@@ -64,7 +64,6 @@ func NewEnv(envpath string) (*Env, error) {
 		SerializedSessionFile: getConfig("SERIALIZED_SESSION_FILE"),
 	}
 
-	println("SharedKeyBytes", result.SharedKeyBytes[0])
 	return result, nil
 }
 
