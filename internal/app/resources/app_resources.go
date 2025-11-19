@@ -7,11 +7,13 @@ import (
 	"github.com/i247app/gex"
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/config"
+	"math-ai.com/math-ai/internal/shared/db"
 )
 
 type AppResource struct {
 	Env            *config.Env
 	HostConfig     gex.HostConfig
+	Db             db.IDatabase
 	SessionManager *session.SessionManager
 }
 
