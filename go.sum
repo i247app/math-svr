@@ -1,0 +1,4 @@
+github.com/i247app/gex v0.0.192 h1:Q0I1FMvgBrLFc6DMUbSX0r6jAKHwJEheAQ+Xb2u4QwE=
+github.com/i247app/gex v0.0.192/go.mod h1:llk+V53qBtS3BV1enl6r5lsI8o1dIqf69/i0S39xA7E=
+github.com/rs/cors v1.11.1 h1:eU3gRzXLRK57F5rKMGMZURNdIG4EoAmX8k94r9wXWHA=
+github.com/rs/cors v1.11.1/go.mod h1:XyqrcTp5zjWr1wsJ8PIRZssZ8b/WMcMf71DJnit4EMU=
