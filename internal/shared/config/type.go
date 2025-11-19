@@ -15,6 +15,7 @@ type ServerConfig struct {
 }
 
 type HostConfig struct {
+	ServerMode    string
 	ServerHost    string
 	ServerPort    string
 	HttpsCertFile *string

@@ -1,1 +1,39 @@
 package resources
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/i247app/gex"
+	"math-ai.com/math-ai/internal/session"
+	"math-ai.com/math-ai/internal/shared/config"
+)
+
+type AppResource struct {
+	Env            *config.Env
+	HostConfig     gex.HostConfig
+	SessionManager *session.SessionManager
+}
+
+func (a *AppResource) GetRequestSession(r *http.Request) (*session.AppSession, error) {
+	sess := session.GetRequestSession(r)
+	if sess == nil {
+		return nil, fmt.Errorf("session not found")
+	}
+
+	return sess, nil
+}
+
+func (a *AppResource) GetRequestUID(r *http.Request) (int64, error) {
+	sess, err := a.GetRequestSession(r)
+	if err != nil {
+		return 0, err
+	}
+
+	id, ok := sess.UID()
+	if !ok {
+		return 0, fmt.Errorf("uid missing from session (did you forget to send the Authorization header?)")
+	}
+
+	return id, nil
+}

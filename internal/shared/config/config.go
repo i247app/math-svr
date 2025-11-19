@@ -40,6 +40,7 @@ func NewEnv(envpath string) (*Env, error) {
 			LogFilePath: getConfig("LOG_FILE_PATH"),
 		},
 		HostConfig: &HostConfig{
+			ServerMode:    getConfig("SERVER_MODE"),
 			ServerHost:    getConfig("SERVER_HOST"),
 			ServerPort:    getConfig("SERVER_PORT"),
 			HttpsCertFile: getConfigOptional("HTTPS_CERT_FILE"),
