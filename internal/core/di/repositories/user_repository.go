@@ -29,18 +29,18 @@ type IUserRepository interface {
 	List(ctx context.Context, params ListUsersParams) ([]*domain.User, *pagination.Pagination, error)
 	FindByID(ctx context.Context, id int64) (*domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
-	Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) // Add tx parameter
+	Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error)
 	Update(ctx context.Context, user *domain.User) (int64, error)
 	Delete(ctx context.Context, uid int64) error
 	ForceDelete(ctx context.Context, tx *sql.Tx, uid int64) error
 
 	// aliases
-	StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error // Add tx parameter
+	StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error
 	DeleteUserAlias(ctx context.Context, uid int64) error
 	ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid int64) error
 
-	// // logins
-	// StoreLogin(ctx context.Context, tx *sql.Tx, dto *CreateLoginDTO) error // Add tx parameter
-	// DeleteLogin(ctx context.Context, uid string) error
-	// ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error
+	// logins
+	StoreLogin(ctx context.Context, tx *sql.Tx, login *domain.Login) error
+	DeleteLogin(ctx context.Context, uid int64) error
+	ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid int64) error
 }
