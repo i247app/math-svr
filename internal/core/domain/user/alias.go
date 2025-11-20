@@ -21,12 +21,12 @@ func NewAliasDomain() *Alias {
 	return &Alias{}
 }
 
-func (a *Alias) ID() string {
-	return a.id
+func (u *Alias) ID() string {
+	return u.id
 }
 
-func (a *Alias) SetID() {
-	a.id = uuid.New().String()
+func (u *Alias) GenerateID() {
+	u.id = uuid.New().String()
 }
 
 func (a *Alias) UID() string {

@@ -38,9 +38,4 @@ type IUserRepository interface {
 	StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error
 	DeleteUserAlias(ctx context.Context, uid string) error
 	ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error
-
-	// logins
-	StoreLogin(ctx context.Context, tx *sql.Tx, login *domain.Login) error
-	DeleteLogin(ctx context.Context, uid string) error
-	ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error
 }

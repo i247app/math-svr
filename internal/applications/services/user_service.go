@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	loginDto "math-ai.com/math-ai/internal/applications/dto/login"
 	dto "math-ai.com/math-ai/internal/applications/dto/user"
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	di "math-ai.com/math-ai/internal/core/di/services"
@@ -14,12 +15,17 @@ import (
 )
 
 type UserService struct {
-	repo repositories.IUserRepository
+	repo      repositories.IUserRepository
+	loginRepo repositories.ILoginRepository
 }
 
-func NewUserService(repo repositories.IUserRepository) di.IUserService {
+func NewUserService(
+	repo repositories.IUserRepository,
+	loginRepo repositories.ILoginRepository,
+) di.IUserService {
 	return &UserService{
-		repo: repo,
+		repo:      repo,
+		loginRepo: loginRepo,
 	}
 }
 
@@ -106,15 +112,22 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 				continue // Skip empty aliases
 			}
 
-			createAliasDTO := dto.BuildAliasDoman(createUserDomain.ID(), aka)
-			if err := s.repo.StoreUserAlias(ctx, tx, createAliasDTO); err != nil {
+			createAliasDomain := dto.BuildAliasDomain(createUserDomain.ID(), aka)
+			if err := s.repo.StoreUserAlias(ctx, tx, createAliasDomain); err != nil {
 				return fmt.Errorf("failed to store user alias in transaction: %v", err)
 			}
+		}
+
+		// Store login
+		createLoginDomain := loginDto.BuildLoginDomain(createUserDomain.ID(), createUserDomain.Password())
+		if err := s.loginRepo.StoreLogin(ctx, tx, createLoginDomain); err != nil {
+			return fmt.Errorf("failed to store user login in transaction: %v", err)
 		}
 
 		return nil
 	}
 
+	// Store login
 	user, err := s.repo.CreateUserWithAssociations(ctx, handler, createUserDomain.ID())
 	if err != nil {
 		return status.INTERNAL, nil, err

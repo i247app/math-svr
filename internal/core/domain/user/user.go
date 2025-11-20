@@ -29,8 +29,12 @@ func (u *User) ID() string {
 	return u.id
 }
 
-func (u *User) SetID() {
+func (u *User) GenerateID() {
 	u.id = uuid.New().String()
+}
+
+func (u *User) SetID(id string) {
+	u.id = id
 }
 
 func (u *User) Name() string {

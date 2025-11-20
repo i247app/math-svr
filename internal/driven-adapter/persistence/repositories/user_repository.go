@@ -227,10 +227,11 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 // Create inserts a new user into the database.
 func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) {
 	query := `
-		INSERT INTO users (name, phone, email, avatar_url, role, status)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO users (id, name, phone, email, avatar_url, role, status)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
+		user.ID(),
 		user.Name(),
 		user.Phone(),
 		user.Email(),
@@ -313,10 +314,11 @@ func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid string
 // StoreUserAlias stores a user alias in the database.
 func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error {
 	query := `
-		INSERT INTO aliases (uid, aka, status)
-		VALUES (?, ?, ?)
+		INSERT INTO aliases (id, uid, aka, status)
+		VALUES (?, ?, ?, ?)
 	`
 	_, err := r.db.Exec(ctx, tx, query,
+		alias.ID(),
 		alias.UID(),
 		alias.Aka(),
 		enum.StatusActive,
@@ -350,50 +352,6 @@ func (r *userRepository) ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, u
 	_, err := r.db.Exec(ctx, tx, query, uid)
 	if err != nil {
 		return fmt.Errorf("failed to force delete user aliases: %v", err)
-	}
-	return nil
-}
-
-// StoreLogin stores a user login record in the database.
-func (r *userRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *domain.Login) error {
-	query := `
-		INSERT INTO logins (uid, hash_pass, status)
-		VALUES (?, ?, ?)
-	`
-	_, err := r.db.Exec(ctx, tx, query,
-		login.UID(),
-		login.HassPass(),
-		enum.StatusActive,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to store user login: %v", err)
-	}
-	return nil
-}
-
-// DeleteLogin deletes user logins by user ID.
-func (r *userRepository) DeleteLogin(ctx context.Context, uid string) error {
-	query := `
-		UPDATE logins
-		SET deleted_dt = ?
-		WHERE uid = ? AND deleted_dt IS NULL
-	`
-	_, err := r.db.Exec(ctx, nil, query, time.Now().UTC(), uid)
-	if err != nil {
-		return fmt.Errorf("failed to delete user logins: %v", err)
-	}
-	return nil
-}
-
-// ForceDeleteLogin permanently deletes user logins by user ID.
-func (r *userRepository) ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
-	query := `
-		DELETE FROM logins
-		WHERE uid = ?
-	`
-	_, err := r.db.Exec(ctx, tx, query, uid)
-	if err != nil {
-		return fmt.Errorf("failed to force delete user logins: %v", err)
 	}
 	return nil
 }

@@ -6,6 +6,7 @@ import (
 
 func BuildUserDomainFromCreateDTO(dto *CreateUserRequest) *domain.User {
 	userDomain := domain.NewUserDomain()
+	userDomain.GenerateID()
 	userDomain.SetEmail(dto.Email)
 	userDomain.SetName(dto.Name)
 	userDomain.SetPhone(dto.Phone)
@@ -16,6 +17,7 @@ func BuildUserDomainFromCreateDTO(dto *CreateUserRequest) *domain.User {
 
 func BuildUserDomainFromUpdateDTO(dto *UpdateUserRequest) *domain.User {
 	userDomain := domain.NewUserDomain()
+	userDomain.SetID(dto.UID)
 	userDomain.SetEmail(*dto.Email)
 	userDomain.SetName(*dto.Name)
 	userDomain.SetPhone(*dto.Phone)
@@ -23,8 +25,9 @@ func BuildUserDomainFromUpdateDTO(dto *UpdateUserRequest) *domain.User {
 	return userDomain
 }
 
-func BuildAliasDoman(uid string, aka string) *domain.Alias {
+func BuildAliasDomain(uid string, aka string) *domain.Alias {
 	aliasDomain := domain.NewAliasDomain()
+	aliasDomain.GenerateID()
 	aliasDomain.SetUID(uid)
 	aliasDomain.SetAka(aka)
 

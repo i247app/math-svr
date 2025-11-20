@@ -14,4 +14,5 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	golang.org/x/crypto v0.45.0 // indirect
 )
