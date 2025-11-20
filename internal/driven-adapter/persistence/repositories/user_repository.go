@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/core/di/repositories"
-	"math-ai.com/math-ai/internal/core/domain/user"
+	domain "math-ai.com/math-ai/internal/core/domain/user"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
@@ -27,7 +27,7 @@ func NewUserRepository(db db.IDatabase) repositories.IUserRepository {
 }
 
 // CreateWithAliases creates a user and their aliases in a single transaction.
-func (r *userRepository) CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid int64) (*user.User, error) {
+func (r *userRepository) CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid int64) (*domain.User, error) {
 	err := r.db.WithTransaction(handler)
 
 	if err != nil {
@@ -63,7 +63,7 @@ func (r *userRepository) ForceDeleteUserWithAssociations(ctx context.Context, ha
 }
 
 // GetUserByLoginName retrieves a user by their login name (email or phone).
-func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName string) (*user.User, error) {
+func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName string) (*domain.User, error) {
 	query := `
 		SELECT u.id, u.name, u.phone, u.email, u.avatar_url, 
 		u.role, u.status, l.hash_pass, u.create_id, u.create_dt, u.modify_id, u.modify_dt
@@ -86,13 +86,13 @@ func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName strin
 		return nil, fmt.Errorf("scan error: %v", err)
 	}
 
-	user := user.UserDomainFromModel(&u)
+	user := domain.BuildUserDomainFromModel(&u)
 
 	return user, nil
 }
 
 // List retrieves a paginated list of users with optional search and sorting.
-func (r *userRepository) List(ctx context.Context, params repositories.ListUsersParams) ([]*user.User, *pagination.Pagination, error) {
+func (r *userRepository) List(ctx context.Context, params repositories.ListUsersParams) ([]*domain.User, *pagination.Pagination, error) {
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
@@ -153,7 +153,7 @@ func (r *userRepository) List(ctx context.Context, params repositories.ListUsers
 	defer rows.Close()
 
 	// Scan results
-	var users []*user.User
+	var users []*domain.User
 	for rows.Next() {
 		var u models.UserModel
 		if err := rows.Scan(
@@ -163,14 +163,14 @@ func (r *userRepository) List(ctx context.Context, params repositories.ListUsers
 			return nil, nil, fmt.Errorf("scan error: %v", err)
 		}
 
-		users = append(users, user.UserDomainFromModel(&u))
+		users = append(users, domain.BuildUserDomainFromModel(&u))
 	}
 
 	return users, pagination, nil
 }
 
 // FindByID retrieves a user by ID.
-func (r *userRepository) FindByID(ctx context.Context, id int64) (*user.User, error) {
+func (r *userRepository) FindByID(ctx context.Context, id int64) (*domain.User, error) {
 	query := `
 		SELECT id, name, phone, email, avatar_url,
 		role, status, create_id, create_dt, modify_id, modify_dt
@@ -193,13 +193,13 @@ func (r *userRepository) FindByID(ctx context.Context, id int64) (*user.User, er
 		return nil, fmt.Errorf("scan error: %v", err)
 	}
 
-	user := user.UserDomainFromModel(&u)
+	user := domain.BuildUserDomainFromModel(&u)
 
 	return user, nil
 }
 
 // FindByEmail retrieves a user by email.
-func (r *userRepository) FindByEmail(ctx context.Context, email string) (*user.User, error) {
+func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	query := `
 		SELECT id, name, phone, email, avatar_url,
 		role, status, create_id, create_dt, modify_id, modify_dt
@@ -220,13 +220,13 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*user.U
 		return nil, fmt.Errorf("scan error: %v", err)
 	}
 
-	user := user.UserDomainFromModel(&u)
+	user := domain.BuildUserDomainFromModel(&u)
 
 	return user, nil
 }
 
 // Create inserts a new user into the database.
-func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *user.User) (int64, error) {
+func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) {
 	query := `
 		INSERT INTO users (name, phone, email, avatar_url, role, status)
 		VALUES (?, ?, ?, ?, ?, ?)
@@ -252,7 +252,7 @@ func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *user.User
 }
 
 // Update updates an existing user.
-func (r *userRepository) Update(ctx context.Context, user *user.User) (int64, error) {
+func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, error) {
 	query := `
 		UPDATE users
 		SET name = COALESCE(?, name),
@@ -307,6 +307,50 @@ func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid int64)
 	_, err := r.db.Exec(ctx, tx, query, uid)
 	if err != nil {
 		return fmt.Errorf("failed to force delete user: %v", err)
+	}
+	return nil
+}
+
+// StoreUserAlias stores a user alias in the database.
+func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error {
+	query := `
+		INSERT INTO aliases (uid, aka, status)
+		VALUES (?, ?, ?)
+	`
+	_, err := r.db.Exec(ctx, tx, query,
+		alias.UID(),
+		alias.Aka(),
+		enum.StatusActive,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to store user alias: %v", err)
+	}
+	return nil
+}
+
+// DeleteUserAlias deletes user aliases by user ID.
+func (r *userRepository) DeleteUserAlias(ctx context.Context, uid int64) error {
+	query := `
+		UPDATE aliases
+		SET deleted_dt = ?
+		WHERE uid = ? AND deleted_dt IS NULL
+	`
+	_, err := r.db.Exec(ctx, nil, query, time.Now().UTC(), uid)
+	if err != nil {
+		return fmt.Errorf("failed to delete user aliases: %v", err)
+	}
+	return nil
+}
+
+// ForceDeleteUserAlias permanently deletes user aliases by user ID.
+func (r *userRepository) ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid int64) error {
+	query := `
+		DELETE FROM aliases
+		WHERE uid = ?
+	`
+	_, err := r.db.Exec(ctx, tx, query, uid)
+	if err != nil {
+		return fmt.Errorf("failed to force delete user aliases: %v", err)
 	}
 	return nil
 }

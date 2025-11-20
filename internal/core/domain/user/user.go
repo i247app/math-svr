@@ -1,4 +1,4 @@
-package user
+package domain
 
 import (
 	"time"
@@ -112,7 +112,7 @@ func (u *User) SetDeletedAt(deletedAt *time.Time) {
 	u.deletedDT = deletedAt
 }
 
-func UserDomainFromModel(model *models.UserModel) *User {
+func BuildUserDomainFromModel(model *models.UserModel) *User {
 	return &User{
 		id:        model.ID,
 		name:      model.Name,

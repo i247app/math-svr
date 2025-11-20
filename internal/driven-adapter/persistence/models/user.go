@@ -11,10 +11,21 @@ type UserModel struct {
 	Email        string
 	AvatarUrl    *string
 	Role         string
-	Status       string
 	HashPassword string
+	Status       string
 	CreateID     *int64
 	CreateDT     time.Time
 	ModifyID     *int64
 	ModifyDT     time.Time
+}
+
+type AliasUserModel struct {
+	ID       int64
+	UID      int64
+	Aka      string
+	Status   string
+	CreateID *int64
+	CreateDT time.Time
+	ModifyID *int64
+	ModifyDT time.Time
 }

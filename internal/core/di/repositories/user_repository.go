@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"math-ai.com/math-ai/internal/core/domain/user"
+	domain "math-ai.com/math-ai/internal/core/domain/user"
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
@@ -19,25 +19,25 @@ type ListUsersParams struct {
 }
 
 type IUserRepository interface {
-	CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid int64) (*user.User, error)
+	CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid int64) (*domain.User, error)
 	DeleteUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx) error
 	ForceDeleteUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx) error
 
-	GetUserByLoginName(ctx context.Context, loginName string) (*user.User, error)
+	GetUserByLoginName(ctx context.Context, loginName string) (*domain.User, error)
 
 	// users
-	List(ctx context.Context, params ListUsersParams) ([]*user.User, *pagination.Pagination, error)
-	FindByID(ctx context.Context, id int64) (*user.User, error)
-	FindByEmail(ctx context.Context, email string) (*user.User, error)
-	Create(ctx context.Context, tx *sql.Tx, user *user.User) (int64, error) // Add tx parameter
-	Update(ctx context.Context, user *user.User) (int64, error)
+	List(ctx context.Context, params ListUsersParams) ([]*domain.User, *pagination.Pagination, error)
+	FindByID(ctx context.Context, id int64) (*domain.User, error)
+	FindByEmail(ctx context.Context, email string) (*domain.User, error)
+	Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) // Add tx parameter
+	Update(ctx context.Context, user *domain.User) (int64, error)
 	Delete(ctx context.Context, uid int64) error
 	ForceDelete(ctx context.Context, tx *sql.Tx, uid int64) error
 
-	// // aliases
-	// StoreUserAlias(ctx context.Context, tx *sql.Tx, dto *CreateAliasDTO) error // Add tx parameter
-	// DeleteUserAlias(ctx context.Context, uid string) error
-	// ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error
+	// aliases
+	StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error // Add tx parameter
+	DeleteUserAlias(ctx context.Context, uid int64) error
+	ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid int64) error
 
 	// // logins
 	// StoreLogin(ctx context.Context, tx *sql.Tx, dto *CreateLoginDTO) error // Add tx parameter

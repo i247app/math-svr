@@ -1,9 +1,11 @@
 package dto
 
-import "math-ai.com/math-ai/internal/core/domain/user"
+import (
+	domain "math-ai.com/math-ai/internal/core/domain/user"
+)
 
-func BuildUserDomainFromCreateDTO(dto *CreateUserRequest) *user.User {
-	userDomain := user.NewUserDomain()
+func BuildUserDomainFromCreateDTO(dto *CreateUserRequest) *domain.User {
+	userDomain := domain.NewUserDomain()
 	userDomain.SetEmail(dto.Email)
 	userDomain.SetName(dto.Name)
 	userDomain.SetPhone(dto.Phone)
@@ -12,8 +14,8 @@ func BuildUserDomainFromCreateDTO(dto *CreateUserRequest) *user.User {
 	return userDomain
 }
 
-func BuildUserDomainFromUpdateDTO(dto *UpdateUserRequest) *user.User {
-	userDomain := user.NewUserDomain()
+func BuildUserDomainFromUpdateDTO(dto *UpdateUserRequest) *domain.User {
+	userDomain := domain.NewUserDomain()
 	userDomain.SetEmail(*dto.Email)
 	userDomain.SetName(*dto.Name)
 	userDomain.SetPhone(*dto.Phone)
@@ -21,7 +23,7 @@ func BuildUserDomainFromUpdateDTO(dto *UpdateUserRequest) *user.User {
 	return userDomain
 }
 
-func UserResponseFromDomain(u *user.User) UserResponse {
+func UserResponseFromDomain(u *domain.User) UserResponse {
 	return UserResponse{
 		ID:        u.ID(),
 		Email:     u.Email(),
@@ -34,7 +36,7 @@ func UserResponseFromDomain(u *user.User) UserResponse {
 	}
 }
 
-func UserResponseListFromDomain(users []*user.User) []UserResponse {
+func UserResponseListFromDomain(users []*domain.User) []UserResponse {
 	responses := make([]UserResponse, len(users))
 	for i, u := range users {
 		responses[i] = UserResponseFromDomain(u)
