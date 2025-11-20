@@ -8,7 +8,7 @@ import (
 )
 
 type UserResponse struct {
-	ID        int64     `json:"id"`
+	ID        string    `json:"id"`
 	Email     string    `json:"email"`
 	Name      string    `json:"name"`
 	Phone     string    `json:"phone"`
@@ -65,5 +65,5 @@ type UpdateUserResponse struct {
 }
 
 type DeleteUserRequest struct {
-	UserID int64 `json:"uid"`
+	UserID string `json:"uid"`
 }

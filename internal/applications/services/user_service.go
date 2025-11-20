@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 
 	dto "math-ai.com/math-ai/internal/applications/dto/user"
 	"math-ai.com/math-ai/internal/core/di/repositories"
@@ -61,8 +63,8 @@ func (s *UserService) GetUserByLoginName(ctx context.Context, loginName string) 
 	return status.SUCCESS, &res, nil
 }
 
-func (s *UserService) GetUserByID(ctx context.Context, id int64) (status.Code, *dto.UserResponse, error) {
-	user, err := s.repo.FindByID(ctx, id)
+func (s *UserService) GetUserByID(ctx context.Context, uid string) (status.Code, *dto.UserResponse, error) {
+	user, err := s.repo.FindByID(ctx, uid)
 	if err != nil {
 		return status.INTERNAL, nil, err
 	}
@@ -90,7 +92,37 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (status.
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (status.Code, *dto.UserResponse, error) {
-	return 0, nil, nil
+	createUserDomain := dto.BuildUserDomainFromCreateDTO(req)
+	handler := func(tx *sql.Tx) error {
+		// Create the user
+		_, err := s.repo.Create(ctx, tx, createUserDomain)
+		if err != nil {
+			return fmt.Errorf("failed to create user in transaction: %v", err)
+		}
+
+		// Store aliases
+		for _, aka := range []string{createUserDomain.Email(), createUserDomain.Phone()} {
+			if aka == "" {
+				continue // Skip empty aliases
+			}
+
+			createAliasDTO := dto.BuildAliasDoman(createUserDomain.ID(), aka)
+			if err := s.repo.StoreUserAlias(ctx, tx, createAliasDTO); err != nil {
+				return fmt.Errorf("failed to store user alias in transaction: %v", err)
+			}
+		}
+
+		return nil
+	}
+
+	user, err := s.repo.CreateUserWithAssociations(ctx, handler, createUserDomain.ID())
+	if err != nil {
+		return status.INTERNAL, nil, err
+	}
+
+	res := dto.UserResponseFromDomain(user)
+
+	return status.SUCCESS, &res, nil
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (status.Code, *dto.UserResponse, error) {
@@ -115,10 +147,10 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	return status.SUCCESS, &res, nil
 }
 
-func (s *UserService) DeleteUser(ctx context.Context, uid int64) (status.Code, error) {
+func (s *UserService) DeleteUser(ctx context.Context, uid string) (status.Code, error) {
 	return 0, nil
 }
 
-func (s *UserService) ForceDeleteUser(ctx context.Context, uid int64) (status.Code, error) {
+func (s *UserService) ForceDeleteUser(ctx context.Context, uid string) (status.Code, error) {
 	return 0, nil
 }

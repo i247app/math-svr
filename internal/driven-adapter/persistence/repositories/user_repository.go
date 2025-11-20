@@ -12,7 +12,6 @@ import (
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
-	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
@@ -27,7 +26,7 @@ func NewUserRepository(db db.IDatabase) repositories.IUserRepository {
 }
 
 // CreateWithAliases creates a user and their aliases in a single transaction.
-func (r *userRepository) CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid int64) (*domain.User, error) {
+func (r *userRepository) CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid string) (*domain.User, error) {
 	err := r.db.WithTransaction(handler)
 
 	if err != nil {
@@ -100,6 +99,7 @@ func (r *userRepository) List(ctx context.Context, params repositories.ListUsers
 	queryBuilder.WriteString(`
 		SELECT id, name, phone, email, avatar_url, 
 		role, status, create_id, create_dt, modify_id, modify_dt
+		FROM users WHERE deleted_dt IS NULL
 	`)
 
 	// Add search condition
@@ -170,7 +170,7 @@ func (r *userRepository) List(ctx context.Context, params repositories.ListUsers
 }
 
 // FindByID retrieves a user by ID.
-func (r *userRepository) FindByID(ctx context.Context, id int64) (*domain.User, error) {
+func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User, error) {
 	query := `
 		SELECT id, name, phone, email, avatar_url,
 		role, status, create_id, create_dt, modify_id, modify_dt
@@ -178,8 +178,7 @@ func (r *userRepository) FindByID(ctx context.Context, id int64) (*domain.User, 
 		WHERE id = ? AND deleted_dt IS NULL
 	`
 
-	logger.Info("id", id)
-	result := r.db.QueryRow(ctx, nil, query, id)
+	result := r.db.QueryRow(ctx, nil, query, uid)
 
 	var u models.UserModel
 	err := result.Scan(
@@ -285,7 +284,7 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 }
 
 // Delete removes a user by ID.
-func (r *userRepository) Delete(ctx context.Context, uid int64) error {
+func (r *userRepository) Delete(ctx context.Context, uid string) error {
 	query := `
 		UPDATE users
 		SET deleted_dt = ?
@@ -299,7 +298,7 @@ func (r *userRepository) Delete(ctx context.Context, uid int64) error {
 }
 
 // ForceDelete removes a user by ID permanently.
-func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid int64) error {
+func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		DELETE FROM users
 		WHERE id = ?
@@ -329,7 +328,7 @@ func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *
 }
 
 // DeleteUserAlias deletes user aliases by user ID.
-func (r *userRepository) DeleteUserAlias(ctx context.Context, uid int64) error {
+func (r *userRepository) DeleteUserAlias(ctx context.Context, uid string) error {
 	query := `
 		UPDATE aliases
 		SET deleted_dt = ?
@@ -343,7 +342,7 @@ func (r *userRepository) DeleteUserAlias(ctx context.Context, uid int64) error {
 }
 
 // ForceDeleteUserAlias permanently deletes user aliases by user ID.
-func (r *userRepository) ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid int64) error {
+func (r *userRepository) ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		DELETE FROM aliases
 		WHERE uid = ?
@@ -373,7 +372,7 @@ func (r *userRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *doma
 }
 
 // DeleteLogin deletes user logins by user ID.
-func (r *userRepository) DeleteLogin(ctx context.Context, uid int64) error {
+func (r *userRepository) DeleteLogin(ctx context.Context, uid string) error {
 	query := `
 		UPDATE logins
 		SET deleted_dt = ?
@@ -387,7 +386,7 @@ func (r *userRepository) DeleteLogin(ctx context.Context, uid int64) error {
 }
 
 // ForceDeleteLogin permanently deletes user logins by user ID.
-func (r *userRepository) ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid int64) error {
+func (r *userRepository) ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		DELETE FROM logins
 		WHERE uid = ?

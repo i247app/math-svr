@@ -19,7 +19,7 @@ type ListUsersParams struct {
 }
 
 type IUserRepository interface {
-	CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid int64) (*domain.User, error)
+	CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid string) (*domain.User, error)
 	DeleteUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx) error
 	ForceDeleteUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx) error
 
@@ -27,20 +27,20 @@ type IUserRepository interface {
 
 	// users
 	List(ctx context.Context, params ListUsersParams) ([]*domain.User, *pagination.Pagination, error)
-	FindByID(ctx context.Context, id int64) (*domain.User, error)
+	FindByID(ctx context.Context, uid string) (*domain.User, error)
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error)
 	Update(ctx context.Context, user *domain.User) (int64, error)
-	Delete(ctx context.Context, uid int64) error
-	ForceDelete(ctx context.Context, tx *sql.Tx, uid int64) error
+	Delete(ctx context.Context, uid string) error
+	ForceDelete(ctx context.Context, tx *sql.Tx, uid string) error
 
 	// aliases
 	StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error
-	DeleteUserAlias(ctx context.Context, uid int64) error
-	ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid int64) error
+	DeleteUserAlias(ctx context.Context, uid string) error
+	ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error
 
 	// logins
 	StoreLogin(ctx context.Context, tx *sql.Tx, login *domain.Login) error
-	DeleteLogin(ctx context.Context, uid int64) error
-	ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid int64) error
+	DeleteLogin(ctx context.Context, uid string) error
+	ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error
 }

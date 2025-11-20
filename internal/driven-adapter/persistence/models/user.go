@@ -5,7 +5,7 @@ import (
 )
 
 type UserModel struct {
-	ID           int64
+	ID           string
 	Name         string
 	Phone        string
 	Email        string
@@ -20,8 +20,8 @@ type UserModel struct {
 }
 
 type AliasUserModel struct {
-	ID       int64
-	UID      int64
+	ID       string
+	UID      string
 	Aka      string
 	Status   string
 	CreateID *int64

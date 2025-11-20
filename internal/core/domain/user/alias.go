@@ -3,12 +3,13 @@ package domain
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 )
 
 type Alias struct {
-	id        int64
-	uid       int64
+	id        string
+	uid       string
 	aka       string
 	status    string
 	createDT  time.Time
@@ -20,19 +21,19 @@ func NewAliasDomain() *Alias {
 	return &Alias{}
 }
 
-func (a *Alias) ID() int64 {
+func (a *Alias) ID() string {
 	return a.id
 }
 
-func (a *Alias) SetID(id int64) {
-	a.id = id
+func (a *Alias) SetID() {
+	a.id = uuid.New().String()
 }
 
-func (a *Alias) UID() int64 {
+func (a *Alias) UID() string {
 	return a.uid
 }
 
-func (a *Alias) SetUID(uid int64) {
+func (a *Alias) SetUID(uid string) {
 	a.uid = uid
 }
 

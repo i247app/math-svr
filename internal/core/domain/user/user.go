@@ -3,11 +3,12 @@ package domain
 import (
 	"time"
 
+	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 )
 
 type User struct {
-	id        int64
+	id        string
 	name      string
 	phone     string
 	email     string
@@ -24,12 +25,12 @@ func NewUserDomain() *User {
 	return &User{}
 }
 
-func (u *User) ID() int64 {
+func (u *User) ID() string {
 	return u.id
 }
 
-func (u *User) SetID(id int64) {
-	u.id = id
+func (u *User) SetID() {
+	u.id = uuid.New().String()
 }
 
 func (u *User) Name() string {

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"math-ai.com/math-ai/internal/app/resources"
 	dto "math-ai.com/math-ai/internal/applications/dto/user"
@@ -47,13 +46,7 @@ func (u *Controller) HandleGetListUsers(w http.ResponseWriter, r *http.Request) 
 func (u *Controller) HandleGetUser(w http.ResponseWriter, r *http.Request) {
 	userID := r.PathValue("id")
 
-	userInt64, err := strconv.ParseInt(userID, 10, 64)
-	if err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid user id"), status.BAD_REQUEST)
-		return
-	}
-
-	statusCode, user, err := u.service.GetUserByID(r.Context(), userInt64)
+	statusCode, user, err := u.service.GetUserByID(r.Context(), userID)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
@@ -68,7 +61,7 @@ func (u *Controller) HandleGetUser(w http.ResponseWriter, r *http.Request) {
 
 // Get - /users/profile
 func (u *Controller) HandleGetProfile(w http.ResponseWriter, r *http.Request) {
-	var userID int64
+	var userID string
 
 	statusCode, user, err := u.service.GetUserByID(r.Context(), userID)
 	if err != nil {

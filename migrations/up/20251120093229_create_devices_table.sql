@@ -1,5 +1,5 @@
 CREATE TABLE devices (
-  `id` int NOT NULL AUTO_INCREMENT,
+  `id` CHAR(36) NOT NULL,
   `uid` CHAR(36) DEFAULT NULL,
   `device_uuid` varchar(255) NOT NULL,
   `device_name` varchar(255) NOT NULL,

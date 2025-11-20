@@ -23,6 +23,14 @@ func BuildUserDomainFromUpdateDTO(dto *UpdateUserRequest) *domain.User {
 	return userDomain
 }
 
+func BuildAliasDoman(uid string, aka string) *domain.Alias {
+	aliasDomain := domain.NewAliasDomain()
+	aliasDomain.SetUID(uid)
+	aliasDomain.SetAka(aka)
+
+	return aliasDomain
+}
+
 func UserResponseFromDomain(u *domain.User) UserResponse {
 	return UserResponse{
 		ID:        u.ID(),
