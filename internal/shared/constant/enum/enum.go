@@ -1,8 +1,5 @@
 package enum
 
-type ERole string
-type EStatus string
-
 const (
 	RoleAdmin ERole = "admin"
 	RoleUser  ERole = "user"
@@ -11,6 +8,9 @@ const (
 	StatusActive   EStatus = "ACTIVE"
 	StatusInactive EStatus = "INACTIVE"
 	StatusBanned   EStatus = "BANNED"
+
+	LoginStatusActive            ELoginStatus = "ACTIVE"
+	LoginStatusTwoFactorRequired ELoginStatus = "2FA_REQUIRED"
 
 	DefaultLang = "en"
 )

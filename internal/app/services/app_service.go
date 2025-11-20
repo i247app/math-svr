@@ -14,15 +14,16 @@ type ServiceContainer struct {
 }
 
 func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error) {
-	logger.Info("Initializing services")
-
-	logger.Info("> userSvc...")
+	logger.Info("Initializing repository")
 	loginRepo := repositories.NewloginRepository(res.Db)
-	var loginSvc = services.NewLoginService(loginRepo)
-
-	logger.Info("> userSvc...")
 	userRepo := repositories.NewUserRepository(res.Db)
+
+	logger.Info("Initializing services")
+	logger.Info("> loginSvc...")
 	var userSvc = services.NewUserService(userRepo, loginRepo)
+
+	logger.Info("> loginSvc...")
+	var loginSvc = services.NewLoginService(loginRepo, userRepo)
 
 	return &ServiceContainer{
 		LoginService: loginSvc,

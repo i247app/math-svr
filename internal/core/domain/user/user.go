@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/shared/constant/enum"
 )
 
 type User struct {
@@ -74,6 +75,10 @@ func (u *User) Role() string {
 }
 
 func (u *User) SetRole(role string) {
+	if role == "" {
+		role = string(enum.RoleUser)
+	}
+
 	u.role = role
 }
 

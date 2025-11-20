@@ -4,8 +4,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"golang.org/x/crypto/bcrypt"
 	"math-ai.com/math-ai/internal/shared/logger"
+	hasher "math-ai.com/math-ai/internal/shared/utils/hash"
 )
 
 type Login struct {
@@ -47,7 +47,7 @@ func (l *Login) HassPass() string {
 }
 
 func (l *Login) SetHassPass(password string) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := hasher.DefaultHasher.Hash(password)
 	if err != nil {
 		logger.Errorf("failed to hash password: %v", err)
 	}

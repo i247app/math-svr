@@ -61,7 +61,7 @@ func (s *AppSession) MarkForDeletion() {
 type InitData struct {
 	Source    string
 	IsSecure  bool
-	UID       int64
+	UID       string
 	Email     string
 	LoginName string
 	ExpireAt  *time.Time

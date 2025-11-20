@@ -3,7 +3,7 @@ package di
 import (
 	"context"
 
-	dto "math-ai.com/math-ai/internal/applications/dto/user"
+	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )

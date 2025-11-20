@@ -5,8 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	loginDto "math-ai.com/math-ai/internal/applications/dto/login"
-	dto "math-ai.com/math-ai/internal/applications/dto/user"
+	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
@@ -98,7 +97,7 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (status.
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (status.Code, *dto.UserResponse, error) {
-	createUserDomain := dto.BuildUserDomainFromCreateDTO(req)
+	createUserDomain := dto.BuildUserDomainForCreate(req)
 	handler := func(tx *sql.Tx) error {
 		// Create the user
 		_, err := s.repo.Create(ctx, tx, createUserDomain)
@@ -119,7 +118,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 		}
 
 		// Store login
-		createLoginDomain := loginDto.BuildLoginDomain(createUserDomain.ID(), createUserDomain.Password())
+		createLoginDomain := dto.BuildLoginDomain(createUserDomain.ID(), createUserDomain.Password())
 		if err := s.loginRepo.StoreLogin(ctx, tx, createLoginDomain); err != nil {
 			return fmt.Errorf("failed to store user login in transaction: %v", err)
 		}
@@ -144,7 +143,7 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	// 	return statusCode, nil, err
 	// }
 
-	userDomain := dto.BuildUserDomainFromUpdateDTO(req)
+	userDomain := dto.BuildUserDomainForUpdate(req)
 	_, err := s.repo.Update(ctx, userDomain)
 	if err != nil {
 		return status.INTERNAL, nil, err

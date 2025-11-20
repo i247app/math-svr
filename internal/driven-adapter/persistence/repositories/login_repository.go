@@ -8,6 +8,7 @@ import (
 
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/login"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
 )
@@ -65,4 +66,69 @@ func (r *loginRepository) ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid 
 		return fmt.Errorf("failed to force delete user logins: %v", err)
 	}
 	return nil
+}
+
+func (r *loginRepository) GetLoginLogByUIDAndDeviceUUID(ctx context.Context, uid string, deviceUUID string) (*domain.LoginLog, error) {
+	query := `
+		SELECT id, uid, ip_address, device_uuid, token
+		FROM login_logs
+		WHERE uid = ? AND device_uuid = ?
+	`
+
+	var ll models.LoginLogModel
+	result := r.db.QueryRow(ctx, nil, query, uid, deviceUUID)
+	err := result.Scan(&ll.ID, &ll.UID, &ll.IPaddress, &ll.DeviceUUID, &ll.Token)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	loginLog := domain.BuildLoginLogFromModel(&ll)
+
+	return loginLog, nil
+}
+
+func (r *loginRepository) StoreLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
+	query := `
+		INSERT INTO login_logs (id, uid, ip_address, device_uuid, token, status)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`
+
+	_, err := r.db.Exec(ctx, nil, query,
+		loginLog.ID(),
+		loginLog.UID(),
+		loginLog.IPAddress(),
+		loginLog.DeviceUUID(),
+		loginLog.Token(),
+		loginLog.Status(),
+	)
+
+	return err
+}
+
+func (r *loginRepository) UpdateLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
+	query := `
+		UPDATE login_logs
+		SET uid = COALESCE(?, uid),
+			ip_address = COALESCE(?, ip_address),
+			device_uuid = COALESCE(?, device_uuid),
+			token = COALESCE(?, token),
+			status = COALESCE(?, status),
+			modify_dt = ?
+		WHERE id = ?
+	`
+
+	_, err := r.db.Exec(ctx, nil, query,
+		loginLog.UID(),
+		loginLog.IPAddress(),
+		loginLog.DeviceUUID(),
+		loginLog.Token(),
+		loginLog.Status(),
+		time.Now().UTC(),
+		loginLog.ID(),
+	)
+
+	return err
 }
