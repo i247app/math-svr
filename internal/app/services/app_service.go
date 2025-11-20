@@ -9,14 +9,16 @@ import (
 )
 
 type ServiceContainer struct {
-	LoginService di.ILoginService
-	UserService  di.IUserService
+	LoginService  di.ILoginService
+	UserService   di.IUserService
+	DeviceService di.IDeviceService
 }
 
 func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error) {
 	logger.Info("Initializing repository")
 	loginRepo := repositories.NewloginRepository(res.Db)
 	userRepo := repositories.NewUserRepository(res.Db)
+	deviceRepo := repositories.NewDeviceRepository(res.Db)
 
 	logger.Info("Initializing services")
 	logger.Info("> loginSvc...")
@@ -25,8 +27,12 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	logger.Info("> loginSvc...")
 	var loginSvc = services.NewLoginService(loginRepo, userRepo)
 
+	logger.Info("> deviceSvc...")
+	var deviceSvc = services.NewDeviceService(deviceRepo)
+
 	return &ServiceContainer{
-		LoginService: loginSvc,
-		UserService:  userSvc,
+		LoginService:  loginSvc,
+		UserService:   userSvc,
+		DeviceService: deviceSvc,
 	}, nil
 }

@@ -84,9 +84,22 @@ func BuildUserDomainForCreate(dto *CreateUserRequest) *domain.User {
 func BuildUserDomainForUpdate(dto *UpdateUserRequest) *domain.User {
 	userDomain := domain.NewUserDomain()
 	userDomain.SetID(dto.UID)
-	userDomain.SetEmail(*dto.Email)
-	userDomain.SetName(*dto.Name)
-	userDomain.SetPhone(*dto.Phone)
+
+	if dto.Email != nil {
+		userDomain.SetEmail(*dto.Email)
+	}
+
+	if dto.Name != nil {
+		userDomain.SetName(*dto.Name)
+	}
+
+	if dto.Phone != nil {
+		userDomain.SetPhone(*dto.Phone)
+	}
+
+	if dto.Role != nil {
+		userDomain.SetRole(string(*dto.Role))
+	}
 
 	return userDomain
 }
