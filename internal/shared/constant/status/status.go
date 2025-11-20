@@ -1,7 +1,5 @@
 package status
 
-type Code = int
-
 const (
 	UNKNOW      Code = 100
 	SUCCESS     Code = 200
