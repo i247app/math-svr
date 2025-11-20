@@ -1,5 +1,5 @@
 CREATE TABLE aliases (
-  `id` CHAR(36) NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `uid` CHAR(36) NOT NULL,
   `aka` varchar(128) NOT NULL,
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',

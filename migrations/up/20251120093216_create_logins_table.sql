@@ -1,5 +1,5 @@
 CREATE TABLE logins (
-  `id` CHAR(36) NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `uid` CHAR(36) NOT NULL,
   `hash_pass` varchar(255) DEFAULT NULL,
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',

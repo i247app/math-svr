@@ -1,5 +1,5 @@
 CREATE TABLE login_logs (
-  `id` CHAR(36) NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
   `uid` CHAR(36) NOT NULL,
   `ip_address` varchar(255) NOT NULL,
   `device_uuid` varchar(255) NOT NULL,

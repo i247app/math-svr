@@ -11,6 +11,7 @@ type UserModel struct {
 	Name         string
 	Phone        string
 	Email        string
+	AvatarUrl    *string
 	Role         *string
 	Status       enum.EStatus
 	HashPassword string
