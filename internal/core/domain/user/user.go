@@ -3,7 +3,7 @@ package user
 import (
 	"time"
 
-	"math-ai.com/math-ai/internal/shared/constant/enum"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 )
 
 type User struct {
@@ -12,7 +12,7 @@ type User struct {
 	phone     string
 	email     string
 	avatarUrl *string
-	role      enum.ERole
+	role      string
 	password  string
 	status    string
 	createDT  time.Time
@@ -40,7 +40,7 @@ func (u *User) AvatarURL() *string {
 	return u.avatarUrl
 }
 
-func (u *User) Role() enum.ERole {
+func (u *User) Role() string {
 	return u.role
 }
 
@@ -62,4 +62,20 @@ func (u *User) ModifyAt() time.Time {
 
 func (u *User) DeletedAt() *time.Time {
 	return u.deletedDT
+}
+
+func UserDomainFromModel(model *models.UserModel) *User {
+	return &User{
+		id:        model.ID,
+		name:      model.Name,
+		phone:     model.Phone,
+		email:     model.Email,
+		avatarUrl: model.AvatarUrl,
+		role:      model.Role,
+		password:  model.HashPassword,
+		status:    model.Status,
+		createDT:  model.CreateDT,
+		modifyDT:  model.ModifyDT,
+	}
+
 }

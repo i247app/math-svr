@@ -18,6 +18,10 @@ type UserResponse struct {
 	ModifyAt  time.Time `json:"modified_at"`
 }
 
+type GetUserResponse struct {
+	User *UserResponse `json:"result"`
+}
+
 type ListUserRequest struct {
 	Search    string `json:"search,omitempty" form:"search"`
 	Page      int64  `json:"page" form:"page"`
@@ -43,6 +47,10 @@ type CreateUserRequest struct {
 	DeviceName string `json:"device_name,omitempty"`
 }
 
+type CreateUserResponse struct {
+	User *UserResponse `json:"result"`
+}
+
 type UpdateUserRequest struct {
 	UID        string        `json:"uid"`
 	FirstName  *string       `json:"first_name,omitempty"`
@@ -52,4 +60,12 @@ type UpdateUserRequest struct {
 	Email      *string       `json:"email,omitempty"`
 	Role       *enum.ERole   `json:"role,omitempty"`
 	Status     *enum.EStatus `json:"status,omitempty"`
+}
+
+type UpdateUserResponse struct {
+	User *UserResponse `json:"result"`
+}
+
+type DeleteUserRequest struct {
+	UserID string `json:"uid"`
 }

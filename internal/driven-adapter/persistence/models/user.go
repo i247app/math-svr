@@ -2,8 +2,6 @@ package models
 
 import (
 	"time"
-
-	"math-ai.com/math-ai/internal/shared/constant/enum"
 )
 
 type UserModel struct {
@@ -12,8 +10,8 @@ type UserModel struct {
 	Phone        string
 	Email        string
 	AvatarUrl    *string
-	Role         *string
-	Status       enum.EStatus
+	Role         string
+	Status       string
 	HashPassword string
 	CreateID     *int64
 	CreateDT     time.Time

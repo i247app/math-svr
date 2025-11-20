@@ -1,4 +1,4 @@
-package services
+package di
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 )
 
 type IUserService interface {
-	ListUsers(ctx context.Context, dto *dto.ListUserRequest) (status.Code, []*dto.UserResponse, pagination.Pagination, error)
+	ListUsers(ctx context.Context, dto *dto.ListUserRequest) (status.Code, []*dto.UserResponse, *pagination.Pagination, error)
 	GetUserByLoginName(ctx context.Context, loginName string) (status.Code, *dto.UserResponse, error)
 	GetUserByID(ctx context.Context, id string) (status.Code, *dto.UserResponse, error)
 	GetUserByEmail(ctx context.Context, email string) (status.Code, *dto.UserResponse, error)

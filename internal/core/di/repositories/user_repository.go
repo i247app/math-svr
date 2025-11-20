@@ -26,13 +26,13 @@ type IUserRepository interface {
 	GetUserByLoginName(ctx context.Context, loginName string) (*user.User, error)
 
 	// users
-	List(ctx context.Context, req ListUsersParams) ([]*user.User, pagination.Pagination, error)
-	FindByID(ctx context.Context, id string) ([]*user.User, error)
-	FindByEmail(ctx context.Context, email string) ([]*user.User, error)
+	List(ctx context.Context, params ListUsersParams) ([]*user.User, *pagination.Pagination, error)
+	FindByID(ctx context.Context, id string) (*user.User, error)
+	FindByEmail(ctx context.Context, email string) (*user.User, error)
 	Create(ctx context.Context, tx *sql.Tx, user *user.User) (int64, error) // Add tx parameter
 	Update(ctx context.Context, user *user.User) (int64, error)
-	Delete(ctx context.Context, id string) error
-	ForceDelete(ctx context.Context, tx *sql.Tx, id string) error
+	Delete(ctx context.Context, uid string) error
+	ForceDelete(ctx context.Context, tx *sql.Tx, uid string) error
 
 	// // aliases
 	// StoreUserAlias(ctx context.Context, tx *sql.Tx, dto *CreateAliasDTO) error // Add tx parameter
