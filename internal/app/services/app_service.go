@@ -2,10 +2,13 @@ package services
 
 import (
 	"math-ai.com/math-ai/internal/app/resources"
+	"math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/logger"
 )
 
-type ServiceContainer struct{}
+type ServiceContainer struct {
+	UserService *services.IUserService
+}
 
 func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error) {
 	logger.Info("Initializing services")

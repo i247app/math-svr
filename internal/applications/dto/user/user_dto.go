@@ -3,6 +3,7 @@ package dto
 import (
 	"time"
 
+	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
@@ -29,4 +30,26 @@ type ListUserRequest struct {
 type ListUserResponse struct {
 	Items      []*UserResponse        `json:"result"`
 	Pagination *pagination.Pagination `json:"metadata"`
+}
+
+type CreateUserRequest struct {
+	Name     string     `json:"last_name"`
+	Phone    string     `json:"phone"`
+	Email    string     `json:"email"`
+	Role     enum.ERole `json:"role,omitempty"`
+	Password string     `json:"password"`
+
+	DeviceUUID string `json:"device_uuid,omitempty"`
+	DeviceName string `json:"device_name,omitempty"`
+}
+
+type UpdateUserRequest struct {
+	UID        string        `json:"uid"`
+	FirstName  *string       `json:"first_name,omitempty"`
+	MiddleName *string       `json:"middle_name,omitempty"`
+	LastName   *string       `json:"last_name,omitempty"`
+	Phone      *string       `json:"phone,omitempty"`
+	Email      *string       `json:"email,omitempty"`
+	Role       *enum.ERole   `json:"role,omitempty"`
+	Status     *enum.EStatus `json:"status,omitempty"`
 }
