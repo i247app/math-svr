@@ -89,7 +89,7 @@ func (d *Database) Query(ctx context.Context, tx *sql.Tx, query string, args ...
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
-	logger.Infof(query, args...)
+	d.logInputSQL(query, args...)
 	var rows *sql.Rows
 	var err error
 	if tx != nil {
@@ -108,7 +108,7 @@ func (d *Database) QueryRow(ctx context.Context, tx *sql.Tx, query string, args 
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
-	logger.Infof(query, args...)
+	d.logInputSQL(query, args...)
 	if tx != nil {
 		return tx.QueryRowContext(ctx, query, args...)
 	}
@@ -119,7 +119,7 @@ func (d *Database) Exec(ctx context.Context, tx *sql.Tx, query string, args ...a
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
-	logger.Infof(query, args...)
+	d.logInputSQL(query, args...)
 	var result sql.Result
 	var err error
 	if tx != nil {
@@ -139,7 +139,7 @@ func (d *Database) PingContext(ctx context.Context) error {
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
-	logger.Info("PING")
+	d.logInputSQL("PING")
 	return d.db.PingContext(ctx)
 }
 
