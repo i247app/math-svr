@@ -52,14 +52,12 @@ type CreateUserResponse struct {
 }
 
 type UpdateUserRequest struct {
-	UID        string        `json:"uid"`
-	FirstName  *string       `json:"first_name,omitempty"`
-	MiddleName *string       `json:"middle_name,omitempty"`
-	LastName   *string       `json:"last_name,omitempty"`
-	Phone      *string       `json:"phone,omitempty"`
-	Email      *string       `json:"email,omitempty"`
-	Role       *enum.ERole   `json:"role,omitempty"`
-	Status     *enum.EStatus `json:"status,omitempty"`
+	UID    string        `json:"uid"`
+	Name   *string       `json:"name,omitempty"`
+	Phone  *string       `json:"phone,omitempty"`
+	Email  *string       `json:"email,omitempty"`
+	Role   *enum.ERole   `json:"role,omitempty"`
+	Status *enum.EStatus `json:"status,omitempty"`
 }
 
 type UpdateUserResponse struct {
@@ -67,5 +65,5 @@ type UpdateUserResponse struct {
 }
 
 type DeleteUserRequest struct {
-	UserID string `json:"uid"`
+	UserID int64 `json:"uid"`
 }

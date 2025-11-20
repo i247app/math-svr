@@ -8,6 +8,7 @@ import (
 
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	appctx "math-ai.com/math-ai/internal/shared/utils/context"
+	"math-ai.com/math-ai/internal/shared/utils/locales"
 )
 
 func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, statusCode status.Code, args ...any) {
@@ -42,7 +43,7 @@ func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, 
 		payload["status"] = status.INTERNAL
 	}
 
-	if payload["message"] == "Unknown" && err != nil {
+	if (payload["message"] == "Unknown" || payload["message"] == "") && err != nil {
 		payload["message"] = err.Error()
 	}
 
@@ -55,5 +56,14 @@ func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, 
 func GetMessageFromStatusCode(ctx context.Context, statusCode status.Code, args ...any) string {
 	lan := appctx.GetLocale(ctx)
 
-	return lan
+	switch locales.LanguageType(lan) {
+	case locales.EN:
+		return locales.GetMessageENFromStatus(statusCode, args...)
+	case locales.VN:
+		return locales.GetMessageVNFromStatus(statusCode, args...)
+	case locales.FR:
+		return locales.GetMessageFRFromStatus(statusCode, args...)
+	default:
+		return locales.GetMessageENFromStatus(statusCode, args...)
+	}
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/i247app/gex"
 	"math-ai.com/math-ai/internal/app/resources"
+	"math-ai.com/math-ai/internal/app/routes"
 	"math-ai.com/math-ai/internal/app/services"
 	"math-ai.com/math-ai/internal/shared/config"
 	"math-ai.com/math-ai/internal/shared/constant/status"
@@ -57,6 +58,8 @@ func NewFromEnv(envPath string) (*App, error) {
 	if err := app.Init(); err != nil {
 		return nil, fmt.Errorf("failed to init app: %w", err)
 	}
+
+	routes.SetUpHttpRoutes(app.Server, &resources, app.Services)
 
 	return app, nil
 }

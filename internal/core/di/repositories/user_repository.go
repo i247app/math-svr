@@ -19,7 +19,7 @@ type ListUsersParams struct {
 }
 
 type IUserRepository interface {
-	CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid string) (*user.User, error)
+	CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid int64) (*user.User, error)
 	DeleteUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx) error
 	ForceDeleteUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx) error
 
@@ -27,12 +27,12 @@ type IUserRepository interface {
 
 	// users
 	List(ctx context.Context, params ListUsersParams) ([]*user.User, *pagination.Pagination, error)
-	FindByID(ctx context.Context, id string) (*user.User, error)
+	FindByID(ctx context.Context, id int64) (*user.User, error)
 	FindByEmail(ctx context.Context, email string) (*user.User, error)
 	Create(ctx context.Context, tx *sql.Tx, user *user.User) (int64, error) // Add tx parameter
 	Update(ctx context.Context, user *user.User) (int64, error)
-	Delete(ctx context.Context, uid string) error
-	ForceDelete(ctx context.Context, tx *sql.Tx, uid string) error
+	Delete(ctx context.Context, uid int64) error
+	ForceDelete(ctx context.Context, tx *sql.Tx, uid int64) error
 
 	// // aliases
 	// StoreUserAlias(ctx context.Context, tx *sql.Tx, dto *CreateAliasDTO) error // Add tx parameter

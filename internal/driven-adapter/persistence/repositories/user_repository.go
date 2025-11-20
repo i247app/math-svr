@@ -12,6 +12,7 @@ import (
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
+	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
@@ -26,7 +27,7 @@ func NewUserRepository(db db.IDatabase) repositories.IUserRepository {
 }
 
 // CreateWithAliases creates a user and their aliases in a single transaction.
-func (r *userRepository) CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid string) (*user.User, error) {
+func (r *userRepository) CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid int64) (*user.User, error) {
 	err := r.db.WithTransaction(handler)
 
 	if err != nil {
@@ -169,14 +170,15 @@ func (r *userRepository) List(ctx context.Context, params repositories.ListUsers
 }
 
 // FindByID retrieves a user by ID.
-func (r *userRepository) FindByID(ctx context.Context, id string) (*user.User, error) {
+func (r *userRepository) FindByID(ctx context.Context, id int64) (*user.User, error) {
 	query := `
 		SELECT id, name, phone, email, avatar_url,
 		role, status, create_id, create_dt, modify_id, modify_dt
 		FROM users
-		WHERE email = ? AND deleted_dt IS NULL
+		WHERE id = ? AND deleted_dt IS NULL
 	`
 
+	logger.Info("id", id)
 	result := r.db.QueryRow(ctx, nil, query, id)
 
 	var u models.UserModel
@@ -283,7 +285,7 @@ func (r *userRepository) Update(ctx context.Context, user *user.User) (int64, er
 }
 
 // Delete removes a user by ID.
-func (r *userRepository) Delete(ctx context.Context, uid string) error {
+func (r *userRepository) Delete(ctx context.Context, uid int64) error {
 	query := `
 		UPDATE users
 		SET deleted_dt = ?
@@ -297,7 +299,7 @@ func (r *userRepository) Delete(ctx context.Context, uid string) error {
 }
 
 // ForceDelete removes a user by ID permanently.
-func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid string) error {
+func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid int64) error {
 	query := `
 		DELETE FROM users
 		WHERE id = ?
