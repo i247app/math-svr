@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/i247app/gex"
 	"math-ai.com/math-ai/internal/app/resources"
 	"math-ai.com/math-ai/internal/app/routes"
 	"math-ai.com/math-ai/internal/app/services"
+	"math-ai.com/math-ai/internal/handlers/http/middleware"
 	"math-ai.com/math-ai/internal/shared/config"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/db"
@@ -76,12 +78,34 @@ func (a *App) Init() error {
 	}
 	a.Server = gex.NewServer(a.Resource.HostConfig, defaultRouteHandler)
 
+	// Register middlewares
+	a.setupMiddleware(a.Server, services)
+
 	return nil
 }
 
 func (a *App) Start() error {
 	logger.Infof("Starting server on %s:%s", a.Resource.HostConfig.ServerHost, a.Resource.HostConfig.ServerPort)
 	return a.Server.Start()
+}
+
+// Setup middlewares
+func (a *App) setupMiddleware(gexSvr *gex.Server, _ *services.ServiceContainer) {
+	logger.Info("Setup middlewares...")
+	// Middleware are run in order of declaration
+	// The first middleware in the slice runs first
+	middlewares := []gex.Middleware{
+		// Start-->
+		middleware.LogRequestMiddleware,
+		// -->End
+	}
+
+	slices.Reverse(middlewares) // Reverse the middleware order so that the first middleware in the slice is the first to run
+	for _, middleware := range middlewares {
+		gexSvr.RegisterMiddleware(middleware)
+	}
+
+	gexSvr.SetupServerCORS()
 }
 
 func (a *App) Close() error {
