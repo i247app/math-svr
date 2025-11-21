@@ -16,11 +16,11 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- comment it if you migrate-up again
-INSERT INTO users (
-    id, name, phone, email, avatar_url, role, status
-) VALUES
-    (UUID(), 'Alice Smith', '1234567890', 'alice.smith@example.com', null, 'admin', 'ACTIVE'),
-    (UUID(), 'Bob Johnson', '2345678901', 'bob.johnson@example.com', null, 'user', 'ACTIVE'),
-    (UUID(), 'Carol Williams', '3456789012', 'carol.williams@example.com', null, 'user', 'ACTIVE'),
-    (UUID(), 'David Brown', '4567890123', 'david.brown@example.com', null, 'guest', 'ACTIVE'),
-    (UUID(), 'Eve Davis', '5678901234', 'eve.davis@example.com', null, 'user', 'ACTIVE');
+-- INSERT INTO users (
+--     id, name, phone, email, avatar_url, role, status
+-- ) VALUES
+--     (UUID(), 'Alice Smith', '1234567890', 'alice.smith@example.com', null, 'admin', 'ACTIVE'),
+--     (UUID(), 'Bob Johnson', '2345678901', 'bob.johnson@example.com', null, 'user', 'ACTIVE'),
+--     (UUID(), 'Carol Williams', '3456789012', 'carol.williams@example.com', null, 'user', 'ACTIVE'),
+--     (UUID(), 'David Brown', '4567890123', 'david.brown@example.com', null, 'guest', 'ACTIVE'),
+--     (UUID(), 'Eve Davis', '5678901234', 'eve.davis@example.com', null, 'user', 'ACTIVE');

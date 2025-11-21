@@ -45,4 +45,10 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("POST /levels/update", lvc.HandlerUpdateLevel)
 	server.AddRoute("POST /levels/delete", lvc.HandlerDeleteLevel)
 	server.AddRoute("POST /levels/force-delete", lvc.HandlerForceDeleteLevel)
+
+	// profiles
+	pc := controller.NewProfileController(res, services.ProfileService)
+	server.AddRoute("POST /profiles/fetch", pc.HandlerFetchProfile)
+	server.AddRoute("POST /profiles/create", pc.HandlerCreateProfile)
+	server.AddRoute("POST /profiles/update", pc.HandlerUpdateProfile)
 }
