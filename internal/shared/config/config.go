@@ -18,6 +18,11 @@ type Env struct {
 	SharedKeyBytes        []byte
 	RootSessionDriver     string
 	SerializedSessionFile string
+	ChatBoxAPIKey            string
+	ChatBoxTestMode          bool
+	ChatBoxProvider          string
+	ChatBoxLangChainProvider string
+	ChatBoxModelName         string
 }
 
 func NewEnv(envpath string) (*Env, error) {
@@ -62,6 +67,11 @@ func NewEnv(envpath string) (*Env, error) {
 		SharedKeyBytes:        getFileBytesConfig("ROOT_SHARED_KEY"),
 		RootSessionDriver:     getConfig("ROOT_SESSION_DRIVER"),
 		SerializedSessionFile: getConfig("SERIALIZED_SESSION_FILE"),
+		ChatBoxAPIKey:            getConfig("CHAT_BOX_API_KEY"),
+		ChatBoxTestMode:          getBoolConfig("CHAT_BOX_TEST_MODE"),
+		ChatBoxProvider:          getConfigWithDefault("CHAT_BOX_PROVIDER", "mock"),
+		ChatBoxLangChainProvider: getConfigWithDefault("CHAT_BOX_LANGCHAIN_PROVIDER", "google"),
+		ChatBoxModelName:         getConfig("CHAT_BOX_MODEL_NAME"),
 	}
 
 	return result, nil
@@ -116,6 +126,14 @@ func getFileBytesConfig(key string) []byte {
 		panic(fmt.Errorf("config error: %s failed to load file: %w", path, err))
 	}
 	return bytes
+}
+
+func getConfigWithDefault(key, defaultValue string) string {
+	val := getConfigOptional(key)
+	if val == nil || *val == "" {
+		return defaultValue
+	}
+	return *val
 }
 
 func loadFile(path string) ([]byte, error) {

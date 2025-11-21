@@ -12,5 +12,13 @@ const (
 	LoginStatusActive            ELoginStatus = "ACTIVE"
 	LoginStatusTwoFactorRequired ELoginStatus = "2FA_REQUIRED"
 
+	TypeQuizMath    ETypeQuiz = "MATH"
+	TypeQuizScience ETypeQuiz = "SCIENCE"
+	TypeQuizHistory ETypeQuiz = "HISTORY"
+
+	TypeQuizPurpuseNew      ETypeQuizPurpuse = "NEW"
+	TypeQuizPurpusePractice ETypeQuizPurpuse = "PRACTICE"
+	TypeQuizPurpuseExam     ETypeQuizPurpuse = "EXAM"
+
 	DefaultLang = "en"
 )

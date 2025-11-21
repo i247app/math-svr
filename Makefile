@@ -1,8 +1,11 @@
-.PHONY: build run tidy migrate-create
+.PHONY: build run list-models tidy migrate-create
 
 ## run: Run the app.
 run:
 	@go run ./cmd/server
+
+list-models:
+	@go run ./cmd/list-models
 
 tidy:
 	go mod tidy
@@ -51,3 +54,11 @@ migrate-create:
 		exit 1; \
 	fi
 	./bin/create_migration.sh $(NAME)
+
+## list-models: List all available Google AI models
+list-models:
+	@if [ ! -f ./bin/list-models ]; then \
+		echo "Building list-models utility..."; \
+		go build -o bin/list-models ./cmd/list-models; \
+	fi
+	@./bin/list-models

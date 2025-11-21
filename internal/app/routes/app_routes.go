@@ -21,4 +21,8 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	// login
 	lc := controller.NewLoginController(res, services.LoginService)
 	server.AddRoute("POST /login", lc.HandleLogin)
+
+	// chatbox
+	cc := controller.NewChatBoxController(res, services.ChatBoxService)
+	server.AddRoute("POST /chat-box", cc.HandleSendMessage)
 }
