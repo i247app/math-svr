@@ -30,10 +30,11 @@ type ChatBoxRequest struct {
 type Data struct {
 	Question string `json:"question"`
 	Answer   []struct {
-		Name    string `json:"name"`
+		Label   string `json:"label"`
 		Content string `json:"content"`
 	} `json:"answers"`
 	RightAnswer string `json:"right_answer"`
+	Duration    int    `json:"duration"`
 }
 
 // ChatBoxResponse represents the response from the chatbox

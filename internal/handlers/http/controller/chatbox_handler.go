@@ -25,8 +25,8 @@ func NewChatBoxController(appResources *resources.AppResource, service di.IChatB
 	}
 }
 
-// HandleSendMessage handles POST /chat-box requests
-func (c *ChatBoxController) HandleSendMessage(w http.ResponseWriter, r *http.Request) {
+// HandleGenerateQuiz handles POST /generate-quiz requests
+func (c *ChatBoxController) HandleGenerateQuiz(w http.ResponseWriter, r *http.Request) {
 	var req dto.ChatBoxRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.BAD_REQUEST)

@@ -63,7 +63,7 @@ func NewConversation() *Conversation {
 		messages:    make([]*Message, 0),
 		model:       openai.GPT4oMini, // default model
 		temperature: 0.7,              // default temperature
-		maxTokens:   2000,             // default max tokens (enough for ~1500 words)
+		maxTokens:   2500,             // default max tokens (enough for ~1500 words)
 		createdAt:   now,
 		updatedAt:   now,
 	}

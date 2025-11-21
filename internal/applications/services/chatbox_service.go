@@ -66,7 +66,7 @@ func (s *ChatBoxService) SendMessage(ctx context.Context, req *dto.ChatBoxReques
 	err = json.Unmarshal([]byte(resp.Message), &response.Data)
 	if err != nil {
 		logger.Errorf("Failed to unmarshal response message: %v", err)
-		return status.INTERNAL, nil, fmt.Errorf("Failed to parse chatbox response: %v", err)
+		// return status.INTERNAL, nil, fmt.Errorf("Failed to parse chatbox response: %v", err)
 	}
 
 	// Include conversation history if requested
