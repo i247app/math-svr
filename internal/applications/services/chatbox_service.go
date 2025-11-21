@@ -15,19 +15,29 @@ import (
 )
 
 type ChatBoxService struct {
-	client chatbox.IChatBoxClient
+	client     chatbox.IChatBoxClient
+	profileSvc di.IProfileService
 }
 
-func NewChatBoxService(client chatbox.IChatBoxClient) di.IChatBoxService {
+func NewChatBoxService(client chatbox.IChatBoxClient, profileSvc di.IProfileService) di.IChatBoxService {
 	return &ChatBoxService{
-		client: client,
+		client:     client,
+		profileSvc: profileSvc,
 	}
 }
 
 // SendMessage sends a message to the chatbox and gets a response
 func (s *ChatBoxService) SendMessage(ctx context.Context, req *dto.ChatBoxRequest) (status.Code, *dto.ChatBoxResponse, error) {
+	statusCode, user, err := s.profileSvc.FetchProfile(ctx, &dto.FetchProfileRequest{
+		UID: req.UID, // Replace with actual user UID from context or request
+	})
+	if err != nil {
+		logger.Errorf("Failed to fetch user profile: %v", err)
+		return statusCode, nil, fmt.Errorf("failed to fetch user profile: %v", err)
+	}
+
 	// Build conversation from request
-	conv := dto.BuildConversationFromRequest(req)
+	conv := dto.BuildConversationFromRequest(req, user)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -80,7 +90,7 @@ func (s *ChatBoxService) SendMessage(ctx context.Context, req *dto.ChatBoxReques
 // SendMessageStream sends a message and streams the response
 func (s *ChatBoxService) SendMessageStream(ctx context.Context, req *dto.ChatBoxRequest) (status.Code, <-chan dto.ChatBoxStreamChunk, error) {
 	// Build conversation from request
-	conv := dto.BuildConversationFromRequest(req)
+	conv := dto.BuildConversationFromRequest(req, nil)
 
 	// Send message to OpenAI with streaming
 	streamChan, err := s.client.StreamMessage(ctx, conv)

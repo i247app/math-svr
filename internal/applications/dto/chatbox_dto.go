@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"fmt"
 	"time"
 
 	domain "math-ai.com/math-ai/internal/core/domain/chatbox"
@@ -16,6 +17,7 @@ type MessageDTO struct {
 
 // ChatBoxRequest represents a request to send a message to the chatbox
 type ChatBoxRequest struct {
+	UID           string                `json:"uid"`
 	Message       string                `json:"message" binding:"required"`
 	History       []*MessageDTO         `json:"history,omitempty"`
 	Model         *string               `json:"model,omitempty"`
@@ -64,7 +66,17 @@ type ChatBoxStreamChunk struct {
 }
 
 // BuildConversationFromRequest builds a Conversation domain object from a ChatBoxRequest
-func BuildConversationFromRequest(req *ChatBoxRequest) *domain.Conversation {
+func BuildConversationFromRequest(req *ChatBoxRequest, userProfile *ProfileResponse) *domain.Conversation {
+	var (
+		grade string
+		level string
+	)
+
+	if userProfile != nil {
+		grade = userProfile.Grade
+		level = userProfile.Level
+	}
+
 	conv := domain.NewConversation()
 
 	// Set model if provided
@@ -101,13 +113,13 @@ func BuildConversationFromRequest(req *ChatBoxRequest) *domain.Conversation {
 	var prompt string
 	switch req.TypeOfPurpose {
 	case enum.TypeQuizPurpuseNew:
-		prompt = domain.PromptMathQuizNew
+		prompt = fmt.Sprintf(domain.PromptMathQuizNew, level, grade)
 	case enum.TypeQuizPurpusePractice:
 		prompt = domain.PromptMathQuizPractice
 	case enum.TypeQuizPurpuseExam:
 		prompt = domain.PromptMathQuizExam
 	default:
-		prompt = domain.PromptMathQuizNew
+		prompt = fmt.Sprintf(domain.PromptMathQuizNew, level, grade)
 	}
 
 	// Add the current user message
