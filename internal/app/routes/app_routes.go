@@ -35,4 +35,14 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("POST /grades/update", gc.HandlerUpdateGrade)
 	server.AddRoute("POST /grades/delete", gc.HandlerDeleteGrade)
 	server.AddRoute("POST /grades/force-delete", gc.HandlerForceDeleteGrade)
+
+	// levels
+	lvc := controller.NewLevelController(res, services.LevelService)
+	server.AddRoute("GET /levels/list", lvc.HandlerGetListLevels)
+	server.AddRoute("GET /levels/{id}", lvc.HandlerGetLevel)
+	server.AddRoute("GET /levels/label/{label}", lvc.HandlerGetLevelByLabel)
+	server.AddRoute("POST /levels/create", lvc.HandlerCreateLevel)
+	server.AddRoute("POST /levels/update", lvc.HandlerUpdateLevel)
+	server.AddRoute("POST /levels/delete", lvc.HandlerDeleteLevel)
+	server.AddRoute("POST /levels/force-delete", lvc.HandlerForceDeleteLevel)
 }

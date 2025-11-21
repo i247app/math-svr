@@ -17,6 +17,7 @@ type ServiceContainer struct {
 	DeviceService  di.IDeviceService
 	ChatBoxService di.IChatBoxService
 	GradeService   di.IGradeService
+	LevelService   di.ILevelService
 }
 
 func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error) {
@@ -25,6 +26,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	userRepo := repositories.NewUserRepository(res.Db)
 	deviceRepo := repositories.NewDeviceRepository(res.Db)
 	gradeRepo := repositories.NewGradeRepository(res.Db)
+	levelRepo := repositories.NewLevelRepository(res.Db)
 
 	logger.Info("Initializing services")
 	logger.Info("> loginSvc...")
@@ -38,6 +40,9 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 
 	logger.Info("> gradeSvc...")
 	var gradeSvc = services.NewGradeService(gradeRepo)
+
+	logger.Info("> levelSvc...")
+	var levelSvc = services.NewLevelService(levelRepo)
 
 	logger.Info("> chatBoxSvc...")
 	var chatBoxClient chatbox.IChatBoxClient
@@ -98,5 +103,6 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		DeviceService:  deviceSvc,
 		ChatBoxService: chatBoxSvc,
 		GradeService:   gradeSvc,
+		LevelService:   levelSvc,
 	}, nil
 }
