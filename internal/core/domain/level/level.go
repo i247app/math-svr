@@ -9,15 +9,16 @@ import (
 )
 
 type Level struct {
-	id          string
-	label       string
-	description string
-	status      string
-	createID    *int64
-	createDT    time.Time
-	modifyID    *int64
-	modifyDT    time.Time
-	deletedDT   *time.Time
+	id           string
+	label        string
+	description  string
+	status       string
+	displayOrder int8
+	createID     *int64
+	createDT     time.Time
+	modifyID     *int64
+	modifyDT     time.Time
+	deletedDT    *time.Time
 }
 
 func NewLevelDomain() *Level {
@@ -63,6 +64,14 @@ func (l *Level) SetStatus(status string) {
 	l.status = status
 }
 
+func (l *Level) DisplayOrder() int8 {
+	return l.displayOrder
+}
+
+func (l *Level) SetDisplayOrder(displayOrder int8) {
+	l.displayOrder = displayOrder
+}
+
 func (l *Level) CreateID() *int64 {
 	return l.createID
 }
@@ -105,14 +114,15 @@ func (l *Level) SetDeletedAt(deletedDT *time.Time) {
 
 func BuildLevelDomainFromModel(model *models.LevelModel) *Level {
 	return &Level{
-		id:          model.ID,
-		label:       model.Label,
-		description: model.Description,
-		status:      model.Status,
-		createID:    model.CreateID,
-		createDT:    model.CreateDT,
-		modifyID:    model.ModifyID,
-		modifyDT:    model.ModifyDT,
-		deletedDT:   model.DeletedDT,
+		id:           model.ID,
+		label:        model.Label,
+		description:  model.Description,
+		status:       model.Status,
+		displayOrder: model.DisplayOrder,
+		createID:     model.CreateID,
+		createDT:     model.CreateDT,
+		modifyID:     model.ModifyID,
+		modifyDT:     model.ModifyDT,
+		deletedDT:    model.DeletedDT,
 	}
 }

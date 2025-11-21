@@ -9,15 +9,16 @@ import (
 )
 
 type Grade struct {
-	id          string
-	label       string
-	description string
-	status      string
-	createID    *int64
-	createDT    time.Time
-	modifyID    *int64
-	modifyDT    time.Time
-	deletedDT   *time.Time
+	id           string
+	label        string
+	description  string
+	status       string
+	displayOrder int8
+	createID     *int64
+	createDT     time.Time
+	modifyID     *int64
+	modifyDT     time.Time
+	deletedDT    *time.Time
 }
 
 func NewGradeDomain() *Grade {
@@ -63,6 +64,14 @@ func (g *Grade) SetStatus(status string) {
 	g.status = status
 }
 
+func (g *Grade) DisplayOrder() int8 {
+	return g.displayOrder
+}
+
+func (g *Grade) SetDisplayOrder(displayOrder int8) {
+	g.displayOrder = displayOrder
+}
+
 func (g *Grade) CreateID() *int64 {
 	return g.createID
 }
@@ -105,14 +114,15 @@ func (g *Grade) SetDeletedAt(deletedDT *time.Time) {
 
 func BuildGradeDomainFromModel(model *models.GradeModel) *Grade {
 	return &Grade{
-		id:          model.ID,
-		label:       model.Label,
-		description: model.Description,
-		status:      model.Status,
-		createID:    model.CreateID,
-		createDT:    model.CreateDT,
-		modifyID:    model.ModifyID,
-		modifyDT:    model.ModifyDT,
-		deletedDT:   model.DeletedDT,
+		id:           model.ID,
+		label:        model.Label,
+		description:  model.Description,
+		status:       model.Status,
+		displayOrder: model.DisplayOrder,
+		createID:     model.CreateID,
+		createDT:     model.CreateDT,
+		modifyID:     model.ModifyID,
+		modifyDT:     model.ModifyDT,
+		deletedDT:    model.DeletedDT,
 	}
 }

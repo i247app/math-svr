@@ -31,7 +31,7 @@ func (r *levelRepository) List(ctx context.Context, params repositories.ListLeve
 
 	// Base query - note: using 'discription' to match the actual table column
 	queryBuilder.WriteString(`
-		SELECT id, label, discription, status,
+		SELECT id, label, discription, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
 		FROM levels WHERE deleted_dt IS NULL
 	`)
@@ -70,7 +70,7 @@ func (r *levelRepository) List(ctx context.Context, params repositories.ListLeve
 			queryBuilder.WriteString(" DESC")
 		}
 	} else {
-		queryBuilder.WriteString(" ORDER BY label ASC")
+		queryBuilder.WriteString(" ORDER BY display_order ASC")
 	}
 
 	// Add pagination
@@ -91,7 +91,7 @@ func (r *levelRepository) List(ctx context.Context, params repositories.ListLeve
 	for rows.Next() {
 		var l models.LevelModel
 		if err := rows.Scan(
-			&l.ID, &l.Label, &l.Description, &l.Status,
+			&l.ID, &l.Label, &l.Description, &l.Status, &l.DisplayOrder,
 			&l.CreateID, &l.CreateDT, &l.ModifyID, &l.ModifyDT,
 		); err != nil {
 			return nil, nil, fmt.Errorf("scan error: %v", err)
@@ -106,7 +106,7 @@ func (r *levelRepository) List(ctx context.Context, params repositories.ListLeve
 // FindByID retrieves a level by ID.
 func (r *levelRepository) FindByID(ctx context.Context, id string) (*domain.Level, error) {
 	query := `
-		SELECT id, label, discription, status,
+		SELECT id, label, discription, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
 		FROM levels
 		WHERE id = ? AND deleted_dt IS NULL
@@ -116,7 +116,7 @@ func (r *levelRepository) FindByID(ctx context.Context, id string) (*domain.Leve
 
 	var l models.LevelModel
 	err := result.Scan(
-		&l.ID, &l.Label, &l.Description, &l.Status,
+		&l.ID, &l.Label, &l.Description, &l.Status, &l.DisplayOrder,
 		&l.CreateID, &l.CreateDT, &l.ModifyID, &l.ModifyDT,
 	)
 	if err != nil {
@@ -134,7 +134,7 @@ func (r *levelRepository) FindByID(ctx context.Context, id string) (*domain.Leve
 // FindByLabel retrieves a level by label.
 func (r *levelRepository) FindByLabel(ctx context.Context, label string) (*domain.Level, error) {
 	query := `
-		SELECT id, label, discription, status,
+		SELECT id, label, discription, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
 		FROM levels
 		WHERE label = ? AND deleted_dt IS NULL
@@ -144,7 +144,7 @@ func (r *levelRepository) FindByLabel(ctx context.Context, label string) (*domai
 
 	var l models.LevelModel
 	err := result.Scan(
-		&l.ID, &l.Label, &l.Description, &l.Status,
+		&l.ID, &l.Label, &l.Description, &l.Status, &l.DisplayOrder,
 		&l.CreateID, &l.CreateDT, &l.ModifyID, &l.ModifyDT,
 	)
 	if err != nil {
@@ -162,14 +162,15 @@ func (r *levelRepository) FindByLabel(ctx context.Context, label string) (*domai
 // Create inserts a new level into the database.
 func (r *levelRepository) Create(ctx context.Context, tx *sql.Tx, level *domain.Level) (int64, error) {
 	query := `
-		INSERT INTO levels (id, label, discription, status)
-		VALUES (?, ?, ?, ?)
+		INSERT INTO levels (id, label, discription, status, display_order)
+		VALUES (?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		level.ID(),
 		level.Label(),
 		level.Description(),
 		enum.StatusActive,
+		level.DisplayOrder(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create level: %v", err)
@@ -199,6 +200,11 @@ func (r *levelRepository) Update(ctx context.Context, level *domain.Level) (int6
 	if level.Status() != "" {
 		updates = append(updates, "status = ?")
 		args = append(args, level.Status())
+	}
+
+	if level.DisplayOrder() != 0 {
+		updates = append(updates, "display_order = ?")
+		args = append(args, level.DisplayOrder())
 	}
 
 	if len(updates) == 0 {

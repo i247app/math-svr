@@ -1,3 +1,4 @@
+-- migration up
 CREATE TABLE aliases (
   `id` CHAR(36) NOT NULL,
   `uid` CHAR(36) NOT NULL,

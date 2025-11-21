@@ -9,12 +9,13 @@ import (
 )
 
 type LevelResponse struct {
-	ID          string    `json:"id"`
-	Label       string    `json:"label"`
-	Description string    `json:"description"`
-	Status      string    `json:"status"`
-	CreatedAt   time.Time `json:"created_at"`
-	ModifiedAt  time.Time `json:"modified_at"`
+	ID           string    `json:"id"`
+	Label        string    `json:"label"`
+	Description  string    `json:"description"`
+	Status       string    `json:"status"`
+	DisplayOrder int8      `json:"display_order"`
+	CreatedAt    time.Time `json:"created_at"`
+	ModifiedAt   time.Time `json:"modified_at"`
 }
 
 type GetLevelResponse struct {
@@ -36,8 +37,9 @@ type ListLevelResponse struct {
 }
 
 type CreateLevelRequest struct {
-	Label       string `json:"label"`
-	Description string `json:"description"`
+	Label        string `json:"label"`
+	Description  string `json:"description"`
+	DisplayOrder int8   `json:"display_order"`
 }
 
 type CreateLevelResponse struct {
@@ -45,10 +47,11 @@ type CreateLevelResponse struct {
 }
 
 type UpdateLevelRequest struct {
-	ID          string        `json:"id"`
-	Label       *string       `json:"label,omitempty"`
-	Description *string       `json:"description,omitempty"`
-	Status      *enum.EStatus `json:"status,omitempty"`
+	ID           string        `json:"id"`
+	Label        *string       `json:"label,omitempty"`
+	Description  *string       `json:"description,omitempty"`
+	Status       *enum.EStatus `json:"status,omitempty"`
+	DisplayOrder *int8         `json:"display_order,omitempty"`
 }
 
 type UpdateLevelResponse struct {
@@ -65,6 +68,7 @@ func BuildLevelDomainForCreate(dto *CreateLevelRequest) *domain.Level {
 	levelDomain.SetLabel(dto.Label)
 	levelDomain.SetDescription(dto.Description)
 	levelDomain.SetStatus(string(enum.StatusActive))
+	levelDomain.SetDisplayOrder(dto.DisplayOrder)
 
 	return levelDomain
 }
@@ -85,17 +89,22 @@ func BuildLevelDomainForUpdate(dto *UpdateLevelRequest) *domain.Level {
 		levelDomain.SetStatus(string(*dto.Status))
 	}
 
+	if dto.DisplayOrder != nil {
+		levelDomain.SetDisplayOrder(*dto.DisplayOrder)
+	}
+
 	return levelDomain
 }
 
 func LevelResponseFromDomain(l *domain.Level) LevelResponse {
 	return LevelResponse{
-		ID:          l.ID(),
-		Label:       l.Label(),
-		Description: l.Description(),
-		Status:      l.Status(),
-		CreatedAt:   l.CreatedAt(),
-		ModifiedAt:  l.ModifiedAt(),
+		ID:           l.ID(),
+		Label:        l.Label(),
+		Description:  l.Description(),
+		Status:       l.Status(),
+		DisplayOrder: l.DisplayOrder(),
+		CreatedAt:    l.CreatedAt(),
+		ModifiedAt:   l.ModifiedAt(),
 	}
 }
 

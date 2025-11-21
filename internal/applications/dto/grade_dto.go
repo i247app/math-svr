@@ -9,12 +9,13 @@ import (
 )
 
 type GradeResponse struct {
-	ID          string    `json:"id"`
-	Label       string    `json:"label"`
-	Description string    `json:"description"`
-	Status      string    `json:"status"`
-	CreatedAt   time.Time `json:"created_at"`
-	ModifiedAt  time.Time `json:"modified_at"`
+	ID           string    `json:"id"`
+	Label        string    `json:"label"`
+	Description  string    `json:"description"`
+	Status       string    `json:"status"`
+	DisplayOrder int8      `json:"display_order"`
+	CreatedAt    time.Time `json:"created_at"`
+	ModifiedAt   time.Time `json:"modified_at"`
 }
 
 type GetGradeResponse struct {
@@ -36,8 +37,9 @@ type ListGradeResponse struct {
 }
 
 type CreateGradeRequest struct {
-	Label       string `json:"label"`
-	Description string `json:"description"`
+	Label        string `json:"label"`
+	Description  string `json:"description"`
+	DisplayOrder int8   `json:"display_order"`
 }
 
 type CreateGradeResponse struct {
@@ -45,10 +47,11 @@ type CreateGradeResponse struct {
 }
 
 type UpdateGradeRequest struct {
-	ID          string       `json:"id"`
-	Label       *string      `json:"label,omitempty"`
-	Description *string      `json:"description,omitempty"`
-	Status      *enum.EStatus `json:"status,omitempty"`
+	ID           string        `json:"id"`
+	Label        *string       `json:"label,omitempty"`
+	Description  *string       `json:"description,omitempty"`
+	Status       *enum.EStatus `json:"status,omitempty"`
+	DisplayOrder *int8         `json:"display_order,omitempty"`
 }
 
 type UpdateGradeResponse struct {
@@ -65,6 +68,7 @@ func BuildGradeDomainForCreate(dto *CreateGradeRequest) *domain.Grade {
 	gradeDomain.SetLabel(dto.Label)
 	gradeDomain.SetDescription(dto.Description)
 	gradeDomain.SetStatus(string(enum.StatusActive))
+	gradeDomain.SetDisplayOrder(dto.DisplayOrder)
 
 	return gradeDomain
 }
@@ -85,17 +89,22 @@ func BuildGradeDomainForUpdate(dto *UpdateGradeRequest) *domain.Grade {
 		gradeDomain.SetStatus(string(*dto.Status))
 	}
 
+	if dto.DisplayOrder != nil {
+		gradeDomain.SetDisplayOrder(*dto.DisplayOrder)
+	}
+
 	return gradeDomain
 }
 
 func GradeResponseFromDomain(g *domain.Grade) GradeResponse {
 	return GradeResponse{
-		ID:          g.ID(),
-		Label:       g.Label(),
-		Description: g.Description(),
-		Status:      g.Status(),
-		CreatedAt:   g.CreatedAt(),
-		ModifiedAt:  g.ModifiedAt(),
+		ID:           g.ID(),
+		Label:        g.Label(),
+		Description:  g.Description(),
+		Status:       g.Status(),
+		DisplayOrder: g.DisplayOrder(),
+		CreatedAt:    g.CreatedAt(),
+		ModifiedAt:   g.ModifiedAt(),
 	}
 }
 
