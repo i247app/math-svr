@@ -25,4 +25,14 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	// chatbox
 	cc := controller.NewChatBoxController(res, services.ChatBoxService)
 	server.AddRoute("POST /generate-quiz", cc.HandleGenerateQuiz)
+
+	// grades
+	gc := controller.NewGradeController(res, services.GradeService)
+	server.AddRoute("GET /grades/list", gc.HandlerGetListGrades)
+	server.AddRoute("GET /grades/{id}", gc.HandlerGetGrade)
+	server.AddRoute("GET /grades/label/{label}", gc.HandlerGetGradeByLabel)
+	server.AddRoute("POST /grades/create", gc.HandlerCreateGrade)
+	server.AddRoute("POST /grades/update", gc.HandlerUpdateGrade)
+	server.AddRoute("POST /grades/delete", gc.HandlerDeleteGrade)
+	server.AddRoute("POST /grades/force-delete", gc.HandlerForceDeleteGrade)
 }
