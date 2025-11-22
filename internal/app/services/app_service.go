@@ -12,13 +12,14 @@ import (
 )
 
 type ServiceContainer struct {
-	LoginService   di.ILoginService
-	UserService    di.IUserService
-	DeviceService  di.IDeviceService
-	ChatBoxService di.IChatBoxService
-	GradeService   di.IGradeService
-	LevelService   di.ILevelService
-	ProfileService di.IProfileService
+	LoginService          di.ILoginService
+	UserService           di.IUserService
+	DeviceService         di.IDeviceService
+	ChatBoxService        di.IChatBoxService
+	GradeService          di.IGradeService
+	LevelService          di.ILevelService
+	ProfileService        di.IProfileService
+	UserLatestQuizService di.IUserLatestQuizService
 }
 
 func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error) {
@@ -29,6 +30,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	gradeRepo := repositories.NewGradeRepository(res.Db)
 	levelRepo := repositories.NewLevelRepository(res.Db)
 	profileRepo := repositories.NewProfileRepository(res.Db)
+	userLatestQuizRepo := repositories.NewUserLatestQuizRepository(res.Db)
 
 	logger.Info("Initializing services")
 	logger.Info("> loginSvc...")
@@ -48,6 +50,9 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 
 	logger.Info("> profileSvc...")
 	var profileSvc = services.NewProfileService(profileRepo)
+
+	logger.Info("> userLatestQuizSvc...")
+	var userLatestQuizSvc = services.NewUserLatestQuizService(userLatestQuizRepo)
 
 	logger.Info("> chatBoxSvc...")
 	var chatBoxClient chatbox.IChatBoxClient
@@ -103,12 +108,13 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	var chatBoxSvc = services.NewChatBoxService(chatBoxClient, profileSvc)
 
 	return &ServiceContainer{
-		LoginService:   loginSvc,
-		UserService:    userSvc,
-		DeviceService:  deviceSvc,
-		ChatBoxService: chatBoxSvc,
-		GradeService:   gradeSvc,
-		LevelService:   levelSvc,
-		ProfileService: profileSvc,
+		LoginService:          loginSvc,
+		UserService:           userSvc,
+		DeviceService:         deviceSvc,
+		ChatBoxService:        chatBoxSvc,
+		GradeService:          gradeSvc,
+		LevelService:          levelSvc,
+		ProfileService:        profileSvc,
+		UserLatestQuizService: userLatestQuizSvc,
 	}, nil
 }
