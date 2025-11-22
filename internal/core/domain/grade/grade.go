@@ -12,6 +12,7 @@ type Grade struct {
 	id           string
 	label        string
 	description  string
+	iconURL      *string
 	status       string
 	displayOrder int8
 	createID     *int64
@@ -51,6 +52,14 @@ func (g *Grade) Description() string {
 
 func (g *Grade) SetDescription(description string) {
 	g.description = description
+}
+
+func (g *Grade) IconURL() *string {
+	return g.iconURL
+}
+
+func (g *Grade) SetIconURL(iconURL *string) {
+	g.iconURL = iconURL
 }
 
 func (g *Grade) Status() string {
@@ -117,6 +126,7 @@ func BuildGradeDomainFromModel(model *models.GradeModel) *Grade {
 		id:           model.ID,
 		label:        model.Label,
 		description:  model.Description,
+		iconURL:      model.IconURL,
 		status:       model.Status,
 		displayOrder: model.DisplayOrder,
 		createID:     model.CreateID,

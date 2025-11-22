@@ -15,14 +15,20 @@ import (
 )
 
 type ChatBoxService struct {
-	client     chatbox.IChatBoxClient
-	profileSvc di.IProfileService
+	client            chatbox.IChatBoxClient
+	profileSvc        di.IProfileService
+	userLatestQuizSvc di.IUserLatestQuizService
 }
 
-func NewChatBoxService(client chatbox.IChatBoxClient, profileSvc di.IProfileService) di.IChatBoxService {
+func NewChatBoxService(
+	client chatbox.IChatBoxClient,
+	profileSvc di.IProfileService,
+	userLatestQuizSvc di.IUserLatestQuizService,
+) di.IChatBoxService {
 	return &ChatBoxService{
-		client:     client,
-		profileSvc: profileSvc,
+		client:            client,
+		profileSvc:        profileSvc,
+		userLatestQuizSvc: userLatestQuizSvc,
 	}
 }
 
@@ -71,6 +77,37 @@ func (s *ChatBoxService) SendMessage(ctx context.Context, req *dto.ChatBoxReques
 		CompletionTokens: resp.CompletionTokens,
 		TotalTokens:      resp.TotalTokens,
 		Timestamp:        time.Now(),
+	}
+
+	// Save latest quiz for the user
+	if resp.Message != "" {
+		_, res, err := s.userLatestQuizSvc.GetQuizByUID(ctx, &dto.GetUserLatestQuizByUIDRequest{
+			UID: req.UID,
+		})
+		if err != nil {
+			logger.Errorf("Failed to get latest quiz for user %s: %v", req.UID, err)
+		}
+
+		if res == nil {
+			_, createdRes, err := s.userLatestQuizSvc.CreateQuiz(ctx, &dto.CreateUserLatestQuizRequest{
+				UID:       req.UID,
+				Questions: resp.Message,
+				AIReview:  "",
+			})
+			if err != nil {
+				logger.Errorf("Failed to create latest quiz for user %s: %v", req.UID, err)
+			}
+			response.UserLatesQuizID = createdRes.ID
+		} else {
+			_, _, err = s.userLatestQuizSvc.UpdateQuiz(ctx, &dto.UpdateUserLatestQuizRequest{
+				ID:        res.ID,
+				Questions: &resp.Message,
+			})
+			if err != nil {
+				logger.Errorf("Failed to update latest quiz for user %s: %v", req.UID, err)
+			}
+			response.UserLatesQuizID = res.ID
+		}
 	}
 
 	err = json.Unmarshal([]byte(resp.Message), &response.Data)

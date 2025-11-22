@@ -102,22 +102,6 @@ func (s *userLatestQuizService) GetQuizByUID(ctx context.Context, req *dto.GetUs
 
 // CreateQuiz creates a new user latest quiz.
 func (s *userLatestQuizService) CreateQuiz(ctx context.Context, req *dto.CreateUserLatestQuizRequest) (status.Code, *dto.UserLatestQuizResponse, error) {
-	if req.UID == "" {
-		return status.BAD_REQUEST, nil, fmt.Errorf("uid is required")
-	}
-
-	if req.Questions == "" {
-		return status.BAD_REQUEST, nil, fmt.Errorf("questions is required")
-	}
-
-	if req.Answers == "" {
-		return status.BAD_REQUEST, nil, fmt.Errorf("answers is required")
-	}
-
-	if req.AIReview == "" {
-		return status.BAD_REQUEST, nil, fmt.Errorf("ai_review is required")
-	}
-
 	quizDomain := dto.BuildUserLatestQuizDomainForCreate(req)
 
 	rowsAffected, err := s.repo.Create(ctx, nil, quizDomain)

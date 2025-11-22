@@ -9,32 +9,31 @@ package domain
 // 	In addition, in your response, do not send information other than my request such as introduction, ending, etc.
 // 	Because I use your response to prepare data for the question list.`
 
-var PromptMathQuizNew = `Generate 10 multiple-choice math questions for %s level (%s).
+var PromptMathQuizNew = `Generate 5 multiple-choice math questions for %s level (%s).
 
 CRITICAL: Your response MUST be ONLY valid JSON. Do not include any text, explanations, markdown formatting, or code blocks before or after the JSON.
-No need line break or spaces for json response format but can space for question of name or content of answer.
 
 Return a JSON array with exactly this structure:
 [
   {
-    "question": "What is 2 + 2?",
+    "question_name": "What is 2 + 2?",
     "answers": [
       {"label": "A", "content": "3"},
       {"label": "B", "content": "4"},
       {"label": "C", "content": "5"},
       {"label": "D", "content": "6"}
     ],
-    "right_answer": "B",
-    "duration": 10
+    "right_answer": "B"
   }
 ]
 
 Requirements:
-- Return ONLY the JSON array, nothing else
+- Return ONLY the JSON array (no line break (\n), no need for spaces but can space for question of name or content of answer), nothing else
 - Each question must have exactly 4 answers with labels A, B, C, D
 - "right_answer" must be one of: A, B, C, or D
-- "duration" is time in seconds (5-15 based on difficulty)
-- Ensure all JSON is properly formatted with correct quotes and commas`
+- Ensure all JSON is properly formatted with correct quotes and commas
+- Questions should be appropriate for level and focus on concepts I give you above
+- Use Vietnamese for all questions and answers`
 
 var PromptMathQuizPractice = `Generate 10 practice math questions for reinforcing concepts.
 
@@ -51,16 +50,15 @@ Return a JSON array with exactly this structure:
       {"label": "D", "content": "20"}
     ],
     "right_answer": "B",
-    "duration": 12
   }
 ]
 
 Requirements:
+- In json response format (no line break, no need for spaces but can space for question of name or content of answer)
 - Return ONLY the JSON array, nothing else
 - Each question must have exactly 4 answers with labels A, B, C, D
 - "right_answer" must be one of: A, B, C, or D
 - "duration" is time in seconds (8-15 for practice level)
-- Questions should focus on reinforcing fundamental concepts
 - Ensure all JSON is properly formatted with correct quotes and commas`
 
 var PromptMathQuizExam = `Generate 10 exam-level math questions with higher difficulty for comprehensive assessment.
@@ -78,7 +76,6 @@ Return a JSON array with exactly this structure:
       {"label": "D", "content": "9"}
     ],
     "right_answer": "C",
-    "duration": 15
   }
 ]
 
@@ -86,6 +83,5 @@ Requirements:
 - Return ONLY the JSON array, nothing else
 - Each question must have exactly 4 answers with labels A, B, C, D
 - "right_answer" must be one of: A, B, C, or D
-- "duration" is time in seconds (12-15 for exam level)
 - Questions should be more challenging and test deeper understanding
 - Ensure all JSON is properly formatted with correct quotes and commas`

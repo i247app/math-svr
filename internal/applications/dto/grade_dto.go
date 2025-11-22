@@ -12,6 +12,7 @@ type GradeResponse struct {
 	ID           string    `json:"id"`
 	Label        string    `json:"label"`
 	Description  string    `json:"description"`
+	IconURL      *string   `json:"icon_url"`
 	Status       string    `json:"status"`
 	DisplayOrder int8      `json:"display_order"`
 	CreatedAt    time.Time `json:"created_at"`
@@ -37,9 +38,10 @@ type ListGradeResponse struct {
 }
 
 type CreateGradeRequest struct {
-	Label        string `json:"label"`
-	Description  string `json:"description"`
-	DisplayOrder int8   `json:"display_order"`
+	Label        string  `json:"label"`
+	Description  string  `json:"description"`
+	IconURL      *string `json:"icon_url,omitempty"`
+	DisplayOrder int8    `json:"display_order"`
 }
 
 type CreateGradeResponse struct {
@@ -50,6 +52,7 @@ type UpdateGradeRequest struct {
 	ID           string        `json:"id"`
 	Label        *string       `json:"label,omitempty"`
 	Description  *string       `json:"description,omitempty"`
+	IconURL      *string       `json:"icon_url,omitempty"`
 	Status       *enum.EStatus `json:"status,omitempty"`
 	DisplayOrder *int8         `json:"display_order,omitempty"`
 }
@@ -67,6 +70,7 @@ func BuildGradeDomainForCreate(dto *CreateGradeRequest) *domain.Grade {
 	gradeDomain.GenerateID()
 	gradeDomain.SetLabel(dto.Label)
 	gradeDomain.SetDescription(dto.Description)
+	gradeDomain.SetIconURL(dto.IconURL)
 	gradeDomain.SetStatus(string(enum.StatusActive))
 	gradeDomain.SetDisplayOrder(dto.DisplayOrder)
 
@@ -85,6 +89,10 @@ func BuildGradeDomainForUpdate(dto *UpdateGradeRequest) *domain.Grade {
 		gradeDomain.SetDescription(*dto.Description)
 	}
 
+	if dto.IconURL != nil {
+		gradeDomain.SetIconURL(dto.IconURL)
+	}
+
 	if dto.Status != nil {
 		gradeDomain.SetStatus(string(*dto.Status))
 	}
@@ -101,6 +109,7 @@ func GradeResponseFromDomain(g *domain.Grade) GradeResponse {
 		ID:           g.ID(),
 		Label:        g.Label(),
 		Description:  g.Description(),
+		IconURL:      g.IconURL(),
 		Status:       g.Status(),
 		DisplayOrder: g.DisplayOrder(),
 		CreatedAt:    g.CreatedAt(),

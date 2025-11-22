@@ -105,7 +105,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		chatBoxClient = chatbox.NewMockOpenAIClient()
 	}
 
-	var chatBoxSvc = services.NewChatBoxService(chatBoxClient, profileSvc)
+	var chatBoxSvc = services.NewChatBoxService(chatBoxClient, profileSvc, userLatestQuizSvc)
 
 	return &ServiceContainer{
 		LoginService:          loginSvc,

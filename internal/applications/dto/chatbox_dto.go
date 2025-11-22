@@ -30,19 +30,19 @@ type ChatBoxRequest struct {
 }
 
 type Data struct {
-	Question string `json:"question"`
-	Answer   []struct {
+	QuestionName string `json:"question_name"`
+	Answer       []struct {
 		Label   string `json:"label"`
 		Content string `json:"content"`
 	} `json:"answers"`
 	RightAnswer string `json:"right_answer"`
-	Duration    int    `json:"duration"`
 }
 
 // ChatBoxResponse represents the response from the chatbox
 type ChatBoxResponse struct {
+	UserLatesQuizID  string        `json:"user_latest_quiz_id"`
 	Response         string        `json:"response"`
-	Data             []Data        `json:"data,omitempty"`
+	Data             []Data        `json:"questions"`
 	Role             string        `json:"role"`
 	Model            string        `json:"model"`
 	FinishReason     string        `json:"finish_reason,omitempty"`

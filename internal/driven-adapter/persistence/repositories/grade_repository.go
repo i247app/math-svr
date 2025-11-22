@@ -31,7 +31,7 @@ func (r *gradeRepository) List(ctx context.Context, params repositories.ListGrad
 
 	// Base query - note: using 'discription' to match the actual table column
 	queryBuilder.WriteString(`
-		SELECT id, label, discription, status, display_order,
+		SELECT id, label, discription, icon_url, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
 		FROM grades WHERE deleted_dt IS NULL
 	`)
@@ -91,7 +91,7 @@ func (r *gradeRepository) List(ctx context.Context, params repositories.ListGrad
 	for rows.Next() {
 		var g models.GradeModel
 		if err := rows.Scan(
-			&g.ID, &g.Label, &g.Description, &g.Status, &g.DisplayOrder,
+			&g.ID, &g.Label, &g.Description, &g.IconURL, &g.Status, &g.DisplayOrder,
 			&g.CreateID, &g.CreateDT, &g.ModifyID, &g.ModifyDT,
 		); err != nil {
 			return nil, nil, fmt.Errorf("scan error: %v", err)
@@ -106,7 +106,7 @@ func (r *gradeRepository) List(ctx context.Context, params repositories.ListGrad
 // FindByID retrieves a grade by ID.
 func (r *gradeRepository) FindByID(ctx context.Context, id string) (*domain.Grade, error) {
 	query := `
-		SELECT id, label, discription, status, display_order,
+		SELECT id, label, discription, icon_url, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
 		FROM grades
 		WHERE id = ? AND deleted_dt IS NULL
@@ -116,7 +116,7 @@ func (r *gradeRepository) FindByID(ctx context.Context, id string) (*domain.Grad
 
 	var g models.GradeModel
 	err := result.Scan(
-		&g.ID, &g.Label, &g.Description, &g.Status, &g.DisplayOrder,
+		&g.ID, &g.Label, &g.Description, &g.IconURL, &g.Status, &g.DisplayOrder,
 		&g.CreateID, &g.CreateDT, &g.ModifyID, &g.ModifyDT,
 	)
 	if err != nil {
@@ -134,7 +134,7 @@ func (r *gradeRepository) FindByID(ctx context.Context, id string) (*domain.Grad
 // FindByLabel retrieves a grade by label.
 func (r *gradeRepository) FindByLabel(ctx context.Context, label string) (*domain.Grade, error) {
 	query := `
-		SELECT id, label, discription, status, display_order,
+		SELECT id, label, discription, icon_url, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
 		FROM grades
 		WHERE label = ? AND deleted_dt IS NULL
@@ -144,7 +144,7 @@ func (r *gradeRepository) FindByLabel(ctx context.Context, label string) (*domai
 
 	var g models.GradeModel
 	err := result.Scan(
-		&g.ID, &g.Label, &g.Description, &g.Status, &g.DisplayOrder,
+		&g.ID, &g.Label, &g.Description, &g.IconURL, &g.Status, &g.DisplayOrder,
 		&g.CreateID, &g.CreateDT, &g.ModifyID, &g.ModifyDT,
 	)
 	if err != nil {
@@ -162,13 +162,14 @@ func (r *gradeRepository) FindByLabel(ctx context.Context, label string) (*domai
 // Create inserts a new grade into the database.
 func (r *gradeRepository) Create(ctx context.Context, tx *sql.Tx, grade *domain.Grade) (int64, error) {
 	query := `
-		INSERT INTO grades (id, label, discription, status, display_order)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO grades (id, label, discription, icon_url, status, display_order)
+		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		grade.ID(),
 		grade.Label(),
 		grade.Description(),
+		grade.IconURL(),
 		enum.StatusActive,
 		grade.DisplayOrder(),
 	)
@@ -195,6 +196,12 @@ func (r *gradeRepository) Update(ctx context.Context, grade *domain.Grade) (int6
 	if grade.Description() != "" {
 		updates = append(updates, "discription = ?")
 		args = append(args, grade.Description())
+	}
+
+	// IconURL can be nil, so we check if it's explicitly set
+	if grade.IconURL() != nil {
+		updates = append(updates, "icon_url = ?")
+		args = append(args, grade.IconURL())
 	}
 
 	if grade.Status() != "" {
