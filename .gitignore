@@ -20,6 +20,9 @@ Thumbs.db
 
 # Generic IDE and Log Files
 log_file
+*.lock
+*.log
+*.pyc
 session_data_store
 *~
 [._]*.s[a-w][a-z]
@@ -28,6 +31,13 @@ session_data_store
 .idea/
 .vscode/
 ..air.toml
+
+# Maven
+/target/
+
+# Gradle
+/.gradle/
+/build/
 
 # C/C++/Java/Go Build Artifacts and Libraries
 *.class
@@ -47,6 +57,11 @@ session_data_store
 */bin/*
 */out/*
 */dist/*
+.mtj.tmp/
+
+# Java
+hs_err_pid*
+replay_pid*
 
 # Go Build and Workspace Files
 .gocache/
@@ -75,7 +90,6 @@ sgconfig.yml
 # 1. FLUTTER CORE
 ######################################################################
 
-/build/
 .dart_tool/
 .packages
 .flutter-plugins
