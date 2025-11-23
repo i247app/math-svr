@@ -3,7 +3,7 @@ CREATE TABLE user_latest_quizzes (
   `id` CHAR(36) NOT NULL,
   `uid` CHAR(36) NOT NULL,
   `questions` longtext,
-  `awswers` longtext,
+  `answers` longtext,
   `ai_review` varchar(255) NOT NULL,
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
   `create_id` INT DEFAULT 0,

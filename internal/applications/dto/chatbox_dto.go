@@ -16,7 +16,7 @@ type MessageDTO struct {
 }
 
 // ChatBoxRequest represents a request to send a message to the chatbox
-type ChatBoxRequest struct {
+type GenerateQuizRequest struct {
 	UID           string                `json:"uid"`
 	Message       string                `json:"message" binding:"required"`
 	History       []*MessageDTO         `json:"history,omitempty"`
@@ -29,9 +29,10 @@ type ChatBoxRequest struct {
 	TypeOfPurpose enum.ETypeQuizPurpuse `json:"type_of_purpose,omitempty"`
 }
 
-type Data struct {
-	QuestionName string `json:"question_name"`
-	Answer       []struct {
+type Question struct {
+	QuestionNumber int64  `json:"question_number"`
+	QuestionName   string `json:"question_name"`
+	Answers        []struct {
 		Label   string `json:"label"`
 		Content string `json:"content"`
 	} `json:"answers"`
@@ -39,22 +40,49 @@ type Data struct {
 }
 
 // ChatBoxResponse represents the response from the chatbox
-type ChatBoxResponse struct {
+type ChatBoxResponse[T any] struct {
 	UserLatesQuizID  string        `json:"user_latest_quiz_id"`
 	Response         string        `json:"response"`
-	Data             []Data        `json:"questions"`
+	Data             T             `json:"data"`
 	Role             string        `json:"role"`
 	Model            string        `json:"model"`
-	FinishReason     string        `json:"finish_reason,omitempty"`
-	PromptTokens     int           `json:"prompt_tokens,omitempty"`
-	CompletionTokens int           `json:"completion_tokens,omitempty"`
-	TotalTokens      int           `json:"total_tokens,omitempty"`
-	History          []*MessageDTO `json:"history,omitempty"`
+	FinishReason     string        `json:"-"`
+	PromptTokens     int           `json:"-"`
+	CompletionTokens int           `json:"-"`
+	TotalTokens      int           `json:"-"`
+	History          []*MessageDTO `json:"-"`
 	Timestamp        time.Time     `json:"timestamp"`
 }
 
-type AskChatBoxResponse struct {
-	Result *ChatBoxResponse `json:"result"`
+type GenerateQuizResponse struct {
+	Result *ChatBoxResponse[[]Question] `json:"result"`
+}
+
+type SubmitQuizRequest struct {
+	UserLatestQuizID string `json:"user_latest_quiz_id"`
+	Answers          []struct {
+		QuestionNumber int64  `json:"question_number"`
+		Answer         string `json:"answer"`
+	} `json:"answers"`
+
+	Message      string        `json:"message" binding:"required"`
+	History      []*MessageDTO `json:"history,omitempty"`
+	Model        *string       `json:"model,omitempty"`
+	Temperature  *float32      `json:"temperature,omitempty"`
+	MaxTokens    *int          `json:"max_tokens,omitempty"`
+	SystemPrompt *string       `json:"system_prompt,omitempty"`
+	Stream       bool          `json:"stream,omitempty"`
+}
+
+type QuizAnswer struct {
+	TotalQuestions  int64  `json:"total_questions"`
+	CorrectNumber   int64  `json:"correct_number"`
+	ScorePercentage int    `json:"score_percentage"`
+	AIReview        string `json:"ai_review"`
+}
+
+type SubmitQuizResponse struct {
+	Result *ChatBoxResponse[QuizAnswer] `json:"result"`
 }
 
 // ChatBoxStreamChunk represents a chunk in a streaming response
@@ -66,7 +94,7 @@ type ChatBoxStreamChunk struct {
 }
 
 // BuildConversationFromRequest builds a Conversation domain object from a ChatBoxRequest
-func BuildConversationFromRequest(req *ChatBoxRequest, userProfile *ProfileResponse) *domain.Conversation {
+func BuildGenerateQuizFromRequest(req *GenerateQuizRequest, userProfile *ProfileResponse) *domain.Conversation {
 	var (
 		grade string
 		level string
@@ -121,6 +149,59 @@ func BuildConversationFromRequest(req *ChatBoxRequest, userProfile *ProfileRespo
 	default:
 		prompt = fmt.Sprintf(domain.PromptMathQuizNew, level, grade)
 	}
+
+	// Add the current user message
+	userMsg := domain.NewMessage("user", prompt)
+	conv.AddMessage(userMsg)
+
+	return conv
+}
+
+func BuildSubmitQuizAnswerFromRequest(req *SubmitQuizRequest, userLatestQuizzes *UserLatestQuizResponse) *domain.Conversation {
+	var (
+		questionsInformation string
+		userAnswers          string
+	)
+
+	if req != nil {
+		questionsInformation = userLatestQuizzes.Questions
+		userAnswers = userLatestQuizzes.Answers
+	}
+
+	conv := domain.NewConversation()
+
+	// Set model if provided
+	if req.Model != nil {
+		conv.SetModel(*req.Model)
+	}
+
+	// Set temperature if provided
+	if req.Temperature != nil {
+		conv.SetTemperature(*req.Temperature)
+	}
+
+	// Set max tokens if provided
+	if req.MaxTokens != nil {
+		conv.SetMaxTokens(*req.MaxTokens)
+	}
+
+	// Set system prompt if provided
+	if req.SystemPrompt != nil {
+		conv.SetSystemPrompt(req.SystemPrompt)
+	}
+
+	// Add history messages
+	if req.History != nil && len(req.History) > 0 {
+		for _, msgDTO := range req.History {
+			msg := domain.NewMessage(msgDTO.Role, msgDTO.Content)
+			if !msgDTO.Timestamp.IsZero() {
+				msg.SetTimestamp(msgDTO.Timestamp)
+			}
+			conv.AddMessage(msg)
+		}
+	}
+
+	prompt := fmt.Sprintf(domain.SubmitQuizAnswerPrompt, questionsInformation, userAnswers)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)

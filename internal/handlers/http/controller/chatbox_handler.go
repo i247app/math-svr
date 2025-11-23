@@ -27,7 +27,7 @@ func NewChatBoxController(appResources *resources.AppResource, service di.IChatB
 
 // HandleGenerateQuiz handles POST /generate-quiz requests
 func (c *ChatBoxController) HandleGenerateQuiz(w http.ResponseWriter, r *http.Request) {
-	var req dto.ChatBoxRequest
+	var req dto.GenerateQuizRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.BAD_REQUEST)
 		return
@@ -40,21 +40,43 @@ func (c *ChatBoxController) HandleGenerateQuiz(w http.ResponseWriter, r *http.Re
 	}
 
 	// Send message to service
-	statusCode, chatResponse, err := c.service.SendMessage(r.Context(), &req)
+	statusCode, chatResponse, err := c.service.GenerateQuiz(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
 	}
 
-	res := dto.AskChatBoxResponse{
+	res := dto.GenerateQuizResponse{
 		Result: chatResponse,
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }
 
+// HandleSubmitQuizAnswer handles POST /submit-quiz requests
+func (c *ChatBoxController) HandleSubmitQuizAnswer(w http.ResponseWriter, r *http.Request) {
+	var req dto.SubmitQuizRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.BAD_REQUEST)
+		return
+	}
+
+	// Send message to service
+	statusCode, result, err := c.service.SubmitQuiz(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, r.Context(), nil, err, statusCode)
+		return
+	}
+
+	res := dto.SubmitQuizResponse{
+		Result: result,
+	}
+
+	response.WriteJson(w, r.Context(), res, nil, statusCode)
+}
+
 // handleStreamingResponse handles streaming chat responses
-func (c *ChatBoxController) handleStreamingResponse(w http.ResponseWriter, r *http.Request, req *dto.ChatBoxRequest) {
+func (c *ChatBoxController) handleStreamingResponse(w http.ResponseWriter, r *http.Request, req *dto.GenerateQuizRequest) {
 	// Set headers for SSE (Server-Sent Events)
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")

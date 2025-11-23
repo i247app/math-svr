@@ -8,9 +8,11 @@ import (
 )
 
 type IChatBoxService interface {
-	// SendMessage sends a message to the chatbox and gets a response
-	SendMessage(ctx context.Context, req *dto.ChatBoxRequest) (status.Code, *dto.ChatBoxResponse, error)
+	// GenerateQuiz handles quiz generation requests
+	GenerateQuiz(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error)
 
-	// SendMessageStream sends a message and streams the response
-	SendMessageStream(ctx context.Context, req *dto.ChatBoxRequest) (status.Code, <-chan dto.ChatBoxStreamChunk, error)
+	// SubmitQuiz handles quiz submission requests
+	SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequest) (status.Code, *dto.ChatBoxResponse[dto.QuizAnswer], error)
+
+	SendMessageStream(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, <-chan dto.ChatBoxStreamChunk, error)
 }

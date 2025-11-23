@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -32,8 +33,7 @@ func NewChatBoxService(
 	}
 }
 
-// SendMessage sends a message to the chatbox and gets a response
-func (s *ChatBoxService) SendMessage(ctx context.Context, req *dto.ChatBoxRequest) (status.Code, *dto.ChatBoxResponse, error) {
+func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
 	statusCode, user, err := s.profileSvc.FetchProfile(ctx, &dto.FetchProfileRequest{
 		UID: req.UID, // Replace with actual user UID from context or request
 	})
@@ -42,8 +42,8 @@ func (s *ChatBoxService) SendMessage(ctx context.Context, req *dto.ChatBoxReques
 		return statusCode, nil, fmt.Errorf("failed to fetch user profile: %v", err)
 	}
 
-	// Build conversation from request
-	conv := dto.BuildConversationFromRequest(req, user)
+	// Build generate quiz from request
+	conv := dto.BuildGenerateQuizFromRequest(req, user)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -67,9 +67,16 @@ func (s *ChatBoxService) SendMessage(ctx context.Context, req *dto.ChatBoxReques
 		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
 	}
 
+	var data []dto.Question
+	err = json.Unmarshal([]byte(resp.Message), &data)
+	if err != nil {
+		logger.Errorf("Failed to unmarshal response message: %v", err)
+	}
+
 	// Build response DTO
-	response := &dto.ChatBoxResponse{
+	response := &dto.ChatBoxResponse[[]dto.Question]{
 		Response:         resp.Message,
+		Data:             data,
 		Role:             resp.Role,
 		Model:            resp.Model,
 		FinishReason:     resp.FinishReason,
@@ -110,10 +117,83 @@ func (s *ChatBoxService) SendMessage(ctx context.Context, req *dto.ChatBoxReques
 		}
 	}
 
-	err = json.Unmarshal([]byte(resp.Message), &response.Data)
+	// Include conversation history if requested
+	if req.History != nil {
+		response.History = dto.ConversationToHistoryDTO(conv)
+	}
+
+	return status.SUCCESS, response, nil
+}
+
+func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequest) (status.Code, *dto.ChatBoxResponse[dto.QuizAnswer], error) {
+	jsonAnswers, err := json.Marshal(req.Answers)
+	if err != nil {
+		log.Fatalf("Error marshaling struct to JSON: %v", err)
+	}
+
+	answersStr := string(jsonAnswers)
+
+	statusCode, ulq, err := s.userLatestQuizSvc.UpdateQuiz(ctx, &dto.UpdateUserLatestQuizRequest{
+		ID:      req.UserLatestQuizID,
+		Answers: &answersStr,
+	})
+
+	if err != nil {
+		logger.Errorf("Failed to fetch user profile: %v", err)
+		return statusCode, nil, fmt.Errorf("failed to fetch user profile: %v", err)
+	}
+
+	// Build generate quiz from request
+	conv := dto.BuildSubmitQuizAnswerFromRequest(req, ulq)
+
+	// log prompt for debugging
+	for _, msg := range conv.Messages() {
+		if msg.Role() == "user" {
+			logger.Infof("User prompt: %s", msg.Content())
+		}
+	}
+
+	// Send message to OpenAI
+	resp, err := s.client.SendMessage(ctx, conv)
+	if err != nil {
+		logger.Errorf("Failed to send message to OpenAI: %v", err)
+		// Check for specific OpenAI errors and return appropriate status codes
+		errMsg := err.Error()
+		if contains(errMsg, "status code: 429") || contains(errMsg, "exceeded your current quota") {
+			return status.INTERNAL, nil, fmt.Errorf("OpenAI API quota exceeded. Please check your billing details at https://platform.openai.com/account/billing")
+		}
+		if contains(errMsg, "status code: 401") || contains(errMsg, "invalid api key") {
+			return status.INTERNAL, nil, fmt.Errorf("Invalid OpenAI API key. Please check your CHAT_BOX_API_KEY configuration")
+		}
+		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
+	}
+
+	var data dto.QuizAnswer
+	err = json.Unmarshal([]byte(resp.Message), &data)
 	if err != nil {
 		logger.Errorf("Failed to unmarshal response message: %v", err)
-		// return status.INTERNAL, nil, fmt.Errorf("Failed to parse chatbox response: %v", err)
+	}
+
+	// Build response DTO
+	response := &dto.ChatBoxResponse[dto.QuizAnswer]{
+		Response:         resp.Message,
+		Data:             data,
+		Role:             resp.Role,
+		Model:            resp.Model,
+		FinishReason:     resp.FinishReason,
+		PromptTokens:     resp.PromptTokens,
+		CompletionTokens: resp.CompletionTokens,
+		TotalTokens:      resp.TotalTokens,
+		Timestamp:        time.Now(),
+	}
+
+	statusCode, _, err = s.userLatestQuizSvc.UpdateQuiz(ctx, &dto.UpdateUserLatestQuizRequest{
+		ID:       req.UserLatestQuizID,
+		AIReview: &data.AIReview,
+	})
+	if err != nil {
+		logger.Errorf("Failed to update user latest quiz with AI review: %v", err)
+		return statusCode, nil, fmt.Errorf("failed to update user latest quiz with AI review: %v", err)
 	}
 
 	// Include conversation history if requested
@@ -124,10 +204,9 @@ func (s *ChatBoxService) SendMessage(ctx context.Context, req *dto.ChatBoxReques
 	return status.SUCCESS, response, nil
 }
 
-// SendMessageStream sends a message and streams the response
-func (s *ChatBoxService) SendMessageStream(ctx context.Context, req *dto.ChatBoxRequest) (status.Code, <-chan dto.ChatBoxStreamChunk, error) {
+func (s *ChatBoxService) SendMessageStream(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, <-chan dto.ChatBoxStreamChunk, error) {
 	// Build conversation from request
-	conv := dto.BuildConversationFromRequest(req, nil)
+	conv := dto.BuildGenerateQuizFromRequest(req, nil)
 
 	// Send message to OpenAI with streaming
 	streamChan, err := s.client.StreamMessage(ctx, conv)
@@ -164,7 +243,6 @@ func (s *ChatBoxService) SendMessageStream(ctx context.Context, req *dto.ChatBox
 	return status.SUCCESS, outputChan, nil
 }
 
-// contains checks if a string contains a substring (case-insensitive)
 func contains(s, substr string) bool {
 	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }

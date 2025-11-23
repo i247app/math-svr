@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"math-ai.com/math-ai/internal/core/di/repositories"
@@ -25,7 +26,7 @@ func NewUserLatestQuizRepository(db db.IDatabase) repositories.IUserLatestQuizRe
 // FindByID retrieves a user latest quiz by ID.
 func (r *userLatestQuizRepository) FindByID(ctx context.Context, id string) (*domain.UserLatestQuiz, error) {
 	query := `
-		SELECT id, uid, questions, awswers, ai_review, status,
+		SELECT id, uid, questions, answers, ai_review, status,
 		create_id, create_dt, modify_id, modify_dt
 		FROM user_latest_quizzes
 		WHERE id = ? AND deleted_dt IS NULL
@@ -53,7 +54,7 @@ func (r *userLatestQuizRepository) FindByID(ctx context.Context, id string) (*do
 // FindByUID retrieves the latest quiz for a user by UID.
 func (r *userLatestQuizRepository) FindByUID(ctx context.Context, uid string) (*domain.UserLatestQuiz, error) {
 	query := `
-		SELECT id, uid, questions, awswers, ai_review, status,
+		SELECT id, uid, questions, answers, ai_review, status,
 		create_id, create_dt, modify_id, modify_dt
 		FROM user_latest_quizzes
 		WHERE uid = ? AND deleted_dt IS NULL
@@ -83,7 +84,7 @@ func (r *userLatestQuizRepository) FindByUID(ctx context.Context, uid string) (*
 // List retrieves a list of user latest quizzes with pagination.
 func (r *userLatestQuizRepository) List(ctx context.Context, limit, offset int) ([]*domain.UserLatestQuiz, error) {
 	query := `
-		SELECT id, uid, questions, awswers, ai_review, status,
+		SELECT id, uid, questions, answers, ai_review, status,
 		create_id, create_dt, modify_id, modify_dt
 		FROM user_latest_quizzes
 		WHERE deleted_dt IS NULL
@@ -122,7 +123,7 @@ func (r *userLatestQuizRepository) List(ctx context.Context, limit, offset int) 
 // Create inserts a new user latest quiz into the database.
 func (r *userLatestQuizRepository) Create(ctx context.Context, tx *sql.Tx, quiz *domain.UserLatestQuiz) (int64, error) {
 	query := `
-		INSERT INTO user_latest_quizzes (id, uid, questions, awswers, ai_review, status)
+		INSERT INTO user_latest_quizzes (id, uid, questions, answers, ai_review, status)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -142,19 +143,37 @@ func (r *userLatestQuizRepository) Create(ctx context.Context, tx *sql.Tx, quiz 
 
 // Update modifies an existing user latest quiz in the database.
 func (r *userLatestQuizRepository) Update(ctx context.Context, quiz *domain.UserLatestQuiz) (int64, error) {
-	query := `
-		UPDATE user_latest_quizzes
-		SET questions = ?, awswers = ?, ai_review = ?, status = ?
-		WHERE id = ? AND deleted_dt IS NULL
-	`
+	var queryBuilder strings.Builder
+	args := []interface{}{}
 
-	result, err := r.db.Exec(ctx, nil, query,
-		quiz.Questions(),
-		quiz.Answers(),
-		quiz.AIReview(),
-		quiz.Status(),
-		quiz.ID(),
-	)
+	queryBuilder.WriteString("UPDATE user_latest_quizzes SET ")
+	updates := []string{}
+	if quiz.Questions() != "" {
+		updates = append(updates, "questions = ?")
+		args = append(args, quiz.Questions())
+	}
+
+	if quiz.Answers() != "" {
+		updates = append(updates, "answers = ?")
+		args = append(args, quiz.Answers())
+	}
+
+	if quiz.AIReview() != "" {
+		updates = append(updates, "ai_review = ?")
+		args = append(args, quiz.AIReview())
+	}
+
+	if len(updates) == 0 {
+		return 0, fmt.Errorf("no fields to update for user latest quiz")
+	}
+
+	queryBuilder.WriteString(strings.Join(updates, ", "))
+	queryBuilder.WriteString(" WHERE id = ? AND deleted_dt IS NULL")
+	args = append(args, quiz.ID())
+
+	query := queryBuilder.String()
+
+	result, err := r.db.Exec(ctx, nil, query, args...)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update user latest quiz: %v", err)
 	}
