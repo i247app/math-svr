@@ -97,6 +97,24 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (status.
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (status.Code, *dto.UserResponse, error) {
+	for _, aka := range []string{req.Email, req.Phone} {
+		if aka == "" {
+			continue // Skip empty aliases
+		}
+		existingUser, err := s.repo.GetUserByLoginName(ctx, aka)
+		if err != nil {
+			return status.INTERNAL, nil, err
+		}
+
+		if existingUser != nil {
+			if existingUser.Email() == req.Email {
+				return status.USER_EMAIL_ALREADY_EXISTS, nil, err_svc.ErrEmailAlreadyExists
+			} else if existingUser.Phone() == req.Phone {
+				return status.USER_PHONE_ALREADY_EXISTS, nil, err_svc.ErrPhoneAlreadyExists
+			}
+		}
+	}
+
 	createUserDomain := dto.BuildUserDomainForCreate(req)
 	handler := func(tx *sql.Tx) error {
 		// Create the user
