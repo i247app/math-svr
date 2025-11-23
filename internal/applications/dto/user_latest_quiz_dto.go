@@ -40,6 +40,7 @@ type CreateUserLatestQuizRequest struct {
 
 type UpdateUserLatestQuizRequest struct {
 	ID        string        `json:"id"`
+	UID       string        `json:"uid"`
 	Questions *string       `json:"questions,omitempty"`
 	Answers   *string       `json:"answers,omitempty"`
 	AIReview  *string       `json:"ai_review,omitempty"`
@@ -69,6 +70,7 @@ func BuildUserLatestQuizDomainForCreate(dto *CreateUserLatestQuizRequest) *domai
 func BuildUserLatestQuizDomainForUpdate(dto *UpdateUserLatestQuizRequest) *domain.UserLatestQuiz {
 	quizDomain := domain.NewUserLatestQuizDomain()
 	quizDomain.SetID(dto.ID)
+	quizDomain.SetUID(dto.UID)
 
 	if dto.Questions != nil {
 		quizDomain.SetQuestions(*dto.Questions)

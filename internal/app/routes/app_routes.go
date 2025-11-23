@@ -26,6 +26,7 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	cc := controller.NewChatBoxController(res, services.ChatBoxService)
 	server.AddRoute("POST /generate-quiz", cc.HandleGenerateQuiz)
 	server.AddRoute("POST /submit-quiz", cc.HandleSubmitQuizAnswer)
+	server.AddRoute("POST /generate-quiz-practice", cc.HandleGenerateQuizPractice)
 
 	// grades
 	gc := controller.NewGradeController(res, services.GradeService)

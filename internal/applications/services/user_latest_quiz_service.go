@@ -120,11 +120,7 @@ func (s *userLatestQuizService) CreateQuiz(ctx context.Context, req *dto.CreateU
 
 // UpdateQuiz updates an existing user latest quiz.
 func (s *userLatestQuizService) UpdateQuiz(ctx context.Context, req *dto.UpdateUserLatestQuizRequest) (status.Code, *dto.UserLatestQuizResponse, error) {
-	if req.ID == "" {
-		return status.BAD_REQUEST, nil, fmt.Errorf("id is required")
-	}
-
-	existingQuiz, err := s.repo.FindByID(ctx, req.ID)
+	existingQuiz, err := s.repo.FindByUID(ctx, req.UID)
 	if err != nil {
 		return status.USER_LATEST_QUIZ_GET_FAILED, nil, err
 	}
@@ -144,7 +140,7 @@ func (s *userLatestQuizService) UpdateQuiz(ctx context.Context, req *dto.UpdateU
 		return status.USER_LATEST_QUIZ_UPDATE_FAILED, nil, fmt.Errorf("failed to update user latest quiz")
 	}
 
-	updatedQuiz, err := s.repo.FindByID(ctx, req.ID)
+	updatedQuiz, err := s.repo.FindByID(ctx, existingQuiz.ID())
 	if err != nil {
 		return status.USER_LATEST_QUIZ_GET_FAILED, nil, err
 	}

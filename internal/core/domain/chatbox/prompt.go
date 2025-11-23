@@ -9,21 +9,25 @@ Return a JSON array with exactly this structure:
 [
   {
     "question_number": 1,
-    "question_name": "What is 2 + 2?",
+    "question_name": "Tính $\\frac{1}{2} + \\frac{1}{3}$ = ?",
     "answers": [
-      {"label": "A", "content": "3"},
-      {"label": "B", "content": "4"},
-      {"label": "C", "content": "5"},
-      {"label": "D", "content": "6"}
+      {"label": "A", "content": "$\\frac{2}{5}$"},
+      {"label": "B", "content": "$\\frac{5}{6}$"},
+      {"label": "C", "content": "$\\frac{3}{5}$"},
+      {"label": "D", "content": "$\\frac{1}{6}$"}
     ],
     "right_answer": "B"
   }
 ]
 
+NOTICE: In the example above, LaTeX backslashes are properly escaped as double backslash (\\frac not \frac).
+
 Requirements:
 - Return ONLY the JSON array (no line break (\n), no need for spaces but can space for question of name or content of answer), nothing else
 - Each question must have exactly 4 answers with labels A, B, C, D
 - "right_answer" must be one of: A, B, C, or D
+- CRITICAL: All backslashes in JSON strings MUST be escaped with double backslash (\\)
+  Example: For LaTeX \frac use \\frac, for \{ use \\{, for \sqrt use \\sqrt
 - Ensure all JSON is properly formatted with correct quotes and commas
 - Questions should be appropriate for level and focus on concepts I give you above
 - Use Vietnamese for all questions and answers
@@ -56,6 +60,39 @@ Requirements:
 - Use Vietnamese for the ai_review
 `
 
-var PromptMathQuizPractice = ``
+var PromptMathQuizPractice = `
+Generate a new math quiz with 5 multiple-choice questions based on the user's previous performance review and answers below:
 
-var PromptMathQuizExam = ``
++ Question Informations: %s
++ User's Previous Answers: %s
++ AI Review of User's Performance: %s
+
+CRITICAL: Your response MUST be ONLY valid JSON. Do not include any text, explanations, markdown formatting, or code blocks before or after the JSON.
+
+Return a JSON array with exactly this structure:
+[
+  {
+    "question_number": 1,
+    "question_name": "Tính $\\frac{1}{2} + \\frac{1}{3}$ = ?",
+    "answers": [
+      {"label": "A", "content": "$\\frac{2}{5}$"},
+      {"label": "B", "content": "$\\frac{5}{6}$"},
+      {"label": "C", "content": "$\\frac{3}{5}$"},
+      {"label": "D", "content": "$\\frac{1}{6}$"}
+    ],
+    "right_answer": "B"
+  }
+]
+
+NOTICE: In the example above, LaTeX backslashes are properly escaped as double backslash (\\frac not \frac).
+
+Requirements:
+- Return ONLY the JSON array (no line break (\n), no need for spaces but can space for question of name or content of answer), nothing else
+- Each question must have exactly 4 answers with labels A, B, C, D
+- "right_answer" must be one of: A, B, C, or D
+- CRITICAL: All backslashes in JSON strings MUST be escaped with double backslash (\\)
+  Example: For LaTeX \frac use \\frac, for \{ use \\{, for \sqrt use \\sqrt
+- Ensure all JSON is properly formatted with correct quotes and commas
+- Questions should focus on areas for improvement mentioned in the review
+- Use Vietnamese for all questions and answers
+`

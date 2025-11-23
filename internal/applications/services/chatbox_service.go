@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"regexp"
 	"strings"
 	"time"
 
@@ -33,9 +34,45 @@ func NewChatBoxService(
 	}
 }
 
+// sanitizeJSONResponse fixes common JSON escaping issues in AI responses,
+// particularly for LaTeX expressions where backslashes need to be escaped.
+func sanitizeJSONResponse(jsonStr string) string {
+	// Pattern to find backslashes in JSON string values that are not already escaped
+	// This regex looks for single backslashes followed by common LaTeX commands
+	patterns := []struct {
+		pattern string
+		replace string
+	}{
+		// Fix unescaped backslashes before common LaTeX commands
+		{`([^\\])\\frac`, `$1\\frac`},
+		{`([^\\])\\sqrt`, `$1\\sqrt`},
+		{`([^\\])\\int`, `$1\\int`},
+		{`([^\\])\\{`, `$1\\{`},
+		{`([^\\])\\}`, `$1\\}`},
+		{`([^\\])\\left`, `$1\\left`},
+		{`([^\\])\\right`, `$1\\right`},
+		// Fix at start of string values (after quotes)
+		{`"\\frac`, `"\\\\frac`},
+		{`"\\sqrt`, `"\\\\sqrt`},
+		{`"\\int`, `"\\\\int`},
+		{`"\\{`, `"\\\\{`},
+		{`"\\}`, `"\\\\}`},
+		{`"\\left`, `"\\\\left`},
+		{`"\\right`, `"\\\\right`},
+	}
+
+	result := jsonStr
+	for _, p := range patterns {
+		re := regexp.MustCompile(p.pattern)
+		result = re.ReplaceAllString(result, p.replace)
+	}
+
+	return result
+}
+
 func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
 	statusCode, user, err := s.profileSvc.FetchProfile(ctx, &dto.FetchProfileRequest{
-		UID: req.UID, // Replace with actual user UID from context or request
+		UID: req.UID,
 	})
 	if err != nil {
 		logger.Errorf("Failed to fetch user profile: %v", err)
@@ -56,21 +93,18 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 	resp, err := s.client.SendMessage(ctx, conv)
 	if err != nil {
 		logger.Errorf("Failed to send message to OpenAI: %v", err)
-		// Check for specific OpenAI errors and return appropriate status codes
-		errMsg := err.Error()
-		if contains(errMsg, "status code: 429") || contains(errMsg, "exceeded your current quota") {
-			return status.INTERNAL, nil, fmt.Errorf("OpenAI API quota exceeded. Please check your billing details at https://platform.openai.com/account/billing")
-		}
-		if contains(errMsg, "status code: 401") || contains(errMsg, "invalid api key") {
-			return status.INTERNAL, nil, fmt.Errorf("Invalid OpenAI API key. Please check your CHAT_BOX_API_KEY configuration")
-		}
 		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
 	}
 
+	// Sanitize JSON response to fix common escaping issues
+	sanitizedJSON := sanitizeJSONResponse(resp.Message)
+
 	var data []dto.Question
-	err = json.Unmarshal([]byte(resp.Message), &data)
+	err = json.Unmarshal([]byte(sanitizedJSON), &data)
 	if err != nil {
 		logger.Errorf("Failed to unmarshal response message: %v", err)
+		logger.Errorf("Original response: %s", resp.Message)
+		logger.Errorf("Sanitized response: %s", sanitizedJSON)
 	}
 
 	// Build response DTO
@@ -106,9 +140,12 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 			}
 			response.UserLatesQuizID = createdRes.ID
 		} else {
+			resetData := "?"
 			_, _, err = s.userLatestQuizSvc.UpdateQuiz(ctx, &dto.UpdateUserLatestQuizRequest{
 				ID:        res.ID,
 				Questions: &resp.Message,
+				Answers:   &resetData,
+				AIReview:  &resetData,
 			})
 			if err != nil {
 				logger.Errorf("Failed to update latest quiz for user %s: %v", req.UID, err)
@@ -134,13 +171,14 @@ func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequ
 	answersStr := string(jsonAnswers)
 
 	statusCode, ulq, err := s.userLatestQuizSvc.UpdateQuiz(ctx, &dto.UpdateUserLatestQuizRequest{
-		ID:      req.UserLatestQuizID,
+		// ID:      req.UserLatestQuizID,
+		UID:     req.UID,
 		Answers: &answersStr,
 	})
 
 	if err != nil {
-		logger.Errorf("Failed to fetch user profile: %v", err)
-		return statusCode, nil, fmt.Errorf("failed to fetch user profile: %v", err)
+		logger.Errorf("Failed to udpate latest quizzes: %v", err)
+		return statusCode, nil, fmt.Errorf("failed to udpate latest quizzes: %v", err)
 	}
 
 	// Build generate quiz from request
@@ -157,21 +195,18 @@ func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequ
 	resp, err := s.client.SendMessage(ctx, conv)
 	if err != nil {
 		logger.Errorf("Failed to send message to OpenAI: %v", err)
-		// Check for specific OpenAI errors and return appropriate status codes
-		errMsg := err.Error()
-		if contains(errMsg, "status code: 429") || contains(errMsg, "exceeded your current quota") {
-			return status.INTERNAL, nil, fmt.Errorf("OpenAI API quota exceeded. Please check your billing details at https://platform.openai.com/account/billing")
-		}
-		if contains(errMsg, "status code: 401") || contains(errMsg, "invalid api key") {
-			return status.INTERNAL, nil, fmt.Errorf("Invalid OpenAI API key. Please check your CHAT_BOX_API_KEY configuration")
-		}
 		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
 	}
 
+	// Sanitize JSON response to fix common escaping issues
+	sanitizedJSON := sanitizeJSONResponse(resp.Message)
+
 	var data dto.QuizAnswer
-	err = json.Unmarshal([]byte(resp.Message), &data)
+	err = json.Unmarshal([]byte(sanitizedJSON), &data)
 	if err != nil {
 		logger.Errorf("Failed to unmarshal response message: %v", err)
+		logger.Errorf("Original response: %s", resp.Message)
+		logger.Errorf("Sanitized response: %s", sanitizedJSON)
 	}
 
 	// Build response DTO
@@ -188,12 +223,86 @@ func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequ
 	}
 
 	statusCode, _, err = s.userLatestQuizSvc.UpdateQuiz(ctx, &dto.UpdateUserLatestQuizRequest{
-		ID:       req.UserLatestQuizID,
+		// ID:       req.UserLatestQuizID,
+		UID:      req.UID,
 		AIReview: &data.AIReview,
 	})
 	if err != nil {
 		logger.Errorf("Failed to update user latest quiz with AI review: %v", err)
 		return statusCode, nil, fmt.Errorf("failed to update user latest quiz with AI review: %v", err)
+	}
+
+	// Include conversation history if requested
+	if req.History != nil {
+		response.History = dto.ConversationToHistoryDTO(conv)
+	}
+
+	return status.SUCCESS, response, nil
+}
+
+func (s *ChatBoxService) GenerateQuizPractice(ctx context.Context, req *dto.GenerateQuizPracticeRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
+	statusCode, ulq, err := s.userLatestQuizSvc.GetQuizByUID(ctx, &dto.GetUserLatestQuizByUIDRequest{
+		UID: req.UID,
+	})
+	if err != nil {
+		logger.Errorf("Failed to fetch user latest quiz: %v", err)
+		return statusCode, nil, fmt.Errorf("failed to fetch user latest quiz: %v", err)
+	}
+
+	// Build generate practice quiz from request
+	conv := dto.BuildGeneratePracticeQuizFromRequest(req, ulq)
+
+	// log prompt for debugging
+	for _, msg := range conv.Messages() {
+		if msg.Role() == "user" {
+			logger.Infof("User prompt: %s", msg.Content())
+		}
+	}
+
+	// Send message to OpenAI
+	resp, err := s.client.SendMessage(ctx, conv)
+	if err != nil {
+		logger.Errorf("Failed to send message to OpenAI: %v", err)
+		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
+	}
+
+	// Sanitize JSON response to fix common escaping issues
+	sanitizedJSON := sanitizeJSONResponse(resp.Message)
+
+	var data []dto.Question
+	err = json.Unmarshal([]byte(sanitizedJSON), &data)
+	if err != nil {
+		logger.Errorf("Failed to unmarshal response message: %v", err)
+		logger.Errorf("Original response: %s", resp.Message)
+		logger.Errorf("Sanitized response: %s", sanitizedJSON)
+	}
+
+	// Build response DTO
+	response := &dto.ChatBoxResponse[[]dto.Question]{
+		Response:         resp.Message,
+		Data:             data,
+		Role:             resp.Role,
+		Model:            resp.Model,
+		FinishReason:     resp.FinishReason,
+		PromptTokens:     resp.PromptTokens,
+		CompletionTokens: resp.CompletionTokens,
+		TotalTokens:      resp.TotalTokens,
+		Timestamp:        time.Now(),
+	}
+
+	// Save latest quiz for the user
+	if resp.Message != "" {
+		resetData := "?"
+		_, _, err := s.userLatestQuizSvc.UpdateQuiz(ctx, &dto.UpdateUserLatestQuizRequest{
+			ID:        ulq.ID,
+			UID:       ulq.UID,
+			Questions: &resp.Message,
+			Answers:   &resetData,
+			AIReview:  &resetData,
+		})
+		if err != nil {
+			logger.Errorf("Failed to update latest quiz for user %s: %v", req.UID, err)
+		}
 	}
 
 	// Include conversation history if requested
@@ -212,14 +321,6 @@ func (s *ChatBoxService) SendMessageStream(ctx context.Context, req *dto.Generat
 	streamChan, err := s.client.StreamMessage(ctx, conv)
 	if err != nil {
 		logger.Errorf("Failed to send streaming message to OpenAI: %v", err)
-		// Check for specific OpenAI errors
-		errMsg := err.Error()
-		if contains(errMsg, "status code: 429") || contains(errMsg, "exceeded your current quota") {
-			return status.INTERNAL, nil, fmt.Errorf("OpenAI API quota exceeded. Please check your billing details at https://platform.openai.com/account/billing")
-		}
-		if contains(errMsg, "status code: 401") || contains(errMsg, "invalid api key") {
-			return status.INTERNAL, nil, fmt.Errorf("Invalid OpenAI API key. Please check your CHAT_BOX_API_KEY configuration")
-		}
 		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
 	}
 

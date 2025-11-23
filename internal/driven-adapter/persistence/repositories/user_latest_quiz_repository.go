@@ -168,8 +168,8 @@ func (r *userLatestQuizRepository) Update(ctx context.Context, quiz *domain.User
 	}
 
 	queryBuilder.WriteString(strings.Join(updates, ", "))
-	queryBuilder.WriteString(" WHERE id = ? AND deleted_dt IS NULL")
-	args = append(args, quiz.ID())
+	queryBuilder.WriteString(" WHERE id = ? OR uid = ? AND deleted_dt IS NULL")
+	args = append(args, quiz.ID(), quiz.UID())
 
 	query := queryBuilder.String()
 
