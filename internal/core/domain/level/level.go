@@ -12,6 +12,7 @@ type Level struct {
 	id           string
 	label        string
 	description  string
+	iconURL      *string
 	status       string
 	displayOrder int8
 	createID     *int64
@@ -51,6 +52,14 @@ func (l *Level) Description() string {
 
 func (l *Level) SetDescription(description string) {
 	l.description = description
+}
+
+func (l *Level) IconURL() *string {
+	return l.iconURL
+}
+
+func (l *Level) SetIconURL(iconURL *string) {
+	l.iconURL = iconURL
 }
 
 func (l *Level) Status() string {
@@ -117,6 +126,7 @@ func BuildLevelDomainFromModel(model *models.LevelModel) *Level {
 		id:           model.ID,
 		label:        model.Label,
 		description:  model.Description,
+		iconURL:      model.IconURL,
 		status:       model.Status,
 		displayOrder: model.DisplayOrder,
 		createID:     model.CreateID,

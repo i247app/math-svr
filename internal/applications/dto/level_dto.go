@@ -12,6 +12,7 @@ type LevelResponse struct {
 	ID           string    `json:"id"`
 	Label        string    `json:"label"`
 	Description  string    `json:"description"`
+	IconURL      *string   `json:"icon_url"`
 	Status       string    `json:"status"`
 	DisplayOrder int8      `json:"display_order"`
 	CreatedAt    time.Time `json:"created_at"`
@@ -37,9 +38,10 @@ type ListLevelResponse struct {
 }
 
 type CreateLevelRequest struct {
-	Label        string `json:"label"`
-	Description  string `json:"description"`
-	DisplayOrder int8   `json:"display_order"`
+	Label        string  `json:"label"`
+	Description  string  `json:"description"`
+	IconURL      *string `json:"icon_url,omitempty"`
+	DisplayOrder int8    `json:"display_order"`
 }
 
 type CreateLevelResponse struct {
@@ -50,6 +52,7 @@ type UpdateLevelRequest struct {
 	ID           string        `json:"id"`
 	Label        *string       `json:"label,omitempty"`
 	Description  *string       `json:"description,omitempty"`
+	IconURL      *string       `json:"icon_url,omitempty"`
 	Status       *enum.EStatus `json:"status,omitempty"`
 	DisplayOrder *int8         `json:"display_order,omitempty"`
 }
@@ -67,6 +70,7 @@ func BuildLevelDomainForCreate(dto *CreateLevelRequest) *domain.Level {
 	levelDomain.GenerateID()
 	levelDomain.SetLabel(dto.Label)
 	levelDomain.SetDescription(dto.Description)
+	levelDomain.SetIconURL(dto.IconURL)
 	levelDomain.SetStatus(string(enum.StatusActive))
 	levelDomain.SetDisplayOrder(dto.DisplayOrder)
 
@@ -85,6 +89,10 @@ func BuildLevelDomainForUpdate(dto *UpdateLevelRequest) *domain.Level {
 		levelDomain.SetDescription(*dto.Description)
 	}
 
+	if dto.IconURL != nil {
+		levelDomain.SetIconURL(dto.IconURL)
+	}
+
 	if dto.Status != nil {
 		levelDomain.SetStatus(string(*dto.Status))
 	}
@@ -101,6 +109,7 @@ func LevelResponseFromDomain(l *domain.Level) LevelResponse {
 		ID:           l.ID(),
 		Label:        l.Label(),
 		Description:  l.Description(),
+		IconURL:      l.IconURL(),
 		Status:       l.Status(),
 		DisplayOrder: l.DisplayOrder(),
 		CreatedAt:    l.CreatedAt(),

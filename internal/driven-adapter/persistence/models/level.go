@@ -8,6 +8,7 @@ type LevelModel struct {
 	ID           string
 	Label        string
 	Description  string
+	IconURL      *string
 	Status       string
 	DisplayOrder int8
 	CreateID     *int64

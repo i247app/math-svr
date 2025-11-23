@@ -31,7 +31,7 @@ func (r *levelRepository) List(ctx context.Context, params repositories.ListLeve
 
 	// Base query - note: using 'discription' to match the actual table column
 	queryBuilder.WriteString(`
-		SELECT id, label, discription, status, display_order,
+		SELECT id, label, discription, icon_url, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
 		FROM levels WHERE deleted_dt IS NULL
 	`)
@@ -91,7 +91,7 @@ func (r *levelRepository) List(ctx context.Context, params repositories.ListLeve
 	for rows.Next() {
 		var l models.LevelModel
 		if err := rows.Scan(
-			&l.ID, &l.Label, &l.Description, &l.Status, &l.DisplayOrder,
+			&l.ID, &l.Label, &l.Description, &l.IconURL, &l.Status, &l.DisplayOrder,
 			&l.CreateID, &l.CreateDT, &l.ModifyID, &l.ModifyDT,
 		); err != nil {
 			return nil, nil, fmt.Errorf("scan error: %v", err)
@@ -106,7 +106,7 @@ func (r *levelRepository) List(ctx context.Context, params repositories.ListLeve
 // FindByID retrieves a level by ID.
 func (r *levelRepository) FindByID(ctx context.Context, id string) (*domain.Level, error) {
 	query := `
-		SELECT id, label, discription, status, display_order,
+		SELECT id, label, discription, icon_url, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
 		FROM levels
 		WHERE id = ? AND deleted_dt IS NULL
@@ -116,7 +116,7 @@ func (r *levelRepository) FindByID(ctx context.Context, id string) (*domain.Leve
 
 	var l models.LevelModel
 	err := result.Scan(
-		&l.ID, &l.Label, &l.Description, &l.Status, &l.DisplayOrder,
+		&l.ID, &l.Label, &l.Description, &l.IconURL, &l.Status, &l.DisplayOrder,
 		&l.CreateID, &l.CreateDT, &l.ModifyID, &l.ModifyDT,
 	)
 	if err != nil {
@@ -134,7 +134,7 @@ func (r *levelRepository) FindByID(ctx context.Context, id string) (*domain.Leve
 // FindByLabel retrieves a level by label.
 func (r *levelRepository) FindByLabel(ctx context.Context, label string) (*domain.Level, error) {
 	query := `
-		SELECT id, label, discription, status, display_order,
+		SELECT id, label, discription, icon_url, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
 		FROM levels
 		WHERE label = ? AND deleted_dt IS NULL
@@ -144,7 +144,7 @@ func (r *levelRepository) FindByLabel(ctx context.Context, label string) (*domai
 
 	var l models.LevelModel
 	err := result.Scan(
-		&l.ID, &l.Label, &l.Description, &l.Status, &l.DisplayOrder,
+		&l.ID, &l.Label, &l.Description, &l.IconURL, &l.Status, &l.DisplayOrder,
 		&l.CreateID, &l.CreateDT, &l.ModifyID, &l.ModifyDT,
 	)
 	if err != nil {
@@ -162,13 +162,14 @@ func (r *levelRepository) FindByLabel(ctx context.Context, label string) (*domai
 // Create inserts a new level into the database.
 func (r *levelRepository) Create(ctx context.Context, tx *sql.Tx, level *domain.Level) (int64, error) {
 	query := `
-		INSERT INTO levels (id, label, discription, status, display_order)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO levels (id, label, discription, icon_url, status, display_order)
+		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		level.ID(),
 		level.Label(),
 		level.Description(),
+		level.IconURL(),
 		enum.StatusActive,
 		level.DisplayOrder(),
 	)
@@ -195,6 +196,12 @@ func (r *levelRepository) Update(ctx context.Context, level *domain.Level) (int6
 	if level.Description() != "" {
 		updates = append(updates, "discription = ?")
 		args = append(args, level.Description())
+	}
+
+	// IconURL can be nil, so we check if it's explicitly set
+	if level.IconURL() != nil {
+		updates = append(updates, "icon_url = ?")
+		args = append(args, level.IconURL())
 	}
 
 	if level.Status() != "" {
