@@ -27,7 +27,7 @@ func (r *userLatestQuizRepository) FindByID(ctx context.Context, id string) (*do
 	query := `
 		SELECT id, uid, questions, awswers, ai_review, status,
 		create_id, create_dt, modify_id, modify_dt
-		FROM user_lates_quizzes
+		FROM user_latest_quizzes
 		WHERE id = ? AND deleted_dt IS NULL
 	`
 
@@ -55,7 +55,7 @@ func (r *userLatestQuizRepository) FindByUID(ctx context.Context, uid string) (*
 	query := `
 		SELECT id, uid, questions, awswers, ai_review, status,
 		create_id, create_dt, modify_id, modify_dt
-		FROM user_lates_quizzes
+		FROM user_latest_quizzes
 		WHERE uid = ? AND deleted_dt IS NULL
 		ORDER BY create_dt DESC
 		LIMIT 1
@@ -85,7 +85,7 @@ func (r *userLatestQuizRepository) List(ctx context.Context, limit, offset int) 
 	query := `
 		SELECT id, uid, questions, awswers, ai_review, status,
 		create_id, create_dt, modify_id, modify_dt
-		FROM user_lates_quizzes
+		FROM user_latest_quizzes
 		WHERE deleted_dt IS NULL
 		ORDER BY create_dt DESC
 		LIMIT ? OFFSET ?
@@ -122,7 +122,7 @@ func (r *userLatestQuizRepository) List(ctx context.Context, limit, offset int) 
 // Create inserts a new user latest quiz into the database.
 func (r *userLatestQuizRepository) Create(ctx context.Context, tx *sql.Tx, quiz *domain.UserLatestQuiz) (int64, error) {
 	query := `
-		INSERT INTO user_lates_quizzes (id, uid, questions, awswers, ai_review, status)
+		INSERT INTO user_latest_quizzes (id, uid, questions, awswers, ai_review, status)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -143,7 +143,7 @@ func (r *userLatestQuizRepository) Create(ctx context.Context, tx *sql.Tx, quiz 
 // Update modifies an existing user latest quiz in the database.
 func (r *userLatestQuizRepository) Update(ctx context.Context, quiz *domain.UserLatestQuiz) (int64, error) {
 	query := `
-		UPDATE user_lates_quizzes
+		UPDATE user_latest_quizzes
 		SET questions = ?, awswers = ?, ai_review = ?, status = ?
 		WHERE id = ? AND deleted_dt IS NULL
 	`
@@ -165,7 +165,7 @@ func (r *userLatestQuizRepository) Update(ctx context.Context, quiz *domain.User
 // Delete performs a soft delete on a user latest quiz.
 func (r *userLatestQuizRepository) Delete(ctx context.Context, id string) (int64, error) {
 	query := `
-		UPDATE user_lates_quizzes
+		UPDATE user_latest_quizzes
 		SET deleted_dt = ?
 		WHERE id = ? AND deleted_dt IS NULL
 	`
@@ -181,7 +181,7 @@ func (r *userLatestQuizRepository) Delete(ctx context.Context, id string) (int64
 // ForceDelete permanently removes a user latest quiz from the database.
 func (r *userLatestQuizRepository) ForceDelete(ctx context.Context, id string) (int64, error) {
 	query := `
-		DELETE FROM user_lates_quizzes
+		DELETE FROM user_latest_quizzes
 		WHERE id = ?
 	`
 
