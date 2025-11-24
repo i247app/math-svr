@@ -68,10 +68,6 @@ func (s *userLatestQuizService) ListQuizzes(ctx context.Context, req *dto.ListUs
 
 // GetQuiz retrieves a specific user latest quiz by ID.
 func (s *userLatestQuizService) GetQuiz(ctx context.Context, req *dto.GetUserLatestQuizRequest) (status.Code, *dto.UserLatestQuizResponse, error) {
-	if req.ID == "" {
-		return status.BAD_REQUEST, nil, fmt.Errorf("id is required")
-	}
-
 	quiz, err := s.repo.FindByID(ctx, req.ID)
 	if err != nil {
 		return status.USER_LATEST_QUIZ_GET_FAILED, nil, err
@@ -88,10 +84,6 @@ func (s *userLatestQuizService) GetQuiz(ctx context.Context, req *dto.GetUserLat
 
 // GetQuizByUID retrieves the latest quiz for a specific user by UID.
 func (s *userLatestQuizService) GetQuizByUID(ctx context.Context, req *dto.GetUserLatestQuizByUIDRequest) (status.Code, *dto.UserLatestQuizResponse, error) {
-	if req.UID == "" {
-		return status.BAD_REQUEST, nil, fmt.Errorf("uid is required")
-	}
-
 	quiz, err := s.repo.FindByUID(ctx, req.UID)
 	if err != nil {
 		return status.USER_LATEST_QUIZ_GET_FAILED, nil, err
@@ -158,10 +150,6 @@ func (s *userLatestQuizService) UpdateQuiz(ctx context.Context, req *dto.UpdateU
 
 // DeleteQuiz performs a soft delete on a user latest quiz.
 func (s *userLatestQuizService) DeleteQuiz(ctx context.Context, req *dto.DeleteUserLatestQuizRequest) (status.Code, error) {
-	if req.ID == "" {
-		return status.BAD_REQUEST, fmt.Errorf("id is required")
-	}
-
 	existingQuiz, err := s.repo.FindByID(ctx, req.ID)
 	if err != nil {
 		return status.USER_LATEST_QUIZ_GET_FAILED, err
@@ -185,10 +173,6 @@ func (s *userLatestQuizService) DeleteQuiz(ctx context.Context, req *dto.DeleteU
 
 // ForceDeleteQuiz permanently removes a user latest quiz.
 func (s *userLatestQuizService) ForceDeleteQuiz(ctx context.Context, req *dto.ForceDeleteUserLatestQuizRequest) (status.Code, error) {
-	if req.ID == "" {
-		return status.BAD_REQUEST, fmt.Errorf("id is required")
-	}
-
 	rowsAffected, err := s.repo.ForceDelete(ctx, req.ID)
 	if err != nil {
 		return status.USER_LATEST_QUIZ_FORCE_DELETE_FAILED, err

@@ -96,6 +96,7 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, _ *services.ServiceContainer) 
 	// The first middleware in the slice runs first
 	middlewares := []gex.Middleware{
 		// Start-->
+		middleware.LocaleMiddleware("en"),
 		middleware.LogRequestMiddleware,
 		// -->End
 	}
