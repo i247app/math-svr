@@ -9,7 +9,7 @@ import (
 
 type IDeviceService interface {
 	GetDeviceByDeviceUUID(ctx context.Context, deviceUUID string) (status.Code, *dto.DeviceResponse, error)
-	CreateDevice(ctx context.Context, req *dto.CreateDeviceReq) (status.Code, error)
-	UpdateDevice(ctx context.Context, req *dto.UpdateDeviceReq) (status.Code, error)
+	CreateDevice(ctx context.Context, req *dto.CreateDeviceRequest) (status.Code, error)
+	UpdateDevice(ctx context.Context, req *dto.UpdateDeviceRequest) (status.Code, error)
 	MarkVerifiedDevice(ctx context.Context, uid string, deviceUUID string) (status.Code, error)
 }

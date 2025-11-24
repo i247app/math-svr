@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	"math-ai.com/math-ai/internal/applications/validators"
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
@@ -12,12 +13,17 @@ import (
 )
 
 type LevelService struct {
-	repo repositories.ILevelRepository
+	validator validators.ILevelValidator
+	repo      repositories.ILevelRepository
 }
 
-func NewLevelService(repo repositories.ILevelRepository) di.ILevelService {
+func NewLevelService(
+	validator validators.ILevelValidator,
+	repo repositories.ILevelRepository,
+) di.ILevelService {
 	return &LevelService{
-		repo: repo,
+		validator: validator,
+		repo:      repo,
 	}
 }
 

@@ -4,17 +4,23 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	"math-ai.com/math-ai/internal/applications/validators"
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 )
 
 type DeviceService struct {
-	repo repositories.IDeviceRepository
+	validator validators.IDeviceValidator
+	repo      repositories.IDeviceRepository
 }
 
-func NewDeviceService(repo repositories.IDeviceRepository) *DeviceService {
+func NewDeviceService(
+	validator validators.IDeviceValidator,
+	repo repositories.IDeviceRepository,
+) *DeviceService {
 	return &DeviceService{
-		repo: repo,
+		validator: validator,
+		repo:      repo,
 	}
 }
 
@@ -33,12 +39,7 @@ func (s *DeviceService) GetDeviceByDeviceUUID(ctx context.Context, deviceUUID st
 	return status.SUCCESS, res, nil
 }
 
-func (s *DeviceService) CreateDevice(ctx context.Context, req *dto.CreateDeviceReq) (status.Code, error) {
-	// statusCode, err := ValidationCreateDeviceReq(req)
-	// if err != nil {
-	// 	return statusCode, err
-	// }
-
+func (s *DeviceService) CreateDevice(ctx context.Context, req *dto.CreateDeviceRequest) (status.Code, error) {
 	deviceDomain := dto.BuildDeviceDomainForCreate(req)
 
 	err := s.repo.StoreDevice(ctx, nil, deviceDomain)
@@ -49,12 +50,7 @@ func (s *DeviceService) CreateDevice(ctx context.Context, req *dto.CreateDeviceR
 	return status.SUCCESS, nil
 }
 
-func (s *DeviceService) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceReq) (status.Code, error) {
-	// statusCode, err := ValidationUpdateDeviceReq(req)
-	// if err != nil {
-	// 	return statusCode, err
-	// }
-
+func (s *DeviceService) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceRequest) (status.Code, error) {
 	deviceDomain := dto.BuildDeviceDomainForUpdate(req)
 	err := s.repo.UpdateDevice(ctx, deviceDomain)
 	if err != nil {

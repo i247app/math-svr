@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	"math-ai.com/math-ai/internal/applications/validators"
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
@@ -14,15 +15,18 @@ import (
 )
 
 type UserService struct {
+	validator validators.IUserValidator
 	repo      repositories.IUserRepository
 	loginRepo repositories.ILoginRepository
 }
 
 func NewUserService(
+	validator validators.IUserValidator,
 	repo repositories.IUserRepository,
 	loginRepo repositories.ILoginRepository,
 ) di.IUserService {
 	return &UserService{
+		validator: validator,
 		repo:      repo,
 		loginRepo: loginRepo,
 	}

@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"strings"
 	"time"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	"math-ai.com/math-ai/internal/applications/validators"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	chatbox "math-ai.com/math-ai/internal/driven-adapter/external/chat-box"
 	"math-ai.com/math-ai/internal/shared/constant/status"
@@ -17,6 +17,7 @@ import (
 )
 
 type ChatBoxService struct {
+	validator         validators.IChatboxValidator
 	client            chatbox.IChatBoxClient
 	profileSvc        di.IProfileService
 	userLatestQuizSvc di.IUserLatestQuizService
@@ -24,10 +25,12 @@ type ChatBoxService struct {
 
 func NewChatBoxService(
 	client chatbox.IChatBoxClient,
+	validator validators.IChatboxValidator,
 	profileSvc di.IProfileService,
 	userLatestQuizSvc di.IUserLatestQuizService,
 ) di.IChatBoxService {
 	return &ChatBoxService{
+		validator:         validator,
 		client:            client,
 		profileSvc:        profileSvc,
 		userLatestQuizSvc: userLatestQuizSvc,
@@ -342,8 +345,4 @@ func (s *ChatBoxService) SendMessageStream(ctx context.Context, req *dto.Generat
 	}()
 
 	return status.SUCCESS, outputChan, nil
-}
-
-func contains(s, substr string) bool {
-	return strings.Contains(strings.ToLower(s), strings.ToLower(substr))
 }

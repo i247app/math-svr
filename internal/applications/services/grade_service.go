@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	"math-ai.com/math-ai/internal/applications/validators"
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
@@ -12,12 +13,17 @@ import (
 )
 
 type GradeService struct {
-	repo repositories.IGradeRepository
+	validator validators.IGradeValidator
+	repo      repositories.IGradeRepository
 }
 
-func NewGradeService(repo repositories.IGradeRepository) di.IGradeService {
+func NewGradeService(
+	validator validators.IGradeValidator,
+	repo repositories.IGradeRepository,
+) di.IGradeService {
 	return &GradeService{
-		repo: repo,
+		validator: validator,
+		repo:      repo,
 	}
 }
 

@@ -2,7 +2,7 @@ package dto
 
 import domain "math-ai.com/math-ai/internal/core/domain/device"
 
-type CreateDeviceReq struct {
+type CreateDeviceRequest struct {
 	UID             *string `json:"uid"`
 	DeviceUUID      string  `json:"device_uuid"`
 	DeviceName      string  `json:"device_name"`
@@ -10,7 +10,7 @@ type CreateDeviceReq struct {
 	IsVerified      bool    `json:"is_verified"`
 }
 
-type UpdateDeviceReq struct {
+type UpdateDeviceRequest struct {
 	ID              string  `json:"id"`
 	UID             *string `json:"uid"`
 	DeviceUUID      *string `json:"device_uuid"`
@@ -28,7 +28,7 @@ type DeviceResponse struct {
 	IsVerified      bool    `json:"is_verified"`
 }
 
-func BuildDeviceDomainForCreate(dto *CreateDeviceReq) *domain.Device {
+func BuildDeviceDomainForCreate(dto *CreateDeviceRequest) *domain.Device {
 	deviceDomain := domain.NewDeviceDomain()
 	deviceDomain.GenerateID()
 	deviceDomain.SetUID(dto.UID)
@@ -40,7 +40,7 @@ func BuildDeviceDomainForCreate(dto *CreateDeviceReq) *domain.Device {
 	return deviceDomain
 }
 
-func BuildDeviceDomainForUpdate(dto *UpdateDeviceReq) *domain.Device {
+func BuildDeviceDomainForUpdate(dto *UpdateDeviceRequest) *domain.Device {
 	deviceDomain := domain.NewDeviceDomain()
 	deviceDomain.SetID(dto.ID)
 	deviceDomain.SetUID(dto.UID)

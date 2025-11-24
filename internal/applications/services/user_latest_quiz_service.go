@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	"math-ai.com/math-ai/internal/applications/validators"
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
@@ -12,12 +13,17 @@ import (
 )
 
 type userLatestQuizService struct {
-	repo repositories.IUserLatestQuizRepository
+	validator validators.IUserLatestQuizValidator
+	repo      repositories.IUserLatestQuizRepository
 }
 
-func NewUserLatestQuizService(repo repositories.IUserLatestQuizRepository) di.IUserLatestQuizService {
+func NewUserLatestQuizService(
+	validator validators.IUserLatestQuizValidator,
+	repo repositories.IUserLatestQuizRepository,
+) di.IUserLatestQuizService {
 	return &userLatestQuizService{
-		repo: repo,
+		validator: validator,
+		repo:      repo,
 	}
 }
 

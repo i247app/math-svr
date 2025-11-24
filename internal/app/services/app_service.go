@@ -5,6 +5,7 @@ import (
 
 	"math-ai.com/math-ai/internal/app/resources"
 	"math-ai.com/math-ai/internal/applications/services"
+	"math-ai.com/math-ai/internal/applications/validators"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	chatbox "math-ai.com/math-ai/internal/driven-adapter/external/chat-box"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/repositories"
@@ -34,25 +35,32 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 
 	logger.Info("Initializing services")
 	logger.Info("> loginSvc...")
-	var userSvc = services.NewUserService(userRepo, loginRepo)
+	var userValidator = validators.NewUserValidator()
+	var userSvc = services.NewUserService(userValidator, userRepo, loginRepo)
 
 	logger.Info("> loginSvc...")
-	var loginSvc = services.NewLoginService(loginRepo, userRepo)
+	var loginValidator = validators.NewLoginValidator()
+	var loginSvc = services.NewLoginService(loginValidator, loginRepo, userRepo)
 
 	logger.Info("> deviceSvc...")
-	var deviceSvc = services.NewDeviceService(deviceRepo)
+	var deviceValidator = validators.NewDeviceValidator()
+	var deviceSvc = services.NewDeviceService(deviceValidator, deviceRepo)
 
 	logger.Info("> gradeSvc...")
-	var gradeSvc = services.NewGradeService(gradeRepo)
+	var gradeValidator = validators.NewGradeValidator()
+	var gradeSvc = services.NewGradeService(gradeValidator, gradeRepo)
 
 	logger.Info("> levelSvc...")
-	var levelSvc = services.NewLevelService(levelRepo)
+	var levelValidator = validators.NewLevelValidator()
+	var levelSvc = services.NewLevelService(levelValidator, levelRepo)
 
 	logger.Info("> profileSvc...")
-	var profileSvc = services.NewProfileService(profileRepo)
+	var profileValidator = validators.NewProfileValidator()
+	var profileSvc = services.NewProfileService(profileValidator, profileRepo)
 
 	logger.Info("> userLatestQuizSvc...")
-	var userLatestQuizSvc = services.NewUserLatestQuizService(userLatestQuizRepo)
+	var userLatestQuizValidator = validators.NewUserLatestQuizValidator()
+	var userLatestQuizSvc = services.NewUserLatestQuizService(userLatestQuizValidator, userLatestQuizRepo)
 
 	logger.Info("> chatBoxSvc...")
 	var chatBoxClient chatbox.IChatBoxClient
@@ -105,7 +113,8 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		chatBoxClient = chatbox.NewMockOpenAIClient()
 	}
 
-	var chatBoxSvc = services.NewChatBoxService(chatBoxClient, profileSvc, userLatestQuizSvc)
+	var chatBoxValidator = validators.NewChatboxValidator()
+	var chatBoxSvc = services.NewChatBoxService(chatBoxClient, chatBoxValidator, profileSvc, userLatestQuizSvc)
 
 	return &ServiceContainer{
 		LoginService:          loginSvc,

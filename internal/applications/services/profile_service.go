@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	"math-ai.com/math-ai/internal/applications/validators"
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
@@ -11,12 +12,17 @@ import (
 )
 
 type ProfileService struct {
-	repo repositories.IProfileRepository
+	validator validators.IProfileValidator
+	repo      repositories.IProfileRepository
 }
 
-func NewProfileService(repo repositories.IProfileRepository) di.IProfileService {
+func NewProfileService(
+	validator validators.IProfileValidator,
+	repo repositories.IProfileRepository,
+) di.IProfileService {
 	return &ProfileService{
-		repo: repo,
+		validator: validator,
+		repo:      repo,
 	}
 }
 
