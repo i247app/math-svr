@@ -30,7 +30,7 @@ Requirements:
   Example: For LaTeX \frac use \\frac, for \{ use \\{, for \sqrt use \\sqrt
 - Ensure all JSON is properly formatted with correct quotes and commas
 - Questions should be appropriate for level and focus on concepts I give you above
-- Use Vietnamese for all questions and answers
+- Use %s for all questions and answers
 `
 
 var SubmitQuizAnswerPrompt = `
@@ -57,7 +57,7 @@ Return ONLY the JSON object with this structure:
 Requirements:
 - Return ONLY the JSON object (no line break (\n), no need for spaces), nothing else
 - Ensure all JSON is properly formatted with correct quotes and commas
-- Use Vietnamese for the ai_review
+- Use %s for the ai_review
 `
 
 var PromptMathQuizPractice = `
@@ -94,5 +94,5 @@ Requirements:
   Example: For LaTeX \frac use \\frac, for \{ use \\{, for \sqrt use \\sqrt
 - Ensure all JSON is properly formatted with correct quotes and commas
 - Questions should focus on areas for improvement mentioned in the review
-- Use Vietnamese for all questions and answers
+- Use %s for all questions and answers
 `

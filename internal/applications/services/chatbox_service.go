@@ -83,7 +83,7 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 	}
 
 	// Build generate quiz from request
-	conv := dto.BuildGenerateQuizFromRequest(req, user)
+	conv := dto.BuildGenerateQuizFromRequest(ctx, req, user)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -145,7 +145,8 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 		} else {
 			resetData := "?"
 			_, _, err = s.userLatestQuizSvc.UpdateQuiz(ctx, &dto.UpdateUserLatestQuizRequest{
-				ID:        res.ID,
+				// ID:        res.ID,
+				UID:       res.UID,
 				Questions: &resp.Message,
 				Answers:   &resetData,
 				AIReview:  &resetData,
@@ -185,7 +186,7 @@ func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequ
 	}
 
 	// Build generate quiz from request
-	conv := dto.BuildSubmitQuizAnswerFromRequest(req, ulq)
+	conv := dto.BuildSubmitQuizAnswerFromRequest(ctx, req, ulq)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -253,7 +254,7 @@ func (s *ChatBoxService) GenerateQuizPractice(ctx context.Context, req *dto.Gene
 	}
 
 	// Build generate practice quiz from request
-	conv := dto.BuildGeneratePracticeQuizFromRequest(req, ulq)
+	conv := dto.BuildGeneratePracticeQuizFromRequest(ctx, req, ulq)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -318,7 +319,7 @@ func (s *ChatBoxService) GenerateQuizPractice(ctx context.Context, req *dto.Gene
 
 func (s *ChatBoxService) SendMessageStream(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, <-chan dto.ChatBoxStreamChunk, error) {
 	// Build conversation from request
-	conv := dto.BuildGenerateQuizFromRequest(req, nil)
+	conv := dto.BuildGenerateQuizFromRequest(ctx, req, nil)
 
 	// Send message to OpenAI with streaming
 	streamChan, err := s.client.StreamMessage(ctx, conv)

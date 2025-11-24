@@ -1,11 +1,13 @@
 package dto
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	domain "math-ai.com/math-ai/internal/core/domain/chatbox"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
+	appctx "math-ai.com/math-ai/internal/shared/utils/context"
 )
 
 // MessageDTO represents a message in the conversation
@@ -100,11 +102,21 @@ type ChatBoxStreamChunk struct {
 	Error        error  `json:"error,omitempty"`
 }
 
-func BuildGenerateQuizFromRequest(req *GenerateQuizRequest, userProfile *ProfileResponse) *domain.Conversation {
+func BuildGenerateQuizFromRequest(ctx context.Context, req *GenerateQuizRequest, userProfile *ProfileResponse) *domain.Conversation {
 	var (
-		grade string
-		level string
+		language string
+		grade    string
+		level    string
 	)
+
+	switch appctx.GetLocale(ctx) {
+	case "en":
+		language = "English"
+	case "vn":
+		language = "Vietnamese"
+	default:
+		language = "English"
+	}
 
 	if userProfile != nil {
 		grade = userProfile.Grade
@@ -144,7 +156,7 @@ func BuildGenerateQuizFromRequest(req *GenerateQuizRequest, userProfile *Profile
 		}
 	}
 
-	prompt := fmt.Sprintf(domain.PromptMathQuizNew, level, grade)
+	prompt := fmt.Sprintf(domain.PromptMathQuizNew, level, grade, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -153,11 +165,21 @@ func BuildGenerateQuizFromRequest(req *GenerateQuizRequest, userProfile *Profile
 	return conv
 }
 
-func BuildSubmitQuizAnswerFromRequest(req *SubmitQuizRequest, userLatestQuizzes *UserLatestQuizResponse) *domain.Conversation {
+func BuildSubmitQuizAnswerFromRequest(ctx context.Context, req *SubmitQuizRequest, userLatestQuizzes *UserLatestQuizResponse) *domain.Conversation {
 	var (
+		language             string
 		questionsInformation string
 		userAnswers          string
 	)
+
+	switch appctx.GetLocale(ctx) {
+	case "en":
+		language = "English"
+	case "vn":
+		language = "Vietnamese"
+	default:
+		language = "English"
+	}
 
 	if req != nil {
 		questionsInformation = userLatestQuizzes.Questions
@@ -197,7 +219,7 @@ func BuildSubmitQuizAnswerFromRequest(req *SubmitQuizRequest, userLatestQuizzes 
 		}
 	}
 
-	prompt := fmt.Sprintf(domain.SubmitQuizAnswerPrompt, questionsInformation, userAnswers)
+	prompt := fmt.Sprintf(domain.SubmitQuizAnswerPrompt, questionsInformation, userAnswers, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -206,12 +228,22 @@ func BuildSubmitQuizAnswerFromRequest(req *SubmitQuizRequest, userLatestQuizzes 
 	return conv
 }
 
-func BuildGeneratePracticeQuizFromRequest(req *GenerateQuizPracticeRequest, userLatestQuizzes *UserLatestQuizResponse) *domain.Conversation {
+func BuildGeneratePracticeQuizFromRequest(ctx context.Context, req *GenerateQuizPracticeRequest, userLatestQuizzes *UserLatestQuizResponse) *domain.Conversation {
 	var (
+		language             string
 		questionsInformation string
 		userAnswers          string
 		reviewedPerformance  string
 	)
+
+	switch appctx.GetLocale(ctx) {
+	case "en":
+		language = "English"
+	case "vn":
+		language = "Vietnamese"
+	default:
+		language = "English"
+	}
 
 	if req != nil {
 		questionsInformation = userLatestQuizzes.Questions
@@ -252,7 +284,7 @@ func BuildGeneratePracticeQuizFromRequest(req *GenerateQuizPracticeRequest, user
 		}
 	}
 
-	prompt := fmt.Sprintf(domain.PromptMathQuizPractice, questionsInformation, userAnswers, reviewedPerformance)
+	prompt := fmt.Sprintf(domain.PromptMathQuizPractice, questionsInformation, userAnswers, reviewedPerformance, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
