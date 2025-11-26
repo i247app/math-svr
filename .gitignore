@@ -12,6 +12,7 @@ AVAILABLE_MODELS.md
 CHATBOX_FEATURE.md
 CHATBOX_SETUP_GUIDE.md
 LANGCHAIN_GUIDE.md
+GRAPHQL_GUIDE.md
 GEMINI.md
 QWEN.md
 AGENTS.md
@@ -33,3 +34,4 @@ keys/
 dist/
 .aider*
 CONVENTIONS.md
+graphql-examples.http

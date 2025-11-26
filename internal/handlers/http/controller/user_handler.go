@@ -59,23 +59,6 @@ func (u *UserController) HandlerGetUser(w http.ResponseWriter, r *http.Request) 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }
 
-// Get - /users/profile
-func (u *UserController) HandlerGetProfile(w http.ResponseWriter, r *http.Request) {
-	var userID string
-
-	statusCode, user, err := u.service.GetUserByID(r.Context(), userID)
-	if err != nil {
-		response.WriteJson(w, r.Context(), nil, err, statusCode)
-		return
-	}
-
-	res := &dto.GetUserResponse{
-		User: user,
-	}
-
-	response.WriteJson(w, r.Context(), res, nil, statusCode)
-}
-
 // POST - /users/create
 func (u *UserController) HandlerCreateUser(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateUserRequest

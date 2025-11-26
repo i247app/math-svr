@@ -4,15 +4,23 @@ import (
 	"github.com/i247app/gex"
 	"math-ai.com/math-ai/internal/app/resources"
 	"math-ai.com/math-ai/internal/app/services"
+	gqlhandler "math-ai.com/math-ai/internal/handlers/graphql"
 	"math-ai.com/math-ai/internal/handlers/http/controller"
+	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *services.ServiceContainer) {
+	// GraphQL endpoint
+	graphqlHandler, err := gqlhandler.NewGraphQLHandler(services)
+	if err != nil {
+		logger.Fatalf("Failed to create GraphQL handler: %v", err)
+	}
+	server.AddRoute("POST /graphql", graphqlHandler.ServeHTTP)
+
 	// user
 	uc := controller.NewUserController(res, services.UserService)
 	server.AddRoute("GET /users/list", uc.HandlerGetListUsers)
 	server.AddRoute("GET /users/{id}", uc.HandlerGetUser)
-	server.AddRoute("GET /users/profile", uc.HandlerGetProfile)
 	server.AddRoute("POST /users/create", uc.HandlerCreateUser)
 	server.AddRoute("POST /users/update", uc.HandlerUpdateUser)
 	server.AddRoute("POST /users/delete", uc.HandlerDeleteUser)
