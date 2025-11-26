@@ -9,14 +9,15 @@ import (
 )
 
 type UserResponse struct {
-	ID        string    `json:"id"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name"`
-	Phone     string    `json:"phone"`
-	AvatarURL *string   `json:"avatar_url"`
-	Role      string    `json:"role"`
-	CreateAt  time.Time `json:"created_at"`
-	ModifyAt  time.Time `json:"modified_at"`
+	ID        string     `json:"id"`
+	Email     string     `json:"email"`
+	Name      string     `json:"name"`
+	Phone     string     `json:"phone"`
+	AvatarURL *string    `json:"avatar_url"`
+	Dob       *time.Time `json:"dob"`
+	Role      string     `json:"role"`
+	CreateAt  time.Time  `json:"created_at"`
+	ModifyAt  time.Time  `json:"modified_at"`
 }
 
 type GetUserResponse struct {
@@ -43,6 +44,7 @@ type CreateUserRequest struct {
 	Email    string     `json:"email"`
 	Role     enum.ERole `json:"role,omitempty"`
 	Password string     `json:"password"`
+	Dob      *string    `json:"dob"`
 
 	DeviceUUID string `json:"device_uuid,omitempty"`
 	DeviceName string `json:"device_name,omitempty"`
@@ -57,6 +59,7 @@ type UpdateUserRequest struct {
 	Name   *string       `json:"name,omitempty"`
 	Phone  *string       `json:"phone,omitempty"`
 	Email  *string       `json:"email,omitempty"`
+	Dob    *string       `json:"dob,omitempty"`
 	Role   *enum.ERole   `json:"role,omitempty"`
 	Status *enum.EStatus `json:"status,omitempty"`
 }
@@ -76,6 +79,14 @@ func BuildUserDomainForCreate(dto *CreateUserRequest) *domain.User {
 	userDomain.SetName(dto.Name)
 	userDomain.SetPhone(dto.Phone)
 	userDomain.SetPassword(dto.Password)
+
+	if dto.Dob != nil {
+		parsedDob, err := time.Parse(time.DateOnly, *dto.Dob)
+		if err == nil {
+			userDomain.SetDOB(&parsedDob)
+		}
+	}
+
 	userDomain.SetRole(string(dto.Role))
 
 	return userDomain
@@ -101,6 +112,13 @@ func BuildUserDomainForUpdate(dto *UpdateUserRequest) *domain.User {
 		userDomain.SetRole(string(*dto.Role))
 	}
 
+	if dto.Dob != nil {
+		parsedDob, err := time.Parse(time.DateOnly, *dto.Dob)
+		if err == nil {
+			userDomain.SetDOB(&parsedDob)
+		}
+	}
+
 	return userDomain
 }
 
@@ -120,6 +138,7 @@ func UserResponseFromDomain(u *domain.User) UserResponse {
 		Name:      u.Name(),
 		Phone:     u.Phone(),
 		AvatarURL: u.AvatarURL(),
+		Dob:       u.DOB(),
 		Role:      u.Role(),
 		CreateAt:  u.CreatedAt(),
 		ModifyAt:  u.ModifyAt(),

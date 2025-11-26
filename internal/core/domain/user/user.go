@@ -14,6 +14,7 @@ type User struct {
 	phone     string
 	email     string
 	avatarUrl *string
+	dob       *time.Time
 	role      string
 	password  string
 	status    string
@@ -68,6 +69,14 @@ func (u *User) AvatarURL() *string {
 
 func (u *User) SetAvatarURL(avatarURL *string) {
 	u.avatarUrl = avatarURL
+}
+
+func (u *User) DOB() *time.Time {
+	return u.dob
+}
+
+func (u *User) SetDOB(dob *time.Time) {
+	u.dob = dob
 }
 
 func (u *User) Role() string {
@@ -129,6 +138,7 @@ func BuildUserDomainFromModel(model *models.UserModel) *User {
 		phone:     model.Phone,
 		email:     model.Email,
 		avatarUrl: model.AvatarUrl,
+		dob:       model.Dob,
 		role:      model.Role,
 		password:  model.HashPassword,
 		status:    model.Status,

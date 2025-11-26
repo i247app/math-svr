@@ -10,6 +10,7 @@ type UserModel struct {
 	Phone        string
 	Email        string
 	AvatarUrl    *string
+	Dob          *time.Time
 	Role         string
 	HashPassword string
 	Status       string

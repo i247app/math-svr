@@ -5,6 +5,7 @@ CREATE TABLE `users` (
   `phone` VARCHAR(128) NOT NULL,
   `email` VARCHAR(128) NOT NULL,
   `avatar_url` VARCHAR(256) DEFAULT NULL,
+  `dob` DATETIME(3),
   `role` VARCHAR(16) NOT NULL,
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
   `create_id` CHAR(36) DEFAULT NULL,
@@ -14,6 +15,8 @@ CREATE TABLE `users` (
   `deleted_dt` DATETIME(3) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ALTER TABLE users add dob DATETIME(3) after avatar_url;
 
 -- comment it if you migrate-up again
 -- INSERT INTO users (

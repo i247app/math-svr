@@ -64,7 +64,7 @@ func (r *userRepository) ForceDeleteUserWithAssociations(ctx context.Context, ha
 // GetUserByLoginName retrieves a user by their login name (email or phone).
 func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName string) (*domain.User, error) {
 	query := `
-		SELECT u.id, u.name, u.phone, u.email, u.avatar_url, 
+		SELECT u.id, u.name, u.phone, u.email, u.avatar_url, u.dob, 
 		u.role, u.status, l.hash_pass, u.create_id, u.create_dt, u.modify_id, u.modify_dt
 		FROM users u
 		JOIN aliases a ON u.id = a.uid
@@ -75,7 +75,7 @@ func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName strin
 
 	var u models.UserModel
 	err := result.Scan(
-		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl,
+		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl, &u.Dob,
 		&u.Role, &u.Status, &u.HashPassword, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
 	)
 	if err != nil {
@@ -97,7 +97,7 @@ func (r *userRepository) List(ctx context.Context, params repositories.ListUsers
 
 	// Base query
 	queryBuilder.WriteString(`
-		SELECT id, name, phone, email, avatar_url, 
+		SELECT id, name, phone, email, avatar_url, dob,
 		role, status, create_id, create_dt, modify_id, modify_dt
 		FROM users WHERE deleted_dt IS NULL
 	`)
@@ -157,7 +157,7 @@ func (r *userRepository) List(ctx context.Context, params repositories.ListUsers
 	for rows.Next() {
 		var u models.UserModel
 		if err := rows.Scan(
-			&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl,
+			&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl, &u.Dob,
 			&u.Role, &u.Status, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
 		); err != nil {
 			return nil, nil, fmt.Errorf("scan error: %v", err)
@@ -172,7 +172,7 @@ func (r *userRepository) List(ctx context.Context, params repositories.ListUsers
 // FindByID retrieves a user by ID.
 func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User, error) {
 	query := `
-		SELECT id, name, phone, email, avatar_url,
+		SELECT id, name, phone, email, avatar_url, dob,
 		role, status, create_id, create_dt, modify_id, modify_dt
 		FROM users
 		WHERE id = ? AND deleted_dt IS NULL
@@ -182,7 +182,7 @@ func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User
 
 	var u models.UserModel
 	err := result.Scan(
-		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl,
+		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl, &u.Dob,
 		&u.Role, &u.Status, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
 	)
 	if err != nil {
@@ -200,7 +200,7 @@ func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User
 // FindByEmail retrieves a user by email.
 func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	query := `
-		SELECT id, name, phone, email, avatar_url,
+		SELECT id, name, phone, email, avatar_url, dob,
 		role, status, create_id, create_dt, modify_id, modify_dt
 		FROM users
 		WHERE email = ? AND deleted_dt IS NULL
@@ -209,7 +209,7 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 
 	var u models.UserModel
 	err := result.Scan(
-		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl,
+		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl, &u.Dob,
 		&u.Role, &u.Status, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
 	)
 	if err != nil {
@@ -227,8 +227,8 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 // Create inserts a new user into the database.
 func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) {
 	query := `
-		INSERT INTO users (id, name, phone, email, avatar_url, role, status)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO users (id, name, phone, email, avatar_url, dob, role, status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		user.ID(),
@@ -236,6 +236,7 @@ func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.Us
 		user.Phone(),
 		user.Email(),
 		user.AvatarURL(),
+		user.DOB(),
 		user.Role(),
 		enum.StatusActive,
 	)
@@ -259,6 +260,7 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 			phone = COALESCE(?, phone),
 			email = COALESCE(?, email),
 			avatar_url = COALESCE(?, avatar_url),
+			dob = COALESCE(?, dob),
 			role = COALESCE(?, role),
 			status = COALESCE(?, status)
 		WHERE id = ? AND deleted_dt IS NULL
@@ -269,6 +271,7 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 		user.Email(),
 		user.Role(),
 		user.AvatarURL(),
+		user.DOB(),
 		user.Status(),
 		user.ID(),
 	)
