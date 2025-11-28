@@ -20,7 +20,7 @@ type GradeResponse struct {
 }
 
 type GetGradeResponse struct {
-	Grade *GradeResponse `json:"result"`
+	Grade *GradeResponse `json:"grade"`
 }
 
 type ListGradeRequest struct {
@@ -33,7 +33,7 @@ type ListGradeRequest struct {
 }
 
 type ListGradeResponse struct {
-	Items      []*GradeResponse       `json:"result"`
+	Items      []*GradeResponse       `json:"items"`
 	Pagination *pagination.Pagination `json:"metadata"`
 }
 
@@ -45,7 +45,7 @@ type CreateGradeRequest struct {
 }
 
 type CreateGradeResponse struct {
-	Grade *GradeResponse `json:"result"`
+	Grade *GradeResponse `json:"grade"`
 }
 
 type UpdateGradeRequest struct {
@@ -58,7 +58,7 @@ type UpdateGradeRequest struct {
 }
 
 type UpdateGradeResponse struct {
-	Grade *GradeResponse `json:"result"`
+	Grade *GradeResponse `json:"grade"`
 }
 
 type DeleteGradeRequest struct {

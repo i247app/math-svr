@@ -55,6 +55,8 @@ func (h *GraphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Log errors if any
 	if len(result.Errors) > 0 {
 		logger.Errorf("GraphQL errors: %v", result.Errors)
+		response.WriteJsonGraphQL(w, r.Context(), result, nil, status.BAD_REQUEST)
+		return
 	}
 
 	// // Set response headers
@@ -66,5 +68,5 @@ func (h *GraphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 	logger.Errorf("Failed to encode GraphQL response: %v", err)
 	// }
 
-	response.WriteJson(w, r.Context(), result, nil, status.OK)
+	response.WriteJsonGraphQL(w, r.Context(), result.Data, nil, status.OK)
 }

@@ -21,7 +21,7 @@ type UserResponse struct {
 }
 
 type GetUserResponse struct {
-	User *UserResponse `json:"result"`
+	User *UserResponse `json:"user"`
 }
 
 type ListUserRequest struct {
@@ -51,7 +51,7 @@ type CreateUserRequest struct {
 }
 
 type CreateUserResponse struct {
-	User *UserResponse `json:"result"`
+	User *UserResponse `json:"user"`
 }
 
 type UpdateUserRequest struct {
@@ -65,7 +65,7 @@ type UpdateUserRequest struct {
 }
 
 type UpdateUserResponse struct {
-	User *UserResponse `json:"result"`
+	User *UserResponse `json:"user"`
 }
 
 type DeleteUserRequest struct {

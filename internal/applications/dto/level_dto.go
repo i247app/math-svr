@@ -20,7 +20,7 @@ type LevelResponse struct {
 }
 
 type GetLevelResponse struct {
-	Level *LevelResponse `json:"result"`
+	Level *LevelResponse `json:"level"`
 }
 
 type ListLevelRequest struct {
@@ -33,7 +33,7 @@ type ListLevelRequest struct {
 }
 
 type ListLevelResponse struct {
-	Items      []*LevelResponse       `json:"result"`
+	Items      []*LevelResponse       `json:"items"`
 	Pagination *pagination.Pagination `json:"metadata"`
 }
 
@@ -45,7 +45,7 @@ type CreateLevelRequest struct {
 }
 
 type CreateLevelResponse struct {
-	Level *LevelResponse `json:"result"`
+	Level *LevelResponse `json:"level"`
 }
 
 type UpdateLevelRequest struct {
@@ -58,7 +58,7 @@ type UpdateLevelRequest struct {
 }
 
 type UpdateLevelResponse struct {
-	Level *LevelResponse `json:"result"`
+	Level *LevelResponse `json:"level"`
 }
 
 type DeleteLevelRequest struct {

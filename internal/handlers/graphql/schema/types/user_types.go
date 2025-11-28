@@ -25,6 +25,10 @@ var UserType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.NewNonNull(graphql.String),
 			Description: "User phone number",
 		},
+		"dob": &graphql.Field{
+			Type:        graphql.String,
+			Description: "User dob",
+		},
 		"avatar_url": &graphql.Field{
 			Type:        graphql.String,
 			Description: "URL to user avatar image",

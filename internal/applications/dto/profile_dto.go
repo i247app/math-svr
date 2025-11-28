@@ -25,7 +25,7 @@ type FetchProfileRequest struct {
 }
 
 type FetchProfileResponse struct {
-	Profile *ProfileResponse `json:"result"`
+	Profile *ProfileResponse `json:"profile"`
 }
 
 type CreateProfileRequest struct {
@@ -35,7 +35,7 @@ type CreateProfileRequest struct {
 }
 
 type CreateProfileResponse struct {
-	Profile *ProfileResponse `json:"result"`
+	Profile *ProfileResponse `json:"profile"`
 }
 
 type UpdateProfileRequest struct {
@@ -46,7 +46,7 @@ type UpdateProfileRequest struct {
 }
 
 type UpdateProfileResponse struct {
-	Profile *ProfileResponse `json:"result"`
+	Profile *ProfileResponse `json:"profile"`
 }
 
 func BuildProfileDomainForCreate(req *CreateProfileRequest) *domain.Profile {
