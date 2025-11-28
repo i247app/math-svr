@@ -181,10 +181,70 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	return status.SUCCESS, &res, nil
 }
 
-func (s *UserService) DeleteUser(ctx context.Context, uid string) (status.Code, error) {
-	return 0, nil
+func (s *UserService) DeleteUser(ctx context.Context, req *dto.DeleteUserRequest) (status.Code, error) {
+	if statusCode, err := s.validator.ValidateDeleteUserRequest(req); err != nil {
+		return statusCode, err
+	}
+
+	handler := func(tx *sql.Tx) error {
+		// Delete users
+		err := s.repo.Delete(ctx, tx, req.UID)
+		if err != nil {
+			return fmt.Errorf("failed to create user in transaction: %v", err)
+		}
+
+		// Delete user aliases
+		err = s.repo.DeleteUserAlias(ctx, tx, req.UID)
+		if err != nil {
+			return fmt.Errorf("failed to delete user aliases in transaction: %v", err)
+		}
+
+		// Delete user logins
+		err = s.loginRepo.DeleteLogin(ctx, tx, req.UID)
+		if err != nil {
+			return fmt.Errorf("failed to delete user logins in transaction: %v", err)
+		}
+
+		return nil
+	}
+
+	err := s.repo.DeleteUserWithAssociations(ctx, handler)
+	if err != nil {
+		return status.INTERNAL, err
+	}
+	return status.SUCCESS, nil
 }
 
-func (s *UserService) ForceDeleteUser(ctx context.Context, uid string) (status.Code, error) {
-	return 0, nil
+func (s *UserService) ForceDeleteUser(ctx context.Context, req *dto.DeleteUserRequest) (status.Code, error) {
+	if statusCode, err := s.validator.ValidateDeleteUserRequest(req); err != nil {
+		return statusCode, err
+	}
+
+	handler := func(tx *sql.Tx) error {
+		// Delete users
+		err := s.repo.ForceDelete(ctx, tx, req.UID)
+		if err != nil {
+			return fmt.Errorf("failed to create user in transaction: %v", err)
+		}
+
+		// Delete user aliases
+		err = s.repo.ForceDeleteUserAlias(ctx, tx, req.UID)
+		if err != nil {
+			return fmt.Errorf("failed to delete user aliases in transaction: %v", err)
+		}
+
+		// Delete user logins
+		err = s.loginRepo.ForceDeleteLogin(ctx, tx, req.UID)
+		if err != nil {
+			return fmt.Errorf("failed to delete user logins in transaction: %v", err)
+		}
+
+		return nil
+	}
+
+	err := s.repo.ForceDeleteUserWithAssociations(ctx, handler)
+	if err != nil {
+		return status.INTERNAL, err
+	}
+	return status.SUCCESS, nil
 }

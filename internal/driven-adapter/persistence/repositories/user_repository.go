@@ -288,13 +288,13 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 }
 
 // Delete removes a user by ID.
-func (r *userRepository) Delete(ctx context.Context, uid string) error {
+func (r *userRepository) Delete(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		UPDATE users
 		SET deleted_dt = ?
 		WHERE id = ?
 	`
-	_, err := r.db.Exec(ctx, nil, query, time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %v", err)
 	}
@@ -333,13 +333,13 @@ func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *
 }
 
 // DeleteUserAlias deletes user aliases by user ID.
-func (r *userRepository) DeleteUserAlias(ctx context.Context, uid string) error {
+func (r *userRepository) DeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		UPDATE aliases
 		SET deleted_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
 	`
-	_, err := r.db.Exec(ctx, nil, query, time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user aliases: %v", err)
 	}

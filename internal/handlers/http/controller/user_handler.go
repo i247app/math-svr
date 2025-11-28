@@ -112,7 +112,7 @@ func (u *UserController) HandlerDeleteUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	statusCode, err := u.service.DeleteUser(r.Context(), req.UserID)
+	statusCode, err := u.service.DeleteUser(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
@@ -129,7 +129,7 @@ func (u *UserController) HandlerForceDeleteUser(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	statusCode, err := u.service.ForceDeleteUser(r.Context(), req.UserID)
+	statusCode, err := u.service.ForceDeleteUser(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return

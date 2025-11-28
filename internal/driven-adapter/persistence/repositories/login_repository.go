@@ -42,13 +42,13 @@ func (r *loginRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *dom
 }
 
 // DeleteLogin deletes user logins by user ID.
-func (r *loginRepository) DeleteLogin(ctx context.Context, uid string) error {
+func (r *loginRepository) DeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		UPDATE logins
 		SET deleted_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
 	`
-	_, err := r.db.Exec(ctx, nil, query, time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user logins: %v", err)
 	}

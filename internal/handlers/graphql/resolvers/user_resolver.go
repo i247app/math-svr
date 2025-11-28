@@ -153,7 +153,11 @@ func (r *UserResolver) DeleteUser(params graphql.ResolveParams) (interface{}, er
 		return false, nil
 	}
 
-	statusCode, err := r.userService.DeleteUser(params.Context, uid)
+	req := &dto.DeleteUserRequest{
+		UID: uid,
+	}
+
+	statusCode, err := r.userService.DeleteUser(params.Context, req)
 	if err != nil || statusCode != status.SUCCESS {
 		return false, err
 	}
@@ -168,7 +172,11 @@ func (r *UserResolver) ForceDeleteUser(params graphql.ResolveParams) (interface{
 		return false, nil
 	}
 
-	statusCode, err := r.userService.ForceDeleteUser(params.Context, uid)
+	req := &dto.DeleteUserRequest{
+		UID: uid,
+	}
+
+	statusCode, err := r.userService.ForceDeleteUser(params.Context, req)
 	if err != nil || statusCode != status.SUCCESS {
 		return false, err
 	}

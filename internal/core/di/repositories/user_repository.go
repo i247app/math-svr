@@ -31,11 +31,11 @@ type IUserRepository interface {
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error)
 	Update(ctx context.Context, user *domain.User) (int64, error)
-	Delete(ctx context.Context, uid string) error
+	Delete(ctx context.Context, tx *sql.Tx, uid string) error
 	ForceDelete(ctx context.Context, tx *sql.Tx, uid string) error
 
 	// aliases
 	StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error
-	DeleteUserAlias(ctx context.Context, uid string) error
+	DeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error
 	ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error
 }

@@ -10,7 +10,7 @@ import (
 type ILoginRepository interface {
 	// logins
 	StoreLogin(ctx context.Context, tx *sql.Tx, login *domain.Login) error
-	DeleteLogin(ctx context.Context, uid string) error
+	DeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error
 	ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error
 
 	// login logs

@@ -69,7 +69,7 @@ type UpdateUserResponse struct {
 }
 
 type DeleteUserRequest struct {
-	UserID string `json:"uid"`
+	UID string `json:"uid"`
 }
 
 func BuildUserDomainForCreate(req *CreateUserRequest) *domain.User {

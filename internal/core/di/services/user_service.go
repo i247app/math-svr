@@ -15,6 +15,6 @@ type IUserService interface {
 	GetUserByEmail(ctx context.Context, email string) (status.Code, *dto.UserResponse, error)
 	CreateUser(ctx context.Context, req *dto.CreateUserRequest) (status.Code, *dto.UserResponse, error)
 	UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (status.Code, *dto.UserResponse, error)
-	DeleteUser(ctx context.Context, uid string) (status.Code, error)
-	ForceDeleteUser(ctx context.Context, uid string) (status.Code, error)
+	DeleteUser(ctx context.Context, req *dto.DeleteUserRequest) (status.Code, error)
+	ForceDeleteUser(ctx context.Context, req *dto.DeleteUserRequest) (status.Code, error)
 }
