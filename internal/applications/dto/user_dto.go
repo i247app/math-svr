@@ -34,7 +34,7 @@ type ListUserRequest struct {
 }
 
 type ListUserResponse struct {
-	Items      []*UserResponse        `json:"result"`
+	Items      []*UserResponse        `json:"items"`
 	Pagination *pagination.Pagination `json:"metadata"`
 }
 
@@ -72,48 +72,48 @@ type DeleteUserRequest struct {
 	UserID string `json:"uid"`
 }
 
-func BuildUserDomainForCreate(dto *CreateUserRequest) *domain.User {
+func BuildUserDomainForCreate(req *CreateUserRequest) *domain.User {
 	userDomain := domain.NewUserDomain()
 	userDomain.GenerateID()
-	userDomain.SetEmail(dto.Email)
-	userDomain.SetName(dto.Name)
-	userDomain.SetPhone(dto.Phone)
-	userDomain.SetPassword(dto.Password)
+	userDomain.SetEmail(req.Email)
+	userDomain.SetName(req.Name)
+	userDomain.SetPhone(req.Phone)
+	userDomain.SetPassword(req.Password)
 
-	if dto.Dob != nil {
-		parsedDob, err := time.Parse(time.DateOnly, *dto.Dob)
+	if req.Dob != nil {
+		parsedDob, err := time.Parse(time.DateOnly, *req.Dob)
 		if err == nil {
 			userDomain.SetDOB(&parsedDob)
 		}
 	}
 
-	userDomain.SetRole(string(dto.Role))
+	userDomain.SetRole(string(req.Role))
 
 	return userDomain
 }
 
-func BuildUserDomainForUpdate(dto *UpdateUserRequest) *domain.User {
+func BuildUserDomainForUpdate(req *UpdateUserRequest) *domain.User {
 	userDomain := domain.NewUserDomain()
-	userDomain.SetID(dto.UID)
+	userDomain.SetID(req.UID)
 
-	if dto.Email != nil {
-		userDomain.SetEmail(*dto.Email)
+	if req.Email != nil {
+		userDomain.SetEmail(*req.Email)
 	}
 
-	if dto.Name != nil {
-		userDomain.SetName(*dto.Name)
+	if req.Name != nil {
+		userDomain.SetName(*req.Name)
 	}
 
-	if dto.Phone != nil {
-		userDomain.SetPhone(*dto.Phone)
+	if req.Phone != nil {
+		userDomain.SetPhone(*req.Phone)
 	}
 
-	if dto.Role != nil {
-		userDomain.SetRole(string(*dto.Role))
+	if req.Role != nil {
+		userDomain.SetRole(string(*req.Role))
 	}
 
-	if dto.Dob != nil {
-		parsedDob, err := time.Parse(time.DateOnly, *dto.Dob)
+	if req.Dob != nil {
+		parsedDob, err := time.Parse(time.DateOnly, *req.Dob)
 		if err == nil {
 			userDomain.SetDOB(&parsedDob)
 		}

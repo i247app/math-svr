@@ -65,40 +65,40 @@ type DeleteGradeRequest struct {
 	ID string `json:"id"`
 }
 
-func BuildGradeDomainForCreate(dto *CreateGradeRequest) *domain.Grade {
+func BuildGradeDomainForCreate(req *CreateGradeRequest) *domain.Grade {
 	gradeDomain := domain.NewGradeDomain()
 	gradeDomain.GenerateID()
-	gradeDomain.SetLabel(dto.Label)
-	gradeDomain.SetDescription(dto.Description)
-	gradeDomain.SetIconURL(dto.IconURL)
+	gradeDomain.SetLabel(req.Label)
+	gradeDomain.SetDescription(req.Description)
+	gradeDomain.SetIconURL(req.IconURL)
 	gradeDomain.SetStatus(string(enum.StatusActive))
-	gradeDomain.SetDisplayOrder(dto.DisplayOrder)
+	gradeDomain.SetDisplayOrder(req.DisplayOrder)
 
 	return gradeDomain
 }
 
-func BuildGradeDomainForUpdate(dto *UpdateGradeRequest) *domain.Grade {
+func BuildGradeDomainForUpdate(req *UpdateGradeRequest) *domain.Grade {
 	gradeDomain := domain.NewGradeDomain()
-	gradeDomain.SetID(dto.ID)
+	gradeDomain.SetID(req.ID)
 
-	if dto.Label != nil {
-		gradeDomain.SetLabel(*dto.Label)
+	if req.Label != nil {
+		gradeDomain.SetLabel(*req.Label)
 	}
 
-	if dto.Description != nil {
-		gradeDomain.SetDescription(*dto.Description)
+	if req.Description != nil {
+		gradeDomain.SetDescription(*req.Description)
 	}
 
-	if dto.IconURL != nil {
-		gradeDomain.SetIconURL(dto.IconURL)
+	if req.IconURL != nil {
+		gradeDomain.SetIconURL(req.IconURL)
 	}
 
-	if dto.Status != nil {
-		gradeDomain.SetStatus(string(*dto.Status))
+	if req.Status != nil {
+		gradeDomain.SetStatus(string(*req.Status))
 	}
 
-	if dto.DisplayOrder != nil {
-		gradeDomain.SetDisplayOrder(*dto.DisplayOrder)
+	if req.DisplayOrder != nil {
+		gradeDomain.SetDisplayOrder(*req.DisplayOrder)
 	}
 
 	return gradeDomain

@@ -7,6 +7,7 @@ var (
 	ErrInvalidUserID    = errors.New("invalid user ID")
 	ErrUserNotFound     = errors.New("user not found")
 
+	ErrMissingUID         = errors.New("uid is required")
 	ErrMissingFirstName   = errors.New("first name is required")
 	ErrMissingLastName    = errors.New("last name is required")
 	ErrMissingPhone       = errors.New("phone is required")

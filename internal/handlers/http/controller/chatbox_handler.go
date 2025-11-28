@@ -40,14 +40,10 @@ func (c *ChatBoxController) HandleGenerateQuiz(w http.ResponseWriter, r *http.Re
 	}
 
 	// Send message to service
-	statusCode, chatResponse, err := c.service.GenerateQuiz(r.Context(), &req)
+	statusCode, res, err := c.service.GenerateQuiz(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
-	}
-
-	res := dto.GenerateQuizResponse{
-		Result: chatResponse,
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
@@ -62,14 +58,10 @@ func (c *ChatBoxController) HandleSubmitQuizAnswer(w http.ResponseWriter, r *htt
 	}
 
 	// Send message to service
-	statusCode, result, err := c.service.SubmitQuiz(r.Context(), &req)
+	statusCode, res, err := c.service.SubmitQuiz(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
-	}
-
-	res := dto.SubmitQuizResponse{
-		Result: result,
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
@@ -84,14 +76,10 @@ func (c *ChatBoxController) HandleGenerateQuizPractice(w http.ResponseWriter, r 
 	}
 
 	// Send message to service
-	statusCode, chatResponse, err := c.service.GenerateQuizPractice(r.Context(), &req)
+	statusCode, res, err := c.service.GenerateQuizPractice(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
-	}
-
-	res := dto.GenerateQuizPracticeResponse{
-		Result: chatResponse,
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)

@@ -55,37 +55,37 @@ type ForceDeleteUserLatestQuizRequest struct {
 	ID string `json:"id"`
 }
 
-func BuildUserLatestQuizDomainForCreate(dto *CreateUserLatestQuizRequest) *domain.UserLatestQuiz {
+func BuildUserLatestQuizDomainForCreate(req *CreateUserLatestQuizRequest) *domain.UserLatestQuiz {
 	quizDomain := domain.NewUserLatestQuizDomain()
 	quizDomain.GenerateID()
-	quizDomain.SetUID(dto.UID)
-	quizDomain.SetQuestions(dto.Questions)
-	quizDomain.SetAnswers(dto.Answers)
-	quizDomain.SetAIReview(dto.AIReview)
+	quizDomain.SetUID(req.UID)
+	quizDomain.SetQuestions(req.Questions)
+	quizDomain.SetAnswers(req.Answers)
+	quizDomain.SetAIReview(req.AIReview)
 	quizDomain.SetStatus(string(enum.StatusActive))
 
 	return quizDomain
 }
 
-func BuildUserLatestQuizDomainForUpdate(dto *UpdateUserLatestQuizRequest) *domain.UserLatestQuiz {
+func BuildUserLatestQuizDomainForUpdate(req *UpdateUserLatestQuizRequest) *domain.UserLatestQuiz {
 	quizDomain := domain.NewUserLatestQuizDomain()
-	quizDomain.SetID(dto.ID)
-	quizDomain.SetUID(dto.UID)
+	quizDomain.SetID(req.ID)
+	quizDomain.SetUID(req.UID)
 
-	if dto.Questions != nil {
-		quizDomain.SetQuestions(*dto.Questions)
+	if req.Questions != nil {
+		quizDomain.SetQuestions(*req.Questions)
 	}
 
-	if dto.Answers != nil {
-		quizDomain.SetAnswers(*dto.Answers)
+	if req.Answers != nil {
+		quizDomain.SetAnswers(*req.Answers)
 	}
 
-	if dto.AIReview != nil {
-		quizDomain.SetAIReview(*dto.AIReview)
+	if req.AIReview != nil {
+		quizDomain.SetAIReview(*req.AIReview)
 	}
 
-	if dto.Status != nil {
-		quizDomain.SetStatus(string(*dto.Status))
+	if req.Status != nil {
+		quizDomain.SetStatus(string(*req.Status))
 	}
 
 	return quizDomain

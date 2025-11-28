@@ -28,35 +28,35 @@ type DeviceResponse struct {
 	IsVerified      bool    `json:"is_verified"`
 }
 
-func BuildDeviceDomainForCreate(dto *CreateDeviceRequest) *domain.Device {
+func BuildDeviceDomainForCreate(req *CreateDeviceRequest) *domain.Device {
 	deviceDomain := domain.NewDeviceDomain()
 	deviceDomain.GenerateID()
-	deviceDomain.SetUID(dto.UID)
-	deviceDomain.SetDeviceUuid(dto.DeviceUUID)
-	deviceDomain.SetDeviceName(dto.DeviceName)
-	deviceDomain.SetDevicePushToken(dto.DevicePushToken)
-	deviceDomain.SetIsVerified(dto.IsVerified)
+	deviceDomain.SetUID(req.UID)
+	deviceDomain.SetDeviceUuid(req.DeviceUUID)
+	deviceDomain.SetDeviceName(req.DeviceName)
+	deviceDomain.SetDevicePushToken(req.DevicePushToken)
+	deviceDomain.SetIsVerified(req.IsVerified)
 
 	return deviceDomain
 }
 
-func BuildDeviceDomainForUpdate(dto *UpdateDeviceRequest) *domain.Device {
+func BuildDeviceDomainForUpdate(req *UpdateDeviceRequest) *domain.Device {
 	deviceDomain := domain.NewDeviceDomain()
-	deviceDomain.SetID(dto.ID)
-	deviceDomain.SetUID(dto.UID)
+	deviceDomain.SetID(req.ID)
+	deviceDomain.SetUID(req.UID)
 
-	if dto.DeviceUUID != nil {
-		deviceDomain.SetDeviceUuid(*dto.DeviceUUID)
+	if req.DeviceUUID != nil {
+		deviceDomain.SetDeviceUuid(*req.DeviceUUID)
 	}
 
-	if dto.DeviceName != nil {
-		deviceDomain.SetDeviceName(*dto.DeviceName)
+	if req.DeviceName != nil {
+		deviceDomain.SetDeviceName(*req.DeviceName)
 	}
 
-	deviceDomain.SetDevicePushToken(dto.DevicePushToken)
+	deviceDomain.SetDevicePushToken(req.DevicePushToken)
 
-	if dto.IsVerified != nil {
-		deviceDomain.SetIsVerified(*dto.IsVerified)
+	if req.IsVerified != nil {
+		deviceDomain.SetIsVerified(*req.IsVerified)
 	}
 
 	return deviceDomain

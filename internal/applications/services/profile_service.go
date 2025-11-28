@@ -41,6 +41,11 @@ func (s *ProfileService) FetchProfile(ctx context.Context, req *dto.FetchProfile
 }
 
 func (s *ProfileService) CreateProfile(ctx context.Context, req *dto.CreateProfileRequest) (status.Code, *dto.ProfileResponse, error) {
+	// Validate request
+	if statusCode, err := s.validator.ValidateCreateProfileRequest(req); err != nil {
+		return statusCode, nil, err
+	}
+
 	// Check if profile already exists for this user
 	existingProfile, err := s.repo.FindByUID(ctx, req.UID)
 	if err != nil {

@@ -65,40 +65,40 @@ type DeleteLevelRequest struct {
 	ID string `json:"id"`
 }
 
-func BuildLevelDomainForCreate(dto *CreateLevelRequest) *domain.Level {
+func BuildLevelDomainForCreate(req *CreateLevelRequest) *domain.Level {
 	levelDomain := domain.NewLevelDomain()
 	levelDomain.GenerateID()
-	levelDomain.SetLabel(dto.Label)
-	levelDomain.SetDescription(dto.Description)
-	levelDomain.SetIconURL(dto.IconURL)
+	levelDomain.SetLabel(req.Label)
+	levelDomain.SetDescription(req.Description)
+	levelDomain.SetIconURL(req.IconURL)
 	levelDomain.SetStatus(string(enum.StatusActive))
-	levelDomain.SetDisplayOrder(dto.DisplayOrder)
+	levelDomain.SetDisplayOrder(req.DisplayOrder)
 
 	return levelDomain
 }
 
-func BuildLevelDomainForUpdate(dto *UpdateLevelRequest) *domain.Level {
+func BuildLevelDomainForUpdate(req *UpdateLevelRequest) *domain.Level {
 	levelDomain := domain.NewLevelDomain()
-	levelDomain.SetID(dto.ID)
+	levelDomain.SetID(req.ID)
 
-	if dto.Label != nil {
-		levelDomain.SetLabel(*dto.Label)
+	if req.Label != nil {
+		levelDomain.SetLabel(*req.Label)
 	}
 
-	if dto.Description != nil {
-		levelDomain.SetDescription(*dto.Description)
+	if req.Description != nil {
+		levelDomain.SetDescription(*req.Description)
 	}
 
-	if dto.IconURL != nil {
-		levelDomain.SetIconURL(dto.IconURL)
+	if req.IconURL != nil {
+		levelDomain.SetIconURL(req.IconURL)
 	}
 
-	if dto.Status != nil {
-		levelDomain.SetStatus(string(*dto.Status))
+	if req.Status != nil {
+		levelDomain.SetStatus(string(*req.Status))
 	}
 
-	if dto.DisplayOrder != nil {
-		levelDomain.SetDisplayOrder(*dto.DisplayOrder)
+	if req.DisplayOrder != nil {
+		levelDomain.SetDisplayOrder(*req.DisplayOrder)
 	}
 
 	return levelDomain

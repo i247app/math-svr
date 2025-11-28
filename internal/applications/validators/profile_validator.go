@@ -3,6 +3,7 @@ package validators
 import (
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/shared/constant/status"
+	err_svc "math-ai.com/math-ai/internal/shared/error"
 )
 
 type IProfileValidator interface {
@@ -22,6 +23,10 @@ func (v *profileValidator) ValidateGetProfileRequest(req *dto.FetchProfileReques
 }
 
 func (v *profileValidator) ValidateCreateProfileRequest(req *dto.CreateProfileRequest) (status.Code, error) {
+	if req.UID == "" {
+		return status.BAD_REQUEST, err_svc.ErrMissingUID
+	}
+
 	return status.SUCCESS, nil
 }
 

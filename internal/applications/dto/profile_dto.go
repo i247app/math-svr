@@ -49,32 +49,32 @@ type UpdateProfileResponse struct {
 	Profile *ProfileResponse `json:"result"`
 }
 
-func BuildProfileDomainForCreate(dto *CreateProfileRequest) *domain.Profile {
+func BuildProfileDomainForCreate(req *CreateProfileRequest) *domain.Profile {
 	profileDomain := domain.NewProfileDomain()
 	profileDomain.GenerateID()
-	profileDomain.SetUID(dto.UID)
-	profileDomain.SetGrade(dto.Grade)
-	profileDomain.SetLevel(dto.Level)
+	profileDomain.SetUID(req.UID)
+	profileDomain.SetGrade(req.Grade)
+	profileDomain.SetLevel(req.Level)
 	profileDomain.SetStatus(string(enum.StatusActive))
 
 	return profileDomain
 }
 
-func BuildProfileDomainForUpdate(dto *UpdateProfileRequest) *domain.Profile {
+func BuildProfileDomainForUpdate(req *UpdateProfileRequest) *domain.Profile {
 	profileDomain := domain.NewProfileDomain()
 
-	profileDomain.SetUID(dto.UID)
+	profileDomain.SetUID(req.UID)
 
-	if dto.Grade != nil {
-		profileDomain.SetGrade(*dto.Grade)
+	if req.Grade != nil {
+		profileDomain.SetGrade(*req.Grade)
 	}
 
-	if dto.Level != nil {
-		profileDomain.SetLevel(*dto.Level)
+	if req.Level != nil {
+		profileDomain.SetLevel(*req.Level)
 	}
 
-	if dto.Status != nil {
-		profileDomain.SetStatus(string(*dto.Status))
+	if req.Status != nil {
+		profileDomain.SetStatus(string(*req.Status))
 	}
 
 	return profileDomain

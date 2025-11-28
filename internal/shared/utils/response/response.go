@@ -16,6 +16,7 @@ func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, 
 
 	// If there's data, try to unmarshal data into being the payload
 	if data != nil {
+
 		dataBytes, err := json.Marshal(data)
 		if err != nil {
 			log.Printf("WriteJson: failed to marshal data: %v\n", err)
@@ -26,9 +27,9 @@ func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, 
 		if err != nil || tmp == nil {
 			// If this fails, just add the data to an empty payload as "result"
 			payload["result"] = data
-		} else {
-			payload = tmp
 		}
+		payload["result"] = data
+
 	}
 
 	if err != nil {
