@@ -15,6 +15,7 @@ type Profile struct {
 	email     string
 	phone     string
 	grade     string
+	dob       *time.Time
 	level     string
 	status    string
 	createID  *int64
@@ -70,6 +71,14 @@ func (p *Profile) Phone() string {
 
 func (p *Profile) SetPhone(phone string) {
 	p.phone = phone
+}
+
+func (p *Profile) Dob() *time.Time {
+	return p.dob
+}
+
+func (p *Profile) SetDob(dob *time.Time) {
+	p.dob = dob
 }
 
 func (p *Profile) Grade() string {
@@ -147,6 +156,7 @@ func BuildProfileDomainFromModel(model *models.ProfileModel) *Profile {
 		email:     model.Email,
 		phone:     model.Phone,
 		grade:     model.Grade,
+		dob:       model.Dob,
 		level:     model.Level,
 		status:    model.Status,
 		createID:  model.CreateID,

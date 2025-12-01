@@ -1,4 +1,4 @@
-.PHONY: build run list-models tidy migrate-create
+.PHONY: build run list-models tidy migrate-create login
 
 ## run: Run the app.
 run:
@@ -62,3 +62,6 @@ list-models:
 		go build -o bin/list-models ./cmd/list-models; \
 	fi
 	@./bin/list-models
+
+
+## login: Login to AWS

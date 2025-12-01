@@ -58,7 +58,7 @@ func (d *Database) GetDB() *sql.DB {
 	return d.db
 }
 
-func (d *Database) WithTransaction(function func(tx *sql.Tx) error) error {
+func (d *Database) WithTransaction(function HanderlerWithTx) error {
 	logger.Info("Starting transaction")
 	tx, err := d.db.Begin()
 	if err != nil {

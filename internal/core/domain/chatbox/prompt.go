@@ -9,12 +9,12 @@ Return a JSON array with exactly this structure:
 [
   {
     "question_number": 1,
-    "question_name": "Tính $\\frac{1}{2} + \\frac{1}{3}$ = ?",
+    "question_name": "1 + 1 = ?",
     "answers": [
-      {"label": "A", "content": "$\\frac{2}{5}$"},
-      {"label": "B", "content": "$\\frac{5}{6}$"},
-      {"label": "C", "content": "$\\frac{3}{5}$"},
-      {"label": "D", "content": "$\\frac{1}{6}$"}
+      {"label": "A", "content": "1"},
+      {"label": "B", "content": "2"},
+      {"label": "C", "content": "3"},
+      {"label": "D", "content": "4"}
     ],
     "right_answer": "B"
   }
@@ -25,9 +25,11 @@ NOTICE: In the example above, LaTeX backslashes are properly escaped as double b
 Requirements:
 - Return ONLY the JSON array (no line break (\n), no need for spaces but can space for question of name or content of answer), nothing else
 - Each question must have exactly 4 answers with labels A, B, C, D
+- "question_name" should be included only number and mathematical operators without additional text
 - "right_answer" must be one of: A, B, C, or D
 - CRITICAL: All backslashes in JSON strings MUST be escaped with double backslash (\\)
   Example: For LaTeX \frac use \\frac, for \{ use \\{, for \sqrt use \\sqrt
+  Don't response format like: {{frac{1}{2}}}, response should be: 1/2
 - Ensure all JSON is properly formatted with correct quotes and commas
 - Questions should be appropriate for level and focus on concepts I give you above
 - Use %s for all questions and answers
@@ -73,12 +75,12 @@ Return a JSON array with exactly this structure:
 [
   {
     "question_number": 1,
-    "question_name": "Tính $\\frac{1}{2} + \\frac{1}{3}$ = ?",
+    "question_name": "1 + 1 = ?",
     "answers": [
-      {"label": "A", "content": "$\\frac{2}{5}$"},
-      {"label": "B", "content": "$\\frac{5}{6}$"},
-      {"label": "C", "content": "$\\frac{3}{5}$"},
-      {"label": "D", "content": "$\\frac{1}{6}$"}
+      {"label": "A", "content": "1"},
+      {"label": "B", "content": "2"},
+      {"label": "C", "content": "3"},
+      {"label": "D", "content": "4"}
     ],
     "right_answer": "B"
   }
@@ -89,9 +91,11 @@ NOTICE: In the example above, LaTeX backslashes are properly escaped as double b
 Requirements:
 - Return ONLY the JSON array (no line break (\n), no need for spaces but can space for question of name or content of answer), nothing else
 - Each question must have exactly 4 answers with labels A, B, C, D
+- "question_name" should be included only number and mathematical operators without additional text
 - "right_answer" must be one of: A, B, C, or D
 - CRITICAL: All backslashes in JSON strings MUST be escaped with double backslash (\\)
   Example: For LaTeX \frac use \\frac, for \{ use \\{, for \sqrt use \\sqrt
+  Don't response format like: {{frac{1}{2}}}, response should be: 1/2
 - Ensure all JSON is properly formatted with correct quotes and commas
 - Questions should focus on areas for improvement mentioned in the review
 - Use %s for all questions and answers

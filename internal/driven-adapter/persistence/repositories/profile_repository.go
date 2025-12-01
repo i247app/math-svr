@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/profile"
@@ -26,7 +27,7 @@ func NewProfileRepository(db db.IDatabase) repositories.IProfileRepository {
 // FindByID retrieves a profile by ID with user information.
 func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Profile, error) {
 	query := `
-		SELECT p.id, p.uid, u.name, u.email, u.phone, p.grade, p.level, p.status,
+		SELECT p.id, p.uid, u.name, u.email, u.phone, u.dob, p.grade, p.level, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt
 		FROM profiles p
 		INNER JOIN users u ON p.uid = u.id
@@ -37,7 +38,7 @@ func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Pr
 
 	var p models.ProfileModel
 	err := result.Scan(
-		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.Grade, &p.Level, &p.Status,
+		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.Dob, &p.Grade, &p.Level, &p.Status,
 		&p.CreateID, &p.CreateDT, &p.ModifyID, &p.ModifyDT,
 	)
 	if err != nil {
@@ -55,7 +56,7 @@ func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Pr
 // FindByUID retrieves a profile by user ID with user information.
 func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.Profile, error) {
 	query := `
-		SELECT p.id, p.uid, u.name, u.email, u.phone, p.grade, p.level, p.status,
+		SELECT p.id, p.uid, u.name, u.email, u.phone, u.dob, p.grade, p.level, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt
 		FROM profiles p
 		INNER JOIN users u ON p.uid = u.id
@@ -66,7 +67,7 @@ func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.
 
 	var p models.ProfileModel
 	err := result.Scan(
-		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.Grade, &p.Level, &p.Status,
+		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.Dob, &p.Grade, &p.Level, &p.Status,
 		&p.CreateID, &p.CreateDT, &p.ModifyID, &p.ModifyDT,
 	)
 	if err != nil {
@@ -124,6 +125,9 @@ func (r *profileRepository) Update(ctx context.Context, profile *domain.Profile)
 		args = append(args, profile.Status())
 	}
 
+	updates = append(updates, "modify_dt = ?")
+	args = append(args, time.Now().UTC())
+
 	if len(updates) == 0 {
 		return 0, fmt.Errorf("no fields to update")
 	}
@@ -138,4 +142,32 @@ func (r *profileRepository) Update(ctx context.Context, profile *domain.Profile)
 	}
 
 	return result.RowsAffected()
+}
+
+func (r *profileRepository) DeleteByUID(ctx context.Context, tx *sql.Tx, uid string) error {
+	query := `
+		UPDATE profiles
+		SET deleted_dt = ?,
+			modify_dt = ?
+		WHERE uid = ? AND deleted_dt IS NULL
+	`
+	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), time.Now().UTC(), uid)
+	if err != nil {
+		return fmt.Errorf("failed to delete profile: %v", err)
+	}
+
+	return nil
+}
+
+func (r *profileRepository) ForceDeleteByUID(ctx context.Context, tx *sql.Tx, uid string) error {
+	query := `
+		DELETE FROM profiles
+		WHERE uid = ?
+	`
+	_, err := r.db.Exec(ctx, tx, query, uid)
+	if err != nil {
+		return fmt.Errorf("failed to force delete profile: %v", err)
+	}
+
+	return nil
 }

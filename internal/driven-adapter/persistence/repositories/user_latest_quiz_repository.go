@@ -163,6 +163,9 @@ func (r *userLatestQuizRepository) Update(ctx context.Context, quiz *domain.User
 		args = append(args, quiz.AIReview())
 	}
 
+	updates = append(updates, "modify_dt = ?")
+	args = append(args, time.Now().UTC())
+
 	if len(updates) == 0 {
 		return 0, fmt.Errorf("no fields to update for user latest quiz")
 	}
@@ -185,11 +188,12 @@ func (r *userLatestQuizRepository) Update(ctx context.Context, quiz *domain.User
 func (r *userLatestQuizRepository) Delete(ctx context.Context, id string) (int64, error) {
 	query := `
 		UPDATE user_latest_quizzes
-		SET deleted_dt = ?
+		SET deleted_dt = ?,
+			modify_dt = ?
 		WHERE id = ? AND deleted_dt IS NULL
 	`
 
-	result, err := r.db.Exec(ctx, nil, query, time.Now(), id)
+	result, err := r.db.Exec(ctx, nil, query, time.Now().UTC(), time.Now().UTC(), id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete user latest quiz: %v", err)
 	}

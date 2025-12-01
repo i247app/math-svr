@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"math-ai.com/math-ai/internal/core/di/repositories"
@@ -109,38 +110,52 @@ func (r *deviceRepository) StoreDevice(ctx context.Context, tx *sql.Tx, device *
 }
 
 func (r *deviceRepository) UpdateDevice(ctx context.Context, device *domain.Device) error {
-	query := `
-		UPDATE devices
-		SET uid = COALESCE(?, uid),
-			device_uuid = COALESCE(?, device_uuid),
-			device_name = COALESCE(?, device_name),
-			device_push_token = COALESCE(?, device_push_token),
-			is_verified = COALESCE(?, is_verified)
-		WHERE id = ? AND status = ?
-	`
+	var queryBuilder strings.Builder
+	args := []interface{}{}
 
-	_, err := r.db.Exec(ctx, nil, query,
-		device.UID(),
-		device.DeviceUuid(),
-		device.DeviceName(),
-		device.DevicePushToken(),
-		device.IsVerified(),
-		device.ID(),
-		enum.StatusActive,
-	)
+	queryBuilder.WriteString("UPDATE devices SET ")
+	updates := []string{}
 
+	if device.DeviceName() != "" {
+		updates = append(updates, "device_name = ?")
+		args = append(args, device.DeviceName())
+	}
+
+	if device.DevicePushToken() != nil {
+		updates = append(updates, "device_push_token = ?")
+		args = append(args, device.DevicePushToken())
+	}
+
+	if device.IsVerified() {
+		updates = append(updates, "is_verified = ?")
+		args = append(args, device.IsVerified())
+	}
+
+	updates = append(updates, "modify_dt = ?")
+	args = append(args, time.Now().UTC())
+
+	queryBuilder.WriteString(strings.Join(updates, ", "))
+	queryBuilder.WriteString(" WHERE uid = ? AND device_uuid = ? AND status = ?")
+	args = append(args, device.UID(), device.DeviceUuid(), enum.StatusActive)
+
+	query := queryBuilder.String()
+
+	_, err := r.db.Exec(ctx, nil, query, args...)
 	return err
+
 }
 
 func (r *deviceRepository) MarkVerifiedDeviceByUIDAndDeviceUUID(ctx context.Context, uid string, deviceUUID string) error {
 	query := `
 		UPDATE devices
-		SET is_verified = ?
+		SET is_verified = ?,
+			modify_dt = ?
 		WHERE uid = ? AND device_uuid = ? AND status = ?
 	`
 
 	_, err := r.db.Exec(ctx, nil, query,
 		true,
+		time.Now().UTC(),
 		uid,
 		deviceUUID,
 		enum.StatusActive,
@@ -152,10 +167,11 @@ func (r *deviceRepository) MarkVerifiedDeviceByUIDAndDeviceUUID(ctx context.Cont
 func (r *deviceRepository) DeleteDeviceByUID(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		UPDATE devices
-		SET deleted_dt = ?
+		SET deleted_dt = ?,
+			modify_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
 	`
-	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), time.Now().UTC(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user logins: %v", err)
 	}

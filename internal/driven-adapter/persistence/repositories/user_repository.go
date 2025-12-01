@@ -25,34 +25,8 @@ func NewUserRepository(db db.IDatabase) repositories.IUserRepository {
 	}
 }
 
-// CreateWithAliases creates a user and their aliases in a single transaction.
-func (r *userRepository) CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid string) (*domain.User, error) {
-	err := r.db.WithTransaction(handler)
-
-	if err != nil {
-		return nil, err
-	}
-
-	result, err := r.FindByID(ctx, uid)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-// DeleteUserWithAssociations deletes a user and their associated records in a single transaction.
-func (r *userRepository) DeleteUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx) error {
-	err := r.db.WithTransaction(handler)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // ForceDeleteUserWithAssociations permanently deletes a user and their associated records in a single transaction.
-func (r *userRepository) ForceDeleteUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx) error {
+func (r *userRepository) DoTransaction(ctx context.Context, handler db.HanderlerWithTx) error {
 	err := r.db.WithTransaction(handler)
 	if err != nil {
 		return err
@@ -254,47 +228,65 @@ func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.Us
 
 // Update updates an existing user.
 func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, error) {
-	query := `
-		UPDATE users
-		SET name = COALESCE(?, name),
-			phone = COALESCE(?, phone),
-			email = COALESCE(?, email),
-			avatar_url = COALESCE(?, avatar_url),
-			dob = COALESCE(?, dob),
-			role = COALESCE(?, role),
-			status = COALESCE(?, status)
-		WHERE id = ? AND deleted_dt IS NULL
-	`
-	result, err := r.db.Exec(ctx, nil, query,
-		user.Name(),
-		user.Phone(),
-		user.Email(),
-		user.Role(),
-		user.AvatarURL(),
-		user.DOB(),
-		user.Status(),
-		user.ID(),
-	)
+	var queryBuilder strings.Builder
+	args := []interface{}{}
+
+	queryBuilder.WriteString("UPDATE users SET ")
+	updates := []string{}
+
+	if user.Name() != "" {
+		updates = append(updates, "name = ?")
+		args = append(args, user.Name())
+	}
+
+	if user.Phone() != "" {
+		updates = append(updates, "phone = ?")
+		args = append(args, user.Phone())
+	}
+
+	if user.Email() != "" {
+		updates = append(updates, "email = ?")
+		args = append(args, user.Email())
+	}
+
+	if user.DOB() != nil {
+		updates = append(updates, "dob = ?")
+		args = append(args, user.DOB())
+	}
+
+	if user.Role() != "" {
+		updates = append(updates, "role = ?")
+		args = append(args, user.Role())
+	}
+
+	updates = append(updates, "modify_dt = ?")
+	args = append(args, time.Now().UTC())
+
+	if len(updates) == 0 {
+		return 0, fmt.Errorf("no fields to update")
+	}
+
+	queryBuilder.WriteString(strings.Join(updates, ", "))
+	queryBuilder.WriteString(" WHERE id = ? AND deleted_dt IS NULL")
+	args = append(args, user.ID())
+
+	result, err := r.db.Exec(ctx, nil, queryBuilder.String(), args...)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update user: %v", err)
 	}
 
-	affectedRows, err := result.RowsAffected()
-	if err != nil {
-		return 0, fmt.Errorf("failed to retrieve affected rows: %v", err)
-	}
-
-	return affectedRows, nil
+	return result.RowsAffected()
 }
 
 // Delete removes a user by ID.
 func (r *userRepository) Delete(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		UPDATE users
-		SET deleted_dt = ?
+		SET deleted_dt = ?,
+			modify_dt = ?
 		WHERE id = ?
 	`
-	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), time.Now().UTC(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %v", err)
 	}
@@ -336,10 +328,11 @@ func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *
 func (r *userRepository) DeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		UPDATE aliases
-		SET deleted_dt = ?
+		SET deleted_dt = ?,
+			modify_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
 	`
-	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), time.Now().UTC(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user aliases: %v", err)
 	}

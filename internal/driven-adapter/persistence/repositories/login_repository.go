@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"math-ai.com/math-ai/internal/core/di/repositories"
@@ -45,10 +46,11 @@ func (r *loginRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *dom
 func (r *loginRepository) DeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		UPDATE logins
-		SET deleted_dt = ?
+		SET deleted_dt = ?,
+			modify_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
 	`
-	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), time.Now().UTC(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user logins: %v", err)
 	}
@@ -109,26 +111,28 @@ func (r *loginRepository) StoreLoginLog(ctx context.Context, loginLog *domain.Lo
 }
 
 func (r *loginRepository) UpdateLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
-	query := `
-		UPDATE login_logs
-		SET uid = COALESCE(?, uid),
-			ip_address = COALESCE(?, ip_address),
-			device_uuid = COALESCE(?, device_uuid),
-			token = COALESCE(?, token),
-			status = COALESCE(?, status),
-			modify_dt = ?
-		WHERE id = ?
-	`
+	var queryBuilder strings.Builder
+	args := []interface{}{}
 
-	_, err := r.db.Exec(ctx, nil, query,
-		loginLog.UID(),
-		loginLog.IPAddress(),
-		loginLog.DeviceUUID(),
-		loginLog.Token(),
-		loginLog.Status(),
-		time.Now().UTC(),
-		loginLog.ID(),
-	)
+	queryBuilder.WriteString("UPDATE login_logs SET ")
+	updates := []string{}
 
+	if loginLog.Token() != "" {
+		updates = append(updates, "token = ?")
+		args = append(args, loginLog.Token())
+	}
+
+	if loginLog.Status() != "" {
+		updates = append(updates, "status = ?")
+		args = append(args, loginLog.Status())
+	}
+
+	queryBuilder.WriteString(strings.Join(updates, ", "))
+	queryBuilder.WriteString(" WHERE uid = ? AND device_uuid = ?")
+	args = append(args, loginLog.UID(), loginLog.DeviceUUID())
+
+	query := queryBuilder.String()
+
+	_, err := r.db.Exec(ctx, nil, query, args...)
 	return err
 }

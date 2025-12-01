@@ -15,20 +15,23 @@ import (
 )
 
 type UserService struct {
-	validator validators.IUserValidator
-	repo      repositories.IUserRepository
-	loginRepo repositories.ILoginRepository
+	validator   validators.IUserValidator
+	repo        repositories.IUserRepository
+	loginRepo   repositories.ILoginRepository
+	profileRepo repositories.IProfileRepository
 }
 
 func NewUserService(
 	validator validators.IUserValidator,
 	repo repositories.IUserRepository,
 	loginRepo repositories.ILoginRepository,
+	profileRepo repositories.IProfileRepository,
 ) di.IUserService {
 	return &UserService{
-		validator: validator,
-		repo:      repo,
-		loginRepo: loginRepo,
+		validator:   validator,
+		repo:        repo,
+		loginRepo:   loginRepo,
+		profileRepo: profileRepo,
 	}
 }
 
@@ -149,7 +152,12 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 	}
 
 	// Store login
-	user, err := s.repo.CreateUserWithAssociations(ctx, handler, createUserDomain.ID())
+	err := s.repo.DoTransaction(ctx, handler)
+	if err != nil {
+		return status.INTERNAL, nil, err
+	}
+
+	user, err := s.repo.FindByID(ctx, createUserDomain.ID())
 	if err != nil {
 		return status.INTERNAL, nil, err
 	}
@@ -205,10 +213,16 @@ func (s *UserService) DeleteUser(ctx context.Context, req *dto.DeleteUserRequest
 			return fmt.Errorf("failed to delete user logins in transaction: %v", err)
 		}
 
+		// Delete user profile
+		err = s.profileRepo.DeleteByUID(ctx, tx, req.UID)
+		if err != nil {
+			return fmt.Errorf("failed to delete user profile in transaction: %v", err)
+		}
+
 		return nil
 	}
 
-	err := s.repo.DeleteUserWithAssociations(ctx, handler)
+	err := s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.INTERNAL, err
 	}
@@ -239,10 +253,16 @@ func (s *UserService) ForceDeleteUser(ctx context.Context, req *dto.DeleteUserRe
 			return fmt.Errorf("failed to delete user logins in transaction: %v", err)
 		}
 
+		// Delete user profile
+		err = s.profileRepo.ForceDeleteByUID(ctx, tx, req.UID)
+		if err != nil {
+			return fmt.Errorf("failed to delete user profile in transaction: %v", err)
+		}
+
 		return nil
 	}
 
-	err := s.repo.ForceDeleteUserWithAssociations(ctx, handler)
+	err := s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.INTERNAL, err
 	}

@@ -19,9 +19,7 @@ type ListUsersParams struct {
 }
 
 type IUserRepository interface {
-	CreateUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx, uid string) (*domain.User, error)
-	DeleteUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx) error
-	ForceDeleteUserWithAssociations(ctx context.Context, handler db.HanderlerWithTx) error
+	DoTransaction(ctx context.Context, handler db.HanderlerWithTx) error
 
 	GetUserByLoginName(ctx context.Context, loginName string) (*domain.User, error)
 

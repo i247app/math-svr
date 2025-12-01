@@ -13,6 +13,7 @@ type ProfileResponse struct {
 	Name       string    `json:"name"`
 	Email      string    `json:"email"`
 	Phone      string    `json:"phone"`
+	Age        *int      `json:"age"`
 	Grade      string    `json:"grade"`
 	Level      string    `json:"level"`
 	Status     string    `json:"status"`
@@ -81,12 +82,22 @@ func BuildProfileDomainForUpdate(req *UpdateProfileRequest) *domain.Profile {
 }
 
 func ProfileResponseFromDomain(p *domain.Profile) ProfileResponse {
+	var age int
+
+	if p.Dob() != nil {
+		age = time.Now().Year() - p.Dob().Year()
+		if time.Now().YearDay() < p.Dob().YearDay() {
+			age--
+		}
+	}
+
 	return ProfileResponse{
 		ID:         p.ID(),
 		UID:        p.UID(),
 		Name:       p.Name(),
 		Email:      p.Email(),
 		Phone:      p.Phone(),
+		Age:        &age,
 		Grade:      p.Grade(),
 		Level:      p.Level(),
 		Status:     p.Status(),

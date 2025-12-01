@@ -36,7 +36,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	logger.Info("Initializing services")
 	logger.Info("> loginSvc...")
 	var userValidator = validators.NewUserValidator()
-	var userSvc = services.NewUserService(userValidator, userRepo, loginRepo)
+	var userSvc = services.NewUserService(userValidator, userRepo, loginRepo, profileRepo)
 
 	logger.Info("> loginSvc...")
 	var loginValidator = validators.NewLoginValidator()

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/grade"
@@ -214,6 +215,9 @@ func (r *gradeRepository) Update(ctx context.Context, grade *domain.Grade) (int6
 		args = append(args, grade.DisplayOrder())
 	}
 
+	updates = append(updates, "modify_dt = ?")
+	args = append(args, time.Now().UTC())
+
 	if len(updates) == 0 {
 		return 0, fmt.Errorf("no fields to update")
 	}
@@ -232,8 +236,12 @@ func (r *gradeRepository) Update(ctx context.Context, grade *domain.Grade) (int6
 
 // Delete soft deletes a grade by setting deleted_dt.
 func (r *gradeRepository) Delete(ctx context.Context, id string) error {
-	query := `UPDATE grades SET deleted_dt = NOW() WHERE id = ? AND deleted_dt IS NULL`
-	_, err := r.db.Exec(ctx, nil, query, id)
+	query := `
+			UPDATE grades 
+			SET deleted_dt = ?,
+				modify_dt = ? 
+			WHERE id = ? AND deleted_dt IS NULL`
+	_, err := r.db.Exec(ctx, nil, query, time.Now().UTC(), time.Now().UTC(), id)
 	if err != nil {
 		return fmt.Errorf("failed to delete grade: %v", err)
 	}
