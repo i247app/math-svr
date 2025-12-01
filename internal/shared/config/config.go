@@ -10,14 +10,14 @@ import (
 )
 
 type Env struct {
-	DBEnv                 *DBConfig
-	ServerEnv             *ServerConfig
-	HostConfig            *HostConfig
-	TwilioConfig          *TwilioConfig
-	MailerConfig          *MailerConfig
-	SharedKeyBytes        []byte
-	RootSessionDriver     string
-	SerializedSessionFile string
+	DBEnv                    *DBConfig
+	ServerEnv                *ServerConfig
+	HostConfig               *HostConfig
+	TwilioConfig             *TwilioConfig
+	MailerConfig             *MailerConfig
+	SharedKeyBytes           []byte
+	GexSessionDriver         string
+	SerializedSessionFile    string
 	ChatBoxAPIKey            string
 	ChatBoxTestMode          bool
 	ChatBoxProvider          string
@@ -64,9 +64,9 @@ func NewEnv(envpath string) (*Env, error) {
 			Password: getConfigOptional("MAIL_PASSWORD"),
 			FromName: getConfigOptional("MAIL_FROM"),
 		},
-		SharedKeyBytes:        getFileBytesConfig("ROOT_SHARED_KEY"),
-		RootSessionDriver:     getConfig("ROOT_SESSION_DRIVER"),
-		SerializedSessionFile: getConfig("SERIALIZED_SESSION_FILE"),
+		SharedKeyBytes:           getFileBytesConfig("GEX_SHARED_KEY"),
+		GexSessionDriver:         getConfig("GEX_SESSION_DRIVER"),
+		SerializedSessionFile:    getConfig("SERIALIZED_SESSION_FILE"),
 		ChatBoxAPIKey:            getConfig("CHAT_BOX_API_KEY"),
 		ChatBoxTestMode:          getBoolConfig("CHAT_BOX_TEST_MODE"),
 		ChatBoxProvider:          getConfigWithDefault("CHAT_BOX_PROVIDER", "mock"),

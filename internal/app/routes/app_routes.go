@@ -17,6 +17,10 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	}
 	server.AddRoute("POST /graphql", graphqlHandler.ServeHTTP)
 
+	// misc
+	mc := controller.NewMiscController(res)
+	server.AddRoute("GET /misc/sessions-dump", mc.HandleSessionDump)
+
 	// user
 	uc := controller.NewUserController(res, services.UserService)
 	server.AddRoute("GET /users/list", uc.HandlerGetListUsers)

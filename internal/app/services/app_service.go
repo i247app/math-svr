@@ -2,17 +2,26 @@ package services
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	"github.com/i247app/gex/jwtutil"
+	gexsess "github.com/i247app/gex/session"
+	"github.com/i247app/gex/sessionprovider"
 	"math-ai.com/math-ai/internal/app/resources"
 	"math-ai.com/math-ai/internal/applications/services"
 	"math-ai.com/math-ai/internal/applications/validators"
 	di "math-ai.com/math-ai/internal/core/di/services"
-	chatbox "math-ai.com/math-ai/internal/driven-adapter/external/chat-box"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/repositories"
+	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 type ServiceContainer struct {
+	SessionManager  *session.SessionManager
+	SessionProvider sessionprovider.SessionProvider
+	JwtHelper       jwtutil.JwtHelper
+
 	LoginService          di.ILoginService
 	UserService           di.IUserService
 	DeviceService         di.IDeviceService
@@ -23,7 +32,13 @@ type ServiceContainer struct {
 	UserLatestQuizService di.IUserLatestQuizService
 }
 
+const (
+	sessionTTL = 14 * 24 * time.Hour // 14 days
+)
+
 func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error) {
+	env := res.Env
+
 	logger.Info("Initializing repository")
 	loginRepo := repositories.NewloginRepository(res.Db)
 	userRepo := repositories.NewUserRepository(res.Db)
@@ -34,6 +49,47 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	userLatestQuizRepo := repositories.NewUserLatestQuizRepository(res.Db)
 
 	logger.Info("Initializing services")
+
+	logger.Info("> sessionManager...")
+	sessionManager := session.NewSessionManager()
+
+	logger.Info("> jwtHelper...")
+	var jwtHelper jwtutil.JwtHelper
+	if env.SharedKeyBytes != nil {
+		helper, err := jwtutil.NewHmacJwtHelper(env.SharedKeyBytes)
+		if err != nil {
+			panic("failed to create jwt toolkit from env shared key")
+		}
+		jwtHelper = helper
+	} else {
+		return nil, fmt.Errorf("unable to determine jwt helper from env")
+	}
+
+	// Build the session provider
+	logger.Info("> sessionProvider...")
+	var sessionProvider sessionprovider.SessionProvider
+	{
+		defaultSessFactory := func() gexsess.SessionStorer {
+			// Create the basic session that all new sessions are based on
+			return session.NewSession()
+		}
+		if env.GexSessionDriver == "xwt" {
+			sessionProvider = sessionprovider.NewXwtSessionProvider(
+				sessionManager.Container(),
+				jwtHelper,
+				defaultSessFactory,
+				sessionTTL,
+			)
+		} else {
+			sessionProvider = sessionprovider.NewJwtSessionProvider(
+				sessionManager.Container(),
+				jwtHelper,
+				defaultSessFactory,
+				sessionTTL,
+			)
+		}
+	}
+
 	logger.Info("> loginSvc...")
 	var userValidator = validators.NewUserValidator()
 	var userSvc = services.NewUserService(userValidator, userRepo, loginRepo, profileRepo)
@@ -63,60 +119,15 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	var userLatestQuizSvc = services.NewUserLatestQuizService(userLatestQuizValidator, userLatestQuizRepo)
 
 	logger.Info("> chatBoxSvc...")
-	var chatBoxClient chatbox.IChatBoxClient
-
-	// Determine which provider to use
-	provider := res.Env.ChatBoxProvider
-	if res.Env.ChatBoxTestMode {
-		provider = "mock"
-	}
-
-	switch provider {
-	case "google", "gemini":
-		logger.Info("ChatBox using GOOGLE GEMINI provider (free tier available)")
-		googleClient, googleErr := chatbox.NewGoogleGeminiClient(context.Background(), res.Env.ChatBoxAPIKey)
-		if googleErr != nil {
-			logger.Errorf("Failed to initialize Google Gemini client: %v", googleErr)
-			logger.Warn("Falling back to MOCK mode")
-			chatBoxClient = chatbox.NewMockOpenAIClient()
-		} else {
-			chatBoxClient = googleClient
-		}
-
-	case "openai":
-		logger.Info("ChatBox using OPENAI provider")
-		chatBoxClient = chatbox.NewOpenAIClient(res.Env.ChatBoxAPIKey)
-
-	case "langchain":
-		logger.Info("ChatBox using LANGCHAIN provider")
-		langchainConfig := chatbox.LangChainConfig{
-			Provider:  res.Env.ChatBoxLangChainProvider,
-			APIKey:    res.Env.ChatBoxAPIKey,
-			ModelName: res.Env.ChatBoxModelName,
-		}
-		langchainClient, langchainErr := chatbox.NewLangChainClient(context.Background(), langchainConfig)
-		if langchainErr != nil {
-			logger.Errorf("Failed to initialize LangChain client: %v", langchainErr)
-			logger.Warn("Falling back to MOCK mode")
-			chatBoxClient = chatbox.NewMockOpenAIClient()
-		} else {
-			logger.Infof("LangChain initialized with sub-provider: %s", res.Env.ChatBoxLangChainProvider)
-			chatBoxClient = langchainClient
-		}
-
-	case "mock", "test":
-		logger.Info("ChatBox using MOCK provider (test mode - no API calls)")
-		chatBoxClient = chatbox.NewMockOpenAIClient()
-
-	default:
-		logger.Warnf("Unknown ChatBox provider '%s', defaulting to MOCK mode", provider)
-		chatBoxClient = chatbox.NewMockOpenAIClient()
-	}
+	chatBoxClient := DetermineAIProvider(context.Background(), *res.Env)
 
 	var chatBoxValidator = validators.NewChatboxValidator()
 	var chatBoxSvc = services.NewChatBoxService(chatBoxClient, chatBoxValidator, profileSvc, userLatestQuizSvc)
 
 	return &ServiceContainer{
+		SessionManager:        sessionManager,
+		SessionProvider:       sessionProvider,
+		JwtHelper:             jwtHelper,
 		LoginService:          loginSvc,
 		UserService:           userSvc,
 		DeviceService:         deviceSvc,

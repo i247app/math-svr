@@ -11,6 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/app/routes"
 	"math-ai.com/math-ai/internal/app/services"
 	"math-ai.com/math-ai/internal/handlers/http/middleware"
+	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/config"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/db"
@@ -72,6 +73,7 @@ func (a *App) Init() error {
 		return fmt.Errorf("failed to setup services: %w", err)
 	}
 	a.Services = services
+	a.Resource.SessionManager = services.SessionManager
 
 	defaultRouteHandler := func(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, r.Context(), nil, fmt.Errorf("route not found"), status.NOT_FOUND)
@@ -90,12 +92,13 @@ func (a *App) Start() error {
 }
 
 // Setup middlewares
-func (a *App) setupMiddleware(gexSvr *gex.Server, _ *services.ServiceContainer) {
+func (a *App) setupMiddleware(gexSvr *gex.Server, services *services.ServiceContainer) {
 	logger.Info("Setup middlewares...")
 	// Middleware are run in order of declaration
 	// The first middleware in the slice runs first
 	middlewares := []gex.Middleware{
 		// Start-->
+		middleware.GexSessionMiddleware(services.SessionProvider, session.SessionContextKey),
 		middleware.LocaleMiddleware("en"),
 		middleware.LogRequestMiddleware,
 		// -->End

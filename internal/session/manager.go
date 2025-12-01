@@ -10,7 +10,7 @@ import (
 type SessionRequestContextKey string
 
 const (
-	SessionContextKey = SessionRequestContextKey("ezmonex_session")
+	SessionContextKey = SessionRequestContextKey("math_session")
 )
 
 func Dump(sessionManager *SessionManager) *map[string]map[string]any {
@@ -19,7 +19,6 @@ func Dump(sessionManager *SessionManager) *map[string]map[string]any {
 	sessions := sessionManager.Sessions()
 	for k, v := range *sessions {
 		result[k] = v.ToMap()
-		// log.Printf(">> Dump: k=%s\tv=%v\n", k, result[k])
 	}
 
 	return &result
@@ -72,23 +71,23 @@ func (m *SessionManager) Session(sessionKey string) (*AppSession, bool) {
 		return nil, false
 	}
 
-	monexSess, ok := sess.(*AppSession)
+	mathSess, ok := sess.(*AppSession)
 	if !ok {
 		return nil, false
 	}
 
-	return monexSess, true
+	return mathSess, true
 }
 
 func (m *SessionManager) Sessions() *map[string]*AppSession {
 	sessions := m.SessionContainer.Sessions()
 	result := make(map[string]*AppSession)
 	for k, v := range *sessions {
-		monexSess, ok := v.(*AppSession)
+		mathSess, ok := v.(*AppSession)
 		if !ok {
 			continue
 		}
-		result[k] = monexSess
+		result[k] = mathSess
 	}
 
 	return &result
@@ -100,12 +99,12 @@ func (m *SessionManager) InitSession(sessionKey string) (*AppSession, bool) {
 		return nil, false
 	}
 
-	monexSess, ok := sess.(*AppSession)
+	mathSess, ok := sess.(*AppSession)
 	if !ok {
-		return monexSess, false
+		return mathSess, false
 	}
 
-	return monexSess, true
+	return mathSess, true
 }
 
 func (m *SessionManager) DeleteSession(sessionKey string) {
