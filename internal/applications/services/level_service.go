@@ -84,6 +84,11 @@ func (s *LevelService) GetLevelByLabel(ctx context.Context, label string) (statu
 }
 
 func (s *LevelService) CreateLevel(ctx context.Context, req *dto.CreateLevelRequest) (status.Code, *dto.LevelResponse, error) {
+	// Validate request
+	if statusCode, err := s.validator.ValidateCreateLevelRequest(req); err != nil {
+		return statusCode, nil, err
+	}
+
 	// Check if level with same label already exists
 	existingLevel, err := s.repo.FindByLabel(ctx, req.Label)
 	if err != nil {
@@ -113,6 +118,11 @@ func (s *LevelService) CreateLevel(ctx context.Context, req *dto.CreateLevelRequ
 }
 
 func (s *LevelService) UpdateLevel(ctx context.Context, req *dto.UpdateLevelRequest) (status.Code, *dto.LevelResponse, error) {
+	// Validate request
+	if statusCode, err := s.validator.ValidateUpdateLevelRequest(req); err != nil {
+		return statusCode, nil, err
+	}
+
 	// Check if level exists
 	existingLevel, err := s.repo.FindByID(ctx, req.ID)
 	if err != nil {

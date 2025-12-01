@@ -33,6 +33,11 @@ func NewLoginService(
 }
 
 func (s *LoginService) Login(ctx context.Context, sess *session.AppSession, req *dto.LoginRequest) (status.Code, *dto.LoginResponse, error) {
+	// Validate request
+	if statusCode, err := s.validator.ValidateLoginRequest(req); err != nil {
+		return statusCode, nil, err
+	}
+
 	var (
 		isSecure    bool              = true
 		needs2FA    bool              = false

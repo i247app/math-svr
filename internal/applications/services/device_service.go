@@ -40,6 +40,11 @@ func (s *DeviceService) GetDeviceByDeviceUUID(ctx context.Context, deviceUUID st
 }
 
 func (s *DeviceService) CreateDevice(ctx context.Context, req *dto.CreateDeviceRequest) (status.Code, error) {
+	// Validate request
+	if statusCode, err := s.validator.ValidateCreateDeviceRequest(req); err != nil {
+		return statusCode, err
+	}
+
 	deviceDomain := dto.BuildDeviceDomainForCreate(req)
 
 	err := s.repo.StoreDevice(ctx, nil, deviceDomain)
@@ -51,6 +56,11 @@ func (s *DeviceService) CreateDevice(ctx context.Context, req *dto.CreateDeviceR
 }
 
 func (s *DeviceService) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceRequest) (status.Code, error) {
+	// Validate request
+	if statusCode, err := s.validator.ValidateUpdateDeviceRequest(req); err != nil {
+		return statusCode, err
+	}
+
 	deviceDomain := dto.BuildDeviceDomainForUpdate(req)
 	err := s.repo.UpdateDevice(ctx, deviceDomain)
 	if err != nil {

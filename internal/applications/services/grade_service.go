@@ -84,6 +84,11 @@ func (s *GradeService) GetGradeByLabel(ctx context.Context, label string) (statu
 }
 
 func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequest) (status.Code, *dto.GradeResponse, error) {
+	// Validate request
+	if statusCode, err := s.validator.ValidateCreateGradeRequest(req); err != nil {
+		return statusCode, nil, err
+	}
+
 	// Check if grade with same label already exists
 	existingGrade, err := s.repo.FindByLabel(ctx, req.Label)
 	if err != nil {
@@ -113,6 +118,11 @@ func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequ
 }
 
 func (s *GradeService) UpdateGrade(ctx context.Context, req *dto.UpdateGradeRequest) (status.Code, *dto.GradeResponse, error) {
+	// Validate request
+	if statusCode, err := s.validator.ValidateUpdateGradeRequest(req); err != nil {
+		return statusCode, nil, err
+	}
+
 	existingGrade, err := s.repo.FindByID(ctx, req.ID)
 	if err != nil {
 		return status.INTERNAL, nil, err

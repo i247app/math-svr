@@ -15,5 +15,5 @@ type IUserLatestQuizService interface {
 	CreateQuiz(ctx context.Context, req *dto.CreateUserLatestQuizRequest) (status.Code, *dto.UserLatestQuizResponse, error)
 	UpdateQuiz(ctx context.Context, req *dto.UpdateUserLatestQuizRequest) (status.Code, *dto.UserLatestQuizResponse, error)
 	DeleteQuiz(ctx context.Context, req *dto.DeleteUserLatestQuizRequest) (status.Code, error)
-	ForceDeleteQuiz(ctx context.Context, req *dto.ForceDeleteUserLatestQuizRequest) (status.Code, error)
+	ForceDeleteQuiz(ctx context.Context, req *dto.DeleteUserLatestQuizRequest) (status.Code, error)
 }

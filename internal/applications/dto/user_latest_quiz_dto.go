@@ -51,10 +51,6 @@ type DeleteUserLatestQuizRequest struct {
 	ID string `json:"id"`
 }
 
-type ForceDeleteUserLatestQuizRequest struct {
-	ID string `json:"id"`
-}
-
 func BuildUserLatestQuizDomainForCreate(req *CreateUserLatestQuizRequest) *domain.UserLatestQuiz {
 	quizDomain := domain.NewUserLatestQuizDomain()
 	quizDomain.GenerateID()

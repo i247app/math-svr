@@ -75,6 +75,11 @@ func (s *ProfileService) CreateProfile(ctx context.Context, req *dto.CreateProfi
 }
 
 func (s *ProfileService) UpdateProfile(ctx context.Context, req *dto.UpdateProfileRequest) (status.Code, *dto.ProfileResponse, error) {
+	// Validate request
+	if statusCode, err := s.validator.ValidateUpdateProfileRequest(req); err != nil {
+		return statusCode, nil, err
+	}
+
 	profileDomain := dto.BuildProfileDomainForUpdate(req)
 	_, err := s.repo.Update(ctx, profileDomain)
 	if err != nil {

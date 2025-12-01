@@ -104,6 +104,11 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (status.
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (status.Code, *dto.UserResponse, error) {
+	// vaidate request
+	if statusCode, err := s.validator.ValidateCreateUserRequest(req); err != nil {
+		return statusCode, nil, err
+	}
+
 	for _, aka := range []string{req.Email, req.Phone} {
 		if aka == "" {
 			continue // Skip empty aliases
@@ -168,10 +173,10 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (status.Code, *dto.UserResponse, error) {
-	// statusCode, err := ValidateUpdateUserRequest(req)
-	// if err != nil {
-	// 	return statusCode, nil, err
-	// }
+	// vaidate request
+	if statusCode, err := s.validator.ValidateUpdateUserRequest(req); err != nil {
+		return statusCode, nil, err
+	}
 
 	userDomain := dto.BuildUserDomainForUpdate(req)
 	_, err := s.repo.Update(ctx, userDomain)
