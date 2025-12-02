@@ -16,8 +16,6 @@ CREATE TABLE `users` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-ALTER TABLE users add dob DATETIME(3) after avatar_url;
-
 -- comment it if you migrate-up again
 -- INSERT INTO users (
 --     id, name, phone, email, avatar_url, role, status

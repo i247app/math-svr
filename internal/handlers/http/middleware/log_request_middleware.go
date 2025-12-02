@@ -5,36 +5,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
+	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/requtil"
 )
 
-type logCount struct {
-	reqId int64
-	mutex sync.Mutex
+type requestLoggerMiddleware struct {
+	hiddenFieldsRegex *regexp.Regexp
+	logHeaders        bool
+	mutex             sync.Mutex
+	reqID             int64
 }
 
-func (l *logCount) Increment() int64 {
-	l.mutex.Lock()
-	defer l.mutex.Unlock()
-
-	tmp := l.reqId
-	l.reqId++
-	return tmp
-}
-
-// LogRequestMiddleware wraps an http.Handler to log the API endpoint details
 func LogRequestMiddleware(next http.Handler) http.Handler {
-	var (
-		logCount        = logCount{0, sync.Mutex{}}
-		logInOutHeaders = true
-	)
+	middleware := newRequestLoggerMiddleware()
+	return middleware.Handle(next)
+}
 
+func newRequestLoggerMiddleware() *requestLoggerMiddleware {
 	hiddenFields := []string{
 		"image_data",
 		"image_data_back",
@@ -45,112 +40,173 @@ func LogRequestMiddleware(next http.Handler) http.Handler {
 		"doc_url",
 		"doc_data",
 	}
-	hiddenFieldsRegex := regexp.MustCompile(`"(` + strings.Join(hiddenFields, "|") + `)":\s*"(?:[^"\\]|\\.)*"`)
 
+	return &requestLoggerMiddleware{
+		hiddenFieldsRegex: regexp.MustCompile(`"(` + strings.Join(hiddenFields, "|") + `)":\s*"(?:[^"\\]|\\.)*"`),
+		logHeaders:        true,
+	}
+}
+
+func (m *requestLoggerMiddleware) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		reqID := logCount.Increment()
+		var (
+			reqID int64 = m.nextRequestID()
+		)
 
-		// read the response into the buffer
-		rawBody := new(bytes.Buffer)
-		_, err := rawBody.ReadFrom(r.Body)
+		rawBody, isJSON, err := m.readRequestBody(r)
 		if err != nil {
-			logger.Error(err)
+			logger.Info("logRequestMiddleware: read request body error: %v", err)
 			return
 		}
-		r.Body = io.NopCloser(bytes.NewBuffer(rawBody.Bytes()))
 
-		// Check if body is valid JSON (without indenting)
-		var jsonCheck any
-		err = json.Unmarshal(rawBody.Bytes(), &jsonCheck)
-		isJson := err == nil
+		token, identifier := m.requestIdentifier(r)
 
-		identifier := "anon"
-		// if sess := session.GetRequestSession(r); sess != nil {
-		// 	uid, ok := sess.UID()
-		// 	if ok {
-		// 		identifier = strconv.FormatInt(uid, 10)
-		// 	}
+		// inMsg := fmt.Sprintf("IN [%v] <%v> %v %v", reqID, identifier, r.Method, r.URL.Path)
+		inMsg := fmt.Sprintf("IN [%v] [%v] %v %v", token[len(token)-6:], identifier, r.Method, r.URL.Path)
+		logger.Info("%s", inMsg)
 
-		// 	email, ok := sess.Get("email")
-		// 	if ok {
-		// 		if emailStr, ok := email.(string); ok {
-		// 			identifier = identifier + ":" + emailStr
-		// 		}
-		// 	}
-
-		// 	isSecure, ok := sess.Get("is_secure")
-		// 	if ok {
-		// 		if isSecureBool, ok := isSecure.(bool); ok && !isSecureBool {
-		// 			identifier = "*" + identifier
-		// 		}
-		// 	}
-		// }
-
-		inMsg := fmt.Sprintf("IN [%v] <%v> %v %v", reqID, identifier, r.Method, r.URL.Path)
-		logger.Infof("%s", inMsg)
-		if r.Method == "GET" {
-			logger.Infof("?%v", r.URL.RawQuery)
+		if r.Method == http.MethodGet && strings.TrimSpace(r.URL.RawQuery) != "" {
+			logger.Info("QUERY PARAMS> %v", r.URL.RawQuery)
 		}
 
-		if isJson {
-			// Truncate certain fields using regex replacement directly on the raw bytes
-			truncatedBodyBytes := hiddenFieldsRegex.ReplaceAll(rawBody.Bytes(), []byte(`"$1": <...>`)) // Use $1 to preserve the matched key name
-			logger.Infof(": %s", truncatedBodyBytes)
+		if isJSON {
+			truncatedBodyBytes := m.truncateSensitiveFields(rawBody.Bytes())
+			logger.Info("REQUEST BODY> %s", truncatedBodyBytes)
 		} else {
-			// unmarshal the buffer into your map[string]any
-			mapBody := new(map[string]any)
-			json.Unmarshal(rawBody.Bytes(), mapBody)
-
-			if len(*mapBody) > 0 {
-				logger.Infof(": %v", *mapBody)
+			mapBody := m.decodeBodyToMap(rawBody.Bytes())
+			if len(mapBody) > 0 {
+				logger.Info("REQUEST BODY> %v", mapBody)
 			}
 		}
 
-		if logInOutHeaders {
-			if authHeader := r.Header.Get("Authorization"); authHeader != "" {
-				logger.Infof("IN HEADER> ", "Authorization", authHeader)
+		if m.logHeaders {
+			for name, values := range r.Header {
+				for _, value := range values {
+					log.Println("IN HEADER> ", name, value)
+				}
 			}
 		}
 
-		// Log metadata
-		if wrapped, err := requtil.Wrap(r); err == nil {
-			if metadata, err := wrapped.Metadata(); err == nil {
-				logger.Infof("__metadata: %v\n", metadata)
-			}
+		if metadata := m.requestMetadata(r); metadata != nil {
+			logger.Info("__metadata: %v\n", metadata)
 		}
 
-		// Create a wrapper to capture the response body
-		wrapper := &responseWriterWrapper{
-			ResponseWriter: w,
-			body:           bytes.NewBuffer(nil),
-		}
-
-		// Call the next handler
+		wrapper := m.newResponseWrapper(w)
 		next.ServeHTTP(wrapper, r)
 
-		// If the response body is not JSON, do not print response body
-		var outMsg string
-		if strings.Contains(wrapper.Header().Get("Content-Type"), "application/json") {
-			outMsg = fmt.Sprintf("OUT [%v] <%v> %v %v: %v", reqID, identifier, r.Method, r.URL.Path, wrapper.body.String())
-		} else {
-			outMsg = fmt.Sprintf("OUT [%v] <%v> %v %v: <>\n", reqID, identifier, r.Method, r.URL.Path)
-		}
-		logger.Infof("%s", outMsg)
+		outMsg := m.outboundMessage(reqID, identifier, r, wrapper)
+		logger.Info("%s", outMsg)
 
-		if logInOutHeaders {
-			// log.Println("OUT STATUS> ", wrapper.statusCode)
+		if m.logHeaders {
 			if h := wrapper.Header().Get("X-Auth-Token"); h != "" {
-				logger.Infof("OUT HEADER> ", "X-Auth-Token", h)
+				log.Println("OUT HEADER> ", "X-Auth-Token", h)
 			} else {
-				logger.Infof("OUT HEADER> ", "X-Auth-Token", "<empty>")
+				log.Println("OUT HEADER> ", "X-Auth-Token", "<empty>")
 			}
 		}
 
-		// NOTE: You can't write an invalid status code or it will cause a runtime error,
-		// and 0 is the most likely invalid status code.
-		if wrapper.statusCode != 0 {
-			w.WriteHeader(wrapper.statusCode)
-		}
-		w.Write(wrapper.body.Bytes())
+		m.flushResponse(w, wrapper)
 	})
+}
+
+func (m *requestLoggerMiddleware) nextRequestID() int64 {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	next := m.reqID
+	m.reqID++
+	return next
+}
+
+func (m *requestLoggerMiddleware) readRequestBody(r *http.Request) (*bytes.Buffer, bool, error) {
+	rawBody := new(bytes.Buffer)
+	if _, err := rawBody.ReadFrom(r.Body); err != nil {
+		return nil, false, fmt.Errorf("read request body: %w", err)
+	}
+	r.Body = io.NopCloser(bytes.NewBuffer(rawBody.Bytes()))
+
+	var jsonCheck any
+	err := json.Unmarshal(rawBody.Bytes(), &jsonCheck)
+	return rawBody, err == nil, nil
+}
+
+func (m *requestLoggerMiddleware) requestIdentifier(r *http.Request) (string, string) {
+	identifier := "anon"
+	token := "anon"
+
+	if sess := session.GetRequestSession(r); sess != nil {
+		if uid, ok := sess.UID(); ok {
+			identifier = strconv.FormatInt(uid, 10)
+		}
+
+		if email, ok := sess.Get("uid"); ok {
+			if emailStr, ok := email.(string); ok {
+				identifier = identifier + ":" + emailStr
+			}
+		}
+
+		if isSecure, ok := sess.Get("is_secure"); ok {
+			if isSecureBool, ok := isSecure.(bool); ok && !isSecureBool {
+				identifier = "*" + identifier
+			}
+		}
+
+		if key, ok := sess.Get("key"); ok {
+			if keyStr, ok := key.(string); ok {
+				token = keyStr
+			}
+		}
+	}
+
+	return token, identifier
+}
+
+func (m *requestLoggerMiddleware) truncateSensitiveFields(body []byte) []byte {
+	if m.hiddenFieldsRegex == nil {
+		return body
+	}
+
+	return m.hiddenFieldsRegex.ReplaceAll(body, []byte(`"$1": <...>`))
+}
+
+func (m *requestLoggerMiddleware) decodeBodyToMap(body []byte) map[string]any {
+	result := map[string]any{}
+	_ = json.Unmarshal(body, &result)
+	return result
+}
+
+func (m *requestLoggerMiddleware) requestMetadata(r *http.Request) *requtil.RequestMetadata {
+	wrapped, err := requtil.Wrap(r)
+	if err != nil {
+		return nil
+	}
+
+	metadata, err := wrapped.Metadata()
+	if err != nil {
+		return nil
+	}
+
+	return metadata
+}
+
+func (m *requestLoggerMiddleware) newResponseWrapper(w http.ResponseWriter) *responseWriterWrapper {
+	return &responseWriterWrapper{
+		ResponseWriter: w,
+		body:           bytes.NewBuffer(nil),
+	}
+}
+
+func (m *requestLoggerMiddleware) outboundMessage(reqID int64, identifier string, r *http.Request, wrapper *responseWriterWrapper) string {
+	if strings.Contains(wrapper.Header().Get("Content-Type"), "application/json") {
+		return fmt.Sprintf("OUT [%v] <%v> %v %v: %v", reqID, identifier, r.Method, r.URL.Path, wrapper.body.String())
+	}
+
+	return fmt.Sprintf("OUT [%v] <%v> %v %v: <>\n", reqID, identifier, r.Method, r.URL.Path)
+}
+
+func (m *requestLoggerMiddleware) flushResponse(w http.ResponseWriter, wrapper *responseWriterWrapper) {
+	if wrapper.statusCode != 0 {
+		w.WriteHeader(wrapper.statusCode)
+	}
+	_, _ = w.Write(wrapper.body.Bytes())
 }
