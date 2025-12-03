@@ -36,3 +36,10 @@ type MailerConfig struct {
 	Password *string
 	FromName *string
 }
+
+type S3Config struct {
+	AccessKey string
+	SecretKey string
+	Region    string
+	Bucket    string
+}

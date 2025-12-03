@@ -30,6 +30,7 @@ type ServiceContainer struct {
 	LevelService          di.ILevelService
 	ProfileService        di.IProfileService
 	UserLatestQuizService di.IUserLatestQuizService
+	StorageService        di.IStorageService
 }
 
 const (
@@ -124,6 +125,9 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	var chatBoxValidator = validators.NewChatboxValidator()
 	var chatBoxSvc = services.NewChatBoxService(chatBoxClient, chatBoxValidator, profileSvc, userLatestQuizSvc)
 
+	logger.Info("> storageSvc...")
+	var storageSvc = services.NewStorageService(res.Env.S3Config)
+
 	return &ServiceContainer{
 		SessionManager:        sessionManager,
 		SessionProvider:       sessionProvider,
@@ -136,5 +140,6 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		LevelService:          levelSvc,
 		ProfileService:        profileSvc,
 		UserLatestQuizService: userLatestQuizSvc,
+		StorageService:        storageSvc,
 	}, nil
 }

@@ -43,14 +43,6 @@ func GetRequestSession(r *http.Request) *AppSession {
 	return sess
 }
 
-// type SessionManager interface {
-// 	Container() *session.Container
-// 	Session(sessionKey string) (*AppSession, bool)
-// 	Sessions() *map[string]*AppSession
-// 	InitSession(sessionKey string) (*AppSession, bool)
-// 	DeleteSession(sessionKey string)
-// }
-
 type SessionManager struct {
 	SessionContainer session.Container
 }

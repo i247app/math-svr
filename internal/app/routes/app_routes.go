@@ -65,4 +65,10 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("POST /profiles/fetch", pc.HandlerFetchProfile)
 	server.AddRoute("POST /profiles/create", pc.HandlerCreateProfile)
 	server.AddRoute("POST /profiles/update", pc.HandlerUpdateProfile)
+
+	// storage
+	sc := controller.NewStorageController(res, services.StorageService)
+	server.AddRoute("POST /storage/upload", sc.HandleUpload)
+	server.AddRoute("POST /storage/delete", sc.HandleDelete)
+	server.AddRoute("POST /storage/preview-url", sc.HandleGetPreviewURL)
 }

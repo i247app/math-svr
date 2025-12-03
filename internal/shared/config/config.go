@@ -15,6 +15,7 @@ type Env struct {
 	HostConfig               *HostConfig
 	TwilioConfig             *TwilioConfig
 	MailerConfig             *MailerConfig
+	S3Config                 *S3Config
 	SharedKeyBytes           []byte
 	GexSessionDriver         string
 	SerializedSessionFile    string
@@ -63,6 +64,12 @@ func NewEnv(envpath string) (*Env, error) {
 			Username: getConfigOptional("MAIL_USER"),
 			Password: getConfigOptional("MAIL_PASSWORD"),
 			FromName: getConfigOptional("MAIL_FROM"),
+		},
+		S3Config: &S3Config{
+			AccessKey: getConfig("S3_ACCESS_KEY"),
+			SecretKey: getConfig("S3_SECRET_KEY"),
+			Region:    getConfig("S3_REGION"),
+			Bucket:    getConfig("S3_BUCKET"),
 		},
 		SharedKeyBytes:           getFileBytesConfig("GEX_SHARED_KEY"),
 		GexSessionDriver:         getConfig("GEX_SESSION_DRIVER"),
