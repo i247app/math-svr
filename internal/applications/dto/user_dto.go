@@ -62,6 +62,8 @@ type UpdateUserRequest struct {
 	Dob    *string       `json:"dob,omitempty"`
 	Role   *enum.ERole   `json:"role,omitempty"`
 	Status *enum.EStatus `json:"status,omitempty"`
+	Grade  *string       `json:"grade,omitempty"`
+	Level  *string       `json:"level,omitempty"`
 }
 
 type UpdateUserResponse struct {

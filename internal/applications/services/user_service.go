@@ -178,13 +178,34 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 		return statusCode, nil, err
 	}
 
-	userDomain := dto.BuildUserDomainForUpdate(req)
-	_, err := s.repo.Update(ctx, userDomain)
+	handler := func(tx *sql.Tx) error {
+		userDomain := dto.BuildUserDomainForUpdate(req)
+		_, err := s.repo.Update(ctx, userDomain)
+		if err != nil {
+			return err
+		}
+
+		if req.Level != nil || req.Grade != nil {
+			profileDomain := dto.BuildProfileDomainForUpdate(&dto.UpdateProfileRequest{
+				UID:   userDomain.ID(),
+				Grade: req.Grade,
+				Level: req.Level,
+			})
+			_, err := s.profileRepo.Update(ctx, profileDomain)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	err := s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.INTERNAL, nil, err
 	}
 
-	user, err := s.repo.FindByID(ctx, userDomain.ID())
+	user, err := s.repo.FindByID(ctx, req.UID)
 	if err != nil {
 		return status.INTERNAL, nil, err
 	}
