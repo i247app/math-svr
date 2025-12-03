@@ -61,7 +61,7 @@ func (s *GradeService) GetGradeByID(ctx context.Context, id string) (status.Code
 		return status.INTERNAL, nil, err
 	}
 	if grade == nil {
-		return status.NOT_FOUND, nil, err_svc.ErrNotFound
+		return status.NOT_FOUND, nil, err_svc.ErrGradeNotFound
 	}
 
 	res := dto.GradeResponseFromDomain(grade)
@@ -75,7 +75,7 @@ func (s *GradeService) GetGradeByLabel(ctx context.Context, label string) (statu
 		return status.INTERNAL, nil, err
 	}
 	if grade == nil {
-		return status.NOT_FOUND, nil, err_svc.ErrNotFound
+		return status.NOT_FOUND, nil, err_svc.ErrGradeNotFound
 	}
 
 	res := dto.GradeResponseFromDomain(grade)
@@ -95,7 +95,7 @@ func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequ
 		return status.INTERNAL, nil, err
 	}
 	if existingGrade != nil {
-		return status.GRADE_ALREADY_EXISTS, nil, err_svc.ErrAlreadyExists
+		return status.GRADE_ALREADY_EXISTS, nil, err_svc.ErrGradeAlreadyExists
 	}
 
 	gradeDomain := dto.BuildGradeDomainForCreate(req)
@@ -128,7 +128,7 @@ func (s *GradeService) UpdateGrade(ctx context.Context, req *dto.UpdateGradeRequ
 		return status.INTERNAL, nil, err
 	}
 	if existingGrade == nil {
-		return status.NOT_FOUND, nil, err_svc.ErrNotFound
+		return status.NOT_FOUND, nil, err_svc.ErrGradeNotFound
 	}
 
 	// If updating label, check for duplicates
@@ -138,7 +138,7 @@ func (s *GradeService) UpdateGrade(ctx context.Context, req *dto.UpdateGradeRequ
 			return status.INTERNAL, nil, err
 		}
 		if duplicateGrade != nil {
-			return status.GRADE_ALREADY_EXISTS, nil, err_svc.ErrAlreadyExists
+			return status.GRADE_ALREADY_EXISTS, nil, err_svc.ErrGradeAlreadyExists
 		}
 	}
 
@@ -165,7 +165,7 @@ func (s *GradeService) DeleteGrade(ctx context.Context, id string) (status.Code,
 		return status.INTERNAL, err
 	}
 	if grade == nil {
-		return status.NOT_FOUND, err_svc.ErrNotFound
+		return status.NOT_FOUND, err_svc.ErrGradeNotFound
 	}
 
 	err = s.repo.Delete(ctx, id)

@@ -8,8 +8,7 @@ var (
 	ErrUserNotFound     = errors.New("user not found")
 
 	ErrMissingUID         = errors.New("uid is required")
-	ErrMissingFirstName   = errors.New("first name is required")
-	ErrMissingLastName    = errors.New("last name is required")
+	ErrMissingName        = errors.New("name is required")
 	ErrMissingPhone       = errors.New("phone is required")
 	ErrMissingPassword    = errors.New("password is required")
 	ErrInvalidPhone       = errors.New("invalid phone format")

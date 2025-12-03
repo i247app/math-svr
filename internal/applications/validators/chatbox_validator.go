@@ -18,13 +18,29 @@ func NewChatboxValidator() *chatboxValidator {
 }
 
 func (v *chatboxValidator) ValidateGenerateQuizRequest(req *dto.GenerateQuizRequest) (status.Code, error) {
+	if req.UID == "" {
+		return status.USER_MISSING_ID, nil
+	}
+
 	return status.SUCCESS, nil
 }
 
 func (v *chatboxValidator) ValidateSubmitAnswerRequest(req *dto.SubmitQuizRequest) (status.Code, error) {
+	if req.UID == "" {
+		return status.USER_MISSING_ID, nil
+	}
+
+	if req.Answers == nil {
+		return status.USER_MISSING_QUIZ_ANSWERS, nil
+	}
+
 	return status.SUCCESS, nil
 }
 
 func (v *chatboxValidator) ValidateGenerateQuizPracticeRequest(req *dto.GenerateQuizPracticeRequest) (status.Code, error) {
+	if req.UID == "" {
+		return status.USER_MISSING_ID, nil
+	}
+
 	return status.SUCCESS, nil
 }

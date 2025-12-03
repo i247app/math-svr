@@ -17,6 +17,14 @@ func NewDeviceValidator() *deviceValidator {
 }
 
 func (v *deviceValidator) ValidateCreateDeviceRequest(req *dto.CreateDeviceRequest) (status.Code, error) {
+	if req.DeviceUUID == "" {
+		return status.DEVICE_MISSING_UUID, nil
+	}
+
+	if req.DeviceName == "" {
+		return status.DEVICE_MISSING_NAME, nil
+	}
+
 	return status.SUCCESS, nil
 }
 

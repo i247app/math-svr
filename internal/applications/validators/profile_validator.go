@@ -19,12 +19,24 @@ func NewProfileValidator() *profileValidator {
 }
 
 func (v *profileValidator) ValidateGetProfileRequest(req *dto.FetchProfileRequest) (status.Code, error) {
+	if req.UID == "" {
+		return status.USER_MISSING_ID, err_svc.ErrMissingUID
+	}
+
 	return status.SUCCESS, nil
 }
 
 func (v *profileValidator) ValidateCreateProfileRequest(req *dto.CreateProfileRequest) (status.Code, error) {
 	if req.UID == "" {
-		return status.BAD_REQUEST, err_svc.ErrMissingUID
+		return status.USER_MISSING_ID, err_svc.ErrMissingUID
+	}
+
+	if req.Grade == "" {
+		return status.PROFILE_MISSING_GRADE, err_svc.ErrProfileMissingGrade
+	}
+
+	if req.Level == "" {
+		return status.PROFILE_MISSING_LEVEL, err_svc.ErrProfileMissingLevel
 	}
 
 	return status.SUCCESS, nil

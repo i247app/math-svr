@@ -17,9 +17,25 @@ func NewLevelValidator() *levelValidator {
 }
 
 func (v *levelValidator) ValidateCreateLevelRequest(req *dto.CreateLevelRequest) (status.Code, error) {
+	if req.Label == "" {
+		return status.LEVEL_MISSING_LABEL, nil
+	}
+
+	if req.Description == "" {
+		return status.LEVEL_MISSING_DESCRIPTION, nil
+	}
+
+	if req.DisplayOrder == 0 {
+		return status.LEVEL_MISSING_DISPLAY_ORDER, nil
+	}
+
 	return status.SUCCESS, nil
 }
 
 func (v *levelValidator) ValidateUpdateLevelRequest(req *dto.UpdateLevelRequest) (status.Code, error) {
+	if req.ID == "" {
+		return status.LEVEL_NOT_FOUND, nil
+	}
+
 	return status.SUCCESS, nil
 }

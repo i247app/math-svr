@@ -3,6 +3,7 @@ package validators
 import (
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/shared/constant/status"
+	err_svc "math-ai.com/math-ai/internal/shared/error"
 )
 
 type IUserLatestQuizValidator interface {
@@ -24,14 +25,26 @@ func (v *ulqValidator) ValidateGetUserLatestQuizRequest(req *dto.GetUserLatestQu
 }
 
 func (v *ulqValidator) ValidateGetUserLatestQuizByUIDRequest(req *dto.GetUserLatestQuizByUIDRequest) (status.Code, error) {
+	if req.UID == "" {
+		return status.USER_MISSING_ID, err_svc.ErrMissingUID
+	}
+
 	return status.SUCCESS, nil
 }
 
 func (v *ulqValidator) ValidateCreateUserLatestQuizRequest(req *dto.CreateUserLatestQuizRequest) (status.Code, error) {
+	if req.UID == "" {
+		return status.USER_MISSING_ID, err_svc.ErrMissingUID
+	}
+
 	return status.SUCCESS, nil
 }
 
 func (v *ulqValidator) ValidateUpdateUserLatestQuizRequest(req *dto.UpdateUserLatestQuizRequest) (status.Code, error) {
+	if req.UID == "" {
+		return status.USER_MISSING_ID, err_svc.ErrMissingUID
+	}
+
 	return status.SUCCESS, nil
 }
 

@@ -61,7 +61,7 @@ func (s *LevelService) GetLevelByID(ctx context.Context, id string) (status.Code
 		return status.INTERNAL, nil, err
 	}
 	if level == nil {
-		return status.NOT_FOUND, nil, err_svc.ErrNotFound
+		return status.NOT_FOUND, nil, err_svc.ErrLevelNotFound
 	}
 
 	res := dto.LevelResponseFromDomain(level)
@@ -75,7 +75,7 @@ func (s *LevelService) GetLevelByLabel(ctx context.Context, label string) (statu
 		return status.INTERNAL, nil, err
 	}
 	if level == nil {
-		return status.NOT_FOUND, nil, err_svc.ErrNotFound
+		return status.NOT_FOUND, nil, err_svc.ErrLevelNotFound
 	}
 
 	res := dto.LevelResponseFromDomain(level)
@@ -95,7 +95,7 @@ func (s *LevelService) CreateLevel(ctx context.Context, req *dto.CreateLevelRequ
 		return status.INTERNAL, nil, err
 	}
 	if existingLevel != nil {
-		return status.LEVEL_ALREADY_EXISTS, nil, err_svc.ErrAlreadyExists
+		return status.LEVEL_ALREADY_EXISTS, nil, err_svc.ErrLevelAlreadyExists
 	}
 
 	levelDomain := dto.BuildLevelDomainForCreate(req)
@@ -129,7 +129,7 @@ func (s *LevelService) UpdateLevel(ctx context.Context, req *dto.UpdateLevelRequ
 		return status.INTERNAL, nil, err
 	}
 	if existingLevel == nil {
-		return status.NOT_FOUND, nil, err_svc.ErrNotFound
+		return status.NOT_FOUND, nil, err_svc.ErrLevelNotFound
 	}
 
 	// If updating label, check for duplicates
@@ -139,7 +139,7 @@ func (s *LevelService) UpdateLevel(ctx context.Context, req *dto.UpdateLevelRequ
 			return status.INTERNAL, nil, err
 		}
 		if duplicateLevel != nil {
-			return status.LEVEL_ALREADY_EXISTS, nil, err_svc.ErrAlreadyExists
+			return status.LEVEL_ALREADY_EXISTS, nil, err_svc.ErrLevelAlreadyExists
 		}
 	}
 
@@ -167,7 +167,7 @@ func (s *LevelService) DeleteLevel(ctx context.Context, id string) (status.Code,
 		return status.INTERNAL, err
 	}
 	if level == nil {
-		return status.NOT_FOUND, err_svc.ErrNotFound
+		return status.NOT_FOUND, err_svc.ErrLevelNotFound
 	}
 
 	err = s.repo.Delete(ctx, id)

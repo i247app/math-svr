@@ -32,7 +32,7 @@ func (s *ProfileService) FetchProfile(ctx context.Context, req *dto.FetchProfile
 		return status.INTERNAL, nil, err
 	}
 	if profile == nil {
-		return status.NOT_FOUND, nil, err_svc.ErrNotFound
+		return status.NOT_FOUND, nil, err_svc.ErrUserNotFound
 	}
 
 	res := dto.ProfileResponseFromDomain(profile)
@@ -52,7 +52,7 @@ func (s *ProfileService) CreateProfile(ctx context.Context, req *dto.CreateProfi
 		return status.INTERNAL, nil, err
 	}
 	if existingProfile != nil {
-		return status.PROFILE_ALREADY_EXISTS, nil, err_svc.ErrAlreadyExists
+		return status.PROFILE_ALREADY_EXISTS, nil, err_svc.ErrProfileAlreadyExists
 	}
 
 	profileDomain := dto.BuildProfileDomainForCreate(req)
