@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
+!/usr/bin/env bash
 
 DEST_DIR="/apps/math"
 PID_FILE="$DEST_DIR/server.pid"
-PORT=8080
+PORT=9543
 
 cd "$DEST_DIR"
 

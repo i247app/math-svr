@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-MONEX_HOME="/apps/math"
-cd $MONEX_HOME
+MATH_HOME="/apps/math"
+cd $MATH_HOME
 
-echo "$MONEX_HOME"
+echo "$MATH_HOME"
 echo "Starting new server..."
 
 # Store output in a logfile and save the PID to a file so we can kill the process later
