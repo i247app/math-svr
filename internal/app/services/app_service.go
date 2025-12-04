@@ -15,6 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/repositories"
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/logger"
+	"math-ai.com/math-ai/pkg/aws/s3"
 )
 
 type ServiceContainer struct {
@@ -92,7 +93,8 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	}
 
 	logger.Info("> storageSvc...")
-	var storageSvc = services.NewStorageService(res.Env.S3Config)
+	s3Client := s3.NewClient(env.S3Config)
+	var storageSvc = services.NewStorageService(s3Client)
 
 	logger.Info("> userSvc...")
 	var userValidator = validators.NewUserValidator()

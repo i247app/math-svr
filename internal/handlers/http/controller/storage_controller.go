@@ -64,7 +64,7 @@ func (s *StorageController) HandleUpload(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Upload file
-	statusCode, uploadRes, err := s.service.Upload(r.Context(), uploadReq)
+	statusCode, uploadRes, err := s.service.HandleUpload(r.Context(), uploadReq)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
@@ -87,7 +87,7 @@ func (s *StorageController) HandleDelete(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	statusCode, err := s.service.Delete(r.Context(), &req)
+	statusCode, err := s.service.HandleDelete(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
@@ -110,9 +110,9 @@ func (s *StorageController) HandleGetPreviewURL(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	previewURL, err := s.service.GetPreviewURL(r.Context(), req.URL)
+	statusCode, previewURL, err := s.service.GetPreviewURL(r.Context(), &req)
 	if err != nil {
-		response.WriteJson(w, r.Context(), nil, err, status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
 	}
 

@@ -18,7 +18,6 @@ import (
 )
 
 const (
-	// AvatarPresignedURLExpiration is the duration for which avatar presigned URLs are valid
 	AvatarPresignedURLExpiration = 24 * time.Hour // 24 hours
 )
 
@@ -132,7 +131,7 @@ func (s *UserService) deleteOldAvatar(ctx context.Context, avatarKey *string) {
 		Key: *avatarKey,
 	}
 
-	_, err := s.storageService.Delete(ctx, deleteReq)
+	_, err := s.storageService.HandleDelete(ctx, deleteReq)
 	if err != nil {
 		logger.Warnf("Failed to delete old avatar (%s): %v", *avatarKey, err)
 		// Don't return error - old avatar cleanup is not critical
@@ -145,7 +144,10 @@ func (s *UserService) buildUserResponseWithPresignedURL(ctx context.Context, use
 
 	// Generate presigned URL for avatar if exists
 	if user.AvatarURL() != nil && *user.AvatarURL() != "" {
-		presignedURL, err := s.storageService.CreatePresignedUrl(ctx, *user.AvatarURL(), AvatarPresignedURLExpiration)
+		_, presignedURL, err := s.storageService.CreatePresignedUrl(ctx, &dto.CreatePresignedUrlRequest{
+			Key:        *user.AvatarURL(),
+			Expiration: AvatarPresignedURLExpiration,
+		})
 		if err != nil {
 			logger.Warnf("Failed to generate presigned URL for avatar (%s): %v", *user.AvatarURL(), err)
 			// Don't fail the request if presigned URL generation fails
@@ -200,9 +202,14 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 	// Handle avatar upload before creating user
 	var avatarKey *string
 	if req.AvatarFile != nil {
-		res, err := s.storageService.HandleUpload(ctx, req.AvatarFile, req.AvatarFilename, req.AvatarContentType, "user")
+		statusCode, res, err := s.storageService.HandleUpload(ctx, &dto.UploadFileRequest{
+			File:        req.AvatarFile,
+			Filename:    req.AvatarFilename,
+			ContentType: req.AvatarContentType,
+			Folder:      "user",
+		})
 		if err != nil {
-			return status.INTERNAL, nil, fmt.Errorf("failed to upload avatar: %w", err)
+			return statusCode, nil, fmt.Errorf("failed to upload avatar: %w", err)
 		}
 		avatarKey = &res.Key
 	}
@@ -280,9 +287,14 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	var newAvatarKey *string
 	if req.AvatarFile != nil {
 		// Upload new avatar
-		res, err := s.storageService.HandleUpload(ctx, req.AvatarFile, req.AvatarFilename, req.AvatarContentType, "user")
+		statusCode, res, err := s.storageService.HandleUpload(ctx, &dto.UploadFileRequest{
+			File:        req.AvatarFile,
+			Filename:    req.AvatarFilename,
+			ContentType: req.AvatarContentType,
+			Folder:      "user",
+		})
 		if err != nil {
-			return status.INTERNAL, nil, fmt.Errorf("failed to upload avatar: %w", err)
+			return statusCode, nil, fmt.Errorf("failed to upload avatar: %w", err)
 		}
 		newAvatarKey = &res.Key
 

@@ -14,6 +14,10 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
+const (
+	GradePresignedURLExpiration = 24 * time.Hour // 24 hours
+)
+
 type GradeService struct {
 	validator      validators.IGradeValidator
 	repo           repositories.IGradeRepository
@@ -55,9 +59,12 @@ func (s *GradeService) ListGrades(ctx context.Context, req *dto.ListGradeRequest
 	for i, grade := range grades {
 		gradeRes := dto.GradeResponseFromDomain(grade)
 		if grade.IconURL() != nil {
-			signedURL, err := s.storageService.CreatePresignedUrl(ctx, *grade.IconURL(), time.Hour)
+			statusCode, signedURL, err := s.storageService.CreatePresignedUrl(ctx, &dto.CreatePresignedUrlRequest{
+				Key:        *grade.IconURL(),
+				Expiration: GradePresignedURLExpiration,
+			})
 			if err != nil {
-				return status.INTERNAL, nil, nil, fmt.Errorf("failed to create presigned URL: %w", err)
+				return statusCode, nil, nil, fmt.Errorf("failed to create presigned URL: %w", err)
 			}
 			if signedURL != "" {
 				gradeRes.IconURL = &signedURL
@@ -81,9 +88,12 @@ func (s *GradeService) GetGradeByID(ctx context.Context, id string) (status.Code
 	res := dto.GradeResponseFromDomain(grade)
 
 	if grade.IconURL() != nil {
-		signedURL, err := s.storageService.CreatePresignedUrl(ctx, *grade.IconURL(), time.Hour)
+		statusCode, signedURL, err := s.storageService.CreatePresignedUrl(ctx, &dto.CreatePresignedUrlRequest{
+			Key:        *grade.IconURL(),
+			Expiration: GradePresignedURLExpiration,
+		})
 		if err != nil {
-			return status.INTERNAL, nil, fmt.Errorf("failed to create presigned URL: %w", err)
+			return statusCode, nil, fmt.Errorf("failed to create presigned URL: %w", err)
 		}
 		if signedURL != "" {
 			res.IconURL = &signedURL
@@ -125,9 +135,14 @@ func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequ
 	// Handle avatar upload before creating user
 	var iconKey *string
 	if req.IconFile != nil {
-		res, err := s.storageService.HandleUpload(ctx, req.IconFile, req.IconFilename, req.IconContentType, "grade")
+		statusCode, res, err := s.storageService.HandleUpload(ctx, &dto.UploadFileRequest{
+			File:        req.IconFile,
+			Filename:    req.IconFilename,
+			ContentType: req.IconContentType,
+			Folder:      "grade",
+		})
 		if err != nil {
-			return status.INTERNAL, nil, fmt.Errorf("failed to upload avatar: %w", err)
+			return statusCode, nil, fmt.Errorf("failed to upload avatar: %w", err)
 		}
 		iconKey = &res.Key
 	}

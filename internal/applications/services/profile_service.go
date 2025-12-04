@@ -42,9 +42,12 @@ func (s *ProfileService) FetchProfile(ctx context.Context, req *dto.FetchProfile
 	res := dto.ProfileResponseFromDomain(profile)
 
 	if profile.AvatarKey() != nil {
-		avatarURL, err := s.storageService.CreatePresignedUrl(ctx, *profile.AvatarKey(), time.Hour)
+		statusCode, avatarURL, err := s.storageService.CreatePresignedUrl(ctx, &dto.CreatePresignedUrlRequest{
+			Key:        *profile.AvatarKey(),
+			Expiration: time.Hour,
+		})
 		if err != nil {
-			return status.INTERNAL, nil, err
+			return statusCode, nil, err
 		}
 		res.AvatarPreviewURL = &avatarURL
 	}
@@ -84,9 +87,12 @@ func (s *ProfileService) CreateProfile(ctx context.Context, req *dto.CreateProfi
 	res := dto.ProfileResponseFromDomain(profile)
 
 	if profile.AvatarKey() != nil {
-		avatarURL, err := s.storageService.CreatePresignedUrl(ctx, *profile.AvatarKey(), time.Hour)
+		statusCode, avatarURL, err := s.storageService.CreatePresignedUrl(ctx, &dto.CreatePresignedUrlRequest{
+			Key:        *profile.AvatarKey(),
+			Expiration: time.Hour,
+		})
 		if err != nil {
-			return status.INTERNAL, nil, err
+			return statusCode, nil, err
 		}
 		res.AvatarPreviewURL = &avatarURL
 	}
