@@ -19,6 +19,7 @@ type Env struct {
 	SharedKeyBytes           []byte
 	GexSessionDriver         string
 	SerializedSessionFile    string
+	LogFile                  string
 	ChatBoxAPIKey            string
 	ChatBoxTestMode          bool
 	ChatBoxProvider          string
@@ -74,6 +75,7 @@ func NewEnv(envpath string) (*Env, error) {
 		SharedKeyBytes:           getFileBytesConfig("GEX_SHARED_KEY"),
 		GexSessionDriver:         getConfig("GEX_SESSION_DRIVER"),
 		SerializedSessionFile:    getConfig("SERIALIZED_SESSION_FILE"),
+		LogFile:                  getConfig("LOG_FILE"),
 		ChatBoxAPIKey:            getConfig("CHAT_BOX_API_KEY"),
 		ChatBoxTestMode:          getBoolConfig("CHAT_BOX_TEST_MODE"),
 		ChatBoxProvider:          getConfigWithDefault("CHAT_BOX_PROVIDER", "mock"),

@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"math-ai.com/math-ai/internal/shared/logger"
 	hasher "math-ai.com/math-ai/internal/shared/utils/hash"
 )
 
@@ -49,7 +48,7 @@ func (l *Login) HassPass() string {
 func (l *Login) SetHassPass(password string) {
 	hash, err := hasher.DefaultHasher.Hash(password)
 	if err != nil {
-		logger.Errorf("failed to hash password: %v", err)
+		////logger.Errorf("failed to hash password: %v", err)
 	}
 
 	l.hasspass = string(hash)

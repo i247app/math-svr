@@ -13,7 +13,6 @@ import (
 	domain "math-ai.com/math-ai/internal/core/domain/user"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
-	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
@@ -133,7 +132,7 @@ func (s *UserService) deleteOldAvatar(ctx context.Context, avatarKey *string) {
 
 	_, err := s.storageService.HandleDelete(ctx, deleteReq)
 	if err != nil {
-		logger.Warnf("Failed to delete old avatar (%s): %v", *avatarKey, err)
+		//logger.Warnf("Failed to delete old avatar (%s): %v", *avatarKey, err)
 		// Don't return error - old avatar cleanup is not critical
 	}
 }
@@ -149,7 +148,7 @@ func (s *UserService) buildUserResponseWithPresignedURL(ctx context.Context, use
 			Expiration: AvatarPresignedURLExpiration,
 		})
 		if err != nil {
-			logger.Warnf("Failed to generate presigned URL for avatar (%s): %v", *user.AvatarURL(), err)
+			//logger.Warnf("Failed to generate presigned URL for avatar (%s): %v", *user.AvatarURL(), err)
 			// Don't fail the request if presigned URL generation fails
 			// User data is still valid, just without the presigned URL
 		} else {

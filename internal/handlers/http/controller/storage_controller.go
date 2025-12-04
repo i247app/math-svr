@@ -9,7 +9,6 @@ import (
 	"math-ai.com/math-ai/internal/applications/dto"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
-	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
@@ -35,7 +34,7 @@ func NewStorageController(appResources *resources.AppResource, service di.IStora
 func (s *StorageController) HandleUpload(w http.ResponseWriter, r *http.Request) {
 	// Parse multipart form with max size
 	if err := r.ParseMultipartForm(MaxUploadSize); err != nil {
-		logger.Errorf("Failed to parse multipart form: %v", err)
+		////logger.Errorf("Failed to parse multipart form: %v", err)
 		response.WriteJson(w, r.Context(), nil, fmt.Errorf("file too large or invalid form data"), status.BAD_REQUEST)
 		return
 	}
@@ -43,7 +42,7 @@ func (s *StorageController) HandleUpload(w http.ResponseWriter, r *http.Request)
 	// Get file from form
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		logger.Errorf("Failed to get file from form: %v", err)
+		////logger.Errorf("Failed to get file from form: %v", err)
 		response.WriteJson(w, r.Context(), nil, fmt.Errorf("no file provided"), status.BAD_REQUEST)
 		return
 	}

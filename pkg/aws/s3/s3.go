@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/shared/config"
-	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/filetype"
 )
 
@@ -26,7 +25,7 @@ type Client struct {
 
 // NewS3Client creates a new storage service instance
 func NewClient(s3Config *config.S3Config) *Client {
-	logger.Info("Initializing S3Client with S3 backend", s3Config.Region, s3Config.Bucket)
+	//logger.Info("Initializing S3Client with S3 backend", s3Config.Region, s3Config.Bucket)
 
 	// Create AWS config with static credentials
 	awsConfig := aws.Config{
@@ -54,7 +53,7 @@ func NewClient(s3Config *config.S3Config) *Client {
 func (s *Client) Upload(ctx context.Context, file io.Reader, filename, contentType, folder string) (*dto.UploadFileResponse, error) {
 	// Validate file type
 	if err := s.ValidateFileType(filename, contentType); err != nil {
-		logger.Errorf("File validation failed: %v", err)
+		////logger.Errorf("File validation failed: %v", err)
 		return nil, fmt.Errorf("invalid file type: %w", err)
 	}
 
@@ -70,7 +69,7 @@ func (s *Client) Upload(ctx context.Context, file io.Reader, filename, contentTy
 	// Note: For large files, consider using multipart upload
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
-		logger.Errorf("Failed to read file: %v", err)
+		////logger.Errorf("Failed to read file: %v", err)
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
@@ -85,14 +84,14 @@ func (s *Client) Upload(ctx context.Context, file io.Reader, filename, contentTy
 	})
 
 	if err != nil {
-		logger.Errorf("Failed to upload file to S3: %v", err)
+		////logger.Errorf("Failed to upload file to S3: %v", err)
 		return nil, fmt.Errorf("failed to upload file: %w", err)
 	}
 
 	// Generate URLs
 	originalURL := s.generateS3URL(key)
 
-	logger.Infof("Successfully uploaded file: %s (key: %s, size: %d bytes)", filename, key, fileSize)
+	////logger.Infof("Successfully uploaded file: %s (key: %s, size: %d bytes)", filename, key, fileSize)
 
 	response := &dto.UploadFileResponse{
 		URL:      originalURL,
@@ -120,11 +119,11 @@ func (s *Client) Delete(ctx context.Context, keyUrl string) error {
 	})
 
 	if err != nil {
-		logger.Errorf("Failed to delete file from S3 (key: %s): %v", key, err)
+		////logger.Errorf("Failed to delete file from S3 (key: %s): %v", key, err)
 		return fmt.Errorf("failed to delete file: %w", err)
 	}
 
-	logger.Infof("Successfully deleted file: %s", key)
+	////logger.Infof("Successfully deleted file: %s", key)
 	return nil
 }
 
@@ -137,7 +136,7 @@ func (s *Client) GetPreviewURL(ctx context.Context, originalURL string) (string,
 
 	previewUrl, err := s.CreatePresignedUrl(ctx, key, time.Hour)
 	if err != nil {
-		logger.Errorf("Failed to generate preview URL for key %s: %v", key, err)
+		////logger.Errorf("Failed to generate preview URL for key %s: %v", key, err)
 		return "", fmt.Errorf("failed to generate preview URL: %w", err)
 	}
 
@@ -172,10 +171,10 @@ func (s *Client) CreatePresignedUrl(ctx context.Context, key string, expiration 
 	})
 
 	if err != nil {
-		logger.Errorf("Failed to create presigned URL for key %s: %v", objectKey, err)
+		////logger.Errorf("Failed to create presigned URL for key %s: %v", objectKey, err)
 		return "", fmt.Errorf("failed to create presigned URL: %w", err)
 	}
 
-	logger.Infof("Created presigned URL for key %s (expires in %v)", objectKey, expiration)
+	////logger.Infof("Created presigned URL for key %s (expires in %v)", objectKey, expiration)
 	return presignedReq.URL, nil
 }

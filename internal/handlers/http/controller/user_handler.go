@@ -11,7 +11,6 @@ import (
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/constant/status"
-	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
@@ -82,7 +81,7 @@ func (u *UserController) HandlerCreateUser(w http.ResponseWriter, r *http.Reques
 	} else {
 		// Multipart form request (with avatar)
 		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
-			logger.Errorf("Failed to parse multipart form: %v", err)
+			////logger.Errorf("Failed to parse multipart form: %v", err)
 			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.BAD_REQUEST)
 			return
 		}
@@ -145,7 +144,7 @@ func (u *UserController) HandlerUpdateUser(w http.ResponseWriter, r *http.Reques
 	} else {
 		// Multipart form request (with avatar)
 		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
-			logger.Errorf("Failed to parse multipart form: %v", err)
+			////logger.Errorf("Failed to parse multipart form: %v", err)
 			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.BAD_REQUEST)
 			return
 		}

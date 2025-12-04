@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/i247app/gex/jwtutil"
@@ -14,7 +15,6 @@ import (
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/repositories"
 	"math-ai.com/math-ai/internal/session"
-	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/pkg/aws/s3"
 )
 
@@ -41,7 +41,7 @@ const (
 func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error) {
 	env := res.Env
 
-	logger.Info("Initializing repository")
+	log.Println("Initializing repository")
 	loginRepo := repositories.NewloginRepository(res.Db)
 	userRepo := repositories.NewUserRepository(res.Db)
 	deviceRepo := repositories.NewDeviceRepository(res.Db)
@@ -50,12 +50,12 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	profileRepo := repositories.NewProfileRepository(res.Db)
 	userLatestQuizRepo := repositories.NewUserLatestQuizRepository(res.Db)
 
-	logger.Info("Initializing services")
+	log.Println("Initializing services")
 
-	logger.Info("> sessionManager...")
+	log.Println("> sessionManager...")
 	sessionManager := session.NewSessionManager()
 
-	logger.Info("> jwtHelper...")
+	log.Println("> jwtHelper...")
 	var jwtHelper jwtutil.JwtHelper
 	if env.SharedKeyBytes != nil {
 		helper, err := jwtutil.NewHmacJwtHelper(env.SharedKeyBytes)
@@ -68,7 +68,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	}
 
 	// Build the session provider
-	logger.Info("> sessionProvider...")
+	log.Println("> sessionProvider...")
 	var sessionProvider sessionprovider.SessionProvider
 	{
 		defaultSessFactory := func() gexsess.SessionStorer {
@@ -92,39 +92,39 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		}
 	}
 
-	logger.Info("> storageSvc...")
+	log.Println("> storageSvc...")
 	s3Client := s3.NewClient(env.S3Config)
 	var storageSvc = services.NewStorageService(s3Client)
 
-	logger.Info("> userSvc...")
+	log.Println("> userSvc...")
 	var userValidator = validators.NewUserValidator()
 	var userSvc = services.NewUserService(userValidator, userRepo, loginRepo, profileRepo, storageSvc)
 
-	logger.Info("> loginSvc...")
+	log.Println("> loginSvc...")
 	var loginValidator = validators.NewLoginValidator()
 	var loginSvc = services.NewLoginService(loginValidator, loginRepo, userRepo)
 
-	logger.Info("> deviceSvc...")
+	log.Println("> deviceSvc...")
 	var deviceValidator = validators.NewDeviceValidator()
 	var deviceSvc = services.NewDeviceService(deviceValidator, deviceRepo)
 
-	logger.Info("> gradeSvc...")
+	log.Println("> gradeSvc...")
 	var gradeValidator = validators.NewGradeValidator()
 	var gradeSvc = services.NewGradeService(gradeValidator, gradeRepo, storageSvc)
 
-	logger.Info("> levelSvc...")
+	log.Println("> levelSvc...")
 	var levelValidator = validators.NewLevelValidator()
 	var levelSvc = services.NewLevelService(levelValidator, levelRepo)
 
-	logger.Info("> profileSvc...")
+	log.Println("> profileSvc...")
 	var profileValidator = validators.NewProfileValidator()
 	var profileSvc = services.NewProfileService(profileValidator, profileRepo, storageSvc)
 
-	logger.Info("> userLatestQuizSvc...")
+	log.Println("> userLatestQuizSvc...")
 	var userLatestQuizValidator = validators.NewUserLatestQuizValidator()
 	var userLatestQuizSvc = services.NewUserLatestQuizService(userLatestQuizValidator, userLatestQuizRepo)
 
-	logger.Info("> chatBoxSvc...")
+	log.Println("> chatBoxSvc...")
 	chatBoxClient := DetermineAIProvider(context.Background(), *res.Env)
 
 	var chatBoxValidator = validators.NewChatboxValidator()

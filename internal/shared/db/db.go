@@ -5,11 +5,11 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
 	"math-ai.com/math-ai/internal/shared/config"
-	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 const (
@@ -50,7 +50,7 @@ func NewDatabase(config *config.DBConfig) (*Database, error) {
 		return nil, fmt.Errorf("failed to ping the database: %v", err)
 	}
 
-	logger.Info("Connected to database successfully")
+	//logger.Info("Connected to database successfully")
 	return &Database{db: db}, nil
 }
 
@@ -59,29 +59,29 @@ func (d *Database) GetDB() *sql.DB {
 }
 
 func (d *Database) WithTransaction(function HanderlerWithTx) error {
-	logger.Info("Starting transaction")
+	//logger.Info("Starting transaction")
 	tx, err := d.db.Begin()
 	if err != nil {
-		logger.Errorf("Failed to begin transaction: %v", err)
+		////logger.Errorf("Failed to begin transaction: %v", err)
 		return fmt.Errorf("failed to begin transaction: %v", err)
 	}
 
 	if err := function(tx); err != nil {
-		logger.Info("Rolling back transaction due to error: %v", err)
+		//logger.Info("Rolling back transaction due to error: %v", err)
 		if rbErr := tx.Rollback(); rbErr != nil {
-			logger.Errorf("Failed to rollback transaction: %v", rbErr)
+			////logger.Errorf("Failed to rollback transaction: %v", rbErr)
 			return fmt.Errorf("failed to rollback transaction: %v (original error: %v)", rbErr, err)
 		}
-		logger.Info("Transaction rolled back successfully")
+		//logger.Info("Transaction rolled back successfully")
 		return err
 	}
 
-	logger.Info("Committing transaction")
+	//logger.Info("Committing transaction")
 	if err := tx.Commit(); err != nil {
-		logger.Errorf("Failed to commit transaction: %v", err)
+		////logger.Errorf("Failed to commit transaction: %v", err)
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
-	logger.Info("Transaction committed successfully")
+	//logger.Info("Transaction committed successfully")
 	return nil
 }
 
@@ -89,7 +89,7 @@ func (d *Database) Query(ctx context.Context, tx *sql.Tx, query string, args ...
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
-	d.logInputSQL(query, args...)
+	d.logInputSQL(ctx, query, args...)
 	var rows *sql.Rows
 	var err error
 	if tx != nil {
@@ -98,9 +98,9 @@ func (d *Database) Query(ctx context.Context, tx *sql.Tx, query string, args ...
 		rows, err = d.db.QueryContext(ctx, query, args...)
 	}
 	if err != nil {
-		logger.Error(err)
+		//logger.Error(err)
 	}
-	logger.Info(rows)
+	//logger.Info(rows)
 	return rows, err
 }
 
@@ -108,7 +108,7 @@ func (d *Database) QueryRow(ctx context.Context, tx *sql.Tx, query string, args 
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
-	d.logInputSQL(query, args...)
+	d.logInputSQL(ctx, query, args...)
 	if tx != nil {
 		return tx.QueryRowContext(ctx, query, args...)
 	}
@@ -119,7 +119,7 @@ func (d *Database) Exec(ctx context.Context, tx *sql.Tx, query string, args ...a
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
-	d.logInputSQL(query, args...)
+	d.logInputSQL(ctx, query, args...)
 	var result sql.Result
 	var err error
 	if tx != nil {
@@ -128,7 +128,7 @@ func (d *Database) Exec(ctx context.Context, tx *sql.Tx, query string, args ...a
 		result, err = d.db.ExecContext(ctx, query, args...)
 	}
 	if err != nil {
-		logger.Error(err)
+		//logger.Error(err)
 	}
 	if result != nil {
 	}
@@ -139,7 +139,7 @@ func (d *Database) PingContext(ctx context.Context) error {
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
-	d.logInputSQL("PING")
+	log.Println("Ping database...")
 	return d.db.PingContext(ctx)
 }
 

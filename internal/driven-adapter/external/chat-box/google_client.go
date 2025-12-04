@@ -10,7 +10,6 @@ import (
 	"google.golang.org/api/option"
 
 	domain "math-ai.com/math-ai/internal/core/domain/chatbox"
-	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 // GoogleGeminiClient wraps the Google Gemini API client
@@ -23,17 +22,17 @@ type GoogleGeminiClient struct {
 // NewGoogleGeminiClient creates a new Google Gemini client
 func NewGoogleGeminiClient(ctx context.Context, apiKey string) (*GoogleGeminiClient, error) {
 	if apiKey == "" {
-		logger.Warn("Google Gemini API key is empty. ChatBox functionality will not work.")
+		//logger.Warn("Google Gemini API key is empty. ChatBox functionality will not work.")
 		return nil, errors.New("Google Gemini API key is required")
 	}
 
-	logger.Infof("Initializing Google Gemini client with model: gemini-2.5-flash")
-	logger.Infof("API Key: %s", apiKey)
+	////logger.Infof("Initializing Google Gemini client with model: gemini-2.5-flash")
+	////logger.Infof("API Key: %s", apiKey)
 
 	// Create Gemini client
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
 	if err != nil {
-		logger.Errorf("Failed to create Google Gemini client: %v", err)
+		////logger.Errorf("Failed to create Google Gemini client: %v", err)
 		return nil, fmt.Errorf("failed to create Google Gemini client: %w", err)
 	}
 
@@ -96,10 +95,10 @@ func (c *GoogleGeminiClient) SendMessage(ctx context.Context, conv *domain.Conve
 	}
 
 	// Generate response
-	logger.Infof("Sending message to Google Gemini: %s", prompt)
+	////logger.Infof("Sending message to Google Gemini: %s", prompt)
 	resp, err := chat.SendMessage(ctx, genai.Text(prompt))
 	if err != nil {
-		logger.Errorf("Failed to send message to Google Gemini: %v", err)
+		////logger.Errorf("Failed to send message to Google Gemini: %v", err)
 		return nil, fmt.Errorf("failed to send message to Google Gemini: %w", err)
 	}
 
@@ -210,7 +209,7 @@ func (c *GoogleGeminiClient) StreamMessage(ctx context.Context, conv *domain.Con
 			}
 
 			if err != nil {
-				logger.Errorf("Stream error: %v", err)
+				////logger.Errorf("Stream error: %v", err)
 				chunkChan <- StreamChunk{
 					Error: err,
 					Done:  true,

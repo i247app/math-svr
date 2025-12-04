@@ -11,7 +11,6 @@ import (
 	"github.com/tmc/langchaingo/llms/openai"
 
 	domain "math-ai.com/math-ai/internal/core/domain/chatbox"
-	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 // LangChainClient wraps LangChain Go with support for multiple LLM providers
@@ -32,7 +31,7 @@ type LangChainConfig struct {
 // NewLangChainClient creates a new LangChain client
 func NewLangChainClient(ctx context.Context, config LangChainConfig) (*LangChainClient, error) {
 	if config.APIKey == "" {
-		logger.Warn("LangChain API key is empty")
+		//logger.Warn("LangChain API key is empty")
 		return nil, errors.New("LangChain API key is required")
 	}
 
@@ -46,13 +45,13 @@ func NewLangChainClient(ctx context.Context, config LangChainConfig) (*LangChain
 		if modelName == "" {
 			modelName = "gpt-3.5-turbo"
 		}
-		logger.Infof("Initializing LangChain with OpenAI provider, model: %s", modelName)
+		////logger.Infof("Initializing LangChain with OpenAI provider, model: %s", modelName)
 		llmModel, err = openai.New(
 			openai.WithToken(config.APIKey),
 			openai.WithModel(modelName),
 		)
 		if err != nil {
-			logger.Errorf("Failed to create LangChain OpenAI client: %v", err)
+			////logger.Errorf("Failed to create LangChain OpenAI client: %v", err)
 			return nil, fmt.Errorf("failed to create LangChain OpenAI client: %w", err)
 		}
 
@@ -61,14 +60,14 @@ func NewLangChainClient(ctx context.Context, config LangChainConfig) (*LangChain
 		if modelName == "" {
 			modelName = "gemini-2.5-flash"
 		}
-		logger.Infof("Initializing LangChain with Google AI provider, model: %s", modelName)
+		////logger.Infof("Initializing LangChain with Google AI provider, model: %s", modelName)
 		llmModel, err = googleai.New(
 			ctx,
 			googleai.WithAPIKey(config.APIKey),
 			googleai.WithDefaultModel(modelName),
 		)
 		if err != nil {
-			logger.Errorf("Failed to create LangChain Google AI client: %v", err)
+			////logger.Errorf("Failed to create LangChain Google AI client: %v", err)
 			return nil, fmt.Errorf("failed to create LangChain Google AI client: %w", err)
 		}
 
@@ -100,10 +99,10 @@ func (c *LangChainClient) SendMessage(ctx context.Context, conv *domain.Conversa
 	}
 
 	// Generate content
-	logger.Infof("[LangChain] Generating content with %d messages", len(messages))
+	////logger.Infof("[LangChain] Generating content with %d messages", len(messages))
 	resp, err := c.llm.GenerateContent(ctx, messages, opts...)
 	if err != nil {
-		logger.Errorf("Failed to generate content with LangChain: %v", err)
+		////logger.Errorf("Failed to generate content with LangChain: %v", err)
 		return nil, fmt.Errorf("failed to generate content: %w", err)
 	}
 
@@ -115,7 +114,7 @@ func (c *LangChainClient) SendMessage(ctx context.Context, conv *domain.Conversa
 	choice := resp.Choices[0]
 	responseText := choice.Content
 
-	logger.Infof("[LangChain] Received response: %s", responseText)
+	////logger.Infof("[LangChain] Received response: %s", responseText)
 
 	// Calculate token counts (approximate)
 	promptTokens := c.estimateTokens(c.buildPromptText(conv))
@@ -178,7 +177,7 @@ func (c *LangChainClient) StreamMessage(ctx context.Context, conv *domain.Conver
 		// Generate content with streaming
 		_, err := c.llm.GenerateContent(ctx, messages, streamOpts...)
 		if err != nil {
-			logger.Errorf("Stream error: %v", err)
+			////logger.Errorf("Stream error: %v", err)
 			chunkChan <- StreamChunk{
 				Error: err,
 				Done:  true,

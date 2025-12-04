@@ -8,7 +8,6 @@ import (
 
 	"github.com/sashabaranov/go-openai"
 	domain "math-ai.com/math-ai/internal/core/domain/chatbox"
-	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 // OpenAIClient wraps the OpenAI API client
@@ -20,10 +19,10 @@ type OpenAIClient struct {
 // NewOpenAIClient creates a new OpenAI client
 func NewOpenAIClient(apiKey string) *OpenAIClient {
 	if apiKey == "" {
-		logger.Warn("OpenAI API key is empty. ChatBox functionality will not work.")
+		//logger.Warn("OpenAI API key is empty. ChatBox functionality will not work.")
 	}
 
-	logger.Infof("Initializing OpenAI client with API key: %s", apiKey)
+	////logger.Infof("Initializing OpenAI client with API key: %s", apiKey)
 	client := openai.NewClient(apiKey)
 
 	return &OpenAIClient{
@@ -63,7 +62,7 @@ func (c *OpenAIClient) SendMessage(ctx context.Context, conv *domain.Conversatio
 	// Send request to OpenAI
 	resp, err := c.client.CreateChatCompletion(ctx, req)
 	if err != nil {
-		logger.Errorf("Failed to create chat completion: %v", err)
+		////logger.Errorf("Failed to create chat completion: %v", err)
 		return nil, fmt.Errorf("failed to create chat completion: %w", err)
 	}
 
@@ -108,7 +107,7 @@ func (c *OpenAIClient) StreamMessage(ctx context.Context, conv *domain.Conversat
 	// Send request to OpenAI
 	stream, err := c.client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
-		logger.Errorf("Failed to create chat completion stream: %v", err)
+		////logger.Errorf("Failed to create chat completion stream: %v", err)
 		return nil, fmt.Errorf("failed to create chat completion stream: %w", err)
 	}
 
@@ -133,7 +132,7 @@ func (c *OpenAIClient) StreamMessage(ctx context.Context, conv *domain.Conversat
 			}
 
 			if err != nil {
-				logger.Errorf("Stream error: %v", err)
+				////logger.Errorf("Stream error: %v", err)
 				chunkChan <- StreamChunk{
 					Error: err,
 					Done:  true,

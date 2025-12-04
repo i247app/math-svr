@@ -9,7 +9,6 @@ import (
 	"math-ai.com/math-ai/internal/applications/dto"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
-	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
@@ -111,7 +110,7 @@ func (c *ChatBoxController) handleStreamingResponse(w http.ResponseWriter, r *ht
 	encoder := json.NewEncoder(w)
 	for chunk := range streamChan {
 		if chunk.Error != nil {
-			logger.Errorf("Stream error: %v", chunk.Error)
+			////logger.Errorf("Stream error: %v", chunk.Error)
 			// Send error chunk
 			fmt.Fprintf(w, "data: %s\n\n", mustMarshalJSON(map[string]interface{}{
 				"error": chunk.Error.Error(),
@@ -129,7 +128,7 @@ func (c *ChatBoxController) handleStreamingResponse(w http.ResponseWriter, r *ht
 		}
 
 		if err := encoder.Encode(chunkData); err != nil {
-			logger.Errorf("Failed to encode chunk: %v", err)
+			////logger.Errorf("Failed to encode chunk: %v", err)
 			break
 		}
 		flusher.Flush()
@@ -144,7 +143,7 @@ func (c *ChatBoxController) handleStreamingResponse(w http.ResponseWriter, r *ht
 func mustMarshalJSON(v interface{}) string {
 	data, err := json.Marshal(v)
 	if err != nil {
-		logger.Errorf("Failed to marshal JSON: %v", err)
+		////logger.Errorf("Failed to marshal JSON: %v", err)
 		return "{\"error\": \"internal server error\"}"
 	}
 	return string(data)

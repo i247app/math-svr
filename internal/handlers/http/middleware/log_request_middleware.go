@@ -13,7 +13,6 @@ import (
 	"sync"
 
 	"math-ai.com/math-ai/internal/session"
-	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/requtil"
 )
 
@@ -49,59 +48,71 @@ func newRequestLoggerMiddleware() *requestLoggerMiddleware {
 
 func (m *requestLoggerMiddleware) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var (
-			reqID int64 = m.nextRequestID()
-		)
+		// var (
+		// 	reqID int64 = m.nextRequestID()
+		// )
 
 		rawBody, isJSON, err := m.readRequestBody(r)
 		if err != nil {
-			logger.Info("logRequestMiddleware: read request body error: %v", err)
+			log.Printf("logRequestMiddleware: read request body error: %v", err)
 			return
 		}
 
 		token, identifier := m.requestIdentifier(r)
 
-		// inMsg := fmt.Sprintf("IN [%v] <%v> %v %v", reqID, identifier, r.Method, r.URL.Path)
-		inMsg := fmt.Sprintf("IN [%v] [%v] %v %v", token[len(token)-6:], identifier, r.Method, r.URL.Path)
-		logger.Info("%s", inMsg)
+		// Extract last 6 characters of token (or entire token if shorter)
+		tokenDisplay := token
+		if len(token) > 6 {
+			tokenDisplay = token[len(token)-6:]
+		}
+
+		inMsg := fmt.Sprintf("IN [%v] [%v] %v %v", tokenDisplay, identifier, r.Method, r.URL.Path)
+		log.Printf("%s", inMsg)
 
 		if r.Method == http.MethodGet && strings.TrimSpace(r.URL.RawQuery) != "" {
-			logger.Info("QUERY PARAMS> %v", r.URL.RawQuery)
+			msg := fmt.Sprintf("IN [%v] [%v] QUERY PARAMS> %v", tokenDisplay, identifier, r.URL.RawQuery)
+			log.Println(msg)
 		}
 
 		if isJSON {
 			truncatedBodyBytes := m.truncateSensitiveFields(rawBody.Bytes())
-			logger.Info("REQUEST BODY> %s", truncatedBodyBytes)
+			msg := fmt.Sprintf("IN [%v] [%v] REQUEST BODY> %s", tokenDisplay, identifier, truncatedBodyBytes)
+			log.Println(msg)
 		} else {
 			mapBody := m.decodeBodyToMap(rawBody.Bytes())
 			if len(mapBody) > 0 {
-				logger.Info("REQUEST BODY> %v", mapBody)
+				msg := fmt.Sprintf("IN [%v] [%v] REQUEST BODY> %v", tokenDisplay, identifier, mapBody)
+				log.Println(msg)
 			}
 		}
 
 		if m.logHeaders {
 			for name, values := range r.Header {
 				for _, value := range values {
-					log.Println("IN HEADER> ", name, value)
+					msg := fmt.Sprintf("IN [%v] [%v] HEADER> %v: %v", tokenDisplay, identifier, name, value)
+					log.Println(msg)
 				}
 			}
 		}
 
 		if metadata := m.requestMetadata(r); metadata != nil {
-			logger.Info("__metadata: %v\n", metadata)
+			msg := fmt.Sprintf("IN [%v] [%v] __metadata: %v", tokenDisplay, identifier, metadata)
+			log.Println(msg)
 		}
 
 		wrapper := m.newResponseWrapper(w)
 		next.ServeHTTP(wrapper, r)
 
-		outMsg := m.outboundMessage(reqID, identifier, r, wrapper)
-		logger.Info("%s", outMsg)
+		outMsg := m.outboundMessage(tokenDisplay, identifier, r, wrapper)
+		log.Printf("%s", outMsg)
 
 		if m.logHeaders {
 			if h := wrapper.Header().Get("X-Auth-Token"); h != "" {
-				log.Println("OUT HEADER> ", "X-Auth-Token", h)
+				msg := fmt.Sprintf("OUT [%v] [%v] HEADER> %v: %v", tokenDisplay, identifier, "X-Auth-Token", h)
+				log.Println(msg)
 			} else {
-				log.Println("OUT HEADER> ", "X-Auth-Token", "<empty>")
+				msg := fmt.Sprintf("OUT [%v] [%v] HEADER> %v: %v", tokenDisplay, identifier, "X-Auth-Token", "<empty>")
+				log.Println(msg)
 			}
 		}
 
@@ -196,12 +207,13 @@ func (m *requestLoggerMiddleware) newResponseWrapper(w http.ResponseWriter) *res
 	}
 }
 
-func (m *requestLoggerMiddleware) outboundMessage(reqID int64, identifier string, r *http.Request, wrapper *responseWriterWrapper) string {
+func (m *requestLoggerMiddleware) outboundMessage(tokenDisplay string, identifier string, r *http.Request, wrapper *responseWriterWrapper) string {
 	if strings.Contains(wrapper.Header().Get("Content-Type"), "application/json") {
-		return fmt.Sprintf("OUT [%v] <%v> %v %v: %v", reqID, identifier, r.Method, r.URL.Path, wrapper.body.String())
+		return fmt.Sprintf("OUT [%v] [%v] %v %v: %v", tokenDisplay, identifier, r.Method, r.URL.Path, wrapper.body.String())
 	}
 
-	return fmt.Sprintf("OUT [%v] <%v> %v %v: <>\n", reqID, identifier, r.Method, r.URL.Path)
+	inMsg := fmt.Sprintf("IN [%v] [%v] %v %v", tokenDisplay, identifier, r.Method, r.URL.Path)
+	return inMsg
 }
 
 func (m *requestLoggerMiddleware) flushResponse(w http.ResponseWriter, wrapper *responseWriterWrapper) {

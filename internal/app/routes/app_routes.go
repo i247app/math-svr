@@ -6,14 +6,13 @@ import (
 	"math-ai.com/math-ai/internal/app/services"
 	gqlhandler "math-ai.com/math-ai/internal/handlers/graphql"
 	"math-ai.com/math-ai/internal/handlers/http/controller"
-	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *services.ServiceContainer) {
 	// GraphQL endpoint
 	graphqlHandler, err := gqlhandler.NewGraphQLHandler(services)
 	if err != nil {
-		logger.Fatalf("Failed to create GraphQL handler: %v", err)
+		//logger.Fatalf("Failed to create GraphQL handler: %v", err)
 	}
 	server.AddRoute("POST /graphql", graphqlHandler.ServeHTTP)
 

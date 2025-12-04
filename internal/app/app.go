@@ -15,7 +15,6 @@ import (
 	"math-ai.com/math-ai/internal/shared/config"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/db"
-	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
@@ -27,7 +26,7 @@ func NewFromEnv(envPath string) (*App, error) {
 	}
 
 	// Initialize logger
-	logger.Initialize(env.HostConfig.ServerMode)
+	// logger.Initialize(env.HostConfig.ServerMode)
 
 	// Initialize database connection
 	database, err := db.NewDatabase(env.DBEnv)
@@ -87,20 +86,21 @@ func (a *App) Init() error {
 }
 
 func (a *App) Start() error {
-	logger.Infof("Starting server on %s:%s", a.Resource.HostConfig.ServerHost, a.Resource.HostConfig.ServerPort)
+	////logger.Infof("Starting server on %s:%s", a.Resource.HostConfig.ServerHost, a.Resource.HostConfig.ServerPort)
 	return a.Server.Start()
 }
 
 // Setup middlewares
 func (a *App) setupMiddleware(gexSvr *gex.Server, services *services.ServiceContainer) {
-	logger.Info("Setup middlewares...")
+	//logger.Info("Setup middlewares...")
 	// Middleware are run in order of declaration
 	// The first middleware in the slice runs first
 	middlewares := []gex.Middleware{
 		// Start-->
+		middleware.LogRequestMiddleware,
+		middleware.LoggerMiddleware(a.Resource.Env.LogFile),
 		middleware.GexSessionMiddleware(services.SessionProvider, session.SessionContextKey),
 		middleware.LocaleMiddleware("en"),
-		middleware.LogRequestMiddleware,
 		// -->End
 	}
 

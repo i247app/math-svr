@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"path"
 	"runtime"
@@ -9,7 +10,8 @@ import (
 	"math-ai.com/math-ai/internal/shared/logger"
 )
 
-func (*Database) logInputSQL(query string, args ...any) {
+func (*Database) logInputSQL(ctx context.Context, query string, args ...any) {
+	logger := logger.GetLogger(ctx)
 	var tag string
 	pc, file, line, ok := runtime.Caller(2) // Get information about the caller 3 frames up
 	if ok {

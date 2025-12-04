@@ -8,7 +8,6 @@ import (
 	"math-ai.com/math-ai/internal/app/services"
 	"math-ai.com/math-ai/internal/handlers/graphql/schema"
 	"math-ai.com/math-ai/internal/shared/constant/status"
-	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
@@ -38,7 +37,7 @@ func (h *GraphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		logger.Errorf("Failed to decode GraphQL request: %v", err)
+		////logger.Errorf("Failed to decode GraphQL request: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -54,7 +53,7 @@ func (h *GraphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Log errors if any
 	if len(result.Errors) > 0 {
-		logger.Errorf("GraphQL errors: %v", result.Errors)
+		////logger.Errorf("GraphQL errors: %v", result.Errors)
 		response.WriteJsonGraphQL(w, r.Context(), result, nil, status.BAD_REQUEST)
 		return
 	}
@@ -65,7 +64,7 @@ func (h *GraphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// // Write the response
 	// if err := json.NewEncoder(w).Encode(result); err != nil {
-	// 	logger.Errorf("Failed to encode GraphQL response: %v", err)
+	// 	////logger.Errorf("Failed to encode GraphQL response: %v", err)
 	// }
 
 	response.WriteJsonGraphQL(w, r.Context(), result.Data, nil, status.OK)

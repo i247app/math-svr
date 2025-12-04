@@ -7,7 +7,6 @@ import (
 	"time"
 
 	domain "math-ai.com/math-ai/internal/core/domain/chatbox"
-	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 // MockOpenAIClient is a mock implementation for testing without OpenAI API
@@ -17,7 +16,7 @@ type MockOpenAIClient struct {
 
 // NewMockOpenAIClient creates a new mock OpenAI client for testing
 func NewMockOpenAIClient() *MockOpenAIClient {
-	logger.Info("Initializing Mock OpenAI client (TEST MODE - No API calls will be made)")
+	//logger.Info("Initializing Mock OpenAI client (TEST MODE - No API calls will be made)")
 	return &MockOpenAIClient{
 		enabled: true,
 	}
@@ -29,7 +28,7 @@ func (m *MockOpenAIClient) SendMessage(ctx context.Context, conv *domain.Convers
 		return nil, fmt.Errorf("mock client is disabled")
 	}
 
-	logger.Info("[MOCK MODE] Processing message (no actual API call)")
+	//logger.Info("[MOCK MODE] Processing message (no actual API call)")
 
 	// Get the last user message
 	messages := conv.Messages()
@@ -49,8 +48,8 @@ func (m *MockOpenAIClient) SendMessage(ctx context.Context, conv *domain.Convers
 		Role:             "assistant",
 		Model:            conv.Model(),
 		FinishReason:     "stop",
-		PromptTokens:     len(userMessage) / 4,     // Rough estimate
-		CompletionTokens: len(mockResponse) / 4,    // Rough estimate
+		PromptTokens:     len(userMessage) / 4,  // Rough estimate
+		CompletionTokens: len(mockResponse) / 4, // Rough estimate
 		TotalTokens:      (len(userMessage) + len(mockResponse)) / 4,
 	}, nil
 }
@@ -61,7 +60,7 @@ func (m *MockOpenAIClient) StreamMessage(ctx context.Context, conv *domain.Conve
 		return nil, fmt.Errorf("mock client is disabled")
 	}
 
-	logger.Info("[MOCK MODE] Processing streaming message (no actual API call)")
+	//logger.Info("[MOCK MODE] Processing streaming message (no actual API call)")
 
 	// Get the last user message
 	messages := conv.Messages()
