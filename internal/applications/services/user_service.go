@@ -4,21 +4,31 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
+	"time"
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/validators"
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	di "math-ai.com/math-ai/internal/core/di/services"
+	domain "math-ai.com/math-ai/internal/core/domain/user"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
+	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
+const (
+	// AvatarPresignedURLExpiration is the duration for which avatar presigned URLs are valid
+	AvatarPresignedURLExpiration = 24 * time.Hour // 24 hours
+)
+
 type UserService struct {
-	validator   validators.IUserValidator
-	repo        repositories.IUserRepository
-	loginRepo   repositories.ILoginRepository
-	profileRepo repositories.IProfileRepository
+	validator      validators.IUserValidator
+	repo           repositories.IUserRepository
+	loginRepo      repositories.ILoginRepository
+	profileRepo    repositories.IProfileRepository
+	storageService di.IStorageService
 }
 
 func NewUserService(
@@ -26,12 +36,14 @@ func NewUserService(
 	repo repositories.IUserRepository,
 	loginRepo repositories.ILoginRepository,
 	profileRepo repositories.IProfileRepository,
+	storageService di.IStorageService,
 ) di.IUserService {
 	return &UserService{
-		validator:   validator,
-		repo:        repo,
-		loginRepo:   loginRepo,
-		profileRepo: profileRepo,
+		validator:      validator,
+		repo:           repo,
+		loginRepo:      loginRepo,
+		profileRepo:    profileRepo,
+		storageService: storageService,
 	}
 }
 
@@ -54,11 +66,10 @@ func (s *UserService) ListUsers(ctx context.Context, req *dto.ListUserRequest) (
 		return status.SUCCESS, []*dto.UserResponse{}, pagination, nil
 	}
 
-	res := make([]*dto.UserResponse, len(users))
-
-	for i, user := range users {
-		userRes := dto.UserResponseFromDomain(user)
-		res[i] = &userRes
+	// Build responses with presigned URLs
+	res, err := s.buildUserResponsesWithPresignedURLs(ctx, users)
+	if err != nil {
+		return status.INTERNAL, nil, nil, err
 	}
 
 	return status.SUCCESS, res, pagination, nil
@@ -70,9 +81,12 @@ func (s *UserService) GetUserByLoginName(ctx context.Context, loginName string) 
 		return status.INTERNAL, nil, err
 	}
 
-	res := dto.UserResponseFromDomain(user)
+	res, err := s.buildUserResponseWithPresignedURL(ctx, user)
+	if err != nil {
+		return status.INTERNAL, nil, err
+	}
 
-	return status.SUCCESS, &res, nil
+	return status.SUCCESS, res, nil
 }
 
 func (s *UserService) GetUserByID(ctx context.Context, uid string) (status.Code, *dto.UserResponse, error) {
@@ -84,9 +98,12 @@ func (s *UserService) GetUserByID(ctx context.Context, uid string) (status.Code,
 		return status.USER_NOT_FOUND, nil, err_svc.ErrUserNotFound
 	}
 
-	res := dto.UserResponseFromDomain(user)
+	res, err := s.buildUserResponseWithPresignedURL(ctx, user)
+	if err != nil {
+		return status.INTERNAL, nil, err
+	}
 
-	return status.SUCCESS, &res, nil
+	return status.SUCCESS, res, nil
 }
 
 func (s *UserService) GetUserByEmail(ctx context.Context, email string) (status.Code, *dto.UserResponse, error) {
@@ -98,9 +115,87 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (status.
 		return status.USER_NOT_FOUND, nil, err_svc.ErrUserNotFound
 	}
 
+	res, err := s.buildUserResponseWithPresignedURL(ctx, user)
+	if err != nil {
+		return status.INTERNAL, nil, err
+	}
+
+	return status.SUCCESS, res, nil
+}
+
+// handleAvatarUpload uploads avatar file to S3 and returns preview URL
+func (s *UserService) handleAvatarUpload(ctx context.Context, file io.Reader, filename, contentType string) (*dto.UploadFileResponse, error) {
+	if file == nil || filename == "" {
+		return nil, nil
+	}
+
+	// Upload to S3 with "avatars" folder
+	uploadReq := &dto.UploadFileRequest{
+		File:        file,
+		Filename:    filename,
+		ContentType: contentType,
+		Folder:      "user",
+	}
+
+	statusCode, res, err := s.storageService.Upload(ctx, uploadReq)
+	if err != nil || statusCode != status.OK {
+		logger.Errorf("Failed to upload avatar: %v", err)
+		return nil, fmt.Errorf("failed to upload avatar: %w", err)
+	}
+
+	// Return preview URL for UI display
+	return res, nil
+}
+
+// deleteOldAvatar removes old avatar from S3 if it exists
+func (s *UserService) deleteOldAvatar(ctx context.Context, avatarKey *string) {
+	if avatarKey == nil || *avatarKey == "" {
+		return
+	}
+
+	deleteReq := &dto.DeleteFileRequest{
+		Key: *avatarKey,
+	}
+
+	_, err := s.storageService.Delete(ctx, deleteReq)
+	if err != nil {
+		logger.Warnf("Failed to delete old avatar (%s): %v", *avatarKey, err)
+		// Don't return error - old avatar cleanup is not critical
+	}
+}
+
+// buildUserResponseWithPresignedURL creates a UserResponse with presigned avatar URL
+func (s *UserService) buildUserResponseWithPresignedURL(ctx context.Context, user *domain.User) (*dto.UserResponse, error) {
 	res := dto.UserResponseFromDomain(user)
 
-	return status.SUCCESS, &res, nil
+	// Generate presigned URL for avatar if exists
+	if user.AvatarURL() != nil && *user.AvatarURL() != "" {
+		presignedURL, err := s.storageService.CreatePresignedUrl(ctx, *user.AvatarURL(), AvatarPresignedURLExpiration)
+		if err != nil {
+			logger.Warnf("Failed to generate presigned URL for avatar (%s): %v", *user.AvatarURL(), err)
+			// Don't fail the request if presigned URL generation fails
+			// User data is still valid, just without the presigned URL
+		} else {
+			res.AvatarPreviewURL = &presignedURL
+		}
+	}
+
+	return &res, nil
+}
+
+// buildUserResponsesWithPresignedURLs creates UserResponses with presigned avatar URLs
+func (s *UserService) buildUserResponsesWithPresignedURLs(ctx context.Context, users []*domain.User) ([]*dto.UserResponse, error) {
+	responses := make([]*dto.UserResponse, len(users))
+
+	for i, user := range users {
+		res, err := s.buildUserResponseWithPresignedURL(ctx, user)
+		if err != nil {
+			return nil, err
+		}
+		responses[i] = res
+	}
+
+	return responses, nil
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (status.Code, *dto.UserResponse, error) {
@@ -127,7 +222,23 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 		}
 	}
 
+	// Handle avatar upload before creating user
+	var avatarKey *string
+	if req.AvatarFile != nil {
+		res, err := s.handleAvatarUpload(ctx, req.AvatarFile, req.AvatarFilename, req.AvatarContentType)
+		if err != nil {
+			return status.INTERNAL, nil, fmt.Errorf("failed to upload avatar: %w", err)
+		}
+		avatarKey = &res.Key
+	}
+
 	createUserDomain := dto.BuildUserDomainForCreate(req)
+
+	// Set avatar URL if uploaded
+	if avatarKey != nil {
+		createUserDomain.SetAvatarURL(avatarKey)
+	}
+
 	handler := func(tx *sql.Tx) error {
 		// Create the user
 		_, err := s.repo.Create(ctx, tx, createUserDomain)
@@ -167,9 +278,12 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 		return status.INTERNAL, nil, err
 	}
 
-	res := dto.UserResponseFromDomain(user)
+	res, err := s.buildUserResponseWithPresignedURL(ctx, user)
+	if err != nil {
+		return status.INTERNAL, nil, err
+	}
 
-	return status.SUCCESS, &res, nil
+	return status.SUCCESS, res, nil
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (status.Code, *dto.UserResponse, error) {
@@ -178,11 +292,48 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 		return statusCode, nil, err
 	}
 
+	// Get existing user to check for old avatar
+	existingUser, err := s.repo.FindByID(ctx, req.UID)
+	if err != nil {
+		return status.INTERNAL, nil, err
+	}
+	if existingUser == nil {
+		return status.USER_NOT_FOUND, nil, err_svc.ErrUserNotFound
+	}
+
+	// Handle avatar updates
+	var newAvatarKey *string
+	if req.AvatarFile != nil {
+		// Upload new avatar
+		res, err := s.handleAvatarUpload(ctx, req.AvatarFile, req.AvatarFilename, req.AvatarContentType)
+		if err != nil {
+			return status.INTERNAL, nil, fmt.Errorf("failed to upload avatar: %w", err)
+		}
+		newAvatarKey = &res.Key
+
+		// Delete old avatar if exists
+		if existingUser.AvatarURL() != nil {
+			s.deleteOldAvatar(ctx, existingUser.AvatarURL())
+		}
+	} else if req.DeleteAvatar {
+		// Delete avatar if requested
+		if existingUser.AvatarURL() != nil {
+			s.deleteOldAvatar(ctx, existingUser.AvatarURL())
+		}
+		emptyString := ""
+		newAvatarKey = &emptyString
+	}
+
 	handler := func(tx *sql.Tx) error {
 		userDomain := dto.BuildUserDomainForUpdate(req)
-		_, err := s.repo.Update(ctx, userDomain)
-		if err != nil {
-			return err
+
+		// Set avatar URL if changed
+		if newAvatarKey != nil {
+			userDomain.SetAvatarURL(newAvatarKey)
+		}
+		_, updateErr := s.repo.Update(ctx, userDomain)
+		if updateErr != nil {
+			return updateErr
 		}
 
 		if req.Level != nil || req.Grade != nil {
@@ -191,28 +342,31 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 				Grade: req.Grade,
 				Level: req.Level,
 			})
-			_, err := s.profileRepo.Update(ctx, profileDomain)
-			if err != nil {
-				return err
+			_, profileErr := s.profileRepo.Update(ctx, profileDomain)
+			if profileErr != nil {
+				return profileErr
 			}
 		}
 
 		return nil
 	}
 
-	err := s.repo.DoTransaction(ctx, handler)
+	txErr := s.repo.DoTransaction(ctx, handler)
+	if txErr != nil {
+		return status.INTERNAL, nil, txErr
+	}
+
+	user, findErr := s.repo.FindByID(ctx, req.UID)
+	if findErr != nil {
+		return status.INTERNAL, nil, findErr
+	}
+
+	res, err := s.buildUserResponseWithPresignedURL(ctx, user)
 	if err != nil {
 		return status.INTERNAL, nil, err
 	}
 
-	user, err := s.repo.FindByID(ctx, req.UID)
-	if err != nil {
-		return status.INTERNAL, nil, err
-	}
-
-	res := dto.UserResponseFromDomain(user)
-
-	return status.SUCCESS, &res, nil
+	return status.SUCCESS, res, nil
 }
 
 func (s *UserService) DeleteUser(ctx context.Context, req *dto.DeleteUserRequest) (status.Code, error) {
@@ -260,6 +414,11 @@ func (s *UserService) ForceDeleteUser(ctx context.Context, req *dto.DeleteUserRe
 		return statusCode, err
 	}
 
+	user, err := s.repo.FindByID(ctx, req.UID)
+	if err != nil {
+		return status.INTERNAL, err
+	}
+
 	handler := func(tx *sql.Tx) error {
 		// Delete users
 		err := s.repo.ForceDelete(ctx, tx, req.UID)
@@ -288,9 +447,15 @@ func (s *UserService) ForceDeleteUser(ctx context.Context, req *dto.DeleteUserRe
 		return nil
 	}
 
-	err := s.repo.DoTransaction(ctx, handler)
+	err = s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.INTERNAL, err
 	}
+
+	// Delete avatar from storage if exists
+	if user.AvatarURL() != nil {
+		s.deleteOldAvatar(ctx, user.AvatarURL())
+	}
+
 	return status.SUCCESS, nil
 }

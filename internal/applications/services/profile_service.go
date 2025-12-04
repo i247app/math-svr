@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"time"
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/validators"
@@ -12,17 +13,20 @@ import (
 )
 
 type ProfileService struct {
-	validator validators.IProfileValidator
-	repo      repositories.IProfileRepository
+	validator      validators.IProfileValidator
+	repo           repositories.IProfileRepository
+	storageService di.IStorageService
 }
 
 func NewProfileService(
 	validator validators.IProfileValidator,
 	repo repositories.IProfileRepository,
+	storageService di.IStorageService,
 ) di.IProfileService {
 	return &ProfileService{
-		validator: validator,
-		repo:      repo,
+		validator:      validator,
+		repo:           repo,
+		storageService: storageService,
 	}
 }
 
@@ -36,6 +40,14 @@ func (s *ProfileService) FetchProfile(ctx context.Context, req *dto.FetchProfile
 	}
 
 	res := dto.ProfileResponseFromDomain(profile)
+
+	if profile.AvatarKey() != nil {
+		avatarURL, err := s.storageService.CreatePresignedUrl(ctx, *profile.AvatarKey(), time.Hour)
+		if err != nil {
+			return status.INTERNAL, nil, err
+		}
+		res.AvatarPreviewURL = &avatarURL
+	}
 
 	return status.SUCCESS, &res, nil
 }
@@ -70,6 +82,14 @@ func (s *ProfileService) CreateProfile(ctx context.Context, req *dto.CreateProfi
 	}
 
 	res := dto.ProfileResponseFromDomain(profile)
+
+	if profile.AvatarKey() != nil {
+		avatarURL, err := s.storageService.CreatePresignedUrl(ctx, *profile.AvatarKey(), time.Hour)
+		if err != nil {
+			return status.INTERNAL, nil, err
+		}
+		res.AvatarPreviewURL = &avatarURL
+	}
 
 	return status.SUCCESS, &res, nil
 }

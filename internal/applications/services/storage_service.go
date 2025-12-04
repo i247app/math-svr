@@ -138,12 +138,49 @@ func (s *StorageService) GetPreviewURL(ctx context.Context, originalURL string) 
 		return "", fmt.Errorf("invalid URL: cannot extract key")
 	}
 
-	return s.generatePreviewURL(key), nil
+	previewUrl, err := s.CreatePresignedUrl(ctx, key, time.Hour)
+	if err != nil {
+		logger.Errorf("Failed to generate preview URL for key %s: %v", key, err)
+		return "", fmt.Errorf("failed to generate preview URL: %w", err)
+	}
+
+	return previewUrl, nil
 }
 
 // ValidateFileType checks if the file type is allowed
 func (s *StorageService) ValidateFileType(filename string, contentType string) error {
 	return filetype.ValidateFile(filename, contentType)
+}
+
+// CreatePresignedUrl generates a temporary presigned URL for secure S3 object access
+func (s *StorageService) CreatePresignedUrl(ctx context.Context, key string, expiration time.Duration) (string, error) {
+	// Extract key from URL if full URL was provided
+	objectKey := s.extractKeyFromURL(key)
+	if objectKey == "" {
+		return "", fmt.Errorf("invalid or empty key")
+	}
+
+	// Create presign client
+	presignClient := s3.NewPresignClient(s.s3Client)
+
+	// Create GetObject request
+	getObjectInput := &s3.GetObjectInput{
+		Bucket: aws.String(s.config.Bucket),
+		Key:    aws.String(objectKey),
+	}
+
+	// Generate presigned URL
+	presignedReq, err := presignClient.PresignGetObject(ctx, getObjectInput, func(opts *s3.PresignOptions) {
+		opts.Expires = expiration
+	})
+
+	if err != nil {
+		logger.Errorf("Failed to create presigned URL for key %s: %v", objectKey, err)
+		return "", fmt.Errorf("failed to create presigned URL: %w", err)
+	}
+
+	logger.Infof("Created presigned URL for key %s (expires in %v)", objectKey, expiration)
+	return presignedReq.URL, nil
 }
 
 // generateKey creates a unique S3 key for the file

@@ -15,6 +15,7 @@ type Profile struct {
 	email     string
 	phone     string
 	grade     string
+	avatarKey *string
 	dob       *time.Time
 	level     string
 	status    string
@@ -71,6 +72,14 @@ func (p *Profile) Phone() string {
 
 func (p *Profile) SetPhone(phone string) {
 	p.phone = phone
+}
+
+func (p *Profile) AvatarKey() *string {
+	return p.avatarKey
+}
+
+func (p *Profile) SetAvatarKey(avatarKey *string) {
+	p.avatarKey = avatarKey
 }
 
 func (p *Profile) Dob() *time.Time {
@@ -157,6 +166,7 @@ func BuildProfileDomainFromModel(model *models.ProfileModel) *Profile {
 		phone:     model.Phone,
 		grade:     model.Grade,
 		dob:       model.Dob,
+		avatarKey: model.AvatarKey,
 		level:     model.Level,
 		status:    model.Status,
 		createID:  model.CreateID,

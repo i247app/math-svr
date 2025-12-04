@@ -91,9 +91,12 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		}
 	}
 
-	logger.Info("> loginSvc...")
+	logger.Info("> storageSvc...")
+	var storageSvc = services.NewStorageService(res.Env.S3Config)
+
+	logger.Info("> userSvc...")
 	var userValidator = validators.NewUserValidator()
-	var userSvc = services.NewUserService(userValidator, userRepo, loginRepo, profileRepo)
+	var userSvc = services.NewUserService(userValidator, userRepo, loginRepo, profileRepo, storageSvc)
 
 	logger.Info("> loginSvc...")
 	var loginValidator = validators.NewLoginValidator()
@@ -113,7 +116,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 
 	logger.Info("> profileSvc...")
 	var profileValidator = validators.NewProfileValidator()
-	var profileSvc = services.NewProfileService(profileValidator, profileRepo)
+	var profileSvc = services.NewProfileService(profileValidator, profileRepo, storageSvc)
 
 	logger.Info("> userLatestQuizSvc...")
 	var userLatestQuizValidator = validators.NewUserLatestQuizValidator()
@@ -124,9 +127,6 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 
 	var chatBoxValidator = validators.NewChatboxValidator()
 	var chatBoxSvc = services.NewChatBoxService(chatBoxClient, chatBoxValidator, profileSvc, userLatestQuizSvc)
-
-	logger.Info("> storageSvc...")
-	var storageSvc = services.NewStorageService(res.Env.S3Config)
 
 	return &ServiceContainer{
 		SessionManager:        sessionManager,

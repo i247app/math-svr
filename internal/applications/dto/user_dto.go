@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"io"
 	"time"
 
 	domain "math-ai.com/math-ai/internal/core/domain/user"
@@ -9,15 +10,16 @@ import (
 )
 
 type UserResponse struct {
-	ID        string     `json:"id"`
-	Email     string     `json:"email"`
-	Name      string     `json:"name"`
-	Phone     string     `json:"phone"`
-	AvatarURL *string    `json:"avatar_url"`
-	Dob       *time.Time `json:"dob"`
-	Role      string     `json:"role"`
-	CreateAt  time.Time  `json:"created_at"`
-	ModifyAt  time.Time  `json:"modified_at"`
+	ID               string     `json:"id"`
+	Email            string     `json:"email"`
+	Name             string     `json:"name"`
+	Phone            string     `json:"phone"`
+	AvatarURL        *string    `json:"-"`                  // S3 key/path
+	AvatarPreviewURL *string    `json:"avatar_preview_url"` // Temporary presigned URL for access
+	Dob              *time.Time `json:"dob"`
+	Role             string     `json:"role"`
+	CreateAt         time.Time  `json:"created_at"`
+	ModifyAt         time.Time  `json:"modified_at"`
 }
 
 type GetUserResponse struct {
@@ -46,6 +48,11 @@ type CreateUserRequest struct {
 	Password string     `json:"password"`
 	Dob      *string    `json:"dob"`
 
+	// Avatar upload fields (for multipart form)
+	AvatarFile        io.Reader `json:"avatar_file"`         // File reader
+	AvatarFilename    string    `json:"avatar_file_name"`    // Original filename
+	AvatarContentType string    `json:"avatar_content_type"` // MIME type
+
 	DeviceUUID string `json:"device_uuid,omitempty"`
 	DeviceName string `json:"device_name,omitempty"`
 }
@@ -64,6 +71,12 @@ type UpdateUserRequest struct {
 	Status *enum.EStatus `json:"status,omitempty"`
 	Grade  *string       `json:"grade,omitempty"`
 	Level  *string       `json:"level,omitempty"`
+
+	// Avatar upload fields (for multipart form)
+	AvatarFile        io.Reader `json:"-"`                       // File reader
+	AvatarFilename    string    `json:"-"`                       // Original filename
+	AvatarContentType string    `json:"-"`                       // MIME type
+	DeleteAvatar      bool      `json:"delete_avatar,omitempty"` // Flag to remove avatar
 }
 
 type UpdateUserResponse struct {

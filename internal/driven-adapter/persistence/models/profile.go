@@ -10,6 +10,7 @@ type ProfileModel struct {
 	Name      string
 	Phone     string
 	Email     string
+	AvatarKey *string
 	Dob       *time.Time
 	Grade     string
 	Level     string

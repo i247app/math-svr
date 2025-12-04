@@ -259,6 +259,11 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 		args = append(args, user.Role())
 	}
 
+	if user.AvatarURL() != nil {
+		updates = append(updates, "avatar_url = ?")
+		args = append(args, user.AvatarURL())
+	}
+
 	updates = append(updates, "modify_dt = ?")
 	args = append(args, time.Now().UTC())
 

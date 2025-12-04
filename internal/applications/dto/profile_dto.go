@@ -8,17 +8,18 @@ import (
 )
 
 type ProfileResponse struct {
-	ID         string    `json:"id"`
-	UID        string    `json:"uid"`
-	Name       string    `json:"name"`
-	Email      string    `json:"email"`
-	Phone      string    `json:"phone"`
-	Age        *int      `json:"age"`
-	Grade      string    `json:"grade"`
-	Level      string    `json:"level"`
-	Status     string    `json:"status"`
-	CreatedAt  time.Time `json:"created_at"`
-	ModifiedAt time.Time `json:"modified_at"`
+	ID               string    `json:"id"`
+	UID              string    `json:"uid"`
+	Name             string    `json:"name"`
+	Email            string    `json:"email"`
+	Phone            string    `json:"phone"`
+	Age              *int      `json:"age"`
+	Grade            string    `json:"grade"`
+	AvatarPreviewURL *string   `json:"avatar_preview_url"`
+	Level            string    `json:"level"`
+	Status           string    `json:"status"`
+	CreatedAt        time.Time `json:"created_at"`
+	ModifiedAt       time.Time `json:"modified_at"`
 }
 
 type FetchProfileRequest struct {
