@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"io"
 	"time"
 
 	domain "math-ai.com/math-ai/internal/core/domain/grade"
@@ -42,6 +43,11 @@ type CreateGradeRequest struct {
 	Description  string  `json:"description"`
 	IconURL      *string `json:"icon_url,omitempty"`
 	DisplayOrder int8    `json:"display_order"`
+
+	// image upload fields (for multipart form)
+	IconFile        io.Reader `json:"icon_file"`         // File reader
+	IconFilename    string    `json:"icon_file_name"`    // Original filename
+	IconContentType string    `json:"icon_content_type"` // MIME type
 }
 
 type CreateGradeResponse struct {

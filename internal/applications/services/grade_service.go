@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/validators"
@@ -13,17 +15,20 @@ import (
 )
 
 type GradeService struct {
-	validator validators.IGradeValidator
-	repo      repositories.IGradeRepository
+	validator      validators.IGradeValidator
+	repo           repositories.IGradeRepository
+	storageService di.IStorageService
 }
 
 func NewGradeService(
 	validator validators.IGradeValidator,
 	repo repositories.IGradeRepository,
+	storageService di.IStorageService,
 ) di.IGradeService {
 	return &GradeService{
-		validator: validator,
-		repo:      repo,
+		validator:      validator,
+		repo:           repo,
+		storageService: storageService,
 	}
 }
 
@@ -49,6 +54,15 @@ func (s *GradeService) ListGrades(ctx context.Context, req *dto.ListGradeRequest
 	res := make([]*dto.GradeResponse, len(grades))
 	for i, grade := range grades {
 		gradeRes := dto.GradeResponseFromDomain(grade)
+		if grade.IconURL() != nil {
+			signedURL, err := s.storageService.CreatePresignedUrl(ctx, *grade.IconURL(), time.Hour)
+			if err != nil {
+				return status.INTERNAL, nil, nil, fmt.Errorf("failed to create presigned URL: %w", err)
+			}
+			if signedURL != "" {
+				gradeRes.IconURL = &signedURL
+			}
+		}
 		res[i] = &gradeRes
 	}
 
@@ -65,6 +79,16 @@ func (s *GradeService) GetGradeByID(ctx context.Context, id string) (status.Code
 	}
 
 	res := dto.GradeResponseFromDomain(grade)
+
+	if grade.IconURL() != nil {
+		signedURL, err := s.storageService.CreatePresignedUrl(ctx, *grade.IconURL(), time.Hour)
+		if err != nil {
+			return status.INTERNAL, nil, fmt.Errorf("failed to create presigned URL: %w", err)
+		}
+		if signedURL != "" {
+			res.IconURL = &signedURL
+		}
+	}
 
 	return status.SUCCESS, &res, nil
 }
@@ -98,7 +122,22 @@ func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequ
 		return status.GRADE_ALREADY_EXISTS, nil, err_svc.ErrGradeAlreadyExists
 	}
 
+	// Handle avatar upload before creating user
+	var iconKey *string
+	if req.IconFile != nil {
+		res, err := s.storageService.HandleUpload(ctx, req.IconFile, req.IconFilename, req.IconContentType, "grade")
+		if err != nil {
+			return status.INTERNAL, nil, fmt.Errorf("failed to upload avatar: %w", err)
+		}
+		iconKey = &res.Key
+	}
+
 	gradeDomain := dto.BuildGradeDomainForCreate(req)
+
+	// Set avatar URL if uploaded
+	if iconKey != nil {
+		gradeDomain.SetIconURL(iconKey)
+	}
 
 	// Create grade without transaction (simple single table insert)
 	_, err = s.repo.Create(ctx, nil, gradeDomain)

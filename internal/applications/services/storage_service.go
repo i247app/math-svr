@@ -50,6 +50,30 @@ func NewStorageService(s3Config *config.S3Config) di.IStorageService {
 	}
 }
 
+// handleAvatarUpload uploads avatar file to S3 and returns preview URL
+func (s *StorageService) HandleUpload(ctx context.Context, file io.Reader, filename, contentType, folder string) (*dto.UploadFileResponse, error) {
+	if file == nil || filename == "" {
+		return nil, nil
+	}
+
+	// Upload to S3 with "avatars" folder
+	uploadReq := &dto.UploadFileRequest{
+		File:        file,
+		Filename:    filename,
+		ContentType: contentType,
+		Folder:      folder,
+	}
+
+	statusCode, res, err := s.Upload(ctx, uploadReq)
+	if err != nil || statusCode != status.OK {
+		logger.Errorf("Failed to upload avatar: %v", err)
+		return nil, fmt.Errorf("failed to upload avatar: %w", err)
+	}
+
+	// Return preview URL for UI display
+	return res, nil
+}
+
 // Upload uploads a file to S3 and returns URLs
 func (s *StorageService) Upload(ctx context.Context, req *dto.UploadFileRequest) (status.Code, *dto.UploadFileResponse, error) {
 	// Validate file type

@@ -2,6 +2,7 @@ package di
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"math-ai.com/math-ai/internal/applications/dto"
@@ -10,6 +11,8 @@ import (
 
 // IStorageService defines the interface for file storage operations
 type IStorageService interface {
+	HandleUpload(ctx context.Context, file io.Reader, filename, contentType, folder string) (*dto.UploadFileResponse, error)
+
 	// Upload uploads a file to storage and returns the URL and preview URL
 	Upload(ctx context.Context, req *dto.UploadFileRequest) (status.Code, *dto.UploadFileResponse, error)
 

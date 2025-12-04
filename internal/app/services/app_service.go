@@ -108,7 +108,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 
 	logger.Info("> gradeSvc...")
 	var gradeValidator = validators.NewGradeValidator()
-	var gradeSvc = services.NewGradeService(gradeValidator, gradeRepo)
+	var gradeSvc = services.NewGradeService(gradeValidator, gradeRepo, storageSvc)
 
 	logger.Info("> levelSvc...")
 	var levelValidator = validators.NewLevelValidator()

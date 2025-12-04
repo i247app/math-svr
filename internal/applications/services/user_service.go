@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"io"
 	"time"
 
 	"math-ai.com/math-ai/internal/applications/dto"
@@ -123,30 +122,6 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (status.
 	return status.SUCCESS, res, nil
 }
 
-// handleAvatarUpload uploads avatar file to S3 and returns preview URL
-func (s *UserService) handleAvatarUpload(ctx context.Context, file io.Reader, filename, contentType string) (*dto.UploadFileResponse, error) {
-	if file == nil || filename == "" {
-		return nil, nil
-	}
-
-	// Upload to S3 with "avatars" folder
-	uploadReq := &dto.UploadFileRequest{
-		File:        file,
-		Filename:    filename,
-		ContentType: contentType,
-		Folder:      "user",
-	}
-
-	statusCode, res, err := s.storageService.Upload(ctx, uploadReq)
-	if err != nil || statusCode != status.OK {
-		logger.Errorf("Failed to upload avatar: %v", err)
-		return nil, fmt.Errorf("failed to upload avatar: %w", err)
-	}
-
-	// Return preview URL for UI display
-	return res, nil
-}
-
 // deleteOldAvatar removes old avatar from S3 if it exists
 func (s *UserService) deleteOldAvatar(ctx context.Context, avatarKey *string) {
 	if avatarKey == nil || *avatarKey == "" {
@@ -225,7 +200,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 	// Handle avatar upload before creating user
 	var avatarKey *string
 	if req.AvatarFile != nil {
-		res, err := s.handleAvatarUpload(ctx, req.AvatarFile, req.AvatarFilename, req.AvatarContentType)
+		res, err := s.storageService.HandleUpload(ctx, req.AvatarFile, req.AvatarFilename, req.AvatarContentType, "user")
 		if err != nil {
 			return status.INTERNAL, nil, fmt.Errorf("failed to upload avatar: %w", err)
 		}
@@ -305,7 +280,7 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	var newAvatarKey *string
 	if req.AvatarFile != nil {
 		// Upload new avatar
-		res, err := s.handleAvatarUpload(ctx, req.AvatarFile, req.AvatarFilename, req.AvatarContentType)
+		res, err := s.storageService.HandleUpload(ctx, req.AvatarFile, req.AvatarFilename, req.AvatarContentType, "user")
 		if err != nil {
 			return status.INTERNAL, nil, fmt.Errorf("failed to upload avatar: %w", err)
 		}

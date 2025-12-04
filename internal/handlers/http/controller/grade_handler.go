@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"math-ai.com/math-ai/internal/app/resources"
 	"math-ai.com/math-ai/internal/applications/dto"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
+	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
@@ -85,9 +87,29 @@ func (c *GradeController) HandlerGetGradeByLabel(w http.ResponseWriter, r *http.
 // POST - /grades/create
 func (c *GradeController) HandlerCreateGrade(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateGradeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+
+	// Multipart form request (with avatar)
+	if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
+		logger.Errorf("Failed to parse multipart form: %v", err)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.BAD_REQUEST)
 		return
+	}
+
+	// Parse form fields
+	req.Label = r.FormValue("label")
+	req.Description = r.FormValue("description")
+	displayOrder, _ := strconv.ParseInt(r.FormValue("display_order"), 10, 8)
+	req.DisplayOrder = int8(displayOrder)
+
+	// Parse role
+
+	// Handle avatar file
+	file, header, err := r.FormFile("icon")
+	if err == nil {
+		defer file.Close()
+		req.IconFile = file
+		req.IconFilename = header.Filename
+		req.IconContentType = header.Header.Get("Content-Type")
 	}
 
 	statusCode, grade, err := c.service.CreateGrade(r.Context(), &req)
