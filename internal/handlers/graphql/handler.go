@@ -54,7 +54,7 @@ func (h *GraphQLHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Log errors if any
 	if len(result.Errors) > 0 {
 		////logger.Errorf("GraphQL errors: %v", result.Errors)
-		response.WriteJsonGraphQL(w, r.Context(), result, nil, status.BAD_REQUEST)
+		response.WriteJsonGraphQL(w, r.Context(), result, nil, status.FAIL)
 		return
 	}
 

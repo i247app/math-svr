@@ -86,7 +86,7 @@ func (c *LevelController) HandlerGetLevelByLabel(w http.ResponseWriter, r *http.
 func (c *LevelController) HandlerCreateLevel(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateLevelRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
@@ -107,7 +107,7 @@ func (c *LevelController) HandlerCreateLevel(w http.ResponseWriter, r *http.Requ
 func (c *LevelController) HandlerUpdateLevel(w http.ResponseWriter, r *http.Request) {
 	var req dto.UpdateLevelRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
@@ -128,7 +128,7 @@ func (c *LevelController) HandlerUpdateLevel(w http.ResponseWriter, r *http.Requ
 func (c *LevelController) HandlerDeleteLevel(w http.ResponseWriter, r *http.Request) {
 	var req dto.DeleteLevelRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
@@ -145,7 +145,7 @@ func (c *LevelController) HandlerDeleteLevel(w http.ResponseWriter, r *http.Requ
 func (c *LevelController) HandlerForceDeleteLevel(w http.ResponseWriter, r *http.Request) {
 	var req dto.DeleteLevelRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 

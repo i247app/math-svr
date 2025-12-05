@@ -28,7 +28,7 @@ func NewProfileController(appResources *resources.AppResource, service di.IProfi
 func (c *ProfileController) HandlerFetchProfile(w http.ResponseWriter, r *http.Request) {
 	var req dto.FetchProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
@@ -49,7 +49,7 @@ func (c *ProfileController) HandlerFetchProfile(w http.ResponseWriter, r *http.R
 func (c *ProfileController) HandlerCreateProfile(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
@@ -70,7 +70,7 @@ func (c *ProfileController) HandlerCreateProfile(w http.ResponseWriter, r *http.
 func (c *ProfileController) HandlerUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	var req dto.UpdateProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 

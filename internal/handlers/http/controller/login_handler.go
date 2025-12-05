@@ -29,7 +29,7 @@ func (c *LoginController) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 	defer r.Body.Close()

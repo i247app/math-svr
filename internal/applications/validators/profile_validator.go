@@ -44,7 +44,7 @@ func (v *profileValidator) ValidateCreateProfileRequest(req *dto.CreateProfileRe
 
 func (v *profileValidator) ValidateUpdateProfileRequest(req *dto.UpdateProfileRequest) (status.Code, error) {
 	if req.UID == "" {
-		return status.BAD_REQUEST, err_svc.ErrMissingUID
+		return status.FAIL, err_svc.ErrMissingUID
 	}
 
 	return status.SUCCESS, nil

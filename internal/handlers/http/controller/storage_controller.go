@@ -35,7 +35,7 @@ func (s *StorageController) HandleUpload(w http.ResponseWriter, r *http.Request)
 	// Parse multipart form with max size
 	if err := r.ParseMultipartForm(MaxUploadSize); err != nil {
 		////logger.Errorf("Failed to parse multipart form: %v", err)
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("file too large or invalid form data"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("file too large or invalid form data"), status.FAIL)
 		return
 	}
 
@@ -43,7 +43,7 @@ func (s *StorageController) HandleUpload(w http.ResponseWriter, r *http.Request)
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		////logger.Errorf("Failed to get file from form: %v", err)
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("no file provided"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("no file provided"), status.FAIL)
 		return
 	}
 	defer file.Close()
@@ -77,12 +77,12 @@ func (s *StorageController) HandleUpload(w http.ResponseWriter, r *http.Request)
 func (s *StorageController) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	var req dto.DeleteFileRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.FAIL)
 		return
 	}
 
 	if req.Key == "" {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("key is required"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("key is required"), status.FAIL)
 		return
 	}
 
@@ -100,12 +100,12 @@ func (s *StorageController) HandleDelete(w http.ResponseWriter, r *http.Request)
 func (s *StorageController) HandleGetPreviewURL(w http.ResponseWriter, r *http.Request) {
 	var req dto.GetPreviewURLRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.FAIL)
 		return
 	}
 
 	if req.URL == "" {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("url is required"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("url is required"), status.FAIL)
 		return
 	}
 

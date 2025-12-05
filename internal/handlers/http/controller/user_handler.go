@@ -75,14 +75,14 @@ func (u *UserController) HandlerCreateUser(w http.ResponseWriter, r *http.Reques
 	if contentType == "application/json" {
 		// JSON request (no avatar)
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 			return
 		}
 	} else {
 		// Multipart form request (with avatar)
 		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
 			////logger.Errorf("Failed to parse multipart form: %v", err)
-			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.BAD_REQUEST)
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.FAIL)
 			return
 		}
 
@@ -138,14 +138,14 @@ func (u *UserController) HandlerUpdateUser(w http.ResponseWriter, r *http.Reques
 	if contentType == "application/json" {
 		// JSON request (no avatar)
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 			return
 		}
 	} else {
 		// Multipart form request (with avatar)
 		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
 			////logger.Errorf("Failed to parse multipart form: %v", err)
-			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.BAD_REQUEST)
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.FAIL)
 			return
 		}
 
@@ -214,7 +214,7 @@ func (u *UserController) HandlerUpdateUser(w http.ResponseWriter, r *http.Reques
 func (u *UserController) HandlerDeleteUser(w http.ResponseWriter, r *http.Request) {
 	var req dto.DeleteUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
@@ -231,7 +231,7 @@ func (u *UserController) HandlerDeleteUser(w http.ResponseWriter, r *http.Reques
 func (u *UserController) HandlerForceDeleteUser(w http.ResponseWriter, r *http.Request) {
 	var req dto.DeleteUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 

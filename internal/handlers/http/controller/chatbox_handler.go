@@ -28,7 +28,7 @@ func NewChatBoxController(appResources *resources.AppResource, service di.IChatB
 func (c *ChatBoxController) HandleGenerateQuiz(w http.ResponseWriter, r *http.Request) {
 	var req dto.GenerateQuizRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.FAIL)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (c *ChatBoxController) HandleGenerateQuiz(w http.ResponseWriter, r *http.Re
 func (c *ChatBoxController) HandleSubmitQuizAnswer(w http.ResponseWriter, r *http.Request) {
 	var req dto.SubmitQuizRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.FAIL)
 		return
 	}
 
@@ -70,7 +70,7 @@ func (c *ChatBoxController) HandleSubmitQuizAnswer(w http.ResponseWriter, r *htt
 func (c *ChatBoxController) HandleGenerateQuizPractice(w http.ResponseWriter, r *http.Request) {
 	var req dto.GenerateQuizPracticeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid request body"), status.FAIL)
 		return
 	}
 

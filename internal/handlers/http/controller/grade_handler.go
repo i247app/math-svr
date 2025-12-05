@@ -90,7 +90,7 @@ func (c *GradeController) HandlerCreateGrade(w http.ResponseWriter, r *http.Requ
 	// Multipart form request (with avatar)
 	if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
 		////logger.Errorf("Failed to parse multipart form: %v", err)
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.FAIL)
 		return
 	}
 
@@ -128,7 +128,7 @@ func (c *GradeController) HandlerCreateGrade(w http.ResponseWriter, r *http.Requ
 func (c *GradeController) HandlerUpdateGrade(w http.ResponseWriter, r *http.Request) {
 	var req dto.UpdateGradeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
@@ -149,7 +149,7 @@ func (c *GradeController) HandlerUpdateGrade(w http.ResponseWriter, r *http.Requ
 func (c *GradeController) HandlerDeleteGrade(w http.ResponseWriter, r *http.Request) {
 	var req dto.DeleteGradeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
@@ -166,7 +166,7 @@ func (c *GradeController) HandlerDeleteGrade(w http.ResponseWriter, r *http.Requ
 func (c *GradeController) HandlerForceDeleteGrade(w http.ResponseWriter, r *http.Request) {
 	var req dto.DeleteGradeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.BAD_REQUEST)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
