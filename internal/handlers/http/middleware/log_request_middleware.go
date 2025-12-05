@@ -150,18 +150,6 @@ func (m *requestLoggerMiddleware) requestIdentifier(r *http.Request) (string, st
 			identifier = strconv.FormatInt(uid, 10)
 		}
 
-		if email, ok := sess.Get("uid"); ok {
-			if emailStr, ok := email.(string); ok {
-				identifier = identifier + ":" + emailStr
-			}
-		}
-
-		if isSecure, ok := sess.Get("is_secure"); ok {
-			if isSecureBool, ok := isSecure.(bool); ok && !isSecureBool {
-				identifier = "*" + identifier
-			}
-		}
-
 		if key, ok := sess.Get("key"); ok {
 			if keyStr, ok := key.(string); ok {
 				token = keyStr

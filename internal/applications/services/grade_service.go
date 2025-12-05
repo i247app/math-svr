@@ -11,6 +11,7 @@ import (
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
+	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
@@ -77,6 +78,10 @@ func (s *GradeService) ListGrades(ctx context.Context, req *dto.ListGradeRequest
 }
 
 func (s *GradeService) GetGradeByID(ctx context.Context, id string) (status.Code, *dto.GradeResponse, error) {
+	logger := logger.GetLogger(ctx)
+
+	logger.Info("Tao vo day xem thoi nha")
+
 	grade, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return status.INTERNAL, nil, err

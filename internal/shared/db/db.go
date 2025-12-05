@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"math-ai.com/math-ai/internal/shared/config"
+	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 const (
@@ -59,6 +60,7 @@ func (d *Database) GetDB() *sql.DB {
 }
 
 func (d *Database) WithTransaction(function HanderlerWithTx) error {
+
 	//logger.Info("Starting transaction")
 	tx, err := d.db.Begin()
 	if err != nil {
@@ -86,6 +88,8 @@ func (d *Database) WithTransaction(function HanderlerWithTx) error {
 }
 
 func (d *Database) Query(ctx context.Context, tx *sql.Tx, query string, args ...any) (*sql.Rows, error) {
+	logger := logger.GetLogger(ctx)
+
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
@@ -98,9 +102,9 @@ func (d *Database) Query(ctx context.Context, tx *sql.Tx, query string, args ...
 		rows, err = d.db.QueryContext(ctx, query, args...)
 	}
 	if err != nil {
-		//logger.Error(err)
+		logger.Error(err)
 	}
-	//logger.Info(rows)
+	logger.Info(rows)
 	return rows, err
 }
 
@@ -116,6 +120,8 @@ func (d *Database) QueryRow(ctx context.Context, tx *sql.Tx, query string, args 
 }
 
 func (d *Database) Exec(ctx context.Context, tx *sql.Tx, query string, args ...any) (sql.Result, error) {
+	logger := logger.GetLogger(ctx)
+
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
@@ -128,7 +134,7 @@ func (d *Database) Exec(ctx context.Context, tx *sql.Tx, query string, args ...a
 		result, err = d.db.ExecContext(ctx, query, args...)
 	}
 	if err != nil {
-		//logger.Error(err)
+		logger.Error(err)
 	}
 	if result != nil {
 	}

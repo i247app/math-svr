@@ -234,6 +234,7 @@ func extractSessionInfoFromRequest(r *http.Request) (token string, userid string
 	// Get session from request context
 	sess := session.GetRequestSession(r)
 	if sess == nil {
+		println("vo day nha cu em")
 		return
 	}
 

@@ -1,14 +1,15 @@
 package status
 
 const (
-	UNKNOW      Code = 100
-	OK          Code = 200
-	SUCCESS     Code = 200
-	CREATED     Code = 201
-	BAD_REQUEST Code = 400
-	FAIL        Code = 400
-	NOT_FOUND   Code = 404
-	INTERNAL    Code = 500
+	UNKNOW       Code = 100
+	OK           Code = 200
+	SUCCESS      Code = 200
+	CREATED      Code = 201
+	BAD_REQUEST  Code = 400
+	FAIL         Code = 400
+	UNAUTHORIZED Code = 401
+	NOT_FOUND    Code = 404
+	INTERNAL     Code = 500
 
 	// User stauts
 	USER_MISSING_ID           Code = 1000
