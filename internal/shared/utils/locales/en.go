@@ -10,82 +10,146 @@ var (
 	EN LanguageType = "en"
 )
 
-func GetMessageENFromStatus(statusCode status.Code, args ...any) string {
+func GetMessageENFromStatus(statusCode status.Code) string {
+	args := GetArgsByStatatus(statusCode)
+
 	switch statusCode {
+	case status.OK:
+		return "OK"
+	case status.CREATED:
+		return "Resource created successfully."
+	case status.FAIL:
+		return "Request failed."
+	case status.UNAUTHORIZED:
+		return "Unauthorized access."
+	case status.NOT_FOUND:
+		return "Resource not found."
+	case status.INTERNAL:
+		return "Internal server error."
+
+	// User status messages
+	case status.USER_MISSING_ID:
+		return "User ID is missing."
 	case status.USER_INVALID_PARAMS:
-		return "Invalid parameters"
+		return "Invalid user parameters."
 	case status.USER_INVALID_ID:
-		return "Invalid user ID"
+		return "Invalid user ID."
 	case status.USER_NOT_FOUND:
-		return "User not found"
-	case status.USER_MISSING_FIRST_NAME:
-		return "First name is required"
-	case status.USER_MISSING_LAST_NAME:
-		return "Last name is required"
+		return "User not found."
+	case status.USER_MISSING_NAME:
+		return "User name is missing."
 	case status.USER_MISSING_EMAIL:
-		return "Email is required"
-	case status.USER_MISSING_PASSWORD:
-		return "Password is required"
+		return "User email is missing."
 	case status.USER_INVALID_EMAIL:
-		return "Invalid email format"
+		return "Invalid user email format."
 	case status.USER_EMAIL_ALREADY_EXISTS:
-		return "Email already exists"
+		return "Email already exists."
 	case status.USER_MISSING_PHONE:
-		return "Phone is required"
-	case status.USER_INVALID_PHONE:
-		return "Invalid phone format"
+		return "User phone number is missing."
 	case status.USER_PHONE_ALREADY_EXISTS:
-		return "Phone already exists"
+		return "Phone number already exists."
+	case status.USER_INVALID_PHONE:
+		return "Invalid user phone number."
 	case status.USER_INVALID_ROLE:
 		return fmt.Sprintf("Invalid role. Valid roles are: %v", args)
 	case status.USER_INVALID_STATUS:
-		return fmt.Sprintf("Invalid status. Valid statuses are: %v", args)
+		return "Invalid user status."
+
+	// Device status messages
 	case status.DEVICE_INVALID_PARAMS:
-		return "Invalid device parameters"
+		return "Invalid device parameters."
 	case status.DEVICE_MISSING_UUID:
-		return "Device UUID is required"
-	case status.DEVICE_BLOCKED:
-		return "Device is blocked"
+		return "Device UUID is missing."
 	case status.DEVICE_MISSING_NAME:
-		return "Device name is required"
+		return "Device name is missing."
+	case status.DEVICE_BLOCKED:
+		return "Device is blocked."
+
+	// Login status messages
 	case status.LOGIN_MISSING_PARAMETERS:
-		return "Missing required parameters"
+		return "Missing login parameters."
 	case status.LOGIN_WRONG_CREDENTIALS:
-		return "Wrong login credentials"
+		return "Wrong login credentials."
+
+	// Block status messages
 	case status.BLOCK_MISSING_TYPE:
-		return "Block type is required"
-	case status.BLOCK_INVALID_TYPE:
-		return fmt.Sprintf("Invalid block type. Valid statuses are: %v", args)
+		return "Block type is missing."
 	case status.BLOCK_MISSING_VALUE:
-		return "Block value is required"
+		return "Block value is missing."
+	case status.BLOCK_INVALID_TYPE:
+		return "Invalid block type."
+
+	// OTP status messages
 	case status.OTP_MISSING_PURPOSE:
-		return "OTP purpose is required"
+		return "OTP purpose is missing."
 	case status.OTP_INVALID_PURPOSE:
-		return fmt.Sprintf("Invalid OTP purpose. Valid purposes are: %v", args)
+		return "Invalid OTP purpose."
 	case status.OTP_MISSING_IDENTIFIER:
-		return "OTP identifier is required"
+		return "OTP identifier is missing."
 	case status.OTP_MISSING_CODE:
-		return "OTP code is required"
+		return "OTP code is missing."
 	case status.OTP_INVALID_CODE:
-		return "Invalid OTP code"
+		return "Invalid OTP code."
 	case status.OTP_STILL_ACTIVE:
-		return fmt.Sprintf("OTP is still active, please try again after %d seconds", args...)
+		return "An active OTP already exists."
 	case status.OTP_EXCEED_MAX_SEND:
-		return "Exceeded maximum OTP send attempts"
+		return "Exceeded maximum OTP send attempts."
 	case status.OTP_EXCEED_MAX_VERIFY:
-		return fmt.Sprintf("Exceeded maximum OTP verify attempts, wait %d seconds to requeset otp again", args...)
+		return "Exceeded maximum OTP verify attempts."
 	case status.OTP_EXPIRED:
-		return "OTP has expired"
+		return "OTP has expired."
 	case status.OTP_NOT_ALLOWED:
-		return "OTP action not allowed"
+		return "OTP request not allowed."
 	case status.OTP_BLOCK_DEVICE:
-		return fmt.Sprintf("For security reasons, this device has been blocked within %d minutes", args...)
+		return "Device is blocked due to OTP violations."
 	case status.OTP_BLOCK_DEVICE_PHONE:
-		return fmt.Sprintf("For security reasons, this device and phone number has been blocked within %d minutes", args...)
+		return "Device phone is blocked due to OTP violations."
 	case status.OTP_BLOCK_DEVICE_EMAIL:
-		return fmt.Sprintf("For security reasons, this device and email has been blocked within %d minutes", args...)
-	case status.SUCCESS:
-		return "Success"
+		return "Device email is blocked due to OTP violations."
+
+	// Grade status messages
+	case status.GRADE_INVALID_PARAMS:
+		return "Invalid grade parameters."
+	case status.GRADE_MISSING_LABEL:
+		return "Grade name is missing."
+	case status.GRADE_NOT_FOUND:
+		return "Grade not found."
+	case status.GRADE_ALREADY_EXISTS:
+		return "Grade already exists."
+	case status.GRADE_CANNOT_DELETE:
+		return "Grade cannot be deleted."
+
+	// Level status messages
+	case status.LEVEL_INVALID_PARAMS:
+		return "Invalid level parameters."
+	case status.LEVEL_MISSING_LABEL:
+		return "Level name is missing."
+	case status.LEVEL_NOT_FOUND:
+		return "Level not found."
+	case status.LEVEL_ALREADY_EXISTS:
+		return "Level already exists."
+	case status.LEVEL_CANNOT_DELETE:
+		return "Level cannot be deleted."
+
+	// Profile status messages
+	case status.PROFILE_INVALID_PARAMS:
+		return "Invalid profile parameters."
+	case status.PROFILE_MISSING_UID:
+		return "Profile user ID is missing."
+	case status.PROFILE_MISSING_GRADE:
+		return "Profile grade is missing."
+	case status.PROFILE_MISSING_LEVEL:
+		return "Profile level is missing."
+	case status.PROFILE_NOT_FOUND:
+		return "Profile not found."
+	case status.PROFILE_ALREADY_EXISTS:
+		return "Profile already exists."
+	case status.PROFILE_CANNOT_DELETE:
+		return "Profile cannot be deleted."
+	case status.PROFILE_INVALID_GRADE:
+		return "Invalid profile grade."
+	case status.PROFILE_INVALID_LEVEL:
+		return "Invalid profile level."
 	default:
 		return "Unknown"
 	}

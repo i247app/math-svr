@@ -15,8 +15,7 @@ const (
 	USER_INVALID_PARAMS       Code = 1001
 	USER_INVALID_ID           Code = 1002
 	USER_NOT_FOUND            Code = 1003
-	USER_MISSING_FIRST_NAME   Code = 1004
-	USER_MISSING_LAST_NAME    Code = 1005
+	USER_MISSING_NAME         Code = 1004
 	USER_MISSING_EMAIL        Code = 1006
 	USER_MISSING_PASSWORD     Code = 1013
 	USER_INVALID_EMAIL        Code = 1007
@@ -65,7 +64,6 @@ const (
 	GRADE_NOT_FOUND             Code = 1505
 	GRADE_ALREADY_EXISTS        Code = 1506
 	GRADE_CANNOT_DELETE         Code = 1507
-	GRADE_HAS_ASSOCIATED_USER   Code = 1508
 
 	// Level status
 	LEVEL_INVALID_PARAMS        Code = 1601
@@ -75,7 +73,6 @@ const (
 	LEVEL_NOT_FOUND             Code = 1605
 	LEVEL_ALREADY_EXISTS        Code = 1606
 	LEVEL_CANNOT_DELETE         Code = 1607
-	LEVEL_HAS_ASSOCIATED_USER   Code = 1608
 
 	// Profile status
 	PROFILE_INVALID_PARAMS Code = 1701

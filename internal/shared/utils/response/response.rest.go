@@ -3,7 +3,6 @@ package response
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"math-ai.com/math-ai/internal/shared/constant/status"
@@ -11,23 +10,23 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils/locales"
 )
 
-func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, statusCode status.Code, args ...any) {
+func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, statusCode status.Code) {
 	payload := make(map[string]any)
 
 	// If there's data, try to unmarshal data into being the payload
 	if data != nil {
 
-		dataBytes, err := json.Marshal(data)
-		if err != nil {
-			log.Printf("WriteJson: failed to marshal data: %v\n", err)
-			return
-		}
-		var tmp map[string]any
-		err = json.Unmarshal(dataBytes, &tmp)
-		if err != nil || tmp == nil {
-			// If this fails, just add the data to an empty payload as "result"
-			payload["result"] = data
-		}
+		// dataBytes, err := json.Marshal(data)
+		// if err != nil {
+		// 	log.Printf("WriteJson: failed to marshal data: %v\n", err)
+		// 	return
+		// }
+		// var tmp map[string]any
+		// err = json.Unmarshal(dataBytes, &tmp)
+		// if err != nil || tmp == nil {
+		// 	// If this fails, just add the data to an empty payload as "result"
+		// 	payload["result"] = data
+		// }
 		payload["result"] = data
 
 	}
@@ -39,9 +38,9 @@ func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, 
 	// Default to not set if not set
 	if statusCode != 0 {
 		payload["status"] = statusCode
-		payload["message"] = GetMessageFromStatusCode(ctx, statusCode, args...)
+		payload["message"] = GetMessageFromStatusCode(ctx, statusCode)
 	} else {
-		payload["status"] = status.INTERNAL
+		payload["status"] = status.FAIL
 	}
 
 	if (payload["message"] == "Unknown" || payload["message"] == "") && err != nil {
@@ -54,17 +53,17 @@ func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, 
 	json.NewEncoder(w).Encode(payload)
 }
 
-func GetMessageFromStatusCode(ctx context.Context, statusCode status.Code, args ...any) string {
+func GetMessageFromStatusCode(ctx context.Context, statusCode status.Code) string {
 	lan := appctx.GetLocale(ctx)
 
 	switch locales.LanguageType(lan) {
 	case locales.EN:
-		return locales.GetMessageENFromStatus(statusCode, args...)
+		return locales.GetMessageENFromStatus(statusCode)
 	case locales.VN:
-		return locales.GetMessageVNFromStatus(statusCode, args...)
+		return locales.GetMessageVNFromStatus(statusCode)
 	case locales.FR:
-		return locales.GetMessageFRFromStatus(statusCode, args...)
+		return locales.GetMessageFRFromStatus(statusCode)
 	default:
-		return locales.GetMessageENFromStatus(statusCode, args...)
+		return locales.GetMessageENFromStatus(statusCode)
 	}
 }

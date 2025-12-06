@@ -32,7 +32,7 @@ func WriteJsonGraphQL(w http.ResponseWriter, ctx context.Context, data any, err 
 	// Default to not set if not set
 	if statusCode != 0 {
 		payload["status"] = statusCode
-		payload["message"] = GetMessageFromStatusCode(ctx, statusCode, args...)
+		payload["message"] = GetMessageFromStatusCode(ctx, statusCode)
 	} else {
 		payload["status"] = status.INTERNAL
 	}

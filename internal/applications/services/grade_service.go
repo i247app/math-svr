@@ -80,10 +80,9 @@ func (s *GradeService) ListGrades(ctx context.Context, req *dto.ListGradeRequest
 func (s *GradeService) GetGradeByID(ctx context.Context, id string) (status.Code, *dto.GradeResponse, error) {
 	logger := logger.GetLogger(ctx)
 
-	logger.Info("Tao vo day xem thoi nha")
-
 	grade, err := s.repo.FindByID(ctx, id)
 	if err != nil {
+		logger.Errorf("failed to get grade by ID: ", err)
 		return status.INTERNAL, nil, err
 	}
 	if grade == nil {
