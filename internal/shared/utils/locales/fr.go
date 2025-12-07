@@ -16,7 +16,7 @@ func GetMessageFRFromStatus(statusCode status.Code) string {
 	switch statusCode {
 
 	case status.OK:
-		return "D'accord"
+		return "Succès."
 	case status.CREATED:
 		return "Ressource créée avec succès."
 	case status.FAIL:

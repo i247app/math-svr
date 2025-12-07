@@ -116,7 +116,7 @@ func (h *customHandler) Handle(ctx context.Context, r slog.Record) error {
 	}
 
 	// Format timestamp with microseconds: 2025/12/04 04:18:38.151018
-	timestamp := r.Time.Format("2006/01/02 15:04:05.000000")
+	timestamp := r.Time.Format("2006/01/02 15:04:05")
 
 	// Format level
 	level := r.Level.String()

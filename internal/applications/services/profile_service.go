@@ -2,9 +2,9 @@ package services
 
 import (
 	"context"
-	"time"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	"math-ai.com/math-ai/internal/applications/utils"
 	"math-ai.com/math-ai/internal/applications/validators"
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	di "math-ai.com/math-ai/internal/core/di/services"
@@ -13,9 +13,11 @@ import (
 )
 
 type ProfileService struct {
-	validator      validators.IProfileValidator
-	repo           repositories.IProfileRepository
-	storageService di.IStorageService
+	validator       validators.IProfileValidator
+	repo            repositories.IProfileRepository
+	storageService  di.IStorageService
+	responseBuilder *utils.ResponseBuilder
+	fileManager     *utils.FileManager
 }
 
 func NewProfileService(
@@ -23,10 +25,15 @@ func NewProfileService(
 	repo repositories.IProfileRepository,
 	storageService di.IStorageService,
 ) di.IProfileService {
+	responseBuilder := utils.NewResponseBuilder(storageService)
+	fileManager := utils.NewFileManager(storageService)
+
 	return &ProfileService{
-		validator:      validator,
-		repo:           repo,
-		storageService: storageService,
+		validator:       validator,
+		repo:            repo,
+		storageService:  storageService,
+		responseBuilder: responseBuilder,
+		fileManager:     fileManager,
 	}
 }
 
@@ -39,20 +46,10 @@ func (s *ProfileService) FetchProfile(ctx context.Context, req *dto.FetchProfile
 		return status.NOT_FOUND, nil, err_svc.ErrUserNotFound
 	}
 
-	res := dto.ProfileResponseFromDomain(profile)
+	// Build response with presigned URL using shared utility
+	res := s.responseBuilder.BuildProfileResponse(ctx, profile)
 
-	if profile.AvatarKey() != nil {
-		statusCode, avatarURL, err := s.storageService.CreatePresignedUrl(ctx, &dto.CreatePresignedUrlRequest{
-			Key:        *profile.AvatarKey(),
-			Expiration: time.Hour,
-		})
-		if err != nil {
-			return statusCode, nil, err
-		}
-		res.AvatarPreviewURL = &avatarURL
-	}
-
-	return status.SUCCESS, &res, nil
+	return status.SUCCESS, res, nil
 }
 
 func (s *ProfileService) CreateProfile(ctx context.Context, req *dto.CreateProfileRequest) (status.Code, *dto.ProfileResponse, error) {
@@ -84,20 +81,10 @@ func (s *ProfileService) CreateProfile(ctx context.Context, req *dto.CreateProfi
 		return status.INTERNAL, nil, err
 	}
 
-	res := dto.ProfileResponseFromDomain(profile)
+	// Build response with presigned URL using shared utility
+	res := s.responseBuilder.BuildProfileResponse(ctx, profile)
 
-	if profile.AvatarKey() != nil {
-		statusCode, avatarURL, err := s.storageService.CreatePresignedUrl(ctx, &dto.CreatePresignedUrlRequest{
-			Key:        *profile.AvatarKey(),
-			Expiration: time.Hour,
-		})
-		if err != nil {
-			return statusCode, nil, err
-		}
-		res.AvatarPreviewURL = &avatarURL
-	}
-
-	return status.SUCCESS, &res, nil
+	return status.SUCCESS, res, nil
 }
 
 func (s *ProfileService) UpdateProfile(ctx context.Context, req *dto.UpdateProfileRequest) (status.Code, *dto.ProfileResponse, error) {

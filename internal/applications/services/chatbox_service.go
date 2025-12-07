@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"regexp"
 	"time"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	helper "math-ai.com/math-ai/internal/applications/helpers/chatbox_helper"
 	"math-ai.com/math-ai/internal/applications/validators"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	chatbox "math-ai.com/math-ai/internal/driven-adapter/external/chat-box"
@@ -20,6 +20,7 @@ type ChatBoxService struct {
 	client            chatbox.IChatBoxClient
 	profileSvc        di.IProfileService
 	userLatestQuizSvc di.IUserLatestQuizService
+	jsonSanitizer     *helper.JSONSanitizer
 }
 
 func NewChatBoxService(
@@ -33,43 +34,8 @@ func NewChatBoxService(
 		client:            client,
 		profileSvc:        profileSvc,
 		userLatestQuizSvc: userLatestQuizSvc,
+		jsonSanitizer:     helper.NewJSONSanitizer(),
 	}
-}
-
-// sanitizeJSONResponse fixes common JSON escaping issues in AI responses,
-// particularly for LaTeX expressions where backslashes need to be escaped.
-func sanitizeJSONResponse(jsonStr string) string {
-	// Pattern to find backslashes in JSON string values that are not already escaped
-	// This regex looks for single backslashes followed by common LaTeX commands
-	patterns := []struct {
-		pattern string
-		replace string
-	}{
-		// Fix unescaped backslashes before common LaTeX commands
-		{`([^\\])\\frac`, `$1\\frac`},
-		{`([^\\])\\sqrt`, `$1\\sqrt`},
-		{`([^\\])\\int`, `$1\\int`},
-		{`([^\\])\\{`, `$1\\{`},
-		{`([^\\])\\}`, `$1\\}`},
-		{`([^\\])\\left`, `$1\\left`},
-		{`([^\\])\\right`, `$1\\right`},
-		// Fix at start of string values (after quotes)
-		{`"\\frac`, `"\\\\frac`},
-		{`"\\sqrt`, `"\\\\sqrt`},
-		{`"\\int`, `"\\\\int`},
-		{`"\\{`, `"\\\\{`},
-		{`"\\}`, `"\\\\}`},
-		{`"\\left`, `"\\\\left`},
-		{`"\\right`, `"\\\\right`},
-	}
-
-	result := jsonStr
-	for _, p := range patterns {
-		re := regexp.MustCompile(p.pattern)
-		result = re.ReplaceAllString(result, p.replace)
-	}
-
-	return result
 }
 
 func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
@@ -98,8 +64,8 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
 	}
 
-	// Sanitize JSON response to fix common escaping issues
-	sanitizedJSON := sanitizeJSONResponse(resp.Message)
+	// Sanitize JSON response to fix common escaping issues using helper
+	sanitizedJSON := s.jsonSanitizer.SanitizeJSONResponse(resp.Message)
 
 	var data []dto.Question
 	err = json.Unmarshal([]byte(sanitizedJSON), &data)
@@ -201,8 +167,8 @@ func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequ
 		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
 	}
 
-	// Sanitize JSON response to fix common escaping issues
-	sanitizedJSON := sanitizeJSONResponse(resp.Message)
+	// Sanitize JSON response to fix common escaping issues using helper
+	sanitizedJSON := s.jsonSanitizer.SanitizeJSONResponse(resp.Message)
 
 	var data dto.QuizAnswer
 	err = json.Unmarshal([]byte(sanitizedJSON), &data)
@@ -269,8 +235,8 @@ func (s *ChatBoxService) GenerateQuizPractice(ctx context.Context, req *dto.Gene
 		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
 	}
 
-	// Sanitize JSON response to fix common escaping issues
-	sanitizedJSON := sanitizeJSONResponse(resp.Message)
+	// Sanitize JSON response to fix common escaping issues using helper
+	sanitizedJSON := s.jsonSanitizer.SanitizeJSONResponse(resp.Message)
 
 	var data []dto.Question
 	err = json.Unmarshal([]byte(sanitizedJSON), &data)

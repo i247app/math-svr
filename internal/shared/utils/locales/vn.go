@@ -15,7 +15,7 @@ func GetMessageVNFromStatus(statusCode status.Code) string {
 
 	switch statusCode {
 	case status.OK:
-		return "Đồng ý"
+		return "Thành công."
 	case status.CREATED:
 		return "Tài nguyên đã được tạo thành công."
 	case status.FAIL:

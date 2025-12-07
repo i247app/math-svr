@@ -2,10 +2,9 @@ package services
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	"math-ai.com/math-ai/internal/applications/utils"
 	"math-ai.com/math-ai/internal/applications/validators"
 	"math-ai.com/math-ai/internal/core/di/repositories"
 	di "math-ai.com/math-ai/internal/core/di/services"
@@ -15,14 +14,12 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
-const (
-	GradePresignedURLExpiration = 24 * time.Hour // 24 hours
-)
-
 type GradeService struct {
-	validator      validators.IGradeValidator
-	repo           repositories.IGradeRepository
-	storageService di.IStorageService
+	validator       validators.IGradeValidator
+	repo            repositories.IGradeRepository
+	storageService  di.IStorageService
+	responseBuilder *utils.ResponseBuilder
+	fileManager     *utils.FileManager
 }
 
 func NewGradeService(
@@ -30,10 +27,15 @@ func NewGradeService(
 	repo repositories.IGradeRepository,
 	storageService di.IStorageService,
 ) di.IGradeService {
+	responseBuilder := utils.NewResponseBuilder(storageService)
+	fileManager := utils.NewFileManager(storageService)
+
 	return &GradeService{
-		validator:      validator,
-		repo:           repo,
-		storageService: storageService,
+		validator:       validator,
+		repo:            repo,
+		storageService:  storageService,
+		responseBuilder: responseBuilder,
+		fileManager:     fileManager,
 	}
 }
 
@@ -56,23 +58,8 @@ func (s *GradeService) ListGrades(ctx context.Context, req *dto.ListGradeRequest
 		return status.SUCCESS, []*dto.GradeResponse{}, pagination, nil
 	}
 
-	res := make([]*dto.GradeResponse, len(grades))
-	for i, grade := range grades {
-		gradeRes := dto.GradeResponseFromDomain(grade)
-		if grade.IconURL() != nil {
-			statusCode, signedURL, err := s.storageService.CreatePresignedUrl(ctx, &dto.CreatePresignedUrlRequest{
-				Key:        *grade.IconURL(),
-				Expiration: GradePresignedURLExpiration,
-			})
-			if err != nil {
-				return statusCode, nil, nil, fmt.Errorf("failed to create presigned URL: %w", err)
-			}
-			if signedURL != "" {
-				gradeRes.IconURL = &signedURL
-			}
-		}
-		res[i] = &gradeRes
-	}
+	// Build responses with presigned URLs using shared utility
+	res := s.responseBuilder.BuildGradeResponses(ctx, grades)
 
 	return status.SUCCESS, res, pagination, nil
 }
@@ -89,22 +76,10 @@ func (s *GradeService) GetGradeByID(ctx context.Context, id string) (status.Code
 		return status.NOT_FOUND, nil, err_svc.ErrGradeNotFound
 	}
 
-	res := dto.GradeResponseFromDomain(grade)
+	// Build response with presigned URL using shared utility
+	res := s.responseBuilder.BuildGradeResponse(ctx, grade)
 
-	if grade.IconURL() != nil {
-		statusCode, signedURL, err := s.storageService.CreatePresignedUrl(ctx, &dto.CreatePresignedUrlRequest{
-			Key:        *grade.IconURL(),
-			Expiration: GradePresignedURLExpiration,
-		})
-		if err != nil {
-			return statusCode, nil, fmt.Errorf("failed to create presigned URL: %w", err)
-		}
-		if signedURL != "" {
-			res.IconURL = &signedURL
-		}
-	}
-
-	return status.SUCCESS, &res, nil
+	return status.SUCCESS, res, nil
 }
 
 func (s *GradeService) GetGradeByLabel(ctx context.Context, label string) (status.Code, *dto.GradeResponse, error) {
@@ -136,24 +111,15 @@ func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequ
 		return status.GRADE_ALREADY_EXISTS, nil, err_svc.ErrGradeAlreadyExists
 	}
 
-	// Handle avatar upload before creating user
-	var iconKey *string
-	if req.IconFile != nil {
-		statusCode, res, err := s.storageService.HandleUpload(ctx, &dto.UploadFileRequest{
-			File:        req.IconFile,
-			Filename:    req.IconFilename,
-			ContentType: req.IconContentType,
-			Folder:      "grade",
-		})
-		if err != nil {
-			return statusCode, nil, fmt.Errorf("failed to upload avatar: %w", err)
-		}
-		iconKey = &res.Key
+	// Handle icon upload using shared file manager
+	iconKey, statusCode, err := s.fileManager.UploadFile(ctx, req.IconFile, req.IconFilename, req.IconContentType, "grade")
+	if err != nil {
+		return statusCode, nil, err
 	}
 
 	gradeDomain := dto.BuildGradeDomainForCreate(req)
 
-	// Set avatar URL if uploaded
+	// Set icon URL if uploaded
 	if iconKey != nil {
 		gradeDomain.SetIconURL(iconKey)
 	}
@@ -170,9 +136,10 @@ func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequ
 		return status.INTERNAL, nil, err
 	}
 
-	res := dto.GradeResponseFromDomain(grade)
+	// Build response using shared utility
+	res := s.responseBuilder.BuildGradeResponse(ctx, grade)
 
-	return status.SUCCESS, &res, nil
+	return status.SUCCESS, res, nil
 }
 
 func (s *GradeService) UpdateGrade(ctx context.Context, req *dto.UpdateGradeRequest) (status.Code, *dto.GradeResponse, error) {
@@ -212,9 +179,10 @@ func (s *GradeService) UpdateGrade(ctx context.Context, req *dto.UpdateGradeRequ
 		return status.INTERNAL, nil, err
 	}
 
-	res := dto.GradeResponseFromDomain(grade)
+	// Build response using shared utility
+	res := s.responseBuilder.BuildGradeResponse(ctx, grade)
 
-	return status.SUCCESS, &res, nil
+	return status.SUCCESS, res, nil
 }
 
 func (s *GradeService) DeleteGrade(ctx context.Context, id string) (status.Code, error) {
