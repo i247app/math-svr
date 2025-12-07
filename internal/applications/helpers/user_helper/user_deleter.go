@@ -5,21 +5,21 @@ import (
 	"database/sql"
 	"fmt"
 
-	"math-ai.com/math-ai/internal/core/di/repositories"
+	di "math-ai.com/math-ai/internal/core/di/repositories"
 )
 
 // UserDeleter handles complex user deletion with transactions
 type UserDeleter struct {
-	userRepo    repositories.IUserRepository
-	loginRepo   repositories.ILoginRepository
-	profileRepo repositories.IProfileRepository
+	userRepo    di.IUserRepository
+	loginRepo   di.ILoginRepository
+	profileRepo di.IProfileRepository
 }
 
 // NewUserDeleter creates a new UserDeleter instance
 func NewUserDeleter(
-	userRepo repositories.IUserRepository,
-	loginRepo repositories.ILoginRepository,
-	profileRepo repositories.IProfileRepository,
+	userRepo di.IUserRepository,
+	loginRepo di.ILoginRepository,
+	profileRepo di.IProfileRepository,
 ) *UserDeleter {
 	return &UserDeleter{
 		userRepo:    userRepo,

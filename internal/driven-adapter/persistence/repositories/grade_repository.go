@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/core/di/repositories"
+	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/grade"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
@@ -19,14 +19,14 @@ type gradeRepository struct {
 	db db.IDatabase
 }
 
-func NewGradeRepository(db db.IDatabase) repositories.IGradeRepository {
+func NewGradeRepository(db db.IDatabase) di.IGradeRepository {
 	return &gradeRepository{
 		db: db,
 	}
 }
 
 // List retrieves a paginated list of grades with optional search and sorting.
-func (r *gradeRepository) List(ctx context.Context, params repositories.ListGradesParams) ([]*domain.Grade, *pagination.Pagination, error) {
+func (r *gradeRepository) List(ctx context.Context, params di.ListGradesParams) ([]*domain.Grade, *pagination.Pagination, error) {
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 

@@ -6,7 +6,8 @@ import (
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/validators"
-	"math-ai.com/math-ai/internal/core/di/repositories"
+	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
+	diSvc "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/constant/status"
@@ -17,15 +18,15 @@ import (
 
 type LoginService struct {
 	validator validators.ILoginValidator
-	repo      repositories.ILoginRepository
-	userRepo  repositories.IUserRepository
+	repo      diRepo.ILoginRepository
+	userRepo  diRepo.IUserRepository
 }
 
 func NewLoginService(
 	validator validators.ILoginValidator,
-	repo repositories.ILoginRepository,
-	userRepo repositories.IUserRepository,
-) *LoginService {
+	repo diRepo.ILoginRepository,
+	userRepo diRepo.IUserRepository,
+) diSvc.ILoginService {
 	return &LoginService{
 		validator: validator,
 		repo:      repo,

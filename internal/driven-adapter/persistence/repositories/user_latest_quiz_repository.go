@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/core/di/repositories"
+	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/user_latest_quiz"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/db"
@@ -17,7 +17,7 @@ type userLatestQuizRepository struct {
 	db db.IDatabase
 }
 
-func NewUserLatestQuizRepository(db db.IDatabase) repositories.IUserLatestQuizRepository {
+func NewUserLatestQuizRepository(db db.IDatabase) di.IUserLatestQuizRepository {
 	return &userLatestQuizRepository{
 		db: db,
 	}

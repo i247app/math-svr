@@ -5,8 +5,8 @@ import (
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/validators"
-	"math-ai.com/math-ai/internal/core/di/repositories"
-	di "math-ai.com/math-ai/internal/core/di/services"
+	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
+	diSvc "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
@@ -14,13 +14,13 @@ import (
 
 type LevelService struct {
 	validator validators.ILevelValidator
-	repo      repositories.ILevelRepository
+	repo      diRepo.ILevelRepository
 }
 
 func NewLevelService(
 	validator validators.ILevelValidator,
-	repo repositories.ILevelRepository,
-) di.ILevelService {
+	repo diRepo.ILevelRepository,
+) diSvc.ILevelService {
 	return &LevelService{
 		validator: validator,
 		repo:      repo,
@@ -28,7 +28,7 @@ func NewLevelService(
 }
 
 func (s *LevelService) ListLevels(ctx context.Context, req *dto.ListLevelRequest) (status.Code, []*dto.LevelResponse, *pagination.Pagination, error) {
-	params := repositories.ListLevelsParams{
+	params := diRepo.ListLevelsParams{
 		Search:    req.Search,
 		Page:      req.Page,
 		Limit:     req.Limit,

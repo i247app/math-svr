@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/core/di/repositories"
+	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/login"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
@@ -18,7 +18,7 @@ type loginRepository struct {
 	db db.IDatabase
 }
 
-func NewloginRepository(db db.IDatabase) repositories.ILoginRepository {
+func NewloginRepository(db db.IDatabase) di.ILoginRepository {
 	return &loginRepository{
 		db: db,
 	}

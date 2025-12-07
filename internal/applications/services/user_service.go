@@ -7,8 +7,8 @@ import (
 	helper "math-ai.com/math-ai/internal/applications/helpers/user_helper"
 	"math-ai.com/math-ai/internal/applications/utils"
 	"math-ai.com/math-ai/internal/applications/validators"
-	"math-ai.com/math-ai/internal/core/di/repositories"
-	di "math-ai.com/math-ai/internal/core/di/services"
+	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
+	diSvc "math-ai.com/math-ai/internal/core/di/services"
 	domain "math-ai.com/math-ai/internal/core/domain/profile"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
@@ -17,8 +17,8 @@ import (
 
 type UserService struct {
 	validator       validators.IUserValidator
-	repo            repositories.IUserRepository
-	profileRepo     repositories.IProfileRepository
+	repo            diRepo.IUserRepository
+	profileRepo     diRepo.IProfileRepository
 	responseBuilder *utils.ResponseBuilder
 	fileManager     *utils.FileManager
 	userCreator     *helper.UserCreator
@@ -28,11 +28,11 @@ type UserService struct {
 
 func NewUserService(
 	validator validators.IUserValidator,
-	repo repositories.IUserRepository,
-	loginRepo repositories.ILoginRepository,
-	profileRepo repositories.IProfileRepository,
-	storageService di.IStorageService,
-) di.IUserService {
+	repo diRepo.IUserRepository,
+	loginRepo diRepo.ILoginRepository,
+	profileRepo diRepo.IProfileRepository,
+	storageService diSvc.IStorageService,
+) diSvc.IUserService {
 	responseBuilder := utils.NewResponseBuilder(storageService)
 	fileManager := utils.NewFileManager(storageService)
 	userCreator := helper.NewUserCreator(repo, loginRepo, profileRepo)
@@ -52,7 +52,7 @@ func NewUserService(
 }
 
 func (s *UserService) ListUsers(ctx context.Context, req *dto.ListUserRequest) (status.Code, []*dto.UserResponse, *pagination.Pagination, error) {
-	params := repositories.ListUsersParams{
+	params := diRepo.ListUsersParams{
 		Search:    req.Search,
 		Page:      req.Page,
 		Limit:     req.Limit,

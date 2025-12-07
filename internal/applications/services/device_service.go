@@ -5,18 +5,18 @@ import (
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/validators"
-	"math-ai.com/math-ai/internal/core/di/repositories"
+	di "math-ai.com/math-ai/internal/core/di/repositories"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 )
 
 type DeviceService struct {
 	validator validators.IDeviceValidator
-	repo      repositories.IDeviceRepository
+	repo      di.IDeviceRepository
 }
 
 func NewDeviceService(
 	validator validators.IDeviceValidator,
-	repo repositories.IDeviceRepository,
+	repo di.IDeviceRepository,
 ) *DeviceService {
 	return &DeviceService{
 		validator: validator,

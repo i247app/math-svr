@@ -6,21 +6,21 @@ import (
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/validators"
-	"math-ai.com/math-ai/internal/core/di/repositories"
-	di "math-ai.com/math-ai/internal/core/di/services"
+	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
+	diSvc "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
 type userLatestQuizService struct {
 	validator validators.IUserLatestQuizValidator
-	repo      repositories.IUserLatestQuizRepository
+	repo      diRepo.IUserLatestQuizRepository
 }
 
 func NewUserLatestQuizService(
 	validator validators.IUserLatestQuizValidator,
-	repo repositories.IUserLatestQuizRepository,
-) di.IUserLatestQuizService {
+	repo diRepo.IUserLatestQuizRepository,
+) diSvc.IUserLatestQuizService {
 	return &userLatestQuizService{
 		validator: validator,
 		repo:      repo,

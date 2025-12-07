@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/core/di/repositories"
+	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/device"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
@@ -19,7 +19,7 @@ type deviceRepository struct {
 	db db.IDatabase
 }
 
-func NewDeviceRepository(db db.IDatabase) repositories.IDeviceRepository {
+func NewDeviceRepository(db db.IDatabase) di.IDeviceRepository {
 	return &deviceRepository{
 		db: db,
 	}

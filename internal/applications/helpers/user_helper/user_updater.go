@@ -4,21 +4,21 @@ import (
 	"context"
 	"database/sql"
 
-	"math-ai.com/math-ai/internal/core/di/repositories"
+	di "math-ai.com/math-ai/internal/core/di/repositories"
 	profileDomain "math-ai.com/math-ai/internal/core/domain/profile"
 	domain "math-ai.com/math-ai/internal/core/domain/user"
 )
 
 // UserUpdater handles complex user update operations with transactions
 type UserUpdater struct {
-	userRepo    repositories.IUserRepository
-	profileRepo repositories.IProfileRepository
+	userRepo    di.IUserRepository
+	profileRepo di.IProfileRepository
 }
 
 // NewUserUpdater creates a new UserUpdater instance
 func NewUserUpdater(
-	userRepo repositories.IUserRepository,
-	profileRepo repositories.IProfileRepository,
+	userRepo di.IUserRepository,
+	profileRepo di.IProfileRepository,
 ) *UserUpdater {
 	return &UserUpdater{
 		userRepo:    userRepo,

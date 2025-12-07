@@ -6,8 +6,9 @@ import (
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/utils"
 	"math-ai.com/math-ai/internal/applications/validators"
-	"math-ai.com/math-ai/internal/core/di/repositories"
-	di "math-ai.com/math-ai/internal/core/di/services"
+	di "math-ai.com/math-ai/internal/core/di/repositories"
+	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
+	diSvc "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
 	"math-ai.com/math-ai/internal/shared/logger"
@@ -16,17 +17,17 @@ import (
 
 type GradeService struct {
 	validator       validators.IGradeValidator
-	repo            repositories.IGradeRepository
-	storageService  di.IStorageService
+	repo            diRepo.IGradeRepository
+	storageService  diSvc.IStorageService
 	responseBuilder *utils.ResponseBuilder
 	fileManager     *utils.FileManager
 }
 
 func NewGradeService(
 	validator validators.IGradeValidator,
-	repo repositories.IGradeRepository,
-	storageService di.IStorageService,
-) di.IGradeService {
+	repo diRepo.IGradeRepository,
+	storageService diSvc.IStorageService,
+) diSvc.IGradeService {
 	responseBuilder := utils.NewResponseBuilder(storageService)
 	fileManager := utils.NewFileManager(storageService)
 
@@ -40,7 +41,7 @@ func NewGradeService(
 }
 
 func (s *GradeService) ListGrades(ctx context.Context, req *dto.ListGradeRequest) (status.Code, []*dto.GradeResponse, *pagination.Pagination, error) {
-	params := repositories.ListGradesParams{
+	params := di.ListGradesParams{
 		Search:    req.Search,
 		Page:      req.Page,
 		Limit:     req.Limit,

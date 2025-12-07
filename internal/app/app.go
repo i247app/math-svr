@@ -11,6 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/app/resources"
 	"math-ai.com/math-ai/internal/app/routes"
 	"math-ai.com/math-ai/internal/app/services"
+	"math-ai.com/math-ai/internal/driven-adapter/jobs"
 	"math-ai.com/math-ai/internal/handlers/http/middleware"
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/config"
@@ -84,6 +85,9 @@ func (a *App) Init() error {
 	// Register middlewares
 	a.setupMiddleware(a.Server, services)
 
+	// Setup jobs
+	a.setupJobs(a.Server, a.Services)
+
 	// Setup shutdown hooks
 	a.setupShutdownHooks(a.Server, services)
 
@@ -95,6 +99,15 @@ func (a *App) Init() error {
 
 func (a *App) Start() error {
 	return a.Server.Start()
+}
+
+func (a *App) setupJobs(_ *gex.Server, _ *services.ServiceContainer) {
+	testJob := jobs.NewTestJob()
+
+	a.JobManager.RegisterJob(testJob)
+
+	// Start the job manager
+	a.JobManager.Start()
 }
 
 func (a *App) setupShutdownHooks(gexServer *gex.Server, _ *services.ServiceContainer) {

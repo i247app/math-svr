@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/core/di/repositories"
+	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/level"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
@@ -19,14 +19,14 @@ type levelRepository struct {
 	db db.IDatabase
 }
 
-func NewLevelRepository(db db.IDatabase) repositories.ILevelRepository {
+func NewLevelRepository(db db.IDatabase) di.ILevelRepository {
 	return &levelRepository{
 		db: db,
 	}
 }
 
 // List retrieves a paginated list of levels with optional search and sorting.
-func (r *levelRepository) List(ctx context.Context, params repositories.ListLevelsParams) ([]*domain.Level, *pagination.Pagination, error) {
+func (r *levelRepository) List(ctx context.Context, params di.ListLevelsParams) ([]*domain.Level, *pagination.Pagination, error) {
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 

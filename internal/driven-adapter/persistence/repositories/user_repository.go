@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/core/di/repositories"
+	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/user"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
@@ -19,7 +19,7 @@ type userRepository struct {
 	db db.IDatabase
 }
 
-func NewUserRepository(db db.IDatabase) repositories.IUserRepository {
+func NewUserRepository(db db.IDatabase) di.IUserRepository {
 	return &userRepository{
 		db: db,
 	}
@@ -65,7 +65,7 @@ func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName strin
 }
 
 // List retrieves a paginated list of users with optional search and sorting.
-func (r *userRepository) List(ctx context.Context, params repositories.ListUsersParams) ([]*domain.User, *pagination.Pagination, error) {
+func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([]*domain.User, *pagination.Pagination, error) {
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/core/di/repositories"
+	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/profile"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
@@ -18,7 +18,7 @@ type profileRepository struct {
 	db db.IDatabase
 }
 
-func NewProfileRepository(db db.IDatabase) repositories.IProfileRepository {
+func NewProfileRepository(db db.IDatabase) di.IProfileRepository {
 	return &profileRepository{
 		db: db,
 	}

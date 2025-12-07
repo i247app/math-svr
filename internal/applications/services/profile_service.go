@@ -6,25 +6,25 @@ import (
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/utils"
 	"math-ai.com/math-ai/internal/applications/validators"
-	"math-ai.com/math-ai/internal/core/di/repositories"
-	di "math-ai.com/math-ai/internal/core/di/services"
+	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
+	diSvc "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
 )
 
 type ProfileService struct {
 	validator       validators.IProfileValidator
-	repo            repositories.IProfileRepository
-	storageService  di.IStorageService
+	repo            diRepo.IProfileRepository
+	storageService  diSvc.IStorageService
 	responseBuilder *utils.ResponseBuilder
 	fileManager     *utils.FileManager
 }
 
 func NewProfileService(
 	validator validators.IProfileValidator,
-	repo repositories.IProfileRepository,
-	storageService di.IStorageService,
-) di.IProfileService {
+	repo diRepo.IProfileRepository,
+	storageService diSvc.IStorageService,
+) diSvc.IProfileService {
 	responseBuilder := utils.NewResponseBuilder(storageService)
 	fileManager := utils.NewFileManager(storageService)
 
