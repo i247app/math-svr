@@ -76,8 +76,8 @@ func (r *GradeResolver) CreateGrade(params graphql.ResolveParams) (interface{}, 
 		DisplayOrder: int8(input["display_order"].(int)),
 	}
 
-	if iconURL, ok := input["icon_url"].(string); ok {
-		req.IconURL = &iconURL
+	if iconURL, ok := input["image_key"].(string); ok {
+		req.ImageKey = &iconURL
 	}
 
 	statusCode, grade, err := r.gradeService.CreateGrade(params.Context, req)
@@ -110,8 +110,8 @@ func (r *GradeResolver) UpdateGrade(params graphql.ResolveParams) (interface{}, 
 	if description, ok := input["description"].(string); ok {
 		req.Description = &description
 	}
-	if iconURL, ok := input["icon_url"].(string); ok {
-		req.IconURL = &iconURL
+	if iconURL, ok := input["image_key"].(string); ok {
+		req.ImageKey = &iconURL
 	}
 	if displayOrder, ok := input["display_order"].(int); ok {
 		order := int8(displayOrder)

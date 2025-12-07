@@ -9,18 +9,23 @@ A complete **Translation Table Pattern** system for multi-language support that 
 ### Migration Files
 
 1. **`migrations/up/20251207220000_create_translation_tables.sql`**
+
    - Creates: grade_translations, semester_translations, chapter_translations, lesson_translations
 
 2. **`migrations/down/20251207220000_create_translation_tables.sql`**
+
    - Rollback for translation tables
 
 3. **`migrations/up/20251207220100_migrate_data_to_translations.sql`**
+
    - Migrates existing data from main tables to translation tables
 
 4. **`migrations/down/20251207220100_migrate_data_to_translations.sql`**
+
    - Rollback for data migration
 
 5. **`migrations/up/20251207220200_update_tables_remove_language_columns.sql`**
+
    - Removes language-specific columns from main tables
 
 6. **`migrations/down/20251207220200_update_tables_remove_language_columns.sql`**
@@ -68,6 +73,7 @@ A complete **Translation Table Pattern** system for multi-language support that 
 ### Database Schema
 
 **BEFORE** (Current - with duplication):
+
 ```
 semesters:          chapters:           lessons:
 ├── id              ├── id              ├── id
@@ -77,6 +83,7 @@ semesters:          chapters:           lessons:
 ```
 
 **AFTER** (Translation Pattern - no duplication):
+
 ```
 Main Tables:              Translation Tables:
 semesters                 semester_translations
@@ -121,7 +128,7 @@ lessons                   lesson_translations
 ```sql
 -- Get grade in Vietnamese with English fallback
 SELECT
-    g.id, g.icon_url, g.status,
+    g.id, g.image_key, g.status,
     COALESCE(gt_vn.label, gt_en.label) as label,
     COALESCE(gt_vn.description, gt_en.description) as description
 FROM grades g
@@ -135,6 +142,7 @@ WHERE g.id = 'xxx';
 ### Prerequisites
 
 1. **Backup your database!**
+
    ```bash
    mysqldump -u root -p math_ai > backup_before_translation_$(date +%Y%m%d).sql
    ```
@@ -217,6 +225,7 @@ func SetupRoutes(router *chi.Mux, ...) {
 ### 2. Update Grade Repository
 
 Follow the examples in `docs/GRADE_REPOSITORY_TRANSLATION_EXAMPLE.md` to update:
+
 - `List()` method
 - `FindByID()` method
 - `FindByLabel()` method
@@ -226,6 +235,7 @@ Follow the examples in `docs/GRADE_REPOSITORY_TRANSLATION_EXAMPLE.md` to update:
 ### 3. Create Semester/Chapter/Lesson Repositories
 
 Use the same pattern for new repositories:
+
 - Join with translation tables
 - Use `language.GetLanguage(ctx)` to get current language
 - Use COALESCE for fallback
@@ -265,6 +275,7 @@ curl -H "X-Language: VN" http://localhost:8080/api/grades
 ### Before Translation Pattern
 
 ❌ Adding French language:
+
 - Duplicate ALL 120 chapters (360 total rows)
 - Duplicate ALL semester data
 - Duplicate ALL lesson data
@@ -274,6 +285,7 @@ curl -H "X-Language: VN" http://localhost:8080/api/grades
 ### After Translation Pattern
 
 ✅ Adding French language:
+
 ```sql
 -- Just insert French translations! (120 INSERT statements)
 INSERT INTO chapter_translations (id, chapter_id, language, title, description)
@@ -309,6 +321,7 @@ id: 'trans-003', chapter_id: 'ch-001', language: 'FR', title: 'Numéros 1-10'
 ### Issue: No translations returned
 
 **Check:**
+
 ```sql
 -- Verify translation exists
 SELECT * FROM grade_translations WHERE language = 'VN';
@@ -324,6 +337,7 @@ LEFT JOIN grade_translations gt_default ON g.id = gt_default.grade_id AND gt_def
 ### Issue: Language not detected
 
 **Check:**
+
 1. Language middleware is applied
 2. Language header is sent correctly
 3. Language context is not overwritten
@@ -339,6 +353,7 @@ log.Printf("Current language: %s", lang)
 **Cause:** Trying to insert same (entity_id, language) combination twice
 
 **Solution:** Use ON DUPLICATE KEY UPDATE for upserts:
+
 ```sql
 INSERT INTO grade_translations (...)
 VALUES (...)

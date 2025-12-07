@@ -122,7 +122,7 @@ func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequ
 
 	// Set icon URL if uploaded
 	if iconKey != nil {
-		gradeDomain.SetIconURL(iconKey)
+		gradeDomain.SetImageKey(iconKey)
 	}
 
 	// Create grade without transaction (simple single table insert)

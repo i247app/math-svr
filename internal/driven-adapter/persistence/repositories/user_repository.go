@@ -38,7 +38,7 @@ func (r *userRepository) DoTransaction(ctx context.Context, handler db.Handerler
 // GetUserByLoginName retrieves a user by their login name (email or phone).
 func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName string) (*domain.User, error) {
 	query := `
-		SELECT u.id, u.name, u.phone, u.email, u.avatar_url, u.dob, 
+		SELECT u.id, u.name, u.phone, u.email, u.avatar_key, u.dob, 
 		u.role, u.status, l.hash_pass, u.create_id, u.create_dt, u.modify_id, u.modify_dt
 		FROM users u
 		JOIN aliases a ON u.id = a.uid
@@ -71,7 +71,7 @@ func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([
 
 	// Base query
 	queryBuilder.WriteString(`
-		SELECT id, name, phone, email, avatar_url, dob,
+		SELECT id, name, phone, email, avatar_key, dob,
 		role, status, create_id, create_dt, modify_id, modify_dt
 		FROM users WHERE deleted_dt IS NULL
 	`)
@@ -146,7 +146,7 @@ func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([
 // FindByID retrieves a user by ID.
 func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User, error) {
 	query := `
-		SELECT id, name, phone, email, avatar_url, dob,
+		SELECT id, name, phone, email, avatar_key, dob,
 		role, status, create_id, create_dt, modify_id, modify_dt
 		FROM users
 		WHERE id = ? AND deleted_dt IS NULL
@@ -174,7 +174,7 @@ func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User
 // FindByEmail retrieves a user by email.
 func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	query := `
-		SELECT id, name, phone, email, avatar_url, dob,
+		SELECT id, name, phone, email, avatar_key, dob,
 		role, status, create_id, create_dt, modify_id, modify_dt
 		FROM users
 		WHERE email = ? AND deleted_dt IS NULL
@@ -201,7 +201,7 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 // Create inserts a new user into the database.
 func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) {
 	query := `
-		INSERT INTO users (id, name, phone, email, avatar_url, dob, role, status)
+		INSERT INTO users (id, name, phone, email, avatar_key, dob, role, status)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -260,7 +260,7 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 	}
 
 	if user.AvatarURL() != nil {
-		updates = append(updates, "avatar_url = ?")
+		updates = append(updates, "avatar_key = ?")
 		args = append(args, user.AvatarURL())
 	}
 

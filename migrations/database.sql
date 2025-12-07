@@ -19,7 +19,7 @@ CREATE TABLE `users` (
   `name` VARCHAR(128) NOT NULL COMMENT 'User full name',
   `phone` VARCHAR(128) NOT NULL COMMENT 'User phone number',
   `email` VARCHAR(128) NOT NULL COMMENT 'User email address',
-  `avatar_url` VARCHAR(256) DEFAULT NULL COMMENT 'URL to user avatar image',
+  `avatar_key` VARCHAR(256) DEFAULT NULL COMMENT 'URL to user avatar image',
   `role` VARCHAR(16) NOT NULL COMMENT 'User role: admin, user, guest',
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE' COMMENT 'Account status: ACTIVE, INACTIVE, SUSPENDED',
   `create_id` CHAR(36) DEFAULT NULL COMMENT 'ID of user who created this record',
@@ -135,7 +135,7 @@ CREATE TABLE `grades` (
   `id` CHAR(36) NOT NULL COMMENT 'Unique identifier (UUID)',
   `label` VARCHAR(128) NOT NULL COMMENT 'Grade label (e.g., "Grade 1", "Grade 2")',
   `discription` VARCHAR(128) NOT NULL COMMENT 'Grade description',
-  `icon_url` VARCHAR(255) DEFAULT NULL COMMENT 'URL to grade icon/image',
+  `image_key` VARCHAR(255) DEFAULT NULL COMMENT 'URL to grade icon/image',
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE' COMMENT 'Grade status: ACTIVE, INACTIVE',
   `display_order` TINYINT NOT NULL COMMENT 'Display order for sorting',
   `create_id` INT DEFAULT 0 COMMENT 'ID of user who created this record',
@@ -151,7 +151,7 @@ CREATE TABLE `grades` (
 COMMENT='Educational grade levels';
 
 -- Sample data for grades
-INSERT INTO `grades` (`id`, `label`, `discription`, `icon_url`, `status`, `display_order`) VALUES
+INSERT INTO `grades` (`id`, `label`, `discription`, `image_key`, `status`, `display_order`) VALUES
 ('d5e6f7a8-b9c0-1d2e-3f4a-5b6c7d8e9f0a', 'Grade 1', 'First year of elementary education level.', 'https://i.etsystatic.com/26332185/r/il/a4a96b/3322375595/il_fullxfull.3322375595_7lup.jpg', 'ACTIVE', 1),
 ('e9d8c7b6-a5f4-3e2d-1c0b-9a8f7e6d5c4b', 'Grade 2', 'Second year of elementary education level.', 'https://media.istockphoto.com/id/2228417672/vector/hello-2nd-grade-back-to-school-colorful-fun-vector-illustration-with-text-pencil-and.jpg?s=612x612&w=0&k=20&c=5R6vE-qbMIgcIt0tnsN0ltd8aDkvFI-JlA3McqP5QRg=', 'ACTIVE', 2),
 ('f1e2d3c4-5b6a-7d8e-9f0c-1b2a3d4e5f6c', 'Grade 3', 'Third year of elementary education level.', 'https://www.shutterstock.com/image-vector/hello-3rd-grade-back-school-600nw-2662389757.jpg', 'ACTIVE', 3);
@@ -164,7 +164,7 @@ CREATE TABLE `levels` (
   `id` CHAR(36) NOT NULL COMMENT 'Unique identifier (UUID)',
   `label` VARCHAR(128) NOT NULL COMMENT 'Level label (e.g., "Basic", "Advanced")',
   `discription` VARCHAR(128) NOT NULL COMMENT 'Level description',
-  `icon_url` VARCHAR(255) DEFAULT NULL COMMENT 'URL to level icon/image',
+  `image_key` VARCHAR(255) DEFAULT NULL COMMENT 'URL to level icon/image',
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE' COMMENT 'Level status: ACTIVE, INACTIVE',
   `display_order` TINYINT NOT NULL COMMENT 'Display order for sorting',
   `create_id` INT DEFAULT 0 COMMENT 'ID of user who created this record',
@@ -180,7 +180,7 @@ CREATE TABLE `levels` (
 COMMENT='Difficulty and proficiency levels';
 
 -- Sample data for levels
-INSERT INTO `levels` (`id`, `label`, `discription`, `icon_url`, `status`, `display_order`) VALUES
+INSERT INTO `levels` (`id`, `label`, `discription`, `image_key`, `status`, `display_order`) VALUES
 (UUID(), 'Basic', 'Beginner level, covering fundamental concepts.', 'https://cdn4.vectorstock.com/i/1000x1000/94/53/beginner-level-concept-icon-vector-36259453.jpg', 'ACTIVE', 1),
 (UUID(), 'Intermediate', 'Moderate level, requiring foundational knowledge.', 'https://c8.alamy.com/comp/2EBR5GT/intermediate-level-concept-icon-2EBR5GT.jpg', 'ACTIVE', 2),
 (UUID(), 'Advanced', 'High level of difficulty, complex application.', 'https://www.equa.se/components/com_rseventspro/assets/images/events/icon-advanced45392195576912739915362270.png', 'ACTIVE', 3),

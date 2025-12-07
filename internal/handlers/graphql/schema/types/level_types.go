@@ -21,7 +21,7 @@ var LevelType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.String,
 			Description: "Level description",
 		},
-		"icon_url": &graphql.Field{
+		"image_key": &graphql.Field{
 			Type:        graphql.String,
 			Description: "URL to level icon/image",
 		},
@@ -60,7 +60,7 @@ var CreateLevelInput = graphql.NewInputObject(graphql.InputObjectConfig{
 			Type:        graphql.NewNonNull(graphql.String),
 			Description: "Level description",
 		},
-		"icon_url": &graphql.InputObjectFieldConfig{
+		"image_key": &graphql.InputObjectFieldConfig{
 			Type:        graphql.String,
 			Description: "URL to level icon/image",
 		},
@@ -88,7 +88,7 @@ var UpdateLevelInput = graphql.NewInputObject(graphql.InputObjectConfig{
 			Type:        graphql.String,
 			Description: "Level description (optional)",
 		},
-		"icon_url": &graphql.InputObjectFieldConfig{
+		"image_key": &graphql.InputObjectFieldConfig{
 			Type:        graphql.String,
 			Description: "URL to level icon/image (optional)",
 		},

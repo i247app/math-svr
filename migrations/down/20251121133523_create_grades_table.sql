@@ -1,2 +1,2 @@
--- migration down
-DROP TABLE IF EXISTS grades;
+-- -- migration down
+-- DROP TABLE IF EXISTS grades;

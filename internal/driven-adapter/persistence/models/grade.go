@@ -8,7 +8,7 @@ type GradeModel struct {
 	ID           string
 	Label        string
 	Description  *string
-	IconURL      *string
+	ImageKey     *string
 	Status       string
 	DisplayOrder int8
 	CreateID     *int64

@@ -80,7 +80,7 @@ func (r *GradeRepository) GetByIDWithTranslation(ctx context.Context, tx *sql.Tx
 
 	query := `
 		SELECT
-			g.id, g.icon_url, g.status, g.display_order,
+			g.id, g.image_key, g.status, g.display_order,
 			g.create_id, g.create_dt, g.modify_id, g.modify_dt, g.deleted_dt,
 			COALESCE(gt_user.label, gt_default.label) as label,
 			COALESCE(gt_user.description, gt_default.description) as description
@@ -118,7 +118,7 @@ func (r *GradeRepository) ListWithTranslations(ctx context.Context, tx *sql.Tx) 
 
 	query := `
 		SELECT
-			g.id, g.icon_url, g.status, g.display_order,
+			g.id, g.image_key, g.status, g.display_order,
 			g.create_id, g.create_dt, g.modify_id, g.modify_dt, g.deleted_dt,
 			COALESCE(gt_user.label, gt_default.label) as label,
 			COALESCE(gt_user.description, gt_default.description) as description
@@ -171,7 +171,7 @@ When creating or updating entities, you need to handle both main table and trans
 func (r *GradeRepository) CreateWithTranslation(ctx context.Context, tx *sql.Tx, grade *domain.Grade, language string) error {
 	// Insert into main table
 	query := `
-		INSERT INTO grades (id, icon_url, status, display_order, create_id, create_dt, modify_id, modify_dt)
+		INSERT INTO grades (id, image_key, status, display_order, create_id, create_dt, modify_id, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	_, err := tx.ExecContext(ctx, query,
@@ -301,6 +301,7 @@ WHERE id = 'd46c8252-06a7-4d6e-8f24-3525278214ae';
 ### Before Running Migrations
 
 **IMPORTANT**: The migrations will:
+
 1. Create translation tables
 2. Migrate existing data to translation tables
 3. Remove language columns from main tables
@@ -395,14 +396,17 @@ WHERE gt.id IS NULL;
 ## Troubleshooting
 
 ### Issue: Getting NULL for label/description
+
 - **Cause**: No translation exists for requested language AND no EN fallback
 - **Solution**: Ensure all entities have at least EN translation
 
 ### Issue: Wrong language returned
+
 - **Cause**: Language not properly set in context
 - **Solution**: Check middleware is applied and language header is sent
 
 ### Issue: Query performance slow
+
 - **Cause**: Missing indexes on translation tables
 - **Solution**: Ensure indexes exist on (entity_id, language) columns
 

@@ -12,7 +12,7 @@ type Grade struct {
 	id           string
 	label        string
 	description  string
-	iconURL      *string
+	imageKey     *string
 	status       string
 	displayOrder int8
 	createID     *int64
@@ -54,12 +54,12 @@ func (g *Grade) SetDescription(description string) {
 	g.description = description
 }
 
-func (g *Grade) IconURL() *string {
-	return g.iconURL
+func (g *Grade) ImageKey() *string {
+	return g.imageKey
 }
 
-func (g *Grade) SetIconURL(iconURL *string) {
-	g.iconURL = iconURL
+func (g *Grade) SetImageKey(imageKey *string) {
+	g.imageKey = imageKey
 }
 
 func (g *Grade) Status() string {
@@ -126,7 +126,7 @@ func (g *Grade) SetDeletedAt(deletedDT *time.Time) {
 func BuildGradeDomainFromModel(model *models.GradeModel) *Grade {
 	return &Grade{
 		id:           model.ID,
-		iconURL:      model.IconURL,
+		imageKey:     model.ImageKey,
 		status:       model.Status,
 		displayOrder: model.DisplayOrder,
 		createID:     model.CreateID,

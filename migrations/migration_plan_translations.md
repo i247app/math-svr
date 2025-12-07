@@ -3,6 +3,7 @@
 ## Phase 1: Create Translation Tables
 
 ### 1. Create grade_translations table
+
 ```sql
 CREATE TABLE grade_translations (
     id CHAR(36) NOT NULL,
@@ -17,6 +18,7 @@ CREATE TABLE grade_translations (
 ```
 
 ### 2. Create semester_translations table
+
 ```sql
 CREATE TABLE semester_translations (
     id CHAR(36) NOT NULL,
@@ -31,6 +33,7 @@ CREATE TABLE semester_translations (
 ```
 
 ### 3. Create chapter_translations table
+
 ```sql
 CREATE TABLE chapter_translations (
     id CHAR(36) NOT NULL,
@@ -45,6 +48,7 @@ CREATE TABLE chapter_translations (
 ```
 
 ### 4. Create lesson_translations table
+
 ```sql
 CREATE TABLE lesson_translations (
     id CHAR(36) NOT NULL,
@@ -61,6 +65,7 @@ CREATE TABLE lesson_translations (
 ## Phase 2: Migrate Existing Data (if you have current chapters/lessons)
 
 ### Migrate chapters
+
 ```sql
 -- Insert into chapter_translations from existing chapters
 INSERT INTO chapter_translations (id, chapter_id, language, title, description)
@@ -69,6 +74,7 @@ FROM chapters;
 ```
 
 ### Migrate lessons
+
 ```sql
 -- Insert into lesson_translations from existing lessons
 INSERT INTO lesson_translations (id, lesson_id, language, title, content)
@@ -77,6 +83,7 @@ FROM lessons;
 ```
 
 ### Migrate semesters
+
 ```sql
 -- Insert into semester_translations from existing semesters
 INSERT INTO semester_translations (id, semester_id, language, name, description)
@@ -87,6 +94,7 @@ FROM semesters;
 ## Phase 3: Update Schema
 
 ### Remove language columns from main tables
+
 ```sql
 -- Remove from chapters (after migration)
 ALTER TABLE chapters DROP COLUMN languague;
@@ -107,10 +115,11 @@ ALTER TABLE semesters DROP COLUMN description;
 ## Phase 4: Application Layer Changes
 
 ### Go Service Layer Example
+
 ```go
 type GradeResponse struct {
     ID           string    `json:"id"`
-    IconURL      *string   `json:"icon_url"`
+    IconURL      *string   `json:"image_key"`
     Status       string    `json:"status"`
     DisplayOrder int       `json:"display_order"`
     Label        string    `json:"label"`        // from translation
@@ -121,7 +130,7 @@ type GradeResponse struct {
 // Repository method
 func (r *GradeRepository) GetByIDWithTranslation(ctx context.Context, id string, language string) (*domain.Grade, error) {
     query := `
-        SELECT g.id, g.icon_url, g.status, g.display_order,
+        SELECT g.id, g.image_key, g.status, g.display_order,
                COALESCE(gt_user.label, gt_default.label) as label,
                COALESCE(gt_user.description, gt_default.description) as description,
                COALESCE(gt_user.language, gt_default.language) as language
@@ -161,6 +170,7 @@ func (s *GradeService) GetGrade(ctx context.Context, id string) (*dto.GradeRespo
 ## Rollback Strategy
 
 If needed, you can revert by:
+
 1. Re-adding language columns to main tables
 2. Migrating data back from translation tables
 3. Dropping translation tables

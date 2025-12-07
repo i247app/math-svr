@@ -79,8 +79,8 @@ func (r *ResponseBuilder) BuildGradeResponse(ctx context.Context, grade *domain_
 	res := dto.GradeResponseFromDomain(grade)
 
 	// Generate presigned URL for icon if exists
-	if grade.IconURL() != nil && *grade.IconURL() != "" {
-		presignedURL := r.generatePresignedURL(ctx, grade.IconURL(), GradePresignedURLExpiration)
+	if grade.ImageKey() != nil && *grade.ImageKey() != "" {
+		presignedURL := r.generatePresignedURL(ctx, grade.ImageKey(), GradePresignedURLExpiration)
 		if presignedURL != "" {
 			res.IconURL = &presignedURL
 		}

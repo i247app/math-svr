@@ -27,7 +27,7 @@ func NewProfileRepository(db db.IDatabase) di.IProfileRepository {
 // FindByID retrieves a profile by ID with user information.
 func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Profile, error) {
 	query := `
-		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_url, u.dob, p.grade, p.level, p.status,
+		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, p.grade, p.level, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt
 		FROM profiles p
 		INNER JOIN users u ON p.uid = u.id
@@ -56,7 +56,7 @@ func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Pr
 // FindByUID retrieves a profile by user ID with user information.
 func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.Profile, error) {
 	query := `
-		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_url, u.dob, p.grade, p.level, p.status,
+		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, p.grade, p.level, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt
 		FROM profiles p
 		INNER JOIN users u ON p.uid = u.id

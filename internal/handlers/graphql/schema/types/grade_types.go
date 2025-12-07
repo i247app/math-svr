@@ -21,7 +21,7 @@ var GradeType = graphql.NewObject(graphql.ObjectConfig{
 			Type:        graphql.String,
 			Description: "Grade description",
 		},
-		"icon_url": &graphql.Field{
+		"image_key": &graphql.Field{
 			Type:        graphql.String,
 			Description: "URL to grade icon/image",
 		},
@@ -60,7 +60,7 @@ var CreateGradeInput = graphql.NewInputObject(graphql.InputObjectConfig{
 			Type:        graphql.NewNonNull(graphql.String),
 			Description: "Grade description",
 		},
-		"icon_url": &graphql.InputObjectFieldConfig{
+		"image_key": &graphql.InputObjectFieldConfig{
 			Type:        graphql.String,
 			Description: "URL to grade icon/image",
 		},
@@ -88,7 +88,7 @@ var UpdateGradeInput = graphql.NewInputObject(graphql.InputObjectConfig{
 			Type:        graphql.String,
 			Description: "Grade description (optional)",
 		},
-		"icon_url": &graphql.InputObjectFieldConfig{
+		"image_key": &graphql.InputObjectFieldConfig{
 			Type:        graphql.String,
 			Description: "URL to grade icon/image (optional)",
 		},

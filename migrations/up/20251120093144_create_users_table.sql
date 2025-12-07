@@ -4,7 +4,7 @@ CREATE TABLE `users` (
   `name` VARCHAR(128) NOT NULL,
   `phone` VARCHAR(128) NOT NULL,
   `email` VARCHAR(128) NOT NULL,
-  `avatar_url` VARCHAR(256) DEFAULT NULL,
+  `avatar_key` VARCHAR(256) DEFAULT NULL,
   `dob` DATETIME(3),
   `role` VARCHAR(16) NOT NULL,
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
@@ -18,7 +18,7 @@ CREATE TABLE `users` (
 
 -- comment it if you migrate-up again
 -- INSERT INTO users (
---     id, name, phone, email, avatar_url, role, status
+--     id, name, phone, email, avatar_key, role, status
 -- ) VALUES
 --     (UUID(), 'Alice Smith', '1234567890', 'alice.smith@example.com', null, 'admin', 'ACTIVE'),
 --     (UUID(), 'Bob Johnson', '2345678901', 'bob.johnson@example.com', null, 'user', 'ACTIVE'),

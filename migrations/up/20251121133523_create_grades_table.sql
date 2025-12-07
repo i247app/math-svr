@@ -3,7 +3,7 @@ CREATE TABLE grades (
   `id` CHAR(36) NOT NULL,
   `label` varchar(128) NOT NULL,
   `discription` varchar(128) NOT NULL,
-  `icon_url` varchar(255) DEFAULT NULL,
+  `image_key` varchar(255) DEFAULT NULL,
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
   `display_order` TINYINT NOT NULL,
   `create_id` INT DEFAULT 0,
@@ -15,7 +15,7 @@ CREATE TABLE grades (
 ) ENGINE=InnoDB AUTO_INCREMENT=1162 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- comment it if you migrate-up again
--- INSERT INTO grades (id,label,discription,icon_url,status,display_order,create_id,create_dt,modify_id,modify_dt,deleted_dt) VALUES
+-- INSERT INTO grades (id,label,discription,image_key,status,display_order,create_id,create_dt,modify_id,modify_dt,deleted_dt) VALUES
 -- 	 ('82023de6-8d1f-46d3-abc8-6dceab23a9f5','Grade 4','Four year of elementary education level.','grade/20251204-44563688-3d06-45e8-8d12-a82b0026c4c2.jpeg','ACTIVE',4,0,'2025-12-04 22:25:54.732',0,'2025-12-04 22:25:54.732',NULL),
 -- 	 ('c95bf9eb-7143-4395-9112-752d7aee8020','Grade 2','Second year of elementary education level.','grade/20251204-b25fcde1-fd91-4afc-8dcf-3cc48c636d32.jpg','ACTIVE',2,0,'2025-12-04 22:25:01.597',0,'2025-12-04 22:25:01.597',NULL),
 -- 	 ('ca93947f-f7b6-433e-968f-a7b70f36c201','Grade 5','Five year of elementary education level.','grade/20251204-3f6ada77-324a-4d52-b5b3-1253ef4e639b.jpg','ACTIVE',5,0,'2025-12-04 22:26:22.351',0,'2025-12-04 22:26:22.351',NULL),

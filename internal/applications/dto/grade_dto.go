@@ -13,7 +13,7 @@ type GradeResponse struct {
 	ID           string    `json:"id"`
 	Label        string    `json:"label"`
 	Description  string    `json:"description"`
-	IconURL      *string   `json:"icon_url"`
+	IconURL      *string   `json:"image_key"`
 	Status       string    `json:"status"`
 	DisplayOrder int8      `json:"display_order"`
 	CreatedAt    time.Time `json:"created_at"`
@@ -41,7 +41,7 @@ type ListGradeResponse struct {
 type CreateGradeRequest struct {
 	Label        string  `json:"label"`
 	Description  string  `json:"description"`
-	IconURL      *string `json:"icon_url,omitempty"`
+	ImageKey     *string `json:"image_key,omitempty"`
 	DisplayOrder int8    `json:"display_order"`
 
 	// image upload fields (for multipart form)
@@ -58,7 +58,7 @@ type UpdateGradeRequest struct {
 	ID           string        `json:"id"`
 	Label        *string       `json:"label,omitempty"`
 	Description  *string       `json:"description,omitempty"`
-	IconURL      *string       `json:"icon_url,omitempty"`
+	ImageKey     *string       `json:"image_key,omitempty"`
 	Status       *enum.EStatus `json:"status,omitempty"`
 	DisplayOrder *int8         `json:"display_order,omitempty"`
 }
@@ -76,7 +76,7 @@ func BuildGradeDomainForCreate(req *CreateGradeRequest) *domain.Grade {
 	gradeDomain.GenerateID()
 	gradeDomain.SetLabel(req.Label)
 	gradeDomain.SetDescription(req.Description)
-	gradeDomain.SetIconURL(req.IconURL)
+	gradeDomain.SetImageKey(req.ImageKey)
 	gradeDomain.SetStatus(string(enum.StatusActive))
 	gradeDomain.SetDisplayOrder(req.DisplayOrder)
 
@@ -95,8 +95,8 @@ func BuildGradeDomainForUpdate(req *UpdateGradeRequest) *domain.Grade {
 		gradeDomain.SetDescription(*req.Description)
 	}
 
-	if req.IconURL != nil {
-		gradeDomain.SetIconURL(req.IconURL)
+	if req.ImageKey != nil {
+		gradeDomain.SetImageKey(req.ImageKey)
 	}
 
 	if req.Status != nil {
@@ -115,7 +115,7 @@ func GradeResponseFromDomain(g *domain.Grade) GradeResponse {
 		ID:           g.ID(),
 		Label:        g.Label(),
 		Description:  g.Description(),
-		IconURL:      g.IconURL(),
+		IconURL:      g.ImageKey(),
 		Status:       g.Status(),
 		DisplayOrder: g.DisplayOrder(),
 		CreatedAt:    g.CreatedAt(),
