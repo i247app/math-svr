@@ -7,7 +7,7 @@ import (
 type GradeModel struct {
 	ID           string
 	Label        string
-	Description  string
+	Description  *string
 	IconURL      *string
 	Status       string
 	DisplayOrder int8
@@ -16,4 +16,5 @@ type GradeModel struct {
 	ModifyID     *int64
 	ModifyDT     time.Time
 	DeletedDT    *time.Time
+	// Label and Description moved to GradeTranslationModel
 }

@@ -121,11 +121,11 @@ func (g *Grade) SetDeletedAt(deletedDT *time.Time) {
 	g.deletedDT = deletedDT
 }
 
+// BuildGradeDomainFromModel builds a Grade from a model
+// Note: label and description must be set separately from translation data
 func BuildGradeDomainFromModel(model *models.GradeModel) *Grade {
 	return &Grade{
 		id:           model.ID,
-		label:        model.Label,
-		description:  model.Description,
 		iconURL:      model.IconURL,
 		status:       model.Status,
 		displayOrder: model.DisplayOrder,

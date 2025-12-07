@@ -12,7 +12,6 @@ func BuildSchema(serviceContainer *services.ServiceContainer) (graphql.Schema, e
 	// Initialize resolvers
 	userResolver := resolvers.NewUserResolver(serviceContainer.UserService)
 	gradeResolver := resolvers.NewGradeResolver(serviceContainer.GradeService)
-	levelResolver := resolvers.NewLevelResolver(serviceContainer.LevelService)
 	loginResolver := resolvers.NewLoginResolver(serviceContainer.LoginService)
 	chatboxResolver := resolvers.NewChatBoxResolver(serviceContainer.ChatBoxService)
 	profileResolver := resolvers.NewProfileResolver(serviceContainer.ProfileService)
@@ -101,37 +100,6 @@ func BuildSchema(serviceContainer *services.ServiceContainer) (graphql.Schema, e
 				Type:        types.GradeListType,
 				Description: "List all grades",
 				Resolve:     gradeResolver.ListGrades,
-			},
-
-			// ============================================================
-			// LEVEL QUERIES
-			// ============================================================
-			"level": &graphql.Field{
-				Type:        types.LevelType,
-				Description: "Get a level by ID",
-				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
-						Type:        graphql.NewNonNull(graphql.String),
-						Description: "Level ID (UUID)",
-					},
-				},
-				Resolve: levelResolver.GetLevel,
-			},
-			"levelByLabel": &graphql.Field{
-				Type:        types.LevelType,
-				Description: "Get a level by label",
-				Args: graphql.FieldConfigArgument{
-					"label": &graphql.ArgumentConfig{
-						Type:        graphql.NewNonNull(graphql.String),
-						Description: "Level label (e.g., 'Basic')",
-					},
-				},
-				Resolve: levelResolver.GetLevelByLabel,
-			},
-			"levels": &graphql.Field{
-				Type:        types.LevelListType,
-				Description: "List all levels",
-				Resolve:     levelResolver.ListLevels,
 			},
 
 			// ============================================================
@@ -302,54 +270,6 @@ func BuildSchema(serviceContainer *services.ServiceContainer) (graphql.Schema, e
 					},
 				},
 				Resolve: gradeResolver.ForceDeleteGrade,
-			},
-
-			// ============================================================
-			// LEVEL MUTATIONS
-			// ============================================================
-			"createLevel": &graphql.Field{
-				Type:        types.LevelType,
-				Description: "Create a new level",
-				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
-						Type:        graphql.NewNonNull(types.CreateLevelInput),
-						Description: "Level creation input",
-					},
-				},
-				Resolve: levelResolver.CreateLevel,
-			},
-			"updateLevel": &graphql.Field{
-				Type:        types.LevelType,
-				Description: "Update an existing level",
-				Args: graphql.FieldConfigArgument{
-					"input": &graphql.ArgumentConfig{
-						Type:        graphql.NewNonNull(types.UpdateLevelInput),
-						Description: "Level update input",
-					},
-				},
-				Resolve: levelResolver.UpdateLevel,
-			},
-			"deleteLevel": &graphql.Field{
-				Type:        graphql.Boolean,
-				Description: "Soft delete a level",
-				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
-						Type:        graphql.NewNonNull(graphql.String),
-						Description: "Level ID to delete",
-					},
-				},
-				Resolve: levelResolver.DeleteLevel,
-			},
-			"forceDeleteLevel": &graphql.Field{
-				Type:        graphql.Boolean,
-				Description: "Permanently delete a level",
-				Args: graphql.FieldConfigArgument{
-					"id": &graphql.ArgumentConfig{
-						Type:        graphql.NewNonNull(graphql.String),
-						Description: "Level ID to permanently delete",
-					},
-				},
-				Resolve: levelResolver.ForceDeleteLevel,
 			},
 
 			// ============================================================
