@@ -72,7 +72,7 @@ func (r *GradeResolver) CreateGrade(params graphql.ResolveParams) (interface{}, 
 
 	req := &dto.CreateGradeRequest{
 		Label:        input["label"].(string),
-		Description:  input["description"].(string),
+		Description:  input["description"].(*string),
 		DisplayOrder: int8(input["display_order"].(int)),
 	}
 

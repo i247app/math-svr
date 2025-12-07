@@ -17,7 +17,6 @@ type Profile struct {
 	grade     string
 	avatarKey *string
 	dob       *time.Time
-	level     string
 	status    string
 	createID  *int64
 	createDT  time.Time
@@ -98,14 +97,6 @@ func (p *Profile) SetGrade(grade string) {
 	p.grade = grade
 }
 
-func (p *Profile) Level() string {
-	return p.level
-}
-
-func (p *Profile) SetLevel(level string) {
-	p.level = level
-}
-
 func (p *Profile) Status() string {
 	return p.status
 }
@@ -167,7 +158,6 @@ func BuildProfileDomainFromModel(model *models.ProfileModel) *Profile {
 		grade:     model.Grade,
 		dob:       model.Dob,
 		avatarKey: model.AvatarKey,
-		level:     model.Level,
 		status:    model.Status,
 		createID:  model.CreateID,
 		createDT:  model.CreateDT,

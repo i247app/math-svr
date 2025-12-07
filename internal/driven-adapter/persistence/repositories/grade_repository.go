@@ -194,7 +194,7 @@ func (r *gradeRepository) Update(ctx context.Context, grade *domain.Grade) (int6
 		args = append(args, grade.Label())
 	}
 
-	if grade.Description() != "" {
+	if grade.Description() != nil {
 		updates = append(updates, "discription = ?")
 		args = append(args, grade.Description())
 	}

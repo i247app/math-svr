@@ -11,7 +11,7 @@ import (
 type Grade struct {
 	id           string
 	label        string
-	description  string
+	description  *string
 	imageKey     *string
 	status       string
 	displayOrder int8
@@ -46,11 +46,11 @@ func (g *Grade) SetLabel(label string) {
 	g.label = label
 }
 
-func (g *Grade) Description() string {
+func (g *Grade) Description() *string {
 	return g.description
 }
 
-func (g *Grade) SetDescription(description string) {
+func (g *Grade) SetDescription(description *string) {
 	g.description = description
 }
 
@@ -126,6 +126,8 @@ func (g *Grade) SetDeletedAt(deletedDT *time.Time) {
 func BuildGradeDomainFromModel(model *models.GradeModel) *Grade {
 	return &Grade{
 		id:           model.ID,
+		label:        model.Label,
+		description:  model.Description,
 		imageKey:     model.ImageKey,
 		status:       model.Status,
 		displayOrder: model.DisplayOrder,

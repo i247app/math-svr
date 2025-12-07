@@ -5,6 +5,7 @@ CREATE TABLE semesters (
     `description` TEXT NULL,
     `iamge_key` VARCHAR(128) NULL,
     `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+    `display_order` TINYINT NOT NULL,
     `create_id` INT DEFAULT 0,
     `create_dt` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
     `modify_id` INT DEFAULT 0,

@@ -27,7 +27,7 @@ func NewProfileRepository(db db.IDatabase) di.IProfileRepository {
 // FindByID retrieves a profile by ID with user information.
 func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Profile, error) {
 	query := `
-		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, p.grade, p.level, p.status,
+		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, p.grade, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt
 		FROM profiles p
 		INNER JOIN users u ON p.uid = u.id
@@ -38,7 +38,7 @@ func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Pr
 
 	var p models.ProfileModel
 	err := result.Scan(
-		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.AvatarKey, &p.Dob, &p.Grade, &p.Level, &p.Status,
+		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.AvatarKey, &p.Dob, &p.Grade, &p.Status,
 		&p.CreateID, &p.CreateDT, &p.ModifyID, &p.ModifyDT,
 	)
 	if err != nil {
@@ -56,7 +56,7 @@ func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Pr
 // FindByUID retrieves a profile by user ID with user information.
 func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.Profile, error) {
 	query := `
-		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, p.grade, p.level, p.status,
+		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, p.grade, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt
 		FROM profiles p
 		INNER JOIN users u ON p.uid = u.id
@@ -67,7 +67,7 @@ func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.
 
 	var p models.ProfileModel
 	err := result.Scan(
-		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.AvatarKey, &p.Dob, &p.Grade, &p.Level, &p.Status,
+		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.AvatarKey, &p.Dob, &p.Grade, &p.Status,
 		&p.CreateID, &p.CreateDT, &p.ModifyID, &p.ModifyDT,
 	)
 	if err != nil {
@@ -85,14 +85,13 @@ func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.
 // Create inserts a new profile into the database.
 func (r *profileRepository) Create(ctx context.Context, tx *sql.Tx, profile *domain.Profile) (int64, error) {
 	query := `
-		INSERT INTO profiles (id, uid, grade, level, status)
+		INSERT INTO profiles (id, uid, grade, status)
 		VALUES (?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		profile.ID(),
 		profile.UID(),
 		profile.Grade(),
-		profile.Level(),
 		enum.StatusActive,
 	)
 	if err != nil {
@@ -113,11 +112,6 @@ func (r *profileRepository) Update(ctx context.Context, profile *domain.Profile)
 	if profile.Grade() != "" {
 		updates = append(updates, "grade = ?")
 		args = append(args, profile.Grade())
-	}
-
-	if profile.Level() != "" {
-		updates = append(updates, "level = ?")
-		args = append(args, profile.Level())
 	}
 
 	if profile.Status() != "" {

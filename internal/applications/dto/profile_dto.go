@@ -56,7 +56,6 @@ func BuildProfileDomainForCreate(req *CreateProfileRequest) *domain.Profile {
 	profileDomain.GenerateID()
 	profileDomain.SetUID(req.UID)
 	profileDomain.SetGrade(req.Grade)
-	profileDomain.SetLevel(req.Level)
 	profileDomain.SetStatus(string(enum.StatusActive))
 
 	return profileDomain
@@ -69,10 +68,6 @@ func BuildProfileDomainForUpdate(req *UpdateProfileRequest) *domain.Profile {
 
 	if req.Grade != nil {
 		profileDomain.SetGrade(*req.Grade)
-	}
-
-	if req.Level != nil {
-		profileDomain.SetLevel(*req.Level)
 	}
 
 	if req.Status != nil {
@@ -100,7 +95,6 @@ func ProfileResponseFromDomain(p *domain.Profile) ProfileResponse {
 		Phone:      p.Phone(),
 		Age:        &age,
 		Grade:      p.Grade(),
-		Level:      p.Level(),
 		Status:     p.Status(),
 		CreatedAt:  p.CreatedAt(),
 		ModifiedAt: p.ModifiedAt(),

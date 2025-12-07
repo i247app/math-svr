@@ -12,8 +12,8 @@ import (
 type GradeResponse struct {
 	ID           string    `json:"id"`
 	Label        string    `json:"label"`
-	Description  string    `json:"description"`
-	IconURL      *string   `json:"image_key"`
+	Description  *string   `json:"description"`
+	ImageUrl     *string   `json:"image_url"`
 	Status       string    `json:"status"`
 	DisplayOrder int8      `json:"display_order"`
 	CreatedAt    time.Time `json:"created_at"`
@@ -40,7 +40,7 @@ type ListGradeResponse struct {
 
 type CreateGradeRequest struct {
 	Label        string  `json:"label"`
-	Description  string  `json:"description"`
+	Description  *string `json:"description"`
 	ImageKey     *string `json:"image_key,omitempty"`
 	DisplayOrder int8    `json:"display_order"`
 
@@ -92,7 +92,7 @@ func BuildGradeDomainForUpdate(req *UpdateGradeRequest) *domain.Grade {
 	}
 
 	if req.Description != nil {
-		gradeDomain.SetDescription(*req.Description)
+		gradeDomain.SetDescription(req.Description)
 	}
 
 	if req.ImageKey != nil {
@@ -115,7 +115,6 @@ func GradeResponseFromDomain(g *domain.Grade) GradeResponse {
 		ID:           g.ID(),
 		Label:        g.Label(),
 		Description:  g.Description(),
-		IconURL:      g.ImageKey(),
 		Status:       g.Status(),
 		DisplayOrder: g.DisplayOrder(),
 		CreatedAt:    g.CreatedAt(),

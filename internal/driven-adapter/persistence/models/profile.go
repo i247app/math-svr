@@ -13,7 +13,6 @@ type ProfileModel struct {
 	AvatarKey *string
 	Dob       *time.Time
 	Grade     string
-	Level     string
 	Status    string
 	CreateID  *int64
 	CreateDT  time.Time

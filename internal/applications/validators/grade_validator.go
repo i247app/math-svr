@@ -22,7 +22,7 @@ func (v *gradeValidator) ValidateCreateGradeRequest(req *dto.CreateGradeRequest)
 		return status.GRADE_MISSING_LABEL, err_svc.ErrGradeMissingLabel
 	}
 
-	if req.Description == "" {
+	if req.Description == nil {
 		return status.GRADE_MISSING_DESCRIPTION, err_svc.ErrGradeMissingDescripton
 	}
 

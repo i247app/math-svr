@@ -49,6 +49,16 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("POST /grades/delete", gc.HandlerDeleteGrade)
 	server.AddRoute("POST /grades/force-delete", gc.HandlerForceDeleteGrade)
 
+	// semesters
+	semc := controller.NewSemesterController(res, services.SemesterService)
+	server.AddRoute("GET /semesters/list", semc.HandlerGetListSemesters)
+	server.AddRoute("GET /semesters/{id}", semc.HandlerGetSemester)
+	server.AddRoute("GET /semesters/name/{name}", semc.HandlerGetSemesterByName)
+	server.AddRoute("POST /semesters/create", semc.HandlerCreateSemester)
+	server.AddRoute("POST /semesters/update", semc.HandlerUpdateSemester)
+	server.AddRoute("POST /semesters/delete", semc.HandlerDeleteSemester)
+	server.AddRoute("POST /semesters/force-delete", semc.HandlerForceDeleteSemester)
+
 	// profiles
 	pc := controller.NewProfileController(res, services.ProfileService)
 	server.AddRoute("POST /profiles/fetch", pc.HandlerFetchProfile)

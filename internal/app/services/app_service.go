@@ -28,6 +28,7 @@ type ServiceContainer struct {
 	DeviceService         di.IDeviceService
 	ChatBoxService        di.IChatBoxService
 	GradeService          di.IGradeService
+	SemesterService       di.ISemesterService
 	ProfileService        di.IProfileService
 	UserLatestQuizService di.IUserLatestQuizService
 	StorageService        di.IStorageService
@@ -45,6 +46,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	userRepo := repositories.NewUserRepository(res.Db)
 	deviceRepo := repositories.NewDeviceRepository(res.Db)
 	gradeRepo := repositories.NewGradeRepository(res.Db)
+	semesterRepo := repositories.NewSemesterRepository(res.Db)
 	profileRepo := repositories.NewProfileRepository(res.Db)
 	userLatestQuizRepo := repositories.NewUserLatestQuizRepository(res.Db)
 
@@ -110,6 +112,10 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	var gradeValidator = validators.NewGradeValidator()
 	var gradeSvc = services.NewGradeService(gradeValidator, gradeRepo, storageSvc)
 
+	log.Println("> semesterSvc...")
+	var semesterValidator = validators.NewSemesterValidator()
+	var semesterSvc = services.NewSemesterService(semesterValidator, semesterRepo, storageSvc)
+
 	log.Println("> profileSvc...")
 	var profileValidator = validators.NewProfileValidator()
 	var profileSvc = services.NewProfileService(profileValidator, profileRepo, storageSvc)
@@ -133,6 +139,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		DeviceService:         deviceSvc,
 		ChatBoxService:        chatBoxSvc,
 		GradeService:          gradeSvc,
+		SemesterService:       semesterSvc,
 		ProfileService:        profileSvc,
 		UserLatestQuizService: userLatestQuizSvc,
 		StorageService:        storageSvc,
