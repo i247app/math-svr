@@ -9,20 +9,23 @@ import (
 )
 
 type Profile struct {
-	id        string
-	uid       string
-	name      string
-	email     string
-	phone     string
-	grade     string
-	avatarKey *string
-	dob       *time.Time
-	status    string
-	createID  *int64
-	createDT  time.Time
-	modifyID  *int64
-	modifyDT  time.Time
-	deletedDT *time.Time
+	id         string
+	uid        string
+	name       string
+	email      string
+	phone      string
+	gradeID    string
+	grade      string
+	semesterID string
+	semester   string
+	avatarKey  *string
+	dob        *time.Time
+	status     string
+	createID   *int64
+	createDT   time.Time
+	modifyID   *int64
+	modifyDT   time.Time
+	deletedDT  *time.Time
 }
 
 func NewProfileDomain() *Profile {
@@ -87,6 +90,30 @@ func (p *Profile) Dob() *time.Time {
 
 func (p *Profile) SetDob(dob *time.Time) {
 	p.dob = dob
+}
+
+func (p *Profile) SemesterID() string {
+	return p.semesterID
+}
+
+func (p *Profile) SetSemesterID(semesterID string) {
+	p.semesterID = semesterID
+}
+
+func (p *Profile) Semester() string {
+	return p.semester
+}
+
+func (p *Profile) SetSemester(semester string) {
+	p.semester = semester
+}
+
+func (p *Profile) GradeID() string {
+	return p.gradeID
+}
+
+func (p *Profile) SetGradeID(gradeID string) {
+	p.gradeID = gradeID
 }
 
 func (p *Profile) Grade() string {
@@ -156,6 +183,7 @@ func BuildProfileDomainFromModel(model *models.ProfileModel) *Profile {
 		email:     model.Email,
 		phone:     model.Phone,
 		grade:     model.Grade,
+		semester:  model.Semester,
 		dob:       model.Dob,
 		avatarKey: model.AvatarKey,
 		status:    model.Status,

@@ -15,8 +15,8 @@ type ProfileResponse struct {
 	Phone            string    `json:"phone"`
 	Age              *int      `json:"age"`
 	Grade            string    `json:"grade"`
-	AvatarPreviewURL *string   `json:"avatar_preview_url"`
-	Level            string    `json:"level"`
+	AvatarPreviewURL *string   `json:"avatar_url"`
+	Semester         string    `json:"semester"`
 	Status           string    `json:"status"`
 	CreatedAt        time.Time `json:"created_at"`
 	ModifiedAt       time.Time `json:"modified_at"`
@@ -31,9 +31,9 @@ type FetchProfileResponse struct {
 }
 
 type CreateProfileRequest struct {
-	UID   string `json:"uid"`
-	Grade string `json:"grade"`
-	Level string `json:"level"`
+	UID        string `json:"uid"`
+	GradeID    string `json:"grade_id"`
+	SemesterID string `json:"semester_id"`
 }
 
 type CreateProfileResponse struct {
@@ -55,7 +55,8 @@ func BuildProfileDomainForCreate(req *CreateProfileRequest) *domain.Profile {
 	profileDomain := domain.NewProfileDomain()
 	profileDomain.GenerateID()
 	profileDomain.SetUID(req.UID)
-	profileDomain.SetGrade(req.Grade)
+	profileDomain.SetGradeID(req.GradeID)
+	profileDomain.SetSemesterID(req.SemesterID)
 	profileDomain.SetStatus(string(enum.StatusActive))
 
 	return profileDomain
@@ -95,6 +96,7 @@ func ProfileResponseFromDomain(p *domain.Profile) ProfileResponse {
 		Phone:      p.Phone(),
 		Age:        &age,
 		Grade:      p.Grade(),
+		Semester:   p.Semester(),
 		Status:     p.Status(),
 		CreatedAt:  p.CreatedAt(),
 		ModifiedAt: p.ModifiedAt(),

@@ -31,12 +31,12 @@ func (v *profileValidator) ValidateCreateProfileRequest(req *dto.CreateProfileRe
 		return status.USER_MISSING_ID, err_svc.ErrMissingUID
 	}
 
-	if req.Grade == "" {
+	if req.GradeID == "" {
 		return status.PROFILE_MISSING_GRADE, err_svc.ErrProfileMissingGrade
 	}
 
-	if req.Level == "" {
-		return status.PROFILE_MISSING_LEVEL, err_svc.ErrProfileMissingLevel
+	if req.SemesterID == "" {
+		return status.PROFILE_MISSING_SEMESTER, err_svc.ErrProfileMissingSemester
 	}
 
 	return status.SUCCESS, nil

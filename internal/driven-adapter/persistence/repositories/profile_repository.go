@@ -27,10 +27,12 @@ func NewProfileRepository(db db.IDatabase) di.IProfileRepository {
 // FindByID retrieves a profile by ID with user information.
 func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Profile, error) {
 	query := `
-		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, p.grade, p.status,
+		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, g.label, s.name, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt
 		FROM profiles p
 		INNER JOIN users u ON p.uid = u.id
+		INNER JOIN semesters s ON p.semester_id = s.id
+		INNER JOIN grades g ON p.grade_id = g.id
 		WHERE p.id = ? AND p.deleted_dt IS NULL AND u.deleted_dt IS NULL
 	`
 
@@ -38,7 +40,7 @@ func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Pr
 
 	var p models.ProfileModel
 	err := result.Scan(
-		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.AvatarKey, &p.Dob, &p.Grade, &p.Status,
+		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.AvatarKey, &p.Dob, &p.Grade, &p.Semester, &p.Status,
 		&p.CreateID, &p.CreateDT, &p.ModifyID, &p.ModifyDT,
 	)
 	if err != nil {
@@ -56,10 +58,12 @@ func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Pr
 // FindByUID retrieves a profile by user ID with user information.
 func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.Profile, error) {
 	query := `
-		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, p.grade, p.status,
+		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, g.label, s.name, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt
 		FROM profiles p
 		INNER JOIN users u ON p.uid = u.id
+		INNER JOIN semesters s ON p.semester_id = s.id
+		INNER JOIN grades g ON p.grade_id = g.id
 		WHERE p.uid = ? AND p.deleted_dt IS NULL AND u.deleted_dt IS NULL
 	`
 
@@ -67,7 +71,7 @@ func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.
 
 	var p models.ProfileModel
 	err := result.Scan(
-		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.AvatarKey, &p.Dob, &p.Grade, &p.Status,
+		&p.ID, &p.UID, &p.Name, &p.Email, &p.Phone, &p.AvatarKey, &p.Dob, &p.Grade, &p.Semester, &p.Status,
 		&p.CreateID, &p.CreateDT, &p.ModifyID, &p.ModifyDT,
 	)
 	if err != nil {
@@ -84,14 +88,16 @@ func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.
 
 // Create inserts a new profile into the database.
 func (r *profileRepository) Create(ctx context.Context, tx *sql.Tx, profile *domain.Profile) (int64, error) {
+	println("profile.SemesterID()", profile.SemesterID())
 	query := `
-		INSERT INTO profiles (id, uid, grade, status)
+		INSERT INTO profiles (id, uid, grade_id, semester_id ,status)
 		VALUES (?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		profile.ID(),
 		profile.UID(),
-		profile.Grade(),
+		profile.GradeID(),
+		profile.SemesterID(),
 		enum.StatusActive,
 	)
 	if err != nil {

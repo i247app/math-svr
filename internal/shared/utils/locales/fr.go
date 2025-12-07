@@ -121,7 +121,7 @@ func GetMessageFRFromStatus(statusCode status.Code) string {
 		return "L'ID utilisateur du profil est manquant."
 	case status.PROFILE_MISSING_GRADE:
 		return "Le niveau du profil est manquant."
-	case status.PROFILE_MISSING_LEVEL:
+	case status.PROFILE_MISSING_SEMESTER:
 		return "Le niveau du profil est manquant."
 	case status.PROFILE_NOT_FOUND:
 		return "Profil non trouvé."

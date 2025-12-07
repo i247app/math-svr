@@ -138,7 +138,7 @@ func GetMessageENFromStatus(statusCode status.Code) string {
 		return "Profile user ID is missing."
 	case status.PROFILE_MISSING_GRADE:
 		return "Profile grade is missing."
-	case status.PROFILE_MISSING_LEVEL:
+	case status.PROFILE_MISSING_SEMESTER:
 		return "Profile level is missing."
 	case status.PROFILE_NOT_FOUND:
 		return "Profile not found."

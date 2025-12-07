@@ -120,7 +120,7 @@ func GetMessageVNFromStatus(statusCode status.Code) string {
 		return "Thiếu ID người dùng trong hồ sơ."
 	case status.PROFILE_MISSING_GRADE:
 		return "Thiếu cấp học trong hồ sơ."
-	case status.PROFILE_MISSING_LEVEL:
+	case status.PROFILE_MISSING_SEMESTER:
 		return "Thiếu cấp độ trong hồ sơ."
 	case status.PROFILE_NOT_FOUND:
 		return "Không tìm thấy hồ sơ."

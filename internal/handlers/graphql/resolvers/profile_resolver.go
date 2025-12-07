@@ -44,9 +44,9 @@ func (r *ProfileResolver) CreateProfile(params graphql.ResolveParams) (interface
 	}
 
 	req := &dto.CreateProfileRequest{
-		UID:   input["uid"].(string),
-		Grade: input["grade"].(string),
-		Level: input["level"].(string),
+		UID:        input["uid"].(string),
+		GradeID:    input["grade_id"].(string),
+		SemesterID: input["semester_id"].(string),
 	}
 
 	statusCode, profile, err := r.profileService.CreateProfile(params.Context, req)

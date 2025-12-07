@@ -120,7 +120,6 @@ func BuildGenerateQuizFromRequest(ctx context.Context, req *GenerateQuizRequest,
 
 	if userProfile != nil {
 		grade = userProfile.Grade
-		level = userProfile.Level
 	}
 
 	conv := domain.NewConversation()
