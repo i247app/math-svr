@@ -26,15 +26,15 @@ func (a *AppResource) GetRequestSession(r *http.Request) (*session.AppSession, e
 	return sess, nil
 }
 
-func (a *AppResource) GetRequestUID(r *http.Request) (int64, error) {
+func (a *AppResource) GetRequestUID(r *http.Request) (string, error) {
 	sess, err := a.GetRequestSession(r)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
 	id, ok := sess.UID()
 	if !ok {
-		return 0, fmt.Errorf("uid missing from session (did you forget to send the Authorization header?)")
+		return "", fmt.Errorf("uid missing from session (did you forget to send the Authorization header?)")
 	}
 
 	return id, nil

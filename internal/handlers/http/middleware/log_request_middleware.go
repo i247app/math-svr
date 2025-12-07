@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -147,7 +146,7 @@ func (m *requestLoggerMiddleware) requestIdentifier(r *http.Request) (string, st
 
 	if sess := session.GetRequestSession(r); sess != nil {
 		if uid, ok := sess.UID(); ok {
-			identifier = strconv.FormatInt(uid, 10)
+			identifier = uid
 		}
 
 		if key, ok := sess.Get("key"); ok {

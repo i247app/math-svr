@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/validators"
@@ -63,7 +64,21 @@ func (s *LoginService) Login(ctx context.Context, sess *session.AppSession, req 
 		return status.LOGIN_WRONG_CREDENTIALS, nil, err_svc.ErrInvalidCredentials
 	}
 
-	authToken := "1234"
+	// Get auth token
+	authTokenRaw, ok := sess.Get("token")
+	if !ok {
+		return status.FAIL, nil, errors.New("session token not found")
+	}
+	authToken := authTokenRaw.(string)
+
+	logger.Info("Login successful, updating session data...")
+	sess.Init(session.InitData{
+		Source:    "login",
+		IsSecure:  isSecure,
+		UID:       user.ID(),
+		Email:     user.Email(),
+		LoginName: req.LoginName,
+	})
 
 	loginLog, err := s.repo.GetLoginLogByUIDAndDeviceUUID(ctx, user.ID(), req.DeviceUUID)
 	if err != nil {

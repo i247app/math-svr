@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"slices"
 
@@ -60,6 +61,7 @@ func NewFromEnv(envPath string) (*App, error) {
 	if err := app.Init(); err != nil {
 		return nil, fmt.Errorf("failed to init app: %w", err)
 	}
+	app.Database = database
 
 	routes.SetUpHttpRoutes(app.Server, &resources, app.Services)
 
@@ -82,11 +84,34 @@ func (a *App) Init() error {
 	// Register middlewares
 	a.setupMiddleware(a.Server, services)
 
+	// Setup shutdown hooks
+	a.setupShutdownHooks(a.Server, services)
+
+	// Reload sessions
+	a.reloadSessions()
+
 	return nil
 }
 
 func (a *App) Start() error {
 	return a.Server.Start()
+}
+
+func (a *App) setupShutdownHooks(gexServer *gex.Server, _ *services.ServiceContainer) {
+	gexServer.OnShutdown(func() {
+		sessionFile := a.Resource.Env.SerializedSessionFile
+		if sessionFile == "" {
+			return
+		}
+
+		log.Println("Serializing sessions...")
+		err := a.SerializeSessions(sessionFile)
+		if err != nil {
+			log.Printf("Failed to serialize sessions: %v\n", err)
+		} else {
+			log.Println("Sessions serialized!")
+		}
+	})
 }
 
 // Setup middlewares
@@ -110,5 +135,15 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, services *services.ServiceCont
 }
 
 func (a *App) Close() error {
-	return nil
+	return a.Database.Close()
+}
+
+func (a *App) reloadSessions() {
+	// Reload old sessions
+	if a.Resource.Env.SerializedSessionFile != "" {
+		log.Println("Reloading old sessions...")
+		if err := a.ReloadSessions(a.Resource.Env.SerializedSessionFile); err != nil {
+			log.Printf("Failed to reload old sessions: %v\n", err)
+		}
+	}
 }

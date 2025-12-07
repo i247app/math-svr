@@ -35,17 +35,17 @@ func (s *AppSession) ToMap() map[string]any {
 	return result
 }
 
-func (s *AppSession) UID() (int64, bool) {
+func (s *AppSession) UID() (string, bool) {
 	result, ok := s.Get("uid")
 	if !ok {
 		// log.Println("ERROR: key 'uid' not in session store")
-		return 0, false
+		return "", false
 	}
 
-	uid, ok := result.(int64)
+	uid, ok := result.(string)
 	if !ok {
 		// log.Printf("ERROR: 'uid' is in session store but expected to be an int64, is a %T\n", result)
-		return 0, false
+		return "", false
 	}
 
 	return uid, true

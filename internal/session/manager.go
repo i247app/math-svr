@@ -132,7 +132,7 @@ func (m *SessionManager) DeleteExpiredSessions() {
 	}
 }
 
-func (m *SessionManager) DeleteUserSessions(uid int64) {
+func (m *SessionManager) DeleteUserSessions(uid string) {
 	for _, sess := range *m.Sessions() {
 		id, ok := sess.UID()
 		if ok && id == uid {

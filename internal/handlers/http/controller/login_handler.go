@@ -39,14 +39,14 @@ func (c *LoginController) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	// sess, err := c.appResources.GetRequestSession(r)
-	// if err != nil {
-	// 	response.WriteJson(w, ctx, nil, fmt.Errorf("failed to get session %w", err), status.INTERNAL)
-	// 	return
-	// }
+	sess, err := c.appResources.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, ctx, nil, fmt.Errorf("failed to get session %w", err), status.FAIL)
+		return
+	}
 
 	// Perform login
-	statusCode, res, err := c.service.Login(ctx, nil, &req)
+	statusCode, res, err := c.service.Login(ctx, sess, &req)
 	if err != nil {
 		response.WriteJson(w, ctx, nil, err, statusCode)
 		return

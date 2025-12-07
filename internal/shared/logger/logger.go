@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
 
 	"math-ai.com/math-ai/internal/session"
 )
@@ -234,7 +233,6 @@ func extractSessionInfoFromRequest(r *http.Request) (token string, userid string
 	// Get session from request context
 	sess := session.GetRequestSession(r)
 	if sess == nil {
-		println("vo day nha cu em")
 		return
 	}
 
@@ -251,8 +249,10 @@ func extractSessionInfoFromRequest(r *http.Request) (token string, userid string
 
 	// Extract userid from session
 	if uid, ok := sess.UID(); ok {
-		userid = strconv.FormatInt(uid, 10)
+		userid = uid
 	}
+
+	println("userID", userid)
 
 	return
 }
