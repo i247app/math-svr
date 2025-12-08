@@ -12,6 +12,7 @@ import (
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
+	appctx "math-ai.com/math-ai/internal/shared/utils/context"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
@@ -28,56 +29,81 @@ func NewGradeRepository(db db.IDatabase) di.IGradeRepository {
 // List retrieves a paginated list of grades with optional search and sorting.
 func (r *gradeRepository) List(ctx context.Context, params di.ListGradesParams) ([]*domain.Grade, *pagination.Pagination, error) {
 	var queryBuilder strings.Builder
+	var countBuilder strings.Builder
 	args := []interface{}{}
+	countArgs := []interface{}{}
+	language := appctx.GetLocale(ctx)
 
-	// Base query - note: using 'discription' to match the actual table column
+	// Base query with LEFT JOIN for translations
 	queryBuilder.WriteString(`
-		SELECT id, label, discription, image_key, status, display_order,
-		create_id, create_dt, modify_id, modify_dt
-		FROM grades WHERE deleted_dt IS NULL
-	`)
+		SELECT
+			g.id,
+			COALESCE(gt.label, g.label) AS label,
+			COALESCE(gt.description, g.discription) AS description,
+			g.image_key,
+			g.status,
+			g.display_order,
+			g.create_id,
+			g.create_dt,
+			g.modify_id,
+			g.modify_dt
+		FROM grades g
+		LEFT JOIN grade_translations gt ON g.id = gt.grade_id AND gt.language = ?
+		WHERE g.deleted_dt IS NULL`)
+	args = append(args, language)
 
-	// Add search condition
+	// Count query base with same JOIN
+	countBuilder.WriteString(`
+		SELECT COUNT(*)
+		FROM grades g
+		LEFT JOIN grade_translations gt ON g.id = gt.grade_id AND gt.language = ?
+		WHERE g.deleted_dt IS NULL`)
+	countArgs = append(countArgs, language)
+
+	// Add search condition to both queries
 	if params.Search != "" {
-		queryBuilder.WriteString(` AND (label LIKE ? OR discription LIKE ?)`)
+		searchCondition := ` AND (COALESCE(gt.label, g.label) LIKE ? OR COALESCE(gt.description, g.discription) LIKE ?)`
 		searchTerm := "%" + params.Search + "%"
+
+		queryBuilder.WriteString(searchCondition)
 		args = append(args, searchTerm, searchTerm)
+
+		countBuilder.WriteString(searchCondition)
+		countArgs = append(countArgs, searchTerm, searchTerm)
 	}
 
 	// Count total records for pagination
-	countQuery := "SELECT COUNT(*) FROM grades WHERE deleted_dt IS NULL"
-	if params.Search != "" {
-		countQuery += ` AND (label LIKE ? OR discription LIKE ?)`
-	}
 	var total int64
-	countRow := r.db.QueryRow(ctx, nil, countQuery, args...)
+	countRow := r.db.QueryRow(ctx, nil, countBuilder.String(), countArgs...)
 	if err := countRow.Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("failed to count grades: %v", err)
 	}
 
 	// Initialize pagination
-	pagination := pagination.NewPagination(params.Page, params.Limit, total)
+	paginationObj := pagination.NewPagination(params.Page, params.Limit, total)
 	if params.TakeAll {
-		pagination.Size = total
-		pagination.Skip = 0
-		pagination.Page = 1
-		pagination.TotalPages = 1
+		paginationObj.Size = total
+		paginationObj.Skip = 0
+		paginationObj.Page = 1
+		paginationObj.TotalPages = 1
 	}
 
 	// Add sorting
 	if params.OrderBy != "" {
-		queryBuilder.WriteString(fmt.Sprintf(" ORDER BY %s", params.OrderBy))
+		queryBuilder.WriteString(fmt.Sprintf(" ORDER BY g.%s", params.OrderBy))
 		if params.OrderDesc {
 			queryBuilder.WriteString(" DESC")
+		} else {
+			queryBuilder.WriteString(" ASC")
 		}
 	} else {
-		queryBuilder.WriteString(" ORDER BY display_order ASC")
+		queryBuilder.WriteString(" ORDER BY g.display_order ASC")
 	}
 
 	// Add pagination
 	if !params.TakeAll {
 		queryBuilder.WriteString(` LIMIT ? OFFSET ?`)
-		args = append(args, pagination.Size, pagination.Skip)
+		args = append(args, paginationObj.Size, paginationObj.Skip)
 	}
 
 	// Execute query
@@ -101,7 +127,7 @@ func (r *gradeRepository) List(ctx context.Context, params di.ListGradesParams) 
 		grades = append(grades, domain.BuildGradeDomainFromModel(&g))
 	}
 
-	return grades, pagination, nil
+	return grades, paginationObj, nil
 }
 
 // FindByID retrieves a grade by ID.

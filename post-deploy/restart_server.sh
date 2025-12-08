@@ -1,4 +1,4 @@
-!/usr/bin/env bash
+#!/usr/bin/env bash
 
 DEST_DIR="/apps/math"
 PID_FILE="$DEST_DIR/server.pid"

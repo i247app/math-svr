@@ -12,6 +12,7 @@ import (
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
+	appctx "math-ai.com/math-ai/internal/shared/utils/context"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
@@ -28,56 +29,81 @@ func NewSemesterRepository(db db.IDatabase) di.ISemesterRepository {
 // List retrieves a paginated list of semesters with optional search and sorting.
 func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersParams) ([]*domain.Semester, *pagination.Pagination, error) {
 	var queryBuilder strings.Builder
+	var countBuilder strings.Builder
 	args := []interface{}{}
+	countArgs := []interface{}{}
+	language := appctx.GetLocale(ctx)
 
-	// Base query
+	// Base query with LEFT JOIN for translations
 	queryBuilder.WriteString(`
-		SELECT id, name, description, iamge_key, status, display_order,
-		create_id, create_dt, modify_id, modify_dt
-		FROM semesters WHERE deleted_dt IS NULL
-	`)
+		SELECT
+			s.id,
+			COALESCE(st.name, s.name) AS name,
+			COALESCE(st.description, s.description) AS description,
+			s.image_key,
+			s.status,
+			s.display_order,
+			s.create_id,
+			s.create_dt,
+			s.modify_id,
+			s.modify_dt
+		FROM semesters s
+		LEFT JOIN semester_translations st ON s.id = st.semester_id AND st.language = ?
+		WHERE s.deleted_dt IS NULL`)
+	args = append(args, language)
 
-	// Add search condition
+	// Count query base with same JOIN
+	countBuilder.WriteString(`
+		SELECT COUNT(*)
+		FROM semesters s
+		LEFT JOIN semester_translations st ON s.id = st.semester_id AND st.language = ?
+		WHERE s.deleted_dt IS NULL`)
+	countArgs = append(countArgs, language)
+
+	// Add search condition to both queries
 	if params.Search != "" {
-		queryBuilder.WriteString(` AND (name LIKE ? OR description LIKE ?)`)
+		searchCondition := ` AND (COALESCE(st.name, s.name) LIKE ? OR COALESCE(st.description, s.description) LIKE ?)`
 		searchTerm := "%" + params.Search + "%"
+
+		queryBuilder.WriteString(searchCondition)
 		args = append(args, searchTerm, searchTerm)
+
+		countBuilder.WriteString(searchCondition)
+		countArgs = append(countArgs, searchTerm, searchTerm)
 	}
 
 	// Count total records for pagination
-	countQuery := "SELECT COUNT(*) FROM semesters WHERE deleted_dt IS NULL"
-	if params.Search != "" {
-		countQuery += ` AND (name LIKE ? OR description LIKE ?)`
-	}
 	var total int64
-	countRow := r.db.QueryRow(ctx, nil, countQuery, args...)
+	countRow := r.db.QueryRow(ctx, nil, countBuilder.String(), countArgs...)
 	if err := countRow.Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("failed to count semesters: %v", err)
 	}
 
 	// Initialize pagination
-	pagination := pagination.NewPagination(params.Page, params.Limit, total)
+	paginationObj := pagination.NewPagination(params.Page, params.Limit, total)
 	if params.TakeAll {
-		pagination.Size = total
-		pagination.Skip = 0
-		pagination.Page = 1
-		pagination.TotalPages = 1
+		paginationObj.Size = total
+		paginationObj.Skip = 0
+		paginationObj.Page = 1
+		paginationObj.TotalPages = 1
 	}
 
 	// Add sorting
 	if params.OrderBy != "" {
-		queryBuilder.WriteString(fmt.Sprintf(" ORDER BY %s", params.OrderBy))
+		queryBuilder.WriteString(fmt.Sprintf(" ORDER BY s.%s", params.OrderBy))
 		if params.OrderDesc {
 			queryBuilder.WriteString(" DESC")
+		} else {
+			queryBuilder.WriteString(" ASC")
 		}
 	} else {
-		queryBuilder.WriteString(" ORDER BY display_order ASC")
+		queryBuilder.WriteString(" ORDER BY s.display_order ASC")
 	}
 
 	// Add pagination
 	if !params.TakeAll {
 		queryBuilder.WriteString(` LIMIT ? OFFSET ?`)
-		args = append(args, pagination.Size, pagination.Skip)
+		args = append(args, paginationObj.Size, paginationObj.Skip)
 	}
 
 	// Execute query
@@ -101,7 +127,7 @@ func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersPa
 		semesters = append(semesters, domain.BuildSemesterDomainFromModel(&s))
 	}
 
-	return semesters, pagination, nil
+	return semesters, paginationObj, nil
 }
 
 // FindByID retrieves a semester by ID.
