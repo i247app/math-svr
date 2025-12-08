@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	"math-ai.com/math-ai/internal/applications/utils"
 	"math-ai.com/math-ai/internal/applications/validators"
 	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
 	diSvc "math-ai.com/math-ai/internal/core/di/services"
@@ -17,20 +18,23 @@ import (
 )
 
 type LoginService struct {
-	validator validators.ILoginValidator
-	repo      diRepo.ILoginRepository
-	userRepo  diRepo.IUserRepository
+	validator       validators.ILoginValidator
+	repo            diRepo.ILoginRepository
+	userRepo        diRepo.IUserRepository
+	responseBuilder *utils.ResponseBuilder
 }
 
 func NewLoginService(
 	validator validators.ILoginValidator,
 	repo diRepo.ILoginRepository,
 	userRepo diRepo.IUserRepository,
+	storageService diSvc.IStorageService,
 ) diSvc.ILoginService {
 	return &LoginService{
-		validator: validator,
-		repo:      repo,
-		userRepo:  userRepo,
+		validator:       validator,
+		repo:            repo,
+		userRepo:        userRepo,
+		responseBuilder: utils.NewResponseBuilder(storageService),
 	}
 }
 
@@ -106,7 +110,7 @@ func (s *LoginService) Login(ctx context.Context, sess *session.AppSession, req 
 	res := &dto.LoginResponse{
 		IsSecure:    isSecure,
 		Needs2FA:    needs2FA,
-		User:        dto.UserResponseFromDomain(user),
+		User:        s.responseBuilder.BuildUserResponse(ctx, user),
 		LoginStatus: loginStatus,
 	}
 

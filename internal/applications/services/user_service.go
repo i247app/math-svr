@@ -137,7 +137,7 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 
 	// Set avatar URL if uploaded
 	if avatarKey != nil {
-		createUserDomain.SetAvatarURL(avatarKey)
+		createUserDomain.SetAvatarKey(avatarKey)
 	}
 
 	// Create user with transaction using helper
@@ -192,7 +192,7 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 
 	// Set avatar URL if uploaded
 	if newAvatarKey != nil {
-		updateUserDomain.SetAvatarURL(newAvatarKey)
+		updateUserDomain.SetAvatarKey(newAvatarKey)
 	}
 
 	// Build profile domain if profile update is included

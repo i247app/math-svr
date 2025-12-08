@@ -23,7 +23,7 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	User        UserResponse      `json:"user"`
+	User        *UserResponse     `json:"user"`
 	Needs2FA    bool              `json:"needs_2fa"`
 	IsSecure    bool              `json:"is_secure"`
 	LoginStatus enum.ELoginStatus `json:"login_status"`

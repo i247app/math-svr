@@ -10,16 +10,16 @@ import (
 )
 
 type UserResponse struct {
-	ID               string     `json:"id"`
-	Email            string     `json:"email"`
-	Name             string     `json:"name"`
-	Phone            string     `json:"phone"`
-	AvatarURL        *string    `json:"-"`                  // S3 key/path
-	AvatarPreviewURL *string    `json:"avatar_preview_url"` // Temporary presigned URL for access
-	Dob              *time.Time `json:"dob"`
-	Role             string     `json:"role"`
-	CreateAt         time.Time  `json:"created_at"`
-	ModifyAt         time.Time  `json:"modified_at"`
+	ID        string     `json:"id"`
+	Email     string     `json:"email"`
+	Name      string     `json:"name"`
+	Phone     string     `json:"phone"`
+	Avatar    *string    `json:"-"`          // S3 key/path
+	AvatarURL *string    `json:"avatar_url"` // Temporary presigned URL for access
+	Dob       *time.Time `json:"dob"`
+	Role      string     `json:"role"`
+	CreateAt  time.Time  `json:"created_at"`
+	ModifyAt  time.Time  `json:"modified_at"`
 }
 
 type GetUserResponse struct {

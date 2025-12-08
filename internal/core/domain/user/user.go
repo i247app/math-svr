@@ -67,8 +67,8 @@ func (u *User) AvatarKey() *string {
 	return u.avatarKey
 }
 
-func (u *User) SetAvatarURL(avatarURL *string) {
-	u.avatarKey = avatarURL
+func (u *User) SetAvatarKey(avatarKey *string) {
+	u.avatarKey = avatarKey
 }
 
 func (u *User) DOB() *time.Time {

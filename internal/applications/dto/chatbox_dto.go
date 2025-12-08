@@ -47,7 +47,6 @@ type Question struct {
 
 // ChatBoxResponse represents the response from the chatbox
 type ChatBoxResponse[T any] struct {
-	UserLatesQuizID  string        `json:"user_latest_quiz_id"`
 	Response         string        `json:"response"`
 	Data             T             `json:"data"`
 	Role             string        `json:"role"`
@@ -106,7 +105,7 @@ func BuildGenerateQuizFromRequest(ctx context.Context, req *GenerateQuizRequest,
 	var (
 		language string
 		grade    string
-		level    string
+		semester string
 	)
 
 	switch appctx.GetLocale(ctx) {
@@ -120,6 +119,7 @@ func BuildGenerateQuizFromRequest(ctx context.Context, req *GenerateQuizRequest,
 
 	if userProfile != nil {
 		grade = userProfile.Grade
+		semester = userProfile.Semester
 	}
 
 	conv := domain.NewConversation()
@@ -145,7 +145,7 @@ func BuildGenerateQuizFromRequest(ctx context.Context, req *GenerateQuizRequest,
 	}
 
 	// Add history messages
-	if req.History != nil && len(req.History) > 0 {
+	if len(req.History) > 0 {
 		for _, msgDTO := range req.History {
 			msg := domain.NewMessage(msgDTO.Role, msgDTO.Content)
 			if !msgDTO.Timestamp.IsZero() {
@@ -155,7 +155,7 @@ func BuildGenerateQuizFromRequest(ctx context.Context, req *GenerateQuizRequest,
 		}
 	}
 
-	prompt := fmt.Sprintf(domain.PromptMathQuizNew, level, grade, language)
+	prompt := fmt.Sprintf(domain.PromptMathQuizNew, grade, semester, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)

@@ -1,7 +1,7 @@
 package domain
 
 var PromptMathQuizNew = `
-Generate 5 multiple-choice math questions for %s level (%s).
+Generate 5 multiple-choice math questions for %s of the %s program.
 
 CRITICAL: Your response MUST be ONLY valid JSON. Do not include any text, explanations, markdown formatting, or code blocks before or after the JSON.
 
@@ -59,7 +59,7 @@ Return ONLY the JSON object with this structure:
 Requirements:
 - Return ONLY the JSON object (no line break (\n), no need for spaces), nothing else
 - Ensure all JSON is properly formatted with correct quotes and commas
-- Use %s for the ai_review
+- Use %s for the ai_review (note: should be less than 200 characters)
 `
 
 var PromptMathQuizPractice = `

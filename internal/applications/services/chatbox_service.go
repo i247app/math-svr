@@ -99,7 +99,7 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 		}
 
 		if res == nil {
-			_, createdRes, err := s.userLatestQuizSvc.CreateQuiz(ctx, &dto.CreateUserLatestQuizRequest{
+			_, _, err := s.userLatestQuizSvc.CreateQuiz(ctx, &dto.CreateUserLatestQuizRequest{
 				UID:       req.UID,
 				Questions: resp.Message,
 				AIReview:  "",
@@ -107,7 +107,6 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 			if err != nil {
 				logger.Errorf("Failed to create latest quiz for user %s: %v", req.UID, err)
 			}
-			response.UserLatesQuizID = createdRes.ID
 		} else {
 			resetData := "?"
 			_, _, err = s.userLatestQuizSvc.UpdateQuiz(ctx, &dto.UpdateUserLatestQuizRequest{
@@ -120,7 +119,6 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 			if err != nil {
 				logger.Errorf("Failed to update latest quiz for user %s: %v", req.UID, err)
 			}
-			response.UserLatesQuizID = res.ID
 		}
 	}
 

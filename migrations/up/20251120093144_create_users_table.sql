@@ -4,7 +4,7 @@ CREATE TABLE `users` (
   `name` VARCHAR(128) NOT NULL,
   `phone` VARCHAR(128) NOT NULL,
   `email` VARCHAR(128) NOT NULL,
-  `avatar_key` VARCHAR(256) DEFAULT NULL,
+  `avatar_key` VARCHAR(128) DEFAULT NULL,
   `dob` DATETIME(3),
   `role` VARCHAR(16) NOT NULL,
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',

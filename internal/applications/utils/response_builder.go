@@ -58,7 +58,7 @@ func (r *ResponseBuilder) BuildUserResponse(ctx context.Context, user *domain_us
 	if user.AvatarKey() != nil && *user.AvatarKey() != "" {
 		presignedURL := r.generatePresignedURL(ctx, user.AvatarKey(), AvatarPresignedURLExpiration)
 		if presignedURL != "" {
-			res.AvatarPreviewURL = &presignedURL
+			res.AvatarURL = &presignedURL
 		}
 	}
 

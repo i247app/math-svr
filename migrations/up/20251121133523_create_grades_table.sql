@@ -3,7 +3,7 @@ CREATE TABLE grades (
   `id` CHAR(36) NOT NULL,
   `label` varchar(128) NOT NULL,
   `discription` varchar(128) NOT NULL,
-  `image_key` varchar(255) DEFAULT NULL,
+  `image_key` varchar(128) DEFAULT NULL,
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
   `display_order` TINYINT NOT NULL,
   `create_id` INT DEFAULT 0,

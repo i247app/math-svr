@@ -15,8 +15,8 @@ type ProfileResponse struct {
 	Phone            string    `json:"phone"`
 	Age              *int      `json:"age"`
 	Grade            string    `json:"grade"`
-	AvatarPreviewURL *string   `json:"avatar_url"`
 	Semester         string    `json:"semester"`
+	AvatarPreviewURL *string   `json:"avatar_url"`
 	Status           string    `json:"status"`
 	CreatedAt        time.Time `json:"created_at"`
 	ModifiedAt       time.Time `json:"modified_at"`
