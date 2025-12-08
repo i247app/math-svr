@@ -8,12 +8,12 @@ import (
 )
 
 type ChatBoxResolver struct {
-	chatboxService di.IChatBoxService
+	userQuizPracticesSvc di.IUserQuizPracticesService
 }
 
-func NewChatBoxResolver(chatboxService di.IChatBoxService) *ChatBoxResolver {
+func NewChatBoxResolver(userQuizPracticesSvc di.IUserQuizPracticesService) *ChatBoxResolver {
 	return &ChatBoxResolver{
-		chatboxService: chatboxService,
+		userQuizPracticesSvc: userQuizPracticesSvc,
 	}
 }
 
@@ -39,7 +39,7 @@ func (r *ChatBoxResolver) GenerateQuiz(params graphql.ResolveParams) (interface{
 		req.Message = message
 	}
 
-	statusCode, response, err := r.chatboxService.GenerateQuiz(params.Context, req)
+	statusCode, response, err := r.userQuizPracticesSvc.GenerateQuiz(params.Context, req)
 	if err != nil || statusCode != status.SUCCESS {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (r *ChatBoxResolver) SubmitQuiz(params graphql.ResolveParams) (interface{},
 		req.Answers = answers
 	}
 
-	statusCode, response, err := r.chatboxService.SubmitQuiz(params.Context, req)
+	statusCode, response, err := r.userQuizPracticesSvc.SubmitQuiz(params.Context, req)
 	if err != nil || statusCode != status.SUCCESS {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (r *ChatBoxResolver) GenerateQuizPractice(params graphql.ResolveParams) (in
 		req.Message = message
 	}
 
-	statusCode, response, err := r.chatboxService.GenerateQuizPractice(params.Context, req)
+	statusCode, response, err := r.userQuizPracticesSvc.GenerateQuizPractice(params.Context, req)
 	if err != nil || statusCode != status.SUCCESS {
 		return nil, err
 	}

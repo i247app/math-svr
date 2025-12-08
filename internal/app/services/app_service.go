@@ -23,15 +23,15 @@ type ServiceContainer struct {
 	SessionProvider sessionprovider.SessionProvider
 	JwtHelper       jwtutil.JwtHelper
 
-	LoginService          di.ILoginService
-	UserService           di.IUserService
-	DeviceService         di.IDeviceService
-	ChatBoxService        di.IChatBoxService
-	GradeService          di.IGradeService
-	SemesterService       di.ISemesterService
-	ProfileService        di.IProfileService
-	UserLatestQuizService di.IUserLatestQuizService
-	StorageService        di.IStorageService
+	LoginService             di.ILoginService
+	UserService              di.IUserService
+	DeviceService            di.IDeviceService
+	ChatBoxService           di.IChatBoxService
+	GradeService             di.IGradeService
+	SemesterService          di.ISemesterService
+	ProfileService           di.IProfileService
+	UserQuizPracticesService di.IUserQuizPracticesService
+	StorageService           di.IStorageService
 }
 
 const (
@@ -48,7 +48,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	gradeRepo := repositories.NewGradeRepository(res.Db)
 	semesterRepo := repositories.NewSemesterRepository(res.Db)
 	profileRepo := repositories.NewProfileRepository(res.Db)
-	userLatestQuizRepo := repositories.NewUserLatestQuizRepository(res.Db)
+	userLatestQuizRepo := repositories.NewUserQuizPracticesRepository(res.Db)
 
 	log.Println("Initializing services")
 
@@ -120,28 +120,28 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	var profileValidator = validators.NewProfileValidator()
 	var profileSvc = services.NewProfileService(profileValidator, profileRepo, storageSvc)
 
-	log.Println("> userLatestQuizSvc...")
-	var userLatestQuizValidator = validators.NewUserLatestQuizValidator()
-	var userLatestQuizSvc = services.NewUserLatestQuizService(userLatestQuizValidator, userLatestQuizRepo)
-
 	log.Println("> chatBoxSvc...")
 	chatBoxClient := DetermineAIProvider(context.Background(), *res.Env)
 
 	var chatBoxValidator = validators.NewChatboxValidator()
-	var chatBoxSvc = services.NewChatBoxService(chatBoxClient, chatBoxValidator, profileSvc, userLatestQuizSvc)
+	var chatBoxSvc = services.NewChatBoxService(chatBoxClient, chatBoxValidator)
+
+	log.Println("> userQuizPracticeSvc...")
+	var userQuizPracticesValidator = validators.NewUserQuizPracticesValidator()
+	var userQuizPracticesSvc = services.NewUserLatestQuizService(userQuizPracticesValidator, userLatestQuizRepo, profileSvc, chatBoxSvc)
 
 	return &ServiceContainer{
-		SessionManager:        sessionManager,
-		SessionProvider:       sessionProvider,
-		JwtHelper:             jwtHelper,
-		LoginService:          loginSvc,
-		UserService:           userSvc,
-		DeviceService:         deviceSvc,
-		ChatBoxService:        chatBoxSvc,
-		GradeService:          gradeSvc,
-		SemesterService:       semesterSvc,
-		ProfileService:        profileSvc,
-		UserLatestQuizService: userLatestQuizSvc,
-		StorageService:        storageSvc,
+		SessionManager:           sessionManager,
+		SessionProvider:          sessionProvider,
+		JwtHelper:                jwtHelper,
+		LoginService:             loginSvc,
+		UserService:              userSvc,
+		DeviceService:            deviceSvc,
+		ChatBoxService:           chatBoxSvc,
+		GradeService:             gradeSvc,
+		SemesterService:          semesterSvc,
+		ProfileService:           profileSvc,
+		UserQuizPracticesService: userQuizPracticesSvc,
+		StorageService:           storageSvc,
 	}, nil
 }

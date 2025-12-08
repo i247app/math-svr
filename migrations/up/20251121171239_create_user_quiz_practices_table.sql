@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE user_latest_quizzes (
+CREATE TABLE user_quiz_practices (
   `id` CHAR(36) NOT NULL,
   `uid` CHAR(36) NOT NULL,
   `questions` longtext,

@@ -164,7 +164,7 @@ func BuildGenerateQuizFromRequest(ctx context.Context, req *GenerateQuizRequest,
 	return conv
 }
 
-func BuildSubmitQuizAnswerFromRequest(ctx context.Context, req *SubmitQuizRequest, userLatestQuizzes *UserLatestQuizResponse) *domain.Conversation {
+func BuildSubmitQuizAnswerFromRequest(ctx context.Context, req *SubmitQuizRequest, userLatestQuizzes *UserQuizPracticesResponse) *domain.Conversation {
 	var (
 		language             string
 		questionsInformation string
@@ -227,7 +227,7 @@ func BuildSubmitQuizAnswerFromRequest(ctx context.Context, req *SubmitQuizReques
 	return conv
 }
 
-func BuildGeneratePracticeQuizFromRequest(ctx context.Context, req *GenerateQuizPracticeRequest, userLatestQuizzes *UserLatestQuizResponse) *domain.Conversation {
+func BuildGeneratePracticeQuizFromRequest(ctx context.Context, req *GenerateQuizPracticeRequest, userLatestQuizzes *UserQuizPracticesResponse) *domain.Conversation {
 	var (
 		language             string
 		questionsInformation string

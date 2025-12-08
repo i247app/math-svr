@@ -211,10 +211,10 @@ CREATE TABLE `profiles` (
 COMMENT='User educational profiles with grade and level preferences';
 
 -- =====================================================
--- Table: user_latest_quizzes
+-- Table: user_quiz_practices
 -- Description: Stores user quiz history with AI-generated reviews
 -- =====================================================
-CREATE TABLE `user_latest_quizzes` (
+CREATE TABLE `user_quiz_practices` (
   `id` CHAR(36) NOT NULL COMMENT 'Unique identifier (UUID)',
   `uid` CHAR(36) NOT NULL COMMENT 'Foreign key to users table',
   `questions` LONGTEXT COMMENT 'Quiz questions in JSON format',

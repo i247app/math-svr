@@ -13,7 +13,7 @@ func BuildSchema(serviceContainer *services.ServiceContainer) (graphql.Schema, e
 	userResolver := resolvers.NewUserResolver(serviceContainer.UserService)
 	gradeResolver := resolvers.NewGradeResolver(serviceContainer.GradeService)
 	loginResolver := resolvers.NewLoginResolver(serviceContainer.LoginService)
-	chatboxResolver := resolvers.NewChatBoxResolver(serviceContainer.ChatBoxService)
+	chatboxResolver := resolvers.NewChatBoxResolver(serviceContainer.UserQuizPracticesService)
 	profileResolver := resolvers.NewProfileResolver(serviceContainer.ProfileService)
 
 	// Define root query

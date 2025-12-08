@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type UserLatestQuizModel struct {
+type UserQuizPracticesModel struct {
 	ID        string
 	UID       string
 	Questions string

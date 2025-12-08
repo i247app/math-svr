@@ -8,33 +8,33 @@ import (
 	"time"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
-	domain "math-ai.com/math-ai/internal/core/domain/user_latest_quiz"
+	domain "math-ai.com/math-ai/internal/core/domain/user_quiz_practices"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/db"
 )
 
-type userLatestQuizRepository struct {
+type userQuizPracticesRepository struct {
 	db db.IDatabase
 }
 
-func NewUserLatestQuizRepository(db db.IDatabase) di.IUserLatestQuizRepository {
-	return &userLatestQuizRepository{
+func NewUserQuizPracticesRepository(db db.IDatabase) di.IUserQuizPracticesRepository {
+	return &userQuizPracticesRepository{
 		db: db,
 	}
 }
 
 // FindByID retrieves a user latest quiz by ID.
-func (r *userLatestQuizRepository) FindByID(ctx context.Context, id string) (*domain.UserLatestQuiz, error) {
+func (r *userQuizPracticesRepository) FindByID(ctx context.Context, id string) (*domain.UserQuizPractices, error) {
 	query := `
 		SELECT id, uid, questions, answers, ai_review, status,
 		create_id, create_dt, modify_id, modify_dt
-		FROM user_latest_quizzes
+		FROM user_quiz_practices
 		WHERE id = ? AND deleted_dt IS NULL
 	`
 
 	result := r.db.QueryRow(ctx, nil, query, id)
 
-	var q models.UserLatestQuizModel
+	var q models.UserQuizPracticesModel
 	err := result.Scan(
 		&q.ID, &q.UID, &q.Questions, &q.Answers, &q.AIReview, &q.Status,
 		&q.CreateID, &q.CreateDT, &q.ModifyID, &q.ModifyDT,
@@ -46,17 +46,17 @@ func (r *userLatestQuizRepository) FindByID(ctx context.Context, id string) (*do
 		return nil, fmt.Errorf("scan error: %v", err)
 	}
 
-	quiz := domain.BuildUserLatestQuizDomainFromModel(&q)
+	quiz := domain.BuildUserQuizPracticesDomainFromModel(&q)
 
 	return quiz, nil
 }
 
 // FindByUID retrieves the latest quiz for a user by UID.
-func (r *userLatestQuizRepository) FindByUID(ctx context.Context, uid string) (*domain.UserLatestQuiz, error) {
+func (r *userQuizPracticesRepository) FindByUID(ctx context.Context, uid string) (*domain.UserQuizPractices, error) {
 	query := `
 		SELECT id, uid, questions, answers, ai_review, status,
 		create_id, create_dt, modify_id, modify_dt
-		FROM user_latest_quizzes
+		FROM user_quiz_practices
 		WHERE uid = ? AND deleted_dt IS NULL
 		ORDER BY create_dt DESC
 		LIMIT 1
@@ -64,7 +64,7 @@ func (r *userLatestQuizRepository) FindByUID(ctx context.Context, uid string) (*
 
 	result := r.db.QueryRow(ctx, nil, query, uid)
 
-	var q models.UserLatestQuizModel
+	var q models.UserQuizPracticesModel
 	err := result.Scan(
 		&q.ID, &q.UID, &q.Questions, &q.Answers, &q.AIReview, &q.Status,
 		&q.CreateID, &q.CreateDT, &q.ModifyID, &q.ModifyDT,
@@ -76,54 +76,15 @@ func (r *userLatestQuizRepository) FindByUID(ctx context.Context, uid string) (*
 		return nil, fmt.Errorf("scan error: %v", err)
 	}
 
-	quiz := domain.BuildUserLatestQuizDomainFromModel(&q)
+	quiz := domain.BuildUserQuizPracticesDomainFromModel(&q)
 
 	return quiz, nil
 }
 
-// List retrieves a list of user latest quizzes with pagination.
-func (r *userLatestQuizRepository) List(ctx context.Context, limit, offset int) ([]*domain.UserLatestQuiz, error) {
-	query := `
-		SELECT id, uid, questions, answers, ai_review, status,
-		create_id, create_dt, modify_id, modify_dt
-		FROM user_latest_quizzes
-		WHERE deleted_dt IS NULL
-		ORDER BY create_dt DESC
-		LIMIT ? OFFSET ?
-	`
-
-	rows, err := r.db.Query(ctx, nil, query, limit, offset)
-	if err != nil {
-		return nil, fmt.Errorf("query error: %v", err)
-	}
-	defer rows.Close()
-
-	var quizzes []*domain.UserLatestQuiz
-	for rows.Next() {
-		var q models.UserLatestQuizModel
-		err := rows.Scan(
-			&q.ID, &q.UID, &q.Questions, &q.Answers, &q.AIReview, &q.Status,
-			&q.CreateID, &q.CreateDT, &q.ModifyID, &q.ModifyDT,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("scan error: %v", err)
-		}
-
-		quiz := domain.BuildUserLatestQuizDomainFromModel(&q)
-		quizzes = append(quizzes, quiz)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error: %v", err)
-	}
-
-	return quizzes, nil
-}
-
 // Create inserts a new user latest quiz into the database.
-func (r *userLatestQuizRepository) Create(ctx context.Context, tx *sql.Tx, quiz *domain.UserLatestQuiz) (int64, error) {
+func (r *userQuizPracticesRepository) Create(ctx context.Context, tx *sql.Tx, quiz *domain.UserQuizPractices) (int64, error) {
 	query := `
-		INSERT INTO user_latest_quizzes (id, uid, questions, answers, ai_review, status)
+		INSERT INTO user_quiz_practices (id, uid, questions, answers, ai_review, status)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -142,11 +103,11 @@ func (r *userLatestQuizRepository) Create(ctx context.Context, tx *sql.Tx, quiz 
 }
 
 // Update modifies an existing user latest quiz in the database.
-func (r *userLatestQuizRepository) Update(ctx context.Context, quiz *domain.UserLatestQuiz) (int64, error) {
+func (r *userQuizPracticesRepository) Update(ctx context.Context, quiz *domain.UserQuizPractices) (int64, error) {
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
-	queryBuilder.WriteString("UPDATE user_latest_quizzes SET ")
+	queryBuilder.WriteString("UPDATE user_quiz_practices SET ")
 	updates := []string{}
 	if quiz.Questions() != "" {
 		updates = append(updates, "questions = ?")
@@ -185,9 +146,9 @@ func (r *userLatestQuizRepository) Update(ctx context.Context, quiz *domain.User
 }
 
 // Delete performs a soft delete on a user latest quiz.
-func (r *userLatestQuizRepository) Delete(ctx context.Context, id string) (int64, error) {
+func (r *userQuizPracticesRepository) Delete(ctx context.Context, id string) (int64, error) {
 	query := `
-		UPDATE user_latest_quizzes
+		UPDATE user_quiz_practices
 		SET deleted_dt = ?,
 			modify_dt = ?
 		WHERE id = ? AND deleted_dt IS NULL
@@ -202,9 +163,9 @@ func (r *userLatestQuizRepository) Delete(ctx context.Context, id string) (int64
 }
 
 // ForceDelete permanently removes a user latest quiz from the database.
-func (r *userLatestQuizRepository) ForceDelete(ctx context.Context, id string) (int64, error) {
+func (r *userQuizPracticesRepository) ForceDelete(ctx context.Context, id string) (int64, error) {
 	query := `
-		DELETE FROM user_latest_quizzes
+		DELETE FROM user_quiz_practices
 		WHERE id = ?
 	`
 

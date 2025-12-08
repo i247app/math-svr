@@ -3,11 +3,11 @@ package dto
 import (
 	"time"
 
-	domain "math-ai.com/math-ai/internal/core/domain/user_latest_quiz"
+	domain "math-ai.com/math-ai/internal/core/domain/user_quiz_practices"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 )
 
-type UserLatestQuizResponse struct {
+type UserQuizPracticesResponse struct {
 	ID         string    `json:"id"`
 	UID        string    `json:"uid"`
 	Questions  string    `json:"questions"`
@@ -18,27 +18,22 @@ type UserLatestQuizResponse struct {
 	ModifiedAt time.Time `json:"modified_at"`
 }
 
-type ListUserLatestQuizzesRequest struct {
-	Limit  int `json:"limit"`
-	Offset int `json:"offset"`
-}
-
-type GetUserLatestQuizRequest struct {
+type GetUserQuizPracticesRequest struct {
 	ID string `json:"id"`
 }
 
-type GetUserLatestQuizByUIDRequest struct {
+type GetUserQuizPracticesByUIDRequest struct {
 	UID string `json:"uid"`
 }
 
-type CreateUserLatestQuizRequest struct {
+type CreateUserQuizPracticesRequest struct {
 	UID       string `json:"uid"`
 	Questions string `json:"questions"`
 	Answers   string `json:"answers"`
 	AIReview  string `json:"ai_review"`
 }
 
-type UpdateUserLatestQuizRequest struct {
+type UpdateUserQuizPracticesRequest struct {
 	ID        string        `json:"id"`
 	UID       string        `json:"uid"`
 	Questions *string       `json:"questions,omitempty"`
@@ -47,12 +42,12 @@ type UpdateUserLatestQuizRequest struct {
 	Status    *enum.EStatus `json:"status,omitempty"`
 }
 
-type DeleteUserLatestQuizRequest struct {
+type DeleteUserQuizPracticesRequest struct {
 	ID string `json:"id"`
 }
 
-func BuildUserLatestQuizDomainForCreate(req *CreateUserLatestQuizRequest) *domain.UserLatestQuiz {
-	quizDomain := domain.NewUserLatestQuizDomain()
+func BuildUserQuizPracticesDomainForCreate(req *CreateUserQuizPracticesRequest) *domain.UserQuizPractices {
+	quizDomain := domain.NewUserQuizPracticesDomain()
 	quizDomain.GenerateID()
 	quizDomain.SetUID(req.UID)
 	quizDomain.SetQuestions(req.Questions)
@@ -63,8 +58,8 @@ func BuildUserLatestQuizDomainForCreate(req *CreateUserLatestQuizRequest) *domai
 	return quizDomain
 }
 
-func BuildUserLatestQuizDomainForUpdate(req *UpdateUserLatestQuizRequest) *domain.UserLatestQuiz {
-	quizDomain := domain.NewUserLatestQuizDomain()
+func BuildUserQuizPracticesDomainForUpdate(req *UpdateUserQuizPracticesRequest) *domain.UserQuizPractices {
+	quizDomain := domain.NewUserQuizPracticesDomain()
 	quizDomain.SetID(req.ID)
 	quizDomain.SetUID(req.UID)
 
@@ -87,8 +82,8 @@ func BuildUserLatestQuizDomainForUpdate(req *UpdateUserLatestQuizRequest) *domai
 	return quizDomain
 }
 
-func UserLatestQuizResponseFromDomain(q *domain.UserLatestQuiz) UserLatestQuizResponse {
-	return UserLatestQuizResponse{
+func UserQuizPracticesResponseFromDomain(q *domain.UserQuizPractices) UserQuizPracticesResponse {
+	return UserQuizPracticesResponse{
 		ID:         q.ID(),
 		UID:        q.UID(),
 		Questions:  q.Questions(),
