@@ -3,7 +3,7 @@ CREATE TABLE semesters (
     `id` CHAR(36) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `description` TEXT NULL,
-    `iamge_key` VARCHAR(128) NULL,
+    `image_key` VARCHAR(128) NULL,
     `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
     `display_order` TINYINT NOT NULL,
     `create_id` INT DEFAULT 0,

@@ -133,7 +133,7 @@ func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersPa
 // FindByID retrieves a semester by ID.
 func (r *semesterRepository) FindByID(ctx context.Context, id string) (*domain.Semester, error) {
 	query := `
-		SELECT id, name, description, iamge_key, status, display_order,
+		SELECT id, name, description, image_key, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
 		FROM semesters
 		WHERE id = ? AND deleted_dt IS NULL
@@ -161,7 +161,7 @@ func (r *semesterRepository) FindByID(ctx context.Context, id string) (*domain.S
 // FindByName retrieves a semester by name.
 func (r *semesterRepository) FindByName(ctx context.Context, name string) (*domain.Semester, error) {
 	query := `
-		SELECT id, name, description, iamge_key, status, display_order,
+		SELECT id, name, description, image_key, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
 		FROM semesters
 		WHERE name = ? AND deleted_dt IS NULL
@@ -189,7 +189,7 @@ func (r *semesterRepository) FindByName(ctx context.Context, name string) (*doma
 // Create inserts a new semester into the database.
 func (r *semesterRepository) Create(ctx context.Context, tx *sql.Tx, semester *domain.Semester) (int64, error) {
 	query := `
-		INSERT INTO semesters (id, name, description, iamge_key, status, display_order)
+		INSERT INTO semesters (id, name, description, image_key, status, display_order)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -227,7 +227,7 @@ func (r *semesterRepository) Update(ctx context.Context, semester *domain.Semest
 
 	// ImageKey can be nil, so we check if it's explicitly set
 	if semester.ImageKey() != nil {
-		updates = append(updates, "iamge_key = ?")
+		updates = append(updates, "image_key = ?")
 		args = append(args, semester.ImageKey())
 	}
 

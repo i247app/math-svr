@@ -30,11 +30,11 @@ func (v *userValidator) ValidateCreateUserRequest(req *dto.CreateUserRequest) (s
 		return status.USER_INVALID_PHONE, err_svc.ErrInvalidPhone
 	}
 
-	if req.Email == "" {
-		return status.USER_MISSING_EMAIL, err_svc.ErrMissingEmail
-	} else if !validate.IsValidEmail(req.Email) {
-		return status.USER_INVALID_EMAIL, err_svc.ErrInvalidEmail
-	}
+	// if req.Email == "" {
+	// 	return status.USER_MISSING_EMAIL, err_svc.ErrMissingEmail
+	// } else if !validate.IsValidEmail(req.Email) {
+	// 	return status.USER_INVALID_EMAIL, err_svc.ErrInvalidEmail
+	// }
 
 	if req.Password == "" {
 		return status.USER_MISSING_PASSWORD, err_svc.ErrMissingPassword

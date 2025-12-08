@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/shared/config"
+	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/filetype"
 )
 
@@ -51,9 +52,11 @@ func NewClient(s3Config *config.S3Config) *Client {
 
 // Upload uploads a file to S3 and returns URLs
 func (s *Client) Upload(ctx context.Context, file io.Reader, filename, contentType, folder string) (*dto.UploadFileResponse, error) {
+	logger := logger.GetLogger(ctx)
+
 	// Validate file type
 	if err := s.ValidateFileType(filename, contentType); err != nil {
-		////logger.Errorf("File validation failed: %v", err)
+		logger.Errorf("File validation failed: %v", err)
 		return nil, fmt.Errorf("invalid file type: %w", err)
 	}
 
@@ -69,7 +72,7 @@ func (s *Client) Upload(ctx context.Context, file io.Reader, filename, contentTy
 	// Note: For large files, consider using multipart upload
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
-		////logger.Errorf("Failed to read file: %v", err)
+		logger.Errorf("Failed to read file: %v", err)
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
@@ -84,14 +87,14 @@ func (s *Client) Upload(ctx context.Context, file io.Reader, filename, contentTy
 	})
 
 	if err != nil {
-		////logger.Errorf("Failed to upload file to S3: %v", err)
+		logger.Errorf("Failed to upload file to S3: %v", err)
 		return nil, fmt.Errorf("failed to upload file: %w", err)
 	}
 
 	// Generate URLs
 	originalURL := s.generateS3URL(key)
 
-	////logger.Infof("Successfully uploaded file: %s (key: %s, size: %d bytes)", filename, key, fileSize)
+	logger.Infof("Successfully uploaded file: %s (key: %s, size: %d bytes)", filename, key, fileSize)
 
 	response := &dto.UploadFileResponse{
 		URL:      originalURL,
@@ -105,6 +108,8 @@ func (s *Client) Upload(ctx context.Context, file io.Reader, filename, contentTy
 
 // Delete removes a file from S3
 func (s *Client) Delete(ctx context.Context, keyUrl string) error {
+	logger := logger.GetLogger(ctx)
+
 	// Extract key from URL if full URL was provided
 	key := s.extractKeyFromURL(keyUrl)
 
@@ -119,16 +124,18 @@ func (s *Client) Delete(ctx context.Context, keyUrl string) error {
 	})
 
 	if err != nil {
-		////logger.Errorf("Failed to delete file from S3 (key: %s): %v", key, err)
+		logger.Errorf("Failed to delete file from S3 (key: %s): %v", key, err)
 		return fmt.Errorf("failed to delete file: %w", err)
 	}
 
-	////logger.Infof("Successfully deleted file: %s", key)
+	logger.Infof("Successfully deleted file: %s", key)
 	return nil
 }
 
 // GetPreviewURL generates a preview URL from an original S3 URL
 func (s *Client) GetPreviewURL(ctx context.Context, originalURL string) (string, error) {
+	logger := logger.GetLogger(ctx)
+
 	key := s.extractKeyFromURL(originalURL)
 	if key == "" {
 		return "", fmt.Errorf("invalid URL: cannot extract key")
@@ -136,7 +143,7 @@ func (s *Client) GetPreviewURL(ctx context.Context, originalURL string) (string,
 
 	previewUrl, err := s.CreatePresignedUrl(ctx, key, time.Hour)
 	if err != nil {
-		////logger.Errorf("Failed to generate preview URL for key %s: %v", key, err)
+		logger.Errorf("Failed to generate preview URL for key %s: %v", key, err)
 		return "", fmt.Errorf("failed to generate preview URL: %w", err)
 	}
 
@@ -150,6 +157,8 @@ func (s *Client) ValidateFileType(filename string, contentType string) error {
 
 // CreatePresignedUrl generates a temporary presigned URL for secure S3 object access
 func (s *Client) CreatePresignedUrl(ctx context.Context, key string, expiration time.Duration) (string, error) {
+	logger := logger.GetLogger(ctx)
+
 	// Extract key from URL if full URL was provided
 	objectKey := s.extractKeyFromURL(key)
 	if objectKey == "" {
@@ -171,10 +180,10 @@ func (s *Client) CreatePresignedUrl(ctx context.Context, key string, expiration 
 	})
 
 	if err != nil {
-		////logger.Errorf("Failed to create presigned URL for key %s: %v", objectKey, err)
+		logger.Errorf("Failed to create presigned URL for key %s: %v", objectKey, err)
 		return "", fmt.Errorf("failed to create presigned URL: %w", err)
 	}
 
-	////logger.Infof("Created presigned URL for key %s (expires in %v)", objectKey, expiration)
+	logger.Infof("Created presigned URL for key %s (expires in %v)", objectKey, expiration)
 	return presignedReq.URL, nil
 }
