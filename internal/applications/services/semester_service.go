@@ -6,7 +6,6 @@ import (
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/utils"
 	"math-ai.com/math-ai/internal/applications/validators"
-	di "math-ai.com/math-ai/internal/core/di/repositories"
 	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
 	diSvc "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
@@ -41,7 +40,7 @@ func NewSemesterService(
 }
 
 func (s *SemesterService) ListSemesters(ctx context.Context, req *dto.ListSemesterRequest) (status.Code, []*dto.SemesterResponse, *pagination.Pagination, error) {
-	params := di.ListSemestersParams{
+	params := diRepo.ListSemestersParams{
 		Search:    req.Search,
 		Page:      req.Page,
 		Limit:     req.Limit,
@@ -52,7 +51,7 @@ func (s *SemesterService) ListSemesters(ctx context.Context, req *dto.ListSemest
 
 	semesters, pagination, err := s.repo.List(ctx, params)
 	if err != nil {
-		return status.INTERNAL, nil, nil, err
+		return status.FAIL, nil, nil, err
 	}
 
 	if len(semesters) == 0 {
@@ -71,7 +70,7 @@ func (s *SemesterService) GetSemesterByID(ctx context.Context, id string) (statu
 	semester, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		logger.Errorf("failed to get semester by ID: ", err)
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 	if semester == nil {
 		return status.NOT_FOUND, nil, err_svc.ErrSemesterNotFound
@@ -86,7 +85,7 @@ func (s *SemesterService) GetSemesterByID(ctx context.Context, id string) (statu
 func (s *SemesterService) GetSemesterByName(ctx context.Context, name string) (status.Code, *dto.SemesterResponse, error) {
 	semester, err := s.repo.FindByName(ctx, name)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 	if semester == nil {
 		return status.NOT_FOUND, nil, err_svc.ErrSemesterNotFound
@@ -106,14 +105,14 @@ func (s *SemesterService) CreateSemester(ctx context.Context, req *dto.CreateSem
 	// Check if semester with same name already exists
 	existingSemester, err := s.repo.FindByName(ctx, req.Name)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 	if existingSemester != nil {
 		return status.SEMESTER_ALREADY_EXISTS, nil, err_svc.ErrSemesterAlreadyExists
 	}
 
 	// Handle icon upload using shared file manager
-	iconKey, statusCode, err := s.fileManager.UploadFile(ctx, req.IconFile, req.IconFilename, req.IconContentType, "semester")
+	iconKey, statusCode, err := s.fileManager.UploadFile(ctx, req.ImageFile, req.ImageFilename, req.ImageContentType, "semester")
 	if err != nil {
 		return statusCode, nil, err
 	}
@@ -128,13 +127,13 @@ func (s *SemesterService) CreateSemester(ctx context.Context, req *dto.CreateSem
 	// Create semester without transaction (simple single table insert)
 	_, err = s.repo.Create(ctx, nil, semesterDomain)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	// Fetch the created semester
 	semester, err := s.repo.FindByID(ctx, semesterDomain.ID())
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	// Build response using shared utility
@@ -151,7 +150,7 @@ func (s *SemesterService) UpdateSemester(ctx context.Context, req *dto.UpdateSem
 
 	existingSemester, err := s.repo.FindByID(ctx, req.ID)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 	if existingSemester == nil {
 		return status.NOT_FOUND, nil, err_svc.ErrSemesterNotFound
@@ -161,7 +160,7 @@ func (s *SemesterService) UpdateSemester(ctx context.Context, req *dto.UpdateSem
 	if req.Name != nil && *req.Name != existingSemester.Name() {
 		duplicateSemester, err := s.repo.FindByName(ctx, *req.Name)
 		if err != nil {
-			return status.INTERNAL, nil, err
+			return status.FAIL, nil, err
 		}
 		if duplicateSemester != nil {
 			return status.SEMESTER_ALREADY_EXISTS, nil, err_svc.ErrSemesterAlreadyExists
@@ -171,13 +170,13 @@ func (s *SemesterService) UpdateSemester(ctx context.Context, req *dto.UpdateSem
 	semesterDomain := dto.BuildSemesterDomainForUpdate(req)
 	_, err = s.repo.Update(ctx, semesterDomain)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	// Fetch the updated semester
 	semester, err := s.repo.FindByID(ctx, semesterDomain.ID())
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	// Build response using shared utility
@@ -189,7 +188,7 @@ func (s *SemesterService) UpdateSemester(ctx context.Context, req *dto.UpdateSem
 func (s *SemesterService) DeleteSemester(ctx context.Context, id string) (status.Code, error) {
 	semester, err := s.repo.FindByID(ctx, id)
 	if err != nil {
-		return status.INTERNAL, err
+		return status.FAIL, err
 	}
 	if semester == nil {
 		return status.NOT_FOUND, err_svc.ErrSemesterNotFound
@@ -197,7 +196,7 @@ func (s *SemesterService) DeleteSemester(ctx context.Context, id string) (status
 
 	err = s.repo.Delete(ctx, id)
 	if err != nil {
-		return status.INTERNAL, err
+		return status.FAIL, err
 	}
 
 	return status.SUCCESS, nil
@@ -206,7 +205,7 @@ func (s *SemesterService) DeleteSemester(ctx context.Context, id string) (status
 func (s *SemesterService) ForceDeleteSemester(ctx context.Context, id string) (status.Code, error) {
 	err := s.repo.ForceDelete(ctx, nil, id)
 	if err != nil {
-		return status.INTERNAL, err
+		return status.FAIL, err
 	}
 
 	return status.SUCCESS, nil

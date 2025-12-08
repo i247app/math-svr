@@ -49,7 +49,7 @@ func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName strin
 
 	var u models.UserModel
 	err := result.Scan(
-		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl, &u.Dob,
+		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
 		&u.Role, &u.Status, &u.HashPassword, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
 	)
 	if err != nil {
@@ -131,7 +131,7 @@ func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([
 	for rows.Next() {
 		var u models.UserModel
 		if err := rows.Scan(
-			&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl, &u.Dob,
+			&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
 			&u.Role, &u.Status, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
 		); err != nil {
 			return nil, nil, fmt.Errorf("scan error: %v", err)
@@ -156,7 +156,7 @@ func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User
 
 	var u models.UserModel
 	err := result.Scan(
-		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl, &u.Dob,
+		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
 		&u.Role, &u.Status, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
 	)
 	if err != nil {
@@ -183,7 +183,7 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 
 	var u models.UserModel
 	err := result.Scan(
-		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarUrl, &u.Dob,
+		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
 		&u.Role, &u.Status, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
 	)
 	if err != nil {
@@ -209,7 +209,7 @@ func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.Us
 		user.Name(),
 		user.Phone(),
 		user.Email(),
-		user.AvatarURL(),
+		user.AvatarKey(),
 		user.DOB(),
 		user.Role(),
 		enum.StatusActive,
@@ -259,9 +259,9 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 		args = append(args, user.Role())
 	}
 
-	if user.AvatarURL() != nil {
+	if user.AvatarKey() != nil {
 		updates = append(updates, "avatar_key = ?")
-		args = append(args, user.AvatarURL())
+		args = append(args, user.AvatarKey())
 	}
 
 	updates = append(updates, "modify_dt = ?")

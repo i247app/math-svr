@@ -45,9 +45,9 @@ type CreateSemesterRequest struct {
 	DisplayOrder int8    `json:"display_order"`
 
 	// image upload fields (for multipart form)
-	IconFile        io.Reader `json:"icon_file"`         // File reader
-	IconFilename    string    `json:"icon_file_name"`    // Original filename
-	IconContentType string    `json:"icon_content_type"` // MIME type
+	ImageFile        io.Reader `json:"icon_file"`         // File reader
+	ImageFilename    string    `json:"icon_file_name"`    // Original filename
+	ImageContentType string    `json:"icon_content_type"` // MIME type
 }
 
 type CreateSemesterResponse struct {
@@ -58,9 +58,13 @@ type UpdateSemesterRequest struct {
 	ID           string        `json:"id"`
 	Name         *string       `json:"name,omitempty"`
 	Description  *string       `json:"description,omitempty"`
-	ImageKey     *string       `json:"image_key,omitempty"`
 	Status       *enum.EStatus `json:"status,omitempty"`
 	DisplayOrder *int8         `json:"display_order,omitempty"`
+
+	// image upload fields (for multipart form)
+	ImageFile        io.Reader `json:"icon_file"`         // File reader
+	ImageFilename    string    `json:"icon_file_name"`    // Original filename
+	ImageContentType string    `json:"icon_content_type"` // MIME type
 }
 
 type UpdateSemesterResponse struct {
@@ -93,10 +97,6 @@ func BuildSemesterDomainForUpdate(req *UpdateSemesterRequest) *domain.Semester {
 
 	if req.Description != nil {
 		semesterDomain.SetDescription(req.Description)
-	}
-
-	if req.ImageKey != nil {
-		semesterDomain.SetImageKey(req.ImageKey)
 	}
 
 	if req.Status != nil {

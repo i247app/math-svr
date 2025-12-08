@@ -95,7 +95,7 @@ func (c *ChatBoxController) handleStreamingResponse(w http.ResponseWriter, r *ht
 	// Get the flusher
 	flusher, ok := w.(http.Flusher)
 	if !ok {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("streaming not supported"), status.INTERNAL)
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("streaming not supported"), status.FAIL)
 		return
 	}
 

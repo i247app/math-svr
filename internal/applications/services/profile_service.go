@@ -40,7 +40,7 @@ func NewProfileService(
 func (s *ProfileService) FetchProfile(ctx context.Context, req *dto.FetchProfileRequest) (status.Code, *dto.ProfileResponse, error) {
 	profile, err := s.repo.FindByUID(ctx, req.UID)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 	if profile == nil {
 		return status.NOT_FOUND, nil, err_svc.ErrUserNotFound
@@ -61,7 +61,7 @@ func (s *ProfileService) CreateProfile(ctx context.Context, req *dto.CreateProfi
 	// Check if profile already exists for this user
 	existingProfile, err := s.repo.FindByUID(ctx, req.UID)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 	if existingProfile != nil {
 		return status.PROFILE_ALREADY_EXISTS, nil, err_svc.ErrProfileAlreadyExists
@@ -72,13 +72,13 @@ func (s *ProfileService) CreateProfile(ctx context.Context, req *dto.CreateProfi
 	// Create profile without transaction (simple single table insert)
 	_, err = s.repo.Create(ctx, nil, profileDomain)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	// Fetch the created profile
 	profile, err := s.repo.FindByID(ctx, profileDomain.ID())
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	// Build response with presigned URL using shared utility
@@ -96,13 +96,13 @@ func (s *ProfileService) UpdateProfile(ctx context.Context, req *dto.UpdateProfi
 	profileDomain := dto.BuildProfileDomainForUpdate(req)
 	_, err := s.repo.Update(ctx, profileDomain)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	// Fetch the updated profile
 	profile, err := s.repo.FindByUID(ctx, profileDomain.UID())
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	res := dto.ProfileResponseFromDomain(profile)

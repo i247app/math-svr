@@ -87,29 +87,40 @@ func (c *GradeController) HandlerGetGradeByLabel(w http.ResponseWriter, r *http.
 func (c *GradeController) HandlerCreateGrade(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateGradeRequest
 
-	// Multipart form request (with avatar)
-	if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
-		////logger.Errorf("Failed to parse multipart form: %v", err)
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.FAIL)
-		return
-	}
+	// Check content type - support both JSON and multipart form
+	contentType := r.Header.Get("Content-Type")
 
-	// Parse form fields
-	req.Label = r.FormValue("label")
-	description := r.FormValue("description")
-	req.Description = &description
-	displayOrder, _ := strconv.ParseInt(r.FormValue("display_order"), 10, 8)
-	req.DisplayOrder = int8(displayOrder)
+	if contentType == "application/json" {
+		// JSON request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
+			return
+		}
+	} else {
+		// Multipart form request
+		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.FAIL)
+			return
+		}
 
-	// Parse role
+		// Parse form fields
+		req.Label = r.FormValue("label")
 
-	// Handle avatar file
-	file, header, err := r.FormFile("image")
-	if err == nil {
-		defer file.Close()
-		req.IconFile = file
-		req.IconFilename = header.Filename
-		req.IconContentType = header.Header.Get("Content-Type")
+		if description := r.FormValue("description"); description != "" {
+			req.Description = &description
+		}
+
+		displayOrder, _ := strconv.ParseInt(r.FormValue("display_order"), 10, 8)
+		req.DisplayOrder = int8(displayOrder)
+
+		// Handle avatar file
+		file, header, err := r.FormFile("image")
+		if err == nil {
+			defer file.Close()
+			req.ImageFile = file
+			req.ImageFilename = header.Filename
+			req.ImageContentType = header.Header.Get("Content-Type")
+		}
 	}
 
 	statusCode, grade, err := c.service.CreateGrade(r.Context(), &req)
@@ -128,9 +139,47 @@ func (c *GradeController) HandlerCreateGrade(w http.ResponseWriter, r *http.Requ
 // POST - /grades/update
 func (c *GradeController) HandlerUpdateGrade(w http.ResponseWriter, r *http.Request) {
 	var req dto.UpdateGradeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
-		return
+
+	// Check content type - support both JSON and multipart form
+	contentType := r.Header.Get("Content-Type")
+
+	if contentType == "application/json" {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
+			return
+		}
+	} else {
+		// Multipart form request
+		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.FAIL)
+			return
+		}
+
+		// Required field
+		req.ID = r.FormValue("id")
+
+		// Optional fields
+		if label := r.FormValue("label"); label != "" {
+			req.Label = &label
+		}
+		if description := r.FormValue("description"); description != "" {
+			req.Description = &description
+		}
+		if displayOrderStr := r.FormValue("display_order"); displayOrderStr != "" {
+			if displayOrder, err := strconv.ParseInt(displayOrderStr, 10, 8); err == nil {
+				displayOrderInt8 := int8(displayOrder)
+				req.DisplayOrder = &displayOrderInt8
+			}
+		}
+
+		// Handle avatar file
+		file, header, err := r.FormFile("image")
+		if err == nil {
+			defer file.Close()
+			req.ImageFile = file
+			req.ImageFilename = header.Filename
+			req.ImageContentType = header.Header.Get("Content-Type")
+		}
 	}
 
 	statusCode, grade, err := c.service.UpdateGrade(r.Context(), &req)

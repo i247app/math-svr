@@ -63,7 +63,7 @@ func (s *UserService) ListUsers(ctx context.Context, req *dto.ListUserRequest) (
 
 	users, pagination, err := s.repo.List(ctx, params)
 	if err != nil {
-		return status.INTERNAL, nil, nil, err
+		return status.FAIL, nil, nil, err
 	}
 
 	if len(users) == 0 {
@@ -79,7 +79,7 @@ func (s *UserService) ListUsers(ctx context.Context, req *dto.ListUserRequest) (
 func (s *UserService) GetUserByLoginName(ctx context.Context, loginName string) (status.Code, *dto.UserResponse, error) {
 	user, err := s.repo.GetUserByLoginName(ctx, loginName)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	res := s.responseBuilder.BuildUserResponse(ctx, user)
@@ -90,7 +90,7 @@ func (s *UserService) GetUserByLoginName(ctx context.Context, loginName string) 
 func (s *UserService) GetUserByID(ctx context.Context, uid string) (status.Code, *dto.UserResponse, error) {
 	user, err := s.repo.FindByID(ctx, uid)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 	if user == nil {
 		return status.USER_NOT_FOUND, nil, err_svc.ErrUserNotFound
@@ -104,7 +104,7 @@ func (s *UserService) GetUserByID(ctx context.Context, uid string) (status.Code,
 func (s *UserService) GetUserByEmail(ctx context.Context, email string) (status.Code, *dto.UserResponse, error) {
 	user, err := s.repo.FindByEmail(ctx, email)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 	if user == nil {
 		return status.USER_NOT_FOUND, nil, err_svc.ErrUserNotFound
@@ -143,13 +143,13 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 	// Create user with transaction using helper
 	err = s.userCreator.CreateWithTransaction(ctx, createUserDomain)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	// Fetch created user
 	user, err := s.repo.FindByID(ctx, createUserDomain.ID())
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	// Build response using shared utility
@@ -167,7 +167,7 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	// Get existing user
 	existingUser, err := s.repo.FindByID(ctx, req.UID)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 	if existingUser == nil {
 		return status.USER_NOT_FOUND, nil, err_svc.ErrUserNotFound
@@ -176,7 +176,7 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	// Handle avatar updates using shared file manager
 	newAvatarKey, statusCode, err := s.fileManager.UpdateFile(
 		ctx,
-		existingUser.AvatarURL(),
+		existingUser.AvatarKey(),
 		req.AvatarFile,
 		req.AvatarFilename,
 		req.AvatarContentType,
@@ -207,13 +207,13 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 	// Update user with transaction using helper
 	err = s.userUpdater.UpdateWithTransaction(ctx, updateUserDomain, profileDomain)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	// Fetch updated user
 	user, findErr := s.repo.FindByID(ctx, req.UID)
 	if findErr != nil {
-		return status.INTERNAL, nil, findErr
+		return status.FAIL, nil, findErr
 	}
 
 	// Build response using shared utility
@@ -230,7 +230,7 @@ func (s *UserService) DeleteUser(ctx context.Context, req *dto.DeleteUserRequest
 	// Delete user and related data using helper
 	err := s.userDeleter.DeleteWithTransaction(ctx, req.UID)
 	if err != nil {
-		return status.INTERNAL, err
+		return status.FAIL, err
 	}
 
 	return status.SUCCESS, nil
@@ -244,18 +244,18 @@ func (s *UserService) ForceDeleteUser(ctx context.Context, req *dto.DeleteUserRe
 	// Get user to retrieve avatar for cleanup
 	user, err := s.repo.FindByID(ctx, req.UID)
 	if err != nil {
-		return status.INTERNAL, err
+		return status.FAIL, err
 	}
 
 	// Force delete user and related data using helper
 	err = s.userDeleter.ForceDeleteWithTransaction(ctx, req.UID)
 	if err != nil {
-		return status.INTERNAL, err
+		return status.FAIL, err
 	}
 
 	// Delete avatar from storage if exists
-	if user != nil && user.AvatarURL() != nil {
-		s.fileManager.DeleteFile(ctx, user.AvatarURL())
+	if user != nil && user.AvatarKey() != nil {
+		s.fileManager.DeleteFile(ctx, user.AvatarKey())
 	}
 
 	return status.SUCCESS, nil

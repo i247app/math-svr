@@ -88,7 +88,6 @@ func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.
 
 // Create inserts a new profile into the database.
 func (r *profileRepository) Create(ctx context.Context, tx *sql.Tx, profile *domain.Profile) (int64, error) {
-	println("profile.SemesterID()", profile.SemesterID())
 	query := `
 		INSERT INTO profiles (id, uid, grade_id, semester_id ,status)
 		VALUES (?, ?, ?, ?, ?)

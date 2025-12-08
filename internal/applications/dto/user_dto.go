@@ -152,7 +152,7 @@ func UserResponseFromDomain(u *domain.User) UserResponse {
 		Email:     u.Email(),
 		Name:      u.Name(),
 		Phone:     u.Phone(),
-		AvatarURL: u.AvatarURL(),
+		AvatarURL: u.AvatarKey(),
 		Dob:       u.DOB(),
 		Role:      u.Role(),
 		CreateAt:  u.CreatedAt(),

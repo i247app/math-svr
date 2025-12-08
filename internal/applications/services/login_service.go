@@ -51,7 +51,7 @@ func (s *LoginService) Login(ctx context.Context, sess *session.AppSession, req 
 	// get user by login name
 	user, err := s.userRepo.GetUserByLoginName(ctx, req.LoginName)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 	if user == nil {
 		logger.Infof("User not found with login name: %s", req.LoginName)
@@ -84,7 +84,7 @@ func (s *LoginService) Login(ctx context.Context, sess *session.AppSession, req 
 	loginLog, err := s.repo.GetLoginLogByUIDAndDeviceUUID(ctx, user.ID(), req.DeviceUUID)
 	if err != nil {
 		logger.Infof("Error getting login log: %v", err)
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	if loginLog != nil {
@@ -92,14 +92,14 @@ func (s *LoginService) Login(ctx context.Context, sess *session.AppSession, req 
 		err = s.repo.UpdateLoginLog(ctx, updateLoginLogDTO)
 		if err != nil {
 			logger.Infof("Error updating login log: %v", err)
-			return status.INTERNAL, nil, err
+			return status.FAIL, nil, err
 		}
 	} else {
 		createLoginLogDTO := dto.BuildLoginLogDomainForCreate(user.ID(), req.IpAddress, req.DeviceUUID, authToken, loginStatus)
 		err = s.repo.StoreLoginLog(ctx, createLoginLogDTO)
 		if err != nil {
 			logger.Infof("Error storing login log: %v", err)
-			return status.INTERNAL, nil, err
+			return status.FAIL, nil, err
 		}
 	}
 

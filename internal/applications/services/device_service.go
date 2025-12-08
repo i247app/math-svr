@@ -27,7 +27,7 @@ func NewDeviceService(
 func (s *DeviceService) GetDeviceByDeviceUUID(ctx context.Context, deviceUUID string) (status.Code, *dto.DeviceResponse, error) {
 	device, err := s.repo.GetDeviceByDeviceUUID(ctx, deviceUUID)
 	if err != nil {
-		return status.INTERNAL, nil, err
+		return status.FAIL, nil, err
 	}
 
 	if device == nil {
@@ -49,7 +49,7 @@ func (s *DeviceService) CreateDevice(ctx context.Context, req *dto.CreateDeviceR
 
 	err := s.repo.StoreDevice(ctx, nil, deviceDomain)
 	if err != nil {
-		return status.INTERNAL, err
+		return status.FAIL, err
 	}
 
 	return status.SUCCESS, nil
@@ -64,7 +64,7 @@ func (s *DeviceService) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceR
 	deviceDomain := dto.BuildDeviceDomainForUpdate(req)
 	err := s.repo.UpdateDevice(ctx, deviceDomain)
 	if err != nil {
-		return status.INTERNAL, err
+		return status.FAIL, err
 	}
 
 	return status.SUCCESS, nil
@@ -73,7 +73,7 @@ func (s *DeviceService) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceR
 func (s *DeviceService) MarkVerifiedDevice(ctx context.Context, uid string, deviceUUID string) (status.Code, error) {
 	err := s.repo.MarkVerifiedDeviceByUIDAndDeviceUUID(ctx, uid, deviceUUID)
 	if err != nil {
-		return status.INTERNAL, err
+		return status.FAIL, err
 	}
 
 	return status.SUCCESS, nil

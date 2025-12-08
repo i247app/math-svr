@@ -45,9 +45,9 @@ type CreateGradeRequest struct {
 	DisplayOrder int8    `json:"display_order"`
 
 	// image upload fields (for multipart form)
-	IconFile        io.Reader `json:"icon_file"`         // File reader
-	IconFilename    string    `json:"icon_file_name"`    // Original filename
-	IconContentType string    `json:"icon_content_type"` // MIME type
+	ImageFile        io.Reader `json:"-"` // File reader
+	ImageFilename    string    `json:"-"` // Original filename
+	ImageContentType string    `json:"-"` // MIME type
 }
 
 type CreateGradeResponse struct {
@@ -61,6 +61,12 @@ type UpdateGradeRequest struct {
 	ImageKey     *string       `json:"image_key,omitempty"`
 	Status       *enum.EStatus `json:"status,omitempty"`
 	DisplayOrder *int8         `json:"display_order,omitempty"`
+
+	// image upload fields (for multipart form)
+	ImageFile        io.Reader `json:"-"` // File reader
+	ImageFilename    string    `json:"-"` // Original filename
+	ImageContentType string    `json:"-"` // MIME type
+	DeleteImage      bool      `json:"delete_image,omitempty"`
 }
 
 type UpdateGradeResponse struct {

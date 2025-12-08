@@ -13,6 +13,7 @@ import (
 	di "math-ai.com/math-ai/internal/core/di/services"
 	chatbox "math-ai.com/math-ai/internal/driven-adapter/external/chat-box"
 	"math-ai.com/math-ai/internal/shared/constant/status"
+	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 type ChatBoxService struct {
@@ -39,11 +40,13 @@ func NewChatBoxService(
 }
 
 func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
+	logger := logger.GetLogger(ctx)
+
 	statusCode, user, err := s.profileSvc.FetchProfile(ctx, &dto.FetchProfileRequest{
 		UID: req.UID,
 	})
 	if err != nil {
-		////logger.Errorf("Failed to fetch user profile: %v", err)
+		logger.Errorf("Failed to fetch user profile: %v", err)
 		return statusCode, nil, fmt.Errorf("failed to fetch user profile: %v", err)
 	}
 
@@ -53,15 +56,15 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
 		if msg.Role() == "user" {
-			////logger.Infof("User prompt: %s", msg.Content())
+			logger.Infof("User prompt: %s", msg.Content())
 		}
 	}
 
 	// Send message to OpenAI
 	resp, err := s.client.SendMessage(ctx, conv)
 	if err != nil {
-		////logger.Errorf("Failed to send message to OpenAI: %v", err)
-		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
+		logger.Errorf("Failed to send message to OpenAI: %v", err)
+		return status.FAIL, nil, fmt.Errorf("ChatBox service error: %v", err)
 	}
 
 	// Sanitize JSON response to fix common escaping issues using helper
@@ -70,9 +73,7 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 	var data []dto.Question
 	err = json.Unmarshal([]byte(sanitizedJSON), &data)
 	if err != nil {
-		////logger.Errorf("Failed to unmarshal response message: %v", err)
-		////logger.Errorf("Original response: %s", resp.Message)
-		////logger.Errorf("Sanitized response: %s", sanitizedJSON)
+		logger.Errorf("Failed to unmarshal response message: %v", err)
 	}
 
 	// Build response DTO
@@ -94,7 +95,7 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 			UID: req.UID,
 		})
 		if err != nil {
-			////logger.Errorf("Failed to get latest quiz for user %s: %v", req.UID, err)
+			logger.Errorf("Failed to get latest quiz for user %s: %v", req.UID, err)
 		}
 
 		if res == nil {
@@ -104,7 +105,7 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 				AIReview:  "",
 			})
 			if err != nil {
-				////logger.Errorf("Failed to create latest quiz for user %s: %v", req.UID, err)
+				logger.Errorf("Failed to create latest quiz for user %s: %v", req.UID, err)
 			}
 			response.UserLatesQuizID = createdRes.ID
 		} else {
@@ -117,7 +118,7 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 				AIReview:  &resetData,
 			})
 			if err != nil {
-				////logger.Errorf("Failed to update latest quiz for user %s: %v", req.UID, err)
+				logger.Errorf("Failed to update latest quiz for user %s: %v", req.UID, err)
 			}
 			response.UserLatesQuizID = res.ID
 		}
@@ -132,6 +133,8 @@ func (s *ChatBoxService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuiz
 }
 
 func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequest) (status.Code, *dto.ChatBoxResponse[dto.QuizAnswer], error) {
+	logger := logger.GetLogger(ctx)
+
 	jsonAnswers, err := json.Marshal(req.Answers)
 	if err != nil {
 		log.Fatalf("Error marshaling struct to JSON: %v", err)
@@ -146,7 +149,7 @@ func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequ
 	})
 
 	if err != nil {
-		////logger.Errorf("Failed to udpate latest quizzes: %v", err)
+		logger.Errorf("Failed to udpate latest quizzes: %v", err)
 		return statusCode, nil, fmt.Errorf("failed to udpate latest quizzes: %v", err)
 	}
 
@@ -156,15 +159,15 @@ func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequ
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
 		if msg.Role() == "user" {
-			////logger.Infof("User prompt: %s", msg.Content())
+			logger.Infof("User prompt: %s", msg.Content())
 		}
 	}
 
 	// Send message to OpenAI
 	resp, err := s.client.SendMessage(ctx, conv)
 	if err != nil {
-		////logger.Errorf("Failed to send message to OpenAI: %v", err)
-		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
+		logger.Errorf("Failed to send message to OpenAI: %v", err)
+		return status.FAIL, nil, fmt.Errorf("ChatBox service error: %v", err)
 	}
 
 	// Sanitize JSON response to fix common escaping issues using helper
@@ -173,9 +176,7 @@ func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequ
 	var data dto.QuizAnswer
 	err = json.Unmarshal([]byte(sanitizedJSON), &data)
 	if err != nil {
-		////logger.Errorf("Failed to unmarshal response message: %v", err)
-		////logger.Errorf("Original response: %s", resp.Message)
-		////logger.Errorf("Sanitized response: %s", sanitizedJSON)
+		logger.Errorf("Failed to unmarshal response message: %v", err)
 	}
 
 	// Build response DTO
@@ -197,7 +198,7 @@ func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequ
 		AIReview: &data.AIReview,
 	})
 	if err != nil {
-		////logger.Errorf("Failed to update user latest quiz with AI review: %v", err)
+		logger.Errorf("Failed to update user latest quiz with AI review: %v", err)
 		return statusCode, nil, fmt.Errorf("failed to update user latest quiz with AI review: %v", err)
 	}
 
@@ -210,11 +211,13 @@ func (s *ChatBoxService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequ
 }
 
 func (s *ChatBoxService) GenerateQuizPractice(ctx context.Context, req *dto.GenerateQuizPracticeRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
+	logger := logger.GetLogger(ctx)
+
 	statusCode, ulq, err := s.userLatestQuizSvc.GetQuizByUID(ctx, &dto.GetUserLatestQuizByUIDRequest{
 		UID: req.UID,
 	})
 	if err != nil {
-		////logger.Errorf("Failed to fetch user latest quiz: %v", err)
+		logger.Errorf("Failed to fetch user latest quiz: %v", err)
 		return statusCode, nil, fmt.Errorf("failed to fetch user latest quiz: %v", err)
 	}
 
@@ -224,15 +227,15 @@ func (s *ChatBoxService) GenerateQuizPractice(ctx context.Context, req *dto.Gene
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
 		if msg.Role() == "user" {
-			////logger.Infof("User prompt: %s", msg.Content())
+			logger.Infof("User prompt: %s", msg.Content())
 		}
 	}
 
 	// Send message to OpenAI
 	resp, err := s.client.SendMessage(ctx, conv)
 	if err != nil {
-		////logger.Errorf("Failed to send message to OpenAI: %v", err)
-		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
+		logger.Errorf("Failed to send message to OpenAI: %v", err)
+		return status.FAIL, nil, fmt.Errorf("ChatBox service error: %v", err)
 	}
 
 	// Sanitize JSON response to fix common escaping issues using helper
@@ -241,9 +244,7 @@ func (s *ChatBoxService) GenerateQuizPractice(ctx context.Context, req *dto.Gene
 	var data []dto.Question
 	err = json.Unmarshal([]byte(sanitizedJSON), &data)
 	if err != nil {
-		////logger.Errorf("Failed to unmarshal response message: %v", err)
-		////logger.Errorf("Original response: %s", resp.Message)
-		////logger.Errorf("Sanitized response: %s", sanitizedJSON)
+		logger.Errorf("Failed to unmarshal response message: %v", err)
 	}
 
 	// Build response DTO
@@ -270,7 +271,7 @@ func (s *ChatBoxService) GenerateQuizPractice(ctx context.Context, req *dto.Gene
 			AIReview:  &resetData,
 		})
 		if err != nil {
-			////logger.Errorf("Failed to update latest quiz for user %s: %v", req.UID, err)
+			logger.Errorf("Failed to update latest quiz for user %s: %v", req.UID, err)
 		}
 	}
 
@@ -283,14 +284,16 @@ func (s *ChatBoxService) GenerateQuizPractice(ctx context.Context, req *dto.Gene
 }
 
 func (s *ChatBoxService) SendMessageStream(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, <-chan dto.ChatBoxStreamChunk, error) {
+	logger := logger.GetLogger(ctx)
+
 	// Build conversation from request
 	conv := dto.BuildGenerateQuizFromRequest(ctx, req, nil)
 
 	// Send message to OpenAI with streaming
 	streamChan, err := s.client.StreamMessage(ctx, conv)
 	if err != nil {
-		////logger.Errorf("Failed to send streaming message to OpenAI: %v", err)
-		return status.INTERNAL, nil, fmt.Errorf("ChatBox service error: %v", err)
+		logger.Errorf("Failed to send streaming message to OpenAI: %v", err)
+		return status.FAIL, nil, fmt.Errorf("ChatBox service error: %v", err)
 	}
 
 	// Create output channel

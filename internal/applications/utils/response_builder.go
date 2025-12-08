@@ -55,8 +55,8 @@ func (r *ResponseBuilder) BuildUserResponse(ctx context.Context, user *domain_us
 	res := dto.UserResponseFromDomain(user)
 
 	// Generate presigned URL for avatar if exists
-	if user.AvatarURL() != nil && *user.AvatarURL() != "" {
-		presignedURL := r.generatePresignedURL(ctx, user.AvatarURL(), AvatarPresignedURLExpiration)
+	if user.AvatarKey() != nil && *user.AvatarKey() != "" {
+		presignedURL := r.generatePresignedURL(ctx, user.AvatarKey(), AvatarPresignedURLExpiration)
 		if presignedURL != "" {
 			res.AvatarPreviewURL = &presignedURL
 		}

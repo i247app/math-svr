@@ -87,26 +87,39 @@ func (c *SemesterController) HandlerGetSemesterByName(w http.ResponseWriter, r *
 func (c *SemesterController) HandlerCreateSemester(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateSemesterRequest
 
-	// Multipart form request (with icon)
-	if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.FAIL)
-		return
-	}
+	// Check content type - support both JSON and multipart form
+	contentType := r.Header.Get("Content-Type")
 
-	// Parse form fields
-	req.Name = r.FormValue("name")
-	description := r.FormValue("description")
-	req.Description = &description
-	displayOrder, _ := strconv.ParseInt(r.FormValue("display_order"), 10, 8)
-	req.DisplayOrder = int8(displayOrder)
+	if contentType == "application/json" {
+		// JSON request
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
+			return
+		}
+	} else {
+		// Multipart form request (with icon)
+		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.FAIL)
+			return
+		}
 
-	// Handle icon file
-	file, header, err := r.FormFile("image")
-	if err == nil {
-		defer file.Close()
-		req.IconFile = file
-		req.IconFilename = header.Filename
-		req.IconContentType = header.Header.Get("Content-Type")
+		// Parse form fields
+		req.Name = r.FormValue("name")
+		if description := r.FormValue("description"); description != "" {
+			req.Description = &description
+		}
+
+		displayOrder, _ := strconv.ParseInt(r.FormValue("display_order"), 10, 8)
+		req.DisplayOrder = int8(displayOrder)
+
+		// Handle icon file
+		file, header, err := r.FormFile("image")
+		if err == nil {
+			defer file.Close()
+			req.ImageFile = file
+			req.ImageFilename = header.Filename
+			req.ImageContentType = header.Header.Get("Content-Type")
+		}
 	}
 
 	statusCode, semester, err := c.service.CreateSemester(r.Context(), &req)
@@ -125,9 +138,47 @@ func (c *SemesterController) HandlerCreateSemester(w http.ResponseWriter, r *htt
 // POST - /semesters/update
 func (c *SemesterController) HandlerUpdateSemester(w http.ResponseWriter, r *http.Request) {
 	var req dto.UpdateSemesterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
-		return
+	// Check content type - support both JSON and multipart form
+	contentType := r.Header.Get("Content-Type")
+
+	if contentType == "application/json" {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
+			return
+		}
+	} else {
+		// Multipart form request (with icon)
+		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
+			response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid form data"), status.FAIL)
+			return
+		}
+
+		// Parse form fields
+		req.ID = r.FormValue("id")
+
+		// Optional fields
+		if name := r.FormValue("name"); name != "" {
+			req.Name = &name
+		}
+		if description := r.FormValue("description"); description != "" {
+			req.Description = &description
+		}
+
+		if displayOrderStr := r.FormValue("display_order"); displayOrderStr != "" {
+			if displayOrder, err := strconv.ParseInt(displayOrderStr, 10, 8); err == nil {
+				displayOrderInt8 := int8(displayOrder)
+				req.DisplayOrder = &displayOrderInt8
+			}
+		}
+
+		// Handle icon file
+		file, header, err := r.FormFile("image")
+		if err == nil {
+			defer file.Close()
+			req.ImageFile = file
+			req.ImageFilename = header.Filename
+			req.ImageContentType = header.Header.Get("Content-Type")
+		}
 	}
 
 	statusCode, semester, err := c.service.UpdateSemester(r.Context(), &req)
