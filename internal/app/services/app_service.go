@@ -23,15 +23,16 @@ type ServiceContainer struct {
 	SessionProvider sessionprovider.SessionProvider
 	JwtHelper       jwtutil.JwtHelper
 
-	LoginService             di.ILoginService
-	UserService              di.IUserService
-	DeviceService            di.IDeviceService
-	ChatBoxService           di.IChatBoxService
-	GradeService             di.IGradeService
-	SemesterService          di.ISemesterService
-	ProfileService           di.IProfileService
-	UserQuizPracticesService di.IUserQuizPracticesService
-	StorageService           di.IStorageService
+	LoginService              di.ILoginService
+	UserService               di.IUserService
+	DeviceService             di.IDeviceService
+	ChatBoxService            di.IChatBoxService
+	GradeService              di.IGradeService
+	SemesterService           di.ISemesterService
+	ProfileService            di.IProfileService
+	UserQuizPracticesService  di.IUserQuizPracticesService
+	UserQuizAssessmentService di.IUserQuizAssessmentService
+	StorageService            di.IStorageService
 }
 
 const (
@@ -49,6 +50,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	semesterRepo := repositories.NewSemesterRepository(res.Db)
 	profileRepo := repositories.NewProfileRepository(res.Db)
 	userLatestQuizRepo := repositories.NewUserQuizPracticesRepository(res.Db)
+	userQuizAssessmentRepo := repositories.NewUserQuizAssessmentRepository(res.Db)
 
 	log.Println("Initializing services")
 
@@ -130,18 +132,22 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	var userQuizPracticesValidator = validators.NewUserQuizPracticesValidator()
 	var userQuizPracticesSvc = services.NewUserLatestQuizService(userQuizPracticesValidator, userLatestQuizRepo, profileSvc, chatBoxSvc)
 
+	log.Println("> userQuizAssessmentSvc...")
+	var userQuizAssessmentSvc = services.NewUserQuizAssessmentService(userQuizAssessmentRepo, profileSvc, chatBoxSvc)
+
 	return &ServiceContainer{
-		SessionManager:           sessionManager,
-		SessionProvider:          sessionProvider,
-		JwtHelper:                jwtHelper,
-		LoginService:             loginSvc,
-		UserService:              userSvc,
-		DeviceService:            deviceSvc,
-		ChatBoxService:           chatBoxSvc,
-		GradeService:             gradeSvc,
-		SemesterService:          semesterSvc,
-		ProfileService:           profileSvc,
-		UserQuizPracticesService: userQuizPracticesSvc,
-		StorageService:           storageSvc,
+		SessionManager:            sessionManager,
+		SessionProvider:           sessionProvider,
+		JwtHelper:                 jwtHelper,
+		LoginService:              loginSvc,
+		UserService:               userSvc,
+		DeviceService:             deviceSvc,
+		ChatBoxService:            chatBoxSvc,
+		GradeService:              gradeSvc,
+		SemesterService:           semesterSvc,
+		ProfileService:            profileSvc,
+		UserQuizPracticesService:  userQuizPracticesSvc,
+		UserQuizAssessmentService: userQuizAssessmentSvc,
+		StorageService:            storageSvc,
 	}, nil
 }

@@ -11,5 +11,6 @@ import (
 type IChatBoxService interface {
 	Generate(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error)
 	Submit(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[dto.QuizAnswer], error)
+	SubmitAssessment(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[dto.QuizAssessmentAnswer], error)
 	Reinforce(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error)
 }

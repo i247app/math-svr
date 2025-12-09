@@ -101,6 +101,39 @@ func (s *ChatBoxService) Submit(ctx context.Context, conv *domain.Conversation) 
 	return status.SUCCESS, response, nil
 }
 
+func (s *ChatBoxService) SubmitAssessment(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[dto.QuizAssessmentAnswer], error) {
+	// Send message to OpenAI
+	resp, err := s.client.SendMessage(ctx, conv)
+	if err != nil {
+		logger.Errorf("Failed to send message to OpenAI: %v", err)
+		return status.FAIL, nil, fmt.Errorf("ChatBox service error: %v", err)
+	}
+
+	// Sanitize JSON response to fix common escaping issues using helper
+	sanitizedJSON := s.jsonSanitizer.SanitizeJSONResponse(resp.Message)
+
+	var data dto.QuizAssessmentAnswer
+	err = json.Unmarshal([]byte(sanitizedJSON), &data)
+	if err != nil {
+		logger.Errorf("Failed to unmarshal response message: %v", err)
+	}
+
+	// Build response DTO
+	response := &dto.ChatBoxResponse[dto.QuizAssessmentAnswer]{
+		Response:         resp.Message,
+		Data:             data,
+		Role:             resp.Role,
+		Model:            resp.Model,
+		FinishReason:     resp.FinishReason,
+		PromptTokens:     resp.PromptTokens,
+		CompletionTokens: resp.CompletionTokens,
+		TotalTokens:      resp.TotalTokens,
+		Timestamp:        time.Now(),
+	}
+
+	return status.SUCCESS, response, nil
+}
+
 func (s *ChatBoxService) Reinforce(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
 	// Send message to OpenAI
 	resp, err := s.client.SendMessage(ctx, conv)

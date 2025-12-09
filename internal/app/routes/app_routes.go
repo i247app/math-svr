@@ -33,11 +33,19 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	lc := controller.NewLoginController(res, services.LoginService)
 	server.AddRoute("POST /login", lc.HandleLogin)
 
-	// chatbox
+	// quiz-practices
 	cc := controller.NewUserQuizPracticesController(res, services.UserQuizPracticesService)
 	server.AddRoute("POST /quiz-practices/generate", cc.HandleGenerateQuizPractices)
 	server.AddRoute("POST /quiz-practices/submit", cc.HandleSubmitQuizParctices)
 	server.AddRoute("POST /quiz-practices/reinforce", cc.HandleReinforceQuizPractices)
+
+	// quiz-assessments
+	qac := controller.NewUserQuizAssessmentsController(res, services.UserQuizAssessmentService)
+	server.AddRoute("POST /quiz-assessments/generate", qac.HandleGenerateQuizAssessments)
+	server.AddRoute("POST /quiz-assessments/submit", qac.HandleSubmitQuizAssessments)
+	server.AddRoute("POST /quiz-assessments/reinforce", qac.HandleReinforceQuizAssessments)
+	server.AddRoute("POST /quiz-assessments/submit-reinforce", qac.HandleSubmitReinforceQuizAssessments)
+	server.AddRoute("POST /quiz-assessments/history", qac.HandleGetUserQuizAssessmentsHistory)
 
 	// grades
 	gc := controller.NewGradeController(res, services.GradeService)

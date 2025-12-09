@@ -2,6 +2,7 @@ package dto
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -265,4 +266,113 @@ func MessageDomainToDTO(msg *domain.Message) *MessageDTO {
 		Content:   msg.Content(),
 		Timestamp: msg.Timestamp(),
 	}
+}
+
+// BuildSubmitQuizAnswerForAssessment builds a conversation for submitting quiz answers with grade assessment
+func BuildSubmitQuizAnswerForAssessment(ctx context.Context, req *SubmitQuizAssessmentRequest, currentGrade string) *domain.Conversation {
+	var (
+		language             string
+		questionsInformation string
+		userAnswers          string
+	)
+
+	switch appctx.GetLocale(ctx) {
+	case "en":
+		language = "English"
+	case "vn":
+		language = "Vietnamese"
+	default:
+		language = "English"
+	}
+
+	if req != nil {
+		questionsInformation = req.Message
+		answersJSON, _ := json.Marshal(req.Answers)
+		userAnswers = string(answersJSON)
+	}
+
+	conv := domain.NewConversation()
+
+	// Set model if provided
+	if req.Model != nil {
+		conv.SetModel(*req.Model)
+	}
+
+	// Set temperature if provided
+	if req.Temperature != nil {
+		conv.SetTemperature(*req.Temperature)
+	}
+
+	// Set max tokens if provided
+	if req.MaxTokens != nil {
+		conv.SetMaxTokens(*req.MaxTokens)
+	}
+
+	// Set system prompt if provided
+	if req.SystemPrompt != nil {
+		conv.SetSystemPrompt(req.SystemPrompt)
+	}
+
+	prompt := fmt.Sprintf(domain.SubmitQuizAnswerAssessmentPrompt, questionsInformation, userAnswers, currentGrade, language)
+
+	// Add the current user message
+	userMsg := domain.NewMessage("user", prompt)
+	conv.AddMessage(userMsg)
+
+	return conv
+}
+
+// BuildReinforceQuizAssessmentFromRequest builds a conversation for generating reinforcement quiz
+func BuildReinforceQuizAssessmentFromRequest(ctx context.Context, req *ReinforceQuizAssessmentRequest, assessment *UserQuizAssessmentResponse) *domain.Conversation {
+	var (
+		language             string
+		questionsInformation string
+		userAnswers          string
+		reviewedPerformance  string
+	)
+
+	switch appctx.GetLocale(ctx) {
+	case "en":
+		language = "English"
+	case "vn":
+		language = "Vietnamese"
+	default:
+		language = "English"
+	}
+
+	if assessment != nil {
+		questionsInformation = assessment.Questions
+		userAnswers = assessment.Answers
+		reviewedPerformance = assessment.AIReview
+	}
+
+	conv := domain.NewConversation()
+
+	// Set model if provided
+	if req.Model != nil {
+		conv.SetModel(*req.Model)
+	}
+
+	// Set temperature if provided
+	if req.Temperature != nil {
+		conv.SetTemperature(*req.Temperature)
+	}
+
+	// Set max tokens if provided
+	if req.MaxTokens != nil {
+		conv.SetMaxTokens(*req.MaxTokens)
+	}
+
+	// Set system prompt if provided
+	if req.SystemPrompt != nil {
+		conv.SetSystemPrompt(req.SystemPrompt)
+	}
+
+	prompt := fmt.Sprintf(domain.PromptMathQuizPractice, questionsInformation, userAnswers, reviewedPerformance, language)
+
+	// Add the current user message
+	userMsg := domain.NewMessage("user", prompt)
+	conv.AddMessage(userMsg)
+
+	return conv
 }
