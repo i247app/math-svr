@@ -29,7 +29,8 @@ type UserQuizAssessmentsHistoryResponse struct {
 
 // Request DTOs for generate quiz
 type GenerateQuizAssessmentRequest struct {
-	UID string `json:"uid"`
+	UID   string `json:"uid"`
+	Grade string `json:"grade,omitempty"`
 	ChatBoxRequestCommon
 }
 
@@ -39,8 +40,9 @@ type GenerateQuizAssessmentResponse struct {
 
 // Request DTOs for submit quiz
 type SubmitQuizAssessmentRequest struct {
-	UID     string `json:"uid"`
-	Answers []struct {
+	UserQuizAssessmentID string `json:"user_quiz_assessment_id"`
+	UID                  string `json:"uid"`
+	Answers              []struct {
 		QuestionNumber int64  `json:"question_number"`
 		Answer         string `json:"answer"`
 	} `json:"answers"`
@@ -95,38 +97,60 @@ type GetUserQuizAssessmentsHistoryRequest struct {
 	TakeAll   bool   `json:"take_all" form:"take_all"`
 }
 
+type CreateUserQuizAssessmentRequest struct {
+	UID           string `json:"uid"`
+	Questions     string `json:"questions"`
+	Answers       string `json:"answers"`
+	AIReview      string `json:"ai_review"`
+	AIDetectGrade string `json:"ai_detect_grade"`
+}
+
+type UpdateUserQuizAssessmentRequest struct {
+	ID            string        `json:"id"`
+	UID           string        `json:"uid"`
+	Questions     *string       `json:"questions,omitempty"`
+	Answers       *string       `json:"answers,omitempty"`
+	AIReview      *string       `json:"ai_review,omitempty"`
+	AIDetectGrade *string       `json:"ai_detect_grade,omitempty"`
+	Status        *enum.EStatus `json:"status,omitempty"`
+}
+
+type DeleteUserQuizAssessmentRequest struct {
+	ID string `json:"id"`
+}
+
 // Builder functions
-func BuildUserQuizAssessmentDomainForCreate(uid, questions, answers, aiReview, aiDetectGrade string) *domain.UserQuizAssessment {
+func BuildUserQuizAssessmentDomainForCreate(req *CreateUserQuizAssessmentRequest) *domain.UserQuizAssessment {
 	assessmentDomain := domain.NewUserQuizAssessmentDomain()
 	assessmentDomain.GenerateID()
-	assessmentDomain.SetUID(uid)
-	assessmentDomain.SetQuestions(questions)
-	assessmentDomain.SetAnswers(answers)
-	assessmentDomain.SetAIReview(aiReview)
-	assessmentDomain.SetAIDetectGrade(aiDetectGrade)
+	assessmentDomain.SetUID(req.UID)
+	assessmentDomain.SetQuestions(req.Questions)
+	assessmentDomain.SetAnswers(req.Answers)
+	assessmentDomain.SetAIReview(req.AIReview)
+	assessmentDomain.SetAIDetectGrade(req.AIDetectGrade)
 	assessmentDomain.SetStatus(string(enum.StatusActive))
 
 	return assessmentDomain
 }
 
-func BuildUserQuizAssessmentDomainForUpdate(id, questions, answers, aiReview, aiDetectGrade string) *domain.UserQuizAssessment {
+func BuildUserQuizAssessmentDomainForUpdate(req *UpdateUserQuizAssessmentRequest) *domain.UserQuizAssessment {
 	assessmentDomain := domain.NewUserQuizAssessmentDomain()
-	assessmentDomain.SetID(id)
+	assessmentDomain.SetID(req.ID)
 
-	if questions != "" {
-		assessmentDomain.SetQuestions(questions)
+	if req.Questions != nil {
+		assessmentDomain.SetQuestions(*req.Questions)
 	}
 
-	if answers != "" {
-		assessmentDomain.SetAnswers(answers)
+	if req.Answers != nil {
+		assessmentDomain.SetAnswers(*req.Answers)
 	}
 
-	if aiReview != "" {
-		assessmentDomain.SetAIReview(aiReview)
+	if req.AIReview != nil {
+		assessmentDomain.SetAIReview(*req.AIReview)
 	}
 
-	if aiDetectGrade != "" {
-		assessmentDomain.SetAIDetectGrade(aiDetectGrade)
+	if req.AIDetectGrade != nil {
+		assessmentDomain.SetAIDetectGrade(*req.AIDetectGrade)
 	}
 
 	return assessmentDomain

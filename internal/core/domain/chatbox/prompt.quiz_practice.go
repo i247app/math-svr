@@ -52,7 +52,7 @@ EXAMPLES OF WRONG FORMAT (DO NOT USE):
 Requirements:
 - Return ONLY the JSON array (no line break (\n), no need for spaces but can space for question of name or content of answer), nothing else
 - Each question must have exactly 4 answers with labels A, B, C, D
-- "question_name" should be included only number and mathematical operators without additional text
+- "question_name" must be included only number and mathematical operators without additional text
 - "right_answer" must be one of: A, B, C, or D
 - Use simple text format for ALL mathematical expressions (no LaTeX)
 - Ensure all JSON is properly formatted with correct quotes and commas
@@ -143,7 +143,7 @@ EXAMPLES OF WRONG FORMAT (DO NOT USE):
 Requirements:
 - Return ONLY the JSON array (no line break (\n), no need for spaces but can space for question of name or content of answer), nothing else
 - Each question must have exactly 4 answers with labels A, B, C, D
-- "question_name" should be included only number and mathematical operators without additional text
+- "question_name" must be included only number and mathematical operators without additional text
 - "right_answer" must be one of: A, B, C, or D
 - Use simple text format for ALL mathematical expressions (no LaTeX)
 - Ensure all JSON is properly formatted with correct quotes and commas

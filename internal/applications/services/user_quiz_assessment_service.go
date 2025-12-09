@@ -43,8 +43,9 @@ func (s *userQuizAssessmentService) GenerateQuizAssessment(ctx context.Context, 
 	}
 
 	// Build generate quiz from request
-	conv := dto.BuildChatDomainForGenerateQuizPractice(ctx, &dto.GenerateQuizRequest{
+	conv := dto.BuildChatDomainGenerateQuizAssessment(ctx, &dto.GenerateQuizRequest{
 		UID:                  req.UID,
+		Grade:                req.Grade,
 		ChatBoxRequestCommon: req.ChatBoxRequestCommon,
 	}, user)
 
@@ -61,20 +62,30 @@ func (s *userQuizAssessmentService) GenerateQuizAssessment(ctx context.Context, 
 		return statusCode, nil, fmt.Errorf("failed to generate quiz assessment: %v", err)
 	}
 
+	data, err := json.Marshal(res.Data)
+	if err != nil {
+		logger.Errorf("Failed to marshal generated questions: %v", err)
+		return status.FAIL, nil, fmt.Errorf("failed to marshal generated questions: %v", err)
+	}
+
+	statusCode, uqa, err := s.CreateUserQuizAssessment(ctx, &dto.CreateUserQuizAssessmentRequest{
+		UID:       req.UID,
+		Questions: string(data),
+		Answers:   "",
+		AIReview:  "",
+	})
+	if err != nil {
+		logger.Errorf("Failed to create latest quiz for user %s: %v", req.UID, err)
+		return statusCode, nil, fmt.Errorf("failed to create latest quiz for user %s: %v", req.UID, err)
+	}
+
+	res.UserQuizAssessmentID = uqa.ID
+
 	return status.SUCCESS, res, nil
 }
 
 func (s *userQuizAssessmentService) SubmitQuizAssessment(ctx context.Context, req *dto.SubmitQuizAssessmentRequest) (status.Code, *dto.ChatBoxResponse[dto.QuizAssessmentAnswer], error) {
 	logger := logger.GetLogger(ctx)
-
-	// Get user profile to determine current grade
-	statusCode, user, err := s.profileSvc.FetchProfile(ctx, &dto.FetchProfileRequest{
-		UID: req.UID,
-	})
-	if err != nil {
-		logger.Errorf("Failed to fetch user profile: %v", err)
-		return statusCode, nil, fmt.Errorf("failed to fetch user profile: %v", err)
-	}
 
 	jsonAnswers, err := json.Marshal(req.Answers)
 	if err != nil {
@@ -83,8 +94,18 @@ func (s *userQuizAssessmentService) SubmitQuizAssessment(ctx context.Context, re
 
 	answersStr := string(jsonAnswers)
 
+	statusCode, uqa, err := s.UpdateUserQuizAssessment(ctx, &dto.UpdateUserQuizAssessmentRequest{
+		ID:      req.UserQuizAssessmentID,
+		Answers: &answersStr,
+	})
+
+	if err != nil {
+		logger.Errorf("Failed to udpate latest quizzes: %v", err)
+		return statusCode, nil, fmt.Errorf("failed to udpate latest quizzes: %v", err)
+	}
+
 	// Build submit quiz answer with assessment
-	conv := dto.BuildChatDomainSubmitQuizAssessment(ctx, req, user.Grade)
+	conv := dto.BuildChatDomainSubmitQuizAssessment(ctx, req, uqa)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -101,17 +122,15 @@ func (s *userQuizAssessmentService) SubmitQuizAssessment(ctx context.Context, re
 
 	// Save the assessment with AI-detected grade
 	if res != nil && res.Data.AIReview != "" {
-		assessmentDomain := dto.BuildUserQuizAssessmentDomainForCreate(
-			req.UID,
-			req.Message, // questions
-			answersStr,  // answers
-			res.Data.AIReview,
-			res.Data.AIDetectGrade,
-		)
+		statusCode, _, err := s.UpdateUserQuizAssessment(ctx, &dto.UpdateUserQuizAssessmentRequest{
+			ID:            uqa.ID,
+			AIReview:      &res.Data.AIReview,
+			AIDetectGrade: &res.Data.AIDetectGrade,
+		})
 
-		_, err := s.repo.Create(ctx, nil, assessmentDomain)
 		if err != nil {
-			logger.Errorf("Failed to save quiz assessment for user %s: %v", req.UID, err)
+			logger.Errorf("Failed to udpate latest quizzes: %v", err)
+			return statusCode, nil, fmt.Errorf("failed to udpate latest quizzes: %v", err)
 		}
 	}
 
@@ -158,7 +177,7 @@ func (s *userQuizAssessmentService) SubmitReinforceQuizAssessment(ctx context.Co
 	logger := logger.GetLogger(ctx)
 
 	// Get the original assessment
-	statusCode, assessment, err := s.GetUserQuizPraticeByID(ctx, req.UserQuizAssessmentID)
+	statusCode, assessment, err := s.GetUserQuizAssessmentByID(ctx, req.UserQuizAssessmentID)
 	if err != nil {
 		logger.Errorf("Failed to fetch quiz assessment: %v", err)
 		return statusCode, nil, fmt.Errorf("failed to fetch quiz assessment: %v", err)
@@ -206,13 +225,13 @@ func (s *userQuizAssessmentService) SubmitReinforceQuizAssessment(ctx context.Co
 
 	// Create new assessment record for the reinforcement quiz
 	if res != nil && res.Data.AIReview != "" {
-		assessmentDomain := dto.BuildUserQuizAssessmentDomainForCreate(
-			req.UID,
-			req.Message, // questions
-			answersStr,  // answers
-			res.Data.AIReview,
-			res.Data.AIDetectGrade,
-		)
+		assessmentDomain := dto.BuildUserQuizAssessmentDomainForCreate(&dto.CreateUserQuizAssessmentRequest{
+			UID:           req.UID,
+			Questions:     req.Message,
+			Answers:       answersStr,
+			AIReview:      res.Data.AIReview,
+			AIDetectGrade: res.Data.AIDetectGrade,
+		})
 
 		_, err := s.repo.Create(ctx, nil, assessmentDomain)
 		if err != nil {
@@ -247,7 +266,7 @@ func (s *userQuizAssessmentService) GetUserQuizAssessmentsHistory(ctx context.Co
 	}, nil
 }
 
-func (s *userQuizAssessmentService) GetUserQuizPraticeByID(ctx context.Context, id string) (status.Code, *dto.UserQuizAssessmentResponse, error) {
+func (s *userQuizAssessmentService) GetUserQuizAssessmentByID(ctx context.Context, id string) (status.Code, *dto.UserQuizAssessmentResponse, error) {
 	logger := logger.GetLogger(ctx)
 	assessment, err := s.repo.FindByID(ctx, id)
 	if err != nil {
@@ -262,4 +281,94 @@ func (s *userQuizAssessmentService) GetUserQuizPraticeByID(ctx context.Context, 
 
 	assessmentResp := dto.UserQuizAssessmentResponseFromDomain(assessment)
 	return status.SUCCESS, &assessmentResp, nil
+}
+
+func (s *userQuizAssessmentService) CreateUserQuizAssessment(ctx context.Context, req *dto.CreateUserQuizAssessmentRequest) (status.Code, *dto.UserQuizAssessmentResponse, error) {
+	logger := logger.GetLogger(ctx)
+
+	uqaDomain := dto.BuildUserQuizAssessmentDomainForCreate(req)
+
+	rowsAffected, err := s.repo.Create(ctx, nil, uqaDomain)
+	if err != nil {
+		logger.Errorf("Failed to create quiz assessment: %v", err)
+		return status.FAIL, nil, fmt.Errorf("failed to create quiz assessment: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return status.FAIL, nil, fmt.Errorf("failed to create user latest quiz")
+	}
+
+	response := dto.UserQuizAssessmentResponseFromDomain(uqaDomain)
+	return status.SUCCESS, &response, nil
+}
+
+func (s *userQuizAssessmentService) UpdateUserQuizAssessment(ctx context.Context, req *dto.UpdateUserQuizAssessmentRequest) (status.Code, *dto.UserQuizAssessmentResponse, error) {
+	logger := logger.GetLogger(ctx)
+
+	existingQuiz, err := s.repo.FindByID(ctx, req.ID)
+	if err != nil {
+		return status.FAIL, nil, err
+	}
+
+	if existingQuiz == nil {
+		return status.FAIL, nil, fmt.Errorf("user latest quiz not found")
+	}
+
+	uqaDomain := dto.BuildUserQuizAssessmentDomainForUpdate(req)
+
+	rowsAffected, err := s.repo.Update(ctx, uqaDomain)
+	if err != nil {
+		logger.Errorf("Failed to update quiz assessment: %v", err)
+		return status.FAIL, nil, fmt.Errorf("failed to update quiz assessment: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return status.FAIL, nil, fmt.Errorf("failed to update user latest quiz")
+	}
+
+	updatedQuiz, err := s.repo.FindByID(ctx, existingQuiz.ID())
+	if err != nil {
+		return status.FAIL, nil, err
+	}
+
+	response := dto.UserQuizAssessmentResponseFromDomain(updatedQuiz)
+	return status.SUCCESS, &response, nil
+}
+
+func (s *userQuizAssessmentService) DeleteUserQuizAssessment(ctx context.Context, req *dto.DeleteUserQuizAssessmentRequest) (status.Code, error) {
+	existingQuiz, err := s.repo.FindByID(ctx, req.ID)
+	if err != nil {
+		return status.FAIL, err
+	}
+
+	if existingQuiz == nil {
+		return status.FAIL, fmt.Errorf("user latest quiz not found")
+	}
+
+	rowsAffected, err := s.repo.Delete(ctx, req.ID)
+	if err != nil {
+		return status.FAIL, err
+	}
+
+	if rowsAffected == 0 {
+		return status.FAIL, fmt.Errorf("failed to delete user latest quiz")
+	}
+
+	return status.SUCCESS, nil
+}
+
+func (s *userQuizAssessmentService) ForceDeleteUserQuizAssessment(ctx context.Context, req *dto.DeleteUserQuizAssessmentRequest) (status.Code, error) {
+	logger := logger.GetLogger(ctx)
+
+	rowsAffected, err := s.repo.ForceDelete(ctx, req.ID)
+	if err != nil {
+		logger.Errorf("Failed to force delete quiz assessment: %v", err)
+		return status.FAIL, fmt.Errorf("failed to force delete quiz assessment: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return status.FAIL, fmt.Errorf("failed to force delete user latest quiz")
+	}
+
+	return status.SUCCESS, nil
 }

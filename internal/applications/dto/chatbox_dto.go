@@ -31,6 +31,7 @@ type ChatBoxRequestCommon struct {
 // ChatBoxRequest represents a request to send a message to the chatbox
 type GenerateQuizRequest struct {
 	UID           string                `json:"uid"`
+	Grade         string                `json:"grade,omitempty"`
 	TypeOfQuiz    string                `json:"type_of_task,omitempty"`
 	TypeOfPurpose enum.ETypeQuizPurpuse `json:"type_of_purpose,omitempty"`
 	ChatBoxRequestCommon
@@ -48,16 +49,17 @@ type Question struct {
 
 // ChatBoxResponse represents the response from the chatbox
 type ChatBoxResponse[T any] struct {
-	Response         string        `json:"response"`
-	Data             T             `json:"data"`
-	Role             string        `json:"role"`
-	Model            string        `json:"model"`
-	FinishReason     string        `json:"-"`
-	PromptTokens     int           `json:"-"`
-	CompletionTokens int           `json:"-"`
-	TotalTokens      int           `json:"-"`
-	History          []*MessageDTO `json:"-"`
-	Timestamp        time.Time     `json:"timestamp"`
+	Response             string        `json:"response"`
+	Data                 T             `json:"data"`
+	Role                 string        `json:"role"`
+	Model                string        `json:"model"`
+	FinishReason         string        `json:"-"`
+	PromptTokens         int           `json:"-"`
+	CompletionTokens     int           `json:"-"`
+	TotalTokens          int           `json:"-"`
+	History              []*MessageDTO `json:"-"`
+	Timestamp            time.Time     `json:"timestamp"`
+	UserQuizAssessmentID string        `json:"user_quiz_assessment_id,omitempty"`
 }
 
 type GenerateQuizResponse struct {
@@ -263,8 +265,8 @@ func BuildChatDomainForReinForceQuizPractice(ctx context.Context, req *GenerateQ
 func BuildChatDomainGenerateQuizAssessment(ctx context.Context, req *GenerateQuizRequest, userProfile *ProfileResponse) *domain.Conversation {
 	var (
 		language string
-		grade    string
-		semester string
+		// grade    string
+		// semester string
 	)
 
 	switch appctx.GetLocale(ctx) {
@@ -276,10 +278,10 @@ func BuildChatDomainGenerateQuizAssessment(ctx context.Context, req *GenerateQui
 		language = "English"
 	}
 
-	if userProfile != nil {
-		grade = userProfile.Grade
-		semester = userProfile.Semester
-	}
+	// if userProfile != nil {
+	// 	grade = userProfile.Grade
+	// 	semester = userProfile.Semester
+	// }
 
 	conv := domain.NewConversation()
 
@@ -303,7 +305,13 @@ func BuildChatDomainGenerateQuizAssessment(ctx context.Context, req *GenerateQui
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptForGenerateQuizAssessment, grade, semester, language)
+	grades := []string{"Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5"}
+
+	if req.Grade != "" {
+		grades = []string{req.Grade}
+	}
+
+	prompt := fmt.Sprintf(domain.PromptForGenerateQuizAssessment, grades, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -312,7 +320,7 @@ func BuildChatDomainGenerateQuizAssessment(ctx context.Context, req *GenerateQui
 	return conv
 }
 
-func BuildChatDomainSubmitQuizAssessment(ctx context.Context, req *SubmitQuizAssessmentRequest, currentGrade string) *domain.Conversation {
+func BuildChatDomainSubmitQuizAssessment(ctx context.Context, req *SubmitQuizAssessmentRequest, userQuizAssessment *UserQuizAssessmentResponse) *domain.Conversation {
 	var (
 		language             string
 		questionsInformation string
@@ -328,8 +336,8 @@ func BuildChatDomainSubmitQuizAssessment(ctx context.Context, req *SubmitQuizAss
 		language = "English"
 	}
 
-	if req != nil {
-		questionsInformation = req.Message
+	if req != nil && userQuizAssessment != nil {
+		questionsInformation = userQuizAssessment.Questions
 		answersJSON, _ := json.Marshal(req.Answers)
 		userAnswers = string(answersJSON)
 	}
@@ -356,7 +364,7 @@ func BuildChatDomainSubmitQuizAssessment(ctx context.Context, req *SubmitQuizAss
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptForSubmitQuizAssessmentAnswer, questionsInformation, userAnswers, currentGrade, language)
+	prompt := fmt.Sprintf(domain.PromptForSubmitQuizAssessmentAnswer, questionsInformation, userAnswers, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)

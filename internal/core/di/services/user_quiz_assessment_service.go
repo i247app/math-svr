@@ -14,5 +14,9 @@ type IUserQuizAssessmentService interface {
 	SubmitReinforceQuizAssessment(ctx context.Context, req *dto.SubmitReinforceQuizAssessmentRequest) (status.Code, *dto.ChatBoxResponse[dto.QuizAssessmentAnswer], error)
 	GetUserQuizAssessmentsHistory(ctx context.Context, req *dto.GetUserQuizAssessmentsHistoryRequest) (status.Code, *dto.UserQuizAssessmentsHistoryResponse, error)
 
-	GetUserQuizPraticeByID(ctx context.Context, id string) (status.Code, *dto.UserQuizAssessmentResponse, error)
+	GetUserQuizAssessmentByID(ctx context.Context, id string) (status.Code, *dto.UserQuizAssessmentResponse, error)
+	CreateUserQuizAssessment(ctx context.Context, req *dto.CreateUserQuizAssessmentRequest) (status.Code, *dto.UserQuizAssessmentResponse, error)
+	UpdateUserQuizAssessment(ctx context.Context, req *dto.UpdateUserQuizAssessmentRequest) (status.Code, *dto.UserQuizAssessmentResponse, error)
+	DeleteUserQuizAssessment(ctx context.Context, req *dto.DeleteUserQuizAssessmentRequest) (status.Code, error)
+	ForceDeleteUserQuizAssessment(ctx context.Context, req *dto.DeleteUserQuizAssessmentRequest) (status.Code, error)
 }

@@ -34,12 +34,13 @@ type CreateUserQuizPracticesRequest struct {
 }
 
 type UpdateUserQuizPracticesRequest struct {
-	ID        string        `json:"id"`
-	UID       string        `json:"uid"`
-	Questions *string       `json:"questions,omitempty"`
-	Answers   *string       `json:"answers,omitempty"`
-	AIReview  *string       `json:"ai_review,omitempty"`
-	Status    *enum.EStatus `json:"status,omitempty"`
+	ID            string        `json:"id"`
+	UID           string        `json:"uid"`
+	Questions     *string       `json:"questions,omitempty"`
+	Answers       *string       `json:"answers,omitempty"`
+	AIReview      *string       `json:"ai_review,omitempty"`
+	Status        *enum.EStatus `json:"status,omitempty"`
+	AIDetectGrade *string       `json:"ai_detect_grade,omitempty"`
 }
 
 type DeleteUserQuizPracticesRequest struct {
