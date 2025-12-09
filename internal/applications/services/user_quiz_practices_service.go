@@ -66,7 +66,7 @@ func (s *userLatestQuizService) GenerateQuiz(ctx context.Context, req *dto.Gener
 	}
 
 	// Save latest quiz for the user
-	if res.Response != "" {
+	if res != nil && res.Response != "" {
 		_, uqp, err := s.GetUserQuizPraticeByUID(ctx, &dto.GetUserQuizPracticesByUIDRequest{
 			UID: req.UID,
 		})
@@ -74,7 +74,7 @@ func (s *userLatestQuizService) GenerateQuiz(ctx context.Context, req *dto.Gener
 			logger.Errorf("Failed to get latest quiz for user %s: %v", req.UID, err)
 		}
 
-		if res == nil {
+		if uqp == nil {
 			_, _, err := s.CreateUserQuizPratice(ctx, &dto.CreateUserQuizPracticesRequest{
 				UID:       req.UID,
 				Questions: res.Response,
@@ -172,7 +172,7 @@ func (s *userLatestQuizService) GenerateQuizPractice(ctx context.Context, req *d
 		}
 	}
 
-	statusCode, res, err := s.chatboxSvc.GeneratePractice(ctx, conv)
+	statusCode, res, err := s.chatboxSvc.Reinforce(ctx, conv)
 	if err != nil {
 		logger.Errorf("Failed to generate quiz: %v", err)
 		return statusCode, nil, fmt.Errorf("failed to generate quiz: %v", err)
@@ -193,7 +193,7 @@ func (s *userLatestQuizService) GenerateQuizPractice(ctx context.Context, req *d
 		}
 	}
 
-	return status.SUCCESS, nil, nil
+	return status.SUCCESS, res, nil
 }
 
 // GetQuiz retrieves a specific user latest quiz by ID.

@@ -144,17 +144,6 @@ func BuildGenerateQuizFromRequest(ctx context.Context, req *GenerateQuizRequest,
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	// Add history messages
-	if len(req.History) > 0 {
-		for _, msgDTO := range req.History {
-			msg := domain.NewMessage(msgDTO.Role, msgDTO.Content)
-			if !msgDTO.Timestamp.IsZero() {
-				msg.SetTimestamp(msgDTO.Timestamp)
-			}
-			conv.AddMessage(msg)
-		}
-	}
-
 	prompt := fmt.Sprintf(domain.PromptMathQuizNew, grade, semester, language)
 
 	// Add the current user message
@@ -164,7 +153,7 @@ func BuildGenerateQuizFromRequest(ctx context.Context, req *GenerateQuizRequest,
 	return conv
 }
 
-func BuildSubmitQuizAnswerFromRequest(ctx context.Context, req *SubmitQuizRequest, userLatestQuizzes *UserQuizPracticesResponse) *domain.Conversation {
+func BuildSubmitQuizAnswerFromRequest(ctx context.Context, req *SubmitQuizRequest, userQuizPractice *UserQuizPracticesResponse) *domain.Conversation {
 	var (
 		language             string
 		questionsInformation string
@@ -181,8 +170,8 @@ func BuildSubmitQuizAnswerFromRequest(ctx context.Context, req *SubmitQuizReques
 	}
 
 	if req != nil {
-		questionsInformation = userLatestQuizzes.Questions
-		userAnswers = userLatestQuizzes.Answers
+		questionsInformation = userQuizPractice.Questions
+		userAnswers = userQuizPractice.Answers
 	}
 
 	conv := domain.NewConversation()
@@ -207,17 +196,6 @@ func BuildSubmitQuizAnswerFromRequest(ctx context.Context, req *SubmitQuizReques
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	// Add history messages
-	if req.History != nil && len(req.History) > 0 {
-		for _, msgDTO := range req.History {
-			msg := domain.NewMessage(msgDTO.Role, msgDTO.Content)
-			if !msgDTO.Timestamp.IsZero() {
-				msg.SetTimestamp(msgDTO.Timestamp)
-			}
-			conv.AddMessage(msg)
-		}
-	}
-
 	prompt := fmt.Sprintf(domain.SubmitQuizAnswerPrompt, questionsInformation, userAnswers, language)
 
 	// Add the current user message
@@ -227,7 +205,7 @@ func BuildSubmitQuizAnswerFromRequest(ctx context.Context, req *SubmitQuizReques
 	return conv
 }
 
-func BuildGeneratePracticeQuizFromRequest(ctx context.Context, req *GenerateQuizPracticeRequest, userLatestQuizzes *UserQuizPracticesResponse) *domain.Conversation {
+func BuildGeneratePracticeQuizFromRequest(ctx context.Context, req *GenerateQuizPracticeRequest, userQuizPractice *UserQuizPracticesResponse) *domain.Conversation {
 	var (
 		language             string
 		questionsInformation string
@@ -245,9 +223,9 @@ func BuildGeneratePracticeQuizFromRequest(ctx context.Context, req *GenerateQuiz
 	}
 
 	if req != nil {
-		questionsInformation = userLatestQuizzes.Questions
-		userAnswers = userLatestQuizzes.Answers
-		reviewedPerformance = userLatestQuizzes.AIReview
+		questionsInformation = userQuizPractice.Questions
+		userAnswers = userQuizPractice.Answers
+		reviewedPerformance = userQuizPractice.AIReview
 	}
 
 	conv := domain.NewConversation()
@@ -272,17 +250,6 @@ func BuildGeneratePracticeQuizFromRequest(ctx context.Context, req *GenerateQuiz
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	// Add history messages
-	if req.History != nil && len(req.History) > 0 {
-		for _, msgDTO := range req.History {
-			msg := domain.NewMessage(msgDTO.Role, msgDTO.Content)
-			if !msgDTO.Timestamp.IsZero() {
-				msg.SetTimestamp(msgDTO.Timestamp)
-			}
-			conv.AddMessage(msg)
-		}
-	}
-
 	prompt := fmt.Sprintf(domain.PromptMathQuizPractice, questionsInformation, userAnswers, reviewedPerformance, language)
 
 	// Add the current user message
@@ -298,15 +265,4 @@ func MessageDomainToDTO(msg *domain.Message) *MessageDTO {
 		Content:   msg.Content(),
 		Timestamp: msg.Timestamp(),
 	}
-}
-
-func ConversationToHistoryDTO(conv *domain.Conversation) []*MessageDTO {
-	messages := conv.Messages()
-	history := make([]*MessageDTO, len(messages))
-
-	for i, msg := range messages {
-		history[i] = MessageDomainToDTO(msg)
-	}
-
-	return history
 }

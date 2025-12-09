@@ -101,7 +101,7 @@ func (s *ChatBoxService) Submit(ctx context.Context, conv *domain.Conversation) 
 	return status.SUCCESS, response, nil
 }
 
-func (s *ChatBoxService) GeneratePractice(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
+func (s *ChatBoxService) Reinforce(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
 	// Send message to OpenAI
 	resp, err := s.client.SendMessage(ctx, conv)
 	if err != nil {
