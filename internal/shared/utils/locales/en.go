@@ -110,6 +110,8 @@ func GetMessageENFromStatus(statusCode status.Code) string {
 	// Grade status messages
 	case status.GRADE_INVALID_PARAMS:
 		return "Invalid grade parameters."
+	case status.GRADE_MISSING_ID:
+		return "Grade ID is missing."
 	case status.GRADE_MISSING_LABEL:
 		return "Grade name is missing."
 	case status.GRADE_NOT_FOUND:
@@ -150,6 +152,21 @@ func GetMessageENFromStatus(statusCode status.Code) string {
 		return "Invalid profile grade."
 	case status.PROFILE_INVALID_LEVEL:
 		return "Invalid profile level."
+
+	// Semester status messages
+	case status.SEMESTER_INVALID_PARAMS:
+		return "Invalid semester parameters."
+	case status.SEMESTER_MISSING_ID:
+		return "Semester ID is missing."
+	case status.SEMESTER_MISSING_NAME:
+		return "Semester name is missing."
+	case status.SEMESTER_NOT_FOUND:
+		return "Semester not found."
+	case status.SEMESTER_ALREADY_EXISTS:
+		return "Semester already exists."
+	case status.SEMESTER_CANNOT_DELETE:
+		return "Semester cannot be deleted."
+
 	default:
 		return "Unknown"
 	}

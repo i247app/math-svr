@@ -92,6 +92,8 @@ func GetMessageVNFromStatus(statusCode status.Code) string {
 		// Grade status messages
 	case status.GRADE_INVALID_PARAMS:
 		return "Tham số cấp học không hợp lệ."
+	case status.GRADE_MISSING_ID:
+		return "Thiếu ID cấp học."
 	case status.GRADE_MISSING_LABEL:
 		return "Thiếu tên cấp học."
 	case status.GRADE_NOT_FOUND:
@@ -132,6 +134,21 @@ func GetMessageVNFromStatus(statusCode status.Code) string {
 		return "Cấp học trong hồ sơ không hợp lệ."
 	case status.PROFILE_INVALID_LEVEL:
 		return "Cấp độ trong hồ sơ không hợp lệ."
+
+	// Semester status messages
+	case status.SEMESTER_INVALID_PARAMS:
+		return "Tham số học kỳ không hợp lệ."
+	case status.SEMESTER_MISSING_ID:
+		return "Thiếu ID học kỳ."
+	case status.SEMESTER_MISSING_NAME:
+		return "Thiếu tên học kỳ."
+	case status.SEMESTER_NOT_FOUND:
+		return "Không tìm thấy học kỳ."
+	case status.SEMESTER_ALREADY_EXISTS:
+		return "Học kỳ đã tồn tại."
+	case status.SEMESTER_CANNOT_DELETE:
+		return "Học kỳ không thể bị xóa."
+
 	default:
 		return "Unknown"
 	}

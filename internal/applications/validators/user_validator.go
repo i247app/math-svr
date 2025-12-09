@@ -36,6 +36,14 @@ func (v *userValidator) ValidateCreateUserRequest(req *dto.CreateUserRequest) (s
 	// 	return status.USER_INVALID_EMAIL, err_svc.ErrInvalidEmail
 	// }
 
+	if req.GradeID == "" {
+		return status.GRADE_MISSING_ID, err_svc.ErrMissingGradeID
+	}
+
+	if req.SemesterID == "" {
+		return status.SEMESTER_MISSING_ID, err_svc.ErrSemesterMissingID
+	}
+
 	if req.Password == "" {
 		return status.USER_MISSING_PASSWORD, err_svc.ErrMissingPassword
 	}

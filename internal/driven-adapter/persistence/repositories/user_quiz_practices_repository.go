@@ -176,3 +176,18 @@ func (r *userQuizPracticesRepository) ForceDelete(ctx context.Context, id string
 
 	return result.RowsAffected()
 }
+
+// ForceDeleteByUID permanently removes user quiz practices by UID from the database.
+func (r *userQuizPracticesRepository) ForceDeleteByUID(ctx context.Context, tx *sql.Tx, uid string) error {
+	query := `
+		DELETE FROM user_quiz_practices
+		WHERE uid = ?
+	`
+
+	_, err := r.db.Exec(ctx, tx, query, uid)
+	if err != nil {
+		return fmt.Errorf("failed to force delete user quiz practices by UID: %v", err)
+	}
+
+	return nil
+}

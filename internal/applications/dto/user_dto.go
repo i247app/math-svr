@@ -41,12 +41,14 @@ type ListUserResponse struct {
 }
 
 type CreateUserRequest struct {
-	Name     string     `json:"name"`
-	Phone    string     `json:"phone"`
-	Email    string     `json:"email"`
-	Role     enum.ERole `json:"role,omitempty"`
-	Password string     `json:"password"`
-	Dob      *string    `json:"dob"`
+	Name       string     `json:"name"`
+	Phone      string     `json:"phone"`
+	Email      string     `json:"email"`
+	Role       enum.ERole `json:"role,omitempty"`
+	Password   string     `json:"password"`
+	Dob        *string    `json:"dob"`
+	GradeID    string     `json:"grade_id"`
+	SemesterID string     `json:"semester_id"`
 
 	// Avatar upload fields (for multipart form)
 	AvatarFile        io.Reader `json:"avatar_file"`         // File reader
@@ -94,6 +96,8 @@ func BuildUserDomainForCreate(req *CreateUserRequest) *domain.User {
 	userDomain.SetName(req.Name)
 	userDomain.SetPhone(req.Phone)
 	userDomain.SetPassword(req.Password)
+	userDomain.SetGradeID(req.GradeID)
+	userDomain.SetSemesterID(req.SemesterID)
 
 	if req.Dob != nil {
 		parsedDob, err := time.Parse(time.DateOnly, *req.Dob)

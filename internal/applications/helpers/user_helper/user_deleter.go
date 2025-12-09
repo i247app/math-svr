@@ -10,9 +10,10 @@ import (
 
 // UserDeleter handles complex user deletion with transactions
 type UserDeleter struct {
-	userRepo    di.IUserRepository
-	loginRepo   di.ILoginRepository
-	profileRepo di.IProfileRepository
+	userRepo             di.IUserRepository
+	loginRepo            di.ILoginRepository
+	profileRepo          di.IProfileRepository
+	userQuizPracticeRepo di.IUserQuizPracticesRepository
 }
 
 // NewUserDeleter creates a new UserDeleter instance
@@ -20,11 +21,13 @@ func NewUserDeleter(
 	userRepo di.IUserRepository,
 	loginRepo di.ILoginRepository,
 	profileRepo di.IProfileRepository,
+	userQuizPracticeRepo di.IUserQuizPracticesRepository,
 ) *UserDeleter {
 	return &UserDeleter{
-		userRepo:    userRepo,
-		loginRepo:   loginRepo,
-		profileRepo: profileRepo,
+		userRepo:             userRepo,
+		loginRepo:            loginRepo,
+		profileRepo:          profileRepo,
+		userQuizPracticeRepo: userQuizPracticeRepo,
 	}
 }
 
@@ -86,6 +89,12 @@ func (u *UserDeleter) ForceDeleteWithTransaction(ctx context.Context, uid string
 		err = u.profileRepo.ForceDeleteByUID(ctx, tx, uid)
 		if err != nil {
 			return fmt.Errorf("failed to force delete user profile in transaction: %v", err)
+		}
+
+		// Force delete user quiz practices
+		err = u.userQuizPracticeRepo.ForceDeleteByUID(ctx, tx, uid)
+		if err != nil {
+			return fmt.Errorf("failed to force delete user quiz practices in transaction: %v", err)
 		}
 
 		return nil

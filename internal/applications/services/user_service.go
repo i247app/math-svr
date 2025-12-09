@@ -31,13 +31,14 @@ func NewUserService(
 	repo diRepo.IUserRepository,
 	loginRepo diRepo.ILoginRepository,
 	profileRepo diRepo.IProfileRepository,
+	userQuizPracticeRepo diRepo.IUserQuizPracticesRepository,
 	storageService diSvc.IStorageService,
 ) diSvc.IUserService {
 	responseBuilder := utils.NewResponseBuilder(storageService)
 	fileManager := utils.NewFileManager(storageService)
 	userCreator := helper.NewUserCreator(repo, loginRepo, profileRepo)
 	userUpdater := helper.NewUserUpdater(repo, profileRepo)
-	userDeleter := helper.NewUserDeleter(repo, loginRepo, profileRepo)
+	userDeleter := helper.NewUserDeleter(repo, loginRepo, profileRepo, userQuizPracticeRepo)
 
 	return &UserService{
 		validator:       validator,

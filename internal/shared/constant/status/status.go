@@ -57,6 +57,7 @@ const (
 	OTP_BLOCK_DEVICE_EMAIL Code = 1413
 
 	// Grade status
+	GRADE_MISSING_ID            Code = 1500
 	GRADE_INVALID_PARAMS        Code = 1501
 	GRADE_MISSING_LABEL         Code = 1502
 	GRADE_MISSING_DESCRIPTION   Code = 1503
@@ -97,6 +98,7 @@ const (
 	USER_MISSING_QUIZ_ANSWERS            Code = 1809
 
 	// Semester status
+	SEMESTER_MISSING_ID          Code = 1900
 	SEMESTER_INVALID_PARAMS      Code = 1901
 	SEMESTER_MISSING_NAME        Code = 1902
 	SEMESTER_MISSING_DESCRIPTION Code = 1903

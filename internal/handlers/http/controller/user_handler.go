@@ -91,6 +91,8 @@ func (u *UserController) HandlerCreateUser(w http.ResponseWriter, r *http.Reques
 		req.Phone = r.FormValue("phone")
 		req.Email = r.FormValue("email")
 		req.Password = r.FormValue("password")
+		req.GradeID = r.FormValue("grade_id")
+		req.SemesterID = r.FormValue("semester_id")
 
 		// Parse role
 		if roleStr := r.FormValue("role"); roleStr != "" {
