@@ -145,7 +145,7 @@ func BuildChatDomainForGenerateQuizPractice(ctx context.Context, req *GenerateQu
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptMathQuizNew, grade, semester, language)
+	prompt := fmt.Sprintf(domain.PromptForGenerateQuizPractice, grade, semester, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -197,7 +197,7 @@ func BuildChatDomainForSubmitQuizPracticeAnswer(ctx context.Context, req *Submit
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.SubmitQuizAnswerPrompt, questionsInformation, userAnswers, language)
+	prompt := fmt.Sprintf(domain.PromptForSubmitQuizPracticeAnswer, questionsInformation, userAnswers, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -251,7 +251,7 @@ func BuildChatDomainForReinForceQuizPractice(ctx context.Context, req *GenerateQ
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptMathQuizPractice, questionsInformation, userAnswers, reviewedPerformance, language)
+	prompt := fmt.Sprintf(domain.PromptForGenerateReinforceQuizPractice, questionsInformation, userAnswers, reviewedPerformance, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -303,7 +303,7 @@ func BuildChatDomainGenerateQuizAssessment(ctx context.Context, req *GenerateQui
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptMathQuizNew, grade, semester, language)
+	prompt := fmt.Sprintf(domain.PromptForGenerateQuizAssessment, grade, semester, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -356,7 +356,7 @@ func BuildChatDomainSubmitQuizAssessment(ctx context.Context, req *SubmitQuizAss
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.SubmitQuizAnswerAssessmentPrompt, questionsInformation, userAnswers, currentGrade, language)
+	prompt := fmt.Sprintf(domain.PromptForSubmitQuizAssessmentAnswer, questionsInformation, userAnswers, currentGrade, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -410,7 +410,7 @@ func BuildChatDomainReinforceQuizAssessment(ctx context.Context, req *ReinforceQ
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptMathQuizPractice, questionsInformation, userAnswers, reviewedPerformance, language)
+	prompt := fmt.Sprintf(domain.PromptForGenerateReinforceQuizAssessment, questionsInformation, userAnswers, reviewedPerformance, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -464,7 +464,7 @@ func BuildChatDomainSubmitReinforceQuizAssessment(ctx context.Context, req *Rein
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptMathQuizPractice, questionsInformation, userAnswers, reviewedPerformance, language)
+	prompt := fmt.Sprintf(domain.PromptForSubmitReinforceQuizAssessmentAnswer, questionsInformation, userAnswers, reviewedPerformance, language)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
