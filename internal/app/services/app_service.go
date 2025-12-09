@@ -130,7 +130,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 
 	log.Println("> userQuizPracticeSvc...")
 	var userQuizPracticesValidator = validators.NewUserQuizPracticesValidator()
-	var userQuizPracticesSvc = services.NewUserLatestQuizService(userQuizPracticesValidator, userLatestQuizRepo, profileSvc, chatBoxSvc)
+	var userQuizPracticesSvc = services.NewUserQuizPracticeService(userQuizPracticesValidator, userLatestQuizRepo, profileSvc, chatBoxSvc)
 
 	log.Println("> userQuizAssessmentSvc...")
 	var userQuizAssessmentSvc = services.NewUserQuizAssessmentService(userQuizAssessmentRepo, profileSvc, chatBoxSvc)

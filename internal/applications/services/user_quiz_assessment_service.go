@@ -43,7 +43,7 @@ func (s *userQuizAssessmentService) GenerateQuizAssessment(ctx context.Context, 
 	}
 
 	// Build generate quiz from request
-	conv := dto.BuildGenerateQuizFromRequest(ctx, &dto.GenerateQuizRequest{
+	conv := dto.BuildChatDomainForGenerateQuizPractice(ctx, &dto.GenerateQuizRequest{
 		UID:                  req.UID,
 		ChatBoxRequestCommon: req.ChatBoxRequestCommon,
 	}, user)
@@ -84,7 +84,7 @@ func (s *userQuizAssessmentService) SubmitQuizAssessment(ctx context.Context, re
 	answersStr := string(jsonAnswers)
 
 	// Build submit quiz answer with assessment
-	conv := dto.BuildSubmitQuizAnswerForAssessment(ctx, req, user.Grade)
+	conv := dto.BuildChatDomainSubmitQuizAssessment(ctx, req, user.Grade)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -136,7 +136,7 @@ func (s *userQuizAssessmentService) ReinforceQuizAssessment(ctx context.Context,
 	assessmentResp := dto.UserQuizAssessmentResponseFromDomain(assessment)
 
 	// Build generate practice quiz from request
-	conv := dto.BuildReinforceQuizAssessmentFromRequest(ctx, req, &assessmentResp)
+	conv := dto.BuildChatDomainReinforceQuizAssessment(ctx, req, &assessmentResp)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -158,10 +158,10 @@ func (s *userQuizAssessmentService) SubmitReinforceQuizAssessment(ctx context.Co
 	logger := logger.GetLogger(ctx)
 
 	// Get the original assessment
-	assessment, err := s.repo.FindByID(ctx, req.UserQuizAssessmentID)
+	statusCode, assessment, err := s.GetUserQuizPraticeByID(ctx, req.UserQuizAssessmentID)
 	if err != nil {
 		logger.Errorf("Failed to fetch quiz assessment: %v", err)
-		return status.FAIL, nil, fmt.Errorf("failed to fetch quiz assessment: %v", err)
+		return statusCode, nil, fmt.Errorf("failed to fetch quiz assessment: %v", err)
 	}
 
 	if assessment == nil {
@@ -170,7 +170,7 @@ func (s *userQuizAssessmentService) SubmitReinforceQuizAssessment(ctx context.Co
 	}
 
 	// Get user profile
-	statusCode, user, err := s.profileSvc.FetchProfile(ctx, &dto.FetchProfileRequest{
+	statusCode, _, err = s.profileSvc.FetchProfile(ctx, &dto.FetchProfileRequest{
 		UID: req.UID,
 	})
 	if err != nil {
@@ -186,11 +186,10 @@ func (s *userQuizAssessmentService) SubmitReinforceQuizAssessment(ctx context.Co
 	answersStr := string(jsonAnswers)
 
 	// Build submit quiz answer with assessment
-	conv := dto.BuildSubmitQuizAnswerForAssessment(ctx, &dto.SubmitQuizAssessmentRequest{
+	conv := dto.BuildChatDomainSubmitReinforceQuizAssessment(ctx, &dto.ReinforceQuizAssessmentRequest{
 		UID:                  req.UID,
-		Answers:              req.Answers,
 		ChatBoxRequestCommon: req.ChatBoxRequestCommon,
-	}, user.Grade)
+	}, assessment)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -246,4 +245,21 @@ func (s *userQuizAssessmentService) GetUserQuizAssessmentsHistory(ctx context.Co
 		Items:      items,
 		Pagination: paginationObj,
 	}, nil
+}
+
+func (s *userQuizAssessmentService) GetUserQuizPraticeByID(ctx context.Context, id string) (status.Code, *dto.UserQuizAssessmentResponse, error) {
+	logger := logger.GetLogger(ctx)
+	assessment, err := s.repo.FindByID(ctx, id)
+	if err != nil {
+		logger.Errorf("Failed to fetch quiz assessment by ID: %v", err)
+		return status.FAIL, nil, fmt.Errorf("failed to fetch quiz assessment by ID: %v", err)
+	}
+
+	if assessment == nil {
+		logger.Errorf("Quiz assessment not found: %s", id)
+		return status.NOT_FOUND, nil, fmt.Errorf("quiz assessment not found")
+	}
+
+	assessmentResp := dto.UserQuizAssessmentResponseFromDomain(assessment)
+	return status.SUCCESS, &assessmentResp, nil
 }

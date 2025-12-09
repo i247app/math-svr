@@ -102,7 +102,7 @@ type ChatBoxStreamChunk struct {
 	Error        error  `json:"error,omitempty"`
 }
 
-func BuildGenerateQuizFromRequest(ctx context.Context, req *GenerateQuizRequest, userProfile *ProfileResponse) *domain.Conversation {
+func BuildChatDomainForGenerateQuizPractice(ctx context.Context, req *GenerateQuizRequest, userProfile *ProfileResponse) *domain.Conversation {
 	var (
 		language string
 		grade    string
@@ -154,7 +154,7 @@ func BuildGenerateQuizFromRequest(ctx context.Context, req *GenerateQuizRequest,
 	return conv
 }
 
-func BuildSubmitQuizAnswerFromRequest(ctx context.Context, req *SubmitQuizRequest, userQuizPractice *UserQuizPracticesResponse) *domain.Conversation {
+func BuildChatDomainForSubmitQuizPracticeAnswer(ctx context.Context, req *SubmitQuizRequest, userQuizPractice *UserQuizPracticesResponse) *domain.Conversation {
 	var (
 		language             string
 		questionsInformation string
@@ -206,7 +206,7 @@ func BuildSubmitQuizAnswerFromRequest(ctx context.Context, req *SubmitQuizReques
 	return conv
 }
 
-func BuildGeneratePracticeQuizFromRequest(ctx context.Context, req *GenerateQuizPracticeRequest, userQuizPractice *UserQuizPracticesResponse) *domain.Conversation {
+func BuildChatDomainForReinForceQuizPractice(ctx context.Context, req *GenerateQuizPracticeRequest, userQuizPractice *UserQuizPracticesResponse) *domain.Conversation {
 	var (
 		language             string
 		questionsInformation string
@@ -260,16 +260,59 @@ func BuildGeneratePracticeQuizFromRequest(ctx context.Context, req *GenerateQuiz
 	return conv
 }
 
-func MessageDomainToDTO(msg *domain.Message) *MessageDTO {
-	return &MessageDTO{
-		Role:      msg.Role(),
-		Content:   msg.Content(),
-		Timestamp: msg.Timestamp(),
+func BuildChatDomainGenerateQuizAssessment(ctx context.Context, req *GenerateQuizRequest, userProfile *ProfileResponse) *domain.Conversation {
+	var (
+		language string
+		grade    string
+		semester string
+	)
+
+	switch appctx.GetLocale(ctx) {
+	case "en":
+		language = "English"
+	case "vn":
+		language = "Vietnamese"
+	default:
+		language = "English"
 	}
+
+	if userProfile != nil {
+		grade = userProfile.Grade
+		semester = userProfile.Semester
+	}
+
+	conv := domain.NewConversation()
+
+	// Set model if provided
+	if req.Model != nil {
+		conv.SetModel(*req.Model)
+	}
+
+	// Set temperature if provided
+	if req.Temperature != nil {
+		conv.SetTemperature(*req.Temperature)
+	}
+
+	// Set max tokens if provided
+	if req.MaxTokens != nil {
+		conv.SetMaxTokens(*req.MaxTokens)
+	}
+
+	// Set system prompt if provided
+	if req.SystemPrompt != nil {
+		conv.SetSystemPrompt(req.SystemPrompt)
+	}
+
+	prompt := fmt.Sprintf(domain.PromptMathQuizNew, grade, semester, language)
+
+	// Add the current user message
+	userMsg := domain.NewMessage("user", prompt)
+	conv.AddMessage(userMsg)
+
+	return conv
 }
 
-// BuildSubmitQuizAnswerForAssessment builds a conversation for submitting quiz answers with grade assessment
-func BuildSubmitQuizAnswerForAssessment(ctx context.Context, req *SubmitQuizAssessmentRequest, currentGrade string) *domain.Conversation {
+func BuildChatDomainSubmitQuizAssessment(ctx context.Context, req *SubmitQuizAssessmentRequest, currentGrade string) *domain.Conversation {
 	var (
 		language             string
 		questionsInformation string
@@ -322,8 +365,7 @@ func BuildSubmitQuizAnswerForAssessment(ctx context.Context, req *SubmitQuizAsse
 	return conv
 }
 
-// BuildReinforceQuizAssessmentFromRequest builds a conversation for generating reinforcement quiz
-func BuildReinforceQuizAssessmentFromRequest(ctx context.Context, req *ReinforceQuizAssessmentRequest, assessment *UserQuizAssessmentResponse) *domain.Conversation {
+func BuildChatDomainReinforceQuizAssessment(ctx context.Context, req *ReinforceQuizAssessmentRequest, assessment *UserQuizAssessmentResponse) *domain.Conversation {
 	var (
 		language             string
 		questionsInformation string
@@ -375,4 +417,66 @@ func BuildReinforceQuizAssessmentFromRequest(ctx context.Context, req *Reinforce
 	conv.AddMessage(userMsg)
 
 	return conv
+}
+
+func BuildChatDomainSubmitReinforceQuizAssessment(ctx context.Context, req *ReinforceQuizAssessmentRequest, assessment *UserQuizAssessmentResponse) *domain.Conversation {
+	var (
+		language             string
+		questionsInformation string
+		userAnswers          string
+		reviewedPerformance  string
+	)
+
+	switch appctx.GetLocale(ctx) {
+	case "en":
+		language = "English"
+	case "vn":
+		language = "Vietnamese"
+	default:
+		language = "English"
+	}
+
+	if assessment != nil {
+		questionsInformation = assessment.Questions
+		userAnswers = assessment.Answers
+		reviewedPerformance = assessment.AIReview
+	}
+
+	conv := domain.NewConversation()
+
+	// Set model if provided
+	if req.Model != nil {
+		conv.SetModel(*req.Model)
+	}
+
+	// Set temperature if provided
+	if req.Temperature != nil {
+		conv.SetTemperature(*req.Temperature)
+	}
+
+	// Set max tokens if provided
+	if req.MaxTokens != nil {
+		conv.SetMaxTokens(*req.MaxTokens)
+	}
+
+	// Set system prompt if provided
+	if req.SystemPrompt != nil {
+		conv.SetSystemPrompt(req.SystemPrompt)
+	}
+
+	prompt := fmt.Sprintf(domain.PromptMathQuizPractice, questionsInformation, userAnswers, reviewedPerformance, language)
+
+	// Add the current user message
+	userMsg := domain.NewMessage("user", prompt)
+	conv.AddMessage(userMsg)
+
+	return conv
+}
+
+func MessageDomainToDTO(msg *domain.Message) *MessageDTO {
+	return &MessageDTO{
+		Role:      msg.Role(),
+		Content:   msg.Content(),
+		Timestamp: msg.Timestamp(),
+	}
 }

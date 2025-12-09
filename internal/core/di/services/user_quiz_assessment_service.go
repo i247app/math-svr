@@ -13,4 +13,6 @@ type IUserQuizAssessmentService interface {
 	ReinforceQuizAssessment(ctx context.Context, req *dto.ReinforceQuizAssessmentRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error)
 	SubmitReinforceQuizAssessment(ctx context.Context, req *dto.SubmitReinforceQuizAssessmentRequest) (status.Code, *dto.ChatBoxResponse[dto.QuizAssessmentAnswer], error)
 	GetUserQuizAssessmentsHistory(ctx context.Context, req *dto.GetUserQuizAssessmentsHistoryRequest) (status.Code, *dto.UserQuizAssessmentsHistoryResponse, error)
+
+	GetUserQuizPraticeByID(ctx context.Context, id string) (status.Code, *dto.UserQuizAssessmentResponse, error)
 }

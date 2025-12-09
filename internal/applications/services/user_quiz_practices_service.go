@@ -15,7 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/logger"
 )
 
-type userLatestQuizService struct {
+type userQuizPracticeService struct {
 	validator     validators.IUserLatestQuizValidator
 	repo          diRepo.IUserQuizPracticesRepository
 	profileSvc    diSvc.IProfileService
@@ -23,13 +23,13 @@ type userLatestQuizService struct {
 	jsonSanitizer *helper.JSONSanitizer
 }
 
-func NewUserLatestQuizService(
+func NewUserQuizPracticeService(
 	validator validators.IUserLatestQuizValidator,
 	repo diRepo.IUserQuizPracticesRepository,
 	profileSvc diSvc.IProfileService,
 	chatboxSvc diSvc.IChatBoxService,
 ) diSvc.IUserQuizPracticesService {
-	return &userLatestQuizService{
+	return &userQuizPracticeService{
 		validator:     validator,
 		repo:          repo,
 		profileSvc:    profileSvc,
@@ -38,7 +38,7 @@ func NewUserLatestQuizService(
 	}
 }
 
-func (s *userLatestQuizService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
+func (s *userQuizPracticeService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
 	logger := logger.GetLogger(ctx)
 
 	statusCode, user, err := s.profileSvc.FetchProfile(ctx, &dto.FetchProfileRequest{
@@ -50,7 +50,7 @@ func (s *userLatestQuizService) GenerateQuiz(ctx context.Context, req *dto.Gener
 	}
 
 	// Build generate quiz from request
-	conv := dto.BuildGenerateQuizFromRequest(ctx, req, user)
+	conv := dto.BuildChatDomainForGenerateQuizPractice(ctx, req, user)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -101,7 +101,7 @@ func (s *userLatestQuizService) GenerateQuiz(ctx context.Context, req *dto.Gener
 	return status.SUCCESS, res, nil
 }
 
-func (s *userLatestQuizService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequest) (status.Code, *dto.ChatBoxResponse[dto.QuizAnswer], error) {
+func (s *userQuizPracticeService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequest) (status.Code, *dto.ChatBoxResponse[dto.QuizAnswer], error) {
 	logger := logger.GetLogger(ctx)
 
 	jsonAnswers, err := json.Marshal(req.Answers)
@@ -123,7 +123,7 @@ func (s *userLatestQuizService) SubmitQuiz(ctx context.Context, req *dto.SubmitQ
 	}
 
 	// Build generate quiz from request
-	conv := dto.BuildSubmitQuizAnswerFromRequest(ctx, req, ulq)
+	conv := dto.BuildChatDomainForSubmitQuizPracticeAnswer(ctx, req, ulq)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -151,7 +151,7 @@ func (s *userLatestQuizService) SubmitQuiz(ctx context.Context, req *dto.SubmitQ
 	return status.SUCCESS, res, nil
 }
 
-func (s *userLatestQuizService) GenerateQuizPractice(ctx context.Context, req *dto.GenerateQuizPracticeRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
+func (s *userQuizPracticeService) GenerateQuizPractice(ctx context.Context, req *dto.GenerateQuizPracticeRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
 	logger := logger.GetLogger(ctx)
 
 	statusCode, ulq, err := s.GetUserQuizPraticeByUID(ctx, &dto.GetUserQuizPracticesByUIDRequest{
@@ -163,7 +163,7 @@ func (s *userLatestQuizService) GenerateQuizPractice(ctx context.Context, req *d
 	}
 
 	// Build generate practice quiz from request
-	conv := dto.BuildGeneratePracticeQuizFromRequest(ctx, req, ulq)
+	conv := dto.BuildChatDomainForReinForceQuizPractice(ctx, req, ulq)
 
 	// log prompt for debugging
 	for _, msg := range conv.Messages() {
@@ -197,7 +197,7 @@ func (s *userLatestQuizService) GenerateQuizPractice(ctx context.Context, req *d
 }
 
 // GetQuiz retrieves a specific user latest quiz by ID.
-func (s *userLatestQuizService) GetUserQuizPratice(ctx context.Context, req *dto.GetUserQuizPracticesRequest) (status.Code, *dto.UserQuizPracticesResponse, error) {
+func (s *userQuizPracticeService) GetUserQuizPratice(ctx context.Context, req *dto.GetUserQuizPracticesRequest) (status.Code, *dto.UserQuizPracticesResponse, error) {
 	quiz, err := s.repo.FindByID(ctx, req.ID)
 	if err != nil {
 		return status.USER_LATEST_QUIZ_GET_FAILED, nil, err
@@ -213,7 +213,7 @@ func (s *userLatestQuizService) GetUserQuizPratice(ctx context.Context, req *dto
 }
 
 // GetQuizByUID retrieves the latest quiz for a specific user by UID.
-func (s *userLatestQuizService) GetUserQuizPraticeByUID(ctx context.Context, req *dto.GetUserQuizPracticesByUIDRequest) (status.Code, *dto.UserQuizPracticesResponse, error) {
+func (s *userQuizPracticeService) GetUserQuizPraticeByUID(ctx context.Context, req *dto.GetUserQuizPracticesByUIDRequest) (status.Code, *dto.UserQuizPracticesResponse, error) {
 	quiz, err := s.repo.FindByUID(ctx, req.UID)
 	if err != nil {
 		return status.USER_LATEST_QUIZ_GET_FAILED, nil, err
@@ -229,7 +229,7 @@ func (s *userLatestQuizService) GetUserQuizPraticeByUID(ctx context.Context, req
 }
 
 // CreateQuiz creates a new user latest quiz.
-func (s *userLatestQuizService) CreateUserQuizPratice(ctx context.Context, req *dto.CreateUserQuizPracticesRequest) (status.Code, *dto.UserQuizPracticesResponse, error) {
+func (s *userQuizPracticeService) CreateUserQuizPratice(ctx context.Context, req *dto.CreateUserQuizPracticesRequest) (status.Code, *dto.UserQuizPracticesResponse, error) {
 	// vaidate request
 	if statusCode, err := s.validator.ValidateCreateUserLatestQuizRequest(req); err != nil {
 		return statusCode, nil, err
@@ -252,7 +252,7 @@ func (s *userLatestQuizService) CreateUserQuizPratice(ctx context.Context, req *
 }
 
 // UpdateQuiz updates an existing user latest quiz.
-func (s *userLatestQuizService) UpdateUserQuizPratice(ctx context.Context, req *dto.UpdateUserQuizPracticesRequest) (status.Code, *dto.UserQuizPracticesResponse, error) {
+func (s *userQuizPracticeService) UpdateUserQuizPratice(ctx context.Context, req *dto.UpdateUserQuizPracticesRequest) (status.Code, *dto.UserQuizPracticesResponse, error) {
 	// vaidate request
 	if statusCode, err := s.validator.ValidateUpdateUserLatestQuizRequest(req); err != nil {
 		return statusCode, nil, err
@@ -289,7 +289,7 @@ func (s *userLatestQuizService) UpdateUserQuizPratice(ctx context.Context, req *
 }
 
 // DeleteQuiz performs a soft delete on a user latest quiz.
-func (s *userLatestQuizService) DeleteUserQuizPratice(ctx context.Context, req *dto.DeleteUserQuizPracticesRequest) (status.Code, error) {
+func (s *userQuizPracticeService) DeleteUserQuizPratice(ctx context.Context, req *dto.DeleteUserQuizPracticesRequest) (status.Code, error) {
 	// vaidate request
 	if statusCode, err := s.validator.ValidateDeleteUserLatestQuizRequest(req); err != nil {
 		return statusCode, err
@@ -317,7 +317,7 @@ func (s *userLatestQuizService) DeleteUserQuizPratice(ctx context.Context, req *
 }
 
 // ForceDeleteQuiz permanently removes a user latest quiz.
-func (s *userLatestQuizService) ForceDeleteUserQuizPratice(ctx context.Context, req *dto.DeleteUserQuizPracticesRequest) (status.Code, error) {
+func (s *userQuizPracticeService) ForceDeleteUserQuizPratice(ctx context.Context, req *dto.DeleteUserQuizPracticesRequest) (status.Code, error) {
 	// vaidate request
 	if statusCode, err := s.validator.ValidateDeleteUserLatestQuizRequest(req); err != nil {
 		return statusCode, err

@@ -34,10 +34,10 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("POST /login", lc.HandleLogin)
 
 	// quiz-practices
-	cc := controller.NewUserQuizPracticesController(res, services.UserQuizPracticesService)
-	server.AddRoute("POST /quiz-practices/generate", cc.HandleGenerateQuizPractices)
-	server.AddRoute("POST /quiz-practices/submit", cc.HandleSubmitQuizParctices)
-	server.AddRoute("POST /quiz-practices/reinforce", cc.HandleReinforceQuizPractices)
+	qpc := controller.NewUserQuizPracticesController(res, services.UserQuizPracticesService)
+	server.AddRoute("POST /quiz-practices/generate", qpc.HandleGenerateQuizPractices)
+	server.AddRoute("POST /quiz-practices/submit", qpc.HandleSubmitQuizParctices)
+	server.AddRoute("POST /quiz-practices/reinforce", qpc.HandleReinforceQuizPractices)
 
 	// quiz-assessments
 	qac := controller.NewUserQuizAssessmentsController(res, services.UserQuizAssessmentService)
