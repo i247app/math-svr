@@ -99,14 +99,7 @@ func ValidateFile(filename string, contentType string) error {
 	// Normalize content type
 	contentType = strings.ToLower(strings.TrimSpace(contentType))
 
-	// Check content type if provided
-	if contentType != "" {
-		if _, allowed := AllowedMimeTypes[contentType]; !allowed {
-			return fmt.Errorf("file type '%s' is not allowed", contentType)
-		}
-	}
-
-	// Check file extension
+	// Check file extension first
 	ext := strings.ToLower(filepath.Ext(filename))
 	if ext == "" {
 		return fmt.Errorf("file must have an extension")
@@ -114,6 +107,15 @@ func ValidateFile(filename string, contentType string) error {
 
 	if _, allowed := AllowedExtensions[ext]; !allowed {
 		return fmt.Errorf("file extension '%s' is not allowed", ext)
+	}
+
+	// Check content type if provided and not a generic type
+	// Skip MIME type validation for application/octet-stream (generic binary type)
+	// as it's commonly used by browsers/clients when they can't determine the specific type
+	if contentType != "" && contentType != "application/octet-stream" {
+		if _, allowed := AllowedMimeTypes[contentType]; !allowed {
+			return fmt.Errorf("file type '%s' is not allowed", contentType)
+		}
 	}
 
 	return nil

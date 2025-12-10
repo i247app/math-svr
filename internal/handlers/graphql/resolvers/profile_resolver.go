@@ -73,11 +73,11 @@ func (r *ProfileResolver) UpdateProfile(params graphql.ResolveParams) (interface
 		UID: uid,
 	}
 
-	if grade, ok := input["grade"].(string); ok {
-		req.Grade = &grade
+	if gradeID, ok := input["grade_id"].(string); ok {
+		req.GradeID = &gradeID
 	}
-	if level, ok := input["level"].(string); ok {
-		req.Level = &level
+	if semesterID, ok := input["semester_id"].(string); ok {
+		req.SemesterID = &semesterID
 	}
 
 	statusCode, profile, err := r.profileService.UpdateProfile(params.Context, req)

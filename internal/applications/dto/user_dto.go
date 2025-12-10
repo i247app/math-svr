@@ -64,15 +64,15 @@ type CreateUserResponse struct {
 }
 
 type UpdateUserRequest struct {
-	UID    string        `json:"uid"`
-	Name   *string       `json:"name,omitempty"`
-	Phone  *string       `json:"phone,omitempty"`
-	Email  *string       `json:"email,omitempty"`
-	Dob    *string       `json:"dob,omitempty"`
-	Role   *enum.ERole   `json:"role,omitempty"`
-	Status *enum.EStatus `json:"status,omitempty"`
-	Grade  *string       `json:"grade,omitempty"`
-	Level  *string       `json:"level,omitempty"`
+	UID        string        `json:"uid"`
+	Name       *string       `json:"name,omitempty"`
+	Phone      *string       `json:"phone,omitempty"`
+	Email      *string       `json:"email,omitempty"`
+	Dob        *string       `json:"dob,omitempty"`
+	Role       *enum.ERole   `json:"role,omitempty"`
+	Status     *enum.EStatus `json:"status,omitempty"`
+	GradeID    *string       `json:"grade_id,omitempty"`
+	SemesterID *string       `json:"semester_id,omitempty"`
 
 	// Avatar upload fields (for multipart form)
 	AvatarFile        io.Reader `json:"-"`                       // File reader

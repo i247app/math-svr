@@ -175,11 +175,11 @@ func (u *UserController) HandlerUpdateUser(w http.ResponseWriter, r *http.Reques
 			stat := enum.EStatus(statusStr)
 			req.Status = &stat
 		}
-		if grade := r.FormValue("grade"); grade != "" {
-			req.Grade = &grade
+		if gradeID := r.FormValue("grade_id"); gradeID != "" {
+			req.GradeID = &gradeID
 		}
-		if level := r.FormValue("level"); level != "" {
-			req.Level = &level
+		if semesterID := r.FormValue("semester_id"); semesterID != "" {
+			req.SemesterID = &semesterID
 		}
 
 		// Parse delete_avatar flag

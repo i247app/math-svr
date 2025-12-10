@@ -114,9 +114,14 @@ func (r *profileRepository) Update(ctx context.Context, profile *domain.Profile)
 	queryBuilder.WriteString("UPDATE profiles SET ")
 	updates := []string{}
 
-	if profile.Grade() != "" {
-		updates = append(updates, "grade = ?")
-		args = append(args, profile.Grade())
+	if profile.GradeID() != "" {
+		updates = append(updates, "grade_id = ?")
+		args = append(args, profile.GradeID())
+	}
+
+	if profile.SemesterID() != "" {
+		updates = append(updates, "semester_id = ?")
+		args = append(args, profile.SemesterID())
 	}
 
 	if profile.Status() != "" {

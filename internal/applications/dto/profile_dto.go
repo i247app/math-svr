@@ -41,10 +41,10 @@ type CreateProfileResponse struct {
 }
 
 type UpdateProfileRequest struct {
-	UID    string        `json:"uid"`
-	Grade  *string       `json:"grade,omitempty"`
-	Level  *string       `json:"level,omitempty"`
-	Status *enum.EStatus `json:"status,omitempty"`
+	UID        string        `json:"uid"`
+	GradeID    *string       `json:"grade_id,omitempty"`
+	SemesterID *string       `json:"semester_id,omitempty"`
+	Status     *enum.EStatus `json:"status,omitempty"`
 }
 
 type UpdateProfileResponse struct {
@@ -67,8 +67,12 @@ func BuildProfileDomainForUpdate(req *UpdateProfileRequest) *domain.Profile {
 
 	profileDomain.SetUID(req.UID)
 
-	if req.Grade != nil {
-		profileDomain.SetGrade(*req.Grade)
+	if req.GradeID != nil {
+		profileDomain.SetGradeID(*req.GradeID)
+	}
+
+	if req.SemesterID != nil {
+		profileDomain.SetSemesterID(*req.SemesterID)
 	}
 
 	if req.Status != nil {

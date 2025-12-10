@@ -165,6 +165,8 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 		return statusCode, nil, err
 	}
 
+	println("grade_id", req.GradeID)
+
 	// Get existing user
 	existingUser, err := s.repo.FindByID(ctx, req.UID)
 	if err != nil {
@@ -198,10 +200,11 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 
 	// Build profile domain if profile update is included
 	var profileDomain *domain.Profile
-	if req.Grade != nil {
+	if req.GradeID != nil {
 		profileDomain = dto.BuildProfileDomainForUpdate(&dto.UpdateProfileRequest{
-			UID:   req.UID,
-			Grade: req.Grade,
+			UID:        req.UID,
+			GradeID:    req.GradeID,
+			SemesterID: req.SemesterID,
 		})
 	}
 
