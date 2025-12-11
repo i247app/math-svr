@@ -8,7 +8,6 @@ import (
 
 	domain "math-ai.com/math-ai/internal/core/domain/chatbox"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
-	appctx "math-ai.com/math-ai/internal/shared/utils/context"
 )
 
 // MessageDTO represents a message in the conversation
@@ -106,19 +105,9 @@ type ChatBoxStreamChunk struct {
 
 func BuildChatDomainForGenerateQuizPractice(ctx context.Context, req *GenerateQuizRequest, userProfile *ProfileResponse) *domain.Conversation {
 	var (
-		language string
 		grade    string
 		semester string
 	)
-
-	switch appctx.GetLocale(ctx) {
-	case "en":
-		language = "English"
-	case "vn":
-		language = "Vietnamese"
-	default:
-		language = "English"
-	}
 
 	if userProfile != nil {
 		grade = userProfile.Grade
@@ -147,7 +136,7 @@ func BuildChatDomainForGenerateQuizPractice(ctx context.Context, req *GenerateQu
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptForGenerateQuizPractice, grade, semester, language)
+	prompt := fmt.Sprintf(domain.PromptForGenerateQuizPractice, grade, semester)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -158,19 +147,9 @@ func BuildChatDomainForGenerateQuizPractice(ctx context.Context, req *GenerateQu
 
 func BuildChatDomainForSubmitQuizPracticeAnswer(ctx context.Context, req *SubmitQuizRequest, userQuizPractice *UserQuizPracticesResponse) *domain.Conversation {
 	var (
-		language             string
 		questionsInformation string
 		userAnswers          string
 	)
-
-	switch appctx.GetLocale(ctx) {
-	case "en":
-		language = "English"
-	case "vn":
-		language = "Vietnamese"
-	default:
-		language = "English"
-	}
 
 	if req != nil {
 		questionsInformation = userQuizPractice.Questions
@@ -199,7 +178,7 @@ func BuildChatDomainForSubmitQuizPracticeAnswer(ctx context.Context, req *Submit
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptForSubmitQuizPracticeAnswer, questionsInformation, userAnswers, language)
+	prompt := fmt.Sprintf(domain.PromptForSubmitQuizPracticeAnswer, questionsInformation, userAnswers)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -210,20 +189,10 @@ func BuildChatDomainForSubmitQuizPracticeAnswer(ctx context.Context, req *Submit
 
 func BuildChatDomainForReinForceQuizPractice(ctx context.Context, req *GenerateQuizPracticeRequest, userQuizPractice *UserQuizPracticesResponse) *domain.Conversation {
 	var (
-		language             string
 		questionsInformation string
 		userAnswers          string
 		reviewedPerformance  string
 	)
-
-	switch appctx.GetLocale(ctx) {
-	case "en":
-		language = "English"
-	case "vn":
-		language = "Vietnamese"
-	default:
-		language = "English"
-	}
 
 	if req != nil {
 		questionsInformation = userQuizPractice.Questions
@@ -253,7 +222,7 @@ func BuildChatDomainForReinForceQuizPractice(ctx context.Context, req *GenerateQ
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptForGenerateReinforceQuizPractice, questionsInformation, userAnswers, reviewedPerformance, language)
+	prompt := fmt.Sprintf(domain.PromptForGenerateReinforceQuizPractice, questionsInformation, userAnswers, reviewedPerformance)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -263,26 +232,6 @@ func BuildChatDomainForReinForceQuizPractice(ctx context.Context, req *GenerateQ
 }
 
 func BuildChatDomainGenerateQuizAssessment(ctx context.Context, req *GenerateQuizRequest, userProfile *ProfileResponse) *domain.Conversation {
-	var (
-		language string
-		// grade    string
-		// semester string
-	)
-
-	switch appctx.GetLocale(ctx) {
-	case "en":
-		language = "English"
-	case "vn":
-		language = "Vietnamese"
-	default:
-		language = "English"
-	}
-
-	// if userProfile != nil {
-	// 	grade = userProfile.Grade
-	// 	semester = userProfile.Semester
-	// }
-
 	conv := domain.NewConversation()
 
 	// Set model if provided
@@ -311,7 +260,7 @@ func BuildChatDomainGenerateQuizAssessment(ctx context.Context, req *GenerateQui
 		grades = []string{req.Grade}
 	}
 
-	prompt := fmt.Sprintf(domain.PromptForGenerateQuizAssessment, grades, language)
+	prompt := fmt.Sprintf(domain.PromptForGenerateQuizAssessment, grades)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -322,19 +271,9 @@ func BuildChatDomainGenerateQuizAssessment(ctx context.Context, req *GenerateQui
 
 func BuildChatDomainSubmitQuizAssessment(ctx context.Context, req *SubmitQuizAssessmentRequest, userQuizAssessment *UserQuizAssessmentResponse) *domain.Conversation {
 	var (
-		language             string
 		questionsInformation string
 		userAnswers          string
 	)
-
-	switch appctx.GetLocale(ctx) {
-	case "en":
-		language = "English"
-	case "vn":
-		language = "Vietnamese"
-	default:
-		language = "English"
-	}
 
 	if req != nil && userQuizAssessment != nil {
 		questionsInformation = userQuizAssessment.Questions
@@ -364,7 +303,7 @@ func BuildChatDomainSubmitQuizAssessment(ctx context.Context, req *SubmitQuizAss
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptForSubmitQuizAssessmentAnswer, questionsInformation, userAnswers, language)
+	prompt := fmt.Sprintf(domain.PromptForSubmitQuizAssessmentAnswer, questionsInformation, userAnswers)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -375,20 +314,10 @@ func BuildChatDomainSubmitQuizAssessment(ctx context.Context, req *SubmitQuizAss
 
 func BuildChatDomainReinforceQuizAssessment(ctx context.Context, req *ReinforceQuizAssessmentRequest, assessment *UserQuizAssessmentResponse) *domain.Conversation {
 	var (
-		language             string
 		questionsInformation string
 		userAnswers          string
 		reviewedPerformance  string
 	)
-
-	switch appctx.GetLocale(ctx) {
-	case "en":
-		language = "English"
-	case "vn":
-		language = "Vietnamese"
-	default:
-		language = "English"
-	}
 
 	if assessment != nil {
 		questionsInformation = assessment.Questions
@@ -418,7 +347,7 @@ func BuildChatDomainReinforceQuizAssessment(ctx context.Context, req *ReinforceQ
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptForGenerateReinforceQuizAssessment, questionsInformation, userAnswers, reviewedPerformance, language)
+	prompt := fmt.Sprintf(domain.PromptForGenerateReinforceQuizAssessment, questionsInformation, userAnswers, reviewedPerformance)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)
@@ -429,20 +358,10 @@ func BuildChatDomainReinforceQuizAssessment(ctx context.Context, req *ReinforceQ
 
 func BuildChatDomainSubmitReinforceQuizAssessment(ctx context.Context, req *ReinforceQuizAssessmentRequest, assessment *UserQuizAssessmentResponse) *domain.Conversation {
 	var (
-		language             string
 		questionsInformation string
 		userAnswers          string
 		reviewedPerformance  string
 	)
-
-	switch appctx.GetLocale(ctx) {
-	case "en":
-		language = "English"
-	case "vn":
-		language = "Vietnamese"
-	default:
-		language = "English"
-	}
 
 	if assessment != nil {
 		questionsInformation = assessment.Questions
@@ -472,7 +391,7 @@ func BuildChatDomainSubmitReinforceQuizAssessment(ctx context.Context, req *Rein
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptForSubmitReinforceQuizAssessmentAnswer, questionsInformation, userAnswers, reviewedPerformance, language)
+	prompt := fmt.Sprintf(domain.PromptForSubmitReinforceQuizAssessmentAnswer, questionsInformation, userAnswers, reviewedPerformance)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)

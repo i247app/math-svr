@@ -1,66 +1,24 @@
 package domain
 
 var PromptForGenerateQuizAssessment = `
-Generate 5 multiple-choice math questions
+Generate 5 multiple-choice math questions for Vietnam %s where the grade has 4 semester level of difficulty.
 
-CRITICAL: Your response MUST be ONLY valid JSON. Do not include any text, explanations, markdown formatting, or code blocks before or after the JSON.
-
-Return a JSON array with exactly this structure:
+CRITICAL: Return ONLY a valid JSON array. Show problem only. NO extra text, explanations, or markdown formatting.
+Use this sample multiple choice problem structure:
 [
-  {
-    "question_number": 1,
-    "question_name": "1 + 1 = ?",
-    "answers": [
-      {"label": "A", "content": "1"},
-      {"label": "B", "content": "2"},
-      {"label": "C", "content": "3"},
-      {"label": "D", "content": "4"}
-    ],
-    "right_answer": "B"
-  }
+  {
+    "question_number": 1,
+    "question_name": "5 + 3 = ?",
+    "answers": [
+      {"label": "A", "content": "8"},
+      {"label": "B", "content": "9"},
+      {"label": "C", "content": "10"},
+      {"label": "D", "content": "7"}
+    ],
+    "right_answer": "A"
+  }
 ]
-
-CRITICAL FORMATTING RULES - DO NOT USE LATEX:
-- DO NOT use LaTeX format like \frac{1}{2}, \times, \div, \sqrt, etc.
-- DO NOT use curly braces {} for mathematical expressions
-- DO NOT use backslashes \ in any form
-
-USE SIMPLE TEXT FORMAT INSTEAD:
-- Fractions: Use "/" (e.g., "1/2" not "\frac{1}{2}" or "frac{1}{2}")
-- Multiplication: Use "x" or "*" (e.g., "2 x 3" not "2 \times 3" or "2 \\times 3")
-- Division: Use "/" or "÷" (e.g., "6 / 2" not "6 \div 2")
-- Square root: Use "√" or write "square root of" (e.g., "√16" not "\sqrt{16}")
-- Exponents: Use "^" (e.g., "2^3" not "2^{3}")
-- Parentheses: Use only ( ) not { } or [ ]
-
-EXAMPLES OF CORRECT FORMAT:
-✓ "1/2 + 1/4 = ?"
-✓ "2 x 3 = ?"
-✓ "10 / 2 = ?"
-✓ "√16 = ?"
-✓ "2^3 = ?"
-✓ "(3 + 2) x 4 = ?"
-
-EXAMPLES OF WRONG FORMAT (DO NOT USE):
-✗ "\frac{1}{2} + \frac{1}{4} = ?"
-✗ "frac{1}{2} + frac{1}{4} = ?"
-✗ "2 \times 3 = ?"
-✗ "10 \div 2 = ?"
-✗ "\sqrt{16} = ?"
-✗ "2^{3} = ?"
-
-Requirements:
-- Grade Levels: %s
-- Focus on fundamental math concepts appropriate for the specified grade levels
-- Return ONLY the JSON array (no line break (\n), no need for spaces but can space for question of name or content of answer), nothing else
-- Each question must have exactly 4 answers with labels A, B, C, D
-- "question_name" should be included only number and mathematical operators without additional text
-- "right_answer" must be one of: A, B, C, or D
-- Use simple text format for ALL mathematical expressions (no LaTeX)
-- Ensure all JSON is properly formatted with correct quotes and commas
-- Questions should be appropriate for level and focus on concepts I give you above
-- Distribution of questions from easy to difficult levels
-- Use %s for all questions and answers
+STRICT FORMATTING RULES: NO LATEX. Use simple text only (e.g., "1/2", "x", "^"). "question_name" must be numbers and operators ONLY. Exactly 5 questions with 4 answers (A, B, C, D) each
 `
 
 var PromptForSubmitQuizAssessmentAnswer = `
@@ -89,8 +47,8 @@ Return ONLY the JSON object with this structure:
 Requirements:
 - Return ONLY the JSON object (no line break (\n), no need for spaces), nothing else
 - Ensure all JSON is properly formatted with correct quotes and commas
-- Use %s for the ai_review (note: should be less than 200 characters)
-- ai_detect_grade should be in the format "Grade X" where X is a number (1-12) or "Kindergarten"
+- "ai_review" should be less than 200 characters
+- ai_detect_grade should be in the format "Grade X" where X is a number (1-5) or "Kindergarten"
 - Consider the question difficulty, user's performance, and current grade when predicting the appropriate grade level
 `
 
@@ -101,61 +59,22 @@ Generate a new math quiz with 5 multiple-choice questions based on the user's pr
 + User's Previous Answers: %s
 + AI Review of User's Performance: %s
 
-CRITICAL: Your response MUST be ONLY valid JSON. Do not include any text, explanations, markdown formatting, or code blocks before or after the JSON.
-
-Return a JSON array with exactly this structure:
+CRITICAL: Return ONLY a valid JSON array. Show problem only. NO extra text, explanations, or markdown formatting.
+Use this sample multiple choice problem structure:
 [
-  {
-    "question_number": 1,
-    "question_name": "1 + 1 = ?",
-    "answers": [
-      {"label": "A", "content": "1"},
-      {"label": "B", "content": "2"},
-      {"label": "C", "content": "3"},
-      {"label": "D", "content": "4"}
-    ],
-    "right_answer": "B"
-  }
+  {
+    "question_number": 1,
+    "question_name": "5 + 3 = ?",
+    "answers": [
+      {"label": "A", "content": "8"},
+      {"label": "B", "content": "9"},
+      {"label": "C", "content": "10"},
+      {"label": "D", "content": "7"}
+    ],
+    "right_answer": "A"
+  }
 ]
-
-CRITICAL FORMATTING RULES - DO NOT USE LATEX:
-- DO NOT use LaTeX format like \frac{1}{2}, \times, \div, \sqrt, etc.
-- DO NOT use curly braces {} for mathematical expressions
-- DO NOT use backslashes \ in any form
-
-USE SIMPLE TEXT FORMAT INSTEAD:
-- Fractions: Use "/" (e.g., "1/2" not "\frac{1}{2}" or "frac{1}{2}")
-- Multiplication: Use "x" or "*" (e.g., "2 x 3" not "2 \times 3" or "2 \\times 3")
-- Division: Use "/" or "÷" (e.g., "6 / 2" not "6 \div 2")
-- Square root: Use "√" or write "square root of" (e.g., "√16" not "\sqrt{16}")
-- Exponents: Use "^" (e.g., "2^3" not "2^{3}")
-- Parentheses: Use only ( ) not { } or [ ]
-
-EXAMPLES OF CORRECT FORMAT:
-✓ "1/2 + 1/4 = ?"
-✓ "2 x 3 = ?"
-✓ "10 / 2 = ?"
-✓ "√16 = ?"
-✓ "2^3 = ?"
-✓ "(3 + 2) x 4 = ?"
-
-EXAMPLES OF WRONG FORMAT (DO NOT USE):
-✗ "\frac{1}{2} + \frac{1}{4} = ?"
-✗ "frac{1}{2} + frac{1}{4} = ?"
-✗ "2 \times 3 = ?"
-✗ "10 \div 2 = ?"
-✗ "\sqrt{16} = ?"
-✗ "2^{3} = ?"
-
-Requirements:
-- Return ONLY the JSON array (no line break (\n), no need for spaces but can space for question of name or content of answer), nothing else
-- Each question must have exactly 4 answers with labels A, B, C, D
-- "question_name" should be included only number and mathematical operators without additional text
-- "right_answer" must be one of: A, B, C, or D
-- Use simple text format for ALL mathematical expressions (no LaTeX)
-- Ensure all JSON is properly formatted with correct quotes and commas
-- Questions should focus on areas for improvement mentioned in the review
-- Use %s for all questions and answers
+STRICT FORMATTING RULES: NO LATEX. Use simple text only (e.g., "1/2", "x", "^"). "question_name" must be numbers and operators ONLY. Exactly 5 questions with 4 answers (A, B, C, D) each
 `
 
 var PromptForSubmitReinforceQuizAssessmentAnswer = `
@@ -185,7 +104,7 @@ Return ONLY the JSON object with this structure:
 Requirements:
 - Return ONLY the JSON object (no line break (\n), no need for spaces), nothing else
 - Ensure all JSON is properly formatted with correct quotes and commas
-- Use %s for the ai_review (note: should be less than 200 characters)
-- ai_detect_grade should be in the format "Grade X" where X is a number (1-12) or "Kindergarten"
+- "ai_review" should be less than 200 characters
+- ai_detect_grade should be in the format "Grade X" where X is a number (1-5) or "Kindergarten"
 - Consider the question difficulty, user's performance, and current grade when predicting the appropriate grade level
 `
