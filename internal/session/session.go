@@ -118,3 +118,8 @@ func (s *AppSession) IsMarkedForDeletion() bool {
 func (s *AppSession) IsValid() bool {
 	return !s.IsExpired() && !s.IsMarkedForDeletion()
 }
+
+func (s *AppSession) ForceDelete() {
+	s.Put("expires_at", time.Now().Add(-time.Minute*10))
+	s.Put("marked_for_deletion", true)
+}

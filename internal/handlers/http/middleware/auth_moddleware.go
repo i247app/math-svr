@@ -7,12 +7,16 @@ import (
 
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/constant/status"
+	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
 func AuthRequiredMiddleware(sessionManager *session.SessionManager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger := logger.GetLogger(r.Context())
+			logger.Infof("AuthRequiredMiddleware: Access granted to admin user")
+
 			// Check if session exists
 			session := session.GetRequestSession(r)
 			if session == nil {
