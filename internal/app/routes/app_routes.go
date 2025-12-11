@@ -6,9 +6,13 @@ import (
 	"math-ai.com/math-ai/internal/app/services"
 	gqlhandler "math-ai.com/math-ai/internal/handlers/graphql"
 	"math-ai.com/math-ai/internal/handlers/http/controller"
+	"math-ai.com/math-ai/internal/handlers/http/middleware"
 )
 
 func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *services.ServiceContainer) {
+	// middleware setup
+	authMiddleware := middleware.AuthRequiredMiddleware(res.SessionManager)
+
 	// GraphQL endpoint
 	graphqlHandler, err := gqlhandler.NewGraphQLHandler(services)
 	if err != nil {
@@ -22,12 +26,12 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 
 	// user
 	uc := controller.NewUserController(res, services.UserService)
-	server.AddRoute("GET /users/list", uc.HandlerGetListUsers)
-	server.AddRoute("GET /users/{id}", uc.HandlerGetUser)
+	server.AddRoute("GET /users/list", uc.HandlerGetListUsers, authMiddleware)
+	server.AddRoute("GET /users/{id}", uc.HandlerGetUser, authMiddleware)
 	server.AddRoute("POST /users/create", uc.HandlerCreateUser)
-	server.AddRoute("POST /users/update", uc.HandlerUpdateUser)
-	server.AddRoute("POST /users/delete", uc.HandlerDeleteUser)
-	server.AddRoute("POST /users/force-delete", uc.HandlerForceDeleteUser)
+	server.AddRoute("POST /users/update", uc.HandlerUpdateUser, authMiddleware)
+	server.AddRoute("POST /users/delete", uc.HandlerDeleteUser, authMiddleware)
+	server.AddRoute("POST /users/force-delete", uc.HandlerForceDeleteUser, authMiddleware)
 
 	// login
 	lc := controller.NewLoginController(res, services.LoginService)
@@ -35,43 +39,43 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 
 	// quiz-practices
 	qpc := controller.NewUserQuizPracticesController(res, services.UserQuizPracticesService)
-	server.AddRoute("POST /quiz-practices/generate", qpc.HandleGenerateQuizPractices)
-	server.AddRoute("POST /quiz-practices/submit", qpc.HandleSubmitQuizParctices)
-	server.AddRoute("POST /quiz-practices/reinforce", qpc.HandleReinforceQuizPractices)
+	server.AddRoute("POST /quiz-practices/generate", qpc.HandleGenerateQuizPractices, authMiddleware)
+	server.AddRoute("POST /quiz-practices/submit", qpc.HandleSubmitQuizParctices, authMiddleware)
+	server.AddRoute("POST /quiz-practices/reinforce", qpc.HandleReinforceQuizPractices, authMiddleware)
 
 	// quiz-assessments
 	qac := controller.NewUserQuizAssessmentsController(res, services.UserQuizAssessmentService)
-	server.AddRoute("POST /quiz-assessments/generate", qac.HandleGenerateQuizAssessments)
-	server.AddRoute("POST /quiz-assessments/submit", qac.HandleSubmitQuizAssessments)
-	server.AddRoute("POST /quiz-assessments/reinforce", qac.HandleReinforceQuizAssessments)
-	server.AddRoute("POST /quiz-assessments/submit-reinforce", qac.HandleSubmitReinforceQuizAssessments)
-	server.AddRoute("POST /quiz-assessments/history", qac.HandleGetUserQuizAssessmentsHistory)
+	server.AddRoute("POST /quiz-assessments/generate", qac.HandleGenerateQuizAssessments, authMiddleware)
+	server.AddRoute("POST /quiz-assessments/submit", qac.HandleSubmitQuizAssessments, authMiddleware)
+	server.AddRoute("POST /quiz-assessments/reinforce", qac.HandleReinforceQuizAssessments, authMiddleware)
+	server.AddRoute("POST /quiz-assessments/submit-reinforce", qac.HandleSubmitReinforceQuizAssessments, authMiddleware)
+	server.AddRoute("POST /quiz-assessments/history", qac.HandleGetUserQuizAssessmentsHistory, authMiddleware)
 
 	// grades
 	gc := controller.NewGradeController(res, services.GradeService)
 	server.AddRoute("GET /grades/list", gc.HandlerGetListGrades)
 	server.AddRoute("GET /grades/{id}", gc.HandlerGetGrade)
 	server.AddRoute("GET /grades/label/{label}", gc.HandlerGetGradeByLabel)
-	server.AddRoute("POST /grades/create", gc.HandlerCreateGrade)
-	server.AddRoute("POST /grades/update", gc.HandlerUpdateGrade)
-	server.AddRoute("POST /grades/delete", gc.HandlerDeleteGrade)
-	server.AddRoute("POST /grades/force-delete", gc.HandlerForceDeleteGrade)
+	server.AddRoute("POST /grades/create", gc.HandlerCreateGrade, authMiddleware)
+	server.AddRoute("POST /grades/update", gc.HandlerUpdateGrade, authMiddleware)
+	server.AddRoute("POST /grades/delete", gc.HandlerDeleteGrade, authMiddleware)
+	server.AddRoute("POST /grades/force-delete", gc.HandlerForceDeleteGrade, authMiddleware)
 
 	// semesters
 	semc := controller.NewSemesterController(res, services.SemesterService)
 	server.AddRoute("GET /semesters/list", semc.HandlerGetListSemesters)
 	server.AddRoute("GET /semesters/{id}", semc.HandlerGetSemester)
 	server.AddRoute("GET /semesters/name/{name}", semc.HandlerGetSemesterByName)
-	server.AddRoute("POST /semesters/create", semc.HandlerCreateSemester)
-	server.AddRoute("POST /semesters/update", semc.HandlerUpdateSemester)
-	server.AddRoute("POST /semesters/delete", semc.HandlerDeleteSemester)
-	server.AddRoute("POST /semesters/force-delete", semc.HandlerForceDeleteSemester)
+	server.AddRoute("POST /semesters/create", semc.HandlerCreateSemester, authMiddleware)
+	server.AddRoute("POST /semesters/update", semc.HandlerUpdateSemester, authMiddleware)
+	server.AddRoute("POST /semesters/delete", semc.HandlerDeleteSemester, authMiddleware)
+	server.AddRoute("POST /semesters/force-delete", semc.HandlerForceDeleteSemester, authMiddleware)
 
 	// profiles
 	pc := controller.NewProfileController(res, services.ProfileService)
-	server.AddRoute("POST /profiles/fetch", pc.HandlerFetchProfile)
-	server.AddRoute("POST /profiles/create", pc.HandlerCreateProfile)
-	server.AddRoute("POST /profiles/update", pc.HandlerUpdateProfile)
+	server.AddRoute("POST /profiles/fetch", pc.HandlerFetchProfile, authMiddleware)
+	server.AddRoute("POST /profiles/create", pc.HandlerCreateProfile, authMiddleware)
+	server.AddRoute("POST /profiles/update", pc.HandlerUpdateProfile, authMiddleware)
 
 	// storage
 	sc := controller.NewStorageController(res, services.StorageService)

@@ -42,6 +42,7 @@ const (
 func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error) {
 	env := res.Env
 
+	// repository setup
 	log.Println("Initializing repository")
 	loginRepo := repositories.NewloginRepository(res.Db)
 	userRepo := repositories.NewUserRepository(res.Db)
