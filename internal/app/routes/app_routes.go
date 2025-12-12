@@ -23,6 +23,7 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 
 	// misc
 	mc := controller.NewMiscController(res)
+	server.AddRoute("GET /misc/health-check", mc.HandleHealthCheck)
 	server.AddRoute("GET /misc/sessions-dump", mc.HandleSessionDump)
 
 	// user
