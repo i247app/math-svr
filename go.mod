@@ -10,7 +10,7 @@ require (
 	github.com/google/generative-ai-go v0.20.1
 	github.com/google/uuid v1.6.0
 	github.com/graphql-go/graphql v0.8.1
-	github.com/i247app/gex v0.0.29
+	github.com/i247app/gex v0.0.30
 	github.com/joho/godotenv v1.5.1
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/tmc/langchaingo v0.1.14

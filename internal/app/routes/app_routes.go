@@ -12,6 +12,7 @@ import (
 func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *services.ServiceContainer) {
 	// middleware setup
 	authMiddleware := middleware.AuthRequiredMiddleware(res.SessionManager)
+	adminMiddleware := middleware.AdminRequiredMiddleware()
 
 	// GraphQL endpoint
 	graphqlHandler, err := gqlhandler.NewGraphQLHandler(services)
@@ -26,7 +27,7 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 
 	// user
 	uc := controller.NewUserController(res, services.UserService)
-	server.AddRoute("GET /users/list", uc.HandlerGetListUsers, authMiddleware)
+	server.AddRoute("GET /users/list", uc.HandlerGetListUsers, authMiddleware, adminMiddleware)
 	server.AddRoute("GET /users/{id}", uc.HandlerGetUser, authMiddleware)
 	server.AddRoute("POST /users/create", uc.HandlerCreateUser)
 	server.AddRoute("POST /users/update", uc.HandlerUpdateUser, authMiddleware)
@@ -56,20 +57,20 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("GET /grades/list", gc.HandlerGetListGrades)
 	server.AddRoute("GET /grades/{id}", gc.HandlerGetGrade)
 	server.AddRoute("GET /grades/label/{label}", gc.HandlerGetGradeByLabel)
-	server.AddRoute("POST /grades/create", gc.HandlerCreateGrade, authMiddleware)
-	server.AddRoute("POST /grades/update", gc.HandlerUpdateGrade, authMiddleware)
-	server.AddRoute("POST /grades/delete", gc.HandlerDeleteGrade, authMiddleware)
-	server.AddRoute("POST /grades/force-delete", gc.HandlerForceDeleteGrade, authMiddleware)
+	server.AddRoute("POST /grades/create", gc.HandlerCreateGrade, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /grades/update", gc.HandlerUpdateGrade, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /grades/delete", gc.HandlerDeleteGrade, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /grades/force-delete", gc.HandlerForceDeleteGrade, authMiddleware, adminMiddleware)
 
 	// semesters
 	semc := controller.NewSemesterController(res, services.SemesterService)
 	server.AddRoute("GET /semesters/list", semc.HandlerGetListSemesters)
 	server.AddRoute("GET /semesters/{id}", semc.HandlerGetSemester)
 	server.AddRoute("GET /semesters/name/{name}", semc.HandlerGetSemesterByName)
-	server.AddRoute("POST /semesters/create", semc.HandlerCreateSemester, authMiddleware)
-	server.AddRoute("POST /semesters/update", semc.HandlerUpdateSemester, authMiddleware)
-	server.AddRoute("POST /semesters/delete", semc.HandlerDeleteSemester, authMiddleware)
-	server.AddRoute("POST /semesters/force-delete", semc.HandlerForceDeleteSemester, authMiddleware)
+	server.AddRoute("POST /semesters/create", semc.HandlerCreateSemester, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /semesters/update", semc.HandlerUpdateSemester, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /semesters/delete", semc.HandlerDeleteSemester, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /semesters/force-delete", semc.HandlerForceDeleteSemester, authMiddleware, adminMiddleware)
 
 	// profiles
 	pc := controller.NewProfileController(res, services.ProfileService)

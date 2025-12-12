@@ -73,8 +73,8 @@ github.com/googleapis/gax-go/v2 v2.14.1 h1:hb0FFeiPaQskmvakKu5EbCbpntQn48jyHuvrk
 github.com/googleapis/gax-go/v2 v2.14.1/go.mod h1:Hb/NubMaVM88SrNkvl8X/o8XWwDJEPqouaLeN2IUxoA=
 github.com/graphql-go/graphql v0.8.1 h1:p7/Ou/WpmulocJeEx7wjQy611rtXGQaAcXGqanuMMgc=
 github.com/graphql-go/graphql v0.8.1/go.mod h1:nKiHzRM0qopJEwCITUuIsxk9PlVlwIiiI8pnJEhordQ=
-github.com/i247app/gex v0.0.29 h1:vfrRD4uL5QMXXbwB6MLLK1X1LKPIVxdxVYW1+oy/uxc=
-github.com/i247app/gex v0.0.29/go.mod h1:llk+V53qBtS3BV1enl6r5lsI8o1dIqf69/i0S39xA7E=
+github.com/i247app/gex v0.0.30 h1:aSqItEQk2JP/SrWIKkFzLLVWMqH3yhyw+Yl4TSb7054=
+github.com/i247app/gex v0.0.30/go.mod h1:llk+V53qBtS3BV1enl6r5lsI8o1dIqf69/i0S39xA7E=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/pkoukk/tiktoken-go v0.1.6 h1:JF0TlJzhTbrI30wCvFuiw6FzP2+/bR+FIxUdgEAcUsw=
