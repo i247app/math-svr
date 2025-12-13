@@ -8,7 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/constant/status"
 )
 
-type ILoginService interface {
+type IAuthService interface {
 	Login(ctx context.Context, sess *session.AppSession, req *dto.LoginRequest) (status.Code, *dto.LoginResponse, error)
 	Logout(ctx context.Context, session *session.AppSession) (status.Code, error)
 }

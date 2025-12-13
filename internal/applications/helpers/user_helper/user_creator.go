@@ -15,19 +15,19 @@ import (
 // UserCreator handles complex user creation with transactions
 type UserCreator struct {
 	userRepo    di.IUserRepository
-	loginRepo   di.ILoginRepository
+	authRepo    di.IAuthRepository
 	profileRepo di.IProfileRepository
 }
 
 // NewUserCreator creates a new UserCreator instance
 func NewUserCreator(
 	userRepo di.IUserRepository,
-	loginRepo di.ILoginRepository,
+	authRepo di.IAuthRepository,
 	profileRepo di.IProfileRepository,
 ) *UserCreator {
 	return &UserCreator{
 		userRepo:    userRepo,
-		loginRepo:   loginRepo,
+		authRepo:    authRepo,
 		profileRepo: profileRepo,
 	}
 }
@@ -79,7 +79,7 @@ func (u *UserCreator) CreateWithTransaction(ctx context.Context, userDomain *dom
 
 		// Store login
 		createLoginDomain := dto.BuildLoginDomain(userDomain.ID(), userDomain.Password())
-		if err := u.loginRepo.StoreLogin(ctx, tx, createLoginDomain); err != nil {
+		if err := u.authRepo.StoreLogin(ctx, tx, createLoginDomain); err != nil {
 			return fmt.Errorf("failed to store user login in transaction: %v", err)
 		}
 

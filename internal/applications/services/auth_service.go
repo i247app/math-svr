@@ -18,20 +18,20 @@ import (
 	hasher "math-ai.com/math-ai/internal/shared/utils/hash"
 )
 
-type LoginService struct {
+type AuthService struct {
 	validator       validators.ILoginValidator
-	repo            diRepo.ILoginRepository
+	repo            diRepo.IAuthRepository
 	userRepo        diRepo.IUserRepository
 	responseBuilder *utils.ResponseBuilder
 }
 
-func NewLoginService(
+func NewAuthService(
 	validator validators.ILoginValidator,
-	repo diRepo.ILoginRepository,
+	repo diRepo.IAuthRepository,
 	userRepo diRepo.IUserRepository,
 	storageService diSvc.IStorageService,
-) diSvc.ILoginService {
-	return &LoginService{
+) diSvc.IAuthService {
+	return &AuthService{
 		validator:       validator,
 		repo:            repo,
 		userRepo:        userRepo,
@@ -39,7 +39,7 @@ func NewLoginService(
 	}
 }
 
-func (s *LoginService) Login(ctx context.Context, sess *session.AppSession, req *dto.LoginRequest) (status.Code, *dto.LoginResponse, error) {
+func (s *AuthService) Login(ctx context.Context, sess *session.AppSession, req *dto.LoginRequest) (status.Code, *dto.LoginResponse, error) {
 	logger := logger.GetLogger(ctx)
 
 	// Validate request
@@ -118,7 +118,7 @@ func (s *LoginService) Login(ctx context.Context, sess *session.AppSession, req 
 	return status.SUCCESS, res, nil
 }
 
-func (s *LoginService) Logout(ctx context.Context, sess *session.AppSession) (status.Code, error) {
+func (s *AuthService) Logout(ctx context.Context, sess *session.AppSession) (status.Code, error) {
 	logger := logger.GetLogger(ctx)
 
 	if sess == nil {

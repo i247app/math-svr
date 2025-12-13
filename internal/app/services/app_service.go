@@ -23,7 +23,7 @@ type ServiceContainer struct {
 	SessionProvider sessionprovider.SessionProvider
 	JwtHelper       jwtutil.JwtHelper
 
-	LoginService              di.ILoginService
+	AuthService               di.IAuthService
 	UserService               di.IUserService
 	DeviceService             di.IDeviceService
 	ChatBoxService            di.IChatBoxService
@@ -44,7 +44,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 
 	// repository setup
 	log.Println("Initializing repository")
-	loginRepo := repositories.NewloginRepository(res.Db)
+	authRepo := repositories.NewAuthRepository(res.Db)
 	userRepo := repositories.NewUserRepository(res.Db)
 	deviceRepo := repositories.NewDeviceRepository(res.Db)
 	gradeRepo := repositories.NewGradeRepository(res.Db)
@@ -101,11 +101,11 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 
 	log.Println("> userSvc...")
 	var userValidator = validators.NewUserValidator()
-	var userSvc = services.NewUserService(userValidator, userRepo, loginRepo, profileRepo, userLatestQuizRepo, storageSvc)
+	var userSvc = services.NewUserService(userValidator, userRepo, authRepo, profileRepo, userLatestQuizRepo, storageSvc)
 
-	log.Println("> loginSvc...")
-	var loginValidator = validators.NewLoginValidator()
-	var loginSvc = services.NewLoginService(loginValidator, loginRepo, userRepo, storageSvc)
+	log.Println("> authSvc...")
+	var authValidator = validators.NewLoginValidator()
+	var authSvc = services.NewAuthService(authValidator, authRepo, userRepo, storageSvc)
 
 	log.Println("> deviceSvc...")
 	var deviceValidator = validators.NewDeviceValidator()
@@ -140,7 +140,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		SessionManager:            sessionManager,
 		SessionProvider:           sessionProvider,
 		JwtHelper:                 jwtHelper,
-		LoginService:              loginSvc,
+		AuthService:               authSvc,
 		UserService:               userSvc,
 		DeviceService:             deviceSvc,
 		ChatBoxService:            chatBoxSvc,

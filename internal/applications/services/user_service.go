@@ -29,16 +29,16 @@ type UserService struct {
 func NewUserService(
 	validator validators.IUserValidator,
 	repo diRepo.IUserRepository,
-	loginRepo diRepo.ILoginRepository,
+	authRepo diRepo.IAuthRepository,
 	profileRepo diRepo.IProfileRepository,
 	userQuizPracticeRepo diRepo.IUserQuizPracticesRepository,
 	storageService diSvc.IStorageService,
 ) diSvc.IUserService {
 	responseBuilder := utils.NewResponseBuilder(storageService)
 	fileManager := utils.NewFileManager(storageService)
-	userCreator := helper.NewUserCreator(repo, loginRepo, profileRepo)
+	userCreator := helper.NewUserCreator(repo, authRepo, profileRepo)
 	userUpdater := helper.NewUserUpdater(repo, profileRepo)
-	userDeleter := helper.NewUserDeleter(repo, loginRepo, profileRepo, userQuizPracticeRepo)
+	userDeleter := helper.NewUserDeleter(repo, authRepo, profileRepo, userQuizPracticeRepo)
 
 	return &UserService{
 		validator:       validator,

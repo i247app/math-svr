@@ -14,18 +14,18 @@ import (
 	"math-ai.com/math-ai/internal/shared/db"
 )
 
-type loginRepository struct {
+type authRepository struct {
 	db db.IDatabase
 }
 
-func NewloginRepository(db db.IDatabase) di.ILoginRepository {
-	return &loginRepository{
+func NewAuthRepository(db db.IDatabase) di.IAuthRepository {
+	return &authRepository{
 		db: db,
 	}
 }
 
 // StoreLogin stores a user login record in the database.
-func (r *loginRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *domain.Login) error {
+func (r *authRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *domain.Login) error {
 	query := `
 		INSERT INTO logins (id, uid, hash_pass, status)
 		VALUES (?, ?, ?, ?)
@@ -43,7 +43,7 @@ func (r *loginRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *dom
 }
 
 // DeleteLogin deletes user logins by user ID.
-func (r *loginRepository) DeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
+func (r *authRepository) DeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		UPDATE logins
 		SET deleted_dt = ?,
@@ -58,7 +58,7 @@ func (r *loginRepository) DeleteLogin(ctx context.Context, tx *sql.Tx, uid strin
 }
 
 // ForceDeleteLogin permanently deletes user logins by user ID.
-func (r *loginRepository) ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
+func (r *authRepository) ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		DELETE FROM logins
 		WHERE uid = ?
@@ -70,7 +70,7 @@ func (r *loginRepository) ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid 
 	return nil
 }
 
-func (r *loginRepository) GetLoginLogByUIDAndDeviceUUID(ctx context.Context, uid string, deviceUUID string) (*domain.LoginLog, error) {
+func (r *authRepository) GetLoginLogByUIDAndDeviceUUID(ctx context.Context, uid string, deviceUUID string) (*domain.LoginLog, error) {
 	query := `
 		SELECT id, uid, ip_address, device_uuid, token
 		FROM login_logs
@@ -92,7 +92,7 @@ func (r *loginRepository) GetLoginLogByUIDAndDeviceUUID(ctx context.Context, uid
 	return loginLog, nil
 }
 
-func (r *loginRepository) StoreLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
+func (r *authRepository) StoreLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
 	query := `
 		INSERT INTO login_logs (id, uid, ip_address, device_uuid, token, status)
 		VALUES (?, ?, ?, ?, ?, ?)
@@ -110,7 +110,7 @@ func (r *loginRepository) StoreLoginLog(ctx context.Context, loginLog *domain.Lo
 	return err
 }
 
-func (r *loginRepository) UpdateLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
+func (r *authRepository) UpdateLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 

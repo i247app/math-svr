@@ -36,9 +36,9 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("POST /users/force-delete", uc.HandlerForceDeleteUser, authMiddleware)
 
 	// login
-	lc := controller.NewLoginController(res, services.LoginService)
-	server.AddRoute("POST /login", lc.HandleLogin)
-	server.AddRoute("POST /logout", lc.HandleLogout, authMiddleware)
+	ac := controller.NewAuthController(res, services.AuthService)
+	server.AddRoute("POST /login", ac.HandleLogin)
+	server.AddRoute("POST /logout", ac.HandleLogout, authMiddleware)
 
 	// quiz-practices
 	qpc := controller.NewUserQuizPracticesController(res, services.UserQuizPracticesService)

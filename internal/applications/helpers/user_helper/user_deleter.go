@@ -11,7 +11,7 @@ import (
 // UserDeleter handles complex user deletion with transactions
 type UserDeleter struct {
 	userRepo             di.IUserRepository
-	loginRepo            di.ILoginRepository
+	authRepo             di.IAuthRepository
 	profileRepo          di.IProfileRepository
 	userQuizPracticeRepo di.IUserQuizPracticesRepository
 }
@@ -19,13 +19,13 @@ type UserDeleter struct {
 // NewUserDeleter creates a new UserDeleter instance
 func NewUserDeleter(
 	userRepo di.IUserRepository,
-	loginRepo di.ILoginRepository,
+	authRepo di.IAuthRepository,
 	profileRepo di.IProfileRepository,
 	userQuizPracticeRepo di.IUserQuizPracticesRepository,
 ) *UserDeleter {
 	return &UserDeleter{
 		userRepo:             userRepo,
-		loginRepo:            loginRepo,
+		authRepo:             authRepo,
 		profileRepo:          profileRepo,
 		userQuizPracticeRepo: userQuizPracticeRepo,
 	}
@@ -47,7 +47,7 @@ func (u *UserDeleter) DeleteWithTransaction(ctx context.Context, uid string) err
 		}
 
 		// Delete user logins
-		err = u.loginRepo.DeleteLogin(ctx, tx, uid)
+		err = u.authRepo.DeleteLogin(ctx, tx, uid)
 		if err != nil {
 			return fmt.Errorf("failed to delete user logins in transaction: %v", err)
 		}
@@ -80,7 +80,7 @@ func (u *UserDeleter) ForceDeleteWithTransaction(ctx context.Context, uid string
 		}
 
 		// Force delete user logins
-		err = u.loginRepo.ForceDeleteLogin(ctx, tx, uid)
+		err = u.authRepo.ForceDeleteLogin(ctx, tx, uid)
 		if err != nil {
 			return fmt.Errorf("failed to force delete user logins in transaction: %v", err)
 		}

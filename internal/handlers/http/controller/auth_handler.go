@@ -12,20 +12,20 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
-type LoginController struct {
+type AuthController struct {
 	appResources *resources.AppResource
-	service      di.ILoginService
+	service      di.IAuthService
 }
 
-func NewLoginController(appResources *resources.AppResource, service di.ILoginService) *LoginController {
-	return &LoginController{
+func NewAuthController(appResources *resources.AppResource, service di.IAuthService) *AuthController {
+	return &AuthController{
 		appResources: appResources,
 		service:      service,
 	}
 }
 
 // POST - /login
-func (c *LoginController) HandleLogin(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	var req dto.LoginRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -56,7 +56,7 @@ func (c *LoginController) HandleLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST - /logout
-func (c *LoginController) HandleLogout(w http.ResponseWriter, r *http.Request) {
+func (c *AuthController) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	sess, err := c.appResources.GetRequestSession(r)

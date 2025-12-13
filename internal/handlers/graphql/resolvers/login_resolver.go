@@ -9,10 +9,10 @@ import (
 )
 
 type LoginResolver struct {
-	loginService di.ILoginService
+	loginService di.IAuthService
 }
 
-func NewLoginResolver(loginService di.ILoginService) *LoginResolver {
+func NewLoginResolver(loginService di.IAuthService) *LoginResolver {
 	return &LoginResolver{
 		loginService: loginService,
 	}

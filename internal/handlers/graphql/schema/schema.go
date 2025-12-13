@@ -12,7 +12,7 @@ func BuildSchema(serviceContainer *services.ServiceContainer) (graphql.Schema, e
 	// Initialize resolvers
 	userResolver := resolvers.NewUserResolver(serviceContainer.UserService)
 	gradeResolver := resolvers.NewGradeResolver(serviceContainer.GradeService)
-	loginResolver := resolvers.NewLoginResolver(serviceContainer.LoginService)
+	loginResolver := resolvers.NewLoginResolver(serviceContainer.AuthService)
 	chatboxResolver := resolvers.NewChatBoxResolver(serviceContainer.UserQuizPracticesService)
 	profileResolver := resolvers.NewProfileResolver(serviceContainer.ProfileService)
 
