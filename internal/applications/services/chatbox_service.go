@@ -11,21 +11,21 @@ import (
 	"math-ai.com/math-ai/internal/applications/validators"
 	di "math-ai.com/math-ai/internal/core/di/services"
 	domain "math-ai.com/math-ai/internal/core/domain/chatbox"
-	chatbox "math-ai.com/math-ai/internal/driven-adapter/external/chat-box"
+	aiProvider "math-ai.com/math-ai/internal/driven-adapter/external/ai_provider"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 type ChatBoxService struct {
 	validator            validators.IChatboxValidator
-	client               chatbox.IChatBoxClient
+	client               aiProvider.IChatBoxClient
 	profileSvc           di.IProfileService
 	userQuizPracticesSvc di.IUserQuizPracticesService
 	jsonSanitizer        *helper.JSONSanitizer
 }
 
 func NewChatBoxService(
-	client chatbox.IChatBoxClient,
+	client aiProvider.IChatBoxClient,
 	validator validators.IChatboxValidator,
 ) di.IChatBoxService {
 	return &ChatBoxService{

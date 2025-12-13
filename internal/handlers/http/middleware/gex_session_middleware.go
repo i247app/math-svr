@@ -58,8 +58,6 @@ func GexSessionMiddleware(
 				body:           bytes.NewBuffer(nil),
 			}
 
-			println("authToken", authToken)
-
 			// Set auth token in request header for downstream handlers
 			if r.Header.Get("Authorization") == "" {
 				r.Header.Add("Authorization", "Bearer "+authToken)

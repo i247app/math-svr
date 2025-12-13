@@ -1,4 +1,4 @@
-package chatbox
+package ai_provider
 
 import (
 	"context"
