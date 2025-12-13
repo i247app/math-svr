@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/utils"
@@ -115,4 +116,16 @@ func (s *LoginService) Login(ctx context.Context, sess *session.AppSession, req 
 	}
 
 	return status.SUCCESS, res, nil
+}
+
+func (s *LoginService) Logout(ctx context.Context, sess *session.AppSession) (status.Code, error) {
+	if sess == nil {
+		return status.FAIL, fmt.Errorf("failed to logout: session is nil")
+	}
+
+	// Invalidate session
+	sess.MarkExpired()
+	sess.MarkNotSecure()
+
+	return status.SUCCESS, nil
 }

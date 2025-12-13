@@ -54,3 +54,23 @@ func (c *LoginController) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	response.WriteJson(w, ctx, res, nil, statusCode)
 }
+
+// POST - /logout
+func (c *LoginController) HandleLogout(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	sess, err := c.appResources.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, ctx, nil, fmt.Errorf("failed to get session %w", err), status.FAIL)
+		return
+	}
+
+	// Perform logout
+	statusCode, err := c.service.Logout(ctx, sess)
+	if err != nil {
+		response.WriteJson(w, ctx, nil, err, statusCode)
+		return
+	}
+
+	response.WriteJson(w, ctx, map[string]string{"message": "logout successful"}, nil, statusCode)
+}
