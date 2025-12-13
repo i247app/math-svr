@@ -119,7 +119,10 @@ func (s *LoginService) Login(ctx context.Context, sess *session.AppSession, req 
 }
 
 func (s *LoginService) Logout(ctx context.Context, sess *session.AppSession) (status.Code, error) {
+	logger := logger.GetLogger(ctx)
+
 	if sess == nil {
+		logger.Error("Session is nil during logout")
 		return status.FAIL, fmt.Errorf("failed to logout: session is nil")
 	}
 

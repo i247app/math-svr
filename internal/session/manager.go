@@ -27,7 +27,6 @@ func Dump(sessionManager *SessionManager) *map[string]map[string]any {
 func GetRequestSession(r *http.Request) *AppSession {
 	val := r.Context().Value(SessionContextKey)
 	if val == nil {
-		println("vo day nha cu em")
 		return nil
 	}
 
