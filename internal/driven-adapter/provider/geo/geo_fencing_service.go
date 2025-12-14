@@ -265,6 +265,7 @@ func (s *GeoFencingService) parseLocationInfo(result *GeocodingResult) *Location
 				info.City = component.LongName
 			case "administrative_area_level_1":
 				info.State = component.LongName
+				info.StateCode = component.ShortName
 			case "country":
 				info.Country = component.LongName
 				info.CountryCode = component.ShortName

@@ -15,6 +15,7 @@ import (
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/repositories"
 	"math-ai.com/math-ai/internal/driven-adapter/provider/geo"
+	"math-ai.com/math-ai/internal/driven-adapter/provider/ip"
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/pkg/aws/s3"
 )
@@ -98,11 +99,14 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		}
 	}
 
-	log.Println("> geoSvc...")
+	log.Println("> geoLocationSvc...")
 	geoSvc := geo.NewGeoFencingService(env.GoogleGeoAPIKey)
 
+	log.Println("> ipLocationSvc...")
+	ipSvc := ip.NewIPGeolocationService()
+
 	log.Println("> miscSvc...")
-	miscSvc := services.NewMiscService(geoSvc)
+	miscSvc := services.NewMiscService(geoSvc, ipSvc)
 
 	log.Println("> storageSvc...")
 	s3Client := s3.NewClient(env.S3Config)

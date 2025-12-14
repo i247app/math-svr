@@ -74,6 +74,7 @@ type LocationInfo struct {
 	Address          string
 	City             string
 	State            string
+	StateCode        string
 	Country          string
 	PostalCode       string
 	CountryCode      string

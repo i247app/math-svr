@@ -17,7 +17,9 @@ type LocationRequest struct {
 }
 
 type LocationResponse struct {
-	City    string `json:"city"`
-	State   string `json:"state"`
-	Country string `json:"country"`
+	City        string `json:"city"`
+	State       string `json:"state"`
+	StateCode   string `json:"state_code"`
+	Country     string `json:"country"`
+	CountryCode string `json:"country_code"`
 }

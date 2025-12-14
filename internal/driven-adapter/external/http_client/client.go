@@ -154,7 +154,7 @@ func (c *Client) buildRequest(ctx context.Context, method, path string, body int
 }
 
 // executeRequest executes the HTTP request and returns a Response
-func (c *Client) executeRequest(ctx context.Context, req *http.Request) (*Response, error) {
+func (c *Client) executeRequest(_ context.Context, req *http.Request) (*Response, error) {
 	// Apply interceptors (before request)
 	for _, interceptor := range c.interceptors {
 		if err := interceptor.Before(req); err != nil {
