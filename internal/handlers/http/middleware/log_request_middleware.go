@@ -5,13 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
 	"sync"
 
-	"math-ai.com/math-ai/internal/session"
+	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/requtil"
 )
 
@@ -47,71 +46,57 @@ func newRequestLoggerMiddleware() *requestLoggerMiddleware {
 
 func (m *requestLoggerMiddleware) Handle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// var (
-		// 	reqID int64 = m.nextRequestID()
-		// )
+		var (
+			reqID int64 = m.nextRequestID()
+		)
+
+		logger := logger.GetLogger(r.Context())
 
 		rawBody, isJSON, err := m.readRequestBody(r)
 		if err != nil {
-			log.Printf("logRequestMiddleware: read request body error: %v", err)
+			logger.Errorf("logRequestMiddleware: read request body error: %v", err)
 			return
 		}
 
-		token, identifier := m.requestIdentifier(r)
-
-		// Extract last 6 characters of token (or entire token if shorter)
-		tokenDisplay := token
-		if len(token) > 6 {
-			tokenDisplay = token[len(token)-6:]
-		}
-
-		inMsg := fmt.Sprintf("IN [%v] [%v] %v %v", tokenDisplay, identifier, r.Method, r.URL.Path)
-		log.Printf("%s", inMsg)
+		logger.Infof("IN <%v> %v %v", reqID, r.Method, r.URL.Path)
 
 		if r.Method == http.MethodGet && strings.TrimSpace(r.URL.RawQuery) != "" {
-			msg := fmt.Sprintf("IN [%v] [%v] QUERY PARAMS> %v", tokenDisplay, identifier, r.URL.RawQuery)
-			log.Println(msg)
+			logger.Infof("IN QUERY PARAMS %v", r.URL.RawQuery)
 		}
 
 		if isJSON {
 			truncatedBodyBytes := m.truncateSensitiveFields(rawBody.Bytes())
-			msg := fmt.Sprintf("IN [%v] [%v] REQUEST BODY> %s", tokenDisplay, identifier, truncatedBodyBytes)
-			log.Println(msg)
+			logger.Infof("IN REQUEST BODY %v", string(truncatedBodyBytes))
 		} else {
 			mapBody := m.decodeBodyToMap(rawBody.Bytes())
 			if len(mapBody) > 0 {
-				msg := fmt.Sprintf("IN [%v] [%v] REQUEST BODY> %v", tokenDisplay, identifier, mapBody)
-				log.Println(msg)
+				logger.Infof("IN REQUEST BODY %v", mapBody)
 			}
 		}
 
 		if m.logHeaders {
 			for name, values := range r.Header {
 				for _, value := range values {
-					msg := fmt.Sprintf("IN [%v] [%v] HEADER> %v: %v", tokenDisplay, identifier, name, value)
-					log.Println(msg)
+					logger.Infof("IN HEADER %v: %v", name, value)
 				}
 			}
 		}
 
 		if metadata := m.requestMetadata(r); metadata != nil {
-			msg := fmt.Sprintf("IN [%v] [%v] __metadata: %v", tokenDisplay, identifier, metadata)
-			log.Println(msg)
+			logger.Infof("IN __metadata %v", metadata)
 		}
 
 		wrapper := m.newResponseWrapper(w)
 		next.ServeHTTP(wrapper, r)
 
-		outMsg := m.outboundMessage(tokenDisplay, identifier, r, wrapper)
-		log.Printf("%s", outMsg)
+		outMsg := m.outboundMessage(r, wrapper)
+		logger.Infof("%s", outMsg)
 
 		if m.logHeaders {
 			if h := wrapper.Header().Get("X-Auth-Token"); h != "" {
-				msg := fmt.Sprintf("OUT [%v] [%v] HEADER> %v: %v", tokenDisplay, identifier, "X-Auth-Token", h)
-				log.Println(msg)
+				logger.Infof("OUT HEADER %v: %v", "X-Auth-Token", h)
 			} else {
-				msg := fmt.Sprintf("OUT [%v] [%v] HEADER> %v: %v", tokenDisplay, identifier, "X-Auth-Token", "<empty>")
-				log.Println(msg)
+				logger.Infof("OUT HEADER %v: %v", "X-Auth-Token", "<empty>")
 			}
 		}
 
@@ -138,25 +123,6 @@ func (m *requestLoggerMiddleware) readRequestBody(r *http.Request) (*bytes.Buffe
 	var jsonCheck any
 	err := json.Unmarshal(rawBody.Bytes(), &jsonCheck)
 	return rawBody, err == nil, nil
-}
-
-func (m *requestLoggerMiddleware) requestIdentifier(r *http.Request) (string, string) {
-	identifier := "anon"
-	token := "anon"
-
-	if sess := session.GetRequestSession(r); sess != nil {
-		if uid, ok := sess.UID(); ok {
-			identifier = uid
-		}
-
-		if key, ok := sess.Get("key"); ok {
-			if keyStr, ok := key.(string); ok {
-				token = keyStr
-			}
-		}
-	}
-
-	return token, identifier
 }
 
 func (m *requestLoggerMiddleware) truncateSensitiveFields(body []byte) []byte {
@@ -194,12 +160,12 @@ func (m *requestLoggerMiddleware) newResponseWrapper(w http.ResponseWriter) *res
 	}
 }
 
-func (m *requestLoggerMiddleware) outboundMessage(tokenDisplay string, identifier string, r *http.Request, wrapper *responseWriterWrapper) string {
+func (m *requestLoggerMiddleware) outboundMessage(r *http.Request, wrapper *responseWriterWrapper) string {
 	if strings.Contains(wrapper.Header().Get("Content-Type"), "application/json") {
-		return fmt.Sprintf("OUT [%v] [%v] %v %v: %v", tokenDisplay, identifier, r.Method, r.URL.Path, wrapper.body.String())
+		return fmt.Sprintf("OUT %v %v: %v", r.Method, r.URL.Path, wrapper.body.String())
 	}
 
-	inMsg := fmt.Sprintf("IN [%v] [%v] %v %v", tokenDisplay, identifier, r.Method, r.URL.Path)
+	inMsg := fmt.Sprintf("IN %v %v", r.Method, r.URL.Path)
 	return inMsg
 }
 

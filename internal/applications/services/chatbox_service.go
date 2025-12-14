@@ -17,11 +17,9 @@ import (
 )
 
 type ChatBoxService struct {
-	validator            validators.IChatboxValidator
-	client               aiProvider.IChatBoxClient
-	profileSvc           di.IProfileService
-	userQuizPracticesSvc di.IUserQuizPracticesService
-	jsonSanitizer        *helper.JSONSanitizer
+	validator     validators.IChatboxValidator
+	client        aiProvider.IChatBoxClient
+	jsonSanitizer *helper.JSONSanitizer
 }
 
 func NewChatBoxService(
@@ -36,6 +34,8 @@ func NewChatBoxService(
 }
 
 func (s *ChatBoxService) Generate(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
+	logger := logger.GetLogger(ctx)
+
 	// Send message to OpenAI
 	resp, err := s.client.SendMessage(ctx, conv)
 	if err != nil {
@@ -69,6 +69,8 @@ func (s *ChatBoxService) Generate(ctx context.Context, conv *domain.Conversation
 }
 
 func (s *ChatBoxService) Submit(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[dto.QuizAnswer], error) {
+	logger := logger.GetLogger(ctx)
+
 	// Send message to OpenAI
 	resp, err := s.client.SendMessage(ctx, conv)
 	if err != nil {
@@ -102,6 +104,8 @@ func (s *ChatBoxService) Submit(ctx context.Context, conv *domain.Conversation) 
 }
 
 func (s *ChatBoxService) SubmitAssessment(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[dto.QuizAssessmentAnswer], error) {
+	logger := logger.GetLogger(ctx)
+
 	// Send message to OpenAI
 	resp, err := s.client.SendMessage(ctx, conv)
 	if err != nil {
@@ -135,6 +139,8 @@ func (s *ChatBoxService) SubmitAssessment(ctx context.Context, conv *domain.Conv
 }
 
 func (s *ChatBoxService) Reinforce(ctx context.Context, conv *domain.Conversation) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
+	logger := logger.GetLogger(ctx)
+
 	// Send message to OpenAI
 	resp, err := s.client.SendMessage(ctx, conv)
 	if err != nil {

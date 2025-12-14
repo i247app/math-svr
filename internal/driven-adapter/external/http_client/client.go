@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"time"
 
@@ -35,9 +36,12 @@ func NewClient(opts ...Option) *Client {
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		headers:      make(map[string]string),
-		queryParams:  make(map[string]string),
-		interceptors: []Interceptor{},
+		headers:     make(map[string]string),
+		queryParams: make(map[string]string),
+		interceptors: []Interceptor{
+			NewLoggingInterceptor(true),
+			NewTimingInterceptor(),
+		},
 	}
 
 	// Apply all options
@@ -75,8 +79,6 @@ func (c *Client) Delete(ctx context.Context, path string, opts ...RequestOption)
 
 // Do performs an HTTP request with the given method, path, and body
 func (c *Client) Do(ctx context.Context, method, path string, body interface{}, opts ...RequestOption) (*Response, error) {
-	logger := logger.GetLogger(ctx)
-
 	// Build the request
 	req, err := c.buildRequest(ctx, method, path, body, opts...)
 	if err != nil {
@@ -87,8 +89,6 @@ func (c *Client) Do(ctx context.Context, method, path string, body interface{}, 
 	if c.retryConfig != nil {
 		return c.doWithRetry(ctx, req)
 	}
-
-	logger.Infof("### Call External API [%v] - %v\n", req.Method, req.URL.String())
 
 	return c.executeRequest(ctx, req)
 }
@@ -104,12 +104,8 @@ func (c *Client) buildRequest(ctx context.Context, method, path string, body int
 	}
 
 	// Copy client-level headers and query params
-	for k, v := range c.headers {
-		reqConfig.headers[k] = v
-	}
-	for k, v := range c.queryParams {
-		reqConfig.queryParams[k] = v
-	}
+	maps.Copy(reqConfig.headers, c.headers)
+	maps.Copy(reqConfig.queryParams, c.queryParams)
 
 	// Apply request-specific options
 	for _, opt := range opts {
@@ -154,10 +150,10 @@ func (c *Client) buildRequest(ctx context.Context, method, path string, body int
 }
 
 // executeRequest executes the HTTP request and returns a Response
-func (c *Client) executeRequest(_ context.Context, req *http.Request) (*Response, error) {
+func (c *Client) executeRequest(ctx context.Context, req *http.Request) (*Response, error) {
 	// Apply interceptors (before request)
 	for _, interceptor := range c.interceptors {
-		if err := interceptor.Before(req); err != nil {
+		if err := interceptor.Before(ctx, req); err != nil {
 			return nil, fmt.Errorf("interceptor before failed: %w", err)
 		}
 	}
@@ -175,8 +171,6 @@ func (c *Client) executeRequest(_ context.Context, req *http.Request) (*Response
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	fmt.Printf("### Call External API Reponse, %v\n", string(bodyBytes))
-
 	// Create Response object
 	resp := &Response{
 		StatusCode: httpResp.StatusCode,
@@ -186,7 +180,7 @@ func (c *Client) executeRequest(_ context.Context, req *http.Request) (*Response
 
 	// Apply interceptors (after response)
 	for _, interceptor := range c.interceptors {
-		if err := interceptor.After(resp); err != nil {
+		if err := interceptor.After(ctx, resp); err != nil {
 			return nil, fmt.Errorf("interceptor after failed: %w", err)
 		}
 	}

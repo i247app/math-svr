@@ -1,6 +1,7 @@
 package http_client
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -10,8 +11,8 @@ import (
 
 // Interceptor defines the interface for request/response interceptors
 type Interceptor interface {
-	Before(req *http.Request) error
-	After(resp *Response) error
+	Before(ctx context.Context, req *http.Request) error
+	After(ctx context.Context, resp *Response) error
 }
 
 // ===============================
@@ -31,7 +32,9 @@ func NewLoggingInterceptor(logBody bool) *LoggingInterceptor {
 }
 
 // Before logs the request details
-func (i *LoggingInterceptor) Before(req *http.Request) error {
+func (i *LoggingInterceptor) Before(ctx context.Context, req *http.Request) error {
+	logger := logger.GetLogger(ctx)
+
 	logger.Infof("[HTTP Client] %s %s", req.Method, req.URL.String())
 
 	if i.LogBody && req.Body != nil {
@@ -42,7 +45,9 @@ func (i *LoggingInterceptor) Before(req *http.Request) error {
 }
 
 // After logs the response details
-func (i *LoggingInterceptor) After(resp *Response) error {
+func (i *LoggingInterceptor) After(ctx context.Context, resp *Response) error {
+	logger := logger.GetLogger(ctx)
+
 	logger.Infof("[HTTP Client] Response Status: %d", resp.StatusCode)
 
 	if i.LogBody {
@@ -67,13 +72,15 @@ func NewTimingInterceptor() *TimingInterceptor {
 }
 
 // Before records the start time
-func (i *TimingInterceptor) Before(req *http.Request) error {
+func (i *TimingInterceptor) Before(ctx context.Context, req *http.Request) error {
 	i.startTime = time.Now()
 	return nil
 }
 
 // After logs the elapsed time
-func (i *TimingInterceptor) After(resp *Response) error {
+func (i *TimingInterceptor) After(ctx context.Context, resp *Response) error {
+	logger := logger.GetLogger(ctx)
+
 	elapsed := time.Since(i.startTime)
 	logger.Infof("[HTTP Client] Request completed in %s", elapsed)
 	return nil
@@ -96,12 +103,12 @@ func NewErrorHandlingInterceptor(onError func(resp *Response) error) *ErrorHandl
 }
 
 // Before does nothing
-func (i *ErrorHandlingInterceptor) Before(req *http.Request) error {
+func (i *ErrorHandlingInterceptor) Before(ctx context.Context, req *http.Request) error {
 	return nil
 }
 
 // After checks for errors and invokes the error handler
-func (i *ErrorHandlingInterceptor) After(resp *Response) error {
+func (i *ErrorHandlingInterceptor) After(ctx context.Context, resp *Response) error {
 	if !resp.IsSuccess() && i.OnError != nil {
 		return i.OnError(resp)
 	}
@@ -127,7 +134,7 @@ func NewRateLimitInterceptor(requestsPerSecond int) *RateLimitInterceptor {
 }
 
 // Before enforces rate limiting
-func (i *RateLimitInterceptor) Before(req *http.Request) error {
+func (i *RateLimitInterceptor) Before(ctx context.Context, req *http.Request) error {
 	minInterval := time.Second / time.Duration(i.requestsPerSecond)
 	elapsed := time.Since(i.lastRequest)
 
@@ -140,7 +147,7 @@ func (i *RateLimitInterceptor) Before(req *http.Request) error {
 }
 
 // After does nothing
-func (i *RateLimitInterceptor) After(resp *Response) error {
+func (i *RateLimitInterceptor) After(ctx context.Context, resp *Response) error {
 	return nil
 }
 
@@ -161,7 +168,7 @@ func NewCustomHeaderInterceptor(headers map[string]string) *CustomHeaderIntercep
 }
 
 // Before adds custom headers to the request
-func (i *CustomHeaderInterceptor) Before(req *http.Request) error {
+func (i *CustomHeaderInterceptor) Before(ctx context.Context, req *http.Request) error {
 	for key, value := range i.Headers {
 		req.Header.Set(key, value)
 	}
@@ -169,7 +176,7 @@ func (i *CustomHeaderInterceptor) Before(req *http.Request) error {
 }
 
 // After does nothing
-func (i *CustomHeaderInterceptor) After(resp *Response) error {
+func (i *CustomHeaderInterceptor) After(ctx context.Context, resp *Response) error {
 	return nil
 }
 
@@ -190,12 +197,12 @@ func NewValidationInterceptor(validateFunc func(resp *Response) error) *Validati
 }
 
 // Before does nothing
-func (i *ValidationInterceptor) Before(req *http.Request) error {
+func (i *ValidationInterceptor) Before(ctx context.Context, req *http.Request) error {
 	return nil
 }
 
 // After validates the response
-func (i *ValidationInterceptor) After(resp *Response) error {
+func (i *ValidationInterceptor) After(ctx context.Context, resp *Response) error {
 	if i.ValidateFunc != nil {
 		return i.ValidateFunc(resp)
 	}
@@ -225,7 +232,7 @@ func NewCircuitBreakerInterceptor(failureThreshold int, resetTimeout time.Durati
 }
 
 // Before checks if the circuit is open
-func (i *CircuitBreakerInterceptor) Before(req *http.Request) error {
+func (i *CircuitBreakerInterceptor) Before(ctx context.Context, req *http.Request) error {
 	if i.state == "open" {
 		if time.Since(i.lastFailureTime) > i.resetTimeout {
 			i.state = "half-open"
@@ -238,7 +245,8 @@ func (i *CircuitBreakerInterceptor) Before(req *http.Request) error {
 }
 
 // After updates the circuit breaker state based on response
-func (i *CircuitBreakerInterceptor) After(resp *Response) error {
+func (i *CircuitBreakerInterceptor) After(ctx context.Context, resp *Response) error {
+	logger := logger.GetLogger(ctx)
 	if resp.IsServerError() {
 		i.failureCount++
 		i.lastFailureTime = time.Now()
