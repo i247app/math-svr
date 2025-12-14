@@ -25,6 +25,7 @@ type Env struct {
 	ChatBoxProvider          string
 	ChatBoxLangChainProvider string
 	ChatBoxModelName         string
+	GoogleGeoAPIKey          string
 }
 
 func NewEnv(envpath string) (*Env, error) {
@@ -81,6 +82,7 @@ func NewEnv(envpath string) (*Env, error) {
 		ChatBoxProvider:          getConfigWithDefault("CHAT_BOX_PROVIDER", "mock"),
 		ChatBoxLangChainProvider: getConfigWithDefault("CHAT_BOX_LANGCHAIN_PROVIDER", "google"),
 		ChatBoxModelName:         getConfig("CHAT_BOX_MODEL_NAME"),
+		GoogleGeoAPIKey:          getConfig("GOOGLE_GEO_API_KEY"),
 	}
 
 	return result, nil

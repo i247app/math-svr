@@ -1,11 +1,14 @@
 package controller
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
 	"math-ai.com/math-ai/internal/app/resources"
 	"math-ai.com/math-ai/internal/applications/dto"
+	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/utils/response"
@@ -13,11 +16,13 @@ import (
 
 type MiscController struct {
 	appResource *resources.AppResource
+	service     di.IMiscService
 }
 
-func NewMiscController(appResource *resources.AppResource) *MiscController {
+func NewMiscController(appResource *resources.AppResource, service di.IMiscService) *MiscController {
 	return &MiscController{
 		appResource: appResource,
+		service:     service,
 	}
 }
 
@@ -39,4 +44,21 @@ func (c *MiscController) HandleHealthCheck(w http.ResponseWriter, r *http.Reques
 func (c *MiscController) HandleSessionDump(w http.ResponseWriter, r *http.Request) {
 	dumpedSession := session.Dump(c.appResource.SessionManager)
 	response.WriteJson(w, r.Context(), dumpedSession, nil, status.OK)
+}
+
+func (c *MiscController) HandleDetermineLocation(w http.ResponseWriter, r *http.Request) {
+	var req dto.LocationRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
+		return
+	}
+
+	statusCode, locationRes, err := c.service.DetermineLocation(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, r.Context(), nil, err, statusCode)
+		return
+	}
+
+	response.WriteJson(w, r.Context(), locationRes, nil, statusCode)
 }

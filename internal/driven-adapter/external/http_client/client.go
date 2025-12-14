@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"time"
+
+	"math-ai.com/math-ai/internal/shared/logger"
 )
 
 // Client is the base HTTP client for making external API calls
@@ -22,8 +24,8 @@ type Client struct {
 
 // RetryConfig defines retry behavior for failed requests
 type RetryConfig struct {
-	MaxRetries     int
-	RetryDelay     time.Duration
+	MaxRetries         int
+	RetryDelay         time.Duration
 	RetryableHTTPCodes []int
 }
 
@@ -73,6 +75,8 @@ func (c *Client) Delete(ctx context.Context, path string, opts ...RequestOption)
 
 // Do performs an HTTP request with the given method, path, and body
 func (c *Client) Do(ctx context.Context, method, path string, body interface{}, opts ...RequestOption) (*Response, error) {
+	logger := logger.GetLogger(ctx)
+
 	// Build the request
 	req, err := c.buildRequest(ctx, method, path, body, opts...)
 	if err != nil {
@@ -81,14 +85,18 @@ func (c *Client) Do(ctx context.Context, method, path string, body interface{}, 
 
 	// Execute request with retry logic if configured
 	if c.retryConfig != nil {
-		return c.doWithRetry(req)
+		return c.doWithRetry(ctx, req)
 	}
 
-	return c.executeRequest(req)
+	logger.Infof("### Call External API [%v] - %v\n", req.Method, req.URL.String())
+
+	return c.executeRequest(ctx, req)
 }
 
 // buildRequest constructs an HTTP request with all configurations applied
 func (c *Client) buildRequest(ctx context.Context, method, path string, body interface{}, opts ...RequestOption) (*http.Request, error) {
+	logger := logger.GetLogger(ctx)
+
 	// Create request config with client defaults
 	reqConfig := &RequestConfig{
 		headers:     make(map[string]string),
@@ -123,6 +131,8 @@ func (c *Client) buildRequest(ctx context.Context, method, path string, body int
 		}
 		bodyReader = bytes.NewReader(jsonBody)
 
+		logger.Info(string(jsonBody))
+
 		// Set Content-Type if not already set
 		if _, exists := reqConfig.headers["Content-Type"]; !exists {
 			reqConfig.headers["Content-Type"] = "application/json"
@@ -144,7 +154,9 @@ func (c *Client) buildRequest(ctx context.Context, method, path string, body int
 }
 
 // executeRequest executes the HTTP request and returns a Response
-func (c *Client) executeRequest(req *http.Request) (*Response, error) {
+func (c *Client) executeRequest(ctx context.Context, req *http.Request) (*Response, error) {
+	logger := logger.GetLogger(ctx)
+
 	// Apply interceptors (before request)
 	for _, interceptor := range c.interceptors {
 		if err := interceptor.Before(req); err != nil {
@@ -165,6 +177,8 @@ func (c *Client) executeRequest(req *http.Request) (*Response, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
+	logger.Infof("### Call External API Reponse, %v", string(bodyBytes))
+
 	// Create Response object
 	resp := &Response{
 		StatusCode: httpResp.StatusCode,
@@ -183,7 +197,7 @@ func (c *Client) executeRequest(req *http.Request) (*Response, error) {
 }
 
 // doWithRetry executes the request with retry logic
-func (c *Client) doWithRetry(req *http.Request) (*Response, error) {
+func (c *Client) doWithRetry(ctx context.Context, req *http.Request) (*Response, error) {
 	var resp *Response
 	var err error
 
@@ -192,7 +206,7 @@ func (c *Client) doWithRetry(req *http.Request) (*Response, error) {
 			time.Sleep(c.retryConfig.RetryDelay)
 		}
 
-		resp, err = c.executeRequest(req)
+		resp, err = c.executeRequest(ctx, req)
 		if err == nil && !c.shouldRetry(resp.StatusCode) {
 			return resp, nil
 		}

@@ -13,6 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/applications/services"
 	"math-ai.com/math-ai/internal/applications/validators"
 	di "math-ai.com/math-ai/internal/core/di/services"
+	"math-ai.com/math-ai/internal/driven-adapter/external/http_client"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/repositories"
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/pkg/aws/s3"
@@ -23,6 +24,8 @@ type ServiceContainer struct {
 	SessionProvider sessionprovider.SessionProvider
 	JwtHelper       jwtutil.JwtHelper
 
+	GeoService                *http_client.GeoFencingService
+	MiscService               di.IMiscService
 	AuthService               di.IAuthService
 	UserService               di.IUserService
 	DeviceService             di.IDeviceService
@@ -95,6 +98,12 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		}
 	}
 
+	log.Println("> geoSvc...")
+	geoSvc := http_client.NewGeoFencingService(env.GoogleGeoAPIKey)
+
+	log.Println("> miscSvc...")
+	miscSvc := services.NewMiscService(geoSvc)
+
 	log.Println("> storageSvc...")
 	s3Client := s3.NewClient(env.S3Config)
 	var storageSvc = services.NewStorageService(s3Client)
@@ -140,6 +149,8 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		SessionManager:            sessionManager,
 		SessionProvider:           sessionProvider,
 		JwtHelper:                 jwtHelper,
+		GeoService:                geoSvc,
+		MiscService:               miscSvc,
 		AuthService:               authSvc,
 		UserService:               userSvc,
 		DeviceService:             deviceSvc,
