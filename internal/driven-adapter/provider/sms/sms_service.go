@@ -4,48 +4,29 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	"math-ai.com/math-ai/internal/driven-adapter/external/http_client"
 )
 
 // SmsService handles SMS-related HTTP requests
 type SmsService struct {
-	client *Client
+	client *http_client.Client
 }
 
-// SMSRequest represents an SMS request payload
-type SMSRequest struct {
-	To      string `json:"to"`
-	From    string `json:"from"`
-	Message string `json:"message"`
-}
-
-// SMSResponse represents an SMS response
-type SMSResponse struct {
-	MessageID string `json:"message_id"`
-	Status    string `json:"status"`
-	Cost      string `json:"cost,omitempty"`
-}
-
-// NewSmsService creates a new SMS service with configurable options
-// Example usage:
-//   service := NewSmsService(
-//     WithBaseURL("https://api.smsprovider.com"),
-//     WithSMSKey("your-sms-api-key"),
-//     WithTimeout(30 * time.Second),
-//   )
-func NewSmsService(opts ...Option) *SmsService {
+func NewSmsService(opts ...http_client.Option) *SmsService {
 	// Add default options for SMS service
-	defaultOpts := []Option{
-		WithContentType("application/json"),
-		WithAccept("application/json"),
-		WithUserAgent("Math-AI-SMS-Client/1.0"),
-		WithTimeout(30 * time.Second),
+	defaultOpts := []http_client.Option{
+		http_client.WithContentType("application/json"),
+		http_client.WithAccept("application/json"),
+		http_client.WithUserAgent("Math-AI-SMS-Client/1.0"),
+		http_client.WithTimeout(30 * time.Second),
 	}
 
 	// Merge default options with provided options
 	allOpts := append(defaultOpts, opts...)
 
 	return &SmsService{
-		client: NewClient(allOpts...),
+		client: http_client.NewClient(allOpts...),
 	}
 }
 

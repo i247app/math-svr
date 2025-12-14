@@ -4,16 +4,16 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/applications/dto"
-	"math-ai.com/math-ai/internal/driven-adapter/external/http_client"
+	"math-ai.com/math-ai/internal/driven-adapter/provider/geo"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	appctx "math-ai.com/math-ai/internal/shared/utils/context"
 )
 
 type MiscService struct {
-	geoSvc *http_client.GeoFencingService
+	geoSvc *geo.GeoFencingService
 }
 
-func NewMiscService(geoSvc *http_client.GeoFencingService) *MiscService {
+func NewMiscService(geoSvc *geo.GeoFencingService) *MiscService {
 	return &MiscService{
 		geoSvc: geoSvc,
 	}
@@ -26,10 +26,10 @@ func (s *MiscService) Ping() (status.Code, error) {
 func (s *MiscService) DetermineLocation(ctx context.Context, req *dto.LocationRequest) (status.Code, *dto.LocationResponse, error) {
 	language := appctx.GetLocale(ctx)
 
-	var location *http_client.LocationInfo
+	var location *geo.LocationInfo
 	switch req.TypeDetect {
 	case "lat_lng":
-		reqGeo := &http_client.ReverseGeocodeRequest{
+		reqGeo := &geo.ReverseGeocodeRequest{
 			Language: language,
 			Lat:      req.LatLng.Lat,
 			Lng:      req.LatLng.Lng,

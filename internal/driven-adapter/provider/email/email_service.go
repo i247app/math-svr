@@ -1,52 +1,27 @@
-package http_client
+package email
 
 import (
 	"context"
 	"fmt"
 	"time"
+
+	"math-ai.com/math-ai/internal/driven-adapter/external/http_client"
 )
 
-// EmailService handles email-related HTTP requests
-type EmailService struct {
-	client *Client
-}
-
-// EmailRequest represents an email request payload
-type EmailRequest struct {
-	To      []string `json:"to"`
-	From    string   `json:"from"`
-	Subject string   `json:"subject"`
-	Body    string   `json:"body"`
-	HTML    string   `json:"html,omitempty"`
-}
-
-// EmailResponse represents an email response
-type EmailResponse struct {
-	MessageID string `json:"message_id"`
-	Status    string `json:"status"`
-}
-
-// NewEmailService creates a new email service with configurable options
-// Example usage:
-//   service := NewEmailService(
-//     WithBaseURL("https://api.emailprovider.com"),
-//     WithEmailKey("your-api-key"),
-//     WithTimeout(30 * time.Second),
-//   )
-func NewEmailService(opts ...Option) *EmailService {
+func NewEmailService(opts ...http_client.Option) *EmailService {
 	// Add default options for email service
-	defaultOpts := []Option{
-		WithContentType("application/json"),
-		WithAccept("application/json"),
-		WithUserAgent("Math-AI-Email-Client/1.0"),
-		WithTimeout(30 * time.Second),
+	defaultOpts := []http_client.Option{
+		http_client.WithContentType("application/json"),
+		http_client.WithAccept("application/json"),
+		http_client.WithUserAgent("Math-AI-Email-Client/1.0"),
+		http_client.WithTimeout(30 * time.Second),
 	}
 
 	// Merge default options with provided options
 	allOpts := append(defaultOpts, opts...)
 
 	return &EmailService{
-		client: NewClient(allOpts...),
+		client: http_client.NewClient(allOpts...),
 	}
 }
 

@@ -1,55 +1,32 @@
-package http_client
+package notification
 
 import (
 	"context"
 	"fmt"
 	"time"
+
+	"math-ai.com/math-ai/internal/driven-adapter/external/http_client"
 )
 
 // PushNotificationService handles push notification-related HTTP requests
 type PushNotificationService struct {
-	client *Client
+	client *http_client.Client
 }
 
-// PushNotificationRequest represents a push notification request payload
-type PushNotificationRequest struct {
-	To    []string               `json:"to"`
-	Title string                 `json:"title"`
-	Body  string                 `json:"body"`
-	Data  map[string]interface{} `json:"data,omitempty"`
-	Badge int                    `json:"badge,omitempty"`
-	Sound string                 `json:"sound,omitempty"`
-}
-
-// PushNotificationResponse represents a push notification response
-type PushNotificationResponse struct {
-	MessageID   string `json:"message_id"`
-	Status      string `json:"status"`
-	SuccessCount int   `json:"success_count"`
-	FailureCount int   `json:"failure_count"`
-}
-
-// NewPushNotificationService creates a new push notification service with configurable options
-// Example usage:
-//   service := NewPushNotificationService(
-//     WithBaseURL("https://fcm.googleapis.com/v1/projects/my-project"),
-//     WithNotificationKey("your-server-key"),
-//     WithTimeout(30 * time.Second),
-//   )
-func NewPushNotificationService(opts ...Option) *PushNotificationService {
+func NewPushNotificationService(opts ...http_client.Option) *PushNotificationService {
 	// Add default options for push notification service
-	defaultOpts := []Option{
-		WithContentType("application/json"),
-		WithAccept("application/json"),
-		WithUserAgent("Math-AI-Push-Client/1.0"),
-		WithTimeout(30 * time.Second),
+	defaultOpts := []http_client.Option{
+		http_client.WithContentType("application/json"),
+		http_client.WithAccept("application/json"),
+		http_client.WithUserAgent("Math-AI-Push-Client/1.0"),
+		http_client.WithTimeout(30 * time.Second),
 	}
 
 	// Merge default options with provided options
 	allOpts := append(defaultOpts, opts...)
 
 	return &PushNotificationService{
-		client: NewClient(allOpts...),
+		client: http_client.NewClient(allOpts...),
 	}
 }
 

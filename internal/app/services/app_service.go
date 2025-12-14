@@ -13,8 +13,8 @@ import (
 	"math-ai.com/math-ai/internal/applications/services"
 	"math-ai.com/math-ai/internal/applications/validators"
 	di "math-ai.com/math-ai/internal/core/di/services"
-	"math-ai.com/math-ai/internal/driven-adapter/external/http_client"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/repositories"
+	"math-ai.com/math-ai/internal/driven-adapter/provider/geo"
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/pkg/aws/s3"
 )
@@ -24,7 +24,7 @@ type ServiceContainer struct {
 	SessionProvider sessionprovider.SessionProvider
 	JwtHelper       jwtutil.JwtHelper
 
-	GeoService                *http_client.GeoFencingService
+	GeoService                *geo.GeoFencingService
 	MiscService               di.IMiscService
 	AuthService               di.IAuthService
 	UserService               di.IUserService
@@ -99,7 +99,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	}
 
 	log.Println("> geoSvc...")
-	geoSvc := http_client.NewGeoFencingService(env.GoogleGeoAPIKey)
+	geoSvc := geo.NewGeoFencingService(env.GoogleGeoAPIKey)
 
 	log.Println("> miscSvc...")
 	miscSvc := services.NewMiscService(geoSvc)

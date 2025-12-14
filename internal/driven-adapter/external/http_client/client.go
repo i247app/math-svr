@@ -155,8 +155,6 @@ func (c *Client) buildRequest(ctx context.Context, method, path string, body int
 
 // executeRequest executes the HTTP request and returns a Response
 func (c *Client) executeRequest(ctx context.Context, req *http.Request) (*Response, error) {
-	logger := logger.GetLogger(ctx)
-
 	// Apply interceptors (before request)
 	for _, interceptor := range c.interceptors {
 		if err := interceptor.Before(req); err != nil {
@@ -177,7 +175,7 @@ func (c *Client) executeRequest(ctx context.Context, req *http.Request) (*Respon
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	logger.Infof("### Call External API Reponse, %v", string(bodyBytes))
+	fmt.Printf("### Call External API Reponse, %v\n", string(bodyBytes))
 
 	// Create Response object
 	resp := &Response{
