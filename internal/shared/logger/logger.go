@@ -7,10 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"path/filepath"
-	"runtime"
-
-	"math-ai.com/math-ai/internal/session"
 )
 
 // Context keys for storing logger and session info in context
@@ -40,130 +36,6 @@ func GetLogger(ctx context.Context) *logger {
 	}
 	return val.(*logger)
 }
-
-// withSessionInfo adds session info (token, userid) to context for logging
-func withSessionInfo(ctx context.Context, token, userid string) context.Context {
-	ctx = context.WithValue(ctx, tokenKey, token)
-	ctx = context.WithValue(ctx, useridKey, userid)
-	return ctx
-}
-
-// extractSessionInfo retrieves token and userid from context
-func extractSessionInfo(ctx context.Context) (token string, userid string) {
-	token = "anon"
-	userid = "anon"
-
-	if t, ok := ctx.Value(tokenKey).(string); ok && t != "" {
-		token = t
-	}
-	if u, ok := ctx.Value(useridKey).(string); ok && u != "" {
-		userid = u
-	}
-
-	return
-}
-
-// Custom slog.Handler implementation
-// ------------------------------------------------------------
-
-// customHandler implements slog.Handler with our custom format
-type customHandler struct {
-	writer io.Writer
-	attrs  []slog.Attr
-	groups []string
-}
-
-// newCustomHandler creates a new custom handler that writes to the given writer
-func newCustomHandler(w io.Writer) *customHandler {
-	return &customHandler{
-		writer: w,
-		attrs:  make([]slog.Attr, 0),
-		groups: make([]string, 0),
-	}
-}
-
-// Enabled reports whether the handler handles records at the given level
-func (h *customHandler) Enabled(ctx context.Context, level slog.Level) bool {
-	// Enable all levels
-	return true
-}
-
-// Handle formats and writes the log record
-func (h *customHandler) Handle(ctx context.Context, r slog.Record) error {
-	// Extract session info from context
-	token, userid := extractSessionInfo(ctx)
-
-	// Get caller information (filename and line)
-	// We need to skip frames to get the actual caller
-	var file string
-	var line int
-
-	// Try to get source from record first
-	if r.PC != 0 {
-		fs := runtime.CallersFrames([]uintptr{r.PC})
-		f, _ := fs.Next()
-		file = filepath.Base(f.File)
-		line = f.Line
-	} else {
-		// Fallback: walk the stack to find the caller
-		var pcs [1]uintptr
-		runtime.Callers(5, pcs[:])
-		fs := runtime.CallersFrames(pcs[:])
-		f, _ := fs.Next()
-		file = filepath.Base(f.File)
-		line = f.Line
-	}
-
-	// Format timestamp with microseconds: 2025/12/04 04:18:38.151018
-	timestamp := r.Time.Format("2006/01/02 15:04:05")
-
-	// Format level
-	level := r.Level.String()
-
-	// Build the log message
-	logMsg := fmt.Sprintf("%s %s:%d [%s] [%s] %s: %s\n",
-		timestamp,
-		file,
-		line,
-		token,
-		userid,
-		level,
-		r.Message,
-	)
-
-	// Write to output
-	_, err := h.writer.Write([]byte(logMsg))
-	return err
-}
-
-// WithAttrs returns a new handler with the given attributes added
-func (h *customHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	newHandler := &customHandler{
-		writer: h.writer,
-		attrs:  make([]slog.Attr, len(h.attrs)+len(attrs)),
-		groups: make([]string, len(h.groups)),
-	}
-	copy(newHandler.attrs, h.attrs)
-	copy(newHandler.attrs[len(h.attrs):], attrs)
-	copy(newHandler.groups, h.groups)
-	return newHandler
-}
-
-// WithGroup returns a new handler with the given group added
-func (h *customHandler) WithGroup(name string) slog.Handler {
-	newHandler := &customHandler{
-		writer: h.writer,
-		attrs:  make([]slog.Attr, len(h.attrs)),
-		groups: make([]string, len(h.groups)+1),
-	}
-	copy(newHandler.attrs, h.attrs)
-	copy(newHandler.groups, h.groups)
-	newHandler.groups[len(h.groups)] = name
-	return newHandler
-}
-
-// Request-scoped logger
-// ------------------------------------------------------------
 
 type logger struct {
 	slogger *slog.Logger
@@ -220,45 +92,6 @@ func (l *logger) Close() error {
 	}
 	return nil
 }
-
-// extractSessionInfoFromRequest extracts token and userid from the request
-func extractSessionInfoFromRequest(r *http.Request) (token string, userid string) {
-	token = "anon"
-	userid = "anon"
-
-	if r == nil {
-		return
-	}
-
-	// Get session from request context
-	sess := session.GetRequestSession(r)
-	if sess == nil {
-		return
-	}
-
-	// Extract token (key) from session
-	if key, ok := sess.Get("key"); ok {
-		if keyStr, ok := key.(string); ok && len(keyStr) >= 6 {
-			// Get last 6 characters of token
-			token = keyStr[len(keyStr)-6:]
-		} else if keyStr, ok := key.(string); ok {
-			// If token is shorter than 6 chars, use as is
-			token = keyStr
-		}
-	}
-
-	// Extract userid from session
-	if uid, ok := sess.UID(); ok {
-		userid = uid
-	}
-
-	println("userID", userid)
-
-	return
-}
-
-// Logger interface methods using slog
-// ------------------------------------------------------------
 
 // Info logs an informational message
 func (l *logger) Info(args ...any) {
