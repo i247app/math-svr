@@ -86,4 +86,9 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("POST /storage/upload", sc.HandleUpload)
 	server.AddRoute("POST /storage/delete", sc.HandleDelete)
 	server.AddRoute("POST /storage/preview-url", sc.HandleGetPreviewURL)
+
+	// contact
+	ct := controller.NewContactController(res, services.ContactService)
+	server.AddRoute("POST /contact/submit", ct.HandlerCreateContact)
+	server.AddRoute("GET /contact/", ct.HandlerGetContacts, authMiddleware, adminMiddleware)
 }

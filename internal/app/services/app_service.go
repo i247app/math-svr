@@ -37,6 +37,7 @@ type ServiceContainer struct {
 	UserQuizPracticesService  di.IUserQuizPracticesService
 	UserQuizAssessmentService di.IUserQuizAssessmentService
 	StorageService            di.IStorageService
+	ContactService            di.IContactService
 }
 
 const (
@@ -56,6 +57,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	profileRepo := repositories.NewProfileRepository(res.Db)
 	userLatestQuizRepo := repositories.NewUserQuizPracticesRepository(res.Db)
 	userQuizAssessmentRepo := repositories.NewUserQuizAssessmentRepository(res.Db)
+	contactRepo := repositories.NewContactRepository(res.Db)
 
 	log.Println("Initializing services")
 
@@ -149,6 +151,9 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	log.Println("> userQuizAssessmentSvc...")
 	var userQuizAssessmentSvc = services.NewUserQuizAssessmentService(userQuizAssessmentRepo, profileSvc, chatBoxSvc)
 
+	log.Println("> contactService...")
+	var contactSvc = services.NewContactService(contactRepo)
+
 	return &ServiceContainer{
 		SessionManager:            sessionManager,
 		SessionProvider:           sessionProvider,
@@ -165,5 +170,6 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		UserQuizPracticesService:  userQuizPracticesSvc,
 		UserQuizAssessmentService: userQuizAssessmentSvc,
 		StorageService:            storageSvc,
+		ContactService: 		   contactSvc,	
 	}, nil
 }
