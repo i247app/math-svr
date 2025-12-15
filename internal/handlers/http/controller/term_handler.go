@@ -13,21 +13,21 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
-type SemesterController struct {
+type TermController struct {
 	appResources *resources.AppResource
-	service      di.ISemesterService
+	service      di.ITermService
 }
 
-func NewSemesterController(appResources *resources.AppResource, service di.ISemesterService) *SemesterController {
-	return &SemesterController{
+func NewTermController(appResources *resources.AppResource, service di.ITermService) *TermController {
+	return &TermController{
 		appResources: appResources,
 		service:      service,
 	}
 }
 
-// GET - /semesters/list
-func (c *SemesterController) HandlerGetListSemesters(w http.ResponseWriter, r *http.Request) {
-	var req dto.ListSemesterRequest
+// GET - /terms/list
+func (c *TermController) HandlerGetListTerms(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListTermRequest
 
 	// Parse query parameters
 	query := r.URL.Query()
@@ -35,57 +35,57 @@ func (c *SemesterController) HandlerGetListSemesters(w http.ResponseWriter, r *h
 		req.Search = search
 	}
 
-	statusCode, semesters, pagination, err := c.service.ListSemesters(r.Context(), &req)
+	statusCode, terms, pagination, err := c.service.ListTerms(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
 	}
 
-	res := &dto.ListSemesterResponse{
-		Items:      semesters,
+	res := &dto.ListTermResponse{
+		Items:      terms,
 		Pagination: pagination,
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }
 
-// GET - /semesters/{id}
-func (c *SemesterController) HandlerGetSemester(w http.ResponseWriter, r *http.Request) {
-	semesterID := r.PathValue("id")
+// GET - /terms/{id}
+func (c *TermController) HandlerGetTerm(w http.ResponseWriter, r *http.Request) {
+	termID := r.PathValue("id")
 
-	statusCode, semester, err := c.service.GetSemesterByID(r.Context(), semesterID)
+	statusCode, term, err := c.service.GetTermByID(r.Context(), termID)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
 	}
 
-	res := &dto.GetSemesterResponse{
-		Semester: semester,
+	res := &dto.GetTermResponse{
+		Term: term,
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }
 
-// GET - /semesters/name/{name}
-func (c *SemesterController) HandlerGetSemesterByName(w http.ResponseWriter, r *http.Request) {
+// GET - /terms/name/{name}
+func (c *TermController) HandlerGetTermByName(w http.ResponseWriter, r *http.Request) {
 	name := r.PathValue("name")
 
-	statusCode, semester, err := c.service.GetSemesterByName(r.Context(), name)
+	statusCode, term, err := c.service.GetTermByName(r.Context(), name)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
 	}
 
-	res := &dto.GetSemesterResponse{
-		Semester: semester,
+	res := &dto.GetTermResponse{
+		Term: term,
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }
 
-// POST - /semesters/create
-func (c *SemesterController) HandlerCreateSemester(w http.ResponseWriter, r *http.Request) {
-	var req dto.CreateSemesterRequest
+// POST - /terms/create
+func (c *TermController) HandlerCreateTerm(w http.ResponseWriter, r *http.Request) {
+	var req dto.CreateTermRequest
 
 	// Check content type - support both JSON and multipart form
 	contentType := r.Header.Get("Content-Type")
@@ -122,22 +122,22 @@ func (c *SemesterController) HandlerCreateSemester(w http.ResponseWriter, r *htt
 		}
 	}
 
-	statusCode, semester, err := c.service.CreateSemester(r.Context(), &req)
+	statusCode, term, err := c.service.CreateTerm(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
 	}
 
-	res := &dto.CreateSemesterResponse{
-		Semester: semester,
+	res := &dto.CreateTermResponse{
+		Term: term,
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }
 
-// POST - /semesters/update
-func (c *SemesterController) HandlerUpdateSemester(w http.ResponseWriter, r *http.Request) {
-	var req dto.UpdateSemesterRequest
+// POST - /terms/update
+func (c *TermController) HandlerUpdateTerm(w http.ResponseWriter, r *http.Request) {
+	var req dto.UpdateTermRequest
 	// Check content type - support both JSON and multipart form
 	contentType := r.Header.Get("Content-Type")
 
@@ -181,49 +181,49 @@ func (c *SemesterController) HandlerUpdateSemester(w http.ResponseWriter, r *htt
 		}
 	}
 
-	statusCode, semester, err := c.service.UpdateSemester(r.Context(), &req)
+	statusCode, term, err := c.service.UpdateTerm(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
 	}
 
-	res := &dto.UpdateSemesterResponse{
-		Semester: semester,
+	res := &dto.UpdateTermResponse{
+		Term: term,
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }
 
-// POST - /semesters/delete
-func (c *SemesterController) HandlerDeleteSemester(w http.ResponseWriter, r *http.Request) {
-	var req dto.DeleteSemesterRequest
+// POST - /terms/delete
+func (c *TermController) HandlerDeleteTerm(w http.ResponseWriter, r *http.Request) {
+	var req dto.DeleteTermRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
-	statusCode, err := c.service.DeleteSemester(r.Context(), req.ID)
+	statusCode, err := c.service.DeleteTerm(r.Context(), req.ID)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
 	}
 
-	response.WriteJson(w, r.Context(), "Semester deleted successfully", nil, statusCode)
+	response.WriteJson(w, r.Context(), "Term deleted successfully", nil, statusCode)
 }
 
-// POST - /semesters/force-delete
-func (c *SemesterController) HandlerForceDeleteSemester(w http.ResponseWriter, r *http.Request) {
-	var req dto.DeleteSemesterRequest
+// POST - /terms/force-delete
+func (c *TermController) HandlerForceDeleteTerm(w http.ResponseWriter, r *http.Request) {
+	var req dto.DeleteTermRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
-	statusCode, err := c.service.ForceDeleteSemester(r.Context(), req.ID)
+	statusCode, err := c.service.ForceDeleteTerm(r.Context(), req.ID)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
 	}
 
-	response.WriteJson(w, r.Context(), "Semester permanently deleted successfully", nil, statusCode)
+	response.WriteJson(w, r.Context(), "Term permanently deleted successfully", nil, statusCode)
 }

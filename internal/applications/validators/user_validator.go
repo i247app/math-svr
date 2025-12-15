@@ -40,8 +40,8 @@ func (v *userValidator) ValidateCreateUserRequest(req *dto.CreateUserRequest) (s
 		return status.GRADE_MISSING_ID, err_svc.ErrMissingGradeID
 	}
 
-	if req.SemesterID == "" {
-		return status.SEMESTER_MISSING_ID, err_svc.ErrSemesterMissingID
+	if req.TermID == "" {
+		return status.TERM_MISSING_ID, err_svc.ErrTermMissingID
 	}
 
 	if req.Password == "" {

@@ -9,20 +9,20 @@ import (
 )
 
 type User struct {
-	id         string
-	name       string
-	phone      string
-	email      string
-	avatarKey  *string
-	dob        *time.Time
-	gradeID    string
-	semesterID string
-	role       string
-	password   string
-	status     string
-	createDT   time.Time
-	modifyDT   time.Time
-	deletedDT  *time.Time
+	id        string
+	name      string
+	phone     string
+	email     string
+	avatarKey *string
+	dob       *time.Time
+	gradeID   string
+	termID    string
+	role      string
+	password  string
+	status    string
+	createDT  time.Time
+	modifyDT  time.Time
+	deletedDT *time.Time
 }
 
 func NewUserDomain() *User {
@@ -89,12 +89,12 @@ func (u *User) SetGradeID(gradeID string) {
 	u.gradeID = gradeID
 }
 
-func (u *User) SemesterID() string {
-	return u.semesterID
+func (u *User) TermID() string {
+	return u.termID
 }
 
-func (u *User) SetSemesterID(semesterID string) {
-	u.semesterID = semesterID
+func (u *User) SetTermID(termID string) {
+	u.termID = termID
 }
 
 func (u *User) Role() string {

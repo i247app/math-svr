@@ -35,8 +35,8 @@ func (v *profileValidator) ValidateCreateProfileRequest(req *dto.CreateProfileRe
 		return status.PROFILE_MISSING_GRADE, err_svc.ErrProfileMissingGrade
 	}
 
-	if req.SemesterID == "" {
-		return status.PROFILE_MISSING_SEMESTER, err_svc.ErrProfileMissingSemester
+	if req.TermID == "" {
+		return status.PROFILE_MISSING_TERM, err_svc.ErrProfileMissingTerm
 	}
 
 	return status.SUCCESS, nil

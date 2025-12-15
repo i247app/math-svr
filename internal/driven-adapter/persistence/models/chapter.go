@@ -3,6 +3,6 @@ package models
 type ChapterModel struct {
 	ID            string
 	GradeID       string
-	SemesterID    string
+	TermID        string
 	ChapterNumber int
 }

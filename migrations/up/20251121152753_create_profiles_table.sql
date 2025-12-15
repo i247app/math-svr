@@ -3,7 +3,7 @@ CREATE TABLE profiles (
   `id` CHAR(36) NOT NULL,
   `uid` CHAR(36) NOT NULL,
   `grade_id` CHAR(36) NOT NULL,
-  `semester_id` CHAR(36) NOT NULL,
+  `term_id` CHAR(36) NOT NULL,
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
   `create_id` INT DEFAULT 0,
   `create_dt` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),

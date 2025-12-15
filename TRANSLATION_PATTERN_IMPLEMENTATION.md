@@ -10,7 +10,7 @@ A complete **Translation Table Pattern** system for multi-language support that 
 
 1. **`migrations/up/20251207220000_create_translation_tables.sql`**
 
-   - Creates: grade_translations, semester_translations, chapter_translations, lesson_translations
+   - Creates: grade_translations, term_translations, chapter_translations, lesson_translations
 
 2. **`migrations/down/20251207220000_create_translation_tables.sql`**
 
@@ -34,8 +34,8 @@ A complete **Translation Table Pattern** system for multi-language support that 
 ### Domain Models
 
 7. **`internal/core/domain/grade/grade_translation.go`** - NEW
-8. **`internal/core/domain/semester/semester.go`** - NEW
-9. **`internal/core/domain/semester/semester_translation.go`** - NEW
+8. **`internal/core/domain/term/term.go`** - NEW
+9. **`internal/core/domain/term/term_translation.go`** - NEW
 10. **`internal/core/domain/chapter/chapter.go`** - NEW
 11. **`internal/core/domain/chapter/chapter_translation.go`** - NEW
 12. **`internal/core/domain/lesson/lesson.go`** - NEW
@@ -48,8 +48,8 @@ A complete **Translation Table Pattern** system for multi-language support that 
 15. **`internal/driven-adapter/persistence/models/grade.go`** - MODIFIED
     - Removed Label and Description fields
 16. **`internal/driven-adapter/persistence/models/grade_translation.go`** - NEW
-17. **`internal/driven-adapter/persistence/models/semester.go`** - NEW
-18. **`internal/driven-adapter/persistence/models/semester_translation.go`** - NEW
+17. **`internal/driven-adapter/persistence/models/term.go`** - NEW
+18. **`internal/driven-adapter/persistence/models/term_translation.go`** - NEW
 19. **`internal/driven-adapter/persistence/models/chapter.go`** - NEW
 20. **`internal/driven-adapter/persistence/models/chapter_translation.go`** - NEW
 21. **`internal/driven-adapter/persistence/models/lesson.go`** - NEW
@@ -75,7 +75,7 @@ A complete **Translation Table Pattern** system for multi-language support that 
 **BEFORE** (Current - with duplication):
 
 ```
-semesters:          chapters:           lessons:
+terms:          chapters:           lessons:
 ├── id              ├── id              ├── id
 ├── name            ├── title           ├── title
 ├── description     ├── description     ├── content
@@ -86,8 +86,8 @@ semesters:          chapters:           lessons:
 
 ```
 Main Tables:              Translation Tables:
-semesters                 semester_translations
-├── id                    ├── semester_id (FK)
+terms                 term_translations
+├── id                    ├── term_id (FK)
                           ├── language
                           ├── name
                           └── description
@@ -95,7 +95,7 @@ semesters                 semester_translations
 chapters                  chapter_translations
 ├── id                    ├── chapter_id (FK)
 ├── grade_id              ├── language
-├── semester_id           ├── title
+├── term_id           ├── title
 └── chapter_number        └── description
 
 lessons                   lesson_translations
@@ -149,7 +149,7 @@ WHERE g.id = 'xxx';
 
 2. **Verify existing data:**
    ```sql
-   SELECT COUNT(*) FROM semesters;  -- Should have 8 rows
+   SELECT COUNT(*) FROM terms;  -- Should have 8 rows
    SELECT COUNT(*) FROM chapters;   -- Should have 120 rows
    SELECT COUNT(*) FROM lessons;    -- Check lesson count
    ```
@@ -176,13 +176,13 @@ mysql -u$DB_USER -p$DB_PASSWORD -h$DB_HOST $DB_NAME < migrations/up/202512072202
 ```sql
 -- Check translation tables have data
 SELECT COUNT(*) FROM grade_translations;      -- Should have rows
-SELECT COUNT(*) FROM semester_translations;   -- Should have 8 rows
+SELECT COUNT(*) FROM term_translations;   -- Should have 8 rows
 SELECT COUNT(*) FROM chapter_translations;    -- Should have 120 rows
 SELECT COUNT(*) FROM lesson_translations;     -- Should match lesson count
 
 -- Check main tables don't have language columns
 DESCRIBE grades;     -- No label, description
-DESCRIBE semesters;  -- No name, description, languague
+DESCRIBE terms;  -- No name, description, languague
 DESCRIBE chapters;   -- No title, description, languague
 DESCRIBE lessons;    -- No title, content, languague
 
@@ -232,7 +232,7 @@ Follow the examples in `docs/GRADE_REPOSITORY_TRANSLATION_EXAMPLE.md` to update:
 - `Create()` method
 - `Update()` method
 
-### 3. Create Semester/Chapter/Lesson Repositories
+### 3. Create term/Chapter/Lesson Repositories
 
 Use the same pattern for new repositories:
 
@@ -277,7 +277,7 @@ curl -H "X-Language: VN" http://localhost:8080/api/grades
 ❌ Adding French language:
 
 - Duplicate ALL 120 chapters (360 total rows)
-- Duplicate ALL semester data
+- Duplicate ALL term data
 - Duplicate ALL lesson data
 - Update foreign keys to point to correct language version
 - Complex queries with UNION or language filtering
@@ -307,7 +307,7 @@ FROM chapters;
 chapters table (1 row):
 id: 'ch-001'
 grade_id: 'grade-1'
-semester_id: 'sem-1'
+term_id: 'sem-1'
 chapter_number: 1
 
 chapter_translations table (3 rows):

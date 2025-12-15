@@ -8,7 +8,7 @@ import (
 	"time"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
-	domain "math-ai.com/math-ai/internal/core/domain/semester"
+	domain "math-ai.com/math-ai/internal/core/domain/term"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
@@ -16,18 +16,18 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
-type semesterRepository struct {
+type termRepository struct {
 	db db.IDatabase
 }
 
-func NewSemesterRepository(db db.IDatabase) di.ISemesterRepository {
-	return &semesterRepository{
+func NewTermRepository(db db.IDatabase) di.ITermRepository {
+	return &termRepository{
 		db: db,
 	}
 }
 
-// List retrieves a paginated list of semesters with optional search and sorting.
-func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersParams) ([]*domain.Semester, *pagination.Pagination, error) {
+// List retrieves a paginated list of terms with optional search and sorting.
+func (r *termRepository) List(ctx context.Context, params di.ListTermsParams) ([]*domain.Term, *pagination.Pagination, error) {
 	var queryBuilder strings.Builder
 	var countBuilder strings.Builder
 	args := []interface{}{}
@@ -47,16 +47,16 @@ func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersPa
 			s.create_dt,
 			s.modify_id,
 			s.modify_dt
-		FROM semesters s
-		LEFT JOIN semester_translations st ON s.id = st.semester_id AND st.language = ?
+		FROM terms s
+		LEFT JOIN term_translations st ON s.id = st.term_id AND st.language = ?
 		WHERE s.deleted_dt IS NULL`)
 	args = append(args, language)
 
 	// Count query base with same JOIN
 	countBuilder.WriteString(`
 		SELECT COUNT(*)
-		FROM semesters s
-		LEFT JOIN semester_translations st ON s.id = st.semester_id AND st.language = ?
+		FROM terms s
+		LEFT JOIN term_translations st ON s.id = st.term_id AND st.language = ?
 		WHERE s.deleted_dt IS NULL`)
 	countArgs = append(countArgs, language)
 
@@ -76,7 +76,7 @@ func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersPa
 	var total int64
 	countRow := r.db.QueryRow(ctx, nil, countBuilder.String(), countArgs...)
 	if err := countRow.Scan(&total); err != nil {
-		return nil, nil, fmt.Errorf("failed to count semesters: %v", err)
+		return nil, nil, fmt.Errorf("failed to count terms: %v", err)
 	}
 
 	// Initialize pagination
@@ -109,14 +109,14 @@ func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersPa
 	// Execute query
 	rows, err := r.db.Query(ctx, nil, queryBuilder.String(), args...)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to list semesters: %v", err)
+		return nil, nil, fmt.Errorf("failed to list terms: %v", err)
 	}
 	defer rows.Close()
 
 	// Scan results
-	var semesters []*domain.Semester
+	var terms []*domain.Term
 	for rows.Next() {
-		var s models.SemesterModel
+		var s models.TermModel
 		if err := rows.Scan(
 			&s.ID, &s.Name, &s.Description, &s.ImageKey, &s.Status, &s.DisplayOrder,
 			&s.CreateID, &s.CreateDT, &s.ModifyID, &s.ModifyDT,
@@ -124,24 +124,24 @@ func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersPa
 			return nil, nil, fmt.Errorf("scan error: %v", err)
 		}
 
-		semesters = append(semesters, domain.BuildSemesterDomainFromModel(&s))
+		terms = append(terms, domain.BuildTermDomainFromModel(&s))
 	}
 
-	return semesters, paginationObj, nil
+	return terms, paginationObj, nil
 }
 
-// FindByID retrieves a semester by ID.
-func (r *semesterRepository) FindByID(ctx context.Context, id string) (*domain.Semester, error) {
+// FindByID retrieves a term by ID.
+func (r *termRepository) FindByID(ctx context.Context, id string) (*domain.Term, error) {
 	query := `
 		SELECT id, name, description, image_key, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
-		FROM semesters
+		FROM terms
 		WHERE id = ? AND deleted_dt IS NULL
 	`
 
 	result := r.db.QueryRow(ctx, nil, query, id)
 
-	var s models.SemesterModel
+	var s models.TermModel
 	err := result.Scan(
 		&s.ID, &s.Name, &s.Description, &s.ImageKey, &s.Status, &s.DisplayOrder,
 		&s.CreateID, &s.CreateDT, &s.ModifyID, &s.ModifyDT,
@@ -153,23 +153,23 @@ func (r *semesterRepository) FindByID(ctx context.Context, id string) (*domain.S
 		return nil, fmt.Errorf("scan error: %v", err)
 	}
 
-	semester := domain.BuildSemesterDomainFromModel(&s)
+	term := domain.BuildTermDomainFromModel(&s)
 
-	return semester, nil
+	return term, nil
 }
 
-// FindByName retrieves a semester by name.
-func (r *semesterRepository) FindByName(ctx context.Context, name string) (*domain.Semester, error) {
+// FindByName retrieves a term by name.
+func (r *termRepository) FindByName(ctx context.Context, name string) (*domain.Term, error) {
 	query := `
 		SELECT id, name, description, image_key, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
-		FROM semesters
+		FROM terms
 		WHERE name = ? AND deleted_dt IS NULL
 	`
 
 	result := r.db.QueryRow(ctx, nil, query, name)
 
-	var s models.SemesterModel
+	var s models.TermModel
 	err := result.Scan(
 		&s.ID, &s.Name, &s.Description, &s.ImageKey, &s.Status, &s.DisplayOrder,
 		&s.CreateID, &s.CreateDT, &s.ModifyID, &s.ModifyDT,
@@ -181,64 +181,64 @@ func (r *semesterRepository) FindByName(ctx context.Context, name string) (*doma
 		return nil, fmt.Errorf("scan error: %v", err)
 	}
 
-	semester := domain.BuildSemesterDomainFromModel(&s)
+	term := domain.BuildTermDomainFromModel(&s)
 
-	return semester, nil
+	return term, nil
 }
 
-// Create inserts a new semester into the database.
-func (r *semesterRepository) Create(ctx context.Context, tx *sql.Tx, semester *domain.Semester) (int64, error) {
+// Create inserts a new term into the database.
+func (r *termRepository) Create(ctx context.Context, tx *sql.Tx, term *domain.Term) (int64, error) {
 	query := `
-		INSERT INTO semesters (id, name, description, image_key, status, display_order)
+		INSERT INTO terms (id, name, description, image_key, status, display_order)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
-		semester.ID(),
-		semester.Name(),
-		semester.Description(),
-		semester.ImageKey(),
+		term.ID(),
+		term.Name(),
+		term.Description(),
+		term.ImageKey(),
 		enum.StatusActive,
-		semester.DisplayOrder(),
+		term.DisplayOrder(),
 	)
 	if err != nil {
-		return 0, fmt.Errorf("failed to create semester: %v", err)
+		return 0, fmt.Errorf("failed to create term: %v", err)
 	}
 
 	return result.RowsAffected()
 }
 
-// Update modifies an existing semester in the database.
-func (r *semesterRepository) Update(ctx context.Context, semester *domain.Semester) (int64, error) {
+// Update modifies an existing term in the database.
+func (r *termRepository) Update(ctx context.Context, term *domain.Term) (int64, error) {
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
-	queryBuilder.WriteString("UPDATE semesters SET ")
+	queryBuilder.WriteString("UPDATE terms SET ")
 	updates := []string{}
 
-	if semester.Name() != "" {
+	if term.Name() != "" {
 		updates = append(updates, "name = ?")
-		args = append(args, semester.Name())
+		args = append(args, term.Name())
 	}
 
-	if semester.Description() != nil {
+	if term.Description() != nil {
 		updates = append(updates, "description = ?")
-		args = append(args, semester.Description())
+		args = append(args, term.Description())
 	}
 
 	// ImageKey can be nil, so we check if it's explicitly set
-	if semester.ImageKey() != nil {
+	if term.ImageKey() != nil {
 		updates = append(updates, "image_key = ?")
-		args = append(args, semester.ImageKey())
+		args = append(args, term.ImageKey())
 	}
 
-	if semester.Status() != "" {
+	if term.Status() != "" {
 		updates = append(updates, "status = ?")
-		args = append(args, semester.Status())
+		args = append(args, term.Status())
 	}
 
-	if semester.DisplayOrder() != 0 {
+	if term.DisplayOrder() != 0 {
 		updates = append(updates, "display_order = ?")
-		args = append(args, semester.DisplayOrder())
+		args = append(args, term.DisplayOrder())
 	}
 
 	updates = append(updates, "modify_dt = ?")
@@ -250,37 +250,37 @@ func (r *semesterRepository) Update(ctx context.Context, semester *domain.Semest
 
 	queryBuilder.WriteString(strings.Join(updates, ", "))
 	queryBuilder.WriteString(" WHERE id = ? AND deleted_dt IS NULL")
-	args = append(args, semester.ID())
+	args = append(args, term.ID())
 
 	result, err := r.db.Exec(ctx, nil, queryBuilder.String(), args...)
 	if err != nil {
-		return 0, fmt.Errorf("failed to update semester: %v", err)
+		return 0, fmt.Errorf("failed to update term: %v", err)
 	}
 
 	return result.RowsAffected()
 }
 
-// Delete soft deletes a semester by setting deleted_dt.
-func (r *semesterRepository) Delete(ctx context.Context, id string) error {
+// Delete soft deletes a term by setting deleted_dt.
+func (r *termRepository) Delete(ctx context.Context, id string) error {
 	query := `
-			UPDATE semesters
+			UPDATE terms
 			SET deleted_dt = ?,
 				modify_dt = ?
 			WHERE id = ? AND deleted_dt IS NULL`
 	_, err := r.db.Exec(ctx, nil, query, time.Now().UTC(), time.Now().UTC(), id)
 	if err != nil {
-		return fmt.Errorf("failed to delete semester: %v", err)
+		return fmt.Errorf("failed to delete term: %v", err)
 	}
 
 	return nil
 }
 
-// ForceDelete permanently deletes a semester from the database.
-func (r *semesterRepository) ForceDelete(ctx context.Context, tx *sql.Tx, id string) error {
-	query := `DELETE FROM semesters WHERE id = ?`
+// ForceDelete permanently deletes a term from the database.
+func (r *termRepository) ForceDelete(ctx context.Context, tx *sql.Tx, id string) error {
+	query := `DELETE FROM terms WHERE id = ?`
 	_, err := r.db.Exec(ctx, tx, query, id)
 	if err != nil {
-		return fmt.Errorf("failed to force delete semester: %v", err)
+		return fmt.Errorf("failed to force delete term: %v", err)
 	}
 
 	return nil

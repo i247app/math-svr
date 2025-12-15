@@ -4,12 +4,12 @@ import (
 	"io"
 	"time"
 
-	domain "math-ai.com/math-ai/internal/core/domain/semester"
+	domain "math-ai.com/math-ai/internal/core/domain/term"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
-type SemesterResponse struct {
+type TermResponse struct {
 	ID           string    `json:"id"`
 	Name         string    `json:"name"`
 	Description  *string   `json:"description"`
@@ -20,11 +20,11 @@ type SemesterResponse struct {
 	ModifiedAt   time.Time `json:"modified_at"`
 }
 
-type GetSemesterResponse struct {
-	Semester *SemesterResponse `json:"semester"`
+type GetTermResponse struct {
+	Term *TermResponse `json:"term"`
 }
 
-type ListSemesterRequest struct {
+type ListTermRequest struct {
 	Search    string `json:"search,omitempty" form:"search"`
 	Page      int64  `json:"page" form:"page"`
 	Limit     int64  `json:"size" form:"size"`
@@ -33,12 +33,12 @@ type ListSemesterRequest struct {
 	TakeAll   bool   `json:"take_all" form:"take_all"`
 }
 
-type ListSemesterResponse struct {
-	Items      []*SemesterResponse    `json:"items"`
+type ListTermResponse struct {
+	Items      []*TermResponse        `json:"items"`
 	Pagination *pagination.Pagination `json:"metadata"`
 }
 
-type CreateSemesterRequest struct {
+type CreateTermRequest struct {
 	Name         string  `json:"name"`
 	Description  *string `json:"description"`
 	ImageKey     *string `json:"image_key,omitempty"`
@@ -50,11 +50,11 @@ type CreateSemesterRequest struct {
 	ImageContentType string    `json:"icon_content_type"` // MIME type
 }
 
-type CreateSemesterResponse struct {
-	Semester *SemesterResponse `json:"semester"`
+type CreateTermResponse struct {
+	Term *TermResponse `json:"term"`
 }
 
-type UpdateSemesterRequest struct {
+type UpdateTermRequest struct {
 	ID           string        `json:"id"`
 	Name         *string       `json:"name,omitempty"`
 	Description  *string       `json:"description,omitempty"`
@@ -67,51 +67,51 @@ type UpdateSemesterRequest struct {
 	ImageContentType string    `json:"icon_content_type"` // MIME type
 }
 
-type UpdateSemesterResponse struct {
-	Semester *SemesterResponse `json:"semester"`
+type UpdateTermResponse struct {
+	Term *TermResponse `json:"term"`
 }
 
-type DeleteSemesterRequest struct {
+type DeleteTermRequest struct {
 	ID string `json:"id"`
 }
 
-func BuildSemesterDomainForCreate(req *CreateSemesterRequest) *domain.Semester {
-	semesterDomain := domain.NewSemesterDomain()
-	semesterDomain.GenerateID()
-	semesterDomain.SetName(req.Name)
-	semesterDomain.SetDescription(req.Description)
-	semesterDomain.SetImageKey(req.ImageKey)
-	semesterDomain.SetStatus(string(enum.StatusActive))
-	semesterDomain.SetDisplayOrder(req.DisplayOrder)
+func BuildTermDomainForCreate(req *CreateTermRequest) *domain.Term {
+	termDomain := domain.NewTermDomain()
+	termDomain.GenerateID()
+	termDomain.SetName(req.Name)
+	termDomain.SetDescription(req.Description)
+	termDomain.SetImageKey(req.ImageKey)
+	termDomain.SetStatus(string(enum.StatusActive))
+	termDomain.SetDisplayOrder(req.DisplayOrder)
 
-	return semesterDomain
+	return termDomain
 }
 
-func BuildSemesterDomainForUpdate(req *UpdateSemesterRequest) *domain.Semester {
-	semesterDomain := domain.NewSemesterDomain()
-	semesterDomain.SetID(req.ID)
+func BuildTermDomainForUpdate(req *UpdateTermRequest) *domain.Term {
+	termDomain := domain.NewTermDomain()
+	termDomain.SetID(req.ID)
 
 	if req.Name != nil {
-		semesterDomain.SetName(*req.Name)
+		termDomain.SetName(*req.Name)
 	}
 
 	if req.Description != nil {
-		semesterDomain.SetDescription(req.Description)
+		termDomain.SetDescription(req.Description)
 	}
 
 	if req.Status != nil {
-		semesterDomain.SetStatus(string(*req.Status))
+		termDomain.SetStatus(string(*req.Status))
 	}
 
 	if req.DisplayOrder != nil {
-		semesterDomain.SetDisplayOrder(*req.DisplayOrder)
+		termDomain.SetDisplayOrder(*req.DisplayOrder)
 	}
 
-	return semesterDomain
+	return termDomain
 }
 
-func SemesterResponseFromDomain(s *domain.Semester) SemesterResponse {
-	return SemesterResponse{
+func TermResponseFromDomain(s *domain.Term) TermResponse {
+	return TermResponse{
 		ID:           s.ID(),
 		Name:         s.Name(),
 		Description:  s.Description(),
@@ -122,10 +122,10 @@ func SemesterResponseFromDomain(s *domain.Semester) SemesterResponse {
 	}
 }
 
-func SemesterResponseListFromDomain(semesters []*domain.Semester) []SemesterResponse {
-	responses := make([]SemesterResponse, len(semesters))
-	for i, s := range semesters {
-		responses[i] = SemesterResponseFromDomain(s)
+func TermResponseListFromDomain(terms []*domain.Term) []TermResponse {
+	responses := make([]TermResponse, len(terms))
+	for i, s := range terms {
+		responses[i] = TermResponseFromDomain(s)
 	}
 	return responses
 }

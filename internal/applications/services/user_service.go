@@ -204,7 +204,7 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 		profileDomain = dto.BuildProfileDomainForUpdate(&dto.UpdateProfileRequest{
 			UID:        req.UID,
 			GradeID:    req.GradeID,
-			SemesterID: req.SemesterID,
+			TermID: req.TermID,
 		})
 	}
 

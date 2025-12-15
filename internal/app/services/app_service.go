@@ -32,7 +32,7 @@ type ServiceContainer struct {
 	DeviceService             di.IDeviceService
 	ChatBoxService            di.IChatBoxService
 	GradeService              di.IGradeService
-	SemesterService           di.ISemesterService
+	TermService               di.ITermService
 	ProfileService            di.IProfileService
 	UserQuizPracticesService  di.IUserQuizPracticesService
 	UserQuizAssessmentService di.IUserQuizAssessmentService
@@ -52,7 +52,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	userRepo := repositories.NewUserRepository(res.Db)
 	deviceRepo := repositories.NewDeviceRepository(res.Db)
 	gradeRepo := repositories.NewGradeRepository(res.Db)
-	semesterRepo := repositories.NewSemesterRepository(res.Db)
+	termRepo := repositories.NewTermRepository(res.Db)
 	profileRepo := repositories.NewProfileRepository(res.Db)
 	userLatestQuizRepo := repositories.NewUserQuizPracticesRepository(res.Db)
 	userQuizAssessmentRepo := repositories.NewUserQuizAssessmentRepository(res.Db)
@@ -128,9 +128,9 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	var gradeValidator = validators.NewGradeValidator()
 	var gradeSvc = services.NewGradeService(gradeValidator, gradeRepo, storageSvc)
 
-	log.Println("> semesterSvc...")
-	var semesterValidator = validators.NewSemesterValidator()
-	var semesterSvc = services.NewSemesterService(semesterValidator, semesterRepo, storageSvc)
+	log.Println("> termSvc...")
+	var termValidator = validators.NewTermValidator()
+	var termSvc = services.NewTermService(termValidator, termRepo, storageSvc)
 
 	log.Println("> profileSvc...")
 	var profileValidator = validators.NewProfileValidator()
@@ -160,7 +160,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		DeviceService:             deviceSvc,
 		ChatBoxService:            chatBoxSvc,
 		GradeService:              gradeSvc,
-		SemesterService:           semesterSvc,
+		TermService:               termSvc,
 		ProfileService:            profileSvc,
 		UserQuizPracticesService:  userQuizPracticesSvc,
 		UserQuizAssessmentService: userQuizAssessmentSvc,

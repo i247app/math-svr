@@ -2,7 +2,7 @@
 CREATE TABLE chapters (
     `id` CHAR(36) NOT NULL,
     `grade_id` CHAR(36) NOT NULL,
-    `semester_id` CHAR(36) NOT NULL,
+    `term_id` CHAR(36) NOT NULL,
     `chapter_number` INT NOT NULL,
     `title` VARCHAR(200) NOT NULL,
     `description` TEXT DEFAULT NULL,

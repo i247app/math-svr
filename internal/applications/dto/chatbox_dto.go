@@ -105,13 +105,13 @@ type ChatBoxStreamChunk struct {
 
 func BuildChatDomainForGenerateQuizPractice(ctx context.Context, req *GenerateQuizRequest, userProfile *ProfileResponse) *domain.Conversation {
 	var (
-		grade    string
-		semester string
+		grade string
+		term  string
 	)
 
 	if userProfile != nil {
 		grade = userProfile.Grade
-		semester = userProfile.Semester
+		term = userProfile.Term
 	}
 
 	conv := domain.NewConversation()
@@ -136,7 +136,7 @@ func BuildChatDomainForGenerateQuizPractice(ctx context.Context, req *GenerateQu
 		conv.SetSystemPrompt(req.SystemPrompt)
 	}
 
-	prompt := fmt.Sprintf(domain.PromptForGenerateQuizPractice, grade, semester)
+	prompt := fmt.Sprintf(domain.PromptForGenerateQuizPractice, grade, term)
 
 	// Add the current user message
 	userMsg := domain.NewMessage("user", prompt)

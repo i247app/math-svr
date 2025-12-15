@@ -140,7 +140,7 @@ func GetMessageENFromStatus(statusCode status.Code) string {
 		return "Profile user ID is missing."
 	case status.PROFILE_MISSING_GRADE:
 		return "Profile grade is missing."
-	case status.PROFILE_MISSING_SEMESTER:
+	case status.PROFILE_MISSING_TERM:
 		return "Profile level is missing."
 	case status.PROFILE_NOT_FOUND:
 		return "Profile not found."
@@ -153,19 +153,19 @@ func GetMessageENFromStatus(statusCode status.Code) string {
 	case status.PROFILE_INVALID_LEVEL:
 		return "Invalid profile level."
 
-	// Semester status messages
-	case status.SEMESTER_INVALID_PARAMS:
-		return "Invalid semester parameters."
-	case status.SEMESTER_MISSING_ID:
-		return "Semester ID is missing."
-	case status.SEMESTER_MISSING_NAME:
-		return "Semester name is missing."
-	case status.SEMESTER_NOT_FOUND:
-		return "Semester not found."
-	case status.SEMESTER_ALREADY_EXISTS:
-		return "Semester already exists."
-	case status.SEMESTER_CANNOT_DELETE:
-		return "Semester cannot be deleted."
+	// Term status messages
+	case status.TERM_INVALID_PARAMS:
+		return "Invalid term parameters."
+	case status.TERM_MISSING_ID:
+		return "Term ID is missing."
+	case status.TERM_MISSING_NAME:
+		return "Term name is missing."
+	case status.TERM_NOT_FOUND:
+		return "Term not found."
+	case status.TERM_ALREADY_EXISTS:
+		return "Term already exists."
+	case status.TERM_CANNOT_DELETE:
+		return "Term cannot be deleted."
 
 	default:
 		return "Unknown"

@@ -1,8 +1,8 @@
 package models
 
-type SemesterTranslationModel struct {
+type TermTranslationModel struct {
 	ID          string
-	SemesterID  string
+	TermID      string
 	Language    string
 	Name        string
 	Description *string

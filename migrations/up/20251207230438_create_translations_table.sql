@@ -18,18 +18,18 @@ CREATE TABLE grade_translations (
 -- (UUID(), 'ca93947f-f7b6-433e-968f-a7b70f36c201', 'vn', 'Lớp 5', 'Chương trình học lớp 5.');
 
 
-CREATE TABLE semester_translations (
+CREATE TABLE term_translations (
     `id` CHAR(36) NOT NULL,
-    `semester_id` CHAR(36) NOT NULL,
+    `term_id` CHAR(36) NOT NULL,
     `language` VARCHAR(10) NOT NULL,
     `name` VARCHAR(100) NOT NULL,
     `description` TEXT NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY unique_semester_language (semester_id, language),
-    FOREIGN KEY (semester_id) REFERENCES semesters(id) ON DELETE CASCADE
+    UNIQUE KEY unique_term_language (term_id, language),
+    FOREIGN KEY (term_id) REFERENCES terms(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- INSERT INTO semester_translations (id, semester_id, language, name, description) VALUES
+-- INSERT INTO term_translations (id, term_id, language, name, description) VALUES
 -- (UUID(), '2c0h1d3e-3f4g-6e5d-0h2c-9d8e7f6g5c13', 'vn', 'Giữa kỳ 1', 'Kỳ thi giữa kỳ đầu tiên.'),
 -- (UUID(), '4e2j3f5g-5h6i-8g7f-2j4e-1f0g9h8i7e35', 'vn', 'Cuối kỳ 1', 'Kết thúc học kỳ đầu tiên của năm học.'),
 -- (UUID(), '3d1i2e4f-4g5h-7f6e-1i3d-0e9f8g7h6d24', 'vn', 'Giữa kỳ 2', 'Kỳ thi giữa kỳ thứ hai.'),

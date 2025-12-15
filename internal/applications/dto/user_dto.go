@@ -41,14 +41,14 @@ type ListUserResponse struct {
 }
 
 type CreateUserRequest struct {
-	Name       string     `json:"name"`
-	Phone      string     `json:"phone"`
-	Email      string     `json:"email"`
-	Role       enum.ERole `json:"role,omitempty"`
-	Password   string     `json:"password"`
-	Dob        *string    `json:"dob"`
-	GradeID    string     `json:"grade_id"`
-	SemesterID string     `json:"semester_id"`
+	Name     string     `json:"name"`
+	Phone    string     `json:"phone"`
+	Email    string     `json:"email"`
+	Role     enum.ERole `json:"role,omitempty"`
+	Password string     `json:"password"`
+	Dob      *string    `json:"dob"`
+	GradeID  string     `json:"grade_id"`
+	TermID   string     `json:"term_id"`
 
 	// Avatar upload fields (for multipart form)
 	AvatarFile        io.Reader `json:"avatar_file"`         // File reader
@@ -64,15 +64,15 @@ type CreateUserResponse struct {
 }
 
 type UpdateUserRequest struct {
-	UID        string        `json:"uid"`
-	Name       *string       `json:"name,omitempty"`
-	Phone      *string       `json:"phone,omitempty"`
-	Email      *string       `json:"email,omitempty"`
-	Dob        *string       `json:"dob,omitempty"`
-	Role       *enum.ERole   `json:"role,omitempty"`
-	Status     *enum.EStatus `json:"status,omitempty"`
-	GradeID    *string       `json:"grade_id,omitempty"`
-	SemesterID *string       `json:"semester_id,omitempty"`
+	UID     string        `json:"uid"`
+	Name    *string       `json:"name,omitempty"`
+	Phone   *string       `json:"phone,omitempty"`
+	Email   *string       `json:"email,omitempty"`
+	Dob     *string       `json:"dob,omitempty"`
+	Role    *enum.ERole   `json:"role,omitempty"`
+	Status  *enum.EStatus `json:"status,omitempty"`
+	GradeID *string       `json:"grade_id,omitempty"`
+	TermID  *string       `json:"term_id,omitempty"`
 
 	// Avatar upload fields (for multipart form)
 	AvatarFile        io.Reader `json:"-"`                       // File reader
@@ -97,7 +97,7 @@ func BuildUserDomainForCreate(req *CreateUserRequest) *domain.User {
 	userDomain.SetPhone(req.Phone)
 	userDomain.SetPassword(req.Password)
 	userDomain.SetGradeID(req.GradeID)
-	userDomain.SetSemesterID(req.SemesterID)
+	userDomain.SetTermID(req.TermID)
 
 	if req.Dob != nil {
 		parsedDob, err := time.Parse(time.DateOnly, *req.Dob)

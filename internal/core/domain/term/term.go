@@ -8,7 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 )
 
-type Semester struct {
+type Term struct {
 	id           string
 	name         string
 	description  *string
@@ -22,109 +22,109 @@ type Semester struct {
 	deletedDT    *time.Time
 }
 
-func NewSemesterDomain() *Semester {
-	return &Semester{}
+func NewTermDomain() *Term {
+	return &Term{}
 }
 
-func (s *Semester) ID() string {
+func (s *Term) ID() string {
 	return s.id
 }
 
-func (s *Semester) GenerateID() {
+func (s *Term) GenerateID() {
 	s.id = uuid.New().String()
 }
 
-func (s *Semester) SetID(id string) {
+func (s *Term) SetID(id string) {
 	s.id = id
 }
 
-func (s *Semester) Name() string {
+func (s *Term) Name() string {
 	return s.name
 }
 
-func (s *Semester) SetName(name string) {
+func (s *Term) SetName(name string) {
 	s.name = name
 }
 
-func (s *Semester) Description() *string {
+func (s *Term) Description() *string {
 	return s.description
 }
 
-func (s *Semester) SetDescription(description *string) {
+func (s *Term) SetDescription(description *string) {
 	s.description = description
 }
 
-func (s *Semester) ImageKey() *string {
+func (s *Term) ImageKey() *string {
 	return s.imageKey
 }
 
-func (s *Semester) SetImageKey(imageKey *string) {
+func (s *Term) SetImageKey(imageKey *string) {
 	s.imageKey = imageKey
 }
 
-func (s *Semester) Status() string {
+func (s *Term) Status() string {
 	return s.status
 }
 
-func (s *Semester) SetStatus(status string) {
+func (s *Term) SetStatus(status string) {
 	if status == "" {
 		status = string(enum.StatusActive)
 	}
 	s.status = status
 }
 
-func (g *Semester) DisplayOrder() int8 {
+func (g *Term) DisplayOrder() int8 {
 	return g.displayOrder
 }
 
-func (g *Semester) SetDisplayOrder(displayOrder int8) {
+func (g *Term) SetDisplayOrder(displayOrder int8) {
 	g.displayOrder = displayOrder
 }
 
-func (s *Semester) CreateID() *int64 {
+func (s *Term) CreateID() *int64 {
 	return s.createID
 }
 
-func (s *Semester) SetCreateID(createID *int64) {
+func (s *Term) SetCreateID(createID *int64) {
 	s.createID = createID
 }
 
-func (s *Semester) CreatedAt() time.Time {
+func (s *Term) CreatedAt() time.Time {
 	return s.createDT
 }
 
-func (s *Semester) SetCreatedAt(createDT time.Time) {
+func (s *Term) SetCreatedAt(createDT time.Time) {
 	s.createDT = createDT
 }
 
-func (s *Semester) ModifyID() *int64 {
+func (s *Term) ModifyID() *int64 {
 	return s.modifyID
 }
 
-func (s *Semester) SetModifyID(modifyID *int64) {
+func (s *Term) SetModifyID(modifyID *int64) {
 	s.modifyID = modifyID
 }
 
-func (s *Semester) ModifiedAt() time.Time {
+func (s *Term) ModifiedAt() time.Time {
 	return s.modifyDT
 }
 
-func (s *Semester) SetModifiedAt(modifyDT time.Time) {
+func (s *Term) SetModifiedAt(modifyDT time.Time) {
 	s.modifyDT = modifyDT
 }
 
-func (s *Semester) DeletedAt() *time.Time {
+func (s *Term) DeletedAt() *time.Time {
 	return s.deletedDT
 }
 
-func (s *Semester) SetDeletedAt(deletedDT *time.Time) {
+func (s *Term) SetDeletedAt(deletedDT *time.Time) {
 	s.deletedDT = deletedDT
 }
 
-// BuildSemesterDomainFromModel builds a Semester from a model
+// BuildTermDomainFromModel builds a Term from a model
 // Note: name and description come from translation data
-func BuildSemesterDomainFromModel(model *models.SemesterModel) *Semester {
-	return &Semester{
+func BuildTermDomainFromModel(model *models.TermModel) *Term {
+	return &Term{
 		id:           model.ID,
 		name:         model.Name,
 		description:  model.Description,

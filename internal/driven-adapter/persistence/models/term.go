@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-type SemesterModel struct {
+type TermModel struct {
 	ID           string
 	Name         string
 	Description  *string

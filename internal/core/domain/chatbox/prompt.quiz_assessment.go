@@ -1,7 +1,7 @@
 package domain
 
 var PromptForGenerateQuizAssessment = `
-Generate 5 multiple-choice math questions for Vietnam %s where the grade has 4 semester level of difficulty.
+Generate 5 multiple-choice math questions for Vietnam %s where the grade has 4 term level of difficulty.
 
 CRITICAL: Return ONLY a valid JSON array. Show problem only. NO extra text, explanations, or markdown formatting.
 Use this sample multiple choice problem structure:

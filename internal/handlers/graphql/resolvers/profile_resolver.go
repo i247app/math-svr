@@ -44,9 +44,9 @@ func (r *ProfileResolver) CreateProfile(params graphql.ResolveParams) (interface
 	}
 
 	req := &dto.CreateProfileRequest{
-		UID:        input["uid"].(string),
-		GradeID:    input["grade_id"].(string),
-		SemesterID: input["semester_id"].(string),
+		UID:     input["uid"].(string),
+		GradeID: input["grade_id"].(string),
+		TermID:  input["term_id"].(string),
 	}
 
 	statusCode, profile, err := r.profileService.CreateProfile(params.Context, req)
@@ -76,8 +76,8 @@ func (r *ProfileResolver) UpdateProfile(params graphql.ResolveParams) (interface
 	if gradeID, ok := input["grade_id"].(string); ok {
 		req.GradeID = &gradeID
 	}
-	if semesterID, ok := input["semester_id"].(string); ok {
-		req.SemesterID = &semesterID
+	if termID, ok := input["term_id"].(string); ok {
+		req.TermID = &termID
 	}
 
 	statusCode, profile, err := r.profileService.UpdateProfile(params.Context, req)

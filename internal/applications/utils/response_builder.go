@@ -8,14 +8,14 @@ import (
 	di "math-ai.com/math-ai/internal/core/di/services"
 	domain_grade "math-ai.com/math-ai/internal/core/domain/grade"
 	domain_profile "math-ai.com/math-ai/internal/core/domain/profile"
-	domain_semester "math-ai.com/math-ai/internal/core/domain/semester"
+	domain_term "math-ai.com/math-ai/internal/core/domain/term"
 	domain_user "math-ai.com/math-ai/internal/core/domain/user"
 )
 
 const (
-	AvatarPresignedURLExpiration   = 24 * time.Hour
-	GradePresignedURLExpiration    = 24 * time.Hour
-	SemesterPresignedURLExpiration = 24 * time.Hour
+	AvatarPresignedURLExpiration = 24 * time.Hour
+	GradePresignedURLExpiration  = 24 * time.Hour
+	TermPresignedURLExpiration   = 24 * time.Hour
 )
 
 // ResponseBuilder provides common response building utilities
@@ -117,13 +117,13 @@ func (r *ResponseBuilder) BuildProfileResponse(ctx context.Context, profile *dom
 	return &res
 }
 
-// BuildSemesterResponse creates a SemesterResponse with presigned icon URL
-func (r *ResponseBuilder) BuildSemesterResponse(ctx context.Context, semester *domain_semester.Semester) *dto.SemesterResponse {
-	res := dto.SemesterResponseFromDomain(semester)
+// BuildTermResponse creates a TermResponse with presigned icon URL
+func (r *ResponseBuilder) BuildTermResponse(ctx context.Context, term *domain_term.Term) *dto.TermResponse {
+	res := dto.TermResponseFromDomain(term)
 
 	// Generate presigned URL for icon if exists
-	if semester.ImageKey() != nil && *semester.ImageKey() != "" {
-		presignedURL := r.generatePresignedURL(ctx, semester.ImageKey(), SemesterPresignedURLExpiration)
+	if term.ImageKey() != nil && *term.ImageKey() != "" {
+		presignedURL := r.generatePresignedURL(ctx, term.ImageKey(), TermPresignedURLExpiration)
 		if presignedURL != "" {
 			res.ImageUrl = &presignedURL
 		}
@@ -132,12 +132,12 @@ func (r *ResponseBuilder) BuildSemesterResponse(ctx context.Context, semester *d
 	return &res
 }
 
-// BuildSemesterResponses creates SemesterResponses with presigned icon URLs
-func (r *ResponseBuilder) BuildSemesterResponses(ctx context.Context, semesters []*domain_semester.Semester) []*dto.SemesterResponse {
-	responses := make([]*dto.SemesterResponse, len(semesters))
+// BuildTermResponses creates TermResponses with presigned icon URLs
+func (r *ResponseBuilder) BuildTermResponses(ctx context.Context, terms []*domain_term.Term) []*dto.TermResponse {
+	responses := make([]*dto.TermResponse, len(terms))
 
-	for i, semester := range semesters {
-		responses[i] = r.BuildSemesterResponse(ctx, semester)
+	for i, term := range terms {
+		responses[i] = r.BuildTermResponse(ctx, term)
 	}
 
 	return responses

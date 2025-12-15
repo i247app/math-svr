@@ -15,7 +15,7 @@ type ProfileResponse struct {
 	Phone            string    `json:"phone"`
 	Age              *int      `json:"age"`
 	Grade            string    `json:"grade"`
-	Semester         string    `json:"semester"`
+	Term             string    `json:"term"`
 	AvatarPreviewURL *string   `json:"avatar_url"`
 	Status           string    `json:"status"`
 	CreatedAt        time.Time `json:"created_at"`
@@ -31,9 +31,9 @@ type FetchProfileResponse struct {
 }
 
 type CreateProfileRequest struct {
-	UID        string `json:"uid"`
-	GradeID    string `json:"grade_id"`
-	SemesterID string `json:"semester_id"`
+	UID     string `json:"uid"`
+	GradeID string `json:"grade_id"`
+	TermID  string `json:"term_id"`
 }
 
 type CreateProfileResponse struct {
@@ -41,10 +41,10 @@ type CreateProfileResponse struct {
 }
 
 type UpdateProfileRequest struct {
-	UID        string        `json:"uid"`
-	GradeID    *string       `json:"grade_id,omitempty"`
-	SemesterID *string       `json:"semester_id,omitempty"`
-	Status     *enum.EStatus `json:"status,omitempty"`
+	UID     string        `json:"uid"`
+	GradeID *string       `json:"grade_id,omitempty"`
+	TermID  *string       `json:"term_id,omitempty"`
+	Status  *enum.EStatus `json:"status,omitempty"`
 }
 
 type UpdateProfileResponse struct {
@@ -56,7 +56,7 @@ func BuildProfileDomainForCreate(req *CreateProfileRequest) *domain.Profile {
 	profileDomain.GenerateID()
 	profileDomain.SetUID(req.UID)
 	profileDomain.SetGradeID(req.GradeID)
-	profileDomain.SetSemesterID(req.SemesterID)
+	profileDomain.SetTermID(req.TermID)
 	profileDomain.SetStatus(string(enum.StatusActive))
 
 	return profileDomain
@@ -71,8 +71,8 @@ func BuildProfileDomainForUpdate(req *UpdateProfileRequest) *domain.Profile {
 		profileDomain.SetGradeID(*req.GradeID)
 	}
 
-	if req.SemesterID != nil {
-		profileDomain.SetSemesterID(*req.SemesterID)
+	if req.TermID != nil {
+		profileDomain.SetTermID(*req.TermID)
 	}
 
 	if req.Status != nil {
@@ -100,7 +100,7 @@ func ProfileResponseFromDomain(p *domain.Profile) ProfileResponse {
 		Phone:      p.Phone(),
 		Age:        &age,
 		Grade:      p.Grade(),
-		Semester:   p.Semester(),
+		Term:       p.Term(),
 		Status:     p.Status(),
 		CreatedAt:  p.CreatedAt(),
 		ModifiedAt: p.ModifiedAt(),

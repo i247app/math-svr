@@ -8,7 +8,7 @@ import (
 type Chapter struct {
 	id            string
 	gradeID       string
-	semesterID    string
+	termID        string
 	chapterNumber int
 	title         string // From translation
 	description   string // From translation
@@ -38,12 +38,12 @@ func (c *Chapter) SetGradeID(gradeID string) {
 	c.gradeID = gradeID
 }
 
-func (c *Chapter) SemesterID() string {
-	return c.semesterID
+func (c *Chapter) TermID() string {
+	return c.termID
 }
 
-func (c *Chapter) SetSemesterID(semesterID string) {
-	c.semesterID = semesterID
+func (c *Chapter) SetTermID(termID string) {
+	c.termID = termID
 }
 
 func (c *Chapter) ChapterNumber() int {
@@ -74,7 +74,7 @@ func BuildChapterFromModel(model *models.ChapterModel) *Chapter {
 	return &Chapter{
 		id:            model.ID,
 		gradeID:       model.GradeID,
-		semesterID:    model.SemesterID,
+		termID:        model.TermID,
 		chapterNumber: model.ChapterNumber,
 	}
 }

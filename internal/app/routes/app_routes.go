@@ -65,15 +65,15 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("POST /grades/delete", gc.HandlerDeleteGrade, authMiddleware, adminMiddleware)
 	server.AddRoute("POST /grades/force-delete", gc.HandlerForceDeleteGrade, authMiddleware, adminMiddleware)
 
-	// semesters
-	semc := controller.NewSemesterController(res, services.SemesterService)
-	server.AddRoute("GET /semesters/list", semc.HandlerGetListSemesters)
-	server.AddRoute("GET /semesters/{id}", semc.HandlerGetSemester)
-	server.AddRoute("GET /semesters/name/{name}", semc.HandlerGetSemesterByName)
-	server.AddRoute("POST /semesters/create", semc.HandlerCreateSemester, authMiddleware, adminMiddleware)
-	server.AddRoute("POST /semesters/update", semc.HandlerUpdateSemester, authMiddleware, adminMiddleware)
-	server.AddRoute("POST /semesters/delete", semc.HandlerDeleteSemester, authMiddleware, adminMiddleware)
-	server.AddRoute("POST /semesters/force-delete", semc.HandlerForceDeleteSemester, authMiddleware, adminMiddleware)
+	// terms
+	semc := controller.NewTermController(res, services.TermService)
+	server.AddRoute("GET /terms/list", semc.HandlerGetListTerms)
+	server.AddRoute("GET /terms/{id}", semc.HandlerGetTerm)
+	server.AddRoute("GET /terms/name/{name}", semc.HandlerGetTermByName)
+	server.AddRoute("POST /terms/create", semc.HandlerCreateTerm, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /terms/update", semc.HandlerUpdateTerm, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /terms/delete", semc.HandlerDeleteTerm, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /terms/force-delete", semc.HandlerForceDeleteTerm, authMiddleware, adminMiddleware)
 
 	// profiles
 	pc := controller.NewProfileController(res, services.ProfileService)

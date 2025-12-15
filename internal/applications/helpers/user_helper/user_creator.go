@@ -85,9 +85,9 @@ func (u *UserCreator) CreateWithTransaction(ctx context.Context, userDomain *dom
 
 		// Store profile
 		createProfileDomain := dto.BuildProfileDomainForCreate(&dto.CreateProfileRequest{
-			UID:        userDomain.ID(),
-			GradeID:    userDomain.GradeID(),
-			SemesterID: userDomain.SemesterID(),
+			UID:     userDomain.ID(),
+			GradeID: userDomain.GradeID(),
+			TermID:  userDomain.TermID(),
 		})
 
 		if _, err := u.profileRepo.Create(ctx, tx, createProfileDomain); err != nil {

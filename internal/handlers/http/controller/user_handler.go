@@ -92,7 +92,7 @@ func (u *UserController) HandlerCreateUser(w http.ResponseWriter, r *http.Reques
 		req.Email = r.FormValue("email")
 		req.Password = r.FormValue("password")
 		req.GradeID = r.FormValue("grade_id")
-		req.SemesterID = r.FormValue("semester_id")
+		req.TermID = r.FormValue("term_id")
 
 		// Parse role
 		if roleStr := r.FormValue("role"); roleStr != "" {
@@ -178,8 +178,8 @@ func (u *UserController) HandlerUpdateUser(w http.ResponseWriter, r *http.Reques
 		if gradeID := r.FormValue("grade_id"); gradeID != "" {
 			req.GradeID = &gradeID
 		}
-		if semesterID := r.FormValue("semester_id"); semesterID != "" {
-			req.SemesterID = &semesterID
+		if termID := r.FormValue("term_id"); termID != "" {
+			req.TermID = &termID
 		}
 
 		// Parse delete_avatar flag

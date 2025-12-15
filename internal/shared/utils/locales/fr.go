@@ -123,7 +123,7 @@ func GetMessageFRFromStatus(statusCode status.Code) string {
 		return "L'ID utilisateur du profil est manquant."
 	case status.PROFILE_MISSING_GRADE:
 		return "Le niveau du profil est manquant."
-	case status.PROFILE_MISSING_SEMESTER:
+	case status.PROFILE_MISSING_TERM:
 		return "Le niveau du profil est manquant."
 	case status.PROFILE_NOT_FOUND:
 		return "Profil non trouvé."
@@ -136,16 +136,16 @@ func GetMessageFRFromStatus(statusCode status.Code) string {
 	case status.PROFILE_INVALID_LEVEL:
 		return "Niveau de profil invalide."
 
-	// Semester status messages
-	case status.SEMESTER_INVALID_PARAMS:
+	// Term status messages
+	case status.TERM_INVALID_PARAMS:
 		return "Paramètres de semestre invalides."
-	case status.SEMESTER_MISSING_NAME:
+	case status.TERM_MISSING_NAME:
 		return "Le nom du semestre est manquant."
-	case status.SEMESTER_NOT_FOUND:
+	case status.TERM_NOT_FOUND:
 		return "Semestre non trouvé."
-	case status.SEMESTER_ALREADY_EXISTS:
+	case status.TERM_ALREADY_EXISTS:
 		return "Le semestre existe déjà."
-	case status.SEMESTER_CANNOT_DELETE:
+	case status.TERM_CANNOT_DELETE:
 		return "Le semestre ne peut pas être supprimé."
 
 	default:
