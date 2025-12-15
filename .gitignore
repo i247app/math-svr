@@ -8,7 +8,6 @@ log_file
 .cursor/
 .claude/
 CLAUDE.md
-TRANSLATION_PATTERN_IMPLEMENTATION.md
 
 # go workspace files
 go.work
@@ -28,3 +27,4 @@ dist/
 .aider*
 CONVENTIONS.md
 graphql-examples.http
+
