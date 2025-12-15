@@ -58,7 +58,7 @@ func NewRequestScopedLogger(r *http.Request, outFilePath string) *logger {
 		} else {
 			outFile = f
 			// Write to both file and stdout
-			// writer = io.MultiWriter(f, os.Stdout)
+			writer = io.MultiWriter(f, os.Stdout)
 		}
 	} else {
 		// Default to stdout
