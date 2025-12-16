@@ -25,31 +25,8 @@ func NewContactController(appResources *resources.AppResource, service di.IConta
 	}
 }
 
-// POST - /contact/submit
-func (c *ContactController) HandlerCreateContact(w http.ResponseWriter, r *http.Request) {
-	var req dto.CreateContactRequest
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
-		return
-	}
-
-	var uid string
-	if uidVal, err := c.appResources.GetRequestUID(r); err == nil {
-		uid = uidVal
-	}
-
-	statusCode, contactRes, err := c.service.SubmitContact(r.Context(), &req, uid)
-	if err != nil {
-		response.WriteJson(w, r.Context(), nil, err, statusCode)
-		return
-	}
-
-	response.WriteJson(w, r.Context(), contactRes, nil, statusCode)
-}
-
-// GET - /contact/
-func (c *ContactController) HandlerGetContacts(w http.ResponseWriter, r *http.Request) {
+// GET - /contact
+func (c *ContactController) HandlerListContacts(w http.ResponseWriter, r *http.Request) {
 	var req dto.ListContactsRequest
 
 	// Parse query parameters
@@ -78,7 +55,7 @@ func (c *ContactController) HandlerGetContacts(w http.ResponseWriter, r *http.Re
 		req.TakeAll = true
 	}
 
-	statusCode, contacts, pagination, err := c.service.GetContacts(r.Context(), &req)
+	statusCode, contacts, pagination, err := c.service.ListGrades(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
@@ -92,9 +69,35 @@ func (c *ContactController) HandlerGetContacts(w http.ResponseWriter, r *http.Re
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }
 
-// POST - /contact/check_read
+// POST - /contact/submit
+func (c *ContactController) HandlerCreateContact(w http.ResponseWriter, r *http.Request) {
+	var req dto.CreateContactRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
+		return
+	}
+
+	uid, _ := c.appResources.GetRequestUID(r)
+
+	req.UID = &uid
+
+	statusCode, contactRes, err := c.service.SubmitContact(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, r.Context(), nil, err, statusCode)
+		return
+	}
+
+	res := &dto.CreateContactResponse{
+		Contact: contactRes,
+	}
+
+	response.WriteJson(w, r.Context(), res, nil, statusCode)
+}
+
+// POST - /contact/mark-read
 func (c *ContactController) HandlerCheckReadContact(w http.ResponseWriter, r *http.Request) {
-	var req dto.CheckReadContactRequest
+	var req dto.MarkReadContactRequest
 
 	// Decode request body
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -102,18 +105,17 @@ func (c *ContactController) HandlerCheckReadContact(w http.ResponseWriter, r *ht
 		return
 	}
 
-	// Validate contact ID is not empty
-	if req.ContactID == "" {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("contact_id is required"), status.FAIL)
-		return
-	}
 	// Call service to mark contact as read
-	statusCode, contactRes, err := c.service.CheckReadContact(r.Context(), req.ContactID)
+	statusCode, contactRes, err := c.service.MarkReadContact(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return
 	}
 
+	res := &dto.MarkReadContactResponse{
+		Contact: contactRes,
+	}
+
 	// Return success response with updated contact
-	response.WriteJson(w, r.Context(), contactRes, nil, statusCode)
+	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }

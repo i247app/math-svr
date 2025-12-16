@@ -6,7 +6,6 @@ type ContactModel struct {
 	ContactName    string
 	ContactEmail   *string
 	ContactPhone   *string
-	ContactMessage *string
+	ContactMessage string
 	IsRead         *bool
 }
-

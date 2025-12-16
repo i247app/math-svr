@@ -149,6 +149,8 @@ func GetMessageFRFromStatus(statusCode status.Code) string {
 		return "Le semestre ne peut pas être supprimé."
 
 	// Contact status messages
+	case status.CONTACT_METHOD_MISSING:
+		return "L'email ou le téléphone est requis"
 	case status.CONTACT_EMAIL_INVALID:
 		return "Email invalide"
 	case status.CONTACT_NAME_MISSING:
@@ -159,7 +161,7 @@ func GetMessageFRFromStatus(statusCode status.Code) string {
 		return "Le message est trop long"
 	case status.CONTACT_NAME_TOO_LONG:
 		return "Le name est trop long"
-		
+
 	default:
 		return "Unknown"
 	}

@@ -7,10 +7,10 @@ import (
 
 type Contact struct {
 	id             string
-	uid            string
+	uid            *string
 	contactName    string
-	contactEmail   string
-	contactPhone   string
+	contactEmail   *string
+	contactPhone   *string
 	contactMessage string
 	isRead         bool
 }
@@ -31,11 +31,11 @@ func (l *Contact) GenerateID() {
 	l.id = uuid.New().String()
 }
 
-func (l *Contact) UID() string {
+func (l *Contact) UID() *string {
 	return l.uid
 }
 
-func (l *Contact) SetUID(uid string) {
+func (l *Contact) SetUID(uid *string) {
 	l.uid = uid
 }
 
@@ -47,19 +47,19 @@ func (l *Contact) SetContactName(contactName string) {
 	l.contactName = contactName
 }
 
-func (l *Contact) ContactEmail() string {
+func (l *Contact) ContactEmail() *string {
 	return l.contactEmail
 }
 
-func (l *Contact) SetContactEmail(contactEmail string) {
+func (l *Contact) SetContactEmail(contactEmail *string) {
 	l.contactEmail = contactEmail
 }
 
-func (l *Contact) ContactPhone() string {
+func (l *Contact) ContactPhone() *string {
 	return l.contactPhone
 }
 
-func (l *Contact) SetContactPhone(contactPhone string) {
+func (l *Contact) SetContactPhone(contactPhone *string) {
 	l.contactPhone = contactPhone
 }
 
@@ -87,11 +87,11 @@ func BuildContactDomainFromModel(model *models.ContactModel) *Contact {
 
 	return &Contact{
 		id:             model.ID,
-		uid:            *model.UID,
+		uid:            model.UID,
 		contactName:    model.ContactName,
-		contactEmail:   *model.ContactEmail,
-		contactPhone:   *model.ContactPhone,
-		contactMessage: *model.ContactMessage,
+		contactEmail:   model.ContactEmail,
+		contactPhone:   model.ContactPhone,
+		contactMessage: model.ContactMessage,
 		isRead:         isRead,
 	}
 }

@@ -150,17 +150,21 @@ func GetMessageVNFromStatus(statusCode status.Code) string {
 		return "Học kỳ không thể bị xóa."
 
 	// Contact status messages
+	case status.CONTACT_METHOD_MISSING:
+		return "Yêu cầu email hoặc số điện thoại"
+	case status.CONTACT_EMAIL_MISSING:
+		return "Thiếu email"
 	case status.CONTACT_EMAIL_INVALID:
 		return "Email không hợp lệ"
 	case status.CONTACT_NAME_MISSING:
 		return "Thiếu tên"
-	case status.CONTACT_PHONE_INVALID: 
+	case status.CONTACT_PHONE_INVALID:
 		return "Số điện thoại không hợp lệ"
 	case status.CONTACT_MESSAGE_TOO_LONG:
 		return "Nội dung quá dài"
 	case status.CONTACT_NAME_TOO_LONG:
 		return "Tên quá dài"
-		
+
 	default:
 		return "Unknown"
 	}

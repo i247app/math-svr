@@ -89,7 +89,7 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 
 	// contact
 	ct := controller.NewContactController(res, services.ContactService)
+	server.AddRoute("GET /contact", ct.HandlerListContacts, authMiddleware, adminMiddleware)
 	server.AddRoute("POST /contact/submit", ct.HandlerCreateContact)
-	server.AddRoute("GET /contact", ct.HandlerGetContacts, authMiddleware, adminMiddleware)
 	server.AddRoute("POST /contact/mark-read", ct.HandlerCheckReadContact, authMiddleware, adminMiddleware)
 }

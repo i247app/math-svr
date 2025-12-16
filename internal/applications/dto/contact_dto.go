@@ -7,24 +7,33 @@ import (
 )
 
 type ContactResponse struct {
-	ID             string `json:"id"`
-	UID            string `json:"uid"`
-	ContactName    string `json:"contact_name"`
-	ContactEmail   string `json:"contact_email"`
-	ContactPhone   string `json:"contact_phone"`
-	ContactMessage string `json:"contact_message"`
-	IsRead         bool   `json:"is_read"`
+	ID             string  `json:"id"`
+	UID            *string `json:"uid"`
+	ContactName    string  `json:"contact_name"`
+	ContactEmail   *string `json:"contact_email"`
+	ContactPhone   *string `json:"contact_phone"`
+	ContactMessage string  `json:"contact_message"`
+	IsRead         bool    `json:"is_read"`
 }
 
 type CreateContactRequest struct {
-	ContactName    string `json:"contact_name"`
-	ContactPhone   string `json:"contact_phone"`
-	ContactEmail   string `json:"contact_email"`
-	ContactMessage string `json:"contact_message"`
+	UID            *string `json:"-"`
+	ContactName    string  `json:"contact_name"`
+	ContactPhone   *string `json:"contact_phone"`
+	ContactEmail   *string `json:"contact_email"`
+	ContactMessage string  `json:"contact_message"`
 }
 
-type CheckReadContactRequest struct {
+type CreateContactResponse struct {
+	Contact *ContactResponse `json:"contact"`
+}
+
+type MarkReadContactRequest struct {
 	ContactID string `json:"contact_id"`
+}
+
+type MarkReadContactResponse struct {
+	Contact *ContactResponse `json:"contact"`
 }
 
 type ListContactsRequest struct {
@@ -58,10 +67,10 @@ func ContactUsResponseFromDomain(contact *domain.Contact) ContactResponse {
 	}
 }
 
-func BuildContactDomainForSubmit(req *CreateContactRequest, uid string) *domain.Contact {
+func BuildContactDomainForSubmit(req *CreateContactRequest) *domain.Contact {
 	contact := domain.NewContactDomain()
 	contact.GenerateID()
-	contact.SetUID(uid) // Will be set if user is authenticated
+	contact.SetUID(req.UID)
 	contact.SetContactName(req.ContactName)
 	contact.SetContactEmail(req.ContactEmail)
 	contact.SetContactPhone(req.ContactPhone)

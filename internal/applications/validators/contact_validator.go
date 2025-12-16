@@ -4,7 +4,6 @@ import (
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
-	"math-ai.com/math-ai/internal/shared/utils/convert"
 	"math-ai.com/math-ai/internal/shared/utils/validate"
 )
 
@@ -19,11 +18,9 @@ func NewContactValidator() *contactValidator {
 }
 
 func (v *contactValidator) ValidateSubmitContactRequest(r *dto.CreateContactRequest) (status.Code, error) {
-	// Trim whitespace from all fields
-	r.ContactName = convert.TrimSpace(r.ContactName)
-	r.ContactEmail = convert.TrimSpace(r.ContactEmail)
-	r.ContactMessage = convert.TrimSpace(r.ContactMessage)
-	r.ContactPhone = convert.TrimSpace(r.ContactPhone)
+	if r.ContactPhone == nil && r.ContactEmail == nil {
+		return status.CONTACT_METHOD_MISSING, err_svc.ErrContactEmailOrPhoneRequired
+	}
 
 	// Validate contact name
 	if r.ContactName == "" {
@@ -34,13 +31,10 @@ func (v *contactValidator) ValidateSubmitContactRequest(r *dto.CreateContactRequ
 	}
 
 	// Validate contact email
-	// if r.ContactEmail == "" {
-	// 	return fmt.Errorf("contact email is required")
-	// }
-	if len(r.ContactEmail) > 200 {
+	if len(*r.ContactEmail) > 200 {
 		return status.CONTACT_EMAIL_TOO_LONG, err_svc.ErrContactTooLongEmail
 	}
-	if !validate.IsValidEmail(r.ContactEmail) {
+	if r.ContactEmail != nil && !validate.IsValidEmail(*r.ContactEmail) {
 		return status.CONTACT_EMAIL_INVALID, err_svc.ErrContactInvalidEmail
 	}
 
@@ -53,7 +47,7 @@ func (v *contactValidator) ValidateSubmitContactRequest(r *dto.CreateContactRequ
 	}
 
 	// Validate contact phone
-	if !validate.IsValidPhoneNumber(r.ContactPhone) {
+	if r.ContactPhone != nil && !validate.IsValidPhoneNumber(*r.ContactPhone) {
 		return status.CONTACT_PHONE_INVALID, err_svc.ErrContactInvalidPhone
 	}
 

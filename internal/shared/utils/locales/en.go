@@ -167,6 +167,26 @@ func GetMessageENFromStatus(statusCode status.Code) string {
 	case status.SEMESTER_CANNOT_DELETE:
 		return "Semester cannot be deleted."
 
+	// Contact status messages
+	case status.CONTACT_METHOD_MISSING:
+		return "Either contact email or phone is required."
+	case status.CONTACT_NAME_MISSING:
+		return "Contact name is required."
+	case status.CONTACT_NAME_TOO_LONG:
+		return "Contact name is too long."
+	case status.CONTACT_EMAIL_TOO_LONG:
+		return "Contact email is too long."
+	case status.CONTACT_EMAIL_INVALID:
+		return "Invalid contact email format."
+	case status.CONTACT_MESSAGE_MISSING:
+		return "Contact message is required."
+	case status.CONTACT_MESSAGE_TOO_LONG:
+		return "Contact message is too long."
+	case status.CONTACT_PHONE_INVALID:
+		return "Invalid contact phone format."
+	case status.CONTACT_ALREADY_READ:
+		return "Contact has already been marked as read."
+
 	default:
 		return "Unknown"
 	}

@@ -36,7 +36,7 @@ func NewContactService(
 	}
 }
 
-func (s *ContactService) GetContacts(ctx context.Context, req *dto.ListContactsRequest) (status.Code, []*dto.ContactResponse, *pagination.Pagination, error) {
+func (s *ContactService) ListGrades(ctx context.Context, req *dto.ListContactsRequest) (status.Code, []*dto.ContactResponse, *pagination.Pagination, error) {
 	params := diRepo.ListContactsParams{
 		Search:    req.Search,
 		Page:      req.Page,
@@ -46,32 +46,30 @@ func (s *ContactService) GetContacts(ctx context.Context, req *dto.ListContactsR
 		TakeAll:   req.TakeAll,
 	}
 
-	
 	// Get total count
 	contacts, pagination, err := s.repo.List(ctx, params)
 	if err != nil {
 		return status.FAIL, nil, nil, err
-	}	
+	}
 
-	
 	if len(contacts) == 0 {
 		return status.SUCCESS, []*dto.ContactResponse{}, pagination, nil
 	}
-	
+
 	// Convert domain contacts to DTO
 	response := s.responseBuilder.BuildContactUsResponses(ctx, contacts)
 
 	return status.SUCCESS, response, pagination, nil
 }
 
-func (s *ContactService) SubmitContact(ctx context.Context, req *dto.CreateContactRequest, uid string) (status.Code, *dto.ContactResponse, error) {
+func (s *ContactService) SubmitContact(ctx context.Context, req *dto.CreateContactRequest) (status.Code, *dto.ContactResponse, error) {
 	// Validate request
 	if statusCode, err := s.validator.ValidateSubmitContactRequest(req); err != nil {
 		return statusCode, nil, err
 	}
 
 	// Create domain object
-	contactDomain := dto.BuildContactDomainForSubmit(req, uid)
+	contactDomain := dto.BuildContactDomainForSubmit(req)
 
 	// Save to database
 	_, err := s.repo.CreateContact(ctx, nil, contactDomain)
@@ -85,10 +83,9 @@ func (s *ContactService) SubmitContact(ctx context.Context, req *dto.CreateConta
 	return status.SUCCESS, response, nil
 }
 
-// CheckReadContact marks a contact as read and returns the updated contact.
-func (s *ContactService) CheckReadContact(ctx context.Context, contactID string) (status.Code, *dto.ContactResponse, error) {
+func (s *ContactService) MarkReadContact(ctx context.Context, req *dto.MarkReadContactRequest) (status.Code, *dto.ContactResponse, error) {
 	// Validate contact exists
-	contact, err := s.repo.FindByID(ctx, contactID)
+	contact, err := s.repo.FindByID(ctx, req.ContactID)
 	if err != nil {
 		return status.FAIL, nil, fmt.Errorf("failed to find contact: %v", err)
 	}
@@ -97,7 +94,7 @@ func (s *ContactService) CheckReadContact(ctx context.Context, contactID string)
 	}
 
 	// Update is_read to true
-	_, err = s.repo.UpdateContactIsRead(ctx, contactID, true)
+	_, err = s.repo.UpdateContactIsRead(ctx, req.ContactID, true)
 	if err != nil {
 		return status.FAIL, nil, fmt.Errorf("failed to update contact is_read: %v", err)
 	}
