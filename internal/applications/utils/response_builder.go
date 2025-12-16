@@ -6,6 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	di "math-ai.com/math-ai/internal/core/di/services"
+	domain_contact "math-ai.com/math-ai/internal/core/domain/contact"
 	domain_grade "math-ai.com/math-ai/internal/core/domain/grade"
 	domain_profile "math-ai.com/math-ai/internal/core/domain/profile"
 	domain_semester "math-ai.com/math-ai/internal/core/domain/semester"
@@ -141,4 +142,20 @@ func (r *ResponseBuilder) BuildSemesterResponses(ctx context.Context, semesters 
 	}
 
 	return responses
+}
+
+func (r *ResponseBuilder) BuildContactUsResponses(ctx context.Context, contacts []*domain_contact.Contact) []*dto.ContactResponse {
+	responses := make([]*dto.ContactResponse, len(contacts))
+
+	for i, contact := range contacts {
+		responses[i] = r.BuildContactUsResponse(ctx, contact)
+	}
+
+	return responses
+}
+
+func (r *ResponseBuilder) BuildContactUsResponse(ctx context.Context, contact *domain_contact.Contact) *dto.ContactResponse {
+	res := dto.ContactUsResponseFromDomain(contact)
+
+	return &res
 }

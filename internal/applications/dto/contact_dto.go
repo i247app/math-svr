@@ -2,6 +2,7 @@ package dto
 
 import (
 	// domain "math-ai.com/math-ai/internal/core/domain/contact"
+	domain "math-ai.com/math-ai/internal/core/domain/contact"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
@@ -34,4 +35,15 @@ type ListContactsParams struct {
 type GetContactsResponse struct {
 	Items      []*ContactResponse     `json:"items"`
 	Pagination *pagination.Pagination `json:"metadata"`
+}
+
+func ContactUsResponseFromDomain(contact *domain.Contact) ContactResponse {
+	return ContactResponse{
+		ID:             contact.ID(),
+		UID:            contact.UID(),
+		ContactName:    contact.ContactName(),
+		ContactEmail:   contact.ContactEmail(),
+		ContactPhone:   contact.ContactPhone(),
+		ContactMessage: contact.ContactMessage(),
+	}
 }

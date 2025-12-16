@@ -155,7 +155,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	
 	log.Println("> contactSvc...")
 	var contactValidator = validators.NewContactValidator()
-	var contactSvc = services.NewContactService(contactValidator, contactRepo)
+	var contactSvc = services.NewContactService(contactValidator, contactRepo, storageSvc)
 
 	return &ServiceContainer{
 		SessionManager:            sessionManager,

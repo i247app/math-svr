@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"math-ai.com/math-ai/internal/applications/dto"
+	"math-ai.com/math-ai/internal/applications/utils"
 	"math-ai.com/math-ai/internal/applications/validators"
 	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
 	diSvc "math-ai.com/math-ai/internal/core/di/services"
@@ -14,17 +15,24 @@ import (
 )
 
 type ContactService struct {
-	validator validators.IContactValidator
-	repo      diRepo.IContactRepository
+	validator       validators.IContactValidator
+	repo            diRepo.IContactRepository
+	responseBuilder *utils.ResponseBuilder
+	storageService  diSvc.IStorageService
 }
 
 func NewContactService(
 	validator validators.IContactValidator,
 	repo diRepo.IContactRepository,
+	storageService diSvc.IStorageService,
 ) diSvc.IContactService {
+	responseBuilder := utils.NewResponseBuilder(storageService)
+
 	return &ContactService{
-		validator: validator,
-		repo: repo,
+		validator:       validator,
+		repo:            repo,
+		responseBuilder: responseBuilder,
+		storageService:  storageService,
 	}
 }
 
@@ -57,17 +65,7 @@ func (s *ContactService) GetContacts(ctx context.Context, req *dto.ListContactsR
 	}
 
 	// Convert domain contacts to DTO
-	var response []*dto.ContactResponse
-	for _, contact := range contacts {
-		response = append(response, &dto.ContactResponse{
-			ID:             contact.ID(),
-			UID:            contact.UID(),
-			ContactName:    contact.ContactName(),
-			ContactEmail:   contact.ContactEmail(),
-			ContactPhone:   contact.ContactPhone(),
-			ContactMessage: contact.ContactMessage(),
-		})
-	}
+	response := s.responseBuilder.BuildContactUsResponses(ctx, contacts)
 
 	return status.SUCCESS, response, paginationInfo, nil
 }
@@ -94,14 +92,7 @@ func (s *ContactService) SubmitContact(ctx context.Context, req *dto.CreateConta
 	}
 
 	// Return response
-	response := &dto.ContactResponse{
-		ID:             contact.ID(),
-		UID:            contact.UID(),
-		ContactName:    contact.ContactName(),
-		ContactEmail:   contact.ContactEmail(),
-		ContactPhone:   contact.ContactPhone(),
-		ContactMessage: contact.ContactMessage(),
-	}
+	response := s.responseBuilder.BuildContactUsResponse(ctx, contact)
 
 	return status.SUCCESS, response, nil
 }
