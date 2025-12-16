@@ -1,11 +1,10 @@
 package validators
 
 import (
-	"strings"
-
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
+	"math-ai.com/math-ai/internal/shared/utils/convert"
 	"math-ai.com/math-ai/internal/shared/utils/validate"
 )
 
@@ -21,10 +20,10 @@ func NewContactValidator() *contactValidator {
 
 func (v *contactValidator) ValidateSubmitContactRequest(r *dto.CreateContactRequest) (status.Code, error) {
 	// Trim whitespace from all fields
-	r.ContactName = strings.TrimSpace(r.ContactName)
-	r.ContactEmail = strings.TrimSpace(r.ContactEmail)
-	r.ContactMessage = strings.TrimSpace(r.ContactMessage)
-	r.ContactPhone = strings.TrimSpace(r.ContactPhone)
+	r.ContactName = convert.TrimSpace(r.ContactName)
+	r.ContactEmail = convert.TrimSpace(r.ContactEmail)
+	r.ContactMessage = convert.TrimSpace(r.ContactMessage)
+	r.ContactPhone = convert.TrimSpace(r.ContactPhone)
 
 	// Validate contact name
 	if r.ContactName == "" {
