@@ -11,4 +11,5 @@ import (
 type IContactService interface {
 	SubmitContact(ctx context.Context, req *dto.CreateContactRequest, uid string) (status.Code, *dto.ContactResponse, error)
 	GetContacts(ctx context.Context, req *dto.ListContactsRequest) (status.Code, []*dto.ContactResponse, *pagination.Pagination, error)
+	CheckReadContact(ctx context.Context, contactID string) (status.Code, *dto.ContactResponse, error)
 }

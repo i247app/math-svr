@@ -67,9 +67,9 @@ func (c *ContactController) HandlerGetContacts(w http.ResponseWriter, r *http.Re
 		req.Page = 1
 	}
 
-	if sizeStr := r.FormValue("size"); sizeStr != "" {
-		if size, err := strconv.ParseInt(sizeStr, 10, 64); err == nil {
-			req.Size = size
+	if limitStr := r.FormValue("limit"); limitStr != "" {
+		if limit, err := strconv.ParseInt(limitStr, 10, 64); err == nil {
+			req.Limit = limit
 		}
 	}
 
@@ -90,4 +90,26 @@ func (c *ContactController) HandlerGetContacts(w http.ResponseWriter, r *http.Re
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
+}
+
+// GET - /contact/{id}/check_read
+func (c *ContactController) HandlerCheckReadContact(w http.ResponseWriter, r *http.Request) {
+	// Extract contact ID from path parameter
+	contactID := r.PathValue("id")
+
+	// Validate ID is not empty
+	if contactID == "" {
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("contact ID is required"), status.FAIL)
+		return
+	}
+
+	// Call service to mark contact as read
+	statusCode, contactRes, err := c.service.CheckReadContact(r.Context(), contactID)
+	if err != nil {
+		response.WriteJson(w, r.Context(), nil, err, statusCode)
+		return
+	}
+
+	// Return success response with updated contact
+	response.WriteJson(w, r.Context(), contactRes, nil, statusCode)
 }
