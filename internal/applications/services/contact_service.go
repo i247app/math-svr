@@ -97,13 +97,9 @@ func (s *ContactService) CheckReadContact(ctx context.Context, contactID string)
 	}
 
 	// Update is_read to true
-	rowsAffected, err := s.repo.UpdateContactIsRead(ctx, contactID, true)
+	_, err = s.repo.UpdateContactIsRead(ctx, contactID, true)
 	if err != nil {
 		return status.FAIL, nil, fmt.Errorf("failed to update contact is_read: %v", err)
-	}
-
-	if rowsAffected == 0 {
-		return status.NOT_FOUND, nil, err_svc.ErrContactNotFound
 	}
 
 	// Update domain object and build response

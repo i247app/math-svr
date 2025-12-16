@@ -11,4 +11,5 @@ var (
 	ErrContactTooLongName    = errors.New("name too long")
 	ErrContactTooLongEmail   = errors.New("mail too long")
 	ErrContactNotFound       = errors.New("contact not found")
+	ErrContactAlreadyRead    = errors.New("contact already check read")
 )
