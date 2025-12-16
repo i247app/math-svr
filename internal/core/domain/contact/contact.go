@@ -6,12 +6,13 @@ import (
 )
 
 type Contact struct {
-	id        string
-	uid 	  string
-	contactName string
-	contactEmail string
-	contactPhone string
+	id             string
+	uid            string
+	contactName    string
+	contactEmail   string
+	contactPhone   string
 	contactMessage string
+	isRead         bool
 }
 
 func NewContactDomain() *Contact {
@@ -66,17 +67,30 @@ func (l *Contact) ContactMessage() string {
 	return l.contactMessage
 }
 
+func (l *Contact) SetIsRead(isRead bool) {
+	l.isRead = isRead
+}
+
+func (l *Contact) IsRead() bool {
+	return l.isRead
+}
+
 func (l *Contact) SetContactMessage(contactMessage string) {
 	l.contactMessage = contactMessage
 }
-
 func BuildContactDomainFromModel(model *models.ContactModel) *Contact {
+	isRead := false
+	if model.IsRead != nil {
+		isRead = *model.IsRead
+	}
+
 	return &Contact{
-		id:        model.ID,
-		uid: 	   *model.UID,
-		contactName:  model.ContactName,
-		contactEmail: *model.ContactEmail,	
-		contactPhone: *model.ContactPhone,	
-		contactMessage: *model.ContactMessage,	
+		id:             model.ID,
+		uid:            *model.UID,
+		contactName:    model.ContactName,
+		contactEmail:   *model.ContactEmail,
+		contactPhone:   *model.ContactPhone,
+		contactMessage: *model.ContactMessage,
+		isRead:         isRead,
 	}
 }

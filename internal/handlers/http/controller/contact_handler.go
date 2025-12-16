@@ -67,9 +67,9 @@ func (c *ContactController) HandlerGetContacts(w http.ResponseWriter, r *http.Re
 		req.Page = 1
 	}
 
-	if sizeStr := r.FormValue("size"); sizeStr != "" {
-		if size, err := strconv.ParseInt(sizeStr, 10, 64); err == nil {
-			req.Size = size
+	if limitStr := r.FormValue("limit"); limitStr != "" {
+		if limit, err := strconv.ParseInt(limitStr, 10, 64); err == nil {
+			req.Limit = limit
 		}
 	}
 
@@ -90,4 +90,30 @@ func (c *ContactController) HandlerGetContacts(w http.ResponseWriter, r *http.Re
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
+}
+
+// POST - /contact/check_read
+func (c *ContactController) HandlerCheckReadContact(w http.ResponseWriter, r *http.Request) {
+	var req dto.CheckReadContactRequest
+
+	// Decode request body
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
+		return
+	}
+
+	// Validate contact ID is not empty
+	if req.ContactID == "" {
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("contact_id is required"), status.FAIL)
+		return
+	}
+	// Call service to mark contact as read
+	statusCode, contactRes, err := c.service.CheckReadContact(r.Context(), req.ContactID)
+	if err != nil {
+		response.WriteJson(w, r.Context(), nil, err, statusCode)
+		return
+	}
+
+	// Return success response with updated contact
+	response.WriteJson(w, r.Context(), contactRes, nil, statusCode)
 }

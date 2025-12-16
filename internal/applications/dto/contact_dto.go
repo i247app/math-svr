@@ -13,6 +13,7 @@ type ContactResponse struct {
 	ContactEmail   string `json:"contact_email"`
 	ContactPhone   string `json:"contact_phone"`
 	ContactMessage string `json:"contact_message"`
+	IsRead         bool   `json:"is_read"`
 }
 
 type CreateContactRequest struct {
@@ -21,10 +22,18 @@ type CreateContactRequest struct {
 	ContactEmail   string `json:"contact_email"`
 	ContactMessage string `json:"contact_message"`
 }
+
+type CheckReadContactRequest struct {
+	ContactID string `json:"contact_id"`
+}
+
 type ListContactsRequest struct {
-	Page    int64 `json:"page" form:"page"`
-	Size    int64 `json:"size" form:"size"`
-	TakeAll bool  `json:"take_all" form:"take_all"`
+	Search    string `json:"search,omitempty" form:"search"`
+	Page      int64  `json:"page" form:"page"`
+	Limit     int64  `json:"size" form:"size"`
+	OrderBy   string `json:"order_by" form:"order_by"`
+	OrderDesc bool   `json:"order_desc" form:"order_desc"`
+	TakeAll   bool   `json:"take_all" form:"take_all"`
 }
 
 type ListContactsParams struct {
@@ -45,5 +54,18 @@ func ContactUsResponseFromDomain(contact *domain.Contact) ContactResponse {
 		ContactEmail:   contact.ContactEmail(),
 		ContactPhone:   contact.ContactPhone(),
 		ContactMessage: contact.ContactMessage(),
+		IsRead:         contact.IsRead(),
 	}
+}
+
+func BuildContactDomainForSubmit(req *CreateContactRequest, uid string) *domain.Contact {
+	contact := domain.NewContactDomain()
+	contact.GenerateID()
+	contact.SetUID(uid) // Will be set if user is authenticated
+	contact.SetContactName(req.ContactName)
+	contact.SetContactEmail(req.ContactEmail)
+	contact.SetContactPhone(req.ContactPhone)
+	contact.SetContactMessage(req.ContactMessage)
+
+	return contact
 }
