@@ -5,21 +5,25 @@ import (
 	"fmt"
 
 	"math-ai.com/math-ai/internal/applications/dto"
-	domain "math-ai.com/math-ai/internal/core/domain/contact"
+	"math-ai.com/math-ai/internal/applications/validators"
 	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
 	diSvc "math-ai.com/math-ai/internal/core/di/services"
+	domain "math-ai.com/math-ai/internal/core/domain/contact"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
 type ContactService struct {
-	repo diRepo.IContactRepository
+	validator validators.IContactValidator
+	repo      diRepo.IContactRepository
 }
 
 func NewContactService(
+	validator validators.IContactValidator,
 	repo diRepo.IContactRepository,
 ) diSvc.IContactService {
 	return &ContactService{
+		validator: validator,
 		repo: repo,
 	}
 }
@@ -70,11 +74,8 @@ func (s *ContactService) GetContacts(ctx context.Context, req *dto.ListContactsR
 
 func (s *ContactService) SubmitContact(ctx context.Context, req *dto.CreateContactRequest, uid string) (status.Code, *dto.ContactResponse, error) {
 	// Validate request
-	if req.ContactName == "" {
-		return status.FAIL, nil, fmt.Errorf("contact name is required")
-	}
-	if req.ContactEmail == "" && req.ContactPhone == "" {
-		return status.FAIL, nil, fmt.Errorf("either contact email or phone is required")
+	if statusCode, err := s.validator.ValidateSubmitContactRequest(req); err != nil {
+		return statusCode, nil, err
 	}
 
 	// Create domain object

@@ -34,12 +34,6 @@ func (c *ContactController) HandlerCreateContact(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Validate request
-	if err := req.Validate(); err != nil {
-		response.WriteJson(w, r.Context(), nil, err, status.FAIL)
-		return
-	}
-
 	var uid string
 	if uidVal, err := c.appResources.GetRequestUID(r); err == nil {
 		uid = uidVal
