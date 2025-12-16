@@ -78,6 +78,7 @@ func (l *Contact) IsRead() bool {
 func (l *Contact) SetContactMessage(contactMessage string) {
 	l.contactMessage = contactMessage
 }
+
 func BuildContactDomainFromModel(model *models.ContactModel) *Contact {
 	isRead := false
 	if model.IsRead != nil {
