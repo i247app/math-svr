@@ -5,7 +5,7 @@ CREATE TABLE user_quiz_assessments (
   `questions` longtext,
   `answers` longtext,
   `ai_review` varchar(255) NOT NULL,
-  `ai_detect_grade` VARCHAR(16) NOT NULL -- e.g., 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'.
+  `ai_detect_grade` VARCHAR(16) NOT NULL, -- e.g., 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5'.
   `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
   `create_id` INT DEFAULT 0,
   `create_dt` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
