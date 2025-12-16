@@ -12,7 +12,7 @@ import (
 func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *services.ServiceContainer) {
 	// middleware setup
 	authMiddleware := middleware.AuthRequiredMiddleware(res.SessionManager)
-	adminMiddleware := middleware.AdminRequiredMiddleware()
+	adminMiddleware := middleware.AdminRequiredMiddleware(res.SessionManager, services.UserService)
 
 	// GraphQL endpoint
 	graphqlHandler, err := gqlhandler.NewGraphQLHandler(services)
