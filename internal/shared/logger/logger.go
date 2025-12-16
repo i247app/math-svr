@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"runtime"
+	"time"
 )
 
 // Context keys for storing logger and session info in context
@@ -96,47 +98,61 @@ func (l *logger) Close() error {
 // Info logs an informational message
 func (l *logger) Info(args ...any) {
 	msg := fmt.Sprint(args...)
-	l.slogger.InfoContext(l.ctx, msg)
+	l.log(l.ctx, slog.LevelInfo, msg)
 }
 
 // Infof logs a formatted informational message
 func (l *logger) Infof(template string, args ...any) {
 	msg := fmt.Sprintf(template, args...)
-	l.slogger.InfoContext(l.ctx, msg)
+	l.log(l.ctx, slog.LevelInfo, msg)
 }
 
 // Error logs an error message
 func (l *logger) Error(args ...any) {
 	msg := fmt.Sprint(args...)
-	l.slogger.ErrorContext(l.ctx, msg)
+	l.log(l.ctx, slog.LevelError, msg)
 }
 
 // Errorf logs a formatted error message
 func (l *logger) Errorf(template string, args ...any) {
 	msg := fmt.Sprintf(template, args...)
-	l.slogger.ErrorContext(l.ctx, msg)
+	l.log(l.ctx, slog.LevelError, msg)
 }
 
 // Debug logs a debug message
 func (l *logger) Debug(args ...any) {
 	msg := fmt.Sprint(args...)
-	l.slogger.DebugContext(l.ctx, msg)
+	l.log(l.ctx, slog.LevelDebug, msg)
 }
 
 // Debugf logs a formatted debug message
 func (l *logger) Debugf(template string, args ...any) {
 	msg := fmt.Sprintf(template, args...)
-	l.slogger.DebugContext(l.ctx, msg)
+	l.log(l.ctx, slog.LevelDebug, msg)
 }
 
 // Warn logs a warning message
 func (l *logger) Warn(args ...any) {
 	msg := fmt.Sprint(args...)
-	l.slogger.WarnContext(l.ctx, msg)
+	l.log(l.ctx, slog.LevelWarn, msg)
 }
 
 // Warnf logs a formatted warning message
 func (l *logger) Warnf(template string, args ...any) {
 	msg := fmt.Sprintf(template, args...)
-	l.slogger.WarnContext(l.ctx, msg)
+	l.log(l.ctx, slog.LevelWarn, msg)
+}
+
+// log is a helper method that creates a log record with the correct caller information
+func (l *logger) log(ctx context.Context, level slog.Level, msg string) {
+	// Get the caller's program counter (PC)
+	// Skip 2 frames: this function and the public logging method (Info, Error, etc.)
+	var pcs [1]uintptr
+	runtime.Callers(3, pcs[:])
+
+	// Create a new record with the correct PC
+	r := slog.NewRecord(time.Now(), level, msg, pcs[0])
+
+	// Call the handler directly
+	_ = l.slogger.Handler().Handle(ctx, r)
 }

@@ -11,6 +11,7 @@ import (
 	di "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/constant/status"
+	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
@@ -32,6 +33,9 @@ func NewUserController(appResources *resources.AppResource, service di.IUserServ
 
 // Get - /users/list
 func (u *UserController) HandlerGetListUsers(w http.ResponseWriter, r *http.Request) {
+	logger := logger.GetLogger(r.Context())
+	logger.Info("HandlerGetListUsers called")
+
 	var req dto.ListUserRequest
 
 	statusCode, users, pagination, err := u.service.ListUsers(r.Context(), &req)
