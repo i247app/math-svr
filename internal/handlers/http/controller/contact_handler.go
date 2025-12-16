@@ -92,19 +92,23 @@ func (c *ContactController) HandlerGetContacts(w http.ResponseWriter, r *http.Re
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }
 
-// GET - /contact/{id}/check_read
+// POST - /contact/check_read
 func (c *ContactController) HandlerCheckReadContact(w http.ResponseWriter, r *http.Request) {
-	// Extract contact ID from path parameter
-	contactID := r.PathValue("id")
+	var req dto.CheckReadContactRequest
 
-	// Validate ID is not empty
-	if contactID == "" {
-		response.WriteJson(w, r.Context(), nil, fmt.Errorf("contact ID is required"), status.FAIL)
+	// Decode request body
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
+	// Validate contact ID is not empty
+	if req.ContactID == "" {
+		response.WriteJson(w, r.Context(), nil, fmt.Errorf("contact_id is required"), status.FAIL)
+		return
+	}
 	// Call service to mark contact as read
-	statusCode, contactRes, err := c.service.CheckReadContact(r.Context(), contactID)
+	statusCode, contactRes, err := c.service.CheckReadContact(r.Context(), req.ContactID)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
 		return

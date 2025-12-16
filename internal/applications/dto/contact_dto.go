@@ -22,6 +22,11 @@ type CreateContactRequest struct {
 	ContactEmail   string `json:"contact_email"`
 	ContactMessage string `json:"contact_message"`
 }
+
+type CheckReadContactRequest struct {
+	ContactID string `json:"contact_id"`
+}
+
 type ListContactsRequest struct {
 	Search    string `json:"search,omitempty" form:"search"`
 	Page      int64  `json:"page" form:"page"`
