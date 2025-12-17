@@ -24,6 +24,23 @@ func NewContactController(appResources *resources.AppResource, service di.IConta
 	}
 }
 
+// GET - /contact/{id}
+func (c *ContactController) HandlerGetContactById(w http.ResponseWriter, r *http.Request) {
+	contactID := r.PathValue("id")
+
+	statusCode, contact, err := c.service.GetContactById(r.Context(), contactID)
+	if err != nil {
+		response.WriteJson(w, r.Context(), nil, err, statusCode)
+		return
+	}
+
+	res := &dto.GetContactByIdRepsonse{
+		Contact: contact,
+	}
+
+	response.WriteJson(w, r.Context(), res, nil, statusCode)
+}
+
 // GET - /contact
 func (c *ContactController) HandlerListContacts(w http.ResponseWriter, r *http.Request) {
 	var req dto.ListContactsRequest
@@ -34,7 +51,7 @@ func (c *ContactController) HandlerListContacts(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	res := &dto.GetContactsResponse{
+	res := &dto.ListContactResponse{
 		Items:      contacts,
 		Pagination: pagination,
 	}
@@ -69,16 +86,14 @@ func (c *ContactController) HandlerCreateContact(w http.ResponseWriter, r *http.
 }
 
 // POST - /contact/mark-read
-func (c *ContactController) HandlerCheckReadContact(w http.ResponseWriter, r *http.Request) {
+func (c *ContactController) HandlerMarkReadContact(w http.ResponseWriter, r *http.Request) {
 	var req dto.MarkReadContactRequest
 
-	// Decode request body
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
 		return
 	}
 
-	// Call service to mark contact as read
 	statusCode, contactRes, err := c.service.MarkReadContact(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, r.Context(), nil, err, statusCode)
@@ -87,24 +102,6 @@ func (c *ContactController) HandlerCheckReadContact(w http.ResponseWriter, r *ht
 
 	res := &dto.MarkReadContactResponse{
 		Contact: contactRes,
-	}
-
-	// Return success response with updated contact
-	response.WriteJson(w, r.Context(), res, nil, statusCode)
-}
-
-// GET - /contact/detail
-func (c *ContactController) HandlerGetContactById(w http.ResponseWriter, r *http.Request) {
-	contactID := r.PathValue("id")
-
-	statusCode, contact, err := c.service.GetContactById(r.Context(), contactID)
-	if err != nil {
-		response.WriteJson(w, r.Context(), nil, err, statusCode)
-		return
-	}
-
-	res := &dto.GetContactByIdRepsonse{
-		Contact: contact,
 	}
 
 	response.WriteJson(w, r.Context(), res, nil, statusCode)

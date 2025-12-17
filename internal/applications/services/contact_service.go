@@ -36,6 +36,21 @@ func NewContactService(
 	}
 }
 
+func (s *ContactService) GetContactById(ctx context.Context, id string) (status.Code, *dto.ContactResponse, error) {
+	contact, err := s.repo.FindByID(ctx, id)
+
+	if err != nil {
+		return status.FAIL, nil, err
+	}
+	if contact == nil {
+		return status.NOT_FOUND, nil, err_svc.ErrContactNotFound
+	}
+
+	response := s.responseBuilder.BuildContactUsResponse(ctx, contact)
+
+	return status.OK, response, nil
+}
+
 func (s *ContactService) ListContacts(ctx context.Context, req *dto.ListContactsRequest) (status.Code, []*dto.ContactResponse, *pagination.Pagination, error) {
 	params := diRepo.ListContactsParams{
 		Search:    req.Search,
@@ -104,18 +119,4 @@ func (s *ContactService) MarkReadContact(ctx context.Context, req *dto.MarkReadC
 	response := s.responseBuilder.BuildContactUsResponse(ctx, contact)
 
 	return status.SUCCESS, response, nil
-}
-func (s *ContactService) GetContactById(ctx context.Context, id string) (status.Code, *dto.ContactResponse, error) {
-	contact, err := s.repo.FindByID(ctx, id)
-
-	if err != nil {
-		return status.FAIL, nil, err
-	}
-	if contact == nil {
-		return status.NOT_FOUND, nil, err_svc.ErrContactNotFound
-	}
-
-	response := s.responseBuilder.BuildContactUsResponse(ctx, contact)
-
-	return status.OK, response, nil
 }

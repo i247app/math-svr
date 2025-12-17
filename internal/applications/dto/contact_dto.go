@@ -14,7 +14,7 @@ type ListContactsRequest struct {
 	TakeAll   bool   `json:"take_all" form:"take_all"`
 }
 
-type GetContactsResponse struct {
+type ListContactResponse struct {
 	Items      []*ContactResponse     `json:"items"`
 	Pagination *pagination.Pagination `json:"metadata"`
 }

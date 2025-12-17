@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/applications/dto"
-	di "math-ai.com/math-ai/internal/core/di/services"
+	diSvc "math-ai.com/math-ai/internal/core/di/services"
 	domain_contact "math-ai.com/math-ai/internal/core/domain/contact"
 	domain_grade "math-ai.com/math-ai/internal/core/domain/grade"
 	domain_profile "math-ai.com/math-ai/internal/core/domain/profile"
@@ -21,11 +21,11 @@ const (
 
 // ResponseBuilder provides common response building utilities
 type ResponseBuilder struct {
-	storageService di.IStorageService
+	storageService diSvc.IStorageService
 }
 
 // NewResponseBuilder creates a new ResponseBuilder instance
-func NewResponseBuilder(storageService di.IStorageService) *ResponseBuilder {
+func NewResponseBuilder(storageService diSvc.IStorageService) *ResponseBuilder {
 	return &ResponseBuilder{
 		storageService: storageService,
 	}
