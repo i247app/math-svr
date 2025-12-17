@@ -1,10 +1,23 @@
 package dto
 
 import (
-	// domain "math-ai.com/math-ai/internal/core/domain/contact"
 	domain "math-ai.com/math-ai/internal/core/domain/contact"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
+
+type ListContactsRequest struct {
+	Search    string `json:"search,omitempty" form:"search"`
+	Page      int64  `json:"page" form:"page"`
+	Limit     int64  `json:"size" form:"size"`
+	OrderBy   string `json:"order_by" form:"order_by"`
+	OrderDesc bool   `json:"order_desc" form:"order_desc"`
+	TakeAll   bool   `json:"take_all" form:"take_all"`
+}
+
+type GetContactsResponse struct {
+	Items      []*ContactResponse     `json:"items"`
+	Pagination *pagination.Pagination `json:"metadata"`
+}
 
 type ContactResponse struct {
 	ID             string  `json:"id"`
@@ -34,25 +47,6 @@ type MarkReadContactRequest struct {
 
 type MarkReadContactResponse struct {
 	Contact *ContactResponse `json:"contact"`
-}
-
-type ListContactsRequest struct {
-	Search    string `json:"search,omitempty" form:"search"`
-	Page      int64  `json:"page" form:"page"`
-	Limit     int64  `json:"size" form:"size"`
-	OrderBy   string `json:"order_by" form:"order_by"`
-	OrderDesc bool   `json:"order_desc" form:"order_desc"`
-	TakeAll   bool   `json:"take_all" form:"take_all"`
-}
-
-type ListContactsParams struct {
-	Limit  int64
-	Offset int64
-}
-
-type GetContactsResponse struct {
-	Items      []*ContactResponse     `json:"items"`
-	Pagination *pagination.Pagination `json:"metadata"`
 }
 
 func ContactUsResponseFromDomain(contact *domain.Contact) ContactResponse {

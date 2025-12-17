@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"math-ai.com/math-ai/internal/applications/dto"
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/contact"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
@@ -52,39 +51,9 @@ func (cr *contactRepository) CreateContact(ctx context.Context, tx *sql.Tx, cont
 	return insertedID, nil
 }
 
-func (cr *contactRepository) GetContacts(ctx context.Context, params *dto.ListContactsParams) ([]*domain.Contact, error) {
-	query := `SELECT id, uid, contact_name, contact_email, contact_phone, contact_message, is_read
-	          FROM contact_us
-	          LIMIT ? OFFSET ?`
-
-	rows, err := cr.db.Query(ctx, nil, query, params.Limit, params.Offset)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query contacts: %v", err)
-	}
-	defer rows.Close()
-
-	var contacts []*domain.Contact
-	for rows.Next() {
-		var c models.ContactModel
-		err := rows.Scan(
-			&c.ID, &c.UID, &c.ContactName, &c.ContactEmail, &c.ContactPhone, &c.ContactMessage, &c.IsRead,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan contact: %v", err)
-		}
-		contacts = append(contacts, domain.BuildContactDomainFromModel(&c))
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating contacts: %v", err)
-	}
-
-	return contacts, nil
-}
-
-func (cr *contactRepository) List(ctx context.Context, params di.ListContactsParams) ([] *domain.Contact, *pagination.Pagination, error) {
+func (cr *contactRepository) List(ctx context.Context, params di.ListContactsParams) ([]*domain.Contact, *pagination.Pagination, error) {
 	var queryBuilder strings.Builder
-	
+
 	args := []interface{}{}
 
 	queryBuilder.WriteString(`
@@ -100,7 +69,7 @@ func (cr *contactRepository) List(ctx context.Context, params di.ListContactsPar
 		countQuery += ` WHERE deleted_dt IS NULL`
 	}
 	var total int64
-	countRow := cr.db.QueryRow(ctx, nil, countQuery, args...)	
+	countRow := cr.db.QueryRow(ctx, nil, countQuery, args...)
 	if err := countRow.Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("failed to count users: %v", err)
 	}
@@ -119,7 +88,6 @@ func (cr *contactRepository) List(ctx context.Context, params di.ListContactsPar
 		args = append(args, pagination.Size, pagination.Skip)
 	}
 
-	
 	// Execute query
 	rows, err := cr.db.Query(ctx, nil, queryBuilder.String(), args...)
 	if err != nil {

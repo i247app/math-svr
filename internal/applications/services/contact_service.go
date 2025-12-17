@@ -36,7 +36,7 @@ func NewContactService(
 	}
 }
 
-func (s *ContactService) ListGrades(ctx context.Context, req *dto.ListContactsRequest) (status.Code, []*dto.ContactResponse, *pagination.Pagination, error) {
+func (s *ContactService) ListContacts(ctx context.Context, req *dto.ListContactsRequest) (status.Code, []*dto.ContactResponse, *pagination.Pagination, error) {
 	params := diRepo.ListContactsParams{
 		Search:    req.Search,
 		Page:      req.Page,
