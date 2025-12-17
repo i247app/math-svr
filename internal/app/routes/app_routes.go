@@ -26,6 +26,8 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("GET /misc/health-check", mc.HandleHealthCheck)
 	server.AddRoute("GET /misc/sessions-dump", mc.HandleSessionDump)
 	server.AddRoute("POST /misc/determine-location", mc.HandleDetermineLocation)
+	// Uncomment to test panic recovery (for development only)
+	server.AddRoute("GET /misc/test-panic", mc.HandleTestPanic)
 
 	// user
 	uc := controller.NewUserController(res, services.UserService)

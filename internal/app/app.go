@@ -131,6 +131,7 @@ func (a *App) setupShutdownHooks(gexServer *gex.Server, _ *services.ServiceConta
 func (a *App) setupMiddleware(gexSvr *gex.Server, services *services.ServiceContainer) {
 	middlewares := []gex.Middleware{
 		// Start-->
+		middleware.RecoveryMiddleware(), // Should be first to catch all panics
 		middleware.GexSessionMiddleware(services.SessionProvider, session.SessionContextKey),
 		middleware.LoggerMiddleware(a.Resource.Env.LogFile),
 		middleware.ValidateSessionMiddleware,

@@ -62,3 +62,14 @@ func (c *MiscController) HandleDetermineLocation(w http.ResponseWriter, r *http.
 
 	response.WriteJson(w, r.Context(), locationRes, nil, statusCode)
 }
+
+// HandleTestPanic is a test endpoint to demonstrate panic recovery
+// This endpoint intentionally causes a nil pointer panic for testing
+func (c *MiscController) HandleTestPanic(w http.ResponseWriter, r *http.Request) {
+	// Intentionally cause a nil pointer panic
+	var user *dto.UserResponse = nil
+	_ = user.Name // This will panic with nil pointer dereference
+
+	// This line will never be reached
+	response.WriteJson(w, r.Context(), "success", nil, status.OK)
+}
