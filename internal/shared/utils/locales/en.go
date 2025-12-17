@@ -186,6 +186,8 @@ func GetMessageENFromStatus(statusCode status.Code) string {
 		return "Invalid contact phone format."
 	case status.CONTACT_ALREADY_READ:
 		return "Contact has already been marked as read."
+	case status.CONTACT_NOT_FOUND:
+		return "Contact not found."
 
 	default:
 		return "Unknown"

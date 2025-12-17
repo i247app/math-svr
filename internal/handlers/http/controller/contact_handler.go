@@ -92,3 +92,20 @@ func (c *ContactController) HandlerCheckReadContact(w http.ResponseWriter, r *ht
 	// Return success response with updated contact
 	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }
+
+// GET - /contact/detail
+func (c *ContactController) HandlerGetContactById(w http.ResponseWriter, r *http.Request) {
+	contactID := r.PathValue("id")
+
+	statusCode, contact, err := c.service.GetContactById(r.Context(), contactID)
+	if err != nil {
+		response.WriteJson(w, r.Context(), nil, err, statusCode)
+		return
+	}
+
+	res := &dto.GetContactByIdRepsonse{
+		Contact: contact,
+	}
+
+	response.WriteJson(w, r.Context(), res, nil, statusCode)
+}

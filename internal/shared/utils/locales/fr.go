@@ -161,6 +161,8 @@ func GetMessageFRFromStatus(statusCode status.Code) string {
 		return "Le message est trop long"
 	case status.CONTACT_NAME_TOO_LONG:
 		return "Le name est trop long"
+	case status.CONTACT_MISSING_ID:
+		return "Identifiant de contact manquant."
 
 	default:
 		return "Unknown"

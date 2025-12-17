@@ -69,7 +69,7 @@ func (s *SemesterService) GetSemesterByID(ctx context.Context, id string) (statu
 
 	semester, err := s.repo.FindByID(ctx, id)
 	if err != nil {
-		logger.Errorf("failed to get semester by ID: ", err)
+		logger.Errorf("failed to get semester by ID: %v", err)
 		return status.FAIL, nil, err
 	}
 	if semester == nil {

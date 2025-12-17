@@ -3,6 +3,7 @@ package err_svc
 import "errors"
 
 var (
+	ErrContactMissingId            = errors.New("id is required")
 	ErrContactMissingName          = errors.New("name is required")
 	ErrContactMissingMessage       = errors.New("message is required")
 	ErrContactEmailOrPhoneRequired = errors.New("either email or phone is required")

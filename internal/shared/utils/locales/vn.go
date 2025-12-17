@@ -164,6 +164,8 @@ func GetMessageVNFromStatus(statusCode status.Code) string {
 		return "Nội dung quá dài"
 	case status.CONTACT_NAME_TOO_LONG:
 		return "Tên quá dài"
+	case status.CONTACT_NOT_FOUND:
+		return "Không tìm thấy thông tin liên hệ."
 
 	default:
 		return "Unknown"

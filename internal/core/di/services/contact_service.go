@@ -12,4 +12,5 @@ type IContactService interface {
 	ListContacts(ctx context.Context, req *dto.ListContactsRequest) (status.Code, []*dto.ContactResponse, *pagination.Pagination, error)
 	SubmitContact(ctx context.Context, req *dto.CreateContactRequest) (status.Code, *dto.ContactResponse, error)
 	MarkReadContact(ctx context.Context, req *dto.MarkReadContactRequest) (status.Code, *dto.ContactResponse, error)
+	GetContactById(ctx context.Context, id string) (status.Code, *dto.ContactResponse, error)
 }

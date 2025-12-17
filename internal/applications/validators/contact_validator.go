@@ -53,3 +53,11 @@ func (v *contactValidator) ValidateSubmitContactRequest(r *dto.CreateContactRequ
 
 	return status.SUCCESS, nil
 }
+
+func (v *contactValidator) ValidateGetContactById(id string) (status.Code, error) {
+	if id == "" {
+		return status.CONTACT_MISSING_ID, err_svc.ErrContactMissingId
+	}
+
+	return status.SUCCESS, nil
+}

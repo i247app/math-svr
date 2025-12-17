@@ -49,6 +49,10 @@ type MarkReadContactResponse struct {
 	Contact *ContactResponse `json:"contact"`
 }
 
+type GetContactByIdRepsonse struct {
+	Contact *ContactResponse `json:"contact"`
+}
+
 func ContactUsResponseFromDomain(contact *domain.Contact) ContactResponse {
 	return ContactResponse{
 		ID:             contact.ID(),
