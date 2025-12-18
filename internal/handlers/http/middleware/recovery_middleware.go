@@ -22,7 +22,7 @@ func RecoveryMiddleware() func(http.Handler) http.Handler {
 					logPanic(r, panicInfo)
 
 					// Send error response to client
-					respondWithPanicError(w, r, panicInfo)
+					respondWithPanicError(w, panicInfo)
 				}
 			}()
 
@@ -47,7 +47,7 @@ func logPanic(r *http.Request, panicInfo *recovery.PanicInfo) {
 }
 
 // respondWithPanicError sends an appropriate error response to the client
-func respondWithPanicError(w http.ResponseWriter, r *http.Request, panicInfo *recovery.PanicInfo) {
+func respondWithPanicError(w http.ResponseWriter, panicInfo *recovery.PanicInfo) {
 	// Set appropriate status code
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusInternalServerError)
@@ -62,11 +62,11 @@ func respondWithPanicError(w http.ResponseWriter, r *http.Request, panicInfo *re
 
 	// Send JSON response
 	response := fmt.Sprintf(`{
-  "success": false,
-  "error": "%s",
-  "message": "The server encountered an unexpected error. Please try again or contact support.",
-  "panic_type": "%T"
-}`, errorMessage, panicInfo.Value)
+		"success": false,
+		"error": "%s",
+		"message": "The server encountered an unexpected error. Please try again or contact support.",
+		"panic_type": "%T"
+		}`, errorMessage, panicInfo.Value)
 
 	w.Write([]byte(response))
 }
