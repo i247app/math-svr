@@ -89,6 +89,24 @@ type DeleteUserRequest struct {
 	UID string `json:"uid"`
 }
 
+type SearchUserRequest struct {
+	Query      string     `json:"query,omitempty"`       // General search query (searches across name, email, phone)
+	Name       *string    `json:"name,omitempty"`        // Specific name search
+	Email      *string    `json:"email,omitempty"`       // Specific email search
+	Phone      *string    `json:"phone,omitempty"`       // Specific phone search
+	Role       *enum.ERole `json:"role,omitempty"`       // Filter by role
+	Status     *enum.EStatus `json:"status,omitempty"`   // Filter by status
+	Page       int64      `json:"page" form:"page"`
+	Limit      int64      `json:"size" form:"size"`
+	OrderBy    string     `json:"order_by" form:"order_by"`
+	OrderDesc  bool       `json:"order_desc" form:"order_desc"`
+}
+
+type SearchUserResponse struct {
+	Items      []*UserResponse        `json:"items"`
+	Pagination *pagination.Pagination `json:"metadata"`
+}
+
 func BuildUserDomainForCreate(req *CreateUserRequest) *domain.User {
 	userDomain := domain.NewUserDomain()
 	userDomain.GenerateID()
