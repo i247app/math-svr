@@ -1,10 +1,9 @@
 package domain
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type Alias struct {
@@ -12,9 +11,9 @@ type Alias struct {
 	uid       string
 	aka       string
 	status    string
-	createDT  time.Time
-	modifyDT  time.Time
-	deletedDT *time.Time
+	createDT  time.MathTime
+	modifyDT  time.MathTime
+	deletedDT *time.MathTime
 }
 
 func NewAliasDomain() *Alias {
@@ -53,23 +52,23 @@ func (a *Alias) SetStatus(status string) {
 	a.status = status
 }
 
-func (a *Alias) CreateDT() time.Time {
+func (a *Alias) CreateDT() time.MathTime {
 	return a.createDT
 }
 
-func (a *Alias) SetCreateDT(createDT time.Time) {
+func (a *Alias) SetCreateDT(createDT time.MathTime) {
 	a.createDT = createDT
 }
 
-func (a *Alias) ModifyDT() time.Time {
+func (a *Alias) ModifyDT() time.MathTime {
 	return a.modifyDT
 }
 
-func (a *Alias) SetModifyDT(modifyDT time.Time) {
+func (a *Alias) SetModifyDT(modifyDT time.MathTime) {
 	a.modifyDT = modifyDT
 }
 
-func (a *Alias) DeletedDT() *time.Time {
+func (a *Alias) DeletedDT() *time.MathTime {
 	return a.deletedDT
 }
 

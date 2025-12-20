@@ -6,9 +6,7 @@ import (
 	"time"
 )
 
-// DefaultFormat is the default time format used for JSON marshaling/unmarshaling
 // RFC3339 is used to maintain compatibility with existing API responses
-const DefaultFormat = time.RFC3339Nano
 
 // MathTime is a custom time type that wraps time.Time with custom JSON and database marshaling
 type MathTime struct {

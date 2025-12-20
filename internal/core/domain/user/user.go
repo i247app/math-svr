@@ -1,11 +1,10 @@
 package domain
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
+	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type User struct {
@@ -14,15 +13,15 @@ type User struct {
 	phone      string
 	email      string
 	avatarKey  *string
-	dob        *time.Time
+	dob        *time.MathTime
 	gradeID    string
 	semesterID string
 	role       string
 	password   string
 	status     string
-	createDT   time.Time
-	modifyDT   time.Time
-	deletedDT  *time.Time
+	createDT   time.MathTime
+	modifyDT   time.MathTime
+	deletedDT  *time.MathTime
 }
 
 func NewUserDomain() *User {
@@ -73,11 +72,11 @@ func (u *User) SetAvatarKey(avatarKey *string) {
 	u.avatarKey = avatarKey
 }
 
-func (u *User) DOB() *time.Time {
+func (u *User) DOB() *time.MathTime {
 	return u.dob
 }
 
-func (u *User) SetDOB(dob *time.Time) {
+func (u *User) SetDOB(dob *time.MathTime) {
 	u.dob = dob
 }
 
@@ -125,27 +124,27 @@ func (u *User) SetStatus(status string) {
 	u.status = status
 }
 
-func (u *User) CreatedAt() time.Time {
+func (u *User) CreatedAt() time.MathTime {
 	return u.createDT
 }
 
-func (u *User) SetCreatedAt(createAt time.Time) {
+func (u *User) SetCreatedAt(createAt time.MathTime) {
 	u.createDT = createAt
 }
 
-func (u *User) ModifyAt() time.Time {
+func (u *User) ModifyAt() time.MathTime {
 	return u.modifyDT
 }
 
-func (u *User) SetModifyAt(modifyAt time.Time) {
+func (u *User) SetModifyAt(modifyAt time.MathTime) {
 	u.modifyDT = modifyAt
 }
 
-func (u *User) DeletedAt() *time.Time {
+func (u *User) DeletedAt() *time.MathTime {
 	return u.deletedDT
 }
 
-func (u *User) SetDeletedAt(deletedAt *time.Time) {
+func (u *User) SetDeletedAt(deletedAt *time.MathTime) {
 	u.deletedDT = deletedAt
 }
 

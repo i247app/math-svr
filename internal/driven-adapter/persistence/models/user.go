@@ -1,8 +1,6 @@
 package models
 
-import (
-	"time"
-)
+import "math-ai.com/math-ai/internal/shared/utils/time"
 
 type UserModel struct {
 	ID           string
@@ -10,14 +8,14 @@ type UserModel struct {
 	Phone        string
 	Email        string
 	AvatarKey    *string
-	Dob          *time.Time
+	Dob          *time.MathTime
 	Role         string
 	HashPassword string
 	Status       string
 	CreateID     *int64
-	CreateDT     time.Time
+	CreateDT     time.MathTime
 	ModifyID     *int64
-	ModifyDT     time.Time
+	ModifyDT     time.MathTime
 }
 
 type AliasUserModel struct {
@@ -26,7 +24,7 @@ type AliasUserModel struct {
 	Aka      string
 	Status   string
 	CreateID *int64
-	CreateDT time.Time
+	CreateDT time.MathTime
 	ModifyID *int64
-	ModifyDT time.Time
+	ModifyDT time.MathTime
 }

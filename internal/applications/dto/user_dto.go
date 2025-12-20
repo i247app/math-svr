@@ -2,24 +2,24 @@ package dto
 
 import (
 	"io"
-	"time"
 
 	domain "math-ai.com/math-ai/internal/core/domain/user"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
+	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type UserResponse struct {
-	ID        string     `json:"id"`
-	Email     string     `json:"email"`
-	Name      string     `json:"name"`
-	Phone     string     `json:"phone"`
-	Avatar    *string    `json:"-"`          // S3 key/path
-	AvatarURL *string    `json:"avatar_url"` // Temporary presigned URL for access
-	Dob       *time.Time `json:"dob"`
-	Role      string     `json:"role"`
-	CreateAt  time.Time  `json:"created_at"`
-	ModifyAt  time.Time  `json:"modified_at"`
+	ID        string         `json:"id"`
+	Email     string         `json:"email"`
+	Name      string         `json:"name"`
+	Phone     string         `json:"phone"`
+	Avatar    *string        `json:"-"`          // S3 key/path
+	AvatarURL *string        `json:"avatar_url"` // Temporary presigned URL for access
+	Dob       *time.MathTime `json:"dob"`
+	Role      string         `json:"role"`
+	CreateAt  time.MathTime  `json:"created_at"`
+	ModifyAt  time.MathTime  `json:"modified_at"`
 }
 
 type GetUserResponse struct {
@@ -90,16 +90,16 @@ type DeleteUserRequest struct {
 }
 
 type SearchUserRequest struct {
-	Query      string     `json:"query,omitempty"`       // General search query (searches across name, email, phone)
-	Name       *string    `json:"name,omitempty"`        // Specific name search
-	Email      *string    `json:"email,omitempty"`       // Specific email search
-	Phone      *string    `json:"phone,omitempty"`       // Specific phone search
-	Role       *enum.ERole `json:"role,omitempty"`       // Filter by role
-	Status     *enum.EStatus `json:"status,omitempty"`   // Filter by status
-	Page       int64      `json:"page" form:"page"`
-	Limit      int64      `json:"size" form:"size"`
-	OrderBy    string     `json:"order_by" form:"order_by"`
-	OrderDesc  bool       `json:"order_desc" form:"order_desc"`
+	Query     string        `json:"query,omitempty"`  // General search query (searches across name, email, phone)
+	Name      *string       `json:"name,omitempty"`   // Specific name search
+	Email     *string       `json:"email,omitempty"`  // Specific email search
+	Phone     *string       `json:"phone,omitempty"`  // Specific phone search
+	Role      *enum.ERole   `json:"role,omitempty"`   // Filter by role
+	Status    *enum.EStatus `json:"status,omitempty"` // Filter by status
+	Page      int64         `json:"page" form:"page"`
+	Limit     int64         `json:"size" form:"size"`
+	OrderBy   string        `json:"order_by" form:"order_by"`
+	OrderDesc bool          `json:"order_desc" form:"order_desc"`
 }
 
 type SearchUserResponse struct {
@@ -118,7 +118,7 @@ func BuildUserDomainForCreate(req *CreateUserRequest) *domain.User {
 	userDomain.SetSemesterID(req.SemesterID)
 
 	if req.Dob != nil {
-		parsedDob, err := time.Parse(time.DateOnly, *req.Dob)
+		parsedDob, err := time.ParseWithFormat(time.DateOnly, *req.Dob)
 		if err == nil {
 			userDomain.SetDOB(&parsedDob)
 		}
@@ -150,7 +150,7 @@ func BuildUserDomainForUpdate(req *UpdateUserRequest) *domain.User {
 	}
 
 	if req.Dob != nil {
-		parsedDob, err := time.Parse(time.DateOnly, *req.Dob)
+		parsedDob, err := time.ParseWithFormat(time.DateOnly, *req.Dob)
 		if err == nil {
 			userDomain.SetDOB(&parsedDob)
 		}
