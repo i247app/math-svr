@@ -1,25 +1,24 @@
 package dto
 
 import (
-	"time"
-
 	domain "math-ai.com/math-ai/internal/core/domain/profile"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
+	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type ProfileResponse struct {
-	ID               string    `json:"id"`
-	UID              string    `json:"uid"`
-	Name             string    `json:"name"`
-	Email            string    `json:"email"`
-	Phone            string    `json:"phone"`
-	Age              *int      `json:"age"`
-	Grade            string    `json:"grade"`
-	Semester         string    `json:"semester"`
-	AvatarPreviewURL *string   `json:"avatar_url"`
-	Status           string    `json:"status"`
-	CreatedAt        time.Time `json:"created_at"`
-	ModifiedAt       time.Time `json:"modified_at"`
+	ID               string        `json:"id"`
+	UID              string        `json:"uid"`
+	Name             string        `json:"name"`
+	Email            string        `json:"email"`
+	Phone            string        `json:"phone"`
+	Age              *int          `json:"age"`
+	Grade            string        `json:"grade"`
+	Semester         string        `json:"semester"`
+	AvatarPreviewURL *string       `json:"avatar_url"`
+	Status           string        `json:"status"`
+	CreatedAt        time.MathTime `json:"created_at"`
+	ModifiedAt       time.MathTime `json:"modified_at"`
 }
 
 type FetchProfileRequest struct {

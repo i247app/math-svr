@@ -1,8 +1,6 @@
 package models
 
-import (
-	"time"
-)
+import "math-ai.com/math-ai/internal/shared/utils/time"
 
 type ProfileModel struct {
 	ID        string
@@ -11,13 +9,13 @@ type ProfileModel struct {
 	Phone     string
 	Email     string
 	AvatarKey *string
-	Dob       *time.Time
+	Dob       *time.MathTime
 	Grade     string
 	Semester  string
 	Status    string
 	CreateID  *int64
-	CreateDT  time.Time
+	CreateDT  time.MathTime
 	ModifyID  *int64
-	ModifyDT  time.Time
-	DeletedDT *time.Time
+	ModifyDT  time.MathTime
+	DeletedDT *time.MathTime
 }
