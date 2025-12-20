@@ -2,22 +2,22 @@ package dto
 
 import (
 	"io"
-	"time"
 
 	domain "math-ai.com/math-ai/internal/core/domain/grade"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
+	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type GradeResponse struct {
-	ID           string    `json:"id"`
-	Label        string    `json:"label"`
-	Description  *string   `json:"description"`
-	ImageUrl     *string   `json:"image_url"`
-	Status       string    `json:"status"`
-	DisplayOrder int8      `json:"display_order"`
-	CreatedAt    time.Time `json:"created_at"`
-	ModifiedAt   time.Time `json:"modified_at"`
+	ID           string        `json:"id"`
+	Label        string        `json:"label"`
+	Description  *string       `json:"description"`
+	ImageUrl     *string       `json:"image_url"`
+	Status       string        `json:"status"`
+	DisplayOrder int8          `json:"display_order"`
+	CreatedAt    time.MathTime `json:"created_at"`
+	ModifiedAt   time.MathTime `json:"modified_at"`
 }
 
 type GetGradeResponse struct {

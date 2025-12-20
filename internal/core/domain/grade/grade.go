@@ -1,11 +1,10 @@
 package domain
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
+	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type Grade struct {
@@ -16,10 +15,10 @@ type Grade struct {
 	status       string
 	displayOrder int8
 	createID     *int64
-	createDT     time.Time
+	createDT     time.MathTime
 	modifyID     *int64
-	modifyDT     time.Time
-	deletedDT    *time.Time
+	modifyDT     time.MathTime
+	deletedDT    *time.MathTime
 }
 
 func NewGradeDomain() *Grade {
@@ -89,11 +88,11 @@ func (g *Grade) SetCreateID(createID *int64) {
 	g.createID = createID
 }
 
-func (g *Grade) CreatedAt() time.Time {
+func (g *Grade) CreatedAt() time.MathTime {
 	return g.createDT
 }
 
-func (g *Grade) SetCreatedAt(createDT time.Time) {
+func (g *Grade) SetCreatedAt(createDT time.MathTime) {
 	g.createDT = createDT
 }
 
@@ -105,19 +104,19 @@ func (g *Grade) SetModifyID(modifyID *int64) {
 	g.modifyID = modifyID
 }
 
-func (g *Grade) ModifiedAt() time.Time {
+func (g *Grade) ModifiedAt() time.MathTime {
 	return g.modifyDT
 }
 
-func (g *Grade) SetModifiedAt(modifyDT time.Time) {
+func (g *Grade) SetModifiedAt(modifyDT time.MathTime) {
 	g.modifyDT = modifyDT
 }
 
-func (g *Grade) DeletedAt() *time.Time {
+func (g *Grade) DeletedAt() *time.MathTime {
 	return g.deletedDT
 }
 
-func (g *Grade) SetDeletedAt(deletedDT *time.Time) {
+func (g *Grade) SetDeletedAt(deletedDT *time.MathTime) {
 	g.deletedDT = deletedDT
 }
 

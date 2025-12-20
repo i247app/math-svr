@@ -1,7 +1,7 @@
 package models
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type GradeModel struct {
@@ -12,9 +12,8 @@ type GradeModel struct {
 	Status       string
 	DisplayOrder int8
 	CreateID     *int64
-	CreateDT     time.Time
+	CreateDT     time.MathTime
 	ModifyID     *int64
-	ModifyDT     time.Time
-	DeletedDT    *time.Time
-	// Label and Description moved to GradeTranslationModel
+	ModifyDT     time.MathTime
+	DeletedDT    *time.MathTime
 }
