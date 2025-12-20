@@ -1,11 +1,10 @@
 package domain
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
+	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type Semester struct {
@@ -16,10 +15,10 @@ type Semester struct {
 	status       string
 	displayOrder int8
 	createID     *int64
-	createDT     time.Time
+	createDT     time.MathTime
 	modifyID     *int64
-	modifyDT     time.Time
-	deletedDT    *time.Time
+	modifyDT     time.MathTime
+	deletedDT    *time.MathTime
 }
 
 func NewSemesterDomain() *Semester {
@@ -89,11 +88,11 @@ func (s *Semester) SetCreateID(createID *int64) {
 	s.createID = createID
 }
 
-func (s *Semester) CreatedAt() time.Time {
+func (s *Semester) CreatedAt() time.MathTime {
 	return s.createDT
 }
 
-func (s *Semester) SetCreatedAt(createDT time.Time) {
+func (s *Semester) SetCreatedAt(createDT time.MathTime) {
 	s.createDT = createDT
 }
 
@@ -105,19 +104,19 @@ func (s *Semester) SetModifyID(modifyID *int64) {
 	s.modifyID = modifyID
 }
 
-func (s *Semester) ModifiedAt() time.Time {
+func (s *Semester) ModifiedAt() time.MathTime {
 	return s.modifyDT
 }
 
-func (s *Semester) SetModifiedAt(modifyDT time.Time) {
+func (s *Semester) SetModifiedAt(modifyDT time.MathTime) {
 	s.modifyDT = modifyDT
 }
 
-func (s *Semester) DeletedAt() *time.Time {
+func (s *Semester) DeletedAt() *time.MathTime {
 	return s.deletedDT
 }
 
-func (s *Semester) SetDeletedAt(deletedDT *time.Time) {
+func (s *Semester) SetDeletedAt(deletedDT *time.MathTime) {
 	s.deletedDT = deletedDT
 }
 

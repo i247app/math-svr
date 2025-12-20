@@ -1,6 +1,6 @@
 package models
 
-import "time"
+import "math-ai.com/math-ai/internal/shared/utils/time"
 
 type SemesterModel struct {
 	ID           string
@@ -10,8 +10,8 @@ type SemesterModel struct {
 	Status       string
 	DisplayOrder int8
 	CreateID     *int64
-	CreateDT     time.Time
+	CreateDT     time.MathTime
 	ModifyID     *int64
-	ModifyDT     time.Time
-	DeletedDT    *time.Time
+	ModifyDT     time.MathTime
+	DeletedDT    *time.MathTime
 }

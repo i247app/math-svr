@@ -119,4 +119,3 @@ func (mt MathTime) IsValid() bool {
 func (mt MathTime) Ptr() *MathTime {
 	return &mt
 }
-
