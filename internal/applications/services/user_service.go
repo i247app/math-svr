@@ -10,6 +10,7 @@ import (
 	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
 	diSvc "math-ai.com/math-ai/internal/core/di/services"
 	domain "math-ai.com/math-ai/internal/core/domain/profile"
+	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
@@ -19,6 +20,7 @@ type UserService struct {
 	validator       validators.IUserValidator
 	repo            diRepo.IUserRepository
 	profileRepo     diRepo.IProfileRepository
+	roleRepo        diRepo.IRoleRepository
 	responseBuilder *utils.ResponseBuilder
 	fileManager     *utils.FileManager
 	userCreator     *helper.UserCreator
@@ -31,6 +33,7 @@ func NewUserService(
 	repo diRepo.IUserRepository,
 	authRepo diRepo.IAuthRepository,
 	profileRepo diRepo.IProfileRepository,
+	roleRepo diRepo.IRoleRepository,
 	userQuizPracticeRepo diRepo.IUserQuizPracticesRepository,
 	storageService diSvc.IStorageService,
 ) diSvc.IUserService {
@@ -44,6 +47,7 @@ func NewUserService(
 		validator:       validator,
 		repo:            repo,
 		profileRepo:     profileRepo,
+		roleRepo:        roleRepo,
 		responseBuilder: responseBuilder,
 		fileManager:     fileManager,
 		userCreator:     userCreator,
@@ -121,6 +125,13 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 	if statusCode, err := s.validator.ValidateCreateUserRequest(req); err != nil {
 		return statusCode, nil, err
 	}
+
+	// Find role by code to set role ID
+	role, err := s.roleRepo.FindByCode(ctx, string(enum.RoleUser))
+	if err != nil || role == nil {
+		return status.FAIL, nil, err
+	}
+	req.RoleID = role.ID()
 
 	// Check for duplicate users using helper
 	if statusCode, err := s.userCreator.CheckDuplicateUser(ctx, req.Email, req.Phone); err != nil {

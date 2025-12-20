@@ -59,7 +59,7 @@ func (s *authorizationService) GetUserPermissions(ctx context.Context, userID st
 
 	// Get user's role ID (try role_id first, fallback to role string)
 	roleID := user.RoleID()
-	if roleID == nil || *roleID == "" {
+	if roleID == "" {
 		// Fallback: map role string to role ID
 		roleCode := user.Role()
 		if roleCode == "" {
@@ -74,11 +74,11 @@ func (s *authorizationService) GetUserPermissions(ctx context.Context, userID st
 			return []*domain.Permission{}, nil
 		}
 		roleIDStr := role.ID()
-		roleID = &roleIDStr
+		roleID = roleIDStr
 	}
 
 	// Get role hierarchy (current role + all parent roles)
-	roles, err := s.roleRepo.GetHierarchy(ctx, *roleID)
+	roles, err := s.roleRepo.GetHierarchy(ctx, roleID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get role hierarchy: %v", err)
 	}

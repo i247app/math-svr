@@ -35,22 +35,28 @@ func (r *userRepository) DoTransaction(ctx context.Context, handler db.Handerler
 	return nil
 }
 
-// GetUserByLoginName retrieves a user by their login name (email or phone).
+// GetUserByLoginName retrieves a user by their login name (email or phone) with role information.
 func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName string) (*domain.User, error) {
 	query := `
-		SELECT u.id, u.name, u.phone, u.email, u.avatar_key, u.dob, 
-		u.role, u.status, l.hash_pass, u.create_id, u.create_dt, u.modify_id, u.modify_dt
+		SELECT u.id, u.name, u.phone, u.email, u.avatar_key, u.dob,
+		       u.role_id, u.status, l.hash_pass,
+		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
+		       r.name as role_name
 		FROM users u
 		JOIN aliases a ON u.id = a.uid
 		JOIN logins l ON u.id = l.uid
+		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
 		WHERE a.aka = ? AND u.deleted_dt IS NULL AND a.deleted_dt IS NULL AND l.deleted_dt IS NULL
 	`
+
 	result := r.db.QueryRow(ctx, nil, query, loginName)
 
 	var u models.UserModel
 	err := result.Scan(
 		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
-		&u.Role, &u.Status, &u.HashPassword, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
+		&u.RoleID, &u.Status, &u.HashPassword,
+		&u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
+		&u.Role,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -65,49 +71,56 @@ func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName strin
 }
 
 // List retrieves a paginated list of users with optional search and sorting.
+// Now supports joining with roles table for enhanced user information.
 func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([]*domain.User, *pagination.Pagination, error) {
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
-	// Base query
+	// Base query with LEFT JOIN to roles table
 	queryBuilder.WriteString(`
-		SELECT id, name, phone, email, avatar_key, dob,
-		role, status, create_id, create_dt, modify_id, modify_dt
-		FROM users WHERE deleted_dt IS NULL
+		SELECT u.id, u.name, u.phone, u.email, u.avatar_key, u.dob,
+		       u.role_id, u.status,
+		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
+		       r.name as role_name
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
+		WHERE u.deleted_dt IS NULL
 	`)
 
 	// Add search condition
 	if params.Search != "" {
-		queryBuilder.WriteString(` AND name LIKE ? OR email LIKE ?`)
+		queryBuilder.WriteString(` AND (u.name LIKE ? OR u.email LIKE ?)`)
 		searchTerm := "%" + params.Search + "%"
 		args = append(args, searchTerm, searchTerm)
 	}
 
 	// Count total records for pagination
-	countQuery := "SELECT COUNT(*) FROM users"
+	countQuery := "SELECT COUNT(*) FROM users u WHERE u.deleted_dt IS NULL"
+	countArgs := []interface{}{}
 	if params.Search != "" {
-		countQuery += ` WHERE name LIKE ? OR email LIKE ? AND deleted_dt IS NULL`
-	} else {
-		countQuery += ` WHERE deleted_dt IS NULL`
+		countQuery += ` AND (u.name LIKE ? OR u.email LIKE ?)`
+		searchTerm := "%" + params.Search + "%"
+		countArgs = append(countArgs, searchTerm, searchTerm)
 	}
+
 	var total int64
-	countRow := r.db.QueryRow(ctx, nil, countQuery, args...)
+	countRow := r.db.QueryRow(ctx, nil, countQuery, countArgs...)
 	if err := countRow.Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("failed to count users: %v", err)
 	}
 
 	// Initialize pagination
-	pagination := pagination.NewPagination(params.Page, params.Limit, total)
+	paginationResult := pagination.NewPagination(params.Page, params.Limit, total)
 	if params.TakeAll {
-		pagination.Size = total
-		pagination.Skip = 0
-		pagination.Page = 1
-		pagination.TotalPages = 1
+		paginationResult.Size = total
+		paginationResult.Skip = 0
+		paginationResult.Page = 1
+		paginationResult.TotalPages = 1
 	}
 
 	// Add sorting
 	if params.OrderBy != "" {
-		queryBuilder.WriteString(fmt.Sprintf(" ORDER BY %s", params.OrderBy))
+		queryBuilder.WriteString(fmt.Sprintf(" ORDER BY u.%s", params.OrderBy))
 		if params.OrderDesc {
 			queryBuilder.WriteString(" DESC")
 		}
@@ -116,7 +129,7 @@ func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([
 	// Add pagination
 	if !params.TakeAll {
 		queryBuilder.WriteString(` LIMIT ? OFFSET ?`)
-		args = append(args, pagination.Size, pagination.Skip)
+		args = append(args, paginationResult.Size, paginationResult.Skip)
 	}
 
 	// Execute query
@@ -132,7 +145,9 @@ func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([
 		var u models.UserModel
 		if err := rows.Scan(
 			&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
-			&u.Role, &u.Status, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
+			&u.RoleID, &u.Status,
+			&u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
+			&u.Role,
 		); err != nil {
 			return nil, nil, fmt.Errorf("scan error: %v", err)
 		}
@@ -140,16 +155,19 @@ func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([
 		users = append(users, domain.BuildUserDomainFromModel(&u))
 	}
 
-	return users, pagination, nil
+	return users, paginationResult, nil
 }
 
-// FindByID retrieves a user by ID.
+// FindByID retrieves a user by ID with optional role information.
 func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User, error) {
 	query := `
-		SELECT id, name, phone, email, avatar_key, dob,
-		role, status, create_id, create_dt, modify_id, modify_dt
-		FROM users
-		WHERE id = ? AND deleted_dt IS NULL
+		SELECT u.id, u.name, u.phone, u.email, u.avatar_key, u.dob,
+		       u.role_id, u.status,
+		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
+		       r.name as role_name
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
+		WHERE u.id = ? AND u.deleted_dt IS NULL
 	`
 
 	result := r.db.QueryRow(ctx, nil, query, uid)
@@ -157,7 +175,9 @@ func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User
 	var u models.UserModel
 	err := result.Scan(
 		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
-		&u.Role, &u.Status, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
+		&u.RoleID, &u.Status,
+		&u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
+		&u.Role,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -171,20 +191,26 @@ func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User
 	return user, nil
 }
 
-// FindByEmail retrieves a user by email.
+// FindByEmail retrieves a user by email with optional role information.
 func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	query := `
-		SELECT id, name, phone, email, avatar_key, dob,
-		role, status, create_id, create_dt, modify_id, modify_dt
-		FROM users
-		WHERE email = ? AND deleted_dt IS NULL
+		SELECT u.id, u.name, u.phone, u.email, u.avatar_key, u.dob,
+		       u.role_id, u.status,
+		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
+		       r.name as role_name
+		FROM users u
+		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
+		WHERE u.email = ? AND u.deleted_dt IS NULL
 	`
+
 	result := r.db.QueryRow(ctx, nil, query, email)
 
 	var u models.UserModel
 	err := result.Scan(
 		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
-		&u.Role, &u.Status, &u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
+		&u.RoleID, &u.Status,
+		&u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
+		&u.Role,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -201,7 +227,7 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 // Create inserts a new user into the database.
 func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) {
 	query := `
-		INSERT INTO users (id, name, phone, email, avatar_key, dob, role, status)
+		INSERT INTO users (id, name, phone, email, avatar_key, dob, role_id, status)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -211,7 +237,7 @@ func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.Us
 		user.Email(),
 		user.AvatarKey(),
 		user.DOB(),
-		user.Role(),
+		user.RoleID(),
 		enum.StatusActive,
 	)
 	if err != nil {
@@ -254,9 +280,9 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 		args = append(args, user.DOB())
 	}
 
-	if user.Role() != "" {
-		updates = append(updates, "role = ?")
-		args = append(args, user.Role())
+	if user.RoleID() != "" {
+		updates = append(updates, "role_id = ?")
+		args = append(args, user.RoleID())
 	}
 
 	if user.AvatarKey() != nil {

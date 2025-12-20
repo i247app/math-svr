@@ -9,8 +9,8 @@ type UserModel struct {
 	Email        string
 	AvatarKey    *string
 	Dob          *time.MathTime
+	RoleID       string
 	Role         string
-	RoleID       *string // New RBAC role ID
 	HashPassword string
 	Status       string
 	CreateID     *int64

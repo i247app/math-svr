@@ -94,11 +94,6 @@ func (u *UserController) HandlerCreateUser(w http.ResponseWriter, r *http.Reques
 		req.GradeID = r.FormValue("grade_id")
 		req.SemesterID = r.FormValue("semester_id")
 
-		// Parse role
-		if roleStr := r.FormValue("role"); roleStr != "" {
-			req.Role = enum.ERole(roleStr)
-		}
-
 		// Parse DOB
 		if dobStr := r.FormValue("dob"); dobStr != "" {
 			req.Dob = &dobStr

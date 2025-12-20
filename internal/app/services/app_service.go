@@ -126,7 +126,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 
 	log.Println("> userSvc...")
 	var userValidator = validators.NewUserValidator()
-	var userSvc = services.NewUserService(userValidator, userRepo, authRepo, profileRepo, userLatestQuizRepo, storageSvc)
+	var userSvc = services.NewUserService(userValidator, userRepo, authRepo, profileRepo, roleRepo, userLatestQuizRepo, storageSvc)
 
 	log.Println("> authSvc...")
 	var authValidator = validators.NewLoginValidator()
@@ -148,7 +148,6 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	var profileValidator = validators.NewProfileValidator()
 	var profileSvc = services.NewProfileService(profileValidator, profileRepo, storageSvc)
 
-	
 	log.Println("> chatBoxSvc...")
 	chatBoxClient := DetermineAIProvider(context.Background(), *res.Env)
 
@@ -162,7 +161,6 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	log.Println("> userQuizAssessmentSvc...")
 	var userQuizAssessmentSvc = services.NewUserQuizAssessmentService(userQuizAssessmentRepo, profileSvc, chatBoxSvc)
 
-	
 	log.Println("> contactSvc...")
 	var contactValidator = validators.NewContactValidator()
 	var contactSvc = services.NewContactService(contactValidator, contactRepo, storageSvc)

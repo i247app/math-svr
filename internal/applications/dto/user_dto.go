@@ -41,14 +41,15 @@ type ListUserResponse struct {
 }
 
 type CreateUserRequest struct {
-	Name       string     `json:"name"`
-	Phone      string     `json:"phone"`
-	Email      string     `json:"email"`
-	Role       enum.ERole `json:"role,omitempty"`
-	Password   string     `json:"password"`
-	Dob        *string    `json:"dob"`
-	GradeID    string     `json:"grade_id"`
-	SemesterID string     `json:"semester_id"`
+	Name       string  `json:"name"`
+	Phone      string  `json:"phone"`
+	Email      string  `json:"email"`
+	Password   string  `json:"password"`
+	Dob        *string `json:"dob"`
+	GradeID    string  `json:"grade_id"`
+	SemesterID string  `json:"semester_id"`
+
+	RoleID string `json:"-"`
 
 	// Avatar upload fields (for multipart form)
 	AvatarFile        io.Reader `json:"avatar_file"`         // File reader
@@ -113,6 +114,7 @@ func BuildUserDomainForCreate(req *CreateUserRequest) *domain.User {
 	userDomain.SetEmail(req.Email)
 	userDomain.SetName(req.Name)
 	userDomain.SetPhone(req.Phone)
+	userDomain.SetRoleID(req.RoleID)
 	userDomain.SetPassword(req.Password)
 	userDomain.SetGradeID(req.GradeID)
 	userDomain.SetSemesterID(req.SemesterID)
@@ -123,8 +125,6 @@ func BuildUserDomainForCreate(req *CreateUserRequest) *domain.User {
 			userDomain.SetDOB(&parsedDob)
 		}
 	}
-
-	userDomain.SetRole(string(req.Role))
 
 	return userDomain
 }
@@ -143,10 +143,6 @@ func BuildUserDomainForUpdate(req *UpdateUserRequest) *domain.User {
 
 	if req.Phone != nil {
 		userDomain.SetPhone(*req.Phone)
-	}
-
-	if req.Role != nil {
-		userDomain.SetRole(string(*req.Role))
 	}
 
 	if req.Dob != nil {

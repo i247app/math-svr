@@ -48,10 +48,6 @@ func (v *userValidator) ValidateCreateUserRequest(req *dto.CreateUserRequest) (s
 		return status.USER_MISSING_PASSWORD, err_svc.ErrMissingPassword
 	}
 
-	if req.Role != "" && !validate.IsValidRole(req.Role) {
-		return status.USER_INVALID_ROLE, err_svc.ErrInvalidRole
-	}
-
 	return status.SUCCESS, nil
 }
 

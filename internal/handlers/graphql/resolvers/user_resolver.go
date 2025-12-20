@@ -86,9 +86,6 @@ func (r *UserResolver) CreateUser(params graphql.ResolveParams) (interface{}, er
 		Password: input["password"].(string),
 	}
 
-	if role, ok := input["role"].(string); ok {
-		req.Role = enum.ERole(role)
-	}
 	if deviceUUID, ok := input["device_uuid"].(string); ok {
 		req.DeviceUUID = deviceUUID
 	}

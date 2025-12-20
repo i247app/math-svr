@@ -77,9 +77,9 @@ ALTER TABLE `users`
 
 -- Insert system roles (guest -> user -> admin hierarchy)
 INSERT INTO `roles` (id, name, code, description, parent_role_id, is_system_role, status, display_order) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'Guest', 'guest', 'Basic read-only access for unauthenticated users', NULL, TRUE, 'ACTIVE', 1),
-  ('22222222-2222-2222-2222-222222222222', 'User', 'user', 'Standard authenticated user with basic permissions', '11111111-1111-1111-1111-111111111111', TRUE, 'ACTIVE', 2),
-  ('33333333-3333-3333-3333-333333333333', 'Admin', 'admin', 'Full administrative access to all resources', '22222222-2222-2222-2222-222222222222', TRUE, 'ACTIVE', 3);
+  ('65e11a5e-a0ac-4ba7-b0ac-ef1f5d0968ac', 'Guest', 'guest', 'Basic read-only access for unauthenticated users', NULL, TRUE, 'ACTIVE', 1),
+  ('812833c1-c48b-4e2d-bf20-6c76612d3e8a', 'User', 'user', 'Standard authenticated user with basic permissions', '65e11a5e-a0ac-4ba7-b0ac-ef1f5d0968ac', TRUE, 'ACTIVE', 2),
+  ('ef023fe5-b89f-4376-9b1c-88a462c91acf', 'Admin', 'admin', 'Full administrative access to all resources', '812833c1-c48b-4e2d-bf20-6c76612d3e8a', TRUE, 'ACTIVE', 3);
 
 -- ============================================================
 -- SEED DATA: Permissions (based on existing routes)
@@ -142,7 +142,7 @@ INSERT INTO `permissions` (id, name, description, http_method, endpoint_path, re
 
 -- Guest role permissions (11 permissions)
 INSERT INTO `role_permissions` (id, role_id, permission_id)
-SELECT UUID(), '11111111-1111-1111-1111-111111111111', id
+SELECT UUID(), '65e11a5e-a0ac-4ba7-b0ac-ef1f5d0968ac', id
 FROM `permissions`
 WHERE name IN (
   'misc:health-check',
@@ -160,7 +160,7 @@ WHERE name IN (
 
 -- User role permissions (inherits guest + 15 more)
 INSERT INTO `role_permissions` (id, role_id, permission_id)
-SELECT UUID(), '22222222-2222-2222-2222-222222222222', id
+SELECT UUID(), '812833c1-c48b-4e2d-bf20-6c76612d3e8a', id
 FROM `permissions`
 WHERE name IN (
   'auth:logout',
@@ -182,7 +182,7 @@ WHERE name IN (
 
 -- Admin role permissions (inherits user + 16 admin-specific)
 INSERT INTO `role_permissions` (id, role_id, permission_id)
-SELECT UUID(), '33333333-3333-3333-3333-333333333333', id
+SELECT UUID(), 'ef023fe5-b89f-4376-9b1c-88a462c91acf', id
 FROM `permissions`
 WHERE name IN (
   'users:list',
@@ -210,9 +210,9 @@ WHERE name IN (
 -- Update existing users to use role_id based on their current role string
 UPDATE `users`
 SET `role_id` = CASE
-  WHEN `role` = 'admin' THEN '33333333-3333-3333-3333-333333333333'
-  WHEN `role` = 'user' THEN '22222222-2222-2222-2222-222222222222'
-  WHEN `role` = 'guest' THEN '11111111-1111-1111-1111-111111111111'
-  ELSE '22222222-2222-2222-2222-222222222222' -- default to user
+  WHEN `role` = 'admin' THEN 'ef023fe5-b89f-4376-9b1c-88a462c91acf'
+  WHEN `role` = 'user' THEN '812833c1-c48b-4e2d-bf20-6c76612d3e8a'
+  WHEN `role` = 'guest' THEN '65e11a5e-a0ac-4ba7-b0ac-ef1f5d0968ac'
+  ELSE '812833c1-c48b-4e2d-bf20-6c76612d3e8a' -- default to user
 END
 WHERE `deleted_dt` IS NULL;

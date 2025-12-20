@@ -3,7 +3,6 @@ package domain
 import (
 	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
-	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
@@ -17,7 +16,7 @@ type User struct {
 	gradeID    string
 	semesterID string
 	role       string
-	roleID     *string // New RBAC role ID
+	roleID     string // New RBAC role ID
 	password   string
 	status     string
 	createDT   time.MathTime
@@ -97,24 +96,20 @@ func (u *User) SetSemesterID(semesterID string) {
 	u.semesterID = semesterID
 }
 
+func (u *User) RoleID() string {
+	return u.roleID
+}
+
+func (u *User) SetRoleID(roleID string) {
+	u.roleID = roleID
+}
+
 func (u *User) Role() string {
 	return u.role
 }
 
 func (u *User) SetRole(role string) {
-	if role == "" {
-		role = string(enum.RoleUser)
-	}
-
 	u.role = role
-}
-
-func (u *User) RoleID() *string {
-	return u.roleID
-}
-
-func (u *User) SetRoleID(roleID *string) {
-	u.roleID = roleID
 }
 
 func (u *User) Password() string {
