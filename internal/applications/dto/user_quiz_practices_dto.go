@@ -1,21 +1,20 @@
 package dto
 
 import (
-	"time"
-
 	domain "math-ai.com/math-ai/internal/core/domain/user_quiz_practices"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
+	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type UserQuizPracticesResponse struct {
-	ID         string    `json:"id"`
-	UID        string    `json:"uid"`
-	Questions  string    `json:"questions"`
-	Answers    string    `json:"answers"`
-	AIReview   string    `json:"ai_review"`
-	Status     string    `json:"status"`
-	CreatedAt  time.Time `json:"created_at"`
-	ModifiedAt time.Time `json:"modified_at"`
+	ID         string        `json:"id"`
+	UID        string        `json:"uid"`
+	Questions  string        `json:"questions"`
+	Answers    string        `json:"answers"`
+	AIReview   string        `json:"ai_review"`
+	Status     string        `json:"status"`
+	CreatedAt  time.MathTime `json:"created_at"`
+	ModifiedAt time.MathTime `json:"modified_at"`
 }
 
 type GetUserQuizPracticesRequest struct {

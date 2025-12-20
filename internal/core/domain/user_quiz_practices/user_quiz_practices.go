@@ -1,11 +1,10 @@
 package domain
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
+	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type UserQuizPractices struct {
@@ -16,10 +15,10 @@ type UserQuizPractices struct {
 	aiReview  string
 	status    string
 	createID  *int64
-	createDT  time.Time
+	createDT  time.MathTime
 	modifyID  *int64
-	modifyDT  time.Time
-	deletedDT *time.Time
+	modifyDT  time.MathTime
+	deletedDT *time.MathTime
 }
 
 func NewUserQuizPracticesDomain() *UserQuizPractices {
@@ -89,11 +88,11 @@ func (u *UserQuizPractices) SetCreateID(createID *int64) {
 	u.createID = createID
 }
 
-func (u *UserQuizPractices) CreatedAt() time.Time {
+func (u *UserQuizPractices) CreatedAt() time.MathTime {
 	return u.createDT
 }
 
-func (u *UserQuizPractices) SetCreatedAt(createDT time.Time) {
+func (u *UserQuizPractices) SetCreatedAt(createDT time.MathTime) {
 	u.createDT = createDT
 }
 
@@ -105,19 +104,19 @@ func (u *UserQuizPractices) SetModifyID(modifyID *int64) {
 	u.modifyID = modifyID
 }
 
-func (u *UserQuizPractices) ModifiedAt() time.Time {
+func (u *UserQuizPractices) ModifiedAt() time.MathTime {
 	return u.modifyDT
 }
 
-func (u *UserQuizPractices) SetModifiedAt(modifyDT time.Time) {
+func (u *UserQuizPractices) SetModifiedAt(modifyDT time.MathTime) {
 	u.modifyDT = modifyDT
 }
 
-func (u *UserQuizPractices) DeletedAt() *time.Time {
+func (u *UserQuizPractices) DeletedAt() *time.MathTime {
 	return u.deletedDT
 }
 
-func (u *UserQuizPractices) SetDeletedAt(deletedDT *time.Time) {
+func (u *UserQuizPractices) SetDeletedAt(deletedDT *time.MathTime) {
 	u.deletedDT = deletedDT
 }
 

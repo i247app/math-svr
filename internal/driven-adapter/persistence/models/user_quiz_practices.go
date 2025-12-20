@@ -1,8 +1,6 @@
 package models
 
-import (
-	"time"
-)
+import "math-ai.com/math-ai/internal/shared/utils/time"
 
 type UserQuizPracticesModel struct {
 	ID        string
@@ -12,8 +10,8 @@ type UserQuizPracticesModel struct {
 	AIReview  string
 	Status    string
 	CreateID  *int64
-	CreateDT  time.Time
+	CreateDT  time.MathTime
 	ModifyID  *int64
-	ModifyDT  time.Time
-	DeletedDT *time.Time
+	ModifyDT  time.MathTime
+	DeletedDT *time.MathTime
 }
