@@ -1,24 +1,23 @@
 package dto
 
 import (
-	"time"
-
 	domain "math-ai.com/math-ai/internal/core/domain/user_quiz_assessment"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
+	"math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 // UserQuizAssessmentResponse represents a single quiz assessment
 type UserQuizAssessmentResponse struct {
-	ID            string    `json:"id"`
-	UID           string    `json:"uid"`
-	Questions     string    `json:"questions"`
-	Answers       string    `json:"answers"`
-	AIReview      string    `json:"ai_review"`
-	AIDetectGrade string    `json:"ai_detect_grade"`
-	Status        string    `json:"status"`
-	CreatedAt     time.Time `json:"created_at"`
-	ModifiedAt    time.Time `json:"modified_at"`
+	ID            string        `json:"id"`
+	UID           string        `json:"uid"`
+	Questions     string        `json:"questions"`
+	Answers       string        `json:"answers"`
+	AIReview      string        `json:"ai_review"`
+	AIDetectGrade string        `json:"ai_detect_grade"`
+	Status        string        `json:"status"`
+	CreatedAt     time.MathTime `json:"created_at"`
+	ModifiedAt    time.MathTime `json:"modified_at"`
 }
 
 // UserQuizAssessmentsHistoryResponse contains paginated list of assessments
