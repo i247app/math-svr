@@ -36,7 +36,7 @@ type ListUserRequest struct {
 }
 
 type ListUserResponse struct {
-	Items      []*UserResponse        `json:"items"`
+	Items      []*UserResponse        `json:"users"`
 	Pagination *pagination.Pagination `json:"metadata"`
 }
 
