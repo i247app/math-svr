@@ -38,6 +38,11 @@ type ServiceContainer struct {
 	UserQuizAssessmentService di.IUserQuizAssessmentService
 	StorageService            di.IStorageService
 	ContactService            di.IContactService
+
+	// RBAC Services
+	RoleService          di.IRoleService
+	PermissionService    di.IPermissionService
+	AuthorizationService di.IAuthorizationService
 }
 
 const (
@@ -58,6 +63,11 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	userLatestQuizRepo := repositories.NewUserQuizPracticesRepository(res.Db)
 	userQuizAssessmentRepo := repositories.NewUserQuizAssessmentRepository(res.Db)
 	contactRepo := repositories.NewContactRepository(res.Db)
+
+	// RBAC repositories
+	roleRepo := repositories.NewRoleRepository(res.Db)
+	permissionRepo := repositories.NewPermissionRepository(res.Db)
+	rolePermissionRepo := repositories.NewRolePermissionRepository(res.Db)
 
 	log.Println("Initializing services")
 
@@ -157,6 +167,15 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	var contactValidator = validators.NewContactValidator()
 	var contactSvc = services.NewContactService(contactValidator, contactRepo, storageSvc)
 
+	log.Println("> roleSvc...")
+	var roleSvc = services.NewRoleService(roleRepo, permissionRepo, rolePermissionRepo)
+
+	log.Println("> permissionSvc...")
+	var permissionSvc = services.NewPermissionService(permissionRepo)
+
+	log.Println("> authorizationSvc...")
+	var authorizationSvc = services.NewAuthorizationService(userRepo, roleRepo, permissionRepo)
+
 	return &ServiceContainer{
 		SessionManager:            sessionManager,
 		SessionProvider:           sessionProvider,
@@ -173,6 +192,11 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 		UserQuizPracticesService:  userQuizPracticesSvc,
 		UserQuizAssessmentService: userQuizAssessmentSvc,
 		StorageService:            storageSvc,
-		ContactService: 		   contactSvc,	
+		ContactService:            contactSvc,
+
+		// RBAC Services
+		RoleService:          roleSvc,
+		PermissionService:    permissionSvc,
+		AuthorizationService: authorizationSvc,
 	}, nil
 }

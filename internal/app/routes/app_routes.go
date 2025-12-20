@@ -95,4 +95,23 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("GET /contacts/list", ct.HandlerListContacts, authMiddleware, adminMiddleware)
 	server.AddRoute("POST /contacts/submit", ct.HandlerCreateContact)
 	server.AddRoute("POST /contact/mark-read", ct.HandlerMarkReadContact, authMiddleware, adminMiddleware)
+
+	// RBAC - Roles
+	rc := controller.NewRoleController(res, services.RoleService)
+	server.AddRoute("GET /roles/list", rc.HandlerListRoles, authMiddleware, adminMiddleware)
+	server.AddRoute("GET /roles/{id}", rc.HandlerGetRole, authMiddleware, adminMiddleware)
+	server.AddRoute("GET /roles/{id}/permissions", rc.HandlerGetRolePermissions, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /roles/create", rc.HandlerCreateRole, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /roles/update", rc.HandlerUpdateRole, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /roles/delete", rc.HandlerDeleteRole, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /roles/assign-permissions", rc.HandlerAssignPermissions, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /roles/revoke-permissions", rc.HandlerRevokePermissions, authMiddleware, adminMiddleware)
+
+	// RBAC - Permissions
+	pmc := controller.NewPermissionController(res, services.PermissionService)
+	server.AddRoute("GET /permissions/list", pmc.HandlerListPermissions, authMiddleware, adminMiddleware)
+	server.AddRoute("GET /permissions/{id}", pmc.HandlerGetPermission, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /permissions/create", pmc.HandlerCreatePermission, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /permissions/update", pmc.HandlerUpdatePermission, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /permissions/delete", pmc.HandlerDeletePermission, authMiddleware, adminMiddleware)
 }

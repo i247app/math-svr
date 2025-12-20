@@ -10,6 +10,7 @@ type UserModel struct {
 	AvatarKey    *string
 	Dob          *time.MathTime
 	Role         string
+	RoleID       *string // New RBAC role ID
 	HashPassword string
 	Status       string
 	CreateID     *int64

@@ -17,6 +17,7 @@ type User struct {
 	gradeID    string
 	semesterID string
 	role       string
+	roleID     *string // New RBAC role ID
 	password   string
 	status     string
 	createDT   time.MathTime
@@ -108,6 +109,14 @@ func (u *User) SetRole(role string) {
 	u.role = role
 }
 
+func (u *User) RoleID() *string {
+	return u.roleID
+}
+
+func (u *User) SetRoleID(roleID *string) {
+	u.roleID = roleID
+}
+
 func (u *User) Password() string {
 	return u.password
 }
@@ -157,6 +166,7 @@ func BuildUserDomainFromModel(model *models.UserModel) *User {
 		avatarKey: model.AvatarKey,
 		dob:       model.Dob,
 		role:      model.Role,
+		roleID:    model.RoleID,
 		password:  model.HashPassword,
 		status:    model.Status,
 		createDT:  model.CreateDT,
