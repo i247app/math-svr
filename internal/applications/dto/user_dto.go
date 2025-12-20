@@ -11,7 +11,7 @@ import (
 
 type UserResponse struct {
 	ID        string         `json:"id"`
-	Email     string         `json:"email"`
+	Email     string         `json:"email,omitempty"`
 	Name      string         `json:"name"`
 	Phone     string         `json:"phone"`
 	Avatar    *string        `json:"-"`          // S3 key/path
