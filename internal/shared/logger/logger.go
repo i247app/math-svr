@@ -17,11 +17,13 @@ import (
 type loggerKeyType string
 type tokenKeyType string
 type useridKeyType string
+type routeKeyType string
 
 const (
 	loggerKey = loggerKeyType("logger")
 	tokenKey  = tokenKeyType("token")
 	useridKey = useridKeyType("userid")
+	routeKey  = routeKeyType("route")
 )
 
 // Context helper functions
@@ -74,10 +76,10 @@ func NewRequestScopedLogger(r *http.Request, outFilePath string) *logger {
 	slogger := slog.New(handler)
 
 	// Extract session info from request
-	token, userid := extractSessionInfoFromRequest(r)
+	token, userid, route := extractSessionInfoFromRequest(r)
 
 	// Create context with session info
-	ctx := withSessionInfo(r.Context(), token, userid)
+	ctx := withSessionInfo(r.Context(), token, userid, route)
 
 	return &logger{
 		slogger: slogger,

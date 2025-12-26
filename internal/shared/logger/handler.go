@@ -37,7 +37,7 @@ func (h *customHandler) Enabled(ctx context.Context, level slog.Level) bool {
 // Handle formats and writes the log record
 func (h *customHandler) Handle(ctx context.Context, r slog.Record) error {
 	// Extract session info from context
-	token, userid := extractSessionInfo(ctx)
+	token, userid, route := extractSessionInfo(ctx)
 
 	// Get caller information (filename and line)
 	// We need to skip frames to get the actual caller
@@ -67,12 +67,13 @@ func (h *customHandler) Handle(ctx context.Context, r slog.Record) error {
 	level := r.Level.String()
 
 	// Build the log message
-	logMsg := fmt.Sprintf("%s %s:%d [%s] [%s] %s: %s\n",
+	logMsg := fmt.Sprintf("%s [%s] [%s] [%s] %s:%d %s: %s\n",
 		timestamp,
-		file,
-		line,
 		token,
 		userid,
+		route,
+		file,
+		line,
 		level,
 		r.Message,
 	)
