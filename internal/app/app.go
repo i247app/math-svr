@@ -137,6 +137,7 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, services *services.ServiceCont
 		middleware.ValidateSessionMiddleware,
 		middleware.LogRequestMiddleware,
 		middleware.LocaleMiddleware("en"),
+		middleware.MetadataMiddleware(),
 		// -->End
 	}
 
