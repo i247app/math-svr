@@ -40,6 +40,9 @@ func NewGradeService(
 }
 
 func (s *GradeService) ListGrades(ctx context.Context, req *dto.ListGradeRequest) (status.Code, []*dto.GradeResponse, *pagination.Pagination, error) {
+	logger := logger.GetLogger(ctx)
+	logger.Info("Start ListGrades service")
+
 	params := diRepo.ListGradesParams{
 		Search:    req.Search,
 		Page:      req.Page,
@@ -66,6 +69,7 @@ func (s *GradeService) ListGrades(ctx context.Context, req *dto.ListGradeRequest
 
 func (s *GradeService) GetGradeByID(ctx context.Context, id string) (status.Code, *dto.GradeResponse, error) {
 	logger := logger.GetLogger(ctx)
+	logger.Info("Start GetGradeByID service")
 
 	grade, err := s.repo.FindByID(ctx, id)
 	if err != nil {
@@ -83,6 +87,9 @@ func (s *GradeService) GetGradeByID(ctx context.Context, id string) (status.Code
 }
 
 func (s *GradeService) GetGradeByLabel(ctx context.Context, label string) (status.Code, *dto.GradeResponse, error) {
+	logger := logger.GetLogger(ctx)
+	logger.Info("Start GetGradeByLabel service")
+
 	grade, err := s.repo.FindByLabel(ctx, label)
 	if err != nil {
 		return status.FAIL, nil, err
@@ -97,6 +104,9 @@ func (s *GradeService) GetGradeByLabel(ctx context.Context, label string) (statu
 }
 
 func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequest) (status.Code, *dto.GradeResponse, error) {
+	logger := logger.GetLogger(ctx)
+	logger.Info("Start CreateGrade service")
+
 	// Validate request
 	if statusCode, err := s.validator.ValidateCreateGradeRequest(req); err != nil {
 		return statusCode, nil, err
@@ -143,6 +153,9 @@ func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequ
 }
 
 func (s *GradeService) UpdateGrade(ctx context.Context, req *dto.UpdateGradeRequest) (status.Code, *dto.GradeResponse, error) {
+	logger := logger.GetLogger(ctx)
+	logger.Info("Start UpdateGrade service")
+
 	// Validate request
 	if statusCode, err := s.validator.ValidateUpdateGradeRequest(req); err != nil {
 		return statusCode, nil, err
@@ -204,6 +217,9 @@ func (s *GradeService) UpdateGrade(ctx context.Context, req *dto.UpdateGradeRequ
 }
 
 func (s *GradeService) DeleteGrade(ctx context.Context, id string) (status.Code, error) {
+	logger := logger.GetLogger(ctx)
+	logger.Info("Start DeleteGrade service")
+
 	grade, err := s.repo.FindByID(ctx, id)
 	if err != nil {
 		return status.FAIL, err
@@ -221,6 +237,9 @@ func (s *GradeService) DeleteGrade(ctx context.Context, id string) (status.Code,
 }
 
 func (s *GradeService) ForceDeleteGrade(ctx context.Context, id string) (status.Code, error) {
+	logger := logger.GetLogger(ctx)
+	logger.Info("Start ForceDeleteGrade service")
+
 	err := s.repo.ForceDelete(ctx, nil, id)
 	if err != nil {
 		return status.FAIL, err

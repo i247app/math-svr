@@ -132,6 +132,7 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, services *services.ServiceCont
 	middlewares := []gex.Middleware{
 		// Start-->
 		middleware.RecoveryMiddleware(),
+		middleware.MetadataMiddleware(), // Extract __metadata from request body
 		middleware.GexSessionMiddleware(services.SessionProvider, session.SessionContextKey),
 		middleware.LoggerMiddleware(a.Resource.Env.LogFile),
 		middleware.ValidateSessionMiddleware,
