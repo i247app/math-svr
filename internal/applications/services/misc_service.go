@@ -7,7 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/driven-adapter/provider/geo"
 	"math-ai.com/math-ai/internal/driven-adapter/provider/ip"
 	"math-ai.com/math-ai/internal/shared/constant/status"
-	appctx "math-ai.com/math-ai/internal/shared/utils/context"
+	"math-ai.com/math-ai/internal/shared/metadata"
 )
 
 type MiscService struct {
@@ -27,7 +27,7 @@ func (s *MiscService) Ping() (status.Code, error) {
 }
 
 func (s *MiscService) DetermineLocation(ctx context.Context, req *dto.LocationRequest) (status.Code, *dto.LocationResponse, error) {
-	language := appctx.GetLocale(ctx)
+	language := metadata.GetLanguage(ctx)
 
 	resp := &dto.LocationResponse{}
 

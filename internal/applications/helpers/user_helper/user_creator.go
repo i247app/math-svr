@@ -46,9 +46,9 @@ func (u *UserCreator) CheckDuplicateUser(ctx context.Context, email, phone strin
 
 		if existingUser != nil {
 			if existingUser.Email() == email {
-				return status.USER_EMAIL_ALREADY_EXISTS, err_svc.ErrEmailAlreadyExists
+				return status.USER_EMAIL_ALREADY_EXISTS, err_svc.NewEmailAlreadyExistsError(email)
 			} else if existingUser.Phone() == phone {
-				return status.USER_PHONE_ALREADY_EXISTS, err_svc.ErrPhoneAlreadyExists
+				return status.USER_PHONE_ALREADY_EXISTS, err_svc.NewPhoneAlreadyExistsError(email)
 			}
 		}
 	}

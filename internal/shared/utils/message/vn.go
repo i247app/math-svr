@@ -1,4 +1,4 @@
-package locales
+package message
 
 import (
 	"fmt"
@@ -6,12 +6,8 @@ import (
 	"math-ai.com/math-ai/internal/shared/constant/status"
 )
 
-var (
-	VN LanguageType = "vn"
-)
-
 func GetMessageVNFromStatus(statusCode status.Code) string {
-	args := GetArgsByStatatus(statusCode)
+	args := GetArgsByStatus(statusCode)
 
 	switch statusCode {
 	case status.OK:

@@ -11,7 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
-	appctx "math-ai.com/math-ai/internal/shared/utils/context"
+	"math-ai.com/math-ai/internal/shared/metadata"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
@@ -32,7 +32,7 @@ func (r *gradeRepository) List(ctx context.Context, params di.ListGradesParams) 
 	var countBuilder strings.Builder
 	args := []interface{}{}
 	countArgs := []interface{}{}
-	language := appctx.GetLocale(ctx)
+	language := metadata.GetLanguage(ctx)
 
 	// Base query with LEFT JOIN for translations
 	queryBuilder.WriteString(`

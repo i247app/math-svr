@@ -7,8 +7,9 @@ import (
 	"net/http"
 
 	"math-ai.com/math-ai/internal/shared/constant/status"
-	appctx "math-ai.com/math-ai/internal/shared/utils/context"
-	"math-ai.com/math-ai/internal/shared/utils/locales"
+	err_svc "math-ai.com/math-ai/internal/shared/error"
+	"math-ai.com/math-ai/internal/shared/metadata"
+	"math-ai.com/math-ai/internal/shared/utils/message"
 )
 
 func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, statusCode status.Code) {
@@ -30,7 +31,14 @@ func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, 
 
 	if err != nil {
 		payload["error"] = err.Error()
-		payload["message"] = GetMessageFromStatusCode(ctx, statusCode)
+		// Check if error is a DynamicError with dynamic arguments
+		if dynErr, ok := err_svc.IsDynamicError(err); ok {
+			// Use the localized message with dynamic arguments
+			payload["message"] = GetMessage(ctx, dynErr.GetStatusCode(), dynErr.GetArgs())
+		} else {
+			// Use standard localized message
+			payload["message"] = GetMessage(ctx, statusCode, nil)
+		}
 	}
 
 	// Default to not set if not set
@@ -48,17 +56,9 @@ func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, 
 	json.NewEncoder(w).Encode(payload)
 }
 
-func GetMessageFromStatusCode(ctx context.Context, statusCode status.Code) string {
-	lan := appctx.GetLocale(ctx)
-
-	switch locales.LanguageType(lan) {
-	case locales.EN:
-		return locales.GetMessageENFromStatus(statusCode)
-	case locales.VN:
-		return locales.GetMessageVNFromStatus(statusCode)
-	case locales.FR:
-		return locales.GetMessageFRFromStatus(statusCode)
-	default:
-		return locales.GetMessageENFromStatus(statusCode)
-	}
+// GetMessageFromStatusCodeWithArgs returns a localized message with dynamic arguments interpolated
+// This supports dynamic error messages like "Email john@example.com already exists"
+func GetMessage(ctx context.Context, statusCode status.Code, args map[string]interface{}) string {
+	lan := metadata.GetLanguage(ctx)
+	return message.GetMessage(message.LanguageType(lan), statusCode, args)
 }
