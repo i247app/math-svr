@@ -13,9 +13,9 @@ import (
 	"math-ai.com/math-ai/internal/applications/services"
 	"math-ai.com/math-ai/internal/applications/validators"
 	di "math-ai.com/math-ai/internal/core/di/services"
+	"math-ai.com/math-ai/internal/driven-adapter/external/provider/geo"
+	"math-ai.com/math-ai/internal/driven-adapter/external/provider/ip"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/repositories"
-	"math-ai.com/math-ai/internal/driven-adapter/provider/geo"
-	"math-ai.com/math-ai/internal/driven-adapter/provider/ip"
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/pkg/aws/s3"
 )

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"math-ai.com/math-ai/internal/driven-adapter/external/http_client"
+	"math-ai.com/math-ai/internal/shared/http_client"
 )
 
 // PushNotificationService handles push notification-related HTTP requests

@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/applications/dto"
-	"math-ai.com/math-ai/internal/driven-adapter/provider/geo"
-	"math-ai.com/math-ai/internal/driven-adapter/provider/ip"
+	"math-ai.com/math-ai/internal/driven-adapter/external/provider/geo"
+	"math-ai.com/math-ai/internal/driven-adapter/external/provider/ip"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/metadata"
 )

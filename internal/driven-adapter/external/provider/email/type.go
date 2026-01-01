@@ -1,6 +1,6 @@
 package email
 
-import "math-ai.com/math-ai/internal/driven-adapter/external/http_client"
+import "math-ai.com/math-ai/internal/shared/http_client"
 
 // EmailService handles email-related HTTP requests
 type EmailService struct {

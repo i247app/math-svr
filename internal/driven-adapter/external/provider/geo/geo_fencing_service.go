@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/driven-adapter/external/http_client"
+	"math-ai.com/math-ai/internal/shared/http_client"
 	"math-ai.com/math-ai/internal/shared/utils/convert"
 )
 
