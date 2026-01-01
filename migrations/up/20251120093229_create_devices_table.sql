@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE `devices` (
+CREATE TABLE `ma_devices` (
   `id` char(36) NOT NULL,
   `uid` char(36) DEFAULT NULL,
   `device_uuid` varchar(255) NOT NULL,

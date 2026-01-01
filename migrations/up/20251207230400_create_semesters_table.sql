@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE `semesters` (
+CREATE TABLE `ma_semesters` (
   `id` char(36) NOT NULL,
   `name` varchar(100) NOT NULL,
   `description` text,

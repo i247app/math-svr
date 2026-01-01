@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE `grade_translations` (
+CREATE TABLE `ma_grade_translations` (
   `id` char(36) NOT NULL,
   `grade_id` char(36) NOT NULL,
   `language` varchar(10) NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE `grade_translations` (
 -- (UUID(), 'ca93947f-f7b6-433e-968f-a7b70f36c201', 'vn', 'Lớp 5', 'Chương trình học lớp 5.');
 
 
-CREATE TABLE `semester_translations` (
+CREATE TABLE `ma_semester_translations` (
   `id` char(36) NOT NULL,
   `semester_id` char(36) NOT NULL,
   `language` varchar(10) NOT NULL,

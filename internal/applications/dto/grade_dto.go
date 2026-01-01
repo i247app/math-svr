@@ -35,7 +35,7 @@ type ListGradeRequest struct {
 
 type ListGradeResponse struct {
 	Items      []*GradeResponse       `json:"grades"`
-	Pagination *pagination.Pagination `json:"metadata"`
+	Pagination *pagination.Pagination `json:"pagination"`
 }
 
 type CreateGradeRequest struct {

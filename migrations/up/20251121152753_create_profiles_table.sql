@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE `profiles` (
+CREATE TABLE `ma_profiles` (
   `id` char(36) NOT NULL,
   `uid` char(36) NOT NULL,
   `grade_id` char(36) NOT NULL,

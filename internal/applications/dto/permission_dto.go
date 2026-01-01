@@ -36,7 +36,7 @@ type ListPermissionRequest struct {
 
 type ListPermissionResponse struct {
 	Items      []PermissionResponse   `json:"permissions"`
-	Pagination *pagination.Pagination `json:"metadata"`
+	Pagination *pagination.Pagination `json:"pagination"`
 }
 
 type CreatePermissionRequest struct {

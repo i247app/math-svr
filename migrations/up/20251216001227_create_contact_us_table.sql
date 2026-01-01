@@ -1,4 +1,4 @@
-CREATE TABLE `contact_us` (
+CREATE TABLE `ma_contact_us` (
   `id` varchar(36) NOT NULL,
   `uid` varchar(36) DEFAULT NULL,
   `contact_name` varchar(255) NOT NULL,

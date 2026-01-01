@@ -35,7 +35,7 @@ type ListSemesterRequest struct {
 
 type ListSemesterResponse struct {
 	Items      []*SemesterResponse    `json:"semesters"`
-	Pagination *pagination.Pagination `json:"metadata"`
+	Pagination *pagination.Pagination `json:"pagination"`
 }
 
 type CreateSemesterRequest struct {

@@ -16,7 +16,7 @@ type ListContactsRequest struct {
 
 type ListContactResponse struct {
 	Items      []*ContactResponse     `json:"contacts"`
-	Pagination *pagination.Pagination `json:"metadata"`
+	Pagination *pagination.Pagination `json:"pagination"`
 }
 
 type ContactResponse struct {

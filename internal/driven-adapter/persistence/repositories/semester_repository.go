@@ -47,16 +47,16 @@ func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersPa
 			s.create_dt,
 			s.modify_id,
 			s.modify_dt
-		FROM semesters s
-		LEFT JOIN semester_translations st ON s.id = st.semester_id AND st.language = ?
+		FROM ma_semesters s
+		LEFT JOIN ma_semester_translations st ON s.id = st.semester_id AND st.language = ?
 		WHERE s.deleted_dt IS NULL`)
 	args = append(args, language)
 
 	// Count query base with same JOIN
 	countBuilder.WriteString(`
 		SELECT COUNT(*)
-		FROM semesters s
-		LEFT JOIN semester_translations st ON s.id = st.semester_id AND st.language = ?
+		FROM ma_semesters s
+		LEFT JOIN ma_semester_translations st ON s.id = st.semester_id AND st.language = ?
 		WHERE s.deleted_dt IS NULL`)
 	countArgs = append(countArgs, language)
 
@@ -135,7 +135,7 @@ func (r *semesterRepository) FindByID(ctx context.Context, id string) (*domain.S
 	query := `
 		SELECT id, name, description, image_key, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
-		FROM semesters
+		FROM ma_semesters
 		WHERE id = ? AND deleted_dt IS NULL
 	`
 
@@ -163,7 +163,7 @@ func (r *semesterRepository) FindByName(ctx context.Context, name string) (*doma
 	query := `
 		SELECT id, name, description, image_key, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
-		FROM semesters
+		FROM ma_semesters
 		WHERE name = ? AND deleted_dt IS NULL
 	`
 
@@ -189,7 +189,7 @@ func (r *semesterRepository) FindByName(ctx context.Context, name string) (*doma
 // Create inserts a new semester into the database.
 func (r *semesterRepository) Create(ctx context.Context, tx *sql.Tx, semester *domain.Semester) (int64, error) {
 	query := `
-		INSERT INTO semesters (id, name, description, image_key, status, display_order)
+		INSERT INTO ma_semesters (id, name, description, image_key, status, display_order)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -212,7 +212,7 @@ func (r *semesterRepository) Update(ctx context.Context, semester *domain.Semest
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
-	queryBuilder.WriteString("UPDATE semesters SET ")
+	queryBuilder.WriteString("UPDATE ma_semesters SET ")
 	updates := []string{}
 
 	if semester.Name() != "" {
@@ -263,7 +263,7 @@ func (r *semesterRepository) Update(ctx context.Context, semester *domain.Semest
 // Delete soft deletes a semester by setting deleted_dt.
 func (r *semesterRepository) Delete(ctx context.Context, id string) error {
 	query := `
-			UPDATE semesters
+			UPDATE ma_semesters
 			SET deleted_dt = ?,
 				modify_dt = ?
 			WHERE id = ? AND deleted_dt IS NULL`
@@ -277,7 +277,7 @@ func (r *semesterRepository) Delete(ctx context.Context, id string) error {
 
 // ForceDelete permanently deletes a semester from the database.
 func (r *semesterRepository) ForceDelete(ctx context.Context, tx *sql.Tx, id string) error {
-	query := `DELETE FROM semesters WHERE id = ?`
+	query := `DELETE FROM ma_semesters WHERE id = ?`
 	_, err := r.db.Exec(ctx, tx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to force delete semester: %v", err)

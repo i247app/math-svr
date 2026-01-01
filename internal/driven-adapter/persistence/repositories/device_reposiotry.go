@@ -28,7 +28,7 @@ func NewDeviceRepository(db db.IDatabase) di.IDeviceRepository {
 func (r *deviceRepository) GetDeviceByDeviceUUID(ctx context.Context, deviceUUID string) (*domain.Device, error) {
 	query := `
 		SELECT id, uid, device_uuid, device_name, device_push_token, is_verified
-		FROM devices
+		FROM ma_devices
 		WHERE device_uuid = ? AND status = ?
 	`
 
@@ -50,7 +50,7 @@ func (r *deviceRepository) GetDeviceByDeviceUUID(ctx context.Context, deviceUUID
 func (r *deviceRepository) GetDeviceByUIDAnDeviceUUID(ctx context.Context, uid string, deviceUUID string) (*domain.Device, error) {
 	query := `
 		SELECT id, uid, device_uuid, device_name, device_push_token, is_verified
-		FROM devices
+		FROM ma_devices
 		WHERE uid = ? AND device_uuid = ? AND status = ?
 	`
 
@@ -73,7 +73,7 @@ func (r *deviceRepository) GetDeviceByUIDAnDeviceUUID(ctx context.Context, uid s
 func (r *deviceRepository) CheckTrustedDeviceByUID(ctx context.Context, uid string, deviceUUID string) (bool, error) {
 	query := `
 		SELECT is_verified
-		FROM devices
+		FROM ma_devices
 		WHERE uid = ? AND device_uuid = ? AND status = ?
 	`
 
@@ -92,7 +92,7 @@ func (r *deviceRepository) CheckTrustedDeviceByUID(ctx context.Context, uid stri
 
 func (r *deviceRepository) StoreDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) error {
 	query := `
-		INSERT INTO devices (id, uid, device_uuid, device_name, device_push_token, is_verified, status)
+		INSERT INTO ma_devices (id, uid, device_uuid, device_name, device_push_token, is_verified, status)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
@@ -113,7 +113,7 @@ func (r *deviceRepository) UpdateDevice(ctx context.Context, device *domain.Devi
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
-	queryBuilder.WriteString("UPDATE devices SET ")
+	queryBuilder.WriteString("UPDATE ma_devices SET ")
 	updates := []string{}
 
 	if device.DeviceName() != "" {
@@ -147,7 +147,7 @@ func (r *deviceRepository) UpdateDevice(ctx context.Context, device *domain.Devi
 
 func (r *deviceRepository) MarkVerifiedDeviceByUIDAndDeviceUUID(ctx context.Context, uid string, deviceUUID string) error {
 	query := `
-		UPDATE devices
+		UPDATE ma_devices
 		SET is_verified = ?,
 			modify_dt = ?
 		WHERE uid = ? AND device_uuid = ? AND status = ?
@@ -166,7 +166,7 @@ func (r *deviceRepository) MarkVerifiedDeviceByUIDAndDeviceUUID(ctx context.Cont
 
 func (r *deviceRepository) DeleteDeviceByUID(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
-		UPDATE devices
+		UPDATE ma_devices
 		SET deleted_dt = ?,
 			modify_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
@@ -180,7 +180,7 @@ func (r *deviceRepository) DeleteDeviceByUID(ctx context.Context, tx *sql.Tx, ui
 
 func (r *deviceRepository) ForceDeleteDeviceByUID(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
-		DELETE FROM devices
+		DELETE FROM ma_devices
 		WHERE uid = ?
 	`
 	_, err := r.db.Exec(ctx, tx, query, uid)

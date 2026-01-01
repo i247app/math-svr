@@ -25,7 +25,7 @@ func NewContactRepository(db db.IDatabase) di.IContactRepository {
 
 func (cr *contactRepository) CreateContact(ctx context.Context, tx *sql.Tx, contact *domain.Contact) (int64, error) {
 	query := `
-		INSERT INTO contact_us (id, uid, contact_name, contact_email, contact_phone, contact_message, is_read)
+		INSERT INTO ma_contact_us (id, uid, contact_name, contact_email, contact_phone, contact_message, is_read)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
@@ -58,7 +58,7 @@ func (cr *contactRepository) List(ctx context.Context, params di.ListContactsPar
 
 	queryBuilder.WriteString(`
 		SELECT id, uid, contact_name, contact_email, contact_phone, contact_message, is_read
-		FROM contact_us
+		FROM ma_contact_us
 	`)
 
 	// Count total records for pagination
@@ -115,7 +115,7 @@ func (cr *contactRepository) List(ctx context.Context, params di.ListContactsPar
 func (cr *contactRepository) FindByID(ctx context.Context, id string) (*domain.Contact, error) {
 	query := `
 		SELECT id, uid, contact_name, contact_email, contact_phone, contact_message, is_read
-		FROM contact_us
+		FROM ma_contact_us
 		WHERE id = ?
 	`
 
@@ -139,7 +139,7 @@ func (cr *contactRepository) FindByID(ctx context.Context, id string) (*domain.C
 // UpdateContactIsRead updates the is_read status of a contact.
 func (cr *contactRepository) UpdateContactIsRead(ctx context.Context, id string, isRead bool) (int64, error) {
 	query := `
-		UPDATE contact_us
+		UPDATE ma_contact_us
 		SET is_read = ?
 		WHERE id = ?
 	`

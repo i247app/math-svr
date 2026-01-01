@@ -23,7 +23,7 @@ type UserQuizAssessmentResponse struct {
 // UserQuizAssessmentsHistoryResponse contains paginated list of assessments
 type UserQuizAssessmentsHistoryResponse struct {
 	Items      []UserQuizAssessmentResponse `json:"items"`
-	Pagination *pagination.Pagination       `json:"metadata"`
+	Pagination *pagination.Pagination       `json:"pagination"`
 }
 
 // Request DTOs for generate quiz

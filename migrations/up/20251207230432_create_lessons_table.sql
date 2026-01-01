@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE lessons (
+CREATE TABLE ma_lessons (
     `id` CHAR(36) NOT NULL,
     `chapter_id` CHAR(36) NOT NULL,
     `lesson_number` INT NOT NULL,

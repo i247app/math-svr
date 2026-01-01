@@ -42,9 +42,9 @@ func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName strin
 		       u.role_id, u.status, l.hash_pass,
 		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
 		       r.name as role_name
-		FROM users u
-		JOIN aliases a ON u.id = a.uid
-		JOIN logins l ON u.id = l.uid
+		FROM ma_users u
+		JOIN ma_aliases a ON u.id = a.uid
+		JOIN ma_logins l ON u.id = l.uid
 		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
 		WHERE a.aka = ? AND u.deleted_dt IS NULL AND a.deleted_dt IS NULL AND l.deleted_dt IS NULL
 	`
@@ -82,7 +82,7 @@ func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([
 		       u.role_id, u.status,
 		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
 		       r.name as role_name
-		FROM users u
+		FROM ma_users u
 		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
 		WHERE u.deleted_dt IS NULL
 	`)
@@ -95,7 +95,7 @@ func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([
 	}
 
 	// Count total records for pagination
-	countQuery := "SELECT COUNT(*) FROM users u WHERE u.deleted_dt IS NULL"
+	countQuery := "SELECT COUNT(*) FROM ma_users u WHERE u.deleted_dt IS NULL"
 	countArgs := []interface{}{}
 	if params.Search != "" {
 		countQuery += ` AND (u.name LIKE ? OR u.email LIKE ?)`
@@ -165,7 +165,7 @@ func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User
 		       u.role_id, u.status,
 		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
 		       r.name as role_name
-		FROM users u
+		FROM ma_users u
 		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
 		WHERE u.id = ? AND u.deleted_dt IS NULL
 	`
@@ -198,7 +198,7 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 		       u.role_id, u.status,
 		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
 		       r.name as role_name
-		FROM users u
+		FROM ma_users u
 		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
 		WHERE u.email = ? AND u.deleted_dt IS NULL
 	`
@@ -227,7 +227,7 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 // Create inserts a new user into the database.
 func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) {
 	query := `
-		INSERT INTO users (id, name, phone, email, avatar_key, dob, role_id, status)
+		INSERT INTO ma_users (id, name, phone, email, avatar_key, dob, role_id, status)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -257,7 +257,7 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
-	queryBuilder.WriteString("UPDATE users SET ")
+	queryBuilder.WriteString("UPDATE ma_users SET ")
 	updates := []string{}
 
 	if user.Name() != "" {
@@ -312,7 +312,7 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 // Delete removes a user by ID.
 func (r *userRepository) Delete(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
-		UPDATE users
+		UPDATE ma_users
 		SET deleted_dt = ?,
 			modify_dt = ?
 		WHERE id = ?
@@ -327,7 +327,7 @@ func (r *userRepository) Delete(ctx context.Context, tx *sql.Tx, uid string) err
 // ForceDelete removes a user by ID permanently.
 func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
-		DELETE FROM users
+		DELETE FROM ma_users
 		WHERE id = ?
 	`
 	_, err := r.db.Exec(ctx, tx, query, uid)
@@ -340,7 +340,7 @@ func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid string
 // StoreUserAlias stores a user alias in the database.
 func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error {
 	query := `
-		INSERT INTO aliases (id, uid, aka, status)
+		INSERT INTO ma_aliases (id, uid, aka, status)
 		VALUES (?, ?, ?, ?)
 	`
 	_, err := r.db.Exec(ctx, tx, query,
@@ -358,7 +358,7 @@ func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *
 // DeleteUserAlias deletes user aliases by user ID.
 func (r *userRepository) DeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
-		UPDATE aliases
+		UPDATE ma_aliases
 		SET deleted_dt = ?,
 			modify_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
@@ -373,7 +373,7 @@ func (r *userRepository) DeleteUserAlias(ctx context.Context, tx *sql.Tx, uid st
 // ForceDeleteUserAlias permanently deletes user aliases by user ID.
 func (r *userRepository) ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
-		DELETE FROM aliases
+		DELETE FROM ma_aliases
 		WHERE uid = ?
 	`
 	_, err := r.db.Exec(ctx, tx, query, uid)

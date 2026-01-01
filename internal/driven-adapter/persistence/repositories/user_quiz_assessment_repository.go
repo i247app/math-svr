@@ -29,7 +29,7 @@ func (r *userQuizAssessmentRepository) FindByID(ctx context.Context, id string) 
 	query := `
 		SELECT id, uid, questions, answers, ai_review, ai_detect_grade, status,
 		create_id, create_dt, modify_id, modify_dt
-		FROM user_quiz_assessments
+		FROM ma_user_quiz_assessments
 		WHERE id = ? AND deleted_dt IS NULL
 	`
 
@@ -61,7 +61,7 @@ func (r *userQuizAssessmentRepository) ListByUID(ctx context.Context, params di.
 	queryBuilder.WriteString(`
 		SELECT id, uid, questions, answers, ai_review, ai_detect_grade, status,
 		create_id, create_dt, modify_id, modify_dt
-		FROM user_quiz_assessments
+		FROM ma_user_quiz_assessments
 		WHERE uid = ? AND deleted_dt IS NULL`)
 	args = append(args, params.UID)
 
@@ -127,7 +127,7 @@ func (r *userQuizAssessmentRepository) ListByUID(ctx context.Context, params di.
 // Create inserts a new quiz assessment into the database.
 func (r *userQuizAssessmentRepository) Create(ctx context.Context, tx *sql.Tx, assessment *domain.UserQuizAssessment) (int64, error) {
 	query := `
-		INSERT INTO user_quiz_assessments (id, uid, questions, answers, ai_review, ai_detect_grade, status)
+		INSERT INTO ma_user_quiz_assessments (id, uid, questions, answers, ai_review, ai_detect_grade, status)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -151,7 +151,7 @@ func (r *userQuizAssessmentRepository) Update(ctx context.Context, assessment *d
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
-	queryBuilder.WriteString("UPDATE user_quiz_assessments SET ")
+	queryBuilder.WriteString("UPDATE ma_user_quiz_assessments SET ")
 	updates := []string{}
 
 	if assessment.Questions() != "" {
@@ -196,7 +196,7 @@ func (r *userQuizAssessmentRepository) Update(ctx context.Context, assessment *d
 // Delete performs a soft delete on a quiz assessment.
 func (r *userQuizAssessmentRepository) Delete(ctx context.Context, id string) (int64, error) {
 	query := `
-		UPDATE user_quiz_assessments
+		UPDATE ma_user_quiz_assessments
 		SET deleted_dt = ?,
 			modify_dt = ?
 		WHERE id = ? AND deleted_dt IS NULL
@@ -213,7 +213,7 @@ func (r *userQuizAssessmentRepository) Delete(ctx context.Context, id string) (i
 // ForceDelete permanently removes a quiz assessment from the database.
 func (r *userQuizAssessmentRepository) ForceDelete(ctx context.Context, id string) (int64, error) {
 	query := `
-		DELETE FROM user_quiz_assessments
+		DELETE FROM ma_user_quiz_assessments
 		WHERE id = ?
 	`
 

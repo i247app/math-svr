@@ -47,16 +47,16 @@ func (r *gradeRepository) List(ctx context.Context, params di.ListGradesParams) 
 			g.create_dt,
 			g.modify_id,
 			g.modify_dt
-		FROM grades g
-		LEFT JOIN grade_translations gt ON g.id = gt.grade_id AND gt.language = ?
+		FROM ma_grades g
+		LEFT JOIN ma_grade_translations gt ON g.id = gt.grade_id AND gt.language = ?
 		WHERE g.deleted_dt IS NULL`)
 	args = append(args, language)
 
 	// Count query base with same JOIN
 	countBuilder.WriteString(`
 		SELECT COUNT(*)
-		FROM grades g
-		LEFT JOIN grade_translations gt ON g.id = gt.grade_id AND gt.language = ?
+		FROM ma_grades g
+		LEFT JOIN ma_grade_translations gt ON g.id = gt.grade_id AND gt.language = ?
 		WHERE g.deleted_dt IS NULL`)
 	countArgs = append(countArgs, language)
 
@@ -135,7 +135,7 @@ func (r *gradeRepository) FindByID(ctx context.Context, id string) (*domain.Grad
 	query := `
 		SELECT id, label, discription, image_key, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
-		FROM grades
+		FROM ma_grades
 		WHERE id = ? AND deleted_dt IS NULL
 	`
 
@@ -163,7 +163,7 @@ func (r *gradeRepository) FindByLabel(ctx context.Context, label string) (*domai
 	query := `
 		SELECT id, label, discription, image_key, status, display_order,
 		create_id, create_dt, modify_id, modify_dt
-		FROM grades
+		FROM ma_grades
 		WHERE label = ? AND deleted_dt IS NULL
 	`
 
@@ -189,7 +189,7 @@ func (r *gradeRepository) FindByLabel(ctx context.Context, label string) (*domai
 // Create inserts a new grade into the database.
 func (r *gradeRepository) Create(ctx context.Context, tx *sql.Tx, grade *domain.Grade) (int64, error) {
 	query := `
-		INSERT INTO grades (id, label, discription, image_key, status, display_order)
+		INSERT INTO ma_grades (id, label, discription, image_key, status, display_order)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -212,7 +212,7 @@ func (r *gradeRepository) Update(ctx context.Context, grade *domain.Grade) (int6
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
-	queryBuilder.WriteString("UPDATE grades SET ")
+	queryBuilder.WriteString("UPDATE ma_grades SET ")
 	updates := []string{}
 
 	if grade.Label() != "" {

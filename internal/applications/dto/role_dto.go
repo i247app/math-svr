@@ -1,8 +1,8 @@
 package dto
 
 import (
-	domain "math-ai.com/math-ai/internal/core/domain/role"
 	permDomain "math-ai.com/math-ai/internal/core/domain/permission"
+	domain "math-ai.com/math-ai/internal/core/domain/role"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 	"math-ai.com/math-ai/internal/shared/utils/time"
@@ -22,7 +22,7 @@ type RoleResponse struct {
 }
 
 type RoleWithPermissionsResponse struct {
-	Role        RoleResponse        `json:"role"`
+	Role        RoleResponse         `json:"role"`
 	Permissions []PermissionResponse `json:"permissions"`
 }
 
@@ -42,7 +42,7 @@ type ListRoleRequest struct {
 
 type ListRoleResponse struct {
 	Items      []*RoleResponse        `json:"roles"`
-	Pagination *pagination.Pagination `json:"metadata"`
+	Pagination *pagination.Pagination `json:"pagination"`
 }
 
 type CreateRoleRequest struct {

@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE chapters (
+CREATE TABLE ma_chapters (
     `id` CHAR(36) NOT NULL,
     `grade_id` CHAR(36) NOT NULL,
     `semester_id` CHAR(36) NOT NULL,

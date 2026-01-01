@@ -28,7 +28,7 @@ func (r *userQuizPracticesRepository) FindByID(ctx context.Context, id string) (
 	query := `
 		SELECT id, uid, questions, answers, ai_review, status,
 		create_id, create_dt, modify_id, modify_dt
-		FROM user_quiz_practices
+		FROM ma_user_quiz_practices
 		WHERE id = ? AND deleted_dt IS NULL
 	`
 
@@ -56,7 +56,7 @@ func (r *userQuizPracticesRepository) FindByUID(ctx context.Context, uid string)
 	query := `
 		SELECT id, uid, questions, answers, ai_review, status,
 		create_id, create_dt, modify_id, modify_dt
-		FROM user_quiz_practices
+		FROM ma_user_quiz_practices
 		WHERE uid = ? AND deleted_dt IS NULL
 		ORDER BY create_dt DESC
 		LIMIT 1
@@ -84,7 +84,7 @@ func (r *userQuizPracticesRepository) FindByUID(ctx context.Context, uid string)
 // Create inserts a new user latest quiz into the database.
 func (r *userQuizPracticesRepository) Create(ctx context.Context, tx *sql.Tx, quiz *domain.UserQuizPractices) (int64, error) {
 	query := `
-		INSERT INTO user_quiz_practices (id, uid, questions, answers, ai_review, status)
+		INSERT INTO ma_user_quiz_practices (id, uid, questions, answers, ai_review, status)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -107,7 +107,7 @@ func (r *userQuizPracticesRepository) Update(ctx context.Context, quiz *domain.U
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
-	queryBuilder.WriteString("UPDATE user_quiz_practices SET ")
+	queryBuilder.WriteString("UPDATE ma_user_quiz_practices SET ")
 	updates := []string{}
 	if quiz.Questions() != "" {
 		updates = append(updates, "questions = ?")
@@ -148,7 +148,7 @@ func (r *userQuizPracticesRepository) Update(ctx context.Context, quiz *domain.U
 // Delete performs a soft delete on a user latest quiz.
 func (r *userQuizPracticesRepository) Delete(ctx context.Context, id string) (int64, error) {
 	query := `
-		UPDATE user_quiz_practices
+		UPDATE ma_user_quiz_practices
 		SET deleted_dt = ?,
 			modify_dt = ?
 		WHERE id = ? AND deleted_dt IS NULL
@@ -165,7 +165,7 @@ func (r *userQuizPracticesRepository) Delete(ctx context.Context, id string) (in
 // ForceDelete permanently removes a user latest quiz from the database.
 func (r *userQuizPracticesRepository) ForceDelete(ctx context.Context, id string) (int64, error) {
 	query := `
-		DELETE FROM user_quiz_practices
+		DELETE FROM ma_user_quiz_practices
 		WHERE id = ?
 	`
 
@@ -180,7 +180,7 @@ func (r *userQuizPracticesRepository) ForceDelete(ctx context.Context, id string
 // ForceDeleteByUID permanently removes user quiz practices by UID from the database.
 func (r *userQuizPracticesRepository) ForceDeleteByUID(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
-		DELETE FROM user_quiz_practices
+		DELETE FROM ma_user_quiz_practices
 		WHERE uid = ?
 	`
 

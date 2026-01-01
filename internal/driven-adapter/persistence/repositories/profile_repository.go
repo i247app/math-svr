@@ -29,10 +29,10 @@ func (r *profileRepository) FindByID(ctx context.Context, id string) (*domain.Pr
 	query := `
 		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, g.label, s.name, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt
-		FROM profiles p
-		INNER JOIN users u ON p.uid = u.id
-		INNER JOIN semesters s ON p.semester_id = s.id
-		INNER JOIN grades g ON p.grade_id = g.id
+		FROM ma_profiles p
+		INNER JOIN ma_users u ON p.uid = u.id
+		INNER JOIN ma_semesters s ON p.semester_id = s.id
+		INNER JOIN ma_grades g ON p.grade_id = g.id
 		WHERE p.id = ? AND p.deleted_dt IS NULL AND u.deleted_dt IS NULL
 	`
 
@@ -60,10 +60,10 @@ func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.
 	query := `
 		SELECT p.id, p.uid, u.name, u.email, u.phone, u.avatar_key, u.dob, g.label, s.name, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt
-		FROM profiles p
-		INNER JOIN users u ON p.uid = u.id
-		INNER JOIN semesters s ON p.semester_id = s.id
-		INNER JOIN grades g ON p.grade_id = g.id
+		FROM ma_profiles p
+		INNER JOIN ma_users u ON p.uid = u.id
+		INNER JOIN ma_semesters s ON p.semester_id = s.id
+		INNER JOIN ma_grades g ON p.grade_id = g.id
 		WHERE p.uid = ? AND p.deleted_dt IS NULL AND u.deleted_dt IS NULL
 	`
 
@@ -89,7 +89,7 @@ func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.
 // Create inserts a new profile into the database.
 func (r *profileRepository) Create(ctx context.Context, tx *sql.Tx, profile *domain.Profile) (int64, error) {
 	query := `
-		INSERT INTO profiles (id, uid, grade_id, semester_id ,status)
+		INSERT INTO ma_profiles (id, uid, grade_id, semester_id ,status)
 		VALUES (?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
@@ -111,7 +111,7 @@ func (r *profileRepository) Update(ctx context.Context, profile *domain.Profile)
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
-	queryBuilder.WriteString("UPDATE profiles SET ")
+	queryBuilder.WriteString("UPDATE ma_profiles SET ")
 	updates := []string{}
 
 	if profile.GradeID() != "" {

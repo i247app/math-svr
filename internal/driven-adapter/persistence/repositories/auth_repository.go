@@ -27,7 +27,7 @@ func NewAuthRepository(db db.IDatabase) di.IAuthRepository {
 // StoreLogin stores a user login record in the database.
 func (r *authRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *domain.Login) error {
 	query := `
-		INSERT INTO logins (id, uid, hash_pass, status)
+		INSERT INTO ma_logins (id, uid, hash_pass, status)
 		VALUES (?, ?, ?, ?)
 	`
 	_, err := r.db.Exec(ctx, tx, query,
@@ -45,7 +45,7 @@ func (r *authRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *doma
 // DeleteLogin deletes user logins by user ID.
 func (r *authRepository) DeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
-		UPDATE logins
+		UPDATE ma_logins
 		SET deleted_dt = ?,
 			modify_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
@@ -60,7 +60,7 @@ func (r *authRepository) DeleteLogin(ctx context.Context, tx *sql.Tx, uid string
 // ForceDeleteLogin permanently deletes user logins by user ID.
 func (r *authRepository) ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
-		DELETE FROM logins
+		DELETE FROM ma_logins
 		WHERE uid = ?
 	`
 	_, err := r.db.Exec(ctx, tx, query, uid)
@@ -70,10 +70,11 @@ func (r *authRepository) ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid s
 	return nil
 }
 
+// GetLoginByUID retrieves a user login by user ID.
 func (r *authRepository) GetLoginLogByUIDAndDeviceUUID(ctx context.Context, uid string, deviceUUID string) (*domain.LoginLog, error) {
 	query := `
 		SELECT id, uid, ip_address, device_uuid, token
-		FROM login_logs
+		FROM ma_login_logs
 		WHERE uid = ? AND device_uuid = ?
 	`
 
@@ -92,9 +93,10 @@ func (r *authRepository) GetLoginLogByUIDAndDeviceUUID(ctx context.Context, uid 
 	return loginLog, nil
 }
 
+// StoreLoginLog stores a user login log record in the database.
 func (r *authRepository) StoreLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
 	query := `
-		INSERT INTO login_logs (id, uid, ip_address, device_uuid, token, status)
+		INSERT INTO ma_login_logs (id, uid, ip_address, device_uuid, token, status)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 
@@ -110,11 +112,12 @@ func (r *authRepository) StoreLoginLog(ctx context.Context, loginLog *domain.Log
 	return err
 }
 
+// UpdateLoginLog updates a user login log record in the database.
 func (r *authRepository) UpdateLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
 	var queryBuilder strings.Builder
 	args := []interface{}{}
 
-	queryBuilder.WriteString("UPDATE login_logs SET ")
+	queryBuilder.WriteString("UPDATE ma_login_logs SET ")
 	updates := []string{}
 
 	if loginLog.Token() != "" {

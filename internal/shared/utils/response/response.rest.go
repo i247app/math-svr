@@ -43,7 +43,7 @@ func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, 
 
 	// Default to not set if not set
 	if statusCode != 0 {
-		payload["mmstatus"] = statusCode
+		payload["mstatus"] = statusCode
 	}
 
 	if (payload["mmessage"] == "Unknown" || payload["message"] == "") && err != nil {
