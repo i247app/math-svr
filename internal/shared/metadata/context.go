@@ -61,3 +61,18 @@ func GetPlatform(ctx context.Context) string {
 func GetAppVersion(ctx context.Context) string {
 	return FromContext(ctx).ClientInfo.AppVersion
 }
+
+// GetDeviceModel is a convenience function to get the client device model from context
+func GetDeviceModel(ctx context.Context) string {
+	return FromContext(ctx).ClientInfo.DeviceModel
+}
+
+// GetDeviceID is a convenience function to get the client device ID from context
+func GetDeviceID(ctx context.Context) string {
+	return FromContext(ctx).ClientInfo.DeviceID
+}
+
+// GetDeviceName is a convenience function to get the client device name from context
+func GetDeviceName(ctx context.Context) string {
+	return FromContext(ctx).ClientInfo.DeviceName
+}

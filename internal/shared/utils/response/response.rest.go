@@ -34,20 +34,20 @@ func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, 
 		// Check if error is a DynamicError with dynamic arguments
 		if dynErr, ok := err_svc.IsDynamicError(err); ok {
 			// Use the localized message with dynamic arguments
-			payload["message"] = GetMessage(ctx, dynErr.GetStatusCode(), dynErr.GetArgs())
+			payload["mmessage"] = GetMessage(ctx, dynErr.GetStatusCode(), dynErr.GetArgs())
 		} else {
 			// Use standard localized message
-			payload["message"] = GetMessage(ctx, statusCode, nil)
+			payload["mmessage"] = GetMessage(ctx, statusCode, nil)
 		}
 	}
 
 	// Default to not set if not set
 	if statusCode != 0 {
-		payload["status"] = statusCode
+		payload["mmstatus"] = statusCode
 	}
 
-	if (payload["message"] == "Unknown" || payload["message"] == "") && err != nil {
-		payload["message"] = err.Error()
+	if (payload["mmessage"] == "Unknown" || payload["message"] == "") && err != nil {
+		payload["mmessage"] = err.Error()
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

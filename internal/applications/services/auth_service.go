@@ -42,6 +42,9 @@ func NewAuthService(
 func (s *AuthService) Login(ctx context.Context, sess *session.AppSession, req *dto.LoginRequest) (status.Code, *dto.LoginResponse, error) {
 	logger := logger.GetLogger(ctx)
 
+	// deviceID := metadata.GetDeviceID(ctx)
+	// deviceName := metadata.GetDeviceName(ctx)
+
 	// Validate request
 	if statusCode, err := s.validator.ValidateLoginRequest(req); err != nil {
 		return statusCode, nil, err

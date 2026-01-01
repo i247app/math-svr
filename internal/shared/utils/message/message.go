@@ -22,9 +22,6 @@ func GetMessage(language LanguageType, statusCode status.Code, args map[string]i
 	case VN:
 		template = GetMessageTemplateVN(statusCode)
 		staticMessage = GetMessageVNFromStatus(statusCode)
-	case FR:
-		template = GetMessageTemplateFR(statusCode)
-		staticMessage = GetMessageFRFromStatus(statusCode)
 	default:
 		template = GetMessageTemplateEN(statusCode)
 		staticMessage = GetMessageENFromStatus(statusCode)

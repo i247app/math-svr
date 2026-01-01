@@ -27,6 +27,7 @@ type ClientInfo struct {
 	DeviceModel string `json:"device_model,omitempty"` // Device model (e.g., "iPhone 14", "Pixel 7")
 	OSVersion   string `json:"os_version,omitempty"`   // OS version (e.g., "iOS 16.0", "Android 13")
 	DeviceID    string `json:"device_id,omitempty"`    // Unique device identifier
+	DeviceName  string `json:"device_name,omitempty"`  // Device name (e.g., "John's iPhone")
 }
 
 // UserContext contains user-specific context information
