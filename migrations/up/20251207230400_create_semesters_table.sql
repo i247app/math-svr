@@ -1,18 +1,20 @@
 -- migration up
-CREATE TABLE semesters (
-    `id` CHAR(36) NOT NULL,
-    `name` VARCHAR(100) NOT NULL,
-    `description` TEXT NULL,
-    `image_key` VARCHAR(128) NULL,
-    `status` VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
-    `display_order` TINYINT NOT NULL,
-    `create_id` INT DEFAULT 0,
-    `create_dt` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3),
-    `modify_id` INT DEFAULT 0,
-    `modify_dt` DATETIME(3) DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-    `deleted_dt` DATETIME(3) DEFAULT NULL,
-    PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+CREATE TABLE `semesters` (
+  `id` char(36) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `image_key` varchar(128) NOT NULL,
+  `display_order` tinyint NOT NULL,
+  `note` varchar(500) DEFAULT NULL,
+  `semester_status` varchar(32) DEFAULT 'ACTIVE',
+  `status` varchar(32) DEFAULT 'ACTIVE',
+  `create_id` int DEFAULT '0',
+  `create_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `modify_id` int DEFAULT '0',
+  `modify_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  `deleted_dt` datetime(6) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 
 -- INSERT INTO semesters (id, name, description, display_order) VALUES
 -- ('2c0h1d3e-3f4g-6e5d-0h2c-9d8e7f6g5c13', 'Semester 1', 'Semester 1 program', 1),

@@ -1,13 +1,20 @@
 -- migration up
-CREATE TABLE grade_translations (
-    `id` CHAR(36) NOT NULL,
-    `grade_id` CHAR(36) NOT NULL,
-    `language` VARCHAR(10) NOT NULL,
-    `label` VARCHAR(128) NOT NULL,
-    `description` VARCHAR(255) NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY unique_grade_language (grade_id, language),
-    FOREIGN KEY (grade_id) REFERENCES grades(id) ON DELETE CASCADE
+CREATE TABLE `grade_translations` (
+  `id` char(36) NOT NULL,
+  `grade_id` char(36) NOT NULL,
+  `language` varchar(10) NOT NULL,
+  `label` varchar(128) NOT NULL,
+  `description` varchar(255) NOT NULL,
+  `note` varchar(500) DEFAULT NULL,
+  `gt_status` varchar(32) DEFAULT 'ACTIVE',
+  `status` varchar(32) DEFAULT 'ACTIVE',
+  `create_id` int DEFAULT '0',
+  `create_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `modify_id` int DEFAULT '0',
+  `modify_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_grade_language` (`grade_id`,`language`),
+  CONSTRAINT `grade_translations_ibfk_1` FOREIGN KEY (`grade_id`) REFERENCES `grades` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- INSERT INTO grade_translations (id, grade_id, language, label, discription) VALUES
@@ -18,15 +25,22 @@ CREATE TABLE grade_translations (
 -- (UUID(), 'ca93947f-f7b6-433e-968f-a7b70f36c201', 'vn', 'Lớp 5', 'Chương trình học lớp 5.');
 
 
-CREATE TABLE semester_translations (
-    `id` CHAR(36) NOT NULL,
-    `semester_id` CHAR(36) NOT NULL,
-    `language` VARCHAR(10) NOT NULL,
-    `name` VARCHAR(100) NOT NULL,
-    `description` TEXT NULL,
-    PRIMARY KEY (id),
-    UNIQUE KEY unique_semester_language (semester_id, language),
-    FOREIGN KEY (semester_id) REFERENCES semesters(id) ON DELETE CASCADE
+CREATE TABLE `semester_translations` (
+  `id` char(36) NOT NULL,
+  `semester_id` char(36) NOT NULL,
+  `language` varchar(10) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `note` varchar(500) DEFAULT NULL,
+  `st_status` varchar(32) DEFAULT 'ACTIVE',
+  `status` varchar(32) DEFAULT 'ACTIVE',
+  `create_id` int DEFAULT '0',
+  `create_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `modify_id` int DEFAULT '0',
+  `modify_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_semester_language` (`semester_id`,`language`),
+  CONSTRAINT `semester_translations_ibfk_1` FOREIGN KEY (`semester_id`) REFERENCES `semesters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- INSERT INTO semester_translations (id, semester_id, language, name, description) VALUES
