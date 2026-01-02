@@ -34,7 +34,7 @@ type ClientInfo struct {
 type UserContext struct {
 	Locale   string `json:"locale,omitempty"`   // User's locale (e.g., "en-US", "vi-VN")
 	Timezone string `json:"timezone,omitempty"` // User's timezone (e.g., "America/New_York", "Asia/Ho_Chi_Minh")
-	Language string `json:"language,omitempty"` // Preferred language (e.g., "en", "vi")
+	Language string `json:"language,omitempty"` // Preferred language (e.g., "en", "vn")
 }
 
 // NewRequestMetadata creates a new RequestMetadata instance with default values

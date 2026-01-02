@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database/sql"
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/utils"
@@ -122,7 +123,7 @@ func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequ
 	}
 
 	// Handle icon upload using shared file manager
-	iconKey, statusCode, err := s.fileManager.UploadFile(ctx, req.ImageFile, req.ImageFilename, req.ImageContentType, "grade")
+	imageKey, statusCode, err := s.fileManager.UploadFile(ctx, req.ImageFile, req.ImageFilename, req.ImageContentType, "grade")
 	if err != nil {
 		return statusCode, nil, err
 	}
@@ -130,12 +131,28 @@ func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequ
 	gradeDomain := dto.BuildGradeDomainForCreate(req)
 
 	// Set icon URL if uploaded
-	if iconKey != nil {
-		gradeDomain.SetImageKey(iconKey)
+	if imageKey != nil {
+		gradeDomain.SetImageKey(imageKey)
 	}
 
-	// Create grade without transaction (simple single table insert)
-	_, err = s.repo.Create(ctx, nil, gradeDomain)
+	// Create grade
+
+	handler := func(tx *sql.Tx) error {
+		_, err = s.repo.Create(ctx, nil, gradeDomain)
+		if err != nil {
+			return err
+		}
+
+		gradeTranslationDomain := dto.BuildGradeTranslationDomainForCreate(gradeDomain.ID(), "vn", gradeDomain.Label(), gradeDomain.Description())
+		_, err = s.repo.CreateGradeTranslation(ctx, tx, gradeTranslationDomain)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err = s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.FAIL, nil, err
 	}
@@ -194,7 +211,16 @@ func (s *GradeService) UpdateGrade(ctx context.Context, req *dto.UpdateGradeRequ
 	}
 
 	gradeDomain := dto.BuildGradeDomainForUpdate(req)
-	_, err = s.repo.Update(ctx, gradeDomain)
+
+	handler := func(tx *sql.Tx) error {
+		_, err = s.repo.Update(ctx, tx, gradeDomain)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	err = s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.FAIL, nil, err
 	}
@@ -228,7 +254,21 @@ func (s *GradeService) DeleteGrade(ctx context.Context, id string) (status.Code,
 		return status.NOT_FOUND, err_svc.ErrGradeNotFound
 	}
 
-	err = s.repo.Delete(ctx, id)
+	handler := func(tx *sql.Tx) error {
+		err = s.repo.Delete(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+
+		err = s.repo.DeleteGradeTranslationsByGradeID(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err = s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.FAIL, err
 	}
@@ -240,7 +280,21 @@ func (s *GradeService) ForceDeleteGrade(ctx context.Context, id string) (status.
 	logger := logger.GetLogger(ctx)
 	logger.Info("Start ForceDeleteGrade service")
 
-	err := s.repo.ForceDelete(ctx, nil, id)
+	handler := func(tx *sql.Tx) error {
+		err := s.repo.ForceDelete(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+
+		err = s.repo.ForceDeleteGradeTranslationsByGradeID(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err := s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.FAIL, err
 	}

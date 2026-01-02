@@ -9,6 +9,8 @@ type GradeModel struct {
 	Label        string
 	Description  *string
 	ImageKey     *string
+	Note         *string
+	GradeStatus  string
 	Status       string
 	DisplayOrder int8
 	CreateID     *int64

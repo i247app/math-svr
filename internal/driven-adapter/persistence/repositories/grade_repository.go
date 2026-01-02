@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/grade"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/queries"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/metadata"
@@ -16,98 +16,96 @@ import (
 	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
+const (
+	gradeTableName = "ma_grades"
+)
+
 type gradeRepository struct {
-	db db.IDatabase
+	BaseRepository // Embed BaseRepository for common operations
 }
 
-func NewGradeRepository(db db.IDatabase) di.IGradeRepository {
+func NewGradeRepository(database db.IDatabase) di.IGradeRepository {
 	return &gradeRepository{
-		db: db,
+		BaseRepository: NewBaseRepository(database),
 	}
+}
+
+// scanGrade is a reusable helper method to scan grade data from a row
+func (r *gradeRepository) scanGrade(scanner Scanner) (*domain.Grade, error) {
+	var g models.GradeModel
+	err := scanner.Scan(
+		&g.ID, &g.Label, &g.Description, &g.ImageKey, &g.Status, &g.DisplayOrder,
+		&g.CreateID, &g.CreateDT, &g.ModifyID, &g.ModifyDT,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("scan error: %v", err)
+	}
+
+	return domain.BuildGradeDomainFromModel(&g), nil
+}
+
+// DoTransaction executes a series of operations within a transaction
+func (r *gradeRepository) DoTransaction(ctx context.Context, handler db.HanderlerWithTx) error {
+	err := r.ExecuteInTransaction(handler)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // List retrieves a paginated list of grades with optional search and sorting.
+// Now uses BaseRepository.PaginatedList to eliminate duplication
 func (r *gradeRepository) List(ctx context.Context, params di.ListGradesParams) ([]*domain.Grade, *pagination.Pagination, error) {
-	var queryBuilder strings.Builder
-	var countBuilder strings.Builder
-	args := []interface{}{}
-	countArgs := []interface{}{}
+	// Get language from context for translations
 	language := metadata.GetLanguage(ctx)
 
-	// Base query with LEFT JOIN for translations
-	queryBuilder.WriteString(`
-		SELECT
-			g.id,
-			COALESCE(gt.label, g.label) AS label,
-			COALESCE(gt.description, g.discription) AS description,
-			g.image_key,
-			g.status,
-			g.display_order,
-			g.create_id,
-			g.create_dt,
-			g.modify_id,
-			g.modify_dt
-		FROM ma_grades g
-		LEFT JOIN ma_grade_translations gt ON g.id = gt.grade_id AND gt.language = ?
-		WHERE g.deleted_dt IS NULL`)
-	args = append(args, language)
+	// Get base queries with language parameter
+	baseQuery := queries.GradeListQuery
+	countQuery := queries.GradeListCountQuery
+	args := []interface{}{language}
 
-	// Count query base with same JOIN
-	countBuilder.WriteString(`
-		SELECT COUNT(*)
-		FROM ma_grades g
-		LEFT JOIN ma_grade_translations gt ON g.id = gt.grade_id AND gt.language = ?
-		WHERE g.deleted_dt IS NULL`)
-	countArgs = append(countArgs, language)
-
-	// Add search condition to both queries
+	// Add search condition if provided
 	if params.Search != "" {
-		searchCondition := ` AND (COALESCE(gt.label, g.label) LIKE ? OR COALESCE(gt.description, g.discription) LIKE ?)`
-		searchTerm := "%" + params.Search + "%"
-
-		queryBuilder.WriteString(searchCondition)
-		args = append(args, searchTerm, searchTerm)
-
-		countBuilder.WriteString(searchCondition)
-		countArgs = append(countArgs, searchTerm, searchTerm)
+		baseQuery, countQuery, args = queries.GradeQueries{}.BuildListQueryWithSearch(language, params.Search)
 	}
 
-	// Count total records for pagination
-	var total int64
-	countRow := r.db.QueryRow(ctx, nil, countBuilder.String(), countArgs...)
-	if err := countRow.Scan(&total); err != nil {
-		return nil, nil, fmt.Errorf("failed to count grades: %v", err)
+	// Build pagination params
+	paginationParams := pagination.Params{
+		Page:      params.Page,
+		Limit:     params.Limit,
+		OrderBy:   params.OrderBy,
+		OrderDesc: params.OrderDesc,
+		TakeAll:   params.TakeAll,
 	}
 
-	// Initialize pagination
-	paginationObj := pagination.NewPagination(params.Page, params.Limit, total)
-	if params.TakeAll {
-		paginationObj.Size = total
-		paginationObj.Skip = 0
-		paginationObj.Page = 1
-		paginationObj.TotalPages = 1
-	}
-
-	// Add sorting
-	if params.OrderBy != "" {
-		queryBuilder.WriteString(fmt.Sprintf(" ORDER BY g.%s", params.OrderBy))
-		if params.OrderDesc {
-			queryBuilder.WriteString(" DESC")
-		} else {
-			queryBuilder.WriteString(" ASC")
-		}
+	// Default ordering if not specified
+	if paginationParams.OrderBy == "" {
+		paginationParams.OrderBy = "g.display_order"
+		paginationParams.OrderDesc = false
 	} else {
-		queryBuilder.WriteString(" ORDER BY g.display_order ASC")
+		// Prefix with table alias
+		paginationParams.OrderBy = "g." + paginationParams.OrderBy
 	}
 
-	// Add pagination
-	if !params.TakeAll {
-		queryBuilder.WriteString(` LIMIT ? OFFSET ?`)
-		args = append(args, paginationObj.Size, paginationObj.Skip)
+	// Use BaseRepository.PaginatedList for automatic count and pagination
+	query, queryArgs, paginationObj, err := r.PaginatedList(
+		ctx,
+		baseQuery,
+		args,
+		countQuery,
+		args,
+		paginationParams,
+	)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	// Execute query
-	rows, err := r.db.Query(ctx, nil, queryBuilder.String(), args...)
+	// Execute final query
+	rows, err := r.db.Query(ctx, nil, query, queryArgs...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list grades: %v", err)
 	}
@@ -116,83 +114,38 @@ func (r *gradeRepository) List(ctx context.Context, params di.ListGradesParams) 
 	// Scan results
 	var grades []*domain.Grade
 	for rows.Next() {
-		var g models.GradeModel
-		if err := rows.Scan(
-			&g.ID, &g.Label, &g.Description, &g.ImageKey, &g.Status, &g.DisplayOrder,
-			&g.CreateID, &g.CreateDT, &g.ModifyID, &g.ModifyDT,
-		); err != nil {
-			return nil, nil, fmt.Errorf("scan error: %v", err)
+		grade, err := r.scanGrade(rows)
+		if err != nil {
+			return nil, nil, err
 		}
-
-		grades = append(grades, domain.BuildGradeDomainFromModel(&g))
+		grades = append(grades, grade)
 	}
 
 	return grades, paginationObj, nil
 }
 
 // FindByID retrieves a grade by ID.
+// Now uses query constants from queries package
 func (r *gradeRepository) FindByID(ctx context.Context, id string) (*domain.Grade, error) {
-	query := `
-		SELECT id, label, discription, image_key, status, display_order,
-		create_id, create_dt, modify_id, modify_dt
-		FROM ma_grades
-		WHERE id = ? AND deleted_dt IS NULL
-	`
+	language := metadata.GetLanguage(ctx)
 
-	result := r.db.QueryRow(ctx, nil, query, id)
-
-	var g models.GradeModel
-	err := result.Scan(
-		&g.ID, &g.Label, &g.Description, &g.ImageKey, &g.Status, &g.DisplayOrder,
-		&g.CreateID, &g.CreateDT, &g.ModifyID, &g.ModifyDT,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	grade := domain.BuildGradeDomainFromModel(&g)
-
-	return grade, nil
+	row := r.db.QueryRow(ctx, nil, queries.GradeFindByIDWithTranslation, language, id)
+	return r.scanGrade(row)
 }
 
 // FindByLabel retrieves a grade by label.
+// Now uses query constants from queries package
 func (r *gradeRepository) FindByLabel(ctx context.Context, label string) (*domain.Grade, error) {
-	query := `
-		SELECT id, label, discription, image_key, status, display_order,
-		create_id, create_dt, modify_id, modify_dt
-		FROM ma_grades
-		WHERE label = ? AND deleted_dt IS NULL
-	`
+	language := metadata.GetLanguage(ctx)
 
-	result := r.db.QueryRow(ctx, nil, query, label)
-
-	var g models.GradeModel
-	err := result.Scan(
-		&g.ID, &g.Label, &g.Description, &g.ImageKey, &g.Status, &g.DisplayOrder,
-		&g.CreateID, &g.CreateDT, &g.ModifyID, &g.ModifyDT,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	grade := domain.BuildGradeDomainFromModel(&g)
-
-	return grade, nil
+	row := r.db.QueryRow(ctx, nil, queries.GradeFindByLabelWithTranslation, language, label, label)
+	return r.scanGrade(row)
 }
 
 // Create inserts a new grade into the database.
+// Now uses query constants from queries package
 func (r *gradeRepository) Create(ctx context.Context, tx *sql.Tx, grade *domain.Grade) (int64, error) {
-	query := `
-		INSERT INTO ma_grades (id, label, discription, image_key, status, display_order, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`
-	result, err := r.db.Exec(ctx, tx, query,
+	result, err := r.db.Exec(ctx, tx, queries.GradeInsert,
 		grade.ID(),
 		grade.Label(),
 		grade.Description(),
@@ -210,81 +163,94 @@ func (r *gradeRepository) Create(ctx context.Context, tx *sql.Tx, grade *domain.
 }
 
 // Update modifies an existing grade in the database.
-func (r *gradeRepository) Update(ctx context.Context, grade *domain.Grade) (int64, error) {
-	var queryBuilder strings.Builder
-	args := []interface{}{}
-
-	queryBuilder.WriteString("UPDATE ma_grades SET ")
-	updates := []string{}
-
-	if grade.Label() != "" {
-		updates = append(updates, "label = ?")
-		args = append(args, grade.Label())
-	}
-
-	if grade.Description() != nil {
-		updates = append(updates, "discription = ?")
-		args = append(args, grade.Description())
-	}
-
-	// ImageKey can be nil, so we check if it's explicitly set
-	if grade.ImageKey() != nil {
-		updates = append(updates, "image_key = ?")
-		args = append(args, grade.ImageKey())
-	}
-
-	if grade.Status() != "" {
-		updates = append(updates, "status = ?")
-		args = append(args, grade.Status())
-	}
-
-	if grade.DisplayOrder() != 0 {
-		updates = append(updates, "display_order = ?")
-		args = append(args, grade.DisplayOrder())
-	}
-
-	updates = append(updates, "modify_dt = ?")
-	args = append(args, mathtime.Now())
-
-	if len(updates) == 0 {
-		return 0, fmt.Errorf("no fields to update")
-	}
-
-	queryBuilder.WriteString(strings.Join(updates, ", "))
-	queryBuilder.WriteString(" WHERE id = ? AND deleted_dt IS NULL")
-	args = append(args, grade.ID())
-
-	result, err := r.db.Exec(ctx, nil, queryBuilder.String(), args...)
+// LEGACY METHOD - kept for backward compatibility
+// New code should use UpdateFields instead
+func (r *gradeRepository) Update(ctx context.Context, tx *sql.Tx, grade *domain.Grade) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.GradeUpdate,
+		PrepareForUpdate(grade.Label()),
+		PrepareForUpdate(grade.Description()),
+		PrepareForUpdate(grade.ImageKey()),
+		PrepareForUpdate(grade.GradeStatus()),
+		PrepareForUpdate(grade.Note()),
+		PrepareForUpdate(grade.DisplayOrder()),
+		mathtime.Now(),
+		grade.ID(),
+	)
 	if err != nil {
-		return 0, fmt.Errorf("failed to update grade: %v", err)
+		return 0, fmt.Errorf("failed to create grade: %v", err)
 	}
 
 	return result.RowsAffected()
 }
 
 // Delete soft deletes a grade by setting deleted_dt.
-func (r *gradeRepository) Delete(ctx context.Context, id string) error {
-	query := `
-			UPDATE grades 
-			SET deleted_dt = ?,
-				modify_dt = ? 
-			WHERE id = ? AND deleted_dt IS NULL`
-	now := mathtime.Now()
-	_, err := r.db.Exec(ctx, nil, query, now, now, id)
+func (r *gradeRepository) Delete(ctx context.Context, tx *sql.Tx, id string) error {
+	_, err := r.SoftDelete(ctx, tx, gradeTableName, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete grade: %v", err)
 	}
-
 	return nil
 }
 
 // ForceDelete permanently deletes a grade from the database.
+// Now uses BaseRepository.HardDelete
 func (r *gradeRepository) ForceDelete(ctx context.Context, tx *sql.Tx, id string) error {
-	query := `DELETE FROM grades WHERE id = ?`
-	_, err := r.db.Exec(ctx, tx, query, id)
+	_, err := r.HardDelete(ctx, tx, gradeTableName, id)
 	if err != nil {
 		return fmt.Errorf("failed to force delete grade: %v", err)
 	}
+	return nil
+}
 
+// CreateGradeTranslation inserts a new grade translation into the database.
+func (r *gradeRepository) CreateGradeTranslation(ctx context.Context, tx *sql.Tx, gradeTranslation *domain.GradeTranslation) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.GradeTranslationInsert,
+		gradeTranslation.ID(),
+		gradeTranslation.GradeID(),
+		gradeTranslation.Language(),
+		gradeTranslation.Label(),
+		gradeTranslation.Description(),
+		gradeTranslation.Note(),
+		mathtime.Now(),
+		mathtime.Now(),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create grade translation: %v", err)
+	}
+
+	return result.RowsAffected()
+}
+
+// UpdateGradeTranslation modifies an existing grade translation in the database.
+func (r *gradeRepository) UpdateGradeTranslation(ctx context.Context, tx *sql.Tx, gradeTranslation *domain.GradeTranslation) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.GradeTranslationUpdate,
+		PrepareForUpdate(gradeTranslation.Label()),
+		PrepareForUpdate(gradeTranslation.Description()),
+		PrepareForUpdate(gradeTranslation.Note()),
+		mathtime.Now(),
+		gradeTranslation.GradeID(),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to update grade translation: %v", err)
+	}
+
+	return result.RowsAffected()
+}
+
+// DeleteGradeTranslationsByGradeID soft deletes grade translations by grade ID.
+func (r *gradeRepository) DeleteGradeTranslationsByGradeID(ctx context.Context, tx *sql.Tx, gradeID string) error {
+	_, err := r.db.Exec(ctx, tx, queries.GradeTranslationDeleteByGradeID, mathtime.Now(), mathtime.Now(), gradeID)
+	if err != nil {
+		return fmt.Errorf("failed to delete grade translations: %v", err)
+	}
+	return nil
+}
+
+// ForceDeleteGradeTranslationsByGradeID permanently deletes grade translations by grade ID.
+func (r *gradeRepository) ForceDeleteGradeTranslationsByGradeID(ctx context.Context, tx *sql.Tx, gradeID string) error {
+	_, err := r.db.Exec(ctx, tx, queries.GradeTranslationForceDeleteByGradeID, gradeID)
+	if err != nil {
+		return fmt.Errorf("failed to force delete grade translations: %v", err)
+	}
 	return nil
 }

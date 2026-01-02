@@ -12,6 +12,8 @@ type Grade struct {
 	label        string
 	description  *string
 	imageKey     *string
+	gradeStatus  string
+	note         *string
 	status       string
 	displayOrder int8
 	createID     *int64
@@ -59,6 +61,25 @@ func (g *Grade) ImageKey() *string {
 
 func (g *Grade) SetImageKey(imageKey *string) {
 	g.imageKey = imageKey
+}
+
+func (g *Grade) GradeStatus() string {
+	return g.gradeStatus
+}
+
+func (g *Grade) SetGradeStatus(gradeStatus string) {
+	if gradeStatus == "" {
+		gradeStatus = string(enum.StatusActive)
+	}
+	g.gradeStatus = gradeStatus
+}
+
+func (g *Grade) Note() *string {
+	return g.note
+}
+
+func (g *Grade) SetNote(note *string) {
+	g.note = note
 }
 
 func (g *Grade) Status() string {
