@@ -11,6 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
+	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type contactRepository struct {
@@ -25,8 +26,8 @@ func NewContactRepository(db db.IDatabase) di.IContactRepository {
 
 func (cr *contactRepository) CreateContact(ctx context.Context, tx *sql.Tx, contact *domain.Contact) (int64, error) {
 	query := `
-		INSERT INTO ma_contact_us (id, uid, contact_name, contact_email, contact_phone, contact_message, is_read)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO ma_contact_us (id, uid, contact_name, contact_email, contact_phone, contact_message, is_read, created_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := cr.db.Exec(ctx, tx, query,
@@ -37,6 +38,8 @@ func (cr *contactRepository) CreateContact(ctx context.Context, tx *sql.Tx, cont
 		contact.ContactPhone(),
 		contact.ContactMessage(),
 		false,
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 
 	if err != nil {

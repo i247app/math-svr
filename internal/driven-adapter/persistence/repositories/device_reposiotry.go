@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/device"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
+	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type deviceRepository struct {
@@ -92,8 +92,8 @@ func (r *deviceRepository) CheckTrustedDeviceByUID(ctx context.Context, uid stri
 
 func (r *deviceRepository) StoreDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) error {
 	query := `
-		INSERT INTO ma_devices (id, uid, device_uuid, device_name, device_push_token, is_verified, status)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO ma_devices (id, uid, device_uuid, device_name, device_push_token, is_verified, status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := r.db.Exec(ctx, tx, query,
@@ -104,6 +104,8 @@ func (r *deviceRepository) StoreDevice(ctx context.Context, tx *sql.Tx, device *
 		device.DevicePushToken(),
 		device.IsVerified(),
 		enum.StatusActive,
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 
 	return err
@@ -132,7 +134,7 @@ func (r *deviceRepository) UpdateDevice(ctx context.Context, device *domain.Devi
 	}
 
 	updates = append(updates, "modify_dt = ?")
-	args = append(args, time.Now().UTC())
+	args = append(args, mathtime.Now())
 
 	queryBuilder.WriteString(strings.Join(updates, ", "))
 	queryBuilder.WriteString(" WHERE uid = ? AND device_uuid = ? AND status = ?")
@@ -155,7 +157,7 @@ func (r *deviceRepository) MarkVerifiedDeviceByUIDAndDeviceUUID(ctx context.Cont
 
 	_, err := r.db.Exec(ctx, nil, query,
 		true,
-		time.Now().UTC(),
+		mathtime.Now(),
 		uid,
 		deviceUUID,
 		enum.StatusActive,
@@ -171,7 +173,7 @@ func (r *deviceRepository) DeleteDeviceByUID(ctx context.Context, tx *sql.Tx, ui
 			modify_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
 	`
-	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user logins: %v", err)
 	}

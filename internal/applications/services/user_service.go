@@ -176,8 +176,6 @@ func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest
 		return statusCode, nil, err
 	}
 
-	println("grade_id", req.GradeID)
-
 	// Get existing user
 	existingUser, err := s.repo.FindByID(ctx, req.UID)
 	if err != nil {

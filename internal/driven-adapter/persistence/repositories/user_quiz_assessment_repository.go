@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/user_quiz_assessment"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
+	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type userQuizAssessmentRepository struct {
@@ -127,8 +127,8 @@ func (r *userQuizAssessmentRepository) ListByUID(ctx context.Context, params di.
 // Create inserts a new quiz assessment into the database.
 func (r *userQuizAssessmentRepository) Create(ctx context.Context, tx *sql.Tx, assessment *domain.UserQuizAssessment) (int64, error) {
 	query := `
-		INSERT INTO ma_user_quiz_assessments (id, uid, questions, answers, ai_review, ai_detect_grade, status)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO ma_user_quiz_assessments (id, uid, questions, answers, ai_review, ai_detect_grade, status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		assessment.ID(),
@@ -138,6 +138,8 @@ func (r *userQuizAssessmentRepository) Create(ctx context.Context, tx *sql.Tx, a
 		assessment.AIReview(),
 		assessment.AIDetectGrade(),
 		assessment.Status(),
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create quiz assessment: %v", err)
@@ -175,7 +177,7 @@ func (r *userQuizAssessmentRepository) Update(ctx context.Context, assessment *d
 	}
 
 	updates = append(updates, "modify_dt = ?")
-	args = append(args, time.Now().UTC())
+	args = append(args, mathtime.Now())
 
 	if len(updates) == 0 {
 		return 0, fmt.Errorf("no fields to update for quiz assessment")
@@ -202,7 +204,7 @@ func (r *userQuizAssessmentRepository) Delete(ctx context.Context, id string) (i
 		WHERE id = ? AND deleted_dt IS NULL
 	`
 
-	result, err := r.db.Exec(ctx, nil, query, time.Now().UTC(), time.Now().UTC(), id)
+	result, err := r.db.Exec(ctx, nil, query, mathtime.Now(), mathtime.Now(), id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete quiz assessment: %v", err)
 	}

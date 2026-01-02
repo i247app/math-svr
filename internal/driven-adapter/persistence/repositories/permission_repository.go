@@ -271,8 +271,8 @@ func (r *permissionRepository) FindByRoleID(ctx context.Context, roleID string) 
 // Create inserts a new permission
 func (r *permissionRepository) Create(ctx context.Context, tx *sql.Tx, permission *domain.Permission) (int64, error) {
 	query := `
-		INSERT INTO permissions (id, name, description, http_method, endpoint_path, resource, action, status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO permissions (id, name, description, http_method, endpoint_path, resource, action, status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		permission.ID(),
@@ -283,6 +283,8 @@ func (r *permissionRepository) Create(ctx context.Context, tx *sql.Tx, permissio
 		permission.Resource(),
 		permission.Action(),
 		enum.StatusActive,
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create permission: %v", err)
@@ -360,8 +362,8 @@ func (r *permissionRepository) Delete(ctx context.Context, id string) error {
 		SET deleted_dt = ?,
 		    modify_dt = ?
 		WHERE id = ? AND deleted_dt IS NULL`
-	now := mathtime.Now()
-	_, err := r.db.Exec(ctx, nil, query, now, now, id)
+
+	_, err := r.db.Exec(ctx, nil, query, mathtime.Now(), mathtime.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to delete permission: %v", err)
 	}

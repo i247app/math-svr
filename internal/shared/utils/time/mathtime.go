@@ -15,7 +15,7 @@ type MathTime struct {
 
 // Now returns a new MathTime with the current time
 func Now() MathTime {
-	return MathTime{Time: time.Now()}
+	return MathTime{Time: time.Now().UTC()}
 }
 
 // NewMathTime creates a new MathTime from a standard time.Time

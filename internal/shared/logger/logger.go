@@ -18,12 +18,14 @@ type loggerKeyType string
 type tokenKeyType string
 type useridKeyType string
 type routeKeyType string
+type bgColorKeyType string
 
 const (
-	loggerKey = loggerKeyType("logger")
-	tokenKey  = tokenKeyType("token")
-	useridKey = useridKeyType("userid")
-	routeKey  = routeKeyType("route")
+	loggerKey  = loggerKeyType("logger")
+	tokenKey   = tokenKeyType("token")
+	useridKey  = useridKeyType("userid")
+	routeKey   = routeKeyType("route")
+	bgColorKey = bgColorKeyType("bgcolor")
 )
 
 // Context helper functions
@@ -41,11 +43,29 @@ func GetLogger(ctx context.Context) *logger {
 	return val.(*logger)
 }
 
+// WithBackgroundColor adds a background color to the context
+func WithBackgroundColor(ctx context.Context, bgColor BackgroundColor) context.Context {
+	return context.WithValue(ctx, bgColorKey, bgColor)
+}
+
+// GetBackgroundColor retrieves the background color from context
+func GetBackgroundColor(ctx context.Context) BackgroundColor {
+	val := ctx.Value(bgColorKey)
+	if val == nil {
+		return BgNone
+	}
+	if bgColor, ok := val.(BackgroundColor); ok {
+		return bgColor
+	}
+	return BgNone
+}
+
 type logger struct {
-	slogger *slog.Logger
-	request *http.Request
-	outFile *os.File
-	ctx     context.Context
+	slogger         *slog.Logger
+	request         *http.Request
+	outFile         *os.File
+	ctx             context.Context
+	backgroundColor BackgroundColor
 }
 
 // NewRequestScopedLogger creates a new request-scoped logger instance
@@ -82,10 +102,11 @@ func NewRequestScopedLogger(r *http.Request, outFilePath string) *logger {
 	ctx := withSessionInfo(r.Context(), token, userid, route)
 
 	return &logger{
-		slogger: slogger,
-		request: r,
-		outFile: outFile,
-		ctx:     ctx,
+		slogger:         slogger,
+		request:         r,
+		outFile:         outFile,
+		ctx:             ctx,
+		backgroundColor: BgNone, // Default to transparent background
 	}
 }
 
@@ -157,4 +178,60 @@ func (l *logger) log(ctx context.Context, level slog.Level, msg string) {
 
 	// Call the handler directly
 	_ = l.slogger.Handler().Handle(ctx, r)
+}
+
+// InfoWithBgColor logs an informational message with a specific background color
+func (l *logger) InfoWithBgColor(bgColor BackgroundColor, args ...any) {
+	msg := fmt.Sprint(args...)
+	ctx := WithBackgroundColor(l.ctx, bgColor)
+	l.log(ctx, slog.LevelInfo, msg)
+}
+
+// InfofWithBgColor logs a formatted informational message with a specific background color
+func (l *logger) InfofWithBgColor(bgColor BackgroundColor, template string, args ...any) {
+	msg := fmt.Sprintf(template, args...)
+	ctx := WithBackgroundColor(l.ctx, bgColor)
+	l.log(ctx, slog.LevelInfo, msg)
+}
+
+// ErrorWithBgColor logs an error message with a specific background color
+func (l *logger) ErrorWithBgColor(bgColor BackgroundColor, args ...any) {
+	msg := fmt.Sprint(args...)
+	ctx := WithBackgroundColor(l.ctx, bgColor)
+	l.log(ctx, slog.LevelError, msg)
+}
+
+// ErrorfWithBgColor logs a formatted error message with a specific background color
+func (l *logger) ErrorfWithBgColor(bgColor BackgroundColor, template string, args ...any) {
+	msg := fmt.Sprintf(template, args...)
+	ctx := WithBackgroundColor(l.ctx, bgColor)
+	l.log(ctx, slog.LevelError, msg)
+}
+
+// DebugWithBgColor logs a debug message with a specific background color
+func (l *logger) DebugWithBgColor(bgColor BackgroundColor, args ...any) {
+	msg := fmt.Sprint(args...)
+	ctx := WithBackgroundColor(l.ctx, bgColor)
+	l.log(ctx, slog.LevelDebug, msg)
+}
+
+// DebugfWithBgColor logs a formatted debug message with a specific background color
+func (l *logger) DebugfWithBgColor(bgColor BackgroundColor, template string, args ...any) {
+	msg := fmt.Sprintf(template, args...)
+	ctx := WithBackgroundColor(l.ctx, bgColor)
+	l.log(ctx, slog.LevelDebug, msg)
+}
+
+// WarnWithBgColor logs a warning message with a specific background color
+func (l *logger) WarnWithBgColor(bgColor BackgroundColor, args ...any) {
+	msg := fmt.Sprint(args...)
+	ctx := WithBackgroundColor(l.ctx, bgColor)
+	l.log(ctx, slog.LevelWarn, msg)
+}
+
+// WarnfWithBgColor logs a formatted warning message with a specific background color
+func (l *logger) WarnfWithBgColor(bgColor BackgroundColor, template string, args ...any) {
+	msg := fmt.Sprintf(template, args...)
+	ctx := WithBackgroundColor(l.ctx, bgColor)
+	l.log(ctx, slog.LevelWarn, msg)
 }

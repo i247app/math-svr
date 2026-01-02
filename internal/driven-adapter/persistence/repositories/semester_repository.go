@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/semester"
@@ -14,6 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/metadata"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
+	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type semesterRepository struct {
@@ -189,8 +189,8 @@ func (r *semesterRepository) FindByName(ctx context.Context, name string) (*doma
 // Create inserts a new semester into the database.
 func (r *semesterRepository) Create(ctx context.Context, tx *sql.Tx, semester *domain.Semester) (int64, error) {
 	query := `
-		INSERT INTO ma_semesters (id, name, description, image_key, status, display_order)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO ma_semesters (id, name, description, image_key, status, display_order, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		semester.ID(),
@@ -199,6 +199,8 @@ func (r *semesterRepository) Create(ctx context.Context, tx *sql.Tx, semester *d
 		semester.ImageKey(),
 		enum.StatusActive,
 		semester.DisplayOrder(),
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create semester: %v", err)
@@ -242,7 +244,7 @@ func (r *semesterRepository) Update(ctx context.Context, semester *domain.Semest
 	}
 
 	updates = append(updates, "modify_dt = ?")
-	args = append(args, time.Now().UTC())
+	args = append(args, mathtime.Now())
 
 	if len(updates) == 0 {
 		return 0, fmt.Errorf("no fields to update")
@@ -267,7 +269,7 @@ func (r *semesterRepository) Delete(ctx context.Context, id string) error {
 			SET deleted_dt = ?,
 				modify_dt = ?
 			WHERE id = ? AND deleted_dt IS NULL`
-	_, err := r.db.Exec(ctx, nil, query, time.Now().UTC(), time.Now().UTC(), id)
+	_, err := r.db.Exec(ctx, nil, query, mathtime.Now(), mathtime.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to delete semester: %v", err)
 	}

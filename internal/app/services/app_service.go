@@ -17,6 +17,7 @@ import (
 	"math-ai.com/math-ai/internal/driven-adapter/external/provider/ip"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/repositories"
 	"math-ai.com/math-ai/internal/session"
+	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/pkg/aws/s3"
 )
 
@@ -53,7 +54,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	env := res.Env
 
 	// repository setup
-	log.Println("Initializing repository")
+	logger.Info("Initializing repository")
 	authRepo := repositories.NewAuthRepository(res.Db)
 	userRepo := repositories.NewUserRepository(res.Db)
 	deviceRepo := repositories.NewDeviceRepository(res.Db)

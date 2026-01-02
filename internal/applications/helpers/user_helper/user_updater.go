@@ -34,7 +34,6 @@ func (u *UserUpdater) UpdateWithTransaction(
 	profileDomain *profileDomain.Profile,
 ) error {
 	handler := func(tx *sql.Tx) error {
-
 		// Update user
 		_, updateErr := u.userRepo.Update(ctx, userDomain)
 		if updateErr != nil {

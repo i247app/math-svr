@@ -25,8 +25,9 @@ func WriteJson(w http.ResponseWriter, ctx context.Context, data any, err error, 
 		err = json.Unmarshal(dataBytes, &tmp)
 		if err == nil || tmp != nil {
 			payload = tmp
+		} else {
+			payload["result"] = data
 		}
-		// payload["result"] = data
 	}
 
 	if err != nil {

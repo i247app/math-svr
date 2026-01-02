@@ -5,12 +5,12 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/user_quiz_practices"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/db"
+	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type userQuizPracticesRepository struct {
@@ -84,8 +84,8 @@ func (r *userQuizPracticesRepository) FindByUID(ctx context.Context, uid string)
 // Create inserts a new user latest quiz into the database.
 func (r *userQuizPracticesRepository) Create(ctx context.Context, tx *sql.Tx, quiz *domain.UserQuizPractices) (int64, error) {
 	query := `
-		INSERT INTO ma_user_quiz_practices (id, uid, questions, answers, ai_review, status)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO ma_user_quiz_practices (id, uid, questions, answers, ai_review, status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		quiz.ID(),
@@ -94,6 +94,8 @@ func (r *userQuizPracticesRepository) Create(ctx context.Context, tx *sql.Tx, qu
 		quiz.Answers(),
 		quiz.AIReview(),
 		quiz.Status(),
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create user latest quiz: %v", err)
@@ -125,7 +127,7 @@ func (r *userQuizPracticesRepository) Update(ctx context.Context, quiz *domain.U
 	}
 
 	updates = append(updates, "modify_dt = ?")
-	args = append(args, time.Now().UTC())
+	args = append(args, mathtime.Now())
 
 	if len(updates) == 0 {
 		return 0, fmt.Errorf("no fields to update for user latest quiz")
@@ -154,7 +156,7 @@ func (r *userQuizPracticesRepository) Delete(ctx context.Context, id string) (in
 		WHERE id = ? AND deleted_dt IS NULL
 	`
 
-	result, err := r.db.Exec(ctx, nil, query, time.Now().UTC(), time.Now().UTC(), id)
+	result, err := r.db.Exec(ctx, nil, query, mathtime.Now(), mathtime.Now(), id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete user latest quiz: %v", err)
 	}

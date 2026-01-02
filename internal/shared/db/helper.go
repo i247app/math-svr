@@ -10,7 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/logger"
 )
 
-func (*Database) logInputSQL(ctx context.Context, query string, args ...any) {
+func (*Database) logInputSQL(ctx context.Context, query string, bgColor logger.BackgroundColor, args ...any) {
 	logger := logger.GetLogger(ctx)
 	var tag string
 	pc, file, line, ok := runtime.Caller(2) // Get information about the caller 3 frames up
@@ -35,7 +35,7 @@ func (*Database) logInputSQL(ctx context.Context, query string, args ...any) {
 	logger.Infof("# SQL START: %s\n", tag)
 
 	msg := fmt.Sprintf("%s, args: %v", query, args)
-	logger.Infof("%s\n", msg)
+	logger.InfofWithBgColor(bgColor, "%s\n", msg)
 
 	logger.Info("# SQL END")
 }

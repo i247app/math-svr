@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/profile"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
+	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type profileRepository struct {
@@ -89,8 +89,8 @@ func (r *profileRepository) FindByUID(ctx context.Context, uid string) (*domain.
 // Create inserts a new profile into the database.
 func (r *profileRepository) Create(ctx context.Context, tx *sql.Tx, profile *domain.Profile) (int64, error) {
 	query := `
-		INSERT INTO ma_profiles (id, uid, grade_id, semester_id ,status)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO ma_profiles (id, uid, grade_id, semester_id ,status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		profile.ID(),
@@ -98,6 +98,8 @@ func (r *profileRepository) Create(ctx context.Context, tx *sql.Tx, profile *dom
 		profile.GradeID(),
 		profile.SemesterID(),
 		enum.StatusActive,
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create profile: %v", err)
@@ -130,7 +132,7 @@ func (r *profileRepository) Update(ctx context.Context, profile *domain.Profile)
 	}
 
 	updates = append(updates, "modify_dt = ?")
-	args = append(args, time.Now().UTC())
+	args = append(args, mathtime.Now())
 
 	if len(updates) == 0 {
 		return 0, fmt.Errorf("no fields to update")
@@ -148,14 +150,15 @@ func (r *profileRepository) Update(ctx context.Context, profile *domain.Profile)
 	return result.RowsAffected()
 }
 
+// DeleteByUID performs a soft delete of a profile by user ID.
 func (r *profileRepository) DeleteByUID(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
-		UPDATE profiles
+		UPDATE ma_profiles
 		SET deleted_dt = ?,
 			modify_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
 	`
-	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete profile: %v", err)
 	}
@@ -163,9 +166,10 @@ func (r *profileRepository) DeleteByUID(ctx context.Context, tx *sql.Tx, uid str
 	return nil
 }
 
+// ForceDeleteByUID permanently deletes a profile by user ID.
 func (r *profileRepository) ForceDeleteByUID(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
-		DELETE FROM profiles
+		DELETE FROM ma_profiles
 		WHERE uid = ?
 	`
 	_, err := r.db.Exec(ctx, tx, query, uid)

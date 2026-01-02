@@ -50,53 +50,52 @@ func (m *requestLoggerMiddleware) Handle(next http.Handler) http.Handler {
 			reqID int64 = m.nextRequestID()
 		)
 
-		logger := logger.GetLogger(r.Context())
+		log := logger.GetLogger(r.Context())
 
 		rawBody, isJSON, err := m.readRequestBody(r)
 		if err != nil {
-			logger.Errorf("logRequestMiddleware: read request body error: %v", err)
+			log.Errorf("logRequestMiddleware: read request body error: %v", err)
 			return
 		}
 
-		logger.Infof("IN <%v> %v %v", reqID, r.Method, r.URL.Path)
+		log.InfofWithBgColor(logger.BgYellow, "IN <%v> %v %v", reqID, r.Method, r.URL.Path)
 
 		if r.Method == http.MethodGet && strings.TrimSpace(r.URL.RawQuery) != "" {
-			logger.Infof("IN QUERY PARAMS %v", r.URL.RawQuery)
+			log.Infof("IN QUERY PARAMS %v", r.URL.RawQuery)
 		}
 
 		if isJSON {
 			truncatedBodyBytes := m.truncateSensitiveFields(rawBody.Bytes())
-			logger.Infof("IN REQUEST BODY %v", string(truncatedBodyBytes))
+			log.Infof("IN REQUEST BODY %v", string(truncatedBodyBytes))
 		} else {
 			mapBody := m.decodeBodyToMap(rawBody.Bytes())
 			if len(mapBody) > 0 {
-				logger.Infof("IN REQUEST BODY %v", mapBody)
+				log.Infof("IN REQUEST BODY %v", mapBody)
 			}
 		}
 
 		if m.logHeaders {
 			for name, values := range r.Header {
 				for _, value := range values {
-					logger.Infof("IN HEADER %v: %v", name, value)
+					log.Infof("IN HEADER %v: %v", name, value)
 				}
 			}
 		}
 
 		if metadata := m.requestMetadata(r); metadata != nil {
-			logger.Infof("IN __metadata %v", metadata)
+			log.Infof("IN __metadata %v", metadata)
 		}
 
 		wrapper := m.newResponseWrapper(w)
 		next.ServeHTTP(wrapper, r)
 
-		outMsg := m.outboundMessage(r, wrapper)
-		logger.Infof("%s", outMsg)
+		log.InfofWithBgColor(logger.BgYellow, "%s", wrapper.body.String())
 
 		if m.logHeaders {
 			if h := wrapper.Header().Get("X-Auth-Token"); h != "" {
-				logger.Infof("OUT HEADER %v: %v", "X-Auth-Token", h)
+				log.Infof("OUT HEADER %v: %v", "X-Auth-Token", h)
 			} else {
-				logger.Infof("OUT HEADER %v: %v", "X-Auth-Token", "<empty>")
+				log.Infof("OUT HEADER %v: %v", "X-Auth-Token", "<empty>")
 			}
 		}
 

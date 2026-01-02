@@ -14,17 +14,24 @@ import (
 
 // customHandler implements slog.Handler with our custom format
 type customHandler struct {
-	writer io.Writer
-	attrs  []slog.Attr
-	groups []string
+	writer          io.Writer
+	attrs           []slog.Attr
+	groups          []string
+	backgroundColor BackgroundColor
 }
 
 // newCustomHandler creates a new custom handler that writes to the given writer
 func newCustomHandler(w io.Writer) *customHandler {
+	return newCustomHandlerWithBgColor(w, BgNone)
+}
+
+// newCustomHandlerWithBgColor creates a new custom handler with a specific background color
+func newCustomHandlerWithBgColor(w io.Writer, bgColor BackgroundColor) *customHandler {
 	return &customHandler{
-		writer: w,
-		attrs:  make([]slog.Attr, 0),
-		groups: make([]string, 0),
+		writer:          w,
+		attrs:           make([]slog.Attr, 0),
+		groups:          make([]string, 0),
+		backgroundColor: bgColor,
 	}
 }
 
@@ -66,8 +73,8 @@ func (h *customHandler) Handle(ctx context.Context, r slog.Record) error {
 	// Format level
 	level := r.Level.String()
 
-	// Build the log message
-	logMsg := fmt.Sprintf("%s [%s] [%s] [%s] %s:%d %s: %s\n",
+	// Build the log message WITHOUT the trailing newline
+	logMsg := fmt.Sprintf("%s [%s] [%s] [%s] %s:%d %s: %s",
 		timestamp,
 		token,
 		userid,
@@ -78,6 +85,18 @@ func (h *customHandler) Handle(ctx context.Context, r slog.Record) error {
 		r.Message,
 	)
 
+	// Check for background color in context, fallback to handler's default
+	bgColor := GetBackgroundColor(ctx)
+	// if bgColor == BgNone {
+	// 	bgColor = h.backgroundColor
+	// }
+
+	// Apply background color to text only (not the newline)
+	logMsg = applyBackgroundColor(logMsg, bgColor)
+
+	// Add newline AFTER applying background color
+	logMsg += "\n"
+
 	// Write to output
 	_, err := h.writer.Write([]byte(logMsg))
 	return err
@@ -86,9 +105,10 @@ func (h *customHandler) Handle(ctx context.Context, r slog.Record) error {
 // WithAttrs returns a new handler with the given attributes added
 func (h *customHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	newHandler := &customHandler{
-		writer: h.writer,
-		attrs:  make([]slog.Attr, len(h.attrs)+len(attrs)),
-		groups: make([]string, len(h.groups)),
+		writer:          h.writer,
+		attrs:           make([]slog.Attr, len(h.attrs)+len(attrs)),
+		groups:          make([]string, len(h.groups)),
+		backgroundColor: h.backgroundColor,
 	}
 	copy(newHandler.attrs, h.attrs)
 	copy(newHandler.attrs[len(h.attrs):], attrs)
@@ -99,9 +119,10 @@ func (h *customHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 // WithGroup returns a new handler with the given group added
 func (h *customHandler) WithGroup(name string) slog.Handler {
 	newHandler := &customHandler{
-		writer: h.writer,
-		attrs:  make([]slog.Attr, len(h.attrs)),
-		groups: make([]string, len(h.groups)+1),
+		writer:          h.writer,
+		attrs:           make([]slog.Attr, len(h.attrs)),
+		groups:          make([]string, len(h.groups)+1),
+		backgroundColor: h.backgroundColor,
 	}
 	copy(newHandler.attrs, h.attrs)
 	copy(newHandler.groups, h.groups)

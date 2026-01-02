@@ -189,8 +189,8 @@ func (r *gradeRepository) FindByLabel(ctx context.Context, label string) (*domai
 // Create inserts a new grade into the database.
 func (r *gradeRepository) Create(ctx context.Context, tx *sql.Tx, grade *domain.Grade) (int64, error) {
 	query := `
-		INSERT INTO ma_grades (id, label, discription, image_key, status, display_order)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO ma_grades (id, label, discription, image_key, status, display_order, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		grade.ID(),
@@ -199,6 +199,8 @@ func (r *gradeRepository) Create(ctx context.Context, tx *sql.Tx, grade *domain.
 		grade.ImageKey(),
 		enum.StatusActive,
 		grade.DisplayOrder(),
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create grade: %v", err)

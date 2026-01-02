@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/user"
@@ -13,6 +12,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
+	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type userRepository struct {
@@ -227,8 +227,8 @@ func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain
 // Create inserts a new user into the database.
 func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) {
 	query := `
-		INSERT INTO ma_users (id, name, phone, email, avatar_key, dob, role_id, status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO ma_users (id, name, phone, email, avatar_key, dob, role_id, status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		user.ID(),
@@ -239,6 +239,8 @@ func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.Us
 		user.DOB(),
 		user.RoleID(),
 		enum.StatusActive,
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create user: %v", err)
@@ -291,7 +293,7 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 	}
 
 	updates = append(updates, "modify_dt = ?")
-	args = append(args, time.Now().UTC())
+	args = append(args, mathtime.Now())
 
 	if len(updates) == 0 {
 		return 0, fmt.Errorf("no fields to update")
@@ -317,7 +319,7 @@ func (r *userRepository) Delete(ctx context.Context, tx *sql.Tx, uid string) err
 			modify_dt = ?
 		WHERE id = ?
 	`
-	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %v", err)
 	}
@@ -340,14 +342,16 @@ func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid string
 // StoreUserAlias stores a user alias in the database.
 func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error {
 	query := `
-		INSERT INTO ma_aliases (id, uid, aka, status)
-		VALUES (?, ?, ?, ?)
+		INSERT INTO ma_aliases (id, uid, aka, status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	_, err := r.db.Exec(ctx, tx, query,
 		alias.ID(),
 		alias.UID(),
 		alias.Aka(),
 		enum.StatusActive,
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to store user alias: %v", err)
@@ -363,7 +367,7 @@ func (r *userRepository) DeleteUserAlias(ctx context.Context, tx *sql.Tx, uid st
 			modify_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
 	`
-	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user aliases: %v", err)
 	}

@@ -217,8 +217,8 @@ func (r *roleRepository) GetHierarchy(ctx context.Context, roleID string) ([]*do
 // Create inserts a new role
 func (r *roleRepository) Create(ctx context.Context, tx *sql.Tx, role *domain.Role) (int64, error) {
 	query := `
-		INSERT INTO roles (id, name, code, description, parent_role_id, is_system_role, status, display_order)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO roles (id, name, code, description, parent_role_id, is_system_role, status, display_order, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, tx, query,
 		role.ID(),
@@ -229,6 +229,8 @@ func (r *roleRepository) Create(ctx context.Context, tx *sql.Tx, role *domain.Ro
 		role.IsSystemRole(),
 		enum.StatusActive,
 		role.DisplayOrder(),
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to create role: %v", err)

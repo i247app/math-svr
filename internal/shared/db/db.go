@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -51,7 +52,7 @@ func NewDatabase(config *config.DBConfig) (*Database, error) {
 		return nil, fmt.Errorf("failed to ping the database: %v", err)
 	}
 
-	//logger.Info("Connected to database successfully")
+	//log.Info("Connected to database successfully")
 	return &Database{db: db}, nil
 }
 
@@ -61,39 +62,39 @@ func (d *Database) GetDB() *sql.DB {
 
 func (d *Database) WithTransaction(function HanderlerWithTx) error {
 
-	//logger.Info("Starting transaction")
+	//log.Info("Starting transaction")
 	tx, err := d.db.Begin()
 	if err != nil {
-		////logger.Errorf("Failed to begin transaction: %v", err)
+		////log.Errorf("Failed to begin transaction: %v", err)
 		return fmt.Errorf("failed to begin transaction: %v", err)
 	}
 
 	if err := function(tx); err != nil {
-		//logger.Info("Rolling back transaction due to error: %v", err)
+		//log.Info("Rolling back transaction due to error: %v", err)
 		if rbErr := tx.Rollback(); rbErr != nil {
-			////logger.Errorf("Failed to rollback transaction: %v", rbErr)
+			////log.Errorf("Failed to rollback transaction: %v", rbErr)
 			return fmt.Errorf("failed to rollback transaction: %v (original error: %v)", rbErr, err)
 		}
-		//logger.Info("Transaction rolled back successfully")
+		//log.Info("Transaction rolled back successfully")
 		return err
 	}
 
-	//logger.Info("Committing transaction")
+	//log.Info("Committing transaction")
 	if err := tx.Commit(); err != nil {
-		////logger.Errorf("Failed to commit transaction: %v", err)
+		////log.Errorf("Failed to commit transaction: %v", err)
 		return fmt.Errorf("failed to commit transaction: %v", err)
 	}
-	//logger.Info("Transaction committed successfully")
+	//log.Info("Transaction committed successfully")
 	return nil
 }
 
 func (d *Database) Query(ctx context.Context, tx *sql.Tx, query string, args ...any) (*sql.Rows, error) {
-	logger := logger.GetLogger(ctx)
+	log := logger.GetLogger(ctx)
 
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
-	d.logInputSQL(ctx, query, args...)
+	d.logInputSQL(ctx, query, logger.BgBrightBlue, args...)
 	var rows *sql.Rows
 	var err error
 	if tx != nil {
@@ -102,9 +103,9 @@ func (d *Database) Query(ctx context.Context, tx *sql.Tx, query string, args ...
 		rows, err = d.db.QueryContext(ctx, query, args...)
 	}
 	if err != nil {
-		logger.Error(err)
+		log.Error(err)
 	}
-	logger.Info(rows)
+	log.Info(rows)
 	return rows, err
 }
 
@@ -112,7 +113,7 @@ func (d *Database) QueryRow(ctx context.Context, tx *sql.Tx, query string, args 
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
-	d.logInputSQL(ctx, query, args...)
+	d.logInputSQL(ctx, query, logger.BgBlue, args...)
 	if tx != nil {
 		return tx.QueryRowContext(ctx, query, args...)
 	}
@@ -120,12 +121,27 @@ func (d *Database) QueryRow(ctx context.Context, tx *sql.Tx, query string, args 
 }
 
 func (d *Database) Exec(ctx context.Context, tx *sql.Tx, query string, args ...any) (sql.Result, error) {
-	logger := logger.GetLogger(ctx)
+	var color logger.BackgroundColor
 
+	log := logger.GetLogger(ctx)
 	_, cancel := context.WithTimeout(ctx, DatabaseTimeout)
 	defer cancel()
 
-	d.logInputSQL(ctx, query, args...)
+	normalized := strings.TrimSpace(strings.ToUpper(query))
+	switch {
+	case strings.HasPrefix(normalized, "SELECT"):
+		color = logger.BgBlue
+	case strings.HasPrefix(normalized, "INSERT"):
+		color = logger.BgMagenta
+	case strings.HasPrefix(normalized, "UPDATE"):
+		color = logger.BgYellow
+	case strings.HasPrefix(normalized, "DELETE"):
+		color = logger.BgRed
+	default:
+		color = logger.BgBlue
+	}
+
+	d.logInputSQL(ctx, query, color, args...)
 	var result sql.Result
 	var err error
 	if tx != nil {
@@ -134,7 +150,7 @@ func (d *Database) Exec(ctx context.Context, tx *sql.Tx, query string, args ...a
 		result, err = d.db.ExecContext(ctx, query, args...)
 	}
 	if err != nil {
-		logger.Error(err)
+		log.Error(err)
 	}
 	if result != nil {
 	}

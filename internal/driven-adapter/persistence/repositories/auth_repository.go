@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
-	"time"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/login"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
+	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type authRepository struct {
@@ -27,14 +27,16 @@ func NewAuthRepository(db db.IDatabase) di.IAuthRepository {
 // StoreLogin stores a user login record in the database.
 func (r *authRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *domain.Login) error {
 	query := `
-		INSERT INTO ma_logins (id, uid, hash_pass, status)
-		VALUES (?, ?, ?, ?)
+		INSERT INTO ma_logins (id, uid, hash_pass, status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?)
 	`
 	_, err := r.db.Exec(ctx, tx, query,
 		login.ID(),
 		login.UID(),
 		login.HassPass(),
 		enum.StatusActive,
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to store user login: %v", err)
@@ -50,7 +52,7 @@ func (r *authRepository) DeleteLogin(ctx context.Context, tx *sql.Tx, uid string
 			modify_dt = ?
 		WHERE uid = ? AND deleted_dt IS NULL
 	`
-	_, err := r.db.Exec(ctx, tx, query, time.Now().UTC(), time.Now().UTC(), uid)
+	_, err := r.db.Exec(ctx, tx, query, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user logins: %v", err)
 	}
