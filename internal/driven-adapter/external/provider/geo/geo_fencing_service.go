@@ -38,11 +38,9 @@ func NewGeoFencingService(apiKey string, opts ...http_client.Option) *GeoFencing
 
 // ReverseGeocode converts latitude/longitude to address information
 func (s *GeoFencingService) ReverseGeocode(ctx context.Context, req *ReverseGeocodeRequest) (*LocationInfo, error) {
-	if req.Lat < -90 || req.Lat > 90 {
-		return nil, fmt.Errorf("invalid latitude: %f (must be between -90 and 90)", req.Lat)
-	}
-	if req.Lng < -180 || req.Lng > 180 {
-		return nil, fmt.Errorf("invalid longitude: %f (must be between -180 and 180)", req.Lng)
+	err := s.ValidateLocation(req.Lat, req.Lng)
+	if err != nil {
+		return nil, err
 	}
 
 	// Build request options

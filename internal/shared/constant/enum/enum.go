@@ -20,5 +20,8 @@ const (
 	TypeQuizPurpusePractice ETypeQuizPurpuse = "PRACTICE"
 	TypeQuizPurpuseExam     ETypeQuizPurpuse = "EXAM"
 
+	GeoTypeLatLng EGeoCategory = "LAT_LNG"
+	GeoTypeIP     EGeoCategory = "IP_ADDRESS"
+
 	DefaultLang = "en"
 )

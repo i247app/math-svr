@@ -47,7 +47,7 @@ func (c *MiscController) HandleSessionDump(w http.ResponseWriter, r *http.Reques
 }
 
 func (c *MiscController) HandleDetermineLocation(w http.ResponseWriter, r *http.Request) {
-	var req dto.LocationRequest
+	var req dto.LocationDetectRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, r.Context(), nil, fmt.Errorf("invalid parameters"), status.FAIL)
@@ -60,7 +60,11 @@ func (c *MiscController) HandleDetermineLocation(w http.ResponseWriter, r *http.
 		return
 	}
 
-	response.WriteJson(w, r.Context(), locationRes, nil, statusCode)
+	res := dto.LocationDetectResponse{
+		Location: locationRes,
+	}
+
+	response.WriteJson(w, r.Context(), res, nil, statusCode)
 }
 
 // HandleTestPanic is a test endpoint to demonstrate panic recovery

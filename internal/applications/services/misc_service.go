@@ -6,6 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/driven-adapter/external/provider/geo"
 	"math-ai.com/math-ai/internal/driven-adapter/external/provider/ip"
+	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/metadata"
 )
@@ -26,13 +27,13 @@ func (s *MiscService) Ping() (status.Code, error) {
 	return status.SUCCESS, nil
 }
 
-func (s *MiscService) DetermineLocation(ctx context.Context, req *dto.LocationRequest) (status.Code, *dto.LocationResponse, error) {
+func (s *MiscService) DetermineLocation(ctx context.Context, req *dto.LocationDetectRequest) (status.Code, *dto.LocationResponse, error) {
 	language := metadata.GetLanguage(ctx)
 
 	resp := &dto.LocationResponse{}
 
 	switch req.TypeDetect {
-	case "lat_lng":
+	case enum.GeoTypeLatLng:
 		reqGeo := &geo.ReverseGeocodeRequest{
 			Language: language,
 			Lat:      req.LatLng.Lat,
@@ -49,7 +50,7 @@ func (s *MiscService) DetermineLocation(ctx context.Context, req *dto.LocationRe
 		resp.StateCode = result.StateCode
 		resp.Country = result.Country
 		resp.CountryCode = result.CountryCode
-	case "ip_address":
+	case enum.GeoTypeIP:
 		reqIP := &ip.IPLookupRequest{
 			IP:       req.IpAddress,
 			Language: language,

@@ -9,5 +9,5 @@ import (
 
 type IMiscService interface {
 	Ping() (status.Code, error)
-	DetermineLocation(ctx context.Context, req *dto.LocationRequest) (status.Code, *dto.LocationResponse, error)
+	DetermineLocation(ctx context.Context, req *dto.LocationDetectRequest) (status.Code, *dto.LocationResponse, error)
 }
