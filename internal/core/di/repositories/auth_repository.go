@@ -10,11 +10,13 @@ import (
 type IAuthRepository interface {
 	// logins
 	StoreLogin(ctx context.Context, tx *sql.Tx, login *domain.Login) error
-	DeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error
-	ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error
+	DeleteLoginByUID(ctx context.Context, tx *sql.Tx, uid string) error
+	ForceDeleteLoginByUID(ctx context.Context, tx *sql.Tx, uid string) error
 
 	// login logs
 	GetLoginLogByUIDAndDeviceUUID(ctx context.Context, uid string, deviceUUID string) (*domain.LoginLog, error)
 	StoreLoginLog(ctx context.Context, loginLog *domain.LoginLog) error
 	UpdateLoginLog(ctx context.Context, loginLog *domain.LoginLog) error
+	DeleteLoginLogByUID(ctx context.Context, uid string) error
+	ForceDeleteLoginLogByUID(ctx context.Context, uid string) error
 }

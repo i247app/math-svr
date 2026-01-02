@@ -164,6 +164,23 @@ func (r *userQuizPracticesRepository) Delete(ctx context.Context, id string) (in
 	return result.RowsAffected()
 }
 
+// DeleteByUID performs a soft delete of user quiz practices by UID.
+func (r *userQuizPracticesRepository) DeleteByUID(ctx context.Context, tx *sql.Tx, uid string) error {
+	query := `
+		UPDATE ma_user_quiz_practices
+		SET deleted_dt = ?,
+			modify_dt = ?
+		WHERE uid = ? AND deleted_dt IS NULL
+	`
+
+	_, err := r.db.Exec(ctx, tx, query, mathtime.Now(), mathtime.Now(), uid)
+	if err != nil {
+		return fmt.Errorf("failed to delete user quiz practices by UID: %v", err)
+	}
+
+	return nil
+}
+
 // ForceDelete permanently removes a user latest quiz from the database.
 func (r *userQuizPracticesRepository) ForceDelete(ctx context.Context, id string) (int64, error) {
 	query := `

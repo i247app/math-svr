@@ -13,6 +13,7 @@ type IUserQuizPracticesRepository interface {
 	Create(ctx context.Context, tx *sql.Tx, quiz *domain.UserQuizPractices) (int64, error)
 	Update(ctx context.Context, quiz *domain.UserQuizPractices) (int64, error)
 	Delete(ctx context.Context, id string) (int64, error)
+	DeleteByUID(ctx context.Context, tx *sql.Tx, uid string) error
 	ForceDelete(ctx context.Context, id string) (int64, error)
 	ForceDeleteByUID(ctx context.Context, tx *sql.Tx, uid string) error
 }

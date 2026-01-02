@@ -45,7 +45,7 @@ func (r *authRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *doma
 }
 
 // DeleteLogin deletes user logins by user ID.
-func (r *authRepository) DeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
+func (r *authRepository) DeleteLoginByUID(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		UPDATE ma_logins
 		SET deleted_dt = ?,
@@ -60,7 +60,7 @@ func (r *authRepository) DeleteLogin(ctx context.Context, tx *sql.Tx, uid string
 }
 
 // ForceDeleteLogin permanently deletes user logins by user ID.
-func (r *authRepository) ForceDeleteLogin(ctx context.Context, tx *sql.Tx, uid string) error {
+func (r *authRepository) ForceDeleteLoginByUID(ctx context.Context, tx *sql.Tx, uid string) error {
 	query := `
 		DELETE FROM ma_logins
 		WHERE uid = ?
@@ -98,8 +98,8 @@ func (r *authRepository) GetLoginLogByUIDAndDeviceUUID(ctx context.Context, uid 
 // StoreLoginLog stores a user login log record in the database.
 func (r *authRepository) StoreLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
 	query := `
-		INSERT INTO ma_login_logs (id, uid, ip_address, device_uuid, token, status)
-		VALUES (?, ?, ?, ?, ?, ?)
+		INSERT INTO ma_login_logs (id, uid, ip_address, device_uuid, token, status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	_, err := r.db.Exec(ctx, nil, query,
@@ -109,6 +109,8 @@ func (r *authRepository) StoreLoginLog(ctx context.Context, loginLog *domain.Log
 		loginLog.DeviceUUID(),
 		loginLog.Token(),
 		loginLog.Status(),
+		mathtime.Now(),
+		mathtime.Now(),
 	)
 
 	return err
@@ -140,4 +142,32 @@ func (r *authRepository) UpdateLoginLog(ctx context.Context, loginLog *domain.Lo
 
 	_, err := r.db.Exec(ctx, nil, query, args...)
 	return err
+}
+
+// DeleteLoginLogByUID marks login logs as deleted for a given user ID.
+func (r *authRepository) DeleteLoginLogByUID(ctx context.Context, uid string) error {
+	query := `
+		UPDATE ma_login_logs
+		SET deleted_dt = ?,
+			modify_dt = ?
+		WHERE uid = ? AND deleted_dt IS NULL
+	`
+	_, err := r.db.Exec(ctx, nil, query, mathtime.Now(), mathtime.Now(), uid)
+	if err != nil {
+		return fmt.Errorf("failed to delete login logs: %v", err)
+	}
+	return nil
+}
+
+// ForceDeleteLoginLogByUID permanently deletes login logs for a given user ID.
+func (r *authRepository) ForceDeleteLoginLogByUID(ctx context.Context, uid string) error {
+	query := `
+		DELETE FROM ma_login_logs
+		WHERE uid = ?
+	`
+	_, err := r.db.Exec(ctx, nil, query, uid)
+	if err != nil {
+		return fmt.Errorf("failed to force delete login logs: %v", err)
+	}
+	return nil
 }

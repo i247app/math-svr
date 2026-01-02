@@ -121,7 +121,6 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (status.
 }
 
 func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest) (status.Code, *dto.UserResponse, error) {
-	// Validate request
 	if statusCode, err := s.validator.ValidateCreateUserRequest(req); err != nil {
 		return statusCode, nil, err
 	}
@@ -171,7 +170,6 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 }
 
 func (s *UserService) UpdateUser(ctx context.Context, req *dto.UpdateUserRequest) (status.Code, *dto.UserResponse, error) {
-	// Validate request
 	if statusCode, err := s.validator.ValidateUpdateUserRequest(req); err != nil {
 		return statusCode, nil, err
 	}

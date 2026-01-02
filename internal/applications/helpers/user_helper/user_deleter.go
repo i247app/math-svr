@@ -47,15 +47,27 @@ func (u *UserDeleter) DeleteWithTransaction(ctx context.Context, uid string) err
 		}
 
 		// Delete user logins
-		err = u.authRepo.DeleteLogin(ctx, tx, uid)
+		err = u.authRepo.DeleteLoginByUID(ctx, tx, uid)
 		if err != nil {
 			return fmt.Errorf("failed to delete user logins in transaction: %v", err)
+		}
+
+		// Delete user login logs
+		err = u.authRepo.DeleteLoginLogByUID(ctx, uid)
+		if err != nil {
+			return fmt.Errorf("failed to delete user login logs in transaction: %v", err)
 		}
 
 		// Delete user profile
 		err = u.profileRepo.DeleteByUID(ctx, tx, uid)
 		if err != nil {
 			return fmt.Errorf("failed to delete user profile in transaction: %v", err)
+		}
+
+		// Delete user quiz practices
+		err = u.userQuizPracticeRepo.DeleteByUID(ctx, tx, uid)
+		if err != nil {
+			return fmt.Errorf("failed to delete user quiz practices in transaction: %v", err)
 		}
 
 		return nil
@@ -80,9 +92,15 @@ func (u *UserDeleter) ForceDeleteWithTransaction(ctx context.Context, uid string
 		}
 
 		// Force delete user logins
-		err = u.authRepo.ForceDeleteLogin(ctx, tx, uid)
+		err = u.authRepo.ForceDeleteLoginByUID(ctx, tx, uid)
 		if err != nil {
 			return fmt.Errorf("failed to force delete user logins in transaction: %v", err)
+		}
+
+		// Force delete user login logs
+		err = u.authRepo.ForceDeleteLoginLogByUID(ctx, uid)
+		if err != nil {
+			return fmt.Errorf("failed to force delete user login logs in transaction: %v", err)
 		}
 
 		// Force delete user profile
