@@ -8,23 +8,25 @@ import (
 )
 
 type Profile struct {
-	id         string
-	uid        string
-	name       string
-	email      string
-	phone      string
-	gradeID    string
-	grade      string
-	semesterID string
-	semester   string
-	avatarKey  *string
-	dob        *time.MathTime
-	status     string
-	createID   *int64
-	createDT   time.MathTime
-	modifyID   *int64
-	modifyDT   time.MathTime
-	deletedDT  *time.MathTime
+	id            string
+	uid           string
+	name          string
+	email         string
+	phone         string
+	gradeID       string
+	grade         string
+	semesterID    string
+	semester      string
+	avatarKey     *string
+	dob           *time.MathTime
+	note          *string
+	profileStatus string
+	status        string
+	createID      *int64
+	createDT      time.MathTime
+	modifyID      *int64
+	modifyDT      time.MathTime
+	deletedDT     *time.MathTime
 }
 
 func NewProfileDomain() *Profile {
@@ -123,6 +125,25 @@ func (p *Profile) SetGrade(grade string) {
 	p.grade = grade
 }
 
+func (p *Profile) Note() *string {
+	return p.note
+}
+
+func (p *Profile) SetNote(note *string) {
+	p.note = note
+}
+
+func (p *Profile) ProfileStatus() string {
+	return p.profileStatus
+}
+
+func (p *Profile) SetProfileStatus(profileStatus string) {
+	if profileStatus == "" {
+		profileStatus = string(enum.StatusActive)
+	}
+	p.profileStatus = profileStatus
+}
+
 func (p *Profile) Status() string {
 	return p.status
 }
@@ -176,20 +197,22 @@ func (p *Profile) SetDeletedAt(deletedDT *time.MathTime) {
 
 func BuildProfileDomainFromModel(model *models.ProfileModel) *Profile {
 	return &Profile{
-		id:        model.ID,
-		uid:       model.UID,
-		name:      model.Name,
-		email:     model.Email,
-		phone:     model.Phone,
-		grade:     model.Grade,
-		semester:  model.Semester,
-		dob:       model.Dob,
-		avatarKey: model.AvatarKey,
-		status:    model.Status,
-		createID:  model.CreateID,
-		createDT:  model.CreateDT,
-		modifyID:  model.ModifyID,
-		modifyDT:  model.ModifyDT,
-		deletedDT: model.DeletedDT,
+		id:            model.ID,
+		uid:           model.UID,
+		name:          model.Name,
+		email:         model.Email,
+		phone:         model.Phone,
+		grade:         model.Grade,
+		semester:      model.Semester,
+		dob:           model.Dob,
+		avatarKey:     model.AvatarKey,
+		note:          model.Note,
+		profileStatus: model.ProfileStatus,
+		status:        model.Status,
+		createID:      model.CreateID,
+		createDT:      model.CreateDT,
+		modifyID:      model.ModifyID,
+		modifyDT:      model.ModifyDT,
+		deletedDT:     model.DeletedDT,
 	}
 }

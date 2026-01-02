@@ -8,19 +8,21 @@ import (
 )
 
 type Permission struct {
-	id           string
-	name         string
-	description  *string
-	httpMethod   string
-	endpointPath string
-	resource     *string
-	action       *string
-	status       string
-	createID     *string
-	createDT     time.MathTime
-	modifyID     *string
-	modifyDT     time.MathTime
-	deletedDT    *time.MathTime
+	id               string
+	name             string
+	description      *string
+	httpMethod       string
+	endpointPath     string
+	resource         *string
+	action           *string
+	note             *string
+	permissionStatus string
+	status           string
+	createID         *string
+	createDT         time.MathTime
+	modifyID         *string
+	modifyDT         time.MathTime
+	deletedDT        *time.MathTime
 }
 
 func NewPermissionDomain() *Permission {
@@ -87,6 +89,25 @@ func (p *Permission) SetAction(action *string) {
 	p.action = action
 }
 
+func (p *Permission) Note() *string {
+	return p.note
+}
+
+func (p *Permission) SetNote(note *string) {
+	p.note = note
+}
+
+func (p *Permission) PermissionStatus() string {
+	return p.permissionStatus
+}
+
+func (p *Permission) SetPermissionStatus(permissionStatus string) {
+	if permissionStatus == "" {
+		permissionStatus = string(enum.StatusActive)
+	}
+	p.permissionStatus = permissionStatus
+}
+
 func (p *Permission) Status() string {
 	return p.status
 }
@@ -141,18 +162,20 @@ func (p *Permission) SetDeletedAt(deletedDT *time.MathTime) {
 // BuildPermissionDomainFromModel builds a Permission from a model
 func BuildPermissionDomainFromModel(model *models.PermissionModel) *Permission {
 	return &Permission{
-		id:           model.ID,
-		name:         model.Name,
-		description:  model.Description,
-		httpMethod:   model.HTTPMethod,
-		endpointPath: model.EndpointPath,
-		resource:     model.Resource,
-		action:       model.Action,
-		status:       model.Status,
-		createID:     model.CreateID,
-		createDT:     model.CreateDT,
-		modifyID:     model.ModifyID,
-		modifyDT:     model.ModifyDT,
-		deletedDT:    model.DeletedDT,
+		id:               model.ID,
+		name:             model.Name,
+		description:      model.Description,
+		httpMethod:       model.HTTPMethod,
+		endpointPath:     model.EndpointPath,
+		resource:         model.Resource,
+		action:           model.Action,
+		note:             model.Note,
+		permissionStatus: model.PermissionStatus,
+		status:           model.Status,
+		createID:         model.CreateID,
+		createDT:         model.CreateDT,
+		modifyID:         model.ModifyID,
+		modifyDT:         model.ModifyDT,
+		deletedDT:        model.DeletedDT,
 	}
 }

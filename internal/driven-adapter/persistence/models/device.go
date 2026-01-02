@@ -1,6 +1,6 @@
 package models
 
-import "time"
+import "math-ai.com/math-ai/internal/shared/utils/time"
 
 type DeviceModel struct {
 	ID              string
@@ -13,8 +13,8 @@ type DeviceModel struct {
 	DeviceStatus    string
 	Status          string
 	CreateID        *int64
-	CreateDT        time.Time
+	CreateDT        time.MathTime
 	ModifyID        *int64
-	ModifyDT        time.Time
-	DeletedDT       *time.Time
+	ModifyDT        time.MathTime
+	DeletedDT       *time.MathTime
 }

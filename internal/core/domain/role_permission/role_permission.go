@@ -10,6 +10,9 @@ type RolePermission struct {
 	id           string
 	roleID       string
 	permissionID string
+	note         *string
+	rpStatus     string
+	status       string
 	createID     *string
 	createDT     time.MathTime
 	modifyID     *string
@@ -47,6 +50,30 @@ func (rp *RolePermission) PermissionID() string {
 
 func (rp *RolePermission) SetPermissionID(permissionID string) {
 	rp.permissionID = permissionID
+}
+
+func (rp *RolePermission) Note() *string {
+	return rp.note
+}
+
+func (rp *RolePermission) SetNote(note *string) {
+	rp.note = note
+}
+
+func (rp *RolePermission) RPStatus() string {
+	return rp.rpStatus
+}
+
+func (rp *RolePermission) SetRPStatus(rpStatus string) {
+	rp.rpStatus = rpStatus
+}
+
+func (rp *RolePermission) Status() string {
+	return rp.status
+}
+
+func (rp *RolePermission) SetStatus(status string) {
+	rp.status = status
 }
 
 func (rp *RolePermission) CreateID() *string {
@@ -95,6 +122,9 @@ func BuildRolePermissionDomainFromModel(model *models.RolePermissionModel) *Role
 		id:           model.ID,
 		roleID:       model.RoleID,
 		permissionID: model.PermissionID,
+		note:         model.Note,
+		rpStatus:     model.RPStatus,
+		status:       model.Status,
 		createID:     model.CreateID,
 		createDT:     model.CreateDT,
 		modifyID:     model.ModifyID,

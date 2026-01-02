@@ -16,10 +16,14 @@ type User struct {
 	gradeID    string
 	semesterID string
 	role       string
-	roleID     string // New RBAC role ID
+	roleID     string
 	password   string
+	note       *string
+	userStatus string
 	status     string
+	createID   *int64
 	createDT   time.MathTime
+	modifyID   *int64
 	modifyDT   time.MathTime
 	deletedDT  *time.MathTime
 }
@@ -120,6 +124,22 @@ func (u *User) SetPassword(password string) {
 	u.password = password
 }
 
+func (u *User) Note() *string {
+	return u.note
+}
+
+func (u *User) SetNote(note *string) {
+	u.note = note
+}
+
+func (u *User) UserStatus() string {
+	return u.userStatus
+}
+
+func (u *User) SetUserStatus(userStatus string) {
+	u.userStatus = userStatus
+}
+
 func (u *User) Status() string {
 	return u.status
 }
@@ -128,12 +148,28 @@ func (u *User) SetStatus(status string) {
 	u.status = status
 }
 
+func (u *User) CreatedBy() *int64 {
+	return u.createID
+}
+
+func (u *User) SetCreatedBy(createID *int64) {
+	u.createID = createID
+}
+
 func (u *User) CreatedAt() time.MathTime {
 	return u.createDT
 }
 
 func (u *User) SetCreatedAt(createAt time.MathTime) {
 	u.createDT = createAt
+}
+
+func (u *User) ModifiedBy() *int64 {
+	return u.modifyID
+}
+
+func (u *User) SetModifiedBy(modifyID *int64) {
+	u.modifyID = modifyID
 }
 
 func (u *User) ModifyAt() time.MathTime {
@@ -154,17 +190,19 @@ func (u *User) SetDeletedAt(deletedAt *time.MathTime) {
 
 func BuildUserDomainFromModel(model *models.UserModel) *User {
 	return &User{
-		id:        model.ID,
-		name:      model.Name,
-		phone:     model.Phone,
-		email:     model.Email,
-		avatarKey: model.AvatarKey,
-		dob:       model.Dob,
-		role:      model.Role,
-		roleID:    model.RoleID,
-		password:  model.HashPassword,
-		status:    model.Status,
-		createDT:  model.CreateDT,
-		modifyDT:  model.ModifyDT,
+		id:         model.ID,
+		name:       model.Name,
+		phone:      model.Phone,
+		email:      model.Email,
+		avatarKey:  model.AvatarKey,
+		dob:        model.Dob,
+		role:       model.Role,
+		roleID:     model.RoleID,
+		password:   model.HashPassword,
+		note:       model.Note,
+		userStatus: model.UserStatus,
+		status:     model.Status,
+		createDT:   model.CreateDT,
+		modifyDT:   model.ModifyDT,
 	}
 }

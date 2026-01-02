@@ -13,6 +13,8 @@ type UserQuizPractices struct {
 	questions string
 	answers   string
 	aiReview  string
+	note      *string
+	uqpStatus string
 	status    string
 	createID  *int64
 	createDT  time.MathTime
@@ -67,6 +69,22 @@ func (u *UserQuizPractices) AIReview() string {
 
 func (u *UserQuizPractices) SetAIReview(aiReview string) {
 	u.aiReview = aiReview
+}
+
+func (u *UserQuizPractices) Note() *string {
+	return u.note
+}
+
+func (u *UserQuizPractices) SetNote(note *string) {
+	u.note = note
+}
+
+func (u *UserQuizPractices) UQPStatus() string {
+	return u.uqpStatus
+}
+
+func (u *UserQuizPractices) SetUQPStatus(uqpStatus string) {
+	u.uqpStatus = uqpStatus
 }
 
 func (u *UserQuizPractices) Status() string {
@@ -127,6 +145,8 @@ func BuildUserQuizPracticesDomainFromModel(model *models.UserQuizPracticesModel)
 		questions: model.Questions,
 		answers:   model.Answers,
 		aiReview:  model.AIReview,
+		note:      model.Note,
+		uqpStatus: model.UQPStatus,
 		status:    model.Status,
 		createID:  model.CreateID,
 		createDT:  model.CreateDT,

@@ -134,6 +134,7 @@ func BuildGradeTranslationFromModel(model *models.GradeTranslationModel) *GradeT
 		label:       model.Label,
 		description: model.Description,
 		note:        model.Note,
+		GTStatus:    model.GTStatus,
 		status:      model.Status,
 		createID:    model.CreateID,
 		createDT:    model.CreateDT,

@@ -12,8 +12,8 @@ type Grade struct {
 	label        string
 	description  *string
 	imageKey     *string
-	gradeStatus  string
 	note         *string
+	gradeStatus  string
 	status       string
 	displayOrder int8
 	createID     *int64
@@ -149,6 +149,8 @@ func BuildGradeDomainFromModel(model *models.GradeModel) *Grade {
 		label:        model.Label,
 		description:  model.Description,
 		imageKey:     model.ImageKey,
+		note:         model.Note,
+		gradeStatus:  model.GradeStatus,
 		status:       model.Status,
 		displayOrder: model.DisplayOrder,
 		createID:     model.CreateID,

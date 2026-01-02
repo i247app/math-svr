@@ -8,17 +8,19 @@ import (
 )
 
 type Semester struct {
-	id           string
-	name         string
-	description  *string
-	imageKey     *string
-	status       string
-	displayOrder int8
-	createID     *int64
-	createDT     time.MathTime
-	modifyID     *int64
-	modifyDT     time.MathTime
-	deletedDT    *time.MathTime
+	id             string
+	name           string
+	description    *string
+	imageKey       *string
+	note           *string
+	semesterStatus string
+	status         string
+	displayOrder   int8
+	createID       *int64
+	createDT       time.MathTime
+	modifyID       *int64
+	modifyDT       time.MathTime
+	deletedDT      *time.MathTime
 }
 
 func NewSemesterDomain() *Semester {
@@ -59,6 +61,25 @@ func (s *Semester) ImageKey() *string {
 
 func (s *Semester) SetImageKey(imageKey *string) {
 	s.imageKey = imageKey
+}
+
+func (s *Semester) Note() *string {
+	return s.note
+}
+
+func (s *Semester) SetNote(note *string) {
+	s.note = note
+}
+
+func (s *Semester) SemesterStatus() string {
+	return s.semesterStatus
+}
+
+func (s *Semester) SetSemesterStatus(semesterStatus string) {
+	if semesterStatus == "" {
+		semesterStatus = string(enum.StatusActive)
+	}
+	s.semesterStatus = semesterStatus
 }
 
 func (s *Semester) Status() string {
@@ -124,16 +145,18 @@ func (s *Semester) SetDeletedAt(deletedDT *time.MathTime) {
 // Note: name and description come from translation data
 func BuildSemesterDomainFromModel(model *models.SemesterModel) *Semester {
 	return &Semester{
-		id:           model.ID,
-		name:         model.Name,
-		description:  model.Description,
-		imageKey:     model.ImageKey,
-		status:       model.Status,
-		displayOrder: model.DisplayOrder,
-		createID:     model.CreateID,
-		createDT:     model.CreateDT,
-		modifyID:     model.ModifyID,
-		modifyDT:     model.ModifyDT,
-		deletedDT:    model.DeletedDT,
+		id:             model.ID,
+		name:           model.Name,
+		description:    model.Description,
+		imageKey:       model.ImageKey,
+		note:           model.Note,
+		semesterStatus: model.SemesterStatus,
+		status:         model.Status,
+		displayOrder:   model.DisplayOrder,
+		createID:       model.CreateID,
+		createDT:       model.CreateDT,
+		modifyID:       model.ModifyID,
+		modifyDT:       model.ModifyDT,
+		deletedDT:      model.DeletedDT,
 	}
 }

@@ -8,13 +8,17 @@ import (
 )
 
 type Login struct {
-	id        string
-	uid       string
-	hasspass  string
-	status    string
-	createDT  time.Time
-	modifyDT  time.Time
-	deletedDT *time.Time
+	id          string
+	uid         string
+	hasspass    string
+	note        *string
+	loginStatus string
+	status      string
+	createID    *int64
+	createDT    time.Time
+	modifyID    *int64
+	modifyDT    time.Time
+	deletedDT   *time.Time
 }
 
 func NewLoginDomain() *Login {
@@ -54,6 +58,22 @@ func (l *Login) SetHassPass(password string) {
 	l.hasspass = string(hash)
 }
 
+func (l *Login) Note() *string {
+	return l.note
+}
+
+func (l *Login) SetNote(note *string) {
+	l.note = note
+}
+
+func (l *Login) LoginStatus() string {
+	return l.loginStatus
+}
+
+func (l *Login) SetLoginStatus(loginStatus string) {
+	l.loginStatus = loginStatus
+}
+
 func (l *Login) Status() string {
 	return l.status
 }
@@ -62,12 +82,28 @@ func (l *Login) SetStatus(status string) {
 	l.status = status
 }
 
+func (l *Login) CreatedBy() *int64 {
+	return l.createID
+}
+
+func (l *Login) SetCreatedBy(createID *int64) {
+	l.createID = createID
+}
+
 func (l *Login) CreateDT() time.Time {
 	return l.createDT
 }
 
 func (l *Login) SetCreateDT(createDT time.Time) {
 	l.createDT = createDT
+}
+
+func (l *Login) ModifiedBy() *int64 {
+	return l.modifyID
+}
+
+func (l *Login) SetModifiedBy(modifyID *int64) {
+	l.modifyID = modifyID
 }
 
 func (l *Login) ModifyDT() time.Time {

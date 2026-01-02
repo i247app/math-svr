@@ -14,6 +14,8 @@ type Role struct {
 	description  *string
 	parentRoleID *string
 	isSystemRole bool
+	note         *string
+	roleStatus   string
 	status       string
 	displayOrder int8
 	createID     *string
@@ -77,6 +79,25 @@ func (r *Role) IsSystemRole() bool {
 
 func (r *Role) SetIsSystemRole(isSystemRole bool) {
 	r.isSystemRole = isSystemRole
+}
+
+func (r *Role) Note() *string {
+	return r.note
+}
+
+func (r *Role) SetNote(note *string) {
+	r.note = note
+}
+
+func (r *Role) RoleStatus() string {
+	return r.roleStatus
+}
+
+func (r *Role) SetRoleStatus(roleStatus string) {
+	if roleStatus == "" {
+		roleStatus = string(enum.StatusActive)
+	}
+	r.roleStatus = roleStatus
 }
 
 func (r *Role) Status() string {
@@ -147,6 +168,8 @@ func BuildRoleDomainFromModel(model *models.RoleModel) *Role {
 		description:  model.Description,
 		parentRoleID: model.ParentRoleID,
 		isSystemRole: model.IsSystemRole,
+		note:         model.Note,
+		roleStatus:   model.RoleStatus,
 		status:       model.Status,
 		displayOrder: model.DisplayOrder,
 		createID:     model.CreateID,

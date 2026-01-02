@@ -14,6 +14,8 @@ type UserQuizAssessment struct {
 	answers       string
 	aiReview      string
 	aiDetectGrade string
+	note          *string
+	uqaStatus     string
 	status        string
 	createID      *int64
 	createDT      time.MathTime
@@ -76,6 +78,22 @@ func (u *UserQuizAssessment) AIDetectGrade() string {
 
 func (u *UserQuizAssessment) SetAIDetectGrade(aiDetectGrade string) {
 	u.aiDetectGrade = aiDetectGrade
+}
+
+func (u *UserQuizAssessment) Note() *string {
+	return u.note
+}
+
+func (u *UserQuizAssessment) SetNote(note *string) {
+	u.note = note
+}
+
+func (u *UserQuizAssessment) UQAStatus() string {
+	return u.uqaStatus
+}
+
+func (u *UserQuizAssessment) SetUQAStatus(uqaStatus string) {
+	u.uqaStatus = uqaStatus
 }
 
 func (u *UserQuizAssessment) Status() string {

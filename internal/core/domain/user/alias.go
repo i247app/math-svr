@@ -7,13 +7,17 @@ import (
 )
 
 type Alias struct {
-	id        string
-	uid       string
-	aka       string
-	status    string
-	createDT  time.MathTime
-	modifyDT  time.MathTime
-	deletedDT *time.MathTime
+	id          string
+	uid         string
+	aka         string
+	note        *string
+	aliasStatus string
+	status      string
+	createID    *int64
+	createDT    time.MathTime
+	modifyID    *int64
+	modifyDT    time.MathTime
+	deletedDT   *time.MathTime
 }
 
 func NewAliasDomain() *Alias {
@@ -44,6 +48,22 @@ func (a *Alias) SetAka(aka string) {
 	a.aka = aka
 }
 
+func (a *Alias) Note() *string {
+	return a.note
+}
+
+func (a *Alias) SetNote(note *string) {
+	a.note = note
+}
+
+func (a *Alias) AliasStatus() string {
+	return a.aliasStatus
+}
+
+func (a *Alias) SetAliasStatus(aliasStatus string) {
+	a.aliasStatus = aliasStatus
+}
+
 func (a *Alias) Status() string {
 	return a.status
 }
@@ -52,12 +72,28 @@ func (a *Alias) SetStatus(status string) {
 	a.status = status
 }
 
+func (a *Alias) CreatedBy() *int64 {
+	return a.createID
+}
+
+func (a *Alias) SetCreatedBy(createID *int64) {
+	a.createID = createID
+}
+
 func (a *Alias) CreateDT() time.MathTime {
 	return a.createDT
 }
 
 func (a *Alias) SetCreateDT(createDT time.MathTime) {
 	a.createDT = createDT
+}
+
+func (a *Alias) ModifiedBy() *int64 {
+	return a.modifyID
+}
+
+func (a *Alias) SetModifiedBy(modifyID *int64) {
+	a.modifyID = modifyID
 }
 
 func (a *Alias) ModifyDT() time.MathTime {
@@ -74,11 +110,13 @@ func (a *Alias) DeletedDT() *time.MathTime {
 
 func BuildAliasDomainFromModel(model *models.AliasUserModel) *Alias {
 	return &Alias{
-		id:       model.ID,
-		uid:      model.UID,
-		aka:      model.Aka,
-		status:   model.Status,
-		createDT: model.CreateDT,
-		modifyDT: model.ModifyDT,
+		id:          model.ID,
+		uid:         model.UID,
+		aka:         model.Aka,
+		note:        model.Note,
+		aliasStatus: model.AliasStatus,
+		status:      model.Status,
+		createDT:    model.CreateDT,
+		modifyDT:    model.ModifyDT,
 	}
 }
