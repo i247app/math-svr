@@ -8,6 +8,8 @@ type UserQuizPracticesModel struct {
 	Questions string
 	Answers   string
 	AIReview  string
+	Note      *string
+	UQPStatus string
 	Status    string
 	CreateID  *int64
 	CreateDT  time.MathTime

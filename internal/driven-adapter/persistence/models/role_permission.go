@@ -8,6 +8,9 @@ type RolePermissionModel struct {
 	ID           string
 	RoleID       string
 	PermissionID string
+	Note         *string
+	RPStatus     string
+	Status       string
 	CreateID     *string
 	CreateDT     time.MathTime
 	ModifyID     *string

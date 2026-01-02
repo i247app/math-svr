@@ -9,9 +9,12 @@ type DeviceModel struct {
 	DeviceName      string
 	DevicePushToken *string
 	IsVerified      bool
+	Note            *string
+	DeviceStatus    string
 	Status          string
 	CreateID        *int64
 	CreateDT        time.Time
 	ModifyID        *int64
 	ModifyDT        time.Time
+	DeletedDT       *time.Time
 }

@@ -12,20 +12,26 @@ type UserModel struct {
 	RoleID       string
 	Role         string
 	HashPassword string
+	Note         *string
+	UserStatus   string
 	Status       string
 	CreateID     *int64
 	CreateDT     time.MathTime
 	ModifyID     *int64
 	ModifyDT     time.MathTime
+	DeletedDT    *time.MathTime
 }
 
 type AliasUserModel struct {
-	ID       string
-	UID      string
-	Aka      string
-	Status   string
-	CreateID *int64
-	CreateDT time.MathTime
-	ModifyID *int64
-	ModifyDT time.MathTime
+	ID          string
+	UID         string
+	Aka         string
+	Note        *string
+	AliasStatus string
+	Status      string
+	CreateID    *int64
+	CreateDT    time.MathTime
+	ModifyID    *int64
+	ModifyDT    time.MathTime
+	DeletedDT   *time.MathTime
 }

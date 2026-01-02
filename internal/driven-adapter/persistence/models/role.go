@@ -11,6 +11,8 @@ type RoleModel struct {
 	Description  *string
 	ParentRoleID *string
 	IsSystemRole bool
+	Note         *string
+	RoleStatus   string
 	Status       string
 	DisplayOrder int8
 	CreateID     *string

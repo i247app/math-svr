@@ -9,6 +9,8 @@ type UserQuizAssessmentModel struct {
 	Answers       string
 	AIReview      string
 	AIDetectGrade string
+	Note          *string
+	UQAStatus     string
 	Status        string
 	CreateID      *int64
 	CreateDT      time.MathTime

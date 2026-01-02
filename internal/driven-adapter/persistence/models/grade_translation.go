@@ -9,6 +9,7 @@ type GradeTranslationModel struct {
 	Label       string
 	Description *string
 	Note        *string
+	GTStatus    string
 	Status      string
 	CreateID    *int64
 	CreateDT    time.MathTime
