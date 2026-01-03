@@ -110,6 +110,17 @@ func BuildSemesterDomainForUpdate(req *UpdateSemesterRequest) *domain.Semester {
 	return semesterDomain
 }
 
+func BuildSemesterTranslationDomainForCreate(semesterID, language, name string, description *string) *domain.SemesterTranslation {
+	semesterTranslationDomain := domain.NewSemesterTranslationDomain()
+	semesterTranslationDomain.GenerateID()
+	semesterTranslationDomain.SetSemesterID(semesterID)
+	semesterTranslationDomain.SetLanguage(language)
+	semesterTranslationDomain.SetName(name)
+	semesterTranslationDomain.SetDescription(description)
+
+	return semesterTranslationDomain
+}
+
 func SemesterResponseFromDomain(s *domain.Semester) SemesterResponse {
 	return SemesterResponse{
 		ID:           s.ID(),

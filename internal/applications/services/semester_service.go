@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"database/sql"
 
 	"math-ai.com/math-ai/internal/applications/dto"
 	"math-ai.com/math-ai/internal/applications/utils"
@@ -124,8 +125,23 @@ func (s *SemesterService) CreateSemester(ctx context.Context, req *dto.CreateSem
 		semesterDomain.SetImageKey(iconKey)
 	}
 
-	// Create semester without transaction (simple single table insert)
-	_, err = s.repo.Create(ctx, nil, semesterDomain)
+	// Create grade
+	handler := func(tx *sql.Tx) error {
+		_, err = s.repo.Create(ctx, nil, semesterDomain)
+		if err != nil {
+			return err
+		}
+
+		gradeTranslationDomain := dto.BuildSemesterTranslationDomainForCreate(semesterDomain.ID(), "vn", semesterDomain.Name(), semesterDomain.Description())
+		_, err = s.repo.CreateSemesterTranslation(ctx, tx, gradeTranslationDomain)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err = s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.FAIL, nil, err
 	}
@@ -168,7 +184,16 @@ func (s *SemesterService) UpdateSemester(ctx context.Context, req *dto.UpdateSem
 	}
 
 	semesterDomain := dto.BuildSemesterDomainForUpdate(req)
-	_, err = s.repo.Update(ctx, semesterDomain)
+
+	handler := func(tx *sql.Tx) error {
+		_, err = s.repo.Update(ctx, tx, semesterDomain)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	err = s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.FAIL, nil, err
 	}
@@ -194,7 +219,7 @@ func (s *SemesterService) DeleteSemester(ctx context.Context, id string) (status
 		return status.NOT_FOUND, err_svc.ErrSemesterNotFound
 	}
 
-	err = s.repo.Delete(ctx, id)
+	err = s.repo.Delete(ctx, nil, id)
 	if err != nil {
 		return status.FAIL, err
 	}

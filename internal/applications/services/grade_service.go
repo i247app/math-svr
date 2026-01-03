@@ -136,7 +136,6 @@ func (s *GradeService) CreateGrade(ctx context.Context, req *dto.CreateGradeRequ
 	}
 
 	// Create grade
-
 	handler := func(tx *sql.Tx) error {
 		_, err = s.repo.Create(ctx, nil, gradeDomain)
 		if err != nil {

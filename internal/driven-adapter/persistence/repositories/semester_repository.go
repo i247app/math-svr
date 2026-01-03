@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/semester"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/queries"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/metadata"
@@ -16,98 +16,91 @@ import (
 	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
+const (
+	semesterTableName = "ma_semesters"
+)
+
 type semesterRepository struct {
-	db db.IDatabase
+	BaseRepository // Embed BaseRepository for common operations
 }
 
-func NewSemesterRepository(db db.IDatabase) di.ISemesterRepository {
+func NewSemesterRepository(database db.IDatabase) di.ISemesterRepository {
 	return &semesterRepository{
-		db: db,
+		BaseRepository: NewBaseRepository(database),
 	}
+}
+
+// scanSemester is a reusable helper method to scan semester data from a row
+func (r *semesterRepository) scanSemester(scanner Scanner) (*domain.Semester, error) {
+	var s models.SemesterModel
+	err := scanner.Scan(
+		&s.ID, &s.Name, &s.Description, &s.ImageKey, &s.Status, &s.DisplayOrder,
+		&s.CreateID, &s.CreateDT, &s.ModifyID, &s.ModifyDT,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("scan error: %v", err)
+	}
+
+	return domain.BuildSemesterDomainFromModel(&s), nil
+}
+
+// DoTransaction wraps a function in a database transaction
+func (r *semesterRepository) DoTransaction(ctx context.Context, handler db.HanderlerWithTx) error {
+	return r.ExecuteInTransaction(handler)
 }
 
 // List retrieves a paginated list of semesters with optional search and sorting.
+// Now uses BaseRepository.PaginatedList to eliminate duplication
 func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersParams) ([]*domain.Semester, *pagination.Pagination, error) {
-	var queryBuilder strings.Builder
-	var countBuilder strings.Builder
-	args := []interface{}{}
-	countArgs := []interface{}{}
+	// Get language from context for translations
 	language := metadata.GetLanguage(ctx)
 
-	// Base query with LEFT JOIN for translations
-	queryBuilder.WriteString(`
-		SELECT
-			s.id,
-			COALESCE(st.name, s.name) AS name,
-			COALESCE(st.description, s.description) AS description,
-			s.image_key,
-			s.status,
-			s.display_order,
-			s.create_id,
-			s.create_dt,
-			s.modify_id,
-			s.modify_dt
-		FROM ma_semesters s
-		LEFT JOIN ma_semester_translations st ON s.id = st.semester_id AND st.language = ?
-		WHERE s.deleted_dt IS NULL`)
-	args = append(args, language)
+	// Get base queries with language parameter
+	baseQuery := queries.SemesterListQuery
+	countQuery := queries.SemesterListCountQuery
+	args := []interface{}{language}
 
-	// Count query base with same JOIN
-	countBuilder.WriteString(`
-		SELECT COUNT(*)
-		FROM ma_semesters s
-		LEFT JOIN ma_semester_translations st ON s.id = st.semester_id AND st.language = ?
-		WHERE s.deleted_dt IS NULL`)
-	countArgs = append(countArgs, language)
-
-	// Add search condition to both queries
+	// Add search condition if provided
 	if params.Search != "" {
-		searchCondition := ` AND (COALESCE(st.name, s.name) LIKE ? OR COALESCE(st.description, s.description) LIKE ?)`
-		searchTerm := "%" + params.Search + "%"
-
-		queryBuilder.WriteString(searchCondition)
-		args = append(args, searchTerm, searchTerm)
-
-		countBuilder.WriteString(searchCondition)
-		countArgs = append(countArgs, searchTerm, searchTerm)
+		baseQuery, countQuery, args = queries.SemesterQueries{}.BuildListQueryWithSearch(language, params.Search)
 	}
 
-	// Count total records for pagination
-	var total int64
-	countRow := r.db.QueryRow(ctx, nil, countBuilder.String(), countArgs...)
-	if err := countRow.Scan(&total); err != nil {
-		return nil, nil, fmt.Errorf("failed to count semesters: %v", err)
+	// Build pagination params
+	paginationParams := pagination.Params{
+		Page:      params.Page,
+		Limit:     params.Limit,
+		OrderBy:   params.OrderBy,
+		OrderDesc: params.OrderDesc,
+		TakeAll:   params.TakeAll,
 	}
 
-	// Initialize pagination
-	paginationObj := pagination.NewPagination(params.Page, params.Limit, total)
-	if params.TakeAll {
-		paginationObj.Size = total
-		paginationObj.Skip = 0
-		paginationObj.Page = 1
-		paginationObj.TotalPages = 1
-	}
-
-	// Add sorting
-	if params.OrderBy != "" {
-		queryBuilder.WriteString(fmt.Sprintf(" ORDER BY s.%s", params.OrderBy))
-		if params.OrderDesc {
-			queryBuilder.WriteString(" DESC")
-		} else {
-			queryBuilder.WriteString(" ASC")
-		}
+	// Default ordering if not specified
+	if paginationParams.OrderBy == "" {
+		paginationParams.OrderBy = "s.display_order"
+		paginationParams.OrderDesc = false
 	} else {
-		queryBuilder.WriteString(" ORDER BY s.display_order ASC")
+		// Prefix with table alias
+		paginationParams.OrderBy = "s." + paginationParams.OrderBy
 	}
 
-	// Add pagination
-	if !params.TakeAll {
-		queryBuilder.WriteString(` LIMIT ? OFFSET ?`)
-		args = append(args, paginationObj.Size, paginationObj.Skip)
+	// Use BaseRepository.PaginatedList for automatic count and pagination
+	query, queryArgs, paginationObj, err := r.PaginatedList(
+		ctx,
+		baseQuery,
+		args,
+		countQuery,
+		args,
+		paginationParams,
+	)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	// Execute query
-	rows, err := r.db.Query(ctx, nil, queryBuilder.String(), args...)
+	// Execute final query
+	rows, err := r.db.Query(ctx, nil, query, queryArgs...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list semesters: %v", err)
 	}
@@ -116,15 +109,11 @@ func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersPa
 	// Scan results
 	var semesters []*domain.Semester
 	for rows.Next() {
-		var s models.SemesterModel
-		if err := rows.Scan(
-			&s.ID, &s.Name, &s.Description, &s.ImageKey, &s.Status, &s.DisplayOrder,
-			&s.CreateID, &s.CreateDT, &s.ModifyID, &s.ModifyDT,
-		); err != nil {
-			return nil, nil, fmt.Errorf("scan error: %v", err)
+		semester, err := r.scanSemester(rows)
+		if err != nil {
+			return nil, nil, err
 		}
-
-		semesters = append(semesters, domain.BuildSemesterDomainFromModel(&s))
+		semesters = append(semesters, semester)
 	}
 
 	return semesters, paginationObj, nil
@@ -132,67 +121,25 @@ func (r *semesterRepository) List(ctx context.Context, params di.ListSemestersPa
 
 // FindByID retrieves a semester by ID.
 func (r *semesterRepository) FindByID(ctx context.Context, id string) (*domain.Semester, error) {
-	query := `
-		SELECT id, name, description, image_key, status, display_order,
-		create_id, create_dt, modify_id, modify_dt
-		FROM ma_semesters
-		WHERE id = ? AND deleted_dt IS NULL
-	`
+	language := metadata.GetLanguage(ctx)
 
-	result := r.db.QueryRow(ctx, nil, query, id)
-
-	var s models.SemesterModel
-	err := result.Scan(
-		&s.ID, &s.Name, &s.Description, &s.ImageKey, &s.Status, &s.DisplayOrder,
-		&s.CreateID, &s.CreateDT, &s.ModifyID, &s.ModifyDT,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	semester := domain.BuildSemesterDomainFromModel(&s)
-
-	return semester, nil
+	row := r.db.QueryRow(ctx, nil, queries.SemesterFindByIDWithTranslation, language, id)
+	return r.scanSemester(row)
 }
 
 // FindByName retrieves a semester by name.
+// Now uses query constants from queries package
 func (r *semesterRepository) FindByName(ctx context.Context, name string) (*domain.Semester, error) {
-	query := `
-		SELECT id, name, description, image_key, status, display_order,
-		create_id, create_dt, modify_id, modify_dt
-		FROM ma_semesters
-		WHERE name = ? AND deleted_dt IS NULL
-	`
+	language := metadata.GetLanguage(ctx)
 
-	result := r.db.QueryRow(ctx, nil, query, name)
-
-	var s models.SemesterModel
-	err := result.Scan(
-		&s.ID, &s.Name, &s.Description, &s.ImageKey, &s.Status, &s.DisplayOrder,
-		&s.CreateID, &s.CreateDT, &s.ModifyID, &s.ModifyDT,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	semester := domain.BuildSemesterDomainFromModel(&s)
-
-	return semester, nil
+	row := r.db.QueryRow(ctx, nil, queries.SemesterFindByNameWithTranslation, language, name)
+	return r.scanSemester(row)
 }
 
 // Create inserts a new semester into the database.
+// Now uses query constants from queries package
 func (r *semesterRepository) Create(ctx context.Context, tx *sql.Tx, semester *domain.Semester) (int64, error) {
-	query := `
-		INSERT INTO ma_semesters (id, name, description, image_key, status, display_order, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`
-	result, err := r.db.Exec(ctx, tx, query,
+	result, err := r.db.Exec(ctx, tx, queries.SemesterInsert,
 		semester.ID(),
 		semester.Name(),
 		semester.Description(),
@@ -210,80 +157,99 @@ func (r *semesterRepository) Create(ctx context.Context, tx *sql.Tx, semester *d
 }
 
 // Update modifies an existing semester in the database.
-func (r *semesterRepository) Update(ctx context.Context, semester *domain.Semester) (int64, error) {
-	var queryBuilder strings.Builder
-	args := []interface{}{}
-
-	queryBuilder.WriteString("UPDATE ma_semesters SET ")
-	updates := []string{}
-
-	if semester.Name() != "" {
-		updates = append(updates, "name = ?")
-		args = append(args, semester.Name())
-	}
-
-	if semester.Description() != nil {
-		updates = append(updates, "description = ?")
-		args = append(args, semester.Description())
-	}
-
-	// ImageKey can be nil, so we check if it's explicitly set
-	if semester.ImageKey() != nil {
-		updates = append(updates, "image_key = ?")
-		args = append(args, semester.ImageKey())
-	}
-
-	if semester.Status() != "" {
-		updates = append(updates, "status = ?")
-		args = append(args, semester.Status())
-	}
-
-	if semester.DisplayOrder() != 0 {
-		updates = append(updates, "display_order = ?")
-		args = append(args, semester.DisplayOrder())
-	}
-
-	updates = append(updates, "modify_dt = ?")
-	args = append(args, mathtime.Now())
-
-	if len(updates) == 0 {
-		return 0, fmt.Errorf("no fields to update")
-	}
-
-	queryBuilder.WriteString(strings.Join(updates, ", "))
-	queryBuilder.WriteString(" WHERE id = ? AND deleted_dt IS NULL")
-	args = append(args, semester.ID())
-
-	result, err := r.db.Exec(ctx, nil, queryBuilder.String(), args...)
+// LEGACY METHOD - kept for backward compatibility
+// New code should use UpdateFields instead
+func (r *semesterRepository) Update(ctx context.Context, tx *sql.Tx, semester *domain.Semester) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.GradeUpdate,
+		PrepareForUpdate(semester.Name()),
+		PrepareForUpdate(semester.Description()),
+		PrepareForUpdate(semester.ImageKey()),
+		PrepareForUpdate(semester.SemesterStatus()),
+		PrepareForUpdate(semester.Note()),
+		PrepareForUpdate(semester.DisplayOrder()),
+		mathtime.Now(),
+		semester.ID(),
+	)
 	if err != nil {
-		return 0, fmt.Errorf("failed to update semester: %v", err)
+		return 0, fmt.Errorf("failed to create grade: %v", err)
 	}
 
 	return result.RowsAffected()
 }
 
 // Delete soft deletes a semester by setting deleted_dt.
-func (r *semesterRepository) Delete(ctx context.Context, id string) error {
-	query := `
-			UPDATE ma_semesters
-			SET deleted_dt = ?,
-				modify_dt = ?
-			WHERE id = ? AND deleted_dt IS NULL`
-	_, err := r.db.Exec(ctx, nil, query, mathtime.Now(), mathtime.Now(), id)
+// Now uses BaseRepository.SoftDelete
+func (r *semesterRepository) Delete(ctx context.Context, tx *sql.Tx, id string) error {
+	_, err := r.SoftDelete(ctx, tx, semesterTableName, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete semester: %v", err)
 	}
-
 	return nil
 }
 
 // ForceDelete permanently deletes a semester from the database.
+// Now uses BaseRepository.HardDelete
 func (r *semesterRepository) ForceDelete(ctx context.Context, tx *sql.Tx, id string) error {
-	query := `DELETE FROM ma_semesters WHERE id = ?`
-	_, err := r.db.Exec(ctx, tx, query, id)
+	_, err := r.HardDelete(ctx, tx, semesterTableName, id)
 	if err != nil {
 		return fmt.Errorf("failed to force delete semester: %v", err)
 	}
+	return nil
+}
 
+// CreateSemesterTranslation inserts a new semester translation into the database.
+func (r *semesterRepository) CreateSemesterTranslation(ctx context.Context, tx *sql.Tx, semesterTranslation *domain.SemesterTranslation) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.SemesterTranslationInsert,
+		semesterTranslation.ID(),
+		semesterTranslation.SemesterID(),
+		semesterTranslation.Language(),
+		semesterTranslation.Name(),
+		semesterTranslation.Description(),
+		semesterTranslation.Note(),
+		mathtime.Now(),
+		mathtime.Now(),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create semester translation: %v", err)
+	}
+
+	return result.RowsAffected()
+}
+
+// UpdateSemesterTranslation modifies an existing semester translation in the database.
+func (r *semesterRepository) UpdateSemesterTranslation(ctx context.Context, tx *sql.Tx, semesterTranslation *domain.SemesterTranslation) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.SemesterTranslationUpdate,
+		PrepareForUpdate(semesterTranslation.Name()),
+		PrepareForUpdate(semesterTranslation.Description()),
+		PrepareForUpdate(semesterTranslation.Note()),
+		mathtime.Now(),
+		semesterTranslation.ID(),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to update semester translation: %v", err)
+	}
+
+	return result.RowsAffected()
+}
+
+// DeleteSemesterTranslationsBySemesterID soft deletes semester translations by semester ID.
+func (r *semesterRepository) DeleteSemesterTranslationsBySemesterID(ctx context.Context, tx *sql.Tx, semesterID string) error {
+	_, err := r.db.Exec(ctx, tx, queries.SemesterTranslationDeleteBySemesterID,
+		mathtime.Now(),
+		mathtime.Now(),
+		semesterID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to delete semester translations: %v", err)
+	}
+	return nil
+}
+
+// ForceDeleteSemesterTranslationsBySemesterID permanently deletes semester translations by semester ID.
+func (r *semesterRepository) ForceDeleteSemesterTranslationsBySemesterID(ctx context.Context, tx *sql.Tx, semesterID string) error {
+	_, err := r.db.Exec(ctx, tx, queries.SemesterTranslationForceDeleteBySemesterID, semesterID)
+	if err != nil {
+		return fmt.Errorf("failed to force delete semester translations: %v", err)
+	}
 	return nil
 }

@@ -30,27 +30,6 @@ func NewBaseRepository(database db.IDatabase) BaseRepository {
 }
 
 // PaginatedList executes a paginated list query with automatic count query execution
-// This eliminates duplicate code for building count queries
-//
-// Parameters:
-//   - ctx: Context for the query
-//   - baseQuery: The main SELECT query (without LIMIT/OFFSET)
-//   - baseArgs: Arguments for the main query
-//   - countQuery: The COUNT query (must return COUNT(*))
-//   - countArgs: Arguments for the count query
-//   - params: Pagination parameters
-//
-// Returns:
-//   - Modified query with pagination applied
-//   - Arguments for the paginated query
-//   - Pagination object with total count
-//   - Error if any
-//
-// Example:
-//
-//	baseQuery := `SELECT u.id, u.name FROM ma_users u WHERE u.deleted_dt IS NULL`
-//	countQuery := `SELECT COUNT(*) FROM ma_users u WHERE u.deleted_dt IS NULL`
-//	query, args, paginationObj, err := r.PaginatedList(ctx, baseQuery, nil, countQuery, nil, params)
 func (r *BaseRepository) PaginatedList(
 	ctx context.Context,
 	baseQuery string,
@@ -97,77 +76,6 @@ func (r *BaseRepository) PaginatedList(
 	}
 
 	return queryBuilder.String(), baseArgs, paginationObj, nil
-}
-
-// FlexibleUpdate builds and executes an UPDATE query from a map of fields
-// This eliminates the need for multiple if-blocks to check each field
-//
-// Parameters:
-//   - ctx: Context for the query
-//   - tx: Optional transaction (pass nil for non-transactional updates)
-//   - table: Table name to update
-//   - id: ID of the record to update
-//   - updates: Map of field names to values
-//   - allowedFields: Map of field names that are allowed to be updated (whitelist for security)
-//
-// Returns:
-//   - Number of rows affected
-//   - Error if any
-//
-// Example:
-//
-//	updates := map[string]interface{}{
-//	    "name": "John Doe",
-//	    "email": "john@example.com",
-//	}
-//	allowedFields := map[string]bool{"name": true, "email": true, "phone": true}
-//	rowsAffected, err := r.FlexibleUpdate(ctx, nil, "ma_users", userID, updates, allowedFields)
-func (r *BaseRepository) FlexibleUpdate(
-	ctx context.Context,
-	tx *sql.Tx,
-	table string,
-	id string,
-	updates map[string]interface{},
-	allowedFields map[string]bool,
-) (int64, error) {
-
-	if len(updates) == 0 {
-		return 0, fmt.Errorf("no fields to update")
-	}
-
-	// Filter updates to only allowed fields
-	filteredUpdates := make(map[string]interface{})
-	for field, value := range updates {
-		// Security check: only allow whitelisted fields
-		if allowedFields != nil && !allowedFields[field] {
-			return 0, fmt.Errorf("field '%s' is not allowed to be updated", field)
-		}
-		filteredUpdates[field] = value
-	}
-
-	// Always update modify_dt
-	filteredUpdates["modify_dt"] = mathtime.Now()
-
-	// Build SET clause
-	setClause, setArgs := r.helper.BuildUpdateSet(filteredUpdates)
-
-	// Build full UPDATE query
-	query := fmt.Sprintf(
-		"UPDATE %s %s WHERE id = ? AND deleted_dt IS NULL",
-		table,
-		setClause,
-	)
-
-	// Append ID to args
-	args := append(setArgs, id)
-
-	// Execute update
-	result, err := r.db.Exec(ctx, tx, query, args...)
-	if err != nil {
-		return 0, fmt.Errorf("failed to execute update: %v", err)
-	}
-
-	return result.RowsAffected()
 }
 
 // BatchInsert inserts multiple records in a single query
@@ -249,20 +157,6 @@ func (r *BaseRepository) BatchInsert(
 }
 
 // SoftDelete performs a soft delete by setting deleted_dt timestamp
-//
-// Parameters:
-//   - ctx: Context for the query
-//   - tx: Optional transaction
-//   - table: Table name
-//   - id: ID of the record to soft delete
-//
-// Returns:
-//   - Number of rows affected
-//   - Error if any
-//
-// Example:
-//
-//	rowsAffected, err := r.SoftDelete(ctx, tx, "ma_users", userID)
 func (r *BaseRepository) SoftDelete(
 	ctx context.Context,
 	tx *sql.Tx,
@@ -285,20 +179,6 @@ func (r *BaseRepository) SoftDelete(
 }
 
 // HardDelete performs a hard delete by actually removing the record from database
-//
-// Parameters:
-//   - ctx: Context for the query
-//   - tx: Transaction (recommended for hard deletes)
-//   - table: Table name
-//   - id: ID of the record to delete
-//
-// Returns:
-//   - Number of rows affected
-//   - Error if any
-//
-// Example:
-//
-//	rowsAffected, err := r.HardDelete(ctx, tx, "ma_users", userID)
 func (r *BaseRepository) HardDelete(
 	ctx context.Context,
 	tx *sql.Tx,
@@ -317,24 +197,6 @@ func (r *BaseRepository) HardDelete(
 }
 
 // ExecuteInTransaction wraps a function in a database transaction
-// Automatically commits on success and rolls back on error
-//
-// Parameters:
-//   - fn: Function to execute within the transaction
-//
-// Returns:
-//   - Error if any (from transaction or function)
-//
-// Example:
-//
-//	err := r.ExecuteInTransaction(func(tx *sql.Tx) error {
-//	    _, err := r.db.Exec(ctx, tx, "INSERT INTO ...", args...)
-//	    if err != nil {
-//	        return err
-//	    }
-//	    _, err = r.db.Exec(ctx, tx, "UPDATE ...", args...)
-//	    return err
-//	})
 func (r *BaseRepository) ExecuteInTransaction(fn func(tx *sql.Tx) error) error {
 	return r.db.WithTransaction(fn)
 }

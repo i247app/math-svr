@@ -23,7 +23,7 @@ type SemesterTranslation struct {
 	deletedDT   *time.MathTime
 }
 
-func NewSemesterTranslation() *SemesterTranslation {
+func NewSemesterTranslationDomain() *SemesterTranslation {
 	return &SemesterTranslation{}
 }
 
