@@ -160,7 +160,7 @@ func (r *semesterRepository) Create(ctx context.Context, tx *sql.Tx, semester *d
 // LEGACY METHOD - kept for backward compatibility
 // New code should use UpdateFields instead
 func (r *semesterRepository) Update(ctx context.Context, tx *sql.Tx, semester *domain.Semester) (int64, error) {
-	result, err := r.db.Exec(ctx, tx, queries.GradeUpdate,
+	result, err := r.db.Exec(ctx, tx, queries.SemesterUpdate,
 		PrepareForUpdate(semester.Name()),
 		PrepareForUpdate(semester.Description()),
 		PrepareForUpdate(semester.ImageKey()),
@@ -222,8 +222,11 @@ func (r *semesterRepository) UpdateSemesterTranslation(ctx context.Context, tx *
 		PrepareForUpdate(semesterTranslation.Name()),
 		PrepareForUpdate(semesterTranslation.Description()),
 		PrepareForUpdate(semesterTranslation.Note()),
+		PrepareForUpdate(semesterTranslation.STStatus()),
+		PrepareForUpdate(semesterTranslation.Status()),
 		mathtime.Now(),
-		semesterTranslation.ID(),
+		semesterTranslation.SemesterID(),
+		semesterTranslation.Language(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update semester translation: %v", err)

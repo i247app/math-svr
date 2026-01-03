@@ -45,9 +45,9 @@ type CreateSemesterRequest struct {
 	DisplayOrder int8    `json:"display_order"`
 
 	// image upload fields (for multipart form)
-	ImageFile        io.Reader `json:"icon_file"`         // File reader
-	ImageFilename    string    `json:"icon_file_name"`    // Original filename
-	ImageContentType string    `json:"icon_content_type"` // MIME type
+	ImageFile        io.Reader // File reader
+	ImageFilename    string    // Original filename
+	ImageContentType string    // MIME type
 }
 
 type CreateSemesterResponse struct {
@@ -62,9 +62,9 @@ type UpdateSemesterRequest struct {
 	DisplayOrder *int8         `json:"display_order,omitempty"`
 
 	// image upload fields (for multipart form)
-	ImageFile        io.Reader `json:"icon_file"`         // File reader
-	ImageFilename    string    `json:"icon_file_name"`    // Original filename
-	ImageContentType string    `json:"icon_content_type"` // MIME type
+	ImageFile        io.Reader // File reader
+	ImageFilename    string    // Original filename
+	ImageContentType string    // MIME type
 }
 
 type UpdateSemesterResponse struct {
@@ -116,6 +116,19 @@ func BuildSemesterTranslationDomainForCreate(semesterID, language, name string, 
 	semesterTranslationDomain.SetSemesterID(semesterID)
 	semesterTranslationDomain.SetLanguage(language)
 	semesterTranslationDomain.SetName(name)
+	semesterTranslationDomain.SetDescription(description)
+
+	return semesterTranslationDomain
+}
+
+func BuildSemesterTranslationDomainForUpdate(semesterID, language, name, stStatus, status string, description *string) *domain.SemesterTranslation {
+	semesterTranslationDomain := domain.NewSemesterTranslationDomain()
+	semesterTranslationDomain.SetSemesterID(semesterID)
+	semesterTranslationDomain.SetLanguage(language)
+	semesterTranslationDomain.SetName(name)
+	semesterTranslationDomain.SetSTStatus(stStatus)
+	semesterTranslationDomain.SetStatus(status)
+
 	semesterTranslationDomain.SetDescription(description)
 
 	return semesterTranslationDomain

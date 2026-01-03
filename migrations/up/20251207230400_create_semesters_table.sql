@@ -3,7 +3,7 @@ CREATE TABLE `ma_semesters` (
   `id` char(36) NOT NULL,
   `name` varchar(100) NOT NULL,
   `description` text,
-  `image_key` varchar(128) NOT NULL,
+  `image_key` varchar(128) DEFAULT NULL,
   `display_order` tinyint NOT NULL,
   `note` varchar(500) DEFAULT NULL,
   `semester_status` varchar(32) DEFAULT 'ACTIVE',

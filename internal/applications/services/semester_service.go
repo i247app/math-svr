@@ -9,6 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/applications/validators"
 	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
 	diSvc "math-ai.com/math-ai/internal/core/di/services"
+	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
 	"math-ai.com/math-ai/internal/shared/logger"
@@ -132,7 +133,12 @@ func (s *SemesterService) CreateSemester(ctx context.Context, req *dto.CreateSem
 			return err
 		}
 
-		gradeTranslationDomain := dto.BuildSemesterTranslationDomainForCreate(semesterDomain.ID(), "vn", semesterDomain.Name(), semesterDomain.Description())
+		gradeTranslationDomain := dto.BuildSemesterTranslationDomainForCreate(
+			semesterDomain.ID(),
+			"vn",
+			semesterDomain.Name(),
+			semesterDomain.Description(),
+		)
 		_, err = s.repo.CreateSemesterTranslation(ctx, tx, gradeTranslationDomain)
 		if err != nil {
 			return err
@@ -190,6 +196,19 @@ func (s *SemesterService) UpdateSemester(ctx context.Context, req *dto.UpdateSem
 		if err != nil {
 			return err
 		}
+
+		semesterTranslationDomain := dto.BuildSemesterTranslationDomainForUpdate(
+			semesterDomain.ID(),
+			"vn",
+			semesterDomain.Name(),
+			string(enum.StatusActive),
+			string(enum.StatusActive),
+			semesterDomain.Description(),
+		)
+		_, err = s.repo.UpdateSemesterTranslation(ctx, tx, semesterTranslationDomain)
+		if err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -219,7 +238,21 @@ func (s *SemesterService) DeleteSemester(ctx context.Context, id string) (status
 		return status.NOT_FOUND, err_svc.ErrSemesterNotFound
 	}
 
-	err = s.repo.Delete(ctx, nil, id)
+	handler := func(tx *sql.Tx) error {
+		err = s.repo.Delete(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+
+		err = s.repo.DeleteSemesterTranslationsBySemesterID(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err = s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.FAIL, err
 	}
@@ -228,7 +261,21 @@ func (s *SemesterService) DeleteSemester(ctx context.Context, id string) (status
 }
 
 func (s *SemesterService) ForceDeleteSemester(ctx context.Context, id string) (status.Code, error) {
-	err := s.repo.ForceDelete(ctx, nil, id)
+	handler := func(tx *sql.Tx) error {
+		err := s.repo.ForceDelete(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+
+		err = s.repo.ForceDeleteSemesterTranslationsBySemesterID(ctx, tx, id)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	err := s.repo.DoTransaction(ctx, handler)
 	if err != nil {
 		return status.FAIL, err
 	}

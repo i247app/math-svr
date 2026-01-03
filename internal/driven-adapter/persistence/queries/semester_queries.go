@@ -76,6 +76,7 @@ const (
 		SET name = COALESCE(?, name),
 			description = COALESCE(?, description),
 			image_key = COALESCE(?, image_key),
+			semester_status = COALESCE(?, semester_status),
 			status = COALESCE(?, status),
 			display_order = COALESCE(?, display_order),
 			modify_dt = ?
@@ -85,6 +86,8 @@ const (
 		SET name = COALESCE(?, name),
 			description = COALESCE(?, description),
 			note = COALESCE(?, note),
+			st_status = COALESCE(?, st_status),
+			status = COALESCE(?, status),
 			modify_dt = ?
 		WHERE semester_id = ? AND language = ? AND deleted_dt IS NULL`
 
