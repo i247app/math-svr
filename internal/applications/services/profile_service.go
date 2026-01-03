@@ -94,7 +94,7 @@ func (s *ProfileService) UpdateProfile(ctx context.Context, req *dto.UpdateProfi
 	}
 
 	profileDomain := dto.BuildProfileDomainForUpdate(req)
-	_, err := s.repo.Update(ctx, profileDomain)
+	_, err := s.repo.Update(ctx, nil, profileDomain)
 	if err != nil {
 		return status.FAIL, nil, err
 	}

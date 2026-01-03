@@ -42,7 +42,7 @@ func (u *UserUpdater) UpdateWithTransaction(
 
 		// Update profile if provided
 		if profileDomain != nil {
-			_, profileUpdateErr := u.profileRepo.Update(ctx, profileDomain)
+			_, profileUpdateErr := u.profileRepo.Update(ctx, tx, profileDomain)
 			if profileUpdateErr != nil {
 				return profileUpdateErr
 			}
