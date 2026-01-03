@@ -227,8 +227,11 @@ func (r *gradeRepository) UpdateGradeTranslation(ctx context.Context, tx *sql.Tx
 		PrepareForUpdate(gradeTranslation.Label()),
 		PrepareForUpdate(gradeTranslation.Description()),
 		PrepareForUpdate(gradeTranslation.Note()),
+		PrepareForUpdate(gradeTranslation.GTStatus()),
+		PrepareForUpdate(gradeTranslation.Status()),
 		mathtime.Now(),
 		gradeTranslation.GradeID(),
+		gradeTranslation.Language(),
 	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update grade translation: %v", err)

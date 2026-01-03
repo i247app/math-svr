@@ -13,7 +13,7 @@ type GradeTranslation struct {
 	label       string
 	description *string
 	note        *string
-	GTStatus    string
+	gtStatus    string
 	status      string
 	createID    *int64
 	createDT    time.MathTime
@@ -78,6 +78,14 @@ func (gt *GradeTranslation) SetNote(note *string) {
 	gt.note = note
 }
 
+func (gt *GradeTranslation) GTStatus() string {
+	return gt.gtStatus
+}
+
+func (gt *GradeTranslation) SetGTStatus(gtStatus string) {
+	gt.gtStatus = gtStatus
+}
+
 func (gt *GradeTranslation) Status() string {
 	return gt.status
 }
@@ -134,7 +142,7 @@ func BuildGradeTranslationFromModel(model *models.GradeTranslationModel) *GradeT
 		label:       model.Label,
 		description: model.Description,
 		note:        model.Note,
-		GTStatus:    model.GTStatus,
+		gtStatus:    model.GTStatus,
 		status:      model.Status,
 		createID:    model.CreateID,
 		createDT:    model.CreateDT,

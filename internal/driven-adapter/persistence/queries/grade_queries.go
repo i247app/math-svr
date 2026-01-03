@@ -90,6 +90,8 @@ const (
 		SET label = COALESCE(?, label),
 			description = COALESCE(?, description),
 			note = COALESCE(?, note),
+			gt_status = COALESCE(?, gt_status),
+			status = COALESCE(?, status),
 			modify_dt = ?
 		WHERE grade_id = ? AND language = ? AND deleted_dt IS NULL`
 

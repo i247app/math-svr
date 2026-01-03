@@ -9,6 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/applications/validators"
 	diRepo "math-ai.com/math-ai/internal/core/di/repositories"
 	diSvc "math-ai.com/math-ai/internal/core/di/services"
+	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
 	"math-ai.com/math-ai/internal/shared/logger"
@@ -213,6 +214,19 @@ func (s *GradeService) UpdateGrade(ctx context.Context, req *dto.UpdateGradeRequ
 
 	handler := func(tx *sql.Tx) error {
 		_, err = s.repo.Update(ctx, tx, gradeDomain)
+		if err != nil {
+			return err
+		}
+
+		gradeTranslationDomain := dto.BuildGradeTranslationDomainForUpdate(
+			gradeDomain.ID(),
+			"vn",
+			gradeDomain.Label(),
+			string(enum.StatusActive),
+			string(enum.StatusActive),
+			gradeDomain.Description(),
+		)
+		_, err = s.repo.UpdateGradeTranslation(ctx, tx, gradeTranslationDomain)
 		if err != nil {
 			return err
 		}

@@ -127,6 +127,22 @@ func BuildGradeTranslationDomainForCreate(gradeID, language, label string, descr
 	return translationDomain
 }
 
+func BuildGradeTranslationDomainForUpdate(gradeID, language, label, gtStatus, status string, description *string) *domain.GradeTranslation {
+	translationDomain := domain.NewGradeTranslationDomain()
+	translationDomain.SetGradeID(gradeID)
+	translationDomain.SetLanguage(language)
+	translationDomain.SetLabel(label)
+
+	if description != nil {
+		translationDomain.SetDescription(description)
+	}
+
+	translationDomain.SetGTStatus(gtStatus)
+	translationDomain.SetStatus(status)
+
+	return translationDomain
+}
+
 func GradeResponseFromDomain(g *domain.Grade) GradeResponse {
 	return GradeResponse{
 		ID:           g.ID(),
