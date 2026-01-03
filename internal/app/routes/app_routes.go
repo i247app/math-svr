@@ -94,7 +94,7 @@ func SetUpHttpRoutes(server *gex.Server, res *resources.AppResource, services *s
 	server.AddRoute("GET /contacts/{id}", ct.HandlerGetContactById, adminMiddleware)
 	server.AddRoute("GET /contacts/list", ct.HandlerListContacts, authMiddleware, adminMiddleware)
 	server.AddRoute("POST /contacts/submit", ct.HandlerCreateContact)
-	server.AddRoute("POST /contact/mark-read", ct.HandlerMarkReadContact, authMiddleware, adminMiddleware)
+	server.AddRoute("POST /contacts/mark-read", ct.HandlerMarkReadContact, authMiddleware, adminMiddleware)
 
 	// RBAC - Roles
 	rc := controller.NewRoleController(res, services.RoleService)

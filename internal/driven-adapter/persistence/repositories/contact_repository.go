@@ -4,130 +4,30 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/contact"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/queries"
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type contactRepository struct {
-	db db.IDatabase
+	BaseRepository // Embed BaseRepository for common operations
 }
 
-func NewContactRepository(db db.IDatabase) di.IContactRepository {
+func NewContactRepository(database db.IDatabase) di.IContactRepository {
 	return &contactRepository{
-		db: db,
+		BaseRepository: NewBaseRepository(database),
 	}
 }
 
-// Create inserts a new contact into the database.
-func (cr *contactRepository) Create(ctx context.Context, tx *sql.Tx, contact *domain.Contact) (int64, error) {
-	query := `
-		INSERT INTO ma_contact_us (id, uid, contact_name, contact_email, contact_phone, contact_message, is_read, created_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`
-
-	result, err := cr.db.Exec(ctx, tx, query,
-		contact.ID(),
-		contact.UID(),
-		contact.ContactName(),
-		contact.ContactEmail(),
-		contact.ContactPhone(),
-		contact.ContactMessage(),
-		false,
-		mathtime.Now(),
-		mathtime.Now(),
-	)
-
-	if err != nil {
-		return 0, fmt.Errorf("failed to create contact: %v", err)
-	}
-
-	insertedID, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("failed to retrieve last insert ID: %v", err)
-	}
-
-	return insertedID, nil
-}
-
-// List retrieves a list of contacts with pagination.
-func (cr *contactRepository) List(ctx context.Context, params di.ListContactsParams) ([]*domain.Contact, *pagination.Pagination, error) {
-	var queryBuilder strings.Builder
-
-	args := []interface{}{}
-
-	queryBuilder.WriteString(`
-		SELECT id, uid, contact_name, contact_email, contact_phone, contact_message, is_read
-		FROM ma_contact_us
-	`)
-
-	// Count total records for pagination
-	countQuery := "SELECT COUNT(*) FROM users"
-	if params.Search != "" {
-		countQuery += ` WHERE name LIKE ? OR email LIKE ? AND deleted_dt IS NULL`
-	} else {
-		countQuery += ` WHERE deleted_dt IS NULL`
-	}
-	var total int64
-	countRow := cr.db.QueryRow(ctx, nil, countQuery, args...)
-	if err := countRow.Scan(&total); err != nil {
-		return nil, nil, fmt.Errorf("failed to count users: %v", err)
-	}
-
-	// Initialize pagination
-	pagination := pagination.NewPagination(params.Page, params.Limit, total)
-	if params.TakeAll {
-		pagination.Size = total
-		pagination.Skip = 0
-		pagination.Page = 1
-		pagination.TotalPages = 1
-	}
-
-	if !params.TakeAll {
-		queryBuilder.WriteString(` LIMIT ? OFFSET ?`)
-		args = append(args, pagination.Size, pagination.Skip)
-	}
-
-	// Execute query
-	rows, err := cr.db.Query(ctx, nil, queryBuilder.String(), args...)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to list contacts: %v", err)
-	}
-	defer rows.Close()
-
-	// Scan results
-	var contacts []*domain.Contact
-	for rows.Next() {
-		var c models.ContactModel
-		if err := rows.Scan(
-			&c.ID, &c.UID, &c.ContactName, &c.ContactEmail,
-			&c.ContactPhone, &c.ContactMessage, &c.IsRead,
-		); err != nil {
-			return nil, nil, fmt.Errorf("scan error: %v", err)
-		}
-		contacts = append(contacts, domain.BuildContactDomainFromModel(&c))
-	}
-
-	return contacts, pagination, nil
-}
-
-// FindByID retrieves a contact by ID.
-func (cr *contactRepository) FindByID(ctx context.Context, id string) (*domain.Contact, error) {
-	query := `
-		SELECT id, uid, contact_name, contact_email, contact_phone, contact_message, is_read
-		FROM ma_contact_us
-		WHERE id = ?
-	`
-
-	result := cr.db.QueryRow(ctx, nil, query, id)
-
+// scanContact is a reusable helper method to scan contact data from a row
+func (r *contactRepository) scanContact(scanner Scanner) (*domain.Contact, error) {
 	var c models.ContactModel
-	err := result.Scan(
+	err := scanner.Scan(
 		&c.ID, &c.UID, &c.ContactName, &c.ContactEmail,
 		&c.ContactPhone, &c.ContactMessage, &c.IsRead,
 	)
@@ -141,23 +41,98 @@ func (cr *contactRepository) FindByID(ctx context.Context, id string) (*domain.C
 	return domain.BuildContactDomainFromModel(&c), nil
 }
 
-// UpdateContactIsRead updates the is_read status of a contact.
-func (cr *contactRepository) MarkAsRead(ctx context.Context, id string, isRead bool) (int64, error) {
-	query := `
-		UPDATE ma_contact_us
-		SET is_read = ?
-		WHERE id = ?
-	`
+// List retrieves a paginated list of contacts with optional search and sorting.
+func (r *contactRepository) List(ctx context.Context, params di.ListContactsParams) ([]*domain.Contact, *pagination.Pagination, error) {
+	// Get base queries
+	baseQuery := queries.ContactListQuery
+	countQuery := queries.ContactListCountQuery
+	args := []interface{}{}
 
-	result, err := cr.db.Exec(ctx, nil, query, isRead, id)
+	// Add search condition if provided
+	if params.Search != "" {
+		baseQuery, countQuery, args = queries.ContactQueries{}.BuildListQueryWithSearch(params.Search)
+	}
+
+	// Build pagination params
+	paginationParams := pagination.Params{
+		Page:      params.Page,
+		Limit:     params.Limit,
+		OrderBy:   params.OrderBy,
+		OrderDesc: params.OrderDesc,
+		TakeAll:   params.TakeAll,
+	}
+
+	// Default ordering if not specified
+	if paginationParams.OrderBy == "" {
+		paginationParams.OrderBy = "create_dt"
+		paginationParams.OrderDesc = true // Most recent first
+	}
+
+	// Use BaseRepository.PaginatedList for automatic count and pagination
+	query, queryArgs, paginationObj, err := r.PaginatedList(
+		ctx,
+		baseQuery,
+		args,
+		countQuery,
+		args,
+		paginationParams,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Execute final query
+	rows, err := r.db.Query(ctx, nil, query, queryArgs...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to list contacts: %v", err)
+	}
+	defer rows.Close()
+
+	// Scan results
+	var contacts []*domain.Contact
+	for rows.Next() {
+		contact, err := r.scanContact(rows)
+		if err != nil {
+			return nil, nil, err
+		}
+		contacts = append(contacts, contact)
+	}
+
+	return contacts, paginationObj, nil
+}
+
+// Create inserts a new contact into the database.
+func (r *contactRepository) Create(ctx context.Context, tx *sql.Tx, contact *domain.Contact) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.ContactInsert,
+		contact.ID(),
+		contact.UID(),
+		contact.ContactName(),
+		contact.ContactEmail(),
+		contact.ContactPhone(),
+		contact.ContactMessage(),
+		false,
+		mathtime.Now(),
+		mathtime.Now(),
+	)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create contact: %v", err)
+	}
+
+	return result.LastInsertId()
+}
+
+// FindByID retrieves a contact by ID.
+func (r *contactRepository) FindByID(ctx context.Context, id string) (*domain.Contact, error) {
+	row := r.db.QueryRow(ctx, nil, queries.ContactFindByID, id)
+	return r.scanContact(row)
+}
+
+// MarkAsRead updates the is_read status of a contact.
+func (r *contactRepository) MarkAsRead(ctx context.Context, id string, isRead bool) (int64, error) {
+	result, err := r.db.Exec(ctx, nil, queries.ContactMarkAsRead, isRead, id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update contact is_read: %v", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return 0, fmt.Errorf("failed to get rows affected: %v", err)
-	}
-
-	return rowsAffected, nil
+	return result.RowsAffected()
 }
