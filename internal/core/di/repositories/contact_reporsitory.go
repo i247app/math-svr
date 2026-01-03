@@ -19,7 +19,7 @@ type ListContactsParams struct {
 
 type IContactRepository interface {
 	List(ctx context.Context, params ListContactsParams) ([]*domain.Contact, *pagination.Pagination, error)
-	CreateContact(ctx context.Context, tx *sql.Tx, contact *domain.Contact) (int64, error)
+	Create(ctx context.Context, tx *sql.Tx, contact *domain.Contact) (int64, error)
 	FindByID(ctx context.Context, id string) (*domain.Contact, error)
-	UpdateContactIsRead(ctx context.Context, id string, isRead bool) (int64, error)
+	MarkAsRead(ctx context.Context, id string, isRead bool) (int64, error)
 }

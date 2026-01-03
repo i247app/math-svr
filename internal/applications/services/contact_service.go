@@ -87,7 +87,7 @@ func (s *ContactService) SubmitContact(ctx context.Context, req *dto.CreateConta
 	contactDomain := dto.BuildContactDomainForSubmit(req)
 
 	// Save to database
-	_, err := s.repo.CreateContact(ctx, nil, contactDomain)
+	_, err := s.repo.Create(ctx, nil, contactDomain)
 	if err != nil {
 		return status.FAIL, nil, fmt.Errorf("failed to create contact: %v", err)
 	}
@@ -109,7 +109,7 @@ func (s *ContactService) MarkReadContact(ctx context.Context, req *dto.MarkReadC
 	}
 
 	// Update is_read to true
-	_, err = s.repo.UpdateContactIsRead(ctx, req.ContactID, true)
+	_, err = s.repo.MarkAsRead(ctx, req.ContactID, true)
 	if err != nil {
 		return status.FAIL, nil, fmt.Errorf("failed to update contact is_read: %v", err)
 	}

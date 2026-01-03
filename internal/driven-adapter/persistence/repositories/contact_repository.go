@@ -24,7 +24,8 @@ func NewContactRepository(db db.IDatabase) di.IContactRepository {
 	}
 }
 
-func (cr *contactRepository) CreateContact(ctx context.Context, tx *sql.Tx, contact *domain.Contact) (int64, error) {
+// Create inserts a new contact into the database.
+func (cr *contactRepository) Create(ctx context.Context, tx *sql.Tx, contact *domain.Contact) (int64, error) {
 	query := `
 		INSERT INTO ma_contact_us (id, uid, contact_name, contact_email, contact_phone, contact_message, is_read, created_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -54,6 +55,7 @@ func (cr *contactRepository) CreateContact(ctx context.Context, tx *sql.Tx, cont
 	return insertedID, nil
 }
 
+// List retrieves a list of contacts with pagination.
 func (cr *contactRepository) List(ctx context.Context, params di.ListContactsParams) ([]*domain.Contact, *pagination.Pagination, error) {
 	var queryBuilder strings.Builder
 
@@ -140,7 +142,7 @@ func (cr *contactRepository) FindByID(ctx context.Context, id string) (*domain.C
 }
 
 // UpdateContactIsRead updates the is_read status of a contact.
-func (cr *contactRepository) UpdateContactIsRead(ctx context.Context, id string, isRead bool) (int64, error) {
+func (cr *contactRepository) MarkAsRead(ctx context.Context, id string, isRead bool) (int64, error) {
 	query := `
 		UPDATE ma_contact_us
 		SET is_read = ?
