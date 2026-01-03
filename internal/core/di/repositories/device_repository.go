@@ -12,7 +12,7 @@ type IDeviceRepository interface {
 	GetDeviceByUIDAnDeviceUUID(ctx context.Context, uid string, deviceUUID string) (*domain.Device, error)
 	CheckTrustedDeviceByUID(ctx context.Context, uid string, deviceUUID string) (bool, error)
 	StoreDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) error
-	UpdateDevice(ctx context.Context, device *domain.Device) error
+	UpdateDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) error
 	MarkVerifiedDeviceByUIDAndDeviceUUID(ctx context.Context, uid string, deviceUUID string) error
 	DeleteDeviceByUID(ctx context.Context, tx *sql.Tx, uid string) error
 	ForceDeleteDeviceByUID(ctx context.Context, tx *sql.Tx, uid string) error

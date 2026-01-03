@@ -157,8 +157,6 @@ func (r *semesterRepository) Create(ctx context.Context, tx *sql.Tx, semester *d
 }
 
 // Update modifies an existing semester in the database.
-// LEGACY METHOD - kept for backward compatibility
-// New code should use UpdateFields instead
 func (r *semesterRepository) Update(ctx context.Context, tx *sql.Tx, semester *domain.Semester) (int64, error) {
 	result, err := r.db.Exec(ctx, tx, queries.SemesterUpdate,
 		PrepareForUpdate(semester.Name()),

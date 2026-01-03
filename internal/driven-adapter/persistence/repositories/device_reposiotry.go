@@ -4,99 +4,75 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
-	"strings"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/device"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/queries"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
 	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
+const (
+	deviceTableName = "ma_devices"
+)
+
 type deviceRepository struct {
-	db db.IDatabase
+	BaseRepository // Embed BaseRepository for common operations
 }
 
-func NewDeviceRepository(db db.IDatabase) di.IDeviceRepository {
+func NewDeviceRepository(database db.IDatabase) di.IDeviceRepository {
 	return &deviceRepository{
-		db: db,
+		BaseRepository: NewBaseRepository(database),
 	}
 }
 
+// scanDevice is a reusable helper method to scan device data from a row
+func (r *deviceRepository) scanDevice(scanner Scanner) (*domain.Device, error) {
+	var d models.DeviceModel
+	err := scanner.Scan(&d.ID, &d.UID, &d.DeviceUuid, &d.DeviceName, &d.DevicePushToken, &d.IsVerified)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("scan error: %v", err)
+	}
+
+	return domain.BuildDeviceDomainFromModel(&d), nil
+}
+
+// GetDeviceByDeviceUUID retrieves a device by device UUID.
 func (r *deviceRepository) GetDeviceByDeviceUUID(ctx context.Context, deviceUUID string) (*domain.Device, error) {
-	query := `
-		SELECT id, uid, device_uuid, device_name, device_push_token, is_verified
-		FROM ma_devices
-		WHERE device_uuid = ? AND status = ?
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, deviceUUID, enum.StatusActive)
-	var d models.DeviceModel
-	err := result.Scan(&d.ID, &d.UID, &d.DeviceUuid, &d.DeviceName, &d.DevicePushToken, &d.IsVerified)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	device := domain.BuildDeviceDomainFromModel(&d)
-
-	return device, nil
+	row := r.db.QueryRow(ctx, nil, queries.DeviceFindByDeviceUUID, deviceUUID, enum.StatusActive)
+	return r.scanDevice(row)
 }
 
+// GetDeviceByUIDAnDeviceUUID retrieves a device by UID and device UUID.
 func (r *deviceRepository) GetDeviceByUIDAnDeviceUUID(ctx context.Context, uid string, deviceUUID string) (*domain.Device, error) {
-	query := `
-		SELECT id, uid, device_uuid, device_name, device_push_token, is_verified
-		FROM ma_devices
-		WHERE uid = ? AND device_uuid = ? AND status = ?
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, uid, deviceUUID, enum.StatusActive)
-	var d models.DeviceModel
-	err := result.Scan(&d.ID, &d.UID, &d.DeviceUuid, &d.DeviceName, &d.DevicePushToken, &d.IsVerified)
-	if err != nil {
-		log.Println("Error scanning device:", err)
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	device := domain.BuildDeviceDomainFromModel(&d)
-
-	return device, nil
+	row := r.db.QueryRow(ctx, nil, queries.DeviceFindByUIDAndDeviceUUID, uid, deviceUUID, enum.StatusActive)
+	return r.scanDevice(row)
 }
 
+// CheckTrustedDeviceByUID checks if a device is verified by UID and device UUID.
+// Now uses query constants from queries package
 func (r *deviceRepository) CheckTrustedDeviceByUID(ctx context.Context, uid string, deviceUUID string) (bool, error) {
-	query := `
-		SELECT is_verified
-		FROM ma_devices
-		WHERE uid = ? AND device_uuid = ? AND status = ?
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, uid, deviceUUID, enum.StatusActive)
 	var isVerified bool
-	err := result.Scan(&isVerified)
+	row := r.db.QueryRow(ctx, nil, queries.DeviceCheckTrustedByUID, uid, deviceUUID, enum.StatusActive)
+	err := row.Scan(&isVerified)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil
 		}
-		return false, err
+		return false, fmt.Errorf("scan error: %v", err)
 	}
 
 	return isVerified, nil
 }
 
+// StoreDevice inserts a new device into the database.
 func (r *deviceRepository) StoreDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) error {
-	query := `
-		INSERT INTO ma_devices (id, uid, device_uuid, device_name, device_push_token, is_verified, status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`
-
-	_, err := r.db.Exec(ctx, tx, query,
+	_, err := r.db.Exec(ctx, tx, queries.DeviceInsert,
 		device.ID(),
 		device.UID(),
 		device.DeviceUuid(),
@@ -111,51 +87,27 @@ func (r *deviceRepository) StoreDevice(ctx context.Context, tx *sql.Tx, device *
 	return err
 }
 
-func (r *deviceRepository) UpdateDevice(ctx context.Context, device *domain.Device) error {
-	var queryBuilder strings.Builder
-	args := []interface{}{}
-
-	queryBuilder.WriteString("UPDATE ma_devices SET ")
-	updates := []string{}
-
-	if device.DeviceName() != "" {
-		updates = append(updates, "device_name = ?")
-		args = append(args, device.DeviceName())
+// UpdateDevice modifies an existing device in the database.
+func (r *deviceRepository) UpdateDevice(ctx context.Context, tx *sql.Tx, device *domain.Device) error {
+	_, err := r.db.Exec(ctx, tx, queries.DeviceUpdate,
+		device.DeviceName(),
+		device.DevicePushToken(),
+		device.IsVerified(),
+		mathtime.Now(),
+		device.UID(),
+		device.DeviceUuid(),
+		device.Status(),
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create grade: %v", err)
 	}
 
-	if device.DevicePushToken() != nil {
-		updates = append(updates, "device_push_token = ?")
-		args = append(args, device.DevicePushToken())
-	}
-
-	if device.IsVerified() {
-		updates = append(updates, "is_verified = ?")
-		args = append(args, device.IsVerified())
-	}
-
-	updates = append(updates, "modify_dt = ?")
-	args = append(args, mathtime.Now())
-
-	queryBuilder.WriteString(strings.Join(updates, ", "))
-	queryBuilder.WriteString(" WHERE uid = ? AND device_uuid = ? AND status = ?")
-	args = append(args, device.UID(), device.DeviceUuid(), enum.StatusActive)
-
-	query := queryBuilder.String()
-
-	_, err := r.db.Exec(ctx, nil, query, args...)
-	return err
-
+	return nil
 }
 
+// MarkVerifiedDeviceByUIDAndDeviceUUID marks a device as verified.
 func (r *deviceRepository) MarkVerifiedDeviceByUIDAndDeviceUUID(ctx context.Context, uid string, deviceUUID string) error {
-	query := `
-		UPDATE ma_devices
-		SET is_verified = ?,
-			modify_dt = ?
-		WHERE uid = ? AND device_uuid = ? AND status = ?
-	`
-
-	_, err := r.db.Exec(ctx, nil, query,
+	_, err := r.db.Exec(ctx, nil, queries.DeviceMarkVerified,
 		true,
 		mathtime.Now(),
 		uid,
@@ -166,26 +118,18 @@ func (r *deviceRepository) MarkVerifiedDeviceByUIDAndDeviceUUID(ctx context.Cont
 	return err
 }
 
+// DeleteDeviceByUID soft deletes devices by UID.
 func (r *deviceRepository) DeleteDeviceByUID(ctx context.Context, tx *sql.Tx, uid string) error {
-	query := `
-		UPDATE ma_devices
-		SET deleted_dt = ?,
-			modify_dt = ?
-		WHERE uid = ? AND deleted_dt IS NULL
-	`
-	_, err := r.db.Exec(ctx, tx, query, mathtime.Now(), mathtime.Now(), uid)
+	_, err := r.db.Exec(ctx, tx, queries.DeviceSoftDeleteByUID, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
-		return fmt.Errorf("failed to delete user logins: %v", err)
+		return fmt.Errorf("failed to delete user devices: %v", err)
 	}
 	return nil
 }
 
+// ForceDeleteDeviceByUID permanently deletes devices by UID.
 func (r *deviceRepository) ForceDeleteDeviceByUID(ctx context.Context, tx *sql.Tx, uid string) error {
-	query := `
-		DELETE FROM ma_devices
-		WHERE uid = ?
-	`
-	_, err := r.db.Exec(ctx, tx, query, uid)
+	_, err := r.db.Exec(ctx, tx, queries.DeviceForceDeleteByUID, uid)
 	if err != nil {
 		return fmt.Errorf("failed to force delete user devices: %v", err)
 	}

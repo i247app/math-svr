@@ -163,8 +163,6 @@ func (r *gradeRepository) Create(ctx context.Context, tx *sql.Tx, grade *domain.
 }
 
 // Update modifies an existing grade in the database.
-// LEGACY METHOD - kept for backward compatibility
-// New code should use UpdateFields instead
 func (r *gradeRepository) Update(ctx context.Context, tx *sql.Tx, grade *domain.Grade) (int64, error) {
 	result, err := r.db.Exec(ctx, tx, queries.GradeUpdate,
 		PrepareForUpdate(grade.Label()),

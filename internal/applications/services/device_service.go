@@ -62,7 +62,7 @@ func (s *DeviceService) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceR
 	}
 
 	deviceDomain := dto.BuildDeviceDomainForUpdate(req)
-	err := s.repo.UpdateDevice(ctx, deviceDomain)
+	err := s.repo.UpdateDevice(ctx, nil, deviceDomain)
 	if err != nil {
 		return status.FAIL, err
 	}
