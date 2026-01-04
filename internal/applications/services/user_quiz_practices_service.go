@@ -269,7 +269,7 @@ func (s *userQuizPracticeService) UpdateUserQuizPratice(ctx context.Context, req
 
 	quizDomain := dto.BuildUserQuizPracticesDomainForUpdate(req)
 
-	rowsAffected, err := s.repo.Update(ctx, quizDomain)
+	rowsAffected, err := s.repo.Update(ctx, nil, quizDomain)
 	if err != nil {
 		return status.USER_LATEST_QUIZ_UPDATE_FAILED, nil, err
 	}
@@ -304,7 +304,7 @@ func (s *userQuizPracticeService) DeleteUserQuizPratice(ctx context.Context, req
 		return status.USER_LATEST_QUIZ_NOT_FOUND, fmt.Errorf("user latest quiz not found")
 	}
 
-	rowsAffected, err := s.repo.Delete(ctx, req.ID)
+	rowsAffected, err := s.repo.Delete(ctx, nil, req.ID)
 	if err != nil {
 		return status.USER_LATEST_QUIZ_DELETE_FAILED, err
 	}
@@ -323,7 +323,7 @@ func (s *userQuizPracticeService) ForceDeleteUserQuizPratice(ctx context.Context
 		return statusCode, err
 	}
 
-	rowsAffected, err := s.repo.ForceDelete(ctx, req.ID)
+	rowsAffected, err := s.repo.ForceDelete(ctx, nil, req.ID)
 	if err != nil {
 		return status.USER_LATEST_QUIZ_FORCE_DELETE_FAILED, err
 	}

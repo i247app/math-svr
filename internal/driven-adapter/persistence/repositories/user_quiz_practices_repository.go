@@ -4,90 +4,57 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/user_quiz_practices"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/queries"
 	"math-ai.com/math-ai/internal/shared/db"
 	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
 type userQuizPracticesRepository struct {
-	db db.IDatabase
+	BaseRepository // Embed BaseRepository for common operations
 }
 
-func NewUserQuizPracticesRepository(db db.IDatabase) di.IUserQuizPracticesRepository {
+func NewUserQuizPracticesRepository(database db.IDatabase) di.IUserQuizPracticesRepository {
 	return &userQuizPracticesRepository{
-		db: db,
+		BaseRepository: NewBaseRepository(database),
 	}
+}
+
+// scanUserQuizPractices is a reusable helper method to scan user quiz practices data from a row
+func (r *userQuizPracticesRepository) scanUserQuizPractices(scanner Scanner) (*domain.UserQuizPractices, error) {
+	var q models.UserQuizPracticesModel
+	err := scanner.Scan(
+		&q.ID, &q.UID, &q.Questions, &q.Answers, &q.AIReview, &q.Status,
+		&q.CreateID, &q.CreateDT, &q.ModifyID, &q.ModifyDT,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("scan error: %v", err)
+	}
+
+	return domain.BuildUserQuizPracticesDomainFromModel(&q), nil
 }
 
 // FindByID retrieves a user latest quiz by ID.
 func (r *userQuizPracticesRepository) FindByID(ctx context.Context, id string) (*domain.UserQuizPractices, error) {
-	query := `
-		SELECT id, uid, questions, answers, ai_review, status,
-		create_id, create_dt, modify_id, modify_dt
-		FROM ma_user_quiz_practices
-		WHERE id = ? AND deleted_dt IS NULL
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, id)
-
-	var q models.UserQuizPracticesModel
-	err := result.Scan(
-		&q.ID, &q.UID, &q.Questions, &q.Answers, &q.AIReview, &q.Status,
-		&q.CreateID, &q.CreateDT, &q.ModifyID, &q.ModifyDT,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	quiz := domain.BuildUserQuizPracticesDomainFromModel(&q)
-
-	return quiz, nil
+	row := r.db.QueryRow(ctx, nil, queries.UserQuizPracticesFindByID, id)
+	return r.scanUserQuizPractices(row)
 }
 
 // FindByUID retrieves the latest quiz for a user by UID.
 func (r *userQuizPracticesRepository) FindByUID(ctx context.Context, uid string) (*domain.UserQuizPractices, error) {
-	query := `
-		SELECT id, uid, questions, answers, ai_review, status,
-		create_id, create_dt, modify_id, modify_dt
-		FROM ma_user_quiz_practices
-		WHERE uid = ? AND deleted_dt IS NULL
-		ORDER BY create_dt DESC
-		LIMIT 1
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, uid)
-
-	var q models.UserQuizPracticesModel
-	err := result.Scan(
-		&q.ID, &q.UID, &q.Questions, &q.Answers, &q.AIReview, &q.Status,
-		&q.CreateID, &q.CreateDT, &q.ModifyID, &q.ModifyDT,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	quiz := domain.BuildUserQuizPracticesDomainFromModel(&q)
-
-	return quiz, nil
+	row := r.db.QueryRow(ctx, nil, queries.UserQuizPracticesFindByUID, uid)
+	return r.scanUserQuizPractices(row)
 }
 
 // Create inserts a new user latest quiz into the database.
 func (r *userQuizPracticesRepository) Create(ctx context.Context, tx *sql.Tx, quiz *domain.UserQuizPractices) (int64, error) {
-	query := `
-		INSERT INTO ma_user_quiz_practices (id, uid, questions, answers, ai_review, status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`
-	result, err := r.db.Exec(ctx, tx, query,
+	result, err := r.db.Exec(ctx, tx, queries.UserQuizPracticesInsert,
 		quiz.ID(),
 		quiz.UID(),
 		quiz.Questions(),
@@ -105,41 +72,14 @@ func (r *userQuizPracticesRepository) Create(ctx context.Context, tx *sql.Tx, qu
 }
 
 // Update modifies an existing user latest quiz in the database.
-func (r *userQuizPracticesRepository) Update(ctx context.Context, quiz *domain.UserQuizPractices) (int64, error) {
-	var queryBuilder strings.Builder
-	args := []interface{}{}
-
-	queryBuilder.WriteString("UPDATE ma_user_quiz_practices SET ")
-	updates := []string{}
-	if quiz.Questions() != "" {
-		updates = append(updates, "questions = ?")
-		args = append(args, quiz.Questions())
-	}
-
-	if quiz.Answers() != "" {
-		updates = append(updates, "answers = ?")
-		args = append(args, quiz.Answers())
-	}
-
-	if quiz.AIReview() != "" {
-		updates = append(updates, "ai_review = ?")
-		args = append(args, quiz.AIReview())
-	}
-
-	updates = append(updates, "modify_dt = ?")
-	args = append(args, mathtime.Now())
-
-	if len(updates) == 0 {
-		return 0, fmt.Errorf("no fields to update for user latest quiz")
-	}
-
-	queryBuilder.WriteString(strings.Join(updates, ", "))
-	queryBuilder.WriteString(" WHERE id = ? OR uid = ? AND deleted_dt IS NULL")
-	args = append(args, quiz.ID(), quiz.UID())
-
-	query := queryBuilder.String()
-
-	result, err := r.db.Exec(ctx, nil, query, args...)
+func (r *userQuizPracticesRepository) Update(ctx context.Context, tx *sql.Tx, quiz *domain.UserQuizPractices) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.UserQuizPracticesUpdate,
+		PrepareForUpdate(quiz.Questions()),
+		PrepareForUpdate(quiz.Answers()),
+		PrepareForUpdate(quiz.AIReview()),
+		mathtime.Now(),
+		quiz.ID(),
+	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update user latest quiz: %v", err)
 	}
@@ -148,15 +88,8 @@ func (r *userQuizPracticesRepository) Update(ctx context.Context, quiz *domain.U
 }
 
 // Delete performs a soft delete on a user latest quiz.
-func (r *userQuizPracticesRepository) Delete(ctx context.Context, id string) (int64, error) {
-	query := `
-		UPDATE ma_user_quiz_practices
-		SET deleted_dt = ?,
-			modify_dt = ?
-		WHERE id = ? AND deleted_dt IS NULL
-	`
-
-	result, err := r.db.Exec(ctx, nil, query, mathtime.Now(), mathtime.Now(), id)
+func (r *userQuizPracticesRepository) Delete(ctx context.Context, tx *sql.Tx, id string) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.UserQuizPracticesSoftDelete, mathtime.Now(), mathtime.Now(), id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete user latest quiz: %v", err)
 	}
@@ -166,14 +99,7 @@ func (r *userQuizPracticesRepository) Delete(ctx context.Context, id string) (in
 
 // DeleteByUID performs a soft delete of user quiz practices by UID.
 func (r *userQuizPracticesRepository) DeleteByUID(ctx context.Context, tx *sql.Tx, uid string) error {
-	query := `
-		UPDATE ma_user_quiz_practices
-		SET deleted_dt = ?,
-			modify_dt = ?
-		WHERE uid = ? AND deleted_dt IS NULL
-	`
-
-	_, err := r.db.Exec(ctx, tx, query, mathtime.Now(), mathtime.Now(), uid)
+	_, err := r.db.Exec(ctx, tx, queries.UserQuizPracticesSoftDeleteByUID, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user quiz practices by UID: %v", err)
 	}
@@ -182,13 +108,8 @@ func (r *userQuizPracticesRepository) DeleteByUID(ctx context.Context, tx *sql.T
 }
 
 // ForceDelete permanently removes a user latest quiz from the database.
-func (r *userQuizPracticesRepository) ForceDelete(ctx context.Context, id string) (int64, error) {
-	query := `
-		DELETE FROM ma_user_quiz_practices
-		WHERE id = ?
-	`
-
-	result, err := r.db.Exec(ctx, nil, query, id)
+func (r *userQuizPracticesRepository) ForceDelete(ctx context.Context, tx *sql.Tx, id string) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.UserQuizPracticesForceDelete, id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to force delete user latest quiz: %v", err)
 	}
@@ -198,12 +119,7 @@ func (r *userQuizPracticesRepository) ForceDelete(ctx context.Context, id string
 
 // ForceDeleteByUID permanently removes user quiz practices by UID from the database.
 func (r *userQuizPracticesRepository) ForceDeleteByUID(ctx context.Context, tx *sql.Tx, uid string) error {
-	query := `
-		DELETE FROM ma_user_quiz_practices
-		WHERE uid = ?
-	`
-
-	_, err := r.db.Exec(ctx, tx, query, uid)
+	_, err := r.db.Exec(ctx, tx, queries.UserQuizPracticesForceDeleteByUID, uid)
 	if err != nil {
 		return fmt.Errorf("failed to force delete user quiz practices by UID: %v", err)
 	}

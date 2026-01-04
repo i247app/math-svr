@@ -69,14 +69,12 @@ func (r *userRepository) DoTransaction(ctx context.Context, handler db.Handerler
 }
 
 // GetUserByLoginName retrieves a user by their login name (email or phone) with role information.
-// Now uses query constants from queries package
 func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName string) (*domain.User, error) {
 	row := r.db.QueryRow(ctx, nil, queries.UserGetByLoginName, loginName)
 	return r.scanUserWithPassword(row)
 }
 
 // List retrieves a paginated list of users with optional search and sorting.
-// Now uses BaseRepository.PaginatedList to eliminate duplication
 func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([]*domain.User, *pagination.Pagination, error) {
 	// Get base queries
 	baseQuery := queries.UserListQuery
@@ -140,21 +138,18 @@ func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([
 }
 
 // FindByID retrieves a user by ID with optional role information.
-// Now uses query constants from queries package
 func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User, error) {
 	row := r.db.QueryRow(ctx, nil, queries.UserFindByID, uid)
 	return r.scanUser(row)
 }
 
 // FindByEmail retrieves a user by email with optional role information.
-// Now uses query constants from queries package
 func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	row := r.db.QueryRow(ctx, nil, queries.UserFindByEmail, email)
 	return r.scanUser(row)
 }
 
 // Create inserts a new user into the database.
-// Now uses query constants from queries package
 func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) {
 	result, err := r.db.Exec(ctx, tx, queries.UserInsert,
 		user.ID(),
@@ -176,7 +171,6 @@ func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.Us
 }
 
 // Update updates an existing user.
-// Now uses query constants from queries package
 func (r *userRepository) Update(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) {
 	result, err := r.db.Exec(ctx, tx, queries.UserUpdate,
 		PrepareForUpdate(user.Name()),
@@ -196,7 +190,6 @@ func (r *userRepository) Update(ctx context.Context, tx *sql.Tx, user *domain.Us
 }
 
 // Delete removes a user by ID.
-// Now uses query constants from queries package
 func (r *userRepository) Delete(ctx context.Context, tx *sql.Tx, uid string) error {
 	_, err := r.db.Exec(ctx, tx, queries.UserSoftDelete, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
@@ -206,7 +199,6 @@ func (r *userRepository) Delete(ctx context.Context, tx *sql.Tx, uid string) err
 }
 
 // ForceDelete removes a user by ID permanently.
-// Now uses query constants from queries package
 func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid string) error {
 	_, err := r.db.Exec(ctx, tx, queries.UserForceDelete, uid)
 	if err != nil {
@@ -216,7 +208,6 @@ func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid string
 }
 
 // StoreUserAlias stores a user alias in the database.
-// Now uses query constants from queries package
 func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error {
 	_, err := r.db.Exec(ctx, tx, queries.AliasInsert,
 		alias.ID(),
@@ -233,7 +224,6 @@ func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *
 }
 
 // DeleteUserAlias deletes user aliases by user ID.
-// Now uses query constants from queries package
 func (r *userRepository) DeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error {
 	_, err := r.db.Exec(ctx, tx, queries.AliasSoftDeleteByUID, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
@@ -243,7 +233,6 @@ func (r *userRepository) DeleteUserAlias(ctx context.Context, tx *sql.Tx, uid st
 }
 
 // ForceDeleteUserAlias permanently deletes user aliases by user ID.
-// Now uses query constants from queries package
 func (r *userRepository) ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error {
 	_, err := r.db.Exec(ctx, tx, queries.AliasForceDeleteByUID, uid)
 	if err != nil {
