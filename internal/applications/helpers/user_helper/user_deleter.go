@@ -53,7 +53,7 @@ func (u *UserDeleter) DeleteWithTransaction(ctx context.Context, uid string) err
 		}
 
 		// Delete user login logs
-		err = u.authRepo.DeleteLoginLogByUID(ctx, uid)
+		err = u.authRepo.DeleteLoginLogByUID(ctx, tx, uid)
 		if err != nil {
 			return fmt.Errorf("failed to delete user login logs in transaction: %v", err)
 		}
@@ -98,7 +98,7 @@ func (u *UserDeleter) ForceDeleteWithTransaction(ctx context.Context, uid string
 		}
 
 		// Force delete user login logs
-		err = u.authRepo.ForceDeleteLoginLogByUID(ctx, uid)
+		err = u.authRepo.ForceDeleteLoginLogByUID(ctx, tx, uid)
 		if err != nil {
 			return fmt.Errorf("failed to force delete user login logs in transaction: %v", err)
 		}

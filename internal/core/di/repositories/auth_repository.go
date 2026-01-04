@@ -15,8 +15,8 @@ type IAuthRepository interface {
 
 	// login logs
 	GetLoginLogByUIDAndDeviceUUID(ctx context.Context, uid string, deviceUUID string) (*domain.LoginLog, error)
-	StoreLoginLog(ctx context.Context, loginLog *domain.LoginLog) error
-	UpdateLoginLog(ctx context.Context, loginLog *domain.LoginLog) error
-	DeleteLoginLogByUID(ctx context.Context, uid string) error
-	ForceDeleteLoginLogByUID(ctx context.Context, uid string) error
+	StoreLoginLog(ctx context.Context, tx *sql.Tx, loginLog *domain.LoginLog) error
+	UpdateLoginLog(ctx context.Context, tx *sql.Tx, loginLog *domain.LoginLog) error
+	DeleteLoginLogByUID(ctx context.Context, tx *sql.Tx, uid string) error
+	ForceDeleteLoginLogByUID(ctx context.Context, tx *sql.Tx, uid string) error
 }

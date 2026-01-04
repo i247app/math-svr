@@ -4,33 +4,49 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/login"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/queries"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
 	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
+const (
+	loginTableName    = "ma_logins"
+	loginLogTableName = "ma_login_logs"
+)
+
 type authRepository struct {
-	db db.IDatabase
+	BaseRepository // Embed BaseRepository for common operations
 }
 
-func NewAuthRepository(db db.IDatabase) di.IAuthRepository {
+func NewAuthRepository(database db.IDatabase) di.IAuthRepository {
 	return &authRepository{
-		db: db,
+		BaseRepository: NewBaseRepository(database),
 	}
 }
 
+// scanLoginLog is a reusable helper method to scan login log data from a row
+func (r *authRepository) scanLoginLog(scanner Scanner) (*domain.LoginLog, error) {
+	var ll models.LoginLogModel
+	err := scanner.Scan(&ll.ID, &ll.UID, &ll.IPaddress, &ll.DeviceUUID, &ll.Token)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("scan error: %v", err)
+	}
+
+	return domain.BuildLoginLogFromModel(&ll), nil
+}
+
 // StoreLogin stores a user login record in the database.
+// Now uses query constants from queries package
 func (r *authRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *domain.Login) error {
-	query := `
-		INSERT INTO ma_logins (id, uid, hash_pass, status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`
-	_, err := r.db.Exec(ctx, tx, query,
+	_, err := r.db.Exec(ctx, tx, queries.LoginInsert,
 		login.ID(),
 		login.UID(),
 		login.HassPass(),
@@ -44,65 +60,37 @@ func (r *authRepository) StoreLogin(ctx context.Context, tx *sql.Tx, login *doma
 	return nil
 }
 
-// DeleteLogin deletes user logins by user ID.
+// DeleteLoginByUID deletes user logins by user ID.
+// Now uses query constants from queries package
 func (r *authRepository) DeleteLoginByUID(ctx context.Context, tx *sql.Tx, uid string) error {
-	query := `
-		UPDATE ma_logins
-		SET deleted_dt = ?,
-			modify_dt = ?
-		WHERE uid = ? AND deleted_dt IS NULL
-	`
-	_, err := r.db.Exec(ctx, tx, query, mathtime.Now(), mathtime.Now(), uid)
+	_, err := r.db.Exec(ctx, tx, queries.LoginSoftDeleteByUID, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user logins: %v", err)
 	}
 	return nil
 }
 
-// ForceDeleteLogin permanently deletes user logins by user ID.
+// ForceDeleteLoginByUID permanently deletes user logins by user ID.
+// Now uses query constants from queries package
 func (r *authRepository) ForceDeleteLoginByUID(ctx context.Context, tx *sql.Tx, uid string) error {
-	query := `
-		DELETE FROM ma_logins
-		WHERE uid = ?
-	`
-	_, err := r.db.Exec(ctx, tx, query, uid)
+	_, err := r.db.Exec(ctx, tx, queries.LoginForceDeleteByUID, uid)
 	if err != nil {
 		return fmt.Errorf("failed to force delete user logins: %v", err)
 	}
 	return nil
 }
 
-// GetLoginByUID retrieves a user login by user ID.
+// GetLoginLogByUIDAndDeviceUUID retrieves a user login log by user ID and device UUID.
+// Now uses query constants from queries package
 func (r *authRepository) GetLoginLogByUIDAndDeviceUUID(ctx context.Context, uid string, deviceUUID string) (*domain.LoginLog, error) {
-	query := `
-		SELECT id, uid, ip_address, device_uuid, token
-		FROM ma_login_logs
-		WHERE uid = ? AND device_uuid = ?
-	`
-
-	var ll models.LoginLogModel
-	result := r.db.QueryRow(ctx, nil, query, uid, deviceUUID)
-	err := result.Scan(&ll.ID, &ll.UID, &ll.IPaddress, &ll.DeviceUUID, &ll.Token)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	loginLog := domain.BuildLoginLogFromModel(&ll)
-
-	return loginLog, nil
+	row := r.db.QueryRow(ctx, nil, queries.LoginLogFindByUIDAndDeviceUUID, uid, deviceUUID)
+	return r.scanLoginLog(row)
 }
 
 // StoreLoginLog stores a user login log record in the database.
-func (r *authRepository) StoreLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
-	query := `
-		INSERT INTO ma_login_logs (id, uid, ip_address, device_uuid, token, status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`
-
-	_, err := r.db.Exec(ctx, nil, query,
+// Now uses query constants from queries package
+func (r *authRepository) StoreLoginLog(ctx context.Context, tx *sql.Tx, loginLog *domain.LoginLog) error {
+	_, err := r.db.Exec(ctx, tx, queries.LoginLogInsert,
 		loginLog.ID(),
 		loginLog.UID(),
 		loginLog.IPAddress(),
@@ -117,42 +105,22 @@ func (r *authRepository) StoreLoginLog(ctx context.Context, loginLog *domain.Log
 }
 
 // UpdateLoginLog updates a user login log record in the database.
-func (r *authRepository) UpdateLoginLog(ctx context.Context, loginLog *domain.LoginLog) error {
-	var queryBuilder strings.Builder
-	args := []interface{}{}
-
-	queryBuilder.WriteString("UPDATE ma_login_logs SET ")
-	updates := []string{}
-
-	if loginLog.Token() != "" {
-		updates = append(updates, "token = ?")
-		args = append(args, loginLog.Token())
-	}
-
-	if loginLog.Status() != "" {
-		updates = append(updates, "status = ?")
-		args = append(args, loginLog.Status())
-	}
-
-	queryBuilder.WriteString(strings.Join(updates, ", "))
-	queryBuilder.WriteString(" WHERE uid = ? AND device_uuid = ?")
-	args = append(args, loginLog.UID(), loginLog.DeviceUUID())
-
-	query := queryBuilder.String()
-
-	_, err := r.db.Exec(ctx, nil, query, args...)
+// Now uses query constants from queries package
+func (r *authRepository) UpdateLoginLog(ctx context.Context, tx *sql.Tx, loginLog *domain.LoginLog) error {
+	_, err := r.db.Exec(ctx, tx, queries.LoginLogUpdate,
+		PrepareForUpdate(loginLog.Token()),
+		PrepareForUpdate(loginLog.Status()),
+		mathtime.Now(),
+		loginLog.UID(),
+		loginLog.DeviceUUID(),
+	)
 	return err
 }
 
 // DeleteLoginLogByUID marks login logs as deleted for a given user ID.
-func (r *authRepository) DeleteLoginLogByUID(ctx context.Context, uid string) error {
-	query := `
-		UPDATE ma_login_logs
-		SET deleted_dt = ?,
-			modify_dt = ?
-		WHERE uid = ? AND deleted_dt IS NULL
-	`
-	_, err := r.db.Exec(ctx, nil, query, mathtime.Now(), mathtime.Now(), uid)
+// Now uses query constants from queries package
+func (r *authRepository) DeleteLoginLogByUID(ctx context.Context, tx *sql.Tx, uid string) error {
+	_, err := r.db.Exec(ctx, tx, queries.LoginLogSoftDeleteByUID, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete login logs: %v", err)
 	}
@@ -160,12 +128,9 @@ func (r *authRepository) DeleteLoginLogByUID(ctx context.Context, uid string) er
 }
 
 // ForceDeleteLoginLogByUID permanently deletes login logs for a given user ID.
-func (r *authRepository) ForceDeleteLoginLogByUID(ctx context.Context, uid string) error {
-	query := `
-		DELETE FROM ma_login_logs
-		WHERE uid = ?
-	`
-	_, err := r.db.Exec(ctx, nil, query, uid)
+// Now uses query constants from queries package
+func (r *authRepository) ForceDeleteLoginLogByUID(ctx context.Context, tx *sql.Tx, uid string) error {
+	_, err := r.db.Exec(ctx, tx, queries.LoginLogForceDeleteByUID, uid)
 	if err != nil {
 		return fmt.Errorf("failed to force delete login logs: %v", err)
 	}

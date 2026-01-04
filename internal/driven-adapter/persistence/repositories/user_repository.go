@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/user"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/queries"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
@@ -16,43 +16,38 @@ import (
 )
 
 type userRepository struct {
-	db db.IDatabase
+	BaseRepository // Embed BaseRepository for common operations
 }
 
-func NewUserRepository(db db.IDatabase) di.IUserRepository {
+func NewUserRepository(database db.IDatabase) di.IUserRepository {
 	return &userRepository{
-		db: db,
+		BaseRepository: NewBaseRepository(database),
 	}
 }
 
-// ForceDeleteUserWithAssociations permanently deletes a user and their associated records in a single transaction.
-func (r *userRepository) DoTransaction(ctx context.Context, handler db.HanderlerWithTx) error {
-	err := r.db.WithTransaction(handler)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// GetUserByLoginName retrieves a user by their login name (email or phone) with role information.
-func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName string) (*domain.User, error) {
-	query := `
-		SELECT u.id, u.name, u.phone, u.email, u.avatar_key, u.dob,
-		       u.role_id, u.status, l.hash_pass,
-		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
-		       r.name as role_name
-		FROM ma_users u
-		JOIN ma_aliases a ON u.id = a.uid
-		JOIN ma_logins l ON u.id = l.uid
-		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
-		WHERE a.aka = ? AND u.deleted_dt IS NULL AND a.deleted_dt IS NULL AND l.deleted_dt IS NULL
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, loginName)
-
+// scanUser is a reusable helper method to scan user data from a row
+func (r *userRepository) scanUser(scanner Scanner) (*domain.User, error) {
 	var u models.UserModel
-	err := result.Scan(
+	err := scanner.Scan(
+		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
+		&u.RoleID, &u.Status,
+		&u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
+		&u.Role,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("scan error: %v", err)
+	}
+
+	return domain.BuildUserDomainFromModel(&u), nil
+}
+
+// scanUserWithPassword is a reusable helper method to scan user data with password from a row
+func (r *userRepository) scanUserWithPassword(scanner Scanner) (*domain.User, error) {
+	var u models.UserModel
+	err := scanner.Scan(
 		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
 		&u.RoleID, &u.Status, &u.HashPassword,
 		&u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
@@ -65,75 +60,67 @@ func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName strin
 		return nil, fmt.Errorf("scan error: %v", err)
 	}
 
-	user := domain.BuildUserDomainFromModel(&u)
+	return domain.BuildUserDomainFromModel(&u), nil
+}
 
-	return user, nil
+// DoTransaction wraps a function in a database transaction
+func (r *userRepository) DoTransaction(ctx context.Context, handler db.HanderlerWithTx) error {
+	return r.ExecuteInTransaction(handler)
+}
+
+// GetUserByLoginName retrieves a user by their login name (email or phone) with role information.
+// Now uses query constants from queries package
+func (r *userRepository) GetUserByLoginName(ctx context.Context, loginName string) (*domain.User, error) {
+	row := r.db.QueryRow(ctx, nil, queries.UserGetByLoginName, loginName)
+	return r.scanUserWithPassword(row)
 }
 
 // List retrieves a paginated list of users with optional search and sorting.
-// Now supports joining with roles table for enhanced user information.
+// Now uses BaseRepository.PaginatedList to eliminate duplication
 func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([]*domain.User, *pagination.Pagination, error) {
-	var queryBuilder strings.Builder
+	// Get base queries
+	baseQuery := queries.UserListQuery
+	countQuery := queries.UserListCountQuery
 	args := []interface{}{}
 
-	// Base query with LEFT JOIN to roles table
-	queryBuilder.WriteString(`
-		SELECT u.id, u.name, u.phone, u.email, u.avatar_key, u.dob,
-		       u.role_id, u.status,
-		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
-		       r.name as role_name
-		FROM ma_users u
-		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
-		WHERE u.deleted_dt IS NULL
-	`)
-
-	// Add search condition
+	// Add search condition if provided
 	if params.Search != "" {
-		queryBuilder.WriteString(` AND (u.name LIKE ? OR u.email LIKE ?)`)
-		searchTerm := "%" + params.Search + "%"
-		args = append(args, searchTerm, searchTerm)
+		baseQuery, countQuery, args = queries.UserQueries{}.BuildListQueryWithSearch(params.Search)
 	}
 
-	// Count total records for pagination
-	countQuery := "SELECT COUNT(*) FROM ma_users u WHERE u.deleted_dt IS NULL"
-	countArgs := []interface{}{}
-	if params.Search != "" {
-		countQuery += ` AND (u.name LIKE ? OR u.email LIKE ?)`
-		searchTerm := "%" + params.Search + "%"
-		countArgs = append(countArgs, searchTerm, searchTerm)
+	// Build pagination params
+	paginationParams := pagination.Params{
+		Page:      params.Page,
+		Limit:     params.Limit,
+		OrderBy:   params.OrderBy,
+		OrderDesc: params.OrderDesc,
+		TakeAll:   params.TakeAll,
 	}
 
-	var total int64
-	countRow := r.db.QueryRow(ctx, nil, countQuery, countArgs...)
-	if err := countRow.Scan(&total); err != nil {
-		return nil, nil, fmt.Errorf("failed to count users: %v", err)
+	// Default ordering if not specified
+	if paginationParams.OrderBy == "" {
+		paginationParams.OrderBy = "u.create_dt"
+		paginationParams.OrderDesc = true // Most recent first
+	} else {
+		// Prefix with table alias
+		paginationParams.OrderBy = "u." + paginationParams.OrderBy
 	}
 
-	// Initialize pagination
-	paginationResult := pagination.NewPagination(params.Page, params.Limit, total)
-	if params.TakeAll {
-		paginationResult.Size = total
-		paginationResult.Skip = 0
-		paginationResult.Page = 1
-		paginationResult.TotalPages = 1
+	// Use BaseRepository.PaginatedList for automatic count and pagination
+	query, queryArgs, paginationObj, err := r.PaginatedList(
+		ctx,
+		baseQuery,
+		args,
+		countQuery,
+		args,
+		paginationParams,
+	)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	// Add sorting
-	if params.OrderBy != "" {
-		queryBuilder.WriteString(fmt.Sprintf(" ORDER BY u.%s", params.OrderBy))
-		if params.OrderDesc {
-			queryBuilder.WriteString(" DESC")
-		}
-	}
-
-	// Add pagination
-	if !params.TakeAll {
-		queryBuilder.WriteString(` LIMIT ? OFFSET ?`)
-		args = append(args, paginationResult.Size, paginationResult.Skip)
-	}
-
-	// Execute query
-	rows, err := r.db.Query(ctx, nil, queryBuilder.String(), args...)
+	// Execute final query
+	rows, err := r.db.Query(ctx, nil, query, queryArgs...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list users: %v", err)
 	}
@@ -142,95 +129,34 @@ func (r *userRepository) List(ctx context.Context, params di.ListUsersParams) ([
 	// Scan results
 	var users []*domain.User
 	for rows.Next() {
-		var u models.UserModel
-		if err := rows.Scan(
-			&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
-			&u.RoleID, &u.Status,
-			&u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
-			&u.Role,
-		); err != nil {
-			return nil, nil, fmt.Errorf("scan error: %v", err)
+		user, err := r.scanUser(rows)
+		if err != nil {
+			return nil, nil, err
 		}
-
-		users = append(users, domain.BuildUserDomainFromModel(&u))
+		users = append(users, user)
 	}
 
-	return users, paginationResult, nil
+	return users, paginationObj, nil
 }
 
 // FindByID retrieves a user by ID with optional role information.
+// Now uses query constants from queries package
 func (r *userRepository) FindByID(ctx context.Context, uid string) (*domain.User, error) {
-	query := `
-		SELECT u.id, u.name, u.phone, u.email, u.avatar_key, u.dob,
-		       u.role_id, u.status,
-		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
-		       r.name as role_name
-		FROM ma_users u
-		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
-		WHERE u.id = ? AND u.deleted_dt IS NULL
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, uid)
-
-	var u models.UserModel
-	err := result.Scan(
-		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
-		&u.RoleID, &u.Status,
-		&u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
-		&u.Role,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	user := domain.BuildUserDomainFromModel(&u)
-
-	return user, nil
+	row := r.db.QueryRow(ctx, nil, queries.UserFindByID, uid)
+	return r.scanUser(row)
 }
 
 // FindByEmail retrieves a user by email with optional role information.
+// Now uses query constants from queries package
 func (r *userRepository) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
-	query := `
-		SELECT u.id, u.name, u.phone, u.email, u.avatar_key, u.dob,
-		       u.role_id, u.status,
-		       u.create_id, u.create_dt, u.modify_id, u.modify_dt,
-		       r.name as role_name
-		FROM ma_users u
-		LEFT JOIN roles r ON u.role_id = r.id AND r.deleted_dt IS NULL
-		WHERE u.email = ? AND u.deleted_dt IS NULL
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, email)
-
-	var u models.UserModel
-	err := result.Scan(
-		&u.ID, &u.Name, &u.Phone, &u.Email, &u.AvatarKey, &u.Dob,
-		&u.RoleID, &u.Status,
-		&u.CreateID, &u.CreateDT, &u.ModifyID, &u.ModifyDT,
-		&u.Role,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	user := domain.BuildUserDomainFromModel(&u)
-
-	return user, nil
+	row := r.db.QueryRow(ctx, nil, queries.UserFindByEmail, email)
+	return r.scanUser(row)
 }
 
 // Create inserts a new user into the database.
+// Now uses query constants from queries package
 func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) {
-	query := `
-		INSERT INTO ma_users (id, name, phone, email, avatar_key, dob, role_id, status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`
-	result, err := r.db.Exec(ctx, tx, query,
+	result, err := r.db.Exec(ctx, tx, queries.UserInsert,
 		user.ID(),
 		user.Name(),
 		user.Phone(),
@@ -246,64 +172,22 @@ func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *domain.Us
 		return 0, fmt.Errorf("failed to create user: %v", err)
 	}
 
-	insertedID, err := result.LastInsertId()
-	if err != nil {
-		return 0, fmt.Errorf("failed to retrieve last insert ID: %v", err)
-	}
-
-	return insertedID, nil
+	return result.LastInsertId()
 }
 
 // Update updates an existing user.
-func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, error) {
-	var queryBuilder strings.Builder
-	args := []interface{}{}
-
-	queryBuilder.WriteString("UPDATE ma_users SET ")
-	updates := []string{}
-
-	if user.Name() != "" {
-		updates = append(updates, "name = ?")
-		args = append(args, user.Name())
-	}
-
-	if user.Phone() != "" {
-		updates = append(updates, "phone = ?")
-		args = append(args, user.Phone())
-	}
-
-	if user.Email() != "" {
-		updates = append(updates, "email = ?")
-		args = append(args, user.Email())
-	}
-
-	if user.DOB() != nil {
-		updates = append(updates, "dob = ?")
-		args = append(args, user.DOB())
-	}
-
-	if user.RoleID() != "" {
-		updates = append(updates, "role_id = ?")
-		args = append(args, user.RoleID())
-	}
-
-	if user.AvatarKey() != nil {
-		updates = append(updates, "avatar_key = ?")
-		args = append(args, user.AvatarKey())
-	}
-
-	updates = append(updates, "modify_dt = ?")
-	args = append(args, mathtime.Now())
-
-	if len(updates) == 0 {
-		return 0, fmt.Errorf("no fields to update")
-	}
-
-	queryBuilder.WriteString(strings.Join(updates, ", "))
-	queryBuilder.WriteString(" WHERE id = ? AND deleted_dt IS NULL")
-	args = append(args, user.ID())
-
-	result, err := r.db.Exec(ctx, nil, queryBuilder.String(), args...)
+// Now uses query constants from queries package
+func (r *userRepository) Update(ctx context.Context, tx *sql.Tx, user *domain.User) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.UserUpdate,
+		PrepareForUpdate(user.Name()),
+		PrepareForUpdate(user.Phone()),
+		PrepareForUpdate(user.Email()),
+		PrepareForUpdate(user.DOB()),
+		PrepareForUpdate(user.RoleID()),
+		PrepareForUpdate(user.AvatarKey()),
+		mathtime.Now(),
+		user.ID(),
+	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update user: %v", err)
 	}
@@ -312,14 +196,9 @@ func (r *userRepository) Update(ctx context.Context, user *domain.User) (int64, 
 }
 
 // Delete removes a user by ID.
+// Now uses query constants from queries package
 func (r *userRepository) Delete(ctx context.Context, tx *sql.Tx, uid string) error {
-	query := `
-		UPDATE ma_users
-		SET deleted_dt = ?,
-			modify_dt = ?
-		WHERE id = ?
-	`
-	_, err := r.db.Exec(ctx, tx, query, mathtime.Now(), mathtime.Now(), uid)
+	_, err := r.db.Exec(ctx, tx, queries.UserSoftDelete, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user: %v", err)
 	}
@@ -327,12 +206,9 @@ func (r *userRepository) Delete(ctx context.Context, tx *sql.Tx, uid string) err
 }
 
 // ForceDelete removes a user by ID permanently.
+// Now uses query constants from queries package
 func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid string) error {
-	query := `
-		DELETE FROM ma_users
-		WHERE id = ?
-	`
-	_, err := r.db.Exec(ctx, tx, query, uid)
+	_, err := r.db.Exec(ctx, tx, queries.UserForceDelete, uid)
 	if err != nil {
 		return fmt.Errorf("failed to force delete user: %v", err)
 	}
@@ -340,12 +216,9 @@ func (r *userRepository) ForceDelete(ctx context.Context, tx *sql.Tx, uid string
 }
 
 // StoreUserAlias stores a user alias in the database.
+// Now uses query constants from queries package
 func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *domain.Alias) error {
-	query := `
-		INSERT INTO ma_aliases (id, uid, aka, status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`
-	_, err := r.db.Exec(ctx, tx, query,
+	_, err := r.db.Exec(ctx, tx, queries.AliasInsert,
 		alias.ID(),
 		alias.UID(),
 		alias.Aka(),
@@ -360,14 +233,9 @@ func (r *userRepository) StoreUserAlias(ctx context.Context, tx *sql.Tx, alias *
 }
 
 // DeleteUserAlias deletes user aliases by user ID.
+// Now uses query constants from queries package
 func (r *userRepository) DeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error {
-	query := `
-		UPDATE ma_aliases
-		SET deleted_dt = ?,
-			modify_dt = ?
-		WHERE uid = ? AND deleted_dt IS NULL
-	`
-	_, err := r.db.Exec(ctx, tx, query, mathtime.Now(), mathtime.Now(), uid)
+	_, err := r.db.Exec(ctx, tx, queries.AliasSoftDeleteByUID, mathtime.Now(), mathtime.Now(), uid)
 	if err != nil {
 		return fmt.Errorf("failed to delete user aliases: %v", err)
 	}
@@ -375,12 +243,9 @@ func (r *userRepository) DeleteUserAlias(ctx context.Context, tx *sql.Tx, uid st
 }
 
 // ForceDeleteUserAlias permanently deletes user aliases by user ID.
+// Now uses query constants from queries package
 func (r *userRepository) ForceDeleteUserAlias(ctx context.Context, tx *sql.Tx, uid string) error {
-	query := `
-		DELETE FROM ma_aliases
-		WHERE uid = ?
-	`
-	_, err := r.db.Exec(ctx, tx, query, uid)
+	_, err := r.db.Exec(ctx, tx, queries.AliasForceDeleteByUID, uid)
 	if err != nil {
 		return fmt.Errorf("failed to force delete user aliases: %v", err)
 	}

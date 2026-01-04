@@ -97,14 +97,14 @@ func (s *AuthService) Login(ctx context.Context, sess *session.AppSession, req *
 
 	if loginLog != nil {
 		updateLoginLogDTO := dto.BuildLoginLogDomainForUpdate(loginLog.ID(), user.ID(), req.IpAddress, req.DeviceUUID, authToken, loginStatus)
-		err = s.repo.UpdateLoginLog(ctx, updateLoginLogDTO)
+		err = s.repo.UpdateLoginLog(ctx, nil, updateLoginLogDTO)
 		if err != nil {
 			logger.Infof("Error updating login log: %v", err)
 			return status.FAIL, nil, err
 		}
 	} else {
 		createLoginLogDTO := dto.BuildLoginLogDomainForCreate(user.ID(), req.IpAddress, req.DeviceUUID, authToken, loginStatus)
-		err = s.repo.StoreLoginLog(ctx, createLoginLogDTO)
+		err = s.repo.StoreLoginLog(ctx, nil, createLoginLogDTO)
 		if err != nil {
 			logger.Infof("Error storing login log: %v", err)
 			return status.FAIL, nil, err
