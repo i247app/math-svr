@@ -38,11 +38,11 @@ type IRoleRepository interface {
 	Create(ctx context.Context, tx *sql.Tx, role *domain.Role) (int64, error)
 
 	// Update modifies an existing role
-	Update(ctx context.Context, role *domain.Role) (int64, error)
+	Update(ctx context.Context, tx *sql.Tx, role *domain.Role) (int64, error)
 
 	// Delete soft deletes a role
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, tx *sql.Tx, id string) (int64, error)
 
 	// ForceDelete permanently deletes a role
-	ForceDelete(ctx context.Context, tx *sql.Tx, id string) error
+	ForceDelete(ctx context.Context, tx *sql.Tx, id string) (int64, error)
 }

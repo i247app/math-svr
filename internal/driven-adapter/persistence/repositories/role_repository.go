@@ -9,6 +9,7 @@ import (
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/role"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/queries"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
@@ -16,13 +17,30 @@ import (
 )
 
 type roleRepository struct {
-	db db.IDatabase
+	BaseRepository // Embed BaseRepository for common operations
 }
 
-func NewRoleRepository(db db.IDatabase) di.IRoleRepository {
+func NewRoleRepository(database db.IDatabase) di.IRoleRepository {
 	return &roleRepository{
-		db: db,
+		BaseRepository: NewBaseRepository(database),
 	}
+}
+
+// scanRole is a reusable helper method to scan role data from a row
+func (r *roleRepository) scanRole(scanner Scanner) (*domain.Role, error) {
+	var m models.RoleModel
+	err := scanner.Scan(
+		&m.ID, &m.Name, &m.Code, &m.Description, &m.ParentRoleID, &m.IsSystemRole,
+		&m.Status, &m.DisplayOrder, &m.CreateID, &m.CreateDT, &m.ModifyID, &m.ModifyDT,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("scan error: %v", err)
+	}
+
+	return domain.BuildRoleDomainFromModel(&m), nil
 }
 
 // List retrieves a paginated list of roles
@@ -33,17 +51,8 @@ func (r *roleRepository) List(ctx context.Context, params di.ListRolesParams) ([
 	countArgs := []interface{}{}
 
 	// Base query
-	queryBuilder.WriteString(`
-		SELECT
-			id, name, code, description, parent_role_id, is_system_role,
-			status, display_order, create_id, create_dt, modify_id, modify_dt
-		FROM roles
-		WHERE deleted_dt IS NULL`)
-
-	countBuilder.WriteString(`
-		SELECT COUNT(*)
-		FROM roles
-		WHERE deleted_dt IS NULL`)
+	queryBuilder.WriteString(queries.RoleBaseSelect)
+	countBuilder.WriteString(queries.RoleBaseCount)
 
 	// Filter system roles if not included
 	if !params.IncludeSystem {
@@ -108,15 +117,11 @@ func (r *roleRepository) List(ctx context.Context, params di.ListRolesParams) ([
 	// Scan results
 	var roles []*domain.Role
 	for rows.Next() {
-		var m models.RoleModel
-		if err := rows.Scan(
-			&m.ID, &m.Name, &m.Code, &m.Description, &m.ParentRoleID, &m.IsSystemRole,
-			&m.Status, &m.DisplayOrder, &m.CreateID, &m.CreateDT, &m.ModifyID, &m.ModifyDT,
-		); err != nil {
-			return nil, nil, fmt.Errorf("scan error: %v", err)
+		role, err := r.scanRole(rows)
+		if err != nil {
+			return nil, nil, err
 		}
-
-		roles = append(roles, domain.BuildRoleDomainFromModel(&m))
+		roles = append(roles, role)
 	}
 
 	return roles, paginationObj, nil
@@ -124,54 +129,14 @@ func (r *roleRepository) List(ctx context.Context, params di.ListRolesParams) ([
 
 // FindByID retrieves a role by ID
 func (r *roleRepository) FindByID(ctx context.Context, id string) (*domain.Role, error) {
-	query := `
-		SELECT id, name, code, description, parent_role_id, is_system_role,
-		       status, display_order, create_id, create_dt, modify_id, modify_dt
-		FROM roles
-		WHERE id = ? AND deleted_dt IS NULL
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, id)
-
-	var m models.RoleModel
-	err := result.Scan(
-		&m.ID, &m.Name, &m.Code, &m.Description, &m.ParentRoleID, &m.IsSystemRole,
-		&m.Status, &m.DisplayOrder, &m.CreateID, &m.CreateDT, &m.ModifyID, &m.ModifyDT,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	return domain.BuildRoleDomainFromModel(&m), nil
+	row := r.db.QueryRow(ctx, nil, queries.RoleFindByID, id)
+	return r.scanRole(row)
 }
 
 // FindByCode retrieves a role by code
 func (r *roleRepository) FindByCode(ctx context.Context, code string) (*domain.Role, error) {
-	query := `
-		SELECT id, name, code, description, parent_role_id, is_system_role,
-		       status, display_order, create_id, create_dt, modify_id, modify_dt
-		FROM roles
-		WHERE code = ? AND deleted_dt IS NULL
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, code)
-
-	var m models.RoleModel
-	err := result.Scan(
-		&m.ID, &m.Name, &m.Code, &m.Description, &m.ParentRoleID, &m.IsSystemRole,
-		&m.Status, &m.DisplayOrder, &m.CreateID, &m.CreateDT, &m.ModifyID, &m.ModifyDT,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	return domain.BuildRoleDomainFromModel(&m), nil
+	row := r.db.QueryRow(ctx, nil, queries.RoleFindByCode, code)
+	return r.scanRole(row)
 }
 
 // GetWithPermissions retrieves a role with its permissions (not yet implemented fully)
@@ -216,11 +181,7 @@ func (r *roleRepository) GetHierarchy(ctx context.Context, roleID string) ([]*do
 
 // Create inserts a new role
 func (r *roleRepository) Create(ctx context.Context, tx *sql.Tx, role *domain.Role) (int64, error) {
-	query := `
-		INSERT INTO roles (id, name, code, description, parent_role_id, is_system_role, status, display_order, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`
-	result, err := r.db.Exec(ctx, tx, query,
+	result, err := r.db.Exec(ctx, tx, queries.RoleInsert,
 		role.ID(),
 		role.Name(),
 		role.Code(),
@@ -240,55 +201,17 @@ func (r *roleRepository) Create(ctx context.Context, tx *sql.Tx, role *domain.Ro
 }
 
 // Update modifies an existing role
-func (r *roleRepository) Update(ctx context.Context, role *domain.Role) (int64, error) {
-	var queryBuilder strings.Builder
-	args := []interface{}{}
-
-	queryBuilder.WriteString("UPDATE roles SET ")
-	updates := []string{}
-
-	if role.Name() != "" {
-		updates = append(updates, "name = ?")
-		args = append(args, role.Name())
-	}
-
-	if role.Code() != "" {
-		updates = append(updates, "code = ?")
-		args = append(args, role.Code())
-	}
-
-	if role.Description() != nil {
-		updates = append(updates, "description = ?")
-		args = append(args, role.Description())
-	}
-
-	if role.ParentRoleID() != nil {
-		updates = append(updates, "parent_role_id = ?")
-		args = append(args, role.ParentRoleID())
-	}
-
-	if role.Status() != "" {
-		updates = append(updates, "status = ?")
-		args = append(args, role.Status())
-	}
-
-	if role.DisplayOrder() != 0 {
-		updates = append(updates, "display_order = ?")
-		args = append(args, role.DisplayOrder())
-	}
-
-	updates = append(updates, "modify_dt = ?")
-	args = append(args, mathtime.Now())
-
-	if len(updates) == 0 {
-		return 0, fmt.Errorf("no fields to update")
-	}
-
-	queryBuilder.WriteString(strings.Join(updates, ", "))
-	queryBuilder.WriteString(" WHERE id = ? AND deleted_dt IS NULL")
-	args = append(args, role.ID())
-
-	result, err := r.db.Exec(ctx, nil, queryBuilder.String(), args...)
+func (r *roleRepository) Update(ctx context.Context, tx *sql.Tx, role *domain.Role) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.RoleUpdate,
+		PrepareForUpdate(role.Name()),
+		PrepareForUpdate(role.Code()),
+		PrepareForUpdate(role.Description()),
+		PrepareForUpdate(role.ParentRoleID()),
+		PrepareForUpdate(role.Status()),
+		PrepareForUpdate(role.DisplayOrder()),
+		mathtime.Now(),
+		role.ID(),
+	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update role: %v", err)
 	}
@@ -297,28 +220,22 @@ func (r *roleRepository) Update(ctx context.Context, role *domain.Role) (int64, 
 }
 
 // Delete soft deletes a role
-func (r *roleRepository) Delete(ctx context.Context, id string) error {
-	query := `
-		UPDATE roles
-		SET deleted_dt = ?,
-		    modify_dt = ?
-		WHERE id = ? AND deleted_dt IS NULL AND is_system_role = FALSE`
+func (r *roleRepository) Delete(ctx context.Context, tx *sql.Tx, id string) (int64, error) {
 	now := mathtime.Now()
-	_, err := r.db.Exec(ctx, nil, query, now, now, id)
+	result, err := r.db.Exec(ctx, tx, queries.RoleSoftDelete, now, now, id)
 	if err != nil {
-		return fmt.Errorf("failed to delete role: %v", err)
+		return 0, fmt.Errorf("failed to delete role: %v", err)
 	}
 
-	return nil
+	return result.RowsAffected()
 }
 
 // ForceDelete permanently deletes a role
-func (r *roleRepository) ForceDelete(ctx context.Context, tx *sql.Tx, id string) error {
-	query := `DELETE FROM roles WHERE id = ? AND is_system_role = FALSE`
-	_, err := r.db.Exec(ctx, tx, query, id)
+func (r *roleRepository) ForceDelete(ctx context.Context, tx *sql.Tx, id string) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.RoleForceDelete, id)
 	if err != nil {
-		return fmt.Errorf("failed to force delete role: %v", err)
+		return 0, fmt.Errorf("failed to force delete role: %v", err)
 	}
 
-	return nil
+	return result.RowsAffected()
 }

@@ -9,6 +9,7 @@ import (
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/permission"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/queries"
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
@@ -16,13 +17,30 @@ import (
 )
 
 type permissionRepository struct {
-	db db.IDatabase
+	BaseRepository // Embed BaseRepository for common operations
 }
 
-func NewPermissionRepository(db db.IDatabase) di.IPermissionRepository {
+func NewPermissionRepository(database db.IDatabase) di.IPermissionRepository {
 	return &permissionRepository{
-		db: db,
+		BaseRepository: NewBaseRepository(database),
 	}
+}
+
+// scanPermission is a reusable helper method to scan permission data from a row
+func (r *permissionRepository) scanPermission(scanner Scanner) (*domain.Permission, error) {
+	var m models.PermissionModel
+	err := scanner.Scan(
+		&m.ID, &m.Name, &m.Description, &m.HTTPMethod, &m.EndpointPath, &m.Resource, &m.Action,
+		&m.Status, &m.CreateID, &m.CreateDT, &m.ModifyID, &m.ModifyDT,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("scan error: %v", err)
+	}
+
+	return domain.BuildPermissionDomainFromModel(&m), nil
 }
 
 // List retrieves a paginated list of permissions
@@ -33,17 +51,8 @@ func (r *permissionRepository) List(ctx context.Context, params di.ListPermissio
 	countArgs := []interface{}{}
 
 	// Base query
-	queryBuilder.WriteString(`
-		SELECT
-			id, name, description, http_method, endpoint_path, resource, action,
-			status, create_id, create_dt, modify_id, modify_dt
-		FROM permissions
-		WHERE deleted_dt IS NULL`)
-
-	countBuilder.WriteString(`
-		SELECT COUNT(*)
-		FROM permissions
-		WHERE deleted_dt IS NULL`)
+	queryBuilder.WriteString(queries.PermissionBaseSelect)
+	countBuilder.WriteString(queries.PermissionBaseCount)
 
 	// Filter by resource
 	if params.Resource != "" {
@@ -111,15 +120,11 @@ func (r *permissionRepository) List(ctx context.Context, params di.ListPermissio
 	// Scan results
 	var permissions []*domain.Permission
 	for rows.Next() {
-		var m models.PermissionModel
-		if err := rows.Scan(
-			&m.ID, &m.Name, &m.Description, &m.HTTPMethod, &m.EndpointPath, &m.Resource, &m.Action,
-			&m.Status, &m.CreateID, &m.CreateDT, &m.ModifyID, &m.ModifyDT,
-		); err != nil {
-			return nil, nil, fmt.Errorf("scan error: %v", err)
+		permission, err := r.scanPermission(rows)
+		if err != nil {
+			return nil, nil, err
 		}
-
-		permissions = append(permissions, domain.BuildPermissionDomainFromModel(&m))
+		permissions = append(permissions, permission)
 	}
 
 	return permissions, paginationObj, nil
@@ -127,93 +132,25 @@ func (r *permissionRepository) List(ctx context.Context, params di.ListPermissio
 
 // FindByID retrieves a permission by ID
 func (r *permissionRepository) FindByID(ctx context.Context, id string) (*domain.Permission, error) {
-	query := `
-		SELECT id, name, description, http_method, endpoint_path, resource, action,
-		       status, create_id, create_dt, modify_id, modify_dt
-		FROM permissions
-		WHERE id = ? AND deleted_dt IS NULL
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, id)
-
-	var m models.PermissionModel
-	err := result.Scan(
-		&m.ID, &m.Name, &m.Description, &m.HTTPMethod, &m.EndpointPath, &m.Resource, &m.Action,
-		&m.Status, &m.CreateID, &m.CreateDT, &m.ModifyID, &m.ModifyDT,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	return domain.BuildPermissionDomainFromModel(&m), nil
+	row := r.db.QueryRow(ctx, nil, queries.PermissionFindByID, id)
+	return r.scanPermission(row)
 }
 
 // FindByName retrieves a permission by name
 func (r *permissionRepository) FindByName(ctx context.Context, name string) (*domain.Permission, error) {
-	query := `
-		SELECT id, name, description, http_method, endpoint_path, resource, action,
-		       status, create_id, create_dt, modify_id, modify_dt
-		FROM permissions
-		WHERE name = ? AND deleted_dt IS NULL
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, name)
-
-	var m models.PermissionModel
-	err := result.Scan(
-		&m.ID, &m.Name, &m.Description, &m.HTTPMethod, &m.EndpointPath, &m.Resource, &m.Action,
-		&m.Status, &m.CreateID, &m.CreateDT, &m.ModifyID, &m.ModifyDT,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	return domain.BuildPermissionDomainFromModel(&m), nil
+	row := r.db.QueryRow(ctx, nil, queries.PermissionFindByName, name)
+	return r.scanPermission(row)
 }
 
 // FindByEndpoint retrieves a permission by HTTP method and endpoint path
 func (r *permissionRepository) FindByEndpoint(ctx context.Context, httpMethod, endpointPath string) (*domain.Permission, error) {
-	query := `
-		SELECT id, name, description, http_method, endpoint_path, resource, action,
-		       status, create_id, create_dt, modify_id, modify_dt
-		FROM permissions
-		WHERE http_method = ? AND endpoint_path = ? AND deleted_dt IS NULL
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, httpMethod, endpointPath)
-
-	var m models.PermissionModel
-	err := result.Scan(
-		&m.ID, &m.Name, &m.Description, &m.HTTPMethod, &m.EndpointPath, &m.Resource, &m.Action,
-		&m.Status, &m.CreateID, &m.CreateDT, &m.ModifyID, &m.ModifyDT,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("scan error: %v", err)
-	}
-
-	return domain.BuildPermissionDomainFromModel(&m), nil
+	row := r.db.QueryRow(ctx, nil, queries.PermissionFindByEndpoint, httpMethod, endpointPath)
+	return r.scanPermission(row)
 }
 
 // FindByResource retrieves all permissions for a resource
 func (r *permissionRepository) FindByResource(ctx context.Context, resource string) ([]*domain.Permission, error) {
-	query := `
-		SELECT id, name, description, http_method, endpoint_path, resource, action,
-		       status, create_id, create_dt, modify_id, modify_dt
-		FROM permissions
-		WHERE resource = ? AND deleted_dt IS NULL
-		ORDER BY name ASC
-	`
-
-	rows, err := r.db.Query(ctx, nil, query, resource)
+	rows, err := r.db.Query(ctx, nil, queries.PermissionFindByResource, resource)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find permissions by resource: %v", err)
 	}
@@ -221,15 +158,11 @@ func (r *permissionRepository) FindByResource(ctx context.Context, resource stri
 
 	var permissions []*domain.Permission
 	for rows.Next() {
-		var m models.PermissionModel
-		if err := rows.Scan(
-			&m.ID, &m.Name, &m.Description, &m.HTTPMethod, &m.EndpointPath, &m.Resource, &m.Action,
-			&m.Status, &m.CreateID, &m.CreateDT, &m.ModifyID, &m.ModifyDT,
-		); err != nil {
-			return nil, fmt.Errorf("scan error: %v", err)
+		permission, err := r.scanPermission(rows)
+		if err != nil {
+			return nil, err
 		}
-
-		permissions = append(permissions, domain.BuildPermissionDomainFromModel(&m))
+		permissions = append(permissions, permission)
 	}
 
 	return permissions, nil
@@ -237,16 +170,7 @@ func (r *permissionRepository) FindByResource(ctx context.Context, resource stri
 
 // FindByRoleID retrieves all permissions assigned to a role (including inherited)
 func (r *permissionRepository) FindByRoleID(ctx context.Context, roleID string) ([]*domain.Permission, error) {
-	query := `
-		SELECT DISTINCT p.id, p.name, p.description, p.http_method, p.endpoint_path, p.resource, p.action,
-		       p.status, p.create_id, p.create_dt, p.modify_id, p.modify_dt
-		FROM permissions p
-		INNER JOIN role_permissions rp ON p.id = rp.permission_id
-		WHERE rp.role_id = ? AND p.deleted_dt IS NULL AND rp.deleted_dt IS NULL
-		ORDER BY p.resource ASC, p.name ASC
-	`
-
-	rows, err := r.db.Query(ctx, nil, query, roleID)
+	rows, err := r.db.Query(ctx, nil, queries.PermissionFindByRoleID, roleID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find permissions by role: %v", err)
 	}
@@ -254,15 +178,11 @@ func (r *permissionRepository) FindByRoleID(ctx context.Context, roleID string) 
 
 	var permissions []*domain.Permission
 	for rows.Next() {
-		var m models.PermissionModel
-		if err := rows.Scan(
-			&m.ID, &m.Name, &m.Description, &m.HTTPMethod, &m.EndpointPath, &m.Resource, &m.Action,
-			&m.Status, &m.CreateID, &m.CreateDT, &m.ModifyID, &m.ModifyDT,
-		); err != nil {
-			return nil, fmt.Errorf("scan error: %v", err)
+		permission, err := r.scanPermission(rows)
+		if err != nil {
+			return nil, err
 		}
-
-		permissions = append(permissions, domain.BuildPermissionDomainFromModel(&m))
+		permissions = append(permissions, permission)
 	}
 
 	return permissions, nil
@@ -270,11 +190,7 @@ func (r *permissionRepository) FindByRoleID(ctx context.Context, roleID string) 
 
 // Create inserts a new permission
 func (r *permissionRepository) Create(ctx context.Context, tx *sql.Tx, permission *domain.Permission) (int64, error) {
-	query := `
-		INSERT INTO permissions (id, name, description, http_method, endpoint_path, resource, action, status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`
-	result, err := r.db.Exec(ctx, tx, query,
+	result, err := r.db.Exec(ctx, tx, queries.PermissionInsert,
 		permission.ID(),
 		permission.Name(),
 		permission.Description(),
@@ -294,60 +210,18 @@ func (r *permissionRepository) Create(ctx context.Context, tx *sql.Tx, permissio
 }
 
 // Update modifies an existing permission
-func (r *permissionRepository) Update(ctx context.Context, permission *domain.Permission) (int64, error) {
-	var queryBuilder strings.Builder
-	args := []interface{}{}
-
-	queryBuilder.WriteString("UPDATE permissions SET ")
-	updates := []string{}
-
-	if permission.Name() != "" {
-		updates = append(updates, "name = ?")
-		args = append(args, permission.Name())
-	}
-
-	if permission.Description() != nil {
-		updates = append(updates, "description = ?")
-		args = append(args, permission.Description())
-	}
-
-	if permission.HTTPMethod() != "" {
-		updates = append(updates, "http_method = ?")
-		args = append(args, permission.HTTPMethod())
-	}
-
-	if permission.EndpointPath() != "" {
-		updates = append(updates, "endpoint_path = ?")
-		args = append(args, permission.EndpointPath())
-	}
-
-	if permission.Resource() != nil {
-		updates = append(updates, "resource = ?")
-		args = append(args, permission.Resource())
-	}
-
-	if permission.Action() != nil {
-		updates = append(updates, "action = ?")
-		args = append(args, permission.Action())
-	}
-
-	if permission.Status() != "" {
-		updates = append(updates, "status = ?")
-		args = append(args, permission.Status())
-	}
-
-	updates = append(updates, "modify_dt = ?")
-	args = append(args, mathtime.Now())
-
-	if len(updates) == 0 {
-		return 0, fmt.Errorf("no fields to update")
-	}
-
-	queryBuilder.WriteString(strings.Join(updates, ", "))
-	queryBuilder.WriteString(" WHERE id = ? AND deleted_dt IS NULL")
-	args = append(args, permission.ID())
-
-	result, err := r.db.Exec(ctx, nil, queryBuilder.String(), args...)
+func (r *permissionRepository) Update(ctx context.Context, tx *sql.Tx, permission *domain.Permission) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.PermissionUpdate,
+		PrepareForUpdate(permission.Name()),
+		PrepareForUpdate(permission.Description()),
+		PrepareForUpdate(permission.HTTPMethod()),
+		PrepareForUpdate(permission.EndpointPath()),
+		PrepareForUpdate(permission.Resource()),
+		PrepareForUpdate(permission.Action()),
+		PrepareForUpdate(permission.Status()),
+		mathtime.Now(),
+		permission.ID(),
+	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update permission: %v", err)
 	}
@@ -356,28 +230,21 @@ func (r *permissionRepository) Update(ctx context.Context, permission *domain.Pe
 }
 
 // Delete soft deletes a permission
-func (r *permissionRepository) Delete(ctx context.Context, id string) error {
-	query := `
-		UPDATE permissions
-		SET deleted_dt = ?,
-		    modify_dt = ?
-		WHERE id = ? AND deleted_dt IS NULL`
-
-	_, err := r.db.Exec(ctx, nil, query, mathtime.Now(), mathtime.Now(), id)
+func (r *permissionRepository) Delete(ctx context.Context, tx *sql.Tx, id string) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.PermissionSoftDelete, mathtime.Now(), mathtime.Now(), id)
 	if err != nil {
-		return fmt.Errorf("failed to delete permission: %v", err)
+		return 0, fmt.Errorf("failed to delete permission: %v", err)
 	}
 
-	return nil
+	return result.RowsAffected()
 }
 
 // ForceDelete permanently deletes a permission
-func (r *permissionRepository) ForceDelete(ctx context.Context, tx *sql.Tx, id string) error {
-	query := `DELETE FROM permissions WHERE id = ?`
-	_, err := r.db.Exec(ctx, tx, query, id)
+func (r *permissionRepository) ForceDelete(ctx context.Context, tx *sql.Tx, id string) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.PermissionForceDelete, id)
 	if err != nil {
-		return fmt.Errorf("failed to force delete permission: %v", err)
+		return 0, fmt.Errorf("failed to force delete permission: %v", err)
 	}
 
-	return nil
+	return result.RowsAffected()
 }

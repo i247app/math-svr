@@ -165,7 +165,7 @@ func (s *roleService) Update(ctx context.Context, role *roleDomain.Role) (*roleD
 	}
 
 	// Update role
-	_, err = s.roleRepo.Update(ctx, role)
+	_, err = s.roleRepo.Update(ctx, nil, role)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update role: %v", err)
 	}
@@ -190,7 +190,8 @@ func (s *roleService) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("cannot delete system role")
 	}
 
-	return s.roleRepo.Delete(ctx, id)
+	_, err = s.roleRepo.Delete(ctx, nil, id)
+	return err
 }
 
 // ForceDelete permanently deletes a role
@@ -209,7 +210,8 @@ func (s *roleService) ForceDelete(ctx context.Context, id string) error {
 		return fmt.Errorf("cannot force delete system role")
 	}
 
-	return s.roleRepo.ForceDelete(ctx, nil, id)
+	_, err = s.roleRepo.ForceDelete(ctx, nil, id)
+	return err
 }
 
 // AssignPermissions assigns multiple permissions to a role

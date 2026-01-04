@@ -41,11 +41,11 @@ type IPermissionRepository interface {
 	Create(ctx context.Context, tx *sql.Tx, permission *domain.Permission) (int64, error)
 
 	// Update modifies an existing permission
-	Update(ctx context.Context, permission *domain.Permission) (int64, error)
+	Update(ctx context.Context, tx *sql.Tx, permission *domain.Permission) (int64, error)
 
 	// Delete soft deletes a permission
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, tx *sql.Tx, id string) (int64, error)
 
 	// ForceDelete permanently deletes a permission
-	ForceDelete(ctx context.Context, tx *sql.Tx, id string) error
+	ForceDelete(ctx context.Context, tx *sql.Tx, id string) (int64, error)
 }

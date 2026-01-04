@@ -4,39 +4,34 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	di "math-ai.com/math-ai/internal/core/di/repositories"
 	domain "math-ai.com/math-ai/internal/core/domain/user_quiz_assessment"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/models"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence/queries"
 	"math-ai.com/math-ai/internal/shared/db"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 	mathtime "math-ai.com/math-ai/internal/shared/utils/time"
 )
 
+const (
+	userQuizAssessmentTableName = "ma_user_quiz_assessments"
+)
+
 type userQuizAssessmentRepository struct {
-	db db.IDatabase
+	BaseRepository // Embed BaseRepository for common operations
 }
 
-func NewUserQuizAssessmentRepository(db db.IDatabase) di.IUserQuizAssessmentRepository {
+func NewUserQuizAssessmentRepository(database db.IDatabase) di.IUserQuizAssessmentRepository {
 	return &userQuizAssessmentRepository{
-		db: db,
+		BaseRepository: NewBaseRepository(database),
 	}
 }
 
-// FindByID retrieves a quiz assessment by ID.
-func (r *userQuizAssessmentRepository) FindByID(ctx context.Context, id string) (*domain.UserQuizAssessment, error) {
-	query := `
-		SELECT id, uid, questions, answers, ai_review, ai_detect_grade, status,
-		create_id, create_dt, modify_id, modify_dt
-		FROM ma_user_quiz_assessments
-		WHERE id = ? AND deleted_dt IS NULL
-	`
-
-	result := r.db.QueryRow(ctx, nil, query, id)
-
+// scanUserQuizAssessment is a reusable helper method to scan user quiz assessment data from a row
+func (r *userQuizAssessmentRepository) scanUserQuizAssessment(scanner Scanner) (*domain.UserQuizAssessment, error) {
 	var q models.UserQuizAssessmentModel
-	err := result.Scan(
+	err := scanner.Scan(
 		&q.ID, &q.UID, &q.Questions, &q.Answers, &q.AIReview, &q.AIDetectGrade, &q.Status,
 		&q.CreateID, &q.CreateDT, &q.ModifyID, &q.ModifyDT,
 	)
@@ -47,61 +42,54 @@ func (r *userQuizAssessmentRepository) FindByID(ctx context.Context, id string) 
 		return nil, fmt.Errorf("scan error: %v", err)
 	}
 
-	assessment := domain.BuildUserQuizAssessmentDomainFromModel(&q)
+	return domain.BuildUserQuizAssessmentDomainFromModel(&q), nil
+}
 
-	return assessment, nil
+// FindByID retrieves a quiz assessment by ID.
+// Now uses query constants from queries package
+func (r *userQuizAssessmentRepository) FindByID(ctx context.Context, id string) (*domain.UserQuizAssessment, error) {
+	row := r.db.QueryRow(ctx, nil, queries.UserQuizAssessmentFindByID, id)
+	return r.scanUserQuizAssessment(row)
 }
 
 // ListByUID retrieves paginated quiz assessments for a user.
+// Now uses BaseRepository.PaginatedList to eliminate duplication
 func (r *userQuizAssessmentRepository) ListByUID(ctx context.Context, params di.ListUserQuizAssessmentsParams) ([]*domain.UserQuizAssessment, *pagination.Pagination, error) {
-	var queryBuilder strings.Builder
-	args := []interface{}{}
+	// Get base queries with UID parameter
+	baseQuery := queries.UserQuizAssessmentBaseSelectByUID
+	countQuery := queries.UserQuizAssessmentCountByUID
+	args := []interface{}{params.UID}
 
-	// Base query
-	queryBuilder.WriteString(`
-		SELECT id, uid, questions, answers, ai_review, ai_detect_grade, status,
-		create_id, create_dt, modify_id, modify_dt
-		FROM ma_user_quiz_assessments
-		WHERE uid = ? AND deleted_dt IS NULL`)
-	args = append(args, params.UID)
-
-	// Count total records for pagination
-	countQuery := "SELECT COUNT(*) FROM user_quiz_assessments WHERE uid = ? AND deleted_dt IS NULL"
-	var total int64
-	countRow := r.db.QueryRow(ctx, nil, countQuery, params.UID)
-	if err := countRow.Scan(&total); err != nil {
-		return nil, nil, fmt.Errorf("failed to count assessments: %v", err)
+	// Build pagination params
+	paginationParams := pagination.Params{
+		Page:      params.Page,
+		Limit:     params.Limit,
+		OrderBy:   params.OrderBy,
+		OrderDesc: params.OrderDesc,
+		TakeAll:   params.TakeAll,
 	}
 
-	// Initialize pagination
-	paginationObj := pagination.NewPagination(params.Page, params.Limit, total)
-	if params.TakeAll {
-		paginationObj.Size = total
-		paginationObj.Skip = 0
-		paginationObj.Page = 1
-		paginationObj.TotalPages = 1
+	// Default ordering if not specified
+	if paginationParams.OrderBy == "" {
+		paginationParams.OrderBy = "create_dt"
+		paginationParams.OrderDesc = true // Most recent first
 	}
 
-	// Add sorting
-	if params.OrderBy != "" {
-		queryBuilder.WriteString(fmt.Sprintf(" ORDER BY %s", params.OrderBy))
-		if params.OrderDesc {
-			queryBuilder.WriteString(" DESC")
-		} else {
-			queryBuilder.WriteString(" ASC")
-		}
-	} else {
-		queryBuilder.WriteString(" ORDER BY create_dt DESC")
+	// Use BaseRepository.PaginatedList for automatic count and pagination
+	query, queryArgs, paginationObj, err := r.PaginatedList(
+		ctx,
+		baseQuery,
+		args,
+		countQuery,
+		args,
+		paginationParams,
+	)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	// Add pagination
-	if !params.TakeAll {
-		queryBuilder.WriteString(` LIMIT ? OFFSET ?`)
-		args = append(args, paginationObj.Size, paginationObj.Skip)
-	}
-
-	// Execute query
-	rows, err := r.db.Query(ctx, nil, queryBuilder.String(), args...)
+	// Execute final query
+	rows, err := r.db.Query(ctx, nil, query, queryArgs...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to list assessments: %v", err)
 	}
@@ -110,27 +98,20 @@ func (r *userQuizAssessmentRepository) ListByUID(ctx context.Context, params di.
 	// Scan results
 	var assessments []*domain.UserQuizAssessment
 	for rows.Next() {
-		var q models.UserQuizAssessmentModel
-		if err := rows.Scan(
-			&q.ID, &q.UID, &q.Questions, &q.Answers, &q.AIReview, &q.AIDetectGrade, &q.Status,
-			&q.CreateID, &q.CreateDT, &q.ModifyID, &q.ModifyDT,
-		); err != nil {
-			return nil, nil, fmt.Errorf("scan error: %v", err)
+		assessment, err := r.scanUserQuizAssessment(rows)
+		if err != nil {
+			return nil, nil, err
 		}
-
-		assessments = append(assessments, domain.BuildUserQuizAssessmentDomainFromModel(&q))
+		assessments = append(assessments, assessment)
 	}
 
 	return assessments, paginationObj, nil
 }
 
 // Create inserts a new quiz assessment into the database.
+// Now uses query constants from queries package
 func (r *userQuizAssessmentRepository) Create(ctx context.Context, tx *sql.Tx, assessment *domain.UserQuizAssessment) (int64, error) {
-	query := `
-		INSERT INTO ma_user_quiz_assessments (id, uid, questions, answers, ai_review, ai_detect_grade, status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`
-	result, err := r.db.Exec(ctx, tx, query,
+	result, err := r.db.Exec(ctx, tx, queries.UserQuizAssessmentInsert,
 		assessment.ID(),
 		assessment.UID(),
 		assessment.Questions(),
@@ -149,45 +130,16 @@ func (r *userQuizAssessmentRepository) Create(ctx context.Context, tx *sql.Tx, a
 }
 
 // Update modifies an existing quiz assessment in the database.
-func (r *userQuizAssessmentRepository) Update(ctx context.Context, assessment *domain.UserQuizAssessment) (int64, error) {
-	var queryBuilder strings.Builder
-	args := []interface{}{}
-
-	queryBuilder.WriteString("UPDATE ma_user_quiz_assessments SET ")
-	updates := []string{}
-
-	if assessment.Questions() != "" {
-		updates = append(updates, "questions = ?")
-		args = append(args, assessment.Questions())
-	}
-
-	if assessment.Answers() != "" {
-		updates = append(updates, "answers = ?")
-		args = append(args, assessment.Answers())
-	}
-
-	if assessment.AIReview() != "" {
-		updates = append(updates, "ai_review = ?")
-		args = append(args, assessment.AIReview())
-	}
-
-	if assessment.AIDetectGrade() != "" {
-		updates = append(updates, "ai_detect_grade = ?")
-		args = append(args, assessment.AIDetectGrade())
-	}
-
-	updates = append(updates, "modify_dt = ?")
-	args = append(args, mathtime.Now())
-
-	if len(updates) == 0 {
-		return 0, fmt.Errorf("no fields to update for quiz assessment")
-	}
-
-	queryBuilder.WriteString(strings.Join(updates, ", "))
-	queryBuilder.WriteString(" WHERE id = ? AND deleted_dt IS NULL")
-	args = append(args, assessment.ID())
-
-	result, err := r.db.Exec(ctx, nil, queryBuilder.String(), args...)
+// Now uses query constants from queries package
+func (r *userQuizAssessmentRepository) Update(ctx context.Context, tx *sql.Tx, assessment *domain.UserQuizAssessment) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.UserQuizAssessmentUpdate,
+		PrepareForUpdate(assessment.Questions()),
+		PrepareForUpdate(assessment.Answers()),
+		PrepareForUpdate(assessment.AIReview()),
+		PrepareForUpdate(assessment.AIDetectGrade()),
+		mathtime.Now(),
+		assessment.ID(),
+	)
 	if err != nil {
 		return 0, fmt.Errorf("failed to update quiz assessment: %v", err)
 	}
@@ -196,15 +148,9 @@ func (r *userQuizAssessmentRepository) Update(ctx context.Context, assessment *d
 }
 
 // Delete performs a soft delete on a quiz assessment.
-func (r *userQuizAssessmentRepository) Delete(ctx context.Context, id string) (int64, error) {
-	query := `
-		UPDATE ma_user_quiz_assessments
-		SET deleted_dt = ?,
-			modify_dt = ?
-		WHERE id = ? AND deleted_dt IS NULL
-	`
-
-	result, err := r.db.Exec(ctx, nil, query, mathtime.Now(), mathtime.Now(), id)
+// Now uses query constants from queries package
+func (r *userQuizAssessmentRepository) Delete(ctx context.Context, tx *sql.Tx, id string) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.UserQuizAssessmentSoftDelete, mathtime.Now(), mathtime.Now(), id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to delete quiz assessment: %v", err)
 	}
@@ -213,13 +159,9 @@ func (r *userQuizAssessmentRepository) Delete(ctx context.Context, id string) (i
 }
 
 // ForceDelete permanently removes a quiz assessment from the database.
-func (r *userQuizAssessmentRepository) ForceDelete(ctx context.Context, id string) (int64, error) {
-	query := `
-		DELETE FROM ma_user_quiz_assessments
-		WHERE id = ?
-	`
-
-	result, err := r.db.Exec(ctx, nil, query, id)
+// Now uses query constants from queries package
+func (r *userQuizAssessmentRepository) ForceDelete(ctx context.Context, tx *sql.Tx, id string) (int64, error) {
+	result, err := r.db.Exec(ctx, tx, queries.UserQuizAssessmentForceDelete, id)
 	if err != nil {
 		return 0, fmt.Errorf("failed to force delete quiz assessment: %v", err)
 	}

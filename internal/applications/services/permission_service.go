@@ -121,7 +121,7 @@ func (s *permissionService) Update(ctx context.Context, permission *domain.Permi
 	}
 
 	// Update permission
-	_, err = s.permissionRepo.Update(ctx, permission)
+	_, err = s.permissionRepo.Update(ctx, nil, permission)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update permission: %v", err)
 	}
@@ -141,7 +141,8 @@ func (s *permissionService) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("permission not found")
 	}
 
-	return s.permissionRepo.Delete(ctx, id)
+	_, err = s.permissionRepo.Delete(ctx, nil, id)
+	return err
 }
 
 // ForceDelete permanently deletes a permission
@@ -155,5 +156,6 @@ func (s *permissionService) ForceDelete(ctx context.Context, id string) error {
 		return fmt.Errorf("permission not found")
 	}
 
-	return s.permissionRepo.ForceDelete(ctx, nil, id)
+	_, err = s.permissionRepo.ForceDelete(ctx, nil, id)
+	return err
 }

@@ -316,7 +316,7 @@ func (s *userQuizAssessmentService) UpdateUserQuizAssessment(ctx context.Context
 
 	uqaDomain := dto.BuildUserQuizAssessmentDomainForUpdate(req)
 
-	rowsAffected, err := s.repo.Update(ctx, uqaDomain)
+	rowsAffected, err := s.repo.Update(ctx, nil, uqaDomain)
 	if err != nil {
 		logger.Errorf("Failed to update quiz assessment: %v", err)
 		return status.FAIL, nil, fmt.Errorf("failed to update quiz assessment: %v", err)
@@ -345,7 +345,7 @@ func (s *userQuizAssessmentService) DeleteUserQuizAssessment(ctx context.Context
 		return status.FAIL, fmt.Errorf("user latest quiz not found")
 	}
 
-	rowsAffected, err := s.repo.Delete(ctx, req.ID)
+	rowsAffected, err := s.repo.Delete(ctx, nil, req.ID)
 	if err != nil {
 		return status.FAIL, err
 	}
@@ -360,7 +360,7 @@ func (s *userQuizAssessmentService) DeleteUserQuizAssessment(ctx context.Context
 func (s *userQuizAssessmentService) ForceDeleteUserQuizAssessment(ctx context.Context, req *dto.DeleteUserQuizAssessmentRequest) (status.Code, error) {
 	logger := logger.GetLogger(ctx)
 
-	rowsAffected, err := s.repo.ForceDelete(ctx, req.ID)
+	rowsAffected, err := s.repo.ForceDelete(ctx, nil, req.ID)
 	if err != nil {
 		logger.Errorf("Failed to force delete quiz assessment: %v", err)
 		return status.FAIL, fmt.Errorf("failed to force delete quiz assessment: %v", err)
