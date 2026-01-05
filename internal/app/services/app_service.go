@@ -13,11 +13,11 @@ import (
 	"math-ai.com/math-ai/internal/applications/services"
 	"math-ai.com/math-ai/internal/applications/validators"
 	di "math-ai.com/math-ai/internal/core/di/services"
+	"math-ai.com/math-ai/internal/driven-adapter/external/ai_provider"
 	"math-ai.com/math-ai/internal/driven-adapter/external/provider/geo"
 	"math-ai.com/math-ai/internal/driven-adapter/external/provider/ip"
 	"math-ai.com/math-ai/internal/driven-adapter/persistence/repositories"
 	"math-ai.com/math-ai/internal/session"
-	"math-ai.com/math-ai/internal/shared/logger"
 	"math-ai.com/math-ai/pkg/aws/s3"
 )
 
@@ -54,7 +54,7 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 	env := res.Env
 
 	// repository setup
-	logger.Info("Initializing repository")
+	log.Println("Initializing repository")
 	authRepo := repositories.NewAuthRepository(res.Db)
 	userRepo := repositories.NewUserRepository(res.Db)
 	deviceRepo := repositories.NewDeviceRepository(res.Db)
@@ -151,6 +151,16 @@ func SetupServiceContainer(res *resources.AppResource) (*ServiceContainer, error
 
 	log.Println("> chatBoxSvc...")
 	chatBoxClient := DetermineAIProvider(context.Background(), *res.Env)
+
+	// Wrap AI client with OpenTelemetry instrumentation
+	if res.Env.OTelConfig.EnableTracing {
+		providerName := res.Env.ChatBoxProvider
+		if res.Env.ChatBoxTestMode {
+			providerName = "mock"
+		}
+		chatBoxClient = ai_provider.NewOtelAIClientWrapper(chatBoxClient, providerName, true)
+		log.Printf("AI provider instrumentation enabled for: %s", providerName)
+	}
 
 	var chatBoxValidator = validators.NewChatboxValidator()
 	var chatBoxSvc = services.NewChatBoxService(chatBoxClient, chatBoxValidator)

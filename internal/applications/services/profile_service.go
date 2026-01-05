@@ -10,6 +10,7 @@ import (
 	diSvc "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
+	"math-ai.com/math-ai/internal/shared/telemetry/metrics"
 )
 
 type ProfileService struct {
@@ -84,6 +85,10 @@ func (s *ProfileService) CreateProfile(ctx context.Context, req *dto.CreateProfi
 	// Build response with presigned URL using shared utility
 	res := s.responseBuilder.BuildProfileResponse(ctx, profile)
 
+	// Record business metric for profile creation
+	gradeLevel := profile.Grade()
+	metrics.RecordProfileCreation(gradeLevel)
+
 	return status.SUCCESS, res, nil
 }
 
@@ -106,6 +111,15 @@ func (s *ProfileService) UpdateProfile(ctx context.Context, req *dto.UpdateProfi
 	}
 
 	res := dto.ProfileResponseFromDomain(profile)
+
+	// Record business metric for profile update
+	updateType := "general"
+	if req.GradeID != nil {
+		updateType = "grade"
+	} else if req.SemesterID != nil {
+		updateType = "semester"
+	}
+	metrics.RecordProfileUpdate(updateType)
 
 	return status.SUCCESS, &res, nil
 }

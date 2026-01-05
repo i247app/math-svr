@@ -13,6 +13,7 @@ import (
 	diSvc "math-ai.com/math-ai/internal/core/di/services"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/logger"
+	"math-ai.com/math-ai/internal/shared/telemetry/metrics"
 )
 
 type userQuizPracticeService struct {
@@ -38,6 +39,7 @@ func NewUserQuizPracticeService(
 	}
 }
 
+// GenerateQuiz generates a new quiz for the user based on the request.
 func (s *userQuizPracticeService) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
 	logger := logger.GetLogger(ctx)
 
@@ -98,9 +100,15 @@ func (s *userQuizPracticeService) GenerateQuiz(ctx context.Context, req *dto.Gen
 		}
 	}
 
+	// Record business metric for quiz generation
+	gradeLevel := user.Grade
+	quizType := req.TypeOfQuiz
+	metrics.RecordQuizGeneration(gradeLevel, quizType, "medium", err == nil)
+
 	return status.SUCCESS, res, nil
 }
 
+// SubmitQuiz submits the user's answers for the quiz and gets feedback.
 func (s *userQuizPracticeService) SubmitQuiz(ctx context.Context, req *dto.SubmitQuizRequest) (status.Code, *dto.ChatBoxResponse[dto.QuizAnswer], error) {
 	logger := logger.GetLogger(ctx)
 
@@ -148,9 +156,25 @@ func (s *userQuizPracticeService) SubmitQuiz(ctx context.Context, req *dto.Submi
 		return statusCode, nil, fmt.Errorf("failed to update user latest quiz with AI review: %v", err)
 	}
 
+	// Record business metric for assessment submission
+	if res != nil {
+		// Fetch user profile for grade level
+		statusCode, profile, err := s.profileSvc.FetchProfile(ctx, &dto.FetchProfileRequest{
+			UID: req.UID,
+		})
+		if err == nil && profile != nil {
+			gradeLevel := profile.Grade
+			totalQuestions := int(res.Data.TotalQuestions)
+			correctAnswers := float64(res.Data.CorrectNumber)
+			metrics.RecordAssessmentSubmission(gradeLevel, "practice", correctAnswers, totalQuestions)
+		}
+		_ = statusCode // Avoid unused variable error
+	}
+
 	return status.SUCCESS, res, nil
 }
 
+// GenerateQuizPractice generates a reinforcement quiz practice for the user.
 func (s *userQuizPracticeService) GenerateQuizPractice(ctx context.Context, req *dto.GenerateQuizPracticeRequest) (status.Code, *dto.ChatBoxResponse[[]dto.Question], error) {
 	logger := logger.GetLogger(ctx)
 

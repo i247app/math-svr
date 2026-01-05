@@ -5,9 +5,35 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 )
+
+// OTelConfig holds OpenTelemetry configuration
+type OTelConfig struct {
+	// Feature flags
+	EnableTracing bool
+	EnableMetrics bool
+
+	// Service identification
+	ServiceName    string
+	ServiceVersion string
+	Environment    string // dev, staging, prod
+
+	// OTLP Exporter
+	OTLPEndpoint string
+	OTLPInsecure bool
+
+	// Trace sampling
+	TraceSampleRate float64 // 0.0 to 1.0
+
+	// Metric export
+	MetricExportInterval time.Duration
+
+	// Prometheus
+	PrometheusPort string
+}
 
 type Env struct {
 	DBEnv                    *DBConfig
@@ -16,6 +42,7 @@ type Env struct {
 	TwilioConfig             *TwilioConfig
 	MailerConfig             *MailerConfig
 	S3Config                 *S3Config
+	OTelConfig               *OTelConfig
 	SharedKeyBytes           []byte
 	GexSessionDriver         string
 	SerializedSessionFile    string
@@ -72,6 +99,18 @@ func NewEnv(envpath string) (*Env, error) {
 			SecretKey: getConfig("S3_SECRET_KEY"),
 			Region:    getConfig("S3_REGION"),
 			Bucket:    getConfig("S3_BUCKET"),
+		},
+		OTelConfig: &OTelConfig{
+			EnableTracing:        getBoolConfigWithDefault("OTEL_ENABLE_TRACING", true),
+			EnableMetrics:        getBoolConfigWithDefault("OTEL_ENABLE_METRICS", true),
+			ServiceName:          getConfigWithDefault("OTEL_SERVICE_NAME", "math-srv"),
+			ServiceVersion:       getConfigWithDefault("OTEL_SERVICE_VERSION", "1.0.0"),
+			Environment:          getConfigWithDefault("OTEL_ENVIRONMENT", "development"),
+			OTLPEndpoint:         getConfigWithDefault("OTEL_EXPORTER_OTLP_ENDPOINT", "localhost:4318"),
+			OTLPInsecure:         getBoolConfigWithDefault("OTEL_EXPORTER_OTLP_INSECURE", true),
+			TraceSampleRate:      getFloatConfigWithDefault("OTEL_TRACE_SAMPLE_RATE", 1.0),
+			MetricExportInterval: time.Second * 30,
+			PrometheusPort:       getConfigWithDefault("OTEL_PROMETHEUS_PORT", "9091"),
 		},
 		SharedKeyBytes:           getFileBytesConfig("GEX_SHARED_KEY"),
 		GexSessionDriver:         getConfig("GEX_SESSION_DRIVER"),
@@ -145,6 +184,26 @@ func getConfigWithDefault(key, defaultValue string) string {
 		return defaultValue
 	}
 	return *val
+}
+
+func getBoolConfigWithDefault(key string, defaultValue bool) bool {
+	val := getConfigOptional(key)
+	if val == nil {
+		return defaultValue
+	}
+	return *val == "true"
+}
+
+func getFloatConfigWithDefault(key string, defaultValue float64) float64 {
+	val := getConfigOptional(key)
+	if val == nil {
+		return defaultValue
+	}
+	floatVal, err := strconv.ParseFloat(*val, 64)
+	if err != nil {
+		return defaultValue
+	}
+	return floatVal
 }
 
 func loadFile(path string) ([]byte, error) {

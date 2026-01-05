@@ -121,11 +121,17 @@ func (c *GoogleGeminiClient) SendMessage(ctx context.Context, conv *domain.Conve
 	}
 
 	// Get token counts
+	// Note: UsageMetadata is not available in generative-ai-go v0.11.2
+	// It was added in later versions. For now, we'll use estimated counts.
 	var promptTokens, completionTokens int
-	if resp.UsageMetadata != nil {
-		promptTokens = int(resp.UsageMetadata.PromptTokenCount)
-		completionTokens = int(resp.UsageMetadata.CandidatesTokenCount)
+	// Rough estimation: ~4 characters per token
+	if conv.SystemPrompt() != nil {
+		promptTokens = len(*conv.SystemPrompt()) / 4
 	}
+	for _, msg := range conv.Messages() {
+		promptTokens += len(msg.Content()) / 4
+	}
+	completionTokens = len(responseText) / 4
 
 	response := &ChatCompletionResponse{
 		Message:          responseText,

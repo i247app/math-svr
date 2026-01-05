@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/config"
 	"math-ai.com/math-ai/internal/shared/db"
+	"math-ai.com/math-ai/internal/shared/telemetry"
 )
 
 type AppResource struct {
@@ -15,6 +16,7 @@ type AppResource struct {
 	HostConfig     gex.HostConfig
 	Db             db.IDatabase
 	SessionManager *session.SessionManager
+	OtelProviders  *telemetry.Providers
 }
 
 func (a *AppResource) GetRequestSession(r *http.Request) (*session.AppSession, error) {

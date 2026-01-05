@@ -75,6 +75,7 @@ migrate-down-deploy:
 	fi
 	@echo "✅ All DOWN migrations completed."
 
+## login: Login to AWS
 login:
 	@./bin/login.sh
 
@@ -110,5 +111,10 @@ deploy-ec2-remote: build-ec2
 	./bin/remote_deploy.sh
 	@echo "make[$@] done"
 
+# run docker otelp collector for testing locally
+docker-otel-up:
+	docker-compose -f docker/observability/docker-compose.otel.yml up -d
 
-## login: Login to AWS
+# stop docker otelp collector for testing locally
+docker-otel-down:
+	docker-compose -f docker/observability/docker-compose.otel.yml down

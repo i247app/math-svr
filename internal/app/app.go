@@ -6,17 +6,20 @@ import (
 	"log"
 	"net/http"
 	"slices"
+	"time"
 
 	"github.com/i247app/gex"
 	"math-ai.com/math-ai/internal/app/resources"
 	"math-ai.com/math-ai/internal/app/routes"
 	"math-ai.com/math-ai/internal/app/services"
 	"math-ai.com/math-ai/internal/driven-adapter/jobs"
+	"math-ai.com/math-ai/internal/driven-adapter/persistence"
 	"math-ai.com/math-ai/internal/handlers/http/middleware"
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/config"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/db"
+	"math-ai.com/math-ai/internal/shared/telemetry"
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
@@ -41,6 +44,24 @@ func NewFromEnv(envPath string) (*App, error) {
 		return nil, fmt.Errorf("failed to ping the database: %w", err)
 	}
 
+	// Initialize OpenTelemetry
+	otelProviders, err := telemetry.Initialize(context.Background(), env.OTelConfig)
+	if err != nil {
+		log.Printf("Warning: Failed to initialize OpenTelemetry: %v", err)
+		// Continue without OTel rather than failing
+		otelProviders = nil
+	} else {
+		log.Printf("OpenTelemetry initialized successfully (tracing=%v, metrics=%v)",
+			env.OTelConfig.EnableTracing, env.OTelConfig.EnableMetrics)
+	}
+
+	// Wrap database with OpenTelemetry instrumentation
+	var instrumentedDB db.IDatabase = database
+	if env.OTelConfig.EnableTracing {
+		instrumentedDB = persistence.NewOtelDatabaseWrapper(database, true)
+		log.Println("Database instrumentation enabled")
+	}
+
 	// Build app resource
 	hostConfig := gex.HostConfig{
 		ServerHost: env.HostConfig.ServerHost,
@@ -53,16 +74,17 @@ func NewFromEnv(envPath string) (*App, error) {
 		hostConfig.HttpsKeyFile = *env.HostConfig.HttpsKeyFile
 	}
 	resources := resources.AppResource{
-		Env:        env,
-		HostConfig: hostConfig,
-		Db:         database,
+		Env:           env,
+		HostConfig:    hostConfig,
+		Db:            instrumentedDB,
+		OtelProviders: otelProviders,
 	}
 
 	app := NewApp(&resources)
 	if err := app.Init(); err != nil {
 		return nil, fmt.Errorf("failed to init app: %w", err)
 	}
-	app.Database = database
+	app.Database = instrumentedDB
 
 	routes.SetUpHttpRoutes(app.Server, &resources, app.Services)
 
@@ -112,6 +134,20 @@ func (a *App) setupJobs(_ *gex.Server, _ *services.ServiceContainer) {
 
 func (a *App) setupShutdownHooks(gexServer *gex.Server, _ *services.ServiceContainer) {
 	gexServer.OnShutdown(func() {
+		// Shutdown OpenTelemetry providers
+		if a.Resource.OtelProviders != nil {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			log.Println("Shutting down OpenTelemetry...")
+			if err := a.Resource.OtelProviders.Shutdown(ctx); err != nil {
+				log.Printf("Failed to shutdown OpenTelemetry: %v\n", err)
+			} else {
+				log.Println("OpenTelemetry shutdown successfully!")
+			}
+		}
+
+		// Serialize sessions
 		sessionFile := a.Resource.Env.SerializedSessionFile
 		if sessionFile == "" {
 			return
@@ -132,6 +168,7 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, services *services.ServiceCont
 	middlewares := []gex.Middleware{
 		// Start-->
 		middleware.RecoveryMiddleware(),
+		middleware.OtelMiddleware(),     // OpenTelemetry tracing and metrics
 		middleware.MetadataMiddleware(), // Extract __metadata from request body
 		middleware.GexSessionMiddleware(services.SessionProvider, session.SessionContextKey),
 		middleware.LoggerMiddleware(a.Resource.Env.LogFile),

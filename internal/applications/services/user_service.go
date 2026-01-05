@@ -13,6 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/constant/enum"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	err_svc "math-ai.com/math-ai/internal/shared/error"
+	"math-ai.com/math-ai/internal/shared/telemetry/metrics"
 	"math-ai.com/math-ai/internal/shared/utils/pagination"
 )
 
@@ -165,6 +166,10 @@ func (s *UserService) CreateUser(ctx context.Context, req *dto.CreateUserRequest
 
 	// Build response using shared utility
 	res := s.responseBuilder.BuildUserResponse(ctx, user)
+
+	// Record business metric for user signup
+	platform := "unknown"
+	metrics.RecordUserSignup(platform)
 
 	return status.SUCCESS, res, nil
 }
