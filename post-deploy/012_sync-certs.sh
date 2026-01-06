@@ -7,7 +7,7 @@ pwd
 for n in {0..5}
 do
 
-  src_dir="/etc/letsencrypt/live/a1.i247.com"
+  src_dir="/etc/letsencrypt/live/m1.i247.com"
   tgt_dir="/apps/math/keys"
 
   if sudo test -f ${src_dir:-notset}/fullchain.pem

@@ -21,7 +21,7 @@ if [ -f "$PID_FILE" ]; then
     rm -f "$PID_FILE"
 fi
 
-# Also kill any process on port 8080 (fallback)
+# Also kill any process on port (fallback)
 echo "Checking port $PORT..."
 PORT_PID=$(sudo lsof -ti:$PORT)
 if [ ! -z "$PORT_PID" ]; then
