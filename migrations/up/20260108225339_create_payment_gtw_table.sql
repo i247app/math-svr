@@ -1,0 +1,138 @@
+CREATE TABLE `ma_domains` (
+  `id` char(36) NOT NULL,
+  `domain_name` varchar(255) DEFAULT NULL,
+  `reverse_name` varchar(255) DEFAULT NULL,
+  `note` varchar(500) DEFAULT NULL,
+  `domain_status` varchar(32) DEFAULT 'ACTIVE',
+  `status` varchar(32) DEFAULT 'ACTIVE',
+  `create_id` int DEFAULT '0',
+  `create_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `modify_id` int DEFAULT '0',
+  `modify_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `domain_name` (`domain_name`),
+  UNIQUE KEY `reverse_name` (`reverse_name`)
+) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO `ma_domains` (id, domain_name, reverse_name, domain_status, status, create_id, create_dt, modify_id, modify_dt)
+VALUES('ebfcd9c4-ecad-11f0-882a-4e0736fd52a4', 'math.com', 'com.math', 'ACTIVE', 'ACTIVE', 0, CURRENT_TIMESTAMP(6), 0, CURRENT_TIMESTAMP(6));
+
+CREATE TABLE `ma_pay_providers` (
+  `id` char(36) NOT NULL,
+  `domain_id` char(36) NOT NULL,
+  `provider_code` varchar(32) DEFAULT NULL,
+  `provider_name` varchar(255) DEFAULT NULL,
+  `merchant_id` varchar(255) DEFAULT NULL,
+  `api_key` varchar(255) DEFAULT NULL,
+  `api_secret` varchar(255) DEFAULT NULL,
+  `debit_mode` varchar(32) DEFAULT NULL,
+  `credit_mode` varchar(32) DEFAULT NULL,
+  `ach_mode` varchar(32) DEFAULT NULL,
+  `crypto_mode` varchar(32) DEFAULT NULL,
+  `note` varchar(500) DEFAULT NULL,
+  `pay_provider_status` varchar(32) DEFAULT 'ACTIVE',
+  `status` varchar(32) DEFAULT 'ACTIVE',
+  `create_id` int DEFAULT '0',
+  `create_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `modify_id` int DEFAULT '0',
+  `modify_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `domain_id` (`domain_id`,`provider_code`),
+  UNIQUE KEY `provider_code` (`provider_code`,`api_key`)
+) ENGINE=InnoDB AUTO_INCREMENT=105 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+INSERT INTO `ma_pay_providers` (id,domain_id,provider_code,provider_name,merchant_id,api_key,api_secret,debit_mode,credit_mode,ach_mode,crypto_mode,pay_provider_status,note,status,create_id,create_dt,modify_id,modify_dt) VALUES
+	 (UUID(),'ebfcd9c4-ecad-11f0-882a-4e0736fd52a4','Cybersource','cybersource','i247_test_1720426956','6566513f-649a-4431-bd34-2c4031177c25','hide_secret','LIVE','LIVE','OFF','OFF','ACTIVE',NULL,'ACTIVE',0,'2025-09-03 14:28:24',0,'2025-09-03 14:28:24'),
+	 (UUID(),'ebfcd9c4-ecad-11f0-882a-4e0736fd52a4','Goat','goat',NULL,'yMKsknaLXvZ5BEYTP779UtB5IWXYykRR','hide_secret','LIVE','LIVE','OFF','OFF','ACTIVE',NULL,'ACTIVE',0,'2025-09-03 14:28:24',0,'2025-09-03 14:28:24'),
+	 (UUID(),'ebfcd9c4-ecad-11f0-882a-4e0736fd52a4','Plaid','plaid',NULL,'68086a38ddca0b002030caec','hide_secret','OFF','OFF','LIVE','OFF','ACTIVE',NULL,'ACTIVE',0,'2025-09-03 14:28:24',0,'2025-09-03 14:28:24'),
+	 (UUID(),'ebfcd9c4-ecad-11f0-882a-4e0736fd52a4','Stripe','stripe',NULL,'NOTYET','hide_secret','OFF','OFF','OFF','OFF','INACTIVE',NULL,'INACTIVE',0,'2025-09-03 14:28:24',0,'2025-09-03 14:28:24');
+
+
+CREATE TABLE `ma_pay_customers` (
+  `id` char(36) NOT NULL,
+  `domain_id` char(36) NOT NULL,
+  `provider_id` char(36) NOT NULL,
+  `uid` char(36) NOT NULL,
+  `pay_customer_token` varchar(100) DEFAULT NULL,
+  `customer_name` varchar(255) DEFAULT NULL,
+  `customer_email` varchar(255) DEFAULT NULL,
+  `customer_phone` varchar(32) DEFAULT NULL,
+  `address_line1` varchar(255) DEFAULT NULL,
+  `address_line2` varchar(255) DEFAULT NULL,
+  `city_code` varchar(50) DEFAULT NULL,
+  `state_code` varchar(50) DEFAULT NULL,
+  `zip_code` varchar(50) DEFAULT NULL,
+  `country_code` varchar(50) DEFAULT NULL,
+  `note` varchar(500) DEFAULT NULL,
+  `pay_customer_status` varchar(32) DEFAULT 'ACTIVE',
+  `status` varchar(32) DEFAULT 'ACTIVE',
+  `create_id` int DEFAULT '0',
+  `create_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `modify_id` int DEFAULT '0',
+  `modify_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=475 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `ma_pay_methods` (
+  `id` char(36) NOT NULL,
+  `domain_id` char(36) NOT NULL,
+  `provider_id` char(36) NOT NULL,
+  `customer_id` char(36) NOT NULL,
+  `uid` int DEFAULT NULL,
+  `pay_access_token` varchar(80) DEFAULT NULL,
+  `pay_method_token` varchar(100) DEFAULT NULL,
+  `pay_method_type` varchar(50) DEFAULT NULL,
+  `card_network` varchar(50) DEFAULT NULL,
+  `card_last4` varchar(10) DEFAULT NULL,
+  `is_default` tinyint(1) DEFAULT '0',
+  `account_checksum` varchar(255) DEFAULT NULL,
+  `card_exp_month` varchar(5) DEFAULT NULL,
+  `card_exp_year` varchar(5) DEFAULT NULL,
+  `issuer` varchar(80) DEFAULT NULL,
+  `bank_routing_number` varchar(50) DEFAULT NULL,
+  `bank_account_number` varchar(50) DEFAULT NULL,
+  `bank_account_type` varchar(50) DEFAULT NULL,
+  `address_line1` varchar(255) DEFAULT NULL,
+  `address_line2` varchar(255) DEFAULT NULL,
+  `city_code` varchar(50) DEFAULT NULL,
+  `state_code` varchar(50) DEFAULT NULL,
+  `zip_code` varchar(50) DEFAULT NULL,
+  `country_code` varchar(50) DEFAULT NULL,
+  `payment_type_id` int DEFAULT NULL,
+  `last_active` datetime DEFAULT NULL,
+  `note` varchar(500) DEFAULT NULL,
+  `pay_method_status` varchar(32) DEFAULT 'ACTIVE',
+  `status` varchar(32) DEFAULT 'ACTIVE',
+  `create_id` int DEFAULT '0',
+  `create_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `modify_id` int DEFAULT '0',
+  `modify_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=628 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `ma_pay_transactions` (
+  `id` char(36) NOT NULL,
+  `domain_id` char(36) NOT NULL,
+  `provider_id` char(36) NOT NULL,
+  `customer_id` char(36) NOT NULL,
+  `uid` char(36) NOT NULL,
+  `ref_no` varchar(100) DEFAULT NULL,
+  `pay_type` varchar(100) DEFAULT NULL,
+  `pay_amount` varchar(50) DEFAULT NULL,
+  `pay_currency` varchar(10) DEFAULT NULL,
+  `method_id` char(36) NOT NULL,
+  `pay_method_token` varchar(100) DEFAULT NULL,
+  `pay_id` varchar(100) DEFAULT NULL,
+  `pay_ppid` varchar(100) DEFAULT NULL,
+  `auth_code` varchar(50) DEFAULT NULL,
+  `pay_status` varchar(50) DEFAULT NULL,
+  `pay_date` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `note` varchar(500) DEFAULT NULL,
+  `pay_transaction_status` varchar(32) DEFAULT 'ACTIVE',
+  `status` varchar(32) DEFAULT 'ACTIVE',
+  `create_id` int DEFAULT '0',
+  `create_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  `modify_id` int DEFAULT '0',
+  `modify_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2093 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
