@@ -8,6 +8,9 @@ log_file
 .cursor/
 .claude/
 CLAUDE.md
+PAYMENT_GATEWAY_DESIGN.md
+PAYMENT_IMPLEMENTATION_ROADMAP_V2.md
+
 
 # go workspace files
 go.work

@@ -1,6 +1,7 @@
 # Payment Gateway Architecture Design
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Domain Layer](#domain-layer)
 3. [Dependency Injection Interfaces](#dependency-injection-interfaces)
@@ -19,6 +20,7 @@
 This architecture provides a **provider-agnostic payment gateway** that integrates with multiple payment processors (Stripe, CyberSource, Plaid, Goat, etc.) while maintaining clean separation of concerns.
 
 ### Key Principles
+
 - **Provider Independence**: Business logic never depends on specific provider implementations
 - **Unified Interface**: Single API for all payment operations regardless of provider
 - **Normalized Responses**: All provider responses are mapped to common domain models
@@ -30,6 +32,7 @@ This architecture provides a **provider-agnostic payment gateway** that integrat
 ## Domain Layer
 
 ### File Structure
+
 ```
 internal/core/domain/payment/
 ├── customer.go
@@ -44,6 +47,7 @@ internal/core/domain/payment/
 ### Domain Entities
 
 #### 1. Customer Entity (`customer.go`)
+
 ```go
 package payment
 
@@ -116,6 +120,7 @@ func (c *Customer) SetMetadata(key, value string) {
 ```
 
 #### 2. Payment Method Entity (`payment_method.go`)
+
 ```go
 package payment
 
@@ -262,6 +267,7 @@ func (pm *PaymentMethod) IsExpired() bool {
 ```
 
 #### 3. Payment State Machine (`payment_state.go`)
+
 ```go
 package payment
 
@@ -334,6 +340,7 @@ func (s PaymentState) IsTerminal() bool {
 ```
 
 #### 4. Transaction Type (`transaction_type.go`)
+
 ```go
 package payment
 
@@ -364,6 +371,7 @@ func (t TransactionType) AllowsPartialAmount() bool {
 ```
 
 #### 5. Provider Type (`provider_type.go`)
+
 ```go
 package payment
 
@@ -395,6 +403,7 @@ func (p Provider) String() string {
 ```
 
 #### 6. Payment Entity (`payment.go`)
+
 ```go
 package payment
 
@@ -608,6 +617,7 @@ func (p *Payment) RemainingRefundAmount() int64 {
 ```
 
 #### 7. Domain Errors (`errors.go`)
+
 ```go
 package payment
 
@@ -665,6 +675,7 @@ var (
 ## Dependency Injection Interfaces
 
 ### File Structure
+
 ```
 internal/core/di/
 ├── repositories/
@@ -679,6 +690,7 @@ internal/core/di/
 ### Repository Interfaces
 
 #### Payment Repository (`i_payment_repository.go`)
+
 ```go
 package repositories
 
@@ -713,6 +725,7 @@ type IPaymentRepository interface {
 ```
 
 #### Customer Repository (`i_customer_repository.go`)
+
 ```go
 package repositories
 
@@ -744,6 +757,7 @@ type ICustomerRepository interface {
 ```
 
 #### Payment Method Repository (`i_payment_method_repository.go`)
+
 ```go
 package repositories
 
@@ -780,6 +794,7 @@ type IPaymentMethodRepository interface {
 ### Service Interfaces
 
 #### Payment Provider Interface (`i_payment_provider.go`)
+
 ```go
 package services
 
@@ -919,6 +934,7 @@ type WebhookEvent struct {
 ```
 
 #### Payment Service Interface (`i_payment_service.go`)
+
 ```go
 package services
 
@@ -962,6 +978,7 @@ type IPaymentService interface {
 ## Application Layer
 
 ### File Structure
+
 ```
 internal/applications/
 ├── dto/
@@ -973,6 +990,7 @@ internal/applications/
 ```
 
 ### DTOs (`payment_dto.go`)
+
 ```go
 package dto
 
@@ -1089,6 +1107,7 @@ type PaymentCustomerResponse struct {
 ```
 
 ### Payment Service Implementation (`payment_service.go`)
+
 ```go
 package services
 
@@ -1356,6 +1375,7 @@ type IPaymentProviderFactory interface {
 ## Adapter Layer
 
 ### File Structure
+
 ```
 internal/driven-adapter/external/payment_provider/
 ├── factory.go                    # Provider factory
@@ -1377,6 +1397,7 @@ internal/driven-adapter/external/payment_provider/
 ```
 
 ### Provider Factory (`factory.go`)
+
 ```go
 package payment_provider
 
@@ -1441,6 +1462,7 @@ func (f *PaymentProviderFactory) GetProvider(provider payment.Provider) (diSvc.I
 ## Provider Implementations
 
 ### Stripe Provider Example (`stripe/stripe_provider.go`)
+
 ```go
 package stripe
 
@@ -1581,6 +1603,7 @@ func (p *StripeProvider) handleStripeError(resp *httpClient.Response) error {
 ```
 
 ### Stripe Mapper (`stripe/stripe_mapper.go`)
+
 ```go
 package stripe
 
@@ -1663,6 +1686,7 @@ func (m *StripeMapper) mapStripeStatusToState(stripeStatus string) payment.Payme
 ## Error Handling & Normalization
 
 ### Normalized Error Response (`internal/shared/errors/payment_errors.go`)
+
 ```go
 package errors
 
@@ -1704,6 +1728,7 @@ type IErrorMapper interface {
 ```
 
 ### Stripe Error Mapper
+
 ```go
 package stripe
 
@@ -1862,6 +1887,7 @@ func (p *StripeProvider) Authorize(ctx context.Context, req *diSvc.AuthorizeRequ
 ## Security Considerations
 
 ### 1. No Raw Card Storage
+
 ```go
 // NEVER store raw card numbers
 type PaymentMethod struct {
@@ -1875,6 +1901,7 @@ type PaymentMethod struct {
 ```
 
 ### 2. PCI Compliance
+
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    Your Frontend                        │
@@ -1895,6 +1922,7 @@ type PaymentMethod struct {
 ```
 
 ### 3. Webhook Signature Verification
+
 ```go
 func (p *StripeProvider) VerifyWebhookSignature(payload []byte, signature string) (bool, error) {
 	// Verify webhook signature to prevent spoofing
@@ -1922,6 +1950,7 @@ func (s *paymentService) HandleWebhook(ctx context.Context, provider payment.Pro
 ```
 
 ### 4. Configuration Security
+
 ```go
 // config.go
 type StripeConfig struct {
@@ -1947,24 +1976,29 @@ func NewEnv(envpath string) (*Env, error) {
 ## Design Decisions & Tradeoffs
 
 ### 1. **Provider Interface vs. Abstract Base Class**
+
 **Decision**: Use interface (`IPaymentProvider`)
 
 **Pros**:
+
 - Go idiomatic (interfaces are implicit)
 - Easy to mock for testing
 - No inheritance complexity
 - Clear contract
 
 **Cons**:
+
 - Some code duplication across providers
 - No shared implementation
 
 **Mitigation**: Create helper functions for common operations (e.g., `buildFormBody()`, error handling)
 
 ### 2. **Synchronous vs. Asynchronous Processing**
+
 **Decision**: Synchronous for critical path, async for webhooks
 
 **Critical Path (Synchronous)**:
+
 ```go
 // User waits for response
 Authorize() -> Call Provider API -> Return result
@@ -1974,6 +2008,7 @@ Authorize() -> Call Provider API -> Return result
 **Cons**: Slower API response times
 
 **Webhook Path (Asynchronous)**:
+
 ```go
 // Provider sends webhook later
 Webhook -> Queue -> Background Job -> Update payment state
@@ -1983,6 +2018,7 @@ Webhook -> Queue -> Background Job -> Update payment state
 **Cons**: More complex state management
 
 ### 3. **State Machine Enforcement**
+
 **Decision**: Enforce valid state transitions in domain layer
 
 ```go
@@ -1992,15 +2028,18 @@ payment.MarkVoided() // ERROR: Can't void a captured payment
 ```
 
 **Pros**:
+
 - Prevents data corruption
 - Business rules in one place
 - Easy to audit
 
 **Cons**:
+
 - Requires careful state mapping from providers
 - Provider-specific states may not fit cleanly
 
 ### 4. **Idempotency Key Strategy**
+
 **Decision**: Client-provided idempotency keys
 
 ```go
@@ -2011,17 +2050,20 @@ type AuthorizeRequest struct {
 ```
 
 **Pros**:
+
 - Client controls retry logic
 - Prevents duplicate charges
 - Provider-agnostic
 
 **Cons**:
+
 - Requires client implementation
 - Key storage overhead
 
 **Alternative**: Server-generated keys (not recommended for payments)
 
 ### 5. **Partial Captures/Refunds**
+
 **Decision**: Support partial amounts
 
 ```go
@@ -2031,26 +2073,32 @@ Void $25     // Void remaining authorization
 ```
 
 **Pros**:
+
 - Flexible for split shipments, tips, etc.
 - Common in e-commerce
 
 **Cons**:
+
 - More complex state tracking
 - Not all providers support partial operations
 
 ### 6. **Provider Response Storage**
+
 **Decision**: Store raw provider responses in `provider_response` field
 
 **Pros**:
+
 - Audit trail
 - Debugging support
 - Can extract additional data later
 
 **Cons**:
+
 - Database storage overhead
 - May contain sensitive data (requires careful scrubbing)
 
 ### 7. **Multi-Tenancy Support**
+
 **Decision**: Provider per customer, not per tenant
 
 ```go
@@ -2060,15 +2108,18 @@ customer2 -> CyberSource
 ```
 
 **Pros**:
+
 - Flexible provider selection
 - A/B testing different providers
 - Geographic optimization
 
 **Cons**:
+
 - More complex configuration
 - Harder to consolidate reporting
 
 ### 8. **Error Normalization Depth**
+
 **Decision**: Two-level error codes (normalized + provider-specific)
 
 ```go
@@ -2079,23 +2130,28 @@ type PaymentError struct {
 ```
 
 **Pros**:
+
 - Consistent error handling in business logic
 - Preserve provider details for debugging
 
 **Cons**:
+
 - Mapping complexity
 - May lose nuance
 
 ### 9. **HTTP Client Usage**
+
 **Decision**: Use your existing `internal/shared/http_client`
 
 **Pros**:
+
 - Consistent HTTP handling
 - Built-in observability (traces, metrics)
 - Retry logic
 - Connection pooling
 
 **Implementation**:
+
 ```go
 func (p *StripeProvider) Authorize(ctx context.Context, req *AuthorizeRequest) (*PaymentResponse, error) {
 	httpReq := &http_client.Request{
@@ -2113,9 +2169,11 @@ func (p *StripeProvider) Authorize(ctx context.Context, req *AuthorizeRequest) (
 ```
 
 ### 10. **Testing Strategy**
+
 **Decision**: Mock provider for unit tests, real providers for integration tests
 
 **Unit Tests**:
+
 ```go
 mockProvider := &MockPaymentProvider{
 	AuthorizeFunc: func(ctx context.Context, req *AuthorizeRequest) (*PaymentResponse, error) {
@@ -2130,6 +2188,7 @@ service := NewPaymentService(validator, repo, mockProvider)
 ```
 
 **Integration Tests**:
+
 ```go
 // Use Stripe test mode
 stripeProvider := stripe.NewStripeProvider(&config.StripeConfig{
@@ -2342,6 +2401,7 @@ This architecture provides:
 ✅ **Observability**: Uses existing telemetry infrastructure
 
 **Next Steps**:
+
 1. Review and approve architecture
 2. Implement database migrations
 3. Implement Stripe provider (reference implementation)
@@ -2349,4 +2409,3 @@ This architecture provides:
 5. Implement remaining providers (CyberSource, Plaid, etc.)
 6. Add webhook handlers
 7. Create API documentation
-
