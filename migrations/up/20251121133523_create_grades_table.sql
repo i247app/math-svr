@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE `ma_grades` (
+CREATE TABLE IF NOT EXISTS `ma_grades` (
   `id` char(36) NOT NULL,
   `label` varchar(128) NOT NULL,
   `discription` varchar(128) NOT NULL,

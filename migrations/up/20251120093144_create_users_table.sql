@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE `ma_users` (
+CREATE TABLE IF NOT EXISTS `ma_users` (
   `id` char(36) NOT NULL,
   `name` varchar(128) NOT NULL,
   `phone` varchar(128) NOT NULL,

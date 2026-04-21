@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE `ma_semesters` (
+CREATE TABLE IF NOT EXISTS `ma_semesters` (
   `id` char(36) NOT NULL,
   `name` varchar(100) NOT NULL,
   `description` text,
@@ -14,7 +14,7 @@ CREATE TABLE `ma_semesters` (
   `modify_dt` datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   `deleted_dt` datetime(6) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- INSERT INTO semesters (id, name, description, display_order) VALUES
 -- ('2c0h1d3e-3f4g-6e5d-0h2c-9d8e7f6g5c13', 'Semester 1', 'Semester 1 program', 1),

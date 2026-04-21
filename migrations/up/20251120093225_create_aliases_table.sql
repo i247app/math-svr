@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE `ma_aliases` (
+CREATE TABLE IF NOT EXISTS `ma_aliases` (
   `id` char(36) NOT NULL,
   `uid` char(36) NOT NULL,
   `aka` varchar(128) NOT NULL,

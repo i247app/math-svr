@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE `ma_login_logs` (
+CREATE TABLE IF NOT EXISTS `ma_login_logs` (
   `id` char(36) NOT NULL,
   `uid` char(36) NOT NULL,
   `ip_address` varchar(255) NOT NULL,

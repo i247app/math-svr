@@ -13,13 +13,11 @@ import (
 	"math-ai.com/math-ai/internal/app/routes"
 	"math-ai.com/math-ai/internal/app/services"
 	"math-ai.com/math-ai/internal/driven-adapter/jobs"
-	"math-ai.com/math-ai/internal/driven-adapter/persistence"
 	"math-ai.com/math-ai/internal/handlers/http/middleware"
 	"math-ai.com/math-ai/internal/session"
 	"math-ai.com/math-ai/internal/shared/config"
 	"math-ai.com/math-ai/internal/shared/constant/status"
 	"math-ai.com/math-ai/internal/shared/db"
-	"math-ai.com/math-ai/internal/shared/telemetry"
 	"math-ai.com/math-ai/internal/shared/utils/response"
 )
 
@@ -44,23 +42,28 @@ func NewFromEnv(envPath string) (*App, error) {
 		return nil, fmt.Errorf("failed to ping the database: %w", err)
 	}
 
-	// Initialize OpenTelemetry
-	otelProviders, err := telemetry.Initialize(context.Background(), env.OTelConfig)
-	if err != nil {
-		log.Printf("Warning: Failed to initialize OpenTelemetry: %v", err)
-		// Continue without OTel rather than failing
-		otelProviders = nil
-	} else {
-		log.Printf("OpenTelemetry initialized successfully (tracing=%v, metrics=%v)",
-			env.OTelConfig.EnableTracing, env.OTelConfig.EnableMetrics)
+	// Migrate the database
+	if err := db.Migrate(database.GetDB(), "migrations/up"); err != nil {
+		return nil, fmt.Errorf("failed to migrate the database: %w", err)
 	}
 
-	// Wrap database with OpenTelemetry instrumentation
-	var instrumentedDB db.IDatabase = database
-	if env.OTelConfig.EnableTracing {
-		instrumentedDB = persistence.NewOtelDatabaseWrapper(database, true)
-		log.Println("Database instrumentation enabled")
-	}
+	// // Initialize OpenTelemetry
+	// otelProviders, err := telemetry.Initialize(context.Background(), env.OTelConfig)
+	// if err != nil {
+	// 	log.Printf("Warning: Failed to initialize OpenTelemetry: %v", err)
+	// 	// Continue without OTel rather than failing
+	// 	otelProviders = nil
+	// } else {
+	// 	log.Printf("OpenTelemetry initialized successfully (tracing=%v, metrics=%v)",
+	// 		env.OTelConfig.EnableTracing, env.OTelConfig.EnableMetrics)
+	// }
+
+	// // Wrap database with OpenTelemetry instrumentation
+	// var instrumentedDB db.IDatabase = database
+	// if env.OTelConfig.EnableTracing {
+	// 	instrumentedDB = persistence.NewOtelDatabaseWrapper(database, true)
+	// 	log.Println("Database instrumentation enabled")
+	// }
 
 	// Build app resource
 	hostConfig := gex.HostConfig{
@@ -74,17 +77,17 @@ func NewFromEnv(envPath string) (*App, error) {
 		hostConfig.HttpsKeyFile = *env.HostConfig.HttpsKeyFile
 	}
 	resources := resources.AppResource{
-		Env:           env,
-		HostConfig:    hostConfig,
-		Db:            instrumentedDB,
-		OtelProviders: otelProviders,
+		Env:        env,
+		HostConfig: hostConfig,
+		Db:         database,
+		// OtelProviders: otelProviders,
 	}
 
 	app := NewApp(&resources)
 	if err := app.Init(); err != nil {
 		return nil, fmt.Errorf("failed to init app: %w", err)
 	}
-	app.Database = instrumentedDB
+	app.Database = database
 
 	routes.SetUpHttpRoutes(app.Server, &resources, app.Services)
 
