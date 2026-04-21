@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `ma_grades` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
 
 -- comment it if you migrate-up again
--- INSERT INTO grades (id,label,discription,image_key,status,display_order,create_id,create_dt,modify_id,modify_dt,deleted_dt) VALUES
+-- INSERT INTO ma_grades (id,label,discription,image_key,status,display_order,create_id,create_dt,modify_id,modify_dt,deleted_dt) VALUES
 -- 	 ('d46c8252-06a7-4d6e-8f24-3525278214ae','Grade 1','First year of elementary education level.','grade/20251204-ee1b0b0b-39eb-494a-a639-5e8641971f42.jpg','ACTIVE',1,0,'2025-12-04 22:24:23.387',0,'2025-12-04 22:24:23.387',NULL);
 -- 	 ('c95bf9eb-7143-4395-9112-752d7aee8020','Grade 2','Second year of elementary education level.','grade/20251204-b25fcde1-fd91-4afc-8dcf-3cc48c636d32.jpg','ACTIVE',2,0,'2025-12-04 22:25:01.597',0,'2025-12-04 22:25:01.597',NULL),
 -- 	 ('d26786b6-7a0a-49c9-ba89-866a4ba55e19','Grade 3','Third year of elementary education level.','grade/20251204-756f7405-1e22-40a9-9e64-9927c9a7acb4.jpeg','ACTIVE',3,0,'2025-12-04 22:25:18.914',0,'2025-12-04 22:25:18.914',NULL),

@@ -88,7 +88,7 @@ func extractMetadataFromJSON(r *http.Request) *metadata.RequestMetadata {
 		}
 
 		// Remove __metadata from the body so DTOs can be parsed normally
-		delete(rawBody, "__metadata")
+		// delete(rawBody, "__metadata")
 
 		// Re-serialize the body without __metadata
 		cleanBodyBytes, err := json.Marshal(rawBody)
