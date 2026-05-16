@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+
+if [ $# -ne 1 ]
+then
+  echo "Usage: $0 <host>"
+  exit 1
+fi
+
+# Check if the .env.ec2-credentials file exists
+if [ ! -f .env.ec2-credentials ]; then
+    echo "Error: .env.ec2-credentials file is missing"
+    exit 1
+fi
+
+hostIn=$1
+
+DEST_DIR="/apps/monex"
+
+SSH_KEY=$(cat .env.ec2-credentials | grep SSH_KEY | cut -d '=' -f 2)
+USER=$(cat .env.ec2-credentials | grep USER | cut -d '=' -f 2)
+HOST=$(cat .env.ec2-credentials | grep '^HOST=' | cut -d '=' -f 2)
+HOST1=$(cat .env.ec2-credentials | grep '^HOST1=' | cut -d '=' -f 2)
+HOST2=$(cat .env.ec2-credentials | grep '^HOST2=' | cut -d '=' -f 2)
+HOST3=$(cat .env.ec2-credentials | grep '^HOST3=' | cut -d '=' -f 2)
+HOST4=$(cat .env.ec2-credentials | grep '^HOST4=' | cut -d '=' -f 2)
+
+case $hostIn in
+  "t1") HOST=$HOST1
+        echo "detect $HOST" ;;
+  "t2") HOST=$HOST2
+        echo "detect $HOST" ;;
+  "t3") HOST=$HOST3
+        echo "detect $HOST" ;;
+  "t4") HOST=$HOST4
+        echo "detect $HOST" ;;
+  *) echo "host not found $hostIn"
+     exit 1 ;;
+esac
+
+echo "deploy to $HOST..."
+
+if [ -z "$SSH_KEY" ] || [ -z "$USER" ] || [ -z "$HOST" ]; then
+    echo "Error: .env.ec2-credentials file is missing one or more required variables [SSH_KEY, USER, HOST]"
+    exit 1
+fi
+
+GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+# Require user confirmation
+read -p "deploy branch=$GIT_BRANCH to ec2=${USER}@${HOST} [y/n]? " ansYN
+#if [ "${ansYN:-N}" != "y" ]; then
+#    echo "Deployment cancelled."
+#    exit 1
+#fi
+
+case "${ansYN:-N}" in
+  "y"|"Y")
+    echo "* Deploying..."
+    echo "* git branch=$GIT_BRANCH"
+    echo "* ec2=${USER}@${HOST}"
+    ;;
+  *)
+    echo "Deploy cancelled. exiting..."
+    exit 1 ;;
+esac
+
+# TODO - DELETE dont build here
+# echo "* Building..."
+# make build-ec2
+# if [ $? -ne 0 ]; then
+#     echo "Error: Failed to build"
+#     exit 1
+# fi
+
+echo "* Syncing remote files..."
+rsync -avz -R \
+    -O \
+    --progress \
+    --no-perms \
+    -e "ssh -i $SSH_KEY" \
+    migrations/ assets/views/ assets/images/ pre-deploy/ post-deploy/ dist/monexsvr ${USER}@${HOST}:${DEST_DIR}
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to deploy"
+    exit 1
+fi
+
+echo "* Running pre-deploy scripts..."
+ssh -i $SSH_KEY ${USER}@${HOST} 'for i in '\""$DEST_DIR"\"'/pre-deploy/*.sh; do [ -f "$i" ] && { echo "Running $i..." && bash "$i"; }; done'
+if [ $? -eq 0 ]; then
+    echo "* Pre-Deployed successfully!"
+fi
+
+echo "* Running post-deploy scripts..."
+ssh -i $SSH_KEY ${USER}@${HOST} 'for i in '\""$DEST_DIR"\"'/post-deploy/*.sh; do [ -f "$i" ] && { echo "Running $i..." && bash "$i"; }; done'
+if [ $? -eq 0 ]; then
+    echo "* Post-Deployed successfully!"
+fi
+
+echo "* Done!"

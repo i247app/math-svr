@@ -1,0 +1,1 @@
+mysqldump -h t1.vpc -u monex -p --no-tablespaces --default-character-set=utf8mb4 --result-file=monexdb.dmp --databases monexdb

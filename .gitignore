@@ -1,16 +1,44 @@
-..air.toml
-session_data_store
-.vscode/
+# miscellaneous
 .DS_Store
+*.swo
+*.swp
+.gocache
+
+# Obsidian
+.obsidian/
+
+# IDE file
+.idea/
+
+static/
+
+# ast-grep files
+sgconfig.yml
+.astgrep/
+
+.air.toml
+.vscode/
+
+session_data_store
 log_file
+webhook.log
+deploy.log
 
 # AI files
 .cursor/
 .claude/
+.crush/
+.specify/
+.opencode/
+.grok
 CLAUDE.md
-PAYMENT_GATEWAY_DESIGN.md
-PAYMENT_IMPLEMENTATION_ROADMAP_V2.md
-
+GEMINI.md
+QWEN.md
+AGENTS.md
+CONVENTIONS.md
+GOAT_POSTMAN.md
+WARP.md
+.aider*
 
 # go workspace files
 go.work
@@ -23,11 +51,13 @@ go.work.sum
 # secrets
 secrets/
 keys/
+trash/
 *.pem
 
 # build files
 dist/
-.aider*
-OBSERVABILITY.md
-graphql-examples.http
 
+# Session files
+data/
+
+internal/handlers/transaction_later

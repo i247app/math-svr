@@ -1,120 +1,64 @@
-.PHONY: build run list-models tidy migrate-create login migrate-up migrate-down migrate-up-deploy migrate-down-deploy login build-ec2 init-deploy deploy-ec2-remote
+.PHONY: build run run-dev build-ec2 deploy login remote-deploy test deploy-quick deploy-rollback deploy-amd watch-logs 
 
-## run: Run the app.
-run:
-	@go run ./cmd/server
-
-list-models:
-	@go run ./cmd/list-models
-
-# Get list of .sql files from the up/ directory, sorted from old to new
-MIGRATE_UP_FILES := $(shell ls migrations/up/*.sql | sort)
-
-# Get list of .sql files from the down/ directory, sorted from new to old
-MIGRATE_DOWN_FILES := $(shell ls migrations/down/*.sql | sort -r)
-
-## migrate-up: Run all pending migrations to the database.
-migrate-up:
-	@echo "🚀 Starting UP migrations from /migrations/up..."
-	@if [ -z "$(MIGRATE_UP_FILES)" ]; then \
-		echo "No UP migration files found in migrations/up."; \
-	else \
-		for file in $(MIGRATE_UP_FILES); do \
-			echo "--> Running UP: $$file"; \
-			./bin/run_migration_file.sh $$file; \
-		done; \
-	fi
-	@echo "✅ All UP migrations completed."
-
-## migrate-down: Run all migrations to the database.
-migrate-down:
-	@echo "⏪ Starting DOWN migrations from /migrations/down..."
-	@if [ -z "$(MIGRATE_DOWN_FILES)" ]; then \
-		echo "No DOWN migration files found in migrations/down."; \
-	else \
-		for file in $(MIGRATE_DOWN_FILES); do \
-			echo "--> Running DOWN: $$file"; \
-			./bin/run_migration_file.sh $$file; \
-		done; \
-	fi
-	@echo "✅ All DOWN migrations completed."
-
-
-## create-migration NAME=<name>: Create a new migration file.
-migrate-create:
-	@if [ -z "$(NAME)" ]; then \
-		echo "Usage: make create-migration NAME=<migration_name>"; \
-		exit 1; \
-	fi
-	./bin/create_migration.sh $(NAME)
-
-
-## migrate-up: Run all pending migrations to the database (aws).
-migrate-up-deploy:
-	@echo "🚀 Starting UP migrations from /migrations/up..."
-	@if [ -z "$(MIGRATE_UP_FILES)" ]; then \
-		echo "No UP migration files found in migrations/up."; \
-	else \
-		for file in $(MIGRATE_UP_FILES); do \
-			echo "--> Running UP: $$file"; \
-			./bin/run_migration_with_tunnel.sh $$file; \
-		done; \
-	fi
-	@echo "✅ All UP migrations completed."
-
-## migrate-down: Run all migrations to the database.
-migrate-down-deploy:
-	@echo "⏪ Starting DOWN migrations from /migrations/down..."
-	@if [ -z "$(MIGRATE_DOWN_FILES)" ]; then \
-		echo "No DOWN migration files found in migrations/down."; \
-	else \
-		for file in $(MIGRATE_DOWN_FILES); do \
-			echo "--> Running DOWN: $$file"; \
-			./bin/run_migration_with_tunnel.sh $$file; \
-		done; \
-	fi
-	@echo "✅ All DOWN migrations completed."
-
-## login: Login to AWS
-login:
-	@./bin/login.sh
-
-
-## list-models: List all available Google AI models
-list-models:
-	@if [ ! -f ./bin/list-models ]; then \
-		echo "Building list-models utility..."; \
-		go build -o bin/list-models ./cmd/list-models; \
-	fi
-	@./bin/list-models
+RHOST ?= none
 
 tidy:
 	go mod tidy
 
 # build current or local machine
 build: tidy
-	go build -o dist/server ./cmd/server
+	go build -o dist/mathsvr ./cmd/mathsvr
 
 # build AWS EC2 ARM64
-build-ec2: tidy
-	GOOS=linux GOARCH=arm64 go build -o dist/server ./cmd/server
-	
-# chmod +x bin/init_deploy.sh
-init-deploy:
-	@echo "make[$@] init deploy from mac to ec2..."
-	./bin/init_deploy.sh
-	@echo "make[$@] done"
+build-ec2-arm: tidy
+	GOOS=linux GOARCH=arm64 go build -o dist/mathsvr ./cmd/mathsvr
 
-# chmod +x bin/remote-deploy
-deploy-ec2-remote: build-ec2
+# build AWS EC2 AMD64
+build-ec2-amd: tidy
+	GOOS=linux GOARCH=amd64 go build -o dist/mathsvr-amd64 ./cmd/mathsvr
+
+deploy-ec2: build-ec2-arm
+	@echo "make[$@] TODO build and deploy locally on ec2..."
+
+# build local, deploy
+deploy-ec2-remote: build-ec2-arm
 	@echo "make[$@] build and deploy from mac to ec2..."
-	./bin/remote_deploy.sh
+	./bin/remote-deploy $(RHOST)
 	@echo "make[$@] done"
 
-# run docker otelp collector for testing locally
-docker-otel-up:
-	docker-compose -f docker/observability/docker-compose.otel.yml up -d
+run: tidy
+	@go run ./cmd/mathsvr
 
-# stop docker otelp collector for testing locally
-docker-otel-down:
-	docker-compose -f docker/observability/docker-compose.otel.yml down
+run-dev: tidy
+	@air --build.cmd "go build -o dist/mathsvr ./cmd/mathsvr" --build.bin "./dist/mathsvr"
+
+check-nil: tidy
+	go install go.uber.org/nilaway/cmd/nilaway@latest   
+	nilaway -include-pkgs="monex.com/monex" ./...
+
+linecount:
+	find internal pkg -name "*.go" | xargs wc -l
+
+login:
+	@./bin/login.sh $(RHOST)
+
+watch-logs:
+	@./bin/watch-logs.sh $(RHOST)
+
+# ── New orchestrated deployment ──────────────────────────
+
+# Full deploy: validate → build → prepare → deliver → activate
+deploy:
+	@./bin/deploy $(RHOST)
+
+# Deploy without rebuilding (use existing binary in dist/)
+deploy-quick:
+	@./bin/deploy $(RHOST) --skip-build
+
+# Rollback to previous binary
+deploy-rollback:
+	@./bin/deploy $(RHOST) --rollback
+
+# Build for AMD64 and deploy
+deploy-amd:
+	@BUILD_ARCH=amd64 ./bin/deploy $(RHOST)
