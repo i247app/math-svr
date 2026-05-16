@@ -1,0 +1,112 @@
+package user
+
+import (
+	"github.com/google/uuid"
+	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+)
+
+type User struct {
+	id         int64
+	userId     uuid.UUID
+	phone      string
+	email      *string
+	userStatus *string
+	status     string
+	note       *string
+	createId   *uuid.UUID
+	createDt   mtime.MathTime
+	modifyId   *uuid.UUID
+	modifyDt   mtime.MathTime
+}
+
+func NewUser() *User {
+	return &User{}
+}
+
+func (u *User) Id() int64 {
+	return u.id
+}
+
+func (u *User) SetId(id int64) {
+	u.id = id
+}
+
+func (u *User) UserId() uuid.UUID {
+	return u.userId
+}
+
+func (u *User) SetUserId(userId uuid.UUID) {
+	u.userId = userId
+}
+
+func (u *User) Phone() string {
+	return u.phone
+}
+
+func (u *User) SetPhone(phone string) {
+	u.phone = phone
+}
+
+func (u *User) Email() *string {
+	return u.email
+}
+
+func (u *User) SetEmail(email *string) {
+	u.email = email
+}
+
+func (u *User) UserStatus() *string {
+	return u.userStatus
+}
+
+func (u *User) SetUserStatus(userStatus *string) {
+	u.userStatus = userStatus
+}
+
+func (u *User) Status() string {
+	return u.status
+}
+
+func (u *User) SetStatus(status string) {
+	u.status = status
+}
+
+func (u *User) Note() *string {
+	return u.note
+}
+
+func (u *User) SetNote(note *string) {
+	u.note = note
+}
+
+func (u *User) CreateId() *uuid.UUID {
+	return u.createId
+}
+
+func (u *User) SetCreateId(createId *uuid.UUID) {
+	u.createId = createId
+}
+
+func (u *User) CreateDt() mtime.MathTime {
+	return u.createDt
+}
+
+func (u *User) SetCreateDt(createDt mtime.MathTime) {
+	u.createDt = createDt
+}
+
+func (u *User) ModifyId() *uuid.UUID {
+	return u.modifyId
+}
+
+func (u *User) SetModifyId(modifyId *uuid.UUID) {
+	u.modifyId = modifyId
+}
+
+func (u *User) ModifyDt() mtime.MathTime {
+	return u.modifyDt
+}
+
+func (u *User) SetModifyDt(modifyDt mtime.MathTime) {
+	u.modifyDt = modifyDt
+}

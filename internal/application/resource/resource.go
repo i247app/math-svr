@@ -1,0 +1,24 @@
+package resource
+
+import (
+	"math-ai.com/math-ai/internal/adapter/email"
+	"math-ai.com/math-ai/internal/adapter/sms"
+	"math-ai.com/math-ai/internal/adapter/storage"
+	"math-ai.com/math-ai/internal/infrastructure/config"
+	"math-ai.com/math-ai/internal/infrastructure/database"
+
+	"github.com/i247app/gex"
+)
+
+// Resource carries the long-lived I/O dependencies wired at boot.
+// Adapter pointers may be nil when the corresponding adapter is
+// disabled in this deploy (e.g. SMS in local dev without Twilio
+// credentials); callers must nil-guard.
+type Resource struct {
+	Env             *config.Env
+	HostConfig      gex.HostConfig
+	DB              *database.DatabaseWithLogs
+	EmailProvider   *email.Adapter
+	SMSProvider     *sms.Adapter
+	StorageProvider *storage.Adapter
+}

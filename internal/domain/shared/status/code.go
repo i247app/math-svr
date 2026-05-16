@@ -1,0 +1,50 @@
+package status
+
+type StatusCode int
+
+const (
+	SUCCESS               StatusCode = 200
+	CREATED               StatusCode = 201
+	ACCEPTED              StatusCode = 202
+	NO_CONTENT            StatusCode = 204
+	BAD_REQUEST           StatusCode = 400
+	FAIL                  StatusCode = 400
+	UNAUTHORIZED          StatusCode = 401
+	FORBIDDEN             StatusCode = 403
+	NOT_FOUND             StatusCode = 404
+	CONFLICT              StatusCode = 409
+	INTERNAL_SERVER_ERROR StatusCode = 500
+
+	USER_MISSING_EMAIL        StatusCode = 4001
+	USER_MISSING_PHONE        StatusCode = 4002
+	USER_MISSING_PASSWORD     StatusCode = 4003
+	USER_INVALID_EMAIL        StatusCode = 4004
+	USER_INVALID_PASSWORD     StatusCode = 4005
+	USER_NOT_FOUND            StatusCode = 4006
+	USER_EMAIL_ALREADY_EXISTS StatusCode = 4007
+	USER_PHONE_ALREADY_EXISTS StatusCode = 4008
+
+	NOTIFICATION_MISSING_UID        StatusCode = 5001
+	NOTIFICATION_MISSING_TITLE      StatusCode = 5002
+	NOTIFICATION_MISSING_SHORT_TEXT StatusCode = 5003
+	NOTIFICATION_INVALID_ICON       StatusCode = 5004
+	NOTIFICATION_INVALID_PRIORITY   StatusCode = 5005
+	NOTIFICATION_NOT_FOUND          StatusCode = 5006
+
+	MESSAGING_PUBLISH_FAILED   StatusCode = 6001
+	MESSAGING_INVALID_ENVELOPE StatusCode = 6002
+	MESSAGING_CONFIG_INVALID   StatusCode = 6003
+	MESSAGING_CONNECT_FAILED   StatusCode = 6004
+
+	CACHE_CONNECT_FAILED   StatusCode = 7001
+	CACHE_CONFIG_INVALID   StatusCode = 7002
+	CACHE_OP_FAILED        StatusCode = 7003
+	CACHE_SERIALIZE_FAILED StatusCode = 7004
+
+	STORAGE_CONFIG_INVALID StatusCode = 8001
+
+	SMS_CONNECT_FAILED   StatusCode = 9001
+	SMS_CONFIG_INVALID   StatusCode = 9002
+	SMS_OP_FAILED        StatusCode = 9003
+	SMS_SERIALIZE_FAILED StatusCode = 9004
+)

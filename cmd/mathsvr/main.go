@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"math-ai.com/math-ai/internal/app"
+	"math-ai.com/math-ai/internal/bootstrap"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 
 func run() error {
 	// Initialize app
-	app, err := app.NewFromEnv(".env")
+	app, err := bootstrap.NewFromEnv(".env")
 	if err != nil {
 		return fmt.Errorf("failed to initialize app: %w", err)
 	}
