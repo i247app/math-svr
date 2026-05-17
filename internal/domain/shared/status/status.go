@@ -1,25 +1,21 @@
 package status
 
-type KStatus struct {
+type MStatus struct {
 	code    StatusCode
 	message StatusMessage
 }
 
-func NewKStatus(code StatusCode, message StatusMessage) *KStatus {
-	return &KStatus{
+func NewMStatus(code StatusCode, message StatusMessage) *MStatus {
+	return &MStatus{
 		code:    code,
 		message: message,
 	}
 }
 
-func (s *KStatus) Code() StatusCode {
+func (s *MStatus) Code() StatusCode {
 	return s.code
 }
 
-func (s *KStatus) Message() StatusMessage {
+func (s *MStatus) Message() StatusMessage {
 	return s.message
 }
-
-// func (s *KStatus) SetMessage(language enum.LanguageType, code StatusCode, args map[string]any) {
-// 	s.message = GetMessage(language, code, args)
-// }

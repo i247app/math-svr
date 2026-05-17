@@ -1,11 +1,13 @@
 package routes
 
 import (
+	"github.com/i247app/gex"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/bootstrap/container"
+	"math-ai.com/math-ai/internal/module/grade"
+	"math-ai.com/math-ai/internal/module/program"
+	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/user"
-
-	"github.com/i247app/gex"
 )
 
 func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *container.ServiceContainer) {
@@ -20,5 +22,17 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		// admin routes
 		gexSvr.AddRoute("POST /users/soft-delete", userHandler.SoftDeleteUser)
 		gexSvr.AddRoute("POST /users/force-delete", userHandler.ForceDeleteUser)
+	}
+
+	// curriculum reference routes (read-only)
+	{
+		programHandler := program.NewProgramHandler(services.ProgramSvc)
+		gexSvr.AddRoute("POST /programs/list", programHandler.ListPrograms)
+
+		gradeHandler := grade.NewGradeHandler(services.GradeSvc)
+		gexSvr.AddRoute("POST /grades/list", gradeHandler.ListGrades)
+
+		semesterHandler := semester.NewSemesterHandler(services.SemesterSvc)
+		gexSvr.AddRoute("POST /semesters/list", semesterHandler.ListSemesters)
 	}
 }

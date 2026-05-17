@@ -1,14 +1,26 @@
 package container
 
 import (
+	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
+	programDomain "math-ai.com/math-ai/internal/domain/program"
+	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
+	"math-ai.com/math-ai/internal/module/grade"
+	"math-ai.com/math-ai/internal/module/program"
+	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/user"
 )
 
 type ServiceContainer struct {
-	UserSvc *user.Service
+	UserSvc     *user.Service
+	ProgramSvc  *program.Service
+	GradeSvc    *grade.Service
+	SemesterSvc *semester.Service
 }
 
 type RepositoryContainer struct {
-	UserRepository userDomain.IRepository
+	UserRepository     userDomain.IRepository
+	ProgramRepository  programDomain.IRepository
+	GradeRepository    gradeDomain.IRepository
+	SemesterRepository semesterDomain.IRepository
 }

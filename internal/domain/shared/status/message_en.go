@@ -35,6 +35,24 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case USER_NOT_FOUND:
 		return "User not found"
 
+	// Program
+	case PROGRAM_NOT_FOUND:
+		return "Program not found"
+	case PROGRAM_INVALID_LANGUAGE:
+		return "Program language is invalid"
+
+	// Grade
+	case GRADE_NOT_FOUND:
+		return "Grade not found"
+	case GRADE_INVALID_LANGUAGE:
+		return "Grade language is invalid"
+
+	// Semester
+	case SEMESTER_NOT_FOUND:
+		return "Semester not found"
+	case SEMESTER_INVALID_LANGUAGE:
+		return "Semester language is invalid"
+
 	// Notification
 	case NOTIFICATION_MISSING_UID:
 		return "User id is required"

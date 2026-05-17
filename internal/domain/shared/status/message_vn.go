@@ -35,6 +35,24 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case USER_NOT_FOUND:
 		return "Không tìm thấy người dùng"
 
+	// Program
+	case PROGRAM_NOT_FOUND:
+		return "Không tìm thấy chương trình học"
+	case PROGRAM_INVALID_LANGUAGE:
+		return "Ngôn ngữ chương trình học không hợp lệ"
+
+	// Grade
+	case GRADE_NOT_FOUND:
+		return "Không tìm thấy lớp"
+	case GRADE_INVALID_LANGUAGE:
+		return "Ngôn ngữ lớp không hợp lệ"
+
+	// Semester
+	case SEMESTER_NOT_FOUND:
+		return "Không tìm thấy học kỳ"
+	case SEMESTER_INVALID_LANGUAGE:
+		return "Ngôn ngữ học kỳ không hợp lệ"
+
 	// Notification
 	case NOTIFICATION_MISSING_UID:
 		return "Vui lòng cung cấp mã người dùng"

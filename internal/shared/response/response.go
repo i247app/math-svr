@@ -36,10 +36,10 @@ func WriteJson(w http.ResponseWriter, data any, err error) {
 		}
 
 		// Check if error is a binbaseError
-		if binbaseErr, ok := errs.IsbinbaseError(err); ok {
-			payload["mstatus"] = binbaseErr.GetStatusCode()
-			payload["mmessage"] = binbaseErr.GetStatusMessage()
-			payload["debug"] = binbaseErr.Error()
+		if mathErr, ok := errs.IsMathError(err); ok {
+			payload["mstatus"] = mathErr.GetStatusCode()
+			payload["mmessage"] = mathErr.GetStatusMessage()
+			payload["debug"] = mathErr.Error()
 		} else {
 			payload["mstatus"] = status.INTERNAL_SERVER_ERROR
 			payload["mmessage"] = err.Error()

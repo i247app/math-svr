@@ -11,7 +11,7 @@ import (
 
 type MathError struct {
 	// StatusCode is the application-specific status code
-	Status *status.KStatus
+	Status *status.MStatus
 
 	// BaseError is the underlying error (optional)
 	BaseError error
@@ -40,7 +40,7 @@ func NewError(ctx context.Context, statusCode status.StatusCode, args map[string
 	message := status.GetMessage(language, statusCode, args)
 
 	return &MathError{
-		Status:    status.NewKStatus(statusCode, message),
+		Status:    status.NewMStatus(statusCode, message),
 		BaseError: baseError,
 	}
 }
@@ -61,7 +61,7 @@ func (e *MathError) Unwrap() error {
 }
 
 // IsbinbaseError checks if an error is a DynamicError
-func IsbinbaseError(err error) (*MathError, bool) {
+func IsMathError(err error) (*MathError, bool) {
 	if err == nil {
 		return nil, false
 	}

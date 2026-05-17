@@ -18,10 +18,10 @@ CREATE TABLE IF NOT EXISTS ma_grades (
 
 -- comment it if you migrate-up again
 -- INSERT INTO ma_grades (grade_id, label, discription, image_key, display_order) VALUES
--- 	 ('d46c8252-06a7-4d6e-8f24-3525278214ae','Grade 1','First year of elementary education level.',NULL,1);
--- 	 ('c95bf9eb-7143-4395-9112-752d7aee8020','Grade 2','Second year of elementary education level.',NULL,2);
--- 	 ('d26786b6-7a0a-49c9-ba89-866a4ba55e19','Grade 3','Third year of elementary education level.',NULL,3);
--- 	 ('82023de6-8d1f-46d3-abc8-6dceab23a9f5','Grade 4','Four year of elementary education level.',NULL,4);
+-- 	 ('d46c8252-06a7-4d6e-8f24-3525278214ae','Grade 1','First year of elementary education level.',NULL,1),
+-- 	 ('c95bf9eb-7143-4395-9112-752d7aee8020','Grade 2','Second year of elementary education level.',NULL,2),
+-- 	 ('d26786b6-7a0a-49c9-ba89-866a4ba55e19','Grade 3','Third year of elementary education level.',NULL,3),
+-- 	 ('82023de6-8d1f-46d3-abc8-6dceab23a9f5','Grade 4','Four year of elementary education level.',NULL,4),
 -- 	 ('ca93947f-f7b6-433e-968f-a7b70f36c201','Grade 5','Five year of elementary education level.',NULL,5);
 
 

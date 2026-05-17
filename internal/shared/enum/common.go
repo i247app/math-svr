@@ -3,7 +3,7 @@ package enum
 type LanguageType string
 
 const (
-	LanguageTypeVietnamese LanguageType = "vi"
+	LanguageTypeVietnamese LanguageType = "vn"
 	LanguageTypeEnglish    LanguageType = "en"
 )
 
