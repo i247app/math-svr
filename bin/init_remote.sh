@@ -18,16 +18,16 @@ fi
 
 # 0. Define constants
 
-SVR_DIR="/var/www/tnmonex_svr"
+SVR_DIR="/var/www/math_svr"
 
 # 1. Create Go server web directory:
 
 ssh -i "$SSH_KEY" "$USER@$HOST" \
 "
 cd /var/www/ && \
-sudo mkdir tnmonex_svr && \
-sudo chgrp -R monex tnmonex_svr/ && \
-sudo chmod 775 -R tnmonex_svr/
+sudo mkdir math_svr && \
+sudo chgrp -R math math_svr/ && \
+sudo chmod 775 -R math_svr/
 "
 
 # 2. Upload JWT handshake keys:
@@ -50,15 +50,15 @@ cat << 'EOF' | ssh -i "$SSH_KEY" "$USER@$HOST" "sudo tee /usr/local/bin/ez >/dev
 
 # Define paths
 SVR_DIR="$SVR_DIR"
-PID_FILE="$SVR_DIR/monexsvr.pid"
-LOG_FILE="$SVR_DIR/monexsvr.log"
+PID_FILE="$SVR_DIR/mathsvr.pid"
+LOG_FILE="$SVR_DIR/mathsvr.log"
 
 # Usage info
 usage() {
     echo "Usage: $0 {start|stop|restart}"
-    echo "  start   - Start the TNMonex server"
-    echo "  stop    - Stop the TNMonex server"
-    echo "  restart - Restart the TNMonex server"
+    echo "  start   - Start the mathsvr server"
+    echo "  stop    - Stop the mathsvr server"
+    echo "  restart - Restart the mathsvr server"
     exit 1
 }
 
@@ -72,7 +72,7 @@ start() {
         echo "Error: Cannot cd to $SVR_DIR"
         exit 1
     }
-    sudo ./dist/monexsvr > "$LOG_FILE" 2>&1 &
+    sudo ./dist/mathsvr > "$LOG_FILE" 2>&1 &
     echo $! > "$PID_FILE"
     echo "Server started with PID $(cat "$PID_FILE")"
 }

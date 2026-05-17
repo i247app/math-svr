@@ -30,8 +30,6 @@ load_credentials() {
 
   local host_var
   case "${1:-}" in
-    p1) host_var="HOST_P1" ;;
-    p2) host_var="HOST_P2" ;;
     t1) host_var="HOST1" ;;
     t2) host_var="HOST2" ;;
     t3) host_var="HOST3" ;;
@@ -52,7 +50,7 @@ load_credentials() {
 
 # ── Remote Execution Helpers ─────────────────────────────
 
-DEST_DIR="/apps/monex"
+DEST_DIR="/apps/math"
 
 remote_exec() {
   ssh -o ConnectTimeout=10 -i "$SSH_KEY" "${DEPLOY_USER}@${DEPLOY_HOST}" "$@"

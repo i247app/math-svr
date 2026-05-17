@@ -49,15 +49,15 @@ watch-logs:
 
 # Full deploy: validate → build → prepare → deliver → activate
 deploy:
-	@./bin/deploy $(RHOST)
+	@./bin/deploy.sh $(RHOST)
 
 # Deploy without rebuilding (use existing binary in dist/)
 deploy-quick:
-	@./bin/deploy $(RHOST) --skip-build
+	@./bin/deploy.sh $(RHOST) --skip-build
 
 # Rollback to previous binary
 deploy-rollback:
-	@./bin/deploy $(RHOST) --rollback
+	@./bin/deploy.sh $(RHOST) --rollback
 
 # Build for AMD64 and deploy
 deploy-amd:

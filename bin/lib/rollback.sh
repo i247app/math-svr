@@ -6,17 +6,17 @@ run_rollback() {
 
   info "Stopping current server..."
   remote_exec "
-    pkill -x monexsvr 2>/dev/null || true
+    pkill -x mathsvr 2>/dev/null || true
     sleep 2
   "
 
   info "Restoring previous binary..."
   remote_exec "
-    if [ -f $DEST_DIR/dist/monexsvr.bak ]; then
-      cp $DEST_DIR/dist/monexsvr.bak $DEST_DIR/dist/monexsvr
+    if [ -f $DEST_DIR/dist/mathsvr.bak ]; then
+      cp $DEST_DIR/dist/mathsvr.bak $DEST_DIR/dist/mathsvr
       echo 'Binary restored from backup'
     else
-      echo 'ERROR: No backup found at $DEST_DIR/dist/monexsvr.bak'
+      echo 'ERROR: No backup found at $DEST_DIR/dist/mathsvr.bak'
       exit 1
     fi
   "
@@ -27,7 +27,7 @@ run_rollback() {
 
   info "Verifying rollback..."
   sleep 3
-  if remote_exec "pgrep -x monexsvr > /dev/null"; then
+  if remote_exec "pgrep -x mathsvr > /dev/null"; then
     info "Rollback successful — server is running"
   else
     error "Rollback failed — server is not running"

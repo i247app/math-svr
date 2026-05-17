@@ -14,7 +14,7 @@ fi
 
 hostIn=$1
 
-DEST_DIR="/apps/monex"
+DEST_DIR="/apps/math"
 
 SSH_KEY=$(cat .env.ec2-credentials | grep SSH_KEY | cut -d '=' -f 2)
 USER=$(cat .env.ec2-credentials | grep USER | cut -d '=' -f 2)
@@ -78,7 +78,7 @@ rsync -avz -R \
     --progress \
     --no-perms \
     -e "ssh -i $SSH_KEY" \
-    migrations/ assets/views/ assets/images/ pre-deploy/ post-deploy/ dist/monexsvr ${USER}@${HOST}:${DEST_DIR}
+    migrations/ assets/views/ assets/images/ pre-deploy/ post-deploy/ dist/mathsvr ${USER}@${HOST}:${DEST_DIR}
 if [ $? -ne 0 ]; then
     echo "Error: Failed to deploy"
     exit 1

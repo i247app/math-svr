@@ -18,8 +18,8 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_DIR"
 
 SESSION_FILE="${1:-}"
-BIN="./dist/monexsvr"
-LOG_FILE="/tmp/monexsvr-verify.log"
+BIN="./dist/mathsvr"
+LOG_FILE="/tmp/mathsvr-verify.log"
 STARTUP_WAIT_SECS=5
 SHUTDOWN_WAIT_SECS=12
 
@@ -58,7 +58,7 @@ start_server() {
   # Wait for the server to finish Init() and reload sessions. Poll for a known
   # log line rather than sleeping blindly, so slower machines don't flake.
   for i in $(seq 1 "$STARTUP_WAIT_SECS"); do
-    if grep -q "Starting monex" "$LOG_FILE" 2>/dev/null; then
+    if grep -q "Starting math" "$LOG_FILE" 2>/dev/null; then
       sleep 1  # grace for middleware registration
       return 0
     fi

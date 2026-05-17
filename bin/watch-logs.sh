@@ -9,4 +9,4 @@ if [ -z "$SSH_KEY" ] || [ -z "$USER" ] || [ -z "$HOST" ]; then
 fi
 
 echo "Watching logs for $HOST as $USER"
-ssh -i $SSH_KEY $USER@$HOST "tail -n 5000 -f /apps/monex/monexsvr.log"
+ssh -i $SSH_KEY $USER@$HOST "tail -n 5000 -f /apps/math/mathsvr.log"

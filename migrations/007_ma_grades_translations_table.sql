@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS ma_grade_translations (
   create_dt               DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
   modify_id               CHAR(36) DEFAULT NULL,
   modify_dt               datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  deleted_dt              DATETIME(6) DEFAULT NULL,
   UNIQUE KEY `unique_grade_language` (`grade_id`,`language`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

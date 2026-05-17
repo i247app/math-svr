@@ -7,9 +7,9 @@ run_prepare() {
   # Backup current binary for rollback
   info "Backing up current binary..."
   remote_exec "
-    if [ -f $DEST_DIR/dist/monexsvr ]; then
-      cp $DEST_DIR/dist/monexsvr $DEST_DIR/dist/monexsvr.bak
-      echo 'Backup created: monexsvr.bak'
+    if [ -f $DEST_DIR/dist/mathsvr ]; then
+      cp $DEST_DIR/dist/mathsvr $DEST_DIR/dist/mathsvr.bak
+      echo 'Backup created: mathsvr.bak'
     else
       echo 'No existing binary to back up'
     fi
@@ -27,7 +27,7 @@ run_prepare() {
   info "Waiting for server process to exit..."
   remote_exec "
     for attempt in 1 2 3 4 5 6 7 8 9 10; do
-      if ! pgrep -x monexsvr > /dev/null 2>&1; then
+      if ! pgrep -x mathsvr > /dev/null 2>&1; then
         echo 'Server stopped'
         exit 0
       fi
@@ -35,7 +35,7 @@ run_prepare() {
       sleep 1
     done
     echo 'WARNING: Server did not stop within 10s, force killing...'
-    pkill -9 -x monexsvr 2>/dev/null || true
+    pkill -9 -x mathsvr 2>/dev/null || true
     sleep 1
   "
 

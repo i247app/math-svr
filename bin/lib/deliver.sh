@@ -11,7 +11,7 @@ run_deliver() {
     assets/images/ \
     pre-deploy/ \
     post-deploy/ \
-    dist/monexsvr
+    dist/mathsvr
 
   info "Files synced successfully"
 
