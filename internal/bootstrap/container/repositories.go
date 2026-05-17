@@ -11,5 +11,6 @@ func SetupRepositories(db *database.DatabaseWithLogs) *RepositoryContainer {
 		ProgramRepository:  repositories.NewProgramRepository(db),
 		GradeRepository:    repositories.NewGradeRepository(db),
 		SemesterRepository: repositories.NewSemesterRepository(db),
+		ProfileRepository:  repositories.NewProfileRepository(db),
 	}
 }

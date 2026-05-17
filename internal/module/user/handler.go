@@ -40,7 +40,13 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) GetUserById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 
-	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: utils.StringToUUID(idStr)})
+	userID, err := utils.StringToUUID(idStr)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: userID})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

@@ -3,7 +3,9 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/grade"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
@@ -103,6 +105,46 @@ func (r *GradeRepository) ListGrades(ctx context.Context, params *grade.ListGrad
 	}
 
 	return grades, pg, nil
+}
+
+// ListGradesByIds — see program_repository's equivalent for rationale.
+func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []uuid.UUID, lang enum.LanguageType) ([]*grade.Grade, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	if lang == "" {
+		lang = enum.LanguageTypeVietnamese
+	}
+
+	placeholders := make([]string, len(ids))
+	args := append(gradeJoinArgs(lang), gradeActiveArgs()...)
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+
+	query := `SELECT ` + gradeColumns + ` FROM ` + gradeFromJoin +
+		` WHERE ` + gradeActiveWhere +
+		` AND g.grade_id IN (` + strings.Join(placeholders, ",") + `)`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("grade repo list by ids: %w", err)
+	}
+	defer rows.Close()
+
+	var grades []*grade.Grade
+	for rows.Next() {
+		m, err := scanGrade(rows)
+		if err != nil {
+			return nil, fmt.Errorf("grade repo scan row: %w", err)
+		}
+		grades = append(grades, ModelToDomainGrade(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("grade repo rows iteration: %w", err)
+	}
+	return grades, nil
 }
 
 func ModelToDomainGrade(m *models.GradeModel) *grade.Grade {

@@ -35,6 +35,28 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case USER_NOT_FOUND:
 		return "Không tìm thấy người dùng"
 
+	// Profile
+	case PROFILE_NOT_FOUND:
+		return "Không tìm thấy hồ sơ"
+	case PROFILE_MISSING_NAME:
+		return "Vui lòng nhập tên của con"
+	case PROFILE_MISSING_USER_ID:
+		return "Mã người dùng là bắt buộc"
+	case PROFILE_MISSING_GRADE_ID:
+		return "Mã lớp là bắt buộc"
+	case PROFILE_MISSING_SEMESTER_ID:
+		return "Mã học kỳ là bắt buộc"
+	case PROFILE_INVALID_DOB:
+		return "Ngày sinh không hợp lệ"
+	case PROFILE_AVATAR_INVALID_FILE:
+		return "Tệp ảnh đại diện không hợp lệ"
+	case PROFILE_AVATAR_UPLOAD_FAILED:
+		return "Tải ảnh đại diện thất bại"
+	case PROFILE_MISSING_PROGRAM_ID:
+		return "Mã chương trình học là bắt buộc"
+	case PROFILE_INVALID_LANGUAGE:
+		return "Ngôn ngữ không hợp lệ"
+
 	// Program
 	case PROGRAM_NOT_FOUND:
 		return "Không tìm thấy chương trình học"

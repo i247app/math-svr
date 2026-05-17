@@ -3,7 +3,9 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/semester"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
@@ -103,6 +105,46 @@ func (r *SemesterRepository) ListSemesters(ctx context.Context, params *semester
 	}
 
 	return semesters, pg, nil
+}
+
+// ListSemestersByIds — see program_repository's equivalent for rationale.
+func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []uuid.UUID, lang enum.LanguageType) ([]*semester.Semester, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	if lang == "" {
+		lang = enum.LanguageTypeVietnamese
+	}
+
+	placeholders := make([]string, len(ids))
+	args := append(semesterJoinArgs(lang), semesterActiveArgs()...)
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+
+	query := `SELECT ` + semesterColumns + ` FROM ` + semesterFromJoin +
+		` WHERE ` + semesterActiveWhere +
+		` AND s.semester_id IN (` + strings.Join(placeholders, ",") + `)`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("semester repo list by ids: %w", err)
+	}
+	defer rows.Close()
+
+	var semesters []*semester.Semester
+	for rows.Next() {
+		m, err := scanSemester(rows)
+		if err != nil {
+			return nil, fmt.Errorf("semester repo scan row: %w", err)
+		}
+		semesters = append(semesters, ModelToDomainSemester(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("semester repo rows iteration: %w", err)
+	}
+	return semesters, nil
 }
 
 func ModelToDomainSemester(m *models.SemesterModel) *semester.Semester {

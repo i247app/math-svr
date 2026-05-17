@@ -4,10 +4,9 @@ import (
 	"context"
 	"database/sql"
 
+	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/repositories"
-
-	"math-ai.com/math-ai/internal/application/transaction"
 )
 
 type SqlUnitOfWork struct {
@@ -22,8 +21,9 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 	return database.WithTransaction(ctx, u.db, func(txCtx context.Context, tx *sql.Tx) error {
 		loggedTx := database.NewTxWithLogs(txCtx, tx)
 		repos := transaction.Repositories{
-			User:  repositories.NewUserRepository(loggedTx),
-			Alias: repositories.NewAliasRepository(loggedTx),
+			User:    repositories.NewUserRepository(loggedTx),
+			Alias:   repositories.NewAliasRepository(loggedTx),
+			Profile: repositories.NewProfileRepository(loggedTx),
 		}
 		return fn(txCtx, repos)
 	})

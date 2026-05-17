@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS ma_profiles (
   name            varchar(128) NOT NULL,
   avatar_key      varchar(256) DEFAULT NULL,
   dob             datetime(3) DEFAULT NULL,
+  program_id      char(36) NOT NULL,
   grade_id        char(36) NOT NULL,
   semester_id     char(36) NOT NULL,
   note            varchar(500) DEFAULT NULL,

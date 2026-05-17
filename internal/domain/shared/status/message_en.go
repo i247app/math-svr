@@ -35,6 +35,28 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case USER_NOT_FOUND:
 		return "User not found"
 
+	// Profile
+	case PROFILE_NOT_FOUND:
+		return "Profile not found"
+	case PROFILE_MISSING_NAME:
+		return "Please enter the child's name"
+	case PROFILE_MISSING_USER_ID:
+		return "User id is required"
+	case PROFILE_MISSING_GRADE_ID:
+		return "Grade id is required"
+	case PROFILE_MISSING_SEMESTER_ID:
+		return "Semester id is required"
+	case PROFILE_INVALID_DOB:
+		return "Date of birth is invalid"
+	case PROFILE_AVATAR_INVALID_FILE:
+		return "Avatar file is invalid"
+	case PROFILE_AVATAR_UPLOAD_FAILED:
+		return "Avatar upload failed"
+	case PROFILE_MISSING_PROGRAM_ID:
+		return "Program id is required"
+	case PROFILE_INVALID_LANGUAGE:
+		return "Language is invalid"
+
 	// Program
 	case PROGRAM_NOT_FOUND:
 		return "Program not found"

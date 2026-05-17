@@ -3,7 +3,9 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/program"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
@@ -111,6 +113,49 @@ func (r *ProgramRepository) ListPrograms(ctx context.Context, params *program.Li
 	}
 
 	return programs, pg, nil
+}
+
+// ListProgramsByIds resolves a batch of programs in a single round-trip.
+// Caller (typically a service composing a parent aggregate response) is
+// responsible for keying the result by ProgramId() — order is not preserved
+// because the IN-clause makes no ordering guarantee.
+func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []uuid.UUID, lang enum.LanguageType) ([]*program.Program, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	if lang == "" {
+		lang = enum.LanguageTypeVietnamese
+	}
+
+	placeholders := make([]string, len(ids))
+	args := append(programJoinArgs(lang), programActiveArgs()...)
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+
+	query := `SELECT ` + programColumns + ` FROM ` + programFromJoin +
+		` WHERE ` + programActiveWhere +
+		` AND p.program_id IN (` + strings.Join(placeholders, ",") + `)`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("program repo list by ids: %w", err)
+	}
+	defer rows.Close()
+
+	var programs []*program.Program
+	for rows.Next() {
+		m, err := scanProgram(rows)
+		if err != nil {
+			return nil, fmt.Errorf("program repo scan row: %w", err)
+		}
+		programs = append(programs, ModelToDomainProgram(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("program repo rows iteration: %w", err)
+	}
+	return programs, nil
 }
 
 func ModelToDomainProgram(m *models.ProgramModel) *program.Program {
