@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	"math-ai.com/math-ai/internal/shared/enum"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 )
@@ -26,10 +25,10 @@ func NewSoftDeleteUserCommandHandler(uow transaction.UnitOfWork) *SoftDeleteUser
 
 func (h *SoftDeleteUserCommandHandler) Handle(ctx context.Context, cmd SoftDeleteUserCommand) error {
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		if err := repos.User.MarkStatusByUserId(ctx, cmd.UserID, enum.UserStatusTypeDeleted); err != nil {
+		if err := repos.User.SoftDeleteByUserId(ctx, cmd.UserID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.Alias.MarkStatusByUserId(ctx, cmd.UserID, enum.UserAliasStatusTypeDeleted); err != nil {
+		if err := repos.Alias.SoftDeleteByUserId(ctx, cmd.UserID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		return nil

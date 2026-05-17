@@ -26,7 +26,7 @@ const (
 	  ON t.semester_id = s.semester_id
 	  AND t.language = ?
 	  AND t.status = ?
-	  AND (t.st_status IS NULL OR t.st_status != ?)`
+	  AND t.deleted_dt IS NULL`
 
 	semesterColumns = `s.id, s.semester_id,
 		COALESCE(t.name, s.name) AS name,
@@ -35,16 +35,15 @@ const (
 		s.semester_status, s.status,
 		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
 
-	semesterActiveWhere = `s.status = ?
-		AND (s.semester_status IS NULL OR s.semester_status != ?)`
+	semesterActiveWhere = `s.status IN (?) AND s.deleted_dt IS NULL`
 )
 
 func semesterJoinArgs(lang enum.LanguageType) []any {
-	return []any{lang, enum.StatusActive, entityDeletedStatus}
+	return []any{lang, enum.StatusActive}
 }
 
 func semesterActiveArgs() []any {
-	return []any{enum.StatusActive, entityDeletedStatus}
+	return []any{enum.StatusActive}
 }
 
 type SemesterRepository struct {

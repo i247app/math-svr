@@ -11,6 +11,7 @@ type Env struct {
 	EmailConfig   EmailConfig
 	StorageConfig StorageConfig
 	SMSConfig     SMSConfig
+	BotConfig     BotConfig
 }
 
 // Config holds the database connection configuration.
@@ -76,4 +77,38 @@ type SMSConfig struct {
 	MaxRetries    int           // env SMS_MAX_RETRIES, default 2
 	RetryDelay    time.Duration // env SMS_RETRY_DELAY, e.g. "250ms"
 	RequireAtBoot bool          // env SMS_REQUIRE_AT_BOOT, default false
+}
+
+// BotConfig configures the AI bot adapter (`internal/adapter/bot`). The
+// factory translates these into provider-specific configs. Today the only
+// supported provider is "langchain", which itself can be backed by one of
+// several LLM vendors (googleai, openai, anthropic, ollama) selected by
+// LangChainBackend.
+//
+// LangChainAPIKey is a long-lived secret. It is never logged. The
+// libs/langchain package masks it out of every code path.
+//
+// Behaviour matrix for BotProvider:
+//
+//	""  or "disabled" → adapter is nil; module services must nil-guard.
+//	"langchain"       → langchain provider, dispatching to the configured backend.
+//	anything else     → MathError(BOT_CONFIG_INVALID) at boot.
+type BotConfig struct {
+	BotProvider string // env BOT_PROVIDER; "langchain" | "" | "disabled"
+
+	// LangChain-backed provider settings. Only consumed when
+	// BotProvider == "langchain".
+	LangChainBackend     string  // env BOT_LANGCHAIN_BACKEND; "googleai" | "openai" | "anthropic" | "ollama"
+	LangChainAPIKey      string  // env BOT_LANGCHAIN_API_KEY — SECRET
+	LangChainBaseURL     string  // env BOT_LANGCHAIN_BASE_URL; optional vendor override / required for ollama
+	LangChainModel       string  // env BOT_LANGCHAIN_MODEL; e.g. "gemini-1.5-flash"
+	LangChainEmbedModel  string  // env BOT_LANGCHAIN_EMBED_MODEL; e.g. "text-embedding-004"
+	LangChainTemperature float64 // env BOT_LANGCHAIN_TEMPERATURE; <0 means vendor default
+	LangChainTopP        float64 // env BOT_LANGCHAIN_TOP_P;        <0 means vendor default
+	LangChainMaxTokens   int     // env BOT_LANGCHAIN_MAX_TOKENS;   0  means vendor default
+
+	Timeout       time.Duration // env BOT_TIMEOUT,        e.g. "60s"
+	MaxRetries    int           // env BOT_MAX_RETRIES,    default 2
+	RetryDelay    time.Duration // env BOT_RETRY_DELAY,    e.g. "500ms"
+	RequireAtBoot bool          // env BOT_REQUIRE_AT_BOOT, default false
 }

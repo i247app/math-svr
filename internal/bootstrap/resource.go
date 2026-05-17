@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"math-ai.com/math-ai/internal/adapter/bot"
 	"math-ai.com/math-ai/internal/adapter/email"
 	"math-ai.com/math-ai/internal/adapter/sms"
 	"math-ai.com/math-ai/internal/adapter/storage"
@@ -40,6 +41,15 @@ func SetupResource(res *resource.Resource) error {
 		return fmt.Errorf("failed to setup storage adapter: %w", err)
 	}
 	res.StorageProvider = storageAdapter
+
+	log.Info("> Setup BotAdapter...")
+	log.Infof("> Bot Provider: %s (langchain backend: %s)",
+		env.BotConfig.BotProvider, env.BotConfig.LangChainBackend)
+	botAdapter, err := bot.NewFromConfig(context.Background(), env.BotConfig)
+	if err != nil {
+		return fmt.Errorf("failed to setup bot adapter: %w", err)
+	}
+	res.BotProvider = botAdapter
 
 	return nil
 }

@@ -20,6 +20,7 @@ type IRepository interface {
 	DeleteById(ctx context.Context, id int64) error
 	DeleteByUserId(ctx context.Context, userId uuid.UUID) error
 	MarkStatusByUserId(ctx context.Context, userId uuid.UUID, status enum.UserStatusType) error
+	SoftDeleteByUserId(ctx context.Context, userId uuid.UUID) error
 }
 
 type IAliasRepository interface {
@@ -30,6 +31,7 @@ type IAliasRepository interface {
 	UpdateByAliasId(ctx context.Context, alias *Alias) error
 	DeleteByUserId(ctx context.Context, userId uuid.UUID) error
 	MarkStatusByUserId(ctx context.Context, userId uuid.UUID, status enum.UserAliasStatusType) error
+	SoftDeleteByUserId(ctx context.Context, userId uuid.UUID) error
 }
 
 type ListUsersParams struct {

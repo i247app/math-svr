@@ -26,7 +26,7 @@ const (
 	  ON t.grade_id = g.grade_id
 	  AND t.language = ?
 	  AND t.status = ?
-	  AND (t.gt_status IS NULL OR t.gt_status != ?)`
+	  AND t.deleted_dt IS NULL`
 
 	gradeColumns = `g.id, g.grade_id,
 		COALESCE(t.label, g.label) AS label,
@@ -35,16 +35,15 @@ const (
 		g.grade_status, g.status,
 		g.create_id, g.create_dt, g.modify_id, g.modify_dt`
 
-	gradeActiveWhere = `g.status = ?
-		AND (g.grade_status IS NULL OR g.grade_status != ?)`
+	gradeActiveWhere = `g.status IN (?) AND g.deleted_dt IS NULL`
 )
 
 func gradeJoinArgs(lang enum.LanguageType) []any {
-	return []any{lang, enum.StatusActive, entityDeletedStatus}
+	return []any{lang, enum.StatusActive}
 }
 
 func gradeActiveArgs() []any {
-	return []any{enum.StatusActive, entityDeletedStatus}
+	return []any{enum.StatusActive}
 }
 
 type GradeRepository struct {

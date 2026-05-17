@@ -71,8 +71,42 @@ func NewEnv(envpath string) (*Env, error) {
 			RetryDelay:    getDurationConfigOptional("SMS_RETRY_DELAY"),
 			RequireAtBoot: getBoolConfigWithDefault("SMS_REQUIRE_AT_BOOT", false),
 		},
+
+		BotConfig: BotConfig{
+			BotProvider: getConfigOptionalString("BOT_PROVIDER"),
+
+			LangChainBackend:     getConfigOptionalString("BOT_LANGCHAIN_BACKEND"),
+			LangChainAPIKey:      getConfigOptionalString("BOT_LANGCHAIN_API_KEY"),
+			LangChainBaseURL:     getConfigOptionalString("BOT_LANGCHAIN_BASE_URL"),
+			LangChainModel:       getConfigOptionalString("BOT_LANGCHAIN_MODEL"),
+			LangChainEmbedModel:  getConfigOptionalString("BOT_LANGCHAIN_EMBED_MODEL"),
+			LangChainTemperature: getFloatConfigWithDefault("BOT_LANGCHAIN_TEMPERATURE", -1),
+			LangChainTopP:        getFloatConfigWithDefault("BOT_LANGCHAIN_TOP_P", -1),
+			LangChainMaxTokens:   getIntConfigOptional("BOT_LANGCHAIN_MAX_TOKENS"),
+
+			Timeout:       getDurationConfigOptional("BOT_TIMEOUT"),
+			MaxRetries:    getIntConfigOptional("BOT_MAX_RETRIES"),
+			RetryDelay:    getDurationConfigOptional("BOT_RETRY_DELAY"),
+			RequireAtBoot: getBoolConfigWithDefault("BOT_REQUIRE_AT_BOOT", false),
+		},
 	}
 	return &result, nil
+}
+
+// getFloatConfigWithDefault parses a float64 env value, returning def when
+// the env var is unset/empty. Use a negative sentinel (e.g. -1) to mean
+// "fall through to the downstream library's default". Panics on a malformed
+// non-empty value — same posture as getIntConfigOptional.
+func getFloatConfigWithDefault(key string, def float64) float64 {
+	raw := getConfigOptional(key)
+	if raw == nil || *raw == "" {
+		return def
+	}
+	v, err := strconv.ParseFloat(*raw, 64)
+	if err != nil {
+		panic(fmt.Sprintf("config error: %s must be a float", key))
+	}
+	return v
 }
 
 // getDurationConfigOptional reads a Go duration string ("2s", "100ms",

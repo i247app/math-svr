@@ -118,6 +118,24 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "SMS operation failed"
 	case SMS_SERIALIZE_FAILED:
 		return "Failed to serialize SMS payload"
+
+	// Bot (AI / chat)
+	case BOT_CONNECT_FAILED:
+		return "AI provider connection failed"
+	case BOT_CONFIG_INVALID:
+		return "AI configuration is invalid"
+	case BOT_OP_FAILED:
+		return "AI operation failed"
+	case BOT_SERIALIZE_FAILED:
+		return "Failed to decode AI response"
+	case BOT_INVALID_PROMPT:
+		return "AI prompt is invalid"
+	case BOT_CONTEXT_TOO_LARGE:
+		return "AI context window exceeded"
+	case BOT_RATE_LIMITED:
+		return "AI provider rate limit exceeded"
+	case BOT_UNSUPPORTED_OP:
+		return "AI operation is not supported by the configured provider"
 	default:
 		return ""
 	}

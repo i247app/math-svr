@@ -21,12 +21,11 @@ const (
 		p.program_id, p.grade_id, p.semester_id, p.note, p.profile_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
-	profileActiveWhere = `p.status = ?
-		AND (p.profile_status IS NULL OR p.profile_status != ?)`
+	profileActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
 )
 
 func profileActiveArgs() []any {
-	return []any{enum.StatusActive, entityDeletedStatus}
+	return []any{enum.StatusActive}
 }
 
 type ProfileRepository struct {

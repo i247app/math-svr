@@ -27,21 +27,21 @@ const (
 	JOIN ma_aliases a ON u.user_id = a.user_id`
 
 	userActiveWhere = `
-	u.status = ? AND (u.user_status IS NULL OR u.user_status != ?)
-	AND a.status = ? AND (a.alias_status IS NULL OR a.alias_status != ?)`
+	u.status IN (?) AND u.deleted_dt IS NULL
+	AND a.status IN (?) AND a.deleted_dt IS NULL`
 
-	userBareActiveWhere = `u.status = ? AND (u.user_status IS NULL OR u.user_status != ?)`
+	userBareActiveWhere = `u.status IN (?) AND u.deleted_dt IS NULL`
 )
 
 func userActiveArgs() []any {
 	return []any{
-		enum.StatusActive, enum.UserStatusTypeDeleted,
-		enum.StatusActive, enum.UserAliasStatusTypeDeleted,
+		enum.StatusActive,
+		enum.StatusActive,
 	}
 }
 
 func userBareActiveArgs() []any {
-	return []any{enum.StatusActive, enum.UserStatusTypeDeleted}
+	return []any{enum.StatusActive}
 }
 
 type UserRepository struct {
@@ -208,6 +208,21 @@ func (r *UserRepository) MarkStatusByUserId(ctx context.Context, userId uuid.UUI
 
 	if _, err := r.db.Exec(ctx, query, status, mtime.Now().Time, userId); err != nil {
 		return fmt.Errorf("user repo mark status by user id: %w", err)
+	}
+	return nil
+}
+
+func (r *UserRepository) SoftDeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+	query := `
+		UPDATE ` + userTable + `
+		SET user_status = ?,
+			status = ?,
+			deleted_dt = ?
+		WHERE user_id = ?
+	`
+
+	if _, err := r.db.Exec(ctx, query, enum.UserStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, userId); err != nil {
+		return fmt.Errorf("user repo soft delete by user id: %w", err)
 	}
 	return nil
 }

@@ -19,11 +19,11 @@ const (
 
 	aliasColumns = `id, alias_id, user_id, aka, alias_status, note, create_id, create_dt, modify_id, modify_dt`
 
-	aliasActiveWhere = `status = ? AND (alias_status IS NULL OR alias_status != ?)`
+	aliasActiveWhere = `status IN (?) AND deleted_dt IS NULL`
 )
 
 func aliasActiveArgs() []any {
-	return []any{enum.StatusActive, enum.UserAliasStatusTypeDeleted}
+	return []any{enum.StatusActive}
 }
 
 type AliasRepository struct {
@@ -129,6 +129,21 @@ func (r *AliasRepository) MarkStatusByUserId(ctx context.Context, userId uuid.UU
 
 	if _, err := r.db.Exec(ctx, query, status, time.Now().Time, userId); err != nil {
 		return fmt.Errorf("alias repo mark status by uid: %w", err)
+	}
+	return nil
+}
+
+func (r *AliasRepository) SoftDeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+	query := `
+		UPDATE ` + aliasTable + `
+		SET alias_status = ?,
+			status = ?,
+			deleted_dt = ?
+		WHERE user_id = ?
+	`
+
+	if _, err := r.db.Exec(ctx, query, enum.UserAliasStatusTypeDeleted, enum.StatusInactive, time.Now().Time, userId); err != nil {
+		return fmt.Errorf("alias repo soft delete by user id: %w", err)
 	}
 	return nil
 }

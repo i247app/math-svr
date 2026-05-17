@@ -29,7 +29,7 @@ const (
 	  ON t.program_id = p.program_id
 	  AND t.language = ?
 	  AND t.status = ?
-	  AND (t.gt_status IS NULL OR t.gt_status != ?)`
+	  AND t.deleted_dt IS NULL`
 
 	programColumns = `p.id, p.program_id,
 		COALESCE(t.label, p.label) AS label,
@@ -38,8 +38,7 @@ const (
 		p.program_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
-	programActiveWhere = `p.status = ?
-		AND (p.program_status IS NULL OR p.program_status != ?)`
+	programActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
 )
 
 // entityDeletedStatus is the literal "DELETED" written to every <entity>_status
@@ -48,11 +47,11 @@ const (
 const entityDeletedStatus = "DELETED"
 
 func programJoinArgs(lang enum.LanguageType) []any {
-	return []any{lang, enum.StatusActive, entityDeletedStatus}
+	return []any{lang, enum.StatusActive}
 }
 
 func programActiveArgs() []any {
-	return []any{enum.StatusActive, entityDeletedStatus}
+	return []any{enum.StatusActive}
 }
 
 type ProgramRepository struct {
