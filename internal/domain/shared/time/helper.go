@@ -66,9 +66,9 @@ func ParseDate(value string) (MathTime, error) {
 	return MathTime{Time: t}, nil
 }
 
-// NewbinbaseTimePtr creates a new *binbaseTime from a standard time.Time
+// NewMathTimePtr creates a new *MathTime from a standard time.Time
 // Returns nil if the time is zero
-func NewbinbaseTimePtr(t time.Time) *MathTime {
+func NewMathTimePtr(t time.Time) *MathTime {
 	if t.IsZero() {
 		return nil
 	}
@@ -76,9 +76,9 @@ func NewbinbaseTimePtr(t time.Time) *MathTime {
 	return &mt
 }
 
-// binbaseTimeFromPtr converts *time.Time to binbaseTime
-// Returns zero binbaseTime if pointer is nil
-func binbaseTimeFromPtr(t *time.Time) MathTime {
+// MathTimeFromPtr converts *time.Time to MathTime
+// Returns zero MathTime if pointer is nil
+func MathTimeFromPtr(t *time.Time) MathTime {
 	if t == nil {
 		return MathTime{}
 	}
@@ -87,16 +87,16 @@ func binbaseTimeFromPtr(t *time.Time) MathTime {
 
 // TimeTobinbaseTimePtr converts *time.Time to *binbaseTime
 // Returns nil if pointer is nil
-func TimeTobinbaseTimePtr(t *time.Time) *MathTime {
+func TimeToMathTimePtr(t *time.Time) *MathTime {
 	if t == nil {
 		return nil
 	}
-	return NewbinbaseTimePtr(*t)
+	return NewMathTimePtr(*t)
 }
 
-// binbaseTimePtrToTime converts *binbaseTime to *time.Time
+// MathTimePtrToTime converts *MathTime to *time.Time
 // Returns nil if pointer is nil
-func binbaseTimePtrToTime(mt *MathTime) *time.Time {
+func MathTimePtrToTime(mt *MathTime) *time.Time {
 	if mt == nil {
 		return nil
 	}
