@@ -17,7 +17,7 @@ func NewGradeHandler(gradeSvc *Service) *GradeHandler {
 }
 
 // POST /grades/list
-func (h *GradeHandler) ListGrades(w http.ResponseWriter, r *http.Request) {
+func (h *GradeHandler) HandleListGrades(w http.ResponseWriter, r *http.Request) {
 	var req dto.ListGradesReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)

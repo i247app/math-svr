@@ -5,6 +5,7 @@ import (
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/bootstrap/container"
 	"math-ai.com/math-ai/internal/module/grade"
+	"math-ai.com/math-ai/internal/module/health"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/semester"
@@ -15,36 +16,42 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// user routes
 	{
 		userHandler := user.NewUserHandler(services.UserSvc)
-		gexSvr.AddRoute("GET  /users/{id}", userHandler.GetUserById)
-		gexSvr.AddRoute("POST /users/list", userHandler.ListUsers)
-		gexSvr.AddRoute("POST /users/create", userHandler.CreateUser)
-		gexSvr.AddRoute("POST /users/update", userHandler.UpdateUser)
+		gexSvr.AddRoute("GET  /users/{id}", userHandler.HandleGetUserById)
+		gexSvr.AddRoute("POST /users/list", userHandler.HandleListUsers)
+		gexSvr.AddRoute("POST /users/create", userHandler.HandleCreateUser)
+		gexSvr.AddRoute("POST /users/update", userHandler.HandleUpdateUser)
 
 		// admin routes
-		gexSvr.AddRoute("POST /users/soft-delete", userHandler.SoftDeleteUser)
-		gexSvr.AddRoute("POST /users/force-delete", userHandler.ForceDeleteUser)
+		gexSvr.AddRoute("POST /users/soft-delete", userHandler.HandleSoftDeleteUser)
+		gexSvr.AddRoute("POST /users/force-delete", userHandler.HandleForceDeleteUser)
 	}
 
 	// curriculum reference routes (read-only)
 	{
 		programHandler := program.NewProgramHandler(services.ProgramSvc)
-		gexSvr.AddRoute("POST /programs/list", programHandler.ListPrograms)
+		gexSvr.AddRoute("POST /programs/list", programHandler.HandleListPrograms)
 
 		gradeHandler := grade.NewGradeHandler(services.GradeSvc)
-		gexSvr.AddRoute("POST /grades/list", gradeHandler.ListGrades)
+		gexSvr.AddRoute("POST /grades/list", gradeHandler.HandleListGrades)
 
 		semesterHandler := semester.NewSemesterHandler(services.SemesterSvc)
-		gexSvr.AddRoute("POST /semesters/list", semesterHandler.ListSemesters)
+		gexSvr.AddRoute("POST /semesters/list", semesterHandler.HandleListSemesters)
 	}
 
 	// profile routes (parent-managed child profiles)
 	{
 		profileHandler := profile.NewProfileHandler(services.ProfileSvc)
-		gexSvr.AddRoute("GET  /profiles/{id}", profileHandler.GetProfileById)
-		gexSvr.AddRoute("POST /profiles/list", profileHandler.ListProfiles)
-		gexSvr.AddRoute("POST /profiles/create", profileHandler.CreateProfile)
-		gexSvr.AddRoute("POST /profiles/update", profileHandler.UpdateProfile)
-		gexSvr.AddRoute("POST /profiles/soft-delete", profileHandler.SoftDeleteProfile)
-		gexSvr.AddRoute("POST /profiles/upload-avatar", profileHandler.UploadAvatar)
+		gexSvr.AddRoute("GET  /profiles/{id}", profileHandler.HandleGetProfileById)
+		gexSvr.AddRoute("POST /profiles/list", profileHandler.HandleListProfiles)
+		gexSvr.AddRoute("POST /profiles/create", profileHandler.HandleCreateProfile)
+		gexSvr.AddRoute("POST /profiles/update", profileHandler.HandleUpdateProfile)
+		gexSvr.AddRoute("POST /profiles/soft-delete", profileHandler.HandleSoftDeleteProfile)
+		gexSvr.AddRoute("POST /profiles/upload-avatar", profileHandler.HandleUploadAvatar)
+	}
+
+	// health routes
+	{
+		healthHandler := health.NewHealthHandler()
+		gexSvr.AddRoute("GET /ping", healthHandler.HandlePing)
 	}
 }

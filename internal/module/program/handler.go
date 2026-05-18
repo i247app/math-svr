@@ -17,7 +17,7 @@ func NewProgramHandler(programSvc *Service) *ProgramHandler {
 }
 
 // POST /programs/list
-func (h *ProgramHandler) ListPrograms(w http.ResponseWriter, r *http.Request) {
+func (h *ProgramHandler) HandleListPrograms(w http.ResponseWriter, r *http.Request) {
 	var req dto.ListProgramsReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)

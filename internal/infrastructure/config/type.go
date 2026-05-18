@@ -3,9 +3,11 @@ package config
 import "time"
 
 type Env struct {
-	ServerHost string
-	ServerPort string
-	LogFile    string
+	ServerHost       string
+	ServerPort       string
+	LogFile          string
+	GexSessionDriver string
+	SharedKeyBytes   []byte
 
 	DBConfig      DBConfig
 	EmailConfig   EmailConfig

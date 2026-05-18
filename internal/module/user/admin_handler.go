@@ -9,7 +9,7 @@ import (
 )
 
 // POST /users/soft-delete
-func (h *UserHandler) SoftDeleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) HandleSoftDeleteUser(w http.ResponseWriter, r *http.Request) {
 	var req dto.DeleteUserReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
@@ -24,7 +24,7 @@ func (h *UserHandler) SoftDeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /users/force-delete
-func (h *UserHandler) ForceDeleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) HandleForceDeleteUser(w http.ResponseWriter, r *http.Request) {
 	var req dto.DeleteUserReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)

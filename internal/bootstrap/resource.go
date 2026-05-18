@@ -3,6 +3,11 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/i247app/gex/jwtutil"
+	gexsess "github.com/i247app/gex/session"
+	"github.com/i247app/gex/sessionprovider"
 
 	"math-ai.com/math-ai/internal/adapter/bot"
 	"math-ai.com/math-ai/internal/adapter/email"
@@ -10,12 +15,57 @@ import (
 	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/infrastructure/session"
+)
+
+const (
+	sessionTTL = 14 * 24 * time.Hour // 14 days
 )
 
 func SetupResource(res *resource.Resource) error {
 	log := logger.From(context.Background())
 
 	env := res.Env
+
+	log.Info("> Setup SessionManager...")
+	sessionManager := session.NewSessionManager()
+	res.SessionManager = sessionManager
+
+	log.Info("> jwtHelper...")
+	var jwtHelper jwtutil.JwtHelper
+	if env.SharedKeyBytes != nil {
+		helper, err := jwtutil.NewHmacJwtHelper(env.SharedKeyBytes)
+		if err != nil {
+			panic("failed to create jwt toolkit from env shared key")
+		}
+		jwtHelper = helper
+	} else {
+		return fmt.Errorf("unable to determine jwt helper from env")
+	}
+
+	var sessionProvider sessionprovider.SessionProvider
+	{
+		defaultSessFactory := func() gexsess.SessionStorer {
+			// Create the basic session that all new sessions are based on
+			return session.NewSession()
+		}
+		if env.GexSessionDriver == "xwt" {
+			sessionProvider = sessionprovider.NewXwtSessionProvider(
+				sessionManager.Container(),
+				jwtHelper,
+				defaultSessFactory,
+				sessionTTL,
+			)
+		} else {
+			sessionProvider = sessionprovider.NewJwtSessionProvider(
+				sessionManager.Container(),
+				jwtHelper,
+				defaultSessFactory,
+				sessionTTL,
+			)
+		}
+	}
+	res.SessionProvider = sessionProvider
 
 	log.Info("> Setup Resource...")
 	log.Info("> Setup EmailAdapter...")

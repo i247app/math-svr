@@ -19,9 +19,11 @@ func NewEnv(envpath string) (*Env, error) {
 	}
 
 	result := Env{
-		ServerHost: getConfig("SERVER_HOST"),
-		ServerPort: getConfig("SERVER_PORT"),
-		LogFile:    getConfigOptionalString("LOG_FILE"),
+		ServerHost:       getConfig("SERVER_HOST"),
+		ServerPort:       getConfig("SERVER_PORT"),
+		LogFile:          getConfigOptionalString("LOG_FILE"),
+		GexSessionDriver: getConfigOptionalString("GEX_SESSION_DRIVER"),
+		SharedKeyBytes:   getFileBytesConfig("GEX_SHARED_KEY"),
 
 		DBConfig: DBConfig{
 			DBHost:   getConfig("DB_HOST"),

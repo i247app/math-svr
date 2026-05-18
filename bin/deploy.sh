@@ -90,9 +90,9 @@ if ! $SKIP_BUILD; then
   run_build
 fi
 
-run_prepare
-run_deliver
-run_activate
+# run_prepare
+# run_deliver
+# run_activate
 
 # ── Summary ──────────────────────────────────────────────
 

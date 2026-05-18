@@ -17,7 +17,7 @@ func NewSemesterHandler(semesterSvc *Service) *SemesterHandler {
 }
 
 // POST /semesters/list
-func (h *SemesterHandler) ListSemesters(w http.ResponseWriter, r *http.Request) {
+func (h *SemesterHandler) HandleListSemesters(w http.ResponseWriter, r *http.Request) {
 	var req dto.ListSemestersReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)

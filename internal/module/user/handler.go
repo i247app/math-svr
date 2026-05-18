@@ -20,7 +20,7 @@ func NewUserHandler(userSvc *Service) *UserHandler {
 }
 
 // POST /users/create
-func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	var req user.CreateUserReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
@@ -37,7 +37,7 @@ func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // GET /users/{id}
-func (h *UserHandler) GetUserById(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 
 	userID, err := utils.StringToUUID(idStr)
@@ -56,7 +56,7 @@ func (h *UserHandler) GetUserById(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /users/list
-func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 	// page := r.URL.Query().Get("page")
 	// limit := r.URL.Query().Get("limit")
 
@@ -81,7 +81,7 @@ func (h *UserHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /users/update
-func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	var req user.UpdateUserReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)

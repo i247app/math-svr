@@ -26,7 +26,7 @@ func NewProfileHandler(profileSvc *Service) *ProfileHandler {
 }
 
 // POST /profiles/create
-func (h *ProfileHandler) CreateProfile(w http.ResponseWriter, r *http.Request) {
+func (h *ProfileHandler) HandleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateProfileReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
@@ -42,7 +42,7 @@ func (h *ProfileHandler) CreateProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 // GET /profiles/{id}?language=vn|en
-func (h *ProfileHandler) GetProfileById(w http.ResponseWriter, r *http.Request) {
+func (h *ProfileHandler) HandleGetProfileById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 	profileID, err := utils.StringToUUID(idStr)
 	if err != nil {
@@ -62,7 +62,7 @@ func (h *ProfileHandler) GetProfileById(w http.ResponseWriter, r *http.Request) 
 }
 
 // POST /profiles/list
-func (h *ProfileHandler) ListProfiles(w http.ResponseWriter, r *http.Request) {
+func (h *ProfileHandler) HandleListProfiles(w http.ResponseWriter, r *http.Request) {
 	var req dto.ListProfilesReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
@@ -78,7 +78,7 @@ func (h *ProfileHandler) ListProfiles(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /profiles/update
-func (h *ProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	var req dto.UpdateProfileReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
@@ -94,7 +94,7 @@ func (h *ProfileHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 // POST /profiles/soft-delete
-func (h *ProfileHandler) SoftDeleteProfile(w http.ResponseWriter, r *http.Request) {
+func (h *ProfileHandler) HandleSoftDeleteProfile(w http.ResponseWriter, r *http.Request) {
 	var req dto.DeleteProfileReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
@@ -113,7 +113,7 @@ func (h *ProfileHandler) SoftDeleteProfile(w http.ResponseWriter, r *http.Reques
 //
 //	profile_id  string (uuid)
 //	file        file
-func (h *ProfileHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
+func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	r.Body = http.MaxBytesReader(w, r.Body, maxAvatarUploadBytes)

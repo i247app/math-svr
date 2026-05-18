@@ -7,8 +7,10 @@ import (
 	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/database"
+	"math-ai.com/math-ai/internal/infrastructure/session"
 
 	"github.com/i247app/gex"
+	"github.com/i247app/gex/sessionprovider"
 )
 
 // Resource carries the long-lived I/O dependencies wired at boot.
@@ -19,6 +21,8 @@ type Resource struct {
 	Env             *config.Env
 	HostConfig      gex.HostConfig
 	DB              *database.DatabaseWithLogs
+	SessionManager  *session.SessionManager
+	SessionProvider sessionprovider.SessionProvider
 	EmailProvider   *email.Adapter
 	SMSProvider     *sms.Adapter
 	StorageProvider *storage.Adapter
