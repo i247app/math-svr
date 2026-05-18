@@ -1,7 +1,6 @@
 package bootstrap
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"log/slog"
@@ -38,12 +37,12 @@ func NewFromEnv(envPath string) (*App, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// Run migrations
-	if err := database.Migrate(context.Background(), sqlDB, "migrations"); err != nil {
-		sqlDB.Close()
-		_ = logProvider.Close()
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
-	}
+	// // Run migrations
+	// if err := database.Migrate(context.Background(), sqlDB, "migrations"); err != nil {
+	// 	sqlDB.Close()
+	// 	_ = logProvider.Close()
+	// 	return nil, fmt.Errorf("failed to run migrations: %w", err)
+	// }
 
 	db := database.NewDatabaseWithLogs(sqlDB)
 
@@ -51,6 +50,12 @@ func NewFromEnv(envPath string) (*App, error) {
 	hostConfig := gex.HostConfig{
 		ServerHost: env.ServerHost,
 		ServerPort: env.ServerPort,
+	}
+	if env.HttpsCertFile != nil {
+		hostConfig.HttpsCertFile = *env.HttpsCertFile
+	}
+	if env.HttpsKeyFile != nil {
+		hostConfig.HttpsKeyFile = *env.HttpsKeyFile
 	}
 	resource := resource.Resource{
 		Env:        env,

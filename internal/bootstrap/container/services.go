@@ -6,6 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql"
+	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -26,6 +27,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 
 	log.Info("> Setup UserSvc...")
 	userService := user.NewService(repos.UserRepository, uow)
+
+	log.Info("> Setup AuthSvc...")
+	authService := auth.NewService(userService)
 
 	log.Info("> Setup ProgramSvc...")
 	programService := program.NewService(repos.ProgramRepository, res.StorageProvider)
@@ -48,6 +52,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 
 	return &ServiceContainer{
 		UserSvc:     userService,
+		AuthSvc:     authService,
 		ProgramSvc:  programService,
 		GradeSvc:    gradeService,
 		SemesterSvc: semesterService,

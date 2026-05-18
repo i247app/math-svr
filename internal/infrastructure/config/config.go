@@ -24,6 +24,8 @@ func NewEnv(envpath string) (*Env, error) {
 		LogFile:          getConfigOptionalString("LOG_FILE"),
 		GexSessionDriver: getConfigOptionalString("GEX_SESSION_DRIVER"),
 		SharedKeyBytes:   getFileBytesConfig("GEX_SHARED_KEY"),
+		HttpsCertFile:    getConfigOptional("HTTPS_CERT_FILE"),
+		HttpsKeyFile:     getConfigOptional("HTTPS_KEY_FILE"),
 
 		DBConfig: DBConfig{
 			DBHost:   getConfig("DB_HOST"),

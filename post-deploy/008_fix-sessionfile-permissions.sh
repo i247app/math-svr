@@ -7,6 +7,6 @@ echo "$MATH_HOME"
 echo "Fixing session file permissions..."
 
 # Fix sessionfile permissions
-# chmod 775 $MATH_HOME/data/*.datc
+chmod 775 $MATH_HOME/data/*.dat
 
 echo "Session file permissions fixed!"

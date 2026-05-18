@@ -8,6 +8,8 @@ type Env struct {
 	LogFile          string
 	GexSessionDriver string
 	SharedKeyBytes   []byte
+	HttpsCertFile    *string
+	HttpsKeyFile     *string
 
 	DBConfig      DBConfig
 	EmailConfig   EmailConfig

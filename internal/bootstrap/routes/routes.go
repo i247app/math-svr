@@ -4,6 +4,7 @@ import (
 	"github.com/i247app/gex"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/bootstrap/container"
+	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
 	"math-ai.com/math-ai/internal/module/profile"
@@ -24,6 +25,12 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		// admin routes
 		gexSvr.AddRoute("POST /users/soft-delete", userHandler.HandleSoftDeleteUser)
 		gexSvr.AddRoute("POST /users/force-delete", userHandler.HandleForceDeleteUser)
+	}
+
+	// auth routes
+	{
+		authHandler := auth.NewAuthHandler(services.AuthSvc)
+		gexSvr.AddRoute("POST /auth/login", authHandler.HandleLogin)
 	}
 
 	// curriculum reference routes (read-only)

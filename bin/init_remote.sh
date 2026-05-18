@@ -46,7 +46,7 @@ ssh -t -i "$SSH_KEY" "$USER@$HOST" "sudo vim $SVR_DIR/.env"
 cat << 'EOF' | ssh -i "$SSH_KEY" "$USER@$HOST" "sudo tee /usr/local/bin/ez >/dev/null && sudo chmod +x /usr/local/bin/ez"
 #!/usr/bin/env bash
 
-# ez - TNMonex EZSend server control script
+# ez - Math AI server control script
 
 # Define paths
 SVR_DIR="$SVR_DIR"

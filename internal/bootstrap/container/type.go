@@ -6,6 +6,7 @@ import (
 	programDomain "math-ai.com/math-ai/internal/domain/program"
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
+	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -15,6 +16,7 @@ import (
 
 type ServiceContainer struct {
 	UserSvc     *user.Service
+	AuthSvc     *auth.Service
 	ProgramSvc  *program.Service
 	GradeSvc    *grade.Service
 	SemesterSvc *semester.Service

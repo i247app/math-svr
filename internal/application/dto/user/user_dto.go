@@ -15,6 +15,14 @@ type UserResponse struct {
 	ModifyDt string    `json:"modify_dt"`
 }
 
+type GetUserByPhoneReq struct {
+	Phone string `json:"phone"`
+}
+
+type GetUserByPhoneRes struct {
+	User *UserResponse `json:"user"`
+}
+
 type CreateUserReq struct {
 	Phone string  `json:"phone"`
 	Email *string `json:"email,omitempty"`

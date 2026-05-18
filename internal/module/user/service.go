@@ -14,6 +14,7 @@ import (
 
 type Service struct {
 	getUserByUserIdQuery *query.GetUserByUserIdQueryHandler
+	getUserByPhoneQuery  *query.GetUserByPhoneQueryHandler
 	listUsersQuery       *query.ListUsersQueryHandler
 	createUserCmd        *command.CreateUserCommandHandler
 	updateUserCmd        *command.UpdateUserCommandHandler
@@ -27,6 +28,7 @@ func NewService(
 ) *Service {
 	return &Service{
 		getUserByUserIdQuery: query.NewGetUserByUserIdQueryHandler(repo),
+		getUserByPhoneQuery:  query.NewGetUserByPhoneQueryHandler(repo),
 		listUsersQuery:       query.NewListUsersQueryHandler(repo),
 		createUserCmd:        command.NewCreateUserCommandHandler(uow),
 		updateUserCmd:        command.NewUpdateUserCommandHandler(uow),
@@ -61,6 +63,19 @@ func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.Li
 		Users:      dto.DomainListToResponse(users),
 		Pagination: pg,
 	}, nil
+}
+
+func (s *Service) GetUserByPhone(ctx context.Context, req *dto.GetUserByPhoneReq) (*dto.GetUserByPhoneRes, error) {
+	user, err := s.getUserByPhoneQuery.Handle(ctx, query.GetUserByPhoneQuery{Phone: req.Phone})
+	if err != nil {
+		return nil, err
+	}
+
+	res := &dto.GetUserByPhoneRes{
+		User: dto.DomainToResponse(user),
+	}
+
+	return res, nil
 }
 
 func (s *Service) CreateUser(ctx context.Context, req *dto.CreateUserReq) (*dto.CreateUserRes, error) {

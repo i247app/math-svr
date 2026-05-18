@@ -15,11 +15,17 @@ run_prepare() {
     fi
   "
 
-  # Run existing pre-deploy scripts (reuses current scripts)
+  # Run existing pre-deploy scripts (reuses current scripts).
+  # nullglob makes an unmatched glob expand to nothing instead of staying
+  # literal, so a fresh host with no remote pre-deploy/ directory yields
+  # an empty loop instead of a failing `[ -f "<glob>" ]` test that would
+  # propagate non-zero back to the local set -e and abort the deploy.
   info "Running pre-deploy scripts..."
   remote_exec "
+    shopt -s nullglob
     for i in $DEST_DIR/pre-deploy/*.sh; do
-      [ -f \"\$i\" ] && { echo \"Running \$i...\"; bash \"\$i\"; }
+      echo \"Running \$i...\"
+      bash \"\$i\"
     done
   "
 

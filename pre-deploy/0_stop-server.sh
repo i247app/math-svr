@@ -1,21 +1,30 @@
 #!/bin/sh
 # cd /apps/math
 
-# echo "Killing old server..."
-# Only attempt to kill the process if the process same as PID file is running
-# kill $(cat /apps/math/gosvr.pid) 2>/dev/null
+echo "Stopping old server..."
+
+PID_FILE=/apps/math/mathsvr.pid
+
+# Prefer the PID file written by post-deploy/015_start-server.sh; fall back to
+# pgrep -x (exact binary name match, so it won't catch mathsvr-amd64).
+PID_TO_KILL=""
+if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+  PID_TO_KILL=$(cat "$PID_FILE")
+else
+  PID_TO_KILL=$(pgrep -x mathsvr | head -n1)
+fi
 
 ps -ef | grep mathsvr | grep -v grep
-
-PID_TO_KILL=$(ps -ef | grep 'mathsvr' | grep -v 'grep' | awk '{print $2; exit}')
 
 if [ -n "${PID_TO_KILL}" ]
 then
   echo "found pid $PID_TO_KILL"
-  echo "kill -HUP $PID_TO_KILL"
-
-  #sudo kill -HUP $PID_TO_KILL
-  kill -HUP $PID_TO_KILL
+  # IMPORTANT: use SIGTERM, not SIGHUP. The gex server subscribes only to
+  # SIGINT and SIGTERM via signal.NotifyContext; SIGHUP uses Go's default
+  # disposition and kills the process immediately, bypassing the onShutdown
+  # hooks that serialize sessions to disk.
+  echo "kill -TERM $PID_TO_KILL"
+  kill -TERM "$PID_TO_KILL"
 
   ps -ef | grep mathsvr | grep -v grep
 else

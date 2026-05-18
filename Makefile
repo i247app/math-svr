@@ -32,9 +32,7 @@ run: tidy
 run-dev: tidy
 	@air --build.cmd "go build -o dist/mathsvr ./cmd/mathsvr" --build.bin "./dist/mathsvr"
 
-check-nil: tidy
-	go install go.uber.org/nilaway/cmd/nilaway@latest   
-	nilaway -include-pkgs="monex.com/monex" ./...
+
 
 linecount:
 	find internal pkg -name "*.go" | xargs wc -l
