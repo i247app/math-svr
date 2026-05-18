@@ -5,6 +5,7 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/loginlog"
+	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/user"
 )
@@ -17,6 +18,7 @@ type Repositories struct {
 	Profile  profile.IRepository
 	LoginLog loginlog.IRepository
 	Device   device.IRepository
+	Otp      otp.IRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

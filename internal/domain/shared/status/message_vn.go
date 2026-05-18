@@ -113,6 +113,38 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case DEVICE_2FA_REQUIRED:
 		return "Thiết bị này yêu cầu xác thực hai yếu tố"
 
+	// OTP
+	case OTP_NOT_FOUND:
+		return "Không tìm thấy mã OTP"
+	case OTP_MISSING_TYPE:
+		return "Vui lòng cung cấp loại OTP"
+	case OTP_MISSING_IDENTIFIER:
+		return "Vui lòng nhập số điện thoại hoặc email"
+	case OTP_MISSING_CODE:
+		return "Vui lòng nhập mã OTP"
+	case OTP_INVALID_TYPE:
+		return "Loại OTP không hợp lệ"
+	case OTP_INVALID_CODE:
+		return "Mã OTP không chính xác"
+	case OTP_EXPIRED:
+		return "Mã OTP đã hết hạn"
+	case OTP_ALREADY_VERIFIED:
+		return "Mã OTP đã được xác thực"
+	case OTP_REVOKED:
+		return "Mã OTP đã bị thu hồi"
+	case OTP_TOO_MANY_ATTEMPTS:
+		return "Bạn đã nhập sai quá nhiều lần; vui lòng yêu cầu mã OTP mới"
+	case OTP_TOO_FREQUENT:
+		return "Vui lòng đợi trước khi yêu cầu mã OTP mới"
+	case OTP_RATE_LIMITED:
+		return "Đã vượt quá số lần yêu cầu OTP; vui lòng thử lại sau"
+	case OTP_DELIVERY_FAILED:
+		return "Gửi mã OTP thất bại"
+	case OTP_NO_DELIVERY_CHANNEL:
+		return "Không có kênh gửi phù hợp cho thông tin này"
+	case OTP_GENERATION_FAILED:
+		return "Không thể tạo mã OTP"
+
 	// Notification
 	case NOTIFICATION_MISSING_UID:
 		return "Vui lòng cung cấp mã người dùng"

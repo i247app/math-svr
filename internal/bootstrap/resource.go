@@ -11,6 +11,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/bot"
 	"math-ai.com/math-ai/internal/adapter/email"
+	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	"math-ai.com/math-ai/internal/adapter/sms"
 	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/resource"
@@ -100,6 +101,9 @@ func SetupResource(res *resource.Resource) error {
 		return fmt.Errorf("failed to setup bot adapter: %w", err)
 	}
 	res.BotProvider = botAdapter
+
+	log.Info("> Setup OtpDeliveryAdapter...")
+	res.OtpDelivery = otp_delivery.NewFromAdapters(context.Background(), smsAdapter, emailAdapter)
 
 	return nil
 }

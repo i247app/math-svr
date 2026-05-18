@@ -113,6 +113,38 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case DEVICE_2FA_REQUIRED:
 		return "Two-factor authentication is required for this device"
 
+	// OTP
+	case OTP_NOT_FOUND:
+		return "OTP not found"
+	case OTP_MISSING_TYPE:
+		return "OTP type is required"
+	case OTP_MISSING_IDENTIFIER:
+		return "Phone or email is required"
+	case OTP_MISSING_CODE:
+		return "OTP code is required"
+	case OTP_INVALID_TYPE:
+		return "OTP type is invalid"
+	case OTP_INVALID_CODE:
+		return "OTP code is invalid"
+	case OTP_EXPIRED:
+		return "OTP has expired"
+	case OTP_ALREADY_VERIFIED:
+		return "OTP has already been verified"
+	case OTP_REVOKED:
+		return "OTP has been revoked"
+	case OTP_TOO_MANY_ATTEMPTS:
+		return "Too many verification attempts; request a new OTP"
+	case OTP_TOO_FREQUENT:
+		return "Please wait before requesting another OTP"
+	case OTP_RATE_LIMITED:
+		return "OTP request limit reached; try again later"
+	case OTP_DELIVERY_FAILED:
+		return "OTP delivery failed"
+	case OTP_NO_DELIVERY_CHANNEL:
+		return "No delivery channel is configured for this identifier"
+	case OTP_GENERATION_FAILED:
+		return "Failed to generate OTP"
+
 	// Notification
 	case NOTIFICATION_MISSING_UID:
 		return "User id is required"

@@ -15,6 +15,7 @@ import (
 type Service struct {
 	getUserByUserIdQuery *query.GetUserByUserIdQueryHandler
 	getUserByPhoneQuery  *query.GetUserByPhoneQueryHandler
+	getUserByEmailQuery  *query.GetUserByEmailQueryHandler
 	listUsersQuery       *query.ListUsersQueryHandler
 	createUserCmd        *command.CreateUserCommandHandler
 	updateUserCmd        *command.UpdateUserCommandHandler
@@ -29,6 +30,7 @@ func NewService(
 	return &Service{
 		getUserByUserIdQuery: query.NewGetUserByUserIdQueryHandler(repo),
 		getUserByPhoneQuery:  query.NewGetUserByPhoneQueryHandler(repo),
+		getUserByEmailQuery:  query.NewGetUserByEmailQueryHandler(repo),
 		listUsersQuery:       query.NewListUsersQueryHandler(repo),
 		createUserCmd:        command.NewCreateUserCommandHandler(uow),
 		updateUserCmd:        command.NewUpdateUserCommandHandler(uow),
@@ -72,6 +74,19 @@ func (s *Service) GetUserByPhone(ctx context.Context, req *dto.GetUserByPhoneReq
 	}
 
 	res := &dto.GetUserByPhoneRes{
+		User: dto.DomainToResponse(user),
+	}
+
+	return res, nil
+}
+
+func (s *Service) GetUserByEmail(ctx context.Context, req *dto.GetUserByEmailReq) (*dto.GetUserByEmailRes, error) {
+	user, err := s.getUserByEmailQuery.Handle(ctx, query.GetUserByEmailQuery{Email: req.Email})
+	if err != nil {
+		return nil, err
+	}
+
+	res := &dto.GetUserByEmailRes{
 		User: dto.DomainToResponse(user),
 	}
 

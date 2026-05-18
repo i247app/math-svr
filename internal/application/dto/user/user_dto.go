@@ -23,6 +23,14 @@ type GetUserByPhoneRes struct {
 	User *UserResponse `json:"user"`
 }
 
+type GetUserByEmailReq struct {
+	Email string `json:"email"`
+}
+
+type GetUserByEmailRes struct {
+	User *UserResponse `json:"user"`
+}
+
 type CreateUserReq struct {
 	Phone string  `json:"phone"`
 	Email *string `json:"email,omitempty"`

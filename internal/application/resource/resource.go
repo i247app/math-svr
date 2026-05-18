@@ -3,6 +3,7 @@ package resource
 import (
 	"math-ai.com/math-ai/internal/adapter/bot"
 	"math-ai.com/math-ai/internal/adapter/email"
+	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	"math-ai.com/math-ai/internal/adapter/sms"
 	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/infrastructure/config"
@@ -27,4 +28,5 @@ type Resource struct {
 	SMSProvider     *sms.Adapter
 	StorageProvider *storage.Adapter
 	BotProvider     *bot.Adapter
+	OtpDelivery     *otp_delivery.Adapter
 }

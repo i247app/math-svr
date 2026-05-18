@@ -9,6 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
+	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/semester"
@@ -54,6 +55,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup DeviceSvc...")
 	deviceService := device.NewService(repos.DeviceRepository, uow)
 
+	log.Info("> Setup OtpSvc...")
+	otpService := otp.NewService(userService, repos.OtpRepository, uow, res.OtpDelivery)
+
 	return &ServiceContainer{
 		UserSvc:     userService,
 		AuthSvc:     authService,
@@ -62,5 +66,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		SemesterSvc: semesterService,
 		ProfileSvc:  profileService,
 		DeviceSvc:   deviceService,
+		OtpSvc:      otpService,
 	}, nil
 }

@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
+	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/semester"
@@ -66,6 +67,13 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /devices/update", deviceHandler.HandleUpdateDevice)
 		gexSvr.AddRoute("POST /devices/revoke", deviceHandler.HandleRevokeDevice)
 		gexSvr.AddRoute("POST /devices/soft-delete", deviceHandler.HandleSoftDeleteDevice)
+	}
+
+	// otp routes
+	{
+		otpHandler := otp.NewOtpHandler(services.OtpSvc)
+		gexSvr.AddRoute("POST /otps/send", otpHandler.HandleSend)
+		gexSvr.AddRoute("POST /otps/verify", otpHandler.HandleVerify)
 	}
 
 	// health routes
