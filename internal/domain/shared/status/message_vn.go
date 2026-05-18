@@ -91,6 +91,28 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case SEMESTER_INVALID_LANGUAGE:
 		return "Ngôn ngữ học kỳ không hợp lệ"
 
+	// Device
+	case DEVICE_NOT_FOUND:
+		return "Không tìm thấy thiết bị"
+	case DEVICE_MISSING_UUID:
+		return "Vui lòng cung cấp mã thiết bị"
+	case DEVICE_MISSING_NAME:
+		return "Vui lòng cung cấp tên thiết bị"
+	case DEVICE_MISSING_USER_ID:
+		return "Mã người dùng là bắt buộc"
+	case DEVICE_NOT_OWNED:
+		return "Thiết bị này không thuộc về người dùng"
+	case DEVICE_ALREADY_VERIFIED:
+		return "Thiết bị đã được xác minh"
+	case DEVICE_REGISTRATION_FAIL:
+		return "Đăng ký thiết bị thất bại"
+	case DEVICE_VERIFICATION_FAIL:
+		return "Xác minh thiết bị thất bại"
+	case DEVICE_REVOKE_FAIL:
+		return "Thu hồi thiết bị thất bại"
+	case DEVICE_2FA_REQUIRED:
+		return "Thiết bị này yêu cầu xác thực hai yếu tố"
+
 	// Notification
 	case NOTIFICATION_MISSING_UID:
 		return "Vui lòng cung cấp mã người dùng"

@@ -36,6 +36,7 @@ func (s *Service) Login(ctx context.Context, req *dto.LoginReq) (*dto.LoginRes, 
 	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
 		Phone:           req.Phone,
 		DeviceUUID:      metadata.GetDeviceID(ctx),
+		DeviceName:      metadata.GetDeviceName(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),
 		DevicePushToken: metadata.GetDevicePushToken(ctx),
 	})
@@ -52,7 +53,8 @@ func (s *Service) Login(ctx context.Context, req *dto.LoginReq) (*dto.LoginRes, 
 	}
 
 	return &dto.LoginRes{
-		User: userRes.User,
+		TwoFactorRequired: result.TwoFactorRequired,
+		User:              userRes.User,
 	}, nil
 }
 
@@ -62,7 +64,8 @@ func (s *Service) Logout(ctx context.Context, req *dto.LogoutReq) (*dto.LogoutRe
 	}
 
 	if err := s.logoutCmd.Handle(ctx, command.LogoutCommand{
-		Token: metadata.GetDevicePushToken(ctx),
+		// UserID:     metadata.GetUserID(ctx),
+		DeviceUUID: metadata.GetDeviceID(ctx),
 	}); err != nil {
 		return nil, err
 	}

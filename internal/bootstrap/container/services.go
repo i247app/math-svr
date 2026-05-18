@@ -7,6 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -50,6 +51,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.SemesterRepository,
 	)
 
+	log.Info("> Setup DeviceSvc...")
+	deviceService := device.NewService(repos.DeviceRepository, uow)
+
 	return &ServiceContainer{
 		UserSvc:     userService,
 		AuthSvc:     authService,
@@ -57,5 +61,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		GradeSvc:    gradeService,
 		SemesterSvc: semesterService,
 		ProfileSvc:  profileService,
+		DeviceSvc:   deviceService,
 	}, nil
 }

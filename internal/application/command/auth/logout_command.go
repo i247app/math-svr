@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -11,7 +12,8 @@ import (
 )
 
 type LogoutCommand struct {
-	Token string
+	UserID     uuid.UUID
+	DeviceUUID string
 }
 
 type LogoutCommandHandler struct {
@@ -24,7 +26,7 @@ func NewLogoutCommandHandler(uow transaction.UnitOfWork) *LogoutCommandHandler {
 
 func (h *LogoutCommandHandler) Handle(ctx context.Context, cmd LogoutCommand) error {
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		ll, err := repos.LoginLog.FindActiveByToken(ctx, cmd.Token)
+		ll, err := repos.LoginLog.FindActiveByUserDevice(ctx, cmd.UserID, cmd.DeviceUUID)
 		if err != nil {
 			return errs.NewError(ctx, status.AUTH_LOGOUT_FAILED, nil, err)
 		}

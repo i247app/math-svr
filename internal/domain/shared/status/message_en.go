@@ -91,6 +91,28 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case SEMESTER_INVALID_LANGUAGE:
 		return "Semester language is invalid"
 
+	// Device
+	case DEVICE_NOT_FOUND:
+		return "Device not found"
+	case DEVICE_MISSING_UUID:
+		return "Device identifier is required"
+	case DEVICE_MISSING_NAME:
+		return "Device name is required"
+	case DEVICE_MISSING_USER_ID:
+		return "User id is required"
+	case DEVICE_NOT_OWNED:
+		return "Device does not belong to this user"
+	case DEVICE_ALREADY_VERIFIED:
+		return "Device is already verified"
+	case DEVICE_REGISTRATION_FAIL:
+		return "Device registration failed"
+	case DEVICE_VERIFICATION_FAIL:
+		return "Device verification failed"
+	case DEVICE_REVOKE_FAIL:
+		return "Device revoke failed"
+	case DEVICE_2FA_REQUIRED:
+		return "Two-factor authentication is required for this device"
+
 	// Notification
 	case NOTIFICATION_MISSING_UID:
 		return "User id is required"

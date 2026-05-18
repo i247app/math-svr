@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/user"
@@ -15,6 +16,7 @@ type Repositories struct {
 	Alias    user.IAliasRepository
 	Profile  profile.IRepository
 	LoginLog loginlog.IRepository
+	Device   device.IRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

@@ -1,6 +1,7 @@
 package container
 
 import (
+	deviceDomain "math-ai.com/math-ai/internal/domain/device"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	loginLogDomain "math-ai.com/math-ai/internal/domain/loginlog"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
@@ -8,6 +9,7 @@ import (
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -22,6 +24,7 @@ type ServiceContainer struct {
 	GradeSvc    *grade.Service
 	SemesterSvc *semester.Service
 	ProfileSvc  *profile.Service
+	DeviceSvc   *device.Service
 }
 
 type RepositoryContainer struct {
@@ -31,4 +34,5 @@ type RepositoryContainer struct {
 	SemesterRepository semesterDomain.IRepository
 	ProfileRepository  profileDomain.IRepository
 	LoginLogRepository loginLogDomain.IRepository
+	DeviceRepository   deviceDomain.IRepository
 }

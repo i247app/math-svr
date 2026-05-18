@@ -8,8 +8,15 @@ type LoginReq struct {
 	Phone string `json:"phone"`
 }
 
+// LoginRes carries one of two shapes depending on device trust:
+//
+//   - TwoFactorRequired=true → User is nil; the client must complete the 2FA
+//     challenge for DeviceID, then re-issue /auth/login.
+//   - TwoFactorRequired=false → User and DeviceID are populated; the session
+//     is established.
 type LoginRes struct {
-	User *user.UserResponse `json:"user"`
+	TwoFactorRequired bool               `json:"2fa_required"`
+	User              *user.UserResponse `json:"user,omitempty"`
 }
 
 type LogoutReq struct{}

@@ -35,17 +35,7 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 	var created *profile.Profile
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
-		p := profile.NewProfile()
-		p.SetProfileId(utils.GenerateUUID())
-		p.SetUserId(cmd.UserID)
-		p.SetName(cmd.Name)
-		p.SetProgramId(cmd.ProgramID)
-		p.SetGradeId(cmd.GradeID)
-		p.SetSemesterId(cmd.SemesterID)
-		p.SetNote(cmd.Note)
-		if cmd.Dob != nil {
-			p.SetDob(mtime.MathTime{Time: *cmd.Dob})
-		}
+		p := BuildProfile(cmd)
 
 		saved, err := repos.Profile.Create(ctx, p)
 		if err != nil {
@@ -59,4 +49,19 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 		return nil, err
 	}
 	return created, nil
+}
+
+func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
+	p := profile.NewProfile()
+	p.SetProfileId(utils.GenerateUUID())
+	p.SetUserId(cmd.UserID)
+	p.SetName(cmd.Name)
+	p.SetProgramId(cmd.ProgramID)
+	p.SetGradeId(cmd.GradeID)
+	p.SetSemesterId(cmd.SemesterID)
+	p.SetNote(cmd.Note)
+	if cmd.Dob != nil {
+		p.SetDob(mtime.MathTime{Time: *cmd.Dob})
+	}
+	return p
 }

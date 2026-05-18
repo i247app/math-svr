@@ -1,0 +1,146 @@
+package device
+
+import (
+	"github.com/google/uuid"
+	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+)
+
+// Device is a (user, device_uuid) registration. The is_verified flag is the
+// trust gate that auth/login consults to decide whether 2FA is required.
+//
+// The schema allows user_id to be NULL (pre-binding registrations), so it is
+// modeled as a *uuid.UUID. In practice the device row is created during login,
+// at which point user_id is always known — but the domain stays faithful to
+// the column nullability.
+type Device struct {
+	id              int64
+	deviceId        uuid.UUID
+	userId          *uuid.UUID
+	deviceUUID      string
+	deviceName      string
+	devicePushToken *string
+	isVerified      bool
+	note            *string
+	deviceStatus    *string
+	status          string
+	createId        *uuid.UUID
+	createDt        mtime.MathTime
+	modifyId        *uuid.UUID
+	modifyDt        mtime.MathTime
+}
+
+func NewDevice() *Device {
+	return &Device{}
+}
+
+func (d *Device) Id() int64 {
+	return d.id
+}
+
+func (d *Device) SetId(id int64) {
+	d.id = id
+}
+
+func (d *Device) DeviceId() uuid.UUID {
+	return d.deviceId
+}
+
+func (d *Device) SetDeviceId(deviceId uuid.UUID) {
+	d.deviceId = deviceId
+}
+
+func (d *Device) UserId() *uuid.UUID {
+	return d.userId
+}
+
+func (d *Device) SetUserId(userId *uuid.UUID) {
+	d.userId = userId
+}
+
+func (d *Device) DeviceUUID() string {
+	return d.deviceUUID
+}
+
+func (d *Device) SetDeviceUUID(deviceUUID string) {
+	d.deviceUUID = deviceUUID
+}
+
+func (d *Device) DeviceName() string {
+	return d.deviceName
+}
+
+func (d *Device) SetDeviceName(deviceName string) {
+	d.deviceName = deviceName
+}
+
+func (d *Device) DevicePushToken() *string {
+	return d.devicePushToken
+}
+
+func (d *Device) SetDevicePushToken(devicePushToken *string) {
+	d.devicePushToken = devicePushToken
+}
+
+func (d *Device) IsVerified() bool {
+	return d.isVerified
+}
+
+func (d *Device) SetIsVerified(isVerified bool) {
+	d.isVerified = isVerified
+}
+
+func (d *Device) Note() *string {
+	return d.note
+}
+
+func (d *Device) SetNote(note *string) {
+	d.note = note
+}
+
+func (d *Device) DeviceStatus() *string {
+	return d.deviceStatus
+}
+
+func (d *Device) SetDeviceStatus(deviceStatus *string) {
+	d.deviceStatus = deviceStatus
+}
+
+func (d *Device) Status() string {
+	return d.status
+}
+
+func (d *Device) SetStatus(status string) {
+	d.status = status
+}
+
+func (d *Device) CreateId() *uuid.UUID {
+	return d.createId
+}
+
+func (d *Device) SetCreateId(createId *uuid.UUID) {
+	d.createId = createId
+}
+
+func (d *Device) CreateDt() mtime.MathTime {
+	return d.createDt
+}
+
+func (d *Device) SetCreateDt(createDt mtime.MathTime) {
+	d.createDt = createDt
+}
+
+func (d *Device) ModifyId() *uuid.UUID {
+	return d.modifyId
+}
+
+func (d *Device) SetModifyId(modifyId *uuid.UUID) {
+	d.modifyId = modifyId
+}
+
+func (d *Device) ModifyDt() mtime.MathTime {
+	return d.modifyDt
+}
+
+func (d *Device) SetModifyDt(modifyDt mtime.MathTime) {
+	d.modifyDt = modifyDt
+}

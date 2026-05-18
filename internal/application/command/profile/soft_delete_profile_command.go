@@ -37,8 +37,3 @@ func (h *SoftDeleteProfileCommandHandler) Handle(ctx context.Context, cmd SoftDe
 	log.Info("profile.soft_delete", "profile_id", cmd.ProfileID, "outcome", "success")
 	return nil
 }
-
-// entityDeletedStatus mirrors the "DELETED" literal written to every
-// <entity>_status column on soft-delete (defined locally to the command
-// package so it doesn't reach back into the repositories layer).
-const entityDeletedStatus = "DELETED"

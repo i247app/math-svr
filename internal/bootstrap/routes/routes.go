@@ -5,6 +5,7 @@ import (
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/bootstrap/container"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
 	"math-ai.com/math-ai/internal/module/profile"
@@ -46,7 +47,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /semesters/list", semesterHandler.HandleListSemesters)
 	}
 
-	// profile routes (parent-managed child profiles)
+	// profile routes
 	{
 		profileHandler := profile.NewProfileHandler(services.ProfileSvc)
 		gexSvr.AddRoute("GET  /profiles/{id}", profileHandler.HandleGetProfileById)
@@ -55,6 +56,16 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /profiles/update", profileHandler.HandleUpdateProfile)
 		gexSvr.AddRoute("POST /profiles/soft-delete", profileHandler.HandleSoftDeleteProfile)
 		gexSvr.AddRoute("POST /profiles/upload-avatar", profileHandler.HandleUploadAvatar)
+	}
+
+	// device routes
+	{
+		deviceHandler := device.NewDeviceHandler(services.DeviceSvc)
+		gexSvr.AddRoute("GET  /devices/{id}", deviceHandler.HandleGetDeviceById)
+		gexSvr.AddRoute("POST /devices/list", deviceHandler.HandleListDevices)
+		gexSvr.AddRoute("POST /devices/update", deviceHandler.HandleUpdateDevice)
+		gexSvr.AddRoute("POST /devices/revoke", deviceHandler.HandleRevokeDevice)
+		gexSvr.AddRoute("POST /devices/soft-delete", deviceHandler.HandleSoftDeleteDevice)
 	}
 
 	// health routes

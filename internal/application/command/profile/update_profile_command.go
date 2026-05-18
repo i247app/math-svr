@@ -46,26 +46,7 @@ func (h *UpdateProfileCommandHandler) Handle(ctx context.Context, cmd UpdateProf
 				errors.New("profile not found"))
 		}
 
-		patch := profile.NewProfile()
-		patch.SetProfileId(cmd.ProfileID)
-		if cmd.Name != nil {
-			patch.SetName(*cmd.Name)
-		}
-		if cmd.Dob != nil {
-			patch.SetDob(mtime.MathTime{Time: *cmd.Dob})
-		}
-		if cmd.ProgramID != nil {
-			patch.SetProgramId(*cmd.ProgramID)
-		}
-		if cmd.GradeID != nil {
-			patch.SetGradeId(*cmd.GradeID)
-		}
-		if cmd.SemesterID != nil {
-			patch.SetSemesterId(*cmd.SemesterID)
-		}
-		if cmd.Note != nil {
-			patch.SetNote(cmd.Note)
-		}
+		patch := BuildUpdateProfile(cmd)
 
 		if err := repos.Profile.Update(ctx, patch); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
@@ -82,4 +63,28 @@ func (h *UpdateProfileCommandHandler) Handle(ctx context.Context, cmd UpdateProf
 		return nil, err
 	}
 	return updated, nil
+}
+
+func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
+	patch := profile.NewProfile()
+	patch.SetProfileId(cmd.ProfileID)
+	if cmd.Name != nil {
+		patch.SetName(*cmd.Name)
+	}
+	if cmd.Dob != nil {
+		patch.SetDob(mtime.MathTime{Time: *cmd.Dob})
+	}
+	if cmd.ProgramID != nil {
+		patch.SetProgramId(*cmd.ProgramID)
+	}
+	if cmd.GradeID != nil {
+		patch.SetGradeId(*cmd.GradeID)
+	}
+	if cmd.SemesterID != nil {
+		patch.SetSemesterId(*cmd.SemesterID)
+	}
+	if cmd.Note != nil {
+		patch.SetNote(cmd.Note)
+	}
+	return patch
 }

@@ -46,12 +46,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 
-		u := user.NewUser()
-		u.SetUserId(utils.GenerateUUID())
-		u.SetEmail(cmd.Email)
-		u.SetPhone(cmd.Phone)
-		u.SetStatus(enum.StatusActive.String())
-
+		u := BuildUser(cmd)
 		u, err := repos.User.Create(ctx, u)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
@@ -82,4 +77,13 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 	}
 
 	return created, nil
+}
+
+func BuildUser(cmd CreateUserCommand) *user.User {
+	u := user.NewUser()
+	u.SetUserId(utils.GenerateUUID())
+	u.SetEmail(cmd.Email)
+	u.SetPhone(cmd.Phone)
+	u.SetStatus(enum.StatusActive.String())
+	return u
 }
