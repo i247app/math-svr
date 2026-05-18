@@ -1,6 +1,8 @@
 package auth
 
-import "math-ai.com/math-ai/internal/application/dto/user"
+import (
+	"math-ai.com/math-ai/internal/application/dto/user"
+)
 
 type LoginReq struct {
 	Phone string `json:"phone"`
@@ -9,3 +11,7 @@ type LoginReq struct {
 type LoginRes struct {
 	User *user.UserResponse `json:"user"`
 }
+
+type LogoutReq struct{}
+
+type LogoutRes struct{}

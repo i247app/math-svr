@@ -1,0 +1,42 @@
+package command
+
+import (
+	"context"
+	"errors"
+
+	"math-ai.com/math-ai/internal/application/transaction"
+	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/enum"
+)
+
+type LogoutCommand struct {
+	Token string
+}
+
+type LogoutCommandHandler struct {
+	uow transaction.UnitOfWork
+}
+
+func NewLogoutCommandHandler(uow transaction.UnitOfWork) *LogoutCommandHandler {
+	return &LogoutCommandHandler{uow: uow}
+}
+
+func (h *LogoutCommandHandler) Handle(ctx context.Context, cmd LogoutCommand) error {
+	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
+		ll, err := repos.LoginLog.FindActiveByToken(ctx, cmd.Token)
+		if err != nil {
+			return errs.NewError(ctx, status.AUTH_LOGOUT_FAILED, nil, err)
+		}
+		if ll == nil {
+			return errs.NewError(ctx, status.AUTH_INVALID_TOKEN, nil, errors.New("token not found or already revoked"))
+		}
+
+		if err := repos.LoginLog.MarkStatusByLoginLogId(
+			ctx, ll.LoginLogId(), enum.LoginLogStatusTypeRevoked,
+		); err != nil {
+			return errs.NewError(ctx, status.AUTH_LOGOUT_FAILED, nil, err)
+		}
+		return nil
+	})
+}

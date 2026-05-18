@@ -2,6 +2,7 @@ package container
 
 import (
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
+	loginLogDomain "math-ai.com/math-ai/internal/domain/loginlog"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
@@ -29,4 +30,5 @@ type RepositoryContainer struct {
 	GradeRepository    gradeDomain.IRepository
 	SemesterRepository semesterDomain.IRepository
 	ProfileRepository  profileDomain.IRepository
+	LoginLogRepository loginLogDomain.IRepository
 }

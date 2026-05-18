@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-type contextKey string
-
 const (
 	ctxKeyTraceID contextKey = "math-ai.trace_id"
 )

@@ -32,3 +32,20 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	response.WriteJson(w, res, nil)
 }
+
+// POST /auth/logout
+func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
+	var req dto.LogoutReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.service.Logout(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	response.WriteJson(w, res, nil)
+}

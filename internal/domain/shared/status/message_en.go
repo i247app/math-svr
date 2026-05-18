@@ -35,6 +35,22 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case USER_NOT_FOUND:
 		return "User not found"
 
+	// Auth
+	case AUTH_MISSING_PHONE:
+		return "Please enter your phone"
+	case AUTH_MISSING_DEVICE_UUID:
+		return "Device identifier is required"
+	case AUTH_MISSING_IP_ADDRESS:
+		return "IP address is required"
+	case AUTH_MISSING_DEVICE_PUSH_TOKEN:
+		return "Device push token is required"
+	case AUTH_INVALID_TOKEN:
+		return "Invalid or expired token"
+	case AUTH_LOGIN_FAILED:
+		return "Login failed"
+	case AUTH_LOGOUT_FAILED:
+		return "Logout failed"
+
 	// Profile
 	case PROFILE_NOT_FOUND:
 		return "Profile not found"

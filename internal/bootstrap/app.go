@@ -111,6 +111,7 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, _ *container.ServiceContainer)
 		// Start-->
 		middleware.LoggerMiddleware(a.Logger),
 		middleware.LogRequestMiddleware,
+		middleware.MetadataMiddleware(),
 		middleware.RecoveryMiddleware,
 		middleware.GzipMiddleware,
 		// -->End

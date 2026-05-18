@@ -31,6 +31,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		authHandler := auth.NewAuthHandler(services.AuthSvc)
 		gexSvr.AddRoute("POST /auth/login", authHandler.HandleLogin)
+		gexSvr.AddRoute("POST /auth/logout", authHandler.HandleLogout)
 	}
 
 	// curriculum reference routes (read-only)

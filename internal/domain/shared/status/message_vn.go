@@ -35,6 +35,22 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case USER_NOT_FOUND:
 		return "Không tìm thấy người dùng"
 
+	// Auth
+	case AUTH_MISSING_PHONE:
+		return "Vui lòng nhập số điện thoại"
+	case AUTH_MISSING_DEVICE_UUID:
+		return "Vui lòng cung cấp mã thiết bị"
+	case AUTH_MISSING_IP_ADDRESS:
+		return "Vui lòng cung cấp địa chỉ IP"
+	case AUTH_MISSING_DEVICE_PUSH_TOKEN:
+		return "Vui lòng cung cấp mã thông báo đẩy"
+	case AUTH_INVALID_TOKEN:
+		return "Token không hợp lệ hoặc đã hết hạn"
+	case AUTH_LOGIN_FAILED:
+		return "Đăng nhập thất bại"
+	case AUTH_LOGOUT_FAILED:
+		return "Đăng xuất thất bại"
+
 	// Profile
 	case PROFILE_NOT_FOUND:
 		return "Không tìm thấy hồ sơ"

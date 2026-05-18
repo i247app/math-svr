@@ -24,6 +24,14 @@ const (
 	USER_EMAIL_ALREADY_EXISTS StatusCode = 4007
 	USER_PHONE_ALREADY_EXISTS StatusCode = 4008
 
+	AUTH_MISSING_PHONE             StatusCode = 4201
+	AUTH_MISSING_DEVICE_UUID       StatusCode = 4202
+	AUTH_MISSING_IP_ADDRESS        StatusCode = 4203
+	AUTH_MISSING_DEVICE_PUSH_TOKEN StatusCode = 4204
+	AUTH_INVALID_TOKEN             StatusCode = 4205
+	AUTH_LOGIN_FAILED              StatusCode = 4206
+	AUTH_LOGOUT_FAILED             StatusCode = 4207
+
 	PROFILE_NOT_FOUND            StatusCode = 4101
 	PROFILE_MISSING_NAME         StatusCode = 4102
 	PROFILE_MISSING_USER_ID      StatusCode = 4103

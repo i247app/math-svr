@@ -29,7 +29,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	userService := user.NewService(repos.UserRepository, uow)
 
 	log.Info("> Setup AuthSvc...")
-	authService := auth.NewService(userService)
+	authService := auth.NewService(userService, uow)
 
 	log.Info("> Setup ProgramSvc...")
 	programService := program.NewService(repos.ProgramRepository, res.StorageProvider)
