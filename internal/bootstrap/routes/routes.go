@@ -12,10 +12,18 @@ import (
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/semester"
+	"math-ai.com/math-ai/internal/module/session"
 	"math-ai.com/math-ai/internal/module/user"
 )
 
 func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *container.ServiceContainer) {
+	// session routes
+	{
+		sessionHandler := session.NewHandler(res)
+		gexSvr.AddRoute("POST /sessions/dump", sessionHandler.HandleSessionDump)
+		gexSvr.AddRoute("POST /sessions/delete-unsecure", sessionHandler.HandleDeleteUnSecureSessions)
+	}
+
 	// user routes
 	{
 		userHandler := user.NewUserHandler(services.UserSvc)
@@ -32,7 +40,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// auth routes
 	{
 		authHandler := auth.NewAuthHandler(services.AuthSvc)
-		gexSvr.AddRoute("POST /auth/login", authHandler.HandleLogin)
+		gexSvr.AddRoute("POST /auth", authHandler.HandleLogin)
 		gexSvr.AddRoute("POST /auth/logout", authHandler.HandleLogout)
 	}
 

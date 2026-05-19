@@ -100,15 +100,16 @@ func (a *App) Init() error {
 	)
 
 	// Register middlewares
-	a.setupMiddleware(a.Server, services)
+	a.setupMiddleware(a.Server, a.Resource, services)
 
 	return nil
 }
 
 // Setup middlewares
-func (a *App) setupMiddleware(gexSvr *gex.Server, _ *container.ServiceContainer) {
+func (a *App) setupMiddleware(gexSvr *gex.Server, res *resource.Resource, _ *container.ServiceContainer) {
 	middlewares := []gex.Middleware{
 		// Start-->
+		// middleware.GexSessionMiddleware(res.SessionProvider, session.SessionContextKey),
 		middleware.LoggerMiddleware(a.Logger),
 		middleware.LogRequestMiddleware,
 		middleware.MetadataMiddleware(),

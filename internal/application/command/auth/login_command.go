@@ -91,17 +91,17 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		// 	return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 		// }
 
-		ll := BuildLoginLog(u.UserId(), cmd)
-		created, err := repos.LoginLog.Create(ctx, ll)
-		if err != nil {
-			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
-		}
+		// ll := BuildLoginLog(u.UserId(), cmd)
+		// created, err := repos.LoginLog.Create(ctx, ll)
+		// if err != nil {
+		// 	return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+		// }
 
-		result = &LoginCommandResult{
-			UserID:     u.UserId(),
-			DeviceID:   d.DeviceId(),
-			LoginLogID: created.LoginLogId(),
-		}
+		// result = &LoginCommandResult{
+		// 	UserID:     u.UserId(),
+		// 	DeviceID:   d.DeviceId(),
+		// 	LoginLogID: created.LoginLogId(),
+		// }
 		return nil
 	})
 	if err != nil {

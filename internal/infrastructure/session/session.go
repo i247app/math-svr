@@ -53,15 +53,12 @@ func (s *AppSession) UID() (string, bool) {
 
 func (s *AppSession) MarkForDeletion() {
 	s.Put("marked_for_deletion", true)
-
-	// TODO: maybe do this instead
-	// s.Put("expires_at", time.Now().Add(-time.Minute*10))
 }
 
 type InitData struct {
 	Source    string
 	IsSecure  bool
-	UID       string
+	UID       int64
 	Email     string
 	LoginName string
 	ExpireAt  *time.Time
@@ -119,7 +116,11 @@ func (s *AppSession) IsValid() bool {
 	return !s.IsExpired() && !s.IsMarkedForDeletion()
 }
 
-func (s *AppSession) ForceDelete() {
-	s.Put("expires_at", time.Now().Add(-time.Minute*10))
-	s.Put("marked_for_deletion", true)
+func (s *AppSession) IsSecure() bool {
+	isSecure, ok := s.Get("is_secure")
+	if !ok {
+		return false
+	}
+
+	return isSecure.(bool)
 }

@@ -77,7 +77,7 @@ func extractMetadataFromJSON(r *http.Request, log *logger.AppLogger) *metadata.R
 
 	// Extract __metadata if present
 	var requestMetadata *metadata.RequestMetadata
-	if metadataRaw, exists := rawBody["__metadata"]; exists {
+	if metadataRaw, exists := rawBody["metadata"]; exists {
 		// Parse __metadata into struct
 		metadataBytes, err := json.Marshal(metadataRaw)
 		if err == nil {
@@ -121,7 +121,7 @@ func extractMetadataFromMultipart(r *http.Request, log *logger.AppLogger) *metad
 	}
 
 	// Look for __metadata form field
-	metadataJSON := r.FormValue("__metadata")
+	metadataJSON := r.FormValue("metadata")
 	if metadataJSON == "" {
 		// No metadata provided, return empty
 		return metadata.NewRequestMetadata()

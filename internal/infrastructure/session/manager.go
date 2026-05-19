@@ -1,6 +1,7 @@
 package session
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -10,7 +11,7 @@ import (
 type SessionRequestContextKey string
 
 const (
-	SessionContextKey = SessionRequestContextKey("math_session")
+	SessionContextKey = SessionRequestContextKey("ezmonex_session")
 )
 
 func Dump(sessionManager *SessionManager) *map[string]map[string]any {
@@ -19,6 +20,7 @@ func Dump(sessionManager *SessionManager) *map[string]map[string]any {
 	sessions := sessionManager.Sessions()
 	for k, v := range *sessions {
 		result[k] = v.ToMap()
+		// log.Printf(">> Dump: k=%s\tv=%v\n", k, result[k])
 	}
 
 	return &result
@@ -43,6 +45,14 @@ func GetRequestSession(r *http.Request) *AppSession {
 	return sess
 }
 
+// type SessionManager interface {
+// 	Container() *session.Container
+// 	Session(sessionKey string) (*AppSession, bool)
+// 	Sessions() *map[string]*AppSession
+// 	InitSession(sessionKey string) (*AppSession, bool)
+// 	DeleteSession(sessionKey string)
+// }
+
 type SessionManager struct {
 	SessionContainer session.Container
 }
@@ -63,23 +73,23 @@ func (m *SessionManager) Session(sessionKey string) (*AppSession, bool) {
 		return nil, false
 	}
 
-	mathSess, ok := sess.(*AppSession)
+	monexSess, ok := sess.(*AppSession)
 	if !ok {
 		return nil, false
 	}
 
-	return mathSess, true
+	return monexSess, true
 }
 
 func (m *SessionManager) Sessions() *map[string]*AppSession {
 	sessions := m.SessionContainer.Sessions()
 	result := make(map[string]*AppSession)
 	for k, v := range *sessions {
-		mathSess, ok := v.(*AppSession)
+		monexSess, ok := v.(*AppSession)
 		if !ok {
 			continue
 		}
-		result[k] = mathSess
+		result[k] = monexSess
 	}
 
 	return &result
@@ -91,12 +101,12 @@ func (m *SessionManager) InitSession(sessionKey string) (*AppSession, bool) {
 		return nil, false
 	}
 
-	mathSess, ok := sess.(*AppSession)
+	monexSess, ok := sess.(*AppSession)
 	if !ok {
-		return mathSess, false
+		return monexSess, false
 	}
 
-	return mathSess, true
+	return monexSess, true
 }
 
 func (m *SessionManager) DeleteSession(sessionKey string) {
@@ -125,7 +135,31 @@ func (m *SessionManager) DeleteExpiredSessions() {
 		}
 
 		if sess.IsExpired() {
-			log.Printf("DeleteExpiredSessions: deleting session %s", key.(string))
+			data, err := json.Marshal(sess.ToMap())
+			if err != nil {
+				log.Printf("DeleteExpiredSessions: failed to marshal session %s: %v", key, err)
+			} else {
+				log.Printf("DeleteExpiredSessions: deleting session %s | %s", key, data)
+			}
+			m.DeleteSession(key.(string))
+		}
+	}
+}
+
+func (m *SessionManager) DeleteUnSecureSessions() {
+	for _, sess := range *m.Sessions() {
+		key, ok := sess.Get("key")
+		if !ok {
+			continue
+		}
+
+		if !sess.IsSecure() {
+			data, err := json.Marshal(sess.ToMap())
+			if err != nil {
+				log.Printf("DeleteUnSecureSessions: failed to marshal session %s: %v", key, err)
+			} else {
+				log.Printf("DeleteUnSecureSessions: deleting session %s | %s", key, data)
+			}
 			m.DeleteSession(key.(string))
 		}
 	}
