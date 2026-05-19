@@ -111,7 +111,7 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 		OtpID:     result.OtpID,
 		ExpiresAt: result.ExpiresAt,
 		Channel:   string(result.Channel),
-		Code:      result.Code,
+		OTPCode:   result.Code,
 	}, nil
 }
 

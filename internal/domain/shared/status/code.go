@@ -6,6 +6,7 @@ const (
 	SUCCESS               StatusCode = 200
 	CREATED               StatusCode = 201
 	ACCEPTED              StatusCode = 202
+	NO_DATA               StatusCode = 202
 	NO_CONTENT            StatusCode = 204
 	BAD_REQUEST           StatusCode = 400
 	FAIL                  StatusCode = 400

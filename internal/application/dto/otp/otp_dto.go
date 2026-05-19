@@ -28,7 +28,7 @@ type SendOtpRes struct {
 	OtpID     uuid.UUID `json:"otp_id"`
 	ExpiresAt time.Time `json:"expires_at"`
 	Channel   string    `json:"channel"`
-	Code      string    `json:"code"`
+	OTPCode   string    `json:"otp_code"`
 }
 
 type VerifyOtpReq struct {

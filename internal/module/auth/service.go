@@ -51,7 +51,7 @@ func (s *Service) Login(ctx context.Context, req *dto.LoginReq) (*dto.LoginRes, 
 	if result == nil {
 		return &dto.LoginRes{
 			User: nil,
-		}, errs.NewError(ctx, status.USER_NOT_FOUND, nil, errors.New("user not found"))
+		}, errs.NewError(ctx, status.NO_DATA, nil, errors.New("user not found"))
 	}
 
 	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: result.UserID})
@@ -88,7 +88,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 	if result == nil {
 		return &dto.LoginWithOTPRes{
 			User: nil,
-		}, errs.NewError(ctx, status.USER_NOT_FOUND, nil, errors.New("user not found"))
+		}, errs.NewError(ctx, status.NO_DATA, nil, errors.New("user not found"))
 	}
 
 	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: result.UserID})
@@ -112,7 +112,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 
 	return &dto.LoginWithOTPRes{
 		User:    userRes.User,
-		OTPCode: otpCreated.Code,
+		OTPCode: otpCreated.OTPCode,
 	}, nil
 }
 
