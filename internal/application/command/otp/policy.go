@@ -16,7 +16,7 @@ import (
 // reassign these at runtime — they are policy, not config.
 var (
 	// OtpCodeLength is the number of decimal digits in a delivered code.
-	OtpCodeLength = 6
+	OtpCodeLength = 4
 
 	// OtpResendCooldown is the minimum wait before the same (type, identifier)
 	// may request another OTP. Trips OTP_TOO_FREQUENT.
