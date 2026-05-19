@@ -2,6 +2,7 @@ package otp
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
@@ -13,6 +14,8 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/otp"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/otp"
+	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -74,10 +77,14 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	var userId *uuid.UUID
 	switch req.OtpType {
 	case string(enum.OtpTypeLogin2FA):
-		if user != nil {
-			userId = &user.UserID
+		if user == nil {
+			return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil, errors.New("user not found"))
 		}
+		userId = &user.UserID
 	case string(enum.OtpTypeRegister):
+		if user != nil {
+			return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, errors.New("user already exists"))
+		}
 		userId = nil
 	default:
 	}

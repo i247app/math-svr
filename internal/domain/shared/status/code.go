@@ -23,6 +23,7 @@ const (
 	USER_NOT_FOUND            StatusCode = 4006
 	USER_EMAIL_ALREADY_EXISTS StatusCode = 4007
 	USER_PHONE_ALREADY_EXISTS StatusCode = 4008
+	USER_ALREADY_EXISTS       StatusCode = 4009
 
 	AUTH_MISSING_PHONE             StatusCode = 4201
 	AUTH_MISSING_DEVICE_UUID       StatusCode = 4202
@@ -52,32 +53,32 @@ const (
 	SEMESTER_NOT_FOUND        StatusCode = 4501
 	SEMESTER_INVALID_LANGUAGE StatusCode = 4502
 
-	DEVICE_NOT_FOUND          StatusCode = 4601
-	DEVICE_MISSING_UUID       StatusCode = 4602
-	DEVICE_MISSING_NAME       StatusCode = 4603
-	DEVICE_MISSING_USER_ID    StatusCode = 4604
-	DEVICE_NOT_OWNED          StatusCode = 4605
-	DEVICE_ALREADY_VERIFIED   StatusCode = 4606
-	DEVICE_REGISTRATION_FAIL  StatusCode = 4607
-	DEVICE_VERIFICATION_FAIL  StatusCode = 4608
-	DEVICE_REVOKE_FAIL        StatusCode = 4609
-	DEVICE_2FA_REQUIRED       StatusCode = 4610
+	DEVICE_NOT_FOUND         StatusCode = 4601
+	DEVICE_MISSING_UUID      StatusCode = 4602
+	DEVICE_MISSING_NAME      StatusCode = 4603
+	DEVICE_MISSING_USER_ID   StatusCode = 4604
+	DEVICE_NOT_OWNED         StatusCode = 4605
+	DEVICE_ALREADY_VERIFIED  StatusCode = 4606
+	DEVICE_REGISTRATION_FAIL StatusCode = 4607
+	DEVICE_VERIFICATION_FAIL StatusCode = 4608
+	DEVICE_REVOKE_FAIL       StatusCode = 4609
+	DEVICE_2FA_REQUIRED      StatusCode = 4610
 
-	OTP_NOT_FOUND             StatusCode = 4701
-	OTP_MISSING_TYPE          StatusCode = 4702
-	OTP_MISSING_IDENTIFIER    StatusCode = 4703
-	OTP_MISSING_CODE          StatusCode = 4704
-	OTP_INVALID_TYPE          StatusCode = 4705
-	OTP_INVALID_CODE          StatusCode = 4706
-	OTP_EXPIRED               StatusCode = 4707
-	OTP_ALREADY_VERIFIED      StatusCode = 4708
-	OTP_REVOKED               StatusCode = 4709
-	OTP_TOO_MANY_ATTEMPTS     StatusCode = 4710
-	OTP_TOO_FREQUENT          StatusCode = 4711
-	OTP_RATE_LIMITED          StatusCode = 4712
-	OTP_DELIVERY_FAILED       StatusCode = 4713
-	OTP_NO_DELIVERY_CHANNEL   StatusCode = 4714
-	OTP_GENERATION_FAILED     StatusCode = 4715
+	OTP_NOT_FOUND           StatusCode = 4701
+	OTP_MISSING_TYPE        StatusCode = 4702
+	OTP_MISSING_IDENTIFIER  StatusCode = 4703
+	OTP_MISSING_CODE        StatusCode = 4704
+	OTP_INVALID_TYPE        StatusCode = 4705
+	OTP_INVALID_CODE        StatusCode = 4706
+	OTP_EXPIRED             StatusCode = 4707
+	OTP_ALREADY_VERIFIED    StatusCode = 4708
+	OTP_REVOKED             StatusCode = 4709
+	OTP_TOO_MANY_ATTEMPTS   StatusCode = 4710
+	OTP_TOO_FREQUENT        StatusCode = 4711
+	OTP_RATE_LIMITED        StatusCode = 4712
+	OTP_DELIVERY_FAILED     StatusCode = 4713
+	OTP_NO_DELIVERY_CHANNEL StatusCode = 4714
+	OTP_GENERATION_FAILED   StatusCode = 4715
 
 	NOTIFICATION_MISSING_UID        StatusCode = 5001
 	NOTIFICATION_MISSING_TITLE      StatusCode = 5002

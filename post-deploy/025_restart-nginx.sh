@@ -2,4 +2,4 @@
 
 # sudo nginx -s reload
 
-# sudo systemctl restart nginx
+sudo systemctl restart nginx
