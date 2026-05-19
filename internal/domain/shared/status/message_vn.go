@@ -12,6 +12,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Bị từ chối"
 	case NOT_FOUND:
 		return "Không tìm thấy"
+	case NO_DATA:
+		return "Không tìm thấy dữ liệu"
 	case CONFLICT:
 		return "Xung đột"
 	case INTERNAL_SERVER_ERROR:

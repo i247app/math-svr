@@ -12,6 +12,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Forbidden"
 	case NOT_FOUND:
 		return "Not Found"
+	case NO_DATA:
+		return "No Resource found"
 	case CONFLICT:
 		return "Conflict"
 	case INTERNAL_SERVER_ERROR:
