@@ -30,9 +30,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup UserSvc...")
 	userService := user.NewService(repos.UserRepository, uow)
 
-	log.Info("> Setup AuthSvc...")
-	authService := auth.NewService(userService, uow)
-
 	log.Info("> Setup ProgramSvc...")
 	programService := program.NewService(repos.ProgramRepository, res.StorageProvider)
 
@@ -57,6 +54,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 
 	log.Info("> Setup OtpSvc...")
 	otpService := otp.NewService(userService, repos.OtpRepository, uow, res.OtpDelivery)
+
+	log.Info("> Setup AuthSvc...")
+	authService := auth.NewService(userService, otpService, uow)
 
 	return &ServiceContainer{
 		UserSvc:     userService,

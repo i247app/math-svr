@@ -71,19 +71,25 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 			return nil
 		}
 
-		d, err := ensureDevice(ctx, repos, u.UserId(), cmd)
-		if err != nil {
-			return err
+		result = &LoginCommandResult{
+			UserID:            u.UserId(),
+			TwoFactorRequired: true,
 		}
+		return nil
 
-		if !d.IsVerified() {
-			result = &LoginCommandResult{
-				UserID:            u.UserId(),
-				DeviceID:          d.DeviceId(),
-				TwoFactorRequired: true,
-			}
-			return nil
-		}
+		// d, err := ensureDevice(ctx, repos, u.UserId(), cmd)
+		// if err != nil {
+		// 	return err
+		// }
+
+		// if !d.IsVerified() {
+		// 	result = &LoginCommandResult{
+		// 		UserID:            u.UserId(),
+		// 		DeviceID:          d.DeviceId(),
+		// 		TwoFactorRequired: true,
+		// 	}
+		// 	return nil
+		// }
 
 		// if err := repos.LoginLog.MarkStatusByUserDevice(
 		// 	ctx, u.UserId(), cmd.DeviceUUID, enum.LoginLogStatusTypeRevoked,
@@ -102,7 +108,7 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		// 	DeviceID:   d.DeviceId(),
 		// 	LoginLogID: created.LoginLogId(),
 		// }
-		return nil
+		// return nil
 	})
 	if err != nil {
 		return nil, err
