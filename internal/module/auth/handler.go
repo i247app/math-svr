@@ -26,6 +26,10 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	res, err := h.service.Login(r.Context(), &req)
 	if err != nil {
+		if res != nil {
+			response.WriteJson(w, res, err)
+			return
+		}
 		response.WriteJson(w, nil, err)
 		return
 	}

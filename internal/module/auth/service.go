@@ -2,11 +2,14 @@ package auth
 
 import (
 	"context"
+	"errors"
 
 	command "math-ai.com/math-ai/internal/application/command/auth"
 	dto "math-ai.com/math-ai/internal/application/dto/auth"
 	dtoUser "math-ai.com/math-ai/internal/application/dto/user"
 	"math-ai.com/math-ai/internal/application/transaction"
+	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/module/user"
 )
@@ -43,7 +46,7 @@ func (s *Service) Login(ctx context.Context, req *dto.LoginReq) (*dto.LoginRes, 
 	if result == nil {
 		return &dto.LoginRes{
 			User: nil,
-		}, nil
+		}, errs.NewError(ctx, status.USER_NOT_FOUND, nil, errors.New("user not found"))
 	}
 
 	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: result.UserID})
