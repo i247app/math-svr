@@ -68,7 +68,7 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 		}
 		if u == nil {
-			return errs.NewError(ctx, status.USER_NOT_FOUND, nil, errors.New("user not found"))
+			return nil
 		}
 
 		d, err := ensureDevice(ctx, repos, u.UserId(), cmd)

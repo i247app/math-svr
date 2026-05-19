@@ -15,8 +15,8 @@ type LoginReq struct {
 //   - TwoFactorRequired=false → User and DeviceID are populated; the session
 //     is established.
 type LoginRes struct {
-	TwoFactorRequired bool               `json:"2fa_required"`
-	User              *user.UserResponse `json:"user,omitempty"`
+	TwoFactorRequired bool               `json:"2fa_required,omitempty"`
+	User              *user.UserResponse `json:"user"`
 }
 
 type LogoutReq struct{}
