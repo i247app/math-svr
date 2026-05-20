@@ -115,12 +115,12 @@ var skipLoggingPaths = map[string]struct{}{
 // sensitiveHeaders are masked before being logged. Lookup keys are
 // canonical (http.CanonicalHeaderKey).
 var sensitiveHeaders = map[string]struct{}{
-	"Authorization": {},
-	"Cookie":        {},
-	"Set-Cookie":    {},
-	"X-Admin-Token": {},
-	"X-Api-Key":     {},
-	"X-Auth-Token":  {},
+	// "Authorization": {},
+	// "Cookie":        {},
+	// "Set-Cookie":    {},
+	// "X-Admin-Token": {},
+	// "X-Api-Key":     {},
+	// "X-Auth-Token":  {},
 }
 
 // sensitiveBodyKeys are JSON object keys whose values get redacted

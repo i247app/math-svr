@@ -80,7 +80,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 	// otp routes
 	{
-		otpHandler := otp.NewOtpHandler(services.OtpSvc)
+		otpHandler := otp.NewOtpHandler(res, services.OtpSvc)
 		gexSvr.AddRoute("POST /otps/send", otpHandler.HandleSend)
 		gexSvr.AddRoute("POST /otps/verify", otpHandler.HandleVerify)
 	}

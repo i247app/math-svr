@@ -43,7 +43,8 @@ type SendOtpCommandResult struct {
 	OtpID     uuid.UUID
 	ExpiresAt time.Time
 	Channel   otp_delivery.ChannelName
-	Code      string
+	OTPCode   string
+	OTPType   string
 }
 
 type SendOtpCommandHandler struct {
@@ -157,7 +158,8 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		OtpID:     createdOtpID,
 		ExpiresAt: expiresAt,
 		Channel:   channel,
-		Code:      plainCode,
+		OTPCode:   plainCode,
+		OTPType:   cmd.OtpType.String(),
 	}, nil
 }
 

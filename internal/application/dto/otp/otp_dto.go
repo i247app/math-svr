@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"math-ai.com/math-ai/internal/application/dto/user"
 )
 
 // SendOtpReq is the public payload for POST /otps/send and /otps/resend.
@@ -25,10 +26,11 @@ type SendOtpReq struct {
 // SendOtpRes never echoes the code. Clients use otp_id + expires_at to drive
 // the verify request and the countdown timer.
 type SendOtpRes struct {
-	OtpID     uuid.UUID `json:"otp_id"`
-	ExpiresAt time.Time `json:"expires_at"`
-	Channel   string    `json:"channel"`
-	OTPCode   string    `json:"otp_code"`
+	ExpiresAt time.Time          `json:"expires_at"`
+	Channel   string             `json:"-"`
+	OTPCode   string             `json:"otp_code"`
+	OtpType   string             `json:"otp_type"`
+	User      *user.UserResponse `json:"user,omitempty"`
 }
 
 type VerifyOtpReq struct {
@@ -38,8 +40,9 @@ type VerifyOtpReq struct {
 }
 
 type VerifyOtpRes struct {
-	OtpID    uuid.UUID `json:"otp_id"`
-	Verified bool      `json:"verified"`
+	Verified bool               `json:"verified"`
+	OtpType  string             `json:"otp_type"`
+	User     *user.UserResponse `json:"user,omitempty"`
 }
 
 type RevokeOtpReq struct {

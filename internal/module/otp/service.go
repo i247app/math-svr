@@ -18,6 +18,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -105,17 +106,17 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 		return nil, err
 	}
 
-	log.Infof("otp sent %s:", result.Code)
+	log.Infof("otp sent %s:", result.OTPCode)
 
 	return &dto.SendOtpRes{
-		OtpID:     result.OtpID,
 		ExpiresAt: result.ExpiresAt,
 		Channel:   string(result.Channel),
-		OTPCode:   result.Code,
+		OTPCode:   result.OTPCode,
+		OtpType:   result.OTPType,
 	}, nil
 }
 
-func (s *Service) Verify(ctx context.Context, req *dto.VerifyOtpReq) (*dto.VerifyOtpRes, error) {
+func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto.VerifyOtpReq) (*dto.VerifyOtpRes, error) {
 	log := logger.From(ctx)
 
 	if err := ValidateVerifyOtp(ctx, req); err != nil {
@@ -131,13 +132,44 @@ func (s *Service) Verify(ctx context.Context, req *dto.VerifyOtpReq) (*dto.Verif
 		return nil, err
 	}
 
-	log.Infof("otp verified %s:", result.OtpID)
+	var user *userDto.UserResponse
+	if result != nil && result.UserID != nil {
+		userRes, err := s.userSvc.GetUserById(ctx, &userDto.GetUserByUserIdReq{UserID: *result.UserID})
+		if err != nil {
+			return nil, err
+		}
+		if userRes == nil || userRes.User == nil {
+			return &dto.VerifyOtpRes{
+				OtpType:  req.OtpType,
+				Verified: true,
+				User:     user,
+			}, nil
+		}
+
+		// Update session
+		switch req.OtpType {
+		case string(enum.OtpTypeLogin2FA):
+			log.Info("Login successful, updating session data...")
+			sessionData := session.InitData{
+				Source:    "login",
+				IsSecure:  true,
+				UID:       userRes.User.UserID.String(),
+				LoginName: req.Identifier,
+			}
+
+			if userRes.User.Email != nil {
+				sessionData.Email = *userRes.User.Email
+			}
+
+			sess.Init(sessionData)
+		}
+		user = userRes.User
+	}
 
 	return &dto.VerifyOtpRes{
-		OtpID:    result.OtpID,
 		Verified: true,
-		// UserID:     result.UserID,
-		// DeviceUUID: result.DeviceUUID,
+		OtpType:  req.OtpType,
+		User:     user,
 	}, nil
 }
 

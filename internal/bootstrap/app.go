@@ -13,6 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/response"
 
 	"github.com/i247app/gex"
@@ -102,6 +103,12 @@ func (a *App) Init() error {
 	// Register middlewares
 	a.setupMiddleware(a.Server, a.Resource, services)
 
+	// Setup shutdown hooks
+	a.setupShutdownHooks(a.Server, services)
+
+	// Reload sessions
+	a.reloadSessions()
+
 	return nil
 }
 
@@ -109,7 +116,7 @@ func (a *App) Init() error {
 func (a *App) setupMiddleware(gexSvr *gex.Server, res *resource.Resource, _ *container.ServiceContainer) {
 	middlewares := []gex.Middleware{
 		// Start-->
-		// middleware.GexSessionMiddleware(res.SessionProvider, session.SessionContextKey),
+		middleware.GexSessionMiddleware(res.SessionProvider, session.SessionContextKey),
 		middleware.LoggerMiddleware(a.Logger),
 		middleware.LogRequestMiddleware,
 		middleware.MetadataMiddleware(),
@@ -145,4 +152,31 @@ func (a *App) Close() error {
 		}
 	}
 	return nil
+}
+
+func (a *App) reloadSessions() {
+	// Reload old sessions
+	if a.Resource.Env.SerializedSessionFile != "" {
+		log.Println("Reloading old sessions...")
+		if err := a.ReloadSessions(a.Resource.Env.SerializedSessionFile); err != nil {
+			log.Printf("Failed to reload old sessions: %v\n", err)
+		}
+	}
+}
+
+func (a *App) setupShutdownHooks(gexSvr *gex.Server, _ *container.ServiceContainer) {
+	gexSvr.OnShutdown(func() {
+		sessionFile := a.Resource.Env.SerializedSessionFile
+		if sessionFile == "" {
+			return
+		}
+
+		log.Println("Serializing sessions...")
+		err := a.SerializeSessions(sessionFile)
+		if err != nil {
+			log.Printf("Failed to serialize sessions: %v\n", err)
+		} else {
+			log.Println("Sessions serialized!")
+		}
+	})
 }

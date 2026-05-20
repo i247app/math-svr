@@ -20,8 +20,9 @@ type LoginRes struct {
 }
 
 type LoginWithOTPRes struct {
-	User    *user.UserResponse `json:"user"`
 	OTPCode string             `json:"otp_code,omitempty"`
+	OtpType string             `json:"otp_type,omitempty"`
+	User    *user.UserResponse `json:"user"`
 }
 
 type LogoutReq struct{}

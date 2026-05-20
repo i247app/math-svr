@@ -113,6 +113,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 	return &dto.LoginWithOTPRes{
 		User:    userRes.User,
 		OTPCode: otpCreated.OTPCode,
+		OtpType: otpCreated.OtpType,
 	}, nil
 }
 
