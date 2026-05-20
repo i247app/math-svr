@@ -205,6 +205,31 @@ func (r *ProfileRepository) SoftDelete(ctx context.Context, profileId uuid.UUID)
 	return nil
 }
 
+func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+	query := `
+		UPDATE ` + profileTable + `
+		SET profile_status = ?,
+			status = ?,
+			deleted_dt = ?
+		WHERE user_id = ?
+	`
+	if _, err := r.db.Exec(ctx, query, enum.ProfileStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, userId); err != nil {
+		return fmt.Errorf("profile repo soft delete by user id: %w", err)
+	}
+	return nil
+}
+
+func (r *ProfileRepository) ForceDeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+	query := `
+		DELETE FROM ` + profileTable + `
+		WHERE user_id = ?
+	`
+	if _, err := r.db.Exec(ctx, query, userId); err != nil {
+		return fmt.Errorf("profile repo force delete by user id: %w", err)
+	}
+	return nil
+}
+
 func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p := profile.NewProfile()
 	p.SetId(m.Id)

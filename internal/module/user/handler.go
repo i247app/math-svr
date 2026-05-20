@@ -58,7 +58,13 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	res, err := h.userSvc.CreateUser(r.Context(), &req)
+	sess, err := h.appResource.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.userSvc.CreateUser(r.Context(), sess, &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

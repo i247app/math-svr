@@ -31,6 +31,9 @@ func (h *SoftDeleteUserCommandHandler) Handle(ctx context.Context, cmd SoftDelet
 		if err := repos.Alias.SoftDeleteByUserId(ctx, cmd.UserID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
+		if err := repos.Profile.ForceDeleteByUserId(ctx, cmd.UserID); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
 		return nil
 	})
 	if err != nil {

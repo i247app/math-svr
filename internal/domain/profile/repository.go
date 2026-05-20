@@ -17,4 +17,6 @@ type IRepository interface {
 	UpdateAvatarKey(ctx context.Context, profileId uuid.UUID, avatarKey string) error
 	MarkStatusByProfileId(ctx context.Context, profileId uuid.UUID, profileStatus string) error
 	SoftDelete(ctx context.Context, profileId uuid.UUID) error
+	SoftDeleteByUserId(ctx context.Context, userId uuid.UUID) error
+	ForceDeleteByUserId(ctx context.Context, userId uuid.UUID) error
 }

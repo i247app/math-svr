@@ -26,6 +26,7 @@ type ProfileResponse struct {
 	Grade         *gradeDto.GradeResponse       `json:"grade,omitempty"`
 	SemesterID    *uuid.UUID                    `json:"semester_id,omitempty"`
 	Semester      *semesterDto.SemesterResponse `json:"semester,omitempty"`
+	IsDefault     bool                          `json:"is_default"`
 	ProfileStatus *string                       `json:"profile_status,omitempty"`
 	CreateDt      string                        `json:"create_dt"`
 	ModifyDt      string                        `json:"modify_dt"`
@@ -104,6 +105,7 @@ func DomainToResponse(p *domain.Profile) *ProfileResponse {
 		ProgramID:     p.ProgramId(),
 		GradeID:       p.GradeId(),
 		SemesterID:    p.SemesterId(),
+		IsDefault:     p.IsDefault(),
 		ProfileStatus: p.ProfileStatus(),
 		CreateDt:      p.CreateDt().String(),
 		ModifyDt:      p.ModifyDt().String(),

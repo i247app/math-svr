@@ -15,6 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	domain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/infrastructure/session"
 )
 
 // avatarFolder is the S3 prefix new parent-signup avatars land under. It
@@ -106,7 +107,7 @@ func (s *Service) GetUserByEmail(ctx context.Context, req *dto.GetUserByEmailReq
 	return res, nil
 }
 
-func (s *Service) CreateUser(ctx context.Context, req *dto.CreateUserReq) (*dto.CreateUserRes, error) {
+func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req *dto.CreateUserReq) (*dto.CreateUserRes, error) {
 	log := logger.From(ctx)
 
 	if err := ValidateCreateUser(ctx, req); err != nil {
@@ -151,6 +152,20 @@ func (s *Service) CreateUser(ctx context.Context, req *dto.CreateUserReq) (*dto.
 	userRes := dto.DomainToResponse(created.User)
 	profileRes := profileDto.DomainToResponse(created.Profile)
 	s.populateImageUrl(ctx, profileRes)
+
+	log.Info("Login successful, updating session data...")
+	sessionData := session.InitData{
+		Source:    "login",
+		IsSecure:  true,
+		UID:       userRes.UserID.String(),
+		LoginName: userRes.Phone,
+	}
+
+	if userRes.Email != nil {
+		sessionData.Email = *userRes.Email
+	}
+
+	sess.Init(sessionData)
 
 	return &dto.CreateUserRes{
 		User:    userRes,
