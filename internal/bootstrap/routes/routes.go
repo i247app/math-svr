@@ -26,8 +26,9 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 	// user routes
 	{
-		userHandler := user.NewUserHandler(services.UserSvc)
+		userHandler := user.NewUserHandler(res, services.UserSvc)
 		gexSvr.AddRoute("GET  /users/{id}", userHandler.HandleGetUserById)
+		gexSvr.AddRoute("GET  /users/me", userHandler.HandleGetUserMe)
 		gexSvr.AddRoute("POST /users/list", userHandler.HandleListUsers)
 		gexSvr.AddRoute("POST /users/create", userHandler.HandleCreateUser)
 		gexSvr.AddRoute("POST /users/update", userHandler.HandleUpdateUser)

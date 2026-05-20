@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"math-ai.com/math-ai/internal/application/dto/user"
+	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -15,12 +16,14 @@ const (
 )
 
 type UserHandler struct {
-	userSvc *Service
+	appResource *resource.Resource
+	userSvc     *Service
 }
 
-func NewUserHandler(userSvc *Service) *UserHandler {
+func NewUserHandler(appResource *resource.Resource, userSvc *Service) *UserHandler {
 	return &UserHandler{
-		userSvc: userSvc,
+		appResource: appResource,
+		userSvc:     userSvc,
 	}
 }
 
@@ -75,6 +78,35 @@ func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) 
 	}
 
 	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: userID})
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	response.WriteJson(w, res, nil)
+}
+
+// Get /users/me
+func (h *UserHandler) HandleGetUserMe(w http.ResponseWriter, r *http.Request) {
+	session, err := h.appResource.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	uid, ok := session.UID()
+	if !ok {
+		response.WriteJson(w, nil, fmt.Errorf("invalid session"))
+		return
+	}
+
+	userId, err := utils.StringToUUID(uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: userId})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
