@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS ma_quizzes (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   quiz_id         CHAR(36) NOT NULL UNIQUE,
   user_id         CHAR(36) NOT NULL,
+  profile_id      CHAR(36) NOT NULL,
   type            VARCHAR(32) DEFAULT 'ASSESSMENT', -- ASSESSMENT, PRACTICE, EXAM
   questions       LONGTEXT,
   answers         LONGTEXT,

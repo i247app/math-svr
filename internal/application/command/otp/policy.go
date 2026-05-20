@@ -20,7 +20,7 @@ var (
 
 	// OtpResendCooldown is the minimum wait before the same (type, identifier)
 	// may request another OTP. Trips OTP_TOO_FREQUENT.
-	OtpResendCooldown = 60 * time.Second
+	OtpResendCooldown = 10 * time.Second
 
 	// OtpSendWindow + OtpMaxSendsPerWindow form the per-window send cap.
 	// Trips OTP_RATE_LIMITED.

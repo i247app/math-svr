@@ -11,6 +11,11 @@ import (
 )
 
 func NewFromConfig(ctx context.Context, cfg config.StorageConfig) (*Adapter, error) {
+	println("AccessKey", cfg.AccessKey)
+	println("SecretKey", cfg.SecretKey)
+	println("Region", cfg.Region)
+	println("Bucket", cfg.Bucket)
+
 	switch cfg.Provider {
 	case string(ProviderS3), "":
 		client := s3.NewClient(s3.Config{
