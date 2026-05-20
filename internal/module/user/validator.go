@@ -15,10 +15,9 @@ func ValidateCreateUser(ctx context.Context, req *dto.CreateUserReq) error {
 	if strings.TrimSpace(req.Phone) == "" {
 		return errs.NewError(ctx, status.USER_MISSING_PHONE, nil, errors.New("phone is required"))
 	}
-	if req.Email != nil && strings.TrimSpace(*req.Email) == "" {
-		return errs.NewError(ctx, status.USER_MISSING_EMAIL, nil, errors.New("email is required"))
+	if strings.TrimSpace(req.Name) == "" {
+		return errs.NewError(ctx, status.PROFILE_MISSING_NAME, nil, errors.New("name is required"))
 	}
-
 	return nil
 }
 

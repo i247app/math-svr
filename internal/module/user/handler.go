@@ -2,11 +2,16 @@ package user
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"math-ai.com/math-ai/internal/application/dto/user"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
+)
+
+const (
+	MaxAvatarUploadSize = 10 << 20 // 10 MB
 )
 
 type UserHandler struct {
@@ -22,9 +27,32 @@ func NewUserHandler(userSvc *Service) *UserHandler {
 // POST /users/create
 func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	var req user.CreateUserReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, nil, err)
-		return
+	contentType := r.Header.Get("Content-Type")
+
+	if contentType == "application/json" {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			response.WriteJson(w, nil, fmt.Errorf("invalid parameters"))
+			return
+		}
+	} else {
+		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
+			response.WriteJson(w, nil, fmt.Errorf("invalid form data"))
+			return
+		}
+
+		// Parse form fields
+		req.Name = r.FormValue("name")
+		req.Phone = r.FormValue("phone")
+		req.Email = r.FormValue("email")
+
+		// Handle avatar file
+		file, header, err := r.FormFile("avatar")
+		if err == nil {
+			defer file.Close()
+			req.AvatarFile = file
+			req.AvatarFilename = header.Filename
+			req.AvatarContentType = header.Header.Get("Content-Type")
+		}
 	}
 
 	res, err := h.userSvc.CreateUser(r.Context(), &req)

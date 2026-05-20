@@ -28,7 +28,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("SetupServiceContainer")
 
 	log.Info("> Setup UserSvc...")
-	userService := user.NewService(repos.UserRepository, uow)
+	userService := user.NewService(repos.UserRepository, uow, res.StorageProvider)
 
 	log.Info("> Setup ProgramSvc...")
 	programService := program.NewService(repos.ProgramRepository, res.StorageProvider)

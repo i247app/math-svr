@@ -304,22 +304,22 @@ func collectRefIds(profiles []*domain.Profile) (progIds, gradeIds, semIds []uuid
 	gradeSeen := make(map[uuid.UUID]struct{}, len(profiles))
 	semSeen := make(map[uuid.UUID]struct{}, len(profiles))
 	for _, p := range profiles {
-		if id := p.ProgramId(); id != uuid.Nil {
-			if _, ok := progSeen[id]; !ok {
-				progSeen[id] = struct{}{}
-				progIds = append(progIds, id)
+		if id := p.ProgramId(); id != nil {
+			if _, ok := progSeen[*id]; !ok {
+				progSeen[*id] = struct{}{}
+				progIds = append(progIds, *id)
 			}
 		}
-		if id := p.GradeId(); id != uuid.Nil {
-			if _, ok := gradeSeen[id]; !ok {
-				gradeSeen[id] = struct{}{}
-				gradeIds = append(gradeIds, id)
+		if id := p.GradeId(); id != nil {
+			if _, ok := gradeSeen[*id]; !ok {
+				gradeSeen[*id] = struct{}{}
+				gradeIds = append(gradeIds, *id)
 			}
 		}
-		if id := p.SemesterId(); id != uuid.Nil {
-			if _, ok := semSeen[id]; !ok {
-				semSeen[id] = struct{}{}
-				semIds = append(semIds, id)
+		if id := p.SemesterId(); id != nil {
+			if _, ok := semSeen[*id]; !ok {
+				semSeen[*id] = struct{}{}
+				semIds = append(semIds, *id)
 			}
 		}
 	}

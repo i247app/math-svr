@@ -17,9 +17,9 @@ type CreateProfileCommand struct {
 	UserID     uuid.UUID
 	Name       string
 	Dob        *time.Time
-	ProgramID  uuid.UUID
-	GradeID    uuid.UUID
-	SemesterID uuid.UUID
+	ProgramID  *uuid.UUID
+	GradeID    *uuid.UUID
+	SemesterID *uuid.UUID
 	Note       *string
 }
 

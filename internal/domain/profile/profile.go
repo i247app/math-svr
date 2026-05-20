@@ -16,9 +16,10 @@ type Profile struct {
 	name          string
 	avatarKey     *string
 	dob           mtime.MathTime
-	programId     uuid.UUID
-	gradeId       uuid.UUID
-	semesterId    uuid.UUID
+	programId     *uuid.UUID
+	gradeId       *uuid.UUID
+	semesterId    *uuid.UUID
+	isDefault     bool
 	note          *string
 	profileStatus *string
 	status        string
@@ -80,28 +81,51 @@ func (p *Profile) SetDob(dob mtime.MathTime) {
 	p.dob = dob
 }
 
-func (p *Profile) ProgramId() uuid.UUID {
+func (p *Profile) ProgramId() *uuid.UUID {
 	return p.programId
 }
 
-func (p *Profile) SetProgramId(programId uuid.UUID) {
+// SetProgramId accepts a pointer so the model layer (which stores
+// *uuid.UUID for the now-nullable column) can pass through nil. nil is
+// flattened to uuid.Nil so the domain field stays a value type.
+func (p *Profile) SetProgramId(programId *uuid.UUID) {
+	if programId == nil {
+		p.programId = nil
+		return
+	}
 	p.programId = programId
 }
 
-func (p *Profile) GradeId() uuid.UUID {
+func (p *Profile) GradeId() *uuid.UUID {
 	return p.gradeId
 }
 
-func (p *Profile) SetGradeId(gradeId uuid.UUID) {
+func (p *Profile) SetGradeId(gradeId *uuid.UUID) {
+	if gradeId == nil {
+		p.gradeId = nil
+		return
+	}
 	p.gradeId = gradeId
 }
 
-func (p *Profile) SemesterId() uuid.UUID {
+func (p *Profile) SemesterId() *uuid.UUID {
 	return p.semesterId
 }
 
-func (p *Profile) SetSemesterId(semesterId uuid.UUID) {
+func (p *Profile) SetSemesterId(semesterId *uuid.UUID) {
+	if semesterId == nil {
+		p.semesterId = nil
+		return
+	}
 	p.semesterId = semesterId
+}
+
+func (p *Profile) IsDefault() bool {
+	return p.isDefault
+}
+
+func (p *Profile) SetIsDefault(isDefault bool) {
+	p.isDefault = isDefault
 }
 
 func (p *Profile) Note() *string {

@@ -20,11 +20,11 @@ type ProfileResponse struct {
 	AvatarKey     *string                       `json:"avatar_key,omitempty"`
 	AvatarUrl     *string                       `json:"avatar_url"` // pre-signed url from avatar_key
 	Dob           string                        `json:"dob,omitempty"`
-	ProgramID     uuid.UUID                     `json:"program_id,omitempty"`
+	ProgramID     *uuid.UUID                    `json:"program_id,omitempty"`
 	Program       *programDto.ProgramResponse   `json:"program,omitempty"`
-	GradeID       uuid.UUID                     `json:"grade_id,omitempty"`
+	GradeID       *uuid.UUID                    `json:"grade_id,omitempty"`
 	Grade         *gradeDto.GradeResponse       `json:"grade,omitempty"`
-	SemesterID    uuid.UUID                     `json:"semester_id,omitempty"`
+	SemesterID    *uuid.UUID                    `json:"semester_id,omitempty"`
 	Semester      *semesterDto.SemesterResponse `json:"semester,omitempty"`
 	ProfileStatus *string                       `json:"profile_status,omitempty"`
 	CreateDt      string                        `json:"create_dt"`
@@ -32,13 +32,13 @@ type ProfileResponse struct {
 }
 
 type CreateProfileReq struct {
-	UserID     uuid.UUID `json:"user_id"`
-	Name       string    `json:"name"`
-	Dob        *string   `json:"dob,omitempty"`
-	ProgramID  uuid.UUID `json:"program_id"`
-	GradeID    uuid.UUID `json:"grade_id"`
-	SemesterID uuid.UUID `json:"semester_id"`
-	Note       *string   `json:"note,omitempty"`
+	UserID     uuid.UUID  `json:"user_id"`
+	Name       string     `json:"name"`
+	Dob        *string    `json:"dob,omitempty"`
+	ProgramID  *uuid.UUID `json:"program_id"`
+	GradeID    *uuid.UUID `json:"grade_id"`
+	SemesterID *uuid.UUID `json:"semester_id"`
+	Note       *string    `json:"note,omitempty"`
 }
 
 type CreateProfileRes struct {

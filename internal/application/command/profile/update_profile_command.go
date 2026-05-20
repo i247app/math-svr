@@ -75,13 +75,13 @@ func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 		patch.SetDob(mtime.MathTime{Time: *cmd.Dob})
 	}
 	if cmd.ProgramID != nil {
-		patch.SetProgramId(*cmd.ProgramID)
+		patch.SetProgramId(cmd.ProgramID)
 	}
 	if cmd.GradeID != nil {
-		patch.SetGradeId(*cmd.GradeID)
+		patch.SetGradeId(cmd.GradeID)
 	}
 	if cmd.SemesterID != nil {
-		patch.SetSemesterId(*cmd.SemesterID)
+		patch.SetSemesterId(cmd.SemesterID)
 	}
 	if cmd.Note != nil {
 		patch.SetNote(cmd.Note)

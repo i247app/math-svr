@@ -5,16 +5,19 @@ import (
 	"net/http"
 
 	dto "math-ai.com/math-ai/internal/application/dto/auth"
+	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
 type AuthHandler struct {
-	service *Service
+	appResource *resource.Resource
+	service     *Service
 }
 
-func NewAuthHandler(service *Service) *AuthHandler {
+func NewAuthHandler(appResource *resource.Resource, service *Service) *AuthHandler {
 	return &AuthHandler{
-		service: service,
+		appResource: appResource,
+		service:     service,
 	}
 }
 
@@ -48,6 +51,28 @@ func (h *AuthHandler) HandleLoginOTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res, err := h.service.LoginWithOTP(r.Context(), &req)
+	if err != nil {
+		if res != nil {
+			response.WriteJson(w, res, err)
+			return
+		}
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	response.WriteJson(w, res, nil)
+}
+
+// POST /auth/login-resume
+func (h *AuthHandler) HandleLoginResume(w http.ResponseWriter, r *http.Request) {
+	// Get session
+	session, err := h.appResource.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.service.LoginResume(r.Context(), session)
 	if err != nil {
 		if res != nil {
 			response.WriteJson(w, res, err)

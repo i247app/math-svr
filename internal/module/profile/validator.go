@@ -57,15 +57,15 @@ func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error
 		return errs.NewError(ctx, status.PROFILE_MISSING_NAME, nil,
 			errors.New("name is required"))
 	}
-	if req.ProgramID == uuid.Nil {
+	if req.ProgramID == nil {
 		return errs.NewError(ctx, status.PROFILE_MISSING_PROGRAM_ID, nil,
 			errors.New("program_id is required"))
 	}
-	if req.GradeID == uuid.Nil {
+	if req.GradeID == nil {
 		return errs.NewError(ctx, status.PROFILE_MISSING_GRADE_ID, nil,
 			errors.New("grade_id is required"))
 	}
-	if req.SemesterID == uuid.Nil {
+	if req.SemesterID == nil {
 		return errs.NewError(ctx, status.PROFILE_MISSING_SEMESTER_ID, nil,
 			errors.New("semester_id is required"))
 	}

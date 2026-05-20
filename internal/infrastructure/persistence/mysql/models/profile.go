@@ -13,9 +13,10 @@ type ProfileModel struct {
 	Name          string
 	AvatarKey     *string
 	Dob           *time.Time
-	ProgramId     uuid.UUID
-	GradeId       uuid.UUID
-	SemesterId    uuid.UUID
+	ProgramId     *uuid.UUID
+	GradeId       *uuid.UUID
+	SemesterId    *uuid.UUID
+	IsDefault     bool
 	Note          *string
 	ProfileStatus *string
 	Status        string

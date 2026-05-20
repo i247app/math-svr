@@ -1,7 +1,11 @@
 package user
 
 import (
+	"io"
+
 	"github.com/google/uuid"
+
+	profileDto "math-ai.com/math-ai/internal/application/dto/profile"
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
@@ -32,12 +36,21 @@ type GetUserByEmailRes struct {
 }
 
 type CreateUserReq struct {
-	Phone string  `json:"phone"`
-	Email *string `json:"email,omitempty"`
+	Name  string `json:"name"`
+	Phone string `json:"phone"`
+	Email string `json:"email,omitempty"`
+
+	AvatarFile        io.Reader `json:"avatar_file"`         // File reader
+	AvatarFilename    string    `json:"avatar_file_name"`    // Original filename
+	AvatarContentType string    `json:"avatar_content_type"` // MIME type
 }
 
+// CreateUserRes carries both the freshly-created parent and their initial
+// child profile so the client doesn't need a follow-up /profiles/list round
+// trip during onboarding.
 type CreateUserRes struct {
-	User *UserResponse `json:"user"`
+	User    *UserResponse                `json:"user"`
+	Profile *profileDto.ProfileResponse  `json:"profile"`
 }
 
 type UpdateUserReq struct {

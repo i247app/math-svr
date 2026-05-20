@@ -70,9 +70,15 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 	out := make([]*dto.ProfileResponse, len(profiles))
 	for i, p := range profiles {
 		resp := dto.DomainToResponse(p)
-		resp.Program = progMap[p.ProgramId()]
-		resp.Grade = gradeMap[p.GradeId()]
-		resp.Semester = semMap[p.SemesterId()]
+		if p.ProgramId() != nil {
+			resp.Program = progMap[*p.ProgramId()]
+		}
+		if p.GradeId() != nil {
+			resp.Grade = gradeMap[*p.GradeId()]
+		}
+		if p.SemesterId() != nil {
+			resp.Semester = semMap[*p.SemesterId()]
+		}
 		s.populateAvatarUrl(ctx, resp)
 		out[i] = resp
 	}

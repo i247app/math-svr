@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	command "math-ai.com/math-ai/internal/application/command/auth"
 	dto "math-ai.com/math-ai/internal/application/dto/auth"
@@ -12,9 +13,11 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/user"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type Service struct {
@@ -67,6 +70,37 @@ func (s *Service) Login(ctx context.Context, req *dto.LoginReq) (*dto.LoginRes, 
 	return &dto.LoginRes{
 		TwoFactorRequired: result.TwoFactorRequired,
 		User:              userRes.User,
+	}, nil
+}
+
+func (s *Service) LoginResume(ctx context.Context, sess *session.AppSession) (*dto.LoginRes, error) {
+	if !sess.IsValid() {
+		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, errors.New("session is not valid"))
+	}
+
+	uid, ok := sess.UID()
+	if !ok {
+		// return nil, m_status.UNAUTHORIZED, fmt.Errorf("failed to resume session: uid not found in session")
+		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, fmt.Errorf("uid not found in session"))
+	}
+
+	userId, err := utils.StringToUUID(uid)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, fmt.Errorf("uid is not valid"))
+	}
+
+	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: userId})
+	if err != nil {
+		return nil, err
+	}
+	if userRes == nil || userRes.User == nil {
+		return &dto.LoginRes{
+			User: nil,
+		}, nil
+	}
+
+	return &dto.LoginRes{
+		User: userRes.User,
 	}, nil
 }
 
