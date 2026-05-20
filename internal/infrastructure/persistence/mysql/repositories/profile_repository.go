@@ -105,6 +105,35 @@ func (r *ProfileRepository) ListByUserId(ctx context.Context, userId uuid.UUID) 
 	return profiles, nil
 }
 
+// ListAvatarKeysByUserId returns every non-null avatar_key for the user's
+// profiles, regardless of status. Used by force-delete to drive S3 cleanup
+// after the DB cascade — soft-deleted profiles still own S3 objects that need
+// to go.
+func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId uuid.UUID) ([]string, error) {
+	query := `SELECT avatar_key FROM ` + profileTable + ` WHERE user_id = ? AND avatar_key IS NOT NULL`
+
+	rows, err := r.db.Query(ctx, query, userId)
+	if err != nil {
+		return nil, fmt.Errorf("profile repo list avatar keys by user id: %w", err)
+	}
+	defer rows.Close()
+
+	var keys []string
+	for rows.Next() {
+		var key string
+		if err := rows.Scan(&key); err != nil {
+			return nil, fmt.Errorf("profile repo scan avatar key: %w", err)
+		}
+		if key != "" {
+			keys = append(keys, key)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("profile repo avatar keys iteration: %w", err)
+	}
+	return keys, nil
+}
+
 func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*profile.Profile, error) {
 	query := `
 		INSERT INTO ` + profileTable + `

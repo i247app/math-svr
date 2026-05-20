@@ -233,14 +233,33 @@ func (s *Service) SoftDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (*
 }
 
 func (s *Service) ForceDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (*dto.DeleteUserRes, error) {
+	log := logger.From(ctx)
+
 	if err := ValidateDeleteUser(ctx, req); err != nil {
 		return nil, err
 	}
 
-	if err := s.forceDeleteUserCmd.Handle(ctx, command.ForceDeleteUserCommand{
+	result, err := s.forceDeleteUserCmd.Handle(ctx, command.ForceDeleteUserCommand{
 		UserID: req.UserID,
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
+	}
+
+	// DB is the source of truth — once the cascade commits, any avatar
+	// objects in S3 are orphans. Delete them best-effort; a failure here is
+	// recoverable by a janitor sweep, so we log and move on rather than
+	// surfacing the error to the caller.
+	if s.storageProvider != nil {
+		for _, key := range result.AvatarKeys {
+			if key == "" {
+				continue
+			}
+			log.Infof("Delete avatar key: %s", key)
+			if delErr := s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{Key: key}); delErr != nil {
+				log.Warnf("user.force_delete avatar cleanup failed key=%s err=%v", key, delErr)
+			}
+		}
 	}
 
 	return &dto.DeleteUserRes{}, nil
