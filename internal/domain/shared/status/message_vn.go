@@ -208,6 +208,36 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Đã vượt quá giới hạn tần suất gọi AI"
 	case BOT_UNSUPPORTED_OP:
 		return "Thao tác AI không được nhà cung cấp hiện tại hỗ trợ"
+
+	// Quiz
+	case QUIZ_NOT_FOUND:
+		return "Không tìm thấy bài kiểm tra"
+	case QUIZ_MISSING_PROFILE_ID:
+		return "Mã hồ sơ là bắt buộc"
+	case QUIZ_MISSING_TYPE:
+		return "Vui lòng chọn loại bài kiểm tra"
+	case QUIZ_INVALID_TYPE:
+		return "Loại bài kiểm tra không hợp lệ"
+	case QUIZ_INVALID_LANGUAGE:
+		return "Ngôn ngữ bài kiểm tra không hợp lệ"
+	case QUIZ_MISSING_ANSWERS:
+		return "Vui lòng cung cấp câu trả lời"
+	case QUIZ_INVALID_ANSWERS:
+		return "Câu trả lời không hợp lệ"
+	case QUIZ_ALREADY_SUBMITTED:
+		return "Bài kiểm tra này đã được nộp"
+	case QUIZ_NOT_OWNED:
+		return "Bài kiểm tra không thuộc về hồ sơ này"
+	case QUIZ_PREVIOUS_NOT_FOUND:
+		return "Không tìm thấy bài kiểm tra trước đó"
+	case QUIZ_PREVIOUS_NOT_GRADED:
+		return "Bài kiểm tra trước đó chưa được chấm điểm"
+	case QUIZ_GENERATION_FAILED:
+		return "Tạo câu hỏi bài kiểm tra thất bại"
+	case QUIZ_GRADING_FAILED:
+		return "Chấm điểm bài kiểm tra thất bại"
+	case QUIZ_PROFILE_NOT_CONFIGURED:
+		return "Hồ sơ cần có chương trình học, lớp và học kỳ trước khi tạo bài kiểm tra"
 	default:
 		return ""
 	}

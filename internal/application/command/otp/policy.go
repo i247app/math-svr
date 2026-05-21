@@ -37,15 +37,15 @@ var (
 func TtlFor(t enum.OtpType) time.Duration {
 	switch t {
 	case enum.OtpTypeLogin2FA:
-		return 5 * time.Minute
+		return 1 * time.Minute
 	case enum.OtpTypeChangePassword:
-		return 5 * time.Minute
+		return 1 * time.Minute
 	case enum.OtpTypeVerifyPhone:
-		return 5 * time.Minute
+		return 1 * time.Minute
 	case enum.OtpTypeRegister, enum.OtpTypeForgotPassword, enum.OtpTypeVerifyEmail:
 		return 15 * time.Minute
 	default:
-		return 5 * time.Minute
+		return 1 * time.Minute
 	}
 }
 

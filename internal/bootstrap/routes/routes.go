@@ -11,6 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
+	"math-ai.com/math-ai/internal/module/quiz"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/session"
 	"math-ai.com/math-ai/internal/module/user"
@@ -85,6 +86,16 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		otpHandler := otp.NewOtpHandler(res, services.OtpSvc)
 		gexSvr.AddRoute("POST /otps/send", otpHandler.HandleSend)
 		gexSvr.AddRoute("POST /otps/verify", otpHandler.HandleVerify)
+	}
+
+	// quiz routes
+	{
+		quizHandler := quiz.NewQuizHandler(services.QuizSvc)
+		gexSvr.AddRoute("GET  /quizzes/{id}", quizHandler.HandleGetQuiz)
+		gexSvr.AddRoute("POST /quizzes/list", quizHandler.HandleListQuizzes)
+		gexSvr.AddRoute("POST /quizzes/generate", quizHandler.HandleGenerateQuiz)
+		gexSvr.AddRoute("POST /quizzes/submit", quizHandler.HandleSubmitQuizAnswers)
+		gexSvr.AddRoute("POST /quizzes/soft-delete", quizHandler.HandleSoftDeleteQuiz)
 	}
 
 	// health routes

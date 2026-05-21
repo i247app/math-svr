@@ -12,6 +12,7 @@ import (
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
+	"math-ai.com/math-ai/internal/module/quiz"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/user"
 )
@@ -58,6 +59,17 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup AuthSvc...")
 	authService := auth.NewService(userService, otpService, uow)
 
+	log.Info("> Setup QuizSvc...")
+	quizService := quiz.NewService(
+		repos.QuizRepository,
+		uow,
+		res.BotProvider,
+		repos.ProfileRepository,
+		repos.ProgramRepository,
+		repos.GradeRepository,
+		repos.SemesterRepository,
+	)
+
 	return &ServiceContainer{
 		UserSvc:     userService,
 		AuthSvc:     authService,
@@ -67,5 +79,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		ProfileSvc:  profileService,
 		DeviceSvc:   deviceService,
 		OtpSvc:      otpService,
+		QuizSvc:     quizService,
 	}, nil
 }

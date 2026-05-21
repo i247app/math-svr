@@ -208,6 +208,36 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "AI provider rate limit exceeded"
 	case BOT_UNSUPPORTED_OP:
 		return "AI operation is not supported by the configured provider"
+
+	// Quiz
+	case QUIZ_NOT_FOUND:
+		return "Quiz not found"
+	case QUIZ_MISSING_PROFILE_ID:
+		return "Profile id is required"
+	case QUIZ_MISSING_TYPE:
+		return "Quiz type is required"
+	case QUIZ_INVALID_TYPE:
+		return "Quiz type is invalid"
+	case QUIZ_INVALID_LANGUAGE:
+		return "Quiz language is invalid"
+	case QUIZ_MISSING_ANSWERS:
+		return "Quiz answers are required"
+	case QUIZ_INVALID_ANSWERS:
+		return "Quiz answers are invalid"
+	case QUIZ_ALREADY_SUBMITTED:
+		return "This quiz has already been submitted"
+	case QUIZ_NOT_OWNED:
+		return "Quiz does not belong to this profile"
+	case QUIZ_PREVIOUS_NOT_FOUND:
+		return "Previous quiz not found"
+	case QUIZ_PREVIOUS_NOT_GRADED:
+		return "Previous quiz has not been graded yet"
+	case QUIZ_GENERATION_FAILED:
+		return "Failed to generate quiz questions"
+	case QUIZ_GRADING_FAILED:
+		return "Failed to grade quiz answers"
+	case QUIZ_PROFILE_NOT_CONFIGURED:
+		return "Profile must have a program, grade, and semester set before generating a quiz"
 	default:
 		return ""
 	}
