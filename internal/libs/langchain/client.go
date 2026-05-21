@@ -2,6 +2,7 @@ package langchain
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -150,6 +151,8 @@ func (c *Client) probe(ctx context.Context) error {
 // timeout and retry budget. Returns ErrInvalidConfig for an empty
 // message list; for other failures see translateError.
 func (c *Client) Generate(ctx context.Context, req ChatRequest) (*ChatResponse, error) {
+	log := logger.From(ctx)
+
 	if len(req.Messages) == 0 {
 		return nil, fmt.Errorf("%w: at least one message is required", ErrInvalidConfig)
 	}
@@ -163,6 +166,11 @@ func (c *Client) Generate(ctx context.Context, req ChatRequest) (*ChatResponse, 
 	resp, err := c.withRetry(callCtx, func(retryCtx context.Context) (*llms.ContentResponse, error) {
 		return c.llm.GenerateContent(retryCtx, content, opts...)
 	})
+
+	// print json resp
+	jsonResp, _ := json.Marshal(resp)
+	log.Infof("langchain: resp=%s", string(jsonResp))
+
 	if err != nil {
 		return nil, c.translateError(err)
 	}

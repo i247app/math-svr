@@ -88,6 +88,8 @@ func BuildQuizPrompt(purpose QuizPurpose, in QuizPromptInput) (system string, us
 		return "", "", err
 	}
 
+	fmt.Println("Language: ", lang)
+
 	switch purpose {
 	case QuizPurposeGenerate:
 		// Curriculum context (Grade/Semester/Program) is OPTIONAL. The
