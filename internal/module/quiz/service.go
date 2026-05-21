@@ -150,6 +150,10 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 
 	// Owner fields are NULL for anonymous quizzes (no profile supplied).
 	var ownerUserID, ownerProfileID *uuid.UUID
+	if req.UserID != nil && req.UserID.String() != "" {
+		ownerUserID = req.UserID
+	}
+
 	if profile != nil {
 		uid := profile.UserId()
 		pid := profile.ProfileId()

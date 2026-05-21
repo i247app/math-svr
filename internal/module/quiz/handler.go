@@ -5,16 +5,23 @@ import (
 	"net/http"
 
 	dto "math-ai.com/math-ai/internal/application/dto/quiz"
+	"math-ai.com/math-ai/internal/application/resource"
+	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type QuizHandler struct {
-	quizSvc *Service
+	appResource *resource.Resource
+	quizSvc     *Service
 }
 
-func NewQuizHandler(quizSvc *Service) *QuizHandler {
-	return &QuizHandler{quizSvc: quizSvc}
+func NewQuizHandler(appResource *resource.Resource, quizSvc *Service) *QuizHandler {
+	return &QuizHandler{
+		appResource: appResource,
+		quizSvc:     quizSvc,
+	}
 }
 
 // POST /quizzes/generate
@@ -24,6 +31,26 @@ func (h *QuizHandler) HandleGenerateQuiz(w http.ResponseWriter, r *http.Request)
 		response.WriteJson(w, nil, err)
 		return
 	}
+
+	session, err := h.appResource.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	uid, ok := session.UID()
+	if !ok {
+		response.WriteJson(w, nil, errs.NewError(r.Context(), status.UNAUTHORIZED, nil, nil))
+		return
+	}
+
+	userId, err := utils.StringToUUID(uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	req.UserID = &userId
 
 	res, err := h.quizSvc.GenerateQuiz(r.Context(), &req)
 	if err != nil {

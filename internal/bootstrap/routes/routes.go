@@ -90,7 +90,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 	// quiz routes
 	{
-		quizHandler := quiz.NewQuizHandler(services.QuizSvc)
+		quizHandler := quiz.NewQuizHandler(res, services.QuizSvc)
 		gexSvr.AddRoute("GET  /quizzes/{id}", quizHandler.HandleGetQuiz)
 		gexSvr.AddRoute("POST /quizzes/list", quizHandler.HandleListQuizzes)
 		gexSvr.AddRoute("POST /quizzes/generate", quizHandler.HandleGenerateQuiz)

@@ -78,6 +78,7 @@ type QuizResponse struct {
 // like "Grade 2 fractions review" without needing a curriculum row, and
 // so the service does not have to do an extra round-trip to translate.
 type GenerateQuizReq struct {
+	UserID         *uuid.UUID        `json:"user_id"`
 	ProfileID      *uuid.UUID        `json:"profile_id,omitempty"`
 	Type           string            `json:"type"`
 	Language       enum.LanguageType `json:"language,omitempty"`

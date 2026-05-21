@@ -81,17 +81,27 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 
 	var createdOtpID uuid.UUID
 	err = h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		// 1. Cooldown
+		// 1. Cooldown.
+		// Compare against OtpCreateDt (app-set, always UTC) not CreateDt
+		// (MySQL DEFAULT CURRENT_TIMESTAMP(6) — emits the server's local
+		// wall-clock, which the driver mis-tags as UTC, yielding a
+		// negative age and a permanently-skipped cooldown).
 		latest, err := repos.Otp.FindLatestPending(ctx, cmd.OtpType, cmd.Identifier)
 		if err != nil {
 			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
 		}
 		if latest != nil {
-			age := now.Sub(latest.CreateDt().Time)
+			age := now.Sub(latest.OtpCreateDt().Time)
 			if age >= 0 && age < OtpResendCooldown {
-				return errs.NewError(ctx, status.OTP_TOO_FREQUENT, map[string]any{
-					"retry_after_seconds": int((OtpResendCooldown - age).Seconds()),
-				}, errors.New("resend cooldown not elapsed"))
+				// return errs.NewError(ctx, status.OTP_TOO_FREQUENT, map[string]any{
+				// 	"retry_after_seconds": int((OtpResendCooldown - age).Seconds()),
+				// }, errors.New("resend cooldown not elapsed"))
+				println("vo dayyyyyyyy")
+				createdOtpID = latest.OtpId()
+				plainCode = latest.OtpCode()
+				expiresAt = latest.OtpExpireDt().Time
+
+				return nil
 			}
 		}
 

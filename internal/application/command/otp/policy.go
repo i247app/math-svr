@@ -20,12 +20,12 @@ var (
 
 	// OtpResendCooldown is the minimum wait before the same (type, identifier)
 	// may request another OTP. Trips OTP_TOO_FREQUENT.
-	OtpResendCooldown = 10 * time.Second
+	OtpResendCooldown = 60 * time.Second
 
 	// OtpSendWindow + OtpMaxSendsPerWindow form the per-window send cap.
 	// Trips OTP_RATE_LIMITED.
 	OtpSendWindow        = 1 * time.Hour
-	OtpMaxSendsPerWindow = 5
+	OtpMaxSendsPerWindow = 50
 
 	// OtpMaxAttempts is the max number of verify attempts before a row is
 	// auto-revoked. Trips OTP_TOO_MANY_ATTEMPTS.
