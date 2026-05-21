@@ -124,9 +124,9 @@ func BuildQuizPrompt(purpose QuizPurpose, in QuizPromptInput) (system string, us
 
 func normalizeLanguage(lang QuizLanguage) (QuizLanguage, error) {
 	switch strings.ToLower(strings.TrimSpace(string(lang))) {
-	case "", "vn":
+	case "vn":
 		return QuizLanguageVietnamese, nil
-	case "en":
+	case "", "en":
 		return QuizLanguageEnglish, nil
 	default:
 		return "", fmt.Errorf("bot: unsupported language %q", string(lang))
