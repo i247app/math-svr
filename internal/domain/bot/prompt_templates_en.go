@@ -1,6 +1,9 @@
 package bot
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // English prompt templates. ai_review is emitted in English. JSON keys
 // are always English regardless of QuizLanguage — only ai_review and
@@ -8,7 +11,7 @@ import "fmt"
 
 const systemGenerateEN = `You are a math quiz generator for Vietnamese primary-school students (Grades 1-5).
 
-Generate EXACTLY 5 multiple-choice questions calibrated to the requested grade, semester, and curriculum.
+Generate EXACTLY 5 multiple-choice questions calibrated to the academic context the user provides; if no context is supplied, choose a balanced elementary-level set.
 
 CONTENT RULES:
 - Each question has EXACTLY 4 answers labeled A, B, C, D.
@@ -39,7 +42,7 @@ SCHEMA:
 
 const systemReinforceEN = `You are a math quiz generator for Vietnamese primary-school students (Grades 1-5).
 
-You will be given the student's previous quiz, their answers, and an AI review of their performance. Generate a NEW quiz of EXACTLY 5 multiple-choice questions that reinforces the topics the student got wrong or struggled with, while keeping the difficulty appropriate for their grade, semester, and curriculum.
+You will be given the student's previous quiz, their answers, and an AI review of their performance. Generate a NEW quiz of EXACTLY 5 multiple-choice questions that reinforces the topics the student got wrong or struggled with. Use any academic context the user supplies; if none is supplied, fall back to a balanced elementary-level set.
 
 CONTENT RULES:
 - Each question has EXACTLY 4 answers labeled A, B, C, D; exactly one correct.
@@ -156,30 +159,39 @@ SCHEMA:
 `
 
 func userGenerateEN(typ QuizType, in QuizPromptInput) string {
-	guidance := "Calibrate difficulty to the grade and semester."
+	guidance := "Calibrate difficulty using the context above where provided; otherwise pick a balanced elementary-level set."
 	if typ == QuizTypePractice {
-		guidance = "Calibrate difficulty to the semester checkpoint; this is a routine practice round."
+		guidance = "Calibrate difficulty to the semester checkpoint when available; otherwise pick a balanced elementary-level practice set."
 	}
-	return fmt.Sprintf(`Generate a %s quiz for this student context:
-- Grade: %s
-- Semester: %s
-- Curriculum: %s
-
-%s`, typ, in.Grade, in.Semester, in.Program, guidance)
+	context := buildCurriculumContextEN(in)
+	if context == "" {
+		return fmt.Sprintf("Generate a %s quiz.\n\nNo specific academic context was provided — use a balanced Vietnamese elementary-level (Grades 1-5) set.\n\n%s", typ, guidance)
+	}
+	return fmt.Sprintf("Generate a %s quiz for this student context:\n%s\n\n%s", typ, context, guidance)
 }
 
 func userReinforceEN(typ QuizType, in QuizPromptInput) string {
-	return fmt.Sprintf(`Generate a %s reinforce quiz for this student context:
-- Grade: %s
-- Semester: %s
-- Curriculum: %s
+	closing := "Target the weak spots from the previous review while keeping difficulty appropriate to the context above; if no context was supplied, fall back to a balanced elementary-level set."
+	context := buildCurriculumContextEN(in)
+	if context == "" {
+		return fmt.Sprintf(`Generate a %s reinforce quiz.
+
+No specific academic context was provided — use a balanced Vietnamese elementary-level (Grades 1-5) set.
 
 Previous quiz questions (JSON): %s
 Student's previous answers (JSON): %s
 AI review of previous performance: %s
 
-Target the weak spots from the previous review while keeping difficulty appropriate for the configured grade and semester.`, typ, in.Grade, in.Semester, in.Program,
-		in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview)
+%s`, typ, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+	}
+	return fmt.Sprintf(`Generate a %s reinforce quiz for this student context:
+%s
+
+Previous quiz questions (JSON): %s
+Student's previous answers (JSON): %s
+AI review of previous performance: %s
+
+%s`, typ, context, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
 }
 
 func userGradeEN(typ QuizType, in QuizPromptInput) string {
@@ -190,9 +202,30 @@ Student's answers (JSON): %s`, typ, in.Questions, in.Answers)
 }
 
 func userGradeReinforceEN(typ QuizType, in QuizPromptInput) string {
+	currentGrade := strings.TrimSpace(in.CurrentGrade)
+	if currentGrade == "" {
+		currentGrade = "unknown (no grade configured)"
+	}
 	return fmt.Sprintf(`Grade this reinforce %s quiz.
 
 Quiz questions (JSON): %s
 Student's answers (JSON): %s
-Student's currently configured grade: %s`, typ, in.Questions, in.Answers, in.CurrentGrade)
+Student's currently configured grade: %s`, typ, in.Questions, in.Answers, currentGrade)
+}
+
+// buildCurriculumContextEN renders only the curriculum lines whose value
+// is non-empty. Returns "" when nothing was supplied so the caller can
+// fall back to a context-free prompt.
+func buildCurriculumContextEN(in QuizPromptInput) string {
+	var b strings.Builder
+	if v := strings.TrimSpace(in.Grade); v != "" {
+		fmt.Fprintf(&b, "- Grade: %s\n", v)
+	}
+	if v := strings.TrimSpace(in.Semester); v != "" {
+		fmt.Fprintf(&b, "- Semester: %s\n", v)
+	}
+	if v := strings.TrimSpace(in.Program); v != "" {
+		fmt.Fprintf(&b, "- Curriculum: %s\n", v)
+	}
+	return strings.TrimRight(b.String(), "\n")
 }

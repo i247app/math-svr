@@ -62,10 +62,24 @@ type QuizResponse struct {
 	ModifyDt       string              `json:"modify_dt"`
 }
 
+// GenerateQuizReq carries the quiz-generation request. Academic context
+// (ProgramLabel / GradeLabel / SemesterLabel) is optional at every layer:
+//   - if provided here, request values OVERRIDE the labels resolved from
+//     the profile;
+//   - if omitted, the service FALLS BACK to the profile's curriculum;
+//   - if neither has them, the bot prompt adapts and still generates a
+//     reasonable elementary-level quiz.
+//
+// Labels (not IDs) are accepted so the client can supply ad-hoc context
+// like "Grade 2 fractions review" without needing a curriculum row, and
+// so the service does not have to do an extra round-trip to translate.
 type GenerateQuizReq struct {
 	ProfileID      uuid.UUID         `json:"profile_id"`
 	Type           string            `json:"type"`
 	Language       enum.LanguageType `json:"language,omitempty"`
+	ProgramLabel   string            `json:"program_label,omitempty"`
+	GradeLabel     string            `json:"grade_label,omitempty"`
+	SemesterLabel  string            `json:"semester_label,omitempty"`
 	PreviousQuizID *uuid.UUID        `json:"previous_quiz_id,omitempty"`
 }
 

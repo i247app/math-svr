@@ -1,6 +1,9 @@
 package bot
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Vietnamese prompt templates. ai_review is emitted in Vietnamese; all
 // JSON keys remain English so persistence and grading code can use a
@@ -8,7 +11,7 @@ import "fmt"
 
 const systemGenerateVN = `Bạn là trợ lý tạo bài kiểm tra toán cho học sinh tiểu học Việt Nam (Lớp 1-5).
 
-Hãy tạo CHÍNH XÁC 5 câu hỏi trắc nghiệm phù hợp với lớp, học kỳ và chương trình học được yêu cầu.
+Hãy tạo CHÍNH XÁC 5 câu hỏi trắc nghiệm phù hợp với thông tin học vấn người dùng cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học.
 
 QUY TẮC NỘI DUNG:
 - Mỗi câu có ĐÚNG 4 phương án A, B, C, D.
@@ -39,7 +42,7 @@ CẤU TRÚC:
 
 const systemReinforceVN = `Bạn là trợ lý tạo bài kiểm tra toán cho học sinh tiểu học Việt Nam (Lớp 1-5).
 
-Bạn sẽ nhận được bài kiểm tra trước, câu trả lời của học sinh và nhận xét AI về kết quả đó. Hãy tạo MỘT bài kiểm tra MỚI gồm ĐÚNG 5 câu trắc nghiệm tập trung vào các dạng bài học sinh làm sai hoặc còn yếu, đồng thời giữ độ khó phù hợp với lớp, học kỳ và chương trình.
+Bạn sẽ nhận được bài kiểm tra trước, câu trả lời của học sinh và nhận xét AI về kết quả đó. Hãy tạo MỘT bài kiểm tra MỚI gồm ĐÚNG 5 câu trắc nghiệm tập trung vào các dạng bài học sinh làm sai hoặc còn yếu. Dùng thông tin học vấn người dùng cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học.
 
 QUY TẮC NỘI DUNG:
 - Mỗi câu có ĐÚNG 4 phương án A, B, C, D; chỉ một đáp án đúng.
@@ -156,30 +159,39 @@ CẤU TRÚC:
 `
 
 func userGenerateVN(typ QuizType, in QuizPromptInput) string {
-	guidance := "Điều chỉnh độ khó phù hợp với lớp và học kỳ."
+	guidance := "Điều chỉnh độ khó theo thông tin đã cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học."
 	if typ == QuizTypePractice {
-		guidance = "Điều chỉnh độ khó theo mốc học kỳ; đây là vòng luyện tập thông thường."
+		guidance = "Điều chỉnh độ khó theo mốc học kỳ khi có; nếu không, hãy chọn bộ luyện tập cân bằng ở trình độ tiểu học."
 	}
-	return fmt.Sprintf(`Hãy tạo bài kiểm tra %s cho học sinh với thông tin sau:
-- Lớp: %s
-- Học kỳ: %s
-- Chương trình học: %s
-
-%s`, typ, in.Grade, in.Semester, in.Program, guidance)
+	context := buildCurriculumContextVN(in)
+	if context == "" {
+		return fmt.Sprintf("Hãy tạo bài kiểm tra %s.\n\nKhông có thông tin học vấn cụ thể — hãy dùng bộ câu hỏi toán cân bằng cho học sinh tiểu học Việt Nam (Lớp 1-5).\n\n%s", typ, guidance)
+	}
+	return fmt.Sprintf("Hãy tạo bài kiểm tra %s cho học sinh với thông tin sau:\n%s\n\n%s", typ, context, guidance)
 }
 
 func userReinforceVN(typ QuizType, in QuizPromptInput) string {
-	return fmt.Sprintf(`Hãy tạo bài kiểm tra %s củng cố cho học sinh với thông tin sau:
-- Lớp: %s
-- Học kỳ: %s
-- Chương trình học: %s
+	closing := "Tập trung vào điểm yếu trong nhận xét trước, đồng thời giữ độ khó phù hợp với thông tin nêu trên; nếu không có thông tin, dùng mức cân bằng cho học sinh tiểu học."
+	context := buildCurriculumContextVN(in)
+	if context == "" {
+		return fmt.Sprintf(`Hãy tạo bài kiểm tra %s củng cố.
+
+Không có thông tin học vấn cụ thể — hãy dùng bộ câu hỏi toán cân bằng cho học sinh tiểu học Việt Nam (Lớp 1-5).
 
 Câu hỏi bài trước (JSON): %s
 Câu trả lời của học sinh (JSON): %s
 Nhận xét AI về kết quả trước: %s
 
-Tập trung vào điểm yếu trong nhận xét trước, đồng thời giữ độ khó phù hợp với lớp và học kỳ đang cấu hình.`, typ, in.Grade, in.Semester, in.Program,
-		in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview)
+%s`, typ, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+	}
+	return fmt.Sprintf(`Hãy tạo bài kiểm tra %s củng cố cho học sinh với thông tin sau:
+%s
+
+Câu hỏi bài trước (JSON): %s
+Câu trả lời của học sinh (JSON): %s
+Nhận xét AI về kết quả trước: %s
+
+%s`, typ, context, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
 }
 
 func userGradeVN(typ QuizType, in QuizPromptInput) string {
@@ -190,9 +202,29 @@ Câu trả lời của học sinh (JSON): %s`, typ, in.Questions, in.Answers)
 }
 
 func userGradeReinforceVN(typ QuizType, in QuizPromptInput) string {
+	currentGrade := strings.TrimSpace(in.CurrentGrade)
+	if currentGrade == "" {
+		currentGrade = "chưa xác định (không có cấp lớp được cấu hình)"
+	}
 	return fmt.Sprintf(`Hãy chấm bài kiểm tra %s củng cố sau đây.
 
 Câu hỏi (JSON): %s
 Câu trả lời của học sinh (JSON): %s
-Cấp lớp đang được cấu hình: %s`, typ, in.Questions, in.Answers, in.CurrentGrade)
+Cấp lớp đang được cấu hình: %s`, typ, in.Questions, in.Answers, currentGrade)
+}
+
+// buildCurriculumContextVN mirrors the EN helper: emits only the lines
+// whose value is non-empty, returns "" when nothing was provided.
+func buildCurriculumContextVN(in QuizPromptInput) string {
+	var b strings.Builder
+	if v := strings.TrimSpace(in.Grade); v != "" {
+		fmt.Fprintf(&b, "- Lớp: %s\n", v)
+	}
+	if v := strings.TrimSpace(in.Semester); v != "" {
+		fmt.Fprintf(&b, "- Học kỳ: %s\n", v)
+	}
+	if v := strings.TrimSpace(in.Program); v != "" {
+		fmt.Fprintf(&b, "- Chương trình học: %s\n", v)
+	}
+	return strings.TrimRight(b.String(), "\n")
 }

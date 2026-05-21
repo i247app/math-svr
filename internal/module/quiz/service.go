@@ -89,23 +89,17 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 			errors.New("profile not found"))
 	}
 
-	// if profile.ProgramId() == nil || profile.GradeId() == nil || profile.SemesterId() == nil {
-	// 	return nil, errs.NewError(ctx, status.QUIZ_PROFILE_NOT_CONFIGURED, nil,
-	// 		errors.New("profile must have program, grade, and semester before generating a quiz"))
+	// cc, err := s.resolveCurriculumContext(ctx, req, profile)
+	// if err != nil {
+	// 	return nil, err
 	// }
 
-	gradeLabel, semesterLabel, programLabel, err := s.resolveCurriculumLabels(ctx,
-		profile.ProgramId(), profile.GradeId(), profile.SemesterId(), req.Language)
-	if err != nil {
-		return nil, err
-	}
-
 	genIn := generateQuizInput{
-		Language:      req.Language,
-		QuizType:      quizType,
-		GradeLabel:    gradeLabel,
-		SemesterLabel: semesterLabel,
-		ProgramLabel:  programLabel,
+		Language: req.Language,
+		QuizType: quizType,
+		// GradeLabel:    cc.GradeLabel,
+		// SemesterLabel: cc.SemesterLabel,
+		// ProgramLabel:  cc.ProgramLabel,
 	}
 
 	if req.PreviousQuizID != nil {

@@ -90,13 +90,17 @@ func BuildQuizPrompt(purpose QuizPurpose, in QuizPromptInput) (system string, us
 
 	switch purpose {
 	case QuizPurposeGenerate:
-		if err := requireFields(in.Grade, "Grade", in.Semester, "Semester", in.Program, "Program"); err != nil {
-			return "", "", err
-		}
+		// Curriculum context (Grade/Semester/Program) is OPTIONAL. The
+		// user prompt adapts to render only the lines that are populated,
+		// so the model still gets a coherent brief on partial / empty
+		// context.
 		return buildGeneratePrompt(lang, typ, in), buildGenerateUser(lang, typ, in), nil
 	case QuizPurposeReinforce:
-		if err := requireFields(in.Grade, "Grade", in.Semester, "Semester", in.Program, "Program",
-			in.PreviousQuestions, "PreviousQuestions", in.PreviousAnswers, "PreviousAnswers",
+		// Previous-round payloads are required (otherwise the bot can't
+		// know what to reinforce); curriculum context stays optional.
+		if err := requireFields(
+			in.PreviousQuestions, "PreviousQuestions",
+			in.PreviousAnswers, "PreviousAnswers",
 			in.PreviousAIReview, "PreviousAIReview"); err != nil {
 			return "", "", err
 		}
@@ -107,8 +111,9 @@ func BuildQuizPrompt(purpose QuizPurpose, in QuizPromptInput) (system string, us
 		}
 		return buildGradePrompt(lang, typ), buildGradeUser(lang, typ, in), nil
 	case QuizPurposeGradeReinforce:
-		if err := requireFields(in.Questions, "Questions", in.Answers, "Answers",
-			in.CurrentGrade, "CurrentGrade"); err != nil {
+		// CurrentGrade is optional — when unknown, the grading prompt
+		// falls back to "unknown" so the model still produces a result.
+		if err := requireFields(in.Questions, "Questions", in.Answers, "Answers"); err != nil {
 			return "", "", err
 		}
 		return buildGradeReinforcePrompt(lang, typ), buildGradeReinforceUser(lang, typ, in), nil
