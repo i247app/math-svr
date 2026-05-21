@@ -39,9 +39,11 @@ func validateQuizType(ctx context.Context, t string) (enum.QuizType, error) {
 }
 
 func ValidateGenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (enum.QuizType, error) {
-	if req.ProfileID == uuid.Nil {
-		return "", errs.NewError(ctx, status.QUIZ_MISSING_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+	// profile_id is optional — an anonymous quiz (no owner) is valid.
+	// When supplied as the zero UUID we treat it as "not sent" rather
+	// than erroring, so JSON encoders that emit "0000…" survive.
+	if req.ProfileID != nil && *req.ProfileID == uuid.Nil {
+		req.ProfileID = nil
 	}
 	if err := validateLanguage(ctx, req.Language); err != nil {
 		return "", err

@@ -52,6 +52,7 @@ type generateQuizInput struct {
 }
 
 func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) ([]quizDto.QuizQuestion, error) {
+	log := logger.From(ctx)
 	if c.adapter == nil {
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil,
 			errors.New("quiz: bot adapter is not configured"))
@@ -75,6 +76,8 @@ func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) ([]q
 	if err != nil {
 		return nil, errs.NewError(ctx, status.QUIZ_GENERATION_FAILED, nil, err)
 	}
+
+	log.Infof("PROMPT: system=%s user=%s", system, user)
 
 	res, err := c.adapter.Chat(ctx, botAdapter.ChatRequest{
 		Messages: []botAdapter.Message{

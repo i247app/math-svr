@@ -16,9 +16,13 @@ import (
 // (which is the expensive bot call) happens BEFORE this command — the
 // command is a thin DB write so the transaction is short and the bot
 // I/O doesn't hold a tx open.
+//
+// UserID and ProfileID are optional: an anonymous / profile-less quiz
+// is persisted with both columns NULL and is only reachable via its
+// quiz_id thereafter.
 type CreateQuizCommand struct {
-	UserID         uuid.UUID
-	ProfileID      uuid.UUID
+	UserID         *uuid.UUID
+	ProfileID      *uuid.UUID
 	QuizType       enum.QuizType
 	QuestionsJSON  string
 	PreviousQuizID *uuid.UUID

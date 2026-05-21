@@ -89,8 +89,8 @@ func (a *Adapter) ChatVia(ctx context.Context, name BotProviderName, req ChatReq
 	if err != nil {
 		return nil, logAndReturn(ctx, log, name, "chat", err)
 	}
-	log.Infof("bot.chat provider=%s model=%s prompt_tokens=%d completion_tokens=%d",
-		name, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens)
+	log.Infof("bot.chat provider=%s model=%s prompt_tokens=%d completion_tokens=%d total_tokens=%d",
+		name, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
 	return res, nil
 }
 

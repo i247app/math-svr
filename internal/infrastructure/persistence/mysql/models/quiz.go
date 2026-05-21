@@ -9,8 +9,8 @@ import (
 type QuizModel struct {
 	Id              int64
 	QuizId          uuid.UUID
-	UserId          uuid.UUID
-	ProfileId       uuid.UUID
+	UserId          *uuid.UUID
+	ProfileId       *uuid.UUID
 	QuizType        string
 	Questions       *string
 	Answers         *string

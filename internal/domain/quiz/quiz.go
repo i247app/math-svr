@@ -20,8 +20,12 @@ import (
 type Quiz struct {
 	id              int64
 	quizId          uuid.UUID
-	userId          uuid.UUID
-	profileId       uuid.UUID
+	// userId and profileId are nullable: the client may generate a quiz
+	// without a profile (and therefore without a user owner). When that
+	// happens both pointers are nil and the quiz is only reachable by
+	// its quiz_id.
+	userId          *uuid.UUID
+	profileId       *uuid.UUID
 	quizType        string
 	questions       *string
 	answers         *string
@@ -48,10 +52,10 @@ func (q *Quiz) Id() int64                     { return q.id }
 func (q *Quiz) SetId(id int64)                { q.id = id }
 func (q *Quiz) QuizId() uuid.UUID             { return q.quizId }
 func (q *Quiz) SetQuizId(id uuid.UUID)        { q.quizId = id }
-func (q *Quiz) UserId() uuid.UUID             { return q.userId }
-func (q *Quiz) SetUserId(id uuid.UUID)        { q.userId = id }
-func (q *Quiz) ProfileId() uuid.UUID          { return q.profileId }
-func (q *Quiz) SetProfileId(id uuid.UUID)     { q.profileId = id }
+func (q *Quiz) UserId() *uuid.UUID            { return q.userId }
+func (q *Quiz) SetUserId(id *uuid.UUID)       { q.userId = id }
+func (q *Quiz) ProfileId() *uuid.UUID         { return q.profileId }
+func (q *Quiz) SetProfileId(id *uuid.UUID)    { q.profileId = id }
 func (q *Quiz) QuizType() string              { return q.quizType }
 func (q *Quiz) SetQuizType(t string)          { q.quizType = t }
 func (q *Quiz) Questions() *string            { return q.questions }

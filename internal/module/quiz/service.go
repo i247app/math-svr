@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
@@ -80,26 +81,33 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		return nil, err
 	}
 
-	profile, err := s.profileRepo.FindByProfileId(ctx, req.ProfileID)
-	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, err)
-	}
-	if profile == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile not found"))
+	// profile_id is optional. When supplied we must find the row (an
+	// explicit profile_id pointing nowhere is a client error). When
+	// absent, profile stays nil and the quiz is generated anonymously.
+	var profile *profileDomain.Profile
+	if req.ProfileID != nil {
+		p, err := s.profileRepo.FindByProfileId(ctx, *req.ProfileID)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if p == nil {
+			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+				errors.New("profile not found"))
+		}
+		profile = p
 	}
 
-	// cc, err := s.resolveCurriculumContext(ctx, req, profile)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	cc, err := s.resolveCurriculumContext(ctx, req, profile)
+	if err != nil {
+		return nil, err
+	}
 
 	genIn := generateQuizInput{
-		Language: req.Language,
-		QuizType: quizType,
-		// GradeLabel:    cc.GradeLabel,
-		// SemesterLabel: cc.SemesterLabel,
-		// ProgramLabel:  cc.ProgramLabel,
+		Language:      req.Language,
+		QuizType:      quizType,
+		GradeLabel:    cc.GradeLabel,
+		SemesterLabel: cc.SemesterLabel,
+		ProgramLabel:  cc.ProgramLabel,
 	}
 
 	if req.PreviousQuizID != nil {
@@ -115,7 +123,10 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 			return nil, errs.NewError(ctx, status.QUIZ_PREVIOUS_NOT_GRADED, nil,
 				errors.New("previous quiz must be submitted before generating a reinforce round"))
 		}
-		if prev.ProfileId() != profile.ProfileId() {
+		// Ownership check only applies when both sides have a profile.
+		// An anonymous reinforce round (or a reinforce off an anonymous
+		// previous quiz) is allowed — they share no owner to mismatch.
+		if profile != nil && prev.ProfileId() != nil && *prev.ProfileId() != profile.ProfileId() {
 			return nil, errs.NewError(ctx, status.QUIZ_NOT_OWNED, nil,
 				errors.New("previous quiz does not belong to this profile"))
 		}
@@ -135,9 +146,19 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 			fmt.Errorf("quiz: marshal questions: %w", err))
 	}
 
+	log.Infof("questionsJSON: %s", string(questionsJSON))
+
+	// Owner fields are NULL for anonymous quizzes (no profile supplied).
+	var ownerUserID, ownerProfileID *uuid.UUID
+	if profile != nil {
+		uid := profile.UserId()
+		pid := profile.ProfileId()
+		ownerUserID = &uid
+		ownerProfileID = &pid
+	}
 	created, err := s.createQuizCmd.Handle(ctx, command.CreateQuizCommand{
-		UserID:         profile.UserId(),
-		ProfileID:      profile.ProfileId(),
+		UserID:         ownerUserID,
+		ProfileID:      ownerProfileID,
 		QuizType:       quizType,
 		QuestionsJSON:  string(questionsJSON),
 		PreviousQuizID: req.PreviousQuizID,
@@ -200,8 +221,10 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 		IsReinforce: existing.PreviousQuizId() != nil,
 	}
 
-	if gradeIn.IsReinforce {
-		currentLabel, err := s.resolveCurrentGradeLabel(ctx, existing.ProfileId(), req.Language)
+	if gradeIn.IsReinforce && existing.ProfileId() != nil {
+		// Anonymous reinforce rounds have no profile to look up; the
+		// prompt's "current grade: unknown" branch handles that case.
+		currentLabel, err := s.resolveCurrentGradeLabel(ctx, *existing.ProfileId(), req.Language)
 		if err != nil {
 			return nil, err
 		}
@@ -313,56 +336,81 @@ func (s *Service) SoftDeleteQuiz(ctx context.Context, req *dto.DeleteQuizReq) (*
 	return &dto.DeleteQuizRes{}, nil
 }
 
-// resolveCurriculumLabels fetches the program / grade / semester names
-// in the requested language, in three batched IN-queries. Falls back to
-// Vietnamese when language is empty (matches the project default).
-func (s *Service) resolveCurriculumLabels(ctx context.Context,
-	programID, gradeID, semesterID *uuid.UUID, lang enum.LanguageType) (gradeLabel, semesterLabel, programLabel string, err error) {
+// curriculumContext is the resolved (request-or-profile-or-empty) view
+// of the academic fields the bot prompt may render. Any field can be
+// blank — the prompt template renders only the lines whose value is
+// non-empty so a partial or absent context still produces a valid quiz.
+type curriculumContext struct {
+	ProgramLabel  string
+	GradeLabel    string
+	SemesterLabel string
+}
 
+// resolveCurriculumContext is the single source of truth for the
+// request → profile → empty priority chain. Modules and ad-hoc callers
+// should use this rather than rolling their own override/fallback
+// dance.
+//
+//   - Labels passed on req take precedence as-is (no DB roundtrip).
+//   - Anything still missing is filled from the profile's curriculum
+//     IDs via batched IN-queries against the existing repos.
+//   - Anything still missing stays empty; the prompt builder adapts.
+//
+// No hardcoded education-system defaults are introduced here — that's a
+// deliberate constraint so the same resolver works for any future
+// curriculum or non-VN deployment.
+func (s *Service) resolveCurriculumContext(ctx context.Context,
+	req *dto.GenerateQuizReq, profile *profileDomain.Profile) (curriculumContext, error) {
+
+	cc := curriculumContext{
+		ProgramLabel:  strings.TrimSpace(req.ProgramLabel),
+		GradeLabel:    strings.TrimSpace(req.GradeLabel),
+		SemesterLabel: strings.TrimSpace(req.SemesterLabel),
+	}
+
+	if profile == nil {
+		return cc, nil
+	}
+
+	lang := req.Language
 	if lang == "" {
 		lang = enum.LanguageTypeVietnamese
 	}
 
-	if programID == nil {
-		programLabel = "Cánh diều"
-	} else {
-		programs, err := s.programRepo.ListProgramsByIds(ctx, []uuid.UUID{*programID}, lang)
+	if cc.ProgramLabel == "" && profile.ProgramId() != nil {
+		programs, err := s.programRepo.ListProgramsByIds(ctx, []uuid.UUID{*profile.ProgramId()}, lang)
 		if err != nil {
-			return "", "", "", errs.NewError(ctx, status.FAIL, nil, err)
+			return cc, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if len(programs) > 0 {
-			programLabel = programs[0].Label()
+			cc.ProgramLabel = programs[0].Label()
 		}
 	}
-
-	if gradeID == nil {
-		gradeLabel = "Lớp 1"
-	} else {
-		grades, err := s.gradeRepo.ListGradesByIds(ctx, []uuid.UUID{*gradeID}, lang)
+	if cc.GradeLabel == "" && profile.GradeId() != nil {
+		grades, err := s.gradeRepo.ListGradesByIds(ctx, []uuid.UUID{*profile.GradeId()}, lang)
 		if err != nil {
-			return "", "", "", errs.NewError(ctx, status.FAIL, nil, err)
+			return cc, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if len(grades) > 0 {
-			gradeLabel = grades[0].Label()
-		}
-
-		if semesterID == nil {
-			semesterLabel = "Học kỳ 1"
-		} else {
-			semesters, err := s.semesterRepo.ListSemestersByIds(ctx, []uuid.UUID{*semesterID}, lang)
-			if err != nil {
-				return "", "", "", errs.NewError(ctx, status.FAIL, nil, err)
-			}
-			if len(semesters) > 0 {
-				semesterLabel = semesters[0].Name()
-			}
+			cc.GradeLabel = grades[0].Label()
 		}
 	}
-	return gradeLabel, semesterLabel, programLabel, nil
+	if cc.SemesterLabel == "" && profile.SemesterId() != nil {
+		semesters, err := s.semesterRepo.ListSemestersByIds(ctx, []uuid.UUID{*profile.SemesterId()}, lang)
+		if err != nil {
+			return cc, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if len(semesters) > 0 {
+			cc.SemesterLabel = semesters[0].Name()
+		}
+	}
+	return cc, nil
 }
 
 // resolveCurrentGradeLabel fetches just the grade label for the profile —
-// used by reinforce grading where only the current grade is needed.
+// used by reinforce grading where only the current grade matters. Returns
+// "" when the profile has no grade configured; the grade prompt handles
+// the "unknown" case gracefully.
 func (s *Service) resolveCurrentGradeLabel(ctx context.Context, profileID uuid.UUID, lang enum.LanguageType) (string, error) {
 	profile, err := s.profileRepo.FindByProfileId(ctx, profileID)
 	if err != nil {
