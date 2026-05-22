@@ -9,9 +9,12 @@ import (
 // are always English regardless of QuizLanguage — only ai_review and
 // the user-facing parts of system text switch language.
 
-const systemGenerateEN = `You are a math quiz generator for Vietnamese primary-school students (Grades 1-5).
+// systemGenerateENTmpl carries three %d placeholders: target count,
+// expected array length, and the upper bound of the question_number
+// range. All three are filled with the same value by buildSystemGenerateEN.
+const systemGenerateENTmpl = `You are a math quiz generator for Vietnamese primary-school students (Grades 1-5).
 
-Generate EXACTLY 5 multiple-choice questions calibrated to the academic context the user provides; if no context is supplied, choose a balanced elementary-level set.
+Generate EXACTLY %d multiple-choice questions calibrated to the academic context the user provides; if no context is supplied, choose a balanced elementary-level set.
 
 CONTENT RULES:
 - Each question has EXACTLY 4 answers labeled A, B, C, D.
@@ -22,7 +25,7 @@ CONTENT RULES:
 
 OUTPUT RULES:
 - Return ONLY a JSON array matching the schema below. No prose, no markdown fences, no trailing commentary.
-- The array MUST have exactly 5 items, "question_number" 1..5 in order.
+- The array MUST have exactly %d items, "question_number" 1..%d in order.
 
 SCHEMA:
 [
@@ -40,9 +43,9 @@ SCHEMA:
 ]
 `
 
-const systemReinforceEN = `You are a math quiz generator for Vietnamese primary-school students (Grades 1-5).
+const systemReinforceENTmpl = `You are a math quiz generator for Vietnamese primary-school students (Grades 1-5).
 
-You will be given the student's previous quiz, their answers, and an AI review of their performance. Generate a NEW quiz of EXACTLY 5 multiple-choice questions that reinforces the topics the student got wrong or struggled with. Use any academic context the user supplies; if none is supplied, fall back to a balanced elementary-level set.
+You will be given the student's previous quiz, their answers, and an AI review of their performance. Generate a NEW quiz of EXACTLY %d multiple-choice questions that reinforces the topics the student got wrong or struggled with. Use any academic context the user supplies; if none is supplied, fall back to a balanced elementary-level set.
 
 CONTENT RULES:
 - Each question has EXACTLY 4 answers labeled A, B, C, D; exactly one correct.
@@ -52,7 +55,7 @@ CONTENT RULES:
 
 OUTPUT RULES:
 - Return ONLY a JSON array matching the schema below. No prose, no markdown fences.
-- The array MUST have exactly 5 items, "question_number" 1..5 in order.
+- The array MUST have exactly %d items, "question_number" 1..%d in order.
 
 SCHEMA:
 [
@@ -69,6 +72,14 @@ SCHEMA:
   }
 ]
 `
+
+func buildSystemGenerateEN(n int) string {
+	return fmt.Sprintf(systemGenerateENTmpl, n, n, n)
+}
+
+func buildSystemReinforceEN(n int) string {
+	return fmt.Sprintf(systemReinforceENTmpl, n, n, n)
+}
 
 const systemGradeAssessmentEN = `You are a math quiz grading assistant for Vietnamese primary-school students.
 
@@ -187,9 +198,9 @@ AI review of previous performance: %s
 	return fmt.Sprintf(`Generate a %s reinforce quiz for this student context:
 %s
 
-Previous quiz questions (JSON): %s
-Student's previous answers (JSON): %s
-AI review of previous performance: %s
+- Previous quiz questions (JSON): %s
+- Student's previous answers (JSON): %s
+- AI review of previous performance: %s
 
 %s`, typ, context, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
 }
@@ -197,8 +208,8 @@ AI review of previous performance: %s
 func userGradeEN(typ QuizType, in QuizPromptInput) string {
 	return fmt.Sprintf(`Grade this %s quiz.
 
-Quiz questions (JSON): %s
-Student's answers (JSON): %s`, typ, in.Questions, in.Answers)
+- Quiz questions (JSON): %s
+- Student's answers (JSON): %s`, typ, in.Questions, in.Answers)
 }
 
 func userGradeReinforceEN(typ QuizType, in QuizPromptInput) string {
@@ -208,9 +219,9 @@ func userGradeReinforceEN(typ QuizType, in QuizPromptInput) string {
 	}
 	return fmt.Sprintf(`Grade this reinforce %s quiz.
 
-Quiz questions (JSON): %s
-Student's answers (JSON): %s
-Student's currently configured grade: %s`, typ, in.Questions, in.Answers, currentGrade)
+- Quiz questions (JSON): %s
+- Student's answers (JSON): %s
+- Student's currently configured grade: %s`, typ, in.Questions, in.Answers, currentGrade)
 }
 
 // buildCurriculumContextEN renders only the curriculum lines whose value

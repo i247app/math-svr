@@ -9,9 +9,11 @@ import (
 // JSON keys remain English so persistence and grading code can use a
 // single struct shape regardless of QuizLanguage.
 
-const systemGenerateVN = `Bạn là trợ lý tạo bài kiểm tra toán cho học sinh tiểu học Việt Nam (Lớp 1-5).
+// systemGenerateVNTmpl mirrors the EN template: three %d slots all
+// filled with the same target question count.
+const systemGenerateVNTmpl = `Bạn là trợ lý tạo bài kiểm tra toán cho học sinh tiểu học Việt Nam (Lớp 1-5).
 
-Hãy tạo CHÍNH XÁC 5 câu hỏi trắc nghiệm phù hợp với thông tin học vấn người dùng cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học.
+Hãy tạo CHÍNH XÁC %d câu hỏi trắc nghiệm phù hợp với thông tin học vấn người dùng cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học.
 
 QUY TẮC NỘI DUNG:
 - Mỗi câu có ĐÚNG 4 phương án A, B, C, D.
@@ -22,7 +24,7 @@ QUY TẮC NỘI DUNG:
 
 QUY TẮC ĐẦU RA:
 - CHỈ trả về JSON array theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không bình luận thêm.
-- Mảng phải có đúng 5 phần tử, "question_number" từ 1..5 theo thứ tự.
+- Mảng phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
 
 CẤU TRÚC:
 [
@@ -40,9 +42,9 @@ CẤU TRÚC:
 ]
 `
 
-const systemReinforceVN = `Bạn là trợ lý tạo bài kiểm tra toán cho học sinh tiểu học Việt Nam (Lớp 1-5).
+const systemReinforceVNTmpl = `Bạn là trợ lý tạo bài kiểm tra toán cho học sinh tiểu học Việt Nam (Lớp 1-5).
 
-Bạn sẽ nhận được bài kiểm tra trước, câu trả lời của học sinh và nhận xét AI về kết quả đó. Hãy tạo MỘT bài kiểm tra MỚI gồm ĐÚNG 5 câu trắc nghiệm tập trung vào các dạng bài học sinh làm sai hoặc còn yếu. Dùng thông tin học vấn người dùng cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học.
+Bạn sẽ nhận được bài kiểm tra trước, câu trả lời của học sinh và nhận xét AI về kết quả đó. Hãy tạo MỘT bài kiểm tra MỚI gồm ĐÚNG %d câu trắc nghiệm tập trung vào các dạng bài học sinh làm sai hoặc còn yếu. Dùng thông tin học vấn người dùng cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học.
 
 QUY TẮC NỘI DUNG:
 - Mỗi câu có ĐÚNG 4 phương án A, B, C, D; chỉ một đáp án đúng.
@@ -52,7 +54,7 @@ QUY TẮC NỘI DUNG:
 
 QUY TẮC ĐẦU RA:
 - CHỈ trả về JSON array theo cấu trúc bên dưới. Không lời dẫn, không khung markdown.
-- Mảng phải có đúng 5 phần tử, "question_number" từ 1..5 theo thứ tự.
+- Mảng phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
 
 CẤU TRÚC:
 [
@@ -69,6 +71,14 @@ CẤU TRÚC:
   }
 ]
 `
+
+func buildSystemGenerateVN(n int) string {
+	return fmt.Sprintf(systemGenerateVNTmpl, n, n, n)
+}
+
+func buildSystemReinforceVN(n int) string {
+	return fmt.Sprintf(systemReinforceVNTmpl, n, n, n)
+}
 
 const systemGradeAssessmentVN = `Bạn là trợ lý chấm điểm bài kiểm tra toán cho học sinh tiểu học Việt Nam.
 

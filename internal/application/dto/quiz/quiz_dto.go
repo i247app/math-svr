@@ -85,6 +85,7 @@ type GenerateQuizReq struct {
 	ProgramLabel   string            `json:"program_label,omitempty"`
 	GradeLabel     string            `json:"grade_label,omitempty"`
 	SemesterLabel  string            `json:"semester_label,omitempty"`
+	NumQuestions   int               `json:"num_questions,omitempty"`
 	PreviousQuizID *uuid.UUID        `json:"previous_quiz_id,omitempty"`
 }
 

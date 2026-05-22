@@ -60,6 +60,11 @@ type QuizPromptInput struct {
 	Semester string
 	Program  string
 
+	// NumQuestions controls how many MCQ items Generate / Reinforce ask
+	// for. Zero or negative falls back to defaultNumQuestions inside the
+	// template builder so callers don't have to defend every entry point.
+	NumQuestions int
+
 	// Previous-round payloads — required for Reinforce.
 	PreviousQuestions string
 	PreviousAnswers   string
@@ -161,11 +166,26 @@ func requireFields(pairs ...string) error {
 	return nil
 }
 
-func buildGeneratePrompt(lang QuizLanguage, _ QuizType, _ QuizPromptInput) string {
-	if lang == QuizLanguageEnglish {
-		return systemGenerateEN
+// defaultNumQuestions is the fallback used when callers leave
+// QuizPromptInput.NumQuestions at zero. Kept in sync with the
+// module/quiz validator's DefaultNumQuestions (5), but duplicated here
+// so the domain prompt builder remains usable without going through the
+// module-layer validator.
+const defaultNumQuestions = 5
+
+func resolveNumQuestions(n int) int {
+	if n <= 0 {
+		return defaultNumQuestions
 	}
-	return systemGenerateVN
+	return n
+}
+
+func buildGeneratePrompt(lang QuizLanguage, _ QuizType, in QuizPromptInput) string {
+	n := resolveNumQuestions(in.NumQuestions)
+	if lang == QuizLanguageEnglish {
+		return buildSystemGenerateEN(n)
+	}
+	return buildSystemGenerateVN(n)
 }
 
 func buildGenerateUser(lang QuizLanguage, typ QuizType, in QuizPromptInput) string {
@@ -175,11 +195,12 @@ func buildGenerateUser(lang QuizLanguage, typ QuizType, in QuizPromptInput) stri
 	return userGenerateVN(typ, in)
 }
 
-func buildReinforcePrompt(lang QuizLanguage, _ QuizType, _ QuizPromptInput) string {
+func buildReinforcePrompt(lang QuizLanguage, _ QuizType, in QuizPromptInput) string {
+	n := resolveNumQuestions(in.NumQuestions)
 	if lang == QuizLanguageEnglish {
-		return systemReinforceEN
+		return buildSystemReinforceEN(n)
 	}
-	return systemReinforceVN
+	return buildSystemReinforceVN(n)
 }
 
 func buildReinforceUser(lang QuizLanguage, typ QuizType, in QuizPromptInput) string {

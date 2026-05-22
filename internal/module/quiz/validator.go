@@ -12,6 +12,16 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
+// DefaultNumQuestions is what GenerateQuiz uses when the request omits
+// num_questions (or sends 0). MaxNumQuestions is a soft cap to keep
+// prompt size, token cost, and bot latency bounded; values above it are
+// silently clamped rather than rejected, since the caller's intent
+// ("a longer quiz") is preserved.
+const (
+	DefaultNumQuestions = 5
+	MaxNumQuestions     = 20
+)
+
 func validateLanguage(ctx context.Context, lang enum.LanguageType) error {
 	if lang == "" {
 		return nil
@@ -51,6 +61,11 @@ func ValidateGenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (enum.Q
 	typ, err := validateQuizType(ctx, req.Type)
 	if err != nil {
 		return "", err
+	}
+	if req.NumQuestions <= 0 {
+		req.NumQuestions = DefaultNumQuestions
+	} else if req.NumQuestions > MaxNumQuestions {
+		req.NumQuestions = MaxNumQuestions
 	}
 	return typ, nil
 }

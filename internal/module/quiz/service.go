@@ -108,6 +108,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		GradeLabel:    cc.GradeLabel,
 		SemesterLabel: cc.SemesterLabel,
 		ProgramLabel:  cc.ProgramLabel,
+		NumQuestions:  req.NumQuestions,
 	}
 
 	if req.PreviousQuizID != nil {
@@ -244,13 +245,16 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 		AIReview: grading.AIReview,
 	}
 	if grading.AIDetectGrade != nil && *grading.AIDetectGrade != "" {
+		log.Infof("quiz.submitted.ai_detect_grade: %s", *grading.AIDetectGrade)
 		gradingUpdate.AIDetectGrade = grading.AIDetectGrade
 	}
 	if grading.TotalQuestions > 0 {
+		log.Infof("quiz.submitted.total_questions: %d", grading.TotalQuestions)
 		v := grading.TotalQuestions
 		gradingUpdate.TotalQuestions = &v
 	}
 	if grading.CorrectNumber >= 0 {
+		log.Infof("quiz.submitted.correct_number: %d", grading.CorrectNumber)
 		v := grading.CorrectNumber
 		gradingUpdate.CorrectNumber = &v
 	}
@@ -267,12 +271,6 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 	if err != nil {
 		return nil, err
 	}
-
-	log.Info("quiz.submitted",
-		"quiz_id", updated.QuizId(),
-		"profile_id", updated.ProfileId(),
-		"score", grading.ScorePercentage,
-	)
 
 	// Submitted quizzes are review-mode — surface right_answer so the
 	// client can render correct/incorrect indicators.

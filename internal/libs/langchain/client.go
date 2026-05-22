@@ -11,6 +11,7 @@ import (
 	"github.com/tmc/langchaingo/embeddings"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/googleai"
+	"github.com/tmc/langchaingo/llms/openai"
 
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
@@ -118,13 +119,35 @@ func newLLM(ctx context.Context, cfg Config) (llms.Model, embeddings.EmbedderCli
 		}
 		return g, embedder, nil
 
-	case BackendOpenAI, BackendAnthropic, BackendOllama:
+	case BackendOpenAI:
+		opts := []openai.Option{
+			openai.WithToken(cfg.APIKey),
+			openai.WithModel(cfg.Model),
+		}
+		if cfg.EmbedModel != "" {
+			opts = append(opts, openai.WithEmbeddingModel(cfg.EmbedModel))
+		}
+		if cfg.BaseURL != "" {
+			opts = append(opts, openai.WithBaseURL(cfg.BaseURL))
+		}
+		o, err := openai.New(opts...)
+		if err != nil {
+			return nil, nil, err
+		}
+		// *openai.LLM has CreateEmbedding(ctx, texts) — it satisfies
+		// embeddings.EmbedderClient. Per-call sampling defaults are
+		// applied via buildCallOptions, mirroring the googleai branch.
+		var embedder embeddings.EmbedderClient
+		if ec, ok := any(o).(embeddings.EmbedderClient); ok {
+			embedder = ec
+		}
+		return o, embedder, nil
+
+	case BackendAnthropic, BackendOllama:
 		// Backend is recognised by Config.Validate so a deploy never sees
-		// "unsupported backend" silently. Wiring the concrete sub-package
-		// is intentionally left as a one-line follow-up so adding it does
-		// not pull dead dependency weight into deploys that only use
-		// Gemini today:
-		//   - openai:    github.com/tmc/langchaingo/llms/openai
+		// "unsupported backend" silently. Wiring is intentionally left as
+		// a one-line follow-up so adding it does not pull dead dependency
+		// weight into deploys that don't need it:
 		//   - anthropic: github.com/tmc/langchaingo/llms/anthropic
 		//   - ollama:    github.com/tmc/langchaingo/llms/ollama
 		return nil, nil, fmt.Errorf(
