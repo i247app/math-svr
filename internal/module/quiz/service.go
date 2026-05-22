@@ -30,7 +30,7 @@ import (
 // rather than raw UUIDs.
 type Service struct {
 	getQuizByIdQuery     *query.GetQuizByQuizIdQueryHandler
-	listQuizzesQuery     *query.ListQuizzesByProfileIdQueryHandler
+	listQuizzesQuery     *query.ListQuizzesQueryHandler
 	createQuizCmd        *command.CreateQuizCommandHandler
 	submitQuizAnswersCmd *command.SubmitQuizAnswersCommandHandler
 	softDeleteQuizCmd    *command.SoftDeleteQuizCommandHandler
@@ -56,7 +56,7 @@ func NewService(
 ) *Service {
 	return &Service{
 		getQuizByIdQuery:     query.NewGetQuizByQuizIdQueryHandler(quizRepo),
-		listQuizzesQuery:     query.NewListQuizzesByProfileIdQueryHandler(quizRepo),
+		listQuizzesQuery:     query.NewListQuizzesQueryHandler(quizRepo),
 		createQuizCmd:        command.NewCreateQuizCommandHandler(uow),
 		submitQuizAnswersCmd: command.NewSubmitQuizAnswersCommandHandler(uow),
 		softDeleteQuizCmd:    command.NewSoftDeleteQuizCommandHandler(uow),
@@ -298,13 +298,14 @@ func (s *Service) GetQuizByQuizId(ctx context.Context, req *dto.GetQuizByQuizIdR
 	return &dto.GetQuizByQuizIdRes{Quiz: dto.DomainToResponse(q, includeAnswers)}, nil
 }
 
-func (s *Service) ListQuizzesByProfileId(ctx context.Context, req *dto.ListQuizzesByProfileIdReq) (*dto.ListQuizzesByProfileIdRes, error) {
+func (s *Service) ListQuizzes(ctx context.Context, req *dto.ListQuizzesReq) (*dto.ListQuizzesRes, error) {
 	if err := ValidateListQuizzes(ctx, req); err != nil {
 		return nil, err
 	}
 
-	quizzes, pg, err := s.listQuizzesQuery.Handle(ctx, query.ListQuizzesByProfileIdQuery{
+	quizzes, pg, err := s.listQuizzesQuery.Handle(ctx, query.ListQuizzesQuery{
 		ProfileID: req.ProfileID,
+		UserID:    req.UserID,
 		Page:      int64(req.Page),
 		Limit:     int64(req.Size),
 	})
@@ -312,7 +313,7 @@ func (s *Service) ListQuizzesByProfileId(ctx context.Context, req *dto.ListQuizz
 		return nil, err
 	}
 
-	return &dto.ListQuizzesByProfileIdRes{
+	return &dto.ListQuizzesRes{
 		Quizzes:    dto.DomainListToResponse(quizzes),
 		Pagination: pg,
 	}, nil

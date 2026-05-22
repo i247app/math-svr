@@ -103,10 +103,18 @@ func ValidateGetQuiz(ctx context.Context, req *dto.GetQuizByQuizIdReq) error {
 	return nil
 }
 
-func ValidateListQuizzes(ctx context.Context, req *dto.ListQuizzesByProfileIdReq) error {
-	if req.ProfileID == uuid.Nil {
+func ValidateListQuizzes(ctx context.Context, req *dto.ListQuizzesReq) error {
+	// Treat the zero UUID as "not sent" so JSON encoders that emit
+	// "0000…" don't accidentally request an empty filter row.
+	if req.ProfileID != nil && *req.ProfileID == uuid.Nil {
+		req.ProfileID = nil
+	}
+	if req.UserID != nil && *req.UserID == uuid.Nil {
+		req.UserID = nil
+	}
+	if req.ProfileID == nil && req.UserID == nil {
 		return errs.NewError(ctx, status.QUIZ_MISSING_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			errors.New("at least one of profile_id or user_id is required"))
 	}
 	return nil
 }

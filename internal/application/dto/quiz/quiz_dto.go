@@ -111,13 +111,18 @@ type GetQuizByQuizIdRes struct {
 	Quiz *QuizResponse `json:"quiz"`
 }
 
-type ListQuizzesByProfileIdReq struct {
-	ProfileID uuid.UUID `json:"profile_id"`
-	Page      int       `json:"page,omitempty"`
-	Size      int       `json:"size,omitempty"`
+// ListQuizzesReq filters the quiz list. ProfileID and UserID are both
+// optional; at least one must be supplied. When both are supplied they
+// are AND'd so the result is the intersection (a specific child of a
+// specific parent).
+type ListQuizzesReq struct {
+	ProfileID *uuid.UUID `json:"profile_id,omitempty"`
+	UserID    *uuid.UUID `json:"user_id,omitempty"`
+	Page      int        `json:"page,omitempty"`
+	Size      int        `json:"size,omitempty"`
 }
 
-type ListQuizzesByProfileIdRes struct {
+type ListQuizzesRes struct {
 	Quizzes    []*QuizResponse        `json:"quizzes"`
 	Pagination *pagination.Pagination `json:"pagination"`
 }

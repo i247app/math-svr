@@ -32,7 +32,7 @@ fi
 
 # Start new server
 echo "Starting new server..."
-nohup ./dist/mathsvr > server.log 2>&1 &
+nohup ./dist/mathsvr > mathsvr.log 2>&1 &
 NEW_PID=$!
 echo $NEW_PID > "$PID_FILE"
 
@@ -40,7 +40,7 @@ echo $NEW_PID > "$PID_FILE"
 sleep 2
 if ps -p $NEW_PID > /dev/null 2>&1; then
     echo "✅ Server started successfully with PID: $NEW_PID"
-    echo "📋 Check logs: tail -f $DEST_DIR/server.log"
+    echo "📋 Check logs: tail -f $DEST_DIR/mathsvr.log"
 else
     echo "❌ Server failed to start, check logs"
     exit 1

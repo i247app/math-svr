@@ -85,10 +85,11 @@ func (r *QuizRepository) FindByQuizId(ctx context.Context, quizId uuid.UUID) (*q
 	return r.findOneBy(ctx, "q.quiz_id = ?", quizId)
 }
 
-// ListByProfileId returns the profile's quiz history (newest first), with
-// pagination. Listing surfaces both GENERATED (unsubmitted) and SUBMITTED
-// rows so the client can resume an in-flight quiz.
-func (r *QuizRepository) ListByProfileId(ctx context.Context, profileId uuid.UUID, page, limit int64) ([]*quiz.Quiz, *pagination.Pagination, error) {
+// ListQuizzes returns the quiz history (newest first), with pagination,
+// filtered by any combination of profile_id and user_id. Listing surfaces
+// both GENERATED (unsubmitted) and SUBMITTED rows so the client can
+// resume an in-flight quiz.
+func (r *QuizRepository) ListQuizzes(ctx context.Context, filter quiz.ListQuizzesFilter, page, limit int64) ([]*quiz.Quiz, *pagination.Pagination, error) {
 	if limit <= 0 {
 		limit = pagination.DefaultPageSize
 	}
@@ -97,22 +98,25 @@ func (r *QuizRepository) ListByProfileId(ctx context.Context, profileId uuid.UUI
 	}
 	offset := (page - 1) * limit
 
-	countArgs := append(quizActiveArgs(), profileId)
+	filterWhere, filterArgs := buildQuizListFilterClause(filter)
+
+	countArgs := append(quizActiveArgs(), filterArgs...)
 	countQuery := `SELECT COUNT(*) FROM ` + quizTable + ` q WHERE ` +
-		quizActiveWhere + ` AND q.profile_id = ?`
+		quizActiveWhere + filterWhere
 
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
-		return nil, nil, fmt.Errorf("quiz repo count by profile id: %w", err)
+		return nil, nil, fmt.Errorf("quiz repo count: %w", err)
 	}
 
-	args := append(quizActiveArgs(), profileId, limit, offset)
+	args := append(quizActiveArgs(), filterArgs...)
+	args = append(args, limit, offset)
 	query := `SELECT ` + quizColumns + ` FROM ` + quizTable + ` q WHERE ` +
-		quizActiveWhere + ` AND q.profile_id = ? ORDER BY q.id DESC LIMIT ? OFFSET ?`
+		quizActiveWhere + filterWhere + ` ORDER BY q.id DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, nil, fmt.Errorf("quiz repo list by profile id: %w", err)
+		return nil, nil, fmt.Errorf("quiz repo list: %w", err)
 	}
 	defer rows.Close()
 
@@ -128,6 +132,25 @@ func (r *QuizRepository) ListByProfileId(ctx context.Context, profileId uuid.UUI
 		return nil, nil, fmt.Errorf("quiz repo rows iteration: %w", err)
 	}
 	return quizzes, pagination.NewPagination(page, limit, total), nil
+}
+
+// buildQuizListFilterClause appends an "AND q.profile_id = ?" / "AND
+// q.user_id = ?" pair for each non-nil field, keeping placeholder
+// ordering in lockstep with the returned args slice.
+func buildQuizListFilterClause(filter quiz.ListQuizzesFilter) (string, []any) {
+	var (
+		clause string
+		args   []any
+	)
+	if filter.ProfileID != nil {
+		clause += ` AND q.profile_id = ?`
+		args = append(args, *filter.ProfileID)
+	}
+	if filter.UserID != nil {
+		clause += ` AND q.user_id = ?`
+		args = append(args, *filter.UserID)
+	}
+	return clause, args
 }
 
 func (r *QuizRepository) Create(ctx context.Context, q *quiz.Quiz) (*quiz.Quiz, error) {

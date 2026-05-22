@@ -2,6 +2,7 @@ package quiz
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	dto "math-ai.com/math-ai/internal/application/dto/quiz"
@@ -40,7 +41,7 @@ func (h *QuizHandler) HandleGenerateQuiz(w http.ResponseWriter, r *http.Request)
 
 	uid, ok := session.UID()
 	if !ok {
-		response.WriteJson(w, nil, errs.NewError(r.Context(), status.UNAUTHORIZED, nil, nil))
+		response.WriteJson(w, nil, errs.NewError(r.Context(), status.UNAUTHORIZED, nil, errors.New("uid not found from session")))
 		return
 	}
 
@@ -95,13 +96,13 @@ func (h *QuizHandler) HandleGetQuiz(w http.ResponseWriter, r *http.Request) {
 
 // POST /quizzes/list
 func (h *QuizHandler) HandleListQuizzes(w http.ResponseWriter, r *http.Request) {
-	var req dto.ListQuizzesByProfileIdReq
+	var req dto.ListQuizzesReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
 
-	res, err := h.quizSvc.ListQuizzesByProfileId(r.Context(), &req)
+	res, err := h.quizSvc.ListQuizzes(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

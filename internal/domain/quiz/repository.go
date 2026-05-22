@@ -19,13 +19,22 @@ type GradingUpdate struct {
 	ScorePercentage *int
 }
 
+// ListQuizzesFilter narrows the listing query. Either or both of
+// ProfileID / UserID may be set; when both are set the repo AND's them
+// so the result is the intersection. At least one must be non-nil —
+// the caller is responsible for that check.
+type ListQuizzesFilter struct {
+	ProfileID *uuid.UUID
+	UserID    *uuid.UUID
+}
+
 // IRepository owns all quiz persistence. UpdateAnswersAndGrading is
 // split from a generic Update so the grade-after-submit path can write
 // the answers + AI grading fields in one shot without forcing COALESCE
 // on the JSON columns.
 type IRepository interface {
 	FindByQuizId(ctx context.Context, quizId uuid.UUID) (*Quiz, error)
-	ListByProfileId(ctx context.Context, profileId uuid.UUID, page, limit int64) ([]*Quiz, *pagination.Pagination, error)
+	ListQuizzes(ctx context.Context, filter ListQuizzesFilter, page, limit int64) ([]*Quiz, *pagination.Pagination, error)
 	Create(ctx context.Context, q *Quiz) (*Quiz, error)
 	UpdateAnswersAndGrading(ctx context.Context, quizId uuid.UUID, answers string,
 		grading GradingUpdate, quizStatus string) error
