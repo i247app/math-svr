@@ -39,6 +39,7 @@ func parseGeneratedQuestions(content string) ([]quizDto.QuizQuestion, error) {
 		Questions []quizDto.QuizQuestion `json:"questions"`
 		Items     []quizDto.QuizQuestion `json:"items"`
 		Data      []quizDto.QuizQuestion `json:"data"`
+		Quiz      []quizDto.QuizQuestion `json:"quiz"`
 	}
 	if err := json.Unmarshal([]byte(payload), &wrap); err == nil {
 		switch {

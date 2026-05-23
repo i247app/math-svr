@@ -43,7 +43,7 @@ func validateQuizType(ctx context.Context, t string) (enum.QuizType, error) {
 	}
 	if !upper.IsValid() {
 		return "", errs.NewError(ctx, status.QUIZ_INVALID_TYPE, nil,
-			errors.New("type must be one of ASSESSMENT, PRACTICE"))
+			errors.New("type must be one of ASSESSMENT, PRACTICE, EXAM"))
 	}
 	return upper, nil
 }

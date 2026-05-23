@@ -23,23 +23,25 @@ QUY TẮC NỘI DUNG:
 - Không lặp lại câu hỏi.
 
 QUY TẮC ĐẦU RA:
-- CHỈ trả về JSON array theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không bình luận thêm.
-- Mảng phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
+- CHỈ trả về JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không bình luận thêm.
+- JSON object phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
 
 CẤU TRÚC:
-[
-  {
-    "question_number": 1,
-    "question_name": "5 + 3 = ?",
-    "answers": [
-      {"label": "A", "content": "8"},
-      {"label": "B", "content": "9"},
-      {"label": "C", "content": "10"},
-      {"label": "D", "content": "7"}
-    ],
-    "right_answer": "A"
-  }
-]
+{
+  "questions":[
+    {
+      "question_number": 1,
+      "question_name": "5 + 3 = ?",
+      "answers": [
+        {"label": "A", "content": "8"},
+        {"label": "B", "content": "9"},
+        {"label": "C", "content": "10"},
+        {"label": "D", "content": "7"}
+      ],
+      "right_answer": "A"
+    }
+  ]
+}
 `
 
 const systemReinforceVNTmpl = `Bạn là trợ lý tạo bài kiểm tra toán cho học sinh tiểu học Việt Nam (Lớp 1-5).
@@ -53,23 +55,25 @@ QUY TẮC NỘI DUNG:
 - Không sao chép nguyên văn câu hỏi cũ; tạo biến thể nhắm vào cùng kỹ năng.
 
 QUY TẮC ĐẦU RA:
-- CHỈ trả về JSON array theo cấu trúc bên dưới. Không lời dẫn, không khung markdown.
-- Mảng phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
+- CHỈ trả về JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown.
+- JSON object phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
 
 CẤU TRÚC:
-[
-  {
-    "question_number": 1,
-    "question_name": "5 + 3 = ?",
-    "answers": [
-      {"label": "A", "content": "8"},
-      {"label": "B", "content": "9"},
-      {"label": "C", "content": "10"},
-      {"label": "D", "content": "7"}
-    ],
-    "right_answer": "A"
-  }
-]
+{
+  "questions":[
+    {
+      "question_number": 1,
+      "question_name": "5 + 3 = ?",
+      "answers": [
+        {"label": "A", "content": "8"},
+        {"label": "B", "content": "9"},
+        {"label": "C", "content": "10"},
+        {"label": "D", "content": "7"}
+      ],
+      "right_answer": "A"
+    }
+  ]
+}
 `
 
 func buildSystemGenerateVN(n int) string {

@@ -16,7 +16,7 @@ func (t QuizType) String() string {
 // callers should branch separately when EXAM ships.
 func (t QuizType) IsValid() bool {
 	switch t {
-	case QuizTypeAssessment, QuizTypePractice:
+	case QuizTypeAssessment, QuizTypePractice, QuizTypeExam:
 		return true
 	default:
 		return false

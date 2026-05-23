@@ -24,23 +24,25 @@ CONTENT RULES:
 - Do not repeat questions.
 
 OUTPUT RULES:
-- Return ONLY a JSON array matching the schema below. No prose, no markdown fences, no trailing commentary.
-- The array MUST have exactly %d items, "question_number" 1..%d in order.
+- Return ONLY a JSON object matching the schema below. No prose, no markdown fences, no trailing commentary.
+- The object MUST have a "questions" field which is an array with exactly %d items, "question_number" 1..%d in order.
 
 SCHEMA:
-[
-  {
-    "question_number": 1,
-    "question_name": "5 + 3 = ?",
-    "answers": [
-      {"label": "A", "content": "8"},
-      {"label": "B", "content": "9"},
-      {"label": "C", "content": "10"},
-      {"label": "D", "content": "7"}
-    ],
-    "right_answer": "A"
-  }
-]
+{
+  "questions":[
+    {
+      "question_number": 1,
+      "question_name": "5 + 3 = ?",
+      "answers": [
+        {"label": "A", "content": "8"},
+        {"label": "B", "content": "9"},
+        {"label": "C", "content": "10"},
+        {"label": "D", "content": "7"}
+      ],
+      "right_answer": "A"
+    }
+  ]
+}
 `
 
 const systemReinforceENTmpl = `You are a math quiz generator for Vietnamese primary-school students (Grades 1-5).
@@ -54,23 +56,25 @@ CONTENT RULES:
 - Do not repeat questions verbatim from the previous quiz; create variations that target the same skills.
 
 OUTPUT RULES:
-- Return ONLY a JSON array matching the schema below. No prose, no markdown fences.
-- The array MUST have exactly %d items, "question_number" 1..%d in order.
+- Return ONLY a JSON object matching the schema below. No prose, no markdown fences.
+- The object MUST have a "questions" field which is an array with exactly %d items, "question_number" 1..%d in order.
 
 SCHEMA:
-[
-  {
-    "question_number": 1,
-    "question_name": "5 + 3 = ?",
-    "answers": [
-      {"label": "A", "content": "8"},
-      {"label": "B", "content": "9"},
-      {"label": "C", "content": "10"},
-      {"label": "D", "content": "7"}
-    ],
-    "right_answer": "A"
-  }
-]
+{
+  "questions":[
+    {
+      "question_number": 1,
+      "question_name": "5 + 3 = ?",
+      "answers": [
+        {"label": "A", "content": "8"},
+        {"label": "B", "content": "9"},
+        {"label": "C", "content": "10"},
+        {"label": "D", "content": "7"}
+      ],
+      "right_answer": "A"
+    }
+  ]
+}
 `
 
 func buildSystemGenerateEN(n int) string {
