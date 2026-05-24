@@ -2,26 +2,24 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type ProfileModel struct {
 	Id            int64
-	ProfileId     uuid.UUID
-	UserId        uuid.UUID
+	ProfileId     string
+	UserId        string
 	Name          string
 	AvatarKey     *string
 	Dob           *time.Time
-	ProgramId     *uuid.UUID
-	GradeId       *uuid.UUID
-	SemesterId    *uuid.UUID
+	ProgramId     *string
+	GradeId       *string
+	SemesterId    *string
 	IsDefault     bool
 	Note          *string
 	ProfileStatus *string
 	Status        string
-	CreateId      *uuid.UUID
+	CreateId      *string
 	CreateDt      time.Time
-	ModifyId      *uuid.UUID
+	ModifyId      *string
 	ModifyDt      time.Time
 }

@@ -3,15 +3,13 @@ package query
 import (
 	"context"
 
-	"github.com/google/uuid"
-
 	"math-ai.com/math-ai/internal/domain/otp"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
 type GetOtpByIdQuery struct {
-	OtpID uuid.UUID
+	OtpID string
 }
 
 type GetOtpByIdQueryHandler struct {

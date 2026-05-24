@@ -2,13 +2,11 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type ProgramModel struct {
 	Id            int64
-	ProgramId     uuid.UUID
+	ProgramId     string
 	Label         string
 	Description   string
 	ImageKey      *string
@@ -16,8 +14,8 @@ type ProgramModel struct {
 	Note          *string
 	ProgramStatus *string
 	Status        string
-	CreateId      *uuid.UUID
+	CreateId      *string
 	CreateDt      time.Time
-	ModifyId      *uuid.UUID
+	ModifyId      *string
 	ModifyDt      time.Time
 }

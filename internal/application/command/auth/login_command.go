@@ -5,8 +5,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/google/uuid"
-
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/loginlog"
@@ -34,9 +32,9 @@ type LoginCommand struct {
 //     inserted (any prior active session for the same device was revoked).
 //     LoginLogID identifies the new session.
 type LoginCommandResult struct {
-	UserID            uuid.UUID
-	DeviceID          uuid.UUID
-	LoginLogID        uuid.UUID
+	UserID            string
+	DeviceID          string
+	LoginLogID        string
 	TwoFactorRequired bool
 }
 
@@ -72,7 +70,7 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		}
 
 		result = &LoginCommandResult{
-			UserID:            u.UserId(),
+			UserID:            u.UserId().String(),
 			TwoFactorRequired: true,
 		}
 		return nil
@@ -124,7 +122,7 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 func ensureDevice(
 	ctx context.Context,
 	repos transaction.Repositories,
-	userId uuid.UUID,
+	userId string,
 	cmd LoginCommand,
 ) (*device.Device, error) {
 	existing, err := repos.Device.FindByUserDevice(ctx, userId, cmd.DeviceUUID)
@@ -152,7 +150,11 @@ func ensureDevice(
 		return existing, nil
 	}
 
-	uid := userId
+	uid, err := utils.StringToUUID(userId)
+	if err != nil {
+		return nil, err
+	}
+
 	d := device.NewDevice()
 	d.SetDeviceId(utils.GenerateUUID())
 	d.SetUserId(&uid)
@@ -181,10 +183,15 @@ func deviceNameOrDefault(name string) string {
 	return name
 }
 
-func BuildLoginLog(userId uuid.UUID, cmd LoginCommand) *loginlog.LoginLog {
+func BuildLoginLog(userId string, cmd LoginCommand) *loginlog.LoginLog {
+	uid, err := utils.StringToUUID(userId)
+	if err != nil {
+		return nil
+	}
+
 	ll := loginlog.NewLoginLog()
 	ll.SetLoginLogId(utils.GenerateUUID())
-	ll.SetUserId(userId)
+	ll.SetUserId(uid)
 	ll.SetDeviceUUID(cmd.DeviceUUID)
 	ll.SetIpAddress(cmd.IPAddress)
 	ll.SetToken(cmd.DevicePushToken)

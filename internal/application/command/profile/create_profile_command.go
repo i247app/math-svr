@@ -2,9 +2,7 @@ package command
 
 import (
 	"context"
-	"time"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -14,12 +12,12 @@ import (
 )
 
 type CreateProfileCommand struct {
-	UserID     uuid.UUID
+	UserID     string
 	Name       string
-	Dob        *time.Time
-	ProgramID  *uuid.UUID
-	GradeID    *uuid.UUID
-	SemesterID *uuid.UUID
+	Dob        *mtime.MathTime
+	ProgramID  *string
+	GradeID    *string
+	SemesterID *string
 	Note       *string
 }
 
@@ -52,16 +50,34 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 }
 
 func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
+	userUUID, err := utils.StringToUUID(cmd.UserID)
+	if err != nil {
+		return nil
+	}
+
+	programUUID, err := utils.PtrStringToUUID(cmd.ProgramID)
+	if err != nil {
+		return nil
+	}
+	gradeUUID, err := utils.PtrStringToUUID(cmd.GradeID)
+	if err != nil {
+		return nil
+	}
+	semesterUUID, err := utils.PtrStringToUUID(cmd.SemesterID)
+	if err != nil {
+		return nil
+	}
+
 	p := profile.NewProfile()
 	p.SetProfileId(utils.GenerateUUID())
-	p.SetUserId(cmd.UserID)
+	p.SetUserId(userUUID)
 	p.SetName(cmd.Name)
-	p.SetProgramId(cmd.ProgramID)
-	p.SetGradeId(cmd.GradeID)
-	p.SetSemesterId(cmd.SemesterID)
+	p.SetProgramId(&programUUID)
+	p.SetGradeId(&gradeUUID)
+	p.SetSemesterId(&semesterUUID)
 	p.SetNote(cmd.Note)
 	if cmd.Dob != nil {
-		p.SetDob(mtime.MathTime{Time: *cmd.Dob})
+		p.SetDob(*cmd.Dob)
 	}
 	return p
 }

@@ -102,6 +102,13 @@ func (mt MathTime) String() string {
 	return mt.Format(DefaultFormat)
 }
 
+func (mt MathTime) StringWithFormat(format string) string {
+	if mt.IsZero() {
+		return ""
+	}
+	return mt.Format(format)
+}
+
 // ToTime returns the underlying time.Time value
 func (mt MathTime) ToTime() time.Time {
 	return mt.Time

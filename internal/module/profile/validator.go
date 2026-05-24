@@ -4,9 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"time"
 
-	"github.com/google/uuid"
 	dto "math-ai.com/math-ai/internal/application/dto/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -29,27 +27,8 @@ func validateLanguage(ctx context.Context, lang enum.LanguageType) error {
 	}
 }
 
-// ParseDob accepts an ISO date or datetime. Returns the parsed time or
-// nil if the input is nil/empty (dob is optional).
-func ParseDob(ctx context.Context, raw *string) (*time.Time, error) {
-	if raw == nil || strings.TrimSpace(*raw) == "" {
-		return nil, nil
-	}
-	for _, layout := range []string{"2006-01-02", time.RFC3339, "2006-01-02T15:04:05"} {
-		if t, err := time.Parse(layout, *raw); err == nil {
-			if t.After(time.Now().UTC()) {
-				return nil, errs.NewError(ctx, status.PROFILE_INVALID_DOB, nil,
-					errors.New("dob is in the future"))
-			}
-			return &t, nil
-		}
-	}
-	return nil, errs.NewError(ctx, status.PROFILE_INVALID_DOB, nil,
-		errors.New("dob format must be YYYY-MM-DD"))
-}
-
 func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error {
-	if req.UserID == uuid.Nil {
+	if req.UserID == "" {
 		return errs.NewError(ctx, status.PROFILE_MISSING_USER_ID, nil,
 			errors.New("user_id is required"))
 	}
@@ -73,7 +52,7 @@ func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error
 }
 
 func ValidateUpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) error {
-	if req.ProfileID == uuid.Nil {
+	if req.ProfileID == "" {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			errors.New("profile_id is required"))
 	}
@@ -85,7 +64,7 @@ func ValidateUpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) error
 }
 
 func ValidateGetProfile(ctx context.Context, req *dto.GetProfileByIdReq) error {
-	if req.ProfileID == uuid.Nil {
+	if req.ProfileID == "" {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			errors.New("profile_id is required"))
 	}
@@ -93,7 +72,7 @@ func ValidateGetProfile(ctx context.Context, req *dto.GetProfileByIdReq) error {
 }
 
 func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
-	if req.UserID == uuid.Nil {
+	if req.UserID == "" {
 		return errs.NewError(ctx, status.PROFILE_MISSING_USER_ID, nil,
 			errors.New("user_id is required"))
 	}
@@ -101,7 +80,7 @@ func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
 }
 
 func ValidateDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) error {
-	if req.ProfileID == uuid.Nil {
+	if req.ProfileID == "" {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			errors.New("profile_id is required"))
 	}

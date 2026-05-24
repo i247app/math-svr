@@ -10,7 +10,6 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/response"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type QuizHandler struct {
@@ -45,13 +44,7 @@ func (h *QuizHandler) HandleGenerateQuiz(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userId, err := utils.StringToUUID(uid)
-	if err != nil {
-		response.WriteJson(w, nil, err)
-		return
-	}
-
-	req.UserID = &userId
+	req.UserID = &uid
 
 	res, err := h.quizSvc.GenerateQuiz(r.Context(), &req)
 	if err != nil {
@@ -80,13 +73,8 @@ func (h *QuizHandler) HandleSubmitQuizAnswers(w http.ResponseWriter, r *http.Req
 // GET /quizzes/{id}
 func (h *QuizHandler) HandleGetQuiz(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
-	quizID, err := utils.StringToUUID(idStr)
-	if err != nil {
-		response.WriteJson(w, nil, err)
-		return
-	}
 
-	res, err := h.quizSvc.GetQuizByQuizId(r.Context(), &dto.GetQuizByQuizIdReq{QuizID: quizID})
+	res, err := h.quizSvc.GetQuizByQuizId(r.Context(), &dto.GetQuizByQuizIdReq{QuizID: idStr})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

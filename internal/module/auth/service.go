@@ -17,7 +17,6 @@ import (
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/user"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type Service struct {
@@ -84,12 +83,7 @@ func (s *Service) LoginResume(ctx context.Context, sess *session.AppSession) (*d
 		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, fmt.Errorf("uid not found in session"))
 	}
 
-	userId, err := utils.StringToUUID(uid)
-	if err != nil {
-		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, fmt.Errorf("uid is not valid"))
-	}
-
-	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: userId})
+	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: uid})
 	if err != nil {
 		return nil, err
 	}

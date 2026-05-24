@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/device"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -76,18 +76,18 @@ func (r *DeviceRepository) findBareById(ctx context.Context, id int64) (*device.
 	return ModelToDomainDevice(m), nil
 }
 
-func (r *DeviceRepository) FindByDeviceId(ctx context.Context, deviceId uuid.UUID) (*device.Device, error) {
+func (r *DeviceRepository) FindByDeviceId(ctx context.Context, deviceId string) (*device.Device, error) {
 	return r.findOneBy(ctx, "d.device_id = ?", deviceId)
 }
 
 // FindByUserDevice looks up the registration for the (user, device_uuid) pair.
 // device_uuid is the client-supplied stable identifier (installation id, IDFV,
 // etc.); device_id is our own UUID for the row.
-func (r *DeviceRepository) FindByUserDevice(ctx context.Context, userId uuid.UUID, deviceUUID string) (*device.Device, error) {
+func (r *DeviceRepository) FindByUserDevice(ctx context.Context, userId string, deviceUUID string) (*device.Device, error) {
 	return r.findOneBy(ctx, "d.user_id = ? AND d.device_uuid = ?", userId, deviceUUID)
 }
 
-func (r *DeviceRepository) ListByUserId(ctx context.Context, userId uuid.UUID) ([]*device.Device, error) {
+func (r *DeviceRepository) ListByUserId(ctx context.Context, userId string) ([]*device.Device, error) {
 	args := append(deviceActiveArgs(), userId)
 	query := `SELECT ` + deviceColumns + ` FROM ` + deviceTable + ` d WHERE ` +
 		deviceActiveWhere + ` AND d.user_id = ? ORDER BY d.id DESC`
@@ -160,7 +160,7 @@ func (r *DeviceRepository) Update(ctx context.Context, d *device.Device) error {
 
 // MarkVerified flips is_verified. Called by the (future) 2FA flow on success,
 // or by revoke to un-trust the device.
-func (r *DeviceRepository) MarkVerified(ctx context.Context, deviceId uuid.UUID, isVerified bool) error {
+func (r *DeviceRepository) MarkVerified(ctx context.Context, deviceId string, isVerified bool) error {
 	query := `
 		UPDATE ` + deviceTable + `
 		SET is_verified = ?,
@@ -173,7 +173,7 @@ func (r *DeviceRepository) MarkVerified(ctx context.Context, deviceId uuid.UUID,
 	return nil
 }
 
-func (r *DeviceRepository) MarkStatusByDeviceId(ctx context.Context, deviceId uuid.UUID, st enum.DeviceStatusType) error {
+func (r *DeviceRepository) MarkStatusByDeviceId(ctx context.Context, deviceId string, st enum.DeviceStatusType) error {
 	query := `
 		UPDATE ` + deviceTable + `
 		SET device_status = ?,
@@ -186,7 +186,7 @@ func (r *DeviceRepository) MarkStatusByDeviceId(ctx context.Context, deviceId uu
 	return nil
 }
 
-func (r *DeviceRepository) SoftDeleteByDeviceId(ctx context.Context, deviceId uuid.UUID) error {
+func (r *DeviceRepository) SoftDeleteByDeviceId(ctx context.Context, deviceId string) error {
 	query := `
 		UPDATE ` + deviceTable + `
 		SET device_status = ?,
@@ -202,10 +202,30 @@ func (r *DeviceRepository) SoftDeleteByDeviceId(ctx context.Context, deviceId uu
 }
 
 func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
+	userId, err := utils.PtrStringToUUID(m.UserId)
+	if err != nil {
+		return nil
+	}
+
+	deviceId, err := utils.StringToUUID(m.DeviceId)
+	if err != nil {
+		return nil
+	}
+
+	createId, err := utils.PtrStringToUUID(m.CreateId)
+	if err != nil {
+		return nil
+	}
+
+	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
+	if err != nil {
+		return nil
+	}
+
 	d := device.NewDevice()
 	d.SetId(m.Id)
-	d.SetDeviceId(m.DeviceId)
-	d.SetUserId(m.UserId)
+	d.SetDeviceId(deviceId)
+	d.SetUserId(&userId)
 	d.SetDeviceUUID(m.DeviceUUID)
 	d.SetDeviceName(m.DeviceName)
 	d.SetDevicePushToken(m.DevicePushToken)
@@ -213,9 +233,9 @@ func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
 	d.SetNote(m.Note)
 	d.SetDeviceStatus(m.DeviceStatus)
 	d.SetStatus(m.Status)
-	d.SetCreateId(m.CreateId)
+	d.SetCreateId(&createId)
 	d.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	d.SetModifyId(m.ModifyId)
+	d.SetModifyId(&modifyId)
 	d.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return d
 }

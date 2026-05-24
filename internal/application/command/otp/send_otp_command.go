@@ -5,8 +5,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/google/uuid"
-
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/otp"
@@ -32,7 +30,7 @@ import (
 type SendOtpCommand struct {
 	OtpType    enum.OtpType
 	Identifier string
-	UserID     *uuid.UUID
+	UserID     *string
 	DeviceUUID *string
 	DeviceName *string
 	Channel    enum.OtpChannel // empty = auto-detect
@@ -40,8 +38,8 @@ type SendOtpCommand struct {
 }
 
 type SendOtpCommandResult struct {
-	OtpID     uuid.UUID
-	ExpiresAt time.Time
+	OtpID     string
+	ExpiresAt mtime.MathTime
 	Channel   otp_delivery.ChannelName
 	OTPCode   string
 	OTPType   string
@@ -79,7 +77,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	now := time.Now().UTC()
 	expiresAt := now.Add(TtlFor(cmd.OtpType))
 
-	var createdOtpID uuid.UUID
+	var createdOtpID string
 	err = h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		// 1. Cooldown.
 		// Compare against OtpCreateDt (app-set, always UTC) not CreateDt
@@ -96,8 +94,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 				// return errs.NewError(ctx, status.OTP_TOO_FREQUENT, map[string]any{
 				// 	"retry_after_seconds": int((OtpResendCooldown - age).Seconds()),
 				// }, errors.New("resend cooldown not elapsed"))
-				println("vo dayyyyyyyy")
-				createdOtpID = latest.OtpId()
+				createdOtpID = latest.OtpId().String()
 				plainCode = latest.OtpCode()
 				expiresAt = latest.OtpExpireDt().Time
 
@@ -126,7 +123,11 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		o := otp.NewOtp()
 		o.SetOtpId(utils.GenerateUUID())
 		o.SetOtpType(cmd.OtpType.String())
-		o.SetUserId(cmd.UserID)
+		userUUID, err := utils.PtrStringToUUID(cmd.UserID)
+		if err != nil {
+			return err
+		}
+		o.SetUserId(&userUUID)
 		o.SetIdentifier(cmd.Identifier)
 		o.SetDeviceUUID(cmd.DeviceUUID)
 		o.SetDeviceName(cmd.DeviceName)
@@ -143,7 +144,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		if err != nil {
 			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
 		}
-		createdOtpID = created.OtpId()
+		createdOtpID = created.OtpId().String()
 		return nil
 	})
 	if err != nil {
@@ -166,7 +167,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 
 	return &SendOtpCommandResult{
 		OtpID:     createdOtpID,
-		ExpiresAt: expiresAt,
+		ExpiresAt: mtime.MathTime{Time: expiresAt},
 		Channel:   channel,
 		OTPCode:   plainCode,
 		OTPType:   cmd.OtpType.String(),

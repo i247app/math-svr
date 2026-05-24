@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	command "math-ai.com/math-ai/internal/application/command/otp"
 	dto "math-ai.com/math-ai/internal/application/dto/otp"
@@ -75,12 +74,13 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 		user = userResp.User
 	}
 
-	var userId *uuid.UUID
+	var userId *string
 	switch req.OtpType {
 	case string(enum.OtpTypeLogin2FA):
 		if user == nil {
 			return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil, errors.New("user not found"))
 		}
+
 		userId = &user.UserID
 	case string(enum.OtpTypeRegister):
 		if user != nil {
@@ -109,7 +109,7 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	log.Infof("otp sent %s:", result.OTPCode)
 
 	return &dto.SendOtpRes{
-		ExpiresAt: result.ExpiresAt,
+		ExpiresAt: result.ExpiresAt.String(),
 		Channel:   string(result.Channel),
 		OTPCode:   result.OTPCode,
 		OtpType:   result.OTPType,
@@ -153,7 +153,7 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 			sessionData := session.InitData{
 				Source:    "login",
 				IsSecure:  true,
-				UID:       userRes.User.UserID.String(),
+				UID:       userRes.User.UserID,
 				LoginName: req.Identifier,
 			}
 

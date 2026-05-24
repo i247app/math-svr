@@ -2,13 +2,11 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type SemesterModel struct {
 	Id             int64
-	SemesterId     uuid.UUID
+	SemesterId     string
 	Name           string
 	Description    string
 	ImageKey       *string
@@ -16,8 +14,8 @@ type SemesterModel struct {
 	Note           *string
 	SemesterStatus *string
 	Status         string
-	CreateId       *uuid.UUID
+	CreateId       *string
 	CreateDt       time.Time
-	ModifyId       *uuid.UUID
+	ModifyId       *string
 	ModifyDt       time.Time
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 
-	"github.com/google/uuid"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 
@@ -12,7 +11,7 @@ import (
 )
 
 type SoftDeleteUserCommand struct {
-	UserID uuid.UUID
+	UserID string
 }
 
 type SoftDeleteUserCommandHandler struct {

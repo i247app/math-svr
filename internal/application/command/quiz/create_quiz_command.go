@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/quiz"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -21,11 +20,11 @@ import (
 // is persisted with both columns NULL and is only reachable via its
 // quiz_id thereafter.
 type CreateQuizCommand struct {
-	UserID         *uuid.UUID
-	ProfileID      *uuid.UUID
+	UserID         *string
+	ProfileID      *string
 	QuizType       enum.QuizType
 	QuestionsJSON  string
-	PreviousQuizID *uuid.UUID
+	PreviousQuizID *string
 }
 
 type CreateQuizCommandHandler struct {
@@ -40,17 +39,31 @@ func (h *CreateQuizCommandHandler) Handle(ctx context.Context, cmd CreateQuizCom
 	var created *quiz.Quiz
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
+		userUUID, err := utils.PtrStringToUUID(cmd.UserID)
+		if err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+
+		profileUUID, err := utils.PtrStringToUUID(cmd.ProfileID)
+		if err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+
 		q := quiz.NewQuiz()
 		q.SetQuizId(utils.GenerateUUID())
-		q.SetUserId(cmd.UserID)
-		q.SetProfileId(cmd.ProfileID)
+		q.SetUserId(&userUUID)
+		q.SetProfileId(&profileUUID)
 		q.SetQuizType(string(cmd.QuizType))
 		questions := cmd.QuestionsJSON
 		q.SetQuestions(&questions)
 		generated := string(enum.QuizStatusTypeGenerated)
 		q.SetQuizStatus(&generated)
 		if cmd.PreviousQuizID != nil {
-			q.SetPreviousQuizId(cmd.PreviousQuizID)
+			prevQuizUUID, err := utils.PtrStringToUUID(cmd.PreviousQuizID)
+			if err != nil {
+				return errs.NewError(ctx, status.FAIL, nil, err)
+			}
+			q.SetPreviousQuizId(&prevQuizUUID)
 		}
 
 		saved, err := repos.Quiz.Create(ctx, q)

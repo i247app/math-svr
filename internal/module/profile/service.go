@@ -6,7 +6,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/profile"
 	dto "math-ai.com/math-ai/internal/application/dto/profile"
@@ -18,6 +17,7 @@ import (
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
@@ -127,15 +127,20 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 	if err := ValidateCreateProfile(ctx, req); err != nil {
 		return nil, err
 	}
-	dob, err := ParseDob(ctx, req.Dob)
-	if err != nil {
-		return nil, err
+
+	var dob mtime.MathTime
+	if req.Dob != nil {
+		parsed, err := mtime.ParseDate(*req.Dob)
+		if err != nil {
+			return nil, err
+		}
+		dob = parsed
 	}
 
 	created, err := s.createProfileCmd.Handle(ctx, command.CreateProfileCommand{
 		UserID:     req.UserID,
 		Name:       req.Name,
-		Dob:        dob,
+		Dob:        &dob,
 		ProgramID:  req.ProgramID,
 		GradeID:    req.GradeID,
 		SemesterID: req.SemesterID,
@@ -164,15 +169,19 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 	if err := ValidateUpdateProfile(ctx, req); err != nil {
 		return nil, err
 	}
-	dob, err := ParseDob(ctx, req.Dob)
-	if err != nil {
-		return nil, err
+	var dob mtime.MathTime
+	if req.Dob != nil {
+		parsed, err := mtime.ParseDate(*req.Dob)
+		if err != nil {
+			return nil, err
+		}
+		dob = parsed
 	}
 
 	updated, err := s.updateProfileCmd.Handle(ctx, command.UpdateProfileCommand{
 		ProfileID:  req.ProfileID,
 		Name:       req.Name,
-		Dob:        dob,
+		Dob:        &dob,
 		ProgramID:  req.ProgramID,
 		GradeID:    req.GradeID,
 		SemesterID: req.SemesterID,
@@ -216,8 +225,8 @@ func (s *Service) SoftDeleteProfile(ctx context.Context, req *dto.DeleteProfileR
 // UploadAvatar streams the request body to S3 then persists the resulting
 // key against the profile in a single transaction. Returns the key plus a
 // short-lived presigned URL for immediate display.
-func (s *Service) UploadAvatar(ctx context.Context, profileID uuid.UUID, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
-	if profileID == uuid.Nil {
+func (s *Service) UploadAvatar(ctx context.Context, profileID string, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
+	if profileID == "" {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			errors.New("profile_id is required"))
 	}
@@ -299,27 +308,27 @@ func (s *Service) UploadAvatar(ctx context.Context, profileID uuid.UUID, filenam
 // collectRefIds extracts the distinct program/grade/semester UUIDs across the
 // given profiles. uuid.Nil is skipped — defensive, since the columns are
 // NOT NULL in the schema but the domain entity doesn't enforce that.
-func collectRefIds(profiles []*domain.Profile) (progIds, gradeIds, semIds []uuid.UUID) {
-	progSeen := make(map[uuid.UUID]struct{}, len(profiles))
-	gradeSeen := make(map[uuid.UUID]struct{}, len(profiles))
-	semSeen := make(map[uuid.UUID]struct{}, len(profiles))
+func collectRefIds(profiles []*domain.Profile) (progIds, gradeIds, semIds []string) {
+	progSeen := make(map[string]struct{}, len(profiles))
+	gradeSeen := make(map[string]struct{}, len(profiles))
+	semSeen := make(map[string]struct{}, len(profiles))
 	for _, p := range profiles {
-		if id := p.ProgramId(); id != nil {
-			if _, ok := progSeen[*id]; !ok {
-				progSeen[*id] = struct{}{}
-				progIds = append(progIds, *id)
+		if id := p.ProgramId().String(); id != "" {
+			if _, ok := progSeen[id]; !ok {
+				progSeen[id] = struct{}{}
+				progIds = append(progIds, id)
 			}
 		}
-		if id := p.GradeId(); id != nil {
-			if _, ok := gradeSeen[*id]; !ok {
-				gradeSeen[*id] = struct{}{}
-				gradeIds = append(gradeIds, *id)
+		if id := p.GradeId().String(); id != "" {
+			if _, ok := gradeSeen[id]; !ok {
+				gradeSeen[id] = struct{}{}
+				gradeIds = append(gradeIds, id)
 			}
 		}
-		if id := p.SemesterId(); id != nil {
-			if _, ok := semSeen[*id]; !ok {
-				semSeen[*id] = struct{}{}
-				semIds = append(semIds, *id)
+		if id := p.SemesterId().String(); id != "" {
+			if _, ok := semSeen[id]; !ok {
+				semSeen[id] = struct{}{}
+				semIds = append(semIds, id)
 			}
 		}
 	}

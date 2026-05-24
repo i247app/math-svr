@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/profile"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -76,11 +76,11 @@ func (r *ProfileRepository) findBareById(ctx context.Context, id int64) (*profil
 	return ModelToDomainProfile(m), nil
 }
 
-func (r *ProfileRepository) FindByProfileId(ctx context.Context, profileId uuid.UUID) (*profile.Profile, error) {
+func (r *ProfileRepository) FindByProfileId(ctx context.Context, profileId string) (*profile.Profile, error) {
 	return r.findOneBy(ctx, "p.profile_id = ?", profileId)
 }
 
-func (r *ProfileRepository) ListByUserId(ctx context.Context, userId uuid.UUID) ([]*profile.Profile, error) {
+func (r *ProfileRepository) ListByUserId(ctx context.Context, userId string) ([]*profile.Profile, error) {
 	args := append(profileActiveArgs(), userId)
 	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE ` +
 		profileActiveWhere + ` AND p.user_id = ? ORDER BY p.id DESC`
@@ -109,7 +109,7 @@ func (r *ProfileRepository) ListByUserId(ctx context.Context, userId uuid.UUID) 
 // profiles, regardless of status. Used by force-delete to drive S3 cleanup
 // after the DB cascade — soft-deleted profiles still own S3 objects that need
 // to go.
-func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId uuid.UUID) ([]string, error) {
+func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId string) ([]string, error) {
 	query := `SELECT avatar_key FROM ` + profileTable + ` WHERE user_id = ? AND avatar_key IS NOT NULL`
 
 	rows, err := r.db.Query(ctx, query, userId)
@@ -199,7 +199,7 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 	return nil
 }
 
-func (r *ProfileRepository) UpdateAvatarKey(ctx context.Context, profileId uuid.UUID, avatarKey string) error {
+func (r *ProfileRepository) UpdateAvatarKey(ctx context.Context, profileId string, avatarKey string) error {
 	query := `UPDATE ` + profileTable + ` SET avatar_key = ? WHERE profile_id = ?`
 	if _, err := r.db.Exec(ctx, query, avatarKey, profileId); err != nil {
 		return fmt.Errorf("profile repo update avatar key: %w", err)
@@ -207,7 +207,7 @@ func (r *ProfileRepository) UpdateAvatarKey(ctx context.Context, profileId uuid.
 	return nil
 }
 
-func (r *ProfileRepository) MarkStatusByProfileId(ctx context.Context, profileId uuid.UUID, profileStatus string) error {
+func (r *ProfileRepository) MarkStatusByProfileId(ctx context.Context, profileId string, profileStatus string) error {
 	query := `
 		UPDATE ` + profileTable + `
 		SET profile_status = ?,
@@ -220,7 +220,7 @@ func (r *ProfileRepository) MarkStatusByProfileId(ctx context.Context, profileId
 	return nil
 }
 
-func (r *ProfileRepository) SoftDelete(ctx context.Context, profileId uuid.UUID) error {
+func (r *ProfileRepository) SoftDelete(ctx context.Context, profileId string) error {
 	query := `
 		UPDATE ` + profileTable + `
 		SET profile_status = ?,
@@ -234,7 +234,7 @@ func (r *ProfileRepository) SoftDelete(ctx context.Context, profileId uuid.UUID)
 	return nil
 }
 
-func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId string) error {
 	query := `
 		UPDATE ` + profileTable + `
 		SET profile_status = ?,
@@ -248,7 +248,7 @@ func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId uuid.
 	return nil
 }
 
-func (r *ProfileRepository) ForceDeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+func (r *ProfileRepository) ForceDeleteByUserId(ctx context.Context, userId string) error {
 	query := `
 		DELETE FROM ` + profileTable + `
 		WHERE user_id = ?
@@ -260,25 +260,60 @@ func (r *ProfileRepository) ForceDeleteByUserId(ctx context.Context, userId uuid
 }
 
 func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
+	profileId, err := utils.StringToUUID(m.ProfileId)
+	if err != nil {
+		return nil
+	}
+
+	userId, err := utils.StringToUUID(m.UserId)
+	if err != nil {
+		return nil
+	}
+
+	programId, err := utils.PtrStringToUUID(m.ProgramId)
+	if err != nil {
+		return nil
+	}
+
+	gradeId, err := utils.PtrStringToUUID(m.GradeId)
+	if err != nil {
+		return nil
+	}
+
+	semesterId, err := utils.PtrStringToUUID(m.SemesterId)
+	if err != nil {
+		return nil
+	}
+
+	createId, err := utils.PtrStringToUUID(m.CreateId)
+	if err != nil {
+		return nil
+	}
+
+	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
+	if err != nil {
+		return nil
+	}
+
 	p := profile.NewProfile()
 	p.SetId(m.Id)
-	p.SetProfileId(m.ProfileId)
-	p.SetUserId(m.UserId)
+	p.SetProfileId(profileId)
+	p.SetUserId(userId)
 	p.SetName(m.Name)
 	p.SetAvatarKey(m.AvatarKey)
 	if m.Dob != nil {
 		p.SetDob(mtime.MathTime{Time: *m.Dob})
 	}
-	p.SetProgramId(m.ProgramId)
-	p.SetGradeId(m.GradeId)
-	p.SetSemesterId(m.SemesterId)
+	p.SetProgramId(&programId)
+	p.SetGradeId(&gradeId)
+	p.SetSemesterId(&semesterId)
 	p.SetIsDefault(m.IsDefault)
 	p.SetNote(m.Note)
 	p.SetProfileStatus(m.ProfileStatus)
 	p.SetStatus(m.Status)
-	p.SetCreateId(m.CreateId)
+	p.SetCreateId(&createId)
 	p.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	p.SetModifyId(m.ModifyId)
+	p.SetModifyId(&modifyId)
 	p.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return p
 }

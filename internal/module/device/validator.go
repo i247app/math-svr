@@ -4,22 +4,20 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
-
 	dto "math-ai.com/math-ai/internal/application/dto/device"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
-func validateUserID(ctx context.Context, userID uuid.UUID) error {
-	if userID == uuid.Nil {
+func validateUserID(ctx context.Context, userID string) error {
+	if userID == "" {
 		return errs.NewError(ctx, status.DEVICE_MISSING_USER_ID, nil, errors.New("user_id is required"))
 	}
 	return nil
 }
 
-func validateDeviceID(ctx context.Context, deviceID uuid.UUID) error {
-	if deviceID == uuid.Nil {
+func validateDeviceID(ctx context.Context, deviceID string) error {
+	if deviceID == "" {
 		return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, errors.New("device_id is required"))
 	}
 	return nil

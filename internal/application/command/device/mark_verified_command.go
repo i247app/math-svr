@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
-
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -19,8 +17,8 @@ import (
 // Ownership is enforced so a leaked DeviceID for a different user cannot be
 // flipped.
 type MarkDeviceVerifiedCommand struct {
-	UserID   uuid.UUID
-	DeviceID uuid.UUID
+	UserID   string
+	DeviceID string
 }
 
 type MarkDeviceVerifiedCommandHandler struct {
@@ -40,7 +38,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 		if d == nil {
 			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, errors.New("device not found"))
 		}
-		if d.UserId() == nil || *d.UserId() != cmd.UserID {
+		if d.UserId() == nil || d.UserId().String() != cmd.UserID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
 				errors.New("device does not belong to user"))
 		}

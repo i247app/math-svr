@@ -3,7 +3,6 @@ package profile
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/adapter/storage"
 	gradeDto "math-ai.com/math-ai/internal/application/dto/grade"
 	dto "math-ai.com/math-ai/internal/application/dto/profile"
@@ -48,36 +47,36 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	progMap := make(map[uuid.UUID]*programDto.ProgramResponse, len(programs))
+	progMap := make(map[string]*programDto.ProgramResponse, len(programs))
 	for _, p := range programs {
 		r := programDto.DomainToResponse(p)
 		s.signProgramImageUrl(ctx, r)
-		progMap[p.ProgramId()] = r
+		progMap[p.ProgramId().String()] = r
 	}
-	gradeMap := make(map[uuid.UUID]*gradeDto.GradeResponse, len(grades))
+	gradeMap := make(map[string]*gradeDto.GradeResponse, len(grades))
 	for _, g := range grades {
 		r := gradeDto.DomainToResponse(g)
 		s.signGradeImageUrl(ctx, r)
-		gradeMap[g.GradeId()] = r
+		gradeMap[g.GradeId().String()] = r
 	}
-	semMap := make(map[uuid.UUID]*semesterDto.SemesterResponse, len(semesters))
+	semMap := make(map[string]*semesterDto.SemesterResponse, len(semesters))
 	for _, sem := range semesters {
 		r := semesterDto.DomainToResponse(sem)
 		s.signSemesterImageUrl(ctx, r)
-		semMap[sem.SemesterId()] = r
+		semMap[sem.SemesterId().String()] = r
 	}
 
 	out := make([]*dto.ProfileResponse, len(profiles))
 	for i, p := range profiles {
 		resp := dto.DomainToResponse(p)
 		if p.ProgramId() != nil {
-			resp.Program = progMap[*p.ProgramId()]
+			resp.Program = progMap[p.ProgramId().String()]
 		}
 		if p.GradeId() != nil {
-			resp.Grade = gradeMap[*p.GradeId()]
+			resp.Grade = gradeMap[p.GradeId().String()]
 		}
 		if p.SemesterId() != nil {
-			resp.Semester = semMap[*p.SemesterId()]
+			resp.Semester = semMap[p.SemesterId().String()]
 		}
 		s.populateAvatarUrl(ctx, resp)
 		out[i] = resp

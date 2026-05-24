@@ -1,8 +1,6 @@
 package device
 
 import (
-	"github.com/google/uuid"
-
 	"math-ai.com/math-ai/internal/domain/device"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
@@ -11,8 +9,8 @@ import (
 // the client can correlate the response with the local identifier it
 // originally sent; we never echo back the push token (treated like a secret).
 type DeviceResponse struct {
-	DeviceID   uuid.UUID      `json:"device_id"`
-	UserID     *uuid.UUID     `json:"user_id,omitempty"`
+	DeviceID   string         `json:"device_id"`
+	UserID     *string        `json:"user_id,omitempty"`
 	DeviceUUID string         `json:"device_uuid"`
 	DeviceName string         `json:"device_name"`
 	IsVerified bool           `json:"is_verified"`
@@ -26,9 +24,12 @@ func DomainToResponse(d *device.Device) *DeviceResponse {
 	if d == nil {
 		return nil
 	}
+
+	userId := d.UserId().String()
+
 	return &DeviceResponse{
-		DeviceID:   d.DeviceId(),
-		UserID:     d.UserId(),
+		DeviceID:   d.DeviceId().String(),
+		UserID:     &userId,
 		DeviceUUID: d.DeviceUUID(),
 		DeviceName: d.DeviceName(),
 		IsVerified: d.IsVerified(),
@@ -48,7 +49,7 @@ func DomainListToResponse(ds []*device.Device) []*DeviceResponse {
 }
 
 type GetDeviceByIdReq struct {
-	DeviceID uuid.UUID `json:"device_id"`
+	DeviceID string `json:"device_id"`
 }
 
 type GetDeviceByIdRes struct {
@@ -56,7 +57,7 @@ type GetDeviceByIdRes struct {
 }
 
 type ListDevicesReq struct {
-	UserID uuid.UUID `json:"user_id"`
+	UserID string `json:"user_id"`
 }
 
 type ListDevicesRes struct {
@@ -64,11 +65,11 @@ type ListDevicesRes struct {
 }
 
 type UpdateDeviceReq struct {
-	UserID          uuid.UUID `json:"user_id"`
-	DeviceID        uuid.UUID `json:"device_id"`
-	DeviceName      string    `json:"device_name,omitempty"`
-	DevicePushToken *string   `json:"device_push_token,omitempty"`
-	Note            *string   `json:"note,omitempty"`
+	UserID          string  `json:"user_id"`
+	DeviceID        string  `json:"device_id"`
+	DeviceName      string  `json:"device_name,omitempty"`
+	DevicePushToken *string `json:"device_push_token,omitempty"`
+	Note            *string `json:"note,omitempty"`
 }
 
 type UpdateDeviceRes struct {
@@ -76,15 +77,15 @@ type UpdateDeviceRes struct {
 }
 
 type RevokeDeviceReq struct {
-	UserID   uuid.UUID `json:"user_id"`
-	DeviceID uuid.UUID `json:"device_id"`
+	UserID   string `json:"user_id"`
+	DeviceID string `json:"device_id"`
 }
 
 type RevokeDeviceRes struct{}
 
 type DeleteDeviceReq struct {
-	UserID   uuid.UUID `json:"user_id"`
-	DeviceID uuid.UUID `json:"device_id"`
+	UserID   string `json:"user_id"`
+	DeviceID string `json:"device_id"`
 }
 
 type DeleteDeviceRes struct{}
@@ -94,8 +95,8 @@ type DeleteDeviceRes struct{}
 // command directly through the Service. Kept here as the canonical shape so
 // the contract is discoverable.
 type VerifyDeviceReq struct {
-	UserID   uuid.UUID `json:"user_id"`
-	DeviceID uuid.UUID `json:"device_id"`
+	UserID   string `json:"user_id"`
+	DeviceID string `json:"device_id"`
 }
 
 type VerifyDeviceRes struct {

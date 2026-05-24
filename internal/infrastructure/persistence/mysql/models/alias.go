@@ -2,19 +2,17 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type AliasModel struct {
 	Id          int64
-	AliasId     uuid.UUID
-	UserId      uuid.UUID
+	AliasId     string
+	UserId      string
 	Aka         string
 	AliasStatus *string
 	Note        *string
-	CreateId    *uuid.UUID
+	CreateId    *string
 	CreateDt    time.Time
-	ModifyId    *uuid.UUID
+	ModifyId    *string
 	ModifyDt    time.Time
 }

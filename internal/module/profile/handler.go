@@ -10,7 +10,6 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/response"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // maxAvatarUploadBytes caps an avatar multipart request before we open
@@ -44,14 +43,9 @@ func (h *ProfileHandler) HandleCreateProfile(w http.ResponseWriter, r *http.Requ
 // GET /profiles/{id}?language=vn|en
 func (h *ProfileHandler) HandleGetProfileById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
-	profileID, err := utils.StringToUUID(idStr)
-	if err != nil {
-		response.WriteJson(w, nil, err)
-		return
-	}
 
 	res, err := h.profileSvc.GetProfileById(r.Context(), &dto.GetProfileByIdReq{
-		ProfileID: profileID,
+		ProfileID: idStr,
 		Language:  enum.LanguageType(r.URL.Query().Get("language")),
 	})
 	if err != nil {
@@ -139,15 +133,9 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 	}
 	defer file.Close()
 
-	profileID, err := utils.StringToUUID(profileIDStr)
-	if err != nil {
-		response.WriteJson(w, nil, err)
-		return
-	}
-
 	res, err := h.profileSvc.UploadAvatar(
 		ctx,
-		profileID,
+		profileIDStr,
 		header.Filename,
 		header.Header.Get("Content-Type"),
 		file,

@@ -3,7 +3,6 @@ package query
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/quiz"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
@@ -12,8 +11,8 @@ import (
 // ProfileID / UserID. Either or both may be set; the repository AND's
 // the populated filters together.
 type ListQuizzesQuery struct {
-	ProfileID *uuid.UUID
-	UserID    *uuid.UUID
+	ProfileID *string
+	UserID    *string
 	Page      int64
 	Limit     int64
 }

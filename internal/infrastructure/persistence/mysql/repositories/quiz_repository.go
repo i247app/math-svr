@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/quiz"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -81,7 +81,7 @@ func (r *QuizRepository) findBareById(ctx context.Context, id int64) (*quiz.Quiz
 	return ModelToDomainQuiz(m), nil
 }
 
-func (r *QuizRepository) FindByQuizId(ctx context.Context, quizId uuid.UUID) (*quiz.Quiz, error) {
+func (r *QuizRepository) FindByQuizId(ctx context.Context, quizId string) (*quiz.Quiz, error) {
 	return r.findOneBy(ctx, "q.quiz_id = ?", quizId)
 }
 
@@ -180,7 +180,7 @@ func (r *QuizRepository) Create(ctx context.Context, q *quiz.Quiz) (*quiz.Quiz, 
 // is the single state transition: GENERATED → SUBMITTED, writing answers
 // + AI grading + score counts in one shot. ai_detect_grade is *string
 // because PRACTICE quizzes don't predict a grade.
-func (r *QuizRepository) UpdateAnswersAndGrading(ctx context.Context, quizId uuid.UUID,
+func (r *QuizRepository) UpdateAnswersAndGrading(ctx context.Context, quizId string,
 	answers string, grading quiz.GradingUpdate, quizStatus string) error {
 	query := `
 		UPDATE ` + quizTable + `
@@ -203,7 +203,7 @@ func (r *QuizRepository) UpdateAnswersAndGrading(ctx context.Context, quizId uui
 	return nil
 }
 
-func (r *QuizRepository) SoftDelete(ctx context.Context, quizId uuid.UUID) error {
+func (r *QuizRepository) SoftDelete(ctx context.Context, quizId string) error {
 	query := `
 		UPDATE ` + quizTable + `
 		SET quiz_status = ?,
@@ -218,7 +218,7 @@ func (r *QuizRepository) SoftDelete(ctx context.Context, quizId uuid.UUID) error
 	return nil
 }
 
-func (r *QuizRepository) SoftDeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+func (r *QuizRepository) SoftDeleteByUserId(ctx context.Context, userId string) error {
 	query := `
 		UPDATE ` + quizTable + `
 		SET quiz_status = ?,
@@ -233,7 +233,7 @@ func (r *QuizRepository) SoftDeleteByUserId(ctx context.Context, userId uuid.UUI
 	return nil
 }
 
-func (r *QuizRepository) ForceDeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+func (r *QuizRepository) ForceDeleteByUserId(ctx context.Context, userId string) error {
 	query := `DELETE FROM ` + quizTable + ` WHERE user_id = ?`
 	if _, err := r.db.Exec(ctx, query, userId); err != nil {
 		return fmt.Errorf("quiz repo force delete by user id: %w", err)
@@ -242,11 +242,41 @@ func (r *QuizRepository) ForceDeleteByUserId(ctx context.Context, userId uuid.UU
 }
 
 func ModelToDomainQuiz(m *models.QuizModel) *quiz.Quiz {
+	quizId, err := utils.StringToUUID(m.QuizId)
+	if err != nil {
+		return nil
+	}
+
+	userId, err := utils.PtrStringToUUID(m.UserId)
+	if err != nil {
+		return nil
+	}
+
+	profileId, err := utils.PtrStringToUUID(m.ProfileId)
+	if err != nil {
+		return nil
+	}
+
+	previousQuizId, err := utils.PtrStringToUUID(m.PreviousQuizId)
+	if err != nil {
+		return nil
+	}
+
+	createId, err := utils.PtrStringToUUID(m.CreateId)
+	if err != nil {
+		return nil
+	}
+
+	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
+	if err != nil {
+		return nil
+	}
+
 	q := quiz.NewQuiz()
 	q.SetId(m.Id)
-	q.SetQuizId(m.QuizId)
-	q.SetUserId(m.UserId)
-	q.SetProfileId(m.ProfileId)
+	q.SetQuizId(quizId)
+	q.SetUserId(&userId)
+	q.SetProfileId(&profileId)
 	q.SetQuizType(m.QuizType)
 	q.SetQuestions(m.Questions)
 	q.SetAnswers(m.Answers)
@@ -255,13 +285,13 @@ func ModelToDomainQuiz(m *models.QuizModel) *quiz.Quiz {
 	q.SetTotalQuestions(m.TotalQuestions)
 	q.SetCorrectNumber(m.CorrectNumber)
 	q.SetScorePercentage(m.ScorePercentage)
-	q.SetPreviousQuizId(m.PreviousQuizId)
+	q.SetPreviousQuizId(&previousQuizId)
 	q.SetNote(m.Note)
 	q.SetQuizStatus(m.QuizStatus)
 	q.SetStatus(m.Status)
-	q.SetCreateId(m.CreateId)
+	q.SetCreateId(&createId)
 	q.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	q.SetModifyId(m.ModifyId)
+	q.SetModifyId(&modifyId)
 	q.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return q
 }

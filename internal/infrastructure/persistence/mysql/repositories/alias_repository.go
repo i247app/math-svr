@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 
 	"math-ai.com/math-ai/internal/domain/shared/time"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
@@ -68,7 +68,7 @@ func (r *AliasRepository) Create(ctx context.Context, alias *user.Alias) (*user.
 	return alias, nil
 }
 
-func (r *AliasRepository) FindByAliasId(ctx context.Context, aliasId uuid.UUID) (*user.Alias, error) {
+func (r *AliasRepository) FindByAliasId(ctx context.Context, aliasId string) (*user.Alias, error) {
 	return r.findOneBy(ctx, "alias_id = ?", aliasId)
 }
 
@@ -76,7 +76,7 @@ func (r *AliasRepository) FindByAka(ctx context.Context, aka string) (*user.Alia
 	return r.findOneBy(ctx, "aka = ?", aka)
 }
 
-func (r *AliasRepository) FindByUserId(ctx context.Context, userId uuid.UUID) ([]*user.Alias, error) {
+func (r *AliasRepository) FindByUserId(ctx context.Context, userId string) ([]*user.Alias, error) {
 	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable + ` WHERE user_id = ?`
 	rows, err := r.db.Query(ctx, query, userId)
 	if err != nil {
@@ -112,14 +112,14 @@ func (r *AliasRepository) UpdateByAliasId(ctx context.Context, alias *user.Alias
 	return nil
 }
 
-func (r *AliasRepository) DeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+func (r *AliasRepository) DeleteByUserId(ctx context.Context, userId string) error {
 	if _, err := r.db.Exec(ctx, `DELETE FROM `+aliasTable+` WHERE user_id = ?`, userId); err != nil {
 		return fmt.Errorf("alias repo delete by uid: %w", err)
 	}
 	return nil
 }
 
-func (r *AliasRepository) MarkStatusByUserId(ctx context.Context, userId uuid.UUID, status enum.UserAliasStatusType) error {
+func (r *AliasRepository) MarkStatusByUserId(ctx context.Context, userId string, status enum.UserAliasStatusType) error {
 	query := `
 		UPDATE ` + aliasTable + `
 		SET alias_status = ?,
@@ -133,7 +133,7 @@ func (r *AliasRepository) MarkStatusByUserId(ctx context.Context, userId uuid.UU
 	return nil
 }
 
-func (r *AliasRepository) SoftDeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+func (r *AliasRepository) SoftDeleteByUserId(ctx context.Context, userId string) error {
 	query := `
 		UPDATE ` + aliasTable + `
 		SET alias_status = ?,
@@ -149,16 +149,36 @@ func (r *AliasRepository) SoftDeleteByUserId(ctx context.Context, userId uuid.UU
 }
 
 func ModelToDomainAlias(m *models.AliasModel) *user.Alias {
+	aliasId, err := utils.StringToUUID(m.AliasId)
+	if err != nil {
+		return nil
+	}
+
+	userId, err := utils.StringToUUID(m.UserId)
+	if err != nil {
+		return nil
+	}
+
+	createId, err := utils.PtrStringToUUID(m.CreateId)
+	if err != nil {
+		return nil
+	}
+
+	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
+	if err != nil {
+		return nil
+	}
+
 	a := user.NewAlias()
 	a.SetId(m.Id)
-	a.SetAliasId(m.AliasId)
-	a.SetUserId(m.UserId)
+	a.SetAliasId(aliasId)
+	a.SetUserId(userId)
 	a.SetAka(m.Aka)
 	a.SetAliasStatus(m.AliasStatus)
 	a.SetNote(m.Note)
-	a.SetCreateId(m.CreateId)
+	a.SetCreateId(&createId)
 	a.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	a.SetModifyId(m.ModifyId)
+	a.SetModifyId(&modifyId)
 	a.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return a
 }

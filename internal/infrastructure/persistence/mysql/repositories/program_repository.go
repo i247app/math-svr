@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/program"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // Reference-data aggregate: read-only, JOIN'd against the translations table
@@ -118,7 +118,7 @@ func (r *ProgramRepository) ListPrograms(ctx context.Context, params *program.Li
 // Caller (typically a service composing a parent aggregate response) is
 // responsible for keying the result by ProgramId() — order is not preserved
 // because the IN-clause makes no ordering guarantee.
-func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []uuid.UUID, lang enum.LanguageType) ([]*program.Program, error) {
+func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []string, lang enum.LanguageType) ([]*program.Program, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -158,9 +158,24 @@ func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []uuid.UU
 }
 
 func ModelToDomainProgram(m *models.ProgramModel) *program.Program {
+	programId, err := utils.StringToUUID(m.ProgramId)
+	if err != nil {
+		return nil
+	}
+
+	createId, err := utils.PtrStringToUUID(m.CreateId)
+	if err != nil {
+		return nil
+	}
+
+	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
+	if err != nil {
+		return nil
+	}
+
 	p := program.NewProgram()
 	p.SetId(m.Id)
-	p.SetProgramId(m.ProgramId)
+	p.SetProgramId(programId)
 	p.SetLabel(m.Label)
 	p.SetDescription(m.Description)
 	p.SetImageKey(m.ImageKey)
@@ -168,9 +183,9 @@ func ModelToDomainProgram(m *models.ProgramModel) *program.Program {
 	p.SetNote(m.Note)
 	p.SetProgramStatus(m.ProgramStatus)
 	p.SetStatus(m.Status)
-	p.SetCreateId(m.CreateId)
+	p.SetCreateId(&createId)
 	p.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	p.SetModifyId(m.ModifyId)
+	p.SetModifyId(&modifyId)
 	p.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return p
 }

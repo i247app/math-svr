@@ -3,7 +3,6 @@ package quiz
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -24,8 +23,8 @@ type GradingUpdate struct {
 // so the result is the intersection. At least one must be non-nil —
 // the caller is responsible for that check.
 type ListQuizzesFilter struct {
-	ProfileID *uuid.UUID
-	UserID    *uuid.UUID
+	ProfileID *string
+	UserID    *string
 }
 
 // IRepository owns all quiz persistence. UpdateAnswersAndGrading is
@@ -33,12 +32,12 @@ type ListQuizzesFilter struct {
 // the answers + AI grading fields in one shot without forcing COALESCE
 // on the JSON columns.
 type IRepository interface {
-	FindByQuizId(ctx context.Context, quizId uuid.UUID) (*Quiz, error)
+	FindByQuizId(ctx context.Context, quizId string) (*Quiz, error)
 	ListQuizzes(ctx context.Context, filter ListQuizzesFilter, page, limit int64) ([]*Quiz, *pagination.Pagination, error)
 	Create(ctx context.Context, q *Quiz) (*Quiz, error)
-	UpdateAnswersAndGrading(ctx context.Context, quizId uuid.UUID, answers string,
+	UpdateAnswersAndGrading(ctx context.Context, quizId string, answers string,
 		grading GradingUpdate, quizStatus string) error
-	SoftDelete(ctx context.Context, quizId uuid.UUID) error
-	SoftDeleteByUserId(ctx context.Context, userId uuid.UUID) error
-	ForceDeleteByUserId(ctx context.Context, userId uuid.UUID) error
+	SoftDelete(ctx context.Context, quizId string) error
+	SoftDeleteByUserId(ctx context.Context, userId string) error
+	ForceDeleteByUserId(ctx context.Context, userId string) error
 }

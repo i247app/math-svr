@@ -3,12 +3,11 @@ package query
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/user"
 )
 
 type GetUserByUserIdQuery struct {
-	UserId uuid.UUID
+	UserId string
 }
 
 type GetUserByUserIdQueryHandler struct {

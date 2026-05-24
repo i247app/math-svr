@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/quiz"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -15,7 +14,7 @@ import (
 // grading verdict in a single update. The bot call happens at the
 // service layer BEFORE this command, so the transaction stays short.
 type SubmitQuizAnswersCommand struct {
-	QuizID      uuid.UUID
+	QuizID      string
 	AnswersJSON string
 	Grading     quiz.GradingUpdate
 }

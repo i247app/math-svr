@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -15,7 +14,7 @@ import (
 // service) because it's external I/O, not DB state — this command owns
 // only the transactional DB write that links the two.
 type SetAvatarKeyCommand struct {
-	ProfileID uuid.UUID
+	ProfileID string
 	AvatarKey string
 }
 

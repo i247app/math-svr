@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/domain/user"
@@ -88,7 +87,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		// only profile attached to a freshly minted parent. Curriculum
 		// fields remain uuid.Nil (→ SQL NULL via repo) and are filled in
 		// later via /profiles/update.
-		p, err := repos.Profile.Create(ctx, BuildInitialProfile(u.UserId(), cmd))
+		p, err := repos.Profile.Create(ctx, BuildInitialProfile(u.UserId().String(), cmd))
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -113,10 +112,14 @@ func BuildUser(cmd CreateUserCommand) *user.User {
 	return u
 }
 
-func BuildInitialProfile(userId uuid.UUID, cmd CreateUserCommand) *profile.Profile {
+func BuildInitialProfile(userId string, cmd CreateUserCommand) *profile.Profile {
+	userUUID, err := utils.StringToUUID(userId)
+	if err != nil {
+		return nil
+	}
 	p := profile.NewProfile()
 	p.SetProfileId(utils.GenerateUUID())
-	p.SetUserId(userId)
+	p.SetUserId(userUUID)
 	p.SetName(cmd.Name)
 	p.SetAvatarKey(cmd.AvatarKey)
 	p.SetIsDefault(true)

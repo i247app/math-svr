@@ -3,10 +3,10 @@ package quiz
 import (
 	"encoding/json"
 
-	"github.com/google/uuid"
 	domain "math-ai.com/math-ai/internal/domain/quiz"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // QuizAnswerChoice is one option in a multiple-choice question. The
@@ -50,11 +50,11 @@ type QuizGradingResult struct {
 // because anonymous quizzes (generated without a profile) carry neither.
 type QuizResponse struct {
 	ID             int64               `json:"id"`
-	QuizID         uuid.UUID           `json:"quiz_id"`
-	UserID         *uuid.UUID          `json:"user_id,omitempty"`
-	ProfileID      *uuid.UUID          `json:"profile_id,omitempty"`
+	QuizID         string              `json:"quiz_id"`
+	UserID         *string             `json:"user_id,omitempty"`
+	ProfileID      *string             `json:"profile_id,omitempty"`
 	Type           string              `json:"type"`
-	PreviousQuizID *uuid.UUID          `json:"previous_quiz_id,omitempty"`
+	PreviousQuizID *string             `json:"previous_quiz_id,omitempty"`
 	Questions      []QuizQuestion      `json:"questions,omitempty"`
 	Answers        []QuizStudentAnswer `json:"answers,omitempty"`
 	Grading        *QuizGradingResult  `json:"grading,omitempty"`
@@ -78,15 +78,15 @@ type QuizResponse struct {
 // like "Grade 2 fractions review" without needing a curriculum row, and
 // so the service does not have to do an extra round-trip to translate.
 type GenerateQuizReq struct {
-	UserID         *uuid.UUID        `json:"user_id"`
-	ProfileID      *uuid.UUID        `json:"profile_id,omitempty"`
+	UserID         *string           `json:"user_id"`
+	ProfileID      *string           `json:"profile_id,omitempty"`
 	Type           string            `json:"type"`
 	Language       enum.LanguageType `json:"language,omitempty"`
 	ProgramLabel   string            `json:"program_label,omitempty"`
 	GradeLabel     string            `json:"grade_label,omitempty"`
 	SemesterLabel  string            `json:"semester_label,omitempty"`
 	NumQuestions   int               `json:"num_questions,omitempty"`
-	PreviousQuizID *uuid.UUID        `json:"previous_quiz_id,omitempty"`
+	PreviousQuizID *string           `json:"previous_quiz_id,omitempty"`
 }
 
 type GenerateQuizRes struct {
@@ -94,7 +94,7 @@ type GenerateQuizRes struct {
 }
 
 type SubmitQuizAnswersReq struct {
-	QuizID   uuid.UUID           `json:"quiz_id"`
+	QuizID   string              `json:"quiz_id"`
 	Language enum.LanguageType   `json:"language,omitempty"`
 	Answers  []QuizStudentAnswer `json:"answers"`
 }
@@ -104,7 +104,7 @@ type SubmitQuizAnswersRes struct {
 }
 
 type GetQuizByQuizIdReq struct {
-	QuizID uuid.UUID `json:"quiz_id"`
+	QuizID string `json:"quiz_id"`
 }
 
 type GetQuizByQuizIdRes struct {
@@ -116,10 +116,10 @@ type GetQuizByQuizIdRes struct {
 // are AND'd so the result is the intersection (a specific child of a
 // specific parent).
 type ListQuizzesReq struct {
-	ProfileID *uuid.UUID `json:"profile_id,omitempty"`
-	UserID    *uuid.UUID `json:"user_id,omitempty"`
-	Page      int        `json:"page,omitempty"`
-	Size      int        `json:"size,omitempty"`
+	ProfileID *string `json:"profile_id,omitempty"`
+	UserID    *string `json:"user_id,omitempty"`
+	Page      int     `json:"page,omitempty"`
+	Size      int     `json:"size,omitempty"`
 }
 
 type ListQuizzesRes struct {
@@ -128,7 +128,7 @@ type ListQuizzesRes struct {
 }
 
 type DeleteQuizReq struct {
-	QuizID uuid.UUID `json:"quiz_id"`
+	QuizID string `json:"quiz_id"`
 }
 
 type DeleteQuizRes struct{}
@@ -141,13 +141,27 @@ func DomainToResponse(q *domain.Quiz, includeRightAnswers bool) *QuizResponse {
 	if q == nil {
 		return nil
 	}
+	var userId, profileId, previousQuizId *string
+	if q.UserId() != nil && !utils.IsEmptyUUID(*q.UserId()) {
+		id := q.UserId().String()
+		userId = &id
+	}
+	if q.ProfileId() != nil && !utils.IsEmptyUUID(*q.ProfileId()) {
+		id := q.ProfileId().String()
+		profileId = &id
+	}
+	if q.PreviousQuizId() != nil && !utils.IsEmptyUUID(*q.PreviousQuizId()) {
+		id := q.PreviousQuizId().String()
+		previousQuizId = &id
+	}
+
 	res := &QuizResponse{
 		ID:             q.Id(),
-		QuizID:         q.QuizId(),
-		UserID:         q.UserId(),
-		ProfileID:      q.ProfileId(),
+		QuizID:         q.QuizId().String(),
+		UserID:         userId,
+		ProfileID:      profileId,
 		Type:           q.QuizType(),
-		PreviousQuizID: q.PreviousQuizId(),
+		PreviousQuizID: previousQuizId,
 		QuizStatus:     q.QuizStatus(),
 		CreateDt:       q.CreateDt().String(),
 		ModifyDt:       q.ModifyDt().String(),

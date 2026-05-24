@@ -2,15 +2,13 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type OtpModel struct {
 	Id           int64
-	OtpId        uuid.UUID
+	OtpId        string
 	OtpType      string
-	UserId       *uuid.UUID
+	UserId       *string
 	Identifier   string
 	DeviceUUID   *string
 	DeviceName   *string
@@ -21,8 +19,8 @@ type OtpModel struct {
 	Note         *string
 	OtpStatus    *string
 	Status       string
-	CreateId     *uuid.UUID
+	CreateId     *string
 	CreateDt     time.Time
-	ModifyId     *uuid.UUID
+	ModifyId     *string
 	ModifyDt     time.Time
 }

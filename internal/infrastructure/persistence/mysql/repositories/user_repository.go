@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"math-ai.com/math-ai/internal/shared/utils"
 
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
@@ -100,7 +100,7 @@ func (r *UserRepository) FindById(ctx context.Context, id int64) (*user.User, er
 	return r.findOneBy(ctx, "u.id = ?", id)
 }
 
-func (r *UserRepository) FindByUserId(ctx context.Context, userId uuid.UUID) (*user.User, error) {
+func (r *UserRepository) FindByUserId(ctx context.Context, userId string) (*user.User, error) {
 	return r.findOneBy(ctx, "u.user_id = ?", userId)
 }
 
@@ -176,7 +176,7 @@ func (r *UserRepository) DeleteById(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (r *UserRepository) DeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+func (r *UserRepository) DeleteByUserId(ctx context.Context, userId string) error {
 	if _, err := r.db.Exec(ctx, `DELETE FROM `+userTable+` WHERE user_id = ?`, userId); err != nil {
 		return fmt.Errorf("user repo delete by user id: %w", err)
 	}
@@ -198,7 +198,7 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 	return nil
 }
 
-func (r *UserRepository) MarkStatusByUserId(ctx context.Context, userId uuid.UUID, status enum.UserStatusType) error {
+func (r *UserRepository) MarkStatusByUserId(ctx context.Context, userId string, status enum.UserStatusType) error {
 	query := `
 		UPDATE ` + userTable + `
 		SET user_status = ?,
@@ -212,7 +212,7 @@ func (r *UserRepository) MarkStatusByUserId(ctx context.Context, userId uuid.UUI
 	return nil
 }
 
-func (r *UserRepository) SoftDeleteByUserId(ctx context.Context, userId uuid.UUID) error {
+func (r *UserRepository) SoftDeleteByUserId(ctx context.Context, userId string) error {
 	query := `
 		UPDATE ` + userTable + `
 		SET user_status = ?,
@@ -228,33 +228,51 @@ func (r *UserRepository) SoftDeleteByUserId(ctx context.Context, userId uuid.UUI
 }
 
 func DomainToModel(u *user.User) *models.UserModel {
+	createId := u.CreateId().String()
+	modifyId := u.ModifyId().String()
+
 	return &models.UserModel{
 		Id:         u.Id(),
-		UserId:     u.UserId(),
+		UserId:     u.UserId().String(),
 		Email:      u.Email(),
 		Phone:      u.Phone(),
 		UserStatus: u.UserStatus(),
 		Status:     u.Status(),
 		Note:       u.Note(),
-		CreateId:   u.CreateId(),
+		CreateId:   &createId,
 		CreateDt:   u.CreateDt().ToTime(),
-		ModifyId:   u.ModifyId(),
+		ModifyId:   &modifyId,
 		ModifyDt:   u.ModifyDt().ToTime(),
 	}
 }
 
 func ModelToDomain(m *models.UserModel) *user.User {
+	createId, err := utils.PtrStringToUUID(m.CreateId)
+	if err != nil {
+		return nil
+	}
+
+	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
+	if err != nil {
+		return nil
+	}
+
+	userId, err := utils.StringToUUID(m.UserId)
+	if err != nil {
+		return nil
+	}
+
 	u := user.NewUser()
 	u.SetId(m.Id)
-	u.SetUserId(m.UserId)
+	u.SetUserId(userId)
 	u.SetEmail(m.Email)
 	u.SetPhone(m.Phone)
 	u.SetUserStatus(m.UserStatus)
 	u.SetStatus(m.Status)
 	u.SetNote(m.Note)
-	u.SetCreateId(m.CreateId)
+	u.SetCreateId(&createId)
 	u.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	u.SetModifyId(m.ModifyId)
+	u.SetModifyId(&modifyId)
 	u.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 
 	return u

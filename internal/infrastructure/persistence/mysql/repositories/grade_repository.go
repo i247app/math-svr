@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/grade"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // Reference-data aggregate. Same shape as program_repository.go — see the
@@ -107,7 +107,7 @@ func (r *GradeRepository) ListGrades(ctx context.Context, params *grade.ListGrad
 }
 
 // ListGradesByIds — see program_repository's equivalent for rationale.
-func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []uuid.UUID, lang enum.LanguageType) ([]*grade.Grade, error) {
+func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []string, lang enum.LanguageType) ([]*grade.Grade, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -147,9 +147,24 @@ func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []uuid.UUID, 
 }
 
 func ModelToDomainGrade(m *models.GradeModel) *grade.Grade {
+	gradeId, err := utils.StringToUUID(m.GradeId)
+	if err != nil {
+		return nil
+	}
+
+	createId, err := utils.PtrStringToUUID(m.CreateId)
+	if err != nil {
+		return nil
+	}
+
+	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
+	if err != nil {
+		return nil
+	}
+
 	g := grade.NewGrade()
 	g.SetId(m.Id)
-	g.SetGradeId(m.GradeId)
+	g.SetGradeId(gradeId)
 	g.SetLabel(m.Label)
 	g.SetDescription(m.Description)
 	g.SetImageKey(m.ImageKey)
@@ -157,9 +172,9 @@ func ModelToDomainGrade(m *models.GradeModel) *grade.Grade {
 	g.SetNote(m.Note)
 	g.SetGradeStatus(m.GradeStatus)
 	g.SetStatus(m.Status)
-	g.SetCreateId(m.CreateId)
+	g.SetCreateId(&createId)
 	g.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	g.SetModifyId(m.ModifyId)
+	g.SetModifyId(&modifyId)
 	g.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return g
 }

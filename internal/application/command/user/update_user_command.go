@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -14,10 +13,10 @@ import (
 )
 
 type UpdateUserCommand struct {
-	ID     int64     `json:"-"`
-	UserID uuid.UUID `json:"user_id"`
-	Email  *string   `json:"email,omitempty"`
-	Phone  *string   `json:"phone,omitempty"`
+	ID     int64   `json:"-"`
+	UserID string  `json:"user_id"`
+	Email  *string `json:"email,omitempty"`
+	Phone  *string `json:"phone,omitempty"`
 }
 
 func (c UpdateUserCommand) Validate() error {

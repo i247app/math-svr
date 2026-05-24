@@ -1,22 +1,22 @@
 package semester
 
 import (
-	"github.com/google/uuid"
 	domain "math-ai.com/math-ai/internal/domain/semester"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type SemesterResponse struct {
-	ID           int64     `json:"id"`
-	SemesterID   uuid.UUID `json:"semester_id"`
-	Name         string    `json:"name"`
-	Description  string    `json:"description"`
-	ImageKey     *string   `json:"image_key,omitempty"`
-	ImageUrl     *string   `json:"image_url"` // pre-signed url from image_key
-	DisplayOrder int8      `json:"display_order"`
-	CreateDt     string    `json:"create_dt"`
-	ModifyDt     string    `json:"modify_dt"`
+	ID           int64   `json:"id"`
+	SemesterID   string  `json:"semester_id"`
+	Name         string  `json:"name"`
+	Description  string  `json:"description"`
+	ImageKey     *string `json:"image_key,omitempty"`
+	ImageUrl     *string `json:"image_url"` // pre-signed url from image_key
+	DisplayOrder int8    `json:"display_order"`
+	CreateDt     string  `json:"create_dt"`
+	ModifyDt     string  `json:"modify_dt"`
 }
 
 type ListSemestersReq struct {
@@ -35,9 +35,15 @@ func DomainToResponse(s *domain.Semester) *SemesterResponse {
 		return nil
 	}
 
+	var semesterId string
+	if !utils.IsEmptyUUID(s.SemesterId()) {
+		id := s.SemesterId().String()
+		semesterId = id
+	}
+
 	return &SemesterResponse{
 		ID:           s.Id(),
-		SemesterID:   s.SemesterId(),
+		SemesterID:   semesterId,
 		Name:         s.Name(),
 		Description:  s.Description(),
 		ImageKey:     s.ImageKey(),

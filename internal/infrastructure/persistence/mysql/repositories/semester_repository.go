@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/semester"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // Reference-data aggregate. Like program/grade, but the base table uses
@@ -107,7 +107,7 @@ func (r *SemesterRepository) ListSemesters(ctx context.Context, params *semester
 }
 
 // ListSemestersByIds — see program_repository's equivalent for rationale.
-func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []uuid.UUID, lang enum.LanguageType) ([]*semester.Semester, error) {
+func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []string, lang enum.LanguageType) ([]*semester.Semester, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -147,9 +147,24 @@ func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []uuid.
 }
 
 func ModelToDomainSemester(m *models.SemesterModel) *semester.Semester {
+	semesterId, err := utils.StringToUUID(m.SemesterId)
+	if err != nil {
+		return nil
+	}
+
+	createId, err := utils.PtrStringToUUID(m.CreateId)
+	if err != nil {
+		return nil
+	}
+
+	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
+	if err != nil {
+		return nil
+	}
+
 	s := semester.NewSemester()
 	s.SetId(m.Id)
-	s.SetSemesterId(m.SemesterId)
+	s.SetSemesterId(semesterId)
 	s.SetName(m.Name)
 	s.SetDescription(m.Description)
 	s.SetImageKey(m.ImageKey)
@@ -157,9 +172,9 @@ func ModelToDomainSemester(m *models.SemesterModel) *semester.Semester {
 	s.SetNote(m.Note)
 	s.SetSemesterStatus(m.SemesterStatus)
 	s.SetStatus(m.Status)
-	s.SetCreateId(m.CreateId)
+	s.SetCreateId(&createId)
 	s.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	s.SetModifyId(m.ModifyId)
+	s.SetModifyId(&modifyId)
 	s.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return s
 }

@@ -2,20 +2,18 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type UserModel struct {
 	Id         int64
-	UserId     uuid.UUID
+	UserId     string
 	Phone      string
 	Email      *string
 	UserStatus *string
 	Status     string
 	Note       *string
-	CreateId   *uuid.UUID
+	CreateId   *string
 	CreateDt   time.Time
-	ModifyId   *uuid.UUID
+	ModifyId   *string
 	ModifyDt   time.Time
 }

@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -76,7 +76,7 @@ func (r *LoginLogRepository) findBareById(ctx context.Context, id int64) (*login
 	return ModelToDomainLoginLog(m), nil
 }
 
-func (r *LoginLogRepository) FindByLoginLogId(ctx context.Context, loginLogId uuid.UUID) (*loginlog.LoginLog, error) {
+func (r *LoginLogRepository) FindByLoginLogId(ctx context.Context, loginLogId string) (*loginlog.LoginLog, error) {
 	return r.findOneBy(ctx, "l.login_log_id = ?", loginLogId)
 }
 
@@ -87,13 +87,13 @@ func (r *LoginLogRepository) FindActiveByToken(ctx context.Context, token string
 	return r.findOneBy(ctx, "l.token = ? AND l.login_log_status = ?", token, enum.LoginLogStatusTypeActive)
 }
 
-func (r *LoginLogRepository) FindActiveByUserDevice(ctx context.Context, userId uuid.UUID, deviceUUID string) (*loginlog.LoginLog, error) {
+func (r *LoginLogRepository) FindActiveByUserDevice(ctx context.Context, userId string, deviceUUID string) (*loginlog.LoginLog, error) {
 	return r.findOneBy(ctx,
 		"l.user_id = ? AND l.device_uuid = ? AND l.login_log_status = ?",
 		userId, deviceUUID, enum.LoginLogStatusTypeActive)
 }
 
-func (r *LoginLogRepository) ListByUserId(ctx context.Context, userId uuid.UUID) ([]*loginlog.LoginLog, error) {
+func (r *LoginLogRepository) ListByUserId(ctx context.Context, userId string) ([]*loginlog.LoginLog, error) {
 	args := append(loginLogActiveArgs(), userId)
 	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE ` +
 		loginLogActiveWhere + ` AND l.user_id = ? ORDER BY l.id DESC`
@@ -139,7 +139,7 @@ func (r *LoginLogRepository) Create(ctx context.Context, l *loginlog.LoginLog) (
 	return r.findBareById(ctx, id)
 }
 
-func (r *LoginLogRepository) MarkStatusByLoginLogId(ctx context.Context, loginLogId uuid.UUID, st enum.LoginLogStatusType) error {
+func (r *LoginLogRepository) MarkStatusByLoginLogId(ctx context.Context, loginLogId string, st enum.LoginLogStatusType) error {
 	query := `
 		UPDATE ` + loginLogTable + `
 		SET login_log_status = ?,
@@ -155,7 +155,7 @@ func (r *LoginLogRepository) MarkStatusByLoginLogId(ctx context.Context, loginLo
 // MarkStatusByUserDevice flips every still-ACTIVE row for the (user, device)
 // pair. Used at login to enforce the "one active session per device" rule —
 // the new login_log row is inserted right after.
-func (r *LoginLogRepository) MarkStatusByUserDevice(ctx context.Context, userId uuid.UUID, deviceUUID string, st enum.LoginLogStatusType) error {
+func (r *LoginLogRepository) MarkStatusByUserDevice(ctx context.Context, userId string, deviceUUID string, st enum.LoginLogStatusType) error {
 	query := `
 		UPDATE ` + loginLogTable + `
 		SET login_log_status = ?,
@@ -170,7 +170,7 @@ func (r *LoginLogRepository) MarkStatusByUserDevice(ctx context.Context, userId 
 	return nil
 }
 
-func (r *LoginLogRepository) SoftDeleteByLoginLogId(ctx context.Context, loginLogId uuid.UUID) error {
+func (r *LoginLogRepository) SoftDeleteByLoginLogId(ctx context.Context, loginLogId string) error {
 	query := `
 		UPDATE ` + loginLogTable + `
 		SET login_log_status = ?,
@@ -186,19 +186,39 @@ func (r *LoginLogRepository) SoftDeleteByLoginLogId(ctx context.Context, loginLo
 }
 
 func ModelToDomainLoginLog(m *models.LoginLogModel) *loginlog.LoginLog {
+	loginLogId, err := utils.StringToUUID(m.LoginLogId)
+	if err != nil {
+		return nil
+	}
+
+	userId, err := utils.StringToUUID(m.UserId)
+	if err != nil {
+		return nil
+	}
+
+	createId, err := utils.PtrStringToUUID(m.CreateId)
+	if err != nil {
+		return nil
+	}
+
+	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
+	if err != nil {
+		return nil
+	}
+
 	l := loginlog.NewLoginLog()
 	l.SetId(m.Id)
-	l.SetLoginLogId(m.LoginLogId)
-	l.SetUserId(m.UserId)
+	l.SetLoginLogId(loginLogId)
+	l.SetUserId(userId)
 	l.SetIpAddress(m.IpAddress)
 	l.SetDeviceUUID(m.DeviceUUID)
 	l.SetToken(m.Token)
 	l.SetNote(m.Note)
 	l.SetLoginLogStatus(m.LoginLogStatus)
 	l.SetStatus(m.Status)
-	l.SetCreateId(m.CreateId)
+	l.SetCreateId(&createId)
 	l.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	l.SetModifyId(m.ModifyId)
+	l.SetModifyId(&modifyId)
 	l.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return l
 }

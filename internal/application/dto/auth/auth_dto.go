@@ -1,8 +1,6 @@
 package auth
 
 import (
-	"time"
-
 	"math-ai.com/math-ai/internal/application/dto/user"
 )
 
@@ -22,7 +20,7 @@ type LoginRes struct {
 }
 
 type LoginWithOTPRes struct {
-	ExpiresAt time.Time          `json:"expires_at"`
+	ExpiresAt string             `json:"expires_at"`
 	OTPCode   string             `json:"otp_code,omitempty"`
 	OtpType   string             `json:"otp_type,omitempty"`
 	User      *user.UserResponse `json:"user"`

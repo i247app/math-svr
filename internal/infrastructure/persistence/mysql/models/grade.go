@@ -2,13 +2,11 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type GradeModel struct {
 	Id           int64
-	GradeId      uuid.UUID
+	GradeId      string
 	Label        string
 	Description  string
 	ImageKey     *string
@@ -16,8 +14,8 @@ type GradeModel struct {
 	Note         *string
 	GradeStatus  *string
 	Status       string
-	CreateId     *uuid.UUID
+	CreateId     *string
 	CreateDt     time.Time
-	ModifyId     *uuid.UUID
+	ModifyId     *string
 	ModifyDt     time.Time
 }

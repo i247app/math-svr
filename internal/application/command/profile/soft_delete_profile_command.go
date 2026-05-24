@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -11,7 +10,7 @@ import (
 )
 
 type SoftDeleteProfileCommand struct {
-	ProfileID uuid.UUID
+	ProfileID string
 }
 
 type SoftDeleteProfileCommandHandler struct {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -12,7 +11,7 @@ import (
 )
 
 type LogoutCommand struct {
-	UserID     uuid.UUID
+	UserID     string
 	DeviceUUID string
 }
 
@@ -35,7 +34,7 @@ func (h *LogoutCommandHandler) Handle(ctx context.Context, cmd LogoutCommand) er
 		}
 
 		if err := repos.LoginLog.MarkStatusByLoginLogId(
-			ctx, ll.LoginLogId(), enum.LoginLogStatusTypeRevoked,
+			ctx, ll.LoginLogId().String(), enum.LoginLogStatusTypeRevoked,
 		); err != nil {
 			return errs.NewError(ctx, status.AUTH_LOGOUT_FAILED, nil, err)
 		}

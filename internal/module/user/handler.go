@@ -8,7 +8,6 @@ import (
 	"math-ai.com/math-ai/internal/application/dto/user"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/shared/response"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -77,13 +76,7 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 
-	userID, err := utils.StringToUUID(idStr)
-	if err != nil {
-		response.WriteJson(w, nil, err)
-		return
-	}
-
-	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: userID})
+	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: idStr})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -106,13 +99,7 @@ func (h *UserHandler) HandleGetUserMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := utils.StringToUUID(uid)
-	if err != nil {
-		response.WriteJson(w, nil, err)
-		return
-	}
-
-	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: userId})
+	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: uid})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

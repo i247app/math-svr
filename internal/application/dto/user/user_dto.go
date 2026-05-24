@@ -3,20 +3,19 @@ package user
 import (
 	"io"
 
-	"github.com/google/uuid"
-
 	profileDto "math-ai.com/math-ai/internal/application/dto/profile"
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type UserResponse struct {
-	ID       int64     `json:"id"`
-	UserID   uuid.UUID `json:"user_id"`
-	Email    *string   `json:"email,omitempty"`
-	Phone    string    `json:"phone,omitempty"`
-	CreateDt string    `json:"create_dt"`
-	ModifyDt string    `json:"modify_dt"`
+	ID       int64   `json:"id"`
+	UserID   string  `json:"user_id"`
+	Email    *string `json:"email,omitempty"`
+	Phone    string  `json:"phone,omitempty"`
+	CreateDt string  `json:"create_dt"`
+	ModifyDt string  `json:"modify_dt"`
 }
 
 type GetUserByPhoneReq struct {
@@ -49,15 +48,15 @@ type CreateUserReq struct {
 // child profile so the client doesn't need a follow-up /profiles/list round
 // trip during onboarding.
 type CreateUserRes struct {
-	User    *UserResponse                `json:"user"`
-	Profile *profileDto.ProfileResponse  `json:"profile"`
+	User    *UserResponse               `json:"user"`
+	Profile *profileDto.ProfileResponse `json:"profile"`
 }
 
 type UpdateUserReq struct {
-	ID     int64     `json:"id"`
-	UserID uuid.UUID `json:"user_id"`
-	Email  *string   `json:"email,omitempty"`
-	Phone  *string   `json:"phone,omitempty"`
+	ID     int64   `json:"id"`
+	UserID string  `json:"user_id"`
+	Email  *string `json:"email,omitempty"`
+	Phone  *string `json:"phone,omitempty"`
 }
 
 type UpdateUserRes struct {
@@ -65,7 +64,7 @@ type UpdateUserRes struct {
 }
 
 type GetUserByUserIdReq struct {
-	UserID uuid.UUID `json:"user_id"`
+	UserID string `json:"user_id"`
 }
 
 type GetUserByUserIdRes struct {
@@ -83,7 +82,7 @@ type ListUsersRes struct {
 }
 
 type DeleteUserReq struct {
-	UserID uuid.UUID `json:"user_id"`
+	UserID string `json:"user_id"`
 }
 
 type DeleteUserRes struct {
@@ -94,9 +93,15 @@ func DomainToResponse(u *user.User) *UserResponse {
 		return nil
 	}
 
+	var userId string
+	if !utils.IsEmptyUUID(u.UserId()) {
+		id := u.UserId().String()
+		userId = id
+	}
+
 	return &UserResponse{
 		ID:       u.Id(),
-		UserID:   u.UserId(),
+		UserID:   userId,
 		Email:    u.Email(),
 		Phone:    u.Phone(),
 		CreateDt: u.CreateDt().String(),

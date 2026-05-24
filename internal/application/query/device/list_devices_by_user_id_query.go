@@ -3,15 +3,13 @@ package query
 import (
 	"context"
 
-	"github.com/google/uuid"
-
 	"math-ai.com/math-ai/internal/domain/device"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
 type ListDevicesByUserIdQuery struct {
-	UserID uuid.UUID
+	UserID string
 }
 
 type ListDevicesByUserIdQueryHandler struct {

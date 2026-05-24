@@ -3,23 +3,22 @@ package command
 import (
 	"context"
 	"errors"
-	"time"
 
-	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type UpdateProfileCommand struct {
-	ProfileID  uuid.UUID
+	ProfileID  string
 	Name       *string
-	Dob        *time.Time
-	ProgramID  *uuid.UUID
-	GradeID    *uuid.UUID
-	SemesterID *uuid.UUID
+	Dob        *mtime.MathTime
+	ProgramID  *string
+	GradeID    *string
+	SemesterID *string
 	Note       *string
 }
 
@@ -67,21 +66,37 @@ func (h *UpdateProfileCommandHandler) Handle(ctx context.Context, cmd UpdateProf
 
 func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 	patch := profile.NewProfile()
-	patch.SetProfileId(cmd.ProfileID)
+	profileUUID, err := utils.StringToUUID(cmd.ProfileID)
+	if err != nil {
+		return nil
+	}
+	patch.SetProfileId(profileUUID)
 	if cmd.Name != nil {
 		patch.SetName(*cmd.Name)
 	}
 	if cmd.Dob != nil {
-		patch.SetDob(mtime.MathTime{Time: *cmd.Dob})
+		patch.SetDob(*cmd.Dob)
 	}
 	if cmd.ProgramID != nil {
-		patch.SetProgramId(cmd.ProgramID)
+		programUUID, err := utils.StringToUUID(*cmd.ProgramID)
+		if err != nil {
+			return nil
+		}
+		patch.SetProgramId(&programUUID)
 	}
 	if cmd.GradeID != nil {
-		patch.SetGradeId(cmd.GradeID)
+		gradeUUID, err := utils.StringToUUID(*cmd.GradeID)
+		if err != nil {
+			return nil
+		}
+		patch.SetGradeId(&gradeUUID)
 	}
 	if cmd.SemesterID != nil {
-		patch.SetSemesterId(cmd.SemesterID)
+		semesterUUID, err := utils.StringToUUID(*cmd.SemesterID)
+		if err != nil {
+			return nil
+		}
+		patch.SetSemesterId(&semesterUUID)
 	}
 	if cmd.Note != nil {
 		patch.SetNote(cmd.Note)

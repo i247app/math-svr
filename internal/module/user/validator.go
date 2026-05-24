@@ -30,7 +30,7 @@ func ValidateUpdateUser(ctx context.Context, req *dto.UpdateUserReq) error {
 }
 
 func ValidateDeleteUser(ctx context.Context, req *dto.DeleteUserReq) error {
-	if req.UserID.String() == "" {
+	if req.UserID == "" {
 		return errs.NewError(ctx, status.BAD_REQUEST, nil, errors.New("user id must be a valid uuid"))
 	}
 	return nil

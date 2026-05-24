@@ -4,20 +4,19 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
-
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // UpdateDeviceCommand patches mutable attributes of an existing device row —
 // rename, refresh push token, attach a note. is_verified is intentionally NOT
 // in this surface; verification flips only via the 2FA flow or revoke.
 type UpdateDeviceCommand struct {
-	UserID          uuid.UUID
-	DeviceID        uuid.UUID
+	UserID          string
+	DeviceID        string
 	DeviceName      string
 	DevicePushToken *string
 	Note            *string
@@ -42,13 +41,18 @@ func (h *UpdateDeviceCommandHandler) Handle(ctx context.Context, cmd UpdateDevic
 		if existing == nil {
 			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, errors.New("device not found"))
 		}
-		if existing.UserId() == nil || *existing.UserId() != cmd.UserID {
+		if existing.UserId() == nil || existing.UserId().String() != cmd.UserID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
 				errors.New("device does not belong to user"))
 		}
 
+		deviceUUID, err := utils.StringToUUID(cmd.DeviceID)
+		if err != nil {
+			return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+		}
+
 		patch := device.NewDevice()
-		patch.SetDeviceId(cmd.DeviceID)
+		patch.SetDeviceId(deviceUUID)
 		patch.SetDeviceName(cmd.DeviceName)
 		patch.SetDevicePushToken(cmd.DevicePushToken)
 		patch.SetNote(cmd.Note)

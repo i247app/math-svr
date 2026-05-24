@@ -2,14 +2,12 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type DeviceModel struct {
 	Id              int64
-	DeviceId        uuid.UUID
-	UserId          *uuid.UUID
+	DeviceId        string
+	UserId          *string
 	DeviceUUID      string
 	DeviceName      string
 	DevicePushToken *string
@@ -17,8 +15,8 @@ type DeviceModel struct {
 	Note            *string
 	DeviceStatus    *string
 	Status          string
-	CreateId        *uuid.UUID
+	CreateId        *string
 	CreateDt        time.Time
-	ModifyId        *uuid.UUID
+	ModifyId        *string
 	ModifyDt        time.Time
 }

@@ -2,15 +2,13 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type QuizModel struct {
 	Id              int64
-	QuizId          uuid.UUID
-	UserId          *uuid.UUID
-	ProfileId       *uuid.UUID
+	QuizId          string
+	UserId          *string
+	ProfileId       *string
 	QuizType        string
 	Questions       *string
 	Answers         *string
@@ -19,12 +17,12 @@ type QuizModel struct {
 	TotalQuestions  *int
 	CorrectNumber   *int
 	ScorePercentage *int
-	PreviousQuizId  *uuid.UUID
+	PreviousQuizId  *string
 	Note            *string
 	QuizStatus      *string
 	Status          string
-	CreateId        *uuid.UUID
+	CreateId        *string
 	CreateDt        time.Time
-	ModifyId        *uuid.UUID
+	ModifyId        *string
 	ModifyDt        time.Time
 }

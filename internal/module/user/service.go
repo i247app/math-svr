@@ -157,7 +157,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	sessionData := session.InitData{
 		Source:    "login",
 		IsSecure:  true,
-		UID:       userRes.UserID.String(),
+		UID:       userRes.UserID,
 		LoginName: userRes.Phone,
 	}
 
@@ -224,7 +224,7 @@ func (s *Service) SoftDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (*
 	}
 
 	if err := s.softDeleteUserCmd.Handle(ctx, command.SoftDeleteUserCommand{
-		UserID: req.UserID,
+		UserID: user.UserId().String(),
 	}); err != nil {
 		return nil, err
 	}

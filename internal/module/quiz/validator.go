@@ -5,7 +5,6 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/google/uuid"
 	dto "math-ai.com/math-ai/internal/application/dto/quiz"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -49,10 +48,7 @@ func validateQuizType(ctx context.Context, t string) (enum.QuizType, error) {
 }
 
 func ValidateGenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (enum.QuizType, error) {
-	// profile_id is optional — an anonymous quiz (no owner) is valid.
-	// When supplied as the zero UUID we treat it as "not sent" rather
-	// than erroring, so JSON encoders that emit "0000…" survive.
-	if req.ProfileID != nil && *req.ProfileID == uuid.Nil {
+	if req.ProfileID != nil && *req.ProfileID == "" {
 		req.ProfileID = nil
 	}
 	if err := validateLanguage(ctx, req.Language); err != nil {
@@ -71,7 +67,7 @@ func ValidateGenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (enum.Q
 }
 
 func ValidateSubmitAnswers(ctx context.Context, req *dto.SubmitQuizAnswersReq) error {
-	if req.QuizID == uuid.Nil {
+	if req.QuizID == "" {
 		return errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
 			errors.New("quiz_id is required"))
 	}
@@ -96,7 +92,7 @@ func ValidateSubmitAnswers(ctx context.Context, req *dto.SubmitQuizAnswersReq) e
 }
 
 func ValidateGetQuiz(ctx context.Context, req *dto.GetQuizByQuizIdReq) error {
-	if req.QuizID == uuid.Nil {
+	if req.QuizID == "" {
 		return errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
 			errors.New("quiz_id is required"))
 	}
@@ -104,12 +100,10 @@ func ValidateGetQuiz(ctx context.Context, req *dto.GetQuizByQuizIdReq) error {
 }
 
 func ValidateListQuizzes(ctx context.Context, req *dto.ListQuizzesReq) error {
-	// Treat the zero UUID as "not sent" so JSON encoders that emit
-	// "0000…" don't accidentally request an empty filter row.
-	if req.ProfileID != nil && *req.ProfileID == uuid.Nil {
+	if req.ProfileID != nil && *req.ProfileID == "" {
 		req.ProfileID = nil
 	}
-	if req.UserID != nil && *req.UserID == uuid.Nil {
+	if req.UserID != nil && *req.UserID == "" {
 		req.UserID = nil
 	}
 	if req.ProfileID == nil && req.UserID == nil {
@@ -120,7 +114,7 @@ func ValidateListQuizzes(ctx context.Context, req *dto.ListQuizzesReq) error {
 }
 
 func ValidateDeleteQuiz(ctx context.Context, req *dto.DeleteQuizReq) error {
-	if req.QuizID == uuid.Nil {
+	if req.QuizID == "" {
 		return errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
 			errors.New("quiz_id is required"))
 	}
