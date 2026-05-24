@@ -73,10 +73,10 @@ func IsMathError(err error) (*MathError, bool) {
 	return nil, false
 }
 
-// func NewInvalidParamError(baseError error) *binbaseError {
-// 	return NewbinbaseError(status.FAIL, nil, baseError)
-// }
+func NewInvalidParamError(ctx context.Context, baseError error) *MathError {
+	return NewError(ctx, status.FAIL, nil, baseError)
+}
 
-// func NewUnauthorizedError(baseError error) *binbaseError {
-// 	return NewbinbaseError(status.UNAUTHORIZED, nil, baseError)
-// }
+func NewUnauthorizedError(ctx context.Context, baseError error) *MathError {
+	return NewError(ctx, status.UNAUTHORIZED, nil, baseError)
+}
