@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+# test
 # copy any updated certs from letsencrypt updates
 
 pwd
