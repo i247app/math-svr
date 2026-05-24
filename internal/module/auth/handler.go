@@ -93,7 +93,14 @@ func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.service.Logout(r.Context(), &req)
+	// Get session
+	session, err := h.appResource.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.service.Logout(r.Context(), session, &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

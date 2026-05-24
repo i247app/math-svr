@@ -146,17 +146,18 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 	}, nil
 }
 
-func (s *Service) Logout(ctx context.Context, req *dto.LogoutReq) (*dto.LogoutRes, error) {
+func (s *Service) Logout(ctx context.Context, sess *session.AppSession, req *dto.LogoutReq) (*dto.LogoutRes, error) {
 	if err := ValidateLogout(ctx, req); err != nil {
 		return nil, err
 	}
 
-	if err := s.logoutCmd.Handle(ctx, command.LogoutCommand{
-		// UserID:     metadata.GetUserID(ctx),
-		DeviceUUID: metadata.GetDeviceID(ctx),
-	}); err != nil {
-		return nil, err
-	}
+	// if err := s.logoutCmd.Handle(ctx, command.LogoutCommand{
+	// 	DeviceUUID: metadata.GetDeviceID(ctx),
+	// }); err != nil {
+	// 	return nil, err
+	// }
+
+	sess.MarkNotSecure()
 
 	return &dto.LogoutRes{}, nil
 }
