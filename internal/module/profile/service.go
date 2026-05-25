@@ -143,12 +143,12 @@ func (s *Service) ListProfilesByUserId(ctx context.Context, req *dto.ListProfile
 		return nil, err
 	}
 
-	// responses, err := s.composeProfileResponses(ctx, profiles, req.Language)
-	// if err != nil {
-	// 	return nil, err
-	// }
+	responses, err := s.composeProfileResponses(ctx, profiles, "")
+	if err != nil {
+		return nil, err
+	}
 
-	responses := dto.DomainListToResponse(profiles)
+	// responses := dto.DomainListToResponse(profiles)
 
 	for _, resp := range responses {
 		s.populateAvatarUrl(ctx, resp)
