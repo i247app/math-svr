@@ -2,11 +2,14 @@ package user
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
 	"math-ai.com/math-ai/internal/application/dto/user"
 	"math-ai.com/math-ai/internal/application/resource"
+	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -42,7 +45,10 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Parse form fields
+		// Parse form fields. user_name is the parent's name (lands on
+		// ma_users.user_name); name is the child's name (kept for the
+		// downstream profile creation path).
+		// req.UserName = r.FormValue("user_name")
 		req.Name = r.FormValue("name")
 		req.Phone = r.FormValue("phone")
 		req.Email = r.FormValue("email")
@@ -147,5 +153,54 @@ func (h *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	response.WriteJson(w, res, nil)
+}
+
+// POST /users/upload-avatar — multipart form with fields:
+//
+//	user_id  string (uuid)
+//	file     file
+//
+// Mirrors /profiles/upload-avatar so the mobile client can use one
+// uploader for both endpoints. user_id is required (no implicit
+// "current session" — the parent might be uploading on behalf of a
+// distinct account in admin flows).
+func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	r.Body = http.MaxBytesReader(w, r.Body, MaxAvatarUploadSize)
+	if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
+		response.WriteJson(w, nil,
+			errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil, err))
+		return
+	}
+
+	userIDStr := r.FormValue("user_id")
+	if userIDStr == "" {
+		response.WriteJson(w, nil,
+			errs.NewError(ctx, status.USER_NOT_FOUND, nil,
+				errors.New("user_id form field is required")))
+		return
+	}
+
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		response.WriteJson(w, nil,
+			errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil, err))
+		return
+	}
+	defer file.Close()
+
+	res, err := h.userSvc.UploadAvatar(
+		ctx,
+		userIDStr,
+		header.Filename,
+		header.Header.Get("Content-Type"),
+		file,
+	)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
 	response.WriteJson(w, res, nil)
 }

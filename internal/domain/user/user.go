@@ -8,8 +8,10 @@ import (
 type User struct {
 	id         int64
 	userId     uuid.UUID
+	userName   string
 	phone      string
 	email      *string
+	avatarKey  *string
 	userStatus *string
 	status     string
 	note       *string
@@ -39,6 +41,14 @@ func (u *User) SetUserId(userId uuid.UUID) {
 	u.userId = userId
 }
 
+func (u *User) UserName() string {
+	return u.userName
+}
+
+func (u *User) SetUserName(userName string) {
+	u.userName = userName
+}
+
 func (u *User) Phone() string {
 	return u.phone
 }
@@ -53,6 +63,14 @@ func (u *User) Email() *string {
 
 func (u *User) SetEmail(email *string) {
 	u.email = email
+}
+
+func (u *User) AvatarKey() *string {
+	return u.avatarKey
+}
+
+func (u *User) SetAvatarKey(avatarKey *string) {
+	u.avatarKey = avatarKey
 }
 
 func (u *User) UserStatus() *string {

@@ -3,11 +3,11 @@ package user
 import (
 	"context"
 	"errors"
+	"io"
 	"strings"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/user"
-	profileDto "math-ai.com/math-ai/internal/application/dto/profile"
 	dto "math-ai.com/math-ai/internal/application/dto/user"
 	query "math-ai.com/math-ai/internal/application/query/user"
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -18,10 +18,13 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/session"
 )
 
-// avatarFolder is the S3 prefix new parent-signup avatars land under. It
-// matches the prefix used by /profiles/upload-avatar so an operator looking
-// at the bucket sees a single namespace per concern.
-const avatarFolder = "profile-avatars"
+// avatarFolder is the S3 prefix user (parent) avatars land under.
+// Separate from the "profile-avatars" prefix the profile module uses
+// for child-profile avatars so the two concerns are bucket-separable.
+//
+// The presigned-URL lifetime is the imageUrlTTL constant in
+// service_helper.go (same package).
+const avatarFolder = "user-avatars"
 
 type Service struct {
 	getUserByUserIdQuery *query.GetUserByUserIdQueryHandler
@@ -30,6 +33,7 @@ type Service struct {
 	listUsersQuery       *query.ListUsersQueryHandler
 	createUserCmd        *command.CreateUserCommandHandler
 	updateUserCmd        *command.UpdateUserCommandHandler
+	setAvatarKeyCmd      *command.SetAvatarKeyCommandHandler
 	softDeleteUserCmd    *command.SoftDeleteUserCommandHandler
 	forceDeleteUserCmd   *command.ForceDeleteUserCommandHandler
 	storageProvider      *storage.Adapter
@@ -47,6 +51,7 @@ func NewService(
 		listUsersQuery:       query.NewListUsersQueryHandler(repo),
 		createUserCmd:        command.NewCreateUserCommandHandler(uow),
 		updateUserCmd:        command.NewUpdateUserCommandHandler(uow),
+		setAvatarKeyCmd:      command.NewSetAvatarKeyCommandHandler(uow),
 		softDeleteUserCmd:    command.NewSoftDeleteUserCommandHandler(uow),
 		forceDeleteUserCmd:   command.NewForceDeleteUserCommandHandler(uow),
 		storageProvider:      storageProvider,
@@ -59,11 +64,10 @@ func (s *Service) GetUserById(ctx context.Context, req *dto.GetUserByUserIdReq) 
 		return nil, err
 	}
 
-	res := &dto.GetUserByUserIdRes{
-		User: dto.DomainToResponse(user),
-	}
+	userRes := dto.DomainToResponse(user)
+	s.populateImageUrl(ctx, userRes)
 
-	return res, nil
+	return &dto.GetUserByUserIdRes{User: userRes}, nil
 }
 
 func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.ListUsersRes, error) {
@@ -75,8 +79,13 @@ func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.Li
 		return nil, err
 	}
 
+	responses := dto.DomainListToResponse(users)
+	for _, r := range responses {
+		s.populateImageUrl(ctx, r)
+	}
+
 	return &dto.ListUsersRes{
-		Users:      dto.DomainListToResponse(users),
+		Users:      responses,
 		Pagination: pg,
 	}, nil
 }
@@ -87,11 +96,10 @@ func (s *Service) GetUserByPhone(ctx context.Context, req *dto.GetUserByPhoneReq
 		return nil, err
 	}
 
-	res := &dto.GetUserByPhoneRes{
-		User: dto.DomainToResponse(user),
-	}
+	userRes := dto.DomainToResponse(user)
+	s.populateImageUrl(ctx, userRes)
 
-	return res, nil
+	return &dto.GetUserByPhoneRes{User: userRes}, nil
 }
 
 func (s *Service) GetUserByEmail(ctx context.Context, req *dto.GetUserByEmailReq) (*dto.GetUserByEmailRes, error) {
@@ -100,11 +108,10 @@ func (s *Service) GetUserByEmail(ctx context.Context, req *dto.GetUserByEmailReq
 		return nil, err
 	}
 
-	res := &dto.GetUserByEmailRes{
-		User: dto.DomainToResponse(user),
-	}
+	userRes := dto.DomainToResponse(user)
+	s.populateImageUrl(ctx, userRes)
 
-	return res, nil
+	return &dto.GetUserByEmailRes{User: userRes}, nil
 }
 
 func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req *dto.CreateUserReq) (*dto.CreateUserRes, error) {
@@ -132,7 +139,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	created, err := s.createUserCmd.Handle(ctx, command.CreateUserCommand{
 		Phone:     req.Phone,
 		Email:     email,
-		Name:      req.Name,
+		UserName:  req.Name,
 		AvatarKey: avatarKey,
 	})
 	if err != nil {
@@ -144,14 +151,8 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		return nil, err
 	}
 
-	log.Info("user.created",
-		"user_id", created.User.UserId(),
-		"profile_id", created.Profile.ProfileId(),
-	)
-
 	userRes := dto.DomainToResponse(created.User)
-	profileRes := profileDto.DomainToResponse(created.Profile)
-	s.populateImageUrl(ctx, profileRes)
+	s.populateImageUrl(ctx, userRes)
 
 	log.Info("Login successful, updating session data...")
 	sessionData := session.InitData{
@@ -168,15 +169,14 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	sess.Init(sessionData)
 
 	return &dto.CreateUserRes{
-		User:    userRes,
-		Profile: profileRes,
+		User: userRes,
 	}, nil
 }
 
 // uploadAvatarIfPresent ships the multipart avatar (if any) to S3 and returns
-// the resulting key. Returns (nil, nil) when no avatar was submitted. Errors
-// out with PROFILE_AVATAR_* codes since the eventual destination is a
-// ma_profiles row.
+// the resulting key. Returns (nil, nil) when no avatar was submitted. The
+// key lands on ma_users.avatar_key via BuildUser inside the create
+// transaction.
 func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateUserReq) (*string, error) {
 	if req.AvatarFile == nil || req.AvatarFilename == "" {
 		return nil, nil
@@ -190,7 +190,7 @@ func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateUser
 		Filename:    req.AvatarFilename,
 		ContentType: req.AvatarContentType,
 	}); err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil, err)
 	}
 
 	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -200,10 +200,10 @@ func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateUser
 		Folder:      avatarFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, status.USER_AVATAR_UPLOAD_FAILED, nil, err)
 	}
 	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
+		return nil, errs.NewError(ctx, status.USER_AVATAR_UPLOAD_FAILED, nil,
 			errors.New("upload returned an empty key"))
 	}
 	return &uploaded.Key, nil
@@ -271,18 +271,104 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 	}
 
 	user, err := s.updateUserCmd.Handle(ctx, command.UpdateUserCommand{
-		ID:     req.ID,
-		UserID: req.UserID,
-		Email:  req.Email,
-		Phone:  req.Phone,
+		ID:       req.ID,
+		UserID:   req.UserID,
+		UserName: req.UserName,
+		Email:    req.Email,
+		Phone:    req.Phone,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	res := &dto.UpdateUserRes{
-		User: dto.DomainToResponse(user),
+	userRes := dto.DomainToResponse(user)
+	s.populateImageUrl(ctx, userRes)
+
+	return &dto.UpdateUserRes{User: userRes}, nil
+}
+
+// UploadAvatar streams the multipart body to S3 then persists the
+// resulting key against the user inside a UnitOfWork. Returns the key
+// plus a short-lived presigned URL for immediate display. Mirrors the
+// profile module's UploadAvatar so the mobile client can reuse its
+// uploader for both endpoints.
+func (s *Service) UploadAvatar(ctx context.Context, userID string, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
+	if userID == "" {
+		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil,
+			errors.New("user_id is required"))
+	}
+	if s.storageProvider == nil {
+		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
+			errors.New("storage adapter is not configured"))
+	}
+	if file == nil || filename == "" {
+		return nil, errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil,
+			errors.New("avatar file is required"))
 	}
 
-	return res, nil
+	// Verify the user exists BEFORE uploading so we don't leave orphan
+	// S3 objects when the caller passes a bogus user_id.
+	existing, err := s.getUserByUserIdQuery.Handle(ctx, query.GetUserByUserIdQuery{UserId: userID})
+	if err != nil {
+		return nil, err
+	}
+	if existing == nil {
+		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil,
+			errors.New("user not found"))
+	}
+
+	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
+		Filename:    filename,
+		ContentType: contentType,
+	}); err != nil {
+		return nil, errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil, err)
+	}
+
+	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
+		File:        file,
+		Filename:    filename,
+		ContentType: contentType,
+		Folder:      avatarFolder,
+	})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.USER_AVATAR_UPLOAD_FAILED, nil, err)
+	}
+	if uploaded == nil || uploaded.Key == "" {
+		return nil, errs.NewError(ctx, status.USER_AVATAR_UPLOAD_FAILED, nil,
+			errors.New("upload returned an empty key"))
+	}
+
+	if err := s.setAvatarKeyCmd.Handle(ctx, command.SetAvatarKeyCommand{
+		UserID:    userID,
+		AvatarKey: uploaded.Key,
+	}); err != nil {
+		// Best-effort cleanup of the orphaned S3 object — we ignore
+		// errors here since the original DB write failure is what the
+		// caller cares about.
+		_ = s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{Key: uploaded.Key})
+		return nil, err
+	}
+
+	signed, err := s.storageProvider.CreatePresignedUrl(ctx, &storage.CreatePresignedUrlRequest{
+		Key:        uploaded.Key,
+		Expiration: imageUrlTTL,
+	})
+	if err != nil {
+		// Key is persisted; failing here just means we can't return a
+		// preview URL now. Log and return the key without it — the
+		// client can re-fetch via /users/me to get a fresh presigned URL.
+		logger.From(ctx).Warnf("user.avatar presign failed user_id=%s err=%v", userID, err)
+		signed = ""
+	}
+
+	logger.From(ctx).Info("user.avatar_uploaded",
+		"user_id", userID,
+		"avatar_key", uploaded.Key,
+	)
+
+	return &dto.UploadAvatarRes{
+		UserID:    userID,
+		AvatarKey: uploaded.Key,
+		AvatarUrl: signed,
+	}, nil
 }

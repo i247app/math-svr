@@ -13,10 +13,11 @@ import (
 )
 
 type UpdateUserCommand struct {
-	ID     int64   `json:"-"`
-	UserID string  `json:"user_id"`
-	Email  *string `json:"email,omitempty"`
-	Phone  *string `json:"phone,omitempty"`
+	ID       int64   `json:"-"`
+	UserID   string  `json:"user_id"`
+	UserName *string `json:"user_name,omitempty"`
+	Email    *string `json:"email,omitempty"`
+	Phone    *string `json:"phone,omitempty"`
 }
 
 func (c UpdateUserCommand) Validate() error {
@@ -41,6 +42,14 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 		}
 		if u == nil {
 			return errs.NewError(ctx, status.FAIL, nil, errors.New("user not found"))
+		}
+
+		// user_name lives on the user row only — no alias mirror to keep
+		// in sync, unlike email/phone. Apply the change on the User
+		// aggregate; the repo's COALESCE-based Update preserves the
+		// existing value when UserName is empty/nil.
+		if cmd.UserName != nil && *cmd.UserName != "" && u.UserName() != *cmd.UserName {
+			u.SetUserName(*cmd.UserName)
 		}
 
 		aliases, err := repos.Alias.FindByUserId(ctx, cmd.UserID)

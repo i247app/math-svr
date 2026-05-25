@@ -34,8 +34,16 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Email đã tồn tại"
 	case USER_PHONE_ALREADY_EXISTS:
 		return "Số điện thoại đã tồn tại"
+	case USER_USERNAME_ALREADY_EXISTS:
+		return "Username đã tồn tại"
 	case USER_NOT_FOUND:
 		return "Không tìm thấy người dùng"
+	case USER_MISSING_NAME:
+		return "Vui lòng nhập tên của bạn"
+	case USER_AVATAR_INVALID_FILE:
+		return "Tệp ảnh đại diện không hợp lệ"
+	case USER_AVATAR_UPLOAD_FAILED:
+		return "Tải ảnh đại diện thất bại"
 
 	// Auth
 	case AUTH_MISSING_PHONE:

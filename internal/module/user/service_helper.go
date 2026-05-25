@@ -5,13 +5,13 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
-	profileDto "math-ai.com/math-ai/internal/application/dto/profile"
+	userDTO "math-ai.com/math-ai/internal/application/dto/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
 const imageUrlTTL = 1 * time.Hour
 
-func (s *Service) populateImageUrl(ctx context.Context, resp *profileDto.ProfileResponse) {
+func (s *Service) populateImageUrl(ctx context.Context, resp *userDTO.UserResponse) {
 	if resp == nil || s.storageProvider == nil || resp.AvatarKey == nil || *resp.AvatarKey == "" {
 		return
 	}

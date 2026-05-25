@@ -233,7 +233,7 @@ before we snapshot the session store.
 | `quiz.cleanup_soft_deleted`  | Cron | daily 03:00 ICT   | Stub — needs `QuizRepository.ForceDeleteSoftDeletedBefore` | `internal/jobs/quiz_cleanup.go` |
 | `leaderboard.recalc`         | Cron | every 30m         | Stub — leaderboard aggregate not yet built | `internal/jobs/leaderboard_recalc.go` |
 | `digest.weekly_fanout`       | Cron | weekly Mon 09:00 ICT | Stub — enqueues one `digest.send` per user (user list pending) | `internal/jobs/weekly_digest.go` |
-| `system.noop`                | Cron | hourly            | Hourly heartbeat — `system.noop.heartbeat` | `internal/jobs/noop.go` |
+| `system.noop`                | Cron | every 1m          | Heartbeat — `system.noop.heartbeat` | `internal/jobs/noop.go` |
 | `digest.send`                | Task | n/a               | Stub — one user's digest email (handler registration currently commented out in `RegisterAll`) | `internal/jobs/weekly_digest.go` |
 
 > Stubs intentionally log and return nil. The schedule, timeout, retry

@@ -11,7 +11,6 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	"math-ai.com/math-ai/internal/domain/profile"
 )
 
 // CreateUserCommand also creates the user's first child profile in the same
@@ -26,7 +25,7 @@ import (
 type CreateUserCommand struct {
 	Phone     string
 	Email     *string
-	Name      string
+	UserName  string
 	AvatarKey *string
 }
 
@@ -37,8 +36,7 @@ func (c CreateUserCommand) Validate() error {
 // CreateUserCommandResult bundles the freshly persisted user with their
 // initial child profile so the caller can build a one-shot response.
 type CreateUserCommandResult struct {
-	User    *user.User
-	Profile *profile.Profile
+	User *user.User
 }
 
 type CreateUserCommandHandler struct {
@@ -64,6 +62,17 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 
+		if cmd.UserName != "" {
+			existByUserName, err := repos.User.FindByUserName(ctx, cmd.UserName)
+			if err != nil {
+				return errs.NewError(ctx, status.FAIL, nil, err)
+			}
+			if existByUserName != nil {
+				return errs.NewError(ctx, status.USER_USERNAME_ALREADY_EXISTS, nil,
+					errors.New("username already exists"))
+			}
+		}
+
 		u, err := repos.User.Create(ctx, BuildUser(cmd))
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
@@ -83,17 +92,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 
-		// Initial child profile. is_default = true since this is the
-		// only profile attached to a freshly minted parent. Curriculum
-		// fields remain uuid.Nil (→ SQL NULL via repo) and are filled in
-		// later via /profiles/update.
-		p, err := repos.Profile.Create(ctx, BuildInitialProfile(u.UserId().String(), cmd))
-		if err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
-
 		result.User = u
-		result.Profile = p
 		return nil
 	}
 
@@ -106,23 +105,10 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 func BuildUser(cmd CreateUserCommand) *user.User {
 	u := user.NewUser()
 	u.SetUserId(utils.GenerateUUID())
+	u.SetUserName(cmd.UserName)
 	u.SetEmail(cmd.Email)
 	u.SetPhone(cmd.Phone)
+	u.SetAvatarKey(cmd.AvatarKey)
 	u.SetStatus(enum.StatusActive.String())
 	return u
-}
-
-func BuildInitialProfile(userId string, cmd CreateUserCommand) *profile.Profile {
-	userUUID, err := utils.StringToUUID(userId)
-	if err != nil {
-		return nil
-	}
-	p := profile.NewProfile()
-	p.SetProfileId(utils.GenerateUUID())
-	p.SetUserId(userUUID)
-	p.SetName(cmd.Name)
-	p.SetAvatarKey(cmd.AvatarKey)
-	p.SetIsDefault(true)
-	p.SetStatus(enum.StatusActive.String())
-	return p
 }

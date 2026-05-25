@@ -36,8 +36,9 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("GET  /users/{id}", userHandler.HandleGetUserById, authMiddleware)
 		gexSvr.AddRoute("POST /users/me", userHandler.HandleGetUserMe, authMiddleware)
 		gexSvr.AddRoute("POST /users/list", userHandler.HandleListUsers, authMiddleware)
-		gexSvr.AddRoute("POST /users/create", userHandler.HandleCreateUser, authMiddleware)
+		gexSvr.AddRoute("POST /users/create", userHandler.HandleCreateUser)
 		gexSvr.AddRoute("POST /users/update", userHandler.HandleUpdateUser, authMiddleware)
+		gexSvr.AddRoute("POST /users/upload-avatar", userHandler.HandleUploadAvatar, authMiddleware)
 
 		// admin routes
 		gexSvr.AddRoute("POST /users/soft-delete", userHandler.HandleSoftDeleteUser, authMiddleware)

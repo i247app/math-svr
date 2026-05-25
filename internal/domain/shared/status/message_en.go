@@ -34,8 +34,16 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Email already exists"
 	case USER_PHONE_ALREADY_EXISTS:
 		return "Phone already exists"
+	case USER_USERNAME_ALREADY_EXISTS:
+		return "Username already exists"
 	case USER_NOT_FOUND:
 		return "User not found"
+	case USER_MISSING_NAME:
+		return "Please enter your name"
+	case USER_AVATAR_INVALID_FILE:
+		return "Avatar file is invalid"
+	case USER_AVATAR_UPLOAD_FAILED:
+		return "Avatar upload failed"
 
 	// Auth
 	case AUTH_MISSING_PHONE:

@@ -13,9 +13,11 @@ type IRepository interface {
 	FindByUserId(ctx context.Context, userId string) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByPhone(ctx context.Context, phone string) (*User, error)
+	FindByUserName(ctx context.Context, userName string) (*User, error)
 	ListUsers(ctx context.Context, params *ListUsersParams) ([]*User, *pagination.Pagination, error)
 	Create(ctx context.Context, user *User) (*User, error)
 	Update(ctx context.Context, user *User) error
+	UpdateAvatarKey(ctx context.Context, userId string, avatarKey string) error
 	DeleteById(ctx context.Context, id int64) error
 	DeleteByUserId(ctx context.Context, userId string) error
 	MarkStatusByUserId(ctx context.Context, userId string, status enum.UserStatusType) error

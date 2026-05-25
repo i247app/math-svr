@@ -20,7 +20,7 @@ import (
 const (
 	userTable = "ma_users"
 
-	userColumns = `u.id, u.user_id, u.phone, u.email, u.user_status, u.status,
+	userColumns = `u.id, u.user_id, u.name, u.phone, u.email, u.avatar_key, u.user_status, u.status,
 	u.note, u.create_id, u.create_dt, u.modify_id, u.modify_dt`
 
 	userFromJoin = userTable + ` u
@@ -54,7 +54,7 @@ func NewUserRepository(db database.Executor) user.IRepository {
 
 func scanUser(s database.RowScanner) (*models.UserModel, error) {
 	var m models.UserModel
-	if err := s.Scan(&m.Id, &m.UserId, &m.Phone, &m.Email, &m.UserStatus, &m.Status,
+	if err := s.Scan(&m.Id, &m.UserId, &m.UserName, &m.Phone, &m.Email, &m.AvatarKey, &m.UserStatus, &m.Status,
 		&m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -112,13 +112,17 @@ func (r *UserRepository) FindByPhone(ctx context.Context, phone string) (*user.U
 	return r.findOneBy(ctx, "u.phone = ?", phone)
 }
 
+func (r *UserRepository) FindByUserName(ctx context.Context, userName string) (*user.User, error) {
+	return r.findOneBy(ctx, "u.name = ?", userName)
+}
+
 func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, error) {
 	query := `
-		INSERT INTO ` + userTable + ` (user_id, phone, email, user_status, note)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO ` + userTable + ` (user_id, name, phone, email, avatar_key, user_status, note)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.Exec(ctx, query, u.UserId(), u.Phone(), u.Email(), u.UserStatus(), u.Note())
+	result, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.AvatarKey(), u.UserStatus(), u.Note())
 	if err != nil {
 		return nil, fmt.Errorf("user repo create: %w", err)
 	}
@@ -184,16 +188,38 @@ func (r *UserRepository) DeleteByUserId(ctx context.Context, userId string) erro
 }
 
 func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
+	// name is NOT NULL in ma_users, so an empty string from the
+	// domain means "do not change" — pass NULL into COALESCE so the
+	// existing value is preserved. Callers that intentionally want to
+	// overwrite must set a non-empty name.
+	var userName any
+	if u.UserName() != "" {
+		userName = u.UserName()
+	}
+
 	query := `
 		UPDATE ` + userTable + `
 		SET
+			name = COALESCE(?, name),
 			email = COALESCE(?, email),
 			phone = COALESCE(?, phone)
 		WHERE id = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, u.Email(), u.Phone(), u.Id()); err != nil {
+	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.Id()); err != nil {
 		return fmt.Errorf("user repo update: %w", err)
+	}
+	return nil
+}
+
+// UpdateAvatarKey persists a newly-uploaded avatar's S3 key onto a user
+// row. Split out from the general Update path so the multipart upload
+// flow doesn't need to materialise the rest of the User aggregate just
+// to write one column.
+func (r *UserRepository) UpdateAvatarKey(ctx context.Context, userId string, avatarKey string) error {
+	query := `UPDATE ` + userTable + ` SET avatar_key = ? WHERE user_id = ?`
+	if _, err := r.db.Exec(ctx, query, avatarKey, userId); err != nil {
+		return fmt.Errorf("user repo update avatar key: %w", err)
 	}
 	return nil
 }
@@ -234,8 +260,10 @@ func DomainToModel(u *user.User) *models.UserModel {
 	return &models.UserModel{
 		Id:         u.Id(),
 		UserId:     u.UserId().String(),
+		UserName:   u.UserName(),
 		Email:      u.Email(),
 		Phone:      u.Phone(),
+		AvatarKey:  u.AvatarKey(),
 		UserStatus: u.UserStatus(),
 		Status:     u.Status(),
 		Note:       u.Note(),
@@ -265,8 +293,10 @@ func ModelToDomain(m *models.UserModel) *user.User {
 	u := user.NewUser()
 	u.SetId(m.Id)
 	u.SetUserId(userId)
+	u.SetUserName(m.UserName)
 	u.SetEmail(m.Email)
 	u.SetPhone(m.Phone)
+	u.SetAvatarKey(m.AvatarKey)
 	u.SetUserStatus(m.UserStatus)
 	u.SetStatus(m.Status)
 	u.SetNote(m.Note)
