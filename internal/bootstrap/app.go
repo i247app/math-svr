@@ -1,12 +1,16 @@
 package bootstrap
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
 	"slices"
 
+	"github.com/i247app/gex"
+
+	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/bootstrap/container"
 	"math-ai.com/math-ai/internal/bootstrap/middleware"
 	"math-ai.com/math-ai/internal/bootstrap/routes"
@@ -14,10 +18,8 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	"math-ai.com/math-ai/internal/jobs"
 	"math-ai.com/math-ai/internal/shared/response"
-
-	"github.com/i247app/gex"
-	"math-ai.com/math-ai/internal/application/resource"
 )
 
 func NewFromEnv(envPath string) (*App, error) {
@@ -103,6 +105,9 @@ func (a *App) Init() error {
 	// Register middlewares
 	a.setupMiddleware(a.Server, a.Resource, services)
 
+	// Setup jobs
+	a.setupJobs(a.Server, services)
+
 	// Setup shutdown hooks
 	a.setupShutdownHooks(a.Server, services)
 
@@ -131,6 +136,22 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, res *resource.Resource, _ *con
 	}
 
 	gexSvr.SetupServerCORS()
+}
+
+// setupJobs populates the JobRegistry with every concrete CronJob /
+// TaskHandler this binary should run, then starts the JobRuntime. The
+// catalogue itself lives in internal/jobs/RegisterAll so that adding a
+// new job does not require editing bootstrap.
+//
+// Order matters: jobs.RegisterAll must finish before runtime.Start —
+// Start reads the registry to seed its per-job state.
+func (a *App) setupJobs(_ *gex.Server, _ *container.ServiceContainer) {
+	jobs.RegisterAll(a.Resource.JobRegistry, jobs.Deps{
+		Runtime:        a.Resource.JobRuntime,
+		SessionManager: a.Resource.SessionManager,
+		EmailProvider:  a.Resource.EmailProvider,
+	})
+	a.Resource.JobRuntime.Start(context.Background())
 }
 
 func (a *App) Start() error {
@@ -166,6 +187,15 @@ func (a *App) reloadSessions() {
 
 func (a *App) setupShutdownHooks(gexSvr *gex.Server, _ *container.ServiceContainer) {
 	gexSvr.OnShutdown(func() {
+		// Drain the job runtime first: stops new schedules from
+		// firing, cancels in-flight execution contexts, waits up to
+		// JobRuntime.Config().DrainTimeout for graceful exit. Done
+		// before session serialisation so any job that touches
+		// sessions has finished before we snapshot them.
+		if a.Resource.JobRuntime != nil {
+			a.Resource.JobRuntime.Stop(context.Background())
+		}
+
 		sessionFile := a.Resource.Env.SerializedSessionFile
 		if sessionFile == "" {
 			return

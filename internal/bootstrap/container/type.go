@@ -13,6 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
+	"math-ai.com/math-ai/internal/module/job"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -31,6 +32,7 @@ type ServiceContainer struct {
 	DeviceSvc   *device.Service
 	OtpSvc      *otp.Service
 	QuizSvc     *quiz.Service
+	JobSvc      *job.Service
 }
 
 type RepositoryContainer struct {

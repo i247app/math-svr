@@ -238,6 +238,30 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Failed to grade quiz answers"
 	case QUIZ_PROFILE_NOT_CONFIGURED:
 		return "Profile must have a program, grade, and semester set before generating a quiz"
+
+	// Job
+	case JOB_NOT_FOUND:
+		return "Job not found"
+	case JOB_ALREADY_PAUSED:
+		return "Job is already paused"
+	case JOB_NOT_PAUSED:
+		return "Job is not paused"
+	case JOB_IN_FLIGHT:
+		return "Job is already running an execution"
+	case JOB_RUNTIME_UNAVAILABLE:
+		return "Job runtime is not started or is shutting down"
+	case JOB_MISSING_NAME:
+		return "Job name is required"
+	case JOB_TRIGGER_FAILED:
+		return "Failed to trigger job"
+	case TASK_HANDLER_NOT_FOUND:
+		return "Task handler is not registered"
+	case TASK_QUEUE_FULL:
+		return "Task queue is full; please retry shortly"
+	case TASK_MISSING_NAME:
+		return "Task name is required"
+	case TASK_ENQUEUE_FAILED:
+		return "Failed to enqueue task"
 	default:
 		return ""
 	}

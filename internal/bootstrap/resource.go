@@ -15,6 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/adapter/sms"
 	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/resource"
+	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 )
@@ -27,6 +28,10 @@ func SetupResource(res *resource.Resource) error {
 	log := logger.From(context.Background())
 
 	env := res.Env
+
+	log.Info("> Setup JobRegistry + JobRuntime...")
+	res.JobRegistry = jobruntime.NewRegistry()
+	res.JobRuntime = jobruntime.NewRuntime(jobruntime.Config{}, res.JobRegistry)
 
 	log.Info("> Setup SessionManager...")
 	sessionManager := session.NewSessionManager()

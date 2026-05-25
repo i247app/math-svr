@@ -9,6 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
+	"math-ai.com/math-ai/internal/module/job"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -106,5 +107,15 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		healthHandler := health.NewHealthHandler()
 		gexSvr.AddRoute("GET /ping", healthHandler.HandlePing)
+	}
+
+	// jobs routes
+	{
+		jobHandler := job.NewJobHandler(services.JobSvc)
+		gexSvr.AddRoute("POST /jobs/list", jobHandler.HandleListJobs, authMiddleware)
+		gexSvr.AddRoute("POST /jobs/trigger", jobHandler.HandleTriggerJob, authMiddleware)
+		gexSvr.AddRoute("POST /jobs/pause", jobHandler.HandlePauseJob, authMiddleware)
+		gexSvr.AddRoute("POST /jobs/resume", jobHandler.HandleResumeJob, authMiddleware)
+		gexSvr.AddRoute("POST /tasks/enqueue", jobHandler.HandleEnqueueTask, authMiddleware)
 	}
 }

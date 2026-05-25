@@ -11,6 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/database"
+	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 
 	"github.com/i247app/gex"
@@ -32,6 +33,16 @@ type Resource struct {
 	StorageProvider *storage.Adapter
 	BotProvider     *bot.Adapter
 	OtpDelivery     *otp_delivery.Adapter
+
+	// JobRegistry holds the static name → handler map for both
+	// CronJobs and TaskHandlers. Populated in bootstrap before the
+	// Runtime starts; read-mostly after that.
+	JobRegistry *jobruntime.Registry
+
+	// JobRuntime owns the scheduler goroutines + task worker pool.
+	// Nil only during bootstrap; once Start has returned, all access
+	// is safe. Stop is called from the gex OnShutdown hook.
+	JobRuntime *jobruntime.Runtime
 }
 
 func (a *Resource) GetRequestSession(r *http.Request) (*session.AppSession, error) {

@@ -128,4 +128,16 @@ const (
 	QUIZ_GENERATION_FAILED     StatusCode = 11012
 	QUIZ_GRADING_FAILED        StatusCode = 11013
 	QUIZ_PROFILE_NOT_CONFIGURED StatusCode = 11014
+
+	JOB_NOT_FOUND            StatusCode = 12001
+	JOB_ALREADY_PAUSED       StatusCode = 12002
+	JOB_NOT_PAUSED           StatusCode = 12003
+	JOB_IN_FLIGHT            StatusCode = 12004
+	JOB_RUNTIME_UNAVAILABLE  StatusCode = 12005
+	JOB_MISSING_NAME         StatusCode = 12006
+	JOB_TRIGGER_FAILED       StatusCode = 12007
+	TASK_HANDLER_NOT_FOUND   StatusCode = 12008
+	TASK_QUEUE_FULL          StatusCode = 12009
+	TASK_MISSING_NAME        StatusCode = 12010
+	TASK_ENQUEUE_FAILED      StatusCode = 12011
 )

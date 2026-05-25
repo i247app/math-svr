@@ -238,6 +238,30 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Chấm điểm bài kiểm tra thất bại"
 	case QUIZ_PROFILE_NOT_CONFIGURED:
 		return "Hồ sơ cần có chương trình học, lớp và học kỳ trước khi tạo bài kiểm tra"
+
+	// Job
+	case JOB_NOT_FOUND:
+		return "Không tìm thấy job"
+	case JOB_ALREADY_PAUSED:
+		return "Job đã ở trạng thái tạm dừng"
+	case JOB_NOT_PAUSED:
+		return "Job không ở trạng thái tạm dừng"
+	case JOB_IN_FLIGHT:
+		return "Job đang chạy một lần thực thi khác"
+	case JOB_RUNTIME_UNAVAILABLE:
+		return "Hệ thống job chưa khởi động hoặc đang dừng"
+	case JOB_MISSING_NAME:
+		return "Tên job là bắt buộc"
+	case JOB_TRIGGER_FAILED:
+		return "Kích hoạt job thất bại"
+	case TASK_HANDLER_NOT_FOUND:
+		return "Không tìm thấy task handler được đăng ký"
+	case TASK_QUEUE_FULL:
+		return "Hàng đợi task đã đầy; vui lòng thử lại sau"
+	case TASK_MISSING_NAME:
+		return "Tên task là bắt buộc"
+	case TASK_ENQUEUE_FAILED:
+		return "Đưa task vào hàng đợi thất bại"
 	default:
 		return ""
 	}
