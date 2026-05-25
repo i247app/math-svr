@@ -101,9 +101,34 @@ func (h *ProfileHandler) HandleListProfiles(w http.ResponseWriter, r *http.Reque
 // POST /profiles/update
 func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	var req dto.UpdateProfileReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, nil, err)
-		return
+	contentType := r.Header.Get("Content-Type")
+
+	if contentType == "application/json" {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			response.WriteJson(w, nil, fmt.Errorf("invalid parameters"))
+			return
+		}
+	} else {
+		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
+			response.WriteJson(w, nil, fmt.Errorf("invalid form data"))
+			return
+		}
+
+		req.ProfileID = r.FormValue("profile_id")
+		req.Name = utils.ToStringPtr(r.FormValue("name"))
+		req.Dob = utils.ToStringPtr(r.FormValue("dob"))
+		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
+		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
+		req.SemesterID = utils.ToStringPtr(r.FormValue("semester_id"))
+
+		// Handle avatar file
+		file, header, err := r.FormFile("avatar")
+		if err == nil {
+			defer file.Close()
+			req.AvatarFile = file
+			req.AvatarFilename = header.Filename
+			req.AvatarContentType = header.Header.Get("Content-Type")
+		}
 	}
 
 	res, err := h.profileSvc.UpdateProfile(r.Context(), &req)

@@ -9,7 +9,6 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type UpdateProfileCommand struct {
@@ -20,6 +19,7 @@ type UpdateProfileCommand struct {
 	GradeID    *string
 	SemesterID *string
 	Note       *string
+	AvatarKey  *string
 }
 
 type UpdateProfileCommandHandler struct {
@@ -66,11 +66,7 @@ func (h *UpdateProfileCommandHandler) Handle(ctx context.Context, cmd UpdateProf
 
 func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 	patch := profile.NewProfile()
-	profileUUID, err := utils.StringToUUID(cmd.ProfileID)
-	if err != nil {
-		return nil
-	}
-	patch.SetProfileId(profileUUID)
+	patch.SetProfileId(cmd.ProfileID)
 	if cmd.Name != nil {
 		patch.SetName(*cmd.Name)
 	}
@@ -78,25 +74,13 @@ func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 		patch.SetDob(*cmd.Dob)
 	}
 	if cmd.ProgramID != nil {
-		programUUID, err := utils.StringToUUID(*cmd.ProgramID)
-		if err != nil {
-			return nil
-		}
-		patch.SetProgramId(&programUUID)
+		patch.SetProgramId(cmd.ProgramID)
 	}
 	if cmd.GradeID != nil {
-		gradeUUID, err := utils.StringToUUID(*cmd.GradeID)
-		if err != nil {
-			return nil
-		}
-		patch.SetGradeId(&gradeUUID)
+		patch.SetGradeId(cmd.GradeID)
 	}
 	if cmd.SemesterID != nil {
-		semesterUUID, err := utils.StringToUUID(*cmd.SemesterID)
-		if err != nil {
-			return nil
-		}
-		patch.SetSemesterId(&semesterUUID)
+		patch.SetSemesterId(cmd.SemesterID)
 	}
 	if cmd.Note != nil {
 		patch.SetNote(cmd.Note)

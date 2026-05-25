@@ -11,7 +11,6 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -167,7 +166,8 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 			grade_id    = COALESCE(?, grade_id),
 			semester_id = COALESCE(?, semester_id),
 			is_default  = COALESCE(?, is_default),
-			note        = COALESCE(?, note)
+			note        = COALESCE(?, note),
+			avatar_key  = COALESCE(?, avatar_key)
 		WHERE profile_id = ?
 	`
 
@@ -176,24 +176,13 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 		dobArg = p.Dob()
 	}
 
-	// Empty UUIDs (uuid.Nil) signal "leave alone" for program/grade/semester.
-	var programArg, gradeArg, semesterArg any
-	if p.ProgramId() != nil {
-		programArg = p.ProgramId()
-	}
-	if p.GradeId() != nil {
-		gradeArg = p.GradeId()
-	}
-	if p.SemesterId() != nil {
-		semesterArg = p.SemesterId()
-	}
 	var nameArg any
 	if p.Name() != "" {
 		nameArg = p.Name()
 	}
 
 	if _, err := r.db.Exec(ctx, query,
-		nameArg, dobArg, programArg, gradeArg, semesterArg, p.Note(), p.ProfileId()); err != nil {
+		nameArg, dobArg, p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(), p.Note(), p.AvatarKey(), p.ProfileId()); err != nil {
 		return fmt.Errorf("profile repo update: %w", err)
 	}
 	return nil
@@ -260,60 +249,25 @@ func (r *ProfileRepository) ForceDeleteByUserId(ctx context.Context, userId stri
 }
 
 func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
-	profileId, err := utils.StringToUUID(m.ProfileId)
-	if err != nil {
-		return nil
-	}
-
-	userId, err := utils.StringToUUID(m.UserId)
-	if err != nil {
-		return nil
-	}
-
-	programId, err := utils.PtrStringToUUID(m.ProgramId)
-	if err != nil {
-		return nil
-	}
-
-	gradeId, err := utils.PtrStringToUUID(m.GradeId)
-	if err != nil {
-		return nil
-	}
-
-	semesterId, err := utils.PtrStringToUUID(m.SemesterId)
-	if err != nil {
-		return nil
-	}
-
-	createId, err := utils.PtrStringToUUID(m.CreateId)
-	if err != nil {
-		return nil
-	}
-
-	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
-	if err != nil {
-		return nil
-	}
-
 	p := profile.NewProfile()
 	p.SetId(m.Id)
-	p.SetProfileId(profileId)
-	p.SetUserId(userId)
+	p.SetProfileId(m.ProfileId)
+	p.SetUserId(m.UserId)
 	p.SetName(m.Name)
 	p.SetAvatarKey(m.AvatarKey)
 	if m.Dob != nil {
 		p.SetDob(mtime.MathTime{Time: *m.Dob})
 	}
-	p.SetProgramId(&programId)
-	p.SetGradeId(&gradeId)
-	p.SetSemesterId(&semesterId)
+	p.SetProgramId(m.ProgramId)
+	p.SetGradeId(m.GradeId)
+	p.SetSemesterId(m.SemesterId)
 	p.SetIsDefault(m.IsDefault)
 	p.SetNote(m.Note)
 	p.SetProfileStatus(m.ProfileStatus)
 	p.SetStatus(m.Status)
-	p.SetCreateId(&createId)
+	p.SetCreateId(m.CreateId)
 	p.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	p.SetModifyId(&modifyId)
+	p.SetModifyId(m.ModifyId)
 	p.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return p
 }

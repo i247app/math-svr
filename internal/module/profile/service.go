@@ -76,42 +76,6 @@ func NewService(
 	}
 }
 
-// uploadAvatarIfPresent ships the multipart avatar (if any) to S3 and returns
-// the resulting key. Returns (nil, nil) when no avatar was submitted. The
-// key lands on ma_users.avatar_key via BuildUser inside the create
-// transaction.
-func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateProfileReq) (*string, error) {
-	if req.AvatarFile == nil || req.AvatarFilename == "" {
-		return nil, nil
-	}
-	if s.storageProvider == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			errors.New("storage adapter is not configured"))
-	}
-
-	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
-		Filename:    req.AvatarFilename,
-		ContentType: req.AvatarContentType,
-	}); err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err)
-	}
-
-	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
-		File:        req.AvatarFile,
-		Filename:    req.AvatarFilename,
-		ContentType: req.AvatarContentType,
-		Folder:      avatarFolder,
-	})
-	if err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil, err)
-	}
-	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
-			errors.New("upload returned an empty key"))
-	}
-	return &uploaded.Key, nil
-}
-
 func (s *Service) GetProfileById(ctx context.Context, req *dto.GetProfileByIdReq) (*dto.GetProfileByIdRes, error) {
 	if err := ValidateGetProfile(ctx, req); err != nil {
 		return nil, err
@@ -206,13 +170,26 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 }
 
 func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) (*dto.UpdateProfileRes, error) {
-	log := logger.From(ctx)
-
 	if err := ValidateUpdateProfile(ctx, req); err != nil {
 		return nil, err
 	}
+
+	existProfile, err := s.getProfileByIdQuery.Handle(ctx, query.GetProfileByIdQuery{ProfileId: req.ProfileID})
+	if err != nil {
+		return nil, err
+	}
+	if existProfile == nil {
+		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			errors.New("profile not found"))
+	}
+
+	avatarKey, err := s.updateAvatarIfPresent(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
 	var dob mtime.MathTime
-	if req.Dob != nil {
+	if req.Dob != nil && *req.Dob != "" {
 		parsed, err := mtime.ParseDate(*req.Dob)
 		if err != nil {
 			return nil, err
@@ -228,12 +205,20 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 		GradeID:    req.GradeID,
 		SemesterID: req.SemesterID,
 		Note:       req.Note,
+		AvatarKey:  avatarKey,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	log.Info("profile.updated", "profile_id", updated.ProfileId())
+	// delete oldAvatar
+	if existProfile.AvatarKey() != nil && *existProfile.AvatarKey() != "" {
+		if err := s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{
+			Key: *existProfile.AvatarKey(),
+		}); err != nil {
+			return nil, err
+		}
+	}
 
 	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{updated}, "")
 	if err != nil {
@@ -355,22 +340,22 @@ func collectRefIds(profiles []*domain.Profile) (progIds, gradeIds, semIds []stri
 	gradeSeen := make(map[string]struct{}, len(profiles))
 	semSeen := make(map[string]struct{}, len(profiles))
 	for _, p := range profiles {
-		if id := p.ProgramId().String(); id != "" {
-			if _, ok := progSeen[id]; !ok {
-				progSeen[id] = struct{}{}
-				progIds = append(progIds, id)
+		if id := p.ProgramId(); id != nil {
+			if _, ok := progSeen[*id]; !ok {
+				progSeen[*id] = struct{}{}
+				progIds = append(progIds, *id)
 			}
 		}
-		if id := p.GradeId().String(); id != "" {
-			if _, ok := gradeSeen[id]; !ok {
-				gradeSeen[id] = struct{}{}
-				gradeIds = append(gradeIds, id)
+		if id := p.GradeId(); id != nil {
+			if _, ok := gradeSeen[*id]; !ok {
+				gradeSeen[*id] = struct{}{}
+				gradeIds = append(gradeIds, *id)
 			}
 		}
-		if id := p.SemesterId().String(); id != "" {
-			if _, ok := semSeen[id]; !ok {
-				semSeen[id] = struct{}{}
-				semIds = append(semIds, id)
+		if id := p.SemesterId(); id != nil {
+			if _, ok := semSeen[*id]; !ok {
+				semSeen[*id] = struct{}{}
+				semIds = append(semIds, *id)
 			}
 		}
 	}

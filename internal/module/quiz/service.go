@@ -126,7 +126,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		// Ownership check only applies when both sides have a profile.
 		// An anonymous reinforce round (or a reinforce off an anonymous
 		// previous quiz) is allowed — they share no owner to mismatch.
-		if profile != nil && prev.ProfileId() != nil && *prev.ProfileId() != profile.ProfileId() {
+		if profile != nil && prev.ProfileId() != nil && prev.ProfileId().String() != profile.ProfileId() {
 			return nil, errs.NewError(ctx, status.QUIZ_NOT_OWNED, nil,
 				errors.New("previous quiz does not belong to this profile"))
 		}
@@ -155,8 +155,8 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 	}
 
 	if profile != nil {
-		uid := profile.UserId().String()
-		pid := profile.ProfileId().String()
+		uid := profile.UserId()
+		pid := profile.ProfileId()
 		ownerUserID = &uid
 		ownerProfileID = &pid
 	}
@@ -380,7 +380,7 @@ func (s *Service) resolveCurriculumContext(ctx context.Context,
 	}
 
 	if cc.ProgramLabel == "" && profile.ProgramId() != nil {
-		programs, err := s.programRepo.ListProgramsByIds(ctx, []string{profile.ProgramId().String()}, lang)
+		programs, err := s.programRepo.ListProgramsByIds(ctx, []string{*profile.ProgramId()}, lang)
 		if err != nil {
 			return cc, errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -389,7 +389,7 @@ func (s *Service) resolveCurriculumContext(ctx context.Context,
 		}
 	}
 	if cc.GradeLabel == "" && profile.GradeId() != nil {
-		grades, err := s.gradeRepo.ListGradesByIds(ctx, []string{profile.GradeId().String()}, lang)
+		grades, err := s.gradeRepo.ListGradesByIds(ctx, []string{*profile.GradeId()}, lang)
 		if err != nil {
 			return cc, errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -398,7 +398,7 @@ func (s *Service) resolveCurriculumContext(ctx context.Context,
 		}
 	}
 	if cc.SemesterLabel == "" && profile.SemesterId() != nil {
-		semesters, err := s.semesterRepo.ListSemestersByIds(ctx, []string{profile.SemesterId().String()}, lang)
+		semesters, err := s.semesterRepo.ListSemestersByIds(ctx, []string{*profile.SemesterId()}, lang)
 		if err != nil {
 			return cc, errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -424,7 +424,7 @@ func (s *Service) resolveCurrentGradeLabel(ctx context.Context, profileID string
 	if lang == "" {
 		lang = enum.LanguageTypeVietnamese
 	}
-	grades, err := s.gradeRepo.ListGradesByIds(ctx, []string{profile.GradeId().String()}, lang)
+	grades, err := s.gradeRepo.ListGradesByIds(ctx, []string{*profile.GradeId()}, lang)
 	if err != nil {
 		return "", errs.NewError(ctx, status.FAIL, nil, err)
 	}

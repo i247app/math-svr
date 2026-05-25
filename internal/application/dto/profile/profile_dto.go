@@ -59,6 +59,10 @@ type UpdateProfileReq struct {
 	GradeID    *string `json:"grade_id,omitempty"`
 	SemesterID *string `json:"semester_id,omitempty"`
 	Note       *string `json:"note,omitempty"`
+
+	AvatarFile        io.Reader `json:"avatar_file"`         // File reader
+	AvatarFilename    string    `json:"avatar_file_name"`    // Original filename
+	AvatarContentType string    `json:"avatar_content_type"` // MIME type
 }
 
 type UpdateProfileRes struct {
@@ -100,20 +104,16 @@ func DomainToResponse(p *domain.Profile) *ProfileResponse {
 		return nil
 	}
 
-	programId := p.ProgramId().String()
-	gradeId := p.GradeId().String()
-	semesterId := p.SemesterId().String()
-
 	return &ProfileResponse{
 		ID:            p.Id(),
-		ProfileID:     p.ProfileId().String(),
-		UserID:        p.UserId().String(),
+		ProfileID:     p.ProfileId(),
+		UserID:        p.UserId(),
 		Name:          p.Name(),
 		AvatarKey:     p.AvatarKey(),
 		Dob:           p.Dob().String(),
-		ProgramID:     &programId,
-		GradeID:       &gradeId,
-		SemesterID:    &semesterId,
+		ProgramID:     p.ProgramId(),
+		GradeID:       p.GradeId(),
+		SemesterID:    p.SemesterId(),
 		IsDefault:     p.IsDefault(),
 		ProfileStatus: p.ProfileStatus(),
 		CreateDt:      p.CreateDt().String(),

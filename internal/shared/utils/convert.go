@@ -330,6 +330,9 @@ func ToFloat64Ptr(f float64) *float64 {
 
 // ToStringPtr returns a pointer to the string value
 func ToStringPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
 	return &s
 }
 

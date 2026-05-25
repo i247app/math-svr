@@ -1,7 +1,6 @@
 package profile
 
 import (
-	"github.com/google/uuid"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
@@ -11,21 +10,21 @@ import (
 // NULL/null without needing a pointer.
 type Profile struct {
 	id            int64
-	profileId     uuid.UUID
-	userId        uuid.UUID
+	profileId     string
+	userId        string
 	name          string
 	avatarKey     *string
 	dob           mtime.MathTime
-	programId     *uuid.UUID
-	gradeId       *uuid.UUID
-	semesterId    *uuid.UUID
+	programId     *string
+	gradeId       *string
+	semesterId    *string
 	isDefault     bool
 	note          *string
 	profileStatus *string
 	status        string
-	createId      *uuid.UUID
+	createId      *string
 	createDt      mtime.MathTime
-	modifyId      *uuid.UUID
+	modifyId      *string
 	modifyDt      mtime.MathTime
 }
 
@@ -41,19 +40,19 @@ func (p *Profile) SetId(id int64) {
 	p.id = id
 }
 
-func (p *Profile) ProfileId() uuid.UUID {
+func (p *Profile) ProfileId() string {
 	return p.profileId
 }
 
-func (p *Profile) SetProfileId(profileId uuid.UUID) {
+func (p *Profile) SetProfileId(profileId string) {
 	p.profileId = profileId
 }
 
-func (p *Profile) UserId() uuid.UUID {
+func (p *Profile) UserId() string {
 	return p.userId
 }
 
-func (p *Profile) SetUserId(userId uuid.UUID) {
+func (p *Profile) SetUserId(userId string) {
 	p.userId = userId
 }
 
@@ -81,14 +80,14 @@ func (p *Profile) SetDob(dob mtime.MathTime) {
 	p.dob = dob
 }
 
-func (p *Profile) ProgramId() *uuid.UUID {
+func (p *Profile) ProgramId() *string {
 	return p.programId
 }
 
 // SetProgramId accepts a pointer so the model layer (which stores
-// *uuid.UUID for the now-nullable column) can pass through nil. nil is
+// *string for the now-nullable column) can pass through nil. nil is
 // flattened to uuid.Nil so the domain field stays a value type.
-func (p *Profile) SetProgramId(programId *uuid.UUID) {
+func (p *Profile) SetProgramId(programId *string) {
 	if programId == nil {
 		p.programId = nil
 		return
@@ -96,11 +95,11 @@ func (p *Profile) SetProgramId(programId *uuid.UUID) {
 	p.programId = programId
 }
 
-func (p *Profile) GradeId() *uuid.UUID {
+func (p *Profile) GradeId() *string {
 	return p.gradeId
 }
 
-func (p *Profile) SetGradeId(gradeId *uuid.UUID) {
+func (p *Profile) SetGradeId(gradeId *string) {
 	if gradeId == nil {
 		p.gradeId = nil
 		return
@@ -108,11 +107,11 @@ func (p *Profile) SetGradeId(gradeId *uuid.UUID) {
 	p.gradeId = gradeId
 }
 
-func (p *Profile) SemesterId() *uuid.UUID {
+func (p *Profile) SemesterId() *string {
 	return p.semesterId
 }
 
-func (p *Profile) SetSemesterId(semesterId *uuid.UUID) {
+func (p *Profile) SetSemesterId(semesterId *string) {
 	if semesterId == nil {
 		p.semesterId = nil
 		return
@@ -152,11 +151,11 @@ func (p *Profile) SetStatus(status string) {
 	p.status = status
 }
 
-func (p *Profile) CreateId() *uuid.UUID {
+func (p *Profile) CreateId() *string {
 	return p.createId
 }
 
-func (p *Profile) SetCreateId(createId *uuid.UUID) {
+func (p *Profile) SetCreateId(createId *string) {
 	p.createId = createId
 }
 
@@ -168,11 +167,11 @@ func (p *Profile) SetCreateDt(createDt mtime.MathTime) {
 	p.createDt = createDt
 }
 
-func (p *Profile) ModifyId() *uuid.UUID {
+func (p *Profile) ModifyId() *string {
 	return p.modifyId
 }
 
-func (p *Profile) SetModifyId(modifyId *uuid.UUID) {
+func (p *Profile) SetModifyId(modifyId *string) {
 	p.modifyId = modifyId
 }
 

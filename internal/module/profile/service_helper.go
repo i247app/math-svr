@@ -2,6 +2,7 @@ package profile
 
 import (
 	"context"
+	"errors"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	gradeDto "math-ai.com/math-ai/internal/application/dto/grade"
@@ -14,6 +15,74 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
+
+// uploadAvatarIfPresent ships the multipart avatar (if any) to S3 and returns
+// the resulting key. Returns (nil, nil) when no avatar was submitted. The
+// key lands on ma_users.avatar_key via BuildUser inside the create
+// transaction.
+func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateProfileReq) (*string, error) {
+	if req.AvatarFile == nil || req.AvatarFilename == "" {
+		return nil, nil
+	}
+	if s.storageProvider == nil {
+		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
+			errors.New("storage adapter is not configured"))
+	}
+
+	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
+		Filename:    req.AvatarFilename,
+		ContentType: req.AvatarContentType,
+	}); err != nil {
+		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err)
+	}
+
+	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
+		File:        req.AvatarFile,
+		Filename:    req.AvatarFilename,
+		ContentType: req.AvatarContentType,
+		Folder:      avatarFolder,
+	})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil, err)
+	}
+	if uploaded == nil || uploaded.Key == "" {
+		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
+			errors.New("upload returned an empty key"))
+	}
+	return &uploaded.Key, nil
+}
+
+func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProfileReq) (*string, error) {
+	if req.AvatarFile == nil || req.AvatarFilename == "" {
+		return nil, nil
+	}
+	if s.storageProvider == nil {
+		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
+			errors.New("storage adapter is not configured"))
+	}
+
+	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
+		Filename:    req.AvatarFilename,
+		ContentType: req.AvatarContentType,
+	}); err != nil {
+		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err)
+	}
+
+	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
+		File:        req.AvatarFile,
+		Filename:    req.AvatarFilename,
+		ContentType: req.AvatarContentType,
+		Folder:      avatarFolder,
+	})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil, err)
+	}
+	if uploaded == nil || uploaded.Key == "" {
+		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
+			errors.New("upload returned an empty key"))
+	}
+	return &uploaded.Key, nil
+}
 
 // composeProfileResponses resolves embedded program/grade/semester objects
 // for the given profiles using exactly 3 batched IN-queries — regardless of
@@ -70,13 +139,13 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 	for i, p := range profiles {
 		resp := dto.DomainToResponse(p)
 		if p.ProgramId() != nil {
-			resp.Program = progMap[p.ProgramId().String()]
+			resp.Program = progMap[*p.ProgramId()]
 		}
 		if p.GradeId() != nil {
-			resp.Grade = gradeMap[p.GradeId().String()]
+			resp.Grade = gradeMap[*p.GradeId()]
 		}
 		if p.SemesterId() != nil {
-			resp.Semester = semMap[p.SemesterId().String()]
+			resp.Semester = semMap[*p.SemesterId()]
 		}
 		s.populateAvatarUrl(ctx, resp)
 		out[i] = resp
