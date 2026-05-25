@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 
+	"github.com/google/uuid"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -56,26 +57,44 @@ func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
 		return nil
 	}
 
-	programUUID, err := utils.PtrStringToUUID(cmd.ProgramID)
-	if err != nil {
-		return nil
+	var programUUID, gradeUUID, semesterUUID *uuid.UUID
+
+	if cmd.ProgramID != nil {
+		result, err := utils.PtrStringToUUID(cmd.ProgramID)
+		if err != nil {
+			return nil
+		}
+		if result != uuid.Nil {
+			programUUID = &result
+		}
 	}
-	gradeUUID, err := utils.PtrStringToUUID(cmd.GradeID)
-	if err != nil {
-		return nil
+	if cmd.GradeID != nil {
+		result, err := utils.PtrStringToUUID(cmd.GradeID)
+		if err != nil {
+			return nil
+		}
+		if result != uuid.Nil {
+			gradeUUID = &result
+		}
 	}
-	semesterUUID, err := utils.PtrStringToUUID(cmd.SemesterID)
-	if err != nil {
-		return nil
+
+	if cmd.SemesterID != nil {
+		result, err := utils.PtrStringToUUID(cmd.SemesterID)
+		if err != nil {
+			return nil
+		}
+		if result != uuid.Nil {
+			semesterUUID = &result
+		}
 	}
 
 	p := profile.NewProfile()
 	p.SetProfileId(utils.GenerateUUID())
 	p.SetUserId(userUUID)
 	p.SetName(cmd.Name)
-	p.SetProgramId(&programUUID)
-	p.SetGradeId(&gradeUUID)
-	p.SetSemesterId(&semesterUUID)
+	p.SetProgramId(programUUID)
+	p.SetGradeId(gradeUUID)
+	p.SetSemesterId(semesterUUID)
 	p.SetAvatarKey(cmd.AvatarKey)
 	p.SetNote(cmd.Note)
 	if cmd.Dob != nil {
