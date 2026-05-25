@@ -170,7 +170,7 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 	}
 
 	var dob mtime.MathTime
-	if req.Dob != nil {
+	if req.Dob != nil && *req.Dob != "" {
 		parsed, err := mtime.ParseDate(*req.Dob)
 		if err != nil {
 			return nil, err
