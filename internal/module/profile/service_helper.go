@@ -57,7 +57,7 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 	for _, g := range grades {
 		r := gradeDto.DomainToResponse(g)
 		s.signGradeImageUrl(ctx, r)
-		gradeMap[g.GradeId().String()] = r
+		gradeMap[g.GradeId()] = r
 	}
 	semMap := make(map[string]*semesterDto.SemesterResponse, len(semesters))
 	for _, sem := range semesters {

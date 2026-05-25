@@ -11,7 +11,6 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // Reference-data aggregate. Same shape as program_repository.go — see the
@@ -147,24 +146,9 @@ func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []string, lan
 }
 
 func ModelToDomainGrade(m *models.GradeModel) *grade.Grade {
-	gradeId, err := utils.StringToUUID(m.GradeId)
-	if err != nil {
-		return nil
-	}
-
-	createId, err := utils.PtrStringToUUID(m.CreateId)
-	if err != nil {
-		return nil
-	}
-
-	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
-	if err != nil {
-		return nil
-	}
-
 	g := grade.NewGrade()
 	g.SetId(m.Id)
-	g.SetGradeId(gradeId)
+	g.SetGradeId(m.GradeId)
 	g.SetLabel(m.Label)
 	g.SetDescription(m.Description)
 	g.SetImageKey(m.ImageKey)
@@ -172,9 +156,9 @@ func ModelToDomainGrade(m *models.GradeModel) *grade.Grade {
 	g.SetNote(m.Note)
 	g.SetGradeStatus(m.GradeStatus)
 	g.SetStatus(m.Status)
-	g.SetCreateId(&createId)
+	g.SetCreateId(m.CreateId)
 	g.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	g.SetModifyId(&modifyId)
+	g.SetModifyId(m.ModifyId)
 	g.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return g
 }

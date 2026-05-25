@@ -1,13 +1,12 @@
 package grade
 
 import (
-	"github.com/google/uuid"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
 type Grade struct {
 	id           int64
-	gradeId      uuid.UUID
+	gradeId      string
 	label        string
 	description  string
 	imageKey     *string
@@ -15,9 +14,9 @@ type Grade struct {
 	note         *string
 	gradeStatus  *string
 	status       string
-	createId     *uuid.UUID
+	createId     *string
 	createDt     mtime.MathTime
-	modifyId     *uuid.UUID
+	modifyId     *string
 	modifyDt     mtime.MathTime
 }
 
@@ -33,11 +32,11 @@ func (g *Grade) SetId(id int64) {
 	g.id = id
 }
 
-func (g *Grade) GradeId() uuid.UUID {
+func (g *Grade) GradeId() string {
 	return g.gradeId
 }
 
-func (g *Grade) SetGradeId(gradeId uuid.UUID) {
+func (g *Grade) SetGradeId(gradeId string) {
 	g.gradeId = gradeId
 }
 
@@ -97,11 +96,11 @@ func (g *Grade) SetStatus(status string) {
 	g.status = status
 }
 
-func (g *Grade) CreateId() *uuid.UUID {
+func (g *Grade) CreateId() *string {
 	return g.createId
 }
 
-func (g *Grade) SetCreateId(createId *uuid.UUID) {
+func (g *Grade) SetCreateId(createId *string) {
 	g.createId = createId
 }
 
@@ -113,11 +112,11 @@ func (g *Grade) SetCreateDt(createDt mtime.MathTime) {
 	g.createDt = createDt
 }
 
-func (g *Grade) ModifyId() *uuid.UUID {
+func (g *Grade) ModifyId() *string {
 	return g.modifyId
 }
 
-func (g *Grade) SetModifyId(modifyId *uuid.UUID) {
+func (g *Grade) SetModifyId(modifyId *string) {
 	g.modifyId = modifyId
 }
 

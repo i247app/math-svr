@@ -36,7 +36,7 @@ func DomainToResponse(g *domain.Grade) *GradeResponse {
 
 	return &GradeResponse{
 		ID:           g.Id(),
-		GradeID:      g.GradeId().String(),
+		GradeID:      g.GradeId(),
 		Label:        g.Label(),
 		Description:  g.Description(),
 		ImageKey:     g.ImageKey(),
