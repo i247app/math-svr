@@ -74,6 +74,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /profiles/create", profileHandler.HandleCreateProfile, authMiddleware)
 		gexSvr.AddRoute("POST /profiles/update", profileHandler.HandleUpdateProfile, authMiddleware)
 		gexSvr.AddRoute("POST /profiles/soft-delete", profileHandler.HandleSoftDeleteProfile, authMiddleware)
+		gexSvr.AddRoute("POST /profiles/force-delete", profileHandler.HandleForceDeleteProfile, authMiddleware)
 		gexSvr.AddRoute("POST /profiles/upload-avatar", profileHandler.HandleUploadAvatar, authMiddleware)
 	}
 

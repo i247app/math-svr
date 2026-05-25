@@ -154,9 +154,6 @@ func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*pr
 	return r.findBareById(ctx, id)
 }
 
-// Update mutates the existing row — per the "one profile per child, one
-// (grade, semester) at a time" rule, advancing a grade NEVER inserts a new
-// row. COALESCE keeps nil fields untouched.
 func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) error {
 	query := `
 		UPDATE ` + profileTable + `
@@ -219,6 +216,17 @@ func (r *ProfileRepository) SoftDelete(ctx context.Context, profileId string) er
 	`
 	if _, err := r.db.Exec(ctx, query, enum.ProfileStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, profileId); err != nil {
 		return fmt.Errorf("profile repo soft delete: %w", err)
+	}
+	return nil
+}
+
+func (r *ProfileRepository) ForceDelete(ctx context.Context, profileId string) error {
+	query := `
+		DELETE FROM ` + profileTable + `
+		WHERE profile_id = ?
+	`
+	if _, err := r.db.Exec(ctx, query, profileId); err != nil {
+		return fmt.Errorf("profile repo force delete: %w", err)
 	}
 	return nil
 }

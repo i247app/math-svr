@@ -155,6 +155,22 @@ func (h *ProfileHandler) HandleSoftDeleteProfile(w http.ResponseWriter, r *http.
 	response.WriteJson(w, res, nil)
 }
 
+// POST /profiles/force-delete
+func (h *ProfileHandler) HandleForceDeleteProfile(w http.ResponseWriter, r *http.Request) {
+	var req dto.DeleteProfileReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.profileSvc.ForceDeleteProfile(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // POST /profiles/upload-avatar — multipart form with fields:
 //
 //	profile_id  string (uuid)

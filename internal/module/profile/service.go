@@ -39,6 +39,7 @@ type Service struct {
 	createProfileCmd          *command.CreateProfileCommandHandler
 	updateProfileCmd          *command.UpdateProfileCommandHandler
 	softDeleteProfileCmd      *command.SoftDeleteProfileCommandHandler
+	forceDeleteProfileCmd     *command.ForceDeleteProfileCommandHandler
 	setAvatarKeyCmd           *command.SetAvatarKeyCommandHandler
 	repo                      domain.IRepository
 	programRepo               programDomain.IRepository
@@ -67,6 +68,7 @@ func NewService(
 		createProfileCmd:          command.NewCreateProfileCommandHandler(uow),
 		updateProfileCmd:          command.NewUpdateProfileCommandHandler(uow),
 		softDeleteProfileCmd:      command.NewSoftDeleteProfileCommandHandler(uow),
+		forceDeleteProfileCmd:     command.NewForceDeleteProfileCommandHandler(uow),
 		setAvatarKeyCmd:           command.NewSetAvatarKeyCommandHandler(uow),
 		repo:                      repo,
 		programRepo:               programRepo,
@@ -246,6 +248,47 @@ func (s *Service) SoftDeleteProfile(ctx context.Context, req *dto.DeleteProfileR
 	}); err != nil {
 		return nil, err
 	}
+	return &dto.DeleteProfileRes{}, nil
+}
+
+func (s *Service) ForceDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) (*dto.DeleteProfileRes, error) {
+	if err := ValidateDeleteProfile(ctx, req); err != nil {
+		return nil, err
+	}
+
+	existProfile, err := s.getProfileByIdQuery.Handle(ctx, query.GetProfileByIdQuery{ProfileId: req.ProfileID})
+	if err != nil {
+		return nil, err
+	}
+	if existProfile == nil {
+		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			errors.New("profile not found"))
+	}
+
+	p, err := s.getProfileByIdQuery.Handle(ctx, query.GetProfileByIdQuery{ProfileId: req.ProfileID})
+	if err != nil {
+		return nil, err
+	}
+	if p == nil {
+		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			errors.New("profile not found"))
+	}
+
+	if err := s.forceDeleteProfileCmd.Handle(ctx, command.ForceDeleteProfileCommand{
+		ProfileID: req.ProfileID,
+	}); err != nil {
+		return nil, err
+	}
+
+	// delete oldAvatar
+	if existProfile.AvatarKey() != nil && *existProfile.AvatarKey() != "" {
+		if err := s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{
+			Key: *existProfile.AvatarKey(),
+		}); err != nil {
+			return nil, err
+		}
+	}
+
 	return &dto.DeleteProfileRes{}, nil
 }
 
