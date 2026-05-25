@@ -12,6 +12,7 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/module/otp"
@@ -35,7 +36,8 @@ func NewService(userSvc *user.Service, otpSvc *otp.Service, uow transaction.Unit
 	}
 }
 
-func (s *Service) Login(ctx context.Context, req *dto.LoginReq) (*dto.LoginRes, error) {
+func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.LoginReq) (*dto.LoginRes, error) {
+	log := logger.From(ctx)
 	if err := ValidateLogin(ctx, req); err != nil {
 		return nil, err
 	}
@@ -65,6 +67,20 @@ func (s *Service) Login(ctx context.Context, req *dto.LoginReq) (*dto.LoginRes, 
 			User: nil,
 		}, nil
 	}
+
+	log.Info("Login successful, updating session data...")
+	sessionData := session.InitData{
+		Source:    "login",
+		IsSecure:  true,
+		UID:       userRes.User.UserID,
+		LoginName: req.Phone,
+	}
+
+	if userRes.User.Email != nil {
+		sessionData.Email = *userRes.User.Email
+	}
+
+	sess.Init(sessionData)
 
 	return &dto.LoginRes{
 		TwoFactorRequired: result.TwoFactorRequired,

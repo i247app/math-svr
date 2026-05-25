@@ -29,7 +29,14 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.service.Login(r.Context(), &req)
+	// Get session
+	session, err := h.appResource.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.service.Login(r.Context(), session, &req)
 	if err != nil {
 		if res != nil {
 			response.WriteJson(w, res, err)
