@@ -22,6 +22,7 @@ type Quiz struct {
 	userId          *string
 	profileId       *string
 	quizType        string
+	title           *string
 	questions       *string
 	answers         *string
 	aiReview        *string
@@ -53,6 +54,8 @@ func (q *Quiz) ProfileId() *string         { return q.profileId }
 func (q *Quiz) SetProfileId(id *string)    { q.profileId = id }
 func (q *Quiz) QuizType() string           { return q.quizType }
 func (q *Quiz) SetQuizType(t string)       { q.quizType = t }
+func (q *Quiz) Title() *string             { return q.title }
+func (q *Quiz) SetTitle(t *string)         { q.title = t }
 func (q *Quiz) Questions() *string         { return q.questions }
 func (q *Quiz) SetQuestions(s *string)     { q.questions = s }
 func (q *Quiz) Answers() *string           { return q.answers }

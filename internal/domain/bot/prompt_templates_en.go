@@ -23,12 +23,18 @@ CONTENT RULES:
 - Use ASCII fractions like "1/2", never "½".
 - Do not repeat questions.
 
+TITLE RULES:
+- "title" is a short, specific phrase that names the math topic of the questions (e.g. "Addition and subtraction within 100", "Basic fractions and comparison", "Single-digit multiplication").
+- Maximum 80 characters, written in English, DO NOT include the grade level, DO NOT include the quiz type (ASSESSMENT/PRACTICE), and DO NOT use generic titles like "Math quiz", "Practice quiz", or "Quiz".
+- Each call must produce a title that reflects the exact skills appearing in "questions" so titles do not repeat across rounds.
+
 OUTPUT RULES:
 - Return ONLY a JSON object matching the schema below. No prose, no markdown fences, no trailing commentary.
-- The object MUST have a "questions" field which is an array with exactly %d items, "question_number" 1..%d in order.
+- "questions" MUST be an array with exactly %d items, "question_number" 1..%d in order.
 
 SCHEMA:
 {
+  "title": "Addition and subtraction within 100",
   "questions":[
     {
       "question_number": 1,
@@ -55,12 +61,18 @@ CONTENT RULES:
 - Use ASCII fractions like "1/2".
 - Do not repeat questions verbatim from the previous quiz; create variations that target the same skills.
 
+TITLE RULES:
+- "title" is a short, specific phrase that names the skills being reinforced (e.g. "Reinforce: subtraction with regrouping", "Reinforce: equivalent fractions").
+- Maximum 80 characters, written in English, DO NOT include the grade level or the quiz type (ASSESSMENT/PRACTICE), and DO NOT use generic titles like "Reinforce quiz" or "Practice quiz".
+- The title must reflect the actual skills targeted in the NEW "questions"; do not copy the previous quiz's title.
+
 OUTPUT RULES:
 - Return ONLY a JSON object matching the schema below. No prose, no markdown fences.
-- The object MUST have a "questions" field which is an array with exactly %d items, "question_number" 1..%d in order.
+- "questions" MUST be an array with exactly %d items, "question_number" 1..%d in order.
 
 SCHEMA:
 {
+  "title": "Reinforce: subtraction with regrouping",
   "questions":[
     {
       "question_number": 1,

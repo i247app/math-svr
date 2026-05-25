@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS ma_quizzes (
   user_id         CHAR(36) DEFAULT NULL,
   profile_id      CHAR(36) DEFAULT NULL,
   type            VARCHAR(32) DEFAULT 'ASSESSMENT', -- ASSESSMENT, PRACTICE, EXAM
+  title           VARCHAR(255) DEFAULT NULL,
   questions       LONGTEXT,
   answers         LONGTEXT,
   ai_review       VARCHAR(255) DEFAULT NULL,

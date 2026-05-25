@@ -23,6 +23,7 @@ type CreateQuizCommand struct {
 	UserID         *string
 	ProfileID      *string
 	QuizType       enum.QuizType
+	Title          *string
 	QuestionsJSON  string
 	PreviousQuizID *string
 }
@@ -44,6 +45,9 @@ func (h *CreateQuizCommandHandler) Handle(ctx context.Context, cmd CreateQuizCom
 		q.SetUserId(cmd.UserID)
 		q.SetProfileId(cmd.ProfileID)
 		q.SetQuizType(string(cmd.QuizType))
+		if cmd.Title != nil {
+			q.SetTitle(cmd.Title)
+		}
 		questions := cmd.QuestionsJSON
 		q.SetQuestions(&questions)
 		generated := string(enum.QuizStatusTypeGenerated)

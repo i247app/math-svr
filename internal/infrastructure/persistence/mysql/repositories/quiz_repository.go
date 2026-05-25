@@ -17,7 +17,7 @@ import (
 const (
 	quizTable = "ma_quizzes"
 
-	quizColumns = `q.id, q.quiz_id, q.user_id, q.profile_id, q.type,
+	quizColumns = `q.id, q.quiz_id, q.user_id, q.profile_id, q.type, q.title,
 		q.questions, q.answers, q.ai_review, q.ai_detect_grade,
 		q.total_questions, q.correct_number, q.score_percentage,
 		q.previous_quiz_id, q.note, q.quiz_status, q.status,
@@ -40,7 +40,7 @@ func NewQuizRepository(db database.Executor) quiz.IRepository {
 
 func scanQuiz(s database.RowScanner) (*models.QuizModel, error) {
 	var m models.QuizModel
-	if err := s.Scan(&m.Id, &m.QuizId, &m.UserId, &m.ProfileId, &m.QuizType,
+	if err := s.Scan(&m.Id, &m.QuizId, &m.UserId, &m.ProfileId, &m.QuizType, &m.Title,
 		&m.Questions, &m.Answers, &m.AIReview, &m.AIDetectGrade,
 		&m.TotalQuestions, &m.CorrectNumber, &m.ScorePercentage,
 		&m.PreviousQuizId, &m.Note, &m.QuizStatus, &m.Status,
@@ -155,13 +155,13 @@ func buildQuizListFilterClause(filter quiz.ListQuizzesFilter) (string, []any) {
 func (r *QuizRepository) Create(ctx context.Context, q *quiz.Quiz) (*quiz.Quiz, error) {
 	query := `
 		INSERT INTO ` + quizTable + `
-			(quiz_id, user_id, profile_id, type, questions, answers,
+			(quiz_id, user_id, profile_id, type, title, questions, answers,
 			 ai_review, ai_detect_grade, previous_quiz_id, note, quiz_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
-		q.QuizId(), q.UserId(), q.ProfileId(), q.QuizType(),
+		q.QuizId(), q.UserId(), q.ProfileId(), q.QuizType(), q.Title(),
 		q.Questions(), q.Answers(), q.AIReview(), q.AIDetectGrade(),
 		q.PreviousQuizId(), q.Note(), q.QuizStatus())
 	if err != nil {
@@ -247,6 +247,7 @@ func ModelToDomainQuiz(m *models.QuizModel) *quiz.Quiz {
 	q.SetUserId(m.UserId)
 	q.SetProfileId(m.ProfileId)
 	q.SetQuizType(m.QuizType)
+	q.SetTitle(m.Title)
 	q.SetQuestions(m.Questions)
 	q.SetAnswers(m.Answers)
 	q.SetAIReview(m.AIReview)

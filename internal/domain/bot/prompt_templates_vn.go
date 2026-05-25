@@ -22,12 +22,18 @@ QUY TẮC NỘI DUNG:
 - Dùng phân số ASCII như "1/2", không dùng "½".
 - Không lặp lại câu hỏi.
 
+QUY TẮC TIÊU ĐỀ:
+- "title" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề toán của bộ câu hỏi (ví dụ: "Phép cộng và phép trừ trong phạm vi 100", "Phân số cơ bản và so sánh", "Phép nhân với số có một chữ số").
+- Tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng tiêu đề chung chung như "Bài kiểm tra Toán", "Bài luyện tập" hay "Quiz".
+- Mỗi lần sinh hãy chọn tiêu đề phản ánh chính xác các kỹ năng xuất hiện trong "questions" để không lặp lại giữa các bài.
+
 QUY TẮC ĐẦU RA:
 - CHỈ trả về JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không bình luận thêm.
-- JSON object phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
+- "questions" phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
 
 CẤU TRÚC:
 {
+  "title": "Phép cộng và phép trừ trong phạm vi 100",
   "questions":[
     {
       "question_number": 1,
@@ -54,12 +60,18 @@ QUY TẮC NỘI DUNG:
 - Dùng phân số ASCII như "1/2".
 - Không sao chép nguyên văn câu hỏi cũ; tạo biến thể nhắm vào cùng kỹ năng.
 
+QUY TẮC TIÊU ĐỀ:
+- "title" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề được củng cố (ví dụ: "Củng cố phép trừ có nhớ", "Ôn lại phân số bằng nhau").
+- Tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng tiêu đề chung chung như "Bài củng cố", "Bài ôn tập" hay "Quiz".
+- Tiêu đề phải phản ánh đúng kỹ năng được nhắm tới trong "questions" của bài mới — không sao chép tiêu đề bài cũ.
+
 QUY TẮC ĐẦU RA:
 - CHỈ trả về JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown.
-- JSON object phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
+- "questions" phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
 
 CẤU TRÚC:
 {
+  "title": "Củng cố phép trừ có nhớ",
   "questions":[
     {
       "question_number": 1,

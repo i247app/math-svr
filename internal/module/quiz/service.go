@@ -135,12 +135,12 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		genIn.PreviousAIReview = *prev.AIReview()
 	}
 
-	questions, err := s.bot.GenerateQuiz(ctx, genIn)
+	generated, err := s.bot.GenerateQuiz(ctx, genIn)
 	if err != nil {
 		return nil, err
 	}
 
-	questionsJSON, err := json.Marshal(questions)
+	questionsJSON, err := json.Marshal(generated.Questions)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.QUIZ_GENERATION_FAILED, nil,
 			fmt.Errorf("quiz: marshal questions: %w", err))
@@ -164,6 +164,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		UserID:         ownerUserID,
 		ProfileID:      ownerProfileID,
 		QuizType:       quizType,
+		Title:          sanitizeQuizTitle(generated.Title),
 		QuestionsJSON:  string(questionsJSON),
 		PreviousQuizID: req.PreviousQuizID,
 	})
@@ -175,13 +176,14 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		"quiz_id", created.QuizId(),
 		"profile_id", created.ProfileId(),
 		"type", created.QuizType(),
+		"title", derefString(created.Title()),
 		"reinforce", req.PreviousQuizID != nil,
 	)
 
 	// Live quizzes do NOT expose right_answer — the student would see
 	// the key in the same payload. After SUBMITTED, review endpoints
 	// flip this flag on.
-	return &dto.GenerateQuizRes{Quiz: dto.DomainToResponse(created, false)}, nil
+	return &dto.GenerateQuizRes{Quiz: dto.DomainToResponse(created, true)}, nil
 }
 
 // SubmitQuizAnswers grades the answers against the quiz's right-answers,
@@ -376,7 +378,7 @@ func (s *Service) resolveCurriculumContext(ctx context.Context,
 
 	lang := req.Language
 	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
+		lang = enum.LanguageTypeEnglish
 	}
 
 	if cc.ProgramLabel == "" && profile.ProgramId() != nil {

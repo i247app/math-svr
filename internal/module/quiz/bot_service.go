@@ -49,7 +49,16 @@ type generateQuizInput struct {
 	PreviousAIReview  string
 }
 
-func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) ([]quizDto.QuizQuestion, error) {
+// generateQuizOutput pairs the parsed quiz title with its questions.
+// Title is the AI-generated topic name and may be empty when the model
+// omits it or the payload was truncated past recovery; callers must
+// tolerate "" without aborting the quiz.
+type generateQuizOutput struct {
+	Title     string
+	Questions []quizDto.QuizQuestion
+}
+
+func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) (*generateQuizOutput, error) {
 	log := logger.From(ctx)
 	if c.adapter == nil {
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil,
@@ -93,13 +102,13 @@ func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) ([]q
 
 	log.Infof("BOT RESPONSE: %s", res.Content)
 
-	questions, err := parseGeneratedQuestions(res.Content)
+	title, questions, err := parseGeneration(res.Content)
 	if err != nil {
 		logger.From(ctx).Warnf("quiz.bot.generate_parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.QUIZ_GENERATION_FAILED,
 			map[string]any{"reason": err.Error()}, err)
 	}
-	return questions, nil
+	return &generateQuizOutput{Title: title, Questions: questions}, nil
 }
 
 type gradeQuizInput struct {
