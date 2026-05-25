@@ -34,7 +34,7 @@ func (h *LogoutCommandHandler) Handle(ctx context.Context, cmd LogoutCommand) er
 		}
 
 		if err := repos.LoginLog.MarkStatusByLoginLogId(
-			ctx, ll.LoginLogId().String(), enum.LoginLogStatusTypeRevoked,
+			ctx, ll.LoginLogId(), enum.LoginLogStatusTypeRevoked,
 		); err != nil {
 			return errs.NewError(ctx, status.AUTH_LOGOUT_FAILED, nil, err)
 		}

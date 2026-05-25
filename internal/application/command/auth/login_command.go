@@ -179,14 +179,9 @@ func deviceNameOrDefault(name string) string {
 }
 
 func BuildLoginLog(userId string, cmd LoginCommand) *loginlog.LoginLog {
-	uid, err := utils.StringToUUID(userId)
-	if err != nil {
-		return nil
-	}
-
 	ll := loginlog.NewLoginLog()
-	ll.SetLoginLogId(utils.GenerateUUID())
-	ll.SetUserId(uid)
+	ll.SetLoginLogId(utils.GenerateUUID().String())
+	ll.SetUserId(userId)
 	ll.SetDeviceUUID(cmd.DeviceUUID)
 	ll.SetIpAddress(cmd.IPAddress)
 	ll.SetToken(cmd.DevicePushToken)

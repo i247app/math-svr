@@ -11,7 +11,6 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -186,39 +185,19 @@ func (r *LoginLogRepository) SoftDeleteByLoginLogId(ctx context.Context, loginLo
 }
 
 func ModelToDomainLoginLog(m *models.LoginLogModel) *loginlog.LoginLog {
-	loginLogId, err := utils.StringToUUID(m.LoginLogId)
-	if err != nil {
-		return nil
-	}
-
-	userId, err := utils.StringToUUID(m.UserId)
-	if err != nil {
-		return nil
-	}
-
-	createId, err := utils.PtrStringToUUID(m.CreateId)
-	if err != nil {
-		return nil
-	}
-
-	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
-	if err != nil {
-		return nil
-	}
-
 	l := loginlog.NewLoginLog()
 	l.SetId(m.Id)
-	l.SetLoginLogId(loginLogId)
-	l.SetUserId(userId)
+	l.SetLoginLogId(m.LoginLogId)
+	l.SetUserId(m.UserId)
 	l.SetIpAddress(m.IpAddress)
 	l.SetDeviceUUID(m.DeviceUUID)
 	l.SetToken(m.Token)
 	l.SetNote(m.Note)
 	l.SetLoginLogStatus(m.LoginLogStatus)
 	l.SetStatus(m.Status)
-	l.SetCreateId(&createId)
+	l.SetCreateId(m.CreateId)
 	l.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	l.SetModifyId(&modifyId)
+	l.SetModifyId(m.ModifyId)
 	l.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return l
 }

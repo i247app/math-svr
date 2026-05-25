@@ -1,23 +1,22 @@
 package loginlog
 
 import (
-	"github.com/google/uuid"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
 type LoginLog struct {
 	id             int64
-	loginLogId     uuid.UUID
-	userId         uuid.UUID
+	loginLogId     string
+	userId         string
 	ipAddress      string
 	deviceUUID     string
 	token          string
 	note           *string
 	loginLogStatus *string
 	status         string
-	createId       *uuid.UUID
+	createId       *string
 	createDt       mtime.MathTime
-	modifyId       *uuid.UUID
+	modifyId       *string
 	modifyDt       mtime.MathTime
 }
 
@@ -33,19 +32,19 @@ func (l *LoginLog) SetId(id int64) {
 	l.id = id
 }
 
-func (l *LoginLog) LoginLogId() uuid.UUID {
+func (l *LoginLog) LoginLogId() string {
 	return l.loginLogId
 }
 
-func (l *LoginLog) SetLoginLogId(loginLogId uuid.UUID) {
+func (l *LoginLog) SetLoginLogId(loginLogId string) {
 	l.loginLogId = loginLogId
 }
 
-func (l *LoginLog) UserId() uuid.UUID {
+func (l *LoginLog) UserId() string {
 	return l.userId
 }
 
-func (l *LoginLog) SetUserId(userId uuid.UUID) {
+func (l *LoginLog) SetUserId(userId string) {
 	l.userId = userId
 }
 
@@ -97,11 +96,11 @@ func (l *LoginLog) SetStatus(status string) {
 	l.status = status
 }
 
-func (l *LoginLog) CreateId() *uuid.UUID {
+func (l *LoginLog) CreateId() *string {
 	return l.createId
 }
 
-func (l *LoginLog) SetCreateId(createId *uuid.UUID) {
+func (l *LoginLog) SetCreateId(createId *string) {
 	l.createId = createId
 }
 
@@ -113,11 +112,11 @@ func (l *LoginLog) SetCreateDt(createDt mtime.MathTime) {
 	l.createDt = createDt
 }
 
-func (l *LoginLog) ModifyId() *uuid.UUID {
+func (l *LoginLog) ModifyId() *string {
 	return l.modifyId
 }
 
-func (l *LoginLog) SetModifyId(modifyId *uuid.UUID) {
+func (l *LoginLog) SetModifyId(modifyId *string) {
 	l.modifyId = modifyId
 }
 
