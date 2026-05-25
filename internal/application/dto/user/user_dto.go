@@ -61,11 +61,15 @@ type CreateUserRes struct {
 }
 
 type UpdateUserReq struct {
-	ID       int64   `json:"id"`
-	UserID   string  `json:"user_id"`
-	UserName *string `json:"user_name,omitempty"`
-	Email    *string `json:"email,omitempty"`
-	Phone    *string `json:"phone,omitempty"`
+	ID     int64   `json:"id"`
+	UserID string  `json:"user_id"`
+	Name   *string `json:"name,omitempty"`
+	Email  *string `json:"email,omitempty"`
+	Phone  *string `json:"phone,omitempty"`
+
+	AvatarFile        io.Reader `json:"avatar_file"`         // File reader
+	AvatarFilename    string    `json:"avatar_file_name"`    // Original filename
+	AvatarContentType string    `json:"avatar_content_type"` // MIME type
 }
 
 type UpdateUserRes struct {

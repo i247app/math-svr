@@ -27,7 +27,7 @@ func ValidateUpdateUser(ctx context.Context, req *dto.UpdateUserReq) error {
 	}
 	// user_name update is optional, but if supplied it must be non-empty
 	// — ma_users.user_name is NOT NULL so an empty rewrite would fail.
-	if req.UserName != nil && strings.TrimSpace(*req.UserName) == "" {
+	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
 		return errs.NewError(ctx, status.USER_MISSING_NAME, nil, errors.New("user_name must be non-empty when provided"))
 	}
 

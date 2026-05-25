@@ -214,7 +214,8 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 	}
 
 	// delete oldAvatar
-	if existProfile.AvatarKey() != nil && *existProfile.AvatarKey() != "" {
+	if existProfile.AvatarKey() != nil && *existProfile.AvatarKey() != "" &&
+		avatarKey != nil && *existProfile.AvatarKey() != *avatarKey {
 		if err := s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{
 			Key: *existProfile.AvatarKey(),
 		}); err != nil {

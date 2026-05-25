@@ -173,42 +173,6 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	}, nil
 }
 
-// uploadAvatarIfPresent ships the multipart avatar (if any) to S3 and returns
-// the resulting key. Returns (nil, nil) when no avatar was submitted. The
-// key lands on ma_users.avatar_key via BuildUser inside the create
-// transaction.
-func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateUserReq) (*string, error) {
-	if req.AvatarFile == nil || req.AvatarFilename == "" {
-		return nil, nil
-	}
-	if s.storageProvider == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			errors.New("storage adapter is not configured"))
-	}
-
-	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
-		Filename:    req.AvatarFilename,
-		ContentType: req.AvatarContentType,
-	}); err != nil {
-		return nil, errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil, err)
-	}
-
-	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
-		File:        req.AvatarFile,
-		Filename:    req.AvatarFilename,
-		ContentType: req.AvatarContentType,
-		Folder:      avatarFolder,
-	})
-	if err != nil {
-		return nil, errs.NewError(ctx, status.USER_AVATAR_UPLOAD_FAILED, nil, err)
-	}
-	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.USER_AVATAR_UPLOAD_FAILED, nil,
-			errors.New("upload returned an empty key"))
-	}
-	return &uploaded.Key, nil
-}
-
 func (s *Service) SoftDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (*dto.DeleteUserRes, error) {
 	if err := ValidateDeleteUser(ctx, req); err != nil {
 		return nil, err
@@ -270,15 +234,40 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 		return nil, err
 	}
 
+	existsUser, err := s.getUserByUserIdQuery.Handle(ctx, query.GetUserByUserIdQuery{UserId: req.UserID})
+	if err != nil {
+		return nil, err
+	}
+
+	if existsUser == nil {
+		return nil, errs.NewError(ctx, status.NOT_FOUND, nil, nil)
+	}
+
+	avatarKey, err := s.updateAvatarIfPresent(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
 	user, err := s.updateUserCmd.Handle(ctx, command.UpdateUserCommand{
-		ID:       req.ID,
-		UserID:   req.UserID,
-		UserName: req.UserName,
-		Email:    req.Email,
-		Phone:    req.Phone,
+		ID:        req.ID,
+		UserID:    req.UserID,
+		UserName:  req.Name,
+		Email:     req.Email,
+		Phone:     req.Phone,
+		AvatarKey: avatarKey,
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	// delete oldAvatar
+	if existsUser.AvatarKey() != nil && *existsUser.AvatarKey() != "" &&
+		avatarKey != nil && *existsUser.AvatarKey() != *avatarKey {
+		if err := s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{
+			Key: *existsUser.AvatarKey(),
+		}); err != nil {
+			return nil, err
+		}
 	}
 
 	userRes := dto.DomainToResponse(user)

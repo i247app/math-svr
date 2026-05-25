@@ -201,11 +201,12 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 		SET
 			name = COALESCE(?, name),
 			email = COALESCE(?, email),
-			phone = COALESCE(?, phone)
+			phone = COALESCE(?, phone),
+			avatar_key = COALESCE(?, avatar_key)
 		WHERE id = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.Id()); err != nil {
+	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.AvatarKey(), u.Id()); err != nil {
 		return fmt.Errorf("user repo update: %w", err)
 	}
 	return nil

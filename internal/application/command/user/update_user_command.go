@@ -13,11 +13,12 @@ import (
 )
 
 type UpdateUserCommand struct {
-	ID       int64   `json:"-"`
-	UserID   string  `json:"user_id"`
-	UserName *string `json:"user_name,omitempty"`
-	Email    *string `json:"email,omitempty"`
-	Phone    *string `json:"phone,omitempty"`
+	ID        int64   `json:"-"`
+	UserID    string  `json:"user_id"`
+	UserName  *string `json:"user_name,omitempty"`
+	Email     *string `json:"email,omitempty"`
+	Phone     *string `json:"phone,omitempty"`
+	AvatarKey *string `json:"avatar_key,omitempty"`
 }
 
 func (c UpdateUserCommand) Validate() error {
@@ -50,6 +51,10 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 		// existing value when UserName is empty/nil.
 		if cmd.UserName != nil && *cmd.UserName != "" && u.UserName() != *cmd.UserName {
 			u.SetUserName(*cmd.UserName)
+		}
+
+		if u.AvatarKey() != nil && cmd.AvatarKey != nil && *u.AvatarKey() != *cmd.AvatarKey {
+			u.SetAvatarKey(cmd.AvatarKey)
 		}
 
 		aliases, err := repos.Alias.FindByUserId(ctx, cmd.UserID)

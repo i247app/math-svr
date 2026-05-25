@@ -11,6 +11,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/response"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -44,11 +45,6 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 			response.WriteJson(w, nil, fmt.Errorf("invalid form data"))
 			return
 		}
-
-		// Parse form fields. user_name is the parent's name (lands on
-		// ma_users.user_name); name is the child's name (kept for the
-		// downstream profile creation path).
-		// req.UserName = r.FormValue("user_name")
 		req.Name = r.FormValue("name")
 		req.Phone = r.FormValue("phone")
 		req.Email = r.FormValue("email")
@@ -116,14 +112,6 @@ func (h *UserHandler) HandleGetUserMe(w http.ResponseWriter, r *http.Request) {
 
 // POST /users/list
 func (h *UserHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
-	// page := r.URL.Query().Get("page")
-	// limit := r.URL.Query().Get("limit")
-
-	// req := user.ListUsersReq{
-	// 	Page:  utils.StringToInt64(page, 0),
-	// 	Limit: utils.StringToInt64(limit, 0),
-	// }
-
 	var req user.ListUsersReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
@@ -142,9 +130,32 @@ func (h *UserHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 // POST /users/update
 func (h *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 	var req user.UpdateUserReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, nil, err)
-		return
+
+	contentType := r.Header.Get("Content-Type")
+
+	if contentType == "application/json" {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			response.WriteJson(w, nil, fmt.Errorf("invalid parameters"))
+			return
+		}
+	} else {
+		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
+			response.WriteJson(w, nil, fmt.Errorf("invalid form data"))
+			return
+		}
+		req.UserID = r.FormValue("user_id")
+		req.Name = utils.ToStringPtr(r.FormValue("name"))
+		req.Phone = utils.ToStringPtr(r.FormValue("phone"))
+		req.Email = utils.ToStringPtr(r.FormValue("email"))
+
+		// Handle avatar file
+		file, header, err := r.FormFile("avatar")
+		if err == nil {
+			defer file.Close()
+			req.AvatarFile = file
+			req.AvatarFilename = header.Filename
+			req.AvatarContentType = header.Header.Get("Content-Type")
+		}
 	}
 
 	res, err := h.userSvc.UpdateUser(r.Context(), &req)
