@@ -6,7 +6,6 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/quiz"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // QuizAnswerChoice is one option in a multiple-choice question. The
@@ -141,27 +140,14 @@ func DomainToResponse(q *domain.Quiz, includeRightAnswers bool) *QuizResponse {
 	if q == nil {
 		return nil
 	}
-	var userId, profileId, previousQuizId *string
-	if q.UserId() != nil && !utils.IsEmptyUUID(*q.UserId()) {
-		id := q.UserId().String()
-		userId = &id
-	}
-	if q.ProfileId() != nil && !utils.IsEmptyUUID(*q.ProfileId()) {
-		id := q.ProfileId().String()
-		profileId = &id
-	}
-	if q.PreviousQuizId() != nil && !utils.IsEmptyUUID(*q.PreviousQuizId()) {
-		id := q.PreviousQuizId().String()
-		previousQuizId = &id
-	}
 
 	res := &QuizResponse{
 		ID:             q.Id(),
-		QuizID:         q.QuizId().String(),
-		UserID:         userId,
-		ProfileID:      profileId,
+		QuizID:         q.QuizId(),
+		UserID:         q.UserId(),
+		ProfileID:      q.ProfileId(),
 		Type:           q.QuizType(),
-		PreviousQuizID: previousQuizId,
+		PreviousQuizID: q.PreviousQuizId(),
 		QuizStatus:     q.QuizStatus(),
 		CreateDt:       q.CreateDt().String(),
 		ModifyDt:       q.ModifyDt().String(),

@@ -11,7 +11,6 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // Reference-data aggregate. Like program/grade, but the base table uses
@@ -147,24 +146,9 @@ func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []strin
 }
 
 func ModelToDomainSemester(m *models.SemesterModel) *semester.Semester {
-	semesterId, err := utils.StringToUUID(m.SemesterId)
-	if err != nil {
-		return nil
-	}
-
-	createId, err := utils.PtrStringToUUID(m.CreateId)
-	if err != nil {
-		return nil
-	}
-
-	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
-	if err != nil {
-		return nil
-	}
-
 	s := semester.NewSemester()
 	s.SetId(m.Id)
-	s.SetSemesterId(semesterId)
+	s.SetSemesterId(m.SemesterId)
 	s.SetName(m.Name)
 	s.SetDescription(m.Description)
 	s.SetImageKey(m.ImageKey)
@@ -172,9 +156,9 @@ func ModelToDomainSemester(m *models.SemesterModel) *semester.Semester {
 	s.SetNote(m.Note)
 	s.SetSemesterStatus(m.SemesterStatus)
 	s.SetStatus(m.Status)
-	s.SetCreateId(&createId)
+	s.SetCreateId(m.CreateId)
 	s.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	s.SetModifyId(&modifyId)
+	s.SetModifyId(m.ModifyId)
 	s.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return s
 }

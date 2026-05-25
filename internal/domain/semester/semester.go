@@ -1,13 +1,12 @@
 package semester
 
 import (
-	"github.com/google/uuid"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
 type Semester struct {
 	id             int64
-	semesterId     uuid.UUID
+	semesterId     string
 	name           string
 	description    string
 	imageKey       *string
@@ -15,9 +14,9 @@ type Semester struct {
 	note           *string
 	semesterStatus *string
 	status         string
-	createId       *uuid.UUID
+	createId       *string
 	createDt       mtime.MathTime
-	modifyId       *uuid.UUID
+	modifyId       *string
 	modifyDt       mtime.MathTime
 }
 
@@ -33,11 +32,11 @@ func (s *Semester) SetId(id int64) {
 	s.id = id
 }
 
-func (s *Semester) SemesterId() uuid.UUID {
+func (s *Semester) SemesterId() string {
 	return s.semesterId
 }
 
-func (s *Semester) SetSemesterId(semesterId uuid.UUID) {
+func (s *Semester) SetSemesterId(semesterId string) {
 	s.semesterId = semesterId
 }
 
@@ -97,11 +96,11 @@ func (s *Semester) SetStatus(status string) {
 	s.status = status
 }
 
-func (s *Semester) CreateId() *uuid.UUID {
+func (s *Semester) CreateId() *string {
 	return s.createId
 }
 
-func (s *Semester) SetCreateId(createId *uuid.UUID) {
+func (s *Semester) SetCreateId(createId *string) {
 	s.createId = createId
 }
 
@@ -113,11 +112,11 @@ func (s *Semester) SetCreateDt(createDt mtime.MathTime) {
 	s.createDt = createDt
 }
 
-func (s *Semester) ModifyId() *uuid.UUID {
+func (s *Semester) ModifyId() *string {
 	return s.modifyId
 }
 
-func (s *Semester) SetModifyId(modifyId *uuid.UUID) {
+func (s *Semester) SetModifyId(modifyId *string) {
 	s.modifyId = modifyId
 }
 

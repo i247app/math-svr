@@ -126,7 +126,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		// Ownership check only applies when both sides have a profile.
 		// An anonymous reinforce round (or a reinforce off an anonymous
 		// previous quiz) is allowed — they share no owner to mismatch.
-		if profile != nil && prev.ProfileId() != nil && prev.ProfileId().String() != profile.ProfileId() {
+		if profile != nil && prev.ProfileId() != nil && *prev.ProfileId() != profile.ProfileId() {
 			return nil, errs.NewError(ctx, status.QUIZ_NOT_OWNED, nil,
 				errors.New("previous quiz does not belong to this profile"))
 		}
@@ -228,7 +228,7 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 	if gradeIn.IsReinforce && existing.ProfileId() != nil {
 		// Anonymous reinforce rounds have no profile to look up; the
 		// prompt's "current grade: unknown" branch handles that case.
-		currentLabel, err := s.resolveCurrentGradeLabel(ctx, existing.ProfileId().String(), req.Language)
+		currentLabel, err := s.resolveCurrentGradeLabel(ctx, *existing.ProfileId(), req.Language)
 		if err != nil {
 			return nil, err
 		}

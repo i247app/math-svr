@@ -4,7 +4,6 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/semester"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type SemesterResponse struct {
@@ -35,15 +34,9 @@ func DomainToResponse(s *domain.Semester) *SemesterResponse {
 		return nil
 	}
 
-	var semesterId string
-	if !utils.IsEmptyUUID(s.SemesterId()) {
-		id := s.SemesterId().String()
-		semesterId = id
-	}
-
 	return &SemesterResponse{
 		ID:           s.Id(),
-		SemesterID:   semesterId,
+		SemesterID:   s.SemesterId(),
 		Name:         s.Name(),
 		Description:  s.Description(),
 		ImageKey:     s.ImageKey(),

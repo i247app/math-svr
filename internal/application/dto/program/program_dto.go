@@ -36,7 +36,7 @@ func DomainToResponse(p *domain.Program) *ProgramResponse {
 
 	return &ProgramResponse{
 		ID:           p.Id(),
-		ProgramID:    p.ProgramId().String(),
+		ProgramID:    p.ProgramId(),
 		Label:        p.Label(),
 		Description:  p.Description(),
 		ImageKey:     p.ImageKey(),

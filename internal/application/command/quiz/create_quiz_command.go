@@ -39,31 +39,17 @@ func (h *CreateQuizCommandHandler) Handle(ctx context.Context, cmd CreateQuizCom
 	var created *quiz.Quiz
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
-		userUUID, err := utils.PtrStringToUUID(cmd.UserID)
-		if err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
-
-		profileUUID, err := utils.PtrStringToUUID(cmd.ProfileID)
-		if err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
-
 		q := quiz.NewQuiz()
-		q.SetQuizId(utils.GenerateUUID())
-		q.SetUserId(&userUUID)
-		q.SetProfileId(&profileUUID)
+		q.SetQuizId(utils.GenerateUUID().String())
+		q.SetUserId(cmd.UserID)
+		q.SetProfileId(cmd.ProfileID)
 		q.SetQuizType(string(cmd.QuizType))
 		questions := cmd.QuestionsJSON
 		q.SetQuestions(&questions)
 		generated := string(enum.QuizStatusTypeGenerated)
 		q.SetQuizStatus(&generated)
 		if cmd.PreviousQuizID != nil {
-			prevQuizUUID, err := utils.PtrStringToUUID(cmd.PreviousQuizID)
-			if err != nil {
-				return errs.NewError(ctx, status.FAIL, nil, err)
-			}
-			q.SetPreviousQuizId(&prevQuizUUID)
+			q.SetPreviousQuizId(cmd.PreviousQuizID)
 		}
 
 		saved, err := repos.Quiz.Create(ctx, q)

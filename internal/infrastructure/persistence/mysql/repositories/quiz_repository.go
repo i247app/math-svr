@@ -12,7 +12,6 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -242,41 +241,11 @@ func (r *QuizRepository) ForceDeleteByUserId(ctx context.Context, userId string)
 }
 
 func ModelToDomainQuiz(m *models.QuizModel) *quiz.Quiz {
-	quizId, err := utils.StringToUUID(m.QuizId)
-	if err != nil {
-		return nil
-	}
-
-	userId, err := utils.PtrStringToUUID(m.UserId)
-	if err != nil {
-		return nil
-	}
-
-	profileId, err := utils.PtrStringToUUID(m.ProfileId)
-	if err != nil {
-		return nil
-	}
-
-	previousQuizId, err := utils.PtrStringToUUID(m.PreviousQuizId)
-	if err != nil {
-		return nil
-	}
-
-	createId, err := utils.PtrStringToUUID(m.CreateId)
-	if err != nil {
-		return nil
-	}
-
-	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
-	if err != nil {
-		return nil
-	}
-
 	q := quiz.NewQuiz()
 	q.SetId(m.Id)
-	q.SetQuizId(quizId)
-	q.SetUserId(&userId)
-	q.SetProfileId(&profileId)
+	q.SetQuizId(m.QuizId)
+	q.SetUserId(m.UserId)
+	q.SetProfileId(m.ProfileId)
 	q.SetQuizType(m.QuizType)
 	q.SetQuestions(m.Questions)
 	q.SetAnswers(m.Answers)
@@ -285,13 +254,13 @@ func ModelToDomainQuiz(m *models.QuizModel) *quiz.Quiz {
 	q.SetTotalQuestions(m.TotalQuestions)
 	q.SetCorrectNumber(m.CorrectNumber)
 	q.SetScorePercentage(m.ScorePercentage)
-	q.SetPreviousQuizId(&previousQuizId)
+	q.SetPreviousQuizId(m.PreviousQuizId)
 	q.SetNote(m.Note)
 	q.SetQuizStatus(m.QuizStatus)
 	q.SetStatus(m.Status)
-	q.SetCreateId(&createId)
+	q.SetCreateId(m.CreateId)
 	q.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	q.SetModifyId(&modifyId)
+	q.SetModifyId(m.ModifyId)
 	q.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return q
 }

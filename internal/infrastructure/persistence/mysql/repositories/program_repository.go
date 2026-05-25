@@ -11,7 +11,6 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // Reference-data aggregate: read-only, JOIN'd against the translations table
@@ -40,11 +39,6 @@ const (
 
 	programActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
 )
-
-// entityDeletedStatus is the literal "DELETED" written to every <entity>_status
-// column on soft-delete. Used in active-row filters for reference aggregates
-// that don't (yet) define a typed enum like UserStatusType.
-const entityDeletedStatus = "DELETED"
 
 func programJoinArgs(lang enum.LanguageType) []any {
 	return []any{lang, enum.StatusActive}
@@ -158,24 +152,9 @@ func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []string,
 }
 
 func ModelToDomainProgram(m *models.ProgramModel) *program.Program {
-	programId, err := utils.StringToUUID(m.ProgramId)
-	if err != nil {
-		return nil
-	}
-
-	createId, err := utils.PtrStringToUUID(m.CreateId)
-	if err != nil {
-		return nil
-	}
-
-	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
-	if err != nil {
-		return nil
-	}
-
 	p := program.NewProgram()
 	p.SetId(m.Id)
-	p.SetProgramId(programId)
+	p.SetProgramId(m.ProgramId)
 	p.SetLabel(m.Label)
 	p.SetDescription(m.Description)
 	p.SetImageKey(m.ImageKey)
@@ -183,9 +162,9 @@ func ModelToDomainProgram(m *models.ProgramModel) *program.Program {
 	p.SetNote(m.Note)
 	p.SetProgramStatus(m.ProgramStatus)
 	p.SetStatus(m.Status)
-	p.SetCreateId(&createId)
+	p.SetCreateId(m.CreateId)
 	p.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	p.SetModifyId(&modifyId)
+	p.SetModifyId(m.ModifyId)
 	p.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return p
 }
