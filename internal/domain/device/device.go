@@ -1,7 +1,6 @@
 package device
 
 import (
-	"github.com/google/uuid"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
@@ -9,13 +8,13 @@ import (
 // trust gate that auth/login consults to decide whether 2FA is required.
 //
 // The schema allows user_id to be NULL (pre-binding registrations), so it is
-// modeled as a *uuid.UUID. In practice the device row is created during login,
+// modeled as a *string. In practice the device row is created during login,
 // at which point user_id is always known — but the domain stays faithful to
 // the column nullability.
 type Device struct {
 	id              int64
-	deviceId        uuid.UUID
-	userId          *uuid.UUID
+	deviceId        string
+	userId          *string
 	deviceUUID      string
 	deviceName      string
 	devicePushToken *string
@@ -23,9 +22,9 @@ type Device struct {
 	note            *string
 	deviceStatus    *string
 	status          string
-	createId        *uuid.UUID
+	createId        *string
 	createDt        mtime.MathTime
-	modifyId        *uuid.UUID
+	modifyId        *string
 	modifyDt        mtime.MathTime
 }
 
@@ -41,19 +40,19 @@ func (d *Device) SetId(id int64) {
 	d.id = id
 }
 
-func (d *Device) DeviceId() uuid.UUID {
+func (d *Device) DeviceId() string {
 	return d.deviceId
 }
 
-func (d *Device) SetDeviceId(deviceId uuid.UUID) {
+func (d *Device) SetDeviceId(deviceId string) {
 	d.deviceId = deviceId
 }
 
-func (d *Device) UserId() *uuid.UUID {
+func (d *Device) UserId() *string {
 	return d.userId
 }
 
-func (d *Device) SetUserId(userId *uuid.UUID) {
+func (d *Device) SetUserId(userId *string) {
 	d.userId = userId
 }
 
@@ -113,11 +112,11 @@ func (d *Device) SetStatus(status string) {
 	d.status = status
 }
 
-func (d *Device) CreateId() *uuid.UUID {
+func (d *Device) CreateId() *string {
 	return d.createId
 }
 
-func (d *Device) SetCreateId(createId *uuid.UUID) {
+func (d *Device) SetCreateId(createId *string) {
 	d.createId = createId
 }
 
@@ -129,11 +128,11 @@ func (d *Device) SetCreateDt(createDt mtime.MathTime) {
 	d.createDt = createDt
 }
 
-func (d *Device) ModifyId() *uuid.UUID {
+func (d *Device) ModifyId() *string {
 	return d.modifyId
 }
 
-func (d *Device) SetModifyId(modifyId *uuid.UUID) {
+func (d *Device) SetModifyId(modifyId *string) {
 	d.modifyId = modifyId
 }
 

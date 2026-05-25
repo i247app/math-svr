@@ -82,7 +82,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		for _, aka := range aliases {
 			if aka != nil && *aka != "" {
 				alias := user.NewAlias()
-				alias.SetAliasId(utils.GenerateUUID())
+				alias.SetAliasId(utils.GenerateUUID().String())
 				alias.SetUserId(u.UserId())
 				alias.SetStatus(enum.StatusActive.String())
 				alias.SetAka(*aka)
@@ -104,7 +104,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 
 func BuildUser(cmd CreateUserCommand) *user.User {
 	u := user.NewUser()
-	u.SetUserId(utils.GenerateUUID())
+	u.SetUserId(utils.GenerateUUID().String())
 	u.SetUserName(cmd.UserName)
 	u.SetEmail(cmd.Email)
 	u.SetPhone(cmd.Phone)

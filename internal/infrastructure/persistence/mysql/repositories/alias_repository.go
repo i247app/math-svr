@@ -8,7 +8,6 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"math-ai.com/math-ai/internal/shared/utils"
 
 	"math-ai.com/math-ai/internal/domain/shared/time"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
@@ -149,36 +148,16 @@ func (r *AliasRepository) SoftDeleteByUserId(ctx context.Context, userId string)
 }
 
 func ModelToDomainAlias(m *models.AliasModel) *user.Alias {
-	aliasId, err := utils.StringToUUID(m.AliasId)
-	if err != nil {
-		return nil
-	}
-
-	userId, err := utils.StringToUUID(m.UserId)
-	if err != nil {
-		return nil
-	}
-
-	createId, err := utils.PtrStringToUUID(m.CreateId)
-	if err != nil {
-		return nil
-	}
-
-	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
-	if err != nil {
-		return nil
-	}
-
 	a := user.NewAlias()
 	a.SetId(m.Id)
-	a.SetAliasId(aliasId)
-	a.SetUserId(userId)
+	a.SetAliasId(m.AliasId)
+	a.SetUserId(m.UserId)
 	a.SetAka(m.Aka)
 	a.SetAliasStatus(m.AliasStatus)
 	a.SetNote(m.Note)
-	a.SetCreateId(&createId)
+	a.SetCreateId(m.CreateId)
 	a.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	a.SetModifyId(&modifyId)
+	a.SetModifyId(m.ModifyId)
 	a.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return a
 }

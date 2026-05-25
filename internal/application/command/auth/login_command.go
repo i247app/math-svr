@@ -70,7 +70,7 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		}
 
 		result = &LoginCommandResult{
-			UserID:            u.UserId().String(),
+			UserID:            u.UserId(),
 			TwoFactorRequired: true,
 		}
 		return nil
@@ -150,14 +150,9 @@ func ensureDevice(
 		return existing, nil
 	}
 
-	uid, err := utils.StringToUUID(userId)
-	if err != nil {
-		return nil, err
-	}
-
 	d := device.NewDevice()
-	d.SetDeviceId(utils.GenerateUUID())
-	d.SetUserId(&uid)
+	d.SetDeviceId(utils.GenerateUUID().String())
+	d.SetUserId(&userId)
 	d.SetDeviceUUID(cmd.DeviceUUID)
 	d.SetDeviceName(deviceNameOrDefault(cmd.DeviceName))
 	if cmd.DevicePushToken != "" {

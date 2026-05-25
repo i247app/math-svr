@@ -1,13 +1,12 @@
 package user
 
 import (
-	"github.com/google/uuid"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
 type User struct {
 	id         int64
-	userId     uuid.UUID
+	userId     string
 	userName   string
 	phone      string
 	email      *string
@@ -15,9 +14,9 @@ type User struct {
 	userStatus *string
 	status     string
 	note       *string
-	createId   *uuid.UUID
+	createId   *string
 	createDt   mtime.MathTime
-	modifyId   *uuid.UUID
+	modifyId   *string
 	modifyDt   mtime.MathTime
 }
 
@@ -33,11 +32,11 @@ func (u *User) SetId(id int64) {
 	u.id = id
 }
 
-func (u *User) UserId() uuid.UUID {
+func (u *User) UserId() string {
 	return u.userId
 }
 
-func (u *User) SetUserId(userId uuid.UUID) {
+func (u *User) SetUserId(userId string) {
 	u.userId = userId
 }
 
@@ -97,11 +96,11 @@ func (u *User) SetNote(note *string) {
 	u.note = note
 }
 
-func (u *User) CreateId() *uuid.UUID {
+func (u *User) CreateId() *string {
 	return u.createId
 }
 
-func (u *User) SetCreateId(createId *uuid.UUID) {
+func (u *User) SetCreateId(createId *string) {
 	u.createId = createId
 }
 
@@ -113,11 +112,11 @@ func (u *User) SetCreateDt(createDt mtime.MathTime) {
 	u.createDt = createDt
 }
 
-func (u *User) ModifyId() *uuid.UUID {
+func (u *User) ModifyId() *string {
 	return u.modifyId
 }
 
-func (u *User) SetModifyId(modifyId *uuid.UUID) {
+func (u *User) SetModifyId(modifyId *string) {
 	u.modifyId = modifyId
 }
 

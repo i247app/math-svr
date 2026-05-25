@@ -11,7 +11,6 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -202,30 +201,10 @@ func (r *DeviceRepository) SoftDeleteByDeviceId(ctx context.Context, deviceId st
 }
 
 func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
-	userId, err := utils.PtrStringToUUID(m.UserId)
-	if err != nil {
-		return nil
-	}
-
-	deviceId, err := utils.StringToUUID(m.DeviceId)
-	if err != nil {
-		return nil
-	}
-
-	createId, err := utils.PtrStringToUUID(m.CreateId)
-	if err != nil {
-		return nil
-	}
-
-	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
-	if err != nil {
-		return nil
-	}
-
 	d := device.NewDevice()
 	d.SetId(m.Id)
-	d.SetDeviceId(deviceId)
-	d.SetUserId(&userId)
+	d.SetDeviceId(m.DeviceId)
+	d.SetUserId(m.UserId)
 	d.SetDeviceUUID(m.DeviceUUID)
 	d.SetDeviceName(m.DeviceName)
 	d.SetDevicePushToken(m.DevicePushToken)
@@ -233,9 +212,9 @@ func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
 	d.SetNote(m.Note)
 	d.SetDeviceStatus(m.DeviceStatus)
 	d.SetStatus(m.Status)
-	d.SetCreateId(&createId)
+	d.SetCreateId(m.CreateId)
 	d.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	d.SetModifyId(&modifyId)
+	d.SetModifyId(m.ModifyId)
 	d.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return d
 }

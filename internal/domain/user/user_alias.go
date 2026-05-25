@@ -1,21 +1,20 @@
 package user
 
 import (
-	"github.com/google/uuid"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
 type Alias struct {
 	id          int64
-	aliasId     uuid.UUID
-	userId      uuid.UUID
+	aliasId     string
+	userId      string
 	aka         string
 	aliasStatus *string
 	note        *string
 	status      string
-	createId    *uuid.UUID
+	createId    *string
 	createDt    mtime.MathTime
-	modifyId    *uuid.UUID
+	modifyId    *string
 	modifyDt    mtime.MathTime
 }
 
@@ -31,19 +30,19 @@ func (a *Alias) SetId(id int64) {
 	a.id = id
 }
 
-func (a *Alias) AliasId() uuid.UUID {
+func (a *Alias) AliasId() string {
 	return a.aliasId
 }
 
-func (a *Alias) SetAliasId(aliasId uuid.UUID) {
+func (a *Alias) SetAliasId(aliasId string) {
 	a.aliasId = aliasId
 }
 
-func (a *Alias) UserId() uuid.UUID {
+func (a *Alias) UserId() string {
 	return a.userId
 }
 
-func (a *Alias) SetUserId(userId uuid.UUID) {
+func (a *Alias) SetUserId(userId string) {
 	a.userId = userId
 }
 
@@ -79,11 +78,11 @@ func (a *Alias) SetStatus(status string) {
 	a.status = status
 }
 
-func (a *Alias) CreateId() *uuid.UUID {
+func (a *Alias) CreateId() *string {
 	return a.createId
 }
 
-func (a *Alias) SetCreateId(createId *uuid.UUID) {
+func (a *Alias) SetCreateId(createId *string) {
 	a.createId = createId
 }
 
@@ -95,11 +94,11 @@ func (a *Alias) SetCreateDt(createDt mtime.MathTime) {
 	a.createDt = createDt
 }
 
-func (a *Alias) ModifyId() *uuid.UUID {
+func (a *Alias) ModifyId() *string {
 	return a.modifyId
 }
 
-func (a *Alias) SetModifyId(modifyId *uuid.UUID) {
+func (a *Alias) SetModifyId(modifyId *string) {
 	a.modifyId = modifyId
 }
 

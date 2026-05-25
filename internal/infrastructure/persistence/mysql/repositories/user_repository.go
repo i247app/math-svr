@@ -11,7 +11,6 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
-	"math-ai.com/math-ai/internal/shared/utils"
 
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
@@ -254,12 +253,9 @@ func (r *UserRepository) SoftDeleteByUserId(ctx context.Context, userId string) 
 }
 
 func DomainToModel(u *user.User) *models.UserModel {
-	createId := u.CreateId().String()
-	modifyId := u.ModifyId().String()
-
 	return &models.UserModel{
 		Id:         u.Id(),
-		UserId:     u.UserId().String(),
+		UserId:     u.UserId(),
 		UserName:   u.UserName(),
 		Email:      u.Email(),
 		Phone:      u.Phone(),
@@ -267,32 +263,17 @@ func DomainToModel(u *user.User) *models.UserModel {
 		UserStatus: u.UserStatus(),
 		Status:     u.Status(),
 		Note:       u.Note(),
-		CreateId:   &createId,
+		CreateId:   u.CreateId(),
 		CreateDt:   u.CreateDt().ToTime(),
-		ModifyId:   &modifyId,
+		ModifyId:   u.ModifyId(),
 		ModifyDt:   u.ModifyDt().ToTime(),
 	}
 }
 
 func ModelToDomain(m *models.UserModel) *user.User {
-	createId, err := utils.PtrStringToUUID(m.CreateId)
-	if err != nil {
-		return nil
-	}
-
-	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
-	if err != nil {
-		return nil
-	}
-
-	userId, err := utils.StringToUUID(m.UserId)
-	if err != nil {
-		return nil
-	}
-
 	u := user.NewUser()
 	u.SetId(m.Id)
-	u.SetUserId(userId)
+	u.SetUserId(m.UserId)
 	u.SetUserName(m.UserName)
 	u.SetEmail(m.Email)
 	u.SetPhone(m.Phone)
@@ -300,9 +281,9 @@ func ModelToDomain(m *models.UserModel) *user.User {
 	u.SetUserStatus(m.UserStatus)
 	u.SetStatus(m.Status)
 	u.SetNote(m.Note)
-	u.SetCreateId(&createId)
+	u.SetCreateId(m.CreateId)
 	u.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	u.SetModifyId(&modifyId)
+	u.SetModifyId(m.ModifyId)
 	u.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 
 	return u

@@ -36,7 +36,7 @@ func (h *RevokeDeviceCommandHandler) Handle(ctx context.Context, cmd RevokeDevic
 		if d == nil {
 			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, errors.New("device not found"))
 		}
-		if d.UserId() == nil || d.UserId().String() != cmd.UserID {
+		if d.UserId() == nil || *d.UserId() != cmd.UserID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
 				errors.New("device does not belong to user"))
 		}

@@ -5,7 +5,6 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/pagination"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type UserResponse struct {
@@ -113,15 +112,9 @@ func DomainToResponse(u *user.User) *UserResponse {
 		return nil
 	}
 
-	var userId string
-	if !utils.IsEmptyUUID(u.UserId()) {
-		id := u.UserId().String()
-		userId = id
-	}
-
 	return &UserResponse{
 		ID:        u.Id(),
-		UserID:    userId,
+		UserID:    u.UserId(),
 		Name:      u.UserName(),
 		Email:     u.Email(),
 		Phone:     u.Phone(),

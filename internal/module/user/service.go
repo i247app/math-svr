@@ -224,7 +224,7 @@ func (s *Service) SoftDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (*
 	}
 
 	if err := s.softDeleteUserCmd.Handle(ctx, command.SoftDeleteUserCommand{
-		UserID: user.UserId().String(),
+		UserID: user.UserId(),
 	}); err != nil {
 		return nil, err
 	}

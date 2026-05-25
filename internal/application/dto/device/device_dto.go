@@ -25,11 +25,9 @@ func DomainToResponse(d *device.Device) *DeviceResponse {
 		return nil
 	}
 
-	userId := d.UserId().String()
-
 	return &DeviceResponse{
-		DeviceID:   d.DeviceId().String(),
-		UserID:     &userId,
+		DeviceID:   d.DeviceId(),
+		UserID:     d.UserId(),
 		DeviceUUID: d.DeviceUUID(),
 		DeviceName: d.DeviceName(),
 		IsVerified: d.IsVerified(),
