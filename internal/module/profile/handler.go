@@ -3,6 +3,7 @@ package profile
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	dto "math-ai.com/math-ai/internal/application/dto/profile"
@@ -10,11 +11,12 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/response"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
-// maxAvatarUploadBytes caps an avatar multipart request before we open
-// the file. 8 MiB is generous for a user-facing image.
-const maxAvatarUploadBytes = 8 << 20
+const (
+	MaxAvatarUploadSize = 10 << 20 // 10 MB
+)
 
 type ProfileHandler struct {
 	profileSvc *Service
@@ -27,9 +29,34 @@ func NewProfileHandler(profileSvc *Service) *ProfileHandler {
 // POST /profiles/create
 func (h *ProfileHandler) HandleCreateProfile(w http.ResponseWriter, r *http.Request) {
 	var req dto.CreateProfileReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, nil, err)
-		return
+	contentType := r.Header.Get("Content-Type")
+
+	if contentType == "application/json" {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			response.WriteJson(w, nil, fmt.Errorf("invalid parameters"))
+			return
+		}
+	} else {
+		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
+			response.WriteJson(w, nil, fmt.Errorf("invalid form data"))
+			return
+		}
+
+		req.UserID = r.FormValue("user_id")
+		req.Name = r.FormValue("name")
+		req.Dob = utils.ToStringPtr(r.FormValue("dob"))
+		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
+		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
+		req.SemesterID = utils.ToStringPtr(r.FormValue("semester_id"))
+
+		// Handle avatar file
+		file, header, err := r.FormFile("avatar")
+		if err == nil {
+			defer file.Close()
+			req.AvatarFile = file
+			req.AvatarFilename = header.Filename
+			req.AvatarContentType = header.Header.Get("Content-Type")
+		}
 	}
 
 	res, err := h.profileSvc.CreateProfile(r.Context(), &req)
@@ -110,8 +137,8 @@ func (h *ProfileHandler) HandleSoftDeleteProfile(w http.ResponseWriter, r *http.
 func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	r.Body = http.MaxBytesReader(w, r.Body, maxAvatarUploadBytes)
-	if err := r.ParseMultipartForm(maxAvatarUploadBytes); err != nil {
+	r.Body = http.MaxBytesReader(w, r.Body, MaxAvatarUploadSize)
+	if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
 		response.WriteJson(w, nil,
 			errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err))
 		return

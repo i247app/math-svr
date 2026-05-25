@@ -1,6 +1,8 @@
 package profile
 
 import (
+	"io"
+
 	gradeDto "math-ai.com/math-ai/internal/application/dto/grade"
 	programDto "math-ai.com/math-ai/internal/application/dto/program"
 	semesterDto "math-ai.com/math-ai/internal/application/dto/semester"
@@ -39,6 +41,10 @@ type CreateProfileReq struct {
 	GradeID    *string `json:"grade_id"`
 	SemesterID *string `json:"semester_id"`
 	Note       *string `json:"note,omitempty"`
+
+	AvatarFile        io.Reader `json:"avatar_file"`         // File reader
+	AvatarFilename    string    `json:"avatar_file_name"`    // Original filename
+	AvatarContentType string    `json:"avatar_content_type"` // MIME type
 }
 
 type CreateProfileRes struct {

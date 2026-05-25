@@ -12,6 +12,8 @@
 
 static/
 
+images/
+
 # ast-grep files
 sgconfig.yml
 .astgrep/

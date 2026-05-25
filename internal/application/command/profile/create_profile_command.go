@@ -18,6 +18,7 @@ type CreateProfileCommand struct {
 	ProgramID  *string
 	GradeID    *string
 	SemesterID *string
+	AvatarKey  *string
 	Note       *string
 }
 
@@ -75,6 +76,7 @@ func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
 	p.SetProgramId(&programUUID)
 	p.SetGradeId(&gradeUUID)
 	p.SetSemesterId(&semesterUUID)
+	p.SetAvatarKey(cmd.AvatarKey)
 	p.SetNote(cmd.Note)
 	if cmd.Dob != nil {
 		p.SetDob(*cmd.Dob)

@@ -29,7 +29,7 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 		return []*dto.ProfileResponse{}, nil
 	}
 	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
+		lang = enum.LanguageTypeEnglish
 	}
 
 	progIds, gradeIds, semIds := collectRefIds(profiles)
