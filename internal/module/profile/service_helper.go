@@ -53,6 +53,9 @@ func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateProf
 }
 
 func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProfileReq) (*string, error) {
+	log := logger.From(ctx)
+	log.Info("Starting uploadAvatarIfPresent")
+
 	if req.AvatarFile == nil || req.AvatarFilename == "" {
 		return nil, nil
 	}
@@ -81,6 +84,11 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProf
 		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
 			errors.New("upload returned an empty key"))
 	}
+
+	log.Info("avatar.uploaded",
+		"profile_id", req.ProfileID,
+		"avatar_key", uploaded.Key,
+	)
 	return &uploaded.Key, nil
 }
 

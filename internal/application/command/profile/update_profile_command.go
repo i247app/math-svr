@@ -85,5 +85,8 @@ func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 	if cmd.Note != nil {
 		patch.SetNote(cmd.Note)
 	}
+	if cmd.AvatarKey != nil && *cmd.AvatarKey != "" {
+		patch.SetAvatarKey(cmd.AvatarKey)
+	}
 	return patch
 }
