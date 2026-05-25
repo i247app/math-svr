@@ -12,7 +12,6 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -201,31 +200,11 @@ func (r *OtpRepository) IncrementAttemptCount(ctx context.Context, otpId string)
 }
 
 func ModelToDomainOtp(m *models.OtpModel) *otp.Otp {
-	otpId, err := utils.StringToUUID(m.OtpId)
-	if err != nil {
-		return nil
-	}
-
-	userId, err := utils.PtrStringToUUID(m.UserId)
-	if err != nil {
-		return nil
-	}
-
-	createId, err := utils.PtrStringToUUID(m.CreateId)
-	if err != nil {
-		return nil
-	}
-
-	modifyId, err := utils.PtrStringToUUID(m.ModifyId)
-	if err != nil {
-		return nil
-	}
-
 	o := otp.NewOtp()
 	o.SetId(m.Id)
-	o.SetOtpId(otpId)
+	o.SetOtpId(m.OtpId)
 	o.SetOtpType(m.OtpType)
-	o.SetUserId(&userId)
+	o.SetUserId(m.UserId)
 	o.SetIdentifier(m.Identifier)
 	o.SetDeviceUUID(m.DeviceUUID)
 	o.SetDeviceName(m.DeviceName)
@@ -240,9 +219,9 @@ func ModelToDomainOtp(m *models.OtpModel) *otp.Otp {
 	o.SetNote(m.Note)
 	o.SetOtpStatus(m.OtpStatus)
 	o.SetStatus(m.Status)
-	o.SetCreateId(&createId)
+	o.SetCreateId(m.CreateId)
 	o.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
-	o.SetModifyId(&modifyId)
+	o.SetModifyId(m.ModifyId)
 	o.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
 	return o
 }

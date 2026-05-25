@@ -94,7 +94,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 				// return errs.NewError(ctx, status.OTP_TOO_FREQUENT, map[string]any{
 				// 	"retry_after_seconds": int((OtpResendCooldown - age).Seconds()),
 				// }, errors.New("resend cooldown not elapsed"))
-				createdOtpID = latest.OtpId().String()
+				createdOtpID = latest.OtpId()
 				plainCode = latest.OtpCode()
 				expiresAt = latest.OtpExpireDt().Time
 
@@ -121,13 +121,9 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 
 		// 4. Insert fresh row
 		o := otp.NewOtp()
-		o.SetOtpId(utils.GenerateUUID())
+		o.SetOtpId(utils.GenerateUUID().String())
 		o.SetOtpType(cmd.OtpType.String())
-		userUUID, err := utils.PtrStringToUUID(cmd.UserID)
-		if err != nil {
-			return err
-		}
-		o.SetUserId(&userUUID)
+		o.SetUserId(cmd.UserID)
 		o.SetIdentifier(cmd.Identifier)
 		o.SetDeviceUUID(cmd.DeviceUUID)
 		o.SetDeviceName(cmd.DeviceName)
@@ -144,7 +140,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		if err != nil {
 			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
 		}
-		createdOtpID = created.OtpId().String()
+		createdOtpID = created.OtpId()
 		return nil
 	})
 	if err != nil {

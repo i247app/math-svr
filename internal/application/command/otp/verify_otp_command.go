@@ -62,18 +62,18 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 
 		// Expiry check. Mark EXPIRED so the row is greppable in audit.
 		if o.OtpExpireDt().IsValid() && time.Now().UTC().After(o.OtpExpireDt().Time) {
-			_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId().String(), enum.OtpStatusTypeExpired)
+			_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeExpired)
 			return errs.NewError(ctx, status.OTP_EXPIRED, nil, errors.New("otp expired"))
 		}
 
 		// Increment attempts BEFORE comparing — otherwise an attacker can
 		// brute-force by flooding mismatches.
-		newCount, err := repos.Otp.IncrementAttemptCount(ctx, o.OtpId().String())
+		newCount, err := repos.Otp.IncrementAttemptCount(ctx, o.OtpId())
 		if err != nil {
 			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
 		}
 		if newCount > OtpMaxAttempts {
-			_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId().String(), enum.OtpStatusTypeRevoked)
+			_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeRevoked)
 			return errs.NewError(ctx, status.OTP_TOO_MANY_ATTEMPTS, nil,
 				errors.New("attempt cap exceeded"))
 		}
@@ -84,21 +84,20 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 			if newCount >= OtpMaxAttempts {
 				// Last allowed attempt just failed; revoke now so the
 				// next /verify call returns OTP_TOO_MANY_ATTEMPTS.
-				_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId().String(), enum.OtpStatusTypeRevoked)
+				_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeRevoked)
 			}
 			return errs.NewError(ctx, status.OTP_INVALID_CODE, map[string]any{
 				"attempts_remaining": maxInt(0, OtpMaxAttempts-newCount),
 			}, errors.New("code mismatch"))
 		}
 
-		if err := repos.Otp.MarkStatusByOtpId(ctx, o.OtpId().String(), enum.OtpStatusTypeVerified); err != nil {
+		if err := repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeVerified); err != nil {
 			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
 		}
 
-		userId := o.UserId().String()
 		result = &VerifyOtpCommandResult{
-			OtpID:      o.OtpId().String(),
-			UserID:     &userId,
+			OtpID:      o.OtpId(),
+			UserID:     o.UserId(),
 			DeviceUUID: o.DeviceUUID(),
 		}
 		return nil
