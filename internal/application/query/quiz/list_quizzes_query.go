@@ -13,6 +13,7 @@ import (
 type ListQuizzesQuery struct {
 	ProfileID *string
 	UserID    *string
+	Purpose   *string
 	Page      int64
 	Limit     int64
 }
@@ -29,5 +30,6 @@ func (h *ListQuizzesQueryHandler) Handle(ctx context.Context, q ListQuizzesQuery
 	return h.quizRepo.ListQuizzes(ctx, quiz.ListQuizzesFilter{
 		ProfileID: q.ProfileID,
 		UserID:    q.UserID,
+		Purpose:   q.Purpose,
 	}, q.Page, q.Limit)
 }

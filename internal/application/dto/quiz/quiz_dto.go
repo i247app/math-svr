@@ -131,6 +131,7 @@ type GetQuizByQuizIdRes struct {
 type ListQuizzesReq struct {
 	ProfileID *string `json:"profile_id,omitempty"`
 	UserID    *string `json:"user_id,omitempty"`
+	Purpose   *string `json:"purpose,omitempty"`
 	Page      int     `json:"page,omitempty"`
 	Size      int     `json:"size,omitempty"`
 }

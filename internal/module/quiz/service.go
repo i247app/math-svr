@@ -321,6 +321,7 @@ func (s *Service) ListQuizzes(ctx context.Context, req *dto.ListQuizzesReq) (*dt
 	quizzes, pg, err := s.listQuizzesQuery.Handle(ctx, query.ListQuizzesQuery{
 		ProfileID: req.ProfileID,
 		UserID:    req.UserID,
+		Purpose:   req.Purpose,
 		Page:      int64(req.Page),
 		Limit:     int64(req.Size),
 	})
