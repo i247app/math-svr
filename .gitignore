@@ -7,6 +7,9 @@
 # Obsidian
 .obsidian/
 
+# Peformance
+perf/
+
 # IDE file
 .idea/
 

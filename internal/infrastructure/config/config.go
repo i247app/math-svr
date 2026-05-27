@@ -55,7 +55,7 @@ func NewEnv(envpath string) (*Env, error) {
 		},
 
 		StorageConfig: StorageConfig{
-			Provider:  getConfigOptionalStringWithDefault("STORAGE_PROVIDER", "s3"),
+			Provider:  getConfigOptionalString("STORAGE_PROVIDER"),
 			AccessKey: getConfigOptionalString("STORAGE_ACCESS_KEY"),
 			SecretKey: getConfigOptionalString("STORAGE_SECRET_KEY"),
 			Region:    getConfigOptionalString("STORAGE_REGION"),
@@ -98,10 +98,39 @@ func NewEnv(envpath string) (*Env, error) {
 	return &result, nil
 }
 
-// getFloatConfigWithDefault parses a float64 env value, returning def when
-// the env var is unset/empty. Use a negative sentinel (e.g. -1) to mean
-// "fall through to the downstream library's default". Panics on a malformed
-// non-empty value — same posture as getIntConfigOptional.
+func getIntConfigOptional(key string) int {
+	val := getConfigOptional(key)
+	if val == nil {
+		return 0
+	}
+	i, err := strconv.Atoi(*val)
+	if err != nil {
+		panic(fmt.Sprintf("config error: %s must be an integer", key))
+	}
+	return i
+}
+
+func getIntConfigOptionalWithDefault(key string, def int) int {
+	raw := getConfigOptional(key)
+	if raw == nil || *raw == "" {
+		return def
+	}
+	i, err := strconv.Atoi(*raw)
+	if err != nil {
+		panic(fmt.Sprintf("config error: %s must be an integer", key))
+	}
+	return i
+}
+
+func getFloatConfigOptional(key string) *float64 {
+	val := getConfigOptional(key)
+	if val == nil {
+		return nil
+	}
+	floatVal, _ := utils.StringToFloat64Err(*val)
+	return &floatVal
+}
+
 func getFloatConfigWithDefault(key string, def float64) float64 {
 	raw := getConfigOptional(key)
 	if raw == nil || *raw == "" {
@@ -114,12 +143,22 @@ func getFloatConfigWithDefault(key string, def float64) float64 {
 	return v
 }
 
-// getDurationConfigOptional reads a Go duration string ("2s", "100ms",
-// "1m30s") from env. Returns zero on missing/empty, which lets the
-// downstream lib (libs/redis.applyDefaults) substitute its own default
-// without the caller having to know that contract. Panics on a malformed
-// value — same posture as getIntConfigOptional, since boot-time misconfig
-// should fail loudly.
+func getBoolConfig(key string) bool {
+	val := getConfigOptional(key)
+	if val == nil {
+		return false
+	}
+	return *val == "true"
+}
+
+func getBoolConfigWithDefault(key string, def bool) bool {
+	raw := getConfigOptional(key)
+	if raw == nil {
+		return def
+	}
+	return *raw == "true"
+}
+
 func getDurationConfigOptional(key string) time.Duration {
 	raw := getConfigOptional(key)
 	if raw == nil || *raw == "" {
@@ -140,57 +179,12 @@ func getConfigOptionalStringWithDefault(key, def string) string {
 	return val
 }
 
-// getIntConfigOptionalWithDefault returns the parsed int value of key,
-// or def when key is unset/empty. Panics on a non-empty but malformed
-// value — same posture as getIntConfigOptional, since boot-time
-// misconfig should fail loudly.
-func getIntConfigOptionalWithDefault(key string, def int) int {
-	raw := getConfigOptional(key)
-	if raw == nil || *raw == "" {
-		return def
-	}
-	i, err := strconv.Atoi(*raw)
-	if err != nil {
-		panic(fmt.Sprintf("config error: %s must be an integer", key))
-	}
-	return i
-}
-
-func getBoolConfigWithDefault(key string, def bool) bool {
-	raw := getConfigOptional(key)
-	if raw == nil {
-		return def
-	}
-	return *raw == "true"
-}
-
 func getConfigOptionalString(key string) string {
 	val := getConfigOptional(key)
 	if val == nil {
 		return ""
 	}
 	return *val
-}
-
-func getIntConfigOptional(key string) int {
-	val := getConfigOptional(key)
-	if val == nil {
-		return 0
-	}
-	i, err := strconv.Atoi(*val)
-	if err != nil {
-		panic(fmt.Sprintf("config error: %s must be an integer", key))
-	}
-	return i
-}
-
-func getFloatConfigOptional(key string) *float64 {
-	if os.Getenv(key) == "" {
-		return nil
-	}
-	val := os.Getenv(key)
-	floatVal, _ := utils.StringToFloat64Err(val)
-	return &floatVal
 }
 
 func getConfigOptional(key string) *string {
@@ -207,14 +201,6 @@ func getConfig(key string) string {
 		panic(fmt.Sprintf("config error: config error: %s is not set", key))
 	}
 	return *val
-}
-
-func getBoolConfig(key string) bool {
-	val := getConfigOptional(key)
-	if val == nil {
-		return false
-	}
-	return *val == "true"
 }
 
 func getFileBytesConfig(key string) []byte {
