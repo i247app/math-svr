@@ -9,7 +9,8 @@ type QuizModel struct {
 	QuizId          string
 	UserId          *string
 	ProfileId       *string
-	QuizType        string
+	Purpose         string
+	TypeOfQuiz      *string
 	Title           *string
 	Questions       *string
 	Answers         *string

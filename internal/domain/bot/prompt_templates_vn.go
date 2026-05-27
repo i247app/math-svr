@@ -184,23 +184,37 @@ CẤU TRÚC:
 }
 `
 
-func userGenerateVN(typ QuizType, in QuizPromptInput) string {
-	guidance := "Điều chỉnh độ khó theo thông tin đã cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học."
-	if typ == QuizTypePractice {
-		guidance = "Điều chỉnh độ khó theo mốc học kỳ khi có; nếu không, hãy chọn bộ luyện tập cân bằng ở trình độ tiểu học."
+// learningIntentVN nêu type_of_quiz bằng tiếng Việt để gắn vào prompt
+// người dùng. GENERAL hướng tới kiến thức mới theo chương trình;
+// REINFORCEMENT tập trung củng cố / ôn lại các kỹ năng học sinh còn yếu.
+func learningIntentVN(t QuizTypeOfQuiz) string {
+	if t == QuizTypeOfQuizReinforcement {
+		return "củng cố (ôn tập các kỹ năng học sinh đã làm sai trước đó)"
 	}
-	context := buildCurriculumContextVN(in)
-	if context == "" {
-		return fmt.Sprintf("Hãy tạo bài kiểm tra %s.\n\nKhông có thông tin học vấn cụ thể — hãy dùng bộ câu hỏi toán cân bằng cho học sinh tiểu học Việt Nam (Lớp 1-5).\n\n%s", typ, guidance)
-	}
-	return fmt.Sprintf("Hãy tạo bài kiểm tra %s cho học sinh với thông tin sau:\n%s\n\n%s", typ, context, guidance)
+	return "chung (giới thiệu hoặc luyện tập kiến thức mới theo chương trình)"
 }
 
-func userReinforceVN(typ QuizType, in QuizPromptInput) string {
+func userGenerateVN(purpose QuizPurpose, in QuizPromptInput) string {
+	guidance := "Điều chỉnh độ khó theo thông tin đã cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học."
+	if purpose == QuizPurposePractice {
+		guidance = "Điều chỉnh độ khó theo mốc học kỳ khi có; nếu không, hãy chọn bộ luyện tập cân bằng ở trình độ tiểu học."
+	}
+	intent := learningIntentVN(in.TypeOfQuiz)
+	context := buildCurriculumContextVN(in)
+	if context == "" {
+		return fmt.Sprintf("Hãy tạo bài kiểm tra %s.\n\nMục tiêu học tập: %s.\n\nKhông có thông tin học vấn cụ thể — hãy dùng bộ câu hỏi toán cân bằng cho học sinh tiểu học Việt Nam (Lớp 1-5).\n\n%s", purpose, intent, guidance)
+	}
+	return fmt.Sprintf("Hãy tạo bài kiểm tra %s cho học sinh với thông tin sau:\n%s\n\nMục tiêu học tập: %s.\n\n%s", purpose, context, intent, guidance)
+}
+
+func userReinforceVN(purpose QuizPurpose, in QuizPromptInput) string {
 	closing := "Tập trung vào điểm yếu trong nhận xét trước, đồng thời giữ độ khó phù hợp với thông tin nêu trên; nếu không có thông tin, dùng mức cân bằng cho học sinh tiểu học."
+	intent := learningIntentVN(QuizTypeOfQuizReinforcement)
 	context := buildCurriculumContextVN(in)
 	if context == "" {
 		return fmt.Sprintf(`Hãy tạo bài kiểm tra %s củng cố.
+
+Mục tiêu học tập: %s.
 
 Không có thông tin học vấn cụ thể — hãy dùng bộ câu hỏi toán cân bằng cho học sinh tiểu học Việt Nam (Lớp 1-5).
 
@@ -208,35 +222,37 @@ Câu hỏi bài trước (JSON): %s
 Câu trả lời của học sinh (JSON): %s
 Nhận xét AI về kết quả trước: %s
 
-%s`, typ, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+%s`, purpose, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
 	}
 	return fmt.Sprintf(`Hãy tạo bài kiểm tra %s củng cố cho học sinh với thông tin sau:
 %s
+
+Mục tiêu học tập: %s.
 
 Câu hỏi bài trước (JSON): %s
 Câu trả lời của học sinh (JSON): %s
 Nhận xét AI về kết quả trước: %s
 
-%s`, typ, context, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+%s`, purpose, context, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
 }
 
-func userGradeVN(typ QuizType, in QuizPromptInput) string {
-	return fmt.Sprintf(`Hãy chấm bài kiểm tra %s sau đây.
+func userGradeVN(purpose QuizPurpose, in QuizPromptInput) string {
+	return fmt.Sprintf(`Hãy chấm bài kiểm tra %s sau đây (mục tiêu học tập: %s).
 
 Câu hỏi (JSON): %s
-Câu trả lời của học sinh (JSON): %s`, typ, in.Questions, in.Answers)
+Câu trả lời của học sinh (JSON): %s`, purpose, learningIntentVN(in.TypeOfQuiz), in.Questions, in.Answers)
 }
 
-func userGradeReinforceVN(typ QuizType, in QuizPromptInput) string {
+func userGradeReinforceVN(purpose QuizPurpose, in QuizPromptInput) string {
 	currentGrade := strings.TrimSpace(in.CurrentGrade)
 	if currentGrade == "" {
 		currentGrade = "chưa xác định (không có cấp lớp được cấu hình)"
 	}
-	return fmt.Sprintf(`Hãy chấm bài kiểm tra %s củng cố sau đây.
+	return fmt.Sprintf(`Hãy chấm bài kiểm tra %s củng cố sau đây (mục tiêu học tập: %s).
 
 Câu hỏi (JSON): %s
 Câu trả lời của học sinh (JSON): %s
-Cấp lớp đang được cấu hình: %s`, typ, in.Questions, in.Answers, currentGrade)
+Cấp lớp đang được cấu hình: %s`, purpose, learningIntentVN(QuizTypeOfQuizReinforcement), in.Questions, in.Answers, currentGrade)
 }
 
 // buildCurriculumContextVN mirrors the EN helper: emits only the lines

@@ -185,23 +185,38 @@ SCHEMA:
 }
 `
 
-func userGenerateEN(typ QuizType, in QuizPromptInput) string {
-	guidance := "Calibrate difficulty using the context above where provided; otherwise pick a balanced elementary-level set."
-	if typ == QuizTypePractice {
-		guidance = "Calibrate difficulty to the semester checkpoint when available; otherwise pick a balanced elementary-level practice set."
+// learningIntentEN names the type_of_quiz dimension in plain English so
+// the user prompt can reference it without leaking the enum literal. The
+// model adapts its emphasis: GENERAL leans on the curriculum, while
+// REINFORCEMENT leans on the previous quiz's weak spots.
+func learningIntentEN(t QuizTypeOfQuiz) string {
+	if t == QuizTypeOfQuizReinforcement {
+		return "reinforcement (consolidate previously-missed skills)"
 	}
-	context := buildCurriculumContextEN(in)
-	if context == "" {
-		return fmt.Sprintf("Generate a %s quiz.\n\nNo specific academic context was provided — use a balanced Vietnamese elementary-level (Grades 1-5) set.\n\n%s", typ, guidance)
-	}
-	return fmt.Sprintf("Generate a %s quiz for this student context:\n%s\n\n%s", typ, context, guidance)
+	return "general (introduce or practice new knowledge from the curriculum)"
 }
 
-func userReinforceEN(typ QuizType, in QuizPromptInput) string {
+func userGenerateEN(purpose QuizPurpose, in QuizPromptInput) string {
+	guidance := "Calibrate difficulty using the context above where provided; otherwise pick a balanced elementary-level set."
+	if purpose == QuizPurposePractice {
+		guidance = "Calibrate difficulty to the semester checkpoint when available; otherwise pick a balanced elementary-level practice set."
+	}
+	intent := learningIntentEN(in.TypeOfQuiz)
+	context := buildCurriculumContextEN(in)
+	if context == "" {
+		return fmt.Sprintf("Generate a %s quiz.\n\nLearning intent: %s.\n\nNo specific academic context was provided — use a balanced Vietnamese elementary-level (Grades 1-5) set.\n\n%s", purpose, intent, guidance)
+	}
+	return fmt.Sprintf("Generate a %s quiz for this student context:\n%s\n\nLearning intent: %s.\n\n%s", purpose, context, intent, guidance)
+}
+
+func userReinforceEN(purpose QuizPurpose, in QuizPromptInput) string {
 	closing := "Target the weak spots from the previous review while keeping difficulty appropriate to the context above; if no context was supplied, fall back to a balanced elementary-level set."
+	intent := learningIntentEN(QuizTypeOfQuizReinforcement)
 	context := buildCurriculumContextEN(in)
 	if context == "" {
 		return fmt.Sprintf(`Generate a %s reinforce quiz.
+
+Learning intent: %s.
 
 No specific academic context was provided — use a balanced Vietnamese elementary-level (Grades 1-5) set.
 
@@ -209,35 +224,37 @@ Previous quiz questions (JSON): %s
 Student's previous answers (JSON): %s
 AI review of previous performance: %s
 
-%s`, typ, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+%s`, purpose, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
 	}
 	return fmt.Sprintf(`Generate a %s reinforce quiz for this student context:
 %s
+
+Learning intent: %s.
 
 - Previous quiz questions (JSON): %s
 - Student's previous answers (JSON): %s
 - AI review of previous performance: %s
 
-%s`, typ, context, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+%s`, purpose, context, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
 }
 
-func userGradeEN(typ QuizType, in QuizPromptInput) string {
-	return fmt.Sprintf(`Grade this %s quiz.
+func userGradeEN(purpose QuizPurpose, in QuizPromptInput) string {
+	return fmt.Sprintf(`Grade this %s quiz (learning intent: %s).
 
 - Quiz questions (JSON): %s
-- Student's answers (JSON): %s`, typ, in.Questions, in.Answers)
+- Student's answers (JSON): %s`, purpose, learningIntentEN(in.TypeOfQuiz), in.Questions, in.Answers)
 }
 
-func userGradeReinforceEN(typ QuizType, in QuizPromptInput) string {
+func userGradeReinforceEN(purpose QuizPurpose, in QuizPromptInput) string {
 	currentGrade := strings.TrimSpace(in.CurrentGrade)
 	if currentGrade == "" {
 		currentGrade = "unknown (no grade configured)"
 	}
-	return fmt.Sprintf(`Grade this reinforce %s quiz.
+	return fmt.Sprintf(`Grade this reinforce %s quiz (learning intent: %s).
 
 - Quiz questions (JSON): %s
 - Student's answers (JSON): %s
-- Student's currently configured grade: %s`, typ, in.Questions, in.Answers, currentGrade)
+- Student's currently configured grade: %s`, purpose, learningIntentEN(QuizTypeOfQuizReinforcement), in.Questions, in.Answers, currentGrade)
 }
 
 // buildCurriculumContextEN renders only the curriculum lines whose value

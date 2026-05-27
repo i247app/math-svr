@@ -3,7 +3,6 @@ package quiz
 import (
 	"context"
 	"errors"
-	"strings"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
@@ -35,11 +34,13 @@ func newBotClient(adapter *botAdapter.Adapter) *botClient {
 }
 
 // generateQuizInput carries every field GenerateQuiz may consume. The
-// reinforce branch is selected when PreviousQuestions is non-empty, so
-// callers never have to choose a purpose explicitly.
+// reinforce branch is selected explicitly via TypeOfQuiz (the persisted
+// learning intent) rather than inferred from PreviousQuestions, so the
+// row's stored value is the single source of truth for the prompt shape.
 type generateQuizInput struct {
 	Language          enum.LanguageType
-	QuizType          enum.QuizType
+	Purpose           enum.QuizPurpose
+	TypeOfQuiz        enum.QuizTypeOfQuiz
 	GradeLabel        string
 	SemesterLabel     string
 	ProgramLabel      string
@@ -65,14 +66,20 @@ func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) (*ge
 			errors.New("quiz: bot adapter is not configured"))
 	}
 
-	purpose := domainBot.QuizPurposeGenerate
-	if strings.TrimSpace(in.PreviousQuestions) != "" {
-		purpose = domainBot.QuizPurposeReinforce
+	// Prompt kind is driven by the persisted learning intent. We still
+	// require the previous-round payloads when the intent is reinforce,
+	// so a caller that asked for REINFORCEMENT without supplying prior
+	// context surfaces a prompt validation error (caught below) rather
+	// than silently degrading to a generate-style prompt.
+	kind := domainBot.QuizPromptKindGenerate
+	if in.TypeOfQuiz == enum.QuizTypeOfQuizReinforcement {
+		kind = domainBot.QuizPromptKindReinforce
 	}
 
-	system, user, err := domainBot.BuildQuizPrompt(purpose, domainBot.QuizPromptInput{
+	system, user, err := domainBot.BuildQuizPrompt(kind, domainBot.QuizPromptInput{
 		Language:          domainBot.QuizLanguage(normalizeLanguage(in.Language)),
-		Type:              domainBot.QuizType(in.QuizType),
+		Purpose:           domainBot.QuizPurpose(in.Purpose),
+		TypeOfQuiz:        domainBot.QuizTypeOfQuiz(in.TypeOfQuiz),
 		Grade:             in.GradeLabel,
 		Semester:          in.SemesterLabel,
 		Program:           in.ProgramLabel,
@@ -111,12 +118,17 @@ func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) (*ge
 	return &generateQuizOutput{Title: title, Questions: questions}, nil
 }
 
+// gradeQuizInput pairs the persisted row's purpose + learning intent
+// with the payloads being graded. The grading prompt branches on
+// TypeOfQuiz the same way GenerateQuiz does, so an explicit
+// REINFORCEMENT round is graded with the reinforce-shaped prompt even
+// when the caller doesn't pass IsReinforce manually.
 type gradeQuizInput struct {
 	Language     enum.LanguageType
-	QuizType     enum.QuizType
+	Purpose      enum.QuizPurpose
+	TypeOfQuiz   enum.QuizTypeOfQuiz
 	Questions    string
 	Answers      string
-	IsReinforce  bool
 	CurrentGrade string
 }
 
@@ -127,14 +139,15 @@ func (c *botClient) GradeQuiz(ctx context.Context, in gradeQuizInput) (*quizDto.
 			errors.New("quiz: bot adapter is not configured"))
 	}
 
-	purpose := domainBot.QuizPurposeGrade
-	if in.IsReinforce {
-		purpose = domainBot.QuizPurposeGradeReinforce
+	kind := domainBot.QuizPromptKindGrade
+	if in.TypeOfQuiz == enum.QuizTypeOfQuizReinforcement {
+		kind = domainBot.QuizPromptKindGradeReinforce
 	}
 
-	system, user, err := domainBot.BuildQuizPrompt(purpose, domainBot.QuizPromptInput{
+	system, user, err := domainBot.BuildQuizPrompt(kind, domainBot.QuizPromptInput{
 		Language:     domainBot.QuizLanguage(normalizeLanguage(in.Language)),
-		Type:         domainBot.QuizType(in.QuizType),
+		Purpose:      domainBot.QuizPurpose(in.Purpose),
+		TypeOfQuiz:   domainBot.QuizTypeOfQuiz(in.TypeOfQuiz),
 		Questions:    in.Questions,
 		Answers:      in.Answers,
 		CurrentGrade: in.CurrentGrade,

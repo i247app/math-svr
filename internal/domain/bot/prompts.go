@@ -5,25 +5,30 @@ import (
 	"strings"
 )
 
-// QuizPurpose discriminates the four supported quiz LLM calls. Each
-// purpose maps to a distinct (system, user) template pair so the model
-// is steered explicitly toward generation, grading, or remediation.
-type QuizPurpose int
+// QuizPromptKind discriminates the four supported quiz LLM calls. Each
+// kind maps to a distinct (system, user) template pair so the model is
+// steered explicitly toward generation, grading, or remediation.
+//
+// Naming note: this concept used to be called QuizPurpose. It was
+// renamed to QuizPromptKind once the quiz domain itself adopted "purpose"
+// as the name of the ASSESSMENT / PRACTICE / EXAM dimension persisted on
+// ma_quizzes.purpose.
+type QuizPromptKind int
 
 const (
-	// QuizPurposeGenerate asks the model to produce a fresh quiz from
+	// QuizPromptKindGenerate asks the model to produce a fresh quiz from
 	// curriculum context (grade, semester, program).
-	QuizPurposeGenerate QuizPurpose = iota + 1
-	// QuizPurposeReinforce asks the model to produce a remedial quiz
+	QuizPromptKindGenerate QuizPromptKind = iota + 1
+	// QuizPromptKindReinforce asks the model to produce a remedial quiz
 	// targeting the student's weak spots from a prior quiz.
-	QuizPurposeReinforce
-	// QuizPurposeGrade asks the model to score the student's answers
+	QuizPromptKindReinforce
+	// QuizPromptKindGrade asks the model to score the student's answers
 	// to a fresh quiz and (for ASSESSMENT) predict ai_detect_grade.
-	QuizPurposeGrade
-	// QuizPurposeGradeReinforce grades a reinforce quiz; the prompt
-	// carries the student's currently configured grade as context so
-	// the prediction reflects progression, not just raw accuracy.
-	QuizPurposeGradeReinforce
+	QuizPromptKindGrade
+	// QuizPromptKindGradeReinforce grades a reinforce quiz; the prompt
+	// carries the student's currently configured grade as context so the
+	// prediction reflects progression, not just raw accuracy.
+	QuizPromptKindGradeReinforce
 )
 
 // QuizLanguage is the response language requested from the model. The
@@ -36,24 +41,44 @@ const (
 	QuizLanguageEnglish    QuizLanguage = "en"
 )
 
-// QuizType narrows the prompt's tone and grading shape. EXAM is reserved
-// for a future template set; today only ASSESSMENT and PRACTICE are
-// honoured by the builder.
-type QuizType string
+// QuizPurpose narrows the prompt's tone and grading shape — the same
+// vocabulary persisted on ma_quizzes.purpose. EXAM is reserved for a
+// future template set; today only ASSESSMENT and PRACTICE are honoured
+// by the builder (EXAM falls back to the ASSESSMENT templates).
+type QuizPurpose string
 
 const (
-	QuizTypeAssessment QuizType = "ASSESSMENT"
-	QuizTypePractice   QuizType = "PRACTICE"
+	QuizPurposeAssessment QuizPurpose = "ASSESSMENT"
+	QuizPurposePractice   QuizPurpose = "PRACTICE"
+	QuizPurposeExam       QuizPurpose = "EXAM"
 )
 
-// QuizPromptInput is the union of fields any quiz purpose may need.
-// Each purpose pulls only the subset it requires; unused fields are
-// ignored. BuildQuizPrompt validates required-field presence per
-// purpose so the model never sees a partially-filled template.
+// QuizTypeOfQuiz captures the *learning intent* persisted on
+// ma_quizzes.type_of_quiz. GENERAL = the quiz introduces new knowledge
+// from the curriculum; REINFORCEMENT = the quiz consolidates / reviews
+// material the student previously got wrong. Both values are passed to
+// the prompt so the model can adapt its phrasing (e.g. emphasise
+// targeted practice for REINFORCEMENT) without us having to fork the
+// system prompt by row state.
+type QuizTypeOfQuiz string
+
+const (
+	QuizTypeOfQuizGeneral       QuizTypeOfQuiz = "GENERAL"
+	QuizTypeOfQuizReinforcement QuizTypeOfQuiz = "REINFORCEMENT"
+)
+
+// QuizPromptInput is the union of fields any prompt kind may need.
+// Each kind pulls only the subset it requires; unused fields are
+// ignored. BuildQuizPrompt validates required-field presence per kind
+// so the model never sees a partially-filled template.
 type QuizPromptInput struct {
-	// Language and Type are required for every purpose.
-	Language QuizLanguage
-	Type     QuizType
+	// Language, Purpose, and TypeOfQuiz are accepted by every kind.
+	// Purpose may be blank — when so, the builder falls back to a
+	// generic elementary-level brief. TypeOfQuiz defaults to GENERAL
+	// when blank.
+	Language   QuizLanguage
+	Purpose    QuizPurpose
+	TypeOfQuiz QuizTypeOfQuiz
 
 	// Curriculum context — required for Generate / Reinforce.
 	Grade    string
@@ -80,29 +105,30 @@ type QuizPromptInput struct {
 }
 
 // BuildQuizPrompt returns the (system, user) message contents for the
-// requested purpose. The caller drops them into ChatRequest.Messages
+// requested prompt kind. The caller drops them into ChatRequest.Messages
 // as Role=system and Role=user respectively, sets JSONMode=true and a
 // low Temperature for determinism, and forwards through the adapter.
-func BuildQuizPrompt(purpose QuizPurpose, in QuizPromptInput) (system string, user string, err error) {
+func BuildQuizPrompt(kind QuizPromptKind, in QuizPromptInput) (system string, user string, err error) {
 	lang, err := normalizeLanguage(in.Language)
 	if err != nil {
 		return "", "", err
 	}
-	typ, err := normalizeQuizType(in.Type)
+	purpose, err := normalizeQuizPurpose(in.Purpose)
 	if err != nil {
 		return "", "", err
 	}
+	typeOfQuiz := normalizeQuizTypeOfQuiz(in.TypeOfQuiz)
+	in.Purpose = purpose
+	in.TypeOfQuiz = typeOfQuiz
 
-	fmt.Println("Language: ", lang)
-
-	switch purpose {
-	case QuizPurposeGenerate:
+	switch kind {
+	case QuizPromptKindGenerate:
 		// Curriculum context (Grade/Semester/Program) is OPTIONAL. The
 		// user prompt adapts to render only the lines that are populated,
 		// so the model still gets a coherent brief on partial / empty
 		// context.
-		return buildGeneratePrompt(lang, typ, in), buildGenerateUser(lang, typ, in), nil
-	case QuizPurposeReinforce:
+		return buildGeneratePrompt(lang, purpose, in), buildGenerateUser(lang, purpose, in), nil
+	case QuizPromptKindReinforce:
 		// Previous-round payloads are required (otherwise the bot can't
 		// know what to reinforce); curriculum context stays optional.
 		if err := requireFields(
@@ -111,21 +137,21 @@ func BuildQuizPrompt(purpose QuizPurpose, in QuizPromptInput) (system string, us
 			in.PreviousAIReview, "PreviousAIReview"); err != nil {
 			return "", "", err
 		}
-		return buildReinforcePrompt(lang, typ, in), buildReinforceUser(lang, typ, in), nil
-	case QuizPurposeGrade:
+		return buildReinforcePrompt(lang, purpose, in), buildReinforceUser(lang, purpose, in), nil
+	case QuizPromptKindGrade:
 		if err := requireFields(in.Questions, "Questions", in.Answers, "Answers"); err != nil {
 			return "", "", err
 		}
-		return buildGradePrompt(lang, typ), buildGradeUser(lang, typ, in), nil
-	case QuizPurposeGradeReinforce:
+		return buildGradePrompt(lang, purpose), buildGradeUser(lang, purpose, in), nil
+	case QuizPromptKindGradeReinforce:
 		// CurrentGrade is optional — when unknown, the grading prompt
 		// falls back to "unknown" so the model still produces a result.
 		if err := requireFields(in.Questions, "Questions", in.Answers, "Answers"); err != nil {
 			return "", "", err
 		}
-		return buildGradeReinforcePrompt(lang, typ), buildGradeReinforceUser(lang, typ, in), nil
+		return buildGradeReinforcePrompt(lang, purpose), buildGradeReinforceUser(lang, purpose, in), nil
 	default:
-		return "", "", fmt.Errorf("bot: unknown quiz purpose %d", purpose)
+		return "", "", fmt.Errorf("bot: unknown quiz prompt kind %d", kind)
 	}
 }
 
@@ -140,19 +166,39 @@ func normalizeLanguage(lang QuizLanguage) (QuizLanguage, error) {
 	}
 }
 
-func normalizeQuizType(t QuizType) (QuizType, error) {
-	switch QuizType(strings.ToUpper(strings.TrimSpace(string(t)))) {
-	case QuizTypeAssessment:
-		return QuizTypeAssessment, nil
-	case QuizTypePractice:
-		return QuizTypePractice, nil
+// normalizeQuizPurpose accepts an empty value (treated as ASSESSMENT so
+// the existing prompt tone still applies) and rejects unknown values
+// loudly — drift from the enum should not silently degrade to a default.
+func normalizeQuizPurpose(p QuizPurpose) (QuizPurpose, error) {
+	switch QuizPurpose(strings.ToUpper(strings.TrimSpace(string(p)))) {
+	case "", QuizPurposeAssessment:
+		return QuizPurposeAssessment, nil
+	case QuizPurposePractice:
+		return QuizPurposePractice, nil
+	case QuizPurposeExam:
+		// EXAM has no dedicated template yet; reuse the ASSESSMENT shape
+		// (closest existing tone) so the request still produces a quiz.
+		return QuizPurposeAssessment, nil
 	default:
-		return "", fmt.Errorf("bot: unsupported quiz type %q", string(t))
+		return "", fmt.Errorf("bot: unsupported quiz purpose %q", string(p))
+	}
+}
+
+// normalizeQuizTypeOfQuiz is tolerant: it never errors. Blank or unknown
+// values fall back to GENERAL so a partially-populated request still
+// produces a usable prompt — the column has a DB-level default of
+// 'GENERAL' for the same reason.
+func normalizeQuizTypeOfQuiz(t QuizTypeOfQuiz) QuizTypeOfQuiz {
+	switch QuizTypeOfQuiz(strings.ToUpper(strings.TrimSpace(string(t)))) {
+	case QuizTypeOfQuizReinforcement:
+		return QuizTypeOfQuizReinforcement
+	default:
+		return QuizTypeOfQuizGeneral
 	}
 }
 
 // requireFields takes alternating (value, name) pairs and returns the
-// first missing-field error encountered. Keeps the per-purpose validation
+// first missing-field error encountered. Keeps the per-kind validation
 // readable at the call site.
 func requireFields(pairs ...string) error {
 	if len(pairs)%2 != 0 {
@@ -180,7 +226,7 @@ func resolveNumQuestions(n int) int {
 	return n
 }
 
-func buildGeneratePrompt(lang QuizLanguage, _ QuizType, in QuizPromptInput) string {
+func buildGeneratePrompt(lang QuizLanguage, _ QuizPurpose, in QuizPromptInput) string {
 	n := resolveNumQuestions(in.NumQuestions)
 	if lang == QuizLanguageEnglish {
 		return buildSystemGenerateEN(n)
@@ -188,14 +234,14 @@ func buildGeneratePrompt(lang QuizLanguage, _ QuizType, in QuizPromptInput) stri
 	return buildSystemGenerateVN(n)
 }
 
-func buildGenerateUser(lang QuizLanguage, typ QuizType, in QuizPromptInput) string {
+func buildGenerateUser(lang QuizLanguage, purpose QuizPurpose, in QuizPromptInput) string {
 	if lang == QuizLanguageEnglish {
-		return userGenerateEN(typ, in)
+		return userGenerateEN(purpose, in)
 	}
-	return userGenerateVN(typ, in)
+	return userGenerateVN(purpose, in)
 }
 
-func buildReinforcePrompt(lang QuizLanguage, _ QuizType, in QuizPromptInput) string {
+func buildReinforcePrompt(lang QuizLanguage, _ QuizPurpose, in QuizPromptInput) string {
 	n := resolveNumQuestions(in.NumQuestions)
 	if lang == QuizLanguageEnglish {
 		return buildSystemReinforceEN(n)
@@ -203,53 +249,53 @@ func buildReinforcePrompt(lang QuizLanguage, _ QuizType, in QuizPromptInput) str
 	return buildSystemReinforceVN(n)
 }
 
-func buildReinforceUser(lang QuizLanguage, typ QuizType, in QuizPromptInput) string {
+func buildReinforceUser(lang QuizLanguage, purpose QuizPurpose, in QuizPromptInput) string {
 	if lang == QuizLanguageEnglish {
-		return userReinforceEN(typ, in)
+		return userReinforceEN(purpose, in)
 	}
-	return userReinforceVN(typ, in)
+	return userReinforceVN(purpose, in)
 }
 
-func buildGradePrompt(lang QuizLanguage, typ QuizType) string {
+func buildGradePrompt(lang QuizLanguage, purpose QuizPurpose) string {
 	switch lang {
 	case QuizLanguageEnglish:
-		if typ == QuizTypePractice {
+		if purpose == QuizPurposePractice {
 			return systemGradePracticeEN
 		}
 		return systemGradeAssessmentEN
 	default:
-		if typ == QuizTypePractice {
+		if purpose == QuizPurposePractice {
 			return systemGradePracticeVN
 		}
 		return systemGradeAssessmentVN
 	}
 }
 
-func buildGradeUser(lang QuizLanguage, typ QuizType, in QuizPromptInput) string {
+func buildGradeUser(lang QuizLanguage, purpose QuizPurpose, in QuizPromptInput) string {
 	if lang == QuizLanguageEnglish {
-		return userGradeEN(typ, in)
+		return userGradeEN(purpose, in)
 	}
-	return userGradeVN(typ, in)
+	return userGradeVN(purpose, in)
 }
 
-func buildGradeReinforcePrompt(lang QuizLanguage, typ QuizType) string {
+func buildGradeReinforcePrompt(lang QuizLanguage, purpose QuizPurpose) string {
 	switch lang {
 	case QuizLanguageEnglish:
-		if typ == QuizTypePractice {
+		if purpose == QuizPurposePractice {
 			return systemGradeReinforcePracticeEN
 		}
 		return systemGradeReinforceAssessmentEN
 	default:
-		if typ == QuizTypePractice {
+		if purpose == QuizPurposePractice {
 			return systemGradeReinforcePracticeVN
 		}
 		return systemGradeReinforceAssessmentVN
 	}
 }
 
-func buildGradeReinforceUser(lang QuizLanguage, typ QuizType, in QuizPromptInput) string {
+func buildGradeReinforceUser(lang QuizLanguage, purpose QuizPurpose, in QuizPromptInput) string {
 	if lang == QuizLanguageEnglish {
-		return userGradeReinforceEN(typ, in)
+		return userGradeReinforceEN(purpose, in)
 	}
-	return userGradeReinforceVN(typ, in)
+	return userGradeReinforceVN(purpose, in)
 }

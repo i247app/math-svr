@@ -246,6 +246,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Failed to grade quiz answers"
 	case QUIZ_PROFILE_NOT_CONFIGURED:
 		return "Profile must have a program, grade, and semester set before generating a quiz"
+	case QUIZ_INVALID_TYPE_OF_QUIZ:
+		return "Quiz learning type is invalid"
 
 	// Job
 	case JOB_NOT_FOUND:

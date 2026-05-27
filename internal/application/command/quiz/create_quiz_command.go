@@ -19,10 +19,14 @@ import (
 // UserID and ProfileID are optional: an anonymous / profile-less quiz
 // is persisted with both columns NULL and is only reachable via its
 // quiz_id thereafter.
+//
+// Purpose ↔ ma_quizzes.purpose (ASSESSMENT / PRACTICE / EXAM).
+// TypeOfQuiz ↔ ma_quizzes.type_of_quiz (GENERAL / REINFORCEMENT).
 type CreateQuizCommand struct {
 	UserID         *string
 	ProfileID      *string
-	QuizType       enum.QuizType
+	Purpose        enum.QuizPurpose
+	TypeOfQuiz     enum.QuizTypeOfQuiz
 	Title          *string
 	QuestionsJSON  string
 	PreviousQuizID *string
@@ -44,7 +48,11 @@ func (h *CreateQuizCommandHandler) Handle(ctx context.Context, cmd CreateQuizCom
 		q.SetQuizId(utils.GenerateUUID().String())
 		q.SetUserId(cmd.UserID)
 		q.SetProfileId(cmd.ProfileID)
-		q.SetQuizType(string(cmd.QuizType))
+		q.SetPurpose(string(cmd.Purpose))
+		if cmd.TypeOfQuiz != "" {
+			tq := string(cmd.TypeOfQuiz)
+			q.SetTypeOfQuiz(&tq)
+		}
 		if cmd.Title != nil {
 			q.SetTitle(cmd.Title)
 		}

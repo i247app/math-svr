@@ -1,22 +1,55 @@
 package enum
 
-type QuizType string
+// QuizPurpose names what the quiz is FOR: a diagnostic round, a daily
+// practice, or a higher-stakes mock test. Persisted in
+// `ma_quizzes.purpose` (renamed from the legacy `type` column).
+type QuizPurpose string
 
 const (
-	QuizTypeAssessment QuizType = "ASSESSMENT"
-	QuizTypePractice   QuizType = "PRACTICE"
-	QuizTypeExam       QuizType = "EXAM"
+	QuizPurposeAssessment QuizPurpose = "ASSESSMENT"
+	QuizPurposePractice   QuizPurpose = "PRACTICE"
+	QuizPurposeExam       QuizPurpose = "EXAM"
 )
 
-func (t QuizType) String() string {
+func (p QuizPurpose) String() string {
+	return string(p)
+}
+
+// IsValid accepts the three currently-modeled purposes. EXAM is listed
+// but template support is still partial — callers that build prompts
+// should branch when EXAM ships.
+func (p QuizPurpose) IsValid() bool {
+	switch p {
+	case QuizPurposeAssessment, QuizPurposePractice, QuizPurposeExam:
+		return true
+	default:
+		return false
+	}
+}
+
+// QuizTypeOfQuiz names the learning intent of the quiz: a GENERAL round
+// introduces new knowledge from the curriculum, a REINFORCEMENT round
+// consolidates / reviews material the student got wrong on a previous
+// round. Persisted in `ma_quizzes.type_of_quiz`.
+type QuizTypeOfQuiz string
+
+const (
+	// QuizTypeOfQuizGeneral is the default — a fresh round generated from
+	// the curriculum context without a previous quiz to consolidate.
+	QuizTypeOfQuizGeneral QuizTypeOfQuiz = "GENERAL"
+
+	// QuizTypeOfQuizReinforcement consolidates previously-incorrect
+	// questions. Generation always reads from a previous_quiz_id row.
+	QuizTypeOfQuizReinforcement QuizTypeOfQuiz = "REINFORCEMENT"
+)
+
+func (t QuizTypeOfQuiz) String() string {
 	return string(t)
 }
 
-// IsValid rejects EXAM until templates exist for it; ValidateExam-Aware
-// callers should branch separately when EXAM ships.
-func (t QuizType) IsValid() bool {
+func (t QuizTypeOfQuiz) IsValid() bool {
 	switch t {
-	case QuizTypeAssessment, QuizTypePractice, QuizTypeExam:
+	case QuizTypeOfQuizGeneral, QuizTypeOfQuizReinforcement:
 		return true
 	default:
 		return false

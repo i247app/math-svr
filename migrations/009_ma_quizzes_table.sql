@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS ma_quizzes (
   quiz_id         CHAR(36) NOT NULL UNIQUE,
   user_id         CHAR(36) DEFAULT NULL,
   profile_id      CHAR(36) DEFAULT NULL,
-  type            VARCHAR(32) DEFAULT 'ASSESSMENT', -- ASSESSMENT, PRACTICE, EXAM
+  purpose         VARCHAR(32) DEFAULT 'PRACTICE', -- ASSESSMENT, PRACTICE, EXAM
+  type_of_quiz    VARCHAR(32) DEFAULT 'GENERAL',  -- GENERAL, REINFORCEMENT
   title           VARCHAR(255) DEFAULT NULL,
   questions       LONGTEXT,
   answers         LONGTEXT,

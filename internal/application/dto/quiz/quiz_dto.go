@@ -47,12 +47,19 @@ type QuizGradingResult struct {
 // Questions / Answers / Grading are nil-omitted so generated and
 // submitted shapes share one envelope. UserID / ProfileID are nullable
 // because anonymous quizzes (generated without a profile) carry neither.
+//
+// Purpose carries the persisted ma_quizzes.purpose value (ASSESSMENT /
+// PRACTICE / EXAM); TypeOfQuiz carries ma_quizzes.type_of_quiz (GENERAL
+// / REINFORCEMENT). TypeOfQuiz is *string because historical rows may
+// be NULL — the column has a DB-level default but Go-side we don't
+// assume it.
 type QuizResponse struct {
 	ID             int64               `json:"id"`
 	QuizID         string              `json:"quiz_id"`
 	UserID         *string             `json:"user_id,omitempty"`
 	ProfileID      *string             `json:"profile_id,omitempty"`
-	Type           string              `json:"type"`
+	Purpose        string              `json:"purpose"`
+	TypeOfQuiz     *string             `json:"type_of_quiz,omitempty"`
 	Title          *string             `json:"title,omitempty"`
 	PreviousQuizID *string             `json:"previous_quiz_id,omitempty"`
 	Questions      []QuizQuestion      `json:"questions,omitempty"`
@@ -74,13 +81,19 @@ type QuizResponse struct {
 //     prompt adapts and still generates a reasonable elementary-level
 //     quiz.
 //
+// Purpose accepts the persisted ma_quizzes.purpose vocabulary
+// (ASSESSMENT / PRACTICE / EXAM). TypeOfQuiz is optional — when omitted
+// it is inferred from PreviousQuizID (set ⇒ REINFORCEMENT, otherwise
+// GENERAL); when supplied it is validated and used as-is.
+//
 // Labels (not IDs) are accepted so the client can supply ad-hoc context
 // like "Grade 2 fractions review" without needing a curriculum row, and
 // so the service does not have to do an extra round-trip to translate.
 type GenerateQuizReq struct {
 	UserID         *string           `json:"user_id"`
 	ProfileID      *string           `json:"profile_id,omitempty"`
-	Type           string            `json:"type"`
+	Purpose        string            `json:"purpose"`
+	TypeOfQuiz     string            `json:"type_of_quiz,omitempty"`
 	Language       enum.LanguageType `json:"language,omitempty"`
 	ProgramLabel   string            `json:"program_label,omitempty"`
 	GradeLabel     string            `json:"grade_label,omitempty"`
@@ -147,7 +160,8 @@ func DomainToResponse(q *domain.Quiz, includeRightAnswers bool) *QuizResponse {
 		QuizID:         q.QuizId(),
 		UserID:         q.UserId(),
 		ProfileID:      q.ProfileId(),
-		Type:           q.QuizType(),
+		Purpose:        q.Purpose(),
+		TypeOfQuiz:     q.TypeOfQuiz(),
 		Title:          q.Title(),
 		PreviousQuizID: q.PreviousQuizId(),
 		QuizStatus:     q.QuizStatus(),

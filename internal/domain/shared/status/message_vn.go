@@ -246,6 +246,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Chấm điểm bài kiểm tra thất bại"
 	case QUIZ_PROFILE_NOT_CONFIGURED:
 		return "Hồ sơ cần có chương trình học, lớp và học kỳ trước khi tạo bài kiểm tra"
+	case QUIZ_INVALID_TYPE_OF_QUIZ:
+		return "Hình thức bài học không hợp lệ"
 
 	// Job
 	case JOB_NOT_FOUND:

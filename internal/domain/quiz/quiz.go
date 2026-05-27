@@ -8,6 +8,12 @@ import (
 // (user, profile) pair. One row per round — reinforce/remedial rounds
 // are new rows that link back via previousQuizId.
 //
+// purpose categorises the *intent* of the quiz (ASSESSMENT, PRACTICE,
+// EXAM) — what was previously persisted in the legacy `type` column.
+// typeOfQuiz categorises the *learning shape* (GENERAL = new knowledge,
+// REINFORCEMENT = consolidating / reviewing past mistakes). Both are
+// persisted; they evolve independently.
+//
 // questions and answers are opaque JSON blobs: questions follow the
 // generation prompt schema, answers follow {question_number: label}.
 // They are stored verbatim from / to the LLM to avoid leaky parsing
@@ -21,7 +27,8 @@ type Quiz struct {
 	quizId          string
 	userId          *string
 	profileId       *string
-	quizType        string
+	purpose         string
+	typeOfQuiz      *string
 	title           *string
 	questions       *string
 	answers         *string
@@ -52,8 +59,10 @@ func (q *Quiz) UserId() *string            { return q.userId }
 func (q *Quiz) SetUserId(id *string)       { q.userId = id }
 func (q *Quiz) ProfileId() *string         { return q.profileId }
 func (q *Quiz) SetProfileId(id *string)    { q.profileId = id }
-func (q *Quiz) QuizType() string           { return q.quizType }
-func (q *Quiz) SetQuizType(t string)       { q.quizType = t }
+func (q *Quiz) Purpose() string            { return q.purpose }
+func (q *Quiz) SetPurpose(p string)        { q.purpose = p }
+func (q *Quiz) TypeOfQuiz() *string        { return q.typeOfQuiz }
+func (q *Quiz) SetTypeOfQuiz(t *string)    { q.typeOfQuiz = t }
 func (q *Quiz) Title() *string             { return q.title }
 func (q *Quiz) SetTitle(t *string)         { q.title = t }
 func (q *Quiz) Questions() *string         { return q.questions }

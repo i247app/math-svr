@@ -75,7 +75,7 @@ func NewService(
 func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*dto.GenerateQuizRes, error) {
 	log := logger.From(ctx)
 
-	quizType, err := ValidateGenerateQuiz(ctx, req)
+	validated, err := ValidateGenerateQuiz(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,8 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 
 	genIn := generateQuizInput{
 		Language:      req.Language,
-		QuizType:      quizType,
+		Purpose:       validated.Purpose,
+		TypeOfQuiz:    validated.TypeOfQuiz,
 		GradeLabel:    cc.GradeLabel,
 		SemesterLabel: cc.SemesterLabel,
 		ProgramLabel:  cc.ProgramLabel,
@@ -163,7 +164,8 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 	created, err := s.createQuizCmd.Handle(ctx, command.CreateQuizCommand{
 		UserID:         ownerUserID,
 		ProfileID:      ownerProfileID,
-		QuizType:       quizType,
+		Purpose:        validated.Purpose,
+		TypeOfQuiz:     validated.TypeOfQuiz,
 		Title:          sanitizeQuizTitle(generated.Title),
 		QuestionsJSON:  string(questionsJSON),
 		PreviousQuizID: req.PreviousQuizID,
@@ -175,9 +177,9 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 	log.Info("quiz.generated",
 		"quiz_id", created.QuizId(),
 		"profile_id", created.ProfileId(),
-		"type", created.QuizType(),
+		"purpose", created.Purpose(),
+		"type_of_quiz", derefString(created.TypeOfQuiz()),
 		"title", derefString(created.Title()),
-		"reinforce", req.PreviousQuizID != nil,
 	)
 
 	// Live quizzes do NOT expose right_answer — the student would see
@@ -219,15 +221,27 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 			fmt.Errorf("quiz: marshal answers: %w", err))
 	}
 
-	gradeIn := gradeQuizInput{
-		Language:    req.Language,
-		QuizType:    enum.QuizType(existing.QuizType()),
-		Questions:   *existing.Questions(),
-		Answers:     string(answersJSON),
-		IsReinforce: existing.PreviousQuizId() != nil,
+	// Derive the learning intent from the persisted column when present;
+	// fall back to inferring it from previous_quiz_id for legacy rows
+	// inserted before the column existed.
+	typeOfQuiz := enum.QuizTypeOfQuizGeneral
+	if existing.TypeOfQuiz() != nil {
+		if t := enum.QuizTypeOfQuiz(*existing.TypeOfQuiz()); t.IsValid() {
+			typeOfQuiz = t
+		}
+	} else if existing.PreviousQuizId() != nil {
+		typeOfQuiz = enum.QuizTypeOfQuizReinforcement
 	}
 
-	if gradeIn.IsReinforce && existing.ProfileId() != nil {
+	gradeIn := gradeQuizInput{
+		Language:   req.Language,
+		Purpose:    enum.QuizPurpose(existing.Purpose()),
+		TypeOfQuiz: typeOfQuiz,
+		Questions:  *existing.Questions(),
+		Answers:    string(answersJSON),
+	}
+
+	if typeOfQuiz == enum.QuizTypeOfQuizReinforcement && existing.ProfileId() != nil {
 		// Anonymous reinforce rounds have no profile to look up; the
 		// prompt's "current grade: unknown" branch handles that case.
 		currentLabel, err := s.resolveCurrentGradeLabel(ctx, *existing.ProfileId(), req.Language)
