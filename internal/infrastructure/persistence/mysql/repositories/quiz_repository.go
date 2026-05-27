@@ -149,6 +149,10 @@ func buildQuizListFilterClause(filter quiz.ListQuizzesFilter) (string, []any) {
 		clause += ` AND q.user_id = ?`
 		args = append(args, *filter.UserID)
 	}
+	if filter.Purpose != "" {
+		clause += ` AND q.purpose = ?`
+		args = append(args, filter.Purpose)
+	}
 	return clause, args
 }
 

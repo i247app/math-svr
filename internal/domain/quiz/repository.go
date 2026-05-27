@@ -25,6 +25,7 @@ type GradingUpdate struct {
 type ListQuizzesFilter struct {
 	ProfileID *string
 	UserID    *string
+	Purpose   string
 }
 
 // IRepository owns all quiz persistence. UpdateAnswersAndGrading is
