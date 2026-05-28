@@ -31,7 +31,7 @@ const (
 		p.program_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
-	programActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
+	programActiveWhere = `p.status = ? AND p.deleted_dt IS NULL`
 )
 
 func programJoinArgs(lang enum.LanguageType) []any {
