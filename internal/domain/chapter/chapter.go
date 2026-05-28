@@ -4,11 +4,6 @@ import (
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
-// Chapter is a curriculum unit owned by a (program, grade) pair. The base
-// row carries the canonical label/description in the seeding language;
-// per-language overrides live in ChapterTranslation rows joined on
-// chapter_id. The DB column is misspelled `discription`; the domain
-// surfaces a clean Description() so the typo never leaks past the repo.
 type Chapter struct {
 	id            int64
 	chapterId     string
@@ -64,9 +59,9 @@ func (c *Chapter) CreateDt() mtime.MathTime   { return c.createDt }
 func (c *Chapter) SetCreateDt(t mtime.MathTime) {
 	c.createDt = t
 }
-func (c *Chapter) ModifyId() *string          { return c.modifyId }
-func (c *Chapter) SetModifyId(id *string)     { c.modifyId = id }
-func (c *Chapter) ModifyDt() mtime.MathTime   { return c.modifyDt }
+func (c *Chapter) ModifyId() *string        { return c.modifyId }
+func (c *Chapter) SetModifyId(id *string)   { c.modifyId = id }
+func (c *Chapter) ModifyDt() mtime.MathTime { return c.modifyDt }
 func (c *Chapter) SetModifyDt(t mtime.MathTime) {
 	c.modifyDt = t
 }

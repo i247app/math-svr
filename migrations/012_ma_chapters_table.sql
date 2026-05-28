@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS ma_chapters (
   grade_id          CHAR(36) NOT NULL,
   semester_id       CHAR(36) NOT NULL,
   label             VARCHAR(128) NOT NULL,
-  discription       VARCHAR(128) NOT NULL,
+  description       VARCHAR(128) NOT NULL,
   display_order     TINYINT NOT NULL,
   note              VARCHAR(500) DEFAULT NULL,
   chapter_status    VARCHAR(32) DEFAULT 'ACTIVE',

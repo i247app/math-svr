@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS ma_programs (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   program_id      CHAR(36) NOT NULL UNIQUE,
   label           VARCHAR(128) NOT NULL,
-  discription     VARCHAR(128) NOT NULL,
+  description     VARCHAR(128) NOT NULL,
   image_key       VARCHAR(128) DEFAULT NULL,
   display_order   TINYINT NOT NULL,
   note            VARCHAR(500) DEFAULT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS ma_programs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- comment it if you migrate-up again
--- INSERT INTO ma_programs (program_id, label, discription, image_key, display_order) VALUES
+-- INSERT INTO ma_programs (program_id, label, description, image_key, display_order) VALUES
 -- 	 ('d46c8252-06a7-4d6e-8f24-3525278214ae','Connecting Knowledge with Life','Connecting Knowledge with Life.',NULL,1),
 -- 	 ('c95bf9eb-7143-4395-9112-752d7aee8020','For Equality and Democracy in Education','For Equality and Democracy in Education.',NULL,2),
 -- 	 ('d26786b6-7a0a-49c9-ba89-866a4ba55e19','Learning Together for Competence Development','Learning Together for Competence Development.',NULL,3),

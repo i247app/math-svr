@@ -13,9 +13,6 @@ import (
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
-// Reference-data aggregate. Same shape as program_repository.go — see the
-// comment there for the LEFT JOIN / COALESCE rationale and the `discription`
-// column-name quirk.
 const (
 	gradeTable             = "ma_grades"
 	gradeTranslationsTable = "ma_grade_translations"
@@ -29,7 +26,7 @@ const (
 
 	gradeColumns = `g.id, g.grade_id,
 		COALESCE(t.label, g.label) AS label,
-		COALESCE(t.description, g.discription) AS description,
+		COALESCE(t.description, g.description) AS description,
 		g.image_key, g.display_order, g.note,
 		g.grade_status, g.status,
 		g.create_id, g.create_dt, g.modify_id, g.modify_dt`

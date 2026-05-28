@@ -14,9 +14,6 @@ import (
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
-// ChapterRepository owns ma_chapters. The base column name is `discription`
-// (sic — kept from the migration); every public surface exposes
-// `description` so the typo is contained to the SQL fragments below.
 const (
 	chapterTable             = "ma_chapters"
 	chapterTranslationsTable = "ma_chapter_translations"
@@ -32,7 +29,7 @@ const (
 
 	chapterColumns = `c.id, c.chapter_id, c.program_id, c.grade_id, c.semester_id,
 		COALESCE(t.label, c.label) AS label,
-		COALESCE(t.discription, c.discription) AS description,
+		COALESCE(t.description, c.description) AS description,
 		c.display_order, c.note,
 		c.chapter_status, c.status,
 		c.create_id, c.create_dt, c.modify_id, c.modify_dt`
@@ -95,10 +92,10 @@ func (r *ChapterRepository) findOneBy(ctx context.Context, lang enum.LanguageTyp
 
 // findBareById hydrates a chapter right after INSERT using its surrogate
 // id. The translation rows haven't been written yet at that point, so we
-// skip the LEFT JOIN and just read the base label/discription.
+// skip the LEFT JOIN and just read the base label/description.
 func (r *ChapterRepository) findBareById(ctx context.Context, id int64) (*chapter.Chapter, error) {
 	query := `SELECT c.id, c.chapter_id, c.program_id, c.grade_id, c.semester_id,
-			c.label, c.discription AS description,
+			c.label, c.description AS description,
 			c.display_order, c.note, c.chapter_status, c.status,
 			c.create_id, c.create_dt, c.modify_id, c.modify_dt
 		FROM ` + chapterTable + ` c
@@ -196,7 +193,7 @@ func buildChapterListFilterClause(params *chapter.ListChaptersParams) (string, [
 func (r *ChapterRepository) Create(ctx context.Context, c *chapter.Chapter) (*chapter.Chapter, error) {
 	query := `
 		INSERT INTO ` + chapterTable + `
-			(chapter_id, program_id, grade_id, semester_id, label, discription, display_order, note, chapter_status)
+			(chapter_id, program_id, grade_id, semester_id, label, description, display_order, note, chapter_status)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
@@ -241,7 +238,7 @@ func (r *ChapterRepository) Update(ctx context.Context, c *chapter.Chapter) erro
 			grade_id      = COALESCE(?, grade_id),
 			semester_id   = COALESCE(?, semester_id),
 			label         = COALESCE(?, label),
-			discription   = COALESCE(?, discription),
+			description   = COALESCE(?, description),
 			display_order = ?,
 			note          = COALESCE(?, note),
 			modify_dt     = ?

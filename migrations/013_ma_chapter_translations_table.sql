@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS ma_chapter_translations (
   chapter_id              CHAR(36) NOT NULL,
   language                VARCHAR(10) NOT NULL,
   label                   VARCHAR(128) NOT NULL,
-  discription             VARCHAR(128) NOT NULL,
+  description             VARCHAR(128) NOT NULL,
   note                    VARCHAR(500) DEFAULT NULL,
   ct_status               VARCHAR(32) DEFAULT 'ACTIVE',
   status                  VARCHAR(32) DEFAULT 'ACTIVE',

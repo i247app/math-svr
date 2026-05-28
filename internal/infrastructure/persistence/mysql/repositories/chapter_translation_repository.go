@@ -14,11 +14,11 @@ import (
 )
 
 // ChapterTranslationRepository owns ma_chapter_translations. As with the
-// parent table the column is `discription`; the domain surfaces it as
+// parent table the column is `description`; the domain surfaces it as
 // Description and only the SQL below carries the typo.
 const (
 	chapterTranslationColumns = `ct.id, ct.chapter_translation_id, ct.chapter_id, ct.language,
-		ct.label, ct.discription AS description, ct.note,
+		ct.label, ct.description AS description, ct.note,
 		ct.ct_status, ct.status,
 		ct.create_id, ct.create_dt, ct.modify_id, ct.modify_dt`
 
@@ -94,7 +94,7 @@ func (r *ChapterTranslationRepository) FindByChapterIdAndLanguage(ctx context.Co
 func (r *ChapterTranslationRepository) Create(ctx context.Context, t *chapter.ChapterTranslation) (*chapter.ChapterTranslation, error) {
 	query := `
 		INSERT INTO ` + chapterTranslationsTable + `
-			(chapter_translation_id, chapter_id, language, label, discription, note, ct_status)
+			(chapter_translation_id, chapter_id, language, label, description, note, ct_status)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 	if _, err := r.db.Exec(ctx, query,
@@ -117,7 +117,7 @@ func (r *ChapterTranslationRepository) Update(ctx context.Context, t *chapter.Ch
 	query := `
 		UPDATE ` + chapterTranslationsTable + `
 		SET label       = COALESCE(?, label),
-			discription = COALESCE(?, discription),
+			description = COALESCE(?, description),
 			note        = COALESCE(?, note),
 			modify_dt   = ?
 		WHERE chapter_translation_id = ?

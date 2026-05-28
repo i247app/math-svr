@@ -13,16 +13,10 @@ import (
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
-// Reference-data aggregate: read-only, JOIN'd against the translations table
-// so label/description carry the requested language. Note that the base table
-// column is misspelled `discription`; the repo isolates that quirk so the
-// domain entity exposes a clean `Description()` getter.
 const (
 	programTable             = "ma_programs"
 	programTranslationsTable = "ma_program_translations"
 
-	// LEFT JOIN — programs without a row in the requested language still
-	// surface using their base label/discription.
 	programFromJoin = programTable + ` p
 	LEFT JOIN ` + programTranslationsTable + ` t
 	  ON t.program_id = p.program_id
@@ -32,7 +26,7 @@ const (
 
 	programColumns = `p.id, p.program_id,
 		COALESCE(t.label, p.label) AS label,
-		COALESCE(t.description, p.discription) AS description,
+		COALESCE(t.description, p.description) AS description,
 		p.image_key, p.display_order, p.note,
 		p.program_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
