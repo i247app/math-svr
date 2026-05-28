@@ -134,7 +134,7 @@ func (s *Service) ListChapters(ctx context.Context, req *dto.ListChaptersReq) (*
 
 	lang := req.Language
 	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
+		lang = enum.LanguageTypeEnglish
 	}
 
 	chapters, pg, err := s.listChaptersQuery.Handle(ctx, query.ListChaptersQuery{
