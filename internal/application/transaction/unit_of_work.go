@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/domain/chapter"
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/domain/otp"
@@ -14,13 +15,15 @@ import (
 // Repositories is the bundle of aggregate repositories bound to a single
 // transaction, handed to callers of UnitOfWork.Do.
 type Repositories struct {
-	User     user.IRepository
-	Alias    user.IAliasRepository
-	Profile  profile.IRepository
-	LoginLog loginlog.IRepository
-	Device   device.IRepository
-	Otp      otp.IRepository
-	Quiz     quiz.IRepository
+	User               user.IRepository
+	Alias              user.IAliasRepository
+	Profile            profile.IRepository
+	LoginLog           loginlog.IRepository
+	Device             device.IRepository
+	Otp                otp.IRepository
+	Quiz               quiz.IRepository
+	Chapter            chapter.IRepository
+	ChapterTranslation chapter.ITranslationRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

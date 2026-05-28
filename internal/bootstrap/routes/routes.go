@@ -6,6 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/bootstrap/container"
 	"math-ai.com/math-ai/internal/bootstrap/middleware"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
@@ -93,6 +94,17 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		otpHandler := otp.NewOtpHandler(res, services.OtpSvc)
 		gexSvr.AddRoute("POST /otps/send", otpHandler.HandleSend)
 		gexSvr.AddRoute("POST /otps/verify", otpHandler.HandleVerify)
+	}
+
+	// chapter routes
+	{
+		chapterHandler := chapter.NewChapterHandler(res, services.ChapterSvc)
+		gexSvr.AddRoute("GET  /chapters/{id}", chapterHandler.HandleGetChapter, authMiddleware)
+		gexSvr.AddRoute("POST /chapters/list", chapterHandler.HandleListChapters, authMiddleware)
+		gexSvr.AddRoute("POST /chapters/create", chapterHandler.HandleCreateChapter, authMiddleware)
+		gexSvr.AddRoute("POST /chapters/update", chapterHandler.HandleUpdateChapter, authMiddleware)
+		gexSvr.AddRoute("POST /chapters/soft-delete", chapterHandler.HandleSoftDeleteChapter, authMiddleware)
+		gexSvr.AddRoute("POST /chapters/force-delete", chapterHandler.HandleForceDeleteChapter, authMiddleware)
 	}
 
 	// quiz routes

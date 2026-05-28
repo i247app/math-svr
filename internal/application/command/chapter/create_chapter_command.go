@@ -1,0 +1,108 @@
+package command
+
+import (
+	"context"
+	"errors"
+	"strings"
+
+	"math-ai.com/math-ai/internal/application/transaction"
+	"math-ai.com/math-ai/internal/domain/chapter"
+	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/utils"
+)
+
+// TranslationInput is the per-language override the create / update
+// commands accept. Language identifies the row uniquely (within the
+// parent chapter); Label and Description are required, Note is optional.
+type TranslationInput struct {
+	Language    string
+	Label       string
+	Description string
+	Note        *string
+}
+
+// CreateChapterCommand writes the parent ma_chapters row and any supplied
+// translation rows in a single transaction. The translation set is
+// de-duplicated by language before insert so a payload with two
+// `language=vn` entries fails fast rather than producing two rows.
+type CreateChapterCommand struct {
+	ProgramID    string
+	GradeID      string
+	Label        string
+	Description  string
+	DisplayOrder int8
+	Note         *string
+	Translations []TranslationInput
+}
+
+type CreateChapterCommandHandler struct {
+	uow transaction.UnitOfWork
+}
+
+func NewCreateChapterCommandHandler(uow transaction.UnitOfWork) *CreateChapterCommandHandler {
+	return &CreateChapterCommandHandler{uow: uow}
+}
+
+func (h *CreateChapterCommandHandler) Handle(ctx context.Context, cmd CreateChapterCommand) (*chapter.Chapter, error) {
+	var created *chapter.Chapter
+
+	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
+		c := chapter.NewChapter()
+		c.SetChapterId(utils.GenerateUUID().String())
+		c.SetProgramId(cmd.ProgramID)
+		c.SetGradeId(cmd.GradeID)
+		c.SetLabel(cmd.Label)
+		c.SetDescription(cmd.Description)
+		c.SetDisplayOrder(cmd.DisplayOrder)
+		c.SetNote(cmd.Note)
+
+		saved, err := repos.Chapter.Create(ctx, c)
+		if err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if saved == nil {
+			return errs.NewError(ctx, status.CHAPTER_NOT_FOUND, nil,
+				errors.New("chapter not found after insert"))
+		}
+
+		seen := make(map[string]struct{}, len(cmd.Translations))
+		hydrated := make([]*chapter.ChapterTranslation, 0, len(cmd.Translations))
+		for _, in := range cmd.Translations {
+			lang := strings.ToLower(strings.TrimSpace(in.Language))
+			if lang == "" {
+				return errs.NewError(ctx, status.CHAPTER_INVALID_TRANSLATION, nil,
+					errors.New("translation language is required"))
+			}
+			if _, dup := seen[lang]; dup {
+				return errs.NewError(ctx, status.CHAPTER_TRANSLATION_ALREADY_EXISTS,
+					map[string]any{"language": lang},
+					errors.New("duplicate translation language in payload"))
+			}
+			seen[lang] = struct{}{}
+
+			t := chapter.NewChapterTranslation()
+			t.SetChapterTranslationId(utils.GenerateUUID().String())
+			t.SetChapterId(saved.ChapterId())
+			t.SetLanguage(lang)
+			t.SetLabel(in.Label)
+			t.SetDescription(in.Description)
+			t.SetNote(in.Note)
+
+			stored, err := repos.ChapterTranslation.Create(ctx, t)
+			if err != nil {
+				return errs.NewError(ctx, status.FAIL, nil, err)
+			}
+			if stored != nil {
+				hydrated = append(hydrated, stored)
+			}
+		}
+		saved.SetTranslations(hydrated)
+		created = saved
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return created, nil
+}

@@ -123,6 +123,30 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case DEVICE_2FA_REQUIRED:
 		return "Thiết bị này yêu cầu xác thực hai yếu tố"
 
+	// Chapter
+	case CHAPTER_NOT_FOUND:
+		return "Không tìm thấy chương học"
+	case CHAPTER_MISSING_ID:
+		return "Mã chương là bắt buộc"
+	case CHAPTER_MISSING_PROGRAM_ID:
+		return "Mã chương trình là bắt buộc"
+	case CHAPTER_MISSING_GRADE_ID:
+		return "Mã lớp là bắt buộc"
+	case CHAPTER_MISSING_LABEL:
+		return "Tên chương là bắt buộc"
+	case CHAPTER_MISSING_DESCRIPTION:
+		return "Mô tả chương là bắt buộc"
+	case CHAPTER_INVALID_DISPLAY_ORDER:
+		return "Thứ tự hiển thị không hợp lệ"
+	case CHAPTER_INVALID_LANGUAGE:
+		return "Ngôn ngữ chương không hợp lệ"
+	case CHAPTER_INVALID_TRANSLATION:
+		return "Dữ liệu bản dịch chương không hợp lệ"
+	case CHAPTER_TRANSLATION_ALREADY_EXISTS:
+		return "Đã tồn tại bản dịch của chương cho ngôn ngữ này"
+	case CHAPTER_TRANSLATION_NOT_FOUND:
+		return "Không tìm thấy bản dịch chương"
+
 	// OTP
 	case OTP_NOT_FOUND:
 		return "Không tìm thấy mã OTP"

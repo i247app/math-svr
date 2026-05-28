@@ -123,6 +123,30 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case DEVICE_2FA_REQUIRED:
 		return "Two-factor authentication is required for this device"
 
+	// Chapter
+	case CHAPTER_NOT_FOUND:
+		return "Chapter not found"
+	case CHAPTER_MISSING_ID:
+		return "Chapter id is required"
+	case CHAPTER_MISSING_PROGRAM_ID:
+		return "Program id is required"
+	case CHAPTER_MISSING_GRADE_ID:
+		return "Grade id is required"
+	case CHAPTER_MISSING_LABEL:
+		return "Chapter label is required"
+	case CHAPTER_MISSING_DESCRIPTION:
+		return "Chapter description is required"
+	case CHAPTER_INVALID_DISPLAY_ORDER:
+		return "Chapter display order is invalid"
+	case CHAPTER_INVALID_LANGUAGE:
+		return "Chapter language is invalid"
+	case CHAPTER_INVALID_TRANSLATION:
+		return "Chapter translation payload is invalid"
+	case CHAPTER_TRANSLATION_ALREADY_EXISTS:
+		return "A translation in this language already exists for the chapter"
+	case CHAPTER_TRANSLATION_NOT_FOUND:
+		return "Chapter translation not found"
+
 	// OTP
 	case OTP_NOT_FOUND:
 		return "OTP not found"

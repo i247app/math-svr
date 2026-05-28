@@ -7,6 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/job"
@@ -71,6 +72,13 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.SemesterRepository,
 	)
 
+	log.Info("> Setup ChapterSvc...")
+	chapterService := chapter.NewService(
+		repos.ChapterRepository,
+		repos.ChapterTranslationRepository,
+		uow,
+	)
+
 	log.Info("> Setup JobSvc...")
 	jobService := job.NewService(res.JobRuntime)
 
@@ -84,6 +92,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		DeviceSvc:   deviceService,
 		OtpSvc:      otpService,
 		QuizSvc:     quizService,
+		ChapterSvc:  chapterService,
 		JobSvc:      jobService,
 	}, nil
 }

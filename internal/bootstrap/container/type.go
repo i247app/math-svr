@@ -1,6 +1,7 @@
 package container
 
 import (
+	chapterDomain "math-ai.com/math-ai/internal/domain/chapter"
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	loginLogDomain "math-ai.com/math-ai/internal/domain/loginlog"
@@ -11,6 +12,7 @@ import (
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/job"
@@ -32,17 +34,20 @@ type ServiceContainer struct {
 	DeviceSvc   *device.Service
 	OtpSvc      *otp.Service
 	QuizSvc     *quiz.Service
+	ChapterSvc  *chapter.Service
 	JobSvc      *job.Service
 }
 
 type RepositoryContainer struct {
-	UserRepository     userDomain.IRepository
-	ProgramRepository  programDomain.IRepository
-	GradeRepository    gradeDomain.IRepository
-	SemesterRepository semesterDomain.IRepository
-	ProfileRepository  profileDomain.IRepository
-	LoginLogRepository loginLogDomain.IRepository
-	DeviceRepository   deviceDomain.IRepository
-	OtpRepository      otpDomain.IRepository
-	QuizRepository     quizDomain.IRepository
+	UserRepository               userDomain.IRepository
+	ProgramRepository            programDomain.IRepository
+	GradeRepository              gradeDomain.IRepository
+	SemesterRepository           semesterDomain.IRepository
+	ProfileRepository            profileDomain.IRepository
+	LoginLogRepository           loginLogDomain.IRepository
+	DeviceRepository             deviceDomain.IRepository
+	OtpRepository                otpDomain.IRepository
+	QuizRepository               quizDomain.IRepository
+	ChapterRepository            chapterDomain.IRepository
+	ChapterTranslationRepository chapterDomain.ITranslationRepository
 }
