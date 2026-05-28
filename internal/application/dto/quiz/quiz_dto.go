@@ -80,6 +80,12 @@ type QuizResponse struct {
 //     to the profile's curriculum; if the profile has none, the bot
 //     prompt adapts and still generates a reasonable elementary-level
 //     quiz.
+//   - ChapterDescriptions, when non-empty, OVERRIDE the chapters the
+//     resolver would derive from the profile's (program, grade,
+//     semester) triple. This is what lets anonymous callers (no
+//     profile) still pin chapter focus, and lets profile-bearing
+//     callers override the curriculum-derived list when they want to
+//     scope the quiz to a subset of chapters.
 //
 // Purpose accepts the persisted ma_quizzes.purpose vocabulary
 // (ASSESSMENT / PRACTICE / EXAM). TypeOfQuiz is optional — when omitted
@@ -90,16 +96,17 @@ type QuizResponse struct {
 // like "Grade 2 fractions review" without needing a curriculum row, and
 // so the service does not have to do an extra round-trip to translate.
 type GenerateQuizReq struct {
-	UserID         *string           `json:"user_id"`
-	ProfileID      *string           `json:"profile_id,omitempty"`
-	Purpose        string            `json:"purpose"`
-	TypeOfQuiz     string            `json:"type_of_quiz,omitempty"`
-	Language       enum.LanguageType `json:"language,omitempty"`
-	ProgramLabel   string            `json:"program_label,omitempty"`
-	GradeLabel     string            `json:"grade_label,omitempty"`
-	SemesterLabel  string            `json:"semester_label,omitempty"`
-	NumQuestions   int               `json:"num_questions,omitempty"`
-	PreviousQuizID *string           `json:"previous_quiz_id,omitempty"`
+	UserID              *string           `json:"user_id"`
+	ProfileID           *string           `json:"profile_id,omitempty"`
+	Purpose             string            `json:"purpose"`
+	TypeOfQuiz          string            `json:"type_of_quiz,omitempty"`
+	Language            enum.LanguageType `json:"language,omitempty"`
+	ProgramLabel        string            `json:"program_label,omitempty"`
+	GradeLabel          string            `json:"grade_label,omitempty"`
+	SemesterLabel       string            `json:"semester_label,omitempty"`
+	ChapterDescriptions []string          `json:"chapter_descriptions,omitempty"`
+	NumQuestions        int               `json:"num_questions,omitempty"`
+	PreviousQuizID      *string           `json:"previous_quiz_id,omitempty"`
 }
 
 type GenerateQuizRes struct {

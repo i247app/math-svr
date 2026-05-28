@@ -70,6 +70,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ProgramRepository,
 		repos.GradeRepository,
 		repos.SemesterRepository,
+		repos.ChapterRepository,
 	)
 
 	log.Info("> Setup ChapterSvc...")

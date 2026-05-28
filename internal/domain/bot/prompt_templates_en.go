@@ -271,5 +271,25 @@ func buildCurriculumContextEN(in QuizPromptInput) string {
 	if v := strings.TrimSpace(in.Program); v != "" {
 		fmt.Fprintf(&b, "- Curriculum: %s\n", v)
 	}
+	if block := buildChaptersBlockEN(in.ChapterDescriptions); block != "" {
+		b.WriteString(block)
+	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// buildChaptersBlockEN renders the curriculum-chapter sub-list. The
+// header line tells the model to prioritise these topics so the chapter
+// labels carry actionable intent rather than reading as inert metadata.
+// Returns "" when no chapter survives trimming.
+func buildChaptersBlockEN(chapters []string) string {
+	cleaned := cleanChapterLabels(chapters)
+	if len(cleaned) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("- Chapters to focus on (prioritise questions aligned with these topics):\n")
+	for _, label := range cleaned {
+		fmt.Fprintf(&b, "  • %s\n", label)
+	}
+	return b.String()
 }

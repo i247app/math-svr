@@ -9,7 +9,7 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/program"
 	domain "math-ai.com/math-ai/internal/domain/program"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -33,13 +33,10 @@ func (s *Service) ListPrograms(ctx context.Context, req *dto.ListProgramsReq) (*
 		return nil, err
 	}
 
-	lang := req.Language
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
+	language := metadata.GetClientLanguage(ctx).ToEnumLanguage()
 
 	programs, pg, err := s.listProgramsQuery.Handle(ctx, &query.ListProgramsQuery{
-		Language: lang,
+		Language: language,
 		Page:     req.Page,
 		Limit:    req.Size,
 	})

@@ -9,7 +9,7 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/semester"
 	domain "math-ai.com/math-ai/internal/domain/semester"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -31,13 +31,10 @@ func (s *Service) ListSemesters(ctx context.Context, req *dto.ListSemestersReq) 
 		return nil, err
 	}
 
-	lang := req.Language
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
+	language := metadata.GetClientLanguage(ctx).ToEnumLanguage()
 
 	semesters, pg, err := s.listSemestersQuery.Handle(ctx, &query.ListSemestersQuery{
-		Language: lang,
+		Language: language,
 		Page:     req.Page,
 		Limit:    req.Size,
 	})

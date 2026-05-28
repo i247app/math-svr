@@ -85,6 +85,13 @@ type QuizPromptInput struct {
 	Semester string
 	Program  string
 
+	// Chapters scopes the generated quiz to specific curriculum units. The
+	// caller supplies pre-formatted, ready-to-render descriptions (one per
+	// chapter); the template renders them as a sub-list under the
+	// curriculum context. Empty means "no chapter preference" — the prompt
+	// falls back to whatever Grade/Semester/Program already imply.
+	ChapterDescriptions []string
+
 	// NumQuestions controls how many MCQ items Generate / Reinforce ask
 	// for. Zero or negative falls back to defaultNumQuestions inside the
 	// template builder so callers don't have to defend every entry point.
@@ -218,6 +225,42 @@ func requireFields(pairs ...string) error {
 // so the domain prompt builder remains usable without going through the
 // module-layer validator.
 const defaultNumQuestions = 5
+
+// maxPromptChapterLabelLen caps each rendered chapter line so an
+// over-long descriptor cannot bloat the prompt. The cap is generous
+// enough to fit the longest real-world chapter name we ship today and
+// still leave headroom; anything past it is truncated with an ellipsis.
+const maxPromptChapterLabelLen = 120
+
+// cleanChapterLabels trims each label, drops empties, deduplicates by
+// case-insensitive match (so EN/VN duplicates from a half-translated
+// curriculum don't render twice), and truncates over-long entries. The
+// callers (EN/VN template builders) treat an empty slice as "no chapter
+// preference" and skip rendering, so this is the single normalization
+// seam for both languages.
+func cleanChapterLabels(chapters []string) []string {
+	if len(chapters) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(chapters))
+	seen := make(map[string]struct{}, len(chapters))
+	for _, raw := range chapters {
+		label := strings.TrimSpace(raw)
+		if label == "" {
+			continue
+		}
+		if len(label) > maxPromptChapterLabelLen {
+			label = label[:maxPromptChapterLabelLen-1] + "…"
+		}
+		key := strings.ToLower(label)
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		out = append(out, label)
+	}
+	return out
+}
 
 func resolveNumQuestions(n int) int {
 	if n <= 0 {

@@ -9,7 +9,7 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/grade"
 	domain "math-ai.com/math-ai/internal/domain/grade"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -31,13 +31,10 @@ func (s *Service) ListGrades(ctx context.Context, req *dto.ListGradesReq) (*dto.
 		return nil, err
 	}
 
-	lang := req.Language
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
+	language := metadata.GetClientLanguage(ctx).ToEnumLanguage()
 
 	grades, pg, err := s.listGradesQuery.Handle(ctx, &query.ListGradesQuery{
-		Language: lang,
+		Language: language,
 		Page:     req.Page,
 		Limit:    req.Size,
 	})

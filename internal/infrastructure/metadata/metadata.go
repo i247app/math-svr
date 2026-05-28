@@ -2,7 +2,30 @@ package metadata
 
 import (
 	"time"
+
+	"math-ai.com/math-ai/internal/shared/enum"
 )
+
+type ClientLanguage string
+
+const (
+	ClientLanguageViVN ClientLanguage = "vi-VN"
+	ClientLanguageEnEN ClientLanguage = "en-EN"
+)
+
+func (c ClientLanguage) String() string {
+	return string(c)
+}
+
+func (c ClientLanguage) ToEnumLanguage() enum.LanguageType {
+	switch c {
+	case ClientLanguageViVN:
+		return enum.LanguageTypeVietnamese
+	case ClientLanguageEnEN:
+		return enum.LanguageTypeEnglish
+	}
+	return enum.LanguageTypeEnglish
+}
 
 // RequestMetadata contains metadata information sent by clients with every request
 type RequestMetadata struct {
@@ -22,14 +45,15 @@ type RequestMetadata struct {
 
 // ClientInfo contains information about the client making the request
 type ClientInfo struct {
-	AppVersion      string `json:"app_version,omitempty"`       // Client app version (e.g., "1.2.3")
-	Platform        string `json:"platform,omitempty"`          // Platform (e.g., "ios", "android", "web")
-	DeviceModel     string `json:"device_model,omitempty"`      // Device model (e.g., "iPhone 14", "Pixel 7")
-	OSVersion       string `json:"os_version,omitempty"`        // OS version (e.g., "iOS 16.0", "Android 13")
-	DeviceID        string `json:"device_id,omitempty"`         // Unique device identifier
-	DeviceName      string `json:"device_name,omitempty"`       // Device name (e.g., "John's iPhone")
-	DevicePushToken string `json:"device_push_token,omitempty"` // Device push token
-	IPAddress       string `json:"ip_address,omitempty"`        // IP address of the client
+	AppVersion      string         `json:"app_version,omitempty"`       // Client app version (e.g., "1.2.3")
+	Platform        string         `json:"platform,omitempty"`          // Platform (e.g., "ios", "android", "web")
+	DeviceModel     string         `json:"device_model,omitempty"`      // Device model (e.g., "iPhone 14", "Pixel 7")
+	OSVersion       string         `json:"os_version,omitempty"`        // OS version (e.g., "iOS 16.0", "Android 13")
+	DeviceID        string         `json:"device_id,omitempty"`         // Unique device identifier
+	DeviceName      string         `json:"device_name,omitempty"`       // Device name (e.g., "John's iPhone")
+	DevicePushToken string         `json:"device_push_token,omitempty"` // Device push token
+	IPAddress       string         `json:"ip_address,omitempty"`        // IP address of the client
+	Language        ClientLanguage `json:"language,omitempty"`          // language (e.g., "vi-VN", "en-EN")
 }
 
 // UserContext contains user-specific context information

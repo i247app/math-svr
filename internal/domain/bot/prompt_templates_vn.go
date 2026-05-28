@@ -268,5 +268,24 @@ func buildCurriculumContextVN(in QuizPromptInput) string {
 	if v := strings.TrimSpace(in.Program); v != "" {
 		fmt.Fprintf(&b, "- Chương trình học: %s\n", v)
 	}
+	if block := buildChaptersBlockVN(in.ChapterDescriptions); block != "" {
+		b.WriteString(block)
+	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// buildChaptersBlockVN mirrors buildChaptersBlockEN — same shape, VN
+// wording. The header line embeds the "prioritise these topics"
+// instruction so the chapter list is not just decorative.
+func buildChaptersBlockVN(chapters []string) string {
+	cleaned := cleanChapterLabels(chapters)
+	if len(cleaned) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("- Các chương cần tập trung (ưu tiên ra câu hỏi bám sát các chủ đề sau):\n")
+	for _, label := range cleaned {
+		fmt.Fprintf(&b, "  • %s\n", label)
+	}
+	return b.String()
 }

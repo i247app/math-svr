@@ -38,16 +38,17 @@ func newBotClient(adapter *botAdapter.Adapter) *botClient {
 // learning intent) rather than inferred from PreviousQuestions, so the
 // row's stored value is the single source of truth for the prompt shape.
 type generateQuizInput struct {
-	Language          enum.LanguageType
-	Purpose           enum.QuizPurpose
-	TypeOfQuiz        enum.QuizTypeOfQuiz
-	GradeLabel        string
-	SemesterLabel     string
-	ProgramLabel      string
-	NumQuestions      int
-	PreviousQuestions string
-	PreviousAnswers   string
-	PreviousAIReview  string
+	Language            enum.LanguageType
+	Purpose             enum.QuizPurpose
+	TypeOfQuiz          enum.QuizTypeOfQuiz
+	GradeLabel          string
+	SemesterLabel       string
+	ProgramLabel        string
+	ChapterDescriptions []string
+	NumQuestions        int
+	PreviousQuestions   string
+	PreviousAnswers     string
+	PreviousAIReview    string
 }
 
 // generateQuizOutput pairs the parsed quiz title with its questions.
@@ -77,16 +78,17 @@ func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) (*ge
 	}
 
 	system, user, err := domainBot.BuildQuizPrompt(kind, domainBot.QuizPromptInput{
-		Language:          domainBot.QuizLanguage(normalizeLanguage(in.Language)),
-		Purpose:           domainBot.QuizPurpose(in.Purpose),
-		TypeOfQuiz:        domainBot.QuizTypeOfQuiz(in.TypeOfQuiz),
-		Grade:             in.GradeLabel,
-		Semester:          in.SemesterLabel,
-		Program:           in.ProgramLabel,
-		NumQuestions:      in.NumQuestions,
-		PreviousQuestions: in.PreviousQuestions,
-		PreviousAnswers:   in.PreviousAnswers,
-		PreviousAIReview:  in.PreviousAIReview,
+		Language:            domainBot.QuizLanguage(normalizeLanguage(in.Language)),
+		Purpose:             domainBot.QuizPurpose(in.Purpose),
+		TypeOfQuiz:          domainBot.QuizTypeOfQuiz(in.TypeOfQuiz),
+		Grade:               in.GradeLabel,
+		Semester:            in.SemesterLabel,
+		Program:             in.ProgramLabel,
+		ChapterDescriptions: in.ChapterDescriptions,
+		NumQuestions:        in.NumQuestions,
+		PreviousQuestions:   in.PreviousQuestions,
+		PreviousAnswers:     in.PreviousAnswers,
+		PreviousAIReview:    in.PreviousAIReview,
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.QUIZ_GENERATION_FAILED, nil, err)

@@ -85,3 +85,8 @@ func GetDevicePushToken(ctx context.Context) string {
 func GetIPAddress(ctx context.Context) string {
 	return FromContext(ctx).ClientInfo.IPAddress
 }
+
+// GetClientLanguage is a convenience function to get the client language from context
+func GetClientLanguage(ctx context.Context) ClientLanguage {
+	return FromContext(ctx).ClientInfo.Language
+}
