@@ -113,6 +113,16 @@ func (m *SessionManager) DeleteSession(sessionKey string) {
 	m.SessionContainer.DeleteSession(sessionKey)
 }
 
+func (m *SessionManager) DeleteAll() {
+	for _, sess := range *m.Sessions() {
+		key, ok := sess.Get("key")
+		if !ok {
+			continue
+		}
+		m.DeleteSession(key.(string))
+	}
+}
+
 func (m *SessionManager) MarkExpiredSessions() {
 	for _, sess := range *m.Sessions() {
 		key, ok := sess.Get("key")

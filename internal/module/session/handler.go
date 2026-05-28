@@ -27,3 +27,9 @@ func (c *Handler) HandleDeleteUnSecureSessions(w http.ResponseWriter, r *http.Re
 
 	response.WriteJson(w, "Delete UnSecure Sessions", nil)
 }
+
+func (c *Handler) HandleDeleteAllSessions(w http.ResponseWriter, r *http.Request) {
+	c.appResource.SessionManager.DeleteAll()
+
+	response.WriteJson(w, "Delete All Sessions", nil)
+}

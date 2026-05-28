@@ -21,6 +21,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -110,7 +111,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 	}
 
 	genIn := generateQuizInput{
-		Language:            req.Language,
+		Language:            metadata.GetClientLanguage(ctx).ToEnumLanguage(),
 		Purpose:             validated.Purpose,
 		TypeOfQuiz:          validated.TypeOfQuiz,
 		GradeLabel:          cc.GradeLabel,
@@ -398,9 +399,7 @@ type curriculumContext struct {
 // No hardcoded education-system defaults are introduced here — that's a
 // deliberate constraint so the same resolver works for any future
 // curriculum or non-VN deployment.
-func (s *Service) resolveCurriculumContext(ctx context.Context,
-	req *dto.GenerateQuizReq, profile *profileDomain.Profile) (curriculumContext, error) {
-
+func (s *Service) resolveCurriculumContext(ctx context.Context, req *dto.GenerateQuizReq, profile *profileDomain.Profile) (curriculumContext, error) {
 	cc := curriculumContext{
 		ProgramLabel:        strings.TrimSpace(req.ProgramLabel),
 		GradeLabel:          strings.TrimSpace(req.GradeLabel),
@@ -412,10 +411,7 @@ func (s *Service) resolveCurriculumContext(ctx context.Context,
 		return cc, nil
 	}
 
-	lang := req.Language
-	if lang == "" {
-		lang = enum.LanguageTypeEnglish
-	}
+	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
 
 	if cc.ProgramLabel == "" && profile.ProgramId() != nil {
 		programs, err := s.programRepo.ListProgramsByIds(ctx, []string{*profile.ProgramId()}, lang)

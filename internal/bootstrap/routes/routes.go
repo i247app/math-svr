@@ -29,6 +29,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		sessionHandler := session.NewHandler(res)
 		gexSvr.AddRoute("POST /sessions/dump", sessionHandler.HandleSessionDump)
 		gexSvr.AddRoute("POST /sessions/delete-unsecure", sessionHandler.HandleDeleteUnSecureSessions, authMiddleware)
+		gexSvr.AddRoute("POST /sessions/delete-all", sessionHandler.HandleDeleteAllSessions, authMiddleware)
 	}
 
 	// user routes
