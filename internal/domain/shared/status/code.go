@@ -73,6 +73,7 @@ const (
 	CHAPTER_MISSING_ID                  StatusCode = 4802
 	CHAPTER_MISSING_PROGRAM_ID          StatusCode = 4803
 	CHAPTER_MISSING_GRADE_ID            StatusCode = 4804
+	CHAPTER_MISSING_SEMESTER_ID         StatusCode = 4812
 	CHAPTER_MISSING_LABEL               StatusCode = 4805
 	CHAPTER_MISSING_DESCRIPTION         StatusCode = 4806
 	CHAPTER_INVALID_DISPLAY_ORDER       StatusCode = 4807

@@ -50,6 +50,7 @@ func (s *Service) CreateChapter(ctx context.Context, req *dto.CreateChapterReq) 
 	created, err := s.createChapterCmd.Handle(ctx, command.CreateChapterCommand{
 		ProgramID:    req.ProgramID,
 		GradeID:      req.GradeID,
+		SemesterID:   req.SemesterID,
 		Label:        req.Label,
 		Description:  req.Description,
 		DisplayOrder: req.DisplayOrder,
@@ -71,6 +72,7 @@ func (s *Service) UpdateChapter(ctx context.Context, req *dto.UpdateChapterReq) 
 		ChapterID:    req.ChapterID,
 		ProgramID:    req.ProgramID,
 		GradeID:      req.GradeID,
+		SemesterID:   req.SemesterID,
 		Label:        req.Label,
 		Description:  req.Description,
 		DisplayOrder: req.DisplayOrder,
@@ -138,11 +140,12 @@ func (s *Service) ListChapters(ctx context.Context, req *dto.ListChaptersReq) (*
 	}
 
 	chapters, pg, err := s.listChaptersQuery.Handle(ctx, query.ListChaptersQuery{
-		ProgramID: req.ProgramID,
-		GradeID:   req.GradeID,
-		Language:  lang,
-		Page:      req.Page,
-		Limit:     req.Size,
+		ProgramID:  req.ProgramID,
+		GradeID:    req.GradeID,
+		SemesterID: req.SemesterID,
+		Language:   lang,
+		Page:       req.Page,
+		Limit:      req.Size,
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)

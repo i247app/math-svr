@@ -14,6 +14,7 @@ type Chapter struct {
 	chapterId     string
 	programId     string
 	gradeId       string
+	semesterId    string
 	label         string
 	description   string
 	displayOrder  int8
@@ -43,6 +44,8 @@ func (c *Chapter) ProgramId() string          { return c.programId }
 func (c *Chapter) SetProgramId(id string)     { c.programId = id }
 func (c *Chapter) GradeId() string            { return c.gradeId }
 func (c *Chapter) SetGradeId(id string)       { c.gradeId = id }
+func (c *Chapter) SemesterId() string         { return c.semesterId }
+func (c *Chapter) SetSemesterId(id string)    { c.semesterId = id }
 func (c *Chapter) Label() string              { return c.label }
 func (c *Chapter) SetLabel(l string)          { c.label = l }
 func (c *Chapter) Description() string        { return c.description }

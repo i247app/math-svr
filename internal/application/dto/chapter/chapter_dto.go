@@ -23,6 +23,7 @@ type ChapterResponse struct {
 	ChapterID    string                   `json:"chapter_id"`
 	ProgramID    string                   `json:"program_id"`
 	GradeID      string                   `json:"grade_id"`
+	SemesterID   string                   `json:"semester_id"`
 	Label        string                   `json:"label"`
 	Description  string                   `json:"description"`
 	DisplayOrder int8                     `json:"display_order"`
@@ -35,6 +36,7 @@ type ChapterResponse struct {
 type CreateChapterReq struct {
 	ProgramID    string                   `json:"program_id"`
 	GradeID      string                   `json:"grade_id"`
+	SemesterID   string                   `json:"semester_id"`
 	Label        string                   `json:"label"`
 	Description  string                   `json:"description"`
 	DisplayOrder int8                     `json:"display_order"`
@@ -55,6 +57,7 @@ type UpdateChapterReq struct {
 	ChapterID    string                   `json:"chapter_id"`
 	ProgramID    *string                  `json:"program_id,omitempty"`
 	GradeID      *string                  `json:"grade_id,omitempty"`
+	SemesterID   *string                  `json:"semester_id,omitempty"`
 	Label        *string                  `json:"label,omitempty"`
 	Description  *string                  `json:"description,omitempty"`
 	DisplayOrder *int8                    `json:"display_order,omitempty"`
@@ -82,11 +85,12 @@ type GetChapterRes struct {
 }
 
 type ListChaptersReq struct {
-	ProgramID *string           `json:"program_id,omitempty"`
-	GradeID   *string           `json:"grade_id,omitempty"`
-	Language  enum.LanguageType `json:"language,omitempty"`
-	Page      int64             `json:"page"`
-	Size      int64             `json:"size"`
+	ProgramID  *string           `json:"program_id,omitempty"`
+	GradeID    *string           `json:"grade_id,omitempty"`
+	SemesterID *string           `json:"semester_id,omitempty"`
+	Language   enum.LanguageType `json:"language,omitempty"`
+	Page       int64             `json:"page"`
+	Size       int64             `json:"size"`
 }
 
 type ListChaptersRes struct {
@@ -103,6 +107,7 @@ func DomainToResponse(c *domain.Chapter) *ChapterResponse {
 		ChapterID:    c.ChapterId(),
 		ProgramID:    c.ProgramId(),
 		GradeID:      c.GradeId(),
+		SemesterID:   c.SemesterId(),
 		Label:        c.Label(),
 		Description:  c.Description(),
 		DisplayOrder: c.DisplayOrder(),

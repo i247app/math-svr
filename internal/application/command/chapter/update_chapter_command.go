@@ -25,6 +25,7 @@ type UpdateChapterCommand struct {
 	ChapterID    string
 	ProgramID    *string
 	GradeID      *string
+	SemesterID   *string
 	Label        *string
 	Description  *string
 	DisplayOrder *int8
@@ -73,6 +74,9 @@ func (h *UpdateChapterCommandHandler) Handle(ctx context.Context, cmd UpdateChap
 		}
 		if cmd.GradeID != nil {
 			patched.SetGradeId(*cmd.GradeID)
+		}
+		if cmd.SemesterID != nil {
+			patched.SetSemesterId(*cmd.SemesterID)
 		}
 		if cmd.Note != nil {
 			patched.SetNote(cmd.Note)

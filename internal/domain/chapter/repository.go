@@ -7,17 +7,19 @@ import (
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
-// ListChaptersParams narrows the listing query. ProgramID and GradeID are
-// optional and AND'd when set; Language drives the LEFT JOIN that overrides
-// the base label/description; TakeAll bypasses pagination for callers that
-// genuinely need every chapter (e.g. an admin export).
+// ListChaptersParams narrows the listing query. ProgramID, GradeID, and
+// SemesterID are optional and AND'd when set; Language drives the LEFT
+// JOIN that overrides the base label/description; TakeAll bypasses
+// pagination for callers that genuinely need every chapter (e.g. an
+// admin export).
 type ListChaptersParams struct {
-	ProgramID *string
-	GradeID   *string
-	Language  enum.LanguageType
-	Page      int64
-	Limit     int64
-	TakeAll   bool
+	ProgramID  *string
+	GradeID    *string
+	SemesterID *string
+	Language   enum.LanguageType
+	Page       int64
+	Limit      int64
+	TakeAll    bool
 }
 
 // IRepository owns ma_chapters persistence. Reads LEFT JOIN against

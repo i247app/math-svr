@@ -29,6 +29,7 @@ type TranslationInput struct {
 type CreateChapterCommand struct {
 	ProgramID    string
 	GradeID      string
+	SemesterID   string
 	Label        string
 	Description  string
 	DisplayOrder int8
@@ -52,6 +53,7 @@ func (h *CreateChapterCommandHandler) Handle(ctx context.Context, cmd CreateChap
 		c.SetChapterId(utils.GenerateUUID().String())
 		c.SetProgramId(cmd.ProgramID)
 		c.SetGradeId(cmd.GradeID)
+		c.SetSemesterId(cmd.SemesterID)
 		c.SetLabel(cmd.Label)
 		c.SetDescription(cmd.Description)
 		c.SetDisplayOrder(cmd.DisplayOrder)

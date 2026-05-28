@@ -97,6 +97,10 @@ func ValidateCreateChapter(ctx context.Context, req *dto.CreateChapterReq) error
 		return errs.NewError(ctx, status.CHAPTER_MISSING_GRADE_ID, nil,
 			errors.New("grade_id is required"))
 	}
+	if strings.TrimSpace(req.SemesterID) == "" {
+		return errs.NewError(ctx, status.CHAPTER_MISSING_SEMESTER_ID, nil,
+			errors.New("semester_id is required"))
+	}
 	if strings.TrimSpace(req.Label) == "" {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_LABEL, nil,
 			errors.New("label is required"))
@@ -153,6 +157,10 @@ func ValidateUpdateChapter(ctx context.Context, req *dto.UpdateChapterReq) error
 		return errs.NewError(ctx, status.CHAPTER_MISSING_GRADE_ID, nil,
 			errors.New("grade_id cannot be blank"))
 	}
+	if req.SemesterID != nil && strings.TrimSpace(*req.SemesterID) == "" {
+		return errs.NewError(ctx, status.CHAPTER_MISSING_SEMESTER_ID, nil,
+			errors.New("semester_id cannot be blank"))
+	}
 	if req.DisplayOrder != nil && *req.DisplayOrder < 0 {
 		return errs.NewError(ctx, status.CHAPTER_INVALID_DISPLAY_ORDER, nil,
 			errors.New("display_order must be >= 0"))
@@ -174,6 +182,9 @@ func ValidateListChapters(ctx context.Context, req *dto.ListChaptersReq) error {
 	}
 	if req.GradeID != nil && strings.TrimSpace(*req.GradeID) == "" {
 		req.GradeID = nil
+	}
+	if req.SemesterID != nil && strings.TrimSpace(*req.SemesterID) == "" {
+		req.SemesterID = nil
 	}
 	return validateLanguage(ctx, req.Language)
 }

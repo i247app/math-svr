@@ -12,11 +12,12 @@ import (
 // LEFT JOIN. Translations are intentionally NOT hydrated for list
 // responses — clients that need every locale fetch the detail row.
 type ListChaptersQuery struct {
-	ProgramID *string
-	GradeID   *string
-	Language  enum.LanguageType
-	Page      int64
-	Limit     int64
+	ProgramID  *string
+	GradeID    *string
+	SemesterID *string
+	Language   enum.LanguageType
+	Page       int64
+	Limit      int64
 }
 
 type ListChaptersQueryHandler struct {
@@ -29,10 +30,11 @@ func NewListChaptersQueryHandler(chapterRepo chapter.IRepository) *ListChaptersQ
 
 func (h *ListChaptersQueryHandler) Handle(ctx context.Context, q ListChaptersQuery) ([]*chapter.Chapter, *pagination.Pagination, error) {
 	return h.chapterRepo.ListChapters(ctx, &chapter.ListChaptersParams{
-		ProgramID: q.ProgramID,
-		GradeID:   q.GradeID,
-		Language:  q.Language,
-		Page:      q.Page,
-		Limit:     q.Limit,
+		ProgramID:  q.ProgramID,
+		GradeID:    q.GradeID,
+		SemesterID: q.SemesterID,
+		Language:   q.Language,
+		Page:       q.Page,
+		Limit:      q.Limit,
 	})
 }

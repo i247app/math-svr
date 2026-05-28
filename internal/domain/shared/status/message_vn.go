@@ -132,6 +132,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Mã chương trình là bắt buộc"
 	case CHAPTER_MISSING_GRADE_ID:
 		return "Mã lớp là bắt buộc"
+	case CHAPTER_MISSING_SEMESTER_ID:
+		return "Mã học kỳ là bắt buộc"
 	case CHAPTER_MISSING_LABEL:
 		return "Tên chương là bắt buộc"
 	case CHAPTER_MISSING_DESCRIPTION:

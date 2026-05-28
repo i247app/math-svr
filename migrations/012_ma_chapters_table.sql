@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS ma_chapters (
   chapter_id        CHAR(36) NOT NULL UNIQUE,
   program_id        CHAR(36) NOT NULL,
   grade_id          CHAR(36) NOT NULL,
+  semester_id       CHAR(36) NOT NULL,
   label             VARCHAR(128) NOT NULL,
   discription       VARCHAR(128) NOT NULL,
   display_order     TINYINT NOT NULL,

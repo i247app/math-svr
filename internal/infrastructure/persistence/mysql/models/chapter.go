@@ -7,6 +7,7 @@ type ChapterModel struct {
 	ChapterId     string
 	ProgramId     string
 	GradeId       string
+	SemesterId    string
 	Label         string
 	Description   string
 	DisplayOrder  int8

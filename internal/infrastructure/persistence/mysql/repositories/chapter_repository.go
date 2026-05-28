@@ -30,7 +30,7 @@ const (
 	  AND t.status = ?
 	  AND t.deleted_dt IS NULL`
 
-	chapterColumns = `c.id, c.chapter_id, c.program_id, c.grade_id,
+	chapterColumns = `c.id, c.chapter_id, c.program_id, c.grade_id, c.semester_id,
 		COALESCE(t.label, c.label) AS label,
 		COALESCE(t.discription, c.discription) AS description,
 		c.display_order, c.note,
@@ -65,7 +65,7 @@ func NewChapterRepository(db database.Executor) chapter.IRepository {
 
 func scanChapter(s database.RowScanner) (*models.ChapterModel, error) {
 	var m models.ChapterModel
-	if err := s.Scan(&m.Id, &m.ChapterId, &m.ProgramId, &m.GradeId,
+	if err := s.Scan(&m.Id, &m.ChapterId, &m.ProgramId, &m.GradeId, &m.SemesterId,
 		&m.Label, &m.Description, &m.DisplayOrder, &m.Note,
 		&m.ChapterStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -97,7 +97,7 @@ func (r *ChapterRepository) findOneBy(ctx context.Context, lang enum.LanguageTyp
 // id. The translation rows haven't been written yet at that point, so we
 // skip the LEFT JOIN and just read the base label/discription.
 func (r *ChapterRepository) findBareById(ctx context.Context, id int64) (*chapter.Chapter, error) {
-	query := `SELECT c.id, c.chapter_id, c.program_id, c.grade_id,
+	query := `SELECT c.id, c.chapter_id, c.program_id, c.grade_id, c.semester_id,
 			c.label, c.discription AS description,
 			c.display_order, c.note, c.chapter_status, c.status,
 			c.create_id, c.create_dt, c.modify_id, c.modify_dt
@@ -186,17 +186,21 @@ func buildChapterListFilterClause(params *chapter.ListChaptersParams) (string, [
 		clause += ` AND c.grade_id = ?`
 		args = append(args, *params.GradeID)
 	}
+	if params.SemesterID != nil && *params.SemesterID != "" {
+		clause += ` AND c.semester_id = ?`
+		args = append(args, *params.SemesterID)
+	}
 	return clause, args
 }
 
 func (r *ChapterRepository) Create(ctx context.Context, c *chapter.Chapter) (*chapter.Chapter, error) {
 	query := `
 		INSERT INTO ` + chapterTable + `
-			(chapter_id, program_id, grade_id, label, discription, display_order, note, chapter_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			(chapter_id, program_id, grade_id, semester_id, label, discription, display_order, note, chapter_status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
-		c.ChapterId(), c.ProgramId(), c.GradeId(),
+		c.ChapterId(), c.ProgramId(), c.GradeId(), c.SemesterId(),
 		c.Label(), c.Description(), c.DisplayOrder(),
 		c.Note(), c.ChapterStatus())
 	if err != nil {
@@ -214,7 +218,7 @@ func (r *ChapterRepository) Create(ctx context.Context, c *chapter.Chapter) (*ch
 // non-zero values overwrite. display_order is int8 — a literal zero is a
 // legal value, so it is always written and not coalesced.
 func (r *ChapterRepository) Update(ctx context.Context, c *chapter.Chapter) error {
-	var label, description, programID, gradeID any
+	var label, description, programID, gradeID, semesterID any
 	if c.Label() != "" {
 		label = c.Label()
 	}
@@ -227,11 +231,15 @@ func (r *ChapterRepository) Update(ctx context.Context, c *chapter.Chapter) erro
 	if c.GradeId() != "" {
 		gradeID = c.GradeId()
 	}
+	if c.SemesterId() != "" {
+		semesterID = c.SemesterId()
+	}
 
 	query := `
 		UPDATE ` + chapterTable + `
 		SET program_id    = COALESCE(?, program_id),
 			grade_id      = COALESCE(?, grade_id),
+			semester_id   = COALESCE(?, semester_id),
 			label         = COALESCE(?, label),
 			discription   = COALESCE(?, discription),
 			display_order = ?,
@@ -240,7 +248,7 @@ func (r *ChapterRepository) Update(ctx context.Context, c *chapter.Chapter) erro
 		WHERE chapter_id = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
-		programID, gradeID, label, description,
+		programID, gradeID, semesterID, label, description,
 		c.DisplayOrder(), c.Note(), mtime.Now().Time, c.ChapterId()); err != nil {
 		return fmt.Errorf("chapter repo update: %w", err)
 	}
@@ -281,6 +289,7 @@ func ModelToDomainChapter(m *models.ChapterModel) *chapter.Chapter {
 	c.SetChapterId(m.ChapterId)
 	c.SetProgramId(m.ProgramId)
 	c.SetGradeId(m.GradeId)
+	c.SetSemesterId(m.SemesterId)
 	c.SetLabel(m.Label)
 	c.SetDescription(m.Description)
 	c.SetDisplayOrder(m.DisplayOrder)

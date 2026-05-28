@@ -132,6 +132,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Program id is required"
 	case CHAPTER_MISSING_GRADE_ID:
 		return "Grade id is required"
+	case CHAPTER_MISSING_SEMESTER_ID:
+		return "Semester id is required"
 	case CHAPTER_MISSING_LABEL:
 		return "Chapter label is required"
 	case CHAPTER_MISSING_DESCRIPTION:
