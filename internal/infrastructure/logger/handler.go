@@ -154,8 +154,8 @@ func tokenSuffixOr(ctx context.Context) string {
 }
 
 func uidOr(ctx context.Context) string {
-	if v := sctx.UserID(ctx); v != 0 {
-		return strconv.FormatInt(v, 10)
+	if v := sctx.UserID(ctx); v != "" {
+		return v
 	}
 	return anonUID
 }

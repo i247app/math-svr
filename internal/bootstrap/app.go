@@ -122,7 +122,7 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, res *resource.Resource, _ *con
 	middlewares := []gex.Middleware{
 		// Start-->
 		middleware.GexSessionMiddleware(res.SessionProvider, session.SessionContextKey),
-		middleware.LoggerMiddleware(a.Logger),
+		middleware.LoggerMiddleware(a.Logger, res),
 		middleware.LogRequestMiddleware,
 		middleware.MetadataMiddleware(),
 		middleware.RecoveryMiddleware,

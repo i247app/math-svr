@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"math-ai.com/math-ai/internal/application/resource"
 	kctx "math-ai.com/math-ai/internal/shared/context"
 
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -25,12 +26,19 @@ const (
 // tokenTailLen characters land in the context, enough to correlate a
 // session in logs without being usable for impersonation if the log file
 // leaks.
-func LoggerMiddleware(p *logger.Provider) func(http.Handler) http.Handler {
+func LoggerMiddleware(p *logger.Provider, res *resource.Resource) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
+
+			// Set token suffix for logger
 			if tail := bearerTail(r); tail != "" {
 				ctx = kctx.WithTokenSuffix(ctx, tail)
+			}
+
+			// Set user ID for logger
+			if uid, err := res.GetRequestUID(r); err == nil {
+				ctx = kctx.WithUserID(ctx, uid)
 			}
 
 			lg := p.New(ctx, r)

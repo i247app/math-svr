@@ -11,18 +11,18 @@ const (
 // attribution. The logger middleware is the canonical writer; auth
 // middleware (when added) should also set this so background work
 // triggered from a request retains uid context.
-func WithUserID(ctx context.Context, uid int64) context.Context {
+func WithUserID(ctx context.Context, uid string) context.Context {
 	return context.WithValue(ctx, ctxKeyUserID, uid)
 }
 
 // UserID returns the authenticated end-user id bound to ctx, or 0 when
 // absent. Logger callers convert 0 to "anon" — UserID itself does not
 // pre-format.
-func UserID(ctx context.Context) int64 {
+func UserID(ctx context.Context) string {
 	if ctx == nil {
-		return 0
+		return ""
 	}
-	v, _ := ctx.Value(ctxKeyUserID).(int64)
+	v, _ := ctx.Value(ctxKeyUserID).(string)
 	return v
 }
 
