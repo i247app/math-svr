@@ -94,6 +94,20 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Không tìm thấy lớp"
 	case GRADE_INVALID_LANGUAGE:
 		return "Ngôn ngữ lớp không hợp lệ"
+	case GRADE_MISSING_ID:
+		return "Mã lớp là bắt buộc"
+	case GRADE_MISSING_LABEL:
+		return "Tên lớp là bắt buộc"
+	case GRADE_MISSING_DESCRIPTION:
+		return "Mô tả lớp là bắt buộc"
+	case GRADE_INVALID_DISPLAY_ORDER:
+		return "Thứ tự hiển thị của lớp không hợp lệ"
+	case GRADE_INVALID_TRANSLATION:
+		return "Dữ liệu bản dịch của lớp không hợp lệ"
+	case GRADE_TRANSLATION_ALREADY_EXISTS:
+		return "Bản dịch của lớp ở ngôn ngữ này đã tồn tại"
+	case GRADE_TRANSLATION_NOT_FOUND:
+		return "Không tìm thấy bản dịch của lớp"
 
 	// Semester
 	case SEMESTER_NOT_FOUND:

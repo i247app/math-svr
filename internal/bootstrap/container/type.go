@@ -53,5 +53,6 @@ type RepositoryContainer struct {
 	QuizRepository               quizDomain.IRepository
 	ChapterRepository            chapterDomain.IRepository
 	ChapterTranslationRepository chapterDomain.ITranslationRepository
+	GradeTranslationRepository   gradeDomain.ITranslationRepository
 	SeqRepository                seqDomain.IRepository
 }

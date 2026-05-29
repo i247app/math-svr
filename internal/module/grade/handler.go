@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	dto "math-ai.com/math-ai/internal/application/dto/grade"
+	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -30,5 +31,88 @@ func (h *GradeHandler) HandleListGrades(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	response.WriteJson(w, res, nil)
+}
+
+// POST /grades/create
+func (h *GradeHandler) HandleCreateGrade(w http.ResponseWriter, r *http.Request) {
+	var req dto.CreateGradeReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.gradeSvc.CreateGrade(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /grades/update
+func (h *GradeHandler) HandleUpdateGrade(w http.ResponseWriter, r *http.Request) {
+	var req dto.UpdateGradeReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.gradeSvc.UpdateGrade(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /grades/soft-delete
+func (h *GradeHandler) HandleSoftDeleteGrade(w http.ResponseWriter, r *http.Request) {
+	var req dto.DeleteGradeReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.gradeSvc.SoftDeleteGrade(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /grades/force-delete
+func (h *GradeHandler) HandleForceDeleteGrade(w http.ResponseWriter, r *http.Request) {
+	var req dto.DeleteGradeReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.gradeSvc.ForceDeleteGrade(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// GET /grades/{id}
+//
+// Reads the optional `language` query parameter so callers can request a
+// specific locale without sending a JSON body. Falls back to the project
+// default (vn) when omitted.
+func (h *GradeHandler) HandleGetGrade(w http.ResponseWriter, r *http.Request) {
+	req := dto.GetGradeReq{
+		GradeID:  r.PathValue("id"),
+		Language: enum.LanguageType(r.URL.Query().Get("language")),
+	}
+
+	res, err := h.gradeSvc.GetGrade(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
 	response.WriteJson(w, res, nil)
 }

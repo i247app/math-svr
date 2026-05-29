@@ -18,10 +18,20 @@ type Grade struct {
 	createDt     mtime.MathTime
 	modifyId     *string
 	modifyDt     mtime.MathTime
+
+	// translations is hydrated only by detail reads; list reads keep it
+	// nil to avoid an N+1 fetch per grade. Nil and empty are equivalent
+	// at the API boundary.
+	translations []*GradeTranslation
 }
 
 func NewGrade() *Grade {
 	return &Grade{}
+}
+
+func (g *Grade) Translations() []*GradeTranslation { return g.translations }
+func (g *Grade) SetTranslations(t []*GradeTranslation) {
+	g.translations = t
 }
 
 func (g *Grade) Id() int64 {

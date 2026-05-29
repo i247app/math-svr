@@ -244,7 +244,7 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 	}
 
 	gradeIn := gradeQuizInput{
-		Language:   req.Language,
+		Language:   metadata.GetClientLanguage(ctx).ToEnumLanguage(),
 		Purpose:    enum.QuizPurpose(existing.Purpose()),
 		TypeOfQuiz: typeOfQuiz,
 		Questions:  *existing.Questions(),

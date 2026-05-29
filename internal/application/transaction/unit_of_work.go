@@ -5,6 +5,7 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/chapter"
 	"math-ai.com/math-ai/internal/domain/device"
+	"math-ai.com/math-ai/internal/domain/grade"
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/profile"
@@ -29,6 +30,8 @@ type Repositories struct {
 	Quiz               quiz.IRepository
 	Chapter            chapter.IRepository
 	ChapterTranslation chapter.ITranslationRepository
+	Grade              grade.IRepository
+	GradeTranslation   grade.ITranslationRepository
 	Seq                seq.IRepository
 }
 

@@ -94,6 +94,20 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Grade not found"
 	case GRADE_INVALID_LANGUAGE:
 		return "Grade language is invalid"
+	case GRADE_MISSING_ID:
+		return "Grade id is required"
+	case GRADE_MISSING_LABEL:
+		return "Grade label is required"
+	case GRADE_MISSING_DESCRIPTION:
+		return "Grade description is required"
+	case GRADE_INVALID_DISPLAY_ORDER:
+		return "Grade display order is invalid"
+	case GRADE_INVALID_TRANSLATION:
+		return "Grade translation payload is invalid"
+	case GRADE_TRANSLATION_ALREADY_EXISTS:
+		return "A translation in this language already exists for the grade"
+	case GRADE_TRANSLATION_NOT_FOUND:
+		return "Grade translation not found"
 
 	// Semester
 	case SEMESTER_NOT_FOUND:

@@ -38,7 +38,12 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	programService := program.NewService(repos.ProgramRepository, res.StorageProvider)
 
 	log.Info("> Setup GradeSvc...")
-	gradeService := grade.NewService(repos.GradeRepository, res.StorageProvider)
+	gradeService := grade.NewService(
+		repos.GradeRepository,
+		repos.GradeTranslationRepository,
+		uow,
+		res.StorageProvider,
+	)
 
 	log.Info("> Setup SemesterSvc...")
 	semesterService := semester.NewService(repos.SemesterRepository, res.StorageProvider)
