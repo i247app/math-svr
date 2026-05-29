@@ -14,6 +14,7 @@ import (
 type CreateProfileCommand struct {
 	UserID     string
 	Name       string
+	Role       string
 	Dob        *mtime.MathTime
 	ProgramID  *string
 	GradeID    *string
@@ -60,6 +61,7 @@ func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
 	// p.SetProfileId(utils.GenerateUUID().String())
 	p.SetUserId(cmd.UserID)
 	p.SetName(cmd.Name)
+	p.SetRole(cmd.Role)
 	p.SetProgramId(cmd.ProgramID)
 	p.SetGradeId(cmd.ProgramID)
 	p.SetSemesterId(cmd.SemesterID)

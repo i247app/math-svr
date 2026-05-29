@@ -9,6 +9,7 @@ type ProfileModel struct {
 	ProfileId     string
 	UserId        string
 	Name          string
+	Role          string
 	AvatarKey     *string
 	Dob           *time.Time
 	ProgramId     *string

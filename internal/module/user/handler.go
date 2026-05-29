@@ -48,6 +48,7 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		req.Name = r.FormValue("name")
 		req.Phone = r.FormValue("phone")
 		req.Email = r.FormValue("email")
+		req.Role = r.FormValue("role")
 
 		// Handle avatar file
 		file, header, err := r.FormFile("avatar")

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -23,6 +24,7 @@ import (
 // module's service. The command itself is storage-agnostic — keeping the
 // adapter out of the application layer.
 type CreateUserCommand struct {
+	Role      enum.RoleProfileType
 	Phone     string
 	Email     *string
 	UserName  string
@@ -104,6 +106,20 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 
+		profileID, err := nextSeqID(ctx, repos, seq.NameProfile)
+		if err != nil {
+			return err
+		}
+
+		profileDomain := BuildProfile(cmd)
+		profileDomain.SetUserId(u.UserId())
+		profileDomain.SetProfileId(profileID)
+		profileDomain.SetIsDefault(true)
+
+		if _, err = repos.Profile.Create(ctx, profileDomain); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+
 		result.User = u
 		return nil
 	}
@@ -123,4 +139,18 @@ func BuildUser(cmd CreateUserCommand) *user.User {
 	u.SetAvatarKey(cmd.AvatarKey)
 	u.SetStatus(enum.StatusActive.String())
 	return u
+}
+
+func BuildProfile(cmd CreateUserCommand) *profile.Profile {
+	role := cmd.Role
+	if role == "" {
+		role = enum.RoleProfileTypeStudent
+	}
+
+	p := profile.NewProfile()
+	p.SetName(cmd.UserName)
+	p.SetRole(role.String())
+	p.SetAvatarKey(cmd.AvatarKey)
+	p.SetStatus(enum.StatusActive.String())
+	return p
 }

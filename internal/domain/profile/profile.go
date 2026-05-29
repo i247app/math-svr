@@ -13,6 +13,7 @@ type Profile struct {
 	profileId     string
 	userId        string
 	name          string
+	role          string
 	avatarKey     *string
 	dob           mtime.MathTime
 	programId     *string
@@ -62,6 +63,14 @@ func (p *Profile) Name() string {
 
 func (p *Profile) SetName(name string) {
 	p.name = name
+}
+
+func (p *Profile) Role() string {
+	return p.role
+}
+
+func (p *Profile) SetRole(role string) {
+	p.role = role
 }
 
 func (p *Profile) AvatarKey() *string {

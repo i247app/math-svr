@@ -18,6 +18,7 @@ type ProfileResponse struct {
 	ProfileID     string                        `json:"profile_id"`
 	UserID        string                        `json:"user_id"`
 	Name          string                        `json:"name"`
+	Role          string                        `json:"role"`
 	AvatarKey     *string                       `json:"avatar_key,omitempty"`
 	AvatarUrl     *string                       `json:"avatar_url"` // pre-signed url from avatar_key
 	Dob           string                        `json:"dob,omitempty"`
@@ -36,6 +37,7 @@ type ProfileResponse struct {
 type CreateProfileReq struct {
 	UserID     string  `json:"user_id"`
 	Name       string  `json:"name"`
+	Role       string  `json:"role"`
 	Dob        *string `json:"dob,omitempty"`
 	ProgramID  *string `json:"program_id"`
 	GradeID    *string `json:"grade_id"`
@@ -109,6 +111,7 @@ func DomainToResponse(p *domain.Profile) *ProfileResponse {
 		ProfileID:     p.ProfileId(),
 		UserID:        p.UserId(),
 		Name:          p.Name(),
+		Role:          p.Role(),
 		AvatarKey:     p.AvatarKey(),
 		Dob:           p.Dob().String(),
 		ProgramID:     p.ProgramId(),

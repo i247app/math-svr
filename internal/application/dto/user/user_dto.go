@@ -48,6 +48,7 @@ type CreateUserReq struct {
 	Name  string `json:"name"`
 	Phone string `json:"phone"`
 	Email string `json:"email,omitempty"`
+	Role  string `json:"role"`
 
 	AvatarFile        io.Reader `json:"avatar_file"`         // File reader
 	AvatarFilename    string    `json:"avatar_file_name"`    // Original filename

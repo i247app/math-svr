@@ -147,6 +147,7 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 	created, err := s.createProfileCmd.Handle(ctx, command.CreateProfileCommand{
 		UserID:     req.UserID,
 		Name:       req.Name,
+		Role:       req.Role,
 		Dob:        &dob,
 		ProgramID:  req.ProgramID,
 		GradeID:    req.GradeID,

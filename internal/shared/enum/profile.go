@@ -20,3 +20,28 @@ func (s ProfileStatusType) IsValid() bool {
 		return false
 	}
 }
+
+type RoleProfileType string
+
+const (
+	RoleProfileTypeStudent RoleProfileType = "STUDENT"
+	RoleProfileTypeTeacher RoleProfileType = "TEACHER"
+	RoleProfileTypeParent  RoleProfileType = "PARENT"
+)
+
+func (s RoleProfileType) String() string {
+	return string(s)
+}
+
+func (s RoleProfileType) Default() RoleProfileType {
+	return RoleProfileTypeStudent
+}
+
+func (s RoleProfileType) IsValid() bool {
+	switch s {
+	case RoleProfileTypeStudent, RoleProfileTypeTeacher, RoleProfileTypeParent:
+		return true
+	default:
+		return false
+	}
+}

@@ -16,7 +16,7 @@ import (
 const (
 	profileTable = "ma_profiles"
 
-	profileColumns = `p.id, p.profile_id, p.user_id, p.name, p.avatar_key, p.dob,
+	profileColumns = `p.id, p.profile_id, p.user_id, p.name, p.role, p.avatar_key, p.dob,
 		p.program_id, p.grade_id, p.semester_id, p.is_default, p.note, p.profile_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
@@ -37,7 +37,7 @@ func NewProfileRepository(db database.Executor) profile.IRepository {
 
 func scanProfile(s database.RowScanner) (*models.ProfileModel, error) {
 	var m models.ProfileModel
-	if err := s.Scan(&m.Id, &m.ProfileId, &m.UserId, &m.Name, &m.AvatarKey, &m.Dob,
+	if err := s.Scan(&m.Id, &m.ProfileId, &m.UserId, &m.Name, &m.Role, &m.AvatarKey, &m.Dob,
 		&m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault, &m.Note, &m.ProfileStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -136,12 +136,12 @@ func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId s
 func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*profile.Profile, error) {
 	query := `
 		INSERT INTO ` + profileTable + `
-			(profile_id, user_id, name, avatar_key, dob, program_id, grade_id, semester_id, is_default, note, profile_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(profile_id, user_id, name, role, avatar_key, dob, program_id, grade_id, semester_id, is_default, note, profile_status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
-		p.ProfileId(), p.UserId(), p.Name(), p.AvatarKey(), p.Dob(),
+		p.ProfileId(), p.UserId(), p.Name(), p.Role(), p.AvatarKey(), p.Dob(),
 		p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(), p.Note(), p.ProfileStatus())
 	if err != nil {
 		return nil, fmt.Errorf("profile repo create: %w", err)
@@ -262,6 +262,7 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p.SetProfileId(m.ProfileId)
 	p.SetUserId(m.UserId)
 	p.SetName(m.Name)
+	p.SetRole(m.Role)
 	p.SetAvatarKey(m.AvatarKey)
 	if m.Dob != nil {
 		p.SetDob(mtime.MathTime{Time: *m.Dob})

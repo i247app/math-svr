@@ -11,6 +11,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/chapter"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -134,16 +135,11 @@ func (s *Service) ListChapters(ctx context.Context, req *dto.ListChaptersReq) (*
 		return nil, err
 	}
 
-	lang := req.Language
-	if lang == "" {
-		lang = enum.LanguageTypeEnglish
-	}
-
 	chapters, pg, err := s.listChaptersQuery.Handle(ctx, query.ListChaptersQuery{
 		ProgramID:  req.ProgramID,
 		GradeID:    req.GradeID,
 		SemesterID: req.SemesterID,
-		Language:   lang,
+		Language:   metadata.GetClientLanguage(ctx).ToEnumLanguage(),
 		Page:       req.Page,
 		Limit:      req.Size,
 	})
