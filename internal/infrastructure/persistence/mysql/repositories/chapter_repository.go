@@ -34,10 +34,10 @@ const (
 		c.chapter_status, c.status,
 		c.create_id, c.create_dt, c.modify_id, c.modify_dt`
 
-	chapterActiveWhere = `c.status IN (?) AND c.deleted_dt IS NULL
+	chapterActiveWhere = `c.status = ? AND c.deleted_dt IS NULL
 		AND (c.chapter_status IS NULL OR c.chapter_status != ?)`
 
-	chapterBareActiveWhere = `c.status IN (?) AND c.deleted_dt IS NULL
+	chapterBareActiveWhere = `c.status ? AND c.deleted_dt IS NULL
 		AND (c.chapter_status IS NULL OR c.chapter_status != ?)`
 )
 

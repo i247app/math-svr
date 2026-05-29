@@ -31,7 +31,7 @@ const (
 		g.grade_status, g.status,
 		g.create_id, g.create_dt, g.modify_id, g.modify_dt`
 
-	gradeActiveWhere = `g.status IN (?) AND g.deleted_dt IS NULL`
+	gradeActiveWhere = `g.status = ? AND g.deleted_dt IS NULL`
 )
 
 func gradeJoinArgs(lang enum.LanguageType) []any {

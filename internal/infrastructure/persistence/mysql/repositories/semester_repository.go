@@ -34,7 +34,7 @@ const (
 		s.semester_status, s.status,
 		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
 
-	semesterActiveWhere = `s.status IN (?) AND s.deleted_dt IS NULL`
+	semesterActiveWhere = `s.status = ? AND s.deleted_dt IS NULL`
 )
 
 func semesterJoinArgs(lang enum.LanguageType) []any {

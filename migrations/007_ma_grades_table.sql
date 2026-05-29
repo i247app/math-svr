@@ -25,4 +25,6 @@ CREATE TABLE IF NOT EXISTS ma_grades (
 -- 	 ('ca93947f-f7b6-433e-968f-a7b70f36c201','Grade 5','Five year of elementary education level.',NULL,5);
 
 
+-- ALTER TABLE ma_grades ADD INDEX idx_status_order (status, deleted_dt, display_order);
+-- ALTER TABLE ma_grade_translations ADD INDEX idx_grade_lang_status (grade_id, language, status, deleted_dt);
 

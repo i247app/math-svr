@@ -21,3 +21,6 @@ CREATE TABLE IF NOT EXISTS ma_semesters (
 -- ('4e2j3f5g-5h6i-8g7f-2j4e-1f0g9h8i7e35', 'Semester 2', 'Semester 2 program', 2),
 -- ('3d1i2e4f-4g5h-7f6e-1i3d-0e9f8g7h6d24', 'Semester 3', 'Semester 3 program', 3),
 -- ('5f3k4g6h-6i7j-9h8g-3k5f-2g1h0i9j8f46', 'Semester 4', 'Semester 4 program', 4);
+
+-- ALTER TABLE ma_semesters ADD INDEX idx_status_order (status, deleted_dt, display_order);
+-- ALTER TABLE ma_semester_translations ADD INDEX idx_semester_lang_status (semester_id, language, status, deleted_dt);

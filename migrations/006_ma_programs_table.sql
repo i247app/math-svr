@@ -24,3 +24,6 @@ CREATE TABLE IF NOT EXISTS ma_programs (
 -- 	 ('82023de6-8d1f-46d3-abc8-6dceab23a9f5','Creative Horizons','Creative Horizons.',NULL,4),
 -- 	 ('ca93947f-f7b6-433e-968f-a7b70f36c201','Kite','Kite.',NULL,5);
 
+
+-- ALTER TABLE ma_programs ADD INDEX idx_status_order (status, deleted_dt, display_order);
+-- ALTER TABLE ma_program_translations ADD INDEX idx_program_lang_status (program_id, language, status, deleted_dt);

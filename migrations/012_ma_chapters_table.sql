@@ -17,3 +17,6 @@ CREATE TABLE IF NOT EXISTS ma_chapters (
   modify_dt         DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   deleted_dt        DATETIME(6) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ALTER TABLE ma_chapters ADD INDEX idx_status_order (status, deleted_dt, display_order);
+-- ALTER TABLE ma_chapter_translations ADD INDEX idx_chapter_lang_status (chapter_id, language, status, deleted_dt);
