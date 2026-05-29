@@ -88,6 +88,20 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Program not found"
 	case PROGRAM_INVALID_LANGUAGE:
 		return "Program language is invalid"
+	case PROGRAM_MISSING_ID:
+		return "Program id is required"
+	case PROGRAM_MISSING_LABEL:
+		return "Program label is required"
+	case PROGRAM_MISSING_DESCRIPTION:
+		return "Program description is required"
+	case PROGRAM_INVALID_DISPLAY_ORDER:
+		return "Program display order is invalid"
+	case PROGRAM_INVALID_TRANSLATION:
+		return "Program translation payload is invalid"
+	case PROGRAM_TRANSLATION_ALREADY_EXISTS:
+		return "A translation in this language already exists for the program"
+	case PROGRAM_TRANSLATION_NOT_FOUND:
+		return "Program translation not found"
 
 	// Grade
 	case GRADE_NOT_FOUND:

@@ -34,6 +34,8 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 			GradeTranslation:   repositories.NewGradeTranslationRepository(loggedTx),
 			Semester:           repositories.NewSemesterRepository(loggedTx),
 			SemesterTranslation: repositories.NewSemesterTranslationRepository(loggedTx),
+			Program:            repositories.NewProgramRepository(loggedTx),
+			ProgramTranslation: repositories.NewProgramTranslationRepository(loggedTx),
 			Seq:                repositories.NewSeqRepository(loggedTx),
 		}
 		return fn(txCtx, repos)

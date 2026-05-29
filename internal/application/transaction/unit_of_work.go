@@ -9,6 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/profile"
+	"math-ai.com/math-ai/internal/domain/program"
 	"math-ai.com/math-ai/internal/domain/quiz"
 	"math-ai.com/math-ai/internal/domain/semester"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -35,6 +36,8 @@ type Repositories struct {
 	GradeTranslation   grade.ITranslationRepository
 	Semester           semester.IRepository
 	SemesterTranslation semester.ITranslationRepository
+	Program            program.IRepository
+	ProgramTranslation program.ITranslationRepository
 	Seq                seq.IRepository
 }
 

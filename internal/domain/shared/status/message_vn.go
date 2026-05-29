@@ -88,6 +88,20 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Không tìm thấy chương trình học"
 	case PROGRAM_INVALID_LANGUAGE:
 		return "Ngôn ngữ chương trình học không hợp lệ"
+	case PROGRAM_MISSING_ID:
+		return "Mã chương trình học là bắt buộc"
+	case PROGRAM_MISSING_LABEL:
+		return "Tên chương trình học là bắt buộc"
+	case PROGRAM_MISSING_DESCRIPTION:
+		return "Mô tả chương trình học là bắt buộc"
+	case PROGRAM_INVALID_DISPLAY_ORDER:
+		return "Thứ tự hiển thị của chương trình học không hợp lệ"
+	case PROGRAM_INVALID_TRANSLATION:
+		return "Dữ liệu bản dịch của chương trình học không hợp lệ"
+	case PROGRAM_TRANSLATION_ALREADY_EXISTS:
+		return "Bản dịch của chương trình học ở ngôn ngữ này đã tồn tại"
+	case PROGRAM_TRANSLATION_NOT_FOUND:
+		return "Không tìm thấy bản dịch của chương trình học"
 
 	// Grade
 	case GRADE_NOT_FOUND:

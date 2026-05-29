@@ -18,10 +18,20 @@ type Program struct {
 	createDt      mtime.MathTime
 	modifyId      *string
 	modifyDt      mtime.MathTime
+
+	// translations is hydrated only by detail reads; list reads keep it
+	// nil to avoid an N+1 fetch per program. Nil and empty are
+	// equivalent at the API boundary.
+	translations []*ProgramTranslation
 }
 
 func NewProgram() *Program {
 	return &Program{}
+}
+
+func (p *Program) Translations() []*ProgramTranslation { return p.translations }
+func (p *Program) SetTranslations(t []*ProgramTranslation) {
+	p.translations = t
 }
 
 func (p *Program) Id() int64 {

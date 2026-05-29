@@ -104,7 +104,7 @@ type GenerateQuizReq struct {
 	ProgramLabel        string            `json:"program_label,omitempty"`
 	GradeLabel          string            `json:"grade_label,omitempty"`
 	SemesterLabel       string            `json:"semester_label,omitempty"`
-	ChapterDescriptions []string          `json:"chapter_descriptions,omitempty"`
+	ChapterDescriptions []string          `json:"chapters,omitempty"`
 	NumQuestions        int               `json:"num_questions,omitempty"`
 	PreviousQuizID      *string           `json:"previous_quiz_id,omitempty"`
 }

@@ -55,5 +55,6 @@ type RepositoryContainer struct {
 	ChapterTranslationRepository chapterDomain.ITranslationRepository
 	GradeTranslationRepository    gradeDomain.ITranslationRepository
 	SemesterTranslationRepository semesterDomain.ITranslationRepository
+	ProgramTranslationRepository  programDomain.ITranslationRepository
 	SeqRepository                 seqDomain.IRepository
 }
