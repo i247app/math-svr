@@ -9,11 +9,16 @@ import (
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/quiz"
+	"math-ai.com/math-ai/internal/domain/seq"
 	"math-ai.com/math-ai/internal/domain/user"
 )
 
 // Repositories is the bundle of aggregate repositories bound to a single
 // transaction, handed to callers of UnitOfWork.Do.
+//
+// Seq is the central ma_seqs sequence registry — every command that
+// mints a new external ID should call Seq.Next(ctx, seq.NameX) instead
+// of generating a UUID, so concurrent inserts share one atomic counter.
 type Repositories struct {
 	User               user.IRepository
 	Alias              user.IAliasRepository
@@ -24,6 +29,7 @@ type Repositories struct {
 	Quiz               quiz.IRepository
 	Chapter            chapter.IRepository
 	ChapterTranslation chapter.ITranslationRepository
+	Seq                seq.IRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

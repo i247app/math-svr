@@ -298,6 +298,14 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Tên task là bắt buộc"
 	case TASK_ENQUEUE_FAILED:
 		return "Đưa task vào hàng đợi thất bại"
+
+	// Sequence
+	case SEQ_NOT_FOUND:
+		return "Không tìm thấy sequence"
+	case SEQ_MISSING_NAME:
+		return "Tên sequence là bắt buộc"
+	case SEQ_GENERATION_FAILED:
+		return "Sinh id mới thất bại"
 	default:
 		return ""
 	}

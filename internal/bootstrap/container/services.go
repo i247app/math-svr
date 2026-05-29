@@ -16,6 +16,7 @@ import (
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/quiz"
 	"math-ai.com/math-ai/internal/module/semester"
+	"math-ai.com/math-ai/internal/module/seq"
 	"math-ai.com/math-ai/internal/module/user"
 )
 
@@ -83,6 +84,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup JobSvc...")
 	jobService := job.NewService(res.JobRuntime)
 
+	log.Info("> Setup SeqSvc...")
+	seqService := seq.NewService(uow)
+
 	return &ServiceContainer{
 		UserSvc:     userService,
 		AuthSvc:     authService,
@@ -95,5 +99,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		QuizSvc:     quizService,
 		ChapterSvc:  chapterService,
 		JobSvc:      jobService,
+		SeqSvc:      seqService,
 	}, nil
 }

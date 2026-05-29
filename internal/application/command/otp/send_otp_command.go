@@ -8,11 +8,11 @@ import (
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/otp"
+	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // SendOtpCommand issues a fresh OTP for (type, identifier) and dispatches it
@@ -121,7 +121,13 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 
 		// 4. Insert fresh row
 		o := otp.NewOtp()
-		o.SetOtpId(utils.GenerateUUID().String())
+		// o.SetOtpId(utils.GenerateUUID().String())
+		otpID, err := nextSeqID(ctx, repos, seq.NameOtp)
+		if err != nil {
+			return err
+		}
+		o.SetOtpId(otpID)
+
 		o.SetOtpType(cmd.OtpType.String())
 		o.SetUserId(cmd.UserID)
 		o.SetIdentifier(cmd.Identifier)

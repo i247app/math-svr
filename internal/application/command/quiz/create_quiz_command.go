@@ -5,10 +5,10 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/quiz"
+	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // CreateQuizCommand inserts a fresh quiz row. Generation of questions
@@ -45,7 +45,13 @@ func (h *CreateQuizCommandHandler) Handle(ctx context.Context, cmd CreateQuizCom
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
 		q := quiz.NewQuiz()
-		q.SetQuizId(utils.GenerateUUID().String())
+		// q.SetQuizId(utils.GenerateUUID().String())
+		quizID, err := nextSeqID(ctx, repos, seq.NameQuiz)
+		if err != nil {
+			return err
+		}
+		q.SetQuizId(quizID)
+
 		q.SetUserId(cmd.UserID)
 		q.SetProfileId(cmd.ProfileID)
 		q.SetPurpose(string(cmd.Purpose))

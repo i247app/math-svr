@@ -298,6 +298,14 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Task name is required"
 	case TASK_ENQUEUE_FAILED:
 		return "Failed to enqueue task"
+
+	// Sequence
+	case SEQ_NOT_FOUND:
+		return "Sequence not found"
+	case SEQ_MISSING_NAME:
+		return "Sequence name is required"
+	case SEQ_GENERATION_FAILED:
+		return "Failed to generate next id"
 	default:
 		return ""
 	}

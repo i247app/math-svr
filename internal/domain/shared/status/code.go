@@ -158,4 +158,8 @@ const (
 	TASK_QUEUE_FULL         StatusCode = 12009
 	TASK_MISSING_NAME       StatusCode = 12010
 	TASK_ENQUEUE_FAILED     StatusCode = 12011
+
+	SEQ_NOT_FOUND         StatusCode = 12101
+	SEQ_MISSING_NAME      StatusCode = 12102
+	SEQ_GENERATION_FAILED StatusCode = 12103
 )

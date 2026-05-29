@@ -18,5 +18,6 @@ func SetupRepositories(db *database.DatabaseWithLogs) *RepositoryContainer {
 		QuizRepository:               repositories.NewQuizRepository(db),
 		ChapterRepository:            repositories.NewChapterRepository(db),
 		ChapterTranslationRepository: repositories.NewChapterTranslationRepository(db),
+		SeqRepository:                repositories.NewSeqRepository(db),
 	}
 }

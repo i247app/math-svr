@@ -5,10 +5,10 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
+	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type CreateProfileCommand struct {
@@ -34,7 +34,12 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 	var created *profile.Profile
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
+		profileID, err := nextSeqID(ctx, repos, seq.NameProfile)
+		if err != nil {
+			return err
+		}
 		p := BuildProfile(cmd)
+		p.SetProfileId(profileID)
 
 		saved, err := repos.Profile.Create(ctx, p)
 		if err != nil {
@@ -52,7 +57,7 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 
 func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
 	p := profile.NewProfile()
-	p.SetProfileId(utils.GenerateUUID().String())
+	// p.SetProfileId(utils.GenerateUUID().String())
 	p.SetUserId(cmd.UserID)
 	p.SetName(cmd.Name)
 	p.SetProgramId(cmd.ProgramID)

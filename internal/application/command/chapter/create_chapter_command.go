@@ -7,9 +7,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/chapter"
+	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // TranslationInput is the per-language override the create / update
@@ -49,8 +49,13 @@ func (h *CreateChapterCommandHandler) Handle(ctx context.Context, cmd CreateChap
 	var created *chapter.Chapter
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
+		chapterID, err := nextSeqID(ctx, repos, seq.NameChapter)
+		if err != nil {
+			return err
+		}
+
 		c := chapter.NewChapter()
-		c.SetChapterId(utils.GenerateUUID().String())
+		c.SetChapterId(chapterID)
 		c.SetProgramId(cmd.ProgramID)
 		c.SetGradeId(cmd.GradeID)
 		c.SetSemesterId(cmd.SemesterID)
@@ -83,8 +88,13 @@ func (h *CreateChapterCommandHandler) Handle(ctx context.Context, cmd CreateChap
 			}
 			seen[lang] = struct{}{}
 
+			translationID, err := nextSeqID(ctx, repos, seq.NameChapterTranslation)
+			if err != nil {
+				return err
+			}
+
 			t := chapter.NewChapterTranslation()
-			t.SetChapterTranslationId(utils.GenerateUUID().String())
+			t.SetChapterTranslationId(translationID)
 			t.SetChapterId(saved.ChapterId())
 			t.SetLanguage(lang)
 			t.SetLabel(in.Label)

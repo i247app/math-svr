@@ -30,6 +30,7 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 			Quiz:               repositories.NewQuizRepository(loggedTx),
 			Chapter:            repositories.NewChapterRepository(loggedTx),
 			ChapterTranslation: repositories.NewChapterTranslationRepository(loggedTx),
+			Seq:                repositories.NewSeqRepository(loggedTx),
 		}
 		return fn(txCtx, repos)
 	})

@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
+	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"math-ai.com/math-ai/internal/shared/utils"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 )
@@ -73,7 +73,15 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 
-		u, err := repos.User.Create(ctx, BuildUser(cmd))
+		userID, err := nextSeqID(ctx, repos, seq.NameUser)
+		if err != nil {
+			return err
+		}
+
+		userDomain := BuildUser(cmd)
+		userDomain.SetUserId(userID)
+
+		u, err := repos.User.Create(ctx, userDomain)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -82,7 +90,11 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		for _, aka := range aliases {
 			if aka != nil && *aka != "" {
 				alias := user.NewAlias()
-				alias.SetAliasId(utils.GenerateUUID().String())
+				aliasID, err := nextSeqID(ctx, repos, seq.NameAlias)
+				if err != nil {
+					return err
+				}
+				alias.SetAliasId(aliasID)
 				alias.SetUserId(u.UserId())
 				alias.SetStatus(enum.StatusActive.String())
 				alias.SetAka(*aka)
@@ -104,7 +116,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 
 func BuildUser(cmd CreateUserCommand) *user.User {
 	u := user.NewUser()
-	u.SetUserId(utils.GenerateUUID().String())
+	// u.SetUserId(utils.GenerateUUID().String())
 	u.SetUserName(cmd.UserName)
 	u.SetEmail(cmd.Email)
 	u.SetPhone(cmd.Phone)

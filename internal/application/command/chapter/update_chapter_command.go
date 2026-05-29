@@ -7,10 +7,10 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/chapter"
+	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // UpdateChapterCommand patches the parent row and upserts translation
@@ -105,8 +105,12 @@ func (h *UpdateChapterCommandHandler) Handle(ctx context.Context, cmd UpdateChap
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			if current == nil {
+				translationID, err := nextSeqID(ctx, repos, seq.NameChapterTranslation)
+				if err != nil {
+					return err
+				}
 				t := chapter.NewChapterTranslation()
-				t.SetChapterTranslationId(utils.GenerateUUID().String())
+				t.SetChapterTranslationId(translationID)
 				t.SetChapterId(cmd.ChapterID)
 				t.SetLanguage(lang)
 				t.SetLabel(in.Label)
