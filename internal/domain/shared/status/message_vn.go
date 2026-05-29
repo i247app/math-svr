@@ -114,6 +114,20 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Không tìm thấy học kỳ"
 	case SEMESTER_INVALID_LANGUAGE:
 		return "Ngôn ngữ học kỳ không hợp lệ"
+	case SEMESTER_MISSING_ID:
+		return "Mã học kỳ là bắt buộc"
+	case SEMESTER_MISSING_NAME:
+		return "Tên học kỳ là bắt buộc"
+	case SEMESTER_MISSING_DESCRIPTION:
+		return "Mô tả học kỳ là bắt buộc"
+	case SEMESTER_INVALID_DISPLAY_ORDER:
+		return "Thứ tự hiển thị của học kỳ không hợp lệ"
+	case SEMESTER_INVALID_TRANSLATION:
+		return "Dữ liệu bản dịch của học kỳ không hợp lệ"
+	case SEMESTER_TRANSLATION_ALREADY_EXISTS:
+		return "Bản dịch của học kỳ ở ngôn ngữ này đã tồn tại"
+	case SEMESTER_TRANSLATION_NOT_FOUND:
+		return "Không tìm thấy bản dịch của học kỳ"
 
 	// Device
 	case DEVICE_NOT_FOUND:

@@ -71,6 +71,11 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 		semesterHandler := semester.NewSemesterHandler(services.SemesterSvc)
 		gexSvr.AddRoute("POST /semesters/list", semesterHandler.HandleListSemesters)
+		gexSvr.AddRoute("GET  /semesters/{id}", semesterHandler.HandleGetSemester, authMiddleware)
+		gexSvr.AddRoute("POST /semesters/create", semesterHandler.HandleCreateSemester, authMiddleware)
+		gexSvr.AddRoute("POST /semesters/update", semesterHandler.HandleUpdateSemester, authMiddleware)
+		gexSvr.AddRoute("POST /semesters/soft-delete", semesterHandler.HandleSoftDeleteSemester, authMiddleware)
+		gexSvr.AddRoute("POST /semesters/force-delete", semesterHandler.HandleForceDeleteSemester, authMiddleware)
 	}
 
 	// profile routes

@@ -46,7 +46,12 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	)
 
 	log.Info("> Setup SemesterSvc...")
-	semesterService := semester.NewService(repos.SemesterRepository, res.StorageProvider)
+	semesterService := semester.NewService(
+		repos.SemesterRepository,
+		repos.SemesterTranslationRepository,
+		uow,
+		res.StorageProvider,
+	)
 
 	log.Info("> Setup ProfileSvc...")
 	profileService := profile.NewService(

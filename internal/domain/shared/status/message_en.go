@@ -114,6 +114,20 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Semester not found"
 	case SEMESTER_INVALID_LANGUAGE:
 		return "Semester language is invalid"
+	case SEMESTER_MISSING_ID:
+		return "Semester id is required"
+	case SEMESTER_MISSING_NAME:
+		return "Semester name is required"
+	case SEMESTER_MISSING_DESCRIPTION:
+		return "Semester description is required"
+	case SEMESTER_INVALID_DISPLAY_ORDER:
+		return "Semester display order is invalid"
+	case SEMESTER_INVALID_TRANSLATION:
+		return "Semester translation payload is invalid"
+	case SEMESTER_TRANSLATION_ALREADY_EXISTS:
+		return "A translation in this language already exists for the semester"
+	case SEMESTER_TRANSLATION_NOT_FOUND:
+		return "Semester translation not found"
 
 	// Device
 	case DEVICE_NOT_FOUND:

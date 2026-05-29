@@ -10,6 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/quiz"
+	"math-ai.com/math-ai/internal/domain/semester"
 	"math-ai.com/math-ai/internal/domain/seq"
 	"math-ai.com/math-ai/internal/domain/user"
 )
@@ -32,6 +33,8 @@ type Repositories struct {
 	ChapterTranslation chapter.ITranslationRepository
 	Grade              grade.IRepository
 	GradeTranslation   grade.ITranslationRepository
+	Semester           semester.IRepository
+	SemesterTranslation semester.ITranslationRepository
 	Seq                seq.IRepository
 }
 
