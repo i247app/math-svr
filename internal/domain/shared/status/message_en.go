@@ -222,6 +222,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "No delivery channel is configured for this identifier"
 	case OTP_GENERATION_FAILED:
 		return "Failed to generate OTP"
+	case OTP_DISABLED:
+		return "OTP is disabled"
 
 	// Notification
 	case NOTIFICATION_MISSING_UID:

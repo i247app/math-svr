@@ -27,6 +27,7 @@ func NewEnv(envpath string) (*Env, error) {
 		SharedKeyBytes:        getFileBytesConfig("GEX_SHARED_KEY"),
 		HttpsCertFile:         getConfigOptional("HTTPS_CERT_FILE"),
 		HttpsKeyFile:          getConfigOptional("HTTPS_KEY_FILE"),
+		EnableOTP:             getBoolConfigWithDefault("ENABLE_OTP", false),
 
 		DBConfig: DBConfig{
 			DBHost:   getConfig("DB_HOST"),

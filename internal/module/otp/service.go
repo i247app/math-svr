@@ -85,7 +85,6 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	switch req.OtpType {
 	case string(enum.OtpTypeLogin2FA):
 		if user == nil {
-			println("VO DAYYYY")
 			return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil, errors.New("user not found"))
 		}
 

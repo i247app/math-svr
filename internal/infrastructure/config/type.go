@@ -11,6 +11,7 @@ type Env struct {
 	SharedKeyBytes        []byte
 	HttpsCertFile         *string
 	HttpsKeyFile          *string
+	EnableOTP             bool
 
 	DBConfig      DBConfig
 	EmailConfig   EmailConfig

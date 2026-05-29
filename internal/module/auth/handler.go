@@ -57,6 +57,29 @@ func (h *AuthHandler) HandleLoginOTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get session
+	session, err := h.appResource.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	enableOTP := h.appResource.Env.EnableOTP
+
+	if !enableOTP {
+		res, err := h.service.Login(r.Context(), session, &req)
+		if err != nil {
+			if res != nil {
+				response.WriteJson(w, res, err)
+				return
+			}
+			response.WriteJson(w, nil, err)
+			return
+		}
+
+		response.WriteJson(w, res, nil)
+		return
+	}
+
 	res, err := h.service.LoginWithOTP(r.Context(), &req)
 	if err != nil {
 		if res != nil {

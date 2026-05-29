@@ -222,6 +222,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Không có kênh gửi phù hợp cho thông tin này"
 	case OTP_GENERATION_FAILED:
 		return "Không thể tạo mã OTP"
+	case OTP_DISABLED:
+		return "Xác thực 2 bước đã bị tắt"
 
 	// Notification
 	case NOTIFICATION_MISSING_UID:
