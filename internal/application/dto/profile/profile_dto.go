@@ -38,6 +38,7 @@ type CreateProfileReq struct {
 	UserID     string  `json:"user_id"`
 	Name       string  `json:"name"`
 	Role       string  `json:"role"`
+	IsDefault  bool    `json:"is_default"`
 	Dob        *string `json:"dob,omitempty"`
 	ProgramID  *string `json:"program_id"`
 	GradeID    *string `json:"grade_id"`

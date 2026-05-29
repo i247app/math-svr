@@ -206,6 +206,19 @@ func (r *ProfileRepository) MarkStatusByProfileId(ctx context.Context, profileId
 	return nil
 }
 
+func (r *ProfileRepository) MarkDefaultByProfileId(ctx context.Context, userId string, profileId string) error {
+	query := `
+		UPDATE ` + profileTable + `
+		SET is_default = CASE WHEN profile_id = ? THEN TRUE ELSE FALSE END,
+			modify_dt    = ?
+		WHERE user_id = ?
+	`
+	if _, err := r.db.Exec(ctx, query, profileId, mtime.Now().Time, userId); err != nil {
+		return fmt.Errorf("profile repo mark is default: %w", err)
+	}
+	return nil
+}
+
 func (r *ProfileRepository) SoftDelete(ctx context.Context, profileId string) error {
 	query := `
 		UPDATE ` + profileTable + `

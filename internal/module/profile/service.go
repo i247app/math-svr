@@ -148,6 +148,7 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 		UserID:     req.UserID,
 		Name:       req.Name,
 		Role:       req.Role,
+		IsDefault:  req.IsDefault,
 		Dob:        &dob,
 		ProgramID:  req.ProgramID,
 		GradeID:    req.GradeID,

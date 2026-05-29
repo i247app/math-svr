@@ -44,6 +44,8 @@ func (h *ProfileHandler) HandleCreateProfile(w http.ResponseWriter, r *http.Requ
 
 		req.UserID = r.FormValue("user_id")
 		req.Name = r.FormValue("name")
+		req.Role = r.FormValue("role")
+		req.IsDefault = utils.StringToBool(r.FormValue("is_default"), false)
 		req.Dob = utils.ToStringPtr(r.FormValue("dob"))
 		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
 		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))

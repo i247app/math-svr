@@ -15,6 +15,7 @@ type CreateProfileCommand struct {
 	UserID     string
 	Name       string
 	Role       string
+	IsDefault  bool
 	Dob        *mtime.MathTime
 	ProgramID  *string
 	GradeID    *string
@@ -46,7 +47,15 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
+
+		if cmd.IsDefault {
+			if err := repos.Profile.MarkDefaultByProfileId(ctx, cmd.UserID, profileID); err != nil {
+				return errs.NewError(ctx, status.FAIL, nil, err)
+			}
+		}
+
 		created = saved
+		created.SetIsDefault(cmd.IsDefault)
 		return nil
 	}
 
