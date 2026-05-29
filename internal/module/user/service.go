@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net/url"
 	"strings"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
@@ -18,6 +17,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // avatarFolder is the S3 prefix user (parent) avatars land under.
@@ -138,13 +138,19 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		email = &e
 	}
 
-	phoneDecoded, err := url.QueryUnescape(req.Phone)
+	phoneForString, err := utils.NormalizePhone(req.Phone)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to decode phone: %w", err))
+		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to normalize phone: %w", err))
 	}
+	log.Infof("Phone for string: %s", phoneForString)
+
+	// phoneDecoded, err := url.QueryUnescape(req.Phone)
+	// if err != nil {
+	// 	return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to decode phone: %w", err))
+	// }
 
 	created, err := s.createUserCmd.Handle(ctx, command.CreateUserCommand{
-		Phone:     phoneDecoded,
+		Phone:     phoneForString,
 		Email:     email,
 		UserName:  req.Name,
 		AvatarKey: avatarKey,

@@ -2,10 +2,10 @@ package user
 
 import (
 	"io"
-	"strings"
 
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type UserResponse struct {
@@ -118,12 +118,17 @@ func DomainToResponse(u *user.User) *UserResponse {
 		return nil
 	}
 
+	normalizedPhone, _ := utils.NormalizePhone(u.Phone())
+	if normalizedPhone == "" {
+		normalizedPhone = u.Phone()
+	}
+
 	return &UserResponse{
 		ID:        u.Id(),
 		UserID:    u.UserId(),
 		Name:      u.UserName(),
 		Email:     u.Email(),
-		Phone:     strings.ReplaceAll(u.Phone(), " ", "+"),
+		Phone:     normalizedPhone,
 		AvatarKey: u.AvatarKey(),
 		CreateDt:  u.CreateDt().String(),
 		ModifyDt:  u.ModifyDt().String(),

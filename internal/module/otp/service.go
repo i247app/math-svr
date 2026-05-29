@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	command "math-ai.com/math-ai/internal/application/command/otp"
@@ -60,23 +59,22 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 		return nil, err
 	}
 
-	identifierDecoded, err := url.QueryUnescape(req.Identifier)
-	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to decode phone: %w", err))
-	}
-
 	var user *userDto.UserResponse
 	var channel enum.OtpChannel
-	if utils.ValidateEmail(identifierDecoded) {
+	if utils.ValidateEmail(req.Identifier) {
 		channel = enum.OtpChannelEmail
 		userResp, _ := s.userSvc.GetUserByEmail(ctx, &userDto.GetUserByEmailReq{
-			Email: identifierDecoded,
+			Email: req.Identifier,
 		})
 		user = userResp.User
-	} else if utils.ValidatePhone(identifierDecoded) {
+	} else if utils.ValidatePhone(req.Identifier) {
+		normalizePhone, err := utils.NormalizePhone(req.Identifier)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to normalize phone: %w", err))
+		}
 		channel = enum.OtpChannelSMS
 		userResp, _ := s.userSvc.GetUserByPhone(ctx, &userDto.GetUserByPhoneReq{
-			Phone: identifierDecoded,
+			Phone: normalizePhone,
 		})
 		user = userResp.User
 	}

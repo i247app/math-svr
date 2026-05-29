@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 
 	command "math-ai.com/math-ai/internal/application/command/auth"
 	dto "math-ai.com/math-ai/internal/application/dto/auth"
@@ -19,6 +18,7 @@ import (
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/user"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type Service struct {
@@ -43,13 +43,13 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		return nil, err
 	}
 
-	phoneDecoded, err := url.QueryUnescape(req.Phone)
+	normalizePhone, err := utils.NormalizePhone(req.Phone)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to decode phone: %w", err))
+		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to normalize phone: %w", err))
 	}
 
 	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
-		Phone:           phoneDecoded,
+		Phone:           normalizePhone,
 		DeviceUUID:      metadata.GetDeviceID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),
@@ -125,13 +125,13 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 		return nil, err
 	}
 
-	phoneDecoded, err := url.QueryUnescape(req.Phone)
+	normalizePhone, err := utils.NormalizePhone(req.Phone)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to decode phone: %w", err))
+		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to normalize phone: %w", err))
 	}
 
 	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
-		Phone:           phoneDecoded,
+		Phone:           normalizePhone,
 		DeviceUUID:      metadata.GetDeviceID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),
@@ -158,7 +158,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 
 	otpCreated, err := s.otpSvc.Send(ctx, &dtoOtp.SendOtpReq{
 		OtpType:    string(enum.OtpTypeLogin2FA),
-		Identifier: req.Phone,
+		Identifier: normalizePhone,
 		UserID:     &userRes.User.UserID,
 	})
 	if err != nil {
