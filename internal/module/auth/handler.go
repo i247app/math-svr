@@ -76,6 +76,8 @@ func (h *AuthHandler) HandleLoginOTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		res.OTPEnabled = enableOTP
+
 		response.WriteJson(w, res, nil)
 		return
 	}
@@ -86,11 +88,13 @@ func (h *AuthHandler) HandleLoginOTP(w http.ResponseWriter, r *http.Request) {
 			response.WriteJson(w, res, err)
 			return
 		}
+
 		response.WriteJson(w, nil, err)
 		return
 	}
+	res.OTPEnabled = enableOTP
 
-	response.WriteJson(w, res, nil)
+	response.WriteJson(w, res, err)
 }
 
 // POST /auth/login-resume

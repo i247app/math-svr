@@ -89,8 +89,8 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 	sess.Init(sessionData)
 
 	return &dto.LoginRes{
-		TwoFactorRequired: result.TwoFactorRequired,
-		User:              userRes.User,
+		// TwoFactorRequired: result.TwoFactorRequired,
+		User: userRes.User,
 	}, nil
 }
 

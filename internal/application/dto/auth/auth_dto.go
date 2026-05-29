@@ -15,15 +15,17 @@ type LoginReq struct {
 //   - TwoFactorRequired=false → User and DeviceID are populated; the session
 //     is established.
 type LoginRes struct {
-	TwoFactorRequired bool               `json:"2fa_required,omitempty"`
-	User              *user.UserResponse `json:"user"`
+	// TwoFactorRequired bool               `json:"2fa_required,omitempty"`
+	OTPEnabled bool               `json:"otp_enabled"`
+	User       *user.UserResponse `json:"user"`
 }
 
 type LoginWithOTPRes struct {
-	ExpiresAt string             `json:"expires_at"`
-	OTPCode   string             `json:"otp_code,omitempty"`
-	OtpType   string             `json:"otp_type,omitempty"`
-	User      *user.UserResponse `json:"user"`
+	ExpiresAt  string             `json:"expires_at"`
+	OTPCode    string             `json:"otp_code,omitempty"`
+	OtpType    string             `json:"otp_type,omitempty"`
+	OTPEnabled bool               `json:"otp_enabled"`
+	User       *user.UserResponse `json:"user"`
 }
 
 type LogoutReq struct{}
