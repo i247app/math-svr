@@ -17,6 +17,7 @@ type CreateProfileCommand struct {
 	Role       string
 	IsDefault  bool
 	Dob        *mtime.MathTime
+	SchoolID   *string
 	ProgramID  *string
 	GradeID    *string
 	SemesterID *string
@@ -67,12 +68,12 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 
 func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
 	p := profile.NewProfile()
-	// p.SetProfileId(utils.GenerateUUID().String())
 	p.SetUserId(cmd.UserID)
 	p.SetName(cmd.Name)
 	p.SetRole(cmd.Role)
+	p.SetSchoolId(cmd.SchoolID)
 	p.SetProgramId(cmd.ProgramID)
-	p.SetGradeId(cmd.ProgramID)
+	p.SetGradeId(cmd.GradeID)
 	p.SetSemesterId(cmd.SemesterID)
 	p.SetAvatarKey(cmd.AvatarKey)
 	p.SetNote(cmd.Note)

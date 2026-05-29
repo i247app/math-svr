@@ -14,6 +14,10 @@ type IRepository interface {
 	Create(ctx context.Context, profile *Profile) (*Profile, error)
 	Update(ctx context.Context, profile *Profile) error
 	UpdateAvatarKey(ctx context.Context, profileId string, avatarKey string) error
+	// SetSchoolId writes school_id directly (no COALESCE) so an explicit
+	// nil clears the link. Used by the assign/remove flows; Update is
+	// still the right tool for partial PATCH-style payloads.
+	SetSchoolId(ctx context.Context, profileId string, schoolId *string) error
 	MarkStatusByProfileId(ctx context.Context, profileId string, profileStatus string) error
 	MarkDefaultByProfileId(ctx context.Context, userId string, profileId string) error
 	SoftDelete(ctx context.Context, profileId string) error

@@ -12,6 +12,7 @@ type ProfileModel struct {
 	Role          string
 	AvatarKey     *string
 	Dob           *time.Time
+	SchoolId      *string
 	ProgramId     *string
 	GradeId       *string
 	SemesterId    *string

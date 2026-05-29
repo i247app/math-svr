@@ -165,6 +165,22 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case DEVICE_2FA_REQUIRED:
 		return "Thiết bị này yêu cầu xác thực hai yếu tố"
 
+	// School
+	case SCHOOL_NOT_FOUND:
+		return "Không tìm thấy trường học"
+	case SCHOOL_MISSING_ID:
+		return "Mã trường học là bắt buộc"
+	case SCHOOL_MISSING_NAME:
+		return "Tên trường học là bắt buộc"
+	case SCHOOL_NAME_TOO_LONG:
+		return "Tên trường học quá dài"
+	case SCHOOL_INVALID_STATUS:
+		return "Trạng thái trường học không hợp lệ"
+	case SCHOOL_DESCRIPTION_TOO_LONG:
+		return "Mô tả trường học quá dài"
+	case SCHOOL_PROFILE_LINK_FAILED:
+		return "Liên kết hồ sơ với trường học thất bại"
+
 	// Chapter
 	case CHAPTER_NOT_FOUND:
 		return "Không tìm thấy chương học"

@@ -20,4 +20,5 @@ const (
 	NameChapter             = "chapter"
 	NameChapterTranslation  = "chapter_translation"
 	NameQuiz                = "quiz"
+	NameSchool              = "school"
 )

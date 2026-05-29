@@ -21,6 +21,7 @@ func SetupRepositories(db *database.DatabaseWithLogs) *RepositoryContainer {
 		GradeTranslationRepository:    repositories.NewGradeTranslationRepository(db),
 		SemesterTranslationRepository: repositories.NewSemesterTranslationRepository(db),
 		ProgramTranslationRepository:  repositories.NewProgramTranslationRepository(db),
+		SchoolRepository:              repositories.NewSchoolRepository(db),
 		SeqRepository:                 repositories.NewSeqRepository(db),
 	}
 }

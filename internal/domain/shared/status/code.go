@@ -90,6 +90,14 @@ const (
 	DEVICE_REVOKE_FAIL       StatusCode = 4609
 	DEVICE_2FA_REQUIRED      StatusCode = 4610
 
+	SCHOOL_NOT_FOUND        StatusCode = 4901
+	SCHOOL_MISSING_ID       StatusCode = 4902
+	SCHOOL_MISSING_NAME     StatusCode = 4903
+	SCHOOL_NAME_TOO_LONG    StatusCode = 4904
+	SCHOOL_INVALID_STATUS   StatusCode = 4905
+	SCHOOL_DESCRIPTION_TOO_LONG StatusCode = 4906
+	SCHOOL_PROFILE_LINK_FAILED  StatusCode = 4907
+
 	CHAPTER_NOT_FOUND                  StatusCode = 4801
 	CHAPTER_MISSING_ID                 StatusCode = 4802
 	CHAPTER_MISSING_PROGRAM_ID         StatusCode = 4803

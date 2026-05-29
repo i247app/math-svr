@@ -17,7 +17,7 @@ const (
 	profileTable = "ma_profiles"
 
 	profileColumns = `p.id, p.profile_id, p.user_id, p.name, p.role, p.avatar_key, p.dob,
-		p.program_id, p.grade_id, p.semester_id, p.is_default, p.note, p.profile_status, p.status,
+		p.school_id, p.program_id, p.grade_id, p.semester_id, p.is_default, p.note, p.profile_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
 	profileActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
@@ -38,7 +38,7 @@ func NewProfileRepository(db database.Executor) profile.IRepository {
 func scanProfile(s database.RowScanner) (*models.ProfileModel, error) {
 	var m models.ProfileModel
 	if err := s.Scan(&m.Id, &m.ProfileId, &m.UserId, &m.Name, &m.Role, &m.AvatarKey, &m.Dob,
-		&m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault, &m.Note, &m.ProfileStatus, &m.Status,
+		&m.SchoolId, &m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault, &m.Note, &m.ProfileStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -136,13 +136,13 @@ func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId s
 func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*profile.Profile, error) {
 	query := `
 		INSERT INTO ` + profileTable + `
-			(profile_id, user_id, name, role, avatar_key, dob, program_id, grade_id, semester_id, is_default, note, profile_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(profile_id, user_id, name, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default, note, profile_status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
 		p.ProfileId(), p.UserId(), p.Name(), p.Role(), p.AvatarKey(), p.Dob(),
-		p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(), p.Note(), p.ProfileStatus())
+		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(), p.Note(), p.ProfileStatus())
 	if err != nil {
 		return nil, fmt.Errorf("profile repo create: %w", err)
 	}
@@ -161,6 +161,7 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 			role       = COALESCE(?, role),
 			is_default  = COALESCE(?, is_default),
 			dob         = COALESCE(?, dob),
+			school_id   = COALESCE(?, school_id),
 			program_id  = COALESCE(?, program_id),
 			grade_id    = COALESCE(?, grade_id),
 			semester_id = COALESCE(?, semester_id),
@@ -190,9 +191,27 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 	}
 
 	if _, err := r.db.Exec(ctx, query,
-		nameArg, roleArg, isDefaultArg, dobArg, p.ProgramId(), p.GradeId(),
+		nameArg, roleArg, isDefaultArg, dobArg, p.SchoolId(), p.ProgramId(), p.GradeId(),
 		p.SemesterId(), p.Note(), p.AvatarKey(), p.ProfileId()); err != nil {
 		return fmt.Errorf("profile repo update: %w", err)
+	}
+	return nil
+}
+
+// SetSchoolId is a dedicated write path for assign/remove flows. Unlike
+// Update (which uses COALESCE to leave existing values alone on nil),
+// this always writes the column — a nil pointer becomes SQL NULL,
+// effectively removing the school link. Keeping it separate avoids
+// re-using Update with sentinel values to express "clear this column".
+func (r *ProfileRepository) SetSchoolId(ctx context.Context, profileId string, schoolId *string) error {
+	query := `
+		UPDATE ` + profileTable + `
+		SET school_id = ?,
+			modify_dt = ?
+		WHERE profile_id = ?
+	`
+	if _, err := r.db.Exec(ctx, query, schoolId, mtime.Now().Time, profileId); err != nil {
+		return fmt.Errorf("profile repo set school id: %w", err)
 	}
 	return nil
 }
@@ -292,6 +311,7 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	if m.Dob != nil {
 		p.SetDob(mtime.MathTime{Time: *m.Dob})
 	}
+	p.SetSchoolId(m.SchoolId)
 	p.SetProgramId(m.ProgramId)
 	p.SetGradeId(m.GradeId)
 	p.SetSemesterId(m.SemesterId)

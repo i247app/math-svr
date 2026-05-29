@@ -17,6 +17,7 @@ type UpdateProfileCommand struct {
 	Role       *string
 	IsDefault  *bool
 	Dob        *mtime.MathTime
+	SchoolID   *string
 	ProgramID  *string
 	GradeID    *string
 	SemesterID *string
@@ -87,6 +88,9 @@ func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 	}
 	if cmd.Dob != nil {
 		patch.SetDob(*cmd.Dob)
+	}
+	if cmd.SchoolID != nil {
+		patch.SetSchoolId(cmd.SchoolID)
 	}
 	if cmd.ProgramID != nil {
 		patch.SetProgramId(cmd.ProgramID)

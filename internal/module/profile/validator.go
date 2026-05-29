@@ -86,3 +86,23 @@ func ValidateDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) error
 	}
 	return nil
 }
+
+func ValidateAssignSchool(ctx context.Context, req *dto.AssignSchoolReq) error {
+	if strings.TrimSpace(req.ProfileID) == "" {
+		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			errors.New("profile_id is required"))
+	}
+	if strings.TrimSpace(req.SchoolID) == "" {
+		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
+			errors.New("school_id is required"))
+	}
+	return nil
+}
+
+func ValidateRemoveSchool(ctx context.Context, req *dto.RemoveSchoolReq) error {
+	if strings.TrimSpace(req.ProfileID) == "" {
+		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			errors.New("profile_id is required"))
+	}
+	return nil
+}

@@ -14,6 +14,7 @@ import (
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	domain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
+	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -41,10 +42,13 @@ type Service struct {
 	softDeleteProfileCmd      *command.SoftDeleteProfileCommandHandler
 	forceDeleteProfileCmd     *command.ForceDeleteProfileCommandHandler
 	setAvatarKeyCmd           *command.SetAvatarKeyCommandHandler
+	assignSchoolCmd           *command.AssignSchoolCommandHandler
+	removeSchoolCmd           *command.RemoveSchoolCommandHandler
 	repo                      domain.IRepository
 	programRepo               programDomain.IRepository
 	gradeRepo                 gradeDomain.IRepository
 	semesterRepo              semesterDomain.IRepository
+	schoolRepo                schoolDomain.IRepository
 	storageProvider           *storage.Adapter
 }
 
@@ -61,6 +65,7 @@ func NewService(
 	programRepo programDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
 	semesterRepo semesterDomain.IRepository,
+	schoolRepo schoolDomain.IRepository,
 ) *Service {
 	return &Service{
 		getProfileByIdQuery:       query.NewGetProfileByIdQueryHandler(repo),
@@ -70,10 +75,13 @@ func NewService(
 		softDeleteProfileCmd:      command.NewSoftDeleteProfileCommandHandler(uow),
 		forceDeleteProfileCmd:     command.NewForceDeleteProfileCommandHandler(uow),
 		setAvatarKeyCmd:           command.NewSetAvatarKeyCommandHandler(uow),
+		assignSchoolCmd:           command.NewAssignSchoolCommandHandler(uow),
+		removeSchoolCmd:           command.NewRemoveSchoolCommandHandler(uow),
 		repo:                      repo,
 		programRepo:               programRepo,
 		gradeRepo:                 gradeRepo,
 		semesterRepo:              semesterRepo,
+		schoolRepo:                schoolRepo,
 		storageProvider:           storageProvider,
 	}
 }
@@ -150,6 +158,7 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 		Role:       req.Role,
 		IsDefault:  req.IsDefault,
 		Dob:        &dob,
+		SchoolID:   req.SchoolID,
 		ProgramID:  req.ProgramID,
 		GradeID:    req.GradeID,
 		SemesterID: req.SemesterID,
@@ -207,6 +216,7 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 		Role:       req.Role,
 		IsDefault:  req.IsDefault,
 		Dob:        &dob,
+		SchoolID:   req.SchoolID,
 		ProgramID:  req.ProgramID,
 		GradeID:    req.GradeID,
 		SemesterID: req.SemesterID,
@@ -380,13 +390,58 @@ func (s *Service) UploadAvatar(ctx context.Context, profileID string, filename, 
 	}, nil
 }
 
-// collectRefIds extracts the distinct program/grade/semester UUIDs across the
-// given profiles. uuid.Nil is skipped — defensive, since the columns are
-// NOT NULL in the schema but the domain entity doesn't enforce that.
-func collectRefIds(profiles []*domain.Profile) (progIds, gradeIds, semIds []string) {
+// AssignSchool links a school to the profile. Both rows are looked up
+// inside the same transaction so concurrent soft-deletes of either side
+// fail the assignment cleanly.
+func (s *Service) AssignSchool(ctx context.Context, req *dto.AssignSchoolReq) (*dto.AssignSchoolRes, error) {
+	if err := ValidateAssignSchool(ctx, req); err != nil {
+		return nil, err
+	}
+
+	updated, err := s.assignSchoolCmd.Handle(ctx, command.AssignSchoolCommand{
+		ProfileID: req.ProfileID,
+		SchoolID:  req.SchoolID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{updated}, "")
+	if err != nil {
+		return nil, err
+	}
+	return &dto.AssignSchoolRes{Profile: responses[0]}, nil
+}
+
+// RemoveSchool clears profile.school_id. Idempotent — calling it on a
+// profile with no school link is a no-op write and a successful return.
+func (s *Service) RemoveSchool(ctx context.Context, req *dto.RemoveSchoolReq) (*dto.RemoveSchoolRes, error) {
+	if err := ValidateRemoveSchool(ctx, req); err != nil {
+		return nil, err
+	}
+
+	updated, err := s.removeSchoolCmd.Handle(ctx, command.RemoveSchoolCommand{
+		ProfileID: req.ProfileID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{updated}, "")
+	if err != nil {
+		return nil, err
+	}
+	return &dto.RemoveSchoolRes{Profile: responses[0]}, nil
+}
+
+// collectRefIds extracts the distinct program/grade/semester/school UUIDs
+// across the given profiles. nil ids are skipped — the columns are
+// nullable in schema and the domain entity carries through that nil.
+func collectRefIds(profiles []*domain.Profile) (progIds, gradeIds, semIds, schoolIds []string) {
 	progSeen := make(map[string]struct{}, len(profiles))
 	gradeSeen := make(map[string]struct{}, len(profiles))
 	semSeen := make(map[string]struct{}, len(profiles))
+	schoolSeen := make(map[string]struct{}, len(profiles))
 	for _, p := range profiles {
 		if id := p.ProgramId(); id != nil {
 			if _, ok := progSeen[*id]; !ok {
@@ -404,6 +459,12 @@ func collectRefIds(profiles []*domain.Profile) (progIds, gradeIds, semIds []stri
 			if _, ok := semSeen[*id]; !ok {
 				semSeen[*id] = struct{}{}
 				semIds = append(semIds, *id)
+			}
+		}
+		if id := p.SchoolId(); id != nil {
+			if _, ok := schoolSeen[*id]; !ok {
+				schoolSeen[*id] = struct{}{}
+				schoolIds = append(schoolIds, *id)
 			}
 		}
 	}

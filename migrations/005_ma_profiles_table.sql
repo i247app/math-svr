@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS ma_profiles (
   role            varchar(64) NOT NULL, -- e.g. "STUDENT", "TEACHER", "PARENT"
   avatar_key      varchar(256) DEFAULT NULL,
   dob             datetime(3) DEFAULT NULL,
+  school_id       CHAR(36) DEFAULT NULL,
   program_id      char(36) DEFAULT NULL,
   grade_id        char(36) DEFAULT NULL,
   semester_id     char(36) DEFAULT NULL,

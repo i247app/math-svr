@@ -165,6 +165,22 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case DEVICE_2FA_REQUIRED:
 		return "Two-factor authentication is required for this device"
 
+	// School
+	case SCHOOL_NOT_FOUND:
+		return "School not found"
+	case SCHOOL_MISSING_ID:
+		return "School id is required"
+	case SCHOOL_MISSING_NAME:
+		return "School name is required"
+	case SCHOOL_NAME_TOO_LONG:
+		return "School name is too long"
+	case SCHOOL_INVALID_STATUS:
+		return "School status is invalid"
+	case SCHOOL_DESCRIPTION_TOO_LONG:
+		return "School description is too long"
+	case SCHOOL_PROFILE_LINK_FAILED:
+		return "Failed to link profile with school"
+
 	// Chapter
 	case CHAPTER_NOT_FOUND:
 		return "Chapter not found"

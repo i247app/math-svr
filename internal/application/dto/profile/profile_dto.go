@@ -5,6 +5,7 @@ import (
 
 	gradeDto "math-ai.com/math-ai/internal/application/dto/grade"
 	programDto "math-ai.com/math-ai/internal/application/dto/program"
+	schoolDto "math-ai.com/math-ai/internal/application/dto/school"
 	semesterDto "math-ai.com/math-ai/internal/application/dto/semester"
 	domain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -22,6 +23,8 @@ type ProfileResponse struct {
 	AvatarKey     *string                       `json:"avatar_key,omitempty"`
 	AvatarUrl     *string                       `json:"avatar_url"` // pre-signed url from avatar_key
 	Dob           string                        `json:"dob,omitempty"`
+	SchoolID      *string                       `json:"school_id,omitempty"`
+	School        *schoolDto.SchoolResponse     `json:"school,omitempty"`
 	ProgramID     *string                       `json:"program_id,omitempty"`
 	Program       *programDto.ProgramResponse   `json:"program,omitempty"`
 	GradeID       *string                       `json:"grade_id,omitempty"`
@@ -40,6 +43,7 @@ type CreateProfileReq struct {
 	Role       string  `json:"role"`
 	IsDefault  bool    `json:"is_default"`
 	Dob        *string `json:"dob,omitempty"`
+	SchoolID   *string `json:"school_id,omitempty"`
 	ProgramID  *string `json:"program_id"`
 	GradeID    *string `json:"grade_id"`
 	SemesterID *string `json:"semester_id"`
@@ -60,6 +64,7 @@ type UpdateProfileReq struct {
 	Role       *string `json:"role,omitempty"`
 	IsDefault  *bool   `json:"is_default,omitempty"`
 	Dob        *string `json:"dob,omitempty"`
+	SchoolID   *string `json:"school_id,omitempty"`
 	ProgramID  *string `json:"program_id,omitempty"`
 	GradeID    *string `json:"grade_id,omitempty"`
 	SemesterID *string `json:"semester_id,omitempty"`
@@ -98,6 +103,28 @@ type DeleteProfileReq struct {
 
 type DeleteProfileRes struct{}
 
+// AssignSchoolReq and RemoveSchoolReq are dedicated to the school-link
+// flow. The standard /profiles/update endpoint can also set school_id
+// (via COALESCE on a non-nil pointer), but cannot clear it — a JSON
+// nil there means "leave unchanged". These endpoints carry a single
+// well-typed intent: assign overwrites, remove clears.
+type AssignSchoolReq struct {
+	ProfileID string `json:"profile_id"`
+	SchoolID  string `json:"school_id"`
+}
+
+type AssignSchoolRes struct {
+	Profile *ProfileResponse `json:"profile"`
+}
+
+type RemoveSchoolReq struct {
+	ProfileID string `json:"profile_id"`
+}
+
+type RemoveSchoolRes struct {
+	Profile *ProfileResponse `json:"profile"`
+}
+
 type UploadAvatarRes struct {
 	ProfileID string `json:"profile_id"`
 	AvatarKey string `json:"avatar_key"`
@@ -117,6 +144,7 @@ func DomainToResponse(p *domain.Profile) *ProfileResponse {
 		Role:          p.Role(),
 		AvatarKey:     p.AvatarKey(),
 		Dob:           p.Dob().String(),
+		SchoolID:      p.SchoolId(),
 		ProgramID:     p.ProgramId(),
 		GradeID:       p.GradeId(),
 		SemesterID:    p.SemesterId(),

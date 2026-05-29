@@ -15,6 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/quiz"
+	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/session"
 	"math-ai.com/math-ai/internal/module/user"
@@ -93,6 +94,19 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /profiles/soft-delete", profileHandler.HandleSoftDeleteProfile, authMiddleware)
 		gexSvr.AddRoute("POST /profiles/force-delete", profileHandler.HandleForceDeleteProfile, authMiddleware)
 		gexSvr.AddRoute("POST /profiles/upload-avatar", profileHandler.HandleUploadAvatar, authMiddleware)
+		gexSvr.AddRoute("POST /profiles/assign-school", profileHandler.HandleAssignSchool, authMiddleware)
+		gexSvr.AddRoute("POST /profiles/remove-school", profileHandler.HandleRemoveSchool, authMiddleware)
+	}
+
+	// school routes
+	{
+		schoolHandler := school.NewSchoolHandler(res, services.SchoolSvc)
+		gexSvr.AddRoute("GET  /schools/{id}", schoolHandler.HandleGetSchool, authMiddleware)
+		gexSvr.AddRoute("POST /schools/list", schoolHandler.HandleListSchools, authMiddleware)
+		gexSvr.AddRoute("POST /schools/create", schoolHandler.HandleCreateSchool, authMiddleware)
+		gexSvr.AddRoute("POST /schools/update", schoolHandler.HandleUpdateSchool, authMiddleware)
+		gexSvr.AddRoute("POST /schools/soft-delete", schoolHandler.HandleSoftDeleteSchool, authMiddleware)
+		gexSvr.AddRoute("POST /schools/force-delete", schoolHandler.HandleForceDeleteSchool, authMiddleware)
 	}
 
 	// device routes

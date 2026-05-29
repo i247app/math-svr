@@ -9,6 +9,7 @@ import (
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
 	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
+	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	seqDomain "math-ai.com/math-ai/internal/domain/seq"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
@@ -21,6 +22,7 @@ import (
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/quiz"
+	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/seq"
 	"math-ai.com/math-ai/internal/module/user"
@@ -37,6 +39,7 @@ type ServiceContainer struct {
 	OtpSvc      *otp.Service
 	QuizSvc     *quiz.Service
 	ChapterSvc  *chapter.Service
+	SchoolSvc   *school.Service
 	JobSvc      *job.Service
 	SeqSvc      *seq.Service
 }
@@ -56,5 +59,6 @@ type RepositoryContainer struct {
 	GradeTranslationRepository    gradeDomain.ITranslationRepository
 	SemesterTranslationRepository semesterDomain.ITranslationRepository
 	ProgramTranslationRepository  programDomain.ITranslationRepository
+	SchoolRepository              schoolDomain.IRepository
 	SeqRepository                 seqDomain.IRepository
 }

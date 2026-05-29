@@ -8,6 +8,7 @@ import (
 	gradeDto "math-ai.com/math-ai/internal/application/dto/grade"
 	dto "math-ai.com/math-ai/internal/application/dto/profile"
 	programDto "math-ai.com/math-ai/internal/application/dto/program"
+	schoolDto "math-ai.com/math-ai/internal/application/dto/school"
 	semesterDto "math-ai.com/math-ai/internal/application/dto/semester"
 	domain "math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -92,15 +93,20 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProf
 	return &uploaded.Key, nil
 }
 
-// composeProfileResponses resolves embedded program/grade/semester objects
-// for the given profiles using exactly 3 batched IN-queries — regardless of
+// composeProfileResponses resolves embedded program/grade/semester/school
+// objects for the given profiles using batched IN-queries — regardless of
 // how many profiles are passed in. The shape is:
 //
 //	1 profile fetch (caller's responsibility, already done) +
-//	1 programs-by-ids + 1 grades-by-ids + 1 semesters-by-ids
-//	= 4 round-trips total, never O(N).
+//	1 programs-by-ids + 1 grades-by-ids + 1 semesters-by-ids +
+//	1 schools-by-ids (skipped when no profile references a school, and
+//	when the school repo isn't wired)
+//	= up to 5 round-trips total, never O(N).
 //
 // AvatarUrl and each ref's ImageUrl are signed in the same pass.
+// School lookups tolerate a missing/soft-deleted school silently —
+// resp.School stays nil, resp.SchoolID is preserved so the client can
+// still tell what the profile refers to.
 func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domain.Profile, lang enum.LanguageType) ([]*dto.ProfileResponse, error) {
 	if len(profiles) == 0 {
 		return []*dto.ProfileResponse{}, nil
@@ -109,7 +115,7 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 		lang = enum.LanguageTypeEnglish
 	}
 
-	progIds, gradeIds, semIds := collectRefIds(profiles)
+	progIds, gradeIds, semIds, schoolIds := collectRefIds(profiles)
 
 	programs, err := s.programRepo.ListProgramsByIds(ctx, progIds, lang)
 	if err != nil {
@@ -143,6 +149,19 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 		semMap[sem.SemesterId()] = r
 	}
 
+	schoolMap := make(map[string]*schoolDto.SchoolResponse)
+	if len(schoolIds) > 0 && s.schoolRepo != nil {
+		schools, err := s.schoolRepo.ListSchoolsByIds(ctx, schoolIds)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		for _, sc := range schools {
+			r := schoolDto.DomainToResponse(sc)
+			s.signSchoolImageUrl(ctx, r)
+			schoolMap[sc.SchoolId()] = r
+		}
+	}
+
 	out := make([]*dto.ProfileResponse, len(profiles))
 	for i, p := range profiles {
 		resp := dto.DomainToResponse(p)
@@ -154,6 +173,9 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 		}
 		if p.SemesterId() != nil {
 			resp.Semester = semMap[*p.SemesterId()]
+		}
+		if p.SchoolId() != nil {
+			resp.School = schoolMap[*p.SchoolId()]
 		}
 		s.populateAvatarUrl(ctx, resp)
 		out[i] = resp
@@ -204,6 +226,21 @@ func (s *Service) signGradeImageUrl(ctx context.Context, r *gradeDto.GradeRespon
 	})
 	if err != nil {
 		logger.From(ctx).Warnf("profile.grade image presign failed grade_id=%s err=%v", r.GradeID, err)
+		return
+	}
+	r.ImageUrl = &url
+}
+
+func (s *Service) signSchoolImageUrl(ctx context.Context, r *schoolDto.SchoolResponse) {
+	if r == nil || s.storageProvider == nil || r.ImageKey == nil || *r.ImageKey == "" {
+		return
+	}
+	url, err := s.storageProvider.CreatePresignedUrl(ctx, &storage.CreatePresignedUrlRequest{
+		Key:        *r.ImageKey,
+		Expiration: refImageUrlTTL,
+	})
+	if err != nil {
+		logger.From(ctx).Warnf("profile.school image presign failed school_id=%s err=%v", r.SchoolID, err)
 		return
 	}
 	r.ImageUrl = &url

@@ -47,6 +47,7 @@ func (h *ProfileHandler) HandleCreateProfile(w http.ResponseWriter, r *http.Requ
 		req.Role = r.FormValue("role")
 		req.IsDefault = utils.StringToBool(r.FormValue("is_default"), false)
 		req.Dob = utils.ToStringPtr(r.FormValue("dob"))
+		req.SchoolID = utils.ToStringPtr(r.FormValue("school_id"))
 		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
 		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
 		req.SemesterID = utils.ToStringPtr(r.FormValue("semester_id"))
@@ -121,6 +122,7 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 		req.Role = utils.ToStringPtr(r.FormValue("role"))
 		req.IsDefault = utils.StringToBoolPtr(r.FormValue("is_default"))
 		req.Dob = utils.ToStringPtr(r.FormValue("dob"))
+		req.SchoolID = utils.ToStringPtr(r.FormValue("school_id"))
 		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
 		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
 		req.SemesterID = utils.ToStringPtr(r.FormValue("semester_id"))
@@ -212,6 +214,38 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 		header.Header.Get("Content-Type"),
 		file,
 	)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /profiles/assign-school — body: { profile_id, school_id }
+func (h *ProfileHandler) HandleAssignSchool(w http.ResponseWriter, r *http.Request) {
+	var req dto.AssignSchoolReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.profileSvc.AssignSchool(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /profiles/remove-school — body: { profile_id }
+func (h *ProfileHandler) HandleRemoveSchool(w http.ResponseWriter, r *http.Request) {
+	var req dto.RemoveSchoolReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.profileSvc.RemoveSchool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

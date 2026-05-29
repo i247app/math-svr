@@ -16,6 +16,7 @@ type Profile struct {
 	role          string
 	avatarKey     *string
 	dob           mtime.MathTime
+	schoolId      *string
 	programId     *string
 	gradeId       *string
 	semesterId    *string
@@ -87,6 +88,20 @@ func (p *Profile) Dob() mtime.MathTime {
 
 func (p *Profile) SetDob(dob mtime.MathTime) {
 	p.dob = dob
+}
+
+func (p *Profile) SchoolId() *string {
+	return p.schoolId
+}
+
+// SetSchoolId mirrors the other reference-id setters — nil passes through
+// so the model layer can flatten a NULL column to "no school assigned".
+func (p *Profile) SetSchoolId(schoolId *string) {
+	if schoolId == nil {
+		p.schoolId = nil
+		return
+	}
+	p.schoolId = schoolId
 }
 
 func (p *Profile) ProgramId() *string {

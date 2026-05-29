@@ -15,6 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/quiz"
+	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/seq"
 	"math-ai.com/math-ai/internal/module/user"
@@ -58,6 +59,13 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		res.StorageProvider,
 	)
 
+	log.Info("> Setup SchoolSvc...")
+	schoolService := school.NewService(
+		repos.SchoolRepository,
+		uow,
+		res.StorageProvider,
+	)
+
 	log.Info("> Setup ProfileSvc...")
 	profileService := profile.NewService(
 		repos.ProfileRepository,
@@ -66,6 +74,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ProgramRepository,
 		repos.GradeRepository,
 		repos.SemesterRepository,
+		repos.SchoolRepository,
 	)
 
 	log.Info("> Setup DeviceSvc...")
@@ -113,6 +122,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		OtpSvc:      otpService,
 		QuizSvc:     quizService,
 		ChapterSvc:  chapterService,
+		SchoolSvc:   schoolService,
 		JobSvc:      jobService,
 		SeqSvc:      seqService,
 	}, nil
