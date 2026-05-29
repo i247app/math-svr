@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 
 	command "math-ai.com/math-ai/internal/application/command/auth"
 	dto "math-ai.com/math-ai/internal/application/dto/auth"
@@ -119,8 +120,13 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 		return nil, err
 	}
 
+	phoneDecoded, err := url.QueryUnescape(req.Phone)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to decode phone: %w", err))
+	}
+
 	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
-		Phone:           req.Phone,
+		Phone:           phoneDecoded,
 		DeviceUUID:      metadata.GetDeviceID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),

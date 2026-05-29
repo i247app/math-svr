@@ -3,7 +3,9 @@ package user
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"net/url"
 	"strings"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
@@ -136,8 +138,13 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		email = &e
 	}
 
+	phoneDecoded, err := url.QueryUnescape(req.Phone)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to decode phone: %w", err))
+	}
+
 	created, err := s.createUserCmd.Handle(ctx, command.CreateUserCommand{
-		Phone:     req.Phone,
+		Phone:     phoneDecoded,
 		Email:     email,
 		UserName:  req.Name,
 		AvatarKey: avatarKey,
