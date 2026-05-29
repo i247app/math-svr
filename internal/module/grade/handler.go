@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	dto "math-ai.com/math-ai/internal/application/dto/grade"
-	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -99,14 +99,10 @@ func (h *GradeHandler) HandleForceDeleteGrade(w http.ResponseWriter, r *http.Req
 }
 
 // GET /grades/{id}
-//
-// Reads the optional `language` query parameter so callers can request a
-// specific locale without sending a JSON body. Falls back to the project
-// default (vn) when omitted.
 func (h *GradeHandler) HandleGetGrade(w http.ResponseWriter, r *http.Request) {
 	req := dto.GetGradeReq{
 		GradeID:  r.PathValue("id"),
-		Language: enum.LanguageType(r.URL.Query().Get("language")),
+		Language: metadata.GetClientLanguage(r.Context()).ToEnumLanguage(),
 	}
 
 	res, err := h.gradeSvc.GetGrade(r.Context(), &req)

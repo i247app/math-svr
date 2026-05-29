@@ -9,7 +9,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -73,7 +73,7 @@ func (h *ProfileHandler) HandleGetProfileById(w http.ResponseWriter, r *http.Req
 
 	res, err := h.profileSvc.GetProfileById(r.Context(), &dto.GetProfileByIdReq{
 		ProfileID: idStr,
-		Language:  enum.LanguageType(r.URL.Query().Get("language")),
+		Language:  metadata.GetClientLanguage(r.Context()).ToEnumLanguage(),
 	})
 	if err != nil {
 		response.WriteJson(w, nil, err)

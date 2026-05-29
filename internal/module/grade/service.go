@@ -15,7 +15,6 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
-	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -118,15 +117,9 @@ func (s *Service) GetGrade(ctx context.Context, req *dto.GetGradeReq) (*dto.GetG
 	if err := ValidateGetGrade(ctx, req); err != nil {
 		return nil, err
 	}
-
-	lang := req.Language
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
-
 	g, err := s.getGradeQuery.Handle(ctx, query.GetGradeByIdQuery{
 		GradeID:  req.GradeID,
-		Language: lang,
+		Language: req.Language,
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
