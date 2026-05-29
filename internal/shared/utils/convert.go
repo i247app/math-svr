@@ -276,6 +276,17 @@ func StringToBool(s string, defaultValue bool) bool {
 	return val
 }
 
+func StringToBoolPtr(s string) *bool {
+	if s == "" {
+		return nil
+	}
+	val, err := strconv.ParseBool(strings.TrimSpace(s))
+	if err != nil {
+		return nil
+	}
+	return &val
+}
+
 // StringToBoolErr converts string to bool with error
 func StringToBoolErr(s string) (bool, error) {
 	return strconv.ParseBool(strings.TrimSpace(s))

@@ -14,6 +14,8 @@ import (
 type UpdateProfileCommand struct {
 	ProfileID  string
 	Name       *string
+	Role       *string
+	IsDefault  *bool
 	Dob        *mtime.MathTime
 	ProgramID  *string
 	GradeID    *string
@@ -55,6 +57,13 @@ func (h *UpdateProfileCommandHandler) Handle(ctx context.Context, cmd UpdateProf
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
+
+		if cmd.IsDefault != nil && *cmd.IsDefault {
+			if err := repos.Profile.MarkDefaultByProfileId(ctx, updated.UserId(), cmd.ProfileID); err != nil {
+				return errs.NewError(ctx, status.FAIL, nil, err)
+			}
+		}
+
 		return nil
 	}
 
@@ -69,6 +78,12 @@ func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 	patch.SetProfileId(cmd.ProfileID)
 	if cmd.Name != nil {
 		patch.SetName(*cmd.Name)
+	}
+	if cmd.Role != nil {
+		patch.SetRole(*cmd.Role)
+	}
+	if cmd.IsDefault != nil {
+		patch.SetIsDefault(*cmd.IsDefault)
 	}
 	if cmd.Dob != nil {
 		patch.SetDob(*cmd.Dob)

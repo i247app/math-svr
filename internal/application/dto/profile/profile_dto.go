@@ -57,6 +57,8 @@ type CreateProfileRes struct {
 type UpdateProfileReq struct {
 	ProfileID  string  `json:"profile_id"`
 	Name       *string `json:"name,omitempty"`
+	Role       *string `json:"role,omitempty"`
+	IsDefault  *bool   `json:"is_default,omitempty"`
 	Dob        *string `json:"dob,omitempty"`
 	ProgramID  *string `json:"program_id,omitempty"`
 	GradeID    *string `json:"grade_id,omitempty"`

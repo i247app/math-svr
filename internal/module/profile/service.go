@@ -204,6 +204,8 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 	updated, err := s.updateProfileCmd.Handle(ctx, command.UpdateProfileCommand{
 		ProfileID:  req.ProfileID,
 		Name:       req.Name,
+		Role:       req.Role,
+		IsDefault:  req.IsDefault,
 		Dob:        &dob,
 		ProgramID:  req.ProgramID,
 		GradeID:    req.GradeID,

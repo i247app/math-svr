@@ -118,6 +118,8 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 
 		req.ProfileID = r.FormValue("profile_id")
 		req.Name = utils.ToStringPtr(r.FormValue("name"))
+		req.Role = utils.ToStringPtr(r.FormValue("role"))
+		req.IsDefault = utils.StringToBoolPtr(r.FormValue("is_default"))
 		req.Dob = utils.ToStringPtr(r.FormValue("dob"))
 		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
 		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))

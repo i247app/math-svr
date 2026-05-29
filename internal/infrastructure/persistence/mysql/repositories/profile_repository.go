@@ -158,11 +158,12 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 	query := `
 		UPDATE ` + profileTable + `
 		SET name        = COALESCE(?, name),
+			role       = COALESCE(?, role),
+			is_default  = COALESCE(?, is_default),
 			dob         = COALESCE(?, dob),
 			program_id  = COALESCE(?, program_id),
 			grade_id    = COALESCE(?, grade_id),
 			semester_id = COALESCE(?, semester_id),
-			is_default  = COALESCE(?, is_default),
 			note        = COALESCE(?, note),
 			avatar_key  = COALESCE(?, avatar_key)
 		WHERE profile_id = ?
@@ -178,8 +179,19 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 		nameArg = p.Name()
 	}
 
+	var roleArg any
+	if p.Role() != "" {
+		roleArg = p.Role()
+	}
+
+	var isDefaultArg any
+	if p.IsDefault() {
+		isDefaultArg = p.IsDefault()
+	}
+
 	if _, err := r.db.Exec(ctx, query,
-		nameArg, dobArg, p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(), p.Note(), p.AvatarKey(), p.ProfileId()); err != nil {
+		nameArg, roleArg, isDefaultArg, dobArg, p.ProgramId(), p.GradeId(),
+		p.SemesterId(), p.Note(), p.AvatarKey(), p.ProfileId()); err != nil {
 		return fmt.Errorf("profile repo update: %w", err)
 	}
 	return nil
