@@ -45,10 +45,12 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 	var created *classroom.Classroom
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		// Reject duplicate invite_code up front so the friendlier
-		// CLASSROOM_INVITE_CODE_TAKEN propagates instead of a generic
-		// repo-level constraint error. The DB UNIQUE key is still the
-		// hard backstop for the race window.
+		// Resolve invite_code. If the client supplied one, precheck for
+		// uniqueness so the friendlier CLASSROOM_INVITE_CODE_TAKEN
+		// propagates instead of a generic repo-level constraint error.
+		// If they did not, mint an "AA-1111" code and retry on the rare
+		// collision (≈ 1 in 6.76M per attempt). The DB UNIQUE key
+		// remains the hard backstop for the race window in both paths.
 		var inviteCodeArg *string
 		if cmd.InviteCode != nil {
 			trimmed := strings.TrimSpace(*cmd.InviteCode)
@@ -63,6 +65,13 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 				}
 				inviteCodeArg = &trimmed
 			}
+		}
+		if inviteCodeArg == nil {
+			minted, err := mintUniqueInviteCode(ctx, repos)
+			if err != nil {
+				return err
+			}
+			inviteCodeArg = &minted
 		}
 
 		classroomID, err := nextSeqID(ctx, repos, seq.NameClassroom)
