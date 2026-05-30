@@ -17,6 +17,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -177,6 +178,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	// }
 
 	created, err := s.createUserCmd.Handle(ctx, command.CreateUserCommand{
+		Role:      enum.RoleProfileType(req.Role),
 		Phone:     phoneForString,
 		Email:     email,
 		UserName:  req.Name,
