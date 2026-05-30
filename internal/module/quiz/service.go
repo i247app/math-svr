@@ -208,6 +208,8 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 		return nil, err
 	}
 
+	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+
 	existing, err := s.quizRepo.FindByQuizId(ctx, req.QuizID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -244,7 +246,7 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 	}
 
 	gradeIn := gradeQuizInput{
-		Language:   metadata.GetClientLanguage(ctx).ToEnumLanguage(),
+		Language:   lang,
 		Purpose:    enum.QuizPurpose(existing.Purpose()),
 		TypeOfQuiz: typeOfQuiz,
 		Questions:  *existing.Questions(),
@@ -254,7 +256,7 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 	if typeOfQuiz == enum.QuizTypeOfQuizReinforcement && existing.ProfileId() != nil {
 		// Anonymous reinforce rounds have no profile to look up; the
 		// prompt's "current grade: unknown" branch handles that case.
-		currentLabel, err := s.resolveCurrentGradeLabel(ctx, *existing.ProfileId(), req.Language)
+		currentLabel, err := s.resolveCurrentGradeLabel(ctx, *existing.ProfileId(), lang)
 		if err != nil {
 			return nil, err
 		}
