@@ -53,3 +53,14 @@ type GetPreviewURLResponse struct {
 type DownloadFileRequest struct {
 	URL string `json:"url"` // S3 URL or key
 }
+
+// NormalizeKeyRequest asks the provider to coerce a client-supplied
+// reference (either a full URL pointing at this provider's storage, or a
+// bare object key) into a canonical key.
+//
+// AllowedPrefix is the folder the key MUST live under (e.g.
+// "user-avatars"). Any other key is rejected — this stops a caller from
+// claiming an object that belongs to another aggregate.
+type NormalizeKeyRequest struct {
+	Raw string
+}

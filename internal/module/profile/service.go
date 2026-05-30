@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
@@ -138,9 +139,28 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 		return nil, err
 	}
 
-	avatarKey, err := s.uploadAvatarIfPresent(ctx, req)
-	if err != nil {
-		return nil, err
+	// Two mutually-exclusive avatar sources (validator enforced "at
+	// most one"): a client-supplied reference (URL or S3 key) or a
+	// multipart file upload. The string path is the new flow; it
+	// avoids the S3 round-trip entirely.
+	var (
+		avatarKey      *string
+		uploadedOnThis bool
+	)
+	switch {
+	case strings.TrimSpace(req.Avatar) != "":
+		key, err := s.normalizeAvatarKey(ctx, req.Avatar, status.PROFILE_AVATAR_INVALID_REFERENCE)
+		if err != nil {
+			return nil, err
+		}
+		avatarKey = &key
+	case req.AvatarFile != nil:
+		key, err := s.uploadAvatarIfPresent(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		avatarKey = key
+		uploadedOnThis = key != nil
 	}
 
 	var dob mtime.MathTime
@@ -166,6 +186,13 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 		AvatarKey:  avatarKey,
 	})
 	if err != nil {
+		// Only delete S3 objects we just uploaded — a referenced key
+		// belongs to the client's prior upload and we must not GC it.
+		if uploadedOnThis && avatarKey != nil && s.storageProvider != nil {
+			if delErr := s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{Key: *avatarKey}); delErr != nil {
+				log.Warnf("profile.create avatar orphan cleanup failed key=%s err=%v", *avatarKey, delErr)
+			}
+		}
 		return nil, err
 	}
 
@@ -196,9 +223,22 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 			errors.New("profile not found"))
 	}
 
-	avatarKey, err := s.updateAvatarIfPresent(ctx, req)
-	if err != nil {
-		return nil, err
+	// Same mutex as create — string ref OR file upload, never both.
+	// Nil avatarKey means "leave avatar_key unchanged".
+	var avatarKey *string
+	switch {
+	case req.Avatar != nil:
+		key, err := s.normalizeAvatarKey(ctx, *req.Avatar, status.PROFILE_AVATAR_INVALID_REFERENCE)
+		if err != nil {
+			return nil, err
+		}
+		avatarKey = &key
+	case req.AvatarFile != nil:
+		key, err := s.updateAvatarIfPresent(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		avatarKey = key
 	}
 
 	var dob mtime.MathTime

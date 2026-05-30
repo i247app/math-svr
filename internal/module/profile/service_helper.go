@@ -93,6 +93,28 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProf
 	return &uploaded.Key, nil
 }
 
+// normalizeAvatarKey resolves a client-supplied avatar reference into a
+// canonical S3 key under profile-avatars/. Host allowlist + prefix
+// enforcement live in the storage provider; the service layer just
+// translates a plain error into a typed MathError.
+func (s *Service) normalizeAvatarKey(ctx context.Context, raw string, invalidStatus status.StatusCode) (string, error) {
+	if s.storageProvider == nil {
+		return "", errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
+			errors.New("storage adapter is not configured"))
+	}
+	key, err := s.storageProvider.NormalizeKey(ctx, &storage.NormalizeKeyRequest{
+		Raw: raw,
+	})
+	if err != nil {
+		return "", errs.NewError(ctx, invalidStatus, nil, err)
+	}
+	if key == "" {
+		return "", errs.NewError(ctx, invalidStatus, nil,
+			errors.New("avatar reference resolved to empty key"))
+	}
+	return key, nil
+}
+
 // composeProfileResponses resolves embedded program/grade/semester/school
 // objects for the given profiles using batched IN-queries — regardless of
 // how many profiles are passed in. The shape is:

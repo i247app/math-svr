@@ -18,6 +18,20 @@ const (
 	MaxAvatarUploadSize = 10 << 20 // 10 MB
 )
 
+// multipartTextValue distinguishes "field absent" from "field empty"
+// for multipart text parts. Used in update flows where nil-pointer
+// means "leave the column untouched".
+func multipartTextValue(r *http.Request, name string) (string, bool) {
+	if r.MultipartForm == nil || r.MultipartForm.Value == nil {
+		return "", false
+	}
+	vs, ok := r.MultipartForm.Value[name]
+	if !ok || len(vs) == 0 {
+		return "", false
+	}
+	return vs[0], true
+}
+
 type ProfileHandler struct {
 	profileSvc *Service
 }
@@ -51,6 +65,7 @@ func (h *ProfileHandler) HandleCreateProfile(w http.ResponseWriter, r *http.Requ
 		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
 		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
 		req.SemesterID = utils.ToStringPtr(r.FormValue("semester_id"))
+		req.Avatar = r.FormValue("avatar_key")
 
 		// Handle avatar file
 		file, header, err := r.FormFile("avatar")
@@ -126,6 +141,7 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
 		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
 		req.SemesterID = utils.ToStringPtr(r.FormValue("semester_id"))
+		req.Avatar = utils.ToStringPtr(r.FormValue("avatar_key"))
 
 		// Handle avatar file
 		file, header, err := r.FormFile("avatar")

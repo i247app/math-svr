@@ -83,6 +83,14 @@ func (a *Adapter) Download(ctx context.Context, req *DownloadFileRequest) ([]byt
 	return provider.Download(ctx, req)
 }
 
+func (a *Adapter) NormalizeKey(ctx context.Context, req *NormalizeKeyRequest) (string, error) {
+	provider, err := a.Get(a.defaultName)
+	if err != nil {
+		return "", err
+	}
+	return provider.NormalizeKey(ctx, req)
+}
+
 func (a *Adapter) Get(name StorageProviderName) (StorageProvider, error) {
 	if provider, ok := a.providers[name]; ok {
 		return provider, nil

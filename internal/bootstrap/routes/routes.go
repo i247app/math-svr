@@ -97,6 +97,10 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /profiles/upload-avatar", profileHandler.HandleUploadAvatar, authMiddleware)
 		gexSvr.AddRoute("POST /profiles/assign-school", profileHandler.HandleAssignSchool, authMiddleware)
 		gexSvr.AddRoute("POST /profiles/remove-school", profileHandler.HandleRemoveSchool, authMiddleware)
+
+		// admin routes
+		gexSvr.AddRoute("POST /profiles/upload-static-file", profileHandler.HandleUploadStaticFile, authMiddleware)
+		gexSvr.AddRoute("POST /profiles/delete-static-file", profileHandler.HandleDeleteStaticFile, authMiddleware)
 	}
 
 	// school routes

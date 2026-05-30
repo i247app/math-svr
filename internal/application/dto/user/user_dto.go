@@ -50,9 +50,16 @@ type CreateUserReq struct {
 	Email string `json:"email,omitempty"`
 	Role  string `json:"role"`
 
-	AvatarFile        io.Reader `json:"avatar_file"`         // File reader
-	AvatarFilename    string    `json:"avatar_file_name"`    // Original filename
-	AvatarContentType string    `json:"avatar_content_type"` // MIME type
+	// Avatar is a client-supplied reference to an object already in our
+	// storage. It can be either a bare S3 key (e.g.
+	// "user-avatars/20260101-uuid.png") or a full URL pointing at the
+	// bucket. The server normalizes it to the canonical key and persists
+	// that to ma_users.avatar_key. Mutually exclusive with AvatarFile.
+	Avatar string `json:"avatar,omitempty"`
+
+	AvatarFile        io.Reader `json:"-"` // multipart file reader
+	AvatarFilename    string    `json:"-"` // original filename
+	AvatarContentType string    `json:"-"` // MIME type
 }
 
 // CreateUserRes carries both the freshly-created parent and their initial
@@ -69,9 +76,16 @@ type UpdateUserReq struct {
 	Email  *string `json:"email,omitempty"`
 	Phone  *string `json:"phone,omitempty"`
 
-	AvatarFile        io.Reader `json:"avatar_file"`         // File reader
-	AvatarFilename    string    `json:"avatar_file_name"`    // Original filename
-	AvatarContentType string    `json:"avatar_content_type"` // MIME type
+	// Avatar is a client-supplied reference to an object already in our
+	// storage — either a bare S3 key or a URL pointing at the bucket.
+	// Pointer semantics: nil = leave avatar_key untouched, non-nil =
+	// replace (including the empty string, which the validator rejects).
+	// Mutually exclusive with AvatarFile.
+	Avatar *string `json:"avatar,omitempty"`
+
+	AvatarFile        io.Reader `json:"-"` // multipart file reader
+	AvatarFilename    string    `json:"-"` // original filename
+	AvatarContentType string    `json:"-"` // MIME type
 }
 
 type UpdateUserRes struct {

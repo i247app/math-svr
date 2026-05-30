@@ -44,6 +44,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Tệp ảnh đại diện không hợp lệ"
 	case USER_AVATAR_UPLOAD_FAILED:
 		return "Tải ảnh đại diện thất bại"
+	case USER_AVATAR_CONFLICT:
+		return "Chỉ chọn một trong hai: tệp ảnh hoặc đường dẫn ảnh"
+	case USER_AVATAR_INVALID_REFERENCE:
+		return "Đường dẫn ảnh đại diện không hợp lệ"
 
 	// Auth
 	case AUTH_MISSING_PHONE:
@@ -78,6 +82,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Tệp ảnh đại diện không hợp lệ"
 	case PROFILE_AVATAR_UPLOAD_FAILED:
 		return "Tải ảnh đại diện thất bại"
+	case PROFILE_AVATAR_CONFLICT:
+		return "Chỉ chọn một trong hai: tệp ảnh hoặc đường dẫn ảnh"
+	case PROFILE_AVATAR_INVALID_REFERENCE:
+		return "Đường dẫn ảnh đại diện không hợp lệ"
 	case PROFILE_MISSING_PROGRAM_ID:
 		return "Mã chương trình học là bắt buộc"
 	case PROFILE_INVALID_LANGUAGE:

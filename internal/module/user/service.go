@@ -123,13 +123,40 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		return nil, err
 	}
 
-	// Upload the avatar BEFORE opening the transaction. The DB write is
-	// the cheap, fast step; the S3 round-trip is slow and would hold a tx
-	// open if interleaved. If the UoW fails after upload, the orphan S3
-	// object is best-effort deleted.
-	avatarKey, err := s.uploadAvatarIfPresent(ctx, req)
-	if err != nil {
-		return nil, err
+	// Resolve the avatar reference (if any) BEFORE opening the
+	// transaction. Two mutually-exclusive paths — validator already
+	// enforced "at most one":
+	//
+	//   1. req.Avatar != "" — client supplied a URL or bare key for an
+	//      object that already lives in our bucket. Just normalize and
+	//      persist; nothing to upload.
+	//
+	//   2. req.AvatarFile != nil — multipart upload; ship to S3 and use
+	//      the returned key.
+	//
+	// Branch one is the new path. The DB write is the cheap, fast step;
+	// the S3 round-trip (when it happens) is slow and would hold a tx
+	// open if interleaved. If the UoW fails after a fresh upload, the
+	// orphan S3 object is best-effort deleted. An object referenced via
+	// path 1 is NOT deleted on rollback — the client owns its lifecycle.
+	var (
+		avatarKey      *string
+		uploadedOnThis bool
+	)
+	switch {
+	case strings.TrimSpace(req.Avatar) != "":
+		key, err := s.normalizeAvatarKey(ctx, req.Avatar, status.USER_AVATAR_INVALID_REFERENCE)
+		if err != nil {
+			return nil, err
+		}
+		avatarKey = &key
+	case req.AvatarFile != nil:
+		key, err := s.uploadAvatarIfPresent(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		avatarKey = key
+		uploadedOnThis = key != nil
 	}
 
 	var email *string
@@ -156,7 +183,11 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		AvatarKey: avatarKey,
 	})
 	if err != nil {
-		if avatarKey != nil {
+		// Only delete objects we just uploaded — a client-supplied
+		// reference points to storage the client owns (or a prior
+		// upload they're reusing); we must not garbage-collect it on
+		// our rollback.
+		if uploadedOnThis && avatarKey != nil {
 			if delErr := s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{Key: *avatarKey}); delErr != nil {
 				log.Warnf("user.create avatar orphan cleanup failed key=%s err=%v", *avatarKey, delErr)
 			}
@@ -256,9 +287,22 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 		return nil, errs.NewError(ctx, status.NOT_FOUND, nil, nil)
 	}
 
-	avatarKey, err := s.updateAvatarIfPresent(ctx, req)
-	if err != nil {
-		return nil, err
+	// Resolve avatar source — same mutex as create. Nil avatarKey here
+	// means "leave avatar_key unchanged"; non-nil means replace.
+	var avatarKey *string
+	switch {
+	case req.Avatar != nil:
+		key, err := s.normalizeAvatarKey(ctx, *req.Avatar, status.USER_AVATAR_INVALID_REFERENCE)
+		if err != nil {
+			return nil, err
+		}
+		avatarKey = &key
+	case req.AvatarFile != nil:
+		key, err := s.updateAvatarIfPresent(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		avatarKey = key
 	}
 
 	user, err := s.updateUserCmd.Handle(ctx, command.UpdateUserCommand{
@@ -273,7 +317,11 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 		return nil, err
 	}
 
-	// delete oldAvatar
+	// Delete the previous S3 object when the key actually changes. We
+	// do this for BOTH source paths: an upload supersedes the old, and
+	// a reference change also supersedes the old. If the new reference
+	// happens to point at the same key (no-op rewrite), the equality
+	// guard below prevents accidental deletion.
 	if existsUser.AvatarKey() != nil && *existsUser.AvatarKey() != "" &&
 		avatarKey != nil && *existsUser.AvatarKey() != *avatarKey {
 		if err := s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{

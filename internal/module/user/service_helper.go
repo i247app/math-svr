@@ -83,6 +83,32 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateUser
 	return &uploaded.Key, nil
 }
 
+// normalizeAvatarKey resolves a client-supplied avatar reference
+// (either a bare S3 key or a URL pointing at our bucket) into the
+// canonical key and validates that it lives under avatarFolder.
+//
+// The host allowlist + prefix enforcement live inside the storage
+// provider so each backing vendor owns its own URL grammar. The
+// service translates the resulting plain error into a typed
+// MathError with the supplied invalidStatus code.
+func (s *Service) normalizeAvatarKey(ctx context.Context, raw string, invalidStatus status.StatusCode) (string, error) {
+	if s.storageProvider == nil {
+		return "", errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
+			errors.New("storage adapter is not configured"))
+	}
+	key, err := s.storageProvider.NormalizeKey(ctx, &storage.NormalizeKeyRequest{
+		Raw: raw,
+	})
+	if err != nil {
+		return "", errs.NewError(ctx, invalidStatus, nil, err)
+	}
+	if key == "" {
+		return "", errs.NewError(ctx, invalidStatus, nil,
+			errors.New("avatar reference resolved to empty key"))
+	}
+	return key, nil
+}
+
 func (s *Service) populateImageUrl(ctx context.Context, resp *userDTO.UserResponse) {
 	if resp == nil || s.storageProvider == nil || resp.AvatarKey == nil || *resp.AvatarKey == "" {
 		return

@@ -27,6 +27,14 @@ type Client struct {
 	cfg      Config
 }
 
+// Bucket returns the configured S3 bucket name. Used by adapters that
+// need to validate caller-supplied references against the bucket the
+// client is bound to.
+func (s *Client) Bucket() string { return s.cfg.Bucket }
+
+// Region returns the AWS region the client is bound to.
+func (s *Client) Region() string { return s.cfg.Region }
+
 // NewS3Client creates a new storage service instance
 func NewClient(cfg Config) *Client {
 	awsConfig := aws.Config{

@@ -36,6 +36,10 @@ func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error
 		return errs.NewError(ctx, status.PROFILE_MISSING_NAME, nil,
 			errors.New("name is required"))
 	}
+	if strings.TrimSpace(req.Avatar) != "" && req.AvatarFile != nil {
+		return errs.NewError(ctx, status.PROFILE_AVATAR_CONFLICT, nil,
+			errors.New("provide either avatar file or avatar reference"))
+	}
 	// if req.ProgramID == nil {
 	// 	return errs.NewError(ctx, status.PROFILE_MISSING_PROGRAM_ID, nil,
 	// 		errors.New("program_id is required"))
@@ -59,6 +63,14 @@ func ValidateUpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) error
 	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
 		return errs.NewError(ctx, status.PROFILE_MISSING_NAME, nil,
 			errors.New("name cannot be blank"))
+	}
+	if req.Avatar != nil && strings.TrimSpace(*req.Avatar) == "" {
+		return errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_REFERENCE, nil,
+			errors.New("avatar reference must be non-empty when provided"))
+	}
+	if req.Avatar != nil && strings.TrimSpace(*req.Avatar) != "" && req.AvatarFile != nil {
+		return errs.NewError(ctx, status.PROFILE_AVATAR_CONFLICT, nil,
+			errors.New("provide either avatar file or avatar reference"))
 	}
 	return nil
 }

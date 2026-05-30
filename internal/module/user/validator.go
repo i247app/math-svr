@@ -18,6 +18,14 @@ func ValidateCreateUser(ctx context.Context, req *dto.CreateUserReq) error {
 	if strings.TrimSpace(req.Name) == "" {
 		return errs.NewError(ctx, status.USER_MISSING_NAME, nil, errors.New("name is required"))
 	}
+	// Avatar can come as a file upload OR a string reference, never both
+	// — the two sources collide semantically and would force the service
+	// to pick a winner silently. Format/host validity lives in the
+	// service layer (normalizeAvatarKey).
+	if strings.TrimSpace(req.Avatar) != "" && req.AvatarFile != nil {
+		return errs.NewError(ctx, status.USER_AVATAR_CONFLICT, nil,
+			errors.New("provide either avatar file or avatar reference"))
+	}
 	return nil
 }
 
@@ -30,7 +38,17 @@ func ValidateUpdateUser(ctx context.Context, req *dto.UpdateUserReq) error {
 	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
 		return errs.NewError(ctx, status.USER_MISSING_NAME, nil, errors.New("user_name must be non-empty when provided"))
 	}
-
+	// A non-nil Avatar pointer means the client wants to change the
+	// avatar reference; an empty string is not a valid reference.
+	// Pointer-nil means "no change" and is allowed.
+	if req.Avatar != nil && strings.TrimSpace(*req.Avatar) == "" {
+		return errs.NewError(ctx, status.USER_AVATAR_INVALID_REFERENCE, nil,
+			errors.New("avatar reference must be non-empty when provided"))
+	}
+	if req.Avatar != nil && strings.TrimSpace(*req.Avatar) != "" && req.AvatarFile != nil {
+		return errs.NewError(ctx, status.USER_AVATAR_CONFLICT, nil,
+			errors.New("provide either avatar file or avatar reference"))
+	}
 	return nil
 }
 

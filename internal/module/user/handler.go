@@ -18,6 +18,21 @@ const (
 	MaxAvatarUploadSize = 10 << 20 // 10 MB
 )
 
+// multipartTextValue returns (value, true) if the named text part was
+// present in the multipart form, and ("", false) otherwise. Used to
+// distinguish "field absent" (leave avatar_key alone) from "field
+// present and empty" (reject as invalid reference) in update flows.
+func multipartTextValue(r *http.Request, name string) (string, bool) {
+	if r.MultipartForm == nil || r.MultipartForm.Value == nil {
+		return "", false
+	}
+	vs, ok := r.MultipartForm.Value[name]
+	if !ok || len(vs) == 0 {
+		return "", false
+	}
+	return vs[0], true
+}
+
 type UserHandler struct {
 	appResource *resource.Resource
 	userSvc     *Service
@@ -49,6 +64,11 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		req.Phone = r.FormValue("phone")
 		req.Email = r.FormValue("email")
 		req.Role = r.FormValue("role")
+		// The multipart text part "avatar" carries a string reference
+		// (URL or S3 key). The file part "avatar" carries an upload.
+		// FormValue and FormFile read from disjoint maps so the same
+		// name coexists; the validator rejects sending both.
+		req.Avatar = r.FormValue("avatar_key")
 
 		// Handle avatar file
 		file, header, err := r.FormFile("avatar")
@@ -148,6 +168,7 @@ func (h *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		req.Name = utils.ToStringPtr(r.FormValue("name"))
 		req.Phone = utils.ToStringPtr(r.FormValue("phone"))
 		req.Email = utils.ToStringPtr(r.FormValue("email"))
+		req.Avatar = utils.ToStringPtr(r.FormValue("avatar_key"))
 
 		// Handle avatar file
 		file, header, err := r.FormFile("avatar")

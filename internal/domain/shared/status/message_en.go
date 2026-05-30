@@ -44,6 +44,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Avatar file is invalid"
 	case USER_AVATAR_UPLOAD_FAILED:
 		return "Avatar upload failed"
+	case USER_AVATAR_CONFLICT:
+		return "Provide either an avatar file or an avatar reference, not both"
+	case USER_AVATAR_INVALID_REFERENCE:
+		return "Avatar reference is invalid"
 
 	// Auth
 	case AUTH_MISSING_PHONE:
@@ -78,6 +82,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Avatar file is invalid"
 	case PROFILE_AVATAR_UPLOAD_FAILED:
 		return "Avatar upload failed"
+	case PROFILE_AVATAR_CONFLICT:
+		return "Provide either an avatar file or an avatar reference, not both"
+	case PROFILE_AVATAR_INVALID_REFERENCE:
+		return "Avatar reference is invalid"
 	case PROFILE_MISSING_PROGRAM_ID:
 		return "Program id is required"
 	case PROFILE_INVALID_LANGUAGE:

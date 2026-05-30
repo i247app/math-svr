@@ -24,4 +24,11 @@ type StorageProvider interface {
 
 	// Download fetches file content from storage and returns the bytes
 	Download(ctx context.Context, req *DownloadFileRequest) ([]byte, error)
+
+	// NormalizeKey resolves a client-supplied reference (URL or bare key)
+	// to a canonical object key managed by this provider. Returns "" when
+	// req.Raw is empty. Returns an error if the reference points outside
+	// the provider's bucket/CDN, fails parsing, or lives outside
+	// req.AllowedPrefix.
+	NormalizeKey(ctx context.Context, req *NormalizeKeyRequest) (string, error)
 }
