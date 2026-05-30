@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql"
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/chapter"
+	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/job"
@@ -111,19 +112,31 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup SeqSvc...")
 	seqService := seq.NewService(uow)
 
+	log.Info("> Setup ClassroomSvc...")
+	classroomService := classroom.NewService(
+		repos.ClassroomRepository,
+		repos.ClassroomMemberRepository,
+		uow,
+		repos.ProfileRepository,
+		repos.ProgramRepository,
+		repos.GradeRepository,
+		res.StorageProvider,
+	)
+
 	return &ServiceContainer{
-		UserSvc:     userService,
-		AuthSvc:     authService,
-		ProgramSvc:  programService,
-		GradeSvc:    gradeService,
-		SemesterSvc: semesterService,
-		ProfileSvc:  profileService,
-		DeviceSvc:   deviceService,
-		OtpSvc:      otpService,
-		QuizSvc:     quizService,
-		ChapterSvc:  chapterService,
-		SchoolSvc:   schoolService,
-		JobSvc:      jobService,
-		SeqSvc:      seqService,
+		UserSvc:      userService,
+		AuthSvc:      authService,
+		ProgramSvc:   programService,
+		GradeSvc:     gradeService,
+		SemesterSvc:  semesterService,
+		ProfileSvc:   profileService,
+		DeviceSvc:    deviceService,
+		OtpSvc:       otpService,
+		QuizSvc:      quizService,
+		ChapterSvc:   chapterService,
+		SchoolSvc:    schoolService,
+		JobSvc:       jobService,
+		SeqSvc:       seqService,
+		ClassroomSvc: classroomService,
 	}, nil
 }

@@ -366,6 +366,98 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Tên sequence là bắt buộc"
 	case SEQ_GENERATION_FAILED:
 		return "Sinh id mới thất bại"
+
+	// Classroom
+	case CLASSROOM_NOT_FOUND:
+		return "Không tìm thấy lớp học"
+	case CLASSROOM_MISSING_ID:
+		return "Mã lớp học là bắt buộc"
+	case CLASSROOM_MISSING_NAME:
+		return "Tên lớp học là bắt buộc"
+	case CLASSROOM_NAME_TOO_LONG:
+		return "Tên lớp học quá dài"
+	case CLASSROOM_DESCRIPTION_TOO_LONG:
+		return "Mô tả lớp học quá dài"
+	case CLASSROOM_MISSING_OWNER_PROFILE_ID:
+		return "Hồ sơ chủ lớp là bắt buộc"
+	case CLASSROOM_INVALID_OWNER_ROLE:
+		return "Chỉ hồ sơ giáo viên mới có thể làm chủ lớp học"
+	case CLASSROOM_INVALID_PROGRAM:
+		return "Chương trình không hợp lệ"
+	case CLASSROOM_INVALID_GRADE:
+		return "Khối lớp không hợp lệ"
+	case CLASSROOM_ALREADY_ARCHIVED:
+		return "Lớp học đã được lưu trữ"
+	case CLASSROOM_NOT_ARCHIVED:
+		return "Lớp học chưa được lưu trữ"
+	case CLASSROOM_ALREADY_DELETED:
+		return "Lớp học đã bị xoá"
+	case CLASSROOM_MAX_MEMBERS_REACHED:
+		return "Lớp học đã đạt giới hạn thành viên"
+	case CLASSROOM_INVITE_CODE_INVALID:
+		return "Mã mời không hợp lệ"
+	case CLASSROOM_INVITE_CODE_EXPIRED:
+		return "Mã mời đã hết hạn"
+	case CLASSROOM_INVITE_CODE_DISABLED:
+		return "Mã mời đã bị vô hiệu hoá"
+	case CLASSROOM_INVITE_CODE_GENERATION_FAILED:
+		return "Tạo mã mời thất bại"
+	case CLASSROOM_PERMISSION_DENIED:
+		return "Bạn không có quyền thực hiện thao tác này trên lớp học"
+	case CLASSROOM_OWNER_CANNOT_LEAVE:
+		return "Chủ lớp phải chuyển quyền sở hữu trước khi rời lớp"
+	case CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER:
+		return "Chỉ có thể chuyển quyền sở hữu cho thành viên đang hoạt động"
+	case CLASSROOM_INVALID_MAX_MEMBERS:
+		return "Giới hạn thành viên phải là số dương"
+
+	// Classroom member
+	case CLASSROOM_MEMBER_NOT_FOUND:
+		return "Không tìm thấy thành viên lớp học"
+	case CLASSROOM_MEMBER_MISSING_ID:
+		return "Mã thành viên là bắt buộc"
+	case CLASSROOM_MEMBER_MISSING_CLASSROOM_ID:
+		return "Mã lớp học là bắt buộc"
+	case CLASSROOM_MEMBER_MISSING_PROFILE_ID:
+		return "Mã hồ sơ là bắt buộc"
+	case CLASSROOM_MEMBER_ALREADY_MEMBER:
+		return "Hồ sơ đã là thành viên của lớp học"
+	case CLASSROOM_MEMBER_NOT_MEMBER:
+		return "Hồ sơ không phải là thành viên của lớp học"
+	case CLASSROOM_MEMBER_INVALID_ROLE:
+		return "Vai trò thành viên không hợp lệ"
+	case CLASSROOM_MEMBER_CANNOT_REMOVE_OWNER:
+		return "Không thể xoá chủ lớp"
+	case CLASSROOM_MEMBER_CANNOT_DEMOTE_OWNER:
+		return "Không thể đổi vai trò chủ lớp; hãy chuyển quyền sở hữu trước"
+
+	// Classroom invitation
+	case CLASSROOM_INVITATION_NOT_FOUND:
+		return "Không tìm thấy lời mời"
+	case CLASSROOM_INVITATION_MISSING_ID:
+		return "Mã lời mời là bắt buộc"
+	case CLASSROOM_INVITATION_MISSING_TARGET:
+		return "Lời mời phải có hồ sơ hoặc định danh người nhận"
+	case CLASSROOM_INVITATION_INVALID_IDENTIFIER:
+		return "Định danh người nhận không hợp lệ"
+	case CLASSROOM_INVITATION_INVALID_IDENTIFIER_TYPE:
+		return "Loại định danh người nhận không hợp lệ"
+	case CLASSROOM_INVITATION_INVALID_ROLE:
+		return "Vai trò đề xuất không hợp lệ"
+	case CLASSROOM_INVITATION_ALREADY_RESPONDED:
+		return "Lời mời đã được phản hồi"
+	case CLASSROOM_INVITATION_EXPIRED:
+		return "Lời mời đã hết hạn"
+	case CLASSROOM_INVITATION_NOT_PENDING:
+		return "Lời mời không ở trạng thái chờ"
+	case CLASSROOM_INVITATION_NOT_INVITEE:
+		return "Bạn không phải người được mời"
+	case CLASSROOM_INVITATION_ALREADY_INVITED:
+		return "Đã tồn tại lời mời đang chờ cho người này"
+	case CLASSROOM_INVITATION_TOKEN_INVALID:
+		return "Token lời mời không hợp lệ"
+	case CLASSROOM_INVITATION_TOKEN_GENERATION_FAILED:
+		return "Tạo token lời mời thất bại"
 	default:
 		return ""
 	}

@@ -21,4 +21,7 @@ const (
 	NameChapterTranslation  = "chapter_translation"
 	NameQuiz                = "quiz"
 	NameSchool              = "school"
+	NameClassroom           = "classroom"
+	NameClassroomMember     = "classroom_member"
+	NameClassroomInvitation = "classroom_invitation"
 )

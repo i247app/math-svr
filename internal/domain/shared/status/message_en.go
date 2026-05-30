@@ -366,6 +366,98 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Sequence name is required"
 	case SEQ_GENERATION_FAILED:
 		return "Failed to generate next id"
+
+	// Classroom
+	case CLASSROOM_NOT_FOUND:
+		return "Classroom not found"
+	case CLASSROOM_MISSING_ID:
+		return "Classroom id is required"
+	case CLASSROOM_MISSING_NAME:
+		return "Classroom name is required"
+	case CLASSROOM_NAME_TOO_LONG:
+		return "Classroom name is too long"
+	case CLASSROOM_DESCRIPTION_TOO_LONG:
+		return "Classroom description is too long"
+	case CLASSROOM_MISSING_OWNER_PROFILE_ID:
+		return "Owner profile id is required"
+	case CLASSROOM_INVALID_OWNER_ROLE:
+		return "Only a teacher profile can own a classroom"
+	case CLASSROOM_INVALID_PROGRAM:
+		return "Program is invalid"
+	case CLASSROOM_INVALID_GRADE:
+		return "Grade is invalid"
+	case CLASSROOM_ALREADY_ARCHIVED:
+		return "Classroom is already archived"
+	case CLASSROOM_NOT_ARCHIVED:
+		return "Classroom is not archived"
+	case CLASSROOM_ALREADY_DELETED:
+		return "Classroom is already deleted"
+	case CLASSROOM_MAX_MEMBERS_REACHED:
+		return "Classroom has reached its member limit"
+	case CLASSROOM_INVITE_CODE_INVALID:
+		return "Invite code is invalid"
+	case CLASSROOM_INVITE_CODE_EXPIRED:
+		return "Invite code has expired"
+	case CLASSROOM_INVITE_CODE_DISABLED:
+		return "Invite code is disabled"
+	case CLASSROOM_INVITE_CODE_GENERATION_FAILED:
+		return "Failed to generate invite code"
+	case CLASSROOM_PERMISSION_DENIED:
+		return "You do not have permission to perform this action on the classroom"
+	case CLASSROOM_OWNER_CANNOT_LEAVE:
+		return "Owner must transfer ownership before leaving the classroom"
+	case CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER:
+		return "Ownership can only be transferred to an active member"
+	case CLASSROOM_INVALID_MAX_MEMBERS:
+		return "Max members must be a positive number"
+
+	// Classroom member
+	case CLASSROOM_MEMBER_NOT_FOUND:
+		return "Classroom member not found"
+	case CLASSROOM_MEMBER_MISSING_ID:
+		return "Member id is required"
+	case CLASSROOM_MEMBER_MISSING_CLASSROOM_ID:
+		return "Classroom id is required"
+	case CLASSROOM_MEMBER_MISSING_PROFILE_ID:
+		return "Profile id is required"
+	case CLASSROOM_MEMBER_ALREADY_MEMBER:
+		return "Profile is already a member of this classroom"
+	case CLASSROOM_MEMBER_NOT_MEMBER:
+		return "Profile is not a member of this classroom"
+	case CLASSROOM_MEMBER_INVALID_ROLE:
+		return "Member role is invalid"
+	case CLASSROOM_MEMBER_CANNOT_REMOVE_OWNER:
+		return "Owner cannot be removed"
+	case CLASSROOM_MEMBER_CANNOT_DEMOTE_OWNER:
+		return "Owner role cannot be changed; transfer ownership first"
+
+	// Classroom invitation
+	case CLASSROOM_INVITATION_NOT_FOUND:
+		return "Invitation not found"
+	case CLASSROOM_INVITATION_MISSING_ID:
+		return "Invitation id is required"
+	case CLASSROOM_INVITATION_MISSING_TARGET:
+		return "Invitation must target a profile or an identifier"
+	case CLASSROOM_INVITATION_INVALID_IDENTIFIER:
+		return "Invitation identifier is invalid"
+	case CLASSROOM_INVITATION_INVALID_IDENTIFIER_TYPE:
+		return "Invitation identifier type is invalid"
+	case CLASSROOM_INVITATION_INVALID_ROLE:
+		return "Proposed role is invalid"
+	case CLASSROOM_INVITATION_ALREADY_RESPONDED:
+		return "Invitation has already been responded to"
+	case CLASSROOM_INVITATION_EXPIRED:
+		return "Invitation has expired"
+	case CLASSROOM_INVITATION_NOT_PENDING:
+		return "Invitation is not in a pending state"
+	case CLASSROOM_INVITATION_NOT_INVITEE:
+		return "You are not the invitee of this invitation"
+	case CLASSROOM_INVITATION_ALREADY_INVITED:
+		return "A pending invitation already exists for this invitee"
+	case CLASSROOM_INVITATION_TOKEN_INVALID:
+		return "Invitation token is invalid"
+	case CLASSROOM_INVITATION_TOKEN_GENERATION_FAILED:
+		return "Failed to generate invitation token"
 	default:
 		return ""
 	}

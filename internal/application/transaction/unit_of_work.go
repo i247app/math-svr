@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/domain/chapter"
+	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/grade"
 	"math-ai.com/math-ai/internal/domain/loginlog"
@@ -41,6 +42,9 @@ type Repositories struct {
 	ProgramTranslation program.ITranslationRepository
 	School             school.IRepository
 	Seq                seq.IRepository
+	Classroom           classroom.IRepository
+	ClassroomMember     classroom.IMemberRepository
+	ClassroomInvitation classroom.IInvitationRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

@@ -7,6 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/bootstrap/middleware"
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/chapter"
+	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
@@ -145,6 +146,19 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /quizzes/generate", quizHandler.HandleGenerateQuiz, authMiddleware)
 		gexSvr.AddRoute("POST /quizzes/submit", quizHandler.HandleSubmitQuizAnswers, authMiddleware)
 		gexSvr.AddRoute("POST /quizzes/soft-delete", quizHandler.HandleSoftDeleteQuiz, authMiddleware)
+	}
+
+	// classroom routes
+	{
+		classroomHandler := classroom.NewClassroomHandler(res, services.ClassroomSvc)
+		gexSvr.AddRoute("GET  /classrooms/{id}", classroomHandler.HandleGetClassroom, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/list", classroomHandler.HandleListClassrooms, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/create", classroomHandler.HandleCreateClassroom, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/update", classroomHandler.HandleUpdateClassroom, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/archive", classroomHandler.HandleArchiveClassroom, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/restore", classroomHandler.HandleRestoreClassroom, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/soft-delete", classroomHandler.HandleSoftDeleteClassroom, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/force-delete", classroomHandler.HandleForceDeleteClassroom, authMiddleware)
 	}
 
 	// health routes
