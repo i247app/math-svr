@@ -14,6 +14,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -133,21 +134,23 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 	if len(profiles) == 0 {
 		return []*dto.ProfileResponse{}, nil
 	}
-	if lang == "" {
-		lang = enum.LanguageTypeEnglish
+
+	language := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+	if lang != "" {
+		language = lang
 	}
 
 	progIds, gradeIds, semIds, schoolIds := collectRefIds(profiles)
 
-	programs, err := s.programRepo.ListProgramsByIds(ctx, progIds, lang)
+	programs, err := s.programRepo.ListProgramsByIds(ctx, progIds, language)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	grades, err := s.gradeRepo.ListGradesByIds(ctx, gradeIds, lang)
+	grades, err := s.gradeRepo.ListGradesByIds(ctx, gradeIds, language)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	semesters, err := s.semesterRepo.ListSemestersByIds(ctx, semIds, lang)
+	semesters, err := s.semesterRepo.ListSemestersByIds(ctx, semIds, language)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
