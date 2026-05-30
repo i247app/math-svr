@@ -182,6 +182,9 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 		ProgramID:  req.ProgramID,
 		GradeID:    req.GradeID,
 		SemesterID: req.SemesterID,
+		IDType:     req.IDType,
+		TeacherID:  req.TeacherID,
+		StudentID:  req.StudentID,
 		Note:       req.Note,
 		AvatarKey:  avatarKey,
 	})
@@ -260,6 +263,9 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 		ProgramID:  req.ProgramID,
 		GradeID:    req.GradeID,
 		SemesterID: req.SemesterID,
+		IDType:     req.IDType,
+		TeacherID:  req.TeacherID,
+		StudentID:  req.StudentID,
 		Note:       req.Note,
 		AvatarKey:  avatarKey,
 	})

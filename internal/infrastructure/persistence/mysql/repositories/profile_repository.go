@@ -17,7 +17,9 @@ const (
 	profileTable = "ma_profiles"
 
 	profileColumns = `p.id, p.profile_id, p.user_id, p.name, p.role, p.avatar_key, p.dob,
-		p.school_id, p.program_id, p.grade_id, p.semester_id, p.is_default, p.note, p.profile_status, p.status,
+		p.school_id, p.program_id, p.grade_id, p.semester_id, p.is_default,
+		p.id_type, p.teacher_id, p.student_id,
+		p.note, p.profile_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
 	profileActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
@@ -38,7 +40,9 @@ func NewProfileRepository(db database.Executor) profile.IRepository {
 func scanProfile(s database.RowScanner) (*models.ProfileModel, error) {
 	var m models.ProfileModel
 	if err := s.Scan(&m.Id, &m.ProfileId, &m.UserId, &m.Name, &m.Role, &m.AvatarKey, &m.Dob,
-		&m.SchoolId, &m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault, &m.Note, &m.ProfileStatus, &m.Status,
+		&m.SchoolId, &m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault,
+		&m.IdType, &m.TeacherId, &m.StudentId,
+		&m.Note, &m.ProfileStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -136,13 +140,15 @@ func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId s
 func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*profile.Profile, error) {
 	query := `
 		INSERT INTO ` + profileTable + `
-			(profile_id, user_id, name, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default, note, profile_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(profile_id, user_id, name, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default,
+			 id_type, teacher_id, student_id, note, profile_status)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
 		p.ProfileId(), p.UserId(), p.Name(), p.Role(), p.AvatarKey(), p.Dob(),
-		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(), p.Note(), p.ProfileStatus())
+		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(),
+		p.IdType(), p.TeacherId(), p.StudentId(), p.Note(), p.ProfileStatus())
 	if err != nil {
 		return nil, fmt.Errorf("profile repo create: %w", err)
 	}
@@ -157,16 +163,20 @@ func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*pr
 func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) error {
 	query := `
 		UPDATE ` + profileTable + `
-		SET name        = COALESCE(?, name),
-			role       = COALESCE(?, role),
-			is_default  = COALESCE(?, is_default),
-			dob         = COALESCE(?, dob),
-			school_id   = COALESCE(?, school_id),
-			program_id  = COALESCE(?, program_id),
-			grade_id    = COALESCE(?, grade_id),
-			semester_id = COALESCE(?, semester_id),
-			note        = COALESCE(?, note),
-			avatar_key  = COALESCE(?, avatar_key)
+		SET name           = COALESCE(?, name),
+			role           = COALESCE(?, role),
+			is_default     = COALESCE(?, is_default),
+			dob            = COALESCE(?, dob),
+			school_id      = COALESCE(?, school_id),
+			program_id     = COALESCE(?, program_id),
+			grade_id       = COALESCE(?, grade_id),
+			semester_id    = COALESCE(?, semester_id),
+			id_type        = COALESCE(?, id_type),
+			teacher_id     = COALESCE(?, teacher_id),
+			student_id     = COALESCE(?, student_id),
+			profile_status = COALESCE(?, profile_status),
+			note           = COALESCE(?, note),
+			avatar_key     = COALESCE(?, avatar_key)
 		WHERE profile_id = ?
 	`
 
@@ -192,7 +202,8 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 
 	if _, err := r.db.Exec(ctx, query,
 		nameArg, roleArg, isDefaultArg, dobArg, p.SchoolId(), p.ProgramId(), p.GradeId(),
-		p.SemesterId(), p.Note(), p.AvatarKey(), p.ProfileId()); err != nil {
+		p.SemesterId(), p.IdType(), p.TeacherId(), p.StudentId(), p.ProfileStatus(),
+		p.Note(), p.AvatarKey(), p.ProfileId()); err != nil {
 		return fmt.Errorf("profile repo update: %w", err)
 	}
 	return nil
@@ -316,6 +327,9 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p.SetGradeId(m.GradeId)
 	p.SetSemesterId(m.SemesterId)
 	p.SetIsDefault(m.IsDefault)
+	p.SetIdType(m.IdType)
+	p.SetTeacherId(m.TeacherId)
+	p.SetStudentId(m.StudentId)
 	p.SetNote(m.Note)
 	p.SetProfileStatus(m.ProfileStatus)
 	p.SetStatus(m.Status)

@@ -32,6 +32,9 @@ type ProfileResponse struct {
 	SemesterID    *string                       `json:"semester_id,omitempty"`
 	Semester      *semesterDto.SemesterResponse `json:"semester,omitempty"`
 	IsDefault     bool                          `json:"is_default"`
+	IDType        *string                       `json:"id_type,omitempty"`
+	TeacherID     *string                       `json:"teacher_id,omitempty"`
+	StudentID     *string                       `json:"student_id,omitempty"`
 	ProfileStatus *string                       `json:"profile_status,omitempty"`
 	CreateDt      string                        `json:"create_dt"`
 	ModifyDt      string                        `json:"modify_dt"`
@@ -47,6 +50,9 @@ type CreateProfileReq struct {
 	ProgramID  *string `json:"program_id"`
 	GradeID    *string `json:"grade_id"`
 	SemesterID *string `json:"semester_id"`
+	IDType     *string `json:"id_type,omitempty"`    // TEACHER only — e.g. MOET, PUBLIC_ID
+	TeacherID  *string `json:"teacher_id,omitempty"` // TEACHER only
+	StudentID  *string `json:"student_id,omitempty"` // STUDENT only
 	Note       *string `json:"note,omitempty"`
 
 	// Avatar is a client-supplied reference to an object already in our
@@ -73,6 +79,9 @@ type UpdateProfileReq struct {
 	ProgramID  *string `json:"program_id,omitempty"`
 	GradeID    *string `json:"grade_id,omitempty"`
 	SemesterID *string `json:"semester_id,omitempty"`
+	IDType     *string `json:"id_type,omitempty"`    // TEACHER only — e.g. MOET, PUBLIC_ID
+	TeacherID  *string `json:"teacher_id,omitempty"` // TEACHER only
+	StudentID  *string `json:"student_id,omitempty"` // STUDENT only
 	Note       *string `json:"note,omitempty"`
 
 	// Avatar is a client-supplied reference. Pointer semantics: nil =
@@ -183,6 +192,9 @@ func DomainToResponse(p *domain.Profile) *ProfileResponse {
 		GradeID:       p.GradeId(),
 		SemesterID:    p.SemesterId(),
 		IsDefault:     p.IsDefault(),
+		IDType:        p.IdType(),
+		TeacherID:     p.TeacherId(),
+		StudentID:     p.StudentId(),
 		ProfileStatus: p.ProfileStatus(),
 		CreateDt:      p.CreateDt().String(),
 		ModifyDt:      p.ModifyDt().String(),

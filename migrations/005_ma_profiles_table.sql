@@ -12,8 +12,11 @@ CREATE TABLE IF NOT EXISTS ma_profiles (
   grade_id        char(36) DEFAULT NULL,
   semester_id     char(36) DEFAULT NULL,
   is_default      boolean DEFAULT false,
+  id_type         varchar(32) DEFAULT NULL, -- Only for TEACHER like as MOET, PUBLIC ID 
+  teacher_id      varchar(64) DEFAULT NULL,
+  student_id      varchar(64) DEFAULT NULL,
   note            varchar(500) DEFAULT NULL,
-  profile_status  varchar(32) DEFAULT 'ACTIVE',
+  profile_status  varchar(32) DEFAULT 'INCOMPLETE',  -- INCOMPLETE, ACTIVE, OFFICIAL
   status          varchar(32) DEFAULT 'ACTIVE',
   create_id       char(36) DEFAULT NULL,
   create_dt       datetime(6) DEFAULT CURRENT_TIMESTAMP(6),

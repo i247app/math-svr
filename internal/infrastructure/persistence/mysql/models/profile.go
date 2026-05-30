@@ -17,6 +17,9 @@ type ProfileModel struct {
 	GradeId       *string
 	SemesterId    *string
 	IsDefault     bool
+	IdType        *string
+	TeacherId     *string
+	StudentId     *string
 	Note          *string
 	ProfileStatus *string
 	Status        string

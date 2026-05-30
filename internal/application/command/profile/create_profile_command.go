@@ -21,6 +21,9 @@ type CreateProfileCommand struct {
 	ProgramID  *string
 	GradeID    *string
 	SemesterID *string
+	IDType     *string // TEACHER only
+	TeacherID  *string // TEACHER only
+	StudentID  *string // STUDENT only
 	AvatarKey  *string
 	Note       *string
 }
@@ -75,10 +78,24 @@ func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
 	p.SetProgramId(cmd.ProgramID)
 	p.SetGradeId(cmd.GradeID)
 	p.SetSemesterId(cmd.SemesterID)
+	p.SetIdType(cmd.IDType)
+	p.SetTeacherId(cmd.TeacherID)
+	p.SetStudentId(cmd.StudentID)
 	p.SetAvatarKey(cmd.AvatarKey)
 	p.SetNote(cmd.Note)
 	if cmd.Dob != nil {
 		p.SetDob(*cmd.Dob)
 	}
+
+	// Derive profile_status from the role + identity fields the caller
+	// provided. The DB column defaults to INCOMPLETE, but we set it
+	// explicitly so the entity returned to the caller carries it too.
+	derived := DeriveProfileStatus(cmd.Role,
+		derefOrEmpty(cmd.IDType),
+		derefOrEmpty(cmd.TeacherID),
+		derefOrEmpty(cmd.StudentID),
+	).String()
+	p.SetProfileStatus(&derived)
+
 	return p
 }

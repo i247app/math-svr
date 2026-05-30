@@ -65,6 +65,9 @@ func (h *ProfileHandler) HandleCreateProfile(w http.ResponseWriter, r *http.Requ
 		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
 		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
 		req.SemesterID = utils.ToStringPtr(r.FormValue("semester_id"))
+		req.IDType = utils.ToStringPtr(r.FormValue("id_type"))
+		req.TeacherID = utils.ToStringPtr(r.FormValue("teacher_id"))
+		req.StudentID = utils.ToStringPtr(r.FormValue("student_id"))
 		req.Avatar = r.FormValue("avatar_key")
 
 		// Handle avatar file
@@ -141,6 +144,9 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
 		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
 		req.SemesterID = utils.ToStringPtr(r.FormValue("semester_id"))
+		req.IDType = utils.ToStringPtr(r.FormValue("id_type"))
+		req.TeacherID = utils.ToStringPtr(r.FormValue("teacher_id"))
+		req.StudentID = utils.ToStringPtr(r.FormValue("student_id"))
 		req.Avatar = utils.ToStringPtr(r.FormValue("avatar_key"))
 
 		// Handle avatar file

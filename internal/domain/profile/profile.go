@@ -21,6 +21,9 @@ type Profile struct {
 	gradeId       *string
 	semesterId    *string
 	isDefault     bool
+	idType        *string
+	teacherId     *string
+	studentId     *string
 	note          *string
 	profileStatus *string
 	status        string
@@ -149,6 +152,30 @@ func (p *Profile) IsDefault() bool {
 
 func (p *Profile) SetIsDefault(isDefault bool) {
 	p.isDefault = isDefault
+}
+
+func (p *Profile) IdType() *string {
+	return p.idType
+}
+
+func (p *Profile) SetIdType(idType *string) {
+	p.idType = idType
+}
+
+func (p *Profile) TeacherId() *string {
+	return p.teacherId
+}
+
+func (p *Profile) SetTeacherId(teacherId *string) {
+	p.teacherId = teacherId
+}
+
+func (p *Profile) StudentId() *string {
+	return p.studentId
+}
+
+func (p *Profile) SetStudentId(studentId *string) {
+	p.studentId = studentId
 }
 
 func (p *Profile) Note() *string {

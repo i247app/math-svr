@@ -9,6 +9,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 type UpdateProfileCommand struct {
@@ -21,6 +22,9 @@ type UpdateProfileCommand struct {
 	ProgramID  *string
 	GradeID    *string
 	SemesterID *string
+	IDType     *string // TEACHER only
+	TeacherID  *string // TEACHER only
+	StudentID  *string // STUDENT only
 	Note       *string
 	AvatarKey  *string
 }
@@ -49,6 +53,13 @@ func (h *UpdateProfileCommandHandler) Handle(ctx context.Context, cmd UpdateProf
 		}
 
 		patch := BuildUpdateProfile(cmd)
+
+		// profile_status is derived from the post-patch state — fields not
+		// present in the patch keep their existing value. We compute it
+		// here (vs. in BuildUpdateProfile) because we need the existing
+		// row to merge the patch over.
+		derived := deriveUpdatedProfileStatus(existing, cmd).String()
+		patch.SetProfileStatus(&derived)
 
 		if err := repos.Profile.Update(ctx, patch); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
@@ -101,6 +112,15 @@ func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 	if cmd.SemesterID != nil {
 		patch.SetSemesterId(cmd.SemesterID)
 	}
+	if cmd.IDType != nil {
+		patch.SetIdType(cmd.IDType)
+	}
+	if cmd.TeacherID != nil {
+		patch.SetTeacherId(cmd.TeacherID)
+	}
+	if cmd.StudentID != nil {
+		patch.SetStudentId(cmd.StudentID)
+	}
 	if cmd.Note != nil {
 		patch.SetNote(cmd.Note)
 	}
@@ -108,4 +128,33 @@ func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 		patch.SetAvatarKey(cmd.AvatarKey)
 	}
 	return patch
+}
+
+// deriveUpdatedProfileStatus folds the patch over the existing row, then
+// applies DeriveProfileStatus. A nil pointer in the patch means "keep
+// the existing column"; a non-nil pointer (even pointing to "") becomes
+// the new value, which can downgrade an OFFICIAL profile to INCOMPLETE
+// (e.g. role flipped from STUDENT to TEACHER without a teacher_id yet).
+func deriveUpdatedProfileStatus(existing *profile.Profile, cmd UpdateProfileCommand) enum.ProfileStatusType {
+	role := existing.Role()
+	if cmd.Role != nil && *cmd.Role != "" {
+		role = *cmd.Role
+	}
+
+	idType := derefOrEmpty(existing.IdType())
+	if cmd.IDType != nil {
+		idType = *cmd.IDType
+	}
+
+	teacherId := derefOrEmpty(existing.TeacherId())
+	if cmd.TeacherID != nil {
+		teacherId = *cmd.TeacherID
+	}
+
+	studentId := derefOrEmpty(existing.StudentId())
+	if cmd.StudentID != nil {
+		studentId = *cmd.StudentID
+	}
+
+	return DeriveProfileStatus(role, idType, teacherId, studentId)
 }

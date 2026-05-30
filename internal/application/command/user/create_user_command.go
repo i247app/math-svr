@@ -152,5 +152,12 @@ func BuildProfile(cmd CreateUserCommand) *profile.Profile {
 	p.SetRole(role.String())
 	p.SetAvatarKey(cmd.AvatarKey)
 	p.SetStatus(enum.StatusActive.String())
+
+	// /users/create never carries the teacher/student identifiers, so the
+	// bootstrap profile is always INCOMPLETE. Setting it explicitly keeps
+	// the in-memory entity in sync with what the DB will store and avoids
+	// relying on the column DEFAULT.
+	incomplete := enum.ProfileStatusTypeIncomplete.String()
+	p.SetProfileStatus(&incomplete)
 	return p
 }
