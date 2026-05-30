@@ -159,6 +159,14 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /classrooms/restore", classroomHandler.HandleRestoreClassroom, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/soft-delete", classroomHandler.HandleSoftDeleteClassroom, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/force-delete", classroomHandler.HandleForceDeleteClassroom, authMiddleware)
+
+		// membership
+		gexSvr.AddRoute("POST /classrooms/join-by-code", classroomHandler.HandleJoinByCode, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/leave", classroomHandler.HandleLeaveClassroom, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/transfer-ownership", classroomHandler.HandleTransferOwnership, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/members/list", classroomHandler.HandleListMembers, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/members/remove", classroomHandler.HandleRemoveMember, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/members/update-role", classroomHandler.HandleUpdateMemberRole, authMiddleware)
 	}
 
 	// health routes

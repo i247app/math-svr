@@ -270,3 +270,123 @@ func (h *ClassroomHandler) HandleForceDeleteClassroom(w http.ResponseWriter, r *
 	}
 	response.WriteJson(w, res, nil)
 }
+
+// POST /classrooms/join-by-code
+func (h *ClassroomHandler) HandleJoinByCode(w http.ResponseWriter, r *http.Request) {
+	var req dto.JoinByCodeReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.JoinClassroomByCode(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/leave
+func (h *ClassroomHandler) HandleLeaveClassroom(w http.ResponseWriter, r *http.Request) {
+	var req dto.LeaveClassroomReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.LeaveClassroom(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/members/remove
+func (h *ClassroomHandler) HandleRemoveMember(w http.ResponseWriter, r *http.Request) {
+	var req dto.RemoveMemberReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.RemoveMember(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/members/update-role
+func (h *ClassroomHandler) HandleUpdateMemberRole(w http.ResponseWriter, r *http.Request) {
+	var req dto.UpdateMemberRoleReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.UpdateMemberRole(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/transfer-ownership
+func (h *ClassroomHandler) HandleTransferOwnership(w http.ResponseWriter, r *http.Request) {
+	var req dto.TransferOwnershipReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.TransferOwnership(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/members/list
+func (h *ClassroomHandler) HandleListMembers(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListMembersReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.ListMembers(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}

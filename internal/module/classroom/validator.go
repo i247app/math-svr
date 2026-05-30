@@ -8,6 +8,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // Column-width mirrors for migration 014. Keeping the bounds here lets
@@ -162,6 +163,138 @@ func ValidateDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq) e
 	if strings.TrimSpace(req.ClassroomID) == "" {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))
+	}
+	return nil
+}
+
+// inviteCodeMaxLen mirrors ma_classrooms.invite_code VARCHAR(16). Used
+// by the join-by-code path to reject obviously-malformed input before
+// it reaches the repo.
+const inviteCodeMaxLen = 16
+
+func ValidateJoinByCode(ctx context.Context, req *dto.JoinByCodeReq) error {
+	if strings.TrimSpace(req.ProfileID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
+			errors.New("profile_id is required"))
+	}
+	code := strings.TrimSpace(req.InviteCode)
+	if code == "" {
+		return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_INVALID, nil,
+			errors.New("invite_code is required"))
+	}
+	if len(code) > inviteCodeMaxLen {
+		return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_INVALID, nil,
+			errors.New("invite_code too long"))
+	}
+	req.InviteCode = code
+	return nil
+}
+
+func ValidateLeaveClassroom(ctx context.Context, req *dto.LeaveClassroomReq) error {
+	if strings.TrimSpace(req.ProfileID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
+			errors.New("profile_id is required"))
+	}
+	if strings.TrimSpace(req.ClassroomID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
+			errors.New("classroom_id is required"))
+	}
+	return nil
+}
+
+func ValidateRemoveMember(ctx context.Context, req *dto.RemoveMemberReq) error {
+	if strings.TrimSpace(req.ProfileID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
+			errors.New("profile_id is required"))
+	}
+	if strings.TrimSpace(req.ClassroomID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
+			errors.New("classroom_id is required"))
+	}
+	if strings.TrimSpace(req.TargetProfileID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
+			errors.New("target_profile_id is required"))
+	}
+	if strings.TrimSpace(req.TargetProfileID) == strings.TrimSpace(req.ProfileID) {
+		return errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
+			errors.New("cannot remove yourself; use leave instead"))
+	}
+	return nil
+}
+
+func ValidateUpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRoleReq) error {
+	if strings.TrimSpace(req.ProfileID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
+			errors.New("profile_id is required"))
+	}
+	if strings.TrimSpace(req.ClassroomID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
+			errors.New("classroom_id is required"))
+	}
+	if strings.TrimSpace(req.TargetProfileID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
+			errors.New("target_profile_id is required"))
+	}
+	role := strings.TrimSpace(req.NewRole)
+	if role == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
+			errors.New("new_role is required"))
+	}
+	// OWNER is intentionally not allowed here — transfer-ownership is
+	// the only way to mint a new owner.
+	if role != string(enum.ClassroomMemberRoleTypeCoTeacher) &&
+		role != string(enum.ClassroomMemberRoleTypeStudent) {
+		return errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
+			errors.New("new_role must be CO_TEACHER or STUDENT"))
+	}
+	req.NewRole = role
+	return nil
+}
+
+func ValidateTransferOwnership(ctx context.Context, req *dto.TransferOwnershipReq) error {
+	if strings.TrimSpace(req.ProfileID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
+			errors.New("profile_id is required"))
+	}
+	if strings.TrimSpace(req.ClassroomID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
+			errors.New("classroom_id is required"))
+	}
+	if strings.TrimSpace(req.NewOwnerProfileID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
+			errors.New("new_owner_profile_id is required"))
+	}
+	if strings.TrimSpace(req.NewOwnerProfileID) == strings.TrimSpace(req.ProfileID) {
+		return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil,
+			errors.New("cannot transfer ownership to yourself"))
+	}
+	return nil
+}
+
+func ValidateListMembers(ctx context.Context, req *dto.ListMembersReq) error {
+	if strings.TrimSpace(req.ProfileID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
+			errors.New("profile_id is required"))
+	}
+	if strings.TrimSpace(req.ClassroomID) == "" {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
+			errors.New("classroom_id is required"))
+	}
+	if req.Role != nil {
+		r := strings.TrimSpace(*req.Role)
+		if r == "" {
+			req.Role = nil
+		} else {
+			req.Role = &r
+		}
+	}
+	if req.Status != nil {
+		s := strings.TrimSpace(*req.Status)
+		if s == "" {
+			req.Status = nil
+		} else {
+			req.Status = &s
+		}
 	}
 	return nil
 }

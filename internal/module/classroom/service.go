@@ -32,12 +32,18 @@ const coverUrlTTL = 1 * time.Hour
 type Service struct {
 	getClassroomQuery       *query.GetClassroomByIdQueryHandler
 	listClassroomsQuery     *query.ListClassroomsQueryHandler
+	listMembersQuery        *query.ListMembersQueryHandler
 	createClassroomCmd      *command.CreateClassroomCommandHandler
 	updateClassroomCmd      *command.UpdateClassroomCommandHandler
 	archiveClassroomCmd     *command.ArchiveClassroomCommandHandler
 	restoreClassroomCmd     *command.RestoreClassroomCommandHandler
 	softDeleteClassroomCmd  *command.SoftDeleteClassroomCommandHandler
 	forceDeleteClassroomCmd *command.ForceDeleteClassroomCommandHandler
+	joinByCodeCmd           *command.JoinByCodeCommandHandler
+	leaveClassroomCmd       *command.LeaveClassroomCommandHandler
+	removeMemberCmd         *command.RemoveMemberCommandHandler
+	updateMemberRoleCmd     *command.UpdateMemberRoleCommandHandler
+	transferOwnershipCmd    *command.TransferOwnershipCommandHandler
 
 	classroomRepo       classroomDomain.IRepository
 	classroomMemberRepo classroomDomain.IMemberRepository
@@ -59,12 +65,18 @@ func NewService(
 	return &Service{
 		getClassroomQuery:       query.NewGetClassroomByIdQueryHandler(classroomRepo),
 		listClassroomsQuery:     query.NewListClassroomsQueryHandler(classroomRepo),
+		listMembersQuery:        query.NewListMembersQueryHandler(classroomMemberRepo),
 		createClassroomCmd:      command.NewCreateClassroomCommandHandler(uow),
 		updateClassroomCmd:      command.NewUpdateClassroomCommandHandler(uow),
 		archiveClassroomCmd:     command.NewArchiveClassroomCommandHandler(uow),
 		restoreClassroomCmd:     command.NewRestoreClassroomCommandHandler(uow),
 		softDeleteClassroomCmd:  command.NewSoftDeleteClassroomCommandHandler(uow),
 		forceDeleteClassroomCmd: command.NewForceDeleteClassroomCommandHandler(uow),
+		joinByCodeCmd:           command.NewJoinByCodeCommandHandler(uow),
+		leaveClassroomCmd:       command.NewLeaveClassroomCommandHandler(uow),
+		removeMemberCmd:         command.NewRemoveMemberCommandHandler(uow),
+		updateMemberRoleCmd:     command.NewUpdateMemberRoleCommandHandler(uow),
+		transferOwnershipCmd:    command.NewTransferOwnershipCommandHandler(uow),
 		classroomRepo:           classroomRepo,
 		classroomMemberRepo:     classroomMemberRepo,
 		profileRepo:             profileRepo,

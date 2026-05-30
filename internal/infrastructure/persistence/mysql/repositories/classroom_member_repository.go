@@ -312,6 +312,31 @@ func (r *ClassroomMemberRepository) MarkRemoved(ctx context.Context, memberId, r
 	return nil
 }
 
+// Reactivate flips an existing row's lifecycle fields back to a fresh
+// ACTIVE membership. invitationId is set/cleared verbatim so the caller
+// can either link the rejoin to an invitation row (accept-invitation
+// path) or null it out (join-by-code path).
+func (r *ClassroomMemberRepository) Reactivate(ctx context.Context, memberId, role string, invitationId *string) error {
+	query := `
+		UPDATE ` + classroomMemberTable + `
+		SET member_role           = ?,
+			member_status         = ?,
+			invitation_id         = ?,
+			joined_dt             = ?,
+			left_dt               = NULL,
+			removed_by_profile_id = NULL,
+			removed_dt            = NULL,
+			modify_dt             = ?
+		WHERE member_id = ?
+	`
+	now := mtime.Now().Time
+	if _, err := r.db.Exec(ctx, query,
+		role, enum.ClassroomMemberStatusTypeActive, invitationId, now, now, memberId); err != nil {
+		return fmt.Errorf("classroom_member repo reactivate: %w", err)
+	}
+	return nil
+}
+
 func (r *ClassroomMemberRepository) SoftDeleteByClassroomId(ctx context.Context, classroomId string) error {
 	query := `
 		UPDATE ` + classroomMemberTable + `

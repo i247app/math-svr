@@ -72,6 +72,13 @@ type IMemberRepository interface {
 	SetRole(ctx context.Context, memberId, role string) error
 	MarkLeft(ctx context.Context, memberId string) error
 	MarkRemoved(ctx context.Context, memberId, removedByProfileId string) error
+	// Reactivate flips an existing INVITED/LEFT/REMOVED member back to
+	// ACTIVE. Resets joined_dt, clears left_dt / removed_dt /
+	// removed_by_profile_id, and assigns the given role. Used by the
+	// join-by-code path (and the future accept-invitation path) so the
+	// UNIQUE (classroom_id, profile_id) constraint doesn't force a
+	// duplicate insert when a profile rejoins a classroom they once left.
+	Reactivate(ctx context.Context, memberId, role string, invitationId *string) error
 	SoftDeleteByClassroomId(ctx context.Context, classroomId string) error
 	ForceDeleteByClassroomId(ctx context.Context, classroomId string) error
 }
