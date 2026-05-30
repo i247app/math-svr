@@ -18,6 +18,7 @@ type UpdateClassroomCommand struct {
 	ClassroomID string
 	Name        *string
 	Description *string
+	SchoolID    *string
 	ProgramID   *string
 	GradeID     *string
 	MaxMembers  *int64
@@ -53,6 +54,9 @@ func (h *UpdateClassroomCommandHandler) Handle(ctx context.Context, cmd UpdateCl
 		}
 		if cmd.Description != nil {
 			patch.SetDescription(cmd.Description)
+		}
+		if cmd.SchoolID != nil {
+			patch.SetSchoolId(cmd.SchoolID)
 		}
 		if cmd.ProgramID != nil {
 			patch.SetProgramId(cmd.ProgramID)

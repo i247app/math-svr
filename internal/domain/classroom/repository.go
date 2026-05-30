@@ -15,6 +15,7 @@ import (
 type ListClassroomsParams struct {
 	ProfileId        *string
 	OwnerProfileId   *string
+	SchoolId         *string
 	ProgramId        *string
 	GradeId          *string
 	Search           *string

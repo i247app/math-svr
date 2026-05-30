@@ -418,6 +418,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Ownership can only be transferred to an active member"
 	case CLASSROOM_INVALID_MAX_MEMBERS:
 		return "Max members must be a positive number"
+	case CLASSROOM_INVALID_SCHOOL:
+		return "School not found"
 
 	// Classroom member
 	case CLASSROOM_MEMBER_NOT_FOUND:

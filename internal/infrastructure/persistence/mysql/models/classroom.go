@@ -8,6 +8,7 @@ type ClassroomModel struct {
 	OwnerProfileId      string
 	Name                string
 	Description         *string
+	SchoolId            *string
 	ProgramId           *string
 	GradeId             *string
 	InviteCode          *string

@@ -16,6 +16,7 @@ type ClassroomResponse struct {
 	OwnerProfileID      string  `json:"owner_profile_id"`
 	Name                string  `json:"name"`
 	Description         *string `json:"description,omitempty"`
+	SchoolID            *string `json:"school_id,omitempty"`
 	ProgramID           *string `json:"program_id,omitempty"`
 	GradeID             *string `json:"grade_id,omitempty"`
 	InviteCode          *string `json:"invite_code,omitempty"`
@@ -38,6 +39,7 @@ type CreateClassroomReq struct {
 	ProfileID   string  `json:"profile_id"`
 	Name        string  `json:"name"`
 	Description *string `json:"description,omitempty"`
+	SchoolID    *string `json:"school_id,omitempty"`
 	ProgramID   *string `json:"program_id,omitempty"`
 	GradeID     *string `json:"grade_id,omitempty"`
 	MaxMembers  *int64  `json:"max_members,omitempty"`
@@ -62,6 +64,7 @@ type UpdateClassroomReq struct {
 	ClassroomID string  `json:"classroom_id"`
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
+	SchoolID    *string `json:"school_id,omitempty"`
 	ProgramID   *string `json:"program_id,omitempty"`
 	GradeID     *string `json:"grade_id,omitempty"`
 	MaxMembers  *int64  `json:"max_members,omitempty"`
@@ -97,6 +100,7 @@ type GetClassroomRes struct {
 type ListClassroomsReq struct {
 	ProfileID       string  `json:"profile_id"`
 	OwnerProfileID  *string `json:"owner_profile_id,omitempty"`
+	SchoolID        *string `json:"school_id,omitempty"`
 	ProgramID       *string `json:"program_id,omitempty"`
 	GradeID         *string `json:"grade_id,omitempty"`
 	Search          *string `json:"search,omitempty"`
@@ -145,6 +149,7 @@ func DomainToResponse(c *domain.Classroom) *ClassroomResponse {
 		OwnerProfileID:  c.OwnerProfileId(),
 		Name:            c.Name(),
 		Description:     c.Description(),
+		SchoolID:        c.SchoolId(),
 		ProgramID:       c.ProgramId(),
 		GradeID:         c.GradeId(),
 		InviteCode:      c.InviteCode(),

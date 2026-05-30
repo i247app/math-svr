@@ -14,6 +14,7 @@ import (
 type ListClassroomsQuery struct {
 	ProfileID       *string
 	OwnerProfileID  *string
+	SchoolID        *string
 	ProgramID       *string
 	GradeID         *string
 	Search          *string
@@ -34,6 +35,7 @@ func (h *ListClassroomsQueryHandler) Handle(ctx context.Context, q ListClassroom
 	return h.classroomRepo.ListClassrooms(ctx, &classroom.ListClassroomsParams{
 		ProfileId:       q.ProfileID,
 		OwnerProfileId:  q.OwnerProfileID,
+		SchoolId:        q.SchoolID,
 		ProgramId:       q.ProgramID,
 		GradeId:         q.GradeID,
 		Search:          q.Search,

@@ -15,6 +15,7 @@ type Classroom struct {
 	ownerProfileId       string
 	name                 string
 	description          *string
+	schoolId             *string
 	programId            *string
 	gradeId              *string
 	inviteCode           *string
@@ -45,6 +46,8 @@ func (c *Classroom) Name() string                       { return c.name }
 func (c *Classroom) SetName(n string)                   { c.name = n }
 func (c *Classroom) Description() *string               { return c.description }
 func (c *Classroom) SetDescription(d *string)           { c.description = d }
+func (c *Classroom) SchoolId() *string                  { return c.schoolId }
+func (c *Classroom) SetSchoolId(id *string)             { c.schoolId = id }
 func (c *Classroom) ProgramId() *string                 { return c.programId }
 func (c *Classroom) SetProgramId(id *string)            { c.programId = id }
 func (c *Classroom) GradeId() *string                   { return c.gradeId }

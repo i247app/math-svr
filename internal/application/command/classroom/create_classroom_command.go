@@ -22,6 +22,7 @@ type CreateClassroomCommand struct {
 	OwnerProfileID string
 	Name           string
 	Description    *string
+	SchoolID       *string
 	ProgramID      *string
 	GradeID        *string
 	MaxMembers     *int64
@@ -51,6 +52,7 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 		c.SetOwnerProfileId(cmd.OwnerProfileID)
 		c.SetName(cmd.Name)
 		c.SetDescription(cmd.Description)
+		c.SetSchoolId(cmd.SchoolID)
 		c.SetProgramId(cmd.ProgramID)
 		c.SetGradeId(cmd.GradeID)
 		c.SetMaxMembers(cmd.MaxMembers)

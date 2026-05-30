@@ -418,6 +418,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Chỉ có thể chuyển quyền sở hữu cho thành viên đang hoạt động"
 	case CLASSROOM_INVALID_MAX_MEMBERS:
 		return "Giới hạn thành viên phải là số dương"
+	case CLASSROOM_INVALID_SCHOOL:
+		return "Không tìm thấy trường học"
 
 	// Classroom member
 	case CLASSROOM_MEMBER_NOT_FOUND:

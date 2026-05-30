@@ -113,6 +113,9 @@ func ValidateListClassrooms(ctx context.Context, req *dto.ListClassroomsReq) err
 	if req.OwnerProfileID != nil && strings.TrimSpace(*req.OwnerProfileID) == "" {
 		req.OwnerProfileID = nil
 	}
+	if req.SchoolID != nil && strings.TrimSpace(*req.SchoolID) == "" {
+		req.SchoolID = nil
+	}
 	if req.ProgramID != nil && strings.TrimSpace(*req.ProgramID) == "" {
 		req.ProgramID = nil
 	}

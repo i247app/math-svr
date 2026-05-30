@@ -15,6 +15,7 @@ import (
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
+	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -50,6 +51,7 @@ type Service struct {
 	profileRepo         profileDomain.IRepository
 	programRepo         programDomain.IRepository
 	gradeRepo           gradeDomain.IRepository
+	schoolRepo          schoolDomain.IRepository
 	storageProvider     *storage.Adapter
 }
 
@@ -60,6 +62,7 @@ func NewService(
 	profileRepo profileDomain.IRepository,
 	programRepo programDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
+	schoolRepo schoolDomain.IRepository,
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
@@ -82,6 +85,7 @@ func NewService(
 		profileRepo:             profileRepo,
 		programRepo:             programRepo,
 		gradeRepo:               gradeRepo,
+		schoolRepo:              schoolRepo,
 		storageProvider:         storageProvider,
 	}
 }
@@ -101,7 +105,7 @@ func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomR
 	if err := s.requireTeacherRole(ctx, caller); err != nil {
 		return nil, err
 	}
-	if err := s.validateCurriculumRefs(ctx, req.ProgramID, req.GradeID); err != nil {
+	if err := s.validateRefs(ctx, req.SchoolID, req.ProgramID, req.GradeID); err != nil {
 		return nil, err
 	}
 
@@ -111,6 +115,7 @@ func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomR
 		OwnerProfileID: caller.ProfileId(),
 		Name:           strings.TrimSpace(req.Name),
 		Description:    req.Description,
+		SchoolID:       req.SchoolID,
 		ProgramID:      req.ProgramID,
 		GradeID:        req.GradeID,
 		MaxMembers:     req.MaxMembers,
@@ -145,7 +150,7 @@ func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomR
 	if _, err := s.requireManager(ctx, req.ClassroomID, caller.ProfileId()); err != nil {
 		return nil, err
 	}
-	if err := s.validateCurriculumRefs(ctx, req.ProgramID, req.GradeID); err != nil {
+	if err := s.validateRefs(ctx, req.SchoolID, req.ProgramID, req.GradeID); err != nil {
 		return nil, err
 	}
 
@@ -155,6 +160,7 @@ func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomR
 		ClassroomID: req.ClassroomID,
 		Name:        req.Name,
 		Description: req.Description,
+		SchoolID:    req.SchoolID,
 		ProgramID:   req.ProgramID,
 		GradeID:     req.GradeID,
 		MaxMembers:  req.MaxMembers,
@@ -217,6 +223,7 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 	classrooms, pg, err := s.listClassroomsQuery.Handle(ctx, query.ListClassroomsQuery{
 		ProfileID:       profileFilter,
 		OwnerProfileID:  req.OwnerProfileID,
+		SchoolID:        req.SchoolID,
 		ProgramID:       req.ProgramID,
 		GradeID:         req.GradeID,
 		Search:          req.Search,
@@ -308,10 +315,20 @@ func (s *Service) ForceDeleteClassroom(ctx context.Context, req *dto.DeleteClass
 	return &dto.DeleteClassroomRes{}, nil
 }
 
-// validateCurriculumRefs makes sure the caller-supplied program/grade
+// validateRefs makes sure the caller-supplied school / program / grade
 // references resolve to ACTIVE rows. Cheap existence check; only runs
 // when the pointer is non-nil so PATCH payloads stay lean.
-func (s *Service) validateCurriculumRefs(ctx context.Context, programID, gradeID *string) error {
+func (s *Service) validateRefs(ctx context.Context, schoolID, programID, gradeID *string) error {
+	if schoolID != nil && strings.TrimSpace(*schoolID) != "" {
+		sc, err := s.schoolRepo.FindBySchoolId(ctx, *schoolID)
+		if err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if sc == nil {
+			return errs.NewError(ctx, status.CLASSROOM_INVALID_SCHOOL, nil,
+				errors.New("school not found"))
+		}
+	}
 	if programID != nil && strings.TrimSpace(*programID) != "" {
 		p, err := s.programRepo.FindByProgramId(ctx, *programID, enum.LanguageTypeVietnamese)
 		if err != nil {
