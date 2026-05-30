@@ -50,7 +50,10 @@ func (h *RemoveMemberCommandHandler) Handle(ctx context.Context, cmd RemoveMembe
 		if err := repos.ClassroomMember.MarkRemoved(ctx, target.MemberId(), cmd.CallerProfileID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.Classroom.IncMemberCount(ctx, cmd.ClassroomID, -1); err != nil {
+		// OWNER is rejected above, so target.MemberRole() is either
+		// STUDENT or CO_TEACHER — both buckets are covered by the helper.
+		studentDelta, teacherDelta := roleCountDeltas(target.MemberRole(), -1)
+		if err := repos.Classroom.IncCounts(ctx, cmd.ClassroomID, -1, studentDelta, teacherDelta); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		return nil

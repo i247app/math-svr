@@ -48,7 +48,11 @@ func (h *LeaveClassroomCommandHandler) Handle(ctx context.Context, cmd LeaveClas
 		if err := repos.ClassroomMember.MarkLeft(ctx, m.MemberId()); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.Classroom.IncMemberCount(ctx, cmd.ClassroomID, -1); err != nil {
+		// Decrement the role-specific bucket the departing member
+		// occupied. OWNER cannot reach here (guarded above), so the
+		// only roles in play are STUDENT and CO_TEACHER.
+		studentDelta, teacherDelta := roleCountDeltas(m.MemberRole(), -1)
+		if err := repos.Classroom.IncCounts(ctx, cmd.ClassroomID, -1, studentDelta, teacherDelta); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		return nil

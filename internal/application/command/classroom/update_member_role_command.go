@@ -58,6 +58,15 @@ func (h *UpdateMemberRoleCommandHandler) Handle(ctx context.Context, cmd UpdateM
 		if err := repos.ClassroomMember.SetRole(ctx, target.MemberId(), cmd.NewRole); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
+		// Shift counters between buckets in lockstep with the role flip.
+		// member_count stays put — the head count is unchanged.
+		oldStudentDelta, oldTeacherDelta := roleCountDeltas(target.MemberRole(), -1)
+		newStudentDelta, newTeacherDelta := roleCountDeltas(cmd.NewRole, 1)
+		if err := repos.Classroom.IncCounts(ctx, cmd.ClassroomID, 0,
+			oldStudentDelta+newStudentDelta,
+			oldTeacherDelta+newTeacherDelta); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
 		refreshed, err := repos.ClassroomMember.FindByMemberId(ctx, target.MemberId())
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)

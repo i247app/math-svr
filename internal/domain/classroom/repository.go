@@ -33,11 +33,13 @@ type IRepository interface {
 	ListClassroomsByIds(ctx context.Context, ids []string) ([]*Classroom, error)
 	Create(ctx context.Context, c *Classroom) (*Classroom, error)
 	Update(ctx context.Context, c *Classroom) error
-	// IncMemberCount applies a signed delta to ma_classrooms.member_count
-	// inside the caller's transaction. Negative deltas are clamped at zero
-	// by the SQL (GREATEST(0, ...)) so a drifted counter never goes
-	// negative. Always called in the same UoW as the member row mutation.
-	IncMemberCount(ctx context.Context, classroomId string, delta int64) error
+	// IncCounts applies signed deltas to the three classroom counters
+	// (member_count, student_count, teacher_count) inside the caller's
+	// transaction. Each negative delta is clamped at zero by the SQL
+	// (GREATEST(0, ...)) so a drifted counter never goes negative.
+	// Always called in the same UoW as the member row mutation so the
+	// counters and the underlying member rows stay consistent.
+	IncCounts(ctx context.Context, classroomId string, memberDelta, studentDelta, teacherDelta int64) error
 	UpdateInviteCode(ctx context.Context, classroomId string, code *string, expiresDt mtime.MathTime) error
 	SetOwnerProfileId(ctx context.Context, classroomId, newOwnerProfileId string) error
 	ArchiveByClassroomId(ctx context.Context, classroomId string) error

@@ -15,6 +15,8 @@ type ClassroomModel struct {
 	InviteCodeExpiresDt *time.Time
 	MaxMembers          *int64
 	MemberCount         int64
+	StudentCount        int64
+	TeacherCount        int64
 	CoverKey            *string
 	Note                *string
 	ClassroomStatus     *string

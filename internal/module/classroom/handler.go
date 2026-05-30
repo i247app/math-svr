@@ -10,6 +10,8 @@ import (
 	"math-ai.com/math-ai/internal/application/resource"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -68,6 +70,14 @@ func (h *ClassroomHandler) HandleCreateClassroom(w http.ResponseWriter, r *http.
 		req.SchoolID = utils.ToStringPtr(r.FormValue("school_id"))
 		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
 		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
+		req.InviteCode = utils.ToStringPtr(r.FormValue("invite_code"))
+		if expires := r.FormValue("invite_code_expires_dt"); expires != "" {
+			if parsed, err := mtime.Parse(expires); err == nil {
+				req.InviteCodeExpiresDt = parsed
+			} else {
+				logger.From(r.Context()).Warnf("classroom.create invite_code_expires_dt parse failed value=%s err=%v", expires, err)
+			}
+		}
 		maxNumbers := r.FormValue("max_members")
 		if maxNumbers != "" {
 			num, err := utils.StringToInt64Err(maxNumbers)

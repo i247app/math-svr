@@ -420,6 +420,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Max members must be a positive number"
 	case CLASSROOM_INVALID_SCHOOL:
 		return "School not found"
+	case CLASSROOM_INVITE_CODE_TAKEN:
+		return "Invite code is already in use"
 
 	// Classroom member
 	case CLASSROOM_MEMBER_NOT_FOUND:

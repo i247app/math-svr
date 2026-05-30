@@ -4,6 +4,7 @@ import (
 	"io"
 
 	domain "math-ai.com/math-ai/internal/domain/classroom"
+	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -23,6 +24,8 @@ type ClassroomResponse struct {
 	InviteCodeExpiresDt string  `json:"invite_code_expires_dt,omitempty"`
 	MaxMembers          *int64  `json:"max_members,omitempty"`
 	MemberCount         int64   `json:"member_count"`
+	StudentCount        int64   `json:"student_count"`
+	TeacherCount        int64   `json:"teacher_count"`
 	CoverKey            *string `json:"cover_key,omitempty"`
 	CoverURL            *string `json:"cover_url,omitempty"`
 	Note                *string `json:"note,omitempty"`
@@ -45,6 +48,16 @@ type CreateClassroomReq struct {
 	MaxMembers  *int64  `json:"max_members,omitempty"`
 	CoverKey    *string `json:"cover_key,omitempty"`
 	Note        *string `json:"note,omitempty"`
+	// InviteCode is an optional client-supplied join code (e.g. a
+	// human-friendly token like "MATH4B"). Bounded by VARCHAR(16) and
+	// must be unique across all classrooms; the command rejects a
+	// duplicate with CLASSROOM_INVITE_CODE_TAKEN. Leave empty to ship a
+	// classroom without a code (targeted invitations only).
+	InviteCode *string `json:"invite_code,omitempty"`
+	// InviteCodeExpiresDt is the optional expiry that pairs with
+	// InviteCode. A zero value (omitted in JSON) means the code never
+	// expires. Required to be in the future when supplied.
+	InviteCodeExpiresDt mtime.MathTime `json:"invite_code_expires_dt,omitempty"`
 
 	// File upload fields for handling cover image
 	AvatarFile        io.Reader `json:"-"`
@@ -68,8 +81,8 @@ type UpdateClassroomReq struct {
 	ProgramID   *string `json:"program_id,omitempty"`
 	GradeID     *string `json:"grade_id,omitempty"`
 	MaxMembers  *int64  `json:"max_members,omitempty"`
-	CoverKey    *string `json:"cover_key,omitempty"`
 	Note        *string `json:"note,omitempty"`
+	AvatarKey   *string `json:"avatar_key,omitempty"`
 
 	// File upload fields for handling cover image
 	AvatarFile        io.Reader `json:"-"`
@@ -155,6 +168,8 @@ func DomainToResponse(c *domain.Classroom) *ClassroomResponse {
 		InviteCode:      c.InviteCode(),
 		MaxMembers:      c.MaxMembers(),
 		MemberCount:     c.MemberCount(),
+		StudentCount:    c.StudentCount(),
+		TeacherCount:    c.TeacherCount(),
 		CoverKey:        c.CoverKey(),
 		Note:            c.Note(),
 		ClassroomStatus: c.ClassroomStatus(),

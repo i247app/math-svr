@@ -111,16 +111,18 @@ func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomR
 
 	actor := caller.ProfileId()
 	created, err := s.createClassroomCmd.Handle(ctx, command.CreateClassroomCommand{
-		ActorID:        &actor,
-		OwnerProfileID: caller.ProfileId(),
-		Name:           strings.TrimSpace(req.Name),
-		Description:    req.Description,
-		SchoolID:       req.SchoolID,
-		ProgramID:      req.ProgramID,
-		GradeID:        req.GradeID,
-		MaxMembers:     req.MaxMembers,
-		CoverKey:       req.CoverKey,
-		Note:           req.Note,
+		ActorID:             &actor,
+		OwnerProfileID:      caller.ProfileId(),
+		Name:                strings.TrimSpace(req.Name),
+		Description:         req.Description,
+		SchoolID:            req.SchoolID,
+		ProgramID:           req.ProgramID,
+		GradeID:             req.GradeID,
+		MaxMembers:          req.MaxMembers,
+		CoverKey:            req.CoverKey,
+		Note:                req.Note,
+		InviteCode:          req.InviteCode,
+		InviteCodeExpiresDt: req.InviteCodeExpiresDt,
 	})
 	if err != nil {
 		return nil, err
@@ -164,7 +166,7 @@ func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomR
 		ProgramID:   req.ProgramID,
 		GradeID:     req.GradeID,
 		MaxMembers:  req.MaxMembers,
-		CoverKey:    req.CoverKey,
+		AvatarKey:   req.AvatarKey,
 		Note:        req.Note,
 	})
 	if err != nil {

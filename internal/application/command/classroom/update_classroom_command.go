@@ -22,7 +22,7 @@ type UpdateClassroomCommand struct {
 	ProgramID   *string
 	GradeID     *string
 	MaxMembers  *int64
-	CoverKey    *string
+	AvatarKey   *string
 	Note        *string
 }
 
@@ -67,8 +67,8 @@ func (h *UpdateClassroomCommandHandler) Handle(ctx context.Context, cmd UpdateCl
 		if cmd.MaxMembers != nil {
 			patch.SetMaxMembers(cmd.MaxMembers)
 		}
-		if cmd.CoverKey != nil {
-			patch.SetCoverKey(cmd.CoverKey)
+		if cmd.AvatarKey != nil {
+			patch.SetCoverKey(cmd.AvatarKey)
 		}
 		if cmd.Note != nil {
 			patch.SetNote(cmd.Note)

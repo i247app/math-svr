@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS ma_classrooms (
   invite_code_expires_dt  DATETIME(6) DEFAULT NULL,
   max_members             INT UNSIGNED DEFAULT NULL,
   member_count            INT UNSIGNED NOT NULL DEFAULT 0,
+  student_count           INT UNSIGNED NOT NULL DEFAULT 0,
+  teacher_count           INT UNSIGNED NOT NULL DEFAULT 0,
   cover_key               VARCHAR(256) DEFAULT NULL,
   note                    VARCHAR(500) DEFAULT NULL,
   classroom_status        VARCHAR(32) DEFAULT 'ACTIVE', -- ACTIVE, ARCHIVED, DELETED

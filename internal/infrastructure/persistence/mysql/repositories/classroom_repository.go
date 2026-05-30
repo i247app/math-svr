@@ -21,7 +21,8 @@ const (
 	classroomColumns = `c.id, c.classroom_id, c.owner_profile_id, c.name, c.description,
 		c.school_id, c.program_id, c.grade_id,
 		c.invite_code, c.invite_code_expires_dt,
-		c.max_members, c.member_count, c.cover_key, c.note,
+		c.max_members, c.member_count, c.student_count, c.teacher_count,
+		c.cover_key, c.note,
 		c.classroom_status, c.status,
 		c.create_id, c.create_dt, c.modify_id, c.modify_dt`
 
@@ -49,7 +50,8 @@ func scanClassroom(s database.RowScanner) (*models.ClassroomModel, error) {
 	if err := s.Scan(&m.Id, &m.ClassroomId, &m.OwnerProfileId, &m.Name, &m.Description,
 		&m.SchoolId, &m.ProgramId, &m.GradeId,
 		&m.InviteCode, &m.InviteCodeExpiresDt,
-		&m.MaxMembers, &m.MemberCount, &m.CoverKey, &m.Note,
+		&m.MaxMembers, &m.MemberCount, &m.StudentCount, &m.TeacherCount,
+		&m.CoverKey, &m.Note,
 		&m.ClassroomStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -249,15 +251,17 @@ func (r *ClassroomRepository) Create(ctx context.Context, c *classroom.Classroom
 			(classroom_id, owner_profile_id, name, description,
 			 school_id, program_id, grade_id,
 			 invite_code, invite_code_expires_dt,
-			 max_members, member_count, cover_key, note,
+			 max_members, member_count, student_count, teacher_count,
+			 cover_key, note,
 			 classroom_status, create_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		c.ClassroomId(), c.OwnerProfileId(), c.Name(), c.Description(),
 		c.SchoolId(), c.ProgramId(), c.GradeId(),
 		c.InviteCode(), expiresArg,
-		c.MaxMembers(), c.MemberCount(), c.CoverKey(), c.Note(),
+		c.MaxMembers(), c.MemberCount(), c.StudentCount(), c.TeacherCount(),
+		c.CoverKey(), c.Note(),
 		c.ClassroomStatus(), c.CreateId())
 	if err != nil {
 		return nil, fmt.Errorf("classroom repo create: %w", err)
@@ -301,17 +305,22 @@ func (r *ClassroomRepository) Update(ctx context.Context, c *classroom.Classroom
 	return nil
 }
 
-// IncMemberCount applies a signed delta and clamps the result at zero so
-// drift can never produce a negative counter on disk.
-func (r *ClassroomRepository) IncMemberCount(ctx context.Context, classroomId string, delta int64) error {
+// IncCounts applies signed deltas to the three counters in a single
+// UPDATE. GREATEST(0, …) clamps each at zero so drift can never produce
+// a negative counter on disk.
+func (r *ClassroomRepository) IncCounts(ctx context.Context, classroomId string, memberDelta, studentDelta, teacherDelta int64) error {
 	query := `
 		UPDATE ` + classroomTable + `
-		SET member_count = GREATEST(0, CAST(member_count AS SIGNED) + ?),
-			modify_dt    = ?
+		SET member_count  = GREATEST(0, CAST(member_count  AS SIGNED) + ?),
+			student_count = GREATEST(0, CAST(student_count AS SIGNED) + ?),
+			teacher_count = GREATEST(0, CAST(teacher_count AS SIGNED) + ?),
+			modify_dt     = ?
 		WHERE classroom_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, delta, mtime.Now().Time, classroomId); err != nil {
-		return fmt.Errorf("classroom repo inc member count: %w", err)
+	if _, err := r.db.Exec(ctx, query,
+		memberDelta, studentDelta, teacherDelta,
+		mtime.Now().Time, classroomId); err != nil {
+		return fmt.Errorf("classroom repo inc counts: %w", err)
 	}
 	return nil
 }
@@ -416,6 +425,8 @@ func ModelToDomainClassroom(m *models.ClassroomModel) *classroom.Classroom {
 	}
 	c.SetMaxMembers(m.MaxMembers)
 	c.SetMemberCount(m.MemberCount)
+	c.SetStudentCount(m.StudentCount)
+	c.SetTeacherCount(m.TeacherCount)
 	c.SetCoverKey(m.CoverKey)
 	c.SetNote(m.Note)
 	c.SetClassroomStatus(m.ClassroomStatus)

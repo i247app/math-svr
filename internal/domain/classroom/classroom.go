@@ -22,6 +22,8 @@ type Classroom struct {
 	inviteCodeExpiresDt  mtime.MathTime
 	maxMembers           *int64
 	memberCount          int64
+	studentCount         int64
+	teacherCount         int64
 	coverKey             *string
 	note                 *string
 	classroomStatus      *string
@@ -62,6 +64,10 @@ func (c *Classroom) MaxMembers() *int64                 { return c.maxMembers }
 func (c *Classroom) SetMaxMembers(v *int64)             { c.maxMembers = v }
 func (c *Classroom) MemberCount() int64                 { return c.memberCount }
 func (c *Classroom) SetMemberCount(v int64)             { c.memberCount = v }
+func (c *Classroom) StudentCount() int64                { return c.studentCount }
+func (c *Classroom) SetStudentCount(v int64)            { c.studentCount = v }
+func (c *Classroom) TeacherCount() int64                { return c.teacherCount }
+func (c *Classroom) SetTeacherCount(v int64)            { c.teacherCount = v }
 func (c *Classroom) CoverKey() *string                  { return c.coverKey }
 func (c *Classroom) SetCoverKey(k *string)              { c.coverKey = k }
 func (c *Classroom) Note() *string                      { return c.note }

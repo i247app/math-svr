@@ -420,6 +420,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Giới hạn thành viên phải là số dương"
 	case CLASSROOM_INVALID_SCHOOL:
 		return "Không tìm thấy trường học"
+	case CLASSROOM_INVITE_CODE_TAKEN:
+		return "Mã mời đã được sử dụng"
 
 	// Classroom member
 	case CLASSROOM_MEMBER_NOT_FOUND:

@@ -79,7 +79,9 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 			if err := repos.ClassroomMember.Reactivate(ctx, existing.MemberId(), studentRole, nil); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
-			if err := repos.Classroom.IncMemberCount(ctx, c.ClassroomId(), 1); err != nil {
+			// Join-by-code always lands in the STUDENT bucket; promotion
+			// to CO_TEACHER is a separate explicit role update.
+			if err := repos.Classroom.IncCounts(ctx, c.ClassroomId(), 1, 1, 0); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			refreshed, err := repos.ClassroomMember.FindByMemberId(ctx, existing.MemberId())
@@ -111,7 +113,7 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.Classroom.IncMemberCount(ctx, c.ClassroomId(), 1); err != nil {
+		if err := repos.Classroom.IncCounts(ctx, c.ClassroomId(), 1, 1, 0); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		saved = inserted

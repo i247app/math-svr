@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -51,6 +52,23 @@ func ValidateCreateClassroom(ctx context.Context, req *dto.CreateClassroomReq) e
 		return errs.NewError(ctx, status.CLASSROOM_INVALID_MAX_MEMBERS, nil,
 			errors.New("max_members must be > 0"))
 	}
+	if req.InviteCode != nil {
+		code := strings.TrimSpace(*req.InviteCode)
+		if code == "" {
+			// Treat a blank pointer as "no code supplied" so callers
+			// using multipart forms don't need to omit the field.
+			req.InviteCode = nil
+		} else if len(code) > inviteCodeMaxLen {
+			return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_INVALID, nil,
+				errors.New("invite_code too long"))
+		} else {
+			req.InviteCode = &code
+		}
+	}
+	if req.InviteCodeExpiresDt.IsValid() && req.InviteCodeExpiresDt.Time.Before(time.Now()) {
+		return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_EXPIRED, nil,
+			errors.New("invite_code_expires_dt must be in the future"))
+	}
 	return nil
 }
 
@@ -77,7 +95,7 @@ func ValidateUpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq) e
 		return errs.NewError(ctx, status.CLASSROOM_DESCRIPTION_TOO_LONG, nil,
 			errors.New("description too long"))
 	}
-	if req.CoverKey != nil && len(*req.CoverKey) > coverKeyMaxLen {
+	if req.AvatarKey != nil && len(*req.AvatarKey) > coverKeyMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
 			errors.New("cover_key too long"))
 	}

@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
@@ -18,16 +19,18 @@ import (
 // here we trust the caller and focus on atomicity: a classroom always
 // ships with exactly one OWNER on disk.
 type CreateClassroomCommand struct {
-	ActorID        *string
-	OwnerProfileID string
-	Name           string
-	Description    *string
-	SchoolID       *string
-	ProgramID      *string
-	GradeID        *string
-	MaxMembers     *int64
-	CoverKey       *string
-	Note           *string
+	ActorID             *string
+	OwnerProfileID      string
+	Name                string
+	Description         *string
+	SchoolID            *string
+	ProgramID           *string
+	GradeID             *string
+	MaxMembers          *int64
+	CoverKey            *string
+	Note                *string
+	InviteCode          *string
+	InviteCodeExpiresDt mtime.MathTime
 }
 
 type CreateClassroomCommandHandler struct {
@@ -42,6 +45,26 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 	var created *classroom.Classroom
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
+		// Reject duplicate invite_code up front so the friendlier
+		// CLASSROOM_INVITE_CODE_TAKEN propagates instead of a generic
+		// repo-level constraint error. The DB UNIQUE key is still the
+		// hard backstop for the race window.
+		var inviteCodeArg *string
+		if cmd.InviteCode != nil {
+			trimmed := strings.TrimSpace(*cmd.InviteCode)
+			if trimmed != "" {
+				existing, err := repos.Classroom.FindByInviteCode(ctx, trimmed)
+				if err != nil {
+					return errs.NewError(ctx, status.FAIL, nil, err)
+				}
+				if existing != nil {
+					return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_TAKEN, nil,
+						errors.New("invite code already taken"))
+				}
+				inviteCodeArg = &trimmed
+			}
+		}
+
 		classroomID, err := nextSeqID(ctx, repos, seq.NameClassroom)
 		if err != nil {
 			return err
@@ -55,8 +78,16 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 		c.SetSchoolId(cmd.SchoolID)
 		c.SetProgramId(cmd.ProgramID)
 		c.SetGradeId(cmd.GradeID)
+		c.SetInviteCode(inviteCodeArg)
+		if cmd.InviteCodeExpiresDt.IsValid() {
+			c.SetInviteCodeExpiresDt(cmd.InviteCodeExpiresDt)
+		}
 		c.SetMaxMembers(cmd.MaxMembers)
-		c.SetMemberCount(1) // the OWNER row inserted below
+		// Seed counters in sync with the OWNER member row inserted
+		// below. OWNER counts as a teacher for role tallies.
+		c.SetMemberCount(1)
+		c.SetStudentCount(0)
+		c.SetTeacherCount(1)
 		c.SetCoverKey(cmd.CoverKey)
 		c.SetNote(cmd.Note)
 		c.SetCreateId(cmd.ActorID)
