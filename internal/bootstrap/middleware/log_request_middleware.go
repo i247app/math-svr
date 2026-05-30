@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"mime"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"strings"
@@ -95,6 +96,19 @@ const (
 	// pass the body through untouched and log a marker. Prevents large
 	// uploads from being copied into memory just for logging.
 	requestBodyHardCap = 1 << 20 // 1 MiB
+
+	// multipartBodyHardCap bounds how much multipart/form-data we'll
+	// buffer for log inspection. Higher than requestBodyHardCap because
+	// uploads commonly carry one or more files — and we have to double-
+	// buffer the whole body so we can both parse it (for the log) and
+	// replay it (for the handler). Above this, the body is skipped with
+	// a marker.
+	multipartBodyHardCap = 16 << 20 // 16 MiB
+
+	// multipartFieldValueCap is the per-field cap for text parts inside a
+	// multipart body. Keeps a single oversized form field from filling
+	// the log line by itself.
+	multipartFieldValueCap = 4 * 1024 // 4 KiB
 
 	// Sentinels inserted into the logged body when content was clipped.
 	bodyTruncatedNote = "[truncated]"
@@ -224,19 +238,33 @@ func (r *responseRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 // snapshotRequestBody returns a copy of the request body (capped) and an
 // optional note explaining why a copy is missing. It always restores
-// r.Body so downstream handlers can read it. Cases that bypass capture:
+// r.Body so downstream handlers can read it. Cases that bypass raw
+// capture:
 //   - no body / Content-Length 0
 //   - chunked-encoding (Content-Length unknown)
 //   - body larger than requestBodyHardCap
-//   - multipart/form-data or application/octet-stream (uploads)
+//   - application/octet-stream (binary upload)
+//
+// multipart/form-data is handled separately by snapshotMultipartBody:
+// text fields are inlined into the note as JSON, file parts are reduced
+// to metadata (filename, size, content type). The body is still restored
+// for the handler.
 func snapshotRequestBody(r *http.Request) ([]byte, string) {
 	if r.Body == nil || r.Body == http.NoBody {
 		return nil, ""
 	}
 
-	switch ct := strings.ToLower(parseMediaType(r.Header.Get("Content-Type"))); {
-	case strings.HasPrefix(ct, "multipart/"),
-		strings.HasPrefix(ct, "application/octet-stream"):
+	// Parse Content-Type once: we need both the media type (to branch on)
+	// and the parameters (the multipart boundary lives in
+	// params["boundary"]). A malformed Content-Type yields an empty
+	// mediaType and falls through to the generic path.
+	mediaType, params, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	mediaType = strings.ToLower(mediaType)
+
+	switch {
+	case strings.HasPrefix(mediaType, "multipart/"):
+		return snapshotMultipartBody(r, params["boundary"])
+	case strings.HasPrefix(mediaType, "application/octet-stream"):
 		return nil, bodySkippedNote + " (binary)"
 	}
 
@@ -259,6 +287,135 @@ func snapshotRequestBody(r *http.Request) ([]byte, string) {
 		return raw, "[read-error: " + err.Error() + "]"
 	}
 	return raw, ""
+}
+
+// snapshotMultipartBody reads a multipart/form-data body, builds a
+// readable JSON representation of its parts (text values inline, file
+// parts as metadata only — filename, size, content type), and restores
+// r.Body so downstream handlers can still parse it. The formatted
+// payload is returned through the note channel so it bypasses the
+// JSON-only path in maskBodyForLog.
+//
+// The body is buffered whole, capped at multipartBodyHardCap. Above the
+// cap — or for chunked uploads where ContentLength is unknown — logging
+// is skipped: file uploads can legitimately be larger than we want to
+// double-buffer just for log inspection.
+func snapshotMultipartBody(r *http.Request, boundary string) ([]byte, string) {
+	if boundary == "" {
+		return nil, bodySkippedNote + " (multipart missing boundary)"
+	}
+	if r.ContentLength < 0 {
+		return nil, bodySkippedNote + " (multipart chunked)"
+	}
+	if r.ContentLength == 0 {
+		return nil, ""
+	}
+	if r.ContentLength > multipartBodyHardCap {
+		return nil, bodySkippedNote + " (multipart oversize)"
+	}
+
+	raw, err := io.ReadAll(r.Body)
+	_ = r.Body.Close()
+	r.Body = io.NopCloser(bytes.NewReader(raw))
+	if err != nil {
+		return nil, "[read-error: " + err.Error() + "]"
+	}
+
+	formatted, perr := formatMultipartForLog(raw, boundary)
+	if perr != nil {
+		return nil, "[multipart-parse-failed: " + perr.Error() + "]"
+	}
+	return nil, formatted
+}
+
+// formatMultipartForLog walks the parts of body using the given boundary
+// and returns a pretty-printed JSON array. Text parts produce
+// {"name","value"} entries (with redaction for sensitiveBodyKeys and
+// per-field truncation at multipartFieldValueCap). File parts produce
+// {"name","filename","size","content_type"} entries — the bytes are
+// counted but never copied into the log.
+//
+// A mid-stream parse error doesn't discard the parts we already gathered;
+// we tag the result with a partial-parse marker and return what we have.
+func formatMultipartForLog(body []byte, boundary string) (string, error) {
+	mr := multipart.NewReader(bytes.NewReader(body), boundary)
+
+	var parts []any
+	var partialErr error
+
+	for {
+		part, err := mr.NextPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			partialErr = err
+			break
+		}
+
+		name := part.FormName()
+		if filename := part.FileName(); filename != "" {
+			// File parts: count bytes, never copy them. io.Discard avoids
+			// the allocation cost of ReadAll for multi-megabyte uploads.
+			size, _ := io.Copy(io.Discard, part)
+			parts = append(parts, multipartFileLogPart{
+				Name:        name,
+				Filename:    filename,
+				Size:        size,
+				ContentType: part.Header.Get("Content-Type"),
+			})
+		} else {
+			value, note := readMultipartFieldValue(part, name)
+			parts = append(parts, multipartTextLogPart{
+				Name:  name,
+				Value: value + note,
+			})
+		}
+		_ = part.Close()
+	}
+
+	out, err := json.MarshalIndent(parts, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	formatted := truncate(string(out), logBodyCap)
+	if partialErr != nil {
+		formatted += " [multipart-partial: " + partialErr.Error() + "]"
+	}
+	return formatted, nil
+}
+
+// readMultipartFieldValue reads at most multipartFieldValueCap bytes
+// from a text part. A field name in sensitiveBodyKeys is fully redacted
+// without inspecting the value; an overflowing field is truncated and
+// tagged. The remainder of the part is drained so the multipart reader
+// can advance to the next part.
+func readMultipartFieldValue(part *multipart.Part, name string) (string, string) {
+	if _, sensitive := sensitiveBodyKeys[strings.ToLower(name)]; sensitive {
+		_, _ = io.Copy(io.Discard, part)
+		return bodyRedactedValue, ""
+	}
+	raw, err := io.ReadAll(io.LimitReader(part, multipartFieldValueCap+1))
+	if err != nil {
+		return string(raw), "[read-error: " + err.Error() + "]"
+	}
+	if len(raw) > multipartFieldValueCap {
+		_, _ = io.Copy(io.Discard, part)
+		return string(raw[:multipartFieldValueCap]), bodyTruncatedNote
+	}
+	return string(raw), ""
+}
+
+type multipartTextLogPart struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type multipartFileLogPart struct {
+	Name        string `json:"name"`
+	Filename    string `json:"filename"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"content_type,omitempty"`
 }
 
 // ──────────────────────────────────────────────────────────────────────────

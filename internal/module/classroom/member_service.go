@@ -15,8 +15,11 @@ import (
 // JoinClassroomByCode lets any authenticated profile join a classroom
 // using a non-expired invite_code. Unlike CreateClassroom there is no
 // TEACHER-role gate — any profile (STUDENT/PARENT/TEACHER) may join.
-// The classroom-state, expiry, and capacity checks live inside the
-// command's UoW so they're atomic with the member-row write.
+// The caller's ma_profiles.role is forwarded to the command, which
+// derives the classroom-side member_role: TEACHER → CO_TEACHER,
+// everyone else → STUDENT. The classroom-state, expiry, and capacity
+// checks live inside the command's UoW so they're atomic with the
+// member-row write.
 func (s *Service) JoinClassroomByCode(ctx context.Context, req *dto.JoinByCodeReq, sessionUserID string) (*dto.JoinByCodeRes, error) {
 	if err := ValidateJoinByCode(ctx, req); err != nil {
 		return nil, err
@@ -28,9 +31,10 @@ func (s *Service) JoinClassroomByCode(ctx context.Context, req *dto.JoinByCodeRe
 
 	actor := caller.ProfileId()
 	saved, err := s.joinByCodeCmd.Handle(ctx, command.JoinByCodeCommand{
-		ActorID:    &actor,
-		ProfileID:  caller.ProfileId(),
-		InviteCode: req.InviteCode,
+		ActorID:     &actor,
+		ProfileID:   caller.ProfileId(),
+		ProfileRole: caller.Role(),
+		InviteCode:  req.InviteCode,
 	})
 	if err != nil {
 		return nil, err

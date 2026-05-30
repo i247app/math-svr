@@ -14,17 +14,20 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// JoinByCodeCommand resolves a classroom by invite_code and inserts (or
-// reactivates) the caller as a STUDENT member. Atomicity guarantees:
-// the classroom lookup, the duplicate check, the member write, and the
-// member_count increment all happen inside one UoW. A profile rejoining
-// a classroom they once left does NOT get a new member row — the
-// existing one is flipped back to ACTIVE so the unique constraint
-// stays meaningful and join history is preserved.
+// JoinByCodeCommand resolves a classroom by invite_code and inserts
+// (or reactivates) the caller as a member. The classroom-side member
+// role is derived from ProfileRole via memberRoleForProfileRole — a
+// TEACHER profile lands as CO_TEACHER, anyone else lands as STUDENT.
+// Atomicity guarantees: classroom lookup, duplicate check, member
+// write, and counter updates all happen inside one UoW. A profile
+// rejoining a classroom they once left does NOT get a new member row
+// — the existing one is flipped back to ACTIVE so the unique
+// constraint stays meaningful and join history is preserved.
 type JoinByCodeCommand struct {
-	ActorID    *string
-	ProfileID  string
-	InviteCode string
+	ActorID     *string
+	ProfileID   string
+	ProfileRole string
+	InviteCode  string
 }
 
 type JoinByCodeCommandHandler struct {
@@ -65,7 +68,8 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 
-		studentRole := string(enum.ClassroomMemberRoleTypeStudent)
+		memberRole := memberRoleForProfileRole(cmd.ProfileRole)
+		studentDelta, teacherDelta := roleCountDeltas(memberRole, 1)
 
 		if existing != nil {
 			currentStatus := ""
@@ -76,12 +80,10 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 				return errs.NewError(ctx, status.CLASSROOM_MEMBER_ALREADY_MEMBER, nil,
 					errors.New("already an active member"))
 			}
-			if err := repos.ClassroomMember.Reactivate(ctx, existing.MemberId(), studentRole, nil); err != nil {
+			if err := repos.ClassroomMember.Reactivate(ctx, existing.MemberId(), memberRole, nil); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
-			// Join-by-code always lands in the STUDENT bucket; promotion
-			// to CO_TEACHER is a separate explicit role update.
-			if err := repos.Classroom.IncCounts(ctx, c.ClassroomId(), 1, 1, 0); err != nil {
+			if err := repos.Classroom.IncCounts(ctx, c.ClassroomId(), 1, studentDelta, teacherDelta); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			refreshed, err := repos.ClassroomMember.FindByMemberId(ctx, existing.MemberId())
@@ -104,7 +106,7 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 		m.SetMemberId(memberID)
 		m.SetClassroomId(c.ClassroomId())
 		m.SetProfileId(cmd.ProfileID)
-		m.SetMemberRole(studentRole)
+		m.SetMemberRole(memberRole)
 		m.SetJoinedDt(now)
 		m.SetMemberStatus(&activeStatus)
 		m.SetCreateId(cmd.ActorID)
@@ -113,7 +115,7 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.Classroom.IncCounts(ctx, c.ClassroomId(), 1, 1, 0); err != nil {
+		if err := repos.Classroom.IncCounts(ctx, c.ClassroomId(), 1, studentDelta, teacherDelta); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		saved = inserted
