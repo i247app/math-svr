@@ -7,8 +7,8 @@ CREATE TABLE IF NOT EXISTS ma_classrooms (
   description             VARCHAR(500) DEFAULT NULL,
   school_id               BIGINT UNSIGNED DEFAULT NULL,
   grade_id                BIGINT UNSIGNED DEFAULT NULL,
-  invite_code             VARCHAR(16) DEFAULT NULL,
-  invite_code_expires_dt  DATETIME(6) DEFAULT NULL,
+  classroom_code             VARCHAR(16) DEFAULT NULL,
+  classroom_code_expires_dt  DATETIME(6) DEFAULT NULL,
   max_members             INT UNSIGNED DEFAULT NULL,
   member_count            INT UNSIGNED NOT NULL DEFAULT 0,
   student_count           INT UNSIGNED NOT NULL DEFAULT 0,
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS ma_classrooms (
   modify_id               BIGINT UNSIGNED DEFAULT NULL,
   modify_dt               DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   deleted_dt              DATETIME(6) DEFAULT NULL,
-  UNIQUE KEY uk_invite_code (invite_code)
+  UNIQUE KEY uk_classroom_code (classroom_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ALTER TABLE ma_classrooms

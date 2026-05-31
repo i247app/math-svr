@@ -7,18 +7,18 @@ import (
 // Classroom models ma_classrooms. owner_profile_id is denormalized for
 // O(1) "who owns this" lookups; it is kept in sync with the matching
 // OWNER row in ma_classroom_members inside the same UnitOfWork. The
-// invite_code path is opt-in: nil/empty + a null expiry means joining
-// is closed (only targeted invitations work).
+// classroom_code path is opt-in: nil/empty + a null expiry means
+// joining is closed (only targeted invitations work).
 type Classroom struct {
-	id                  int64
-	classroomId         int64
-	ownerProfileId      int64
-	name                string
-	description         *string
-	schoolId            *int64
-	gradeId             *int64
-	inviteCode          *string
-	inviteCodeExpiresDt mtime.MathTime
+	id                     int64
+	classroomId            int64
+	ownerProfileId         int64
+	name                   string
+	description            *string
+	schoolId               *int64
+	gradeId                *int64
+	classroomCode          *string
+	classroomCodeExpiresDt mtime.MathTime
 	maxMembers          *int64
 	memberCount         int64
 	studentCount        int64
@@ -60,11 +60,11 @@ func (c *Classroom) ProgramIds() []int64                 { return c.programIds }
 func (c *Classroom) SetProgramIds(ids []int64)           { c.programIds = ids }
 func (c *Classroom) GradeId() *int64                     { return c.gradeId }
 func (c *Classroom) SetGradeId(id *int64)                { c.gradeId = id }
-func (c *Classroom) InviteCode() *string                 { return c.inviteCode }
-func (c *Classroom) SetInviteCode(v *string)             { c.inviteCode = v }
-func (c *Classroom) InviteCodeExpiresDt() mtime.MathTime { return c.inviteCodeExpiresDt }
-func (c *Classroom) SetInviteCodeExpiresDt(t mtime.MathTime) {
-	c.inviteCodeExpiresDt = t
+func (c *Classroom) ClassroomCode() *string                 { return c.classroomCode }
+func (c *Classroom) SetClassroomCode(v *string)             { c.classroomCode = v }
+func (c *Classroom) ClassroomCodeExpiresDt() mtime.MathTime { return c.classroomCodeExpiresDt }
+func (c *Classroom) SetClassroomCodeExpiresDt(t mtime.MathTime) {
+	c.classroomCodeExpiresDt = t
 }
 func (c *Classroom) MaxMembers() *int64           { return c.maxMembers }
 func (c *Classroom) SetMaxMembers(v *int64)       { c.maxMembers = v }

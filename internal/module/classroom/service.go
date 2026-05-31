@@ -146,8 +146,8 @@ func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomR
 		MaxMembers:          req.MaxMembers,
 		CoverKey:            req.CoverKey,
 		Note:                req.Note,
-		InviteCode:          req.InviteCode,
-		InviteCodeExpiresDt: req.InviteCodeExpiresDt,
+		ClassroomCode:          req.ClassroomCode,
+		ClassroomCodeExpiresDt: req.ClassroomCodeExpiresDt,
 	})
 	if err != nil {
 		return nil, err

@@ -20,7 +20,7 @@ const (
 
 	classroomColumns = `c.id, c.classroom_id, c.owner_profile_id, c.name, c.description,
 		c.school_id, c.grade_id,
-		c.invite_code, c.invite_code_expires_dt,
+		c.classroom_code, c.classroom_code_expires_dt,
 		c.max_members, c.member_count, c.student_count, c.teacher_count,
 		c.cover_key, c.note,
 		c.classroom_status, c.status,
@@ -49,7 +49,7 @@ func scanClassroom(s database.RowScanner) (*models.ClassroomModel, error) {
 	var m models.ClassroomModel
 	if err := s.Scan(&m.Id, &m.ClassroomId, &m.OwnerProfileId, &m.Name, &m.Description,
 		&m.SchoolId, &m.GradeId,
-		&m.InviteCode, &m.InviteCodeExpiresDt,
+		&m.ClassroomCode, &m.ClassroomCodeExpiresDt,
 		&m.MaxMembers, &m.MemberCount, &m.StudentCount, &m.TeacherCount,
 		&m.CoverKey, &m.Note,
 		&m.ClassroomStatus, &m.Status,
@@ -93,8 +93,8 @@ func (r *ClassroomRepository) FindByClassroomId(ctx context.Context, classroomId
 	return r.findOneBy(ctx, "c.classroom_id = ?", classroomId)
 }
 
-func (r *ClassroomRepository) FindByInviteCode(ctx context.Context, code string) (*classroom.Classroom, error) {
-	return r.findOneBy(ctx, "c.invite_code = ?", code)
+func (r *ClassroomRepository) FindByClassroomCode(ctx context.Context, code string) (*classroom.Classroom, error) {
+	return r.findOneBy(ctx, "c.classroom_code = ?", code)
 }
 
 func (r *ClassroomRepository) ListClassrooms(ctx context.Context, params *classroom.ListClassroomsParams) ([]*classroom.Classroom, *pagination.Pagination, error) {
@@ -285,15 +285,15 @@ func (r *ClassroomRepository) ListClassroomsByIds(ctx context.Context, ids []int
 
 func (r *ClassroomRepository) Create(ctx context.Context, c *classroom.Classroom) (*classroom.Classroom, error) {
 	var expiresArg any
-	if c.InviteCodeExpiresDt().IsValid() {
-		expiresArg = c.InviteCodeExpiresDt().Time
+	if c.ClassroomCodeExpiresDt().IsValid() {
+		expiresArg = c.ClassroomCodeExpiresDt().Time
 	}
 
 	query := `
 		INSERT INTO ` + classroomTable + `
 			(classroom_id, owner_profile_id, name, description,
 			 school_id, grade_id,
-			 invite_code, invite_code_expires_dt,
+			 classroom_code, classroom_code_expires_dt,
 			 max_members, member_count, student_count, teacher_count,
 			 cover_key, note,
 			 classroom_status, create_id)
@@ -302,7 +302,7 @@ func (r *ClassroomRepository) Create(ctx context.Context, c *classroom.Classroom
 	result, err := r.db.Exec(ctx, query,
 		c.ClassroomId(), c.OwnerProfileId(), c.Name(), c.Description(),
 		c.SchoolId(), c.GradeId(),
-		c.InviteCode(), expiresArg,
+		c.ClassroomCode(), expiresArg,
 		c.MaxMembers(), c.MemberCount(), c.StudentCount(), c.TeacherCount(),
 		c.CoverKey(), c.Note(),
 		c.ClassroomStatus(), c.CreateId())
@@ -367,15 +367,15 @@ func (r *ClassroomRepository) IncCounts(ctx context.Context, classroomId int64, 
 	return nil
 }
 
-func (r *ClassroomRepository) UpdateInviteCode(ctx context.Context, classroomId int64, code *string, expiresDt mtime.MathTime) error {
+func (r *ClassroomRepository) UpdateClassroomCode(ctx context.Context, classroomId int64, code *string, expiresDt mtime.MathTime) error {
 	var expiresArg any
 	if expiresDt.IsValid() {
 		expiresArg = expiresDt.Time
 	}
 	query := `
 		UPDATE ` + classroomTable + `
-		SET invite_code             = ?,
-			invite_code_expires_dt  = ?,
+		SET classroom_code             = ?,
+			classroom_code_expires_dt  = ?,
 			modify_dt               = ?
 		WHERE classroom_id = ?
 	`
@@ -460,9 +460,9 @@ func ModelToDomainClassroom(m *models.ClassroomModel) *classroom.Classroom {
 	c.SetDescription(m.Description)
 	c.SetSchoolId(m.SchoolId)
 	c.SetGradeId(m.GradeId)
-	c.SetInviteCode(m.InviteCode)
-	if m.InviteCodeExpiresDt != nil {
-		c.SetInviteCodeExpiresDt(mtime.MathTime{Time: *m.InviteCodeExpiresDt})
+	c.SetClassroomCode(m.ClassroomCode)
+	if m.ClassroomCodeExpiresDt != nil {
+		c.SetClassroomCodeExpiresDt(mtime.MathTime{Time: *m.ClassroomCodeExpiresDt})
 	}
 	c.SetMaxMembers(m.MaxMembers)
 	c.SetMemberCount(m.MemberCount)

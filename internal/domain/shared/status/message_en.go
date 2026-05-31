@@ -402,13 +402,13 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Classroom is already deleted"
 	case CLASSROOM_MAX_MEMBERS_REACHED:
 		return "Classroom has reached its member limit"
-	case CLASSROOM_INVITE_CODE_INVALID:
+	case CLASSROOM_CODE_INVALID:
 		return "Invite code is invalid"
-	case CLASSROOM_INVITE_CODE_EXPIRED:
+	case CLASSROOM_CODE_EXPIRED:
 		return "Invite code has expired"
-	case CLASSROOM_INVITE_CODE_DISABLED:
+	case CLASSROOM_CODE_DISABLED:
 		return "Invite code is disabled"
-	case CLASSROOM_INVITE_CODE_GENERATION_FAILED:
+	case CLASSROOM_CODE_GENERATION_FAILED:
 		return "Failed to generate invite code"
 	case CLASSROOM_PERMISSION_DENIED:
 		return "You do not have permission to perform this action on the classroom"
@@ -420,7 +420,7 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Max members must be a positive number"
 	case CLASSROOM_INVALID_SCHOOL:
 		return "School not found"
-	case CLASSROOM_INVITE_CODE_TAKEN:
+	case CLASSROOM_CODE_TAKEN:
 		return "Invite code is already in use"
 	case CLASSROOM_PROGRAM_DUPLICATE:
 		return "Duplicate program id in the list"

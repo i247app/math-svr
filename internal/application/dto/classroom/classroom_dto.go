@@ -20,8 +20,8 @@ type ClassroomResponse struct {
 	SchoolID            *int64  `json:"school_id,omitempty"`
 	ProgramIDs          []int64 `json:"program_ids"`
 	GradeID             *int64  `json:"grade_id,omitempty"`
-	InviteCode          *string `json:"invite_code,omitempty"`
-	InviteCodeExpiresDt string  `json:"invite_code_expires_dt,omitempty"`
+	ClassroomCode          *string `json:"classroom_code,omitempty"`
+	ClassroomCodeExpiresDt string  `json:"classroom_code_expires_dt,omitempty"`
 	MaxMembers          *int64  `json:"max_members,omitempty"`
 	MemberCount         int64   `json:"member_count"`
 	StudentCount        int64   `json:"student_count"`
@@ -52,16 +52,16 @@ type CreateClassroomReq struct {
 	MaxMembers *int64  `json:"max_members,omitempty"`
 	CoverKey   *string `json:"cover_key,omitempty"`
 	Note       *string `json:"note,omitempty"`
-	// InviteCode is an optional client-supplied join code (e.g. a
+	// ClassroomCode is an optional client-supplied join code (e.g. a
 	// human-friendly token like "MATH4B"). Bounded by VARCHAR(16) and
 	// must be unique across all classrooms; the command rejects a
-	// duplicate with CLASSROOM_INVITE_CODE_TAKEN. Leave empty to ship a
+	// duplicate with CLASSROOM_CODE_TAKEN. Leave empty to ship a
 	// classroom without a code (targeted invitations only).
-	InviteCode *string `json:"invite_code,omitempty"`
-	// InviteCodeExpiresDt is the optional expiry that pairs with
-	// InviteCode. A zero value (omitted in JSON) means the code never
+	ClassroomCode *string `json:"classroom_code,omitempty"`
+	// ClassroomCodeExpiresDt is the optional expiry that pairs with
+	// ClassroomCode. A zero value (omitted in JSON) means the code never
 	// expires. Required to be in the future when supplied.
-	InviteCodeExpiresDt mtime.MathTime `json:"invite_code_expires_dt,omitempty"`
+	ClassroomCodeExpiresDt mtime.MathTime `json:"classroom_code_expires_dt,omitempty"`
 
 	// File upload fields for handling cover image
 	AvatarFile        io.Reader `json:"-"`
@@ -186,7 +186,7 @@ func DomainToResponse(c *domain.Classroom) *ClassroomResponse {
 		SchoolID:        c.SchoolId(),
 		ProgramIDs:      programIDs,
 		GradeID:         c.GradeId(),
-		InviteCode:      c.InviteCode(),
+		ClassroomCode:      c.ClassroomCode(),
 		MaxMembers:      c.MaxMembers(),
 		MemberCount:     c.MemberCount(),
 		StudentCount:    c.StudentCount(),
@@ -197,8 +197,8 @@ func DomainToResponse(c *domain.Classroom) *ClassroomResponse {
 		CreateDt:        c.CreateDt().String(),
 		ModifyDt:        c.ModifyDt().String(),
 	}
-	if c.InviteCodeExpiresDt().IsValid() {
-		resp.InviteCodeExpiresDt = c.InviteCodeExpiresDt().String()
+	if c.ClassroomCodeExpiresDt().IsValid() {
+		resp.ClassroomCodeExpiresDt = c.ClassroomCodeExpiresDt().String()
 	}
 	return resp
 }

@@ -34,7 +34,7 @@ type ListClassroomsParams struct {
 // IRepository owns ma_classrooms persistence.
 type IRepository interface {
 	FindByClassroomId(ctx context.Context, classroomId int64) (*Classroom, error)
-	FindByInviteCode(ctx context.Context, code string) (*Classroom, error)
+	FindByClassroomCode(ctx context.Context, code string) (*Classroom, error)
 	ListClassrooms(ctx context.Context, params *ListClassroomsParams) ([]*Classroom, *pagination.Pagination, error)
 	ListClassroomsByIds(ctx context.Context, ids []int64) ([]*Classroom, error)
 	Create(ctx context.Context, c *Classroom) (*Classroom, error)
@@ -46,7 +46,7 @@ type IRepository interface {
 	// Always called in the same UoW as the member row mutation so the
 	// counters and the underlying member rows stay consistent.
 	IncCounts(ctx context.Context, classroomId int64, memberDelta, studentDelta, teacherDelta int64) error
-	UpdateInviteCode(ctx context.Context, classroomId int64, code *string, expiresDt mtime.MathTime) error
+	UpdateClassroomCode(ctx context.Context, classroomId int64, code *string, expiresDt mtime.MathTime) error
 	SetOwnerProfileId(ctx context.Context, classroomId int64, newOwnerProfileId int64) error
 	ArchiveByClassroomId(ctx context.Context, classroomId int64) error
 	RestoreByClassroomId(ctx context.Context, classroomId int64) error

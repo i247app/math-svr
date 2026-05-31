@@ -28,13 +28,13 @@ type MemberResponse struct {
 }
 
 // JoinByCodeReq lets any profile submit a join request to a
-// classroom by presenting a non-expired invite_code. ProfileID is
+// classroom by presenting a non-expired classroom_code. ProfileID is
 // the caller's acting profile. NOTE: this no longer joins the
 // classroom directly — it creates a PENDING_REQUEST on
 // ma_classroom_members that the classroom owner must approve.
 type JoinByCodeReq struct {
 	ProfileID  int64  `json:"profile_id"`
-	InviteCode string `json:"invite_code"`
+	ClassroomCode string `json:"classroom_code"`
 }
 
 type JoinByCodeRes struct {

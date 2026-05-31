@@ -14,7 +14,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// JoinByCodeCommand resolves a classroom by invite_code and submits a
+// JoinByCodeCommand resolves a classroom by classroom_code and submits a
 // PENDING_REQUEST on behalf of the caller — it no longer joins the
 // classroom directly. The classroom owner approves or rejects the
 // request via ApproveJoinRequest / RejectJoinRequest. The
@@ -28,7 +28,7 @@ type JoinByCodeCommand struct {
 	ActorID     *int64
 	ProfileID   int64
 	ProfileRole string
-	InviteCode  string
+	ClassroomCode  string
 }
 
 type JoinByCodeCommandHandler struct {
@@ -43,20 +43,20 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 	var saved *classroom.Member
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		c, err := repos.Classroom.FindByInviteCode(ctx, cmd.InviteCode)
+		c, err := repos.Classroom.FindByClassroomCode(ctx, cmd.ClassroomCode)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if c == nil {
-			return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_INVALID, nil,
+			return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
 				errors.New("invite code not found"))
 		}
 		if c.ClassroomStatus() != nil && *c.ClassroomStatus() == string(enum.ClassroomStatusTypeArchived) {
-			return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_DISABLED, nil,
+			return errs.NewError(ctx, status.CLASSROOM_CODE_DISABLED, nil,
 				errors.New("classroom is archived"))
 		}
-		if c.InviteCodeExpiresDt().IsValid() && c.InviteCodeExpiresDt().Time.Before(time.Now()) {
-			return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_EXPIRED, nil,
+		if c.ClassroomCodeExpiresDt().IsValid() && c.ClassroomCodeExpiresDt().Time.Before(time.Now()) {
+			return errs.NewError(ctx, status.CLASSROOM_CODE_EXPIRED, nil,
 				errors.New("invite code expired"))
 		}
 

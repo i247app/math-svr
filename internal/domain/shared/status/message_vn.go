@@ -402,13 +402,13 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Lớp học đã bị xoá"
 	case CLASSROOM_MAX_MEMBERS_REACHED:
 		return "Lớp học đã đạt giới hạn thành viên"
-	case CLASSROOM_INVITE_CODE_INVALID:
+	case CLASSROOM_CODE_INVALID:
 		return "Mã mời không hợp lệ"
-	case CLASSROOM_INVITE_CODE_EXPIRED:
+	case CLASSROOM_CODE_EXPIRED:
 		return "Mã mời đã hết hạn"
-	case CLASSROOM_INVITE_CODE_DISABLED:
+	case CLASSROOM_CODE_DISABLED:
 		return "Mã mời đã bị vô hiệu hoá"
-	case CLASSROOM_INVITE_CODE_GENERATION_FAILED:
+	case CLASSROOM_CODE_GENERATION_FAILED:
 		return "Tạo mã mời thất bại"
 	case CLASSROOM_PERMISSION_DENIED:
 		return "Bạn không có quyền thực hiện thao tác này trên lớp học"
@@ -420,7 +420,7 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Giới hạn thành viên phải là số dương"
 	case CLASSROOM_INVALID_SCHOOL:
 		return "Không tìm thấy trường học"
-	case CLASSROOM_INVITE_CODE_TAKEN:
+	case CLASSROOM_CODE_TAKEN:
 		return "Mã mời đã được sử dụng"
 	case CLASSROOM_PROGRAM_DUPLICATE:
 		return "Danh sách chương trình bị trùng"

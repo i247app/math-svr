@@ -33,8 +33,8 @@ type CreateClassroomCommand struct {
 	MaxMembers          *int64
 	CoverKey            *string
 	Note                *string
-	InviteCode          *string
-	InviteCodeExpiresDt mtime.MathTime
+	ClassroomCode          *string
+	ClassroomCodeExpiresDt mtime.MathTime
 }
 
 type CreateClassroomCommandHandler struct {
@@ -49,33 +49,33 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 	var created *classroom.Classroom
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		// Resolve invite_code. If the client supplied one, precheck for
-		// uniqueness so the friendlier CLASSROOM_INVITE_CODE_TAKEN
+		// Resolve classroom_code. If the client supplied one, precheck for
+		// uniqueness so the friendlier CLASSROOM_CODE_TAKEN
 		// propagates instead of a generic repo-level constraint error.
 		// If they did not, mint an "AA-1111" code and retry on the rare
 		// collision (≈ 1 in 6.76M per attempt). The DB UNIQUE key
 		// remains the hard backstop for the race window in both paths.
-		var inviteCodeArg *string
-		if cmd.InviteCode != nil {
-			trimmed := strings.TrimSpace(*cmd.InviteCode)
+		var classroomCodeArg *string
+		if cmd.ClassroomCode != nil {
+			trimmed := strings.TrimSpace(*cmd.ClassroomCode)
 			if trimmed != "" {
-				existing, err := repos.Classroom.FindByInviteCode(ctx, trimmed)
+				existing, err := repos.Classroom.FindByClassroomCode(ctx, trimmed)
 				if err != nil {
 					return errs.NewError(ctx, status.FAIL, nil, err)
 				}
 				if existing != nil {
-					return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_TAKEN, nil,
+					return errs.NewError(ctx, status.CLASSROOM_CODE_TAKEN, nil,
 						errors.New("invite code already taken"))
 				}
-				inviteCodeArg = &trimmed
+				classroomCodeArg = &trimmed
 			}
 		}
-		if inviteCodeArg == nil {
-			minted, err := mintUniqueInviteCode(ctx, repos)
+		if classroomCodeArg == nil {
+			minted, err := mintUniqueClassroomCode(ctx, repos)
 			if err != nil {
 				return err
 			}
-			inviteCodeArg = &minted
+			classroomCodeArg = &minted
 		}
 
 		classroomID, err := nextSeqID(ctx, repos, seq.NameClassroom)
@@ -90,9 +90,9 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 		c.SetDescription(cmd.Description)
 		c.SetSchoolId(cmd.SchoolID)
 		c.SetGradeId(cmd.GradeID)
-		c.SetInviteCode(inviteCodeArg)
-		if cmd.InviteCodeExpiresDt.IsValid() {
-			c.SetInviteCodeExpiresDt(cmd.InviteCodeExpiresDt)
+		c.SetClassroomCode(classroomCodeArg)
+		if cmd.ClassroomCodeExpiresDt.IsValid() {
+			c.SetClassroomCodeExpiresDt(cmd.ClassroomCodeExpiresDt)
 		}
 		c.SetMaxMembers(cmd.MaxMembers)
 		// Seed counters in sync with the OWNER member row inserted

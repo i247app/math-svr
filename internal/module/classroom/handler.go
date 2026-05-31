@@ -110,12 +110,12 @@ func (h *ClassroomHandler) HandleCreateClassroom(w http.ResponseWriter, r *http.
 		req.SchoolID = utils.StringToInt64Ptr(r.FormValue("school_id"))
 		req.ProgramIDs = parseProgramIDsFromForm(r)
 		req.GradeID = utils.StringToInt64Ptr(r.FormValue("grade_id"))
-		req.InviteCode = utils.ToStringPtr(r.FormValue("invite_code"))
-		if expires := r.FormValue("invite_code_expires_dt"); expires != "" {
+		req.ClassroomCode = utils.ToStringPtr(r.FormValue("classroom_code"))
+		if expires := r.FormValue("classroom_code_expires_dt"); expires != "" {
 			if parsed, err := mtime.Parse(expires); err == nil {
-				req.InviteCodeExpiresDt = parsed
+				req.ClassroomCodeExpiresDt = parsed
 			} else {
-				logger.From(r.Context()).Warnf("classroom.create invite_code_expires_dt parse failed value=%s err=%v", expires, err)
+				logger.From(r.Context()).Warnf("classroom.create classroom_code_expires_dt parse failed value=%s err=%v", expires, err)
 			}
 		}
 		maxNumbers := r.FormValue("max_members")

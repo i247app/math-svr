@@ -13,7 +13,7 @@ import (
 )
 
 // JoinClassroomByCode lets any authenticated profile join a classroom
-// using a non-expired invite_code. Unlike CreateClassroom there is no
+// using a non-expired classroom_code. Unlike CreateClassroom there is no
 // TEACHER-role gate — any profile (STUDENT/PARENT/TEACHER) may join.
 // The caller's ma_profiles.role is forwarded to the command, which
 // derives the classroom-side member_role: TEACHER → CO_TEACHER,
@@ -34,7 +34,7 @@ func (s *Service) JoinClassroomByCode(ctx context.Context, req *dto.JoinByCodeRe
 		ActorID:     &actor,
 		ProfileID:   caller.ProfileId(),
 		ProfileRole: caller.Role(),
-		InviteCode:  req.InviteCode,
+		ClassroomCode:  req.ClassroomCode,
 	})
 	if err != nil {
 		return nil, err

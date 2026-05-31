@@ -10,8 +10,8 @@ type ClassroomModel struct {
 	Description         *string
 	SchoolId            *int64
 	GradeId             *int64
-	InviteCode          *string
-	InviteCodeExpiresDt *time.Time
+	ClassroomCode          *string
+	ClassroomCodeExpiresDt *time.Time
 	MaxMembers          *int64
 	MemberCount         int64
 	StudentCount        int64

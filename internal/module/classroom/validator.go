@@ -57,22 +57,22 @@ func ValidateCreateClassroom(ctx context.Context, req *dto.CreateClassroomReq) e
 	} else {
 		req.ProgramIDs = normalized
 	}
-	if req.InviteCode != nil {
-		code := strings.TrimSpace(*req.InviteCode)
+	if req.ClassroomCode != nil {
+		code := strings.TrimSpace(*req.ClassroomCode)
 		if code == "" {
 			// Treat a blank pointer as "no code supplied" so callers
 			// using multipart forms don't need to omit the field.
-			req.InviteCode = nil
-		} else if len(code) > inviteCodeMaxLen {
-			return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_INVALID, nil,
-				errors.New("invite_code too long"))
+			req.ClassroomCode = nil
+		} else if len(code) > classroomCodeMaxLen {
+			return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
+				errors.New("classroom_code too long"))
 		} else {
-			req.InviteCode = &code
+			req.ClassroomCode = &code
 		}
 	}
-	if req.InviteCodeExpiresDt.IsValid() && req.InviteCodeExpiresDt.Time.Before(time.Now()) {
-		return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_EXPIRED, nil,
-			errors.New("invite_code_expires_dt must be in the future"))
+	if req.ClassroomCodeExpiresDt.IsValid() && req.ClassroomCodeExpiresDt.Time.Before(time.Now()) {
+		return errs.NewError(ctx, status.CLASSROOM_CODE_EXPIRED, nil,
+			errors.New("classroom_code_expires_dt must be in the future"))
 	}
 	return nil
 }
@@ -220,10 +220,10 @@ func ValidateDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq) e
 	return nil
 }
 
-// inviteCodeMaxLen mirrors ma_classrooms.invite_code VARCHAR(16). Used
+// classroomCodeMaxLen mirrors ma_classrooms.classroom_code VARCHAR(16). Used
 // by the join-by-code path to reject obviously-malformed input before
 // it reaches the repo.
-const inviteCodeMaxLen = 16
+const classroomCodeMaxLen = 16
 
 // normalizeProgramIDList trims, drops blanks, and rejects duplicates
 // with CLASSROOM_PROGRAM_DUPLICATE. Used by Create + Update so the
@@ -252,16 +252,16 @@ func ValidateJoinByCode(ctx context.Context, req *dto.JoinByCodeReq) error {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
-	code := strings.TrimSpace(req.InviteCode)
+	code := strings.TrimSpace(req.ClassroomCode)
 	if code == "" {
-		return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_INVALID, nil,
-			errors.New("invite_code is required"))
+		return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
+			errors.New("classroom_code is required"))
 	}
-	if len(code) > inviteCodeMaxLen {
-		return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_INVALID, nil,
-			errors.New("invite_code too long"))
+	if len(code) > classroomCodeMaxLen {
+		return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
+			errors.New("classroom_code too long"))
 	}
-	req.InviteCode = code
+	req.ClassroomCode = code
 	return nil
 }
 
