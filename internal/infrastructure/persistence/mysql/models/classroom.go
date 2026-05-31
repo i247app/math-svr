@@ -9,7 +9,6 @@ type ClassroomModel struct {
 	Name                string
 	Description         *string
 	SchoolId            *string
-	ProgramId           *string
 	GradeId             *string
 	InviteCode          *string
 	InviteCodeExpiresDt *time.Time

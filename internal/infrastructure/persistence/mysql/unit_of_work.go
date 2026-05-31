@@ -41,6 +41,7 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 			Classroom:           repositories.NewClassroomRepository(loggedTx),
 			ClassroomMember:     repositories.NewClassroomMemberRepository(loggedTx),
 			ClassroomInvitation: repositories.NewClassroomInvitationRepository(loggedTx),
+			ClassroomProgram:    repositories.NewClassroomProgramRepository(loggedTx),
 		}
 		return fn(txCtx, repos)
 	})

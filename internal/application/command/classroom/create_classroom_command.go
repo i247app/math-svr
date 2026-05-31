@@ -14,17 +14,21 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// CreateClassroomCommand creates the classroom row AND the OWNER member
-// row in a single UoW. Role/identity checks live at the module level —
-// here we trust the caller and focus on atomicity: a classroom always
-// ships with exactly one OWNER on disk.
+// CreateClassroomCommand creates the classroom row, the OWNER member
+// row, AND any ma_classroom_programs junction rows in a single UoW.
+// Role/identity checks live at the module level — here we trust the
+// caller and focus on atomicity: a classroom always ships with exactly
+// one OWNER on disk, and its program associations land or fail as a
+// unit. ProgramIDs may be empty; the validator dedupes before this
+// runs, and the DB UNIQUE on (classroom_id, program_id) remains the
+// hard backstop.
 type CreateClassroomCommand struct {
 	ActorID             *string
 	OwnerProfileID      string
 	Name                string
 	Description         *string
 	SchoolID            *string
-	ProgramID           *string
+	ProgramIDs          []string
 	GradeID             *string
 	MaxMembers          *int64
 	CoverKey            *string
@@ -85,7 +89,6 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 		c.SetName(cmd.Name)
 		c.SetDescription(cmd.Description)
 		c.SetSchoolId(cmd.SchoolID)
-		c.SetProgramId(cmd.ProgramID)
 		c.SetGradeId(cmd.GradeID)
 		c.SetInviteCode(inviteCodeArg)
 		if cmd.InviteCodeExpiresDt.IsValid() {
@@ -129,6 +132,19 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 
 		if _, err := repos.ClassroomMember.Create(ctx, m); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+
+		if len(cmd.ProgramIDs) > 0 {
+			insertedProgramIDs, err := insertClassroomPrograms(ctx, repos,
+				saved.ClassroomId(), cmd.ProgramIDs, cmd.ActorID)
+			if err != nil {
+				return err
+			}
+			saved.SetProgramIds(insertedProgramIDs)
+		} else {
+			// Hydrate as the empty slice (not nil) so DomainToResponse
+			// emits []string{} rather than omitting the field.
+			saved.SetProgramIds([]string{})
 		}
 
 		created = saved

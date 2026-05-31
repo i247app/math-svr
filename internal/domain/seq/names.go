@@ -24,4 +24,5 @@ const (
 	NameClassroom           = "classroom"
 	NameClassroomMember     = "classroom_member"
 	NameClassroomInvitation = "classroom_invitation"
+	NameClassroomProgram    = "classroom_program"
 )

@@ -12,11 +12,17 @@ import (
 // filters to classrooms the profile owns. Either or both may be set.
 // Search matches case-insensitively against name. IncludeArchived
 // controls whether ARCHIVED rows are returned alongside ACTIVE ones.
+//
+// Program filters operate via the ma_classroom_programs junction table:
+// ProgramId matches a single program; ProgramIds matches the OR-set
+// ("classroom contains at least one of these programs"). When both are
+// set the singleton is appended to the slice and the union is matched.
 type ListClassroomsParams struct {
 	ProfileId        *string
 	OwnerProfileId   *string
 	SchoolId         *string
 	ProgramId        *string
+	ProgramIds       []string
 	GradeId          *string
 	Search           *string
 	IncludeArchived  bool
@@ -46,6 +52,38 @@ type IRepository interface {
 	RestoreByClassroomId(ctx context.Context, classroomId string) error
 	SoftDeleteByClassroomId(ctx context.Context, classroomId string) error
 	ForceDeleteByClassroomId(ctx context.Context, classroomId string) error
+}
+
+// IClassroomProgramRepository owns ma_classroom_programs — the
+// many-to-many edge between a classroom and one or more programs/books.
+// The replace-set update path inside UpdateClassroomCommand reads the
+// current set, hard-deletes removed pairs, and inserts new ones, all
+// inside the surrounding UoW.
+type IClassroomProgramRepository interface {
+	// ListProgramIdsByClassroomId returns the ACTIVE program ids linked
+	// to a single classroom, in insertion order. Used by GetClassroom.
+	ListProgramIdsByClassroomId(ctx context.Context, classroomId string) ([]string, error)
+	// ListProgramIdsByClassroomIds batches the ListByClassroomId call
+	// across a page of classrooms to avoid N+1 on ListClassrooms. The
+	// returned map only contains keys for classrooms that have at least
+	// one program — callers should treat a missing key as "zero
+	// programs", not "not hydrated".
+	ListProgramIdsByClassroomIds(ctx context.Context, classroomIds []string) (map[string][]string, error)
+	// Create inserts one (classroom_id, program_id) pair. The DB UNIQUE
+	// (classroom_id, program_id) is the hard backstop against duplicates;
+	// callers should dedupe their input slice to surface a friendly
+	// CLASSROOM_PROGRAM_DUPLICATE before reaching this method.
+	Create(ctx context.Context, cp *ClassroomProgram) (*ClassroomProgram, error)
+	// DeleteByPair physically removes one (classroom_id, program_id)
+	// row. The edge has no history worth keeping, so this is a hard
+	// DELETE; soft-deletion would force a partial unique index (not
+	// supported on MySQL 8) to allow re-adding the same program later.
+	DeleteByPair(ctx context.Context, classroomId, programId string) error
+	// DeleteByClassroomId clears every program link for a classroom.
+	// Used by the soft-delete and force-delete paths so a deleted
+	// classroom doesn't leak into program-filtered listings via a stale
+	// junction row.
+	DeleteByClassroomId(ctx context.Context, classroomId string) error
 }
 
 // ListMembersParams narrows ma_classroom_members reads. ClassroomId is

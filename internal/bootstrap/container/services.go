@@ -116,6 +116,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	classroomService := classroom.NewService(
 		repos.ClassroomRepository,
 		repos.ClassroomMemberRepository,
+		repos.ClassroomProgramRepository,
 		uow,
 		repos.ProfileRepository,
 		repos.ProgramRepository,

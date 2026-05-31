@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS ma_classrooms (
   name                    VARCHAR(128) NOT NULL,
   description             VARCHAR(500) DEFAULT NULL,
   school_id               CHAR(36) DEFAULT NULL,
-  program_id              CHAR(36) DEFAULT NULL,
   grade_id                CHAR(36) DEFAULT NULL,
   invite_code             VARCHAR(16) DEFAULT NULL,
   invite_code_expires_dt  DATETIME(6) DEFAULT NULL,
@@ -28,4 +27,4 @@ CREATE TABLE IF NOT EXISTS ma_classrooms (
 
 ALTER TABLE ma_classrooms
   ADD INDEX idx_owner_status (owner_profile_id, classroom_status, deleted_dt, id),
-  ADD INDEX idx_program_grade (program_id, grade_id, classroom_status, deleted_dt);
+  ADD INDEX idx_grade (grade_id, classroom_status, deleted_dt);

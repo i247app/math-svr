@@ -9,9 +9,9 @@ import (
 )
 
 // ForceDeleteClassroomCommand removes the classroom and its child rows
-// physically. Order matters: invitations → members → classroom so any
-// future foreign keys (or just consistency-conscious operators) won't
-// trip. Idempotent: missing rows are not an error.
+// physically. Order matters: invitations → members → program links →
+// classroom so any future foreign keys (or just consistency-conscious
+// operators) won't trip. Idempotent: missing rows are not an error.
 type ForceDeleteClassroomCommand struct {
 	ClassroomID string
 }
@@ -30,6 +30,9 @@ func (h *ForceDeleteClassroomCommandHandler) Handle(ctx context.Context, cmd For
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if err := repos.ClassroomMember.ForceDeleteByClassroomId(ctx, cmd.ClassroomID); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if err := repos.ClassroomProgram.DeleteByClassroomId(ctx, cmd.ClassroomID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if err := repos.Classroom.ForceDeleteByClassroomId(ctx, cmd.ClassroomID); err != nil {

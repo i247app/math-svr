@@ -46,18 +46,20 @@ type Service struct {
 	updateMemberRoleCmd     *command.UpdateMemberRoleCommandHandler
 	transferOwnershipCmd    *command.TransferOwnershipCommandHandler
 
-	classroomRepo       classroomDomain.IRepository
-	classroomMemberRepo classroomDomain.IMemberRepository
-	profileRepo         profileDomain.IRepository
-	programRepo         programDomain.IRepository
-	gradeRepo           gradeDomain.IRepository
-	schoolRepo          schoolDomain.IRepository
-	storageProvider     *storage.Adapter
+	classroomRepo        classroomDomain.IRepository
+	classroomMemberRepo  classroomDomain.IMemberRepository
+	classroomProgramRepo classroomDomain.IClassroomProgramRepository
+	profileRepo          profileDomain.IRepository
+	programRepo          programDomain.IRepository
+	gradeRepo            gradeDomain.IRepository
+	schoolRepo           schoolDomain.IRepository
+	storageProvider      *storage.Adapter
 }
 
 func NewService(
 	classroomRepo classroomDomain.IRepository,
 	classroomMemberRepo classroomDomain.IMemberRepository,
+	classroomProgramRepo classroomDomain.IClassroomProgramRepository,
 	uow transaction.UnitOfWork,
 	profileRepo profileDomain.IRepository,
 	programRepo programDomain.IRepository,
@@ -66,8 +68,8 @@ func NewService(
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
-		getClassroomQuery:       query.NewGetClassroomByIdQueryHandler(classroomRepo),
-		listClassroomsQuery:     query.NewListClassroomsQueryHandler(classroomRepo),
+		getClassroomQuery:       query.NewGetClassroomByIdQueryHandler(classroomRepo, classroomProgramRepo),
+		listClassroomsQuery:     query.NewListClassroomsQueryHandler(classroomRepo, classroomProgramRepo),
 		listMembersQuery:        query.NewListMembersQueryHandler(classroomMemberRepo),
 		createClassroomCmd:      command.NewCreateClassroomCommandHandler(uow),
 		updateClassroomCmd:      command.NewUpdateClassroomCommandHandler(uow),
@@ -80,13 +82,14 @@ func NewService(
 		removeMemberCmd:         command.NewRemoveMemberCommandHandler(uow),
 		updateMemberRoleCmd:     command.NewUpdateMemberRoleCommandHandler(uow),
 		transferOwnershipCmd:    command.NewTransferOwnershipCommandHandler(uow),
-		classroomRepo:           classroomRepo,
-		classroomMemberRepo:     classroomMemberRepo,
-		profileRepo:             profileRepo,
-		programRepo:             programRepo,
-		gradeRepo:               gradeRepo,
-		schoolRepo:              schoolRepo,
-		storageProvider:         storageProvider,
+		classroomRepo:        classroomRepo,
+		classroomMemberRepo:  classroomMemberRepo,
+		classroomProgramRepo: classroomProgramRepo,
+		profileRepo:          profileRepo,
+		programRepo:          programRepo,
+		gradeRepo:            gradeRepo,
+		schoolRepo:           schoolRepo,
+		storageProvider:      storageProvider,
 	}
 }
 
@@ -105,7 +108,7 @@ func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomR
 	if err := s.requireTeacherRole(ctx, caller); err != nil {
 		return nil, err
 	}
-	if err := s.validateRefs(ctx, req.SchoolID, req.ProgramID, req.GradeID); err != nil {
+	if err := s.validateRefs(ctx, req.SchoolID, req.ProgramIDs, req.GradeID); err != nil {
 		return nil, err
 	}
 
@@ -116,7 +119,7 @@ func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomR
 		Name:                strings.TrimSpace(req.Name),
 		Description:         req.Description,
 		SchoolID:            req.SchoolID,
-		ProgramID:           req.ProgramID,
+		ProgramIDs:          req.ProgramIDs,
 		GradeID:             req.GradeID,
 		MaxMembers:          req.MaxMembers,
 		CoverKey:            req.CoverKey,
@@ -152,7 +155,11 @@ func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomR
 	if _, err := s.requireManager(ctx, req.ClassroomID, caller.ProfileId()); err != nil {
 		return nil, err
 	}
-	if err := s.validateRefs(ctx, req.SchoolID, req.ProgramID, req.GradeID); err != nil {
+	programIDsForValidate := []string{}
+	if req.ProgramIDs != nil {
+		programIDsForValidate = *req.ProgramIDs
+	}
+	if err := s.validateRefs(ctx, req.SchoolID, programIDsForValidate, req.GradeID); err != nil {
 		return nil, err
 	}
 
@@ -163,7 +170,7 @@ func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomR
 		Name:        req.Name,
 		Description: req.Description,
 		SchoolID:    req.SchoolID,
-		ProgramID:   req.ProgramID,
+		ProgramIDs:  req.ProgramIDs,
 		GradeID:     req.GradeID,
 		MaxMembers:  req.MaxMembers,
 		AvatarKey:   req.AvatarKey,
@@ -227,6 +234,7 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 		OwnerProfileID:  req.OwnerProfileID,
 		SchoolID:        req.SchoolID,
 		ProgramID:       req.ProgramID,
+		ProgramIDs:      req.ProgramIDs,
 		GradeID:         req.GradeID,
 		Search:          req.Search,
 		IncludeArchived: req.IncludeArchived,
@@ -317,10 +325,14 @@ func (s *Service) ForceDeleteClassroom(ctx context.Context, req *dto.DeleteClass
 	return &dto.DeleteClassroomRes{}, nil
 }
 
-// validateRefs makes sure the caller-supplied school / program / grade
+// validateRefs makes sure the caller-supplied school / programs / grade
 // references resolve to ACTIVE rows. Cheap existence check; only runs
 // when the pointer is non-nil so PATCH payloads stay lean.
-func (s *Service) validateRefs(ctx context.Context, schoolID, programID, gradeID *string) error {
+//
+// programIDs is treated as already deduped/trimmed by the validator
+// layer — we just walk and verify each one. An empty slice is allowed
+// (a classroom can carry zero programs).
+func (s *Service) validateRefs(ctx context.Context, schoolID *string, programIDs []string, gradeID *string) error {
 	if schoolID != nil && strings.TrimSpace(*schoolID) != "" {
 		sc, err := s.schoolRepo.FindBySchoolId(ctx, *schoolID)
 		if err != nil {
@@ -331,8 +343,12 @@ func (s *Service) validateRefs(ctx context.Context, schoolID, programID, gradeID
 				errors.New("school not found"))
 		}
 	}
-	if programID != nil && strings.TrimSpace(*programID) != "" {
-		p, err := s.programRepo.FindByProgramId(ctx, *programID, enum.LanguageTypeVietnamese)
+	for _, pid := range programIDs {
+		trimmed := strings.TrimSpace(pid)
+		if trimmed == "" {
+			continue
+		}
+		p, err := s.programRepo.FindByProgramId(ctx, trimmed, enum.LanguageTypeVietnamese)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}

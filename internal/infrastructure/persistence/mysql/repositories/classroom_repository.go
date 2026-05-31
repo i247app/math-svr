@@ -19,7 +19,7 @@ const (
 	classroomTable = "ma_classrooms"
 
 	classroomColumns = `c.id, c.classroom_id, c.owner_profile_id, c.name, c.description,
-		c.school_id, c.program_id, c.grade_id,
+		c.school_id, c.grade_id,
 		c.invite_code, c.invite_code_expires_dt,
 		c.max_members, c.member_count, c.student_count, c.teacher_count,
 		c.cover_key, c.note,
@@ -48,7 +48,7 @@ func NewClassroomRepository(db database.Executor) classroom.IRepository {
 func scanClassroom(s database.RowScanner) (*models.ClassroomModel, error) {
 	var m models.ClassroomModel
 	if err := s.Scan(&m.Id, &m.ClassroomId, &m.OwnerProfileId, &m.Name, &m.Description,
-		&m.SchoolId, &m.ProgramId, &m.GradeId,
+		&m.SchoolId, &m.GradeId,
 		&m.InviteCode, &m.InviteCodeExpiresDt,
 		&m.MaxMembers, &m.MemberCount, &m.StudentCount, &m.TeacherCount,
 		&m.CoverKey, &m.Note,
@@ -151,6 +151,33 @@ func (r *ClassroomRepository) ListClassrooms(ctx context.Context, params *classr
 	return out, pg, nil
 }
 
+// mergeProgramIDFilters returns the OR-union of the singular ProgramId
+// pointer and the ProgramIds slice, with blanks dropped and duplicates
+// removed. Used by the list-filter builder so callers can supply either
+// or both without the SQL needing to know which path they took.
+func mergeProgramIDFilters(single *string, slice []string) []string {
+	seen := make(map[string]struct{}, len(slice)+1)
+	out := make([]string, 0, len(slice)+1)
+	add := func(id string) {
+		trimmed := strings.TrimSpace(id)
+		if trimmed == "" {
+			return
+		}
+		if _, ok := seen[trimmed]; ok {
+			return
+		}
+		seen[trimmed] = struct{}{}
+		out = append(out, trimmed)
+	}
+	if single != nil {
+		add(*single)
+	}
+	for _, id := range slice {
+		add(id)
+	}
+	return out
+}
+
 // buildClassroomListFilter composes the optional WHERE fragments and the
 // LEFT JOIN we need when filtering by ProfileId (membership). Keeping the
 // join LEFT lets us still apply the classroom-level active filter; the
@@ -183,9 +210,26 @@ func buildClassroomListFilter(params *classroom.ListClassroomsParams) (string, [
 		clause += ` AND c.school_id = ?`
 		args = append(args, strings.TrimSpace(*params.SchoolId))
 	}
-	if params.ProgramId != nil && strings.TrimSpace(*params.ProgramId) != "" {
-		clause += ` AND c.program_id = ?`
-		args = append(args, strings.TrimSpace(*params.ProgramId))
+	// Program filter — union of the singular ProgramId and the
+	// ProgramIds slice. Matches via EXISTS against the junction table
+	// so a classroom is included if it carries any of the requested
+	// programs (OR semantics, per the redesign agreement).
+	programIDs := mergeProgramIDFilters(params.ProgramId, params.ProgramIds)
+	if len(programIDs) > 0 {
+		placeholders := make([]string, len(programIDs))
+		for i := range programIDs {
+			placeholders[i] = "?"
+		}
+		clause += ` AND EXISTS (
+			SELECT 1 FROM ma_classroom_programs cp
+			WHERE cp.classroom_id = c.classroom_id
+				AND cp.status = ? AND cp.deleted_dt IS NULL
+				AND cp.program_id IN (` + strings.Join(placeholders, ",") + `)
+		)`
+		args = append(args, enum.StatusActive)
+		for _, id := range programIDs {
+			args = append(args, id)
+		}
 	}
 	if params.GradeId != nil && strings.TrimSpace(*params.GradeId) != "" {
 		clause += ` AND c.grade_id = ?`
@@ -249,16 +293,16 @@ func (r *ClassroomRepository) Create(ctx context.Context, c *classroom.Classroom
 	query := `
 		INSERT INTO ` + classroomTable + `
 			(classroom_id, owner_profile_id, name, description,
-			 school_id, program_id, grade_id,
+			 school_id, grade_id,
 			 invite_code, invite_code_expires_dt,
 			 max_members, member_count, student_count, teacher_count,
 			 cover_key, note,
 			 classroom_status, create_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		c.ClassroomId(), c.OwnerProfileId(), c.Name(), c.Description(),
-		c.SchoolId(), c.ProgramId(), c.GradeId(),
+		c.SchoolId(), c.GradeId(),
 		c.InviteCode(), expiresArg,
 		c.MaxMembers(), c.MemberCount(), c.StudentCount(), c.TeacherCount(),
 		c.CoverKey(), c.Note(),
@@ -287,7 +331,6 @@ func (r *ClassroomRepository) Update(ctx context.Context, c *classroom.Classroom
 		SET name        = COALESCE(?, name),
 			description = COALESCE(?, description),
 			school_id   = COALESCE(?, school_id),
-			program_id  = COALESCE(?, program_id),
 			grade_id    = COALESCE(?, grade_id),
 			max_members = COALESCE(?, max_members),
 			cover_key   = COALESCE(?, cover_key),
@@ -297,7 +340,7 @@ func (r *ClassroomRepository) Update(ctx context.Context, c *classroom.Classroom
 		WHERE classroom_id = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
-		nameArg, c.Description(), c.SchoolId(), c.ProgramId(), c.GradeId(),
+		nameArg, c.Description(), c.SchoolId(), c.GradeId(),
 		c.MaxMembers(), c.CoverKey(), c.Note(), c.ModifyId(),
 		mtime.Now().Time, c.ClassroomId()); err != nil {
 		return fmt.Errorf("classroom repo update: %w", err)
@@ -417,7 +460,6 @@ func ModelToDomainClassroom(m *models.ClassroomModel) *classroom.Classroom {
 	c.SetName(m.Name)
 	c.SetDescription(m.Description)
 	c.SetSchoolId(m.SchoolId)
-	c.SetProgramId(m.ProgramId)
 	c.SetGradeId(m.GradeId)
 	c.SetInviteCode(m.InviteCode)
 	if m.InviteCodeExpiresDt != nil {

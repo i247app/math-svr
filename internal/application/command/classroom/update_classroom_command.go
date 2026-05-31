@@ -10,16 +10,24 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
-// UpdateClassroomCommand patches mutable fields. Permission and
-// archived-state checks live at the module level; here we trust the
-// caller and apply COALESCE-style partial update through the repo.
+// UpdateClassroomCommand patches mutable fields and (optionally) the
+// classroom's program link set. Permission and archived-state checks
+// live at the module level; here we trust the caller and focus on
+// atomicity — the COALESCE column patch and the junction-row diff land
+// in the same UoW so a partially-applied update is impossible.
+//
+// ProgramIDs uses replace-set semantics:
+//   - nil        → leave the existing links untouched
+//   - non-nil [] → remove every program link
+//   - non-nil X  → make the active link set exactly X (insert new,
+//     delete removed)
 type UpdateClassroomCommand struct {
 	ActorID     *string
 	ClassroomID string
 	Name        *string
 	Description *string
 	SchoolID    *string
-	ProgramID   *string
+	ProgramIDs  *[]string
 	GradeID     *string
 	MaxMembers  *int64
 	AvatarKey   *string
@@ -58,9 +66,6 @@ func (h *UpdateClassroomCommandHandler) Handle(ctx context.Context, cmd UpdateCl
 		if cmd.SchoolID != nil {
 			patch.SetSchoolId(cmd.SchoolID)
 		}
-		if cmd.ProgramID != nil {
-			patch.SetProgramId(cmd.ProgramID)
-		}
 		if cmd.GradeID != nil {
 			patch.SetGradeId(cmd.GradeID)
 		}
@@ -79,6 +84,13 @@ func (h *UpdateClassroomCommandHandler) Handle(ctx context.Context, cmd UpdateCl
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 
+		if cmd.ProgramIDs != nil {
+			if _, err := replaceClassroomPrograms(ctx, repos,
+				cmd.ClassroomID, *cmd.ProgramIDs, cmd.ActorID); err != nil {
+				return err
+			}
+		}
+
 		refreshed, err := repos.Classroom.FindByClassroomId(ctx, cmd.ClassroomID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
@@ -87,6 +99,17 @@ func (h *UpdateClassroomCommandHandler) Handle(ctx context.Context, cmd UpdateCl
 			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
 				errors.New("classroom not found after update"))
 		}
+		// Hydrate the response with the current link set so the API
+		// reply reflects exactly what's on disk, regardless of whether
+		// the caller asked to mutate links.
+		programIDs, err := repos.ClassroomProgram.ListProgramIdsByClassroomId(ctx, cmd.ClassroomID)
+		if err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if programIDs == nil {
+			programIDs = []string{}
+		}
+		refreshed.SetProgramIds(programIDs)
 		updated = refreshed
 		return nil
 	})

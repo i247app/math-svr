@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
 	"math-ai.com/math-ai/internal/application/resource"
@@ -15,6 +16,45 @@ import (
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
+
+// hasProgramIDsForm returns true if the multipart payload contains a
+// program_ids key at all (even with an empty value). The Update path
+// uses this to distinguish "leave links alone" (nil) from "clear links"
+// (non-nil empty slice), since multipart cannot express JSON null.
+func hasProgramIDsForm(r *http.Request) bool {
+	if r.MultipartForm == nil {
+		return false
+	}
+	_, repeated := r.MultipartForm.Value["program_ids"]
+	_, single := r.MultipartForm.Value["program_id"]
+	return repeated || single
+}
+
+// parseProgramIDsFromForm reads the multipart payload's program_ids
+// entries (repeated keys) and, as a fallback, a single comma-separated
+// program_ids value. Blanks are dropped; deduplication is left to the
+// validator so it can surface CLASSROOM_PROGRAM_DUPLICATE consistently
+// between JSON and multipart callers.
+func parseProgramIDsFromForm(r *http.Request) []string {
+	out := make([]string, 0)
+	if r.MultipartForm != nil {
+		for _, v := range r.MultipartForm.Value["program_ids"] {
+			for _, part := range strings.Split(v, ",") {
+				if trimmed := strings.TrimSpace(part); trimmed != "" {
+					out = append(out, trimmed)
+				}
+			}
+		}
+		// Legacy "program_id" single field still parsed so existing
+		// clients keep working through the migration window.
+		for _, v := range r.MultipartForm.Value["program_id"] {
+			if trimmed := strings.TrimSpace(v); trimmed != "" {
+				out = append(out, trimmed)
+			}
+		}
+	}
+	return out
+}
 
 const (
 	MaxAvatarUploadSize = 10 << 20 // 10 MB
@@ -68,7 +108,7 @@ func (h *ClassroomHandler) HandleCreateClassroom(w http.ResponseWriter, r *http.
 		req.Name = r.FormValue("name")
 		req.Description = utils.ToStringPtr(r.FormValue("description"))
 		req.SchoolID = utils.ToStringPtr(r.FormValue("school_id"))
-		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
+		req.ProgramIDs = parseProgramIDsFromForm(r)
 		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
 		req.InviteCode = utils.ToStringPtr(r.FormValue("invite_code"))
 		if expires := r.FormValue("invite_code_expires_dt"); expires != "" {
@@ -129,7 +169,10 @@ func (h *ClassroomHandler) HandleUpdateClassroom(w http.ResponseWriter, r *http.
 		req.Name = utils.ToStringPtr(r.FormValue("name"))
 		req.Description = utils.ToStringPtr(r.FormValue("description"))
 		req.SchoolID = utils.ToStringPtr(r.FormValue("school_id"))
-		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
+		if hasProgramIDsForm(r) {
+			ids := parseProgramIDsFromForm(r)
+			req.ProgramIDs = &ids
+		}
 		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
 		maxNumbers := r.FormValue("max_members")
 		if maxNumbers != "" {

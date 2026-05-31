@@ -52,6 +52,11 @@ func ValidateCreateClassroom(ctx context.Context, req *dto.CreateClassroomReq) e
 		return errs.NewError(ctx, status.CLASSROOM_INVALID_MAX_MEMBERS, nil,
 			errors.New("max_members must be > 0"))
 	}
+	if normalized, err := normalizeProgramIDList(ctx, req.ProgramIDs); err != nil {
+		return err
+	} else {
+		req.ProgramIDs = normalized
+	}
 	if req.InviteCode != nil {
 		code := strings.TrimSpace(*req.InviteCode)
 		if code == "" {
@@ -107,6 +112,17 @@ func ValidateUpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq) e
 		return errs.NewError(ctx, status.CLASSROOM_INVALID_MAX_MEMBERS, nil,
 			errors.New("max_members must be > 0"))
 	}
+	if req.ProgramIDs != nil {
+		normalized, err := normalizeProgramIDList(ctx, *req.ProgramIDs)
+		if err != nil {
+			return err
+		}
+		// Hold onto the same pointer-to-non-nil-slice so the command
+		// can still distinguish "clear all" (non-nil empty) from "no-op"
+		// (nil). A user-supplied [a, b] with duplicates collapses to
+		// the deduped slice in place.
+		req.ProgramIDs = &normalized
+	}
 	return nil
 }
 
@@ -136,6 +152,26 @@ func ValidateListClassrooms(ctx context.Context, req *dto.ListClassroomsReq) err
 	}
 	if req.ProgramID != nil && strings.TrimSpace(*req.ProgramID) == "" {
 		req.ProgramID = nil
+	}
+	if len(req.ProgramIDs) > 0 {
+		// On the list path we don't surface CLASSROOM_PROGRAM_DUPLICATE
+		// — duplicates in the filter are harmless. Just normalize the
+		// slice so the repo only has to deal with non-blank, deduped
+		// ids.
+		seen := make(map[string]struct{}, len(req.ProgramIDs))
+		out := make([]string, 0, len(req.ProgramIDs))
+		for _, id := range req.ProgramIDs {
+			trimmed := strings.TrimSpace(id)
+			if trimmed == "" {
+				continue
+			}
+			if _, ok := seen[trimmed]; ok {
+				continue
+			}
+			seen[trimmed] = struct{}{}
+			out = append(out, trimmed)
+		}
+		req.ProgramIDs = out
 	}
 	if req.GradeID != nil && strings.TrimSpace(*req.GradeID) == "" {
 		req.GradeID = nil
@@ -192,6 +228,32 @@ func ValidateDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq) e
 // by the join-by-code path to reject obviously-malformed input before
 // it reaches the repo.
 const inviteCodeMaxLen = 16
+
+// normalizeProgramIDList trims, drops blanks, and rejects duplicates
+// with CLASSROOM_PROGRAM_DUPLICATE. Used by Create + Update so the
+// service-level validatePrograms loop never wastes a roundtrip on a
+// duplicate id, and the command's INSERT path never has to handle a
+// UNIQUE-violation error from the DB on the happy path.
+func normalizeProgramIDList(ctx context.Context, in []string) ([]string, error) {
+	if len(in) == 0 {
+		return []string{}, nil
+	}
+	seen := make(map[string]struct{}, len(in))
+	out := make([]string, 0, len(in))
+	for _, raw := range in {
+		id := strings.TrimSpace(raw)
+		if id == "" {
+			continue
+		}
+		if _, dup := seen[id]; dup {
+			return nil, errs.NewError(ctx, status.CLASSROOM_PROGRAM_DUPLICATE, nil,
+				errors.New("duplicate program_id in list"))
+		}
+		seen[id] = struct{}{}
+		out = append(out, id)
+	}
+	return out, nil
+}
 
 func ValidateJoinByCode(ctx context.Context, req *dto.JoinByCodeReq) error {
 	if strings.TrimSpace(req.ProfileID) == "" {

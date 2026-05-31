@@ -220,6 +220,7 @@ const (
 	CLASSROOM_INVALID_MAX_MEMBERS           StatusCode = 12221
 	CLASSROOM_INVALID_SCHOOL                StatusCode = 12222
 	CLASSROOM_INVITE_CODE_TAKEN             StatusCode = 12223
+	CLASSROOM_PROGRAM_DUPLICATE             StatusCode = 12224
 
 	CLASSROOM_MEMBER_NOT_FOUND            StatusCode = 12301
 	CLASSROOM_MEMBER_MISSING_ID           StatusCode = 12302

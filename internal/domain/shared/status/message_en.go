@@ -422,6 +422,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "School not found"
 	case CLASSROOM_INVITE_CODE_TAKEN:
 		return "Invite code is already in use"
+	case CLASSROOM_PROGRAM_DUPLICATE:
+		return "Duplicate program id in the list"
 
 	// Classroom member
 	case CLASSROOM_MEMBER_NOT_FOUND:

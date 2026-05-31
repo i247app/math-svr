@@ -67,4 +67,5 @@ type RepositoryContainer struct {
 	ClassroomRepository           classroomDomain.IRepository
 	ClassroomMemberRepository     classroomDomain.IMemberRepository
 	ClassroomInvitationRepository classroomDomain.IInvitationRepository
+	ClassroomProgramRepository    classroomDomain.IClassroomProgramRepository
 }

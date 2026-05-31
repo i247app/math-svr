@@ -16,7 +16,6 @@ type Classroom struct {
 	name                 string
 	description          *string
 	schoolId             *string
-	programId            *string
 	gradeId              *string
 	inviteCode           *string
 	inviteCodeExpiresDt  mtime.MathTime
@@ -32,6 +31,13 @@ type Classroom struct {
 	createDt             mtime.MathTime
 	modifyId             *string
 	modifyDt             mtime.MathTime
+
+	// programIds is the in-memory denormalisation of the
+	// ma_classroom_programs junction rows for this classroom. It is set
+	// by the query/command layer after the classroom row is fetched;
+	// no column on ma_classrooms backs it. A nil slice means "not
+	// hydrated"; an empty non-nil slice means "hydrated, zero programs".
+	programIds []string
 }
 
 func NewClassroom() *Classroom {
@@ -50,8 +56,8 @@ func (c *Classroom) Description() *string               { return c.description }
 func (c *Classroom) SetDescription(d *string)           { c.description = d }
 func (c *Classroom) SchoolId() *string                  { return c.schoolId }
 func (c *Classroom) SetSchoolId(id *string)             { c.schoolId = id }
-func (c *Classroom) ProgramId() *string                 { return c.programId }
-func (c *Classroom) SetProgramId(id *string)            { c.programId = id }
+func (c *Classroom) ProgramIds() []string               { return c.programIds }
+func (c *Classroom) SetProgramIds(ids []string)         { c.programIds = ids }
 func (c *Classroom) GradeId() *string                   { return c.gradeId }
 func (c *Classroom) SetGradeId(id *string)              { c.gradeId = id }
 func (c *Classroom) InviteCode() *string                { return c.inviteCode }

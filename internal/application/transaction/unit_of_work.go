@@ -45,6 +45,7 @@ type Repositories struct {
 	Classroom           classroom.IRepository
 	ClassroomMember     classroom.IMemberRepository
 	ClassroomInvitation classroom.IInvitationRepository
+	ClassroomProgram    classroom.IClassroomProgramRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and
