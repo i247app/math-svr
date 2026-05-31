@@ -21,6 +21,6 @@ var ErrNotFound = errors.New("seq: sequence not found")
 // current state without advancing — never call it as a precursor to
 // Next, since that defeats the atomicity guarantee.
 type IRepository interface {
-	Next(ctx context.Context, name string) (string, error)
+	Next(ctx context.Context, name string) (int64, error)
 	Find(ctx context.Context, name string) (*Sequence, error)
 }

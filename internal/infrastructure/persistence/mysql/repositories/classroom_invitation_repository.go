@@ -86,7 +86,7 @@ func (r *ClassroomInvitationRepository) findBareById(ctx context.Context, id int
 	return ModelToDomainClassroomInvitation(m), nil
 }
 
-func (r *ClassroomInvitationRepository) FindByInvitationId(ctx context.Context, invitationId string) (*classroom.Invitation, error) {
+func (r *ClassroomInvitationRepository) FindByInvitationId(ctx context.Context, invitationId int64) (*classroom.Invitation, error) {
 	return r.findOneBy(ctx, "i.invitation_id = ?", invitationId)
 }
 
@@ -94,13 +94,13 @@ func (r *ClassroomInvitationRepository) FindByToken(ctx context.Context, token s
 	return r.findOneBy(ctx, "i.token = ?", token)
 }
 
-func (r *ClassroomInvitationRepository) FindPendingByClassroomAndProfile(ctx context.Context, classroomId, profileId string) (*classroom.Invitation, error) {
+func (r *ClassroomInvitationRepository) FindPendingByClassroomAndProfile(ctx context.Context, classroomId, profileId int64) (*classroom.Invitation, error) {
 	return r.findOneBy(ctx,
 		"i.classroom_id = ? AND i.invited_profile_id = ? AND i.invitation_status = ?",
 		classroomId, profileId, enum.ClassroomInvitationStatusTypePending)
 }
 
-func (r *ClassroomInvitationRepository) FindPendingByClassroomAndIdentifier(ctx context.Context, classroomId, identifier string) (*classroom.Invitation, error) {
+func (r *ClassroomInvitationRepository) FindPendingByClassroomAndIdentifier(ctx context.Context, classroomId int64, identifier string) (*classroom.Invitation, error) {
 	return r.findOneBy(ctx,
 		"i.classroom_id = ? AND i.invitee_identifier = ? AND i.invitation_status = ?",
 		classroomId, identifier, enum.ClassroomInvitationStatusTypePending)
@@ -166,17 +166,17 @@ func buildClassroomInvitationFilter(params *classroom.ListInvitationsParams) (st
 		clause string
 		args   []any
 	)
-	if params.ClassroomId != nil && strings.TrimSpace(*params.ClassroomId) != "" {
+	if params.ClassroomId != nil && *params.ClassroomId != 0 {
 		clause += ` AND i.classroom_id = ?`
-		args = append(args, strings.TrimSpace(*params.ClassroomId))
+		args = append(args, *params.ClassroomId)
 	}
-	if params.InviterProfileId != nil && strings.TrimSpace(*params.InviterProfileId) != "" {
+	if params.InviterProfileId != nil && *params.InviterProfileId != 0 {
 		clause += ` AND i.inviter_profile_id = ?`
-		args = append(args, strings.TrimSpace(*params.InviterProfileId))
+		args = append(args, *params.InviterProfileId)
 	}
-	if params.InvitedProfileId != nil && strings.TrimSpace(*params.InvitedProfileId) != "" {
+	if params.InvitedProfileId != nil && *params.InvitedProfileId != 0 {
 		clause += ` AND i.invited_profile_id = ?`
-		args = append(args, strings.TrimSpace(*params.InvitedProfileId))
+		args = append(args, *params.InvitedProfileId)
 	}
 	if params.InviteeIdentifier != nil && strings.TrimSpace(*params.InviteeIdentifier) != "" {
 		clause += ` AND i.invitee_identifier = ?`
@@ -263,12 +263,12 @@ func (r *ClassroomInvitationRepository) Update(ctx context.Context, inv *classro
 	return nil
 }
 
-func (r *ClassroomInvitationRepository) SetStatus(ctx context.Context, invitationId, newStatus string, respondedByProfileId *string) error {
+func (r *ClassroomInvitationRepository) SetStatus(ctx context.Context, invitationId int64, newStatus string, respondedByProfileId int64) error {
 	query := `
 		UPDATE ` + classroomInvitationTable + `
 		SET invitation_status   = ?,
 			responded_dt        = ?,
-			response_profile_id = COALESCE(?, response_profile_id),
+			response_profile_id = ?,
 			modify_dt           = ?
 		WHERE invitation_id = ?
 	`
@@ -305,7 +305,7 @@ func (r *ClassroomInvitationRepository) ExpirePending(ctx context.Context) (int6
 	return n, nil
 }
 
-func (r *ClassroomInvitationRepository) SoftDeleteByClassroomId(ctx context.Context, classroomId string) error {
+func (r *ClassroomInvitationRepository) SoftDeleteByClassroomId(ctx context.Context, classroomId int64) error {
 	query := `
 		UPDATE ` + classroomInvitationTable + `
 		SET status     = ?,
@@ -320,7 +320,7 @@ func (r *ClassroomInvitationRepository) SoftDeleteByClassroomId(ctx context.Cont
 	return nil
 }
 
-func (r *ClassroomInvitationRepository) ForceDeleteByClassroomId(ctx context.Context, classroomId string) error {
+func (r *ClassroomInvitationRepository) ForceDeleteByClassroomId(ctx context.Context, classroomId int64) error {
 	query := `DELETE FROM ` + classroomInvitationTable + ` WHERE classroom_id = ?`
 	if _, err := r.db.Exec(ctx, query, classroomId); err != nil {
 		return fmt.Errorf("classroom_invitation repo force delete by classroom: %w", err)

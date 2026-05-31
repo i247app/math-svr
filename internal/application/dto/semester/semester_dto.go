@@ -10,8 +10,8 @@ import (
 // the API. SemesterTranslationID is empty on create payloads and populated
 // on responses; the service treats (language) as the upsert key.
 type SemesterTranslationDTO struct {
-	SemesterTranslationID string  `json:"semester_translation_id,omitempty"`
-	SemesterID            string  `json:"semester_id,omitempty"`
+	SemesterTranslationID int64   `json:"semester_translation_id,omitempty"`
+	SemesterID            int64   `json:"semester_id,omitempty"`
 	Language              string  `json:"language"`
 	Name                  string  `json:"name"`
 	Description           string  `json:"description"`
@@ -20,7 +20,7 @@ type SemesterTranslationDTO struct {
 
 type SemesterResponse struct {
 	ID           int64                     `json:"id"`
-	SemesterID   string                    `json:"semester_id"`
+	SemesterID   int64                     `json:"semester_id"`
 	Name         string                    `json:"name"`
 	Description  string                    `json:"description"`
 	ImageKey     *string                   `json:"image_key,omitempty"`
@@ -51,7 +51,7 @@ type CreateSemesterRes struct {
 // updated, missing rows are inserted, and rows the client omits are left
 // alone (no implicit deletion — translation removal is an explicit call).
 type UpdateSemesterReq struct {
-	SemesterID   string                    `json:"semester_id"`
+	SemesterID   int64                     `json:"semester_id"`
 	Name         *string                   `json:"name,omitempty"`
 	Description  *string                   `json:"description,omitempty"`
 	ImageKey     *string                   `json:"image_key,omitempty"`
@@ -65,13 +65,13 @@ type UpdateSemesterRes struct {
 }
 
 type DeleteSemesterReq struct {
-	SemesterID string `json:"semester_id"`
+	SemesterID int64 `json:"semester_id"`
 }
 
 type DeleteSemesterRes struct{}
 
 type GetSemesterReq struct {
-	SemesterID string            `json:"semester_id"`
+	SemesterID int64             `json:"semester_id"`
 	Language   enum.LanguageType `json:"language,omitempty"`
 }
 

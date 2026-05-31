@@ -10,8 +10,8 @@ import (
 // the API. ChapterTranslationID is empty on create payloads and populated
 // on responses; the service treats (language) as the upsert key.
 type ChapterTranslationDTO struct {
-	ChapterTranslationID string  `json:"chapter_translation_id,omitempty"`
-	ChapterID            string  `json:"chapter_id,omitempty"`
+	ChapterTranslationID int64   `json:"chapter_translation_id,omitempty"`
+	ChapterID            int64   `json:"chapter_id,omitempty"`
 	Language             string  `json:"language"`
 	Label                string  `json:"label"`
 	Description          string  `json:"description"`
@@ -20,10 +20,10 @@ type ChapterTranslationDTO struct {
 
 type ChapterResponse struct {
 	ID           int64                    `json:"id"`
-	ChapterID    string                   `json:"chapter_id"`
-	ProgramID    string                   `json:"program_id"`
-	GradeID      string                   `json:"grade_id"`
-	SemesterID   string                   `json:"semester_id"`
+	ChapterID    int64                    `json:"chapter_id"`
+	ProgramID    int64                    `json:"program_id"`
+	GradeID      int64                    `json:"grade_id"`
+	SemesterID   int64                    `json:"semester_id"`
 	Label        string                   `json:"label"`
 	Description  string                   `json:"description"`
 	DisplayOrder int8                     `json:"display_order"`
@@ -34,9 +34,9 @@ type ChapterResponse struct {
 }
 
 type CreateChapterReq struct {
-	ProgramID    string                   `json:"program_id"`
-	GradeID      string                   `json:"grade_id"`
-	SemesterID   string                   `json:"semester_id"`
+	ProgramID    int64                    `json:"program_id"`
+	GradeID      int64                    `json:"grade_id"`
+	SemesterID   int64                    `json:"semester_id"`
 	Label        string                   `json:"label"`
 	Description  string                   `json:"description"`
 	DisplayOrder int8                     `json:"display_order"`
@@ -54,10 +54,10 @@ type CreateChapterRes struct {
 // updated, missing rows are inserted, and rows the client omits are left
 // alone (no implicit deletion — translation removal is an explicit call).
 type UpdateChapterReq struct {
-	ChapterID    string                   `json:"chapter_id"`
-	ProgramID    *string                  `json:"program_id,omitempty"`
-	GradeID      *string                  `json:"grade_id,omitempty"`
-	SemesterID   *string                  `json:"semester_id,omitempty"`
+	ChapterID    int64                    `json:"chapter_id"`
+	ProgramID    *int64                   `json:"program_id,omitempty"`
+	GradeID      *int64                   `json:"grade_id,omitempty"`
+	SemesterID   *int64                   `json:"semester_id,omitempty"`
 	Label        *string                  `json:"label,omitempty"`
 	Description  *string                  `json:"description,omitempty"`
 	DisplayOrder *int8                    `json:"display_order,omitempty"`
@@ -70,13 +70,13 @@ type UpdateChapterRes struct {
 }
 
 type DeleteChapterReq struct {
-	ChapterID string `json:"chapter_id"`
+	ChapterID int64 `json:"chapter_id"`
 }
 
 type DeleteChapterRes struct{}
 
 type GetChapterReq struct {
-	ChapterID string            `json:"chapter_id"`
+	ChapterID int64             `json:"chapter_id"`
 	Language  enum.LanguageType `json:"language,omitempty"`
 }
 
@@ -85,9 +85,9 @@ type GetChapterRes struct {
 }
 
 type ListChaptersReq struct {
-	ProgramID  *string           `json:"program_id,omitempty"`
-	GradeID    *string           `json:"grade_id,omitempty"`
-	SemesterID *string           `json:"semester_id,omitempty"`
+	ProgramID  *int64            `json:"program_id,omitempty"`
+	GradeID    *int64            `json:"grade_id,omitempty"`
+	SemesterID *int64            `json:"semester_id,omitempty"`
 	Language   enum.LanguageType `json:"language,omitempty"`
 	Page       int64             `json:"page"`
 	Size       int64             `json:"size"`

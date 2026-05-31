@@ -15,12 +15,12 @@ import (
 // ProgramID and ProgramIDs are unioned at the repo layer (OR semantics).
 // Callers may set either or both; both blank means "no program filter".
 type ListClassroomsQuery struct {
-	ProfileID       *string
-	OwnerProfileID  *string
-	SchoolID        *string
-	ProgramID       *string
-	ProgramIDs      []string
-	GradeID         *string
+	ProfileID       *int64
+	OwnerProfileID  *int64
+	SchoolID        *int64
+	ProgramID       *int64
+	ProgramIDs      []int64
+	GradeID         *int64
 	Search          *string
 	IncludeArchived bool
 	Page            int64
@@ -66,7 +66,7 @@ func (h *ListClassroomsQueryHandler) Handle(ctx context.Context, q ListClassroom
 		return classrooms, pg, nil
 	}
 
-	ids := make([]string, len(classrooms))
+	ids := make([]int64, len(classrooms))
 	for i, c := range classrooms {
 		ids[i] = c.ClassroomId()
 	}
@@ -77,7 +77,7 @@ func (h *ListClassroomsQueryHandler) Handle(ctx context.Context, q ListClassroom
 	for _, c := range classrooms {
 		ps, ok := links[c.ClassroomId()]
 		if !ok {
-			ps = []string{}
+			ps = []int64{}
 		}
 		c.SetProgramIds(ps)
 	}

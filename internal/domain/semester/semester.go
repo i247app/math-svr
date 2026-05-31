@@ -6,7 +6,7 @@ import (
 
 type Semester struct {
 	id             int64
-	semesterId     string
+	semesterId     int64
 	name           string
 	description    string
 	imageKey       *string
@@ -14,9 +14,9 @@ type Semester struct {
 	note           *string
 	semesterStatus *string
 	status         string
-	createId       *string
+	createId       *int64
 	createDt       mtime.MathTime
-	modifyId       *string
+	modifyId       *int64
 	modifyDt       mtime.MathTime
 
 	// translations is hydrated only by detail reads; list reads keep it
@@ -42,11 +42,11 @@ func (s *Semester) SetId(id int64) {
 	s.id = id
 }
 
-func (s *Semester) SemesterId() string {
+func (s *Semester) SemesterId() int64 {
 	return s.semesterId
 }
 
-func (s *Semester) SetSemesterId(semesterId string) {
+func (s *Semester) SetSemesterId(semesterId int64) {
 	s.semesterId = semesterId
 }
 
@@ -106,11 +106,11 @@ func (s *Semester) SetStatus(status string) {
 	s.status = status
 }
 
-func (s *Semester) CreateId() *string {
+func (s *Semester) CreateId() *int64 {
 	return s.createId
 }
 
-func (s *Semester) SetCreateId(createId *string) {
+func (s *Semester) SetCreateId(createId *int64) {
 	s.createId = createId
 }
 
@@ -122,11 +122,11 @@ func (s *Semester) SetCreateDt(createDt mtime.MathTime) {
 	s.createDt = createDt
 }
 
-func (s *Semester) ModifyId() *string {
+func (s *Semester) ModifyId() *int64 {
 	return s.modifyId
 }
 
-func (s *Semester) SetModifyId(modifyId *string) {
+func (s *Semester) SetModifyId(modifyId *int64) {
 	s.modifyId = modifyId
 }
 

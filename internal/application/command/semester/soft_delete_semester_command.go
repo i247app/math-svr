@@ -15,7 +15,7 @@ import (
 // queryable for audit / history paths but are filtered out of every
 // standard read.
 type SoftDeleteSemesterCommand struct {
-	SemesterID string
+	SemesterID int64
 }
 
 type SoftDeleteSemesterCommandHandler struct {

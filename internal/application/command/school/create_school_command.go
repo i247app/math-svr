@@ -12,7 +12,7 @@ import (
 )
 
 type CreateSchoolCommand struct {
-	ActorID     *string
+	ActorID     *int64
 	Name        string
 	Description *string
 	ImageKey    *string

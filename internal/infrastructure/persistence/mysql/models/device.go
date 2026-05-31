@@ -6,8 +6,8 @@ import (
 
 type DeviceModel struct {
 	Id              int64
-	DeviceId        string
-	UserId          *string
+	DeviceId        int64
+	UserId          *int64
 	DeviceUUID      string
 	DeviceName      string
 	DevicePushToken *string
@@ -15,8 +15,8 @@ type DeviceModel struct {
 	Note            *string
 	DeviceStatus    *string
 	Status          string
-	CreateId        *string
+	CreateId        *int64
 	CreateDt        time.Time
-	ModifyId        *string
+	ModifyId        *int64
 	ModifyDt        time.Time
 }

@@ -9,8 +9,8 @@ import (
 // the client can correlate the response with the local identifier it
 // originally sent; we never echo back the push token (treated like a secret).
 type DeviceResponse struct {
-	DeviceID   string         `json:"device_id"`
-	UserID     *string        `json:"user_id,omitempty"`
+	DeviceID   int64          `json:"device_id"`
+	UserID     *int64         `json:"user_id,omitempty"`
 	DeviceUUID string         `json:"device_uuid"`
 	DeviceName string         `json:"device_name"`
 	IsVerified bool           `json:"is_verified"`
@@ -47,7 +47,7 @@ func DomainListToResponse(ds []*device.Device) []*DeviceResponse {
 }
 
 type GetDeviceByIdReq struct {
-	DeviceID string `json:"device_id"`
+	DeviceID int64 `json:"device_id"`
 }
 
 type GetDeviceByIdRes struct {
@@ -55,7 +55,7 @@ type GetDeviceByIdRes struct {
 }
 
 type ListDevicesReq struct {
-	UserID string `json:"user_id"`
+	UserID int64 `json:"user_id"`
 }
 
 type ListDevicesRes struct {
@@ -63,8 +63,8 @@ type ListDevicesRes struct {
 }
 
 type UpdateDeviceReq struct {
-	UserID          string  `json:"user_id"`
-	DeviceID        string  `json:"device_id"`
+	UserID          int64   `json:"user_id"`
+	DeviceID        int64   `json:"device_id"`
 	DeviceName      string  `json:"device_name,omitempty"`
 	DevicePushToken *string `json:"device_push_token,omitempty"`
 	Note            *string `json:"note,omitempty"`
@@ -75,15 +75,15 @@ type UpdateDeviceRes struct {
 }
 
 type RevokeDeviceReq struct {
-	UserID   string `json:"user_id"`
-	DeviceID string `json:"device_id"`
+	UserID   int64 `json:"user_id"`
+	DeviceID int64 `json:"device_id"`
 }
 
 type RevokeDeviceRes struct{}
 
 type DeleteDeviceReq struct {
-	UserID   string `json:"user_id"`
-	DeviceID string `json:"device_id"`
+	UserID   int64 `json:"user_id"`
+	DeviceID int64 `json:"device_id"`
 }
 
 type DeleteDeviceRes struct{}
@@ -93,8 +93,8 @@ type DeleteDeviceRes struct{}
 // command directly through the Service. Kept here as the canonical shape so
 // the contract is discoverable.
 type VerifyDeviceReq struct {
-	UserID   string `json:"user_id"`
-	DeviceID string `json:"device_id"`
+	UserID   int64 `json:"user_id"`
+	DeviceID int64 `json:"device_id"`
 }
 
 type VerifyDeviceRes struct {

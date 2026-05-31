@@ -160,8 +160,8 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 	log.Infof("questionsJSON: %s", string(questionsJSON))
 
 	// Owner fields are NULL for anonymous quizzes (no profile supplied).
-	var ownerUserID, ownerProfileID *string
-	if req.UserID != nil && *req.UserID != "" {
+	var ownerUserID, ownerProfileID *int64
+	if req.UserID != nil && *req.UserID != 0 {
 		ownerUserID = req.UserID
 	}
 
@@ -416,7 +416,7 @@ func (s *Service) resolveCurriculumContext(ctx context.Context, req *dto.Generat
 	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
 
 	if cc.ProgramLabel == "" && profile.ProgramId() != nil {
-		programs, err := s.programRepo.ListProgramsByIds(ctx, []string{*profile.ProgramId()}, lang)
+		programs, err := s.programRepo.ListProgramsByIds(ctx, []int64{*profile.ProgramId()}, lang)
 		if err != nil {
 			return cc, errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -425,7 +425,7 @@ func (s *Service) resolveCurriculumContext(ctx context.Context, req *dto.Generat
 		}
 	}
 	if cc.GradeLabel == "" && profile.GradeId() != nil {
-		grades, err := s.gradeRepo.ListGradesByIds(ctx, []string{*profile.GradeId()}, lang)
+		grades, err := s.gradeRepo.ListGradesByIds(ctx, []int64{*profile.GradeId()}, lang)
 		if err != nil {
 			return cc, errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -434,7 +434,7 @@ func (s *Service) resolveCurriculumContext(ctx context.Context, req *dto.Generat
 		}
 	}
 	if cc.SemesterLabel == "" && profile.SemesterId() != nil {
-		semesters, err := s.semesterRepo.ListSemestersByIds(ctx, []string{*profile.SemesterId()}, lang)
+		semesters, err := s.semesterRepo.ListSemestersByIds(ctx, []int64{*profile.SemesterId()}, lang)
 		if err != nil {
 			return cc, errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -537,7 +537,7 @@ func (s *Service) resolveProfileChapterDescriptions(ctx context.Context,
 // used by reinforce grading where only the current grade matters. Returns
 // "" when the profile has no grade configured; the grade prompt handles
 // the "unknown" case gracefully.
-func (s *Service) resolveCurrentGradeLabel(ctx context.Context, profileID string, lang enum.LanguageType) (string, error) {
+func (s *Service) resolveCurrentGradeLabel(ctx context.Context, profileID int64, lang enum.LanguageType) (string, error) {
 	profile, err := s.profileRepo.FindByProfileId(ctx, profileID)
 	if err != nil {
 		return "", errs.NewError(ctx, status.FAIL, nil, err)
@@ -548,7 +548,7 @@ func (s *Service) resolveCurrentGradeLabel(ctx context.Context, profileID string
 	if lang == "" {
 		lang = enum.LanguageTypeVietnamese
 	}
-	grades, err := s.gradeRepo.ListGradesByIds(ctx, []string{*profile.GradeId()}, lang)
+	grades, err := s.gradeRepo.ListGradesByIds(ctx, []int64{*profile.GradeId()}, lang)
 	if err != nil {
 		return "", errs.NewError(ctx, status.FAIL, nil, err)
 	}

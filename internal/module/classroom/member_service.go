@@ -20,7 +20,7 @@ import (
 // everyone else → STUDENT. The classroom-state, expiry, and capacity
 // checks live inside the command's UoW so they're atomic with the
 // member-row write.
-func (s *Service) JoinClassroomByCode(ctx context.Context, req *dto.JoinByCodeReq, sessionUserID string) (*dto.JoinByCodeRes, error) {
+func (s *Service) JoinClassroomByCode(ctx context.Context, req *dto.JoinByCodeReq, sessionUserID int64) (*dto.JoinByCodeRes, error) {
 	if err := ValidateJoinByCode(ctx, req); err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (s *Service) JoinClassroomByCode(ctx context.Context, req *dto.JoinByCodeRe
 // LeaveClassroom transitions the caller's member row to LEFT. OWNER is
 // rejected at the command level — the owner must transfer ownership
 // first to avoid an owner-less classroom.
-func (s *Service) LeaveClassroom(ctx context.Context, req *dto.LeaveClassroomReq, sessionUserID string) (*dto.LeaveClassroomRes, error) {
+func (s *Service) LeaveClassroom(ctx context.Context, req *dto.LeaveClassroomReq, sessionUserID int64) (*dto.LeaveClassroomRes, error) {
 	if err := ValidateLeaveClassroom(ctx, req); err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func (s *Service) LeaveClassroom(ctx context.Context, req *dto.LeaveClassroomReq
 // RemoveMember kicks a target profile out. Caller must be OWNER (any
 // target) or CO_TEACHER (STUDENT targets only). The command guards
 // "cannot remove OWNER" as a defensive invariant.
-func (s *Service) RemoveMember(ctx context.Context, req *dto.RemoveMemberReq, sessionUserID string) (*dto.RemoveMemberRes, error) {
+func (s *Service) RemoveMember(ctx context.Context, req *dto.RemoveMemberReq, sessionUserID int64) (*dto.RemoveMemberRes, error) {
 	if err := ValidateRemoveMember(ctx, req); err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (s *Service) RemoveMember(ctx context.Context, req *dto.RemoveMemberReq, se
 // OWNER-only. Promotion to CO_TEACHER requires the target profile to
 // have role=TEACHER on ma_profiles — STUDENT/PARENT cannot become a
 // co-teacher.
-func (s *Service) UpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRoleReq, sessionUserID string) (*dto.UpdateMemberRoleRes, error) {
+func (s *Service) UpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRoleReq, sessionUserID int64) (*dto.UpdateMemberRoleRes, error) {
 	if err := ValidateUpdateMemberRole(ctx, req); err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (s *Service) UpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRol
 // new owner must already be an ACTIVE member AND a TEACHER profile;
 // the outgoing owner is demoted to CO_TEACHER so they keep manager
 // rights and unblock the future leave path.
-func (s *Service) TransferOwnership(ctx context.Context, req *dto.TransferOwnershipReq, sessionUserID string) (*dto.TransferOwnershipRes, error) {
+func (s *Service) TransferOwnership(ctx context.Context, req *dto.TransferOwnershipReq, sessionUserID int64) (*dto.TransferOwnershipRes, error) {
 	if err := ValidateTransferOwnership(ctx, req); err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (s *Service) TransferOwnership(ctx context.Context, req *dto.TransferOwners
 // ListMembers returns the members of a classroom the caller belongs to.
 // The membership gate prevents outsiders from enumerating a classroom's
 // roster via this endpoint.
-func (s *Service) ListMembers(ctx context.Context, req *dto.ListMembersReq, sessionUserID string) (*dto.ListMembersRes, error) {
+func (s *Service) ListMembers(ctx context.Context, req *dto.ListMembersReq, sessionUserID int64) (*dto.ListMembersRes, error) {
 	if err := ValidateListMembers(ctx, req); err != nil {
 		return nil, err
 	}

@@ -7,7 +7,7 @@ import (
 )
 
 type GetQuizByQuizIdQuery struct {
-	QuizID string
+	QuizID int64
 }
 
 type GetQuizByQuizIdQueryHandler struct {

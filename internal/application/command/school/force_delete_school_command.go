@@ -14,7 +14,7 @@ import (
 // profile service treats unresolved school_ids as nil at the API edge,
 // so callers see school=null rather than an error.
 type ForceDeleteSchoolCommand struct {
-	SchoolID string
+	SchoolID int64
 }
 
 type ForceDeleteSchoolCommandHandler struct {

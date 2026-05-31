@@ -6,9 +6,9 @@ import (
 
 type OtpModel struct {
 	Id           int64
-	OtpId        string
+	OtpId        int64
 	OtpType      string
-	UserId       *string
+	UserId       *int64
 	Identifier   string
 	DeviceUUID   *string
 	DeviceName   *string
@@ -19,8 +19,8 @@ type OtpModel struct {
 	Note         *string
 	OtpStatus    *string
 	Status       string
-	CreateId     *string
+	CreateId     *int64
 	CreateDt     time.Time
-	ModifyId     *string
+	ModifyId     *int64
 	ModifyDt     time.Time
 }

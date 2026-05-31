@@ -48,7 +48,7 @@ func scanClassroomProgram(s database.RowScanner) (*models.ClassroomProgramModel,
 	return &m, nil
 }
 
-func (r *ClassroomProgramRepository) ListProgramIdsByClassroomId(ctx context.Context, classroomId string) ([]string, error) {
+func (r *ClassroomProgramRepository) ListProgramIdsByClassroomId(ctx context.Context, classroomId int64) ([]int64, error) {
 	args := append(classroomProgramActiveArgs(), classroomId)
 	query := `SELECT cp.program_id FROM ` + classroomProgramTable + ` cp WHERE ` +
 		classroomProgramActiveWhere + ` AND cp.classroom_id = ? ORDER BY cp.id ASC`
@@ -59,9 +59,9 @@ func (r *ClassroomProgramRepository) ListProgramIdsByClassroomId(ctx context.Con
 	}
 	defer rows.Close()
 
-	var out []string
+	var out []int64
 	for rows.Next() {
-		var id string
+		var id int64
 		if err := rows.Scan(&id); err != nil {
 			return nil, fmt.Errorf("classroom_program repo scan row: %w", err)
 		}
@@ -73,9 +73,9 @@ func (r *ClassroomProgramRepository) ListProgramIdsByClassroomId(ctx context.Con
 	return out, nil
 }
 
-func (r *ClassroomProgramRepository) ListProgramIdsByClassroomIds(ctx context.Context, classroomIds []string) (map[string][]string, error) {
+func (r *ClassroomProgramRepository) ListProgramIdsByClassroomIds(ctx context.Context, classroomIds []int64) (map[int64][]int64, error) {
 	if len(classroomIds) == 0 {
-		return map[string][]string{}, nil
+		return map[int64][]int64{}, nil
 	}
 	placeholders := make([]string, len(classroomIds))
 	args := classroomProgramActiveArgs()
@@ -95,9 +95,10 @@ func (r *ClassroomProgramRepository) ListProgramIdsByClassroomIds(ctx context.Co
 	}
 	defer rows.Close()
 
-	out := make(map[string][]string, len(classroomIds))
+	out := make(map[int64][]int64, len(classroomIds))
 	for rows.Next() {
-		var classroomId, programId string
+		var classroomId int64
+		var programId int64
 		if err := rows.Scan(&classroomId, &programId); err != nil {
 			return nil, fmt.Errorf("classroom_program repo scan row: %w", err)
 		}
@@ -143,7 +144,7 @@ func (r *ClassroomProgramRepository) Create(ctx context.Context, cp *classroom.C
 	return r.findBareById(ctx, id)
 }
 
-func (r *ClassroomProgramRepository) DeleteByPair(ctx context.Context, classroomId, programId string) error {
+func (r *ClassroomProgramRepository) DeleteByPair(ctx context.Context, classroomId, programId int64) error {
 	query := `DELETE FROM ` + classroomProgramTable +
 		` WHERE classroom_id = ? AND program_id = ?`
 	if _, err := r.db.Exec(ctx, query, classroomId, programId); err != nil {
@@ -152,7 +153,7 @@ func (r *ClassroomProgramRepository) DeleteByPair(ctx context.Context, classroom
 	return nil
 }
 
-func (r *ClassroomProgramRepository) DeleteByClassroomId(ctx context.Context, classroomId string) error {
+func (r *ClassroomProgramRepository) DeleteByClassroomId(ctx context.Context, classroomId int64) error {
 	query := `DELETE FROM ` + classroomProgramTable + ` WHERE classroom_id = ?`
 	if _, err := r.db.Exec(ctx, query, classroomId); err != nil {
 		return fmt.Errorf("classroom_program repo delete by classroom: %w", err)

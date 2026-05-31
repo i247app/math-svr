@@ -6,16 +6,16 @@ import (
 
 type ProfileModel struct {
 	Id            int64
-	ProfileId     string
-	UserId        string
+	ProfileId     int64
+	UserId        int64
 	Name          string
 	Role          string
 	AvatarKey     *string
 	Dob           *time.Time
-	SchoolId      *string
-	ProgramId     *string
-	GradeId       *string
-	SemesterId    *string
+	SchoolId      *int64
+	ProgramId     *int64
+	GradeId       *int64
+	SemesterId    *int64
 	IsDefault     bool
 	IdType        *string
 	TeacherId     *string
@@ -23,8 +23,8 @@ type ProfileModel struct {
 	Note          *string
 	ProfileStatus *string
 	Status        string
-	CreateId      *string
+	CreateId      *int64
 	CreateDt      time.Time
-	ModifyId      *string
+	ModifyId      *int64
 	ModifyDt      time.Time
 }

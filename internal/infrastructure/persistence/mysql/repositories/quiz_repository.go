@@ -80,7 +80,7 @@ func (r *QuizRepository) findBareById(ctx context.Context, id int64) (*quiz.Quiz
 	return ModelToDomainQuiz(m), nil
 }
 
-func (r *QuizRepository) FindByQuizId(ctx context.Context, quizId string) (*quiz.Quiz, error) {
+func (r *QuizRepository) FindByQuizId(ctx context.Context, quizId int64) (*quiz.Quiz, error) {
 	return r.findOneBy(ctx, "q.quiz_id = ?", quizId)
 }
 
@@ -183,7 +183,7 @@ func (r *QuizRepository) Create(ctx context.Context, q *quiz.Quiz) (*quiz.Quiz, 
 // is the single state transition: GENERATED → SUBMITTED, writing answers
 // + AI grading + score counts in one shot. ai_detect_grade is *string
 // because PRACTICE quizzes don't predict a grade.
-func (r *QuizRepository) UpdateAnswersAndGrading(ctx context.Context, quizId string,
+func (r *QuizRepository) UpdateAnswersAndGrading(ctx context.Context, quizId int64,
 	answers string, grading quiz.GradingUpdate, quizStatus string) error {
 	query := `
 		UPDATE ` + quizTable + `
@@ -206,7 +206,7 @@ func (r *QuizRepository) UpdateAnswersAndGrading(ctx context.Context, quizId str
 	return nil
 }
 
-func (r *QuizRepository) SoftDelete(ctx context.Context, quizId string) error {
+func (r *QuizRepository) SoftDelete(ctx context.Context, quizId int64) error {
 	query := `
 		UPDATE ` + quizTable + `
 		SET quiz_status = ?,
@@ -221,7 +221,7 @@ func (r *QuizRepository) SoftDelete(ctx context.Context, quizId string) error {
 	return nil
 }
 
-func (r *QuizRepository) SoftDeleteByUserId(ctx context.Context, userId string) error {
+func (r *QuizRepository) SoftDeleteByUserId(ctx context.Context, userId int64) error {
 	query := `
 		UPDATE ` + quizTable + `
 		SET quiz_status = ?,
@@ -236,7 +236,7 @@ func (r *QuizRepository) SoftDeleteByUserId(ctx context.Context, userId string) 
 	return nil
 }
 
-func (r *QuizRepository) ForceDeleteByUserId(ctx context.Context, userId string) error {
+func (r *QuizRepository) ForceDeleteByUserId(ctx context.Context, userId int64) error {
 	query := `DELETE FROM ` + quizTable + ` WHERE user_id = ?`
 	if _, err := r.db.Exec(ctx, query, userId); err != nil {
 		return fmt.Errorf("quiz repo force delete by user id: %w", err)

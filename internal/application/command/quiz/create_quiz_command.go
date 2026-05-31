@@ -23,13 +23,13 @@ import (
 // Purpose ↔ ma_quizzes.purpose (ASSESSMENT / PRACTICE / EXAM).
 // TypeOfQuiz ↔ ma_quizzes.type_of_quiz (GENERAL / REINFORCEMENT).
 type CreateQuizCommand struct {
-	UserID         *string
-	ProfileID      *string
+	UserID         *int64
+	ProfileID      *int64
 	Purpose        enum.QuizPurpose
 	TypeOfQuiz     enum.QuizTypeOfQuiz
 	Title          *string
 	QuestionsJSON  string
-	PreviousQuizID *string
+	PreviousQuizID *int64
 }
 
 type CreateQuizCommandHandler struct {

@@ -11,8 +11,8 @@ import (
 // ProfileID / UserID. Either or both may be set; the repository AND's
 // the populated filters together.
 type ListQuizzesQuery struct {
-	ProfileID *string
-	UserID    *string
+	ProfileID *int64
+	UserID    *int64
 	Purpose   *string
 	Page      int64
 	Limit     int64

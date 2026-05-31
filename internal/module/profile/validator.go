@@ -28,7 +28,7 @@ func validateLanguage(ctx context.Context, lang enum.LanguageType) error {
 }
 
 func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error {
-	if req.UserID == "" {
+	if req.UserID == 0 {
 		return errs.NewError(ctx, status.PROFILE_MISSING_USER_ID, nil,
 			errors.New("user_id is required"))
 	}
@@ -56,7 +56,7 @@ func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error
 }
 
 func ValidateUpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) error {
-	if req.ProfileID == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			errors.New("profile_id is required"))
 	}
@@ -76,7 +76,7 @@ func ValidateUpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) error
 }
 
 func ValidateGetProfile(ctx context.Context, req *dto.GetProfileByIdReq) error {
-	if req.ProfileID == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			errors.New("profile_id is required"))
 	}
@@ -84,7 +84,7 @@ func ValidateGetProfile(ctx context.Context, req *dto.GetProfileByIdReq) error {
 }
 
 func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
-	if req.UserID == "" {
+	if req.UserID == 0 {
 		return errs.NewError(ctx, status.PROFILE_MISSING_USER_ID, nil,
 			errors.New("user_id is required"))
 	}
@@ -92,7 +92,7 @@ func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
 }
 
 func ValidateDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) error {
-	if req.ProfileID == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			errors.New("profile_id is required"))
 	}
@@ -100,11 +100,11 @@ func ValidateDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) error
 }
 
 func ValidateAssignSchool(ctx context.Context, req *dto.AssignSchoolReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			errors.New("profile_id is required"))
 	}
-	if strings.TrimSpace(req.SchoolID) == "" {
+	if req.SchoolID == 0 {
 		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
 			errors.New("school_id is required"))
 	}
@@ -112,7 +112,7 @@ func ValidateAssignSchool(ctx context.Context, req *dto.AssignSchoolReq) error {
 }
 
 func ValidateRemoveSchool(ctx context.Context, req *dto.RemoveSchoolReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			errors.New("profile_id is required"))
 	}

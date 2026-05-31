@@ -31,35 +31,40 @@ const coverUrlTTL = 1 * time.Hour
 // needed for foreign-key validation, and exposes a sessionUserID-aware
 // API so handlers can enforce the §0 Q1 contract.
 type Service struct {
-	getClassroomQuery       *query.GetClassroomByIdQueryHandler
-	listClassroomsQuery     *query.ListClassroomsQueryHandler
-	listMembersQuery        *query.ListMembersQueryHandler
-	createClassroomCmd      *command.CreateClassroomCommandHandler
-	updateClassroomCmd      *command.UpdateClassroomCommandHandler
-	archiveClassroomCmd     *command.ArchiveClassroomCommandHandler
-	restoreClassroomCmd     *command.RestoreClassroomCommandHandler
-	softDeleteClassroomCmd  *command.SoftDeleteClassroomCommandHandler
-	forceDeleteClassroomCmd *command.ForceDeleteClassroomCommandHandler
-	joinByCodeCmd           *command.JoinByCodeCommandHandler
-	leaveClassroomCmd       *command.LeaveClassroomCommandHandler
-	removeMemberCmd         *command.RemoveMemberCommandHandler
-	updateMemberRoleCmd     *command.UpdateMemberRoleCommandHandler
-	transferOwnershipCmd    *command.TransferOwnershipCommandHandler
+	getClassroomQuery               *query.GetClassroomByIdQueryHandler
+	listClassroomsQuery             *query.ListClassroomsQueryHandler
+	listMembersQuery                *query.ListMembersQueryHandler
+	listInvitationsByClassroomQuery *query.ListInvitationsByClassroomQueryHandler
+	listMyPendingInvitationsQuery   *query.ListMyPendingInvitationsQueryHandler
+	createClassroomCmd              *command.CreateClassroomCommandHandler
+	updateClassroomCmd              *command.UpdateClassroomCommandHandler
+	archiveClassroomCmd             *command.ArchiveClassroomCommandHandler
+	restoreClassroomCmd             *command.RestoreClassroomCommandHandler
+	softDeleteClassroomCmd          *command.SoftDeleteClassroomCommandHandler
+	forceDeleteClassroomCmd         *command.ForceDeleteClassroomCommandHandler
+	joinByCodeCmd                   *command.JoinByCodeCommandHandler
+	leaveClassroomCmd               *command.LeaveClassroomCommandHandler
+	removeMemberCmd                 *command.RemoveMemberCommandHandler
+	updateMemberRoleCmd             *command.UpdateMemberRoleCommandHandler
+	transferOwnershipCmd            *command.TransferOwnershipCommandHandler
+	createInvitationCmd             *command.CreateInvitationCommandHandler
 
-	classroomRepo        classroomDomain.IRepository
-	classroomMemberRepo  classroomDomain.IMemberRepository
-	classroomProgramRepo classroomDomain.IClassroomProgramRepository
-	profileRepo          profileDomain.IRepository
-	programRepo          programDomain.IRepository
-	gradeRepo            gradeDomain.IRepository
-	schoolRepo           schoolDomain.IRepository
-	storageProvider      *storage.Adapter
+	classroomRepo           classroomDomain.IRepository
+	classroomMemberRepo     classroomDomain.IMemberRepository
+	classroomProgramRepo    classroomDomain.IClassroomProgramRepository
+	classroomInvitationRepo classroomDomain.IInvitationRepository
+	profileRepo             profileDomain.IRepository
+	programRepo             programDomain.IRepository
+	gradeRepo               gradeDomain.IRepository
+	schoolRepo              schoolDomain.IRepository
+	storageProvider         *storage.Adapter
 }
 
 func NewService(
 	classroomRepo classroomDomain.IRepository,
 	classroomMemberRepo classroomDomain.IMemberRepository,
 	classroomProgramRepo classroomDomain.IClassroomProgramRepository,
+	classroomInvitationRepo classroomDomain.IInvitationRepository,
 	uow transaction.UnitOfWork,
 	profileRepo profileDomain.IRepository,
 	programRepo programDomain.IRepository,
@@ -68,28 +73,32 @@ func NewService(
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
-		getClassroomQuery:       query.NewGetClassroomByIdQueryHandler(classroomRepo, classroomProgramRepo),
-		listClassroomsQuery:     query.NewListClassroomsQueryHandler(classroomRepo, classroomProgramRepo),
-		listMembersQuery:        query.NewListMembersQueryHandler(classroomMemberRepo),
-		createClassroomCmd:      command.NewCreateClassroomCommandHandler(uow),
-		updateClassroomCmd:      command.NewUpdateClassroomCommandHandler(uow),
-		archiveClassroomCmd:     command.NewArchiveClassroomCommandHandler(uow),
-		restoreClassroomCmd:     command.NewRestoreClassroomCommandHandler(uow),
-		softDeleteClassroomCmd:  command.NewSoftDeleteClassroomCommandHandler(uow),
-		forceDeleteClassroomCmd: command.NewForceDeleteClassroomCommandHandler(uow),
-		joinByCodeCmd:           command.NewJoinByCodeCommandHandler(uow),
-		leaveClassroomCmd:       command.NewLeaveClassroomCommandHandler(uow),
-		removeMemberCmd:         command.NewRemoveMemberCommandHandler(uow),
-		updateMemberRoleCmd:     command.NewUpdateMemberRoleCommandHandler(uow),
-		transferOwnershipCmd:    command.NewTransferOwnershipCommandHandler(uow),
-		classroomRepo:        classroomRepo,
-		classroomMemberRepo:  classroomMemberRepo,
-		classroomProgramRepo: classroomProgramRepo,
-		profileRepo:          profileRepo,
-		programRepo:          programRepo,
-		gradeRepo:            gradeRepo,
-		schoolRepo:           schoolRepo,
-		storageProvider:      storageProvider,
+		getClassroomQuery:               query.NewGetClassroomByIdQueryHandler(classroomRepo, classroomProgramRepo),
+		listClassroomsQuery:             query.NewListClassroomsQueryHandler(classroomRepo, classroomProgramRepo),
+		listMembersQuery:                query.NewListMembersQueryHandler(classroomMemberRepo),
+		listInvitationsByClassroomQuery: query.NewListInvitationsByClassroomQueryHandler(classroomInvitationRepo),
+		listMyPendingInvitationsQuery:   query.NewListMyPendingInvitationsQueryHandler(classroomInvitationRepo),
+		createClassroomCmd:              command.NewCreateClassroomCommandHandler(uow),
+		updateClassroomCmd:              command.NewUpdateClassroomCommandHandler(uow),
+		archiveClassroomCmd:             command.NewArchiveClassroomCommandHandler(uow),
+		restoreClassroomCmd:             command.NewRestoreClassroomCommandHandler(uow),
+		softDeleteClassroomCmd:          command.NewSoftDeleteClassroomCommandHandler(uow),
+		forceDeleteClassroomCmd:         command.NewForceDeleteClassroomCommandHandler(uow),
+		joinByCodeCmd:                   command.NewJoinByCodeCommandHandler(uow),
+		leaveClassroomCmd:               command.NewLeaveClassroomCommandHandler(uow),
+		removeMemberCmd:                 command.NewRemoveMemberCommandHandler(uow),
+		updateMemberRoleCmd:             command.NewUpdateMemberRoleCommandHandler(uow),
+		transferOwnershipCmd:            command.NewTransferOwnershipCommandHandler(uow),
+		createInvitationCmd:             command.NewCreateInvitationCommandHandler(uow),
+		classroomRepo:                   classroomRepo,
+		classroomMemberRepo:             classroomMemberRepo,
+		classroomProgramRepo:            classroomProgramRepo,
+		classroomInvitationRepo:         classroomInvitationRepo,
+		profileRepo:                     profileRepo,
+		programRepo:                     programRepo,
+		gradeRepo:                       gradeRepo,
+		schoolRepo:                      schoolRepo,
+		storageProvider:                 storageProvider,
 	}
 }
 
@@ -97,7 +106,7 @@ func NewService(
 // a TEACHER profile can become an OWNER. Curriculum tie validation runs
 // here so a bad program_id / grade_id is rejected before we mint a
 // classroom row inside UoW.
-func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomReq, sessionUserID string) (*dto.CreateClassroomRes, error) {
+func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomReq, sessionUserID int64) (*dto.CreateClassroomRes, error) {
 	if err := ValidateCreateClassroom(ctx, req); err != nil {
 		return nil, err
 	}
@@ -136,7 +145,7 @@ func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomR
 	return &dto.CreateClassroomRes{Classroom: resp}, nil
 }
 
-func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq, sessionUserID string) (*dto.UpdateClassroomRes, error) {
+func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq, sessionUserID int64) (*dto.UpdateClassroomRes, error) {
 	if err := ValidateUpdateClassroom(ctx, req); err != nil {
 		return nil, err
 	}
@@ -155,7 +164,7 @@ func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomR
 	if _, err := s.requireManager(ctx, req.ClassroomID, caller.ProfileId()); err != nil {
 		return nil, err
 	}
-	programIDsForValidate := []string{}
+	programIDsForValidate := []int64{}
 	if req.ProgramIDs != nil {
 		programIDsForValidate = *req.ProgramIDs
 	}
@@ -185,7 +194,7 @@ func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomR
 	return &dto.UpdateClassroomRes{Classroom: resp}, nil
 }
 
-func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, sessionUserID string) (*dto.GetClassroomRes, error) {
+func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, sessionUserID int64) (*dto.GetClassroomRes, error) {
 	if err := ValidateGetClassroom(ctx, req); err != nil {
 		return nil, err
 	}
@@ -211,7 +220,7 @@ func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, se
 	return &dto.GetClassroomRes{Classroom: resp}, nil
 }
 
-func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq, sessionUserID string) (*dto.ListClassroomsRes, error) {
+func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq, sessionUserID int64) (*dto.ListClassroomsRes, error) {
 	if err := ValidateListClassrooms(ctx, req); err != nil {
 		return nil, err
 	}
@@ -224,7 +233,7 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 	// Explicit OwnerProfileID overrides; we don't apply both because the
 	// AND semantics rarely match what the caller wants.
 	callerProfileID := caller.ProfileId()
-	var profileFilter *string
+	var profileFilter *int64
 	if req.OwnerProfileID == nil {
 		profileFilter = &callerProfileID
 	}
@@ -255,7 +264,7 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 	}, nil
 }
 
-func (s *Service) ArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroomReq, sessionUserID string) (*dto.ArchiveClassroomRes, error) {
+func (s *Service) ArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroomReq, sessionUserID int64) (*dto.ArchiveClassroomRes, error) {
 	if err := ValidateArchiveClassroom(ctx, req); err != nil {
 		return nil, err
 	}
@@ -272,7 +281,7 @@ func (s *Service) ArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroo
 	return &dto.ArchiveClassroomRes{}, nil
 }
 
-func (s *Service) RestoreClassroom(ctx context.Context, req *dto.RestoreClassroomReq, sessionUserID string) (*dto.RestoreClassroomRes, error) {
+func (s *Service) RestoreClassroom(ctx context.Context, req *dto.RestoreClassroomReq, sessionUserID int64) (*dto.RestoreClassroomRes, error) {
 	if err := ValidateRestoreClassroom(ctx, req); err != nil {
 		return nil, err
 	}
@@ -289,7 +298,7 @@ func (s *Service) RestoreClassroom(ctx context.Context, req *dto.RestoreClassroo
 	return &dto.RestoreClassroomRes{}, nil
 }
 
-func (s *Service) SoftDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq, sessionUserID string) (*dto.DeleteClassroomRes, error) {
+func (s *Service) SoftDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq, sessionUserID int64) (*dto.DeleteClassroomRes, error) {
 	if err := ValidateDeleteClassroom(ctx, req); err != nil {
 		return nil, err
 	}
@@ -308,7 +317,7 @@ func (s *Service) SoftDeleteClassroom(ctx context.Context, req *dto.DeleteClassr
 
 // ForceDeleteClassroom is OWNER-gated like SoftDelete; admin-only
 // gating would land here when RBAC arrives (known-issues.md §11).
-func (s *Service) ForceDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq, sessionUserID string) (*dto.DeleteClassroomRes, error) {
+func (s *Service) ForceDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq, sessionUserID int64) (*dto.DeleteClassroomRes, error) {
 	if err := ValidateDeleteClassroom(ctx, req); err != nil {
 		return nil, err
 	}
@@ -332,8 +341,8 @@ func (s *Service) ForceDeleteClassroom(ctx context.Context, req *dto.DeleteClass
 // programIDs is treated as already deduped/trimmed by the validator
 // layer — we just walk and verify each one. An empty slice is allowed
 // (a classroom can carry zero programs).
-func (s *Service) validateRefs(ctx context.Context, schoolID *string, programIDs []string, gradeID *string) error {
-	if schoolID != nil && strings.TrimSpace(*schoolID) != "" {
+func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs []int64, gradeID *int64) error {
+	if schoolID != nil && *schoolID != 0 {
 		sc, err := s.schoolRepo.FindBySchoolId(ctx, *schoolID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
@@ -344,11 +353,10 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *string, programIDs
 		}
 	}
 	for _, pid := range programIDs {
-		trimmed := strings.TrimSpace(pid)
-		if trimmed == "" {
+		if pid == 0 {
 			continue
 		}
-		p, err := s.programRepo.FindByProgramId(ctx, trimmed, enum.LanguageTypeVietnamese)
+		p, err := s.programRepo.FindByProgramId(ctx, pid, enum.LanguageTypeVietnamese)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -357,7 +365,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *string, programIDs
 				errors.New("program not found"))
 		}
 	}
-	if gradeID != nil && strings.TrimSpace(*gradeID) != "" {
+	if gradeID != nil && *gradeID != 0 {
 		g, err := s.gradeRepo.FindByGradeId(ctx, *gradeID, enum.LanguageTypeVietnamese)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)

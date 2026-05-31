@@ -79,11 +79,11 @@ func (r *ProfileRepository) findBareById(ctx context.Context, id int64) (*profil
 	return ModelToDomainProfile(m), nil
 }
 
-func (r *ProfileRepository) FindByProfileId(ctx context.Context, profileId string) (*profile.Profile, error) {
+func (r *ProfileRepository) FindByProfileId(ctx context.Context, profileId int64) (*profile.Profile, error) {
 	return r.findOneBy(ctx, "p.profile_id = ?", profileId)
 }
 
-func (r *ProfileRepository) ListByUserId(ctx context.Context, userId string) ([]*profile.Profile, error) {
+func (r *ProfileRepository) ListByUserId(ctx context.Context, userId int64) ([]*profile.Profile, error) {
 	args := append(profileActiveArgs(), userId)
 	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE ` +
 		profileActiveWhere + ` AND p.user_id = ? ORDER BY p.id DESC`
@@ -112,7 +112,7 @@ func (r *ProfileRepository) ListByUserId(ctx context.Context, userId string) ([]
 // profiles, regardless of status. Used by force-delete to drive S3 cleanup
 // after the DB cascade — soft-deleted profiles still own S3 objects that need
 // to go.
-func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId string) ([]string, error) {
+func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId int64) ([]string, error) {
 	query := `SELECT avatar_key FROM ` + profileTable + ` WHERE user_id = ? AND avatar_key IS NOT NULL`
 
 	rows, err := r.db.Query(ctx, query, userId)
@@ -214,7 +214,7 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 // this always writes the column — a nil pointer becomes SQL NULL,
 // effectively removing the school link. Keeping it separate avoids
 // re-using Update with sentinel values to express "clear this column".
-func (r *ProfileRepository) SetSchoolId(ctx context.Context, profileId string, schoolId *string) error {
+func (r *ProfileRepository) SetSchoolId(ctx context.Context, profileId int64, schoolId *int64) error {
 	query := `
 		UPDATE ` + profileTable + `
 		SET school_id = ?,
@@ -227,7 +227,7 @@ func (r *ProfileRepository) SetSchoolId(ctx context.Context, profileId string, s
 	return nil
 }
 
-func (r *ProfileRepository) UpdateAvatarKey(ctx context.Context, profileId string, avatarKey string) error {
+func (r *ProfileRepository) UpdateAvatarKey(ctx context.Context, profileId int64, avatarKey string) error {
 	query := `UPDATE ` + profileTable + ` SET avatar_key = ? WHERE profile_id = ?`
 	if _, err := r.db.Exec(ctx, query, avatarKey, profileId); err != nil {
 		return fmt.Errorf("profile repo update avatar key: %w", err)
@@ -235,7 +235,7 @@ func (r *ProfileRepository) UpdateAvatarKey(ctx context.Context, profileId strin
 	return nil
 }
 
-func (r *ProfileRepository) MarkStatusByProfileId(ctx context.Context, profileId string, profileStatus string) error {
+func (r *ProfileRepository) MarkStatusByProfileId(ctx context.Context, profileId int64, profileStatus string) error {
 	query := `
 		UPDATE ` + profileTable + `
 		SET profile_status = ?,
@@ -248,7 +248,7 @@ func (r *ProfileRepository) MarkStatusByProfileId(ctx context.Context, profileId
 	return nil
 }
 
-func (r *ProfileRepository) MarkDefaultByProfileId(ctx context.Context, userId string, profileId string) error {
+func (r *ProfileRepository) MarkDefaultByProfileId(ctx context.Context, userId int64, profileId int64) error {
 	query := `
 		UPDATE ` + profileTable + `
 		SET is_default = CASE WHEN profile_id = ? THEN TRUE ELSE FALSE END,
@@ -261,7 +261,7 @@ func (r *ProfileRepository) MarkDefaultByProfileId(ctx context.Context, userId s
 	return nil
 }
 
-func (r *ProfileRepository) SoftDelete(ctx context.Context, profileId string) error {
+func (r *ProfileRepository) SoftDelete(ctx context.Context, profileId int64) error {
 	query := `
 		UPDATE ` + profileTable + `
 		SET profile_status = ?,
@@ -275,7 +275,7 @@ func (r *ProfileRepository) SoftDelete(ctx context.Context, profileId string) er
 	return nil
 }
 
-func (r *ProfileRepository) ForceDelete(ctx context.Context, profileId string) error {
+func (r *ProfileRepository) ForceDelete(ctx context.Context, profileId int64) error {
 	query := `
 		DELETE FROM ` + profileTable + `
 		WHERE profile_id = ?
@@ -286,7 +286,7 @@ func (r *ProfileRepository) ForceDelete(ctx context.Context, profileId string) e
 	return nil
 }
 
-func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId string) error {
+func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId int64) error {
 	query := `
 		UPDATE ` + profileTable + `
 		SET profile_status = ?,
@@ -300,7 +300,7 @@ func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId strin
 	return nil
 }
 
-func (r *ProfileRepository) ForceDeleteByUserId(ctx context.Context, userId string) error {
+func (r *ProfileRepository) ForceDeleteByUserId(ctx context.Context, userId int64) error {
 	query := `
 		DELETE FROM ` + profileTable + `
 		WHERE user_id = ?

@@ -27,7 +27,7 @@ type TranslationInput struct {
 // set is de-duplicated by language before insert so a payload with two
 // `language=vn` entries fails fast rather than producing two rows.
 type CreateSemesterCommand struct {
-	ActorID      *string
+	ActorID      *int64
 	Name         string
 	Description  string
 	ImageKey     *string

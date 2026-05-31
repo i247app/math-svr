@@ -13,13 +13,13 @@ import (
 // with the rest of the project.
 type ClassroomResponse struct {
 	ID                  int64   `json:"id"`
-	ClassroomID         string  `json:"classroom_id"`
-	OwnerProfileID      string  `json:"owner_profile_id"`
+	ClassroomID         int64   `json:"classroom_id"`
+	OwnerProfileID      int64   `json:"owner_profile_id"`
 	Name                string  `json:"name"`
 	Description         *string `json:"description,omitempty"`
-	SchoolID            *string `json:"school_id,omitempty"`
-	ProgramIDs          []string `json:"program_ids"`
-	GradeID             *string `json:"grade_id,omitempty"`
+	SchoolID            *int64  `json:"school_id,omitempty"`
+	ProgramIDs          []int64 `json:"program_ids"`
+	GradeID             *int64  `json:"grade_id,omitempty"`
 	InviteCode          *string `json:"invite_code,omitempty"`
 	InviteCodeExpiresDt string  `json:"invite_code_expires_dt,omitempty"`
 	MaxMembers          *int64  `json:"max_members,omitempty"`
@@ -39,19 +39,19 @@ type ClassroomResponse struct {
 // in the body, validated against the session's user_id at the service
 // edge. ProfileID here is the *owner-to-be*.
 type CreateClassroomReq struct {
-	ProfileID   string   `json:"profile_id"`
-	Name        string   `json:"name"`
-	Description *string  `json:"description,omitempty"`
-	SchoolID    *string  `json:"school_id,omitempty"`
+	ProfileID   int64   `json:"profile_id"`
+	Name        string  `json:"name"`
+	Description *string `json:"description,omitempty"`
+	SchoolID    *int64  `json:"school_id,omitempty"`
 	// ProgramIDs is the set of curriculum programs (books) the new
 	// classroom carries. May be empty — a classroom with zero programs
 	// is allowed. The validator dedupes and the command writes one
 	// ma_classroom_programs row per id inside the create UoW.
-	ProgramIDs  []string `json:"program_ids,omitempty"`
-	GradeID     *string  `json:"grade_id,omitempty"`
-	MaxMembers  *int64   `json:"max_members,omitempty"`
-	CoverKey    *string `json:"cover_key,omitempty"`
-	Note        *string `json:"note,omitempty"`
+	ProgramIDs []int64 `json:"program_ids,omitempty"`
+	GradeID    *int64  `json:"grade_id,omitempty"`
+	MaxMembers *int64  `json:"max_members,omitempty"`
+	CoverKey   *string `json:"cover_key,omitempty"`
+	Note       *string `json:"note,omitempty"`
 	// InviteCode is an optional client-supplied join code (e.g. a
 	// human-friendly token like "MATH4B"). Bounded by VARCHAR(16) and
 	// must be unique across all classrooms; the command rejects a
@@ -77,11 +77,11 @@ type CreateClassroomRes struct {
 // non-nil value overwrites. ProfileID is the caller; ClassroomID picks
 // the target.
 type UpdateClassroomReq struct {
-	ProfileID   string  `json:"profile_id"`
-	ClassroomID string  `json:"classroom_id"`
+	ProfileID   int64   `json:"profile_id"`
+	ClassroomID int64   `json:"classroom_id"`
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
-	SchoolID    *string `json:"school_id,omitempty"`
+	SchoolID    *int64  `json:"school_id,omitempty"`
 	// ProgramIDs uses replace-set semantics:
 	//   nil        — leave the existing program links untouched
 	//   non-nil [] — remove every program link
@@ -90,11 +90,11 @@ type UpdateClassroomReq struct {
 	// The handler distinguishes nil from [] by whether the JSON key was
 	// present, so multipart callers should omit the field entirely to
 	// signal "don't touch".
-	ProgramIDs  *[]string `json:"program_ids,omitempty"`
-	GradeID     *string   `json:"grade_id,omitempty"`
-	MaxMembers  *int64    `json:"max_members,omitempty"`
-	Note        *string   `json:"note,omitempty"`
-	AvatarKey   *string   `json:"avatar_key,omitempty"`
+	ProgramIDs *[]int64 `json:"program_ids,omitempty"`
+	GradeID    *int64   `json:"grade_id,omitempty"`
+	MaxMembers *int64   `json:"max_members,omitempty"`
+	Note       *string  `json:"note,omitempty"`
+	AvatarKey  *string  `json:"avatar_key,omitempty"`
 
 	// File upload fields for handling cover image
 	AvatarFile        io.Reader `json:"-"`
@@ -110,8 +110,8 @@ type GetClassroomReq struct {
 	// ProfileID is the caller — required to membership-gate the read.
 	// Populated by the handler from the request body (POST) or query
 	// string (GET); the validator treats both paths the same.
-	ProfileID   string `json:"profile_id"`
-	ClassroomID string `json:"classroom_id"`
+	ProfileID   int64 `json:"profile_id"`
+	ClassroomID int64 `json:"classroom_id"`
 }
 
 type GetClassroomRes struct {
@@ -123,20 +123,20 @@ type GetClassroomRes struct {
 // rejects the request — the unauthenticated "all classrooms" path is
 // intentionally not offered.
 type ListClassroomsReq struct {
-	ProfileID       string   `json:"profile_id"`
-	OwnerProfileID  *string  `json:"owner_profile_id,omitempty"`
-	SchoolID        *string  `json:"school_id,omitempty"`
+	ProfileID      int64  `json:"profile_id"`
+	OwnerProfileID *int64 `json:"owner_profile_id,omitempty"`
+	SchoolID       *int64 `json:"school_id,omitempty"`
 	// ProgramID and ProgramIDs are unioned (OR semantics): a classroom
 	// matches when it carries any of the named programs. Either field
 	// or both may be sent; ProgramID is kept for legacy single-filter
 	// callers, ProgramIDs is the new multi-filter shape.
-	ProgramID       *string  `json:"program_id,omitempty"`
-	ProgramIDs      []string `json:"program_ids,omitempty"`
-	GradeID         *string  `json:"grade_id,omitempty"`
-	Search          *string  `json:"search,omitempty"`
-	IncludeArchived bool     `json:"include_archived"`
-	Page            int64    `json:"page"`
-	Size            int64    `json:"size"`
+	ProgramID       *int64  `json:"program_id,omitempty"`
+	ProgramIDs      []int64 `json:"program_ids,omitempty"`
+	GradeID         *int64  `json:"grade_id,omitempty"`
+	Search          *string `json:"search,omitempty"`
+	IncludeArchived bool    `json:"include_archived"`
+	Page            int64   `json:"page"`
+	Size            int64   `json:"size"`
 }
 
 type ListClassroomsRes struct {
@@ -149,22 +149,22 @@ type ListClassroomsRes struct {
 // each independently (e.g. force-delete may grow an admin-only reason
 // field later) without breaking JSON contracts.
 type ArchiveClassroomReq struct {
-	ProfileID   string `json:"profile_id"`
-	ClassroomID string `json:"classroom_id"`
+	ProfileID   int64 `json:"profile_id"`
+	ClassroomID int64 `json:"classroom_id"`
 }
 
 type ArchiveClassroomRes struct{}
 
 type RestoreClassroomReq struct {
-	ProfileID   string `json:"profile_id"`
-	ClassroomID string `json:"classroom_id"`
+	ProfileID   int64 `json:"profile_id"`
+	ClassroomID int64 `json:"classroom_id"`
 }
 
 type RestoreClassroomRes struct{}
 
 type DeleteClassroomReq struct {
-	ProfileID   string `json:"profile_id"`
-	ClassroomID string `json:"classroom_id"`
+	ProfileID   int64 `json:"profile_id"`
+	ClassroomID int64 `json:"classroom_id"`
 }
 
 type DeleteClassroomRes struct{}
@@ -175,7 +175,7 @@ func DomainToResponse(c *domain.Classroom) *ClassroomResponse {
 	}
 	programIDs := c.ProgramIds()
 	if programIDs == nil {
-		programIDs = []string{}
+		programIDs = []int64{}
 	}
 	resp := &ClassroomResponse{
 		ID:              c.Id(),

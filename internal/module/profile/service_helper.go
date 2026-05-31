@@ -155,26 +155,26 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	progMap := make(map[string]*programDto.ProgramResponse, len(programs))
+	progMap := make(map[int64]*programDto.ProgramResponse, len(programs))
 	for _, p := range programs {
 		r := programDto.DomainToResponse(p)
 		s.signProgramImageUrl(ctx, r)
 		progMap[p.ProgramId()] = r
 	}
-	gradeMap := make(map[string]*gradeDto.GradeResponse, len(grades))
+	gradeMap := make(map[int64]*gradeDto.GradeResponse, len(grades))
 	for _, g := range grades {
 		r := gradeDto.DomainToResponse(g)
 		s.signGradeImageUrl(ctx, r)
 		gradeMap[g.GradeId()] = r
 	}
-	semMap := make(map[string]*semesterDto.SemesterResponse, len(semesters))
+	semMap := make(map[int64]*semesterDto.SemesterResponse, len(semesters))
 	for _, sem := range semesters {
 		r := semesterDto.DomainToResponse(sem)
 		s.signSemesterImageUrl(ctx, r)
 		semMap[sem.SemesterId()] = r
 	}
 
-	schoolMap := make(map[string]*schoolDto.SchoolResponse)
+	schoolMap := make(map[int64]*schoolDto.SchoolResponse)
 	if len(schoolIds) > 0 && s.schoolRepo != nil {
 		schools, err := s.schoolRepo.ListSchoolsByIds(ctx, schoolIds)
 		if err != nil {

@@ -9,15 +9,15 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
-func validateUserID(ctx context.Context, userID string) error {
-	if userID == "" {
+func validateUserID(ctx context.Context, userID int64) error {
+	if userID == 0 {
 		return errs.NewError(ctx, status.DEVICE_MISSING_USER_ID, nil, errors.New("user_id is required"))
 	}
 	return nil
 }
 
-func validateDeviceID(ctx context.Context, deviceID string) error {
-	if deviceID == "" {
+func validateDeviceID(ctx context.Context, deviceID int64) error {
+	if deviceID == 0 {
 		return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, errors.New("device_id is required"))
 	}
 	return nil

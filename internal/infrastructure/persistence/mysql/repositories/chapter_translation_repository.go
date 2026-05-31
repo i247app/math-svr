@@ -49,7 +49,7 @@ func scanChapterTranslation(s database.RowScanner) (*models.ChapterTranslationMo
 	return &m, nil
 }
 
-func (r *ChapterTranslationRepository) ListByChapterId(ctx context.Context, chapterId string) ([]*chapter.ChapterTranslation, error) {
+func (r *ChapterTranslationRepository) ListByChapterId(ctx context.Context, chapterId int64) ([]*chapter.ChapterTranslation, error) {
 	args := append(chapterTranslationActiveArgs(), chapterId)
 	query := `SELECT ` + chapterTranslationColumns + ` FROM ` + chapterTranslationsTable + ` ct
 		WHERE ` + chapterTranslationActiveWhere + ` AND ct.chapter_id = ?
@@ -75,7 +75,7 @@ func (r *ChapterTranslationRepository) ListByChapterId(ctx context.Context, chap
 	return translations, nil
 }
 
-func (r *ChapterTranslationRepository) FindByChapterIdAndLanguage(ctx context.Context, chapterId string, language string) (*chapter.ChapterTranslation, error) {
+func (r *ChapterTranslationRepository) FindByChapterIdAndLanguage(ctx context.Context, chapterId int64, language string) (*chapter.ChapterTranslation, error) {
 	args := append(chapterTranslationActiveArgs(), chapterId, language)
 	query := `SELECT ` + chapterTranslationColumns + ` FROM ` + chapterTranslationsTable + ` ct
 		WHERE ` + chapterTranslationActiveWhere + ` AND ct.chapter_id = ? AND ct.language = ?
@@ -129,7 +129,7 @@ func (r *ChapterTranslationRepository) Update(ctx context.Context, t *chapter.Ch
 	return nil
 }
 
-func (r *ChapterTranslationRepository) SoftDeleteByChapterId(ctx context.Context, chapterId string) error {
+func (r *ChapterTranslationRepository) SoftDeleteByChapterId(ctx context.Context, chapterId int64) error {
 	query := `
 		UPDATE ` + chapterTranslationsTable + `
 		SET ct_status  = ?,
@@ -146,7 +146,7 @@ func (r *ChapterTranslationRepository) SoftDeleteByChapterId(ctx context.Context
 	return nil
 }
 
-func (r *ChapterTranslationRepository) SoftDeleteByTranslationId(ctx context.Context, chapterTranslationId string) error {
+func (r *ChapterTranslationRepository) SoftDeleteByTranslationId(ctx context.Context, chapterTranslationId int64) error {
 	query := `
 		UPDATE ` + chapterTranslationsTable + `
 		SET ct_status  = ?,
@@ -163,7 +163,7 @@ func (r *ChapterTranslationRepository) SoftDeleteByTranslationId(ctx context.Con
 	return nil
 }
 
-func (r *ChapterTranslationRepository) ForceDeleteByChapterId(ctx context.Context, chapterId string) error {
+func (r *ChapterTranslationRepository) ForceDeleteByChapterId(ctx context.Context, chapterId int64) error {
 	query := `
 		DELETE FROM ` + chapterTranslationsTable + `
 		WHERE chapter_id = ?
@@ -174,7 +174,7 @@ func (r *ChapterTranslationRepository) ForceDeleteByChapterId(ctx context.Contex
 	return nil
 }
 
-func (r *ChapterTranslationRepository) ForceDeleteByTranslationId(ctx context.Context, chapterTranslationId string) error {
+func (r *ChapterTranslationRepository) ForceDeleteByTranslationId(ctx context.Context, chapterTranslationId int64) error {
 	query := `
 		DELETE FROM ` + chapterTranslationsTable + `
 		WHERE chapter_translation_id = ?

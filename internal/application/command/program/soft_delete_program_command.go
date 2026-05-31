@@ -15,7 +15,7 @@ import (
 // queryable for audit / history paths but are filtered out of every
 // standard read.
 type SoftDeleteProgramCommand struct {
-	ProgramID string
+	ProgramID int64
 }
 
 type SoftDeleteProgramCommandHandler struct {

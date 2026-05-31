@@ -1,7 +1,7 @@
 -- migration up
 CREATE TABLE IF NOT EXISTS ma_schools (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  school_id       CHAR(36) NOT NULL UNIQUE,
+  school_id       BIGINT UNSIGNED NOT NULL UNIQUE,
   name            VARCHAR(100) NOT NULL,
   description     TEXT,
   image_key       VARCHAR(128) DEFAULT NULL,
@@ -10,9 +10,9 @@ CREATE TABLE IF NOT EXISTS ma_schools (
   district        VARCHAR(100) DEFAULT NULL,
   province        VARCHAR(100) DEFAULT NULL,
   status          VARCHAR(32) DEFAULT 'ACTIVE',
-  create_id       CHAR(36) DEFAULT NULL,
+  create_id       BIGINT UNSIGNED DEFAULT NULL,
   create_dt       DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
-  modify_id       CHAR(36) DEFAULT NULL,
+  modify_id       BIGINT UNSIGNED DEFAULT NULL,
   modify_dt       DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   deleted_dt      DATETIME(6) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

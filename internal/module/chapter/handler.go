@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/response"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type ChapterHandler struct {
@@ -93,7 +94,7 @@ func (h *ChapterHandler) HandleForceDeleteChapter(w http.ResponseWriter, r *http
 // default (vn) when omitted.
 func (h *ChapterHandler) HandleGetChapter(w http.ResponseWriter, r *http.Request) {
 	req := dto.GetChapterReq{
-		ChapterID: r.PathValue("id"),
+		ChapterID: utils.StringToInt64(r.PathValue("id"), 0),
 		Language:  enum.LanguageType(r.URL.Query().Get("language")),
 	}
 

@@ -14,7 +14,7 @@ import (
 // grading verdict in a single update. The bot call happens at the
 // service layer BEFORE this command, so the transaction stays short.
 type SubmitQuizAnswersCommand struct {
-	QuizID      string
+	QuizID      int64
 	AnswersJSON string
 	Grading     quiz.GradingUpdate
 }

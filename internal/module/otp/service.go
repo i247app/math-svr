@@ -79,7 +79,7 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 		user = userResp.User
 	}
 
-	var userId *string
+	var userId *int64
 	switch req.OtpType {
 	case string(enum.OtpTypeLogin2FA):
 		if user == nil {

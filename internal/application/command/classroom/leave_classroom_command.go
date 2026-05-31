@@ -15,8 +15,8 @@ import (
 // module level — by the time we get here, we trust the caller is a
 // non-owner active member.
 type LeaveClassroomCommand struct {
-	ProfileID   string
-	ClassroomID string
+	ProfileID   int64
+	ClassroomID int64
 }
 
 type LeaveClassroomCommandHandler struct {

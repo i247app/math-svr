@@ -13,8 +13,8 @@ import (
 // the column nullability.
 type Device struct {
 	id              int64
-	deviceId        string
-	userId          *string
+	deviceId        int64
+	userId          *int64
 	deviceUUID      string
 	deviceName      string
 	devicePushToken *string
@@ -22,9 +22,9 @@ type Device struct {
 	note            *string
 	deviceStatus    *string
 	status          string
-	createId        *string
+	createId        *int64
 	createDt        mtime.MathTime
-	modifyId        *string
+	modifyId        *int64
 	modifyDt        mtime.MathTime
 }
 
@@ -40,19 +40,19 @@ func (d *Device) SetId(id int64) {
 	d.id = id
 }
 
-func (d *Device) DeviceId() string {
+func (d *Device) DeviceId() int64 {
 	return d.deviceId
 }
 
-func (d *Device) SetDeviceId(deviceId string) {
+func (d *Device) SetDeviceId(deviceId int64) {
 	d.deviceId = deviceId
 }
 
-func (d *Device) UserId() *string {
+func (d *Device) UserId() *int64 {
 	return d.userId
 }
 
-func (d *Device) SetUserId(userId *string) {
+func (d *Device) SetUserId(userId *int64) {
 	d.userId = userId
 }
 
@@ -112,11 +112,11 @@ func (d *Device) SetStatus(status string) {
 	d.status = status
 }
 
-func (d *Device) CreateId() *string {
+func (d *Device) CreateId() *int64 {
 	return d.createId
 }
 
-func (d *Device) SetCreateId(createId *string) {
+func (d *Device) SetCreateId(createId *int64) {
 	d.createId = createId
 }
 
@@ -128,11 +128,11 @@ func (d *Device) SetCreateDt(createDt mtime.MathTime) {
 	d.createDt = createDt
 }
 
-func (d *Device) ModifyId() *string {
+func (d *Device) ModifyId() *int64 {
 	return d.modifyId
 }
 
-func (d *Device) SetModifyId(modifyId *string) {
+func (d *Device) SetModifyId(modifyId *int64) {
 	d.modifyId = modifyId
 }
 

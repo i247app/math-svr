@@ -9,7 +9,7 @@ import (
 )
 
 type GetOtpByIdQuery struct {
-	OtpID string
+	OtpID int64
 }
 
 type GetOtpByIdQueryHandler struct {

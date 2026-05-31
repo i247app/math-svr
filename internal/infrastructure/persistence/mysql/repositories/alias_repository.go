@@ -67,7 +67,7 @@ func (r *AliasRepository) Create(ctx context.Context, alias *user.Alias) (*user.
 	return alias, nil
 }
 
-func (r *AliasRepository) FindByAliasId(ctx context.Context, aliasId string) (*user.Alias, error) {
+func (r *AliasRepository) FindByAliasId(ctx context.Context, aliasId int64) (*user.Alias, error) {
 	return r.findOneBy(ctx, "alias_id = ?", aliasId)
 }
 
@@ -75,7 +75,7 @@ func (r *AliasRepository) FindByAka(ctx context.Context, aka string) (*user.Alia
 	return r.findOneBy(ctx, "aka = ?", aka)
 }
 
-func (r *AliasRepository) FindByUserId(ctx context.Context, userId string) ([]*user.Alias, error) {
+func (r *AliasRepository) FindByUserId(ctx context.Context, userId int64) ([]*user.Alias, error) {
 	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable + ` WHERE user_id = ?`
 	rows, err := r.db.Query(ctx, query, userId)
 	if err != nil {
@@ -111,14 +111,14 @@ func (r *AliasRepository) UpdateByAliasId(ctx context.Context, alias *user.Alias
 	return nil
 }
 
-func (r *AliasRepository) DeleteByUserId(ctx context.Context, userId string) error {
+func (r *AliasRepository) DeleteByUserId(ctx context.Context, userId int64) error {
 	if _, err := r.db.Exec(ctx, `DELETE FROM `+aliasTable+` WHERE user_id = ?`, userId); err != nil {
 		return fmt.Errorf("alias repo delete by uid: %w", err)
 	}
 	return nil
 }
 
-func (r *AliasRepository) MarkStatusByUserId(ctx context.Context, userId string, status enum.UserAliasStatusType) error {
+func (r *AliasRepository) MarkStatusByUserId(ctx context.Context, userId int64, status enum.UserAliasStatusType) error {
 	query := `
 		UPDATE ` + aliasTable + `
 		SET alias_status = ?,
@@ -132,7 +132,7 @@ func (r *AliasRepository) MarkStatusByUserId(ctx context.Context, userId string,
 	return nil
 }
 
-func (r *AliasRepository) SoftDeleteByUserId(ctx context.Context, userId string) error {
+func (r *AliasRepository) SoftDeleteByUserId(ctx context.Context, userId int64) error {
 	query := `
 		UPDATE ` + aliasTable + `
 		SET alias_status = ?,

@@ -16,20 +16,20 @@ import (
 // each embedded object — keeping them on the parent too would be redundant.
 type ProfileResponse struct {
 	ID            int64                         `json:"id"`
-	ProfileID     string                        `json:"profile_id"`
-	UserID        string                        `json:"user_id"`
+	ProfileID     int64                         `json:"profile_id"`
+	UserID        int64                         `json:"user_id"`
 	Name          string                        `json:"name"`
 	Role          string                        `json:"role"`
 	AvatarKey     *string                       `json:"avatar_key,omitempty"`
 	AvatarUrl     *string                       `json:"avatar_url"` // pre-signed url from avatar_key
 	Dob           string                        `json:"dob,omitempty"`
-	SchoolID      *string                       `json:"school_id,omitempty"`
+	SchoolID      *int64                        `json:"school_id,omitempty"`
 	School        *schoolDto.SchoolResponse     `json:"school,omitempty"`
-	ProgramID     *string                       `json:"program_id,omitempty"`
+	ProgramID     *int64                        `json:"program_id,omitempty"`
 	Program       *programDto.ProgramResponse   `json:"program,omitempty"`
-	GradeID       *string                       `json:"grade_id,omitempty"`
+	GradeID       *int64                        `json:"grade_id,omitempty"`
 	Grade         *gradeDto.GradeResponse       `json:"grade,omitempty"`
-	SemesterID    *string                       `json:"semester_id,omitempty"`
+	SemesterID    *int64                        `json:"semester_id,omitempty"`
 	Semester      *semesterDto.SemesterResponse `json:"semester,omitempty"`
 	IsDefault     bool                          `json:"is_default"`
 	IDType        *string                       `json:"id_type,omitempty"`
@@ -41,15 +41,15 @@ type ProfileResponse struct {
 }
 
 type CreateProfileReq struct {
-	UserID     string  `json:"user_id"`
+	UserID     int64   `json:"user_id"`
 	Name       string  `json:"name"`
 	Role       string  `json:"role"`
 	IsDefault  bool    `json:"is_default"`
 	Dob        *string `json:"dob,omitempty"`
-	SchoolID   *string `json:"school_id,omitempty"`
-	ProgramID  *string `json:"program_id"`
-	GradeID    *string `json:"grade_id"`
-	SemesterID *string `json:"semester_id"`
+	SchoolID   *int64  `json:"school_id,omitempty"`
+	ProgramID  *int64  `json:"program_id"`
+	GradeID    *int64  `json:"grade_id"`
+	SemesterID *int64  `json:"semester_id"`
 	IDType     *string `json:"id_type,omitempty"`    // TEACHER only — e.g. MOET, PUBLIC_ID
 	TeacherID  *string `json:"teacher_id,omitempty"` // TEACHER only
 	StudentID  *string `json:"student_id,omitempty"` // STUDENT only
@@ -70,15 +70,15 @@ type CreateProfileRes struct {
 }
 
 type UpdateProfileReq struct {
-	ProfileID  string  `json:"profile_id"`
+	ProfileID  int64   `json:"profile_id"`
 	Name       *string `json:"name,omitempty"`
 	Role       *string `json:"role,omitempty"`
 	IsDefault  *bool   `json:"is_default,omitempty"`
 	Dob        *string `json:"dob,omitempty"`
-	SchoolID   *string `json:"school_id,omitempty"`
-	ProgramID  *string `json:"program_id,omitempty"`
-	GradeID    *string `json:"grade_id,omitempty"`
-	SemesterID *string `json:"semester_id,omitempty"`
+	SchoolID   *int64  `json:"school_id,omitempty"`
+	ProgramID  *int64  `json:"program_id,omitempty"`
+	GradeID    *int64  `json:"grade_id,omitempty"`
+	SemesterID *int64  `json:"semester_id,omitempty"`
 	IDType     *string `json:"id_type,omitempty"`    // TEACHER only — e.g. MOET, PUBLIC_ID
 	TeacherID  *string `json:"teacher_id,omitempty"` // TEACHER only
 	StudentID  *string `json:"student_id,omitempty"` // STUDENT only
@@ -99,7 +99,7 @@ type UpdateProfileRes struct {
 }
 
 type GetProfileByIdReq struct {
-	ProfileID string            `json:"profile_id"`
+	ProfileID int64             `json:"profile_id"`
 	Language  enum.LanguageType `json:"language,omitempty"`
 }
 
@@ -108,7 +108,7 @@ type GetProfileByIdRes struct {
 }
 
 type ListProfilesReq struct {
-	UserID   string            `json:"user_id"`
+	UserID   int64             `json:"user_id"`
 	Language enum.LanguageType `json:"language,omitempty"`
 }
 
@@ -117,7 +117,7 @@ type ListProfilesRes struct {
 }
 
 type DeleteProfileReq struct {
-	ProfileID string `json:"profile_id"`
+	ProfileID int64 `json:"profile_id"`
 }
 
 type DeleteProfileRes struct{}
@@ -128,8 +128,8 @@ type DeleteProfileRes struct{}
 // nil there means "leave unchanged". These endpoints carry a single
 // well-typed intent: assign overwrites, remove clears.
 type AssignSchoolReq struct {
-	ProfileID string `json:"profile_id"`
-	SchoolID  string `json:"school_id"`
+	ProfileID int64 `json:"profile_id"`
+	SchoolID  int64 `json:"school_id"`
 }
 
 type AssignSchoolRes struct {
@@ -137,7 +137,7 @@ type AssignSchoolRes struct {
 }
 
 type RemoveSchoolReq struct {
-	ProfileID string `json:"profile_id"`
+	ProfileID int64 `json:"profile_id"`
 }
 
 type RemoveSchoolRes struct {
@@ -145,7 +145,7 @@ type RemoveSchoolRes struct {
 }
 
 type UploadAvatarRes struct {
-	ProfileID string `json:"profile_id"`
+	ProfileID int64  `json:"profile_id"`
 	AvatarKey string `json:"avatar_key"`
 	AvatarUrl string `json:"avatar_url"`
 }

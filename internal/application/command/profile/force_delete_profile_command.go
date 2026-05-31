@@ -10,7 +10,7 @@ import (
 )
 
 type ForceDeleteProfileCommand struct {
-	ProfileID string
+	ProfileID int64
 }
 
 type ForceDeleteProfileCommandHandler struct {

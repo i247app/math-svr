@@ -11,7 +11,7 @@ import (
 // when they need to re-sign later.
 type SchoolResponse struct {
 	ID           int64   `json:"id"`
-	SchoolID     string  `json:"school_id"`
+	SchoolID     int64   `json:"school_id"`
 	Name         string  `json:"name"`
 	Description  *string `json:"description,omitempty"`
 	ImageKey     *string `json:"image_key,omitempty"`
@@ -42,7 +42,7 @@ type CreateSchoolRes struct {
 // means "leave alone"; a non-nil value (including an empty string for
 // optional fields) overwrites.
 type UpdateSchoolReq struct {
-	SchoolID    string  `json:"school_id"`
+	SchoolID    int64   `json:"school_id"`
 	Name        *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
 	ImageKey    *string `json:"image_key,omitempty"`
@@ -56,13 +56,13 @@ type UpdateSchoolRes struct {
 }
 
 type DeleteSchoolReq struct {
-	SchoolID string `json:"school_id"`
+	SchoolID int64 `json:"school_id"`
 }
 
 type DeleteSchoolRes struct{}
 
 type GetSchoolReq struct {
-	SchoolID string `json:"school_id"`
+	SchoolID int64 `json:"school_id"`
 }
 
 type GetSchoolRes struct {

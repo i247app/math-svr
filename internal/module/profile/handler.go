@@ -56,15 +56,15 @@ func (h *ProfileHandler) HandleCreateProfile(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		req.UserID = r.FormValue("user_id")
+		req.UserID = utils.StringToInt64(r.FormValue("user_id"), 0)
 		req.Name = r.FormValue("name")
 		req.Role = r.FormValue("role")
 		req.IsDefault = utils.StringToBool(r.FormValue("is_default"), false)
 		req.Dob = utils.ToStringPtr(r.FormValue("dob"))
-		req.SchoolID = utils.ToStringPtr(r.FormValue("school_id"))
-		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
-		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
-		req.SemesterID = utils.ToStringPtr(r.FormValue("semester_id"))
+		req.SchoolID = utils.StringToInt64Ptr(r.FormValue("school_id"))
+		req.GradeID = utils.StringToInt64Ptr(r.FormValue("grade_id"))
+		req.ProgramID = utils.StringToInt64Ptr(r.FormValue("program_id"))
+		req.SemesterID = utils.StringToInt64Ptr(r.FormValue("semester_id"))
 		req.IDType = utils.ToStringPtr(r.FormValue("id_type"))
 		req.TeacherID = utils.ToStringPtr(r.FormValue("teacher_id"))
 		req.StudentID = utils.ToStringPtr(r.FormValue("student_id"))
@@ -93,7 +93,7 @@ func (h *ProfileHandler) HandleGetProfileById(w http.ResponseWriter, r *http.Req
 	idStr := r.PathValue("id")
 
 	res, err := h.profileSvc.GetProfileById(r.Context(), &dto.GetProfileByIdReq{
-		ProfileID: idStr,
+		ProfileID: utils.StringToInt64(idStr, 0),
 		Language:  metadata.GetClientLanguage(r.Context()).ToEnumLanguage(),
 	})
 	if err != nil {
@@ -135,15 +135,15 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		req.ProfileID = r.FormValue("profile_id")
+		req.ProfileID = utils.StringToInt64(r.FormValue("profile_id"), 0)
 		req.Name = utils.ToStringPtr(r.FormValue("name"))
 		req.Role = utils.ToStringPtr(r.FormValue("role"))
 		req.IsDefault = utils.StringToBoolPtr(r.FormValue("is_default"))
 		req.Dob = utils.ToStringPtr(r.FormValue("dob"))
-		req.SchoolID = utils.ToStringPtr(r.FormValue("school_id"))
-		req.GradeID = utils.ToStringPtr(r.FormValue("grade_id"))
-		req.ProgramID = utils.ToStringPtr(r.FormValue("program_id"))
-		req.SemesterID = utils.ToStringPtr(r.FormValue("semester_id"))
+		req.SchoolID = utils.StringToInt64Ptr(r.FormValue("school_id"))
+		req.GradeID = utils.StringToInt64Ptr(r.FormValue("grade_id"))
+		req.ProgramID = utils.StringToInt64Ptr(r.FormValue("program_id"))
+		req.SemesterID = utils.StringToInt64Ptr(r.FormValue("semester_id"))
 		req.IDType = utils.ToStringPtr(r.FormValue("id_type"))
 		req.TeacherID = utils.ToStringPtr(r.FormValue("teacher_id"))
 		req.StudentID = utils.ToStringPtr(r.FormValue("student_id"))
@@ -231,7 +231,7 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 
 	res, err := h.profileSvc.UploadAvatar(
 		ctx,
-		profileIDStr,
+		utils.StringToInt64(profileIDStr, 0),
 		header.Filename,
 		header.Header.Get("Content-Type"),
 		file,

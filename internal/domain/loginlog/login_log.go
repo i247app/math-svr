@@ -6,17 +6,17 @@ import (
 
 type LoginLog struct {
 	id             int64
-	loginLogId     string
-	userId         string
+	loginLogId     int64
+	userId         int64
 	ipAddress      string
 	deviceUUID     string
 	token          string
 	note           *string
 	loginLogStatus *string
 	status         string
-	createId       *string
+	createId       *int64
 	createDt       mtime.MathTime
-	modifyId       *string
+	modifyId       *int64
 	modifyDt       mtime.MathTime
 }
 
@@ -32,19 +32,19 @@ func (l *LoginLog) SetId(id int64) {
 	l.id = id
 }
 
-func (l *LoginLog) LoginLogId() string {
+func (l *LoginLog) LoginLogId() int64 {
 	return l.loginLogId
 }
 
-func (l *LoginLog) SetLoginLogId(loginLogId string) {
+func (l *LoginLog) SetLoginLogId(loginLogId int64) {
 	l.loginLogId = loginLogId
 }
 
-func (l *LoginLog) UserId() string {
+func (l *LoginLog) UserId() int64 {
 	return l.userId
 }
 
-func (l *LoginLog) SetUserId(userId string) {
+func (l *LoginLog) SetUserId(userId int64) {
 	l.userId = userId
 }
 
@@ -96,11 +96,11 @@ func (l *LoginLog) SetStatus(status string) {
 	l.status = status
 }
 
-func (l *LoginLog) CreateId() *string {
+func (l *LoginLog) CreateId() *int64 {
 	return l.createId
 }
 
-func (l *LoginLog) SetCreateId(createId *string) {
+func (l *LoginLog) SetCreateId(createId *int64) {
 	l.createId = createId
 }
 
@@ -112,11 +112,11 @@ func (l *LoginLog) SetCreateDt(createDt mtime.MathTime) {
 	l.createDt = createDt
 }
 
-func (l *LoginLog) ModifyId() *string {
+func (l *LoginLog) ModifyId() *int64 {
 	return l.modifyId
 }
 
-func (l *LoginLog) SetModifyId(modifyId *string) {
+func (l *LoginLog) SetModifyId(modifyId *int64) {
 	l.modifyId = modifyId
 }
 

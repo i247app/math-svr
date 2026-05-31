@@ -30,7 +30,7 @@ import (
 type SendOtpCommand struct {
 	OtpType    enum.OtpType
 	Identifier string
-	UserID     *string
+	UserID     *int64
 	DeviceUUID *string
 	DeviceName *string
 	Channel    enum.OtpChannel // empty = auto-detect
@@ -38,7 +38,7 @@ type SendOtpCommand struct {
 }
 
 type SendOtpCommandResult struct {
-	OtpID     string
+	OtpID     int64
 	ExpiresAt mtime.MathTime
 	Channel   otp_delivery.ChannelName
 	OTPCode   string
@@ -77,7 +77,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	now := time.Now().UTC()
 	expiresAt := now.Add(TtlFor(cmd.OtpType))
 
-	var createdOtpID string
+	var createdOtpID int64
 	err = h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		// 1. Cooldown.
 		// Compare against OtpCreateDt (app-set, always UTC) not CreateDt

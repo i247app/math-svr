@@ -10,7 +10,7 @@ import (
 
 type UserResponse struct {
 	ID     int64   `json:"id"`
-	UserID string  `json:"user_id"`
+	UserID int64   `json:"user_id"`
 	Name   string  `json:"name"`
 	Email  *string `json:"email,omitempty"`
 	Phone  string  `json:"phone,omitempty"`
@@ -71,7 +71,7 @@ type CreateUserRes struct {
 
 type UpdateUserReq struct {
 	ID     int64   `json:"id"`
-	UserID string  `json:"user_id"`
+	UserID int64   `json:"user_id"`
 	Name   *string `json:"name,omitempty"`
 	Email  *string `json:"email,omitempty"`
 	Phone  *string `json:"phone,omitempty"`
@@ -93,7 +93,7 @@ type UpdateUserRes struct {
 }
 
 type GetUserByUserIdReq struct {
-	UserID string `json:"user_id"`
+	UserID int64 `json:"user_id"`
 }
 
 type GetUserByUserIdRes struct {
@@ -111,7 +111,7 @@ type ListUsersRes struct {
 }
 
 type DeleteUserReq struct {
-	UserID string `json:"user_id"`
+	UserID int64 `json:"user_id"`
 }
 
 type DeleteUserRes struct {
@@ -122,7 +122,7 @@ type DeleteUserRes struct {
 // presigned URL; AvatarKey is exposed so the caller can persist it for
 // long-lived references (e.g. re-presigning later via /users/me).
 type UploadAvatarRes struct {
-	UserID    string `json:"user_id"`
+	UserID    int64  `json:"user_id"`
 	AvatarKey string `json:"avatar_key"`
 	AvatarUrl string `json:"avatar_url"`
 }

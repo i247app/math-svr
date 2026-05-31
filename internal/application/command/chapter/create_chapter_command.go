@@ -27,9 +27,9 @@ type TranslationInput struct {
 // de-duplicated by language before insert so a payload with two
 // `language=vn` entries fails fast rather than producing two rows.
 type CreateChapterCommand struct {
-	ProgramID    string
-	GradeID      string
-	SemesterID   string
+	ProgramID    int64
+	GradeID      int64
+	SemesterID   int64
 	Label        string
 	Description  string
 	DisplayOrder int8

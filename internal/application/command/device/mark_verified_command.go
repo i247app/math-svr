@@ -17,8 +17,8 @@ import (
 // Ownership is enforced so a leaked DeviceID for a different user cannot be
 // flipped.
 type MarkDeviceVerifiedCommand struct {
-	UserID   string
-	DeviceID string
+	UserID   int64
+	DeviceID int64
 }
 
 type MarkDeviceVerifiedCommandHandler struct {

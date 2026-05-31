@@ -79,7 +79,7 @@ type validatedGenerateQuiz struct {
 }
 
 func ValidateGenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (validatedGenerateQuiz, error) {
-	if req.ProfileID != nil && *req.ProfileID == "" {
+	if req.ProfileID != nil && *req.ProfileID == 0 {
 		req.ProfileID = nil
 	}
 	if err := validateLanguage(ctx, req.Language); err != nil {
@@ -102,7 +102,7 @@ func ValidateGenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (valida
 }
 
 func ValidateSubmitAnswers(ctx context.Context, req *dto.SubmitQuizAnswersReq) error {
-	if req.QuizID == "" {
+	if req.QuizID == 0 {
 		return errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
 			errors.New("quiz_id is required"))
 	}
@@ -127,7 +127,7 @@ func ValidateSubmitAnswers(ctx context.Context, req *dto.SubmitQuizAnswersReq) e
 }
 
 func ValidateGetQuiz(ctx context.Context, req *dto.GetQuizByQuizIdReq) error {
-	if req.QuizID == "" {
+	if req.QuizID == 0 {
 		return errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
 			errors.New("quiz_id is required"))
 	}
@@ -135,10 +135,10 @@ func ValidateGetQuiz(ctx context.Context, req *dto.GetQuizByQuizIdReq) error {
 }
 
 func ValidateListQuizzes(ctx context.Context, req *dto.ListQuizzesReq) error {
-	if req.ProfileID != nil && *req.ProfileID == "" {
+	if req.ProfileID != nil && *req.ProfileID == 0 {
 		req.ProfileID = nil
 	}
-	if req.UserID != nil && *req.UserID == "" {
+	if req.UserID != nil && *req.UserID == 0 {
 		req.UserID = nil
 	}
 	if req.ProfileID == nil && req.UserID == nil {
@@ -149,7 +149,7 @@ func ValidateListQuizzes(ctx context.Context, req *dto.ListQuizzesReq) error {
 }
 
 func ValidateDeleteQuiz(ctx context.Context, req *dto.DeleteQuizReq) error {
-	if req.QuizID == "" {
+	if req.QuizID == 0 {
 		return errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
 			errors.New("quiz_id is required"))
 	}

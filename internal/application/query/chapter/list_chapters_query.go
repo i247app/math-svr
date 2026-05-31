@@ -12,9 +12,9 @@ import (
 // LEFT JOIN. Translations are intentionally NOT hydrated for list
 // responses — clients that need every locale fetch the detail row.
 type ListChaptersQuery struct {
-	ProgramID  *string
-	GradeID    *string
-	SemesterID *string
+	ProgramID  *int64
+	GradeID    *int64
+	SemesterID *int64
 	Language   enum.LanguageType
 	Page       int64
 	Limit      int64

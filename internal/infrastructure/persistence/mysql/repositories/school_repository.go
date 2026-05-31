@@ -85,7 +85,7 @@ func (r *SchoolRepository) findBareById(ctx context.Context, id int64) (*school.
 	return ModelToDomainSchool(m), nil
 }
 
-func (r *SchoolRepository) FindBySchoolId(ctx context.Context, schoolId string) (*school.School, error) {
+func (r *SchoolRepository) FindBySchoolId(ctx context.Context, schoolId int64) (*school.School, error) {
 	return r.findOneBy(ctx, "s.school_id = ?", schoolId)
 }
 
@@ -176,7 +176,7 @@ func buildSchoolListFilterClause(params *school.ListSchoolsParams) (string, []an
 // Caller (typically the profile service composing a response) is
 // responsible for keying the result by SchoolId() — order is not preserved
 // because the IN-clause makes no ordering guarantee.
-func (r *SchoolRepository) ListSchoolsByIds(ctx context.Context, ids []string) ([]*school.School, error) {
+func (r *SchoolRepository) ListSchoolsByIds(ctx context.Context, ids []int64) ([]*school.School, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -262,7 +262,7 @@ func (r *SchoolRepository) Update(ctx context.Context, s *school.School) error {
 	return nil
 }
 
-func (r *SchoolRepository) SoftDeleteBySchoolId(ctx context.Context, schoolId string) error {
+func (r *SchoolRepository) SoftDeleteBySchoolId(ctx context.Context, schoolId int64) error {
 	query := `
 		UPDATE ` + schoolTable + `
 		SET school_status = ?,
@@ -279,7 +279,7 @@ func (r *SchoolRepository) SoftDeleteBySchoolId(ctx context.Context, schoolId st
 	return nil
 }
 
-func (r *SchoolRepository) ForceDeleteBySchoolId(ctx context.Context, schoolId string) error {
+func (r *SchoolRepository) ForceDeleteBySchoolId(ctx context.Context, schoolId int64) error {
 	query := `
 		DELETE FROM ` + schoolTable + `
 		WHERE school_id = ?

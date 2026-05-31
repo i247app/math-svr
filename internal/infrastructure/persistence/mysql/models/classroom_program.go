@@ -4,13 +4,13 @@ import "time"
 
 type ClassroomProgramModel struct {
 	Id                 int64
-	ClassroomProgramId string
-	ClassroomId        string
-	ProgramId          string
+	ClassroomProgramId int64
+	ClassroomId        int64
+	ProgramId          int64
 	Note               *string
 	Status             string
-	CreateId           *string
+	CreateId           *int64
 	CreateDt           time.Time
-	ModifyId           *string
+	ModifyId           *int64
 	ModifyDt           time.Time
 }

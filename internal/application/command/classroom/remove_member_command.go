@@ -16,9 +16,9 @@ import (
 // gating is enforced at the module level; here we only block the
 // "cannot remove the owner" case as a defensive invariant.
 type RemoveMemberCommand struct {
-	ClassroomID     string
-	CallerProfileID string
-	TargetProfileID string
+	ClassroomID     int64
+	CallerProfileID int64
+	TargetProfileID int64
 }
 
 type RemoveMemberCommandHandler struct {

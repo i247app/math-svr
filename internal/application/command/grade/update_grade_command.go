@@ -21,8 +21,8 @@ import (
 // language NOT in the payload is left alone — explicit translation
 // removal goes through the dedicated delete-translation path.
 type UpdateGradeCommand struct {
-	ActorID      *string
-	GradeID      string
+	ActorID      *int64
+	GradeID      int64
 	Label        *string
 	Description  *string
 	ImageKey     *string

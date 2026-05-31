@@ -117,6 +117,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ClassroomRepository,
 		repos.ClassroomMemberRepository,
 		repos.ClassroomProgramRepository,
+		repos.ClassroomInvitationRepository,
 		uow,
 		repos.ProfileRepository,
 		repos.ProgramRepository,

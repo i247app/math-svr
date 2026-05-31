@@ -15,7 +15,7 @@ import (
 // owns only the transactional DB write that links the two. Mirrors the
 // profile module's command of the same name.
 type SetAvatarKeyCommand struct {
-	UserID    string
+	UserID    int64
 	AvatarKey string
 }
 

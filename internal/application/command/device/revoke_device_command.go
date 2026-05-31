@@ -15,8 +15,8 @@ import (
 // itself is preserved so subsequent logins still find it (they will then be
 // gated by 2FA again).
 type RevokeDeviceCommand struct {
-	UserID   string
-	DeviceID string
+	UserID   int64
+	DeviceID int64
 }
 
 type RevokeDeviceCommandHandler struct {

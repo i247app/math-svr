@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
@@ -15,19 +14,15 @@ import (
 // preserving caller order. Used by both Create and Update so the
 // junction-row writes never collide with the (classroom_id, program_id)
 // UNIQUE constraint on the happy path.
-func normalizeProgramIDs(in []string) []string {
-	seen := make(map[string]struct{}, len(in))
-	out := make([]string, 0, len(in))
+func normalizeProgramIDs(in []int64) []int64 {
+	seen := make(map[int64]struct{}, len(in))
+	out := make([]int64, 0, len(in))
 	for _, raw := range in {
-		id := strings.TrimSpace(raw)
-		if id == "" {
+		if _, ok := seen[raw]; ok {
 			continue
 		}
-		if _, ok := seen[id]; ok {
-			continue
-		}
-		seen[id] = struct{}{}
-		out = append(out, id)
+		seen[raw] = struct{}{}
+		out = append(out, raw)
 	}
 	return out
 }
@@ -40,13 +35,13 @@ func normalizeProgramIDs(in []string) []string {
 func insertClassroomPrograms(
 	ctx context.Context,
 	repos transaction.Repositories,
-	classroomID string,
-	programIDs []string,
-	actorID *string,
-) ([]string, error) {
+	classroomID int64,
+	programIDs []int64,
+	actorID *int64,
+) ([]int64, error) {
 	ids := normalizeProgramIDs(programIDs)
 	if len(ids) == 0 {
-		return []string{}, nil
+		return []int64{}, nil
 	}
 	for _, pid := range ids {
 		linkID, err := nextSeqID(ctx, repos, seq.NameClassroomProgram)
@@ -74,21 +69,21 @@ func insertClassroomPrograms(
 func replaceClassroomPrograms(
 	ctx context.Context,
 	repos transaction.Repositories,
-	classroomID string,
-	desired []string,
-	actorID *string,
-) ([]string, error) {
+	classroomID int64,
+	desired []int64,
+	actorID *int64,
+) ([]int64, error) {
 	desiredSet := normalizeProgramIDs(desired)
 	current, err := repos.ClassroomProgram.ListProgramIdsByClassroomId(ctx, classroomID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	currentIndex := make(map[string]struct{}, len(current))
+	currentIndex := make(map[int64]struct{}, len(current))
 	for _, id := range current {
 		currentIndex[id] = struct{}{}
 	}
-	desiredIndex := make(map[string]struct{}, len(desiredSet))
+	desiredIndex := make(map[int64]struct{}, len(desiredSet))
 	for _, id := range desiredSet {
 		desiredIndex[id] = struct{}{}
 	}

@@ -14,7 +14,7 @@ import (
 // row in one transaction. Soft-deleted translations stay queryable for
 // audit / history paths but are filtered out of every standard read.
 type SoftDeleteGradeCommand struct {
-	GradeID string
+	GradeID int64
 }
 
 type SoftDeleteGradeCommandHandler struct {

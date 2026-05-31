@@ -175,7 +175,7 @@ func (m *SessionManager) DeleteUnSecureSessions() {
 	}
 }
 
-func (m *SessionManager) DeleteUserSessions(uid string) {
+func (m *SessionManager) DeleteUserSessions(uid int64) {
 	for _, sess := range *m.Sessions() {
 		id, ok := sess.UID()
 		if ok && id == uid {

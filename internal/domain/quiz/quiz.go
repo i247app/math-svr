@@ -24,9 +24,9 @@ import (
 // in separate steps.
 type Quiz struct {
 	id              int64
-	quizId          string
-	userId          *string
-	profileId       *string
+	quizId          int64
+	userId          *int64
+	profileId       *int64
 	purpose         string
 	typeOfQuiz      *string
 	title           *string
@@ -37,13 +37,13 @@ type Quiz struct {
 	totalQuestions  *int
 	correctNumber   *int
 	scorePercentage *int
-	previousQuizId  *string
+	previousQuizId  *int64
 	note            *string
 	quizStatus      *string
 	status          string
-	createId        *string
+	createId        *int64
 	createDt        mtime.MathTime
-	modifyId        *string
+	modifyId        *int64
 	modifyDt        mtime.MathTime
 }
 
@@ -53,12 +53,12 @@ func NewQuiz() *Quiz {
 
 func (q *Quiz) Id() int64                  { return q.id }
 func (q *Quiz) SetId(id int64)             { q.id = id }
-func (q *Quiz) QuizId() string             { return q.quizId }
-func (q *Quiz) SetQuizId(id string)        { q.quizId = id }
-func (q *Quiz) UserId() *string            { return q.userId }
-func (q *Quiz) SetUserId(id *string)       { q.userId = id }
-func (q *Quiz) ProfileId() *string         { return q.profileId }
-func (q *Quiz) SetProfileId(id *string)    { q.profileId = id }
+func (q *Quiz) QuizId() int64              { return q.quizId }
+func (q *Quiz) SetQuizId(id int64)         { q.quizId = id }
+func (q *Quiz) UserId() *int64             { return q.userId }
+func (q *Quiz) SetUserId(id *int64)        { q.userId = id }
+func (q *Quiz) ProfileId() *int64          { return q.profileId }
+func (q *Quiz) SetProfileId(id *int64)     { q.profileId = id }
 func (q *Quiz) Purpose() string            { return q.purpose }
 func (q *Quiz) SetPurpose(p string)        { q.purpose = p }
 func (q *Quiz) TypeOfQuiz() *string        { return q.typeOfQuiz }
@@ -79,8 +79,8 @@ func (q *Quiz) CorrectNumber() *int        { return q.correctNumber }
 func (q *Quiz) SetCorrectNumber(n *int)    { q.correctNumber = n }
 func (q *Quiz) ScorePercentage() *int      { return q.scorePercentage }
 func (q *Quiz) SetScorePercentage(n *int)  { q.scorePercentage = n }
-func (q *Quiz) PreviousQuizId() *string    { return q.previousQuizId }
-func (q *Quiz) SetPreviousQuizId(id *string) {
+func (q *Quiz) PreviousQuizId() *int64     { return q.previousQuizId }
+func (q *Quiz) SetPreviousQuizId(id *int64) {
 	if id == nil {
 		q.previousQuizId = nil
 		return
@@ -93,11 +93,11 @@ func (q *Quiz) QuizStatus() *string          { return q.quizStatus }
 func (q *Quiz) SetQuizStatus(s *string)      { q.quizStatus = s }
 func (q *Quiz) Status() string               { return q.status }
 func (q *Quiz) SetStatus(s string)           { q.status = s }
-func (q *Quiz) CreateId() *string            { return q.createId }
-func (q *Quiz) SetCreateId(id *string)       { q.createId = id }
+func (q *Quiz) CreateId() *int64             { return q.createId }
+func (q *Quiz) SetCreateId(id *int64)        { q.createId = id }
 func (q *Quiz) CreateDt() mtime.MathTime     { return q.createDt }
 func (q *Quiz) SetCreateDt(t mtime.MathTime) { q.createDt = t }
-func (q *Quiz) ModifyId() *string            { return q.modifyId }
-func (q *Quiz) SetModifyId(id *string)       { q.modifyId = id }
+func (q *Quiz) ModifyId() *int64             { return q.modifyId }
+func (q *Quiz) SetModifyId(id *int64)        { q.modifyId = id }
 func (q *Quiz) ModifyDt() mtime.MathTime     { return q.modifyDt }
 func (q *Quiz) SetModifyDt(t mtime.MathTime) { q.modifyDt = t }

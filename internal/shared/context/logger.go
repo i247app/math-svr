@@ -11,7 +11,7 @@ const (
 // attribution. The logger middleware is the canonical writer; auth
 // middleware (when added) should also set this so background work
 // triggered from a request retains uid context.
-func WithUserID(ctx context.Context, uid string) context.Context {
+func WithUserID(ctx context.Context, uid int64) context.Context {
 	return context.WithValue(ctx, ctxKeyUserID, uid)
 }
 

@@ -7,7 +7,7 @@ import (
 )
 
 type GetProfileByIdQuery struct {
-	ProfileId string
+	ProfileId int64
 }
 
 type GetProfileByIdQueryHandler struct {

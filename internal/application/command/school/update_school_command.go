@@ -14,8 +14,8 @@ import (
 // "leave unchanged when nil"; only the non-nil ones reach the repo's
 // COALESCE update so partial PATCH-style payloads work.
 type UpdateSchoolCommand struct {
-	ActorID     *string
-	SchoolID    string
+	ActorID     *int64
+	SchoolID    int64
 	Name        *string
 	Description *string
 	ImageKey    *string

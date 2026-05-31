@@ -13,9 +13,9 @@ import (
 // verify.
 type Otp struct {
 	id           int64
-	otpId        string
+	otpId        int64
 	otpType      string
-	userId       *string
+	userId       *int64
 	identifier   string
 	deviceUUID   *string
 	deviceName   *string
@@ -26,9 +26,9 @@ type Otp struct {
 	note         *string
 	otpStatus    *string
 	status       string
-	createId     *string
+	createId     *int64
 	createDt     mtime.MathTime
-	modifyId     *string
+	modifyId     *int64
 	modifyDt     mtime.MathTime
 }
 
@@ -36,12 +36,12 @@ func NewOtp() *Otp { return &Otp{} }
 
 func (o *Otp) Id() int64                       { return o.id }
 func (o *Otp) SetId(id int64)                  { o.id = id }
-func (o *Otp) OtpId() string                   { return o.otpId }
-func (o *Otp) SetOtpId(v string)               { o.otpId = v }
+func (o *Otp) OtpId() int64                    { return o.otpId }
+func (o *Otp) SetOtpId(v int64)                { o.otpId = v }
 func (o *Otp) OtpType() string                 { return o.otpType }
 func (o *Otp) SetOtpType(v string)             { o.otpType = v }
-func (o *Otp) UserId() *string                 { return o.userId }
-func (o *Otp) SetUserId(v *string)             { o.userId = v }
+func (o *Otp) UserId() *int64                  { return o.userId }
+func (o *Otp) SetUserId(v *int64)              { o.userId = v }
 func (o *Otp) Identifier() string              { return o.identifier }
 func (o *Otp) SetIdentifier(v string)          { o.identifier = v }
 func (o *Otp) DeviceUUID() *string             { return o.deviceUUID }
@@ -62,11 +62,11 @@ func (o *Otp) OtpStatus() *string              { return o.otpStatus }
 func (o *Otp) SetOtpStatus(v *string)          { o.otpStatus = v }
 func (o *Otp) Status() string                  { return o.status }
 func (o *Otp) SetStatus(v string)              { o.status = v }
-func (o *Otp) CreateId() *string               { return o.createId }
-func (o *Otp) SetCreateId(v *string)           { o.createId = v }
+func (o *Otp) CreateId() *int64                { return o.createId }
+func (o *Otp) SetCreateId(v *int64)            { o.createId = v }
 func (o *Otp) CreateDt() mtime.MathTime        { return o.createDt }
 func (o *Otp) SetCreateDt(v mtime.MathTime)    { o.createDt = v }
-func (o *Otp) ModifyId() *string               { return o.modifyId }
-func (o *Otp) SetModifyId(v *string)           { o.modifyId = v }
+func (o *Otp) ModifyId() *int64                { return o.modifyId }
+func (o *Otp) SetModifyId(v *int64)            { o.modifyId = v }
 func (o *Otp) ModifyDt() mtime.MathTime        { return o.modifyDt }
 func (o *Otp) SetModifyDt(v mtime.MathTime)    { o.modifyDt = v }

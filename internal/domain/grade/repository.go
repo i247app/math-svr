@@ -12,29 +12,29 @@ import (
 // base row. Translation-row mutations live on ITranslationRepository so
 // the two surfaces compose cleanly inside a UoW.
 type IRepository interface {
-	FindByGradeId(ctx context.Context, gradeId string, language enum.LanguageType) (*Grade, error)
+	FindByGradeId(ctx context.Context, gradeId int64, language enum.LanguageType) (*Grade, error)
 	ListGrades(ctx context.Context, params *ListGradesParams) ([]*Grade, *pagination.Pagination, error)
 	// ListGradesByIds resolves a set of grades in one query. Returns nil slice
 	// on empty input; caller maps by GradeId().
-	ListGradesByIds(ctx context.Context, ids []string, language enum.LanguageType) ([]*Grade, error)
+	ListGradesByIds(ctx context.Context, ids []int64, language enum.LanguageType) ([]*Grade, error)
 	Create(ctx context.Context, g *Grade) (*Grade, error)
 	Update(ctx context.Context, g *Grade) error
-	SoftDeleteByGradeId(ctx context.Context, gradeId string) error
-	ForceDeleteByGradeId(ctx context.Context, gradeId string) error
+	SoftDeleteByGradeId(ctx context.Context, gradeId int64) error
+	ForceDeleteByGradeId(ctx context.Context, gradeId int64) error
 }
 
 // ITranslationRepository owns the per-language override rows. Listing /
 // upsert / delete live here; reads are typically piggybacked on the parent
 // LEFT JOIN, so callers that need the full set use ListByGradeId.
 type ITranslationRepository interface {
-	ListByGradeId(ctx context.Context, gradeId string) ([]*GradeTranslation, error)
-	FindByGradeIdAndLanguage(ctx context.Context, gradeId string, language string) (*GradeTranslation, error)
+	ListByGradeId(ctx context.Context, gradeId int64) ([]*GradeTranslation, error)
+	FindByGradeIdAndLanguage(ctx context.Context, gradeId int64, language string) (*GradeTranslation, error)
 	Create(ctx context.Context, t *GradeTranslation) (*GradeTranslation, error)
 	Update(ctx context.Context, t *GradeTranslation) error
-	SoftDeleteByGradeId(ctx context.Context, gradeId string) error
-	SoftDeleteByTranslationId(ctx context.Context, gradeTranslationId string) error
-	ForceDeleteByGradeId(ctx context.Context, gradeId string) error
-	ForceDeleteByTranslationId(ctx context.Context, gradeTranslationId string) error
+	SoftDeleteByGradeId(ctx context.Context, gradeId int64) error
+	SoftDeleteByTranslationId(ctx context.Context, gradeTranslationId int64) error
+	ForceDeleteByGradeId(ctx context.Context, gradeId int64) error
+	ForceDeleteByTranslationId(ctx context.Context, gradeTranslationId int64) error
 }
 
 type ListGradesParams struct {

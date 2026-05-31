@@ -21,8 +21,8 @@ import (
 // language NOT in the payload is left alone — explicit translation
 // removal goes through the dedicated delete-translation path.
 type UpdateProgramCommand struct {
-	ActorID      *string
-	ProgramID    string
+	ActorID      *int64
+	ProgramID    int64
 	Label        *string
 	Description  *string
 	ImageKey     *string

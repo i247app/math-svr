@@ -17,7 +17,7 @@ import (
 
 // Reference-data aggregate. Like program/grade, but the base table uses
 // `name` (not `label`) and `description TEXT` is nullable, so the SELECT
-// COALESCEs to '' to keep the scan target a plain string.
+// COALESCEs to ” to keep the scan target a plain string.
 const (
 	semesterTable             = "ma_semesters"
 	semesterTranslationsTable = "ma_semester_translations"
@@ -115,7 +115,7 @@ func (r *SemesterRepository) findBareById(ctx context.Context, id int64) (*semes
 	return ModelToDomainSemester(m), nil
 }
 
-func (r *SemesterRepository) FindBySemesterId(ctx context.Context, semesterId string, language enum.LanguageType) (*semester.Semester, error) {
+func (r *SemesterRepository) FindBySemesterId(ctx context.Context, semesterId int64, language enum.LanguageType) (*semester.Semester, error) {
 	return r.findOneBy(ctx, language, "s.semester_id = ?", semesterId)
 }
 
@@ -169,7 +169,7 @@ func (r *SemesterRepository) ListSemesters(ctx context.Context, params *semester
 }
 
 // ListSemestersByIds — see program_repository's equivalent for rationale.
-func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []string, lang enum.LanguageType) ([]*semester.Semester, error) {
+func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []int64, lang enum.LanguageType) ([]*semester.Semester, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -267,7 +267,7 @@ func (r *SemesterRepository) Update(ctx context.Context, s *semester.Semester) e
 	return nil
 }
 
-func (r *SemesterRepository) SoftDeleteBySemesterId(ctx context.Context, semesterId string) error {
+func (r *SemesterRepository) SoftDeleteBySemesterId(ctx context.Context, semesterId int64) error {
 	query := `
 		UPDATE ` + semesterTable + `
 		SET semester_status = ?,
@@ -284,7 +284,7 @@ func (r *SemesterRepository) SoftDeleteBySemesterId(ctx context.Context, semeste
 	return nil
 }
 
-func (r *SemesterRepository) ForceDeleteBySemesterId(ctx context.Context, semesterId string) error {
+func (r *SemesterRepository) ForceDeleteBySemesterId(ctx context.Context, semesterId int64) error {
 	query := `
 		DELETE FROM ` + semesterTable + `
 		WHERE semester_id = ?

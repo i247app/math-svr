@@ -15,7 +15,7 @@ import (
 // the module level. Idempotency: re-archiving an ARCHIVED classroom
 // returns ALREADY_ARCHIVED rather than silently succeeding.
 type ArchiveClassroomCommand struct {
-	ClassroomID string
+	ClassroomID int64
 }
 
 type ArchiveClassroomCommandHandler struct {

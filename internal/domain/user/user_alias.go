@@ -6,15 +6,15 @@ import (
 
 type Alias struct {
 	id          int64
-	aliasId     string
-	userId      string
+	aliasId     int64
+	userId      int64
 	aka         string
 	aliasStatus *string
 	note        *string
 	status      string
-	createId    *string
+	createId    *int64
 	createDt    mtime.MathTime
-	modifyId    *string
+	modifyId    *int64
 	modifyDt    mtime.MathTime
 }
 
@@ -30,19 +30,19 @@ func (a *Alias) SetId(id int64) {
 	a.id = id
 }
 
-func (a *Alias) AliasId() string {
+func (a *Alias) AliasId() int64 {
 	return a.aliasId
 }
 
-func (a *Alias) SetAliasId(aliasId string) {
+func (a *Alias) SetAliasId(aliasId int64) {
 	a.aliasId = aliasId
 }
 
-func (a *Alias) UserId() string {
+func (a *Alias) UserId() int64 {
 	return a.userId
 }
 
-func (a *Alias) SetUserId(userId string) {
+func (a *Alias) SetUserId(userId int64) {
 	a.userId = userId
 }
 
@@ -78,11 +78,11 @@ func (a *Alias) SetStatus(status string) {
 	a.status = status
 }
 
-func (a *Alias) CreateId() *string {
+func (a *Alias) CreateId() *int64 {
 	return a.createId
 }
 
-func (a *Alias) SetCreateId(createId *string) {
+func (a *Alias) SetCreateId(createId *int64) {
 	a.createId = createId
 }
 
@@ -94,11 +94,11 @@ func (a *Alias) SetCreateDt(createDt mtime.MathTime) {
 	a.createDt = createDt
 }
 
-func (a *Alias) ModifyId() *string {
+func (a *Alias) ModifyId() *int64 {
 	return a.modifyId
 }
 
-func (a *Alias) SetModifyId(modifyId *string) {
+func (a *Alias) SetModifyId(modifyId *int64) {
 	a.modifyId = modifyId
 }
 

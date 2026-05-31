@@ -9,7 +9,7 @@ import (
 )
 
 type GetDeviceByIdQuery struct {
-	DeviceID string
+	DeviceID int64
 }
 
 type GetDeviceByIdQueryHandler struct {

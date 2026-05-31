@@ -55,7 +55,7 @@ func ValidateCreateSchool(ctx context.Context, req *dto.CreateSchoolReq) error {
 }
 
 func ValidateUpdateSchool(ctx context.Context, req *dto.UpdateSchoolReq) error {
-	if strings.TrimSpace(req.SchoolID) == "" {
+	if req.SchoolID == 0 {
 		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
 			errors.New("school_id is required"))
 	}
@@ -93,7 +93,7 @@ func ValidateUpdateSchool(ctx context.Context, req *dto.UpdateSchoolReq) error {
 }
 
 func ValidateGetSchool(ctx context.Context, req *dto.GetSchoolReq) error {
-	if strings.TrimSpace(req.SchoolID) == "" {
+	if req.SchoolID == 0 {
 		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
 			errors.New("school_id is required"))
 	}
@@ -115,7 +115,7 @@ func ValidateListSchools(ctx context.Context, req *dto.ListSchoolsReq) error {
 }
 
 func ValidateDeleteSchool(ctx context.Context, req *dto.DeleteSchoolReq) error {
-	if strings.TrimSpace(req.SchoolID) == "" {
+	if req.SchoolID == 0 {
 		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
 			errors.New("school_id is required"))
 	}

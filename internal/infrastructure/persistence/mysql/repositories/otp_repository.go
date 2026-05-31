@@ -78,7 +78,7 @@ func (r *OtpRepository) findBareById(ctx context.Context, id int64) (*otp.Otp, e
 	return ModelToDomainOtp(m), nil
 }
 
-func (r *OtpRepository) FindByOtpId(ctx context.Context, otpId string) (*otp.Otp, error) {
+func (r *OtpRepository) FindByOtpId(ctx context.Context, otpId int64) (*otp.Otp, error) {
 	return r.findOneBy(ctx, "o.otp_id = ?", otpId)
 }
 
@@ -143,7 +143,7 @@ func (r *OtpRepository) Create(ctx context.Context, o *otp.Otp) (*otp.Otp, error
 	return r.findBareById(ctx, id)
 }
 
-func (r *OtpRepository) MarkStatusByOtpId(ctx context.Context, otpId string, st enum.OtpStatusType) error {
+func (r *OtpRepository) MarkStatusByOtpId(ctx context.Context, otpId int64, st enum.OtpStatusType) error {
 	query := `
 		UPDATE ` + otpTable + `
 		SET otp_status = ?,
@@ -181,7 +181,7 @@ func (r *OtpRepository) RevokePendingByTypeIdentifier(ctx context.Context, otpTy
 // value. The UPDATE..LAST_INSERT_ID trick keeps the read+write a single round
 // trip and tolerates concurrent verify attempts: the second one will see the
 // already-incremented value through SELECT LAST_INSERT_ID().
-func (r *OtpRepository) IncrementAttemptCount(ctx context.Context, otpId string) (int, error) {
+func (r *OtpRepository) IncrementAttemptCount(ctx context.Context, otpId int64) (int, error) {
 	update := `
 		UPDATE ` + otpTable + `
 		SET attempt_count = LAST_INSERT_ID(attempt_count + 1),

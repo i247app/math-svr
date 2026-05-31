@@ -21,8 +21,8 @@ import (
 // language NOT in the payload is left alone — explicit translation
 // removal goes through the dedicated delete-translation path.
 type UpdateSemesterCommand struct {
-	ActorID      *string
-	SemesterID   string
+	ActorID      *int64
+	SemesterID   int64
 	Name         *string
 	Description  *string
 	ImageKey     *string
@@ -93,7 +93,7 @@ func (h *UpdateSemesterCommandHandler) Handle(ctx context.Context, cmd UpdateSem
 			}
 			seen[lang] = struct{}{}
 
-			current, err := repos.SemesterTranslation.FindBySemesterIdAndLanguage(ctx, cmd.SemesterID, lang)
+			current, err := repos.SemesterTranslation.FindBySemesterIdAndLanguage(ctx, cmd.SemesterID, enum.LanguageType(lang))
 			if err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}

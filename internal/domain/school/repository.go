@@ -23,14 +23,14 @@ type ListSchoolsParams struct {
 // surface — name/description/district/province are single-language
 // at the schema level today.
 type IRepository interface {
-	FindBySchoolId(ctx context.Context, schoolId string) (*School, error)
+	FindBySchoolId(ctx context.Context, schoolId int64) (*School, error)
 	ListSchools(ctx context.Context, params *ListSchoolsParams) ([]*School, *pagination.Pagination, error)
 	// ListSchoolsByIds resolves a set of schools in one query. Returns nil
 	// slice on empty input; caller maps by SchoolId(). Used by parent
 	// aggregates (profile) to embed school responses without N+1.
-	ListSchoolsByIds(ctx context.Context, ids []string) ([]*School, error)
+	ListSchoolsByIds(ctx context.Context, ids []int64) ([]*School, error)
 	Create(ctx context.Context, s *School) (*School, error)
 	Update(ctx context.Context, s *School) error
-	SoftDeleteBySchoolId(ctx context.Context, schoolId string) error
-	ForceDeleteBySchoolId(ctx context.Context, schoolId string) error
+	SoftDeleteBySchoolId(ctx context.Context, schoolId int64) error
+	ForceDeleteBySchoolId(ctx context.Context, schoolId int64) error
 }

@@ -23,8 +23,8 @@ type GradingUpdate struct {
 // so the result is the intersection. At least one must be non-nil —
 // the caller is responsible for that check.
 type ListQuizzesFilter struct {
-	ProfileID *string
-	UserID    *string
+	ProfileID *int64
+	UserID    *int64
 	Purpose   *string
 }
 
@@ -33,12 +33,11 @@ type ListQuizzesFilter struct {
 // the answers + AI grading fields in one shot without forcing COALESCE
 // on the JSON columns.
 type IRepository interface {
-	FindByQuizId(ctx context.Context, quizId string) (*Quiz, error)
+	FindByQuizId(ctx context.Context, quizId int64) (*Quiz, error)
 	ListQuizzes(ctx context.Context, filter ListQuizzesFilter, page, limit int64) ([]*Quiz, *pagination.Pagination, error)
 	Create(ctx context.Context, q *Quiz) (*Quiz, error)
-	UpdateAnswersAndGrading(ctx context.Context, quizId string, answers string,
-		grading GradingUpdate, quizStatus string) error
-	SoftDelete(ctx context.Context, quizId string) error
-	SoftDeleteByUserId(ctx context.Context, userId string) error
-	ForceDeleteByUserId(ctx context.Context, userId string) error
+	UpdateAnswersAndGrading(ctx context.Context, quizId int64, answers string, grading GradingUpdate, quizStatus string) error
+	SoftDelete(ctx context.Context, quizId int64) error
+	SoftDeleteByUserId(ctx context.Context, userId int64) error
+	ForceDeleteByUserId(ctx context.Context, userId int64) error
 }

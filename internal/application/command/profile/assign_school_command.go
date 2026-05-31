@@ -15,8 +15,8 @@ import (
 // profile exists. Both checks run inside the same UoW so a race that
 // soft-deletes either row mid-flight fails the whole assignment.
 type AssignSchoolCommand struct {
-	ProfileID string
-	SchoolID  string
+	ProfileID int64
+	SchoolID  int64
 }
 
 type AssignSchoolCommandHandler struct {

@@ -114,7 +114,7 @@ func ValidateCreateGrade(ctx context.Context, req *dto.CreateGradeReq) error {
 }
 
 func ValidateUpdateGrade(ctx context.Context, req *dto.UpdateGradeReq) error {
-	if strings.TrimSpace(req.GradeID) == "" {
+	if req.GradeID == 0 {
 		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil,
 			errors.New("grade_id is required"))
 	}
@@ -146,7 +146,7 @@ func ValidateUpdateGrade(ctx context.Context, req *dto.UpdateGradeReq) error {
 }
 
 func ValidateGetGrade(ctx context.Context, req *dto.GetGradeReq) error {
-	if strings.TrimSpace(req.GradeID) == "" {
+	if req.GradeID == 0 {
 		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil,
 			errors.New("grade_id is required"))
 	}
@@ -158,7 +158,7 @@ func ValidateListGrades(ctx context.Context, req *dto.ListGradesReq) error {
 }
 
 func ValidateDeleteGrade(ctx context.Context, req *dto.DeleteGradeReq) error {
-	if strings.TrimSpace(req.GradeID) == "" {
+	if req.GradeID == 0 {
 		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil,
 			errors.New("grade_id is required"))
 	}

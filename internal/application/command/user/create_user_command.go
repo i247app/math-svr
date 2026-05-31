@@ -106,14 +106,14 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 
-		profileID, err := nextSeqID(ctx, repos, seq.NameProfile)
-		if err != nil {
-			return err
-		}
+		// profileID, err := nextSeqID(ctx, repos, seq.NameUser)
+		// if err != nil {
+		// 	return err
+		// }
 
 		profileDomain := BuildProfile(cmd)
 		profileDomain.SetUserId(u.UserId())
-		profileDomain.SetProfileId(profileID)
+		profileDomain.SetProfileId(userID)
 		profileDomain.SetIsDefault(true)
 
 		if _, err = repos.Profile.Create(ctx, profileDomain); err != nil {

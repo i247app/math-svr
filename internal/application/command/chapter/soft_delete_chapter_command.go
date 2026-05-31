@@ -14,7 +14,7 @@ import (
 // row in one transaction. Soft-deleted translations stay queryable for
 // audit / history paths but are filtered out of every standard read.
 type SoftDeleteChapterCommand struct {
-	ChapterID string
+	ChapterID int64
 }
 
 type SoftDeleteChapterCommandHandler struct {

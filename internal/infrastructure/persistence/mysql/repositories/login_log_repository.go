@@ -75,7 +75,7 @@ func (r *LoginLogRepository) findBareById(ctx context.Context, id int64) (*login
 	return ModelToDomainLoginLog(m), nil
 }
 
-func (r *LoginLogRepository) FindByLoginLogId(ctx context.Context, loginLogId string) (*loginlog.LoginLog, error) {
+func (r *LoginLogRepository) FindByLoginLogId(ctx context.Context, loginLogId int64) (*loginlog.LoginLog, error) {
 	return r.findOneBy(ctx, "l.login_log_id = ?", loginLogId)
 }
 
@@ -86,13 +86,13 @@ func (r *LoginLogRepository) FindActiveByToken(ctx context.Context, token string
 	return r.findOneBy(ctx, "l.token = ? AND l.login_log_status = ?", token, enum.LoginLogStatusTypeActive)
 }
 
-func (r *LoginLogRepository) FindActiveByUserDevice(ctx context.Context, userId string, deviceUUID string) (*loginlog.LoginLog, error) {
+func (r *LoginLogRepository) FindActiveByUserDevice(ctx context.Context, userId int64, deviceUUID string) (*loginlog.LoginLog, error) {
 	return r.findOneBy(ctx,
 		"l.user_id = ? AND l.device_uuid = ? AND l.login_log_status = ?",
 		userId, deviceUUID, enum.LoginLogStatusTypeActive)
 }
 
-func (r *LoginLogRepository) ListByUserId(ctx context.Context, userId string) ([]*loginlog.LoginLog, error) {
+func (r *LoginLogRepository) ListByUserId(ctx context.Context, userId int64) ([]*loginlog.LoginLog, error) {
 	args := append(loginLogActiveArgs(), userId)
 	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE ` +
 		loginLogActiveWhere + ` AND l.user_id = ? ORDER BY l.id DESC`
@@ -138,7 +138,7 @@ func (r *LoginLogRepository) Create(ctx context.Context, l *loginlog.LoginLog) (
 	return r.findBareById(ctx, id)
 }
 
-func (r *LoginLogRepository) MarkStatusByLoginLogId(ctx context.Context, loginLogId string, st enum.LoginLogStatusType) error {
+func (r *LoginLogRepository) MarkStatusByLoginLogId(ctx context.Context, loginLogId int64, st enum.LoginLogStatusType) error {
 	query := `
 		UPDATE ` + loginLogTable + `
 		SET login_log_status = ?,
@@ -154,7 +154,7 @@ func (r *LoginLogRepository) MarkStatusByLoginLogId(ctx context.Context, loginLo
 // MarkStatusByUserDevice flips every still-ACTIVE row for the (user, device)
 // pair. Used at login to enforce the "one active session per device" rule —
 // the new login_log row is inserted right after.
-func (r *LoginLogRepository) MarkStatusByUserDevice(ctx context.Context, userId string, deviceUUID string, st enum.LoginLogStatusType) error {
+func (r *LoginLogRepository) MarkStatusByUserDevice(ctx context.Context, userId int64, deviceUUID string, st enum.LoginLogStatusType) error {
 	query := `
 		UPDATE ` + loginLogTable + `
 		SET login_log_status = ?,
@@ -169,7 +169,7 @@ func (r *LoginLogRepository) MarkStatusByUserDevice(ctx context.Context, userId 
 	return nil
 }
 
-func (r *LoginLogRepository) SoftDeleteByLoginLogId(ctx context.Context, loginLogId string) error {
+func (r *LoginLogRepository) SoftDeleteByLoginLogId(ctx context.Context, loginLogId int64) error {
 	query := `
 		UPDATE ` + loginLogTable + `
 		SET login_log_status = ?,

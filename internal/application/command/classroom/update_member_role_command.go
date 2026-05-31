@@ -17,10 +17,10 @@ import (
 // the module level (must be CO_TEACHER or STUDENT) and a TEACHER
 // profile check guards promotion to CO_TEACHER.
 type UpdateMemberRoleCommand struct {
-	ClassroomID     string
-	TargetProfileID string
+	ClassroomID     int64
+	TargetProfileID int64
 	NewRole         string
-	ActorID         *string
+	ActorID         *int64
 }
 
 type UpdateMemberRoleCommandHandler struct {

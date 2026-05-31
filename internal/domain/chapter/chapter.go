@@ -6,19 +6,19 @@ import (
 
 type Chapter struct {
 	id            int64
-	chapterId     string
-	programId     string
-	gradeId       string
-	semesterId    string
+	chapterId     int64
+	programId     int64
+	gradeId       int64
+	semesterId    int64
 	label         string
 	description   string
 	displayOrder  int8
 	note          *string
 	chapterStatus *string
 	status        string
-	createId      *string
+	createId      *int64
 	createDt      mtime.MathTime
-	modifyId      *string
+	modifyId      *int64
 	modifyDt      mtime.MathTime
 
 	// translations is hydrated only by detail reads; list reads keep it
@@ -33,14 +33,14 @@ func NewChapter() *Chapter {
 
 func (c *Chapter) Id() int64                  { return c.id }
 func (c *Chapter) SetId(id int64)             { c.id = id }
-func (c *Chapter) ChapterId() string          { return c.chapterId }
-func (c *Chapter) SetChapterId(id string)     { c.chapterId = id }
-func (c *Chapter) ProgramId() string          { return c.programId }
-func (c *Chapter) SetProgramId(id string)     { c.programId = id }
-func (c *Chapter) GradeId() string            { return c.gradeId }
-func (c *Chapter) SetGradeId(id string)       { c.gradeId = id }
-func (c *Chapter) SemesterId() string         { return c.semesterId }
-func (c *Chapter) SetSemesterId(id string)    { c.semesterId = id }
+func (c *Chapter) ChapterId() int64           { return c.chapterId }
+func (c *Chapter) SetChapterId(id int64)      { c.chapterId = id }
+func (c *Chapter) ProgramId() int64           { return c.programId }
+func (c *Chapter) SetProgramId(id int64)      { c.programId = id }
+func (c *Chapter) GradeId() int64             { return c.gradeId }
+func (c *Chapter) SetGradeId(id int64)        { c.gradeId = id }
+func (c *Chapter) SemesterId() int64          { return c.semesterId }
+func (c *Chapter) SetSemesterId(id int64)     { c.semesterId = id }
 func (c *Chapter) Label() string              { return c.label }
 func (c *Chapter) SetLabel(l string)          { c.label = l }
 func (c *Chapter) Description() string        { return c.description }
@@ -53,14 +53,14 @@ func (c *Chapter) ChapterStatus() *string     { return c.chapterStatus }
 func (c *Chapter) SetChapterStatus(s *string) { c.chapterStatus = s }
 func (c *Chapter) Status() string             { return c.status }
 func (c *Chapter) SetStatus(s string)         { c.status = s }
-func (c *Chapter) CreateId() *string          { return c.createId }
-func (c *Chapter) SetCreateId(id *string)     { c.createId = id }
+func (c *Chapter) CreateId() *int64           { return c.createId }
+func (c *Chapter) SetCreateId(id *int64)      { c.createId = id }
 func (c *Chapter) CreateDt() mtime.MathTime   { return c.createDt }
 func (c *Chapter) SetCreateDt(t mtime.MathTime) {
 	c.createDt = t
 }
-func (c *Chapter) ModifyId() *string        { return c.modifyId }
-func (c *Chapter) SetModifyId(id *string)   { c.modifyId = id }
+func (c *Chapter) ModifyId() *int64         { return c.modifyId }
+func (c *Chapter) SetModifyId(id *int64)    { c.modifyId = id }
 func (c *Chapter) ModifyDt() mtime.MathTime { return c.modifyDt }
 func (c *Chapter) SetModifyDt(t mtime.MathTime) {
 	c.modifyDt = t

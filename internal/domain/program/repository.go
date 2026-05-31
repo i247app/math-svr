@@ -12,29 +12,29 @@ import (
 // the base row. Translation-row mutations live on ITranslationRepository
 // so the two surfaces compose cleanly inside a UoW.
 type IRepository interface {
-	FindByProgramId(ctx context.Context, programId string, language enum.LanguageType) (*Program, error)
+	FindByProgramId(ctx context.Context, programId int64, language enum.LanguageType) (*Program, error)
 	ListPrograms(ctx context.Context, params *ListProgramsParams) ([]*Program, *pagination.Pagination, error)
 	// ListProgramsByIds resolves a set of programs in one query. Returns nil
 	// slice on empty input; caller maps by ProgramId().
-	ListProgramsByIds(ctx context.Context, ids []string, language enum.LanguageType) ([]*Program, error)
+	ListProgramsByIds(ctx context.Context, ids []int64, language enum.LanguageType) ([]*Program, error)
 	Create(ctx context.Context, p *Program) (*Program, error)
 	Update(ctx context.Context, p *Program) error
-	SoftDeleteByProgramId(ctx context.Context, programId string) error
-	ForceDeleteByProgramId(ctx context.Context, programId string) error
+	SoftDeleteByProgramId(ctx context.Context, programId int64) error
+	ForceDeleteByProgramId(ctx context.Context, programId int64) error
 }
 
 // ITranslationRepository owns the per-language override rows. Listing /
 // upsert / delete live here; reads are typically piggybacked on the parent
 // LEFT JOIN, so callers that need the full set use ListByProgramId.
 type ITranslationRepository interface {
-	ListByProgramId(ctx context.Context, programId string) ([]*ProgramTranslation, error)
-	FindByProgramIdAndLanguage(ctx context.Context, programId string, language string) (*ProgramTranslation, error)
+	ListByProgramId(ctx context.Context, programId int64) ([]*ProgramTranslation, error)
+	FindByProgramIdAndLanguage(ctx context.Context, programId int64, language string) (*ProgramTranslation, error)
 	Create(ctx context.Context, t *ProgramTranslation) (*ProgramTranslation, error)
 	Update(ctx context.Context, t *ProgramTranslation) error
-	SoftDeleteByProgramId(ctx context.Context, programId string) error
-	SoftDeleteByTranslationId(ctx context.Context, programTranslationId string) error
-	ForceDeleteByProgramId(ctx context.Context, programId string) error
-	ForceDeleteByTranslationId(ctx context.Context, programTranslationId string) error
+	SoftDeleteByProgramId(ctx context.Context, programId int64) error
+	SoftDeleteByTranslationId(ctx context.Context, programTranslationId int64) error
+	ForceDeleteByProgramId(ctx context.Context, programId int64) error
+	ForceDeleteByTranslationId(ctx context.Context, programTranslationId int64) error
 }
 
 type ListProgramsParams struct {

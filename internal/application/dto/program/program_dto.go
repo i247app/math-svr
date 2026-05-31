@@ -10,8 +10,8 @@ import (
 // the API. ProgramTranslationID is empty on create payloads and populated
 // on responses; the service treats (language) as the upsert key.
 type ProgramTranslationDTO struct {
-	ProgramTranslationID string  `json:"program_translation_id,omitempty"`
-	ProgramID            string  `json:"program_id,omitempty"`
+	ProgramTranslationID int64   `json:"program_translation_id,omitempty"`
+	ProgramID            int64   `json:"program_id,omitempty"`
 	Language             string  `json:"language"`
 	Label                string  `json:"label"`
 	Description          string  `json:"description"`
@@ -20,7 +20,7 @@ type ProgramTranslationDTO struct {
 
 type ProgramResponse struct {
 	ID           int64                    `json:"id"`
-	ProgramID    string                   `json:"program_id"`
+	ProgramID    int64                    `json:"program_id"`
 	Label        string                   `json:"label"`
 	Description  string                   `json:"description"`
 	ImageKey     *string                  `json:"image_key,omitempty"`
@@ -51,7 +51,7 @@ type CreateProgramRes struct {
 // updated, missing rows are inserted, and rows the client omits are left
 // alone (no implicit deletion — translation removal is an explicit call).
 type UpdateProgramReq struct {
-	ProgramID    string                   `json:"program_id"`
+	ProgramID    int64                    `json:"program_id"`
 	Label        *string                  `json:"label,omitempty"`
 	Description  *string                  `json:"description,omitempty"`
 	ImageKey     *string                  `json:"image_key,omitempty"`
@@ -65,13 +65,13 @@ type UpdateProgramRes struct {
 }
 
 type DeleteProgramReq struct {
-	ProgramID string `json:"program_id"`
+	ProgramID int64 `json:"program_id"`
 }
 
 type DeleteProgramRes struct{}
 
 type GetProgramReq struct {
-	ProgramID string            `json:"program_id"`
+	ProgramID int64             `json:"program_id"`
 	Language  enum.LanguageType `json:"language,omitempty"`
 }
 

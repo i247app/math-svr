@@ -27,7 +27,7 @@ type TranslationInput struct {
 // de-duplicated by language before insert so a payload with two
 // `language=vn` entries fails fast rather than producing two rows.
 type CreateGradeCommand struct {
-	ActorID      *string
+	ActorID      *int64
 	Label        string
 	Description  string
 	ImageKey     *string

@@ -23,13 +23,13 @@ import (
 // runs, and the DB UNIQUE on (classroom_id, program_id) remains the
 // hard backstop.
 type CreateClassroomCommand struct {
-	ActorID             *string
-	OwnerProfileID      string
+	ActorID             *int64
+	OwnerProfileID      int64
 	Name                string
 	Description         *string
-	SchoolID            *string
-	ProgramIDs          []string
-	GradeID             *string
+	SchoolID            *int64
+	ProgramIDs          []int64
+	GradeID             *int64
 	MaxMembers          *int64
 	CoverKey            *string
 	Note                *string
@@ -144,7 +144,7 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 		} else {
 			// Hydrate as the empty slice (not nil) so DomainToResponse
 			// emits []string{} rather than omitting the field.
-			saved.SetProgramIds([]string{})
+			saved.SetProgramIds([]int64{})
 		}
 
 		created = saved

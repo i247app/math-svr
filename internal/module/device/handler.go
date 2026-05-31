@@ -6,6 +6,7 @@ import (
 
 	dto "math-ai.com/math-ai/internal/application/dto/device"
 	"math-ai.com/math-ai/internal/shared/response"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type DeviceHandler struct {
@@ -18,9 +19,10 @@ func NewDeviceHandler(deviceSvc *Service) *DeviceHandler {
 
 // GET /devices/{id}
 func (h *DeviceHandler) HandleGetDeviceById(w http.ResponseWriter, r *http.Request) {
-	deviceID := r.PathValue("id")
+	id := r.PathValue("id")
+	deviceId := utils.StringToInt64(id, 0)
 
-	res, err := h.deviceSvc.GetDeviceById(r.Context(), &dto.GetDeviceByIdReq{DeviceID: deviceID})
+	res, err := h.deviceSvc.GetDeviceById(r.Context(), &dto.GetDeviceByIdReq{DeviceID: deviceId})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

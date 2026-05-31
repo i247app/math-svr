@@ -17,7 +17,7 @@ import (
 // user. Handlers extract the session UID and pass it through; an empty
 // sessionUserID skips the ownership check (intended for tests and
 // internal callers, never for HTTP).
-func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUserID string) (*profileDomain.Profile, error) {
+func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUserID int64) (*profileDomain.Profile, error) {
 	p, err := s.profileRepo.FindByProfileId(ctx, profileID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -26,7 +26,7 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			errors.New("profile not found"))
 	}
-	if sessionUserID != "" && sessionUserID != p.UserId() {
+	if sessionUserID != 0 && sessionUserID != p.UserId() {
 		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
 			errors.New("profile does not belong to the authenticated user"))
 	}
@@ -45,7 +45,7 @@ func (s *Service) requireTeacherRole(ctx context.Context, p *profileDomain.Profi
 
 // requireMember asserts profileID is an ACTIVE member of classroomID.
 // Returns the loaded member row so callers can branch on role.
-func (s *Service) requireMember(ctx context.Context, classroomID, profileID string) (*classroomDomain.Member, error) {
+func (s *Service) requireMember(ctx context.Context, classroomID, profileID int64) (*classroomDomain.Member, error) {
 	m, err := s.classroomMemberRepo.FindByClassroomAndProfile(ctx, classroomID, profileID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -63,7 +63,7 @@ func (s *Service) requireMember(ctx context.Context, classroomID, profileID stri
 
 // requireManager asserts the caller is OWNER or CO_TEACHER (active).
 // Used for invite / remove / classroom-update operations.
-func (s *Service) requireManager(ctx context.Context, classroomID, profileID string) (*classroomDomain.Member, error) {
+func (s *Service) requireManager(ctx context.Context, classroomID, profileID int64) (*classroomDomain.Member, error) {
 	m, err := s.requireMember(ctx, classroomID, profileID)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (s *Service) requireManager(ctx context.Context, classroomID, profileID str
 
 // requireOwner asserts the caller is the OWNER (active). Used for
 // transfer / delete / archive paths.
-func (s *Service) requireOwner(ctx context.Context, classroomID, profileID string) (*classroomDomain.Member, error) {
+func (s *Service) requireOwner(ctx context.Context, classroomID, profileID int64) (*classroomDomain.Member, error) {
 	m, err := s.requireMember(ctx, classroomID, profileID)
 	if err != nil {
 		return nil, err

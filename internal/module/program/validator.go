@@ -114,7 +114,7 @@ func ValidateCreateProgram(ctx context.Context, req *dto.CreateProgramReq) error
 }
 
 func ValidateUpdateProgram(ctx context.Context, req *dto.UpdateProgramReq) error {
-	if strings.TrimSpace(req.ProgramID) == "" {
+	if req.ProgramID == 0 {
 		return errs.NewError(ctx, status.PROGRAM_MISSING_ID, nil,
 			errors.New("program_id is required"))
 	}
@@ -146,7 +146,7 @@ func ValidateUpdateProgram(ctx context.Context, req *dto.UpdateProgramReq) error
 }
 
 func ValidateGetProgram(ctx context.Context, req *dto.GetProgramReq) error {
-	if strings.TrimSpace(req.ProgramID) == "" {
+	if req.ProgramID == 0 {
 		return errs.NewError(ctx, status.PROGRAM_MISSING_ID, nil,
 			errors.New("program_id is required"))
 	}
@@ -158,7 +158,7 @@ func ValidateListPrograms(ctx context.Context, req *dto.ListProgramsReq) error {
 }
 
 func ValidateDeleteProgram(ctx context.Context, req *dto.DeleteProgramReq) error {
-	if strings.TrimSpace(req.ProgramID) == "" {
+	if req.ProgramID == 0 {
 		return errs.NewError(ctx, status.PROGRAM_MISSING_ID, nil,
 			errors.New("program_id is required"))
 	}

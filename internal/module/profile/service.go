@@ -356,8 +356,8 @@ func (s *Service) ForceDeleteProfile(ctx context.Context, req *dto.DeleteProfile
 // UploadAvatar streams the request body to S3 then persists the resulting
 // key against the profile in a single transaction. Returns the key plus a
 // short-lived presigned URL for immediate display.
-func (s *Service) UploadAvatar(ctx context.Context, profileID string, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
-	if profileID == "" {
+func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
+	if profileID == 0 {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			errors.New("profile_id is required"))
 	}
@@ -483,11 +483,11 @@ func (s *Service) RemoveSchool(ctx context.Context, req *dto.RemoveSchoolReq) (*
 // collectRefIds extracts the distinct program/grade/semester/school UUIDs
 // across the given profiles. nil ids are skipped — the columns are
 // nullable in schema and the domain entity carries through that nil.
-func collectRefIds(profiles []*domain.Profile) (progIds, gradeIds, semIds, schoolIds []string) {
-	progSeen := make(map[string]struct{}, len(profiles))
-	gradeSeen := make(map[string]struct{}, len(profiles))
-	semSeen := make(map[string]struct{}, len(profiles))
-	schoolSeen := make(map[string]struct{}, len(profiles))
+func collectRefIds(profiles []*domain.Profile) (progIds, gradeIds, semIds, schoolIds []int64) {
+	progSeen := make(map[int64]struct{}, len(profiles))
+	gradeSeen := make(map[int64]struct{}, len(profiles))
+	semSeen := make(map[int64]struct{}, len(profiles))
+	schoolSeen := make(map[int64]struct{}, len(profiles))
 	for _, p := range profiles {
 		if id := p.ProgramId(); id != nil {
 			if _, ok := progSeen[*id]; !ok {

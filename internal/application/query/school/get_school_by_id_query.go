@@ -7,7 +7,7 @@ import (
 )
 
 type GetSchoolByIdQuery struct {
-	SchoolID string
+	SchoolID int64
 }
 
 type GetSchoolByIdQueryHandler struct {

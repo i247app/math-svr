@@ -10,7 +10,7 @@ import (
 )
 
 type SoftDeleteProfileCommand struct {
-	ProfileID string
+	ProfileID int64
 }
 
 type SoftDeleteProfileCommandHandler struct {

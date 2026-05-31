@@ -6,7 +6,7 @@ import (
 
 type SemesterModel struct {
 	Id             int64
-	SemesterId     string
+	SemesterId     int64
 	Name           string
 	Description    string
 	ImageKey       *string
@@ -14,8 +14,8 @@ type SemesterModel struct {
 	Note           *string
 	SemesterStatus *string
 	Status         string
-	CreateId       *string
+	CreateId       *int64
 	CreateDt       time.Time
-	ModifyId       *string
+	ModifyId       *int64
 	ModifyDt       time.Time
 }

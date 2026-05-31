@@ -14,7 +14,7 @@ import (
 )
 
 // SemesterTranslationRepository owns ma_semester_translations.
-// description is TEXT and nullable, coalesced to '' on read so the
+// description is TEXT and nullable, coalesced to ” on read so the
 // domain field is always a plain string.
 const (
 	semesterTranslationColumns = `st.id, st.semester_translation_id, st.semester_id, st.language,
@@ -49,7 +49,7 @@ func scanSemesterTranslation(s database.RowScanner) (*models.SemesterTranslation
 	return &m, nil
 }
 
-func (r *SemesterTranslationRepository) ListBySemesterId(ctx context.Context, semesterId string) ([]*semester.SemesterTranslation, error) {
+func (r *SemesterTranslationRepository) ListBySemesterId(ctx context.Context, semesterId int64) ([]*semester.SemesterTranslation, error) {
 	args := append(semesterTranslationActiveArgs(), semesterId)
 	query := `SELECT ` + semesterTranslationColumns + ` FROM ` + semesterTranslationsTable + ` st
 		WHERE ` + semesterTranslationActiveWhere + ` AND st.semester_id = ?
@@ -75,7 +75,7 @@ func (r *SemesterTranslationRepository) ListBySemesterId(ctx context.Context, se
 	return translations, nil
 }
 
-func (r *SemesterTranslationRepository) FindBySemesterIdAndLanguage(ctx context.Context, semesterId string, language string) (*semester.SemesterTranslation, error) {
+func (r *SemesterTranslationRepository) FindBySemesterIdAndLanguage(ctx context.Context, semesterId int64, language enum.LanguageType) (*semester.SemesterTranslation, error) {
 	args := append(semesterTranslationActiveArgs(), semesterId, language)
 	query := `SELECT ` + semesterTranslationColumns + ` FROM ` + semesterTranslationsTable + ` st
 		WHERE ` + semesterTranslationActiveWhere + ` AND st.semester_id = ? AND st.language = ?
@@ -106,7 +106,7 @@ func (r *SemesterTranslationRepository) Create(ctx context.Context, t *semester.
 		t.Name(), description, t.Note(), t.StStatus()); err != nil {
 		return nil, fmt.Errorf("semester translation repo create: %w", err)
 	}
-	return r.FindBySemesterIdAndLanguage(ctx, t.SemesterId(), t.Language())
+	return r.FindBySemesterIdAndLanguage(ctx, t.SemesterId(), enum.LanguageType(t.Language()))
 }
 
 func (r *SemesterTranslationRepository) Update(ctx context.Context, t *semester.SemesterTranslation) error {
@@ -133,7 +133,7 @@ func (r *SemesterTranslationRepository) Update(ctx context.Context, t *semester.
 	return nil
 }
 
-func (r *SemesterTranslationRepository) SoftDeleteBySemesterId(ctx context.Context, semesterId string) error {
+func (r *SemesterTranslationRepository) SoftDeleteBySemesterId(ctx context.Context, semesterId int64) error {
 	query := `
 		UPDATE ` + semesterTranslationsTable + `
 		SET st_status  = ?,
@@ -150,7 +150,7 @@ func (r *SemesterTranslationRepository) SoftDeleteBySemesterId(ctx context.Conte
 	return nil
 }
 
-func (r *SemesterTranslationRepository) SoftDeleteByTranslationId(ctx context.Context, semesterTranslationId string) error {
+func (r *SemesterTranslationRepository) SoftDeleteByTranslationId(ctx context.Context, semesterTranslationId int64) error {
 	query := `
 		UPDATE ` + semesterTranslationsTable + `
 		SET st_status  = ?,
@@ -167,7 +167,7 @@ func (r *SemesterTranslationRepository) SoftDeleteByTranslationId(ctx context.Co
 	return nil
 }
 
-func (r *SemesterTranslationRepository) ForceDeleteBySemesterId(ctx context.Context, semesterId string) error {
+func (r *SemesterTranslationRepository) ForceDeleteBySemesterId(ctx context.Context, semesterId int64) error {
 	query := `
 		DELETE FROM ` + semesterTranslationsTable + `
 		WHERE semester_id = ?
@@ -178,7 +178,7 @@ func (r *SemesterTranslationRepository) ForceDeleteBySemesterId(ctx context.Cont
 	return nil
 }
 
-func (r *SemesterTranslationRepository) ForceDeleteByTranslationId(ctx context.Context, semesterTranslationId string) error {
+func (r *SemesterTranslationRepository) ForceDeleteByTranslationId(ctx context.Context, semesterTranslationId int64) error {
 	query := `
 		DELETE FROM ` + semesterTranslationsTable + `
 		WHERE semester_translation_id = ?

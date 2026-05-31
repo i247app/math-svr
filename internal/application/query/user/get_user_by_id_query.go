@@ -7,7 +7,7 @@ import (
 )
 
 type GetUserByUserIdQuery struct {
-	UserId string
+	UserId int64
 }
 
 type GetUserByUserIdQueryHandler struct {

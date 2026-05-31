@@ -472,6 +472,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Invitation token is invalid"
 	case CLASSROOM_INVITATION_TOKEN_GENERATION_FAILED:
 		return "Failed to generate invitation token"
+	case CLASSROOM_INVITATION_PERMISSION_DENIED:
+		return "You do not have permission to manage this invitation"
 	default:
 		return ""
 	}

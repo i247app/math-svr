@@ -11,14 +11,14 @@ import (
 // time format across the project.
 type MemberResponse struct {
 	ID                 int64   `json:"id"`
-	MemberID           string  `json:"member_id"`
-	ClassroomID        string  `json:"classroom_id"`
-	ProfileID          string  `json:"profile_id"`
+	MemberID           int64   `json:"member_id"`
+	ClassroomID        int64   `json:"classroom_id"`
+	ProfileID          int64   `json:"profile_id"`
 	MemberRole         string  `json:"member_role"`
-	InvitationID       *string `json:"invitation_id,omitempty"`
+	InvitationID       *int64  `json:"invitation_id,omitempty"`
 	JoinedDt           string  `json:"joined_dt,omitempty"`
 	LeftDt             string  `json:"left_dt,omitempty"`
-	RemovedByProfileID *string `json:"removed_by_profile_id,omitempty"`
+	RemovedByProfileID *int64  `json:"removed_by_profile_id,omitempty"`
 	RemovedDt          string  `json:"removed_dt,omitempty"`
 	LastSeenDt         string  `json:"last_seen_dt,omitempty"`
 	Note               *string `json:"note,omitempty"`
@@ -30,7 +30,7 @@ type MemberResponse struct {
 // JoinByCodeReq lets any profile join a classroom by presenting a
 // non-expired invite_code. ProfileID is the caller's acting profile.
 type JoinByCodeReq struct {
-	ProfileID  string `json:"profile_id"`
+	ProfileID  int64  `json:"profile_id"`
 	InviteCode string `json:"invite_code"`
 }
 
@@ -41,8 +41,8 @@ type JoinByCodeRes struct {
 // LeaveClassroomReq lets the caller leave a classroom they're a member
 // of. OWNER is rejected — they must transfer ownership first.
 type LeaveClassroomReq struct {
-	ProfileID   string `json:"profile_id"`
-	ClassroomID string `json:"classroom_id"`
+	ProfileID   int64 `json:"profile_id"`
+	ClassroomID int64 `json:"classroom_id"`
 }
 
 type LeaveClassroomRes struct{}
@@ -50,9 +50,9 @@ type LeaveClassroomRes struct{}
 // RemoveMemberReq removes a target profile from a classroom. Caller
 // must be OWNER (any target) or CO_TEACHER (STUDENT targets only).
 type RemoveMemberReq struct {
-	ProfileID       string `json:"profile_id"`
-	ClassroomID     string `json:"classroom_id"`
-	TargetProfileID string `json:"target_profile_id"`
+	ProfileID       int64 `json:"profile_id"`
+	ClassroomID     int64 `json:"classroom_id"`
+	TargetProfileID int64 `json:"target_profile_id"`
 }
 
 type RemoveMemberRes struct{}
@@ -61,9 +61,9 @@ type RemoveMemberRes struct{}
 // CO_TEACHER back to STUDENT. OWNER cannot be set or unset this way —
 // use TransferOwnership instead.
 type UpdateMemberRoleReq struct {
-	ProfileID       string `json:"profile_id"`
-	ClassroomID     string `json:"classroom_id"`
-	TargetProfileID string `json:"target_profile_id"`
+	ProfileID       int64  `json:"profile_id"`
+	ClassroomID     int64  `json:"classroom_id"`
+	TargetProfileID int64  `json:"target_profile_id"`
 	NewRole         string `json:"new_role"`
 }
 
@@ -76,9 +76,9 @@ type UpdateMemberRoleRes struct {
 // profile and an active member. The outgoing owner becomes CO_TEACHER
 // so they keep manager rights but no longer block leave.
 type TransferOwnershipReq struct {
-	ProfileID         string `json:"profile_id"`
-	ClassroomID       string `json:"classroom_id"`
-	NewOwnerProfileID string `json:"new_owner_profile_id"`
+	ProfileID         int64 `json:"profile_id"`
+	ClassroomID       int64 `json:"classroom_id"`
+	NewOwnerProfileID int64 `json:"new_owner_profile_id"`
 }
 
 type TransferOwnershipRes struct{}
@@ -86,8 +86,8 @@ type TransferOwnershipRes struct{}
 // ListMembersReq enumerates members of a classroom the caller belongs
 // to. Optional Role / Status filters narrow the result.
 type ListMembersReq struct {
-	ProfileID   string  `json:"profile_id"`
-	ClassroomID string  `json:"classroom_id"`
+	ProfileID   int64   `json:"profile_id"`
+	ClassroomID int64   `json:"classroom_id"`
 	Role        *string `json:"role,omitempty"`
 	Status      *string `json:"status,omitempty"`
 	Page        int64   `json:"page"`

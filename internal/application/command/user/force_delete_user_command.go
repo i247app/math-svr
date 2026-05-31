@@ -11,7 +11,7 @@ import (
 )
 
 type ForceDeleteUserCommand struct {
-	UserID string
+	UserID int64
 }
 
 // ForceDeleteUserCommandResult carries side-effect cleanup data the service

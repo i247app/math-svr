@@ -6,7 +6,7 @@ import (
 
 type User struct {
 	id         int64
-	userId     string
+	userId     int64
 	userName   string
 	phone      string
 	email      *string
@@ -14,9 +14,9 @@ type User struct {
 	userStatus *string
 	status     string
 	note       *string
-	createId   *string
+	createId   *int64
 	createDt   mtime.MathTime
-	modifyId   *string
+	modifyId   *int64
 	modifyDt   mtime.MathTime
 }
 
@@ -32,11 +32,11 @@ func (u *User) SetId(id int64) {
 	u.id = id
 }
 
-func (u *User) UserId() string {
+func (u *User) UserId() int64 {
 	return u.userId
 }
 
-func (u *User) SetUserId(userId string) {
+func (u *User) SetUserId(userId int64) {
 	u.userId = userId
 }
 
@@ -96,11 +96,11 @@ func (u *User) SetNote(note *string) {
 	u.note = note
 }
 
-func (u *User) CreateId() *string {
+func (u *User) CreateId() *int64 {
 	return u.createId
 }
 
-func (u *User) SetCreateId(createId *string) {
+func (u *User) SetCreateId(createId *int64) {
 	u.createId = createId
 }
 
@@ -112,11 +112,11 @@ func (u *User) SetCreateDt(createDt mtime.MathTime) {
 	u.createDt = createDt
 }
 
-func (u *User) ModifyId() *string {
+func (u *User) ModifyId() *int64 {
 	return u.modifyId
 }
 
-func (u *User) SetModifyId(modifyId *string) {
+func (u *User) SetModifyId(modifyId *int64) {
 	u.modifyId = modifyId
 }
 

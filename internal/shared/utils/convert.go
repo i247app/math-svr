@@ -347,6 +347,18 @@ func ToStringPtr(s string) *string {
 	return &s
 }
 
+// StringToInt64Ptr converts string to pointer to int64
+func StringToInt64Ptr(s string) *int64 {
+	if s == "" {
+		return nil
+	}
+	val, err := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
+	if err != nil {
+		return nil
+	}
+	return &val
+}
+
 // ToBoolPtr returns a pointer to the bool value
 func ToBoolPtr(b bool) *bool {
 	return &b

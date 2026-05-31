@@ -17,9 +17,9 @@ import (
 // in sync with the member rows so O(1) "who owns this" lookups stay
 // accurate.
 type TransferOwnershipCommand struct {
-	ClassroomID       string
-	CurrentOwnerID    string
-	NewOwnerProfileID string
+	ClassroomID       int64
+	CurrentOwnerID    int64
+	NewOwnerProfileID int64
 }
 
 type TransferOwnershipCommandHandler struct {

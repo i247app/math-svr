@@ -12,15 +12,15 @@ import (
 )
 
 type CreateProfileCommand struct {
-	UserID     string
+	UserID     int64
 	Name       string
 	Role       string
 	IsDefault  bool
 	Dob        *mtime.MathTime
-	SchoolID   *string
-	ProgramID  *string
-	GradeID    *string
-	SemesterID *string
+	SchoolID   *int64
+	ProgramID  *int64
+	GradeID    *int64
+	SemesterID *int64
 	IDType     *string // TEACHER only
 	TeacherID  *string // TEACHER only
 	StudentID  *string // STUDENT only
@@ -40,7 +40,7 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 	var created *profile.Profile
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
-		profileID, err := nextSeqID(ctx, repos, seq.NameProfile)
+		profileID, err := nextSeqID(ctx, repos, seq.NameUser)
 		if err != nil {
 			return err
 		}

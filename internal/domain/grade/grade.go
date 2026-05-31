@@ -6,7 +6,7 @@ import (
 
 type Grade struct {
 	id           int64
-	gradeId      string
+	gradeId      int64
 	label        string
 	description  string
 	imageKey     *string
@@ -14,9 +14,9 @@ type Grade struct {
 	note         *string
 	gradeStatus  *string
 	status       string
-	createId     *string
+	createId     *int64
 	createDt     mtime.MathTime
-	modifyId     *string
+	modifyId     *int64
 	modifyDt     mtime.MathTime
 
 	// translations is hydrated only by detail reads; list reads keep it
@@ -42,11 +42,11 @@ func (g *Grade) SetId(id int64) {
 	g.id = id
 }
 
-func (g *Grade) GradeId() string {
+func (g *Grade) GradeId() int64 {
 	return g.gradeId
 }
 
-func (g *Grade) SetGradeId(gradeId string) {
+func (g *Grade) SetGradeId(gradeId int64) {
 	g.gradeId = gradeId
 }
 
@@ -106,11 +106,11 @@ func (g *Grade) SetStatus(status string) {
 	g.status = status
 }
 
-func (g *Grade) CreateId() *string {
+func (g *Grade) CreateId() *int64 {
 	return g.createId
 }
 
-func (g *Grade) SetCreateId(createId *string) {
+func (g *Grade) SetCreateId(createId *int64) {
 	g.createId = createId
 }
 
@@ -122,11 +122,11 @@ func (g *Grade) SetCreateDt(createDt mtime.MathTime) {
 	g.createDt = createDt
 }
 
-func (g *Grade) ModifyId() *string {
+func (g *Grade) ModifyId() *int64 {
 	return g.modifyId
 }
 
-func (g *Grade) SetModifyId(modifyId *string) {
+func (g *Grade) SetModifyId(modifyId *int64) {
 	g.modifyId = modifyId
 }
 

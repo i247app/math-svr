@@ -85,11 +85,11 @@ func (r *ClassroomMemberRepository) findBareById(ctx context.Context, id int64) 
 	return ModelToDomainClassroomMember(m), nil
 }
 
-func (r *ClassroomMemberRepository) FindByMemberId(ctx context.Context, memberId string) (*classroom.Member, error) {
+func (r *ClassroomMemberRepository) FindByMemberId(ctx context.Context, memberId int64) (*classroom.Member, error) {
 	return r.findOneBy(ctx, "m.member_id = ?", memberId)
 }
 
-func (r *ClassroomMemberRepository) FindByClassroomAndProfile(ctx context.Context, classroomId, profileId string) (*classroom.Member, error) {
+func (r *ClassroomMemberRepository) FindByClassroomAndProfile(ctx context.Context, classroomId, profileId int64) (*classroom.Member, error) {
 	return r.findOneBy(ctx, "m.classroom_id = ? AND m.profile_id = ?", classroomId, profileId)
 }
 
@@ -153,17 +153,17 @@ func buildClassroomMemberFilter(params *classroom.ListMembersParams) (string, []
 		clause string
 		args   []any
 	)
-	if params.ClassroomId != nil && strings.TrimSpace(*params.ClassroomId) != "" {
+	if params.ClassroomId != nil && *params.ClassroomId != 0 {
 		clause += ` AND m.classroom_id = ?`
-		args = append(args, strings.TrimSpace(*params.ClassroomId))
+		args = append(args, *params.ClassroomId)
 	}
-	if params.ProfileId != nil && strings.TrimSpace(*params.ProfileId) != "" {
+	if params.ProfileId != nil && *params.ProfileId != 0 {
 		clause += ` AND m.profile_id = ?`
-		args = append(args, strings.TrimSpace(*params.ProfileId))
+		args = append(args, *params.ProfileId)
 	}
-	if params.Role != nil && strings.TrimSpace(*params.Role) != "" {
+	if params.Role != nil && *params.Role != "" {
 		clause += ` AND m.member_role = ?`
-		args = append(args, strings.TrimSpace(*params.Role))
+		args = append(args, *params.Role)
 	}
 	if params.Status != nil && strings.TrimSpace(*params.Status) != "" {
 		clause += ` AND m.member_status = ?`
@@ -172,7 +172,7 @@ func buildClassroomMemberFilter(params *classroom.ListMembersParams) (string, []
 	return clause, args
 }
 
-func (r *ClassroomMemberRepository) CountActiveByClassroomId(ctx context.Context, classroomId string) (int64, error) {
+func (r *ClassroomMemberRepository) CountActiveByClassroomId(ctx context.Context, classroomId int64) (int64, error) {
 	query := `SELECT COUNT(*) FROM ` + classroomMemberTable + ` m WHERE ` +
 		classroomMemberActiveWhere + ` AND m.classroom_id = ? AND m.member_status = ?`
 	args := append(classroomMemberActiveArgs(),
@@ -267,7 +267,7 @@ func (r *ClassroomMemberRepository) Update(ctx context.Context, m *classroom.Mem
 	return nil
 }
 
-func (r *ClassroomMemberRepository) SetRole(ctx context.Context, memberId, role string) error {
+func (r *ClassroomMemberRepository) SetRole(ctx context.Context, memberId int64, role string) error {
 	query := `
 		UPDATE ` + classroomMemberTable + `
 		SET member_role = ?,
@@ -280,7 +280,7 @@ func (r *ClassroomMemberRepository) SetRole(ctx context.Context, memberId, role 
 	return nil
 }
 
-func (r *ClassroomMemberRepository) MarkLeft(ctx context.Context, memberId string) error {
+func (r *ClassroomMemberRepository) MarkLeft(ctx context.Context, memberId int64) error {
 	query := `
 		UPDATE ` + classroomMemberTable + `
 		SET member_status = ?,
@@ -295,7 +295,7 @@ func (r *ClassroomMemberRepository) MarkLeft(ctx context.Context, memberId strin
 	return nil
 }
 
-func (r *ClassroomMemberRepository) MarkRemoved(ctx context.Context, memberId, removedByProfileId string) error {
+func (r *ClassroomMemberRepository) MarkRemoved(ctx context.Context, memberId, removedByProfileId int64) error {
 	query := `
 		UPDATE ` + classroomMemberTable + `
 		SET member_status         = ?,
@@ -316,7 +316,7 @@ func (r *ClassroomMemberRepository) MarkRemoved(ctx context.Context, memberId, r
 // ACTIVE membership. invitationId is set/cleared verbatim so the caller
 // can either link the rejoin to an invitation row (accept-invitation
 // path) or null it out (join-by-code path).
-func (r *ClassroomMemberRepository) Reactivate(ctx context.Context, memberId, role string, invitationId *string) error {
+func (r *ClassroomMemberRepository) Reactivate(ctx context.Context, memberId int64, role string, invitationId *int64) error {
 	query := `
 		UPDATE ` + classroomMemberTable + `
 		SET member_role           = ?,
@@ -337,7 +337,7 @@ func (r *ClassroomMemberRepository) Reactivate(ctx context.Context, memberId, ro
 	return nil
 }
 
-func (r *ClassroomMemberRepository) SoftDeleteByClassroomId(ctx context.Context, classroomId string) error {
+func (r *ClassroomMemberRepository) SoftDeleteByClassroomId(ctx context.Context, classroomId int64) error {
 	query := `
 		UPDATE ` + classroomMemberTable + `
 		SET member_status = ?,
@@ -354,7 +354,7 @@ func (r *ClassroomMemberRepository) SoftDeleteByClassroomId(ctx context.Context,
 	return nil
 }
 
-func (r *ClassroomMemberRepository) ForceDeleteByClassroomId(ctx context.Context, classroomId string) error {
+func (r *ClassroomMemberRepository) ForceDeleteByClassroomId(ctx context.Context, classroomId int64) error {
 	query := `DELETE FROM ` + classroomMemberTable + ` WHERE classroom_id = ?`
 	if _, err := r.db.Exec(ctx, query, classroomId); err != nil {
 		return fmt.Errorf("classroom_member repo force delete by classroom: %w", err)

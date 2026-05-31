@@ -4,12 +4,12 @@ import "time"
 
 type ClassroomModel struct {
 	Id                  int64
-	ClassroomId         string
-	OwnerProfileId      string
+	ClassroomId         int64
+	OwnerProfileId      int64
 	Name                string
 	Description         *string
-	SchoolId            *string
-	GradeId             *string
+	SchoolId            *int64
+	GradeId             *int64
 	InviteCode          *string
 	InviteCodeExpiresDt *time.Time
 	MaxMembers          *int64
@@ -20,8 +20,8 @@ type ClassroomModel struct {
 	Note                *string
 	ClassroomStatus     *string
 	Status              string
-	CreateId            *string
+	CreateId            *int64
 	CreateDt            time.Time
-	ModifyId            *string
+	ModifyId            *int64
 	ModifyDt            time.Time
 }

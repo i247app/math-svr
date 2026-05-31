@@ -89,7 +89,7 @@ func (r *ClassroomRepository) findBareById(ctx context.Context, id int64) (*clas
 	return ModelToDomainClassroom(m), nil
 }
 
-func (r *ClassroomRepository) FindByClassroomId(ctx context.Context, classroomId string) (*classroom.Classroom, error) {
+func (r *ClassroomRepository) FindByClassroomId(ctx context.Context, classroomId int64) (*classroom.Classroom, error) {
 	return r.findOneBy(ctx, "c.classroom_id = ?", classroomId)
 }
 
@@ -155,19 +155,18 @@ func (r *ClassroomRepository) ListClassrooms(ctx context.Context, params *classr
 // pointer and the ProgramIds slice, with blanks dropped and duplicates
 // removed. Used by the list-filter builder so callers can supply either
 // or both without the SQL needing to know which path they took.
-func mergeProgramIDFilters(single *string, slice []string) []string {
-	seen := make(map[string]struct{}, len(slice)+1)
-	out := make([]string, 0, len(slice)+1)
-	add := func(id string) {
-		trimmed := strings.TrimSpace(id)
-		if trimmed == "" {
+func mergeProgramIDFilters(single *int64, slice []int64) []int64 {
+	seen := make(map[int64]struct{}, len(slice)+1)
+	out := make([]int64, 0, len(slice)+1)
+	add := func(id int64) {
+		if id == 0 {
 			return
 		}
-		if _, ok := seen[trimmed]; ok {
+		if _, ok := seen[id]; ok {
 			return
 		}
-		seen[trimmed] = struct{}{}
-		out = append(out, trimmed)
+		seen[id] = struct{}{}
+		out = append(out, id)
 	}
 	if single != nil {
 		add(*single)
@@ -191,24 +190,24 @@ func buildClassroomListFilter(params *classroom.ListClassroomsParams) (string, [
 		args   []any
 		join   string
 	)
-	if params.ProfileId != nil && strings.TrimSpace(*params.ProfileId) != "" {
+	if params.ProfileId != nil && *params.ProfileId != 0 {
 		join += ` JOIN ma_classroom_members mem ON mem.classroom_id = c.classroom_id`
 		clause += ` AND mem.profile_id = ? AND mem.status = ?
 			AND mem.deleted_dt IS NULL
 			AND (mem.member_status IS NULL OR mem.member_status = ?)`
 		args = append(args,
-			strings.TrimSpace(*params.ProfileId),
+			*params.ProfileId,
 			enum.StatusActive,
 			enum.ClassroomMemberStatusTypeActive,
 		)
 	}
-	if params.OwnerProfileId != nil && strings.TrimSpace(*params.OwnerProfileId) != "" {
+	if params.OwnerProfileId != nil && *params.OwnerProfileId != 0 {
 		clause += ` AND c.owner_profile_id = ?`
-		args = append(args, strings.TrimSpace(*params.OwnerProfileId))
+		args = append(args, *params.OwnerProfileId)
 	}
-	if params.SchoolId != nil && strings.TrimSpace(*params.SchoolId) != "" {
+	if params.SchoolId != nil && *params.SchoolId != 0 {
 		clause += ` AND c.school_id = ?`
-		args = append(args, strings.TrimSpace(*params.SchoolId))
+		args = append(args, *params.SchoolId)
 	}
 	// Program filter — union of the singular ProgramId and the
 	// ProgramIds slice. Matches via EXISTS against the junction table
@@ -231,9 +230,9 @@ func buildClassroomListFilter(params *classroom.ListClassroomsParams) (string, [
 			args = append(args, id)
 		}
 	}
-	if params.GradeId != nil && strings.TrimSpace(*params.GradeId) != "" {
+	if params.GradeId != nil && *params.GradeId != 0 {
 		clause += ` AND c.grade_id = ?`
-		args = append(args, strings.TrimSpace(*params.GradeId))
+		args = append(args, *params.GradeId)
 	}
 	if params.Search != nil {
 		needle := strings.TrimSpace(*params.Search)
@@ -249,7 +248,7 @@ func buildClassroomListFilter(params *classroom.ListClassroomsParams) (string, [
 	return clause, args, join
 }
 
-func (r *ClassroomRepository) ListClassroomsByIds(ctx context.Context, ids []string) ([]*classroom.Classroom, error) {
+func (r *ClassroomRepository) ListClassroomsByIds(ctx context.Context, ids []int64) ([]*classroom.Classroom, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -351,7 +350,7 @@ func (r *ClassroomRepository) Update(ctx context.Context, c *classroom.Classroom
 // IncCounts applies signed deltas to the three counters in a single
 // UPDATE. GREATEST(0, …) clamps each at zero so drift can never produce
 // a negative counter on disk.
-func (r *ClassroomRepository) IncCounts(ctx context.Context, classroomId string, memberDelta, studentDelta, teacherDelta int64) error {
+func (r *ClassroomRepository) IncCounts(ctx context.Context, classroomId int64, memberDelta, studentDelta, teacherDelta int64) error {
 	query := `
 		UPDATE ` + classroomTable + `
 		SET member_count  = GREATEST(0, CAST(member_count  AS SIGNED) + ?),
@@ -368,7 +367,7 @@ func (r *ClassroomRepository) IncCounts(ctx context.Context, classroomId string,
 	return nil
 }
 
-func (r *ClassroomRepository) UpdateInviteCode(ctx context.Context, classroomId string, code *string, expiresDt mtime.MathTime) error {
+func (r *ClassroomRepository) UpdateInviteCode(ctx context.Context, classroomId int64, code *string, expiresDt mtime.MathTime) error {
 	var expiresArg any
 	if expiresDt.IsValid() {
 		expiresArg = expiresDt.Time
@@ -386,7 +385,7 @@ func (r *ClassroomRepository) UpdateInviteCode(ctx context.Context, classroomId 
 	return nil
 }
 
-func (r *ClassroomRepository) SetOwnerProfileId(ctx context.Context, classroomId, newOwnerProfileId string) error {
+func (r *ClassroomRepository) SetOwnerProfileId(ctx context.Context, classroomId, newOwnerProfileId int64) error {
 	query := `
 		UPDATE ` + classroomTable + `
 		SET owner_profile_id = ?,
@@ -399,7 +398,7 @@ func (r *ClassroomRepository) SetOwnerProfileId(ctx context.Context, classroomId
 	return nil
 }
 
-func (r *ClassroomRepository) ArchiveByClassroomId(ctx context.Context, classroomId string) error {
+func (r *ClassroomRepository) ArchiveByClassroomId(ctx context.Context, classroomId int64) error {
 	query := `
 		UPDATE ` + classroomTable + `
 		SET classroom_status = ?,
@@ -413,7 +412,7 @@ func (r *ClassroomRepository) ArchiveByClassroomId(ctx context.Context, classroo
 	return nil
 }
 
-func (r *ClassroomRepository) RestoreByClassroomId(ctx context.Context, classroomId string) error {
+func (r *ClassroomRepository) RestoreByClassroomId(ctx context.Context, classroomId int64) error {
 	query := `
 		UPDATE ` + classroomTable + `
 		SET classroom_status = ?,
@@ -427,7 +426,7 @@ func (r *ClassroomRepository) RestoreByClassroomId(ctx context.Context, classroo
 	return nil
 }
 
-func (r *ClassroomRepository) SoftDeleteByClassroomId(ctx context.Context, classroomId string) error {
+func (r *ClassroomRepository) SoftDeleteByClassroomId(ctx context.Context, classroomId int64) error {
 	query := `
 		UPDATE ` + classroomTable + `
 		SET classroom_status = ?,
@@ -444,7 +443,7 @@ func (r *ClassroomRepository) SoftDeleteByClassroomId(ctx context.Context, class
 	return nil
 }
 
-func (r *ClassroomRepository) ForceDeleteByClassroomId(ctx context.Context, classroomId string) error {
+func (r *ClassroomRepository) ForceDeleteByClassroomId(ctx context.Context, classroomId int64) error {
 	query := `DELETE FROM ` + classroomTable + ` WHERE classroom_id = ?`
 	if _, err := r.db.Exec(ctx, query, classroomId); err != nil {
 		return fmt.Errorf("classroom repo force delete: %w", err)

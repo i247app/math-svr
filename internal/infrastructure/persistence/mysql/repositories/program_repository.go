@@ -111,7 +111,7 @@ func (r *ProgramRepository) findBareById(ctx context.Context, id int64) (*progra
 	return ModelToDomainProgram(m), nil
 }
 
-func (r *ProgramRepository) FindByProgramId(ctx context.Context, programId string, language enum.LanguageType) (*program.Program, error) {
+func (r *ProgramRepository) FindByProgramId(ctx context.Context, programId int64, language enum.LanguageType) (*program.Program, error) {
 	return r.findOneBy(ctx, language, "p.program_id = ?", programId)
 }
 
@@ -168,7 +168,7 @@ func (r *ProgramRepository) ListPrograms(ctx context.Context, params *program.Li
 // Caller (typically a service composing a parent aggregate response) is
 // responsible for keying the result by ProgramId() — order is not preserved
 // because the IN-clause makes no ordering guarantee.
-func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []string, lang enum.LanguageType) ([]*program.Program, error) {
+func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []int64, lang enum.LanguageType) ([]*program.Program, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -259,7 +259,7 @@ func (r *ProgramRepository) Update(ctx context.Context, p *program.Program) erro
 	return nil
 }
 
-func (r *ProgramRepository) SoftDeleteByProgramId(ctx context.Context, programId string) error {
+func (r *ProgramRepository) SoftDeleteByProgramId(ctx context.Context, programId int64) error {
 	query := `
 		UPDATE ` + programTable + `
 		SET program_status = ?,
@@ -276,7 +276,7 @@ func (r *ProgramRepository) SoftDeleteByProgramId(ctx context.Context, programId
 	return nil
 }
 
-func (r *ProgramRepository) ForceDeleteByProgramId(ctx context.Context, programId string) error {
+func (r *ProgramRepository) ForceDeleteByProgramId(ctx context.Context, programId int64) error {
 	query := `
 		DELETE FROM ` + programTable + `
 		WHERE program_id = ?

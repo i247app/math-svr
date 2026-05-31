@@ -7,6 +7,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/school"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/shared/response"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type SchoolHandler struct {
@@ -87,7 +88,7 @@ func (h *SchoolHandler) HandleForceDeleteSchool(w http.ResponseWriter, r *http.R
 
 // GET /schools/{id}
 func (h *SchoolHandler) HandleGetSchool(w http.ResponseWriter, r *http.Request) {
-	req := dto.GetSchoolReq{SchoolID: r.PathValue("id")}
+	req := dto.GetSchoolReq{SchoolID: utils.StringToInt64(r.PathValue("id"), 0)}
 
 	res, err := h.schoolSvc.GetSchool(r.Context(), &req)
 	if err != nil {

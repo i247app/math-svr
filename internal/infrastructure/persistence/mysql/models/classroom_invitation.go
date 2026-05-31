@@ -4,10 +4,10 @@ import "time"
 
 type ClassroomInvitationModel struct {
 	Id                    int64
-	InvitationId          string
-	ClassroomId           string
-	InviterProfileId      string
-	InvitedProfileId      *string
+	InvitationId          int64
+	ClassroomId           int64
+	InviterProfileId      int64
+	InvitedProfileId      *int64
 	InviteeIdentifier     *string
 	InviteeIdentifierType *string
 	ProposedRole          string
@@ -16,13 +16,13 @@ type ClassroomInvitationModel struct {
 	SentDt                time.Time
 	ExpiresDt             *time.Time
 	RespondedDt           *time.Time
-	ResponseProfileId     *string
-	CancelledByProfileId  *string
+	ResponseProfileId     *int64
+	CancelledByProfileId  *int64
 	Note                  *string
 	InvitationStatus      *string
 	Status                string
-	CreateId              *string
+	CreateId              *int64
 	CreateDt              time.Time
-	ModifyId              *string
+	ModifyId              *int64
 	ModifyDt              time.Time
 }

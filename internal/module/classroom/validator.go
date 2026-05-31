@@ -24,7 +24,7 @@ const (
 )
 
 func ValidateCreateClassroom(ctx context.Context, req *dto.CreateClassroomReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
@@ -78,11 +78,11 @@ func ValidateCreateClassroom(ctx context.Context, req *dto.CreateClassroomReq) e
 }
 
 func ValidateUpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
-	if strings.TrimSpace(req.ClassroomID) == "" {
+	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))
 	}
@@ -127,11 +127,11 @@ func ValidateUpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq) e
 }
 
 func ValidateGetClassroom(ctx context.Context, req *dto.GetClassroomReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
-	if strings.TrimSpace(req.ClassroomID) == "" {
+	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))
 	}
@@ -139,18 +139,18 @@ func ValidateGetClassroom(ctx context.Context, req *dto.GetClassroomReq) error {
 }
 
 func ValidateListClassrooms(ctx context.Context, req *dto.ListClassroomsReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
 	// Collapse blank optional filters to nil so the repo skips the predicate.
-	if req.OwnerProfileID != nil && strings.TrimSpace(*req.OwnerProfileID) == "" {
+	if req.OwnerProfileID != nil && *req.OwnerProfileID == 0 {
 		req.OwnerProfileID = nil
 	}
-	if req.SchoolID != nil && strings.TrimSpace(*req.SchoolID) == "" {
+	if req.SchoolID != nil && *req.SchoolID == 0 {
 		req.SchoolID = nil
 	}
-	if req.ProgramID != nil && strings.TrimSpace(*req.ProgramID) == "" {
+	if req.ProgramID != nil && *req.ProgramID == 0 {
 		req.ProgramID = nil
 	}
 	if len(req.ProgramIDs) > 0 {
@@ -158,22 +158,18 @@ func ValidateListClassrooms(ctx context.Context, req *dto.ListClassroomsReq) err
 		// — duplicates in the filter are harmless. Just normalize the
 		// slice so the repo only has to deal with non-blank, deduped
 		// ids.
-		seen := make(map[string]struct{}, len(req.ProgramIDs))
-		out := make([]string, 0, len(req.ProgramIDs))
+		seen := make(map[int64]struct{}, len(req.ProgramIDs))
+		out := make([]int64, 0, len(req.ProgramIDs))
 		for _, id := range req.ProgramIDs {
-			trimmed := strings.TrimSpace(id)
-			if trimmed == "" {
+			if _, ok := seen[id]; ok {
 				continue
 			}
-			if _, ok := seen[trimmed]; ok {
-				continue
-			}
-			seen[trimmed] = struct{}{}
-			out = append(out, trimmed)
+			seen[id] = struct{}{}
+			out = append(out, id)
 		}
 		req.ProgramIDs = out
 	}
-	if req.GradeID != nil && strings.TrimSpace(*req.GradeID) == "" {
+	if req.GradeID != nil && *req.GradeID == 0 {
 		req.GradeID = nil
 	}
 	if req.Search != nil {
@@ -189,11 +185,11 @@ func ValidateListClassrooms(ctx context.Context, req *dto.ListClassroomsReq) err
 }
 
 func ValidateArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroomReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
-	if strings.TrimSpace(req.ClassroomID) == "" {
+	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))
 	}
@@ -201,11 +197,11 @@ func ValidateArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroomReq)
 }
 
 func ValidateRestoreClassroom(ctx context.Context, req *dto.RestoreClassroomReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
-	if strings.TrimSpace(req.ClassroomID) == "" {
+	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))
 	}
@@ -213,11 +209,11 @@ func ValidateRestoreClassroom(ctx context.Context, req *dto.RestoreClassroomReq)
 }
 
 func ValidateDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
-	if strings.TrimSpace(req.ClassroomID) == "" {
+	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))
 	}
@@ -234,29 +230,25 @@ const inviteCodeMaxLen = 16
 // service-level validatePrograms loop never wastes a roundtrip on a
 // duplicate id, and the command's INSERT path never has to handle a
 // UNIQUE-violation error from the DB on the happy path.
-func normalizeProgramIDList(ctx context.Context, in []string) ([]string, error) {
+func normalizeProgramIDList(ctx context.Context, in []int64) ([]int64, error) {
 	if len(in) == 0 {
-		return []string{}, nil
+		return []int64{}, nil
 	}
-	seen := make(map[string]struct{}, len(in))
-	out := make([]string, 0, len(in))
+	seen := make(map[int64]struct{}, len(in))
+	out := make([]int64, 0, len(in))
 	for _, raw := range in {
-		id := strings.TrimSpace(raw)
-		if id == "" {
-			continue
-		}
-		if _, dup := seen[id]; dup {
+		if _, dup := seen[raw]; dup {
 			return nil, errs.NewError(ctx, status.CLASSROOM_PROGRAM_DUPLICATE, nil,
 				errors.New("duplicate program_id in list"))
 		}
-		seen[id] = struct{}{}
-		out = append(out, id)
+		seen[raw] = struct{}{}
+		out = append(out, raw)
 	}
 	return out, nil
 }
 
 func ValidateJoinByCode(ctx context.Context, req *dto.JoinByCodeReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
@@ -274,11 +266,11 @@ func ValidateJoinByCode(ctx context.Context, req *dto.JoinByCodeReq) error {
 }
 
 func ValidateLeaveClassroom(ctx context.Context, req *dto.LeaveClassroomReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
-	if strings.TrimSpace(req.ClassroomID) == "" {
+	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))
 	}
@@ -286,19 +278,19 @@ func ValidateLeaveClassroom(ctx context.Context, req *dto.LeaveClassroomReq) err
 }
 
 func ValidateRemoveMember(ctx context.Context, req *dto.RemoveMemberReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
-	if strings.TrimSpace(req.ClassroomID) == "" {
+	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))
 	}
-	if strings.TrimSpace(req.TargetProfileID) == "" {
+	if req.TargetProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
 			errors.New("target_profile_id is required"))
 	}
-	if strings.TrimSpace(req.TargetProfileID) == strings.TrimSpace(req.ProfileID) {
+	if req.TargetProfileID == req.ProfileID {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
 			errors.New("cannot remove yourself; use leave instead"))
 	}
@@ -306,15 +298,15 @@ func ValidateRemoveMember(ctx context.Context, req *dto.RemoveMemberReq) error {
 }
 
 func ValidateUpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRoleReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
-	if strings.TrimSpace(req.ClassroomID) == "" {
+	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))
 	}
-	if strings.TrimSpace(req.TargetProfileID) == "" {
+	if req.TargetProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
 			errors.New("target_profile_id is required"))
 	}
@@ -335,19 +327,19 @@ func ValidateUpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRoleReq)
 }
 
 func ValidateTransferOwnership(ctx context.Context, req *dto.TransferOwnershipReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
-	if strings.TrimSpace(req.ClassroomID) == "" {
+	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))
 	}
-	if strings.TrimSpace(req.NewOwnerProfileID) == "" {
+	if req.NewOwnerProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
 			errors.New("new_owner_profile_id is required"))
 	}
-	if strings.TrimSpace(req.NewOwnerProfileID) == strings.TrimSpace(req.ProfileID) {
+	if req.NewOwnerProfileID == req.ProfileID {
 		return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil,
 			errors.New("cannot transfer ownership to yourself"))
 	}
@@ -355,11 +347,11 @@ func ValidateTransferOwnership(ctx context.Context, req *dto.TransferOwnershipRe
 }
 
 func ValidateListMembers(ctx context.Context, req *dto.ListMembersReq) error {
-	if strings.TrimSpace(req.ProfileID) == "" {
+	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
-	if strings.TrimSpace(req.ClassroomID) == "" {
+	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))
 	}

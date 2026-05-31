@@ -6,7 +6,7 @@ import (
 
 type Program struct {
 	id            int64
-	programId     string
+	programId     int64
 	label         string
 	description   string
 	imageKey      *string
@@ -14,9 +14,9 @@ type Program struct {
 	note          *string
 	programStatus *string
 	status        string
-	createId      *string
+	createId      *int64
 	createDt      mtime.MathTime
-	modifyId      *string
+	modifyId      *int64
 	modifyDt      mtime.MathTime
 
 	// translations is hydrated only by detail reads; list reads keep it
@@ -42,11 +42,11 @@ func (p *Program) SetId(id int64) {
 	p.id = id
 }
 
-func (p *Program) ProgramId() string {
+func (p *Program) ProgramId() int64 {
 	return p.programId
 }
 
-func (p *Program) SetProgramId(programId string) {
+func (p *Program) SetProgramId(programId int64) {
 	p.programId = programId
 }
 
@@ -106,11 +106,11 @@ func (p *Program) SetStatus(status string) {
 	p.status = status
 }
 
-func (p *Program) CreateId() *string {
+func (p *Program) CreateId() *int64 {
 	return p.createId
 }
 
-func (p *Program) SetCreateId(createId *string) {
+func (p *Program) SetCreateId(createId *int64) {
 	p.createId = createId
 }
 
@@ -122,11 +122,11 @@ func (p *Program) SetCreateDt(createDt mtime.MathTime) {
 	p.createDt = createDt
 }
 
-func (p *Program) ModifyId() *string {
+func (p *Program) ModifyId() *int64 {
 	return p.modifyId
 }
 
-func (p *Program) SetModifyId(modifyId *string) {
+func (p *Program) SetModifyId(modifyId *int64) {
 	p.modifyId = modifyId
 }
 

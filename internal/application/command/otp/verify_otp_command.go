@@ -22,8 +22,8 @@ type VerifyOtpCommand struct {
 }
 
 type VerifyOtpCommandResult struct {
-	OtpID      string
-	UserID     *string
+	OtpID      int64
+	UserID     *int64
 	DeviceUUID *string
 }
 

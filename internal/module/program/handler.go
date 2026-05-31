@@ -7,6 +7,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/program"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/response"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type ProgramHandler struct {
@@ -101,7 +102,7 @@ func (h *ProgramHandler) HandleForceDeleteProgram(w http.ResponseWriter, r *http
 // GET /programs/{id}
 func (h *ProgramHandler) HandleGetProgram(w http.ResponseWriter, r *http.Request) {
 	req := dto.GetProgramReq{
-		ProgramID: r.PathValue("id"),
+		ProgramID: utils.StringToInt64(r.PathValue("id"), 0),
 		Language:  metadata.GetClientLanguage(r.Context()).ToEnumLanguage(),
 	}
 

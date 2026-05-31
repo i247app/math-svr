@@ -11,8 +11,8 @@ import (
 // and "my classrooms via membership" (ProfileID set) reads. The module
 // service guarantees at least one is non-nil before calling.
 type ListMembersQuery struct {
-	ClassroomID *string
-	ProfileID   *string
+	ClassroomID *int64
+	ProfileID   *int64
 	Role        *string
 	Status      *string
 	Page        int64

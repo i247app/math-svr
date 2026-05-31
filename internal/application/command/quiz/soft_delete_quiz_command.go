@@ -9,7 +9,7 @@ import (
 )
 
 type SoftDeleteQuizCommand struct {
-	QuizID string
+	QuizID int64
 }
 
 type SoftDeleteQuizCommandHandler struct {

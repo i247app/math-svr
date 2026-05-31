@@ -10,16 +10,16 @@ import (
 // NULL/null without needing a pointer.
 type Profile struct {
 	id            int64
-	profileId     string
-	userId        string
+	profileId     int64
+	userId        int64
 	name          string
 	role          string
 	avatarKey     *string
 	dob           mtime.MathTime
-	schoolId      *string
-	programId     *string
-	gradeId       *string
-	semesterId    *string
+	schoolId      *int64
+	programId     *int64
+	gradeId       *int64
+	semesterId    *int64
 	isDefault     bool
 	idType        *string
 	teacherId     *string
@@ -27,9 +27,9 @@ type Profile struct {
 	note          *string
 	profileStatus *string
 	status        string
-	createId      *string
+	createId      *int64
 	createDt      mtime.MathTime
-	modifyId      *string
+	modifyId      *int64
 	modifyDt      mtime.MathTime
 }
 
@@ -45,19 +45,19 @@ func (p *Profile) SetId(id int64) {
 	p.id = id
 }
 
-func (p *Profile) ProfileId() string {
+func (p *Profile) ProfileId() int64 {
 	return p.profileId
 }
 
-func (p *Profile) SetProfileId(profileId string) {
+func (p *Profile) SetProfileId(profileId int64) {
 	p.profileId = profileId
 }
 
-func (p *Profile) UserId() string {
+func (p *Profile) UserId() int64 {
 	return p.userId
 }
 
-func (p *Profile) SetUserId(userId string) {
+func (p *Profile) SetUserId(userId int64) {
 	p.userId = userId
 }
 
@@ -93,13 +93,13 @@ func (p *Profile) SetDob(dob mtime.MathTime) {
 	p.dob = dob
 }
 
-func (p *Profile) SchoolId() *string {
+func (p *Profile) SchoolId() *int64 {
 	return p.schoolId
 }
 
 // SetSchoolId mirrors the other reference-id setters — nil passes through
 // so the model layer can flatten a NULL column to "no school assigned".
-func (p *Profile) SetSchoolId(schoolId *string) {
+func (p *Profile) SetSchoolId(schoolId *int64) {
 	if schoolId == nil {
 		p.schoolId = nil
 		return
@@ -107,14 +107,14 @@ func (p *Profile) SetSchoolId(schoolId *string) {
 	p.schoolId = schoolId
 }
 
-func (p *Profile) ProgramId() *string {
+func (p *Profile) ProgramId() *int64 {
 	return p.programId
 }
 
 // SetProgramId accepts a pointer so the model layer (which stores
 // *string for the now-nullable column) can pass through nil. nil is
 // flattened to uuid.Nil so the domain field stays a value type.
-func (p *Profile) SetProgramId(programId *string) {
+func (p *Profile) SetProgramId(programId *int64) {
 	if programId == nil {
 		p.programId = nil
 		return
@@ -122,11 +122,11 @@ func (p *Profile) SetProgramId(programId *string) {
 	p.programId = programId
 }
 
-func (p *Profile) GradeId() *string {
+func (p *Profile) GradeId() *int64 {
 	return p.gradeId
 }
 
-func (p *Profile) SetGradeId(gradeId *string) {
+func (p *Profile) SetGradeId(gradeId *int64) {
 	if gradeId == nil {
 		p.gradeId = nil
 		return
@@ -134,11 +134,11 @@ func (p *Profile) SetGradeId(gradeId *string) {
 	p.gradeId = gradeId
 }
 
-func (p *Profile) SemesterId() *string {
+func (p *Profile) SemesterId() *int64 {
 	return p.semesterId
 }
 
-func (p *Profile) SetSemesterId(semesterId *string) {
+func (p *Profile) SetSemesterId(semesterId *int64) {
 	if semesterId == nil {
 		p.semesterId = nil
 		return
@@ -202,11 +202,11 @@ func (p *Profile) SetStatus(status string) {
 	p.status = status
 }
 
-func (p *Profile) CreateId() *string {
+func (p *Profile) CreateId() *int64 {
 	return p.createId
 }
 
-func (p *Profile) SetCreateId(createId *string) {
+func (p *Profile) SetCreateId(createId *int64) {
 	p.createId = createId
 }
 
@@ -218,11 +218,11 @@ func (p *Profile) SetCreateDt(createDt mtime.MathTime) {
 	p.createDt = createDt
 }
 
-func (p *Profile) ModifyId() *string {
+func (p *Profile) ModifyId() *int64 {
 	return p.modifyId
 }
 
-func (p *Profile) SetModifyId(modifyId *string) {
+func (p *Profile) SetModifyId(modifyId *int64) {
 	p.modifyId = modifyId
 }
 

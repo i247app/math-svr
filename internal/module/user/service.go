@@ -344,8 +344,8 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 // plus a short-lived presigned URL for immediate display. Mirrors the
 // profile module's UploadAvatar so the mobile client can reuse its
 // uploader for both endpoints.
-func (s *Service) UploadAvatar(ctx context.Context, userID string, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
-	if userID == "" {
+func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
+	if userID == 0 {
 		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil,
 			errors.New("user_id is required"))
 	}

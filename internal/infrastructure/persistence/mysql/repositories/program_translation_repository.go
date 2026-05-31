@@ -50,7 +50,7 @@ func scanProgramTranslation(s database.RowScanner) (*models.ProgramTranslationMo
 	return &m, nil
 }
 
-func (r *ProgramTranslationRepository) ListByProgramId(ctx context.Context, programId string) ([]*program.ProgramTranslation, error) {
+func (r *ProgramTranslationRepository) ListByProgramId(ctx context.Context, programId int64) ([]*program.ProgramTranslation, error) {
 	args := append(programTranslationActiveArgs(), programId)
 	query := `SELECT ` + programTranslationColumns + ` FROM ` + programTranslationsTable + ` pt
 		WHERE ` + programTranslationActiveWhere + ` AND pt.program_id = ?
@@ -76,7 +76,7 @@ func (r *ProgramTranslationRepository) ListByProgramId(ctx context.Context, prog
 	return translations, nil
 }
 
-func (r *ProgramTranslationRepository) FindByProgramIdAndLanguage(ctx context.Context, programId string, language string) (*program.ProgramTranslation, error) {
+func (r *ProgramTranslationRepository) FindByProgramIdAndLanguage(ctx context.Context, programId int64, language string) (*program.ProgramTranslation, error) {
 	args := append(programTranslationActiveArgs(), programId, language)
 	query := `SELECT ` + programTranslationColumns + ` FROM ` + programTranslationsTable + ` pt
 		WHERE ` + programTranslationActiveWhere + ` AND pt.program_id = ? AND pt.language = ?
@@ -130,7 +130,7 @@ func (r *ProgramTranslationRepository) Update(ctx context.Context, t *program.Pr
 	return nil
 }
 
-func (r *ProgramTranslationRepository) SoftDeleteByProgramId(ctx context.Context, programId string) error {
+func (r *ProgramTranslationRepository) SoftDeleteByProgramId(ctx context.Context, programId int64) error {
 	query := `
 		UPDATE ` + programTranslationsTable + `
 		SET gt_status  = ?,
@@ -147,7 +147,7 @@ func (r *ProgramTranslationRepository) SoftDeleteByProgramId(ctx context.Context
 	return nil
 }
 
-func (r *ProgramTranslationRepository) SoftDeleteByTranslationId(ctx context.Context, programTranslationId string) error {
+func (r *ProgramTranslationRepository) SoftDeleteByTranslationId(ctx context.Context, programTranslationId int64) error {
 	query := `
 		UPDATE ` + programTranslationsTable + `
 		SET gt_status  = ?,
@@ -164,7 +164,7 @@ func (r *ProgramTranslationRepository) SoftDeleteByTranslationId(ctx context.Con
 	return nil
 }
 
-func (r *ProgramTranslationRepository) ForceDeleteByProgramId(ctx context.Context, programId string) error {
+func (r *ProgramTranslationRepository) ForceDeleteByProgramId(ctx context.Context, programId int64) error {
 	query := `
 		DELETE FROM ` + programTranslationsTable + `
 		WHERE program_id = ?
@@ -175,7 +175,7 @@ func (r *ProgramTranslationRepository) ForceDeleteByProgramId(ctx context.Contex
 	return nil
 }
 
-func (r *ProgramTranslationRepository) ForceDeleteByTranslationId(ctx context.Context, programTranslationId string) error {
+func (r *ProgramTranslationRepository) ForceDeleteByTranslationId(ctx context.Context, programTranslationId int64) error {
 	query := `
 		DELETE FROM ` + programTranslationsTable + `
 		WHERE program_translation_id = ?

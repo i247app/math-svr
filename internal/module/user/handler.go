@@ -99,7 +99,13 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")
 
-	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: idStr})
+	uid, err := utils.StringToInt64Err(idStr)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: uid})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -164,7 +170,7 @@ func (h *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 			response.WriteJson(w, nil, fmt.Errorf("invalid form data"))
 			return
 		}
-		req.UserID = r.FormValue("user_id")
+		req.UserID = utils.StringToInt64(r.FormValue("user_id"), 0)
 		req.Name = utils.ToStringPtr(r.FormValue("name"))
 		req.Phone = utils.ToStringPtr(r.FormValue("phone"))
 		req.Email = utils.ToStringPtr(r.FormValue("email"))
@@ -215,6 +221,7 @@ func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request)
 				errors.New("user_id form field is required")))
 		return
 	}
+	userID := utils.StringToInt64(userIDStr, 0)
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -226,7 +233,7 @@ func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request)
 
 	res, err := h.userSvc.UploadAvatar(
 		ctx,
-		userIDStr,
+		userID,
 		header.Filename,
 		header.Header.Get("Content-Type"),
 		file,

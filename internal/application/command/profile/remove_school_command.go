@@ -15,7 +15,7 @@ import (
 // the caller can drop the school link without having to know the
 // previous value or pass any sentinel.
 type RemoveSchoolCommand struct {
-	ProfileID string
+	ProfileID int64
 }
 
 type RemoveSchoolCommandHandler struct {

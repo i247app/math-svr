@@ -472,6 +472,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Token lời mời không hợp lệ"
 	case CLASSROOM_INVITATION_TOKEN_GENERATION_FAILED:
 		return "Tạo token lời mời thất bại"
+	case CLASSROOM_INVITATION_PERMISSION_DENIED:
+		return "Bạn không có quyền thao tác trên lời mời này"
 	default:
 		return ""
 	}

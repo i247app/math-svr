@@ -91,7 +91,7 @@ func ValidateCreateSemester(ctx context.Context, req *dto.CreateSemesterReq) err
 }
 
 func ValidateUpdateSemester(ctx context.Context, req *dto.UpdateSemesterReq) error {
-	if strings.TrimSpace(req.SemesterID) == "" {
+	if req.SemesterID == 0 {
 		return errs.NewError(ctx, status.SEMESTER_MISSING_ID, nil,
 			errors.New("semester_id is required"))
 	}
@@ -113,7 +113,7 @@ func ValidateUpdateSemester(ctx context.Context, req *dto.UpdateSemesterReq) err
 }
 
 func ValidateGetSemester(ctx context.Context, req *dto.GetSemesterReq) error {
-	if strings.TrimSpace(req.SemesterID) == "" {
+	if req.SemesterID == 0 {
 		return errs.NewError(ctx, status.SEMESTER_MISSING_ID, nil,
 			errors.New("semester_id is required"))
 	}
@@ -125,7 +125,7 @@ func ValidateListSemesters(ctx context.Context, req *dto.ListSemestersReq) error
 }
 
 func ValidateDeleteSemester(ctx context.Context, req *dto.DeleteSemesterReq) error {
-	if strings.TrimSpace(req.SemesterID) == "" {
+	if req.SemesterID == 0 {
 		return errs.NewError(ctx, status.SEMESTER_MISSING_ID, nil,
 			errors.New("semester_id is required"))
 	}

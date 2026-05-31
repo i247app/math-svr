@@ -14,7 +14,7 @@ import (
 // where clause, and the cheaper restore path lets us recover without
 // rebuilding membership history.
 type SoftDeleteClassroomCommand struct {
-	ClassroomID string
+	ClassroomID int64
 }
 
 type SoftDeleteClassroomCommandHandler struct {

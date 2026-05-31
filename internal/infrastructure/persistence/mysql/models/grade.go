@@ -6,7 +6,7 @@ import (
 
 type GradeModel struct {
 	Id           int64
-	GradeId      string
+	GradeId      int64
 	Label        string
 	Description  string
 	ImageKey     *string
@@ -14,8 +14,8 @@ type GradeModel struct {
 	Note         *string
 	GradeStatus  *string
 	Status       string
-	CreateId     *string
+	CreateId     *int64
 	CreateDt     time.Time
-	ModifyId     *string
+	ModifyId     *int64
 	ModifyDt     time.Time
 }

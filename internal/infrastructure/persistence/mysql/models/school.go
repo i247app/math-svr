@@ -4,7 +4,7 @@ import "time"
 
 type SchoolModel struct {
 	Id           int64
-	SchoolId     string
+	SchoolId     int64
 	Name         string
 	Description  *string
 	ImageKey     *string
@@ -13,8 +13,8 @@ type SchoolModel struct {
 	Note         *string
 	SchoolStatus *string
 	Status       string
-	CreateId     *string
+	CreateId     *int64
 	CreateDt     time.Time
-	ModifyId     *string
+	ModifyId     *int64
 	ModifyDt     time.Time
 }

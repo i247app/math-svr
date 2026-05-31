@@ -22,13 +22,13 @@ import (
 //   - non-nil X  → make the active link set exactly X (insert new,
 //     delete removed)
 type UpdateClassroomCommand struct {
-	ActorID     *string
-	ClassroomID string
+	ActorID     *int64
+	ClassroomID int64
 	Name        *string
 	Description *string
-	SchoolID    *string
-	ProgramIDs  *[]string
-	GradeID     *string
+	SchoolID    *int64
+	ProgramIDs  *[]int64
+	GradeID     *int64
 	MaxMembers  *int64
 	AvatarKey   *string
 	Note        *string
@@ -107,7 +107,7 @@ func (h *UpdateClassroomCommandHandler) Handle(ctx context.Context, cmd UpdateCl
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if programIDs == nil {
-			programIDs = []string{}
+			programIDs = []int64{}
 		}
 		refreshed.SetProgramIds(programIDs)
 		updated = refreshed

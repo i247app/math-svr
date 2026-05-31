@@ -10,8 +10,8 @@ import (
 // the API. GradeTranslationID is empty on create payloads and populated
 // on responses; the service treats (language) as the upsert key.
 type GradeTranslationDTO struct {
-	GradeTranslationID string  `json:"grade_translation_id,omitempty"`
-	GradeID            string  `json:"grade_id,omitempty"`
+	GradeTranslationID int64   `json:"grade_translation_id,omitempty"`
+	GradeID            int64   `json:"grade_id,omitempty"`
 	Language           string  `json:"language"`
 	Label              string  `json:"label"`
 	Description        string  `json:"description"`
@@ -20,7 +20,7 @@ type GradeTranslationDTO struct {
 
 type GradeResponse struct {
 	ID           int64                  `json:"id"`
-	GradeID      string                 `json:"grade_id"`
+	GradeID      int64                  `json:"grade_id"`
 	Label        string                 `json:"label"`
 	Description  string                 `json:"description"`
 	ImageKey     *string                `json:"image_key,omitempty"`
@@ -51,7 +51,7 @@ type CreateGradeRes struct {
 // updated, missing rows are inserted, and rows the client omits are left
 // alone (no implicit deletion — translation removal is an explicit call).
 type UpdateGradeReq struct {
-	GradeID      string                 `json:"grade_id"`
+	GradeID      int64                  `json:"grade_id"`
 	Label        *string                `json:"label,omitempty"`
 	Description  *string                `json:"description,omitempty"`
 	ImageKey     *string                `json:"image_key,omitempty"`
@@ -65,13 +65,13 @@ type UpdateGradeRes struct {
 }
 
 type DeleteGradeReq struct {
-	GradeID string `json:"grade_id"`
+	GradeID int64 `json:"grade_id"`
 }
 
 type DeleteGradeRes struct{}
 
 type GetGradeReq struct {
-	GradeID  string            `json:"grade_id"`
+	GradeID  int64             `json:"grade_id"`
 	Language enum.LanguageType `json:"language,omitempty"`
 }
 

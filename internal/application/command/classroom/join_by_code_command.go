@@ -24,8 +24,8 @@ import (
 // — the existing one is flipped back to ACTIVE so the unique
 // constraint stays meaningful and join history is preserved.
 type JoinByCodeCommand struct {
-	ActorID     *string
-	ProfileID   string
+	ActorID     *int64
+	ProfileID   int64
 	ProfileRole string
 	InviteCode  string
 }

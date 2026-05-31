@@ -11,9 +11,9 @@ import (
 //
 // channel is optional. Empty (or "AUTO") = pick by identifier shape.
 type SendOtpReq struct {
-	OtpType    string  `json:"otp_type"`
-	Identifier string  `json:"identifier"`
-	UserID     *string `json:"user_id,omitempty"`
+	OtpType    string `json:"otp_type"`
+	Identifier string `json:"identifier"`
+	UserID     *int64 `json:"user_id,omitempty"`
 	// DeviceUUID *string    `json:"device_uuid,omitempty"`
 	// DeviceName *string    `json:"device_name,omitempty"`
 	// Channel    string     `json:"channel,omitempty"` // "", "SMS", "EMAIL"

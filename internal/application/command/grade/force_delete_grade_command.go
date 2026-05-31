@@ -14,7 +14,7 @@ import (
 // translation in one transaction. Translations go first so an FK addition
 // later won't break ordering.
 type ForceDeleteGradeCommand struct {
-	GradeID string
+	GradeID int64
 }
 
 type ForceDeleteGradeCommandHandler struct {

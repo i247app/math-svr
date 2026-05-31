@@ -112,7 +112,7 @@ func (r *ChapterRepository) findBareById(ctx context.Context, id int64) (*chapte
 	return ModelToDomainChapter(m), nil
 }
 
-func (r *ChapterRepository) FindByChapterId(ctx context.Context, chapterId string, language enum.LanguageType) (*chapter.Chapter, error) {
+func (r *ChapterRepository) FindByChapterId(ctx context.Context, chapterId int64, language enum.LanguageType) (*chapter.Chapter, error) {
 	return r.findOneBy(ctx, language, "c.chapter_id = ?", chapterId)
 }
 
@@ -175,15 +175,15 @@ func buildChapterListFilterClause(params *chapter.ListChaptersParams) (string, [
 		clause string
 		args   []any
 	)
-	if params.ProgramID != nil && *params.ProgramID != "" {
+	if params.ProgramID != nil && *params.ProgramID != 0 {
 		clause += ` AND c.program_id = ?`
 		args = append(args, *params.ProgramID)
 	}
-	if params.GradeID != nil && *params.GradeID != "" {
+	if params.GradeID != nil && *params.GradeID != 0 {
 		clause += ` AND c.grade_id = ?`
 		args = append(args, *params.GradeID)
 	}
-	if params.SemesterID != nil && *params.SemesterID != "" {
+	if params.SemesterID != nil && *params.SemesterID != 0 {
 		clause += ` AND c.semester_id = ?`
 		args = append(args, *params.SemesterID)
 	}
@@ -222,13 +222,13 @@ func (r *ChapterRepository) Update(ctx context.Context, c *chapter.Chapter) erro
 	if c.Description() != "" {
 		description = c.Description()
 	}
-	if c.ProgramId() != "" {
+	if c.ProgramId() != 0 {
 		programID = c.ProgramId()
 	}
-	if c.GradeId() != "" {
+	if c.GradeId() != 0 {
 		gradeID = c.GradeId()
 	}
-	if c.SemesterId() != "" {
+	if c.SemesterId() != 0 {
 		semesterID = c.SemesterId()
 	}
 
@@ -252,7 +252,7 @@ func (r *ChapterRepository) Update(ctx context.Context, c *chapter.Chapter) erro
 	return nil
 }
 
-func (r *ChapterRepository) SoftDeleteByChapterId(ctx context.Context, chapterId string) error {
+func (r *ChapterRepository) SoftDeleteByChapterId(ctx context.Context, chapterId int64) error {
 	query := `
 		UPDATE ` + chapterTable + `
 		SET chapter_status = ?,
@@ -269,7 +269,7 @@ func (r *ChapterRepository) SoftDeleteByChapterId(ctx context.Context, chapterId
 	return nil
 }
 
-func (r *ChapterRepository) ForceDeleteByChapterId(ctx context.Context, chapterId string) error {
+func (r *ChapterRepository) ForceDeleteByChapterId(ctx context.Context, chapterId int64) error {
 	query := `
 		DELETE FROM ` + chapterTable + `
 		WHERE chapter_id = ?

@@ -6,7 +6,7 @@ import (
 
 type UserModel struct {
 	Id         int64
-	UserId     string
+	UserId     int64
 	UserName   string
 	Phone      string
 	Email      *string
@@ -14,8 +14,8 @@ type UserModel struct {
 	UserStatus *string
 	Status     string
 	Note       *string
-	CreateId   *string
+	CreateId   *int64
 	CreateDt   time.Time
-	ModifyId   *string
+	ModifyId   *int64
 	ModifyDt   time.Time
 }

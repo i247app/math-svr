@@ -6,9 +6,9 @@ import (
 
 type QuizModel struct {
 	Id              int64
-	QuizId          string
-	UserId          *string
-	ProfileId       *string
+	QuizId          int64
+	UserId          *int64
+	ProfileId       *int64
 	Purpose         string
 	TypeOfQuiz      *string
 	Title           *string
@@ -19,12 +19,12 @@ type QuizModel struct {
 	TotalQuestions  *int
 	CorrectNumber   *int
 	ScorePercentage *int
-	PreviousQuizId  *string
+	PreviousQuizId  *int64
 	Note            *string
 	QuizStatus      *string
 	Status          string
-	CreateId        *string
+	CreateId        *int64
 	CreateDt        time.Time
-	ModifyId        *string
+	ModifyId        *int64
 	ModifyDt        time.Time
 }

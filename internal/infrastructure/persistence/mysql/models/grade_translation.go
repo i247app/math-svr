@@ -4,16 +4,16 @@ import "time"
 
 type GradeTranslationModel struct {
 	Id                 int64
-	GradeTranslationId string
-	GradeId            string
+	GradeTranslationId int64
+	GradeId            int64
 	Language           string
 	Label              string
 	Description        string
 	Note               *string
 	GtStatus           *string
 	Status             string
-	CreateId           *string
+	CreateId           *int64
 	CreateDt           time.Time
-	ModifyId           *string
+	ModifyId           *int64
 	ModifyDt           time.Time
 }

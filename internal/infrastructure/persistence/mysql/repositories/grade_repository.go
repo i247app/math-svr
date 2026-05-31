@@ -111,7 +111,7 @@ func (r *GradeRepository) findBareById(ctx context.Context, id int64) (*grade.Gr
 	return ModelToDomainGrade(m), nil
 }
 
-func (r *GradeRepository) FindByGradeId(ctx context.Context, gradeId string, language enum.LanguageType) (*grade.Grade, error) {
+func (r *GradeRepository) FindByGradeId(ctx context.Context, gradeId int64, language enum.LanguageType) (*grade.Grade, error) {
 	return r.findOneBy(ctx, language, "g.grade_id = ?", gradeId)
 }
 
@@ -165,7 +165,7 @@ func (r *GradeRepository) ListGrades(ctx context.Context, params *grade.ListGrad
 }
 
 // ListGradesByIds — see program_repository's equivalent for rationale.
-func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []string, lang enum.LanguageType) ([]*grade.Grade, error) {
+func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []int64, lang enum.LanguageType) ([]*grade.Grade, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -256,7 +256,7 @@ func (r *GradeRepository) Update(ctx context.Context, g *grade.Grade) error {
 	return nil
 }
 
-func (r *GradeRepository) SoftDeleteByGradeId(ctx context.Context, gradeId string) error {
+func (r *GradeRepository) SoftDeleteByGradeId(ctx context.Context, gradeId int64) error {
 	query := `
 		UPDATE ` + gradeTable + `
 		SET grade_status = ?,
@@ -273,7 +273,7 @@ func (r *GradeRepository) SoftDeleteByGradeId(ctx context.Context, gradeId strin
 	return nil
 }
 
-func (r *GradeRepository) ForceDeleteByGradeId(ctx context.Context, gradeId string) error {
+func (r *GradeRepository) ForceDeleteByGradeId(ctx context.Context, gradeId int64) error {
 	query := `
 		DELETE FROM ` + gradeTable + `
 		WHERE grade_id = ?

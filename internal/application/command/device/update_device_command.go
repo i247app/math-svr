@@ -14,8 +14,8 @@ import (
 // rename, refresh push token, attach a note. is_verified is intentionally NOT
 // in this surface; verification flips only via the 2FA flow or revoke.
 type UpdateDeviceCommand struct {
-	UserID          string
-	DeviceID        string
+	UserID          int64
+	DeviceID        int64
 	DeviceName      string
 	DevicePushToken *string
 	Note            *string

@@ -75,18 +75,18 @@ func (r *DeviceRepository) findBareById(ctx context.Context, id int64) (*device.
 	return ModelToDomainDevice(m), nil
 }
 
-func (r *DeviceRepository) FindByDeviceId(ctx context.Context, deviceId string) (*device.Device, error) {
+func (r *DeviceRepository) FindByDeviceId(ctx context.Context, deviceId int64) (*device.Device, error) {
 	return r.findOneBy(ctx, "d.device_id = ?", deviceId)
 }
 
 // FindByUserDevice looks up the registration for the (user, device_uuid) pair.
 // device_uuid is the client-supplied stable identifier (installation id, IDFV,
 // etc.); device_id is our own UUID for the row.
-func (r *DeviceRepository) FindByUserDevice(ctx context.Context, userId string, deviceUUID string) (*device.Device, error) {
+func (r *DeviceRepository) FindByUserDevice(ctx context.Context, userId int64, deviceUUID string) (*device.Device, error) {
 	return r.findOneBy(ctx, "d.user_id = ? AND d.device_uuid = ?", userId, deviceUUID)
 }
 
-func (r *DeviceRepository) ListByUserId(ctx context.Context, userId string) ([]*device.Device, error) {
+func (r *DeviceRepository) ListByUserId(ctx context.Context, userId int64) ([]*device.Device, error) {
 	args := append(deviceActiveArgs(), userId)
 	query := `SELECT ` + deviceColumns + ` FROM ` + deviceTable + ` d WHERE ` +
 		deviceActiveWhere + ` AND d.user_id = ? ORDER BY d.id DESC`
@@ -159,7 +159,7 @@ func (r *DeviceRepository) Update(ctx context.Context, d *device.Device) error {
 
 // MarkVerified flips is_verified. Called by the (future) 2FA flow on success,
 // or by revoke to un-trust the device.
-func (r *DeviceRepository) MarkVerified(ctx context.Context, deviceId string, isVerified bool) error {
+func (r *DeviceRepository) MarkVerified(ctx context.Context, deviceId int64, isVerified bool) error {
 	query := `
 		UPDATE ` + deviceTable + `
 		SET is_verified = ?,
@@ -172,7 +172,7 @@ func (r *DeviceRepository) MarkVerified(ctx context.Context, deviceId string, is
 	return nil
 }
 
-func (r *DeviceRepository) MarkStatusByDeviceId(ctx context.Context, deviceId string, st enum.DeviceStatusType) error {
+func (r *DeviceRepository) MarkStatusByDeviceId(ctx context.Context, deviceId int64, st enum.DeviceStatusType) error {
 	query := `
 		UPDATE ` + deviceTable + `
 		SET device_status = ?,
@@ -185,7 +185,7 @@ func (r *DeviceRepository) MarkStatusByDeviceId(ctx context.Context, deviceId st
 	return nil
 }
 
-func (r *DeviceRepository) SoftDeleteByDeviceId(ctx context.Context, deviceId string) error {
+func (r *DeviceRepository) SoftDeleteByDeviceId(ctx context.Context, deviceId int64) error {
 	query := `
 		UPDATE ` + deviceTable + `
 		SET device_status = ?,

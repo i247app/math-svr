@@ -13,7 +13,7 @@ import (
 // classroom so any future foreign keys (or just consistency-conscious
 // operators) won't trip. Idempotent: missing rows are not an error.
 type ForceDeleteClassroomCommand struct {
-	ClassroomID string
+	ClassroomID int64
 }
 
 type ForceDeleteClassroomCommandHandler struct {

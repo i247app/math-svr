@@ -54,10 +54,10 @@ func (a *Resource) GetRequestSession(r *http.Request) (*session.AppSession, erro
 	return sess, nil
 }
 
-func (a *Resource) GetRequestUID(r *http.Request) (string, error) {
+func (a *Resource) GetRequestUID(r *http.Request) (int64, error) {
 	sess, err := a.GetRequestSession(r)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 
 	// ## We can't do this because sometimes you want the uid even if not authenticated
@@ -67,7 +67,7 @@ func (a *Resource) GetRequestUID(r *http.Request) (string, error) {
 
 	id, ok := sess.UID()
 	if !ok {
-		return "", fmt.Errorf("uid missing from session (did you forget to send the Authorization header?)")
+		return 0, fmt.Errorf("uid missing from session (did you forget to send the Authorization header?)")
 	}
 
 	return id, nil

@@ -15,13 +15,13 @@ import (
 // stays focused on its aggregate logic and the MathError mapping is
 // consistent — repo-level seq.ErrNotFound becomes SEQ_NOT_FOUND, any
 // other failure becomes SEQ_GENERATION_FAILED.
-func nextSeqID(ctx context.Context, repos transaction.Repositories, name string) (string, error) {
+func nextSeqID(ctx context.Context, repos transaction.Repositories, name string) (int64, error) {
 	id, err := repos.Seq.Next(ctx, name)
 	if err != nil {
 		if errors.Is(err, seq.ErrNotFound) {
-			return "", errs.NewError(ctx, status.SEQ_NOT_FOUND, map[string]any{"name": name}, err)
+			return 0, errs.NewError(ctx, status.SEQ_NOT_FOUND, map[string]any{"name": name}, err)
 		}
-		return "", errs.NewError(ctx, status.SEQ_GENERATION_FAILED, map[string]any{"name": name}, err)
+		return 0, errs.NewError(ctx, status.SEQ_GENERATION_FAILED, map[string]any{"name": name}, err)
 	}
 	return id, nil
 }

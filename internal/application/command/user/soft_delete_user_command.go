@@ -11,7 +11,7 @@ import (
 )
 
 type SoftDeleteUserCommand struct {
-	UserID string
+	UserID int64
 }
 
 type SoftDeleteUserCommandHandler struct {

@@ -12,7 +12,7 @@ import (
 // JOIN override; the translation list is independent of Language so the
 // caller always sees every defined locale.
 type GetProgramByIdQuery struct {
-	ProgramID string
+	ProgramID int64
 	Language  enum.LanguageType
 }
 

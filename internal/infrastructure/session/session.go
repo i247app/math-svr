@@ -35,17 +35,17 @@ func (s *AppSession) ToMap() map[string]any {
 	return result
 }
 
-func (s *AppSession) UID() (string, bool) {
+func (s *AppSession) UID() (int64, bool) {
 	result, ok := s.Get("uid")
 	if !ok {
 		// log.Println("ERROR: key 'uid' not in session store")
-		return "", false
+		return 0, false
 	}
 
-	uid, ok := result.(string)
+	uid, ok := result.(int64)
 	if !ok {
 		// log.Printf("ERROR: 'uid' is in session store but expected to be an int64, is a %T\n", result)
-		return "", false
+		return 0, false
 	}
 
 	return uid, true
@@ -58,7 +58,7 @@ func (s *AppSession) MarkForDeletion() {
 type InitData struct {
 	Source    string
 	IsSecure  bool
-	UID       string
+	UID       int64
 	Email     string
 	LoginName string
 	ExpireAt  *time.Time

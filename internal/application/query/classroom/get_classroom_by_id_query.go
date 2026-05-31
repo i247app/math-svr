@@ -7,7 +7,7 @@ import (
 )
 
 type GetClassroomByIdQuery struct {
-	ClassroomID string
+	ClassroomID int64
 }
 
 type GetClassroomByIdQueryHandler struct {
@@ -43,7 +43,7 @@ func (h *GetClassroomByIdQueryHandler) Handle(ctx context.Context, q GetClassroo
 		return nil, err
 	}
 	if programIDs == nil {
-		programIDs = []string{}
+		programIDs = []int64{}
 	}
 	found.SetProgramIds(programIDs)
 	return found, nil

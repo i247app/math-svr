@@ -40,13 +40,13 @@ func NewService(uow transaction.UnitOfWork) *Service {
 // transaction. Returns SEQ_MISSING_NAME for empty input,
 // SEQ_NOT_FOUND when the row is absent, SEQ_GENERATION_FAILED for
 // every other failure mode.
-func (s *Service) NextID(ctx context.Context, name string) (string, error) {
+func (s *Service) NextID(ctx context.Context, name string) (int64, error) {
 	if name == "" {
-		return "", errs.NewError(ctx, status.SEQ_MISSING_NAME, nil,
+		return 0, errs.NewError(ctx, status.SEQ_MISSING_NAME, nil,
 			errors.New("seq name is required"))
 	}
 
-	var id string
+	var id int64
 	err := s.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		next, err := repos.Seq.Next(ctx, name)
 		if err != nil {
@@ -61,7 +61,7 @@ func (s *Service) NextID(ctx context.Context, name string) (string, error) {
 		return nil
 	})
 	if err != nil {
-		return "", err
+		return 0, err
 	}
 	return id, nil
 }
@@ -71,18 +71,18 @@ func (s *Service) NextID(ctx context.Context, name string) (string, error) {
 // MathError so command handlers don't have to duplicate the wrapping
 // logic. The caller passes the tx-bound repo (repos.Seq), not the
 // module service.
-func ResolveNext(ctx context.Context, repo domain.IRepository, name string) (string, error) {
+func ResolveNext(ctx context.Context, repo domain.IRepository, name string) (int64, error) {
 	if name == "" {
-		return "", errs.NewError(ctx, status.SEQ_MISSING_NAME, nil,
+		return 0, errs.NewError(ctx, status.SEQ_MISSING_NAME, nil,
 			errors.New("seq name is required"))
 	}
 	id, err := repo.Next(ctx, name)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			return "", errs.NewError(ctx, status.SEQ_NOT_FOUND,
+			return 0, errs.NewError(ctx, status.SEQ_NOT_FOUND,
 				map[string]any{"name": name}, err)
 		}
-		return "", errs.NewError(ctx, status.SEQ_GENERATION_FAILED,
+		return 0, errs.NewError(ctx, status.SEQ_GENERATION_FAILED,
 			map[string]any{"name": name}, err)
 	}
 	return id, nil

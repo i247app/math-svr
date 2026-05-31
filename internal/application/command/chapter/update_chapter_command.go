@@ -21,11 +21,11 @@ import (
 // language NOT in the payload is left alone — explicit translation
 // removal goes through the dedicated delete-translation path.
 type UpdateChapterCommand struct {
-	ActorID      *string
-	ChapterID    string
-	ProgramID    *string
-	GradeID      *string
-	SemesterID   *string
+	ActorID      *int64
+	ChapterID    int64
+	ProgramID    *int64
+	GradeID      *int64
+	SemesterID   *int64
 	Label        *string
 	Description  *string
 	DisplayOrder *int8

@@ -14,7 +14,7 @@ import (
 // service) because it's external I/O, not DB state — this command owns
 // only the transactional DB write that links the two.
 type SetAvatarKeyCommand struct {
-	ProfileID string
+	ProfileID int64
 	AvatarKey string
 }
 

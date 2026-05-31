@@ -14,7 +14,7 @@ import (
 // this school keep their school_id column intact — surfacing it as nil
 // in responses is the composing service's responsibility.
 type SoftDeleteSchoolCommand struct {
-	SchoolID string
+	SchoolID int64
 }
 
 type SoftDeleteSchoolCommandHandler struct {

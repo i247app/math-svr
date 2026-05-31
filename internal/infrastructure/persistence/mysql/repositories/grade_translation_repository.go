@@ -47,7 +47,7 @@ func scanGradeTranslation(s database.RowScanner) (*models.GradeTranslationModel,
 	return &m, nil
 }
 
-func (r *GradeTranslationRepository) ListByGradeId(ctx context.Context, gradeId string) ([]*grade.GradeTranslation, error) {
+func (r *GradeTranslationRepository) ListByGradeId(ctx context.Context, gradeId int64) ([]*grade.GradeTranslation, error) {
 	args := append(gradeTranslationActiveArgs(), gradeId)
 	query := `SELECT ` + gradeTranslationColumns + ` FROM ` + gradeTranslationsTable + ` gt
 		WHERE ` + gradeTranslationActiveWhere + ` AND gt.grade_id = ?
@@ -73,7 +73,7 @@ func (r *GradeTranslationRepository) ListByGradeId(ctx context.Context, gradeId 
 	return translations, nil
 }
 
-func (r *GradeTranslationRepository) FindByGradeIdAndLanguage(ctx context.Context, gradeId string, language string) (*grade.GradeTranslation, error) {
+func (r *GradeTranslationRepository) FindByGradeIdAndLanguage(ctx context.Context, gradeId int64, language string) (*grade.GradeTranslation, error) {
 	args := append(gradeTranslationActiveArgs(), gradeId, language)
 	query := `SELECT ` + gradeTranslationColumns + ` FROM ` + gradeTranslationsTable + ` gt
 		WHERE ` + gradeTranslationActiveWhere + ` AND gt.grade_id = ? AND gt.language = ?
@@ -127,7 +127,7 @@ func (r *GradeTranslationRepository) Update(ctx context.Context, t *grade.GradeT
 	return nil
 }
 
-func (r *GradeTranslationRepository) SoftDeleteByGradeId(ctx context.Context, gradeId string) error {
+func (r *GradeTranslationRepository) SoftDeleteByGradeId(ctx context.Context, gradeId int64) error {
 	query := `
 		UPDATE ` + gradeTranslationsTable + `
 		SET gt_status  = ?,
@@ -144,7 +144,7 @@ func (r *GradeTranslationRepository) SoftDeleteByGradeId(ctx context.Context, gr
 	return nil
 }
 
-func (r *GradeTranslationRepository) SoftDeleteByTranslationId(ctx context.Context, gradeTranslationId string) error {
+func (r *GradeTranslationRepository) SoftDeleteByTranslationId(ctx context.Context, gradeTranslationId int64) error {
 	query := `
 		UPDATE ` + gradeTranslationsTable + `
 		SET gt_status  = ?,
@@ -161,7 +161,7 @@ func (r *GradeTranslationRepository) SoftDeleteByTranslationId(ctx context.Conte
 	return nil
 }
 
-func (r *GradeTranslationRepository) ForceDeleteByGradeId(ctx context.Context, gradeId string) error {
+func (r *GradeTranslationRepository) ForceDeleteByGradeId(ctx context.Context, gradeId int64) error {
 	query := `
 		DELETE FROM ` + gradeTranslationsTable + `
 		WHERE grade_id = ?
@@ -172,7 +172,7 @@ func (r *GradeTranslationRepository) ForceDeleteByGradeId(ctx context.Context, g
 	return nil
 }
 
-func (r *GradeTranslationRepository) ForceDeleteByTranslationId(ctx context.Context, gradeTranslationId string) error {
+func (r *GradeTranslationRepository) ForceDeleteByTranslationId(ctx context.Context, gradeTranslationId int64) error {
 	query := `
 		DELETE FROM ` + gradeTranslationsTable + `
 		WHERE grade_translation_id = ?

@@ -11,7 +11,6 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type LoginCommand struct {
@@ -32,7 +31,7 @@ type LoginCommand struct {
 //     inserted (any prior active session for the same device was revoked).
 //     LoginLogID identifies the new session.
 type LoginCommandResult struct {
-	UserID            string
+	UserID            int64
 	DeviceID          string
 	LoginLogID        string
 	TwoFactorRequired bool
@@ -122,7 +121,7 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 func ensureDevice(
 	ctx context.Context,
 	repos transaction.Repositories,
-	userId string,
+	userId int64,
 	cmd LoginCommand,
 ) (*device.Device, error) {
 	existing, err := repos.Device.FindByUserDevice(ctx, userId, cmd.DeviceUUID)
@@ -151,7 +150,7 @@ func ensureDevice(
 	}
 
 	d := device.NewDevice()
-	d.SetDeviceId(utils.GenerateUUID().String())
+	// d.SetDeviceId(utils.GenerateUUID().String())
 	d.SetUserId(&userId)
 	d.SetDeviceUUID(cmd.DeviceUUID)
 	d.SetDeviceName(deviceNameOrDefault(cmd.DeviceName))
@@ -178,9 +177,9 @@ func deviceNameOrDefault(name string) string {
 	return name
 }
 
-func BuildLoginLog(userId string, cmd LoginCommand) *loginlog.LoginLog {
+func BuildLoginLog(userId int64, cmd LoginCommand) *loginlog.LoginLog {
 	ll := loginlog.NewLoginLog()
-	ll.SetLoginLogId(utils.GenerateUUID().String())
+	// ll.SetLoginLogId(utils.GenerateUUID().String())
 	ll.SetUserId(userId)
 	ll.SetDeviceUUID(cmd.DeviceUUID)
 	ll.SetIpAddress(cmd.IPAddress)

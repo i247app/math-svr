@@ -12,7 +12,7 @@ import (
 // the translation list is independent of Language so the caller always
 // sees every defined locale.
 type GetChapterByIdQuery struct {
-	ChapterID string
+	ChapterID int64
 	Language  enum.LanguageType
 }
 

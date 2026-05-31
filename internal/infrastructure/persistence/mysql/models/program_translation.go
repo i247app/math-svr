@@ -8,16 +8,16 @@ import "time"
 // so existing data keeps reading cleanly).
 type ProgramTranslationModel struct {
 	Id                   int64
-	ProgramTranslationId string
-	ProgramId            string
+	ProgramTranslationId int64
+	ProgramId            int64
 	Language             string
 	Label                string
 	Description          string
 	Note                 *string
 	PtStatus             *string
 	Status               string
-	CreateId             *string
+	CreateId             *int64
 	CreateDt             time.Time
-	ModifyId             *string
+	ModifyId             *int64
 	ModifyDt             time.Time
 }

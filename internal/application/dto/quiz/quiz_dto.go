@@ -55,13 +55,13 @@ type QuizGradingResult struct {
 // assume it.
 type QuizResponse struct {
 	ID             int64               `json:"id"`
-	QuizID         string              `json:"quiz_id"`
-	UserID         *string             `json:"user_id,omitempty"`
-	ProfileID      *string             `json:"profile_id,omitempty"`
+	QuizID         int64               `json:"quiz_id"`
+	UserID         *int64              `json:"user_id,omitempty"`
+	ProfileID      *int64              `json:"profile_id,omitempty"`
 	Purpose        string              `json:"purpose"`
 	TypeOfQuiz     *string             `json:"type_of_quiz,omitempty"`
 	Title          *string             `json:"title,omitempty"`
-	PreviousQuizID *string             `json:"previous_quiz_id,omitempty"`
+	PreviousQuizID *int64              `json:"previous_quiz_id,omitempty"`
 	Questions      []QuizQuestion      `json:"questions,omitempty"`
 	Answers        []QuizStudentAnswer `json:"answers,omitempty"`
 	Grading        *QuizGradingResult  `json:"grading,omitempty"`
@@ -96,8 +96,8 @@ type QuizResponse struct {
 // like "Grade 2 fractions review" without needing a curriculum row, and
 // so the service does not have to do an extra round-trip to translate.
 type GenerateQuizReq struct {
-	UserID              *string           `json:"user_id"`
-	ProfileID           *string           `json:"profile_id,omitempty"`
+	UserID              *int64            `json:"user_id"`
+	ProfileID           *int64            `json:"profile_id,omitempty"`
 	Purpose             string            `json:"purpose"`
 	TypeOfQuiz          string            `json:"type_of_quiz,omitempty"`
 	Language            enum.LanguageType `json:"language,omitempty"`
@@ -106,7 +106,7 @@ type GenerateQuizReq struct {
 	SemesterLabel       string            `json:"semester_label,omitempty"`
 	ChapterDescriptions []string          `json:"chapters,omitempty"`
 	NumQuestions        int               `json:"num_questions,omitempty"`
-	PreviousQuizID      *string           `json:"previous_quiz_id,omitempty"`
+	PreviousQuizID      *int64            `json:"previous_quiz_id,omitempty"`
 }
 
 type GenerateQuizRes struct {
@@ -114,7 +114,7 @@ type GenerateQuizRes struct {
 }
 
 type SubmitQuizAnswersReq struct {
-	QuizID   string              `json:"quiz_id"`
+	QuizID   int64               `json:"quiz_id"`
 	Language enum.LanguageType   `json:"language,omitempty"`
 	Answers  []QuizStudentAnswer `json:"answers"`
 }
@@ -124,7 +124,7 @@ type SubmitQuizAnswersRes struct {
 }
 
 type GetQuizByQuizIdReq struct {
-	QuizID string `json:"quiz_id"`
+	QuizID int64 `json:"quiz_id"`
 }
 
 type GetQuizByQuizIdRes struct {
@@ -136,8 +136,8 @@ type GetQuizByQuizIdRes struct {
 // are AND'd so the result is the intersection (a specific child of a
 // specific parent).
 type ListQuizzesReq struct {
-	ProfileID *string `json:"profile_id,omitempty"`
-	UserID    *string `json:"user_id,omitempty"`
+	ProfileID *int64  `json:"profile_id,omitempty"`
+	UserID    *int64  `json:"user_id,omitempty"`
 	Purpose   *string `json:"purpose,omitempty"`
 	Page      int     `json:"page,omitempty"`
 	Size      int     `json:"size,omitempty"`
@@ -149,7 +149,7 @@ type ListQuizzesRes struct {
 }
 
 type DeleteQuizReq struct {
-	QuizID string `json:"quiz_id"`
+	QuizID int64 `json:"quiz_id"`
 }
 
 type DeleteQuizRes struct{}

@@ -11,7 +11,7 @@ import (
 )
 
 type LogoutCommand struct {
-	UserID     string
+	UserID     int64
 	DeviceUUID string
 }
 

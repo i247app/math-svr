@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -42,10 +41,10 @@ func NewSeqRepository(db database.Executor) seq.IRepository {
 // transaction.UnitOfWork callback). Outside a tx, MySQL's driver may
 // route the two statements to different pooled connections, breaking
 // the own-write guarantee.
-func (r *SeqRepository) Next(ctx context.Context, name string) (string, error) {
+func (r *SeqRepository) Next(ctx context.Context, name string) (int64, error) {
 	trimmed := strings.TrimSpace(name)
 	if trimmed == "" {
-		return "", fmt.Errorf("seq repo next: name is required")
+		return 0, fmt.Errorf("seq repo next: name is required")
 	}
 
 	updateQuery := `UPDATE ` + seqTable + `
@@ -53,14 +52,14 @@ func (r *SeqRepository) Next(ctx context.Context, name string) (string, error) {
 		WHERE seq_name = ?`
 	result, err := r.db.Exec(ctx, updateQuery, trimmed)
 	if err != nil {
-		return "", fmt.Errorf("seq repo next update (%s): %w", trimmed, err)
+		return 0, fmt.Errorf("seq repo next update (%s): %w", trimmed, err)
 	}
 	affected, err := result.RowsAffected()
 	if err != nil {
-		return "", fmt.Errorf("seq repo next rows affected (%s): %w", trimmed, err)
+		return 0, fmt.Errorf("seq repo next rows affected (%s): %w", trimmed, err)
 	}
 	if affected == 0 {
-		return "", fmt.Errorf("seq repo next (%s): %w", trimmed, seq.ErrNotFound)
+		return 0, fmt.Errorf("seq repo next (%s): %w", trimmed, seq.ErrNotFound)
 	}
 
 	selectQuery := `SELECT current_value, prefix, padding FROM ` + seqTable +
@@ -72,7 +71,7 @@ func (r *SeqRepository) Next(ctx context.Context, name string) (string, error) {
 	)
 	if err := r.db.QueryRow(ctx, selectQuery, trimmed).
 		Scan(&current, &prefix, &padding); err != nil {
-		return "", fmt.Errorf("seq repo next select (%s): %w", trimmed, err)
+		return 0, fmt.Errorf("seq repo next select (%s): %w", trimmed, err)
 	}
 
 	return formatSeqID(prefix, padding, current), nil
@@ -104,12 +103,13 @@ func (r *SeqRepository) Find(ctx context.Context, name string) (*seq.Sequence, e
 // formatSeqID renders the prefix + zero-padded counter. When padding is
 // 0 (admin opted out) we emit the raw decimal — never truncate, since a
 // missing leading zero is a silent collision risk.
-func formatSeqID(prefix string, padding uint8, value uint64) string {
-	str := strconv.FormatUint(value, 10)
-	if int(padding) > len(str) {
-		str = strings.Repeat("0", int(padding)-len(str)) + str
-	}
-	return prefix + str
+func formatSeqID(prefix string, padding uint8, value uint64) int64 {
+	// str := strconv.FormatUint(value, 10)
+	// if int(padding) > len(str) {
+	// 	str = strings.Repeat("0", int(padding)-len(str)) + str
+	// }
+	// return prefix + str
+	return int64(value)
 }
 
 func ModelToDomainSeq(m *models.SeqModel) *seq.Sequence {

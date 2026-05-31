@@ -15,7 +15,7 @@ import (
 // classroom_status=DELETED the classroomActiveWhere filter hides it,
 // and recovery is a manual-admin task.
 type RestoreClassroomCommand struct {
-	ClassroomID string
+	ClassroomID int64
 }
 
 type RestoreClassroomCommandHandler struct {

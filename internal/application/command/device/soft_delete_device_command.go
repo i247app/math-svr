@@ -11,8 +11,8 @@ import (
 )
 
 type SoftDeleteDeviceCommand struct {
-	UserID   string
-	DeviceID string
+	UserID   int64
+	DeviceID int64
 }
 
 type SoftDeleteDeviceCommandHandler struct {
