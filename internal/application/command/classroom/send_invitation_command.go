@@ -19,9 +19,11 @@ import (
 // vs proposed-role rules — this command focuses on identifier
 // resolution, conflict detection, and the actual row mutation.
 type SendInvitationTarget struct {
-	IdentifierType string
-	Identifier     string
-	ProposedRole   string
+	// IdentifierType string
+	// Identifier     string
+	// ProposedRole   string
+	ProfileID int64
+	Role      string
 }
 
 // SendInvitationSkipReason captures a per-target outcome that did not
@@ -91,20 +93,20 @@ func (h *SendInvitationCommandHandler) Handle(ctx context.Context, cmd SendInvit
 		inviter := cmd.CallerProfileID
 
 		for _, t := range cmd.Targets {
-			resolved, err := resolveInvitationTarget(ctx, repos, t.IdentifierType, t.Identifier)
-			if err != nil {
-				return err
-			}
-			if resolved.skipReason != 0 {
-				result.Skipped = append(result.Skipped, SendInvitationSkipReason{
-					Target:  t,
-					Reason:  resolved.skipReason,
-					Message: "target could not be resolved",
-				})
-				continue
-			}
+			// resolved, err := resolveInvitationTarget(ctx, repos, t.IdentifierType, t.Identifier)
+			// if err != nil {
+			// 	return err
+			// }
+			// if resolved.skipReason != 0 {
+			// 	result.Skipped = append(result.Skipped, SendInvitationSkipReason{
+			// 		Target:  t,
+			// 		Reason:  resolved.skipReason,
+			// 		Message: "target could not be resolved",
+			// 	})
+			// 	continue
+			// }
 
-			invitedProfileID := *resolved.invitedProfileID
+			invitedProfileID := t.ProfileID
 			existing, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, cmd.ClassroomID, invitedProfileID)
 			if err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
@@ -132,8 +134,12 @@ func (h *SendInvitationCommandHandler) Handle(ctx context.Context, cmd SendInvit
 					continue
 				}
 				// REJECTED / LEFT / REMOVED → reactivate in place as PENDING.
+				// if err := repos.ClassroomMember.Invite(ctx, existing.MemberId(),
+				// 	t.ProposedRole, &inviter, mtime.Now(), cmd.Note); err != nil {
+				// 	return errs.NewError(ctx, status.FAIL, nil, err)
+				// }
 				if err := repos.ClassroomMember.Invite(ctx, existing.MemberId(),
-					t.ProposedRole, &inviter, mtime.Now(), cmd.Note); err != nil {
+					t.Role, &inviter, mtime.Now(), cmd.Note); err != nil {
 					return errs.NewError(ctx, status.FAIL, nil, err)
 				}
 				refreshed, err := repos.ClassroomMember.FindByMemberId(ctx, existing.MemberId())
@@ -154,7 +160,8 @@ func (h *SendInvitationCommandHandler) Handle(ctx context.Context, cmd SendInvit
 			m.SetMemberId(memberID)
 			m.SetClassroomId(cmd.ClassroomID)
 			m.SetProfileId(invitedProfileID)
-			m.SetMemberRole(t.ProposedRole)
+			// m.SetMemberRole(t.ProposedRole)
+			m.SetMemberRole(t.Role)
 			m.SetInviteBy(&inviter)
 			m.SetInviteDt(now)
 			m.SetNote(cmd.Note)

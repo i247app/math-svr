@@ -28,7 +28,8 @@ func roleCountDeltas(role string, delta int64) (studentDelta, teacherDelta int64
 	case string(enum.ClassroomMemberRoleTypeStudent):
 		return delta, 0
 	case string(enum.ClassroomMemberRoleTypeCoTeacher),
-		string(enum.ClassroomMemberRoleTypeOwner):
+		string(enum.ClassroomMemberRoleTypeOwner),
+		string(enum.ClassroomMemberRoleTypeTeacher):
 		return 0, delta
 	default:
 		return 0, 0

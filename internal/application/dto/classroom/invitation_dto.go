@@ -1,6 +1,7 @@
 package classroom
 
 import (
+	profileDTO "math-ai.com/math-ai/internal/application/dto/profile"
 	domain "math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
@@ -12,19 +13,20 @@ import (
 // member_status carries PENDING / ACTIVE / REJECTED / etc — the same
 // values as MemberResponse.MemberStatus.
 type InvitationResponse struct {
-	InvitationID int64   `json:"invitation_id"`
-	ClassroomID  int64   `json:"classroom_id"`
-	ProfileID    int64   `json:"profile_id"`
-	MemberRole   string  `json:"member_role"`
-	MemberStatus *string `json:"member_status,omitempty"`
-	InviteBy     *int64  `json:"invite_by,omitempty"`
-	InviteDt     string  `json:"invite_dt,omitempty"`
-	JoinedDt     string  `json:"joined_dt,omitempty"`
-	LeftDt       string  `json:"left_dt,omitempty"`
-	RemovedDt    string  `json:"removed_dt,omitempty"`
-	Note         *string `json:"note,omitempty"`
-	CreateDt     string  `json:"create_dt"`
-	ModifyDt     string  `json:"modify_dt"`
+	InvitationID int64                       `json:"invitation_id"`
+	ClassroomID  int64                       `json:"classroom_id"`
+	ProfileID    int64                       `json:"profile_id"`
+	MemberRole   string                      `json:"member_role"`
+	MemberStatus *string                     `json:"member_status,omitempty"`
+	InviteBy     *int64                      `json:"invite_by,omitempty"`
+	Inviter      *profileDTO.ProfileResponse `json:"inviter,omitempty"`
+	InviteDt     string                      `json:"invite_dt,omitempty"`
+	JoinedDt     string                      `json:"joined_dt,omitempty"`
+	LeftDt       string                      `json:"left_dt,omitempty"`
+	RemovedDt    string                      `json:"removed_dt,omitempty"`
+	Note         *string                     `json:"note,omitempty"`
+	CreateDt     string                      `json:"create_dt"`
+	ModifyDt     string                      `json:"modify_dt"`
 }
 
 // InvitationTarget is the per-recipient payload accepted by Send.
@@ -52,10 +54,11 @@ type SkippedInvitation struct {
 // optional Note is copied into ma_classroom_members.note for each
 // inserted/reactivated row.
 type SendInvitationReq struct {
-	ProfileID   int64              `json:"profile_id"`
-	ClassroomID int64              `json:"classroom_id"`
-	Targets     []InvitationTarget `json:"targets"`
-	Note        *string            `json:"note,omitempty"`
+	ProfileID   int64 `json:"profile_id"`
+	ClassroomID int64 `json:"classroom_id"`
+	// Targets     []InvitationTarget `json:"targets"`
+	Targets []int64 `json:"targets"`
+	Note    *string `json:"note,omitempty"`
 }
 
 type SendInvitationRes struct {
@@ -126,7 +129,7 @@ type CancelInvitationRes struct{}
 // invitation wire shape. Timestamps that are unset land as the empty
 // string ("" via omitempty) rather than the zero MathTime stringer
 // output so the mobile client doesn't see a phantom date.
-func InvitationDomainToResponse(m *domain.Member) *InvitationResponse {
+func InvitationDomainToResponse(m *domain.Member, inviter *profileDTO.ProfileResponse) *InvitationResponse {
 	if m == nil {
 		return nil
 	}
@@ -153,13 +156,21 @@ func InvitationDomainToResponse(m *domain.Member) *InvitationResponse {
 	if m.RemovedDt().IsValid() {
 		resp.RemovedDt = m.RemovedDt().String()
 	}
+
+	if inviter != nil {
+		resp.Inviter = inviter
+	}
 	return resp
 }
 
-func InvitationDomainListToResponse(rows []*domain.Member) []*InvitationResponse {
+func InvitationDomainListToResponse(rows []*domain.Member, inviter []*profileDTO.ProfileResponse) []*InvitationResponse {
 	out := make([]*InvitationResponse, len(rows))
 	for i, m := range rows {
-		out[i] = InvitationDomainToResponse(m)
+		if inviter != nil && inviter[i] != nil {
+			out[i] = InvitationDomainToResponse(m, inviter[i])
+		} else {
+			out[i] = InvitationDomainToResponse(m, nil)
+		}
 	}
 	return out
 }

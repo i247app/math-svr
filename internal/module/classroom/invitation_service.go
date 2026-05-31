@@ -6,10 +6,10 @@ import (
 
 	command "math-ai.com/math-ai/internal/application/command/classroom"
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
+	profileDTO "math-ai.com/math-ai/internal/application/dto/profile"
 	query "math-ai.com/math-ai/internal/application/query/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // SendInvitation creates one PENDING ma_classroom_members row per
@@ -34,24 +34,35 @@ func (s *Service) SendInvitation(ctx context.Context, req *dto.SendInvitationReq
 	if err := guardClassroomMutable(ctx, existing); err != nil {
 		return nil, err
 	}
-	callerMember, err := s.requireManager(ctx, req.ClassroomID, caller.ProfileId())
-	if err != nil {
-		return nil, err
-	}
-	callerIsOwner := callerMember.MemberRole() == string(enum.ClassroomMemberRoleTypeOwner)
-	for _, t := range req.Targets {
-		if !callerIsOwner && t.ProposedRole == string(enum.ClassroomMemberRoleTypeCoTeacher) {
-			return nil, errs.NewError(ctx, status.CLASSROOM_INVITATION_PERMISSION_DENIED, nil,
-				errors.New("only owner can invite co-teachers"))
-		}
-	}
+
+	// callerMember, err := s.requireManager(ctx, req.ClassroomID, caller.ProfileId())
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// callerIsOwner := callerMember.MemberRole() == string(enum.ClassroomMemberRoleTypeOwner)
+	// for _, t := range req.Targets {
+	// 	if !callerIsOwner && t.ProposedRole == string(enum.ClassroomMemberRoleTypeCoTeacher) {
+	// 		return nil, errs.NewError(ctx, status.CLASSROOM_INVITATION_PERMISSION_DENIED, nil,
+	// 			errors.New("only owner can invite co-teachers"))
+	// 	}
+	// }
 
 	targets := make([]command.SendInvitationTarget, 0, len(req.Targets))
 	for _, t := range req.Targets {
+		profileExists, err := s.profileRepo.FindByProfileId(ctx, t)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if profileExists == nil {
+			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, errors.New("profile not found"))
+		}
+
 		targets = append(targets, command.SendInvitationTarget{
-			IdentifierType: t.IdentifierType,
-			Identifier:     t.Identifier,
-			ProposedRole:   t.ProposedRole,
+			// IdentifierType: t.IdentifierType,
+			// Identifier:     t.Identifier,
+			// ProposedRole:   t.ProposedRole,
+			ProfileID: t,
+			Role:      profileExists.Role(),
 		})
 	}
 
@@ -68,8 +79,8 @@ func (s *Service) SendInvitation(ctx context.Context, req *dto.SendInvitationReq
 	}
 
 	return &dto.SendInvitationRes{
-		Invitations: dto.InvitationDomainListToResponse(result.Invitations),
-		Skipped:     toSkippedInvitations(result.Skipped),
+		Invitations: dto.InvitationDomainListToResponse(result.Invitations, nil),
+		// Skipped:     toSkippedInvitations(result.Skipped),
 	}, nil
 }
 
@@ -91,8 +102,26 @@ func (s *Service) ListMyPendingInvitations(ctx context.Context, req *dto.ListMyP
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
+
+	inviterIds := make([]int64, len(rows))
+	for i, row := range rows {
+		if row.InviteBy() != nil {
+			inviterIds[i] = *row.InviteBy()
+		}
+	}
+
+	// inviters
+	inviters, err := s.profileRepo.ListByProfileIds(ctx, inviterIds)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	listInviterRes := make([]*profileDTO.ProfileResponse, 0, len(inviters))
+	for _, inviter := range inviters {
+		listInviterRes = append(listInviterRes, profileDTO.DomainToResponse(inviter))
+	}
 	return &dto.ListMyPendingInvitationsRes{
-		Invitations: dto.InvitationDomainListToResponse(rows),
+		Invitations: dto.InvitationDomainListToResponse(rows, listInviterRes),
 		Pagination:  pg,
 	}, nil
 }
@@ -118,8 +147,9 @@ func (s *Service) ListClassroomInvitations(ctx context.Context, req *dto.ListCla
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
+
 	return &dto.ListClassroomInvitationsRes{
-		Invitations: dto.InvitationDomainListToResponse(rows),
+		Invitations: dto.InvitationDomainListToResponse(rows, nil),
 		Pagination:  pg,
 	}, nil
 }
@@ -143,7 +173,7 @@ func (s *Service) AcceptInvitation(ctx context.Context, req *dto.AcceptInvitatio
 	if err != nil {
 		return nil, err
 	}
-	return &dto.AcceptInvitationRes{Invitation: dto.InvitationDomainToResponse(saved)}, nil
+	return &dto.AcceptInvitationRes{Invitation: dto.InvitationDomainToResponse(saved, nil)}, nil
 }
 
 // RejectInvitation flips a PENDING row owned by the caller to REJECTED.
@@ -189,15 +219,15 @@ func (s *Service) CancelInvitation(ctx context.Context, req *dto.CancelInvitatio
 	return &dto.CancelInvitationRes{}, nil
 }
 
-func toSkippedInvitations(in []command.SendInvitationSkipReason) []dto.SkippedInvitation {
-	out := make([]dto.SkippedInvitation, len(in))
-	for i, s := range in {
-		out[i] = dto.SkippedInvitation{
-			IdentifierType: s.Target.IdentifierType,
-			Identifier:     s.Target.Identifier,
-			Reason:         int64(s.Reason),
-			Message:        s.Message,
-		}
-	}
-	return out
-}
+// func toSkippedInvitations(in []command.SendInvitationSkipReason) []dto.SkippedInvitation {
+// 	out := make([]dto.SkippedInvitation, len(in))
+// 	for i, s := range in {
+// 		out[i] = dto.SkippedInvitation{
+// 			IdentifierType: s.Target.IdentifierType,
+// 			Identifier:     s.Target.Identifier,
+// 			Reason:         int64(s.Reason),
+// 			Message:        s.Message,
+// 		}
+// 	}
+// 	return out
+// }

@@ -31,6 +31,7 @@ type ListProfilesParams struct {
 // COALESCE on every other column.
 type IRepository interface {
 	FindByProfileId(ctx context.Context, profileId int64) (*Profile, error)
+	ListByProfileIds(ctx context.Context, profileIds []int64) ([]*Profile, error)
 	ListByUserId(ctx context.Context, userId int64) ([]*Profile, error)
 	ListProfiles(ctx context.Context, params *ListProfilesParams) ([]*Profile, *pagination.Pagination, error)
 	ListAvatarKeysByUserId(ctx context.Context, userId int64) ([]string, error)

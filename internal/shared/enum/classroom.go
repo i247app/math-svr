@@ -26,6 +26,7 @@ type ClassroomMemberRoleType string
 const (
 	ClassroomMemberRoleTypeOwner     ClassroomMemberRoleType = "OWNER"
 	ClassroomMemberRoleTypeCoTeacher ClassroomMemberRoleType = "CO_TEACHER"
+	ClassroomMemberRoleTypeTeacher   ClassroomMemberRoleType = "TEACHER"
 	ClassroomMemberRoleTypeStudent   ClassroomMemberRoleType = "STUDENT"
 )
 

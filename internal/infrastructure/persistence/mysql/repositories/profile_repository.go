@@ -110,6 +110,44 @@ func (r *ProfileRepository) ListByUserId(ctx context.Context, userId int64) ([]*
 	return profiles, nil
 }
 
+func (r *ProfileRepository) ListByProfileIds(ctx context.Context, profileIds []int64) ([]*profile.Profile, error) {
+	if len(profileIds) == 0 {
+		return nil, nil
+	}
+	// Build IN clause with placeholders: ? , ? , ?
+	placeholders := make([]string, len(profileIds))
+	// args := make([]any, len(profileIds))
+	args := profileActiveArgs()
+	// args = append(args, enum.StatusActive)
+
+	for i, id := range profileIds {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+
+	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE ` +
+		profileActiveWhere + ` AND p.profile_id IN (` + strings.Join(placeholders, ", ") + `) ORDER BY p.id DESC`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("profile repo list by profile ids: %w", err)
+	}
+	defer rows.Close()
+
+	var profiles []*profile.Profile
+	for rows.Next() {
+		m, err := scanProfile(rows)
+		if err != nil {
+			return nil, fmt.Errorf("profile repo scan row: %w", err)
+		}
+		profiles = append(profiles, ModelToDomainProfile(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("profile repo rows iteration: %w", err)
+	}
+	return profiles, nil
+}
+
 // ListProfiles returns a paginated slice of active profiles matching the
 // provided filters. The filter shape mirrors classroom/user list — every
 // predicate is optional and contributes to the WHERE clause only when set.
