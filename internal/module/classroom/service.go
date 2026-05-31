@@ -51,6 +51,11 @@ type Service struct {
 	acceptInvitationCmd                   *command.AcceptInvitationCommandHandler
 	rejectInvitationCmd                   *command.RejectInvitationCommandHandler
 	cancelInvitationCmd                   *command.CancelInvitationCommandHandler
+	approveJoinRequestCmd                 *command.ApproveJoinRequestCommandHandler
+	rejectJoinRequestCmd                  *command.RejectJoinRequestCommandHandler
+	cancelJoinRequestCmd                  *command.CancelJoinRequestCommandHandler
+	listJoinRequestsByClassroomQuery      *query.ListJoinRequestsByClassroomQueryHandler
+	listMyJoinRequestsQuery               *query.ListMyJoinRequestsQueryHandler
 
 	classroomRepo        classroomDomain.IRepository
 	classroomMemberRepo  classroomDomain.IMemberRepository
@@ -94,6 +99,11 @@ func NewService(
 		acceptInvitationCmd:                command.NewAcceptInvitationCommandHandler(uow),
 		rejectInvitationCmd:                command.NewRejectInvitationCommandHandler(uow),
 		cancelInvitationCmd:                command.NewCancelInvitationCommandHandler(uow),
+		approveJoinRequestCmd:              command.NewApproveJoinRequestCommandHandler(uow),
+		rejectJoinRequestCmd:               command.NewRejectJoinRequestCommandHandler(uow),
+		cancelJoinRequestCmd:               command.NewCancelJoinRequestCommandHandler(uow),
+		listJoinRequestsByClassroomQuery:   query.NewListJoinRequestsByClassroomQueryHandler(classroomMemberRepo),
+		listMyJoinRequestsQuery:            query.NewListMyJoinRequestsQueryHandler(classroomMemberRepo),
 		classroomRepo:                      classroomRepo,
 		classroomMemberRepo:                classroomMemberRepo,
 		classroomProgramRepo:               classroomProgramRepo,

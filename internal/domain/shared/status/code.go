@@ -246,4 +246,12 @@ const (
 	CLASSROOM_INVITATION_TOKEN_INVALID           StatusCode = 12412
 	CLASSROOM_INVITATION_TOKEN_GENERATION_FAILED StatusCode = 12413
 	CLASSROOM_INVITATION_PERMISSION_DENIED       StatusCode = 12414
+
+	// Classroom join request — user-initiated counterpart to the
+	// teacher-initiated invitation flow. Same ma_classroom_members
+	// table, distinguished by member_status = PENDING_REQUEST.
+	CLASSROOM_JOIN_REQUEST_NOT_FOUND         StatusCode = 12501
+	CLASSROOM_JOIN_REQUEST_NOT_PENDING       StatusCode = 12502
+	CLASSROOM_JOIN_REQUEST_ALREADY_PENDING   StatusCode = 12503
+	CLASSROOM_JOIN_REQUEST_PERMISSION_DENIED StatusCode = 12504
 )

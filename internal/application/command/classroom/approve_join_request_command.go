@@ -11,28 +11,29 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// AcceptInvitationCommand flips a PENDING ma_classroom_members row to
-// ACTIVE inside one UoW and advances the classroom counters in the
-// same transaction. Caller permission (caller == invitee) is enforced
-// at the module layer; here we trust the (classroom, profile) pair and
-// focus on the state-machine invariant: only PENDING accepts, never
-// ACTIVE / REJECTED / LEFT / REMOVED.
-type AcceptInvitationCommand struct {
+// ApproveJoinRequestCommand flips a PENDING_REQUEST ma_classroom_members
+// row to ACTIVE inside one UoW and advances the classroom counters in
+// the same transaction. Owner permission is enforced at the module
+// layer; here we trust the (classroom, target_profile) pair and guard
+// the state-machine: only PENDING_REQUEST approves. The max_members
+// check runs here (not at request time) so requests can queue while
+// seats open up.
+type ApproveJoinRequestCommand struct {
 	ClassroomID     int64
-	CallerProfileID int64
+	TargetProfileID int64
 	ActorID         *int64
 }
 
-type AcceptInvitationCommandHandler struct {
+type ApproveJoinRequestCommandHandler struct {
 	uow transaction.UnitOfWork
 }
 
-func NewAcceptInvitationCommandHandler(uow transaction.UnitOfWork) *AcceptInvitationCommandHandler {
-	return &AcceptInvitationCommandHandler{uow: uow}
+func NewApproveJoinRequestCommandHandler(uow transaction.UnitOfWork) *ApproveJoinRequestCommandHandler {
+	return &ApproveJoinRequestCommandHandler{uow: uow}
 }
 
-func (h *AcceptInvitationCommandHandler) Handle(ctx context.Context, cmd AcceptInvitationCommand) (*classroom.Member, error) {
-	var accepted *classroom.Member
+func (h *ApproveJoinRequestCommandHandler) Handle(ctx context.Context, cmd ApproveJoinRequestCommand) (*classroom.Member, error) {
+	var approved *classroom.Member
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		c, err := repos.Classroom.FindByClassroomId(ctx, cmd.ClassroomID)
@@ -53,21 +54,21 @@ func (h *AcceptInvitationCommandHandler) Handle(ctx context.Context, cmd AcceptI
 				errors.New("classroom is full"))
 		}
 
-		existing, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, cmd.ClassroomID, cmd.CallerProfileID)
+		existing, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, cmd.ClassroomID, cmd.TargetProfileID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.CLASSROOM_INVITATION_NOT_FOUND, nil,
-				errors.New("invitation not found"))
+			return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_NOT_FOUND, nil,
+				errors.New("join request not found"))
 		}
 		currentStatus := ""
 		if existing.MemberStatus() != nil {
 			currentStatus = *existing.MemberStatus()
 		}
-		if currentStatus != string(enum.ClassroomMemberStatusTypePendingInvitation) {
-			return errs.NewError(ctx, status.CLASSROOM_INVITATION_NOT_PENDING, nil,
-				errors.New("invitation is not pending"))
+		if currentStatus != string(enum.ClassroomMemberStatusTypePendingRequest) {
+			return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_NOT_PENDING, nil,
+				errors.New("join request is not pending"))
 		}
 
 		if err := repos.ClassroomMember.Activate(ctx, existing.MemberId()); err != nil {
@@ -81,11 +82,11 @@ func (h *AcceptInvitationCommandHandler) Handle(ctx context.Context, cmd AcceptI
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		accepted = refreshed
+		approved = refreshed
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
-	return accepted, nil
+	return approved, nil
 }

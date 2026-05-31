@@ -53,12 +53,15 @@ func (s ClassroomMemberRoleType) IsValid() bool {
 type ClassroomMemberStatusType string
 
 const (
-	ClassroomMemberStatusTypePending  ClassroomMemberStatusType = "PENDING"
-	ClassroomMemberStatusTypeActive   ClassroomMemberStatusType = "ACTIVE"
-	ClassroomMemberStatusTypeRejected ClassroomMemberStatusType = "REJECTED"
-	ClassroomMemberStatusTypeLeft     ClassroomMemberStatusType = "LEFT"
-	ClassroomMemberStatusTypeRemoved  ClassroomMemberStatusType = "REMOVED"
-	ClassroomMemberStatusTypeDeleted  ClassroomMemberStatusType = "DELETED"
+	// PENDING_INVITATION → teacher invited; awaiting invitee accept/reject.
+	ClassroomMemberStatusTypePendingInvitation ClassroomMemberStatusType = "PENDING_INVITATION"
+	// PENDING_REQUEST → user requested; awaiting owner approve/reject.
+	ClassroomMemberStatusTypePendingRequest ClassroomMemberStatusType = "PENDING_REQUEST"
+	ClassroomMemberStatusTypeActive         ClassroomMemberStatusType = "ACTIVE"
+	ClassroomMemberStatusTypeRejected       ClassroomMemberStatusType = "REJECTED"
+	ClassroomMemberStatusTypeLeft           ClassroomMemberStatusType = "LEFT"
+	ClassroomMemberStatusTypeRemoved        ClassroomMemberStatusType = "REMOVED"
+	ClassroomMemberStatusTypeDeleted        ClassroomMemberStatusType = "DELETED"
 )
 
 func (s ClassroomMemberStatusType) String() string {
@@ -67,7 +70,8 @@ func (s ClassroomMemberStatusType) String() string {
 
 func (s ClassroomMemberStatusType) IsValid() bool {
 	switch s {
-	case ClassroomMemberStatusTypePending,
+	case ClassroomMemberStatusTypePendingInvitation,
+		ClassroomMemberStatusTypePendingRequest,
 		ClassroomMemberStatusTypeActive,
 		ClassroomMemberStatusTypeRejected,
 		ClassroomMemberStatusTypeLeft,

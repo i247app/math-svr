@@ -39,7 +39,7 @@ func (s *Service) JoinClassroomByCode(ctx context.Context, req *dto.JoinByCodeRe
 	if err != nil {
 		return nil, err
 	}
-	return &dto.JoinByCodeRes{Member: dto.MemberDomainToResponse(saved)}, nil
+	return &dto.JoinByCodeRes{Request: dto.JoinRequestDomainToResponse(saved, nil)}, nil
 }
 
 // LeaveClassroom transitions the caller's member row to LEFT. OWNER is

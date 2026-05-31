@@ -42,7 +42,7 @@ func (h *RejectInvitationCommandHandler) Handle(ctx context.Context, cmd RejectI
 		if existing.MemberStatus() != nil {
 			currentStatus = *existing.MemberStatus()
 		}
-		if currentStatus != string(enum.ClassroomMemberStatusTypePending) {
+		if currentStatus != string(enum.ClassroomMemberStatusTypePendingInvitation) {
 			return errs.NewError(ctx, status.CLASSROOM_INVITATION_NOT_PENDING, nil,
 				errors.New("invitation is not pending"))
 		}

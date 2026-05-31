@@ -474,6 +474,16 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Tạo token lời mời thất bại"
 	case CLASSROOM_INVITATION_PERMISSION_DENIED:
 		return "Bạn không có quyền thao tác trên lời mời này"
+
+	// Classroom join request
+	case CLASSROOM_JOIN_REQUEST_NOT_FOUND:
+		return "Không tìm thấy yêu cầu tham gia"
+	case CLASSROOM_JOIN_REQUEST_NOT_PENDING:
+		return "Yêu cầu tham gia không ở trạng thái chờ duyệt"
+	case CLASSROOM_JOIN_REQUEST_ALREADY_PENDING:
+		return "Đã tồn tại yêu cầu tham gia đang chờ duyệt cho lớp học này"
+	case CLASSROOM_JOIN_REQUEST_PERMISSION_DENIED:
+		return "Bạn không có quyền thao tác trên yêu cầu tham gia này"
 	default:
 		return ""
 	}

@@ -474,6 +474,16 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Failed to generate invitation token"
 	case CLASSROOM_INVITATION_PERMISSION_DENIED:
 		return "You do not have permission to manage this invitation"
+
+	// Classroom join request
+	case CLASSROOM_JOIN_REQUEST_NOT_FOUND:
+		return "Join request not found"
+	case CLASSROOM_JOIN_REQUEST_NOT_PENDING:
+		return "Join request is not in a pending state"
+	case CLASSROOM_JOIN_REQUEST_ALREADY_PENDING:
+		return "A pending join request already exists for this classroom"
+	case CLASSROOM_JOIN_REQUEST_PERMISSION_DENIED:
+		return "You do not have permission to manage this join request"
 	default:
 		return ""
 	}

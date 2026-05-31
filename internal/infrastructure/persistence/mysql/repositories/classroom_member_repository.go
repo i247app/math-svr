@@ -345,11 +345,11 @@ func (r *ClassroomMemberRepository) Reactivate(ctx context.Context, memberId int
 	return nil
 }
 
-// Invite refreshes a row into a PENDING invitation in place — used when
-// the send-invitation path finds an existing row in a terminal state
-// (REJECTED/LEFT/REMOVED) for the (classroom, profile) pair. The
-// member_role and inviter metadata are rewritten so the new invitation
-// is indistinguishable from one inserted fresh.
+// Invite refreshes a row into a PENDING_INVITATION in place — used
+// when the send-invitation path finds an existing row in a terminal
+// state (REJECTED/LEFT/REMOVED) for the (classroom, profile) pair.
+// The member_role and inviter metadata are rewritten so the new
+// invitation is indistinguishable from one inserted fresh.
 func (r *ClassroomMemberRepository) Invite(ctx context.Context, memberId int64, role string, inviteBy *int64, inviteDt mtime.MathTime, note *string) error {
 	var inviteDtArg any
 	if inviteDt.IsValid() {
@@ -372,7 +372,7 @@ func (r *ClassroomMemberRepository) Invite(ctx context.Context, memberId int64, 
 		WHERE member_id = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
-		role, enum.ClassroomMemberStatusTypePending,
+		role, enum.ClassroomMemberStatusTypePendingInvitation,
 		inviteBy, inviteDtArg, note,
 		mtime.Now().Time, memberId); err != nil {
 		return fmt.Errorf("classroom_member repo invite: %w", err)
@@ -380,10 +380,47 @@ func (r *ClassroomMemberRepository) Invite(ctx context.Context, memberId int64, 
 	return nil
 }
 
-// Accept flips PENDING → ACTIVE, refreshes joined_dt, and clears
-// terminal-state markers. Caller pairs with Classroom.IncCounts inside
-// the same UoW so the classroom counters stay aligned.
-func (r *ClassroomMemberRepository) Accept(ctx context.Context, memberId int64) error {
+// RequestToJoin refreshes a row into a PENDING_REQUEST in place — the
+// user-initiated counterpart to Invite. invite_by is explicitly
+// nulled (no manager is sponsoring) and invite_dt carries the
+// "requested at" timestamp. Used by the join-by-code path when an
+// existing terminal-state row is reactivated.
+func (r *ClassroomMemberRepository) RequestToJoin(ctx context.Context, memberId int64, role string, requestedDt mtime.MathTime, note *string) error {
+	var requestedDtArg any
+	if requestedDt.IsValid() {
+		requestedDtArg = requestedDt.Time
+	} else {
+		requestedDtArg = mtime.Now().Time
+	}
+	query := `
+		UPDATE ` + classroomMemberTable + `
+		SET member_role           = ?,
+			member_status         = ?,
+			invite_by             = NULL,
+			invite_dt             = ?,
+			note                  = COALESCE(?, note),
+			joined_dt             = NULL,
+			left_dt               = NULL,
+			removed_by_profile_id = NULL,
+			removed_dt            = NULL,
+			modify_dt             = ?
+		WHERE member_id = ?
+	`
+	if _, err := r.db.Exec(ctx, query,
+		role, enum.ClassroomMemberStatusTypePendingRequest,
+		requestedDtArg, note,
+		mtime.Now().Time, memberId); err != nil {
+		return fmt.Errorf("classroom_member repo request to join: %w", err)
+	}
+	return nil
+}
+
+// Activate flips a PENDING_* row to ACTIVE, refreshes joined_dt, and
+// clears terminal-state markers. Shared by accept-invitation and
+// approve-request paths; the command-layer guard decides which prior
+// status is valid. Caller pairs with Classroom.IncCounts inside the
+// same UoW so the classroom counters stay aligned.
+func (r *ClassroomMemberRepository) Activate(ctx context.Context, memberId int64) error {
 	query := `
 		UPDATE ` + classroomMemberTable + `
 		SET member_status         = ?,
@@ -397,12 +434,12 @@ func (r *ClassroomMemberRepository) Accept(ctx context.Context, memberId int64) 
 	now := mtime.Now().Time
 	if _, err := r.db.Exec(ctx, query,
 		enum.ClassroomMemberStatusTypeActive, now, now, memberId); err != nil {
-		return fmt.Errorf("classroom_member repo accept: %w", err)
+		return fmt.Errorf("classroom_member repo activate: %w", err)
 	}
 	return nil
 }
 
-// Reject flips PENDING → REJECTED. left_dt is reused as the
+// Reject flips a PENDING_* row to REJECTED. left_dt is reused as the
 // "responded at" timestamp so the schema doesn't need a new column.
 func (r *ClassroomMemberRepository) Reject(ctx context.Context, memberId int64) error {
 	query := `

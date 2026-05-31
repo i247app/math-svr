@@ -117,24 +117,32 @@ type IMemberRepository interface {
 	SetRole(ctx context.Context, memberId int64, role string) error
 	MarkLeft(ctx context.Context, memberId int64) error
 	MarkRemoved(ctx context.Context, memberId, removedByProfileId int64) error
-	// Invite flips an existing row into a fresh PENDING invitation
+	// Invite flips an existing row into a fresh PENDING_INVITATION
 	// (member_role/invite_by/invite_dt refreshed, terminal-state
 	// timestamps cleared). Used by the send-invitation path when the
 	// target previously REJECTED/LEFT/REMOVED so the UNIQUE
 	// (classroom_id, profile_id) constraint stays meaningful.
 	Invite(ctx context.Context, memberId int64, role string, inviteBy *int64, inviteDt mtime.MathTime, note *string) error
-	// Accept flips a PENDING row to ACTIVE, refreshing joined_dt and
-	// clearing left_dt/removed_dt/removed_by_profile_id. The caller
-	// pairs this with Classroom.IncCounts inside the same UoW.
-	Accept(ctx context.Context, memberId int64) error
-	// Reject flips a PENDING row to REJECTED. left_dt is reused to
-	// store the response timestamp so the existing column carries
-	// "when did the row last transition out of activity" semantics for
-	// every terminal state.
+	// RequestToJoin is Invite's user-initiated twin: flips an existing
+	// terminal-state row into PENDING_REQUEST, with invite_by NULL
+	// (no manager initiated it) and invite_dt = requestedDt as the
+	// "requested at" timestamp.
+	RequestToJoin(ctx context.Context, memberId int64, role string, requestedDt mtime.MathTime, note *string) error
+	// Activate flips a PENDING_INVITATION OR PENDING_REQUEST row to
+	// ACTIVE, refreshing joined_dt and clearing terminal-state
+	// timestamps. Used by both accept-invitation and approve-request
+	// paths; the command-layer guard decides which prior status is
+	// allowed. The caller pairs this with Classroom.IncCounts inside
+	// the same UoW.
+	Activate(ctx context.Context, memberId int64) error
+	// Reject flips a PENDING_* row to REJECTED. Reused by both the
+	// invitee-rejects-invitation and owner-rejects-request paths;
+	// command-layer guards enforce which source status is valid.
+	// left_dt is reused as the "responded at" timestamp.
 	Reject(ctx context.Context, memberId int64) error
-	// Cancel flips a PENDING row to REMOVED with the manager's profile
-	// id captured in removed_by_profile_id. Distinguishable from a
-	// regular member-removal by the source state (PENDING vs ACTIVE).
+	// Cancel flips a PENDING_* row to REMOVED with the cancelling
+	// profile id captured in removed_by_profile_id. Reused by both
+	// manager-cancels-invitation and user-cancels-own-request paths.
 	Cancel(ctx context.Context, memberId, cancelledByProfileId int64) error
 	// Reactivate flips an existing PENDING/LEFT/REMOVED/REJECTED row
 	// back to ACTIVE in place. Used by the join-by-code path so the

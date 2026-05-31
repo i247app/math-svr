@@ -14,15 +14,16 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// JoinByCodeCommand resolves a classroom by invite_code and inserts
-// (or reactivates) the caller as a member. The classroom-side member
-// role is derived from ProfileRole via memberRoleForProfileRole — a
-// TEACHER profile lands as CO_TEACHER, anyone else lands as STUDENT.
-// Atomicity guarantees: classroom lookup, duplicate check, member
-// write, and counter updates all happen inside one UoW. A profile
-// rejoining a classroom they once left does NOT get a new member row
-// — the existing one is flipped back to ACTIVE so the unique
-// constraint stays meaningful and join history is preserved.
+// JoinByCodeCommand resolves a classroom by invite_code and submits a
+// PENDING_REQUEST on behalf of the caller — it no longer joins the
+// classroom directly. The classroom owner approves or rejects the
+// request via ApproveJoinRequest / RejectJoinRequest. The
+// classroom-side member_role is derived from the caller's profile
+// role via memberRoleForProfileRole. Atomicity: classroom lookup,
+// duplicate check, and member row write all happen inside one UoW.
+// max_members is intentionally NOT enforced here — capacity is
+// checked when the owner approves so requests can queue while seats
+// open up.
 type JoinByCodeCommand struct {
 	ActorID     *int64
 	ProfileID   int64
@@ -58,32 +59,37 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 			return errs.NewError(ctx, status.CLASSROOM_INVITE_CODE_EXPIRED, nil,
 				errors.New("invite code expired"))
 		}
-		if c.MaxMembers() != nil && c.MemberCount() >= *c.MaxMembers() {
-			return errs.NewError(ctx, status.CLASSROOM_MAX_MEMBERS_REACHED, nil,
-				errors.New("classroom is full"))
-		}
+
+		memberRole := memberRoleForProfileRole(cmd.ProfileRole)
 
 		existing, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, c.ClassroomId(), cmd.ProfileID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-
-		memberRole := memberRoleForProfileRole(cmd.ProfileRole)
-		studentDelta, teacherDelta := roleCountDeltas(memberRole, 1)
-
 		if existing != nil {
 			currentStatus := ""
 			if existing.MemberStatus() != nil {
 				currentStatus = *existing.MemberStatus()
 			}
-			if currentStatus == string(enum.ClassroomMemberStatusTypeActive) {
+			switch currentStatus {
+			case string(enum.ClassroomMemberStatusTypeActive):
 				return errs.NewError(ctx, status.CLASSROOM_MEMBER_ALREADY_MEMBER, nil,
 					errors.New("already an active member"))
+			case string(enum.ClassroomMemberStatusTypePendingInvitation):
+				// A teacher has already reached out — the user should
+				// accept that invitation rather than open a separate
+				// request thread.
+				return errs.NewError(ctx, status.CLASSROOM_INVITATION_ALREADY_INVITED, nil,
+					errors.New("a pending invitation already exists; accept it instead"))
+			case string(enum.ClassroomMemberStatusTypePendingRequest):
+				return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_ALREADY_PENDING, nil,
+					errors.New("a pending join request already exists"))
 			}
-			if err := repos.ClassroomMember.Reactivate(ctx, existing.MemberId(), memberRole, nil); err != nil {
-				return errs.NewError(ctx, status.FAIL, nil, err)
-			}
-			if err := repos.Classroom.IncCounts(ctx, c.ClassroomId(), 1, studentDelta, teacherDelta); err != nil {
+			// REJECTED / LEFT / REMOVED → reactivate the existing row
+			// as a fresh PENDING_REQUEST so the UNIQUE
+			// (classroom_id, profile_id) constraint stays meaningful.
+			if err := repos.ClassroomMember.RequestToJoin(ctx, existing.MemberId(),
+				memberRole, mtime.Now(), nil); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			refreshed, err := repos.ClassroomMember.FindByMemberId(ctx, existing.MemberId())
@@ -100,22 +106,21 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 		}
 
 		now := mtime.Now()
-		activeStatus := string(enum.ClassroomMemberStatusTypeActive)
+		pendingRequest := string(enum.ClassroomMemberStatusTypePendingRequest)
 
 		m := classroom.NewMember()
 		m.SetMemberId(memberID)
 		m.SetClassroomId(c.ClassroomId())
 		m.SetProfileId(cmd.ProfileID)
 		m.SetMemberRole(memberRole)
-		m.SetJoinedDt(now)
-		m.SetMemberStatus(&activeStatus)
+		// invite_by stays nil — the request is self-initiated.
+		// invite_dt doubles as the "requested at" timestamp.
+		m.SetInviteDt(now)
+		m.SetMemberStatus(&pendingRequest)
 		m.SetCreateId(cmd.ActorID)
 
 		inserted, err := repos.ClassroomMember.Create(ctx, m)
 		if err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
-		if err := repos.Classroom.IncCounts(ctx, c.ClassroomId(), 1, studentDelta, teacherDelta); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		saved = inserted

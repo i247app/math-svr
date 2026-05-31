@@ -565,3 +565,103 @@ func (h *ClassroomHandler) HandleCancelInvitation(w http.ResponseWriter, r *http
 	}
 	response.WriteJson(w, res, nil)
 }
+
+// POST /classrooms/join-requests/list  (owner view)
+func (h *ClassroomHandler) HandleListJoinRequestsByClassroom(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListJoinRequestsByClassroomReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.ListJoinRequestsByClassroom(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/join-requests/my-pending  (requester view)
+func (h *ClassroomHandler) HandleListMyJoinRequests(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListMyJoinRequestsReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.ListMyJoinRequests(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/join-requests/approve
+func (h *ClassroomHandler) HandleApproveJoinRequest(w http.ResponseWriter, r *http.Request) {
+	var req dto.ApproveJoinRequestReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.ApproveJoinRequest(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/join-requests/reject
+func (h *ClassroomHandler) HandleRejectJoinRequest(w http.ResponseWriter, r *http.Request) {
+	var req dto.RejectJoinRequestReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.RejectJoinRequest(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/join-requests/cancel  (requester withdraws own request)
+func (h *ClassroomHandler) HandleCancelJoinRequest(w http.ResponseWriter, r *http.Request) {
+	var req dto.CancelJoinRequestReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.CancelJoinRequest(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}

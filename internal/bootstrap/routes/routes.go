@@ -165,20 +165,27 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /classrooms/force-delete", classroomHandler.HandleForceDeleteClassroom, authMiddleware)
 
 		// membership
-		gexSvr.AddRoute("POST /classrooms/join-by-code", classroomHandler.HandleJoinByCode, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/leave", classroomHandler.HandleLeaveClassroom, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/transfer-ownership", classroomHandler.HandleTransferOwnership, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/members/list", classroomHandler.HandleListMembers, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/members/remove", classroomHandler.HandleRemoveMember, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/members/update-role", classroomHandler.HandleUpdateMemberRole, authMiddleware)
 
-		// invitations — backed by ma_classroom_members.member_status
+		// invitations — teacher-initiated, member_status = PENDING_INVITATION
 		gexSvr.AddRoute("POST /classrooms/invitations/send", classroomHandler.HandleSendInvitation, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/invitations/list", classroomHandler.HandleListClassroomInvitations, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/invitations/my-pending", classroomHandler.HandleListMyPendingInvitations, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/invitations/accept", classroomHandler.HandleAcceptInvitation, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/invitations/reject", classroomHandler.HandleRejectInvitation, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/invitations/cancel", classroomHandler.HandleCancelInvitation, authMiddleware)
+
+		// join requests — user-initiated, member_status = PENDING_REQUEST
+		gexSvr.AddRoute("POST /classrooms/join-by-code", classroomHandler.HandleJoinByCode, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/join-requests/list", classroomHandler.HandleListJoinRequestsByClassroom, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/join-requests/my-pending", classroomHandler.HandleListMyJoinRequests, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/join-requests/approve", classroomHandler.HandleApproveJoinRequest, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/join-requests/reject", classroomHandler.HandleRejectJoinRequest, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/join-requests/cancel", classroomHandler.HandleCancelJoinRequest, authMiddleware)
 	}
 
 	// health routes
