@@ -116,12 +116,13 @@ func (s *Service) ListMyPendingInvitations(ctx context.Context, req *dto.ListMyP
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	listInviterRes := make([]*profileDTO.ProfileResponse, 0, len(inviters))
+	// listInviterRes := make([]*profileDTO.ProfileResponse, 0, len(inviters))
+	hashInviter := make(map[int64]*profileDTO.ProfileResponse)
 	for _, inviter := range inviters {
-		listInviterRes = append(listInviterRes, profileDTO.DomainToResponse(inviter))
+		hashInviter[inviter.ProfileId()] = profileDTO.DomainToResponse(inviter)
 	}
 	return &dto.ListMyPendingInvitationsRes{
-		Invitations: dto.InvitationDomainListToResponse(rows, listInviterRes),
+		Invitations: dto.InvitationDomainListToResponse(rows, hashInviter),
 		Pagination:  pg,
 	}, nil
 }

@@ -66,9 +66,6 @@ type SendInvitationRes struct {
 	Skipped     []SkippedInvitation   `json:"skipped"`
 }
 
-// ListMyPendingInvitationsReq enumerates pending invitations targeted
-// at the caller's profile. The classroom-side counterpart is
-// ListClassroomInvitationsReq below.
 type ListMyPendingInvitationsReq struct {
 	ProfileID int64 `json:"profile_id"`
 	Page      int64 `json:"page"`
@@ -80,9 +77,6 @@ type ListMyPendingInvitationsRes struct {
 	Pagination  *pagination.Pagination `json:"pagination"`
 }
 
-// ListClassroomInvitationsReq is the manager-side view: every PENDING
-// invitation a classroom has outstanding. Caller must be a manager of
-// the classroom.
 type ListClassroomInvitationsReq struct {
 	ProfileID   int64 `json:"profile_id"`
 	ClassroomID int64 `json:"classroom_id"`
@@ -95,10 +89,6 @@ type ListClassroomInvitationsRes struct {
 	Pagination  *pagination.Pagination `json:"pagination"`
 }
 
-// AcceptInvitationReq / RejectInvitationReq flip a PENDING row owned
-// by the caller. ClassroomID identifies which invitation to act on;
-// the (caller_profile_id, classroom_id) pair must point at exactly
-// one PENDING row.
 type AcceptInvitationReq struct {
 	ProfileID   int64 `json:"profile_id"`
 	ClassroomID int64 `json:"classroom_id"`
@@ -125,10 +115,6 @@ type CancelInvitationReq struct {
 
 type CancelInvitationRes struct{}
 
-// InvitationDomainToResponse renders a ma_classroom_members row as the
-// invitation wire shape. Timestamps that are unset land as the empty
-// string ("" via omitempty) rather than the zero MathTime stringer
-// output so the mobile client doesn't see a phantom date.
 func InvitationDomainToResponse(m *domain.Member, inviter *profileDTO.ProfileResponse) *InvitationResponse {
 	if m == nil {
 		return nil
@@ -163,11 +149,16 @@ func InvitationDomainToResponse(m *domain.Member, inviter *profileDTO.ProfileRes
 	return resp
 }
 
-func InvitationDomainListToResponse(rows []*domain.Member, inviter []*profileDTO.ProfileResponse) []*InvitationResponse {
+func InvitationDomainListToResponse(rows []*domain.Member, hashInviters map[int64]*profileDTO.ProfileResponse) []*InvitationResponse {
 	out := make([]*InvitationResponse, len(rows))
 	for i, m := range rows {
-		if inviter != nil && inviter[i] != nil {
-			out[i] = InvitationDomainToResponse(m, inviter[i])
+		if m.InviteBy() != nil {
+			inviter, ok := hashInviters[*m.InviteBy()]
+			if ok {
+				out[i] = InvitationDomainToResponse(m, inviter)
+			} else {
+				out[i] = InvitationDomainToResponse(m, nil)
+			}
 		} else {
 			out[i] = InvitationDomainToResponse(m, nil)
 		}
