@@ -9,6 +9,7 @@ import (
 	semesterDto "math-ai.com/math-ai/internal/application/dto/semester"
 	domain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
 // ProfileResponse embeds the full Program / Grade / Semester objects so the
@@ -107,13 +108,29 @@ type GetProfileByIdRes struct {
 	Profile *ProfileResponse `json:"profile"`
 }
 
+// ListProfilesReq powers /profiles/list. All filter fields are optional —
+// callers can scope by user_id (the original behaviour) or by any
+// combination of role, profile_status, school/program/grade/semester ids,
+// is_default flag, and a free-text search against name. Pagination is
+// standard (page / size, defaults applied by pagination.NewPagination).
 type ListProfilesReq struct {
-	UserID   int64             `json:"user_id"`
-	Language enum.LanguageType `json:"language,omitempty"`
+	UserID        *int64            `json:"user_id,omitempty"`
+	Role          *string           `json:"role,omitempty"`
+	ProfileStatus *string           `json:"profile_status,omitempty"`
+	SchoolID      *int64            `json:"school_id,omitempty"`
+	ProgramID     *int64            `json:"program_id,omitempty"`
+	GradeID       *int64            `json:"grade_id,omitempty"`
+	SemesterID    *int64            `json:"semester_id,omitempty"`
+	IsDefault     *bool             `json:"is_default,omitempty"`
+	Search        *string           `json:"search,omitempty"`
+	Page          int64             `json:"page"`
+	Size          int64             `json:"size"`
+	Language      enum.LanguageType `json:"language,omitempty"`
 }
 
 type ListProfilesRes struct {
-	Profiles []*ProfileResponse `json:"profiles"`
+	Profiles   []*ProfileResponse     `json:"profiles"`
+	Pagination *pagination.Pagination `json:"pagination"`
 }
 
 type DeleteProfileReq struct {

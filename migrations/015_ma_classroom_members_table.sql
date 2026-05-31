@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS ma_classroom_members (
   removed_dt               DATETIME(6) DEFAULT NULL,
   last_seen_dt             DATETIME(6) DEFAULT NULL,
   note                     VARCHAR(500) DEFAULT NULL,
+  invite_by                BIGINT UNSIGNED DEFAULT NULL,
+  invite_dt                DATETIME(6) DEFAULT NULL,
   member_status            VARCHAR(32) DEFAULT 'ACTIVE', -- INVITED, ACTIVE, LEFT, REMOVED, DELETED
   status                   VARCHAR(32) DEFAULT 'ACTIVE',
   create_id                BIGINT UNSIGNED DEFAULT NULL,

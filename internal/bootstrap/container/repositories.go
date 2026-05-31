@@ -7,17 +7,17 @@ import (
 
 func SetupRepositories(db *database.DatabaseWithLogs) *RepositoryContainer {
 	return &RepositoryContainer{
-		UserRepository:               repositories.NewUserRepository(db),
-		ProgramRepository:            repositories.NewProgramRepository(db),
-		GradeRepository:              repositories.NewGradeRepository(db),
-		SemesterRepository:           repositories.NewSemesterRepository(db),
-		ProfileRepository:            repositories.NewProfileRepository(db),
-		LoginLogRepository:           repositories.NewLoginLogRepository(db),
-		DeviceRepository:             repositories.NewDeviceRepository(db),
-		OtpRepository:                repositories.NewOtpRepository(db),
-		QuizRepository:               repositories.NewQuizRepository(db),
-		ChapterRepository:            repositories.NewChapterRepository(db),
-		ChapterTranslationRepository: repositories.NewChapterTranslationRepository(db),
+		UserRepository:                repositories.NewUserRepository(db),
+		ProgramRepository:             repositories.NewProgramRepository(db),
+		GradeRepository:               repositories.NewGradeRepository(db),
+		SemesterRepository:            repositories.NewSemesterRepository(db),
+		ProfileRepository:             repositories.NewProfileRepository(db),
+		LoginLogRepository:            repositories.NewLoginLogRepository(db),
+		DeviceRepository:              repositories.NewDeviceRepository(db),
+		OtpRepository:                 repositories.NewOtpRepository(db),
+		QuizRepository:                repositories.NewQuizRepository(db),
+		ChapterRepository:             repositories.NewChapterRepository(db),
+		ChapterTranslationRepository:  repositories.NewChapterTranslationRepository(db),
 		GradeTranslationRepository:    repositories.NewGradeTranslationRepository(db),
 		SemesterTranslationRepository: repositories.NewSemesterTranslationRepository(db),
 		ProgramTranslationRepository:  repositories.NewProgramTranslationRepository(db),
@@ -25,7 +25,6 @@ func SetupRepositories(db *database.DatabaseWithLogs) *RepositoryContainer {
 		SeqRepository:                 repositories.NewSeqRepository(db),
 		ClassroomRepository:           repositories.NewClassroomRepository(db),
 		ClassroomMemberRepository:     repositories.NewClassroomMemberRepository(db),
-		ClassroomInvitationRepository: repositories.NewClassroomInvitationRepository(db),
 		ClassroomProgramRepository:    repositories.NewClassroomProgramRepository(db),
 	}
 }

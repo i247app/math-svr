@@ -31,16 +31,16 @@ import (
 )
 
 type ServiceContainer struct {
-	UserSvc     *user.Service
-	AuthSvc     *auth.Service
-	ProgramSvc  *program.Service
-	GradeSvc    *grade.Service
-	SemesterSvc *semester.Service
-	ProfileSvc  *profile.Service
-	DeviceSvc   *device.Service
-	OtpSvc      *otp.Service
-	QuizSvc     *quiz.Service
-	ChapterSvc  *chapter.Service
+	UserSvc      *user.Service
+	AuthSvc      *auth.Service
+	ProgramSvc   *program.Service
+	GradeSvc     *grade.Service
+	SemesterSvc  *semester.Service
+	ProfileSvc   *profile.Service
+	DeviceSvc    *device.Service
+	OtpSvc       *otp.Service
+	QuizSvc      *quiz.Service
+	ChapterSvc   *chapter.Service
 	SchoolSvc    *school.Service
 	JobSvc       *job.Service
 	SeqSvc       *seq.Service
@@ -48,17 +48,17 @@ type ServiceContainer struct {
 }
 
 type RepositoryContainer struct {
-	UserRepository               userDomain.IRepository
-	ProgramRepository            programDomain.IRepository
-	GradeRepository              gradeDomain.IRepository
-	SemesterRepository           semesterDomain.IRepository
-	ProfileRepository            profileDomain.IRepository
-	LoginLogRepository           loginLogDomain.IRepository
-	DeviceRepository             deviceDomain.IRepository
-	OtpRepository                otpDomain.IRepository
-	QuizRepository               quizDomain.IRepository
-	ChapterRepository            chapterDomain.IRepository
-	ChapterTranslationRepository chapterDomain.ITranslationRepository
+	UserRepository                userDomain.IRepository
+	ProgramRepository             programDomain.IRepository
+	GradeRepository               gradeDomain.IRepository
+	SemesterRepository            semesterDomain.IRepository
+	ProfileRepository             profileDomain.IRepository
+	LoginLogRepository            loginLogDomain.IRepository
+	DeviceRepository              deviceDomain.IRepository
+	OtpRepository                 otpDomain.IRepository
+	QuizRepository                quizDomain.IRepository
+	ChapterRepository             chapterDomain.IRepository
+	ChapterTranslationRepository  chapterDomain.ITranslationRepository
 	GradeTranslationRepository    gradeDomain.ITranslationRepository
 	SemesterTranslationRepository semesterDomain.ITranslationRepository
 	ProgramTranslationRepository  programDomain.ITranslationRepository
@@ -66,6 +66,5 @@ type RepositoryContainer struct {
 	SeqRepository                 seqDomain.IRepository
 	ClassroomRepository           classroomDomain.IRepository
 	ClassroomMemberRepository     classroomDomain.IMemberRepository
-	ClassroomInvitationRepository classroomDomain.IInvitationRepository
 	ClassroomProgramRepository    classroomDomain.IClassroomProgramRepository
 }

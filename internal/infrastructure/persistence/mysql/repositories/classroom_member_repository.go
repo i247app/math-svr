@@ -20,13 +20,13 @@ const (
 
 	classroomMemberColumns = `m.id, m.member_id, m.classroom_id, m.profile_id, m.member_role,
 		m.invitation_id, m.joined_dt, m.left_dt, m.removed_by_profile_id, m.removed_dt,
-		m.last_seen_dt, m.note,
+		m.last_seen_dt, m.note, m.invite_by, m.invite_dt,
 		m.member_status, m.status,
 		m.create_id, m.create_dt, m.modify_id, m.modify_dt`
 
 	// classroomMemberActiveWhere excludes only system-inactive and the
-	// DELETED business state. INVITED/ACTIVE/LEFT/REMOVED are all visible
-	// — callers narrow further via params.Status.
+	// DELETED business state. PENDING/ACTIVE/REJECTED/LEFT/REMOVED are
+	// all visible — callers narrow further via params.Status.
 	classroomMemberActiveWhere = `m.status = ? AND m.deleted_dt IS NULL
 		AND (m.member_status IS NULL OR m.member_status != ?)`
 )
@@ -47,7 +47,7 @@ func scanClassroomMember(s database.RowScanner) (*models.ClassroomMemberModel, e
 	var m models.ClassroomMemberModel
 	if err := s.Scan(&m.Id, &m.MemberId, &m.ClassroomId, &m.ProfileId, &m.MemberRole,
 		&m.InvitationId, &m.JoinedDt, &m.LeftDt, &m.RemovedByProfileId, &m.RemovedDt,
-		&m.LastSeenDt, &m.Note,
+		&m.LastSeenDt, &m.Note, &m.InviteBy, &m.InviteDt,
 		&m.MemberStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -186,7 +186,7 @@ func (r *ClassroomMemberRepository) CountActiveByClassroomId(ctx context.Context
 }
 
 func (r *ClassroomMemberRepository) Create(ctx context.Context, m *classroom.Member) (*classroom.Member, error) {
-	var joinedArg, leftArg, removedArg, lastSeenArg any
+	var joinedArg, leftArg, removedArg, lastSeenArg, inviteDtArg any
 	if m.JoinedDt().IsValid() {
 		joinedArg = m.JoinedDt().Time
 	}
@@ -199,18 +199,21 @@ func (r *ClassroomMemberRepository) Create(ctx context.Context, m *classroom.Mem
 	if m.LastSeenDt().IsValid() {
 		lastSeenArg = m.LastSeenDt().Time
 	}
+	if m.InviteDt().IsValid() {
+		inviteDtArg = m.InviteDt().Time
+	}
 
 	query := `
 		INSERT INTO ` + classroomMemberTable + `
 			(member_id, classroom_id, profile_id, member_role,
 			 invitation_id, joined_dt, left_dt, removed_by_profile_id, removed_dt,
-			 last_seen_dt, note, member_status, create_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 last_seen_dt, note, invite_by, invite_dt, member_status, create_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		m.MemberId(), m.ClassroomId(), m.ProfileId(), m.MemberRole(),
 		m.InvitationId(), joinedArg, leftArg, m.RemovedByProfileId(), removedArg,
-		lastSeenArg, m.Note(), m.MemberStatus(), m.CreateId())
+		lastSeenArg, m.Note(), m.InviteBy(), inviteDtArg, m.MemberStatus(), m.CreateId())
 	if err != nil {
 		return nil, fmt.Errorf("classroom_member repo create: %w", err)
 	}
@@ -228,7 +231,7 @@ func (r *ClassroomMemberRepository) Update(ctx context.Context, m *classroom.Mem
 	if m.MemberRole() != "" {
 		roleArg = m.MemberRole()
 	}
-	var joinedArg, leftArg, removedArg, lastSeenArg any
+	var joinedArg, leftArg, removedArg, lastSeenArg, inviteDtArg any
 	if m.JoinedDt().IsValid() {
 		joinedArg = m.JoinedDt().Time
 	}
@@ -241,6 +244,9 @@ func (r *ClassroomMemberRepository) Update(ctx context.Context, m *classroom.Mem
 	if m.LastSeenDt().IsValid() {
 		lastSeenArg = m.LastSeenDt().Time
 	}
+	if m.InviteDt().IsValid() {
+		inviteDtArg = m.InviteDt().Time
+	}
 
 	query := `
 		UPDATE ` + classroomMemberTable + `
@@ -252,6 +258,8 @@ func (r *ClassroomMemberRepository) Update(ctx context.Context, m *classroom.Mem
 			removed_dt            = COALESCE(?, removed_dt),
 			last_seen_dt          = COALESCE(?, last_seen_dt),
 			note                  = COALESCE(?, note),
+			invite_by             = COALESCE(?, invite_by),
+			invite_dt             = COALESCE(?, invite_dt),
 			member_status         = COALESCE(?, member_status),
 			modify_id             = COALESCE(?, modify_id),
 			modify_dt             = ?
@@ -260,7 +268,7 @@ func (r *ClassroomMemberRepository) Update(ctx context.Context, m *classroom.Mem
 	if _, err := r.db.Exec(ctx, query,
 		roleArg, m.InvitationId(), joinedArg, leftArg,
 		m.RemovedByProfileId(), removedArg, lastSeenArg,
-		m.Note(), m.MemberStatus(), m.ModifyId(),
+		m.Note(), m.InviteBy(), inviteDtArg, m.MemberStatus(), m.ModifyId(),
 		mtime.Now().Time, m.MemberId()); err != nil {
 		return fmt.Errorf("classroom_member repo update: %w", err)
 	}
@@ -313,9 +321,9 @@ func (r *ClassroomMemberRepository) MarkRemoved(ctx context.Context, memberId, r
 }
 
 // Reactivate flips an existing row's lifecycle fields back to a fresh
-// ACTIVE membership. invitationId is set/cleared verbatim so the caller
-// can either link the rejoin to an invitation row (accept-invitation
-// path) or null it out (join-by-code path).
+// ACTIVE membership. invitationId is kept on the signature so historical
+// callers compile, but is no longer written by the new flow (the
+// legacy ma_classroom_invitations link is unused).
 func (r *ClassroomMemberRepository) Reactivate(ctx context.Context, memberId int64, role string, invitationId *int64) error {
 	query := `
 		UPDATE ` + classroomMemberTable + `
@@ -333,6 +341,102 @@ func (r *ClassroomMemberRepository) Reactivate(ctx context.Context, memberId int
 	if _, err := r.db.Exec(ctx, query,
 		role, enum.ClassroomMemberStatusTypeActive, invitationId, now, now, memberId); err != nil {
 		return fmt.Errorf("classroom_member repo reactivate: %w", err)
+	}
+	return nil
+}
+
+// Invite refreshes a row into a PENDING invitation in place — used when
+// the send-invitation path finds an existing row in a terminal state
+// (REJECTED/LEFT/REMOVED) for the (classroom, profile) pair. The
+// member_role and inviter metadata are rewritten so the new invitation
+// is indistinguishable from one inserted fresh.
+func (r *ClassroomMemberRepository) Invite(ctx context.Context, memberId int64, role string, inviteBy *int64, inviteDt mtime.MathTime, note *string) error {
+	var inviteDtArg any
+	if inviteDt.IsValid() {
+		inviteDtArg = inviteDt.Time
+	} else {
+		inviteDtArg = mtime.Now().Time
+	}
+	query := `
+		UPDATE ` + classroomMemberTable + `
+		SET member_role           = ?,
+			member_status         = ?,
+			invite_by             = ?,
+			invite_dt             = ?,
+			note                  = COALESCE(?, note),
+			joined_dt             = NULL,
+			left_dt               = NULL,
+			removed_by_profile_id = NULL,
+			removed_dt            = NULL,
+			modify_dt             = ?
+		WHERE member_id = ?
+	`
+	if _, err := r.db.Exec(ctx, query,
+		role, enum.ClassroomMemberStatusTypePending,
+		inviteBy, inviteDtArg, note,
+		mtime.Now().Time, memberId); err != nil {
+		return fmt.Errorf("classroom_member repo invite: %w", err)
+	}
+	return nil
+}
+
+// Accept flips PENDING → ACTIVE, refreshes joined_dt, and clears
+// terminal-state markers. Caller pairs with Classroom.IncCounts inside
+// the same UoW so the classroom counters stay aligned.
+func (r *ClassroomMemberRepository) Accept(ctx context.Context, memberId int64) error {
+	query := `
+		UPDATE ` + classroomMemberTable + `
+		SET member_status         = ?,
+			joined_dt             = ?,
+			left_dt               = NULL,
+			removed_by_profile_id = NULL,
+			removed_dt            = NULL,
+			modify_dt             = ?
+		WHERE member_id = ?
+	`
+	now := mtime.Now().Time
+	if _, err := r.db.Exec(ctx, query,
+		enum.ClassroomMemberStatusTypeActive, now, now, memberId); err != nil {
+		return fmt.Errorf("classroom_member repo accept: %w", err)
+	}
+	return nil
+}
+
+// Reject flips PENDING → REJECTED. left_dt is reused as the
+// "responded at" timestamp so the schema doesn't need a new column.
+func (r *ClassroomMemberRepository) Reject(ctx context.Context, memberId int64) error {
+	query := `
+		UPDATE ` + classroomMemberTable + `
+		SET member_status = ?,
+			left_dt       = ?,
+			modify_dt     = ?
+		WHERE member_id = ?
+	`
+	now := mtime.Now().Time
+	if _, err := r.db.Exec(ctx, query,
+		enum.ClassroomMemberStatusTypeRejected, now, now, memberId); err != nil {
+		return fmt.Errorf("classroom_member repo reject: %w", err)
+	}
+	return nil
+}
+
+// Cancel flips PENDING → REMOVED with the manager's profile id in
+// removed_by_profile_id. Distinguishable from a regular member-removal
+// only by the prior state (PENDING vs ACTIVE) — UI labels it
+// "invitation cancelled" when it sees a removed PENDING row.
+func (r *ClassroomMemberRepository) Cancel(ctx context.Context, memberId, cancelledByProfileId int64) error {
+	query := `
+		UPDATE ` + classroomMemberTable + `
+		SET member_status         = ?,
+			removed_by_profile_id = ?,
+			removed_dt            = ?,
+			modify_dt             = ?
+		WHERE member_id = ?
+	`
+	now := mtime.Now().Time
+	if _, err := r.db.Exec(ctx, query,
+		enum.ClassroomMemberStatusTypeRemoved, cancelledByProfileId, now, now, memberId); err != nil {
+		return fmt.Errorf("classroom_member repo cancel: %w", err)
 	}
 	return nil
 }
@@ -384,6 +488,10 @@ func ModelToDomainClassroomMember(m *models.ClassroomMemberModel) *classroom.Mem
 		d.SetLastSeenDt(mtime.MathTime{Time: *m.LastSeenDt})
 	}
 	d.SetNote(m.Note)
+	d.SetInviteBy(m.InviteBy)
+	if m.InviteDt != nil {
+		d.SetInviteDt(mtime.MathTime{Time: *m.InviteDt})
+	}
 	d.SetMemberStatus(m.MemberStatus)
 	d.SetStatus(m.Status)
 	d.SetCreateId(m.CreateId)

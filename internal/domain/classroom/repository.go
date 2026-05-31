@@ -88,7 +88,10 @@ type IClassroomProgramRepository interface {
 
 // ListMembersParams narrows ma_classroom_members reads. ClassroomId is
 // required for the "members of classroom" path; ProfileId is required
-// for the "my classrooms" path; Role / Status filter both.
+// for the "my classrooms" / "my pending invitations" path; Role and
+// Status further narrow. Statuses ∈ {PENDING, ACTIVE, REJECTED, LEFT,
+// REMOVED} — PENDING rows are invitations, the rest are membership
+// lifecycle states.
 type ListMembersParams struct {
 	ClassroomId *int64
 	ProfileId   *int64
@@ -99,10 +102,11 @@ type ListMembersParams struct {
 	TakeAll     bool
 }
 
-// IMemberRepository owns ma_classroom_members. Note: the same (classroom,
-// profile) pair has at most one row — Upsert flips an existing inactive
-// row back to ACTIVE rather than inserting a duplicate, so the unique
-// constraint stays meaningful.
+// IMemberRepository owns ma_classroom_members — both the membership and
+// the invitation lifecycle now ride this single table (member_status
+// PENDING → ACTIVE/REJECTED → LEFT/REMOVED). The (classroom_id,
+// profile_id) UNIQUE constraint means re-invitation and rejoin both
+// reactivate the existing row in place rather than insert a duplicate.
 type IMemberRepository interface {
 	FindByMemberId(ctx context.Context, memberId int64) (*Member, error)
 	FindByClassroomAndProfile(ctx context.Context, classroomId, profileId int64) (*Member, error)
@@ -113,49 +117,31 @@ type IMemberRepository interface {
 	SetRole(ctx context.Context, memberId int64, role string) error
 	MarkLeft(ctx context.Context, memberId int64) error
 	MarkRemoved(ctx context.Context, memberId, removedByProfileId int64) error
-	// Reactivate flips an existing INVITED/LEFT/REMOVED member back to
-	// ACTIVE. Resets joined_dt, clears left_dt / removed_dt /
-	// removed_by_profile_id, and assigns the given role. Used by the
-	// join-by-code path (and the future accept-invitation path) so the
+	// Invite flips an existing row into a fresh PENDING invitation
+	// (member_role/invite_by/invite_dt refreshed, terminal-state
+	// timestamps cleared). Used by the send-invitation path when the
+	// target previously REJECTED/LEFT/REMOVED so the UNIQUE
+	// (classroom_id, profile_id) constraint stays meaningful.
+	Invite(ctx context.Context, memberId int64, role string, inviteBy *int64, inviteDt mtime.MathTime, note *string) error
+	// Accept flips a PENDING row to ACTIVE, refreshing joined_dt and
+	// clearing left_dt/removed_dt/removed_by_profile_id. The caller
+	// pairs this with Classroom.IncCounts inside the same UoW.
+	Accept(ctx context.Context, memberId int64) error
+	// Reject flips a PENDING row to REJECTED. left_dt is reused to
+	// store the response timestamp so the existing column carries
+	// "when did the row last transition out of activity" semantics for
+	// every terminal state.
+	Reject(ctx context.Context, memberId int64) error
+	// Cancel flips a PENDING row to REMOVED with the manager's profile
+	// id captured in removed_by_profile_id. Distinguishable from a
+	// regular member-removal by the source state (PENDING vs ACTIVE).
+	Cancel(ctx context.Context, memberId, cancelledByProfileId int64) error
+	// Reactivate flips an existing PENDING/LEFT/REMOVED/REJECTED row
+	// back to ACTIVE in place. Used by the join-by-code path so the
 	// UNIQUE (classroom_id, profile_id) constraint doesn't force a
-	// duplicate insert when a profile rejoins a classroom they once left.
+	// duplicate insert when a profile rejoins a classroom they once
+	// left or had a pending invitation for.
 	Reactivate(ctx context.Context, memberId int64, role string, invitationId *int64) error
-	SoftDeleteByClassroomId(ctx context.Context, classroomId int64) error
-	ForceDeleteByClassroomId(ctx context.Context, classroomId int64) error
-}
-
-// ListInvitationsParams narrows ma_classroom_invitations reads. At least
-// one of ClassroomId / InvitedProfileId / InviteeIdentifier should be
-// set in practice; an empty params returns every active invitation.
-type ListInvitationsParams struct {
-	ClassroomId       *int64
-	InviterProfileId  *int64
-	InvitedProfileId  *int64
-	InviteeIdentifier *string
-	Status            *string
-	Page              int64
-	Limit             int64
-	TakeAll           bool
-}
-
-// IInvitationRepository owns ma_classroom_invitations.
-type IInvitationRepository interface {
-	FindByInvitationId(ctx context.Context, invitationId int64) (*Invitation, error)
-	FindByToken(ctx context.Context, token string) (*Invitation, error)
-	// FindPendingByClassroomAndProfile guards against duplicate active
-	// invitations for the same (classroom, profile) pair.
-	FindPendingByClassroomAndProfile(ctx context.Context, classroomId, profileId int64) (*Invitation, error)
-	// FindPendingByClassroomAndIdentifier is the equivalent guard for
-	// identifier-based invitations (email / phone / explicit profile id).
-	FindPendingByClassroomAndIdentifier(ctx context.Context, classroomId int64, identifier string) (*Invitation, error)
-	ListInvitations(ctx context.Context, params *ListInvitationsParams) ([]*Invitation, *pagination.Pagination, error)
-	Create(ctx context.Context, inv *Invitation) (*Invitation, error)
-	Update(ctx context.Context, inv *Invitation) error
-	SetStatus(ctx context.Context, invitationId int64, newStatus string, respondedByProfileId int64) error
-	// ExpirePending sweeps PENDING rows whose expires_dt < now into the
-	// EXPIRED state. Returns the number of rows affected for the job's
-	// telemetry. Used by the reaper job in Phase 6.
-	ExpirePending(ctx context.Context) (int64, error)
 	SoftDeleteByClassroomId(ctx context.Context, classroomId int64) error
 	ForceDeleteByClassroomId(ctx context.Context, classroomId int64) error
 }

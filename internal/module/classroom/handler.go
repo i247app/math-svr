@@ -445,3 +445,123 @@ func (h *ClassroomHandler) HandleListMembers(w http.ResponseWriter, r *http.Requ
 	}
 	response.WriteJson(w, res, nil)
 }
+
+// POST /classrooms/invitations/send
+func (h *ClassroomHandler) HandleSendInvitation(w http.ResponseWriter, r *http.Request) {
+	var req dto.SendInvitationReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.SendInvitation(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/invitations/my-pending
+func (h *ClassroomHandler) HandleListMyPendingInvitations(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListMyPendingInvitationsReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.ListMyPendingInvitations(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/invitations/list
+func (h *ClassroomHandler) HandleListClassroomInvitations(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListClassroomInvitationsReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.ListClassroomInvitations(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/invitations/accept
+func (h *ClassroomHandler) HandleAcceptInvitation(w http.ResponseWriter, r *http.Request) {
+	var req dto.AcceptInvitationReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.AcceptInvitation(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/invitations/reject
+func (h *ClassroomHandler) HandleRejectInvitation(w http.ResponseWriter, r *http.Request) {
+	var req dto.RejectInvitationReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.RejectInvitation(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classrooms/invitations/cancel
+func (h *ClassroomHandler) HandleCancelInvitation(w http.ResponseWriter, r *http.Request) {
+	var req dto.CancelInvitationReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.CancelInvitation(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}

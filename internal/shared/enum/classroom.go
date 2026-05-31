@@ -42,14 +42,22 @@ func (s ClassroomMemberRoleType) IsValid() bool {
 	}
 }
 
+// ClassroomMemberStatusType is the source of truth for the membership
+// lifecycle. Invitations live on ma_classroom_members: a freshly-sent
+// invitation is a row in PENDING; acceptance flips it to ACTIVE;
+// rejection / manager-cancellation / member-leave / member-removal all
+// land at their respective terminal states without dropping the row,
+// so the (classroom_id, profile_id) UNIQUE key stays meaningful when
+// the same target is re-invited or rejoins later.
 type ClassroomMemberStatusType string
 
 const (
-	ClassroomMemberStatusTypeInvited ClassroomMemberStatusType = "INVITED"
-	ClassroomMemberStatusTypeActive  ClassroomMemberStatusType = "ACTIVE"
-	ClassroomMemberStatusTypeLeft    ClassroomMemberStatusType = "LEFT"
-	ClassroomMemberStatusTypeRemoved ClassroomMemberStatusType = "REMOVED"
-	ClassroomMemberStatusTypeDeleted ClassroomMemberStatusType = "DELETED"
+	ClassroomMemberStatusTypePending  ClassroomMemberStatusType = "PENDING"
+	ClassroomMemberStatusTypeActive   ClassroomMemberStatusType = "ACTIVE"
+	ClassroomMemberStatusTypeRejected ClassroomMemberStatusType = "REJECTED"
+	ClassroomMemberStatusTypeLeft     ClassroomMemberStatusType = "LEFT"
+	ClassroomMemberStatusTypeRemoved  ClassroomMemberStatusType = "REMOVED"
+	ClassroomMemberStatusTypeDeleted  ClassroomMemberStatusType = "DELETED"
 )
 
 func (s ClassroomMemberStatusType) String() string {
@@ -58,8 +66,9 @@ func (s ClassroomMemberStatusType) String() string {
 
 func (s ClassroomMemberStatusType) IsValid() bool {
 	switch s {
-	case ClassroomMemberStatusTypeInvited,
+	case ClassroomMemberStatusTypePending,
 		ClassroomMemberStatusTypeActive,
+		ClassroomMemberStatusTypeRejected,
 		ClassroomMemberStatusTypeLeft,
 		ClassroomMemberStatusTypeRemoved,
 		ClassroomMemberStatusTypeDeleted:
@@ -69,39 +78,9 @@ func (s ClassroomMemberStatusType) IsValid() bool {
 	}
 }
 
-type ClassroomInvitationStatusType string
-
-const (
-	ClassroomInvitationStatusTypePending   ClassroomInvitationStatusType = "PENDING"
-	ClassroomInvitationStatusTypeAccepted  ClassroomInvitationStatusType = "ACCEPTED"
-	ClassroomInvitationStatusTypeRejected  ClassroomInvitationStatusType = "REJECTED"
-	ClassroomInvitationStatusTypeExpired   ClassroomInvitationStatusType = "EXPIRED"
-	ClassroomInvitationStatusTypeCancelled ClassroomInvitationStatusType = "CANCELLED"
-	ClassroomInvitationStatusTypeRevoked   ClassroomInvitationStatusType = "REVOKED"
-)
-
-func (s ClassroomInvitationStatusType) String() string {
-	return string(s)
-}
-
-func (s ClassroomInvitationStatusType) IsValid() bool {
-	switch s {
-	case ClassroomInvitationStatusTypePending,
-		ClassroomInvitationStatusTypeAccepted,
-		ClassroomInvitationStatusTypeRejected,
-		ClassroomInvitationStatusTypeExpired,
-		ClassroomInvitationStatusTypeCancelled,
-		ClassroomInvitationStatusTypeRevoked:
-		return true
-	default:
-		return false
-	}
-}
-
-// ClassroomInviteeIdentifierType identifies how `invitee_identifier` on
-// ma_classroom_invitations should be interpreted at acceptance time:
-// EMAIL/PHONE rows are claimable by any caller whose alias matches;
-// PROFILE_ID rows are direct targeted invites.
+// ClassroomInviteeIdentifierType identifies how a send-invitation
+// caller addressed the target — EMAIL/PHONE need alias lookup to
+// resolve a profile_id, PROFILE_ID is a direct id.
 type ClassroomInviteeIdentifierType string
 
 const (

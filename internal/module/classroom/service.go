@@ -31,40 +31,41 @@ const coverUrlTTL = 1 * time.Hour
 // needed for foreign-key validation, and exposes a sessionUserID-aware
 // API so handlers can enforce the §0 Q1 contract.
 type Service struct {
-	getClassroomQuery               *query.GetClassroomByIdQueryHandler
-	listClassroomsQuery             *query.ListClassroomsQueryHandler
-	listMembersQuery                *query.ListMembersQueryHandler
-	listInvitationsByClassroomQuery *query.ListInvitationsByClassroomQueryHandler
-	listMyPendingInvitationsQuery   *query.ListMyPendingInvitationsQueryHandler
-	createClassroomCmd              *command.CreateClassroomCommandHandler
-	updateClassroomCmd              *command.UpdateClassroomCommandHandler
-	archiveClassroomCmd             *command.ArchiveClassroomCommandHandler
-	restoreClassroomCmd             *command.RestoreClassroomCommandHandler
-	softDeleteClassroomCmd          *command.SoftDeleteClassroomCommandHandler
-	forceDeleteClassroomCmd         *command.ForceDeleteClassroomCommandHandler
-	joinByCodeCmd                   *command.JoinByCodeCommandHandler
-	leaveClassroomCmd               *command.LeaveClassroomCommandHandler
-	removeMemberCmd                 *command.RemoveMemberCommandHandler
-	updateMemberRoleCmd             *command.UpdateMemberRoleCommandHandler
-	transferOwnershipCmd            *command.TransferOwnershipCommandHandler
-	createInvitationCmd             *command.CreateInvitationCommandHandler
+	getClassroomQuery                     *query.GetClassroomByIdQueryHandler
+	listClassroomsQuery                   *query.ListClassroomsQueryHandler
+	listMembersQuery                      *query.ListMembersQueryHandler
+	listMyPendingInvitationsQuery         *query.ListMyPendingInvitationsQueryHandler
+	listPendingInvitationsByClassroomQ    *query.ListPendingInvitationsByClassroomQueryHandler
+	createClassroomCmd                    *command.CreateClassroomCommandHandler
+	updateClassroomCmd                    *command.UpdateClassroomCommandHandler
+	archiveClassroomCmd                   *command.ArchiveClassroomCommandHandler
+	restoreClassroomCmd                   *command.RestoreClassroomCommandHandler
+	softDeleteClassroomCmd                *command.SoftDeleteClassroomCommandHandler
+	forceDeleteClassroomCmd               *command.ForceDeleteClassroomCommandHandler
+	joinByCodeCmd                         *command.JoinByCodeCommandHandler
+	leaveClassroomCmd                     *command.LeaveClassroomCommandHandler
+	removeMemberCmd                       *command.RemoveMemberCommandHandler
+	updateMemberRoleCmd                   *command.UpdateMemberRoleCommandHandler
+	transferOwnershipCmd                  *command.TransferOwnershipCommandHandler
+	sendInvitationCmd                     *command.SendInvitationCommandHandler
+	acceptInvitationCmd                   *command.AcceptInvitationCommandHandler
+	rejectInvitationCmd                   *command.RejectInvitationCommandHandler
+	cancelInvitationCmd                   *command.CancelInvitationCommandHandler
 
-	classroomRepo           classroomDomain.IRepository
-	classroomMemberRepo     classroomDomain.IMemberRepository
-	classroomProgramRepo    classroomDomain.IClassroomProgramRepository
-	classroomInvitationRepo classroomDomain.IInvitationRepository
-	profileRepo             profileDomain.IRepository
-	programRepo             programDomain.IRepository
-	gradeRepo               gradeDomain.IRepository
-	schoolRepo              schoolDomain.IRepository
-	storageProvider         *storage.Adapter
+	classroomRepo        classroomDomain.IRepository
+	classroomMemberRepo  classroomDomain.IMemberRepository
+	classroomProgramRepo classroomDomain.IClassroomProgramRepository
+	profileRepo          profileDomain.IRepository
+	programRepo          programDomain.IRepository
+	gradeRepo            gradeDomain.IRepository
+	schoolRepo           schoolDomain.IRepository
+	storageProvider      *storage.Adapter
 }
 
 func NewService(
 	classroomRepo classroomDomain.IRepository,
 	classroomMemberRepo classroomDomain.IMemberRepository,
 	classroomProgramRepo classroomDomain.IClassroomProgramRepository,
-	classroomInvitationRepo classroomDomain.IInvitationRepository,
 	uow transaction.UnitOfWork,
 	profileRepo profileDomain.IRepository,
 	programRepo programDomain.IRepository,
@@ -73,32 +74,34 @@ func NewService(
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
-		getClassroomQuery:               query.NewGetClassroomByIdQueryHandler(classroomRepo, classroomProgramRepo),
-		listClassroomsQuery:             query.NewListClassroomsQueryHandler(classroomRepo, classroomProgramRepo),
-		listMembersQuery:                query.NewListMembersQueryHandler(classroomMemberRepo),
-		listInvitationsByClassroomQuery: query.NewListInvitationsByClassroomQueryHandler(classroomInvitationRepo),
-		listMyPendingInvitationsQuery:   query.NewListMyPendingInvitationsQueryHandler(classroomInvitationRepo),
-		createClassroomCmd:              command.NewCreateClassroomCommandHandler(uow),
-		updateClassroomCmd:              command.NewUpdateClassroomCommandHandler(uow),
-		archiveClassroomCmd:             command.NewArchiveClassroomCommandHandler(uow),
-		restoreClassroomCmd:             command.NewRestoreClassroomCommandHandler(uow),
-		softDeleteClassroomCmd:          command.NewSoftDeleteClassroomCommandHandler(uow),
-		forceDeleteClassroomCmd:         command.NewForceDeleteClassroomCommandHandler(uow),
-		joinByCodeCmd:                   command.NewJoinByCodeCommandHandler(uow),
-		leaveClassroomCmd:               command.NewLeaveClassroomCommandHandler(uow),
-		removeMemberCmd:                 command.NewRemoveMemberCommandHandler(uow),
-		updateMemberRoleCmd:             command.NewUpdateMemberRoleCommandHandler(uow),
-		transferOwnershipCmd:            command.NewTransferOwnershipCommandHandler(uow),
-		createInvitationCmd:             command.NewCreateInvitationCommandHandler(uow),
-		classroomRepo:                   classroomRepo,
-		classroomMemberRepo:             classroomMemberRepo,
-		classroomProgramRepo:            classroomProgramRepo,
-		classroomInvitationRepo:         classroomInvitationRepo,
-		profileRepo:                     profileRepo,
-		programRepo:                     programRepo,
-		gradeRepo:                       gradeRepo,
-		schoolRepo:                      schoolRepo,
-		storageProvider:                 storageProvider,
+		getClassroomQuery:                  query.NewGetClassroomByIdQueryHandler(classroomRepo, classroomProgramRepo),
+		listClassroomsQuery:                query.NewListClassroomsQueryHandler(classroomRepo, classroomProgramRepo),
+		listMembersQuery:                   query.NewListMembersQueryHandler(classroomMemberRepo),
+		listMyPendingInvitationsQuery:      query.NewListMyPendingInvitationsQueryHandler(classroomMemberRepo),
+		listPendingInvitationsByClassroomQ: query.NewListPendingInvitationsByClassroomQueryHandler(classroomMemberRepo),
+		createClassroomCmd:                 command.NewCreateClassroomCommandHandler(uow),
+		updateClassroomCmd:                 command.NewUpdateClassroomCommandHandler(uow),
+		archiveClassroomCmd:                command.NewArchiveClassroomCommandHandler(uow),
+		restoreClassroomCmd:                command.NewRestoreClassroomCommandHandler(uow),
+		softDeleteClassroomCmd:             command.NewSoftDeleteClassroomCommandHandler(uow),
+		forceDeleteClassroomCmd:            command.NewForceDeleteClassroomCommandHandler(uow),
+		joinByCodeCmd:                      command.NewJoinByCodeCommandHandler(uow),
+		leaveClassroomCmd:                  command.NewLeaveClassroomCommandHandler(uow),
+		removeMemberCmd:                    command.NewRemoveMemberCommandHandler(uow),
+		updateMemberRoleCmd:                command.NewUpdateMemberRoleCommandHandler(uow),
+		transferOwnershipCmd:               command.NewTransferOwnershipCommandHandler(uow),
+		sendInvitationCmd:                  command.NewSendInvitationCommandHandler(uow),
+		acceptInvitationCmd:                command.NewAcceptInvitationCommandHandler(uow),
+		rejectInvitationCmd:                command.NewRejectInvitationCommandHandler(uow),
+		cancelInvitationCmd:                command.NewCancelInvitationCommandHandler(uow),
+		classroomRepo:                      classroomRepo,
+		classroomMemberRepo:                classroomMemberRepo,
+		classroomProgramRepo:               classroomProgramRepo,
+		profileRepo:                        profileRepo,
+		programRepo:                        programRepo,
+		gradeRepo:                          gradeRepo,
+		schoolRepo:                         schoolRepo,
+		storageProvider:                    storageProvider,
 	}
 }
 

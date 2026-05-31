@@ -2,108 +2,74 @@ package classroom
 
 import (
 	domain "math-ai.com/math-ai/internal/domain/classroom"
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
-// InvitationResponse is the wire shape for ma_classroom_invitations
-// rows. Optional times follow the same "empty string when zero" pattern
-// as MemberResponse so the client gets a stable JSON shape regardless of
-// the row's lifecycle state. Token is intentionally excluded from the
-// default response — it's a secret meant for the share-by-link path
-// (deferred) and should not leak through the manager/recipient roster
-// endpoints.
+// InvitationResponse is the wire shape for an ma_classroom_members row
+// viewed through the invitation lens. It re-uses the underlying member
+// row but renames a few fields so a mobile client treating invitations
+// as a distinct concept doesn't have to know the unified storage model.
+// member_status carries PENDING / ACTIVE / REJECTED / etc — the same
+// values as MemberResponse.MemberStatus.
 type InvitationResponse struct {
-	ID                    int64   `json:"id"`
-	InvitationID          int64   `json:"invitation_id"`
-	ClassroomID           int64   `json:"classroom_id"`
-	InviterProfileID      int64   `json:"inviter_profile_id"`
-	InvitedProfileID      *int64  `json:"invited_profile_id,omitempty"`
-	InviteeIdentifier     *string `json:"invitee_identifier,omitempty"`
-	InviteeIdentifierType *string `json:"invitee_identifier_type,omitempty"`
-	ProposedRole          string  `json:"proposed_role"`
-	Message               *string `json:"message,omitempty"`
-	SentDt                string  `json:"sent_dt,omitempty"`
-	ExpiresDt             string  `json:"expires_dt,omitempty"`
-	RespondedDt           string  `json:"responded_dt,omitempty"`
-	ResponseProfileID     *int64  `json:"response_profile_id,omitempty"`
-	CancelledByProfileID  *int64  `json:"cancelled_by_profile_id,omitempty"`
-	Note                  *string `json:"note,omitempty"`
-	InvitationStatus      *string `json:"invitation_status,omitempty"`
-	CreateDt              string  `json:"create_dt"`
-	ModifyDt              string  `json:"modify_dt"`
+	InvitationID int64   `json:"invitation_id"`
+	ClassroomID  int64   `json:"classroom_id"`
+	ProfileID    int64   `json:"profile_id"`
+	MemberRole   string  `json:"member_role"`
+	MemberStatus *string `json:"member_status,omitempty"`
+	InviteBy     *int64  `json:"invite_by,omitempty"`
+	InviteDt     string  `json:"invite_dt,omitempty"`
+	JoinedDt     string  `json:"joined_dt,omitempty"`
+	LeftDt       string  `json:"left_dt,omitempty"`
+	RemovedDt    string  `json:"removed_dt,omitempty"`
+	Note         *string `json:"note,omitempty"`
+	CreateDt     string  `json:"create_dt"`
+	ModifyDt     string  `json:"modify_dt"`
 }
 
-// InvitationTarget describes one recipient in a bulk-create request.
-// IdentifierType is one of EMAIL / PHONE / PROFILE_ID — the command
-// resolves EMAIL/PHONE via ma_aliases at create time and falls through
-// to silent-create-with-null-invited-profile when no profile matches,
-// per the Phase 5 design.
-//
-// ProposedRole is optional; nil/empty defaults to STUDENT. Only OWNER
-// callers may supply CO_TEACHER (enforced at the service layer).
+// InvitationTarget is the per-recipient payload accepted by Send.
+// IdentifierType is one of EMAIL / PHONE / PROFILE_ID; Identifier is
+// the corresponding string. ProposedRole defaults to STUDENT in the
+// validator when blank.
 type InvitationTarget struct {
-	IdentifierType string  `json:"identifier_type"`
-	Identifier     int64   `json:"identifier"`
-	ProposedRole   *string `json:"proposed_role,omitempty"`
+	IdentifierType string `json:"identifier_type"`
+	Identifier     string `json:"identifier"`
+	ProposedRole   string `json:"proposed_role,omitempty"`
 }
 
-// CreateInvitationReq is a bulk-create payload. The handler walks each
-// target inside one UoW and reports per-target outcomes through
-// CreateInvitationRes.Skipped instead of aborting the batch on the first
-// "already a member" or "already invited" — gives the UI partial
-// success without forcing the caller to retry one-by-one.
-type CreateInvitationReq struct {
-	ProfileID   int64              `json:"profile_id"`
-	ClassroomID int64              `json:"classroom_id"`
-	Targets     []InvitationTarget `json:"targets"`
-	Message     *string            `json:"message,omitempty"`
-	// ExpiresDt is optional; when omitted the command defaults to
-	// now + 7 days. Must be in the future when supplied.
-	ExpiresDt mtime.MathTime `json:"expires_dt,omitempty"`
-}
-
-// SkippedInvitation reports why a single target did not produce an
-// invitation row (already a member, already pending invitation, profile
-// lookup failed, etc.). Reason is the MathError status code as an
-// integer so the client can map it to a localized message without
-// re-parsing free-form strings.
+// SkippedInvitation mirrors a per-target outcome from Send that did
+// not land an invitation row but did not abort the batch.
 type SkippedInvitation struct {
 	IdentifierType string `json:"identifier_type"`
 	Identifier     string `json:"identifier"`
 	Reason         int64  `json:"reason"`
-	Message        string `json:"message,omitempty"`
+	Message        string `json:"message"`
 }
 
-type CreateInvitationRes struct {
+// SendInvitationReq invites one or more targets to a classroom. The
+// caller (resolved from session) must be a manager (OWNER or
+// CO_TEACHER) of the classroom — enforced at the service layer. The
+// optional Note is copied into ma_classroom_members.note for each
+// inserted/reactivated row.
+type SendInvitationReq struct {
+	ProfileID   int64              `json:"profile_id"`
+	ClassroomID int64              `json:"classroom_id"`
+	Targets     []InvitationTarget `json:"targets"`
+	Note        *string            `json:"note,omitempty"`
+}
+
+type SendInvitationRes struct {
 	Invitations []*InvitationResponse `json:"invitations"`
 	Skipped     []SkippedInvitation   `json:"skipped"`
 }
 
-// ListInvitationsByClassroomReq powers the manager's roster view.
-// Caller must be OWNER / CO_TEACHER of the classroom (or the original
-// inviter); enforcement lives at the service layer.
-type ListInvitationsByClassroomReq struct {
-	ProfileID   int64   `json:"profile_id"`
-	ClassroomID int64   `json:"classroom_id"`
-	Status      *string `json:"status,omitempty"`
-	Page        int64   `json:"page"`
-	Size        int64   `json:"size"`
-}
-
-type ListInvitationsByClassroomRes struct {
-	Invitations []*InvitationResponse  `json:"invitations"`
-	Pagination  *pagination.Pagination `json:"pagination"`
-}
-
-// ListMyPendingInvitationsReq returns every invitation targeted at the
-// caller's profile. Status defaults to PENDING when omitted so the
-// common "do I have anything to act on?" call stays a single field.
+// ListMyPendingInvitationsReq enumerates pending invitations targeted
+// at the caller's profile. The classroom-side counterpart is
+// ListClassroomInvitationsReq below.
 type ListMyPendingInvitationsReq struct {
-	ProfileID int64   `json:"profile_id"`
-	Status    *string `json:"status,omitempty"`
-	Page      int64   `json:"page"`
-	Size      int64   `json:"size"`
+	ProfileID int64 `json:"profile_id"`
+	Page      int64 `json:"page"`
+	Size      int64 `json:"size"`
 }
 
 type ListMyPendingInvitationsRes struct {
@@ -111,96 +77,89 @@ type ListMyPendingInvitationsRes struct {
 	Pagination  *pagination.Pagination `json:"pagination"`
 }
 
-// AcceptInvitationReq is the invitee's "yes" action. Inside the
-// command's UoW: verify PENDING + not expired + classroom still
-// joinable + caller is the intended invitee + max_members not reached,
-// then flip ACCEPTED and mint/reactivate the matching member row
-// atomically.
+// ListClassroomInvitationsReq is the manager-side view: every PENDING
+// invitation a classroom has outstanding. Caller must be a manager of
+// the classroom.
+type ListClassroomInvitationsReq struct {
+	ProfileID   int64 `json:"profile_id"`
+	ClassroomID int64 `json:"classroom_id"`
+	Page        int64 `json:"page"`
+	Size        int64 `json:"size"`
+}
+
+type ListClassroomInvitationsRes struct {
+	Invitations []*InvitationResponse  `json:"invitations"`
+	Pagination  *pagination.Pagination `json:"pagination"`
+}
+
+// AcceptInvitationReq / RejectInvitationReq flip a PENDING row owned
+// by the caller. ClassroomID identifies which invitation to act on;
+// the (caller_profile_id, classroom_id) pair must point at exactly
+// one PENDING row.
 type AcceptInvitationReq struct {
-	ProfileID    int64 `json:"profile_id"`
-	InvitationID int64 `json:"invitation_id"`
+	ProfileID   int64 `json:"profile_id"`
+	ClassroomID int64 `json:"classroom_id"`
 }
 
 type AcceptInvitationRes struct {
-	Member *MemberResponse `json:"member"`
+	Invitation *InvitationResponse `json:"invitation"`
 }
 
-// RejectInvitationReq is the invitee's "no" action. No member row is
-// created; the invitation flips REJECTED with responded_dt = now.
 type RejectInvitationReq struct {
-	ProfileID    int64 `json:"profile_id"`
-	InvitationID int64 `json:"invitation_id"`
+	ProfileID   int64 `json:"profile_id"`
+	ClassroomID int64 `json:"classroom_id"`
 }
 
 type RejectInvitationRes struct{}
 
-// CancelInvitationReq lets a classroom manager (OWNER / CO_TEACHER) or
-// the original inviter cancel a PENDING invitation before it's
-// accepted. Status flips to CANCELLED and cancelled_by_profile_id
-// records the caller.
+// CancelInvitationReq lets a classroom manager revoke a PENDING
+// invitation by (classroom_id, target_profile_id).
 type CancelInvitationReq struct {
-	ProfileID    int64 `json:"profile_id"`
-	InvitationID int64 `json:"invitation_id"`
+	ProfileID       int64 `json:"profile_id"`
+	ClassroomID     int64 `json:"classroom_id"`
+	TargetProfileID int64 `json:"target_profile_id"`
 }
 
 type CancelInvitationRes struct{}
 
-// ResendInvitationReq refreshes an existing invitation in place rather
-// than minting a new row — keeps idx_invited_profile lean and avoids
-// duplicate-pending logic. EXPIRED rows flip back to PENDING with new
-// expires_dt; PENDING rows just get a new expires_dt. CANCELLED /
-// REJECTED / ACCEPTED rows are terminal and rejected.
-type ResendInvitationReq struct {
-	ProfileID    int64          `json:"profile_id"`
-	InvitationID int64          `json:"invitation_id"`
-	ExpiresDt    mtime.MathTime `json:"expires_dt,omitempty"`
-}
-
-type ResendInvitationRes struct {
-	Invitation *InvitationResponse `json:"invitation"`
-}
-
-// InvitationDomainToResponse maps a domain Invitation onto the wire
-// shape. Optional time fields render to "" when invalid so the JSON
-// envelope stays consistent regardless of which lifecycle state the
-// row is in.
-func InvitationDomainToResponse(inv *domain.Invitation) *InvitationResponse {
-	if inv == nil {
+// InvitationDomainToResponse renders a ma_classroom_members row as the
+// invitation wire shape. Timestamps that are unset land as the empty
+// string ("" via omitempty) rather than the zero MathTime stringer
+// output so the mobile client doesn't see a phantom date.
+func InvitationDomainToResponse(m *domain.Member) *InvitationResponse {
+	if m == nil {
 		return nil
 	}
 	resp := &InvitationResponse{
-		ID:                    inv.Id(),
-		InvitationID:          inv.InvitationId(),
-		ClassroomID:           inv.ClassroomId(),
-		InviterProfileID:      inv.InviterProfileId(),
-		InvitedProfileID:      inv.InvitedProfileId(),
-		InviteeIdentifier:     inv.InviteeIdentifier(),
-		InviteeIdentifierType: inv.InviteeIdentifierType(),
-		ProposedRole:          inv.ProposedRole(),
-		Message:               inv.Message(),
-		ResponseProfileID:     inv.ResponseProfileId(),
-		CancelledByProfileID:  inv.CancelledByProfileId(),
-		Note:                  inv.Note(),
-		InvitationStatus:      inv.InvitationStatus(),
-		CreateDt:              inv.CreateDt().String(),
-		ModifyDt:              inv.ModifyDt().String(),
+		InvitationID: m.MemberId(),
+		ClassroomID:  m.ClassroomId(),
+		ProfileID:    m.ProfileId(),
+		MemberRole:   m.MemberRole(),
+		MemberStatus: m.MemberStatus(),
+		InviteBy:     m.InviteBy(),
+		Note:         m.Note(),
+		CreateDt:     m.CreateDt().String(),
+		ModifyDt:     m.ModifyDt().String(),
 	}
-	if inv.SentDt().IsValid() {
-		resp.SentDt = inv.SentDt().String()
+	if m.InviteDt().IsValid() {
+		resp.InviteDt = m.InviteDt().String()
 	}
-	if inv.ExpiresDt().IsValid() {
-		resp.ExpiresDt = inv.ExpiresDt().String()
+	if m.JoinedDt().IsValid() {
+		resp.JoinedDt = m.JoinedDt().String()
 	}
-	if inv.RespondedDt().IsValid() {
-		resp.RespondedDt = inv.RespondedDt().String()
+	if m.LeftDt().IsValid() {
+		resp.LeftDt = m.LeftDt().String()
+	}
+	if m.RemovedDt().IsValid() {
+		resp.RemovedDt = m.RemovedDt().String()
 	}
 	return resp
 }
 
-func InvitationDomainListToResponse(invs []*domain.Invitation) []*InvitationResponse {
-	result := make([]*InvitationResponse, len(invs))
-	for i, inv := range invs {
-		result[i] = InvitationDomainToResponse(inv)
+func InvitationDomainListToResponse(rows []*domain.Member) []*InvitationResponse {
+	out := make([]*InvitationResponse, len(rows))
+	for i, m := range rows {
+		out[i] = InvitationDomainToResponse(m)
 	}
-	return result
+	return out
 }

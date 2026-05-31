@@ -4,12 +4,17 @@ import (
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
-// Member models ma_classroom_members — the (classroom, profile) join row
-// with role and lifecycle status. The UNIQUE (classroom_id, profile_id)
-// constraint means rejoin updates the same row: member_status flips
-// LEFT/REMOVED → ACTIVE, joined_dt is refreshed, and left_dt/removed_*
-// are cleared. invitationId is the back-reference to the invitation
-// that produced the row (null for the owner and for code-joiners).
+// Member models ma_classroom_members — the (classroom, profile) join
+// row that doubles as the invitation record. member_status is the
+// source of truth for both invitation and membership lifecycle
+// (PENDING → ACTIVE/REJECTED, ACTIVE → LEFT/REMOVED). The UNIQUE
+// (classroom_id, profile_id) constraint means re-invitation and
+// rejoin both reactivate the same row instead of inserting a
+// duplicate. inviteBy + inviteDt capture who invited the profile and
+// when; both are NULL for the owner row (created via CreateClassroom)
+// and for code-joiners. invitationId is the legacy back-reference to
+// ma_classroom_invitations and is no longer written — it remains on
+// the entity only so historical rows hydrate without scan errors.
 type Member struct {
 	id                 int64
 	memberId           int64
@@ -23,6 +28,8 @@ type Member struct {
 	removedDt          mtime.MathTime
 	lastSeenDt         mtime.MathTime
 	note               *string
+	inviteBy           *int64
+	inviteDt           mtime.MathTime
 	memberStatus       *string
 	status             string
 	createId           *int64
@@ -59,6 +66,10 @@ func (m *Member) LastSeenDt() mtime.MathTime     { return m.lastSeenDt }
 func (m *Member) SetLastSeenDt(t mtime.MathTime) { m.lastSeenDt = t }
 func (m *Member) Note() *string                  { return m.note }
 func (m *Member) SetNote(n *string)              { m.note = n }
+func (m *Member) InviteBy() *int64               { return m.inviteBy }
+func (m *Member) SetInviteBy(v *int64)           { m.inviteBy = v }
+func (m *Member) InviteDt() mtime.MathTime       { return m.inviteDt }
+func (m *Member) SetInviteDt(t mtime.MathTime)   { m.inviteDt = t }
 func (m *Member) MemberStatus() *string          { return m.memberStatus }
 func (m *Member) SetMemberStatus(v *string)      { m.memberStatus = v }
 func (m *Member) Status() string                 { return m.status }

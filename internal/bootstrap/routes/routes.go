@@ -171,6 +171,14 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /classrooms/members/list", classroomHandler.HandleListMembers, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/members/remove", classroomHandler.HandleRemoveMember, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/members/update-role", classroomHandler.HandleUpdateMemberRole, authMiddleware)
+
+		// invitations — backed by ma_classroom_members.member_status
+		gexSvr.AddRoute("POST /classrooms/invitations/send", classroomHandler.HandleSendInvitation, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/invitations/list", classroomHandler.HandleListClassroomInvitations, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/invitations/my-pending", classroomHandler.HandleListMyPendingInvitations, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/invitations/accept", classroomHandler.HandleAcceptInvitation, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/invitations/reject", classroomHandler.HandleRejectInvitation, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/invitations/cancel", classroomHandler.HandleCancelInvitation, authMiddleware)
 	}
 
 	// health routes

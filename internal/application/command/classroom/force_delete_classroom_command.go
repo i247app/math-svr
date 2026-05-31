@@ -26,9 +26,6 @@ func NewForceDeleteClassroomCommandHandler(uow transaction.UnitOfWork) *ForceDel
 
 func (h *ForceDeleteClassroomCommandHandler) Handle(ctx context.Context, cmd ForceDeleteClassroomCommand) error {
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		if err := repos.ClassroomInvitation.ForceDeleteByClassroomId(ctx, cmd.ClassroomID); err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
 		if err := repos.ClassroomMember.ForceDeleteByClassroomId(ctx, cmd.ClassroomID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}

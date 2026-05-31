@@ -25,26 +25,25 @@ import (
 // mints a new external ID should call Seq.Next(ctx, seq.NameX) instead
 // of generating a UUID, so concurrent inserts share one atomic counter.
 type Repositories struct {
-	User               user.IRepository
-	Alias              user.IAliasRepository
-	Profile            profile.IRepository
-	LoginLog           loginlog.IRepository
-	Device             device.IRepository
-	Otp                otp.IRepository
-	Quiz               quiz.IRepository
-	Chapter            chapter.IRepository
-	ChapterTranslation chapter.ITranslationRepository
-	Grade              grade.IRepository
-	GradeTranslation   grade.ITranslationRepository
-	Semester           semester.IRepository
+	User                user.IRepository
+	Alias               user.IAliasRepository
+	Profile             profile.IRepository
+	LoginLog            loginlog.IRepository
+	Device              device.IRepository
+	Otp                 otp.IRepository
+	Quiz                quiz.IRepository
+	Chapter             chapter.IRepository
+	ChapterTranslation  chapter.ITranslationRepository
+	Grade               grade.IRepository
+	GradeTranslation    grade.ITranslationRepository
+	Semester            semester.IRepository
 	SemesterTranslation semester.ITranslationRepository
-	Program            program.IRepository
-	ProgramTranslation program.ITranslationRepository
-	School             school.IRepository
-	Seq                seq.IRepository
+	Program             program.IRepository
+	ProgramTranslation  program.ITranslationRepository
+	School              school.IRepository
+	Seq                 seq.IRepository
 	Classroom           classroom.IRepository
 	ClassroomMember     classroom.IMemberRepository
-	ClassroomInvitation classroom.IInvitationRepository
 	ClassroomProgram    classroom.IClassroomProgramRepository
 }
 

@@ -110,8 +110,11 @@ func (h *ProfileHandler) HandleListProfiles(w http.ResponseWriter, r *http.Reque
 		response.WriteJson(w, nil, err)
 		return
 	}
+	if req.Language == "" {
+		req.Language = metadata.GetClientLanguage(r.Context()).ToEnumLanguage()
+	}
 
-	res, err := h.profileSvc.ListProfilesByUserId(r.Context(), &req)
+	res, err := h.profileSvc.ListProfiles(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

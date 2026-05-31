@@ -36,21 +36,21 @@ const (
 )
 
 type Service struct {
-	getProfileByIdQuery       *query.GetProfileByIdQueryHandler
-	listProfilesByUserIdQuery *query.ListProfilesByUserIdQueryHandler
-	createProfileCmd          *command.CreateProfileCommandHandler
-	updateProfileCmd          *command.UpdateProfileCommandHandler
-	softDeleteProfileCmd      *command.SoftDeleteProfileCommandHandler
-	forceDeleteProfileCmd     *command.ForceDeleteProfileCommandHandler
-	setAvatarKeyCmd           *command.SetAvatarKeyCommandHandler
-	assignSchoolCmd           *command.AssignSchoolCommandHandler
-	removeSchoolCmd           *command.RemoveSchoolCommandHandler
-	repo                      domain.IRepository
-	programRepo               programDomain.IRepository
-	gradeRepo                 gradeDomain.IRepository
-	semesterRepo              semesterDomain.IRepository
-	schoolRepo                schoolDomain.IRepository
-	storageProvider           *storage.Adapter
+	getProfileByIdQuery   *query.GetProfileByIdQueryHandler
+	listProfilesQuery     *query.ListProfilesQueryHandler
+	createProfileCmd      *command.CreateProfileCommandHandler
+	updateProfileCmd      *command.UpdateProfileCommandHandler
+	softDeleteProfileCmd  *command.SoftDeleteProfileCommandHandler
+	forceDeleteProfileCmd *command.ForceDeleteProfileCommandHandler
+	setAvatarKeyCmd       *command.SetAvatarKeyCommandHandler
+	assignSchoolCmd       *command.AssignSchoolCommandHandler
+	removeSchoolCmd       *command.RemoveSchoolCommandHandler
+	repo                  domain.IRepository
+	programRepo           programDomain.IRepository
+	gradeRepo             gradeDomain.IRepository
+	semesterRepo          semesterDomain.IRepository
+	schoolRepo            schoolDomain.IRepository
+	storageProvider       *storage.Adapter
 }
 
 // NewService wires the profile module. storageProvider may be nil — in a
@@ -69,21 +69,21 @@ func NewService(
 	schoolRepo schoolDomain.IRepository,
 ) *Service {
 	return &Service{
-		getProfileByIdQuery:       query.NewGetProfileByIdQueryHandler(repo),
-		listProfilesByUserIdQuery: query.NewListProfilesByUserIdQueryHandler(repo),
-		createProfileCmd:          command.NewCreateProfileCommandHandler(uow),
-		updateProfileCmd:          command.NewUpdateProfileCommandHandler(uow),
-		softDeleteProfileCmd:      command.NewSoftDeleteProfileCommandHandler(uow),
-		forceDeleteProfileCmd:     command.NewForceDeleteProfileCommandHandler(uow),
-		setAvatarKeyCmd:           command.NewSetAvatarKeyCommandHandler(uow),
-		assignSchoolCmd:           command.NewAssignSchoolCommandHandler(uow),
-		removeSchoolCmd:           command.NewRemoveSchoolCommandHandler(uow),
-		repo:                      repo,
-		programRepo:               programRepo,
-		gradeRepo:                 gradeRepo,
-		semesterRepo:              semesterRepo,
-		schoolRepo:                schoolRepo,
-		storageProvider:           storageProvider,
+		getProfileByIdQuery:   query.NewGetProfileByIdQueryHandler(repo),
+		listProfilesQuery:     query.NewListProfilesQueryHandler(repo),
+		createProfileCmd:      command.NewCreateProfileCommandHandler(uow),
+		updateProfileCmd:      command.NewUpdateProfileCommandHandler(uow),
+		softDeleteProfileCmd:  command.NewSoftDeleteProfileCommandHandler(uow),
+		forceDeleteProfileCmd: command.NewForceDeleteProfileCommandHandler(uow),
+		setAvatarKeyCmd:       command.NewSetAvatarKeyCommandHandler(uow),
+		assignSchoolCmd:       command.NewAssignSchoolCommandHandler(uow),
+		removeSchoolCmd:       command.NewRemoveSchoolCommandHandler(uow),
+		repo:                  repo,
+		programRepo:           programRepo,
+		gradeRepo:             gradeRepo,
+		semesterRepo:          semesterRepo,
+		schoolRepo:            schoolRepo,
+		storageProvider:       storageProvider,
 	}
 }
 
@@ -108,28 +108,41 @@ func (s *Service) GetProfileById(ctx context.Context, req *dto.GetProfileByIdReq
 	return &dto.GetProfileByIdRes{Profile: responses[0]}, nil
 }
 
-func (s *Service) ListProfilesByUserId(ctx context.Context, req *dto.ListProfilesReq) (*dto.ListProfilesRes, error) {
+// ListProfiles paginates over active profiles using the optional filters
+// in req. composeProfileResponses hydrates embedded program/grade/
+// semester/school objects and signs the avatar URL in the same pass, so
+// the handler doesn't need to know about reference batching.
+func (s *Service) ListProfiles(ctx context.Context, req *dto.ListProfilesReq) (*dto.ListProfilesRes, error) {
 	if err := ValidateListProfiles(ctx, req); err != nil {
 		return nil, err
 	}
 
-	profiles, err := s.listProfilesByUserIdQuery.Handle(ctx, query.ListProfilesByUserIdQuery{UserId: req.UserID})
+	profiles, pg, err := s.listProfilesQuery.Handle(ctx, query.ListProfilesQuery{
+		UserID:        req.UserID,
+		Role:          req.Role,
+		ProfileStatus: req.ProfileStatus,
+		SchoolID:      req.SchoolID,
+		ProgramID:     req.ProgramID,
+		GradeID:       req.GradeID,
+		SemesterID:    req.SemesterID,
+		IsDefault:     req.IsDefault,
+		Search:        req.Search,
+		Page:          req.Page,
+		Limit:         req.Size,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	responses, err := s.composeProfileResponses(ctx, profiles, "")
+	responses, err := s.composeProfileResponses(ctx, profiles, req.Language)
 	if err != nil {
 		return nil, err
 	}
 
-	// responses := dto.DomainListToResponse(profiles)
-
-	for _, resp := range responses {
-		s.populateAvatarUrl(ctx, resp)
-	}
-
-	return &dto.ListProfilesRes{Profiles: responses}, nil
+	return &dto.ListProfilesRes{
+		Profiles:   responses,
+		Pagination: pg,
+	}, nil
 }
 
 func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) (*dto.CreateProfileRes, error) {

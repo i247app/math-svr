@@ -5,12 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"math-ai.com/math-ai/internal/domain/profile"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
 const (
@@ -106,6 +108,114 @@ func (r *ProfileRepository) ListByUserId(ctx context.Context, userId int64) ([]*
 		return nil, fmt.Errorf("profile repo rows iteration: %w", err)
 	}
 	return profiles, nil
+}
+
+// ListProfiles returns a paginated slice of active profiles matching the
+// provided filters. The filter shape mirrors classroom/user list — every
+// predicate is optional and contributes to the WHERE clause only when set.
+// Search runs against name with LIKE %?%. Pagination is computed against
+// COUNT(DISTINCT p.id) so the totals stay correct when future filters
+// introduce joins. TakeAll bypasses LIMIT/OFFSET for admin exports.
+func (r *ProfileRepository) ListProfiles(ctx context.Context, params *profile.ListProfilesParams) ([]*profile.Profile, *pagination.Pagination, error) {
+	filterWhere, filterArgs := buildProfileListFilter(params)
+
+	countArgs := append(profileActiveArgs(), filterArgs...)
+	countQuery := `SELECT COUNT(DISTINCT p.id) FROM ` + profileTable + ` p WHERE ` +
+		profileActiveWhere + filterWhere
+
+	var total int64
+	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
+		return nil, nil, fmt.Errorf("profile repo count: %w", err)
+	}
+
+	listArgs := append(profileActiveArgs(), filterArgs...)
+	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE ` +
+		profileActiveWhere + filterWhere +
+		` ORDER BY p.id DESC`
+
+	var pg *pagination.Pagination
+	if params == nil || !params.TakeAll {
+		page := int64(1)
+		limit := int64(0)
+		if params != nil {
+			page = params.Page
+			limit = params.Limit
+		}
+		pg = pagination.NewPagination(page, limit, total)
+		query += ` LIMIT ? OFFSET ?`
+		listArgs = append(listArgs, pg.Size, pg.Skip)
+	} else {
+		pg = pagination.NewPagination(1, total, total)
+	}
+
+	rows, err := r.db.Query(ctx, query, listArgs...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("profile repo list: %w", err)
+	}
+	defer rows.Close()
+
+	var profiles []*profile.Profile
+	for rows.Next() {
+		m, err := scanProfile(rows)
+		if err != nil {
+			return nil, nil, fmt.Errorf("profile repo scan row: %w", err)
+		}
+		profiles = append(profiles, ModelToDomainProfile(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("profile repo rows iteration: %w", err)
+	}
+	return profiles, pg, nil
+}
+
+func buildProfileListFilter(params *profile.ListProfilesParams) (string, []any) {
+	if params == nil {
+		return "", nil
+	}
+	var (
+		clause strings.Builder
+		args   []any
+	)
+	if params.UserId != nil && *params.UserId != 0 {
+		clause.WriteString(` AND p.user_id = ?`)
+		args = append(args, *params.UserId)
+	}
+	if params.Role != nil && *params.Role != "" {
+		clause.WriteString(` AND p.role = ?`)
+		args = append(args, *params.Role)
+	}
+	if params.ProfileStatus != nil && *params.ProfileStatus != "" {
+		clause.WriteString(` AND p.profile_status = ?`)
+		args = append(args, *params.ProfileStatus)
+	}
+	if params.SchoolId != nil && *params.SchoolId != 0 {
+		clause.WriteString(` AND p.school_id = ?`)
+		args = append(args, *params.SchoolId)
+	}
+	if params.ProgramId != nil && *params.ProgramId != 0 {
+		clause.WriteString(` AND p.program_id = ?`)
+		args = append(args, *params.ProgramId)
+	}
+	if params.GradeId != nil && *params.GradeId != 0 {
+		clause.WriteString(` AND p.grade_id = ?`)
+		args = append(args, *params.GradeId)
+	}
+	if params.SemesterId != nil && *params.SemesterId != 0 {
+		clause.WriteString(` AND p.semester_id = ?`)
+		args = append(args, *params.SemesterId)
+	}
+	if params.IsDefault != nil {
+		clause.WriteString(` AND p.is_default = ?`)
+		args = append(args, *params.IsDefault)
+	}
+	if params.Search != nil {
+		needle := strings.TrimSpace(*params.Search)
+		if needle != "" {
+			clause.WriteString(` AND p.name LIKE ?`)
+			args = append(args, "%"+needle+"%")
+		}
+	}
+	return clause.String(), args
 }
 
 // ListAvatarKeysByUserId returns every non-null avatar_key for the user's
