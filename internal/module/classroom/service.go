@@ -237,27 +237,13 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 	if err := ValidateListClassrooms(ctx, req); err != nil {
 		return nil, err
 	}
-	// caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// profileCaller,err:= s.profileRepo.ListByUserId()(ctx, req.ProfileID)
-	// if err != nil {
-	// 	return nil, errs.NewError(ctx, status.FAIL, nil, err)
-	// }
-
-	// // Default "my classrooms": filter by caller's profile membership.
-	// // Explicit OwnerProfileID overrides; we don't apply both because the
-	// // AND semantics rarely match what the caller wants.
-	// callerProfileID := caller.ProfileId()
-	// var profileFilter *int64
-	// if req.OwnerProfileID == nil {
-	// 	profileFilter = &callerProfileID
-	// }
-
+	// ProfileID is intentionally NOT forwarded as a query filter — when
+	// the repo sees it, it inner-joins ma_classroom_members and drops
+	// every row where the profile isn't an ACTIVE member, which hides
+	// classrooms the caller could still see via Relationship=NONE /
+	// PENDING_*. The hydration step below uses req.ProfileID
+	// independently to fill the per-row relationship column.
 	classrooms, pg, err := s.listClassroomsQuery.Handle(ctx, query.ListClassroomsQuery{
-		ProfileID:       &req.ProfileID,
 		OwnerProfileID:  req.OwnerProfileID,
 		SchoolID:        req.SchoolID,
 		ProgramID:       req.ProgramID,
