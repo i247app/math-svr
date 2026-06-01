@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS ma_classroom_exercises (
     id                      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     classroom_exercise_id   BIGINT UNSIGNED NOT NULL UNIQUE,
     classroom_id            BIGINT UNSIGNED NOT NULL,
+    creator_profile_id      BIGINT UNSIGNED DEFAULT NULL,
+    visibility              VARCHAR(32) NOT NULL DEFAULT 'PRIVATE',
     program_id              BIGINT UNSIGNED DEFAULT NULL,
     title                   VARCHAR(255) NOT NULL,
     chapter_name            VARCHAR(255) NOT NULL,
@@ -23,3 +25,5 @@ CREATE TABLE IF NOT EXISTS ma_classroom_exercises (
     KEY ix_classroom_status (classroom_id, exercise_status, deleted_dt),
     KEY ix_classroom_window (classroom_id, start_date, end_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ALTER TABLE ma_classroom_exercises ADD KEY ix_classroom_visibility_creator (classroom_id, visibility, creator_profile_id);

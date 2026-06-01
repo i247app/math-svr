@@ -18,24 +18,24 @@ import (
 // classroom manager — students get the response with answer keys
 // stripped so they cannot peek before submitting.
 type ExerciseResponse struct {
-	ID                  int64                   `json:"id"`
-	ClassroomExerciseID int64                   `json:"classroom_exercise_id"`
-	ClassroomID         int64                   `json:"classroom_id"`
-	CreatorProfileID    int64                   `json:"creator_profile_id"`
-	Visibility          string                  `json:"visibility"`
-	ProgramID           *int64                  `json:"program_id,omitempty"`
-	Title               string                  `json:"title"`
-	ChapterName         string                  `json:"chapter_name"`
-	LessonName          string                  `json:"lesson_name"`
-	TotalQuestions      int                     `json:"total_questions"`
-	Questions           []quizDto.QuizQuestion  `json:"questions,omitempty"`
-	StartDate           *mtime.MathTime         `json:"start_date,omitempty"`
-	EndDate             *mtime.MathTime         `json:"end_date,omitempty"`
-	Note                *string                 `json:"note,omitempty"`
-	ExerciseStatus      *string                 `json:"exercise_status,omitempty"`
-	CreateID            *int64                  `json:"create_id,omitempty"`
-	CreateDt            string                  `json:"create_dt"`
-	ModifyDt            string                  `json:"modify_dt"`
+	ID                  int64                  `json:"id"`
+	ClassroomExerciseID int64                  `json:"classroom_exercise_id"`
+	ClassroomID         int64                  `json:"classroom_id"`
+	CreatorProfileID    int64                  `json:"creator_profile_id"`
+	Visibility          string                 `json:"visibility"`
+	ProgramID           *int64                 `json:"program_id,omitempty"`
+	Title               string                 `json:"title"`
+	ChapterName         string                 `json:"chapter_name"`
+	LessonName          string                 `json:"lesson_name"`
+	TotalQuestions      int                    `json:"total_questions"`
+	Questions           []quizDto.QuizQuestion `json:"questions,omitempty"`
+	StartDate           *string                `json:"start_date,omitempty"`
+	EndDate             *string                `json:"end_date,omitempty"`
+	Note                *string                `json:"note,omitempty"`
+	ExerciseStatus      *string                `json:"exercise_status,omitempty"`
+	CreateID            *int64                 `json:"create_id,omitempty"`
+	CreateDt            string                 `json:"create_dt"`
+	ModifyDt            string                 `json:"modify_dt"`
 }
 
 // CreateExerciseReq is the teacher-side create payload. ProgramID is
@@ -140,11 +140,11 @@ func DomainToResponse(e *domain.Exercise, includeRightAnswers bool) *ExerciseRes
 		ModifyDt:            e.ModifyDt().String(),
 	}
 	if e.StartDate().IsValid() {
-		t := e.StartDate()
+		t := e.StartDate().String()
 		res.StartDate = &t
 	}
 	if e.EndDate().IsValid() {
-		t := e.EndDate()
+		t := e.EndDate().String()
 		res.EndDate = &t
 	}
 	if questions := parseQuestions(e.Questions()); len(questions) > 0 {
