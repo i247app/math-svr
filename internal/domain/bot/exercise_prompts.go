@@ -26,9 +26,16 @@ const (
 // pinned. Grading reuses Questions / Answers as the JSON blobs being
 // scored.
 type ExercisePromptInput struct {
-	Language     QuizLanguage
-	Grade        string
-	Program      string
+	Language QuizLanguage
+	Grade    string
+	Program  string
+	// Description is the teacher's free-form supplemental guidance —
+	// e.g. learning objectives, focus areas, difficulty hints. The
+	// generate prompt treats it as additional context, layered on top
+	// of (not replacing) the curriculum + chapter + lesson scope.
+	// Empty / blank is the normal case and is rendered as no extra
+	// instruction.
+	Description  string
 	ChapterName  string
 	LessonName   string
 	NumQuestions int
@@ -99,9 +106,11 @@ func buildExerciseGenerateUser(lang QuizLanguage, in ExercisePromptInput) string
 	return userExerciseGenerateVN(in)
 }
 
-// buildExerciseContextEN emits the optional grade / program lines. The
-// chapter and lesson go in the dedicated SCOPE block of the user prompt,
-// not here.
+// buildExerciseContextEN emits the optional grade / program /
+// teacher-description lines. The chapter and lesson go in the dedicated
+// SCOPE block of the user prompt, not here. Description renders LAST so
+// the curriculum lines anchor the model first and the teacher's note
+// reads as a refinement, not an override.
 func buildExerciseContextEN(in ExercisePromptInput) string {
 	var b strings.Builder
 	if v := strings.TrimSpace(in.Grade); v != "" {
@@ -109,6 +118,9 @@ func buildExerciseContextEN(in ExercisePromptInput) string {
 	}
 	if v := strings.TrimSpace(in.Program); v != "" {
 		fmt.Fprintf(&b, "- Curriculum: %s\n", v)
+	}
+	if v := strings.TrimSpace(in.Description); v != "" {
+		fmt.Fprintf(&b, "- Teacher's guidance: %s\n", v)
 	}
 	return strings.TrimRight(b.String(), "\n")
 }
@@ -120,6 +132,9 @@ func buildExerciseContextVN(in ExercisePromptInput) string {
 	}
 	if v := strings.TrimSpace(in.Program); v != "" {
 		fmt.Fprintf(&b, "- Chương trình học: %s\n", v)
+	}
+	if v := strings.TrimSpace(in.Description); v != "" {
+		fmt.Fprintf(&b, "- Mô tả từ giáo viên: %s\n", v)
 	}
 	return strings.TrimRight(b.String(), "\n")
 }

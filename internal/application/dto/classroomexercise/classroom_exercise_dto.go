@@ -25,6 +25,7 @@ type ExerciseResponse struct {
 	Visibility          string                 `json:"visibility"`
 	ProgramID           *int64                 `json:"program_id,omitempty"`
 	Title               string                 `json:"title"`
+	Description         *string                `json:"description,omitempty"`
 	ChapterName         string                 `json:"chapter_name"`
 	LessonName          string                 `json:"lesson_name"`
 	TotalQuestions      int                    `json:"total_questions"`
@@ -47,6 +48,7 @@ type CreateExerciseReq struct {
 	ClassroomID  int64             `json:"classroom_id"`
 	ProgramID    *int64            `json:"program_id,omitempty"`
 	Title        string            `json:"title"`
+	Description  *string           `json:"description,omitempty"`
 	ChapterName  string            `json:"chapter_name"`
 	LessonName   string            `json:"lesson_name"`
 	NumQuestions int               `json:"num_questions,omitempty"`
@@ -71,6 +73,7 @@ type UpdateExerciseReq struct {
 	ProfileID           *int64          `json:"profile_id,omitempty"`
 	ClassroomExerciseID int64           `json:"classroom_exercise_id"`
 	Title               *string         `json:"title,omitempty"`
+	Description         *string         `json:"description,omitempty"`
 	ChapterName         *string         `json:"chapter_name,omitempty"`
 	LessonName          *string         `json:"lesson_name,omitempty"`
 	StartDate           *mtime.MathTime `json:"start_date,omitempty"`
@@ -158,6 +161,7 @@ func DomainToResponse(e *domain.Exercise, includeRightAnswers bool) *ExerciseRes
 		Visibility:          e.Visibility(),
 		ProgramID:           e.ProgramId(),
 		Title:               e.Title(),
+		Description:         e.Description(),
 		ChapterName:         e.ChapterName(),
 		LessonName:          e.LessonName(),
 		TotalQuestions:      e.TotalQuestions(),

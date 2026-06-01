@@ -23,6 +23,7 @@ type UpdateClassroomExerciseCommand struct {
 	ActorID             *int64
 	ClassroomExerciseID int64
 	Title               *string
+	Description         *string
 	ChapterName         *string
 	LessonName          *string
 	StartDate           *mtime.MathTime
@@ -55,6 +56,7 @@ func (h *UpdateClassroomExerciseCommandHandler) Handle(ctx context.Context, cmd 
 
 		patch := domain.UpdatePatch{
 			Title:          cmd.Title,
+			Description:    cmd.Description,
 			ChapterName:    cmd.ChapterName,
 			LessonName:     cmd.LessonName,
 			StartDate:      cmd.StartDate,

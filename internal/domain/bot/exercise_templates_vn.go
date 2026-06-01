@@ -69,7 +69,7 @@ Mọi câu hỏi đều phải nằm trong phạm vi chương + bài học nêu 
 Thông tin bổ sung:
 %s
 
-Hiệu chỉnh độ khó theo cấp lớp / bộ sách nêu trên, nhưng mọi câu hỏi vẫn phải nằm trong phạm vi chương + bài học.`, scope, context)
+Dùng các thông tin bổ sung phía trên để điều chỉnh độ khó, trọng tâm và cách diễn đạt — KHÔNG ghi đè phạm vi chương + bài học vốn bắt buộc. Hướng dẫn của giáo viên (nếu có) chỉ là gợi ý, không phải cớ để lan sang chủ đề khác.`, scope, context)
 }
 
 // Grading prompt — Vietnamese. Mirrors the quiz-grading output shape so

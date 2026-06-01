@@ -54,6 +54,7 @@ type ListExercisesParams struct {
 // set once at create time and never changes.
 type UpdatePatch struct {
 	Title          *string
+	Description    *string
 	ChapterName    *string
 	LessonName     *string
 	StartDate      *mtime.MathTime

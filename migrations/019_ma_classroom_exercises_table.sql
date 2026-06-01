@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS ma_classroom_exercises (
     visibility              VARCHAR(32) NOT NULL DEFAULT 'PRIVATE',
     program_id              BIGINT UNSIGNED DEFAULT NULL,
     title                   VARCHAR(255) NOT NULL,
+    description             VARCHAR(500) DEFAULT NULL,
     chapter_name            VARCHAR(255) NOT NULL,
     lesson_name             VARCHAR(255) NOT NULL,
     total_questions         INT UNSIGNED NOT NULL DEFAULT 0,

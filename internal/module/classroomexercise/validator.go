@@ -13,6 +13,7 @@ import (
 
 const (
 	titleMaxLen       = 255
+	descriptionMaxLen = 500
 	chapterNameMaxLen = 255
 	lessonNameMaxLen  = 255
 	noteMaxLen        = 500
@@ -56,6 +57,17 @@ func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) err
 	if len([]rune(req.Title)) > titleMaxLen {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_TITLE_TOO_LONG, nil,
 			errors.New("title too long"))
+	}
+	if req.Description != nil {
+		v := strings.TrimSpace(*req.Description)
+		if v == "" {
+			req.Description = nil
+		} else if len([]rune(v)) > descriptionMaxLen {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOTE_TOO_LONG, nil,
+				errors.New("description too long"))
+		} else {
+			req.Description = &v
+		}
 	}
 	if strings.TrimSpace(req.ChapterName) == "" {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_CHAPTER_NAME, nil,
@@ -116,6 +128,22 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 		if len([]rune(*req.Title)) > titleMaxLen {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_TITLE_TOO_LONG, nil,
 				errors.New("title too long"))
+		}
+	}
+	if req.Description != nil {
+		v := strings.TrimSpace(*req.Description)
+		// Allow explicit clear: pass an empty-but-non-nil string to wipe
+		// the column. The repo's COALESCE-style patch normally leaves the
+		// column alone on nil, so passing "" here would be a no-op for
+		// the column. We accept both "leave alone" (nil) and "set to a
+		// trimmed value" — clearing is a follow-up if needed.
+		if v == "" {
+			req.Description = nil
+		} else if len([]rune(v)) > descriptionMaxLen {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOTE_TOO_LONG, nil,
+				errors.New("description too long"))
+		} else {
+			req.Description = &v
 		}
 	}
 	if req.ChapterName != nil {

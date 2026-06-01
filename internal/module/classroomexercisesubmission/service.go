@@ -360,11 +360,11 @@ func enforceSubmissionWindow(ctx context.Context, e *exerciseDomain.Exercise) er
 	now := time.Now().UTC()
 	if e.StartDate().IsValid() && now.Before(e.StartDate().Time) {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_WINDOW_NOT_OPEN, nil,
-			errors.New("submission window has not opened"))
+			errors.New("You can not submit before start time"))
 	}
 	if e.EndDate().IsValid() && now.After(e.EndDate().Time) {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_WINDOW_CLOSED, nil,
-			errors.New("submission window has closed"))
+			errors.New("You can not submit after end time"))
 	}
 	return nil
 }

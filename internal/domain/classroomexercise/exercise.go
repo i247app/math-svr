@@ -27,6 +27,7 @@ type Exercise struct {
 	visibility          string
 	programId           *int64
 	title               string
+	description         *string
 	chapterName         string
 	lessonName          string
 	totalQuestions      int
@@ -59,6 +60,8 @@ func (e *Exercise) ProgramId() *int64               { return e.programId }
 func (e *Exercise) SetProgramId(id *int64)          { e.programId = id }
 func (e *Exercise) Title() string                   { return e.title }
 func (e *Exercise) SetTitle(s string)               { e.title = s }
+func (e *Exercise) Description() *string            { return e.description }
+func (e *Exercise) SetDescription(s *string)        { e.description = s }
 func (e *Exercise) ChapterName() string             { return e.chapterName }
 func (e *Exercise) SetChapterName(s string)         { e.chapterName = s }
 func (e *Exercise) LessonName() string              { return e.lessonName }

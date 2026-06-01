@@ -72,7 +72,7 @@ Keep every question inside the chapter + lesson scope above.`, scope)
 Additional context:
 %s
 
-Calibrate question difficulty to the grade / curriculum above while keeping every question inside the chapter + lesson scope.`, scope, context)
+Use the additional context above to refine question difficulty, focus areas, and phrasing — without overriding the chapter + lesson scope, which is binding. The teacher's guidance, when present, is a hint, not a license to drift to other topics.`, scope, context)
 }
 
 // Grading prompt — English. Output schema matches QuizGradingResult so

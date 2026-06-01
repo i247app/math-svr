@@ -37,6 +37,10 @@ type generateExerciseInput struct {
 	Language     enum.LanguageType
 	GradeLabel   string
 	ProgramLabel string
+	// Description is the teacher's free-form guidance — passed through
+	// verbatim to the prompt's additional-context block. Empty means
+	// the prompt renders no teacher-guidance line.
+	Description  string
 	ChapterName  string
 	LessonName   string
 	NumQuestions int
@@ -59,6 +63,7 @@ func (c *botClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 			Language:     domainBot.QuizLanguage(normalizeLanguage(in.Language)),
 			Grade:        in.GradeLabel,
 			Program:      in.ProgramLabel,
+			Description:  in.Description,
 			ChapterName:  in.ChapterName,
 			LessonName:   in.LessonName,
 			NumQuestions: in.NumQuestions,

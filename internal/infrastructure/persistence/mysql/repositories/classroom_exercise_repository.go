@@ -20,7 +20,7 @@ const (
 
 	classroomExerciseColumns = `e.id, e.classroom_exercise_id, e.classroom_id,
 		e.creator_profile_id, e.visibility, e.program_id,
-		e.title, e.chapter_name, e.lesson_name, e.total_questions,
+		e.title, e.description, e.chapter_name, e.lesson_name, e.total_questions,
 		e.questions, e.answers, e.start_date, e.end_date,
 		e.note, e.exercise_status, e.status,
 		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
@@ -48,7 +48,7 @@ func scanClassroomExercise(s database.RowScanner) (*models.ClassroomExerciseMode
 	var m models.ClassroomExerciseModel
 	if err := s.Scan(&m.Id, &m.ClassroomExerciseId, &m.ClassroomId,
 		&m.CreatorProfileId, &m.Visibility, &m.ProgramId,
-		&m.Title, &m.ChapterName, &m.LessonName, &m.TotalQuestions,
+		&m.Title, &m.Description, &m.ChapterName, &m.LessonName, &m.TotalQuestions,
 		&m.Questions, &m.Answers, &m.StartDate, &m.EndDate,
 		&m.Note, &m.ExerciseStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -254,15 +254,15 @@ func (r *ClassroomExerciseRepository) Create(ctx context.Context, e *domain.Exer
 		INSERT INTO ` + classroomExerciseTable + `
 			(classroom_exercise_id, classroom_id, creator_profile_id, visibility,
 			 program_id,
-			 title, chapter_name, lesson_name, total_questions,
+			 title, description, chapter_name, lesson_name, total_questions,
 			 questions, answers, start_date, end_date,
 			 note, exercise_status, create_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		e.ClassroomExerciseId(), e.ClassroomId(), e.CreatorProfileId(), visibility,
 		e.ProgramId(),
-		e.Title(), e.ChapterName(), e.LessonName(), e.TotalQuestions(),
+		e.Title(), e.Description(), e.ChapterName(), e.LessonName(), e.TotalQuestions(),
 		e.Questions(), e.Answers(), startArg, endArg,
 		e.Note(), e.ExerciseStatus(), e.CreateId())
 	if err != nil {
@@ -301,6 +301,7 @@ func (r *ClassroomExerciseRepository) Update(ctx context.Context, classroomExerc
 	query := `
 		UPDATE ` + classroomExerciseTable + `
 		SET title           = COALESCE(?, title),
+			description     = COALESCE(?, description),
 			chapter_name    = COALESCE(?, chapter_name),
 			lesson_name     = COALESCE(?, lesson_name),
 			start_date      = COALESCE(?, start_date),
@@ -313,7 +314,7 @@ func (r *ClassroomExerciseRepository) Update(ctx context.Context, classroomExerc
 		WHERE classroom_exercise_id = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
-		patch.Title, patch.ChapterName, patch.LessonName,
+		patch.Title, patch.Description, patch.ChapterName, patch.LessonName,
 		startArg, endArg,
 		patch.Note, patch.ExerciseStatus, patch.Visibility, patch.ModifyID,
 		mtime.Now().Time, classroomExerciseId); err != nil {
@@ -352,6 +353,7 @@ func modelToDomainClassroomExercise(m *models.ClassroomExerciseModel) *domain.Ex
 	e.SetVisibility(m.Visibility)
 	e.SetProgramId(m.ProgramId)
 	e.SetTitle(m.Title)
+	e.SetDescription(m.Description)
 	e.SetChapterName(m.ChapterName)
 	e.SetLessonName(m.LessonName)
 	e.SetTotalQuestions(m.TotalQuestions)

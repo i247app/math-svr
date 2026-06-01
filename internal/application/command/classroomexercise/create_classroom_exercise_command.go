@@ -28,6 +28,7 @@ type CreateClassroomExerciseCommand struct {
 	Visibility       string
 	ProgramID        *int64
 	Title            string
+	Description      *string
 	ChapterName      string
 	LessonName       string
 	TotalQuestions   int
@@ -66,6 +67,7 @@ func (h *CreateClassroomExerciseCommandHandler) Handle(ctx context.Context, cmd 
 		e.SetVisibility(visibility)
 		e.SetProgramId(cmd.ProgramID)
 		e.SetTitle(cmd.Title)
+		e.SetDescription(cmd.Description)
 		e.SetChapterName(cmd.ChapterName)
 		e.SetLessonName(cmd.LessonName)
 		e.SetTotalQuestions(cmd.TotalQuestions)

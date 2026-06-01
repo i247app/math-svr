@@ -12,6 +12,7 @@ type ClassroomExerciseModel struct {
 	Visibility          string
 	ProgramId           *int64
 	Title               string
+	Description         *string
 	ChapterName         string
 	LessonName          string
 	TotalQuestions      int

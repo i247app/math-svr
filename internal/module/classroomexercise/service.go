@@ -117,10 +117,15 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 		numQuestions = DefaultNumQuestions
 	}
 
+	description := ""
+	if req.Description != nil {
+		description = *req.Description
+	}
 	generated, err := s.bot.GenerateExercise(ctx, generateExerciseInput{
 		Language:     lang,
 		GradeLabel:   gradeLabel,
 		ProgramLabel: programLabel,
+		Description:  description,
 		ChapterName:  req.ChapterName,
 		LessonName:   req.LessonName,
 		NumQuestions: numQuestions,
@@ -150,6 +155,7 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 		Visibility:       visibility,
 		ProgramID:        programID,
 		Title:            req.Title,
+		Description:      req.Description,
 		ChapterName:      req.ChapterName,
 		LessonName:       req.LessonName,
 		TotalQuestions:   len(generated.Questions),
@@ -203,6 +209,7 @@ func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq
 		ActorID:             &actor,
 		ClassroomExerciseID: req.ClassroomExerciseID,
 		Title:               req.Title,
+		Description:         req.Description,
 		ChapterName:         req.ChapterName,
 		LessonName:          req.LessonName,
 		StartDate:           req.StartDate,
