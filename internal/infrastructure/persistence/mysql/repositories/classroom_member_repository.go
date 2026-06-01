@@ -172,6 +172,46 @@ func buildClassroomMemberFilter(params *classroom.ListMembersParams) (string, []
 	return clause, args
 }
 
+// ListByProfileAndClassroomIds returns every active (non-DELETED) row
+// for the given profile across the requested classroom ids. Pulled in
+// one round trip via IN(...). Terminal-state rows
+// (REJECTED/LEFT/REMOVED) are included — the caller is responsible for
+// mapping them to "not participating" when composing relationship.
+func (r *ClassroomMemberRepository) ListByProfileAndClassroomIds(ctx context.Context, profileId int64, classroomIds []int64) ([]*classroom.Member, error) {
+	if profileId == 0 || len(classroomIds) == 0 {
+		return nil, nil
+	}
+	placeholders := make([]string, len(classroomIds))
+	args := classroomMemberActiveArgs()
+	args = append(args, profileId)
+	for i, id := range classroomIds {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m WHERE ` +
+		classroomMemberActiveWhere +
+		` AND m.profile_id = ? AND m.classroom_id IN (` + strings.Join(placeholders, ", ") + `)`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("classroom_member repo list by profile and classroom ids: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*classroom.Member
+	for rows.Next() {
+		m, err := scanClassroomMember(rows)
+		if err != nil {
+			return nil, fmt.Errorf("classroom_member repo scan row: %w", err)
+		}
+		out = append(out, ModelToDomainClassroomMember(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom_member repo rows iteration: %w", err)
+	}
+	return out, nil
+}
+
 func (r *ClassroomMemberRepository) CountActiveByClassroomId(ctx context.Context, classroomId int64) (int64, error) {
 	query := `SELECT COUNT(*) FROM ` + classroomMemberTable + ` m WHERE ` +
 		classroomMemberActiveWhere + ` AND m.classroom_id = ? AND m.member_status = ?`

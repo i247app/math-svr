@@ -31,31 +31,31 @@ const coverUrlTTL = 1 * time.Hour
 // needed for foreign-key validation, and exposes a sessionUserID-aware
 // API so handlers can enforce the §0 Q1 contract.
 type Service struct {
-	getClassroomQuery                     *query.GetClassroomByIdQueryHandler
-	listClassroomsQuery                   *query.ListClassroomsQueryHandler
-	listMembersQuery                      *query.ListMembersQueryHandler
-	listMyPendingInvitationsQuery         *query.ListMyPendingInvitationsQueryHandler
-	listPendingInvitationsByClassroomQ    *query.ListPendingInvitationsByClassroomQueryHandler
-	createClassroomCmd                    *command.CreateClassroomCommandHandler
-	updateClassroomCmd                    *command.UpdateClassroomCommandHandler
-	archiveClassroomCmd                   *command.ArchiveClassroomCommandHandler
-	restoreClassroomCmd                   *command.RestoreClassroomCommandHandler
-	softDeleteClassroomCmd                *command.SoftDeleteClassroomCommandHandler
-	forceDeleteClassroomCmd               *command.ForceDeleteClassroomCommandHandler
-	joinByCodeCmd                         *command.JoinByCodeCommandHandler
-	leaveClassroomCmd                     *command.LeaveClassroomCommandHandler
-	removeMemberCmd                       *command.RemoveMemberCommandHandler
-	updateMemberRoleCmd                   *command.UpdateMemberRoleCommandHandler
-	transferOwnershipCmd                  *command.TransferOwnershipCommandHandler
-	sendInvitationCmd                     *command.SendInvitationCommandHandler
-	acceptInvitationCmd                   *command.AcceptInvitationCommandHandler
-	rejectInvitationCmd                   *command.RejectInvitationCommandHandler
-	cancelInvitationCmd                   *command.CancelInvitationCommandHandler
-	approveJoinRequestCmd                 *command.ApproveJoinRequestCommandHandler
-	rejectJoinRequestCmd                  *command.RejectJoinRequestCommandHandler
-	cancelJoinRequestCmd                  *command.CancelJoinRequestCommandHandler
-	listJoinRequestsByClassroomQuery      *query.ListJoinRequestsByClassroomQueryHandler
-	listMyJoinRequestsQuery               *query.ListMyJoinRequestsQueryHandler
+	getClassroomQuery                  *query.GetClassroomByIdQueryHandler
+	listClassroomsQuery                *query.ListClassroomsQueryHandler
+	listMembersQuery                   *query.ListMembersQueryHandler
+	listMyPendingInvitationsQuery      *query.ListMyPendingInvitationsQueryHandler
+	listPendingInvitationsByClassroomQ *query.ListPendingInvitationsByClassroomQueryHandler
+	createClassroomCmd                 *command.CreateClassroomCommandHandler
+	updateClassroomCmd                 *command.UpdateClassroomCommandHandler
+	archiveClassroomCmd                *command.ArchiveClassroomCommandHandler
+	restoreClassroomCmd                *command.RestoreClassroomCommandHandler
+	softDeleteClassroomCmd             *command.SoftDeleteClassroomCommandHandler
+	forceDeleteClassroomCmd            *command.ForceDeleteClassroomCommandHandler
+	joinByCodeCmd                      *command.JoinByCodeCommandHandler
+	leaveClassroomCmd                  *command.LeaveClassroomCommandHandler
+	removeMemberCmd                    *command.RemoveMemberCommandHandler
+	updateMemberRoleCmd                *command.UpdateMemberRoleCommandHandler
+	transferOwnershipCmd               *command.TransferOwnershipCommandHandler
+	sendInvitationCmd                  *command.SendInvitationCommandHandler
+	acceptInvitationCmd                *command.AcceptInvitationCommandHandler
+	rejectInvitationCmd                *command.RejectInvitationCommandHandler
+	cancelInvitationCmd                *command.CancelInvitationCommandHandler
+	approveJoinRequestCmd              *command.ApproveJoinRequestCommandHandler
+	rejectJoinRequestCmd               *command.RejectJoinRequestCommandHandler
+	cancelJoinRequestCmd               *command.CancelJoinRequestCommandHandler
+	listJoinRequestsByClassroomQuery   *query.ListJoinRequestsByClassroomQueryHandler
+	listMyJoinRequestsQuery            *query.ListMyJoinRequestsQueryHandler
 
 	classroomRepo        classroomDomain.IRepository
 	classroomMemberRepo  classroomDomain.IMemberRepository
@@ -136,16 +136,16 @@ func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomR
 
 	actor := caller.ProfileId()
 	created, err := s.createClassroomCmd.Handle(ctx, command.CreateClassroomCommand{
-		ActorID:             &actor,
-		OwnerProfileID:      caller.ProfileId(),
-		Name:                strings.TrimSpace(req.Name),
-		Description:         req.Description,
-		SchoolID:            req.SchoolID,
-		ProgramIDs:          req.ProgramIDs,
-		GradeID:             req.GradeID,
-		MaxMembers:          req.MaxMembers,
-		CoverKey:            req.CoverKey,
-		Note:                req.Note,
+		ActorID:                &actor,
+		OwnerProfileID:         caller.ProfileId(),
+		Name:                   strings.TrimSpace(req.Name),
+		Description:            req.Description,
+		SchoolID:               req.SchoolID,
+		ProgramIDs:             req.ProgramIDs,
+		GradeID:                req.GradeID,
+		MaxMembers:             req.MaxMembers,
+		CoverKey:               req.CoverKey,
+		Note:                   req.Note,
 		ClassroomCode:          req.ClassroomCode,
 		ClassroomCodeExpiresDt: req.ClassroomCodeExpiresDt,
 	})
@@ -237,22 +237,22 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 	if err := ValidateListClassrooms(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
-	if err != nil {
-		return nil, err
-	}
+	// caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	// Default "my classrooms": filter by caller's profile membership.
-	// Explicit OwnerProfileID overrides; we don't apply both because the
-	// AND semantics rarely match what the caller wants.
-	callerProfileID := caller.ProfileId()
-	var profileFilter *int64
-	if req.OwnerProfileID == nil {
-		profileFilter = &callerProfileID
-	}
+	// // Default "my classrooms": filter by caller's profile membership.
+	// // Explicit OwnerProfileID overrides; we don't apply both because the
+	// // AND semantics rarely match what the caller wants.
+	// callerProfileID := caller.ProfileId()
+	// var profileFilter *int64
+	// if req.OwnerProfileID == nil {
+	// 	profileFilter = &callerProfileID
+	// }
 
 	classrooms, pg, err := s.listClassroomsQuery.Handle(ctx, query.ListClassroomsQuery{
-		ProfileID:       profileFilter,
+		ProfileID:       &req.ProfileID,
 		OwnerProfileID:  req.OwnerProfileID,
 		SchoolID:        req.SchoolID,
 		ProgramID:       req.ProgramID,
@@ -270,6 +270,9 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 	responses := dto.DomainListToResponse(classrooms)
 	for _, r := range responses {
 		s.populateCoverUrl(ctx, r)
+	}
+	if err := s.hydrateOwnersAndRelationships(ctx, classrooms, responses, req.ProfileID); err != nil {
+		return nil, err
 	}
 	return &dto.ListClassroomsRes{
 		Classrooms: responses,
@@ -389,6 +392,122 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 		}
 	}
 	return nil
+}
+
+// hydrateOwnersAndRelationships fills the Owner and Relationship fields
+// for a page of classroom responses using batched cross-aggregate
+// queries — one ListByProfileIds against ma_profiles and one
+// ListByProfileAndClassroomIds against ma_classroom_members. Total
+// cross-aggregate cost is +2 round trips per list call, independent of
+// page size, so N+1 is structurally impossible.
+//
+// callerProfileID is the acting profile id from the request; it drives
+// the relationship lookup. When it is zero (caller did not supply it)
+// every classroom defaults to Relationship=NONE so the field is still
+// stable for the frontend.
+func (s *Service) hydrateOwnersAndRelationships(
+	ctx context.Context,
+	classrooms []*classroomDomain.Classroom,
+	responses []*dto.ClassroomResponse,
+	callerProfileID int64,
+) error {
+	if len(classrooms) == 0 {
+		return nil
+	}
+
+	ownerIDSet := make(map[int64]struct{}, len(classrooms))
+	classroomIDs := make([]int64, 0, len(classrooms))
+	for _, c := range classrooms {
+		ownerIDSet[c.OwnerProfileId()] = struct{}{}
+		classroomIDs = append(classroomIDs, c.ClassroomId())
+	}
+	ownerIDs := make([]int64, 0, len(ownerIDSet))
+	for id := range ownerIDSet {
+		ownerIDs = append(ownerIDs, id)
+	}
+
+	ownerMap := make(map[int64]*dto.ClassroomOwnerSummary, len(ownerIDs))
+	if len(ownerIDs) > 0 && s.profileRepo != nil {
+		owners, err := s.profileRepo.ListByProfileIds(ctx, ownerIDs)
+		if err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		for _, p := range owners {
+			summary := &dto.ClassroomOwnerSummary{
+				ProfileID: p.ProfileId(),
+				Name:      p.Name(),
+				Role:      p.Role(),
+				AvatarKey: p.AvatarKey(),
+			}
+			s.signOwnerAvatarURL(ctx, summary)
+			ownerMap[p.ProfileId()] = summary
+		}
+	}
+
+	memberMap := make(map[int64]*classroomDomain.Member, len(classroomIDs))
+	if callerProfileID != 0 && s.classroomMemberRepo != nil {
+		rows, err := s.classroomMemberRepo.ListByProfileAndClassroomIds(ctx, callerProfileID, classroomIDs)
+		if err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		for _, m := range rows {
+			memberMap[m.ClassroomId()] = m
+		}
+	}
+
+	for i, c := range classrooms {
+		resp := responses[i]
+		if resp == nil {
+			continue
+		}
+		if owner, ok := ownerMap[c.OwnerProfileId()]; ok {
+			resp.Owner = owner
+		}
+		rel, role := relationshipFromMember(memberMap[c.ClassroomId()])
+		resp.Relationship = string(rel)
+		resp.MyRole = role
+	}
+	return nil
+}
+
+// relationshipFromMember maps a member row's status into the public
+// relationship enum. Terminal states (REJECTED/LEFT/REMOVED) and a
+// missing row both flatten to NONE — the UI treats them identically as
+// "not currently participating". Returns the caller's member_role only
+// when the relationship is MEMBER; nil otherwise so the JSON omits it.
+func relationshipFromMember(m *classroomDomain.Member) (enum.ClassroomRelationshipType, *string) {
+	if m == nil || m.MemberStatus() == nil {
+		return enum.ClassroomRelationshipTypeNone, nil
+	}
+	switch enum.ClassroomMemberStatusType(*m.MemberStatus()) {
+	case enum.ClassroomMemberStatusTypeActive:
+		role := m.MemberRole()
+		return enum.ClassroomRelationshipTypeMember, &role
+	case enum.ClassroomMemberStatusTypePendingInvitation:
+		return enum.ClassroomRelationshipTypePendingInvitation, nil
+	case enum.ClassroomMemberStatusTypePendingRequest:
+		return enum.ClassroomRelationshipTypePendingRequest, nil
+	default:
+		return enum.ClassroomRelationshipTypeNone, nil
+	}
+}
+
+// signOwnerAvatarURL mutates the owner summary in place to add a
+// short-lived presigned URL for the avatar. No-op when storage is
+// disabled or the owner has no avatar_key.
+func (s *Service) signOwnerAvatarURL(ctx context.Context, summary *dto.ClassroomOwnerSummary) {
+	if summary == nil || s.storageProvider == nil || summary.AvatarKey == nil || *summary.AvatarKey == "" {
+		return
+	}
+	url, err := s.storageProvider.CreatePresignedUrl(ctx, &storage.CreatePresignedUrlRequest{
+		Key:        *summary.AvatarKey,
+		Expiration: coverUrlTTL,
+	})
+	if err != nil {
+		logger.From(ctx).Warnf("classroom.owner_avatar presign failed profile_id=%d err=%v", summary.ProfileID, err)
+		return
+	}
+	summary.AvatarURL = &url
 }
 
 // populateCoverUrl mutates resp in place to add a short-lived presigned

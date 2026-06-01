@@ -9,6 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
+	"math-ai.com/math-ai/internal/module/classroomexercise"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/job"
@@ -125,6 +126,19 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		res.StorageProvider,
 	)
 
+	log.Info("> Setup ClassroomExerciseSvc...")
+	classroomExerciseService := classroomexercise.NewService(
+		repos.ClassroomExerciseRepository,
+		uow,
+		res.BotProvider,
+		repos.ClassroomRepository,
+		repos.ClassroomMemberRepository,
+		repos.ClassroomProgramRepository,
+		repos.ProfileRepository,
+		repos.ProgramRepository,
+		repos.GradeRepository,
+	)
+
 	return &ServiceContainer{
 		UserSvc:      userService,
 		AuthSvc:      authService,
@@ -140,5 +154,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		JobSvc:       jobService,
 		SeqSvc:       seqService,
 		ClassroomSvc: classroomService,
+		ClassroomExerciseSvc: classroomExerciseService,
 	}, nil
 }

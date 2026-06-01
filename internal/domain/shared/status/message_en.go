@@ -484,6 +484,42 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "A pending join request already exists for this classroom"
 	case CLASSROOM_JOIN_REQUEST_PERMISSION_DENIED:
 		return "You do not have permission to manage this join request"
+
+	// Classroom exercise
+	case CLASSROOM_EXERCISE_NOT_FOUND:
+		return "Classroom exercise not found"
+	case CLASSROOM_EXERCISE_MISSING_ID:
+		return "Classroom exercise id is required"
+	case CLASSROOM_EXERCISE_MISSING_CLASSROOM_ID:
+		return "Classroom id is required"
+	case CLASSROOM_EXERCISE_MISSING_TITLE:
+		return "Exercise title is required"
+	case CLASSROOM_EXERCISE_TITLE_TOO_LONG:
+		return "Exercise title is too long"
+	case CLASSROOM_EXERCISE_MISSING_CHAPTER_NAME:
+		return "Chapter name is required"
+	case CLASSROOM_EXERCISE_CHAPTER_NAME_TOO_LONG:
+		return "Chapter name is too long"
+	case CLASSROOM_EXERCISE_MISSING_LESSON_NAME:
+		return "Lesson name is required"
+	case CLASSROOM_EXERCISE_LESSON_NAME_TOO_LONG:
+		return "Lesson name is too long"
+	case CLASSROOM_EXERCISE_INVALID_NUM_QUESTIONS:
+		return "Number of questions is invalid"
+	case CLASSROOM_EXERCISE_INVALID_DATE_RANGE:
+		return "Exercise end date must be after start date"
+	case CLASSROOM_EXERCISE_NOTE_TOO_LONG:
+		return "Exercise note is too long"
+	case CLASSROOM_EXERCISE_INVALID_PROGRAM:
+		return "Program is invalid"
+	case CLASSROOM_EXERCISE_PROGRAM_NOT_IN_CLASSROOM:
+		return "Program is not associated with this classroom"
+	case CLASSROOM_EXERCISE_ALREADY_DELETED:
+		return "Classroom exercise is already deleted"
+	case CLASSROOM_EXERCISE_PERMISSION_DENIED:
+		return "You do not have permission to manage this exercise"
+	case CLASSROOM_EXERCISE_GENERATION_FAILED:
+		return "Failed to generate classroom exercise"
 	default:
 		return ""
 	}

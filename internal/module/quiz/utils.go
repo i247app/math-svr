@@ -26,6 +26,15 @@ func normalizeLanguage(lang enum.LanguageType) string {
 // defence-in-depth for backends that drift from the schema or hit a
 // max-tokens cut. Title is best-effort: an empty string flows through
 // to a NULL DB column, which the response layer omits.
+// ParseGeneration is the exported entry point for sibling modules that
+// drive the same generation JSON contract (e.g. classroomexercise). It
+// reuses the same payload-extraction + salvage pipeline as the in-
+// package parseGeneration so any future schema tweak only has to be
+// made in one place.
+func ParseGeneration(content string) (string, []quizDto.QuizQuestion, error) {
+	return parseGeneration(content)
+}
+
 func parseGeneration(content string) (string, []quizDto.QuizQuestion, error) {
 	payload := extractJSONPayload(content)
 

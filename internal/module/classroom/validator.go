@@ -139,10 +139,10 @@ func ValidateGetClassroom(ctx context.Context, req *dto.GetClassroomReq) error {
 }
 
 func ValidateListClassrooms(ctx context.Context, req *dto.ListClassroomsReq) error {
-	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
-	}
+	// if req.ProfileID == 0 {
+	// 	return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
+	// 		errors.New("profile_id is required"))
+	// }
 	// Collapse blank optional filters to nil so the repo skips the predicate.
 	if req.OwnerProfileID != nil && *req.OwnerProfileID == 0 {
 		req.OwnerProfileID = nil

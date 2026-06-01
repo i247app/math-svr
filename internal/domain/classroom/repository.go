@@ -111,6 +111,14 @@ type IMemberRepository interface {
 	FindByMemberId(ctx context.Context, memberId int64) (*Member, error)
 	FindByClassroomAndProfile(ctx context.Context, classroomId, profileId int64) (*Member, error)
 	ListMembers(ctx context.Context, params *ListMembersParams) ([]*Member, *pagination.Pagination, error)
+	// ListByProfileAndClassroomIds fetches the rows where (profile_id =
+	// profileId AND classroom_id IN classroomIds), excluding DELETED.
+	// Returned terminal-state rows (REJECTED/LEFT/REMOVED) are kept so
+	// the caller can decide whether to surface them as "not
+	// participating" or not. Used by the classroom list flow to hydrate
+	// the caller's relationship to each classroom on a single page in
+	// one round trip, preventing N+1 lookups across the page.
+	ListByProfileAndClassroomIds(ctx context.Context, profileId int64, classroomIds []int64) ([]*Member, error)
 	CountActiveByClassroomId(ctx context.Context, classroomId int64) (int64, error)
 	Create(ctx context.Context, m *Member) (*Member, error)
 	Update(ctx context.Context, m *Member) error

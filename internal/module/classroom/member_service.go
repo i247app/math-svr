@@ -31,10 +31,11 @@ func (s *Service) JoinClassroomByCode(ctx context.Context, req *dto.JoinByCodeRe
 
 	actor := caller.ProfileId()
 	saved, err := s.joinByCodeCmd.Handle(ctx, command.JoinByCodeCommand{
-		ActorID:     &actor,
-		ProfileID:   caller.ProfileId(),
-		ProfileRole: caller.Role(),
-		ClassroomCode:  req.ClassroomCode,
+		ActorID:       &actor,
+		InviteBy:      caller.ProfileId(),
+		ProfileID:     caller.ProfileId(),
+		ProfileRole:   caller.Role(),
+		ClassroomCode: req.ClassroomCode,
 	})
 	if err != nil {
 		return nil, err

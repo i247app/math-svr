@@ -484,6 +484,42 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Đã tồn tại yêu cầu tham gia đang chờ duyệt cho lớp học này"
 	case CLASSROOM_JOIN_REQUEST_PERMISSION_DENIED:
 		return "Bạn không có quyền thao tác trên yêu cầu tham gia này"
+
+	// Classroom exercise
+	case CLASSROOM_EXERCISE_NOT_FOUND:
+		return "Không tìm thấy bài tập lớp học"
+	case CLASSROOM_EXERCISE_MISSING_ID:
+		return "Mã bài tập là bắt buộc"
+	case CLASSROOM_EXERCISE_MISSING_CLASSROOM_ID:
+		return "Mã lớp học là bắt buộc"
+	case CLASSROOM_EXERCISE_MISSING_TITLE:
+		return "Tên bài tập là bắt buộc"
+	case CLASSROOM_EXERCISE_TITLE_TOO_LONG:
+		return "Tên bài tập quá dài"
+	case CLASSROOM_EXERCISE_MISSING_CHAPTER_NAME:
+		return "Tên chương là bắt buộc"
+	case CLASSROOM_EXERCISE_CHAPTER_NAME_TOO_LONG:
+		return "Tên chương quá dài"
+	case CLASSROOM_EXERCISE_MISSING_LESSON_NAME:
+		return "Tên bài học là bắt buộc"
+	case CLASSROOM_EXERCISE_LESSON_NAME_TOO_LONG:
+		return "Tên bài học quá dài"
+	case CLASSROOM_EXERCISE_INVALID_NUM_QUESTIONS:
+		return "Số lượng câu hỏi không hợp lệ"
+	case CLASSROOM_EXERCISE_INVALID_DATE_RANGE:
+		return "Ngày kết thúc phải sau ngày bắt đầu"
+	case CLASSROOM_EXERCISE_NOTE_TOO_LONG:
+		return "Ghi chú quá dài"
+	case CLASSROOM_EXERCISE_INVALID_PROGRAM:
+		return "Bộ sách không hợp lệ"
+	case CLASSROOM_EXERCISE_PROGRAM_NOT_IN_CLASSROOM:
+		return "Bộ sách không thuộc lớp học này"
+	case CLASSROOM_EXERCISE_ALREADY_DELETED:
+		return "Bài tập đã bị xoá"
+	case CLASSROOM_EXERCISE_PERMISSION_DENIED:
+		return "Bạn không có quyền thao tác trên bài tập này"
+	case CLASSROOM_EXERCISE_GENERATION_FAILED:
+		return "Tạo bài tập tự động thất bại"
 	default:
 		return ""
 	}

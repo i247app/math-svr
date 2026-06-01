@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
+	"math-ai.com/math-ai/internal/module/classroomexercise"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
@@ -186,6 +187,16 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /classrooms/join-requests/approve", classroomHandler.HandleApproveJoinRequest, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/join-requests/reject", classroomHandler.HandleRejectJoinRequest, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/join-requests/cancel", classroomHandler.HandleCancelJoinRequest, authMiddleware)
+	}
+
+	// classroom exercise routes — teacher-issued, AI-generated assignments
+	{
+		exerciseHandler := classroomexercise.NewClassroomExerciseHandler(res, services.ClassroomExerciseSvc)
+		gexSvr.AddRoute("POST /classroom-exercises/create", exerciseHandler.HandleCreateExercise, authMiddleware)
+		gexSvr.AddRoute("POST /classroom-exercises/update", exerciseHandler.HandleUpdateExercise, authMiddleware)
+		gexSvr.AddRoute("GET  /classroom-exercises/{id}", exerciseHandler.HandleGetExercise, authMiddleware)
+		gexSvr.AddRoute("POST /classroom-exercises/list", exerciseHandler.HandleListExercises, authMiddleware)
+		gexSvr.AddRoute("POST /classroom-exercises/soft-delete", exerciseHandler.HandleSoftDeleteExercise, authMiddleware)
 	}
 
 	// health routes

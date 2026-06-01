@@ -25,10 +25,11 @@ import (
 // checked when the owner approves so requests can queue while seats
 // open up.
 type JoinByCodeCommand struct {
-	ActorID     *int64
-	ProfileID   int64
-	ProfileRole string
-	ClassroomCode  string
+	ActorID       *int64
+	InviteBy      int64
+	ProfileID     int64
+	ProfileRole   string
+	ClassroomCode string
 }
 
 type JoinByCodeCommandHandler struct {
@@ -113,7 +114,7 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 		m.SetClassroomId(c.ClassroomId())
 		m.SetProfileId(cmd.ProfileID)
 		m.SetMemberRole(memberRole)
-		// invite_by stays nil — the request is self-initiated.
+		m.SetInviteBy(&cmd.InviteBy)
 		// invite_dt doubles as the "requested at" timestamp.
 		m.SetInviteDt(now)
 		m.SetMemberStatus(&pendingRequest)

@@ -83,6 +83,27 @@ func (s ClassroomMemberStatusType) IsValid() bool {
 	}
 }
 
+// ClassroomRelationshipType encodes the calling profile's relation to a
+// classroom on a list response. NONE means the profile has no row in
+// ma_classroom_members for that classroom (or the row sits in a
+// terminal state — REJECTED/LEFT/REMOVED — which the UI should treat
+// the same as "not participating"). MEMBER, PENDING_INVITATION, and
+// PENDING_REQUEST map 1:1 onto ClassroomMemberStatusType so the
+// frontend can branch on a single field instead of inspecting raw
+// member_status values.
+type ClassroomRelationshipType string
+
+const (
+	ClassroomRelationshipTypeMember             ClassroomRelationshipType = "MEMBER"
+	ClassroomRelationshipTypePendingInvitation  ClassroomRelationshipType = "PENDING_INVITATION"
+	ClassroomRelationshipTypePendingRequest     ClassroomRelationshipType = "PENDING_REQUEST"
+	ClassroomRelationshipTypeNone               ClassroomRelationshipType = "NONE"
+)
+
+func (s ClassroomRelationshipType) String() string {
+	return string(s)
+}
+
 // ClassroomInviteeIdentifierType identifies how a send-invitation
 // caller addressed the target — EMAIL/PHONE need alias lookup to
 // resolve a profile_id, PROFILE_ID is a direct id.
@@ -103,6 +124,33 @@ func (s ClassroomInviteeIdentifierType) IsValid() bool {
 	case ClassroomInviteeIdentifierTypeEmail,
 		ClassroomInviteeIdentifierTypePhone,
 		ClassroomInviteeIdentifierTypeProfileId:
+		return true
+	default:
+		return false
+	}
+}
+
+// ClassroomExerciseStatusType is the lifecycle on ma_classroom_exercises.
+// Mirrors ClassroomStatusType but kept separate because the legal
+// transitions are independent (an exercise can be archived without
+// touching the classroom).
+type ClassroomExerciseStatusType string
+
+const (
+	ClassroomExerciseStatusTypeActive   ClassroomExerciseStatusType = "ACTIVE"
+	ClassroomExerciseStatusTypeArchived ClassroomExerciseStatusType = "ARCHIVED"
+	ClassroomExerciseStatusTypeDeleted  ClassroomExerciseStatusType = "DELETED"
+)
+
+func (s ClassroomExerciseStatusType) String() string {
+	return string(s)
+}
+
+func (s ClassroomExerciseStatusType) IsValid() bool {
+	switch s {
+	case ClassroomExerciseStatusTypeActive,
+		ClassroomExerciseStatusTypeArchived,
+		ClassroomExerciseStatusTypeDeleted:
 		return true
 	default:
 		return false

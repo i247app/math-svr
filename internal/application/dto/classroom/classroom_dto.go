@@ -8,30 +8,53 @@ import (
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
+// ClassroomOwnerSummary is the slim owner-profile shape carried on a
+// classroom response. Keeps a list card render to one cheap struct and
+// avoids dragging the full ProfileResponse (which embeds program, grade,
+// semester, school) into every classroom row. AvatarURL is a short-lived
+// presigned URL when the owner has an avatar_key and storage is wired;
+// nil otherwise.
+type ClassroomOwnerSummary struct {
+	ProfileID int64   `json:"profile_id"`
+	Name      string  `json:"name"`
+	Role      string  `json:"role"`
+	AvatarKey *string `json:"avatar_key,omitempty"`
+	AvatarURL *string `json:"avatar_url,omitempty"`
+}
+
 // ClassroomResponse is the surface returned to API consumers. Time fields
 // render via mtime.MathTime.String() so the wire format stays consistent
 // with the rest of the project.
+//
+// Owner is hydrated by the service from ma_profiles using a batched
+// IN-lookup so a page of classrooms costs one extra round trip
+// regardless of size. Relationship is the caller's relation to the
+// classroom — see enum.ClassroomRelationshipType. MyRole is the caller's
+// member_role when Relationship is MEMBER; nil for every other state.
 type ClassroomResponse struct {
-	ID                  int64   `json:"id"`
-	ClassroomID         int64   `json:"classroom_id"`
-	OwnerProfileID      int64   `json:"owner_profile_id"`
-	Name                string  `json:"name"`
-	Description         *string `json:"description,omitempty"`
-	SchoolID            *int64  `json:"school_id,omitempty"`
-	ProgramIDs          []int64 `json:"program_ids"`
-	GradeID             *int64  `json:"grade_id,omitempty"`
-	ClassroomCode          *string `json:"classroom_code,omitempty"`
-	ClassroomCodeExpiresDt string  `json:"classroom_code_expires_dt,omitempty"`
-	MaxMembers          *int64  `json:"max_members,omitempty"`
-	MemberCount         int64   `json:"member_count"`
-	StudentCount        int64   `json:"student_count"`
-	TeacherCount        int64   `json:"teacher_count"`
-	CoverKey            *string `json:"cover_key,omitempty"`
-	CoverURL            *string `json:"cover_url,omitempty"`
-	Note                *string `json:"note,omitempty"`
-	ClassroomStatus     *string `json:"classroom_status,omitempty"`
-	CreateDt            string  `json:"create_dt"`
-	ModifyDt            string  `json:"modify_dt"`
+	ID                     int64                  `json:"id"`
+	ClassroomID            int64                  `json:"classroom_id"`
+	OwnerProfileID         int64                  `json:"owner_profile_id"`
+	Owner                  *ClassroomOwnerSummary `json:"owner,omitempty"`
+	Name                   string                 `json:"name"`
+	Description            *string                `json:"description,omitempty"`
+	SchoolID               *int64                 `json:"school_id,omitempty"`
+	ProgramIDs             []int64                `json:"program_ids"`
+	GradeID                *int64                 `json:"grade_id,omitempty"`
+	ClassroomCode          *string                `json:"classroom_code,omitempty"`
+	ClassroomCodeExpiresDt string                 `json:"classroom_code_expires_dt,omitempty"`
+	MaxMembers             *int64                 `json:"max_members,omitempty"`
+	MemberCount            int64                  `json:"member_count"`
+	StudentCount           int64                  `json:"student_count"`
+	TeacherCount           int64                  `json:"teacher_count"`
+	CoverKey               *string                `json:"cover_key,omitempty"`
+	CoverURL               *string                `json:"cover_url,omitempty"`
+	Note                   *string                `json:"note,omitempty"`
+	ClassroomStatus        *string                `json:"classroom_status,omitempty"`
+	Relationship           string                 `json:"relationship"`
+	MyRole                 *string                `json:"my_role,omitempty"`
+	CreateDt               string                 `json:"create_dt"`
+	ModifyDt               string                 `json:"modify_dt"`
 }
 
 // CreateClassroomReq carries the caller's acting profile_id — see
