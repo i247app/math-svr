@@ -109,7 +109,7 @@ func ValidateListClassroomInvitations(ctx context.Context, req *dto.ListClassroo
 }
 
 func ValidateAcceptInvitation(ctx context.Context, req *dto.AcceptInvitationReq) error {
-	if req.ProfileID == 0 {
+	if req.InviterProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}
@@ -121,7 +121,7 @@ func ValidateAcceptInvitation(ctx context.Context, req *dto.AcceptInvitationReq)
 }
 
 func ValidateRejectInvitation(ctx context.Context, req *dto.RejectInvitationReq) error {
-	if req.ProfileID == 0 {
+	if req.InviterProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
 			errors.New("profile_id is required"))
 	}

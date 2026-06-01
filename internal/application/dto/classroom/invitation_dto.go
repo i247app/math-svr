@@ -54,7 +54,7 @@ type SkippedInvitation struct {
 // optional Note is copied into ma_classroom_members.note for each
 // inserted/reactivated row.
 type SendInvitationReq struct {
-	ProfileID   int64 `json:"profile_id"`
+	ProfileID   int64 `json:"inviter_profile_id"`
 	ClassroomID int64 `json:"classroom_id"`
 	// Targets     []InvitationTarget `json:"targets"`
 	Targets []int64 `json:"targets"`
@@ -90,8 +90,8 @@ type ListClassroomInvitationsRes struct {
 }
 
 type AcceptInvitationReq struct {
-	ProfileID   int64 `json:"profile_id"`
-	ClassroomID int64 `json:"classroom_id"`
+	InviterProfileID int64 `json:"inviter_profile_id"`
+	ClassroomID      int64 `json:"classroom_id"`
 }
 
 type AcceptInvitationRes struct {
@@ -99,8 +99,8 @@ type AcceptInvitationRes struct {
 }
 
 type RejectInvitationReq struct {
-	ProfileID   int64 `json:"profile_id"`
-	ClassroomID int64 `json:"classroom_id"`
+	InviterProfileID int64 `json:"inviter_profile_id"`
+	ClassroomID      int64 `json:"classroom_id"`
 }
 
 type RejectInvitationRes struct{}

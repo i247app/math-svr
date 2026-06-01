@@ -161,7 +161,7 @@ func (s *Service) AcceptInvitation(ctx context.Context, req *dto.AcceptInvitatio
 	if err := ValidateAcceptInvitation(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.InviterProfileID, sessionUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (s *Service) RejectInvitation(ctx context.Context, req *dto.RejectInvitatio
 	if err := ValidateRejectInvitation(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.InviterProfileID, sessionUserID)
 	if err != nil {
 		return nil, err
 	}
