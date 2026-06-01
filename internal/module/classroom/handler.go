@@ -225,6 +225,26 @@ func (h *ClassroomHandler) HandleListClassrooms(w http.ResponseWriter, r *http.R
 	response.WriteJson(w, res, nil)
 }
 
+// POST /classrooms/my-joined
+func (h *ClassroomHandler) HandleListMyJoinedClassrooms(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListMyJoinedClassroomsReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.ListMyJoinedClassrooms(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // GET /classrooms/{id}?profile_id=...
 // profile_id arrives as a query parameter for the GET path; POST callers
 // can use /classrooms/get (not yet exposed — GET is the canonical read).

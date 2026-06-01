@@ -158,6 +158,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		classroomHandler := classroom.NewClassroomHandler(res, services.ClassroomSvc)
 		gexSvr.AddRoute("GET  /classrooms/{id}", classroomHandler.HandleGetClassroom, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/list", classroomHandler.HandleListClassrooms, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/my-joined", classroomHandler.HandleListMyJoinedClassrooms, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/create", classroomHandler.HandleCreateClassroom, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/update", classroomHandler.HandleUpdateClassroom, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/archive", classroomHandler.HandleArchiveClassroom, authMiddleware)

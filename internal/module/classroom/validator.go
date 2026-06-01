@@ -184,6 +184,26 @@ func ValidateListClassrooms(ctx context.Context, req *dto.ListClassroomsReq) err
 	return nil
 }
 
+// ValidateListMyJoinedClassrooms enforces profile_id (the caller must
+// disambiguate which of their profiles is asking) and normalises the
+// optional search filter the same way ValidateListClassrooms does.
+func ValidateListMyJoinedClassrooms(ctx context.Context, req *dto.ListMyJoinedClassroomsReq) error {
+	if req.ProfileID == 0 {
+		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
+			errors.New("profile_id is required"))
+	}
+	if req.Search != nil {
+		s := strings.TrimSpace(*req.Search)
+		if s == "" {
+			req.Search = nil
+		} else if len(s) > searchMaxLen {
+			return errs.NewError(ctx, status.FAIL, nil,
+				errors.New("search too long"))
+		}
+	}
+	return nil
+}
+
 func ValidateArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroomReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,

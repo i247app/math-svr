@@ -271,6 +271,45 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 	}, nil
 }
 
+// ListMyJoinedClassrooms is the membership-scoped counterpart to
+// ListClassrooms. Forwarding ProfileID into the query intentionally
+// triggers the repo's ACTIVE-member inner-join — only classrooms the
+// caller is currently an ACTIVE member of are returned. Relationship
+// will hydrate to MEMBER for every row.
+func (s *Service) ListMyJoinedClassrooms(ctx context.Context, req *dto.ListMyJoinedClassroomsReq, sessionUserID int64) (*dto.ListMyJoinedClassroomsRes, error) {
+	if err := ValidateListMyJoinedClassrooms(ctx, req); err != nil {
+		return nil, err
+	}
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	profileID := caller.ProfileId()
+	classrooms, pg, err := s.listClassroomsQuery.Handle(ctx, query.ListClassroomsQuery{
+		ProfileID:       &profileID,
+		Search:          req.Search,
+		IncludeArchived: req.IncludeArchived,
+		Page:            req.Page,
+		Limit:           req.Size,
+	})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	responses := dto.DomainListToResponse(classrooms)
+	for _, r := range responses {
+		s.populateCoverUrl(ctx, r)
+	}
+	if err := s.hydrateOwnersAndRelationships(ctx, classrooms, responses, profileID); err != nil {
+		return nil, err
+	}
+	return &dto.ListMyJoinedClassroomsRes{
+		Classrooms: responses,
+		Pagination: pg,
+	}, nil
+}
+
 func (s *Service) ArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroomReq, sessionUserID int64) (*dto.ArchiveClassroomRes, error) {
 	if err := ValidateArchiveClassroom(ctx, req); err != nil {
 		return nil, err

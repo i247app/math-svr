@@ -167,6 +167,24 @@ type ListClassroomsRes struct {
 	Pagination *pagination.Pagination `json:"pagination"`
 }
 
+// ListMyJoinedClassroomsReq is the symmetric counterpart to
+// ListClassroomsReq: the latter is the discovery endpoint (returns every
+// classroom, hydrates Relationship per row), this one is scoped to the
+// caller's own active memberships. ProfileID is required; the repo
+// inner-joins ma_classroom_members and filters member_status = ACTIVE.
+type ListMyJoinedClassroomsReq struct {
+	ProfileID       int64   `json:"profile_id"`
+	Search          *string `json:"search,omitempty"`
+	IncludeArchived bool    `json:"include_archived"`
+	Page            int64   `json:"page"`
+	Size            int64   `json:"size"`
+}
+
+type ListMyJoinedClassroomsRes struct {
+	Classrooms []*ClassroomResponse   `json:"classrooms"`
+	Pagination *pagination.Pagination `json:"pagination"`
+}
+
 // ArchiveClassroomReq + RestoreClassroomReq + DeleteClassroomReq all
 // share the same shape; keeping them as separate types lets us evolve
 // each independently (e.g. force-delete may grow an admin-only reason
