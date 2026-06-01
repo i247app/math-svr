@@ -120,6 +120,7 @@ type AcceptInvitationRes struct {
 }
 
 type RejectInvitationReq struct {
+	InviteeProfileID int64 `json:"invitee_profile_id"`
 	InviterProfileID int64 `json:"inviter_profile_id"`
 	ClassroomID      int64 `json:"classroom_id"`
 }

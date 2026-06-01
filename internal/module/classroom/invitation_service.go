@@ -124,8 +124,12 @@ func (s *Service) ListMyPendingInvitations(ctx context.Context, req *dto.ListMyP
 	for _, inviter := range inviters {
 		hashInviter[inviter.ProfileId()] = profileDTO.DomainToResponse(inviter)
 	}
+	invitations := dto.InvitationDomainListToResponse(rows, hashInviter)
+	if err := s.hydrateInvitationClassrooms(ctx, rows, invitations); err != nil {
+		return nil, err
+	}
 	return &dto.ListMyPendingInvitationsRes{
-		Invitations: dto.InvitationDomainListToResponse(rows, hashInviter),
+		Invitations: invitations,
 		Pagination:  pg,
 	}, nil
 }
@@ -266,9 +270,10 @@ func (s *Service) RejectInvitation(ctx context.Context, req *dto.RejectInvitatio
 	}
 	actor := caller.ProfileId()
 	if err := s.rejectInvitationCmd.Handle(ctx, command.RejectInvitationCommand{
-		ClassroomID:     req.ClassroomID,
-		CallerProfileID: caller.ProfileId(),
-		ActorID:         &actor,
+		ClassroomID:      req.ClassroomID,
+		InviteeProfileID: req.InviteeProfileID,
+		InviterProfileID: req.InviterProfileID,
+		ActorID:          &actor,
 	}); err != nil {
 		return nil, err
 	}

@@ -15,9 +15,10 @@ import (
 // module layer; here we trust the (classroom, profile) pair and guard
 // the state-machine: only PENDING rejects, never ACTIVE / etc.
 type RejectInvitationCommand struct {
-	ClassroomID     int64
-	CallerProfileID int64
-	ActorID         *int64
+	ClassroomID      int64
+	InviteeProfileID int64
+	InviterProfileID int64
+	ActorID          *int64
 }
 
 type RejectInvitationCommandHandler struct {
@@ -30,7 +31,7 @@ func NewRejectInvitationCommandHandler(uow transaction.UnitOfWork) *RejectInvita
 
 func (h *RejectInvitationCommandHandler) Handle(ctx context.Context, cmd RejectInvitationCommand) error {
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		existing, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, cmd.ClassroomID, cmd.CallerProfileID)
+		existing, err := repos.ClassroomMember.FindByClassroomAndProfileAndInvitedBy(ctx, cmd.ClassroomID, cmd.InviteeProfileID, cmd.InviterProfileID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
