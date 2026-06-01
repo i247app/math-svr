@@ -367,10 +367,9 @@ func ValidateTransferOwnership(ctx context.Context, req *dto.TransferOwnershipRe
 }
 
 func ValidateListMembers(ctx context.Context, req *dto.ListMembersReq) error {
-	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
-	}
+	// profile_id is optional — when omitted the service falls back to a
+	// profile owned by the authenticated session user that is an ACTIVE
+	// member of the classroom. classroom_id stays required.
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))

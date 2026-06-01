@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 
+	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/classroom"
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
 	query "math-ai.com/math-ai/internal/application/query/classroom"
+	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -186,10 +189,19 @@ func (s *Service) TransferOwnership(ctx context.Context, req *dto.TransferOwners
 
 // ListMembers returns the members of a classroom the caller belongs to.
 // The membership gate prevents outsiders from enumerating a classroom's
-// roster via this endpoint.
+// roster via this endpoint. profile_id is optional in the request: when
+// omitted the service finds a profile owned by the session user that is
+// an ACTIVE member of the classroom and uses that as the acting profile.
 func (s *Service) ListMembers(ctx context.Context, req *dto.ListMembersReq, sessionUserID int64) (*dto.ListMembersRes, error) {
 	if err := ValidateListMembers(ctx, req); err != nil {
 		return nil, err
+	}
+	if req.ProfileID == 0 {
+		fallback, err := s.resolveMemberProfileForUser(ctx, sessionUserID, req.ClassroomID)
+		if err != nil {
+			return nil, err
+		}
+		req.ProfileID = fallback
 	}
 	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
 	if err != nil {
@@ -210,8 +222,111 @@ func (s *Service) ListMembers(ctx context.Context, req *dto.ListMembersReq, sess
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
+	responses := dto.MemberDomainListToResponse(members)
+	if err := s.hydrateMemberProfiles(ctx, members, responses); err != nil {
+		return nil, err
+	}
 	return &dto.ListMembersRes{
-		Members:    dto.MemberDomainListToResponse(members),
+		Members:    responses,
 		Pagination: pg,
 	}, nil
+}
+
+// resolveMemberProfileForUser picks one of the session user's profiles
+// that is an ACTIVE member of the given classroom. It enumerates the
+// user's profiles (typically one or two), looks them up against
+// ma_classroom_members in one call, and returns the first matching
+// profile_id. Returns CLASSROOM_PERMISSION_DENIED when sessionUserID is
+// zero (anonymous) or no owned profile is a member.
+func (s *Service) resolveMemberProfileForUser(ctx context.Context, sessionUserID, classroomID int64) (int64, error) {
+	if sessionUserID == 0 {
+		return 0, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
+			errors.New("profile_id is required when no session is attached"))
+	}
+	profiles, err := s.profileRepo.ListByUserId(ctx, sessionUserID)
+	if err != nil {
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if len(profiles) == 0 {
+		return 0, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			errors.New("no profile found for the authenticated user"))
+	}
+	for _, p := range profiles {
+		m, err := s.classroomMemberRepo.FindByClassroomAndProfile(ctx, classroomID, p.ProfileId())
+		if err != nil {
+			return 0, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if m == nil || m.MemberStatus() == nil {
+			continue
+		}
+		if *m.MemberStatus() == string(enum.ClassroomMemberStatusTypeActive) {
+			return p.ProfileId(), nil
+		}
+	}
+	return 0, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
+		errors.New("not a member of this classroom"))
+}
+
+// hydrateMemberProfiles batches one ma_profiles lookup for the page of
+// member rows and attaches a MemberProfileSummary to each response. A
+// missing profile (deleted out from under the membership row) leaves
+// MemberProfile nil so the client can still render the rest of the row.
+func (s *Service) hydrateMemberProfiles(
+	ctx context.Context,
+	members []*classroomDomain.Member,
+	responses []*dto.MemberResponse,
+) error {
+	if len(members) == 0 || s.profileRepo == nil {
+		return nil
+	}
+	idSet := make(map[int64]struct{}, len(members))
+	for _, m := range members {
+		idSet[m.ProfileId()] = struct{}{}
+	}
+	ids := make([]int64, 0, len(idSet))
+	for id := range idSet {
+		ids = append(ids, id)
+	}
+	profiles, err := s.profileRepo.ListByProfileIds(ctx, ids)
+	if err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	summaries := make(map[int64]*dto.MemberProfileSummary, len(profiles))
+	for _, p := range profiles {
+		summary := &dto.MemberProfileSummary{
+			ProfileID: p.ProfileId(),
+			Name:      p.Name(),
+			Role:      p.Role(),
+			AvatarKey: p.AvatarKey(),
+		}
+		s.signMemberAvatarURL(ctx, summary)
+		summaries[p.ProfileId()] = summary
+	}
+	for i, m := range members {
+		if responses[i] == nil {
+			continue
+		}
+		if summary, ok := summaries[m.ProfileId()]; ok {
+			responses[i].MemberProfile = summary
+		}
+	}
+	return nil
+}
+
+// signMemberAvatarURL mirrors signOwnerAvatarURL: presigns a short-lived
+// URL for the avatar_key when storage is configured. No-op when storage
+// is disabled or the profile has no avatar_key.
+func (s *Service) signMemberAvatarURL(ctx context.Context, summary *dto.MemberProfileSummary) {
+	if summary == nil || s.storageProvider == nil || summary.AvatarKey == nil || *summary.AvatarKey == "" {
+		return
+	}
+	url, err := s.storageProvider.CreatePresignedUrl(ctx, &storage.CreatePresignedUrlRequest{
+		Key:        *summary.AvatarKey,
+		Expiration: coverUrlTTL,
+	})
+	if err != nil {
+		logger.From(ctx).Warnf("classroom.member_avatar presign failed profile_id=%d err=%v", summary.ProfileID, err)
+		return
+	}
+	summary.AvatarURL = &url
 }

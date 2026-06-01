@@ -5,26 +5,43 @@ import (
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
+// MemberProfileSummary is the slim profile shape carried on a member
+// response. Mirrors ClassroomOwnerSummary so list endpoints can render a
+// member row without pulling the full ProfileResponse. AvatarURL is a
+// short-lived presigned URL when storage is wired and the profile has
+// an avatar_key; nil otherwise.
+type MemberProfileSummary struct {
+	ProfileID int64   `json:"profile_id"`
+	Name      string  `json:"name"`
+	Role      string  `json:"role"`
+	AvatarKey *string `json:"avatar_key,omitempty"`
+	AvatarURL *string `json:"avatar_url"`
+}
+
 // MemberResponse is the wire shape for ma_classroom_members rows.
 // joined / left / removed / last_seen timestamps are rendered as
 // strings via mtime.MathTime.String() so the client gets a consistent
-// time format across the project.
+// time format across the project. MemberProfile is hydrated by the
+// service from ma_profiles using a batched IN-lookup so a page costs
+// one extra round trip regardless of size; nil when the profile lookup
+// is skipped or the profile row no longer exists.
 type MemberResponse struct {
-	ID                 int64   `json:"id"`
-	MemberID           int64   `json:"member_id"`
-	ClassroomID        int64   `json:"classroom_id"`
-	ProfileID          int64   `json:"profile_id"`
-	MemberRole         string  `json:"member_role"`
-	InvitationID       *int64  `json:"invitation_id,omitempty"`
-	JoinedDt           string  `json:"joined_dt,omitempty"`
-	LeftDt             string  `json:"left_dt,omitempty"`
-	RemovedByProfileID *int64  `json:"removed_by_profile_id,omitempty"`
-	RemovedDt          string  `json:"removed_dt,omitempty"`
-	LastSeenDt         string  `json:"last_seen_dt,omitempty"`
-	Note               *string `json:"note,omitempty"`
-	MemberStatus       *string `json:"member_status,omitempty"`
-	CreateDt           string  `json:"create_dt"`
-	ModifyDt           string  `json:"modify_dt"`
+	ID                 int64                 `json:"id"`
+	MemberID           int64                 `json:"member_id"`
+	ClassroomID        int64                 `json:"classroom_id"`
+	ProfileID          int64                 `json:"profile_id"`
+	MemberProfile      *MemberProfileSummary `json:"member_profile,omitempty"`
+	MemberRole         string                `json:"member_role"`
+	InvitationID       *int64                `json:"invitation_id,omitempty"`
+	JoinedDt           string                `json:"joined_dt,omitempty"`
+	LeftDt             string                `json:"left_dt,omitempty"`
+	RemovedByProfileID *int64                `json:"removed_by_profile_id,omitempty"`
+	RemovedDt          string                `json:"removed_dt,omitempty"`
+	LastSeenDt         string                `json:"last_seen_dt,omitempty"`
+	Note               *string               `json:"note,omitempty"`
+	MemberStatus       *string               `json:"member_status,omitempty"`
+	CreateDt           string                `json:"create_dt"`
+	ModifyDt           string                `json:"modify_dt"`
 }
 
 // JoinByCodeReq lets any profile submit a join request to a
@@ -33,7 +50,7 @@ type MemberResponse struct {
 // classroom directly — it creates a PENDING_REQUEST on
 // ma_classroom_members that the classroom owner must approve.
 type JoinByCodeReq struct {
-	ProfileID  int64  `json:"profile_id"`
+	ProfileID     int64  `json:"profile_id"`
 	ClassroomCode string `json:"classroom_code"`
 }
 
