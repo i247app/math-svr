@@ -8,6 +8,8 @@ type ClassroomExerciseModel struct {
 	Id                  int64
 	ClassroomExerciseId int64
 	ClassroomId         int64
+	CreatorProfileId    *int64
+	Visibility          string
 	ProgramId           *int64
 	Title               string
 	ChapterName         string

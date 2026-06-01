@@ -22,18 +22,20 @@ import (
 // against the classroom's program junction by the caller (the module
 // layer does that check before dispatching).
 type CreateClassroomExerciseCommand struct {
-	ActorID        *int64
-	ClassroomID    int64
-	ProgramID      *int64
-	Title          string
-	ChapterName    string
-	LessonName     string
-	TotalQuestions int
-	QuestionsJSON  *string
-	AnswersJSON    *string
-	StartDate      mtime.MathTime
-	EndDate        mtime.MathTime
-	Note           *string
+	ActorID          *int64
+	ClassroomID      int64
+	CreatorProfileID int64
+	Visibility       string
+	ProgramID        *int64
+	Title            string
+	ChapterName      string
+	LessonName       string
+	TotalQuestions   int
+	QuestionsJSON    *string
+	AnswersJSON      *string
+	StartDate        mtime.MathTime
+	EndDate          mtime.MathTime
+	Note             *string
 }
 
 type CreateClassroomExerciseCommandHandler struct {
@@ -56,6 +58,12 @@ func (h *CreateClassroomExerciseCommandHandler) Handle(ctx context.Context, cmd 
 		e := domain.NewExercise()
 		e.SetClassroomExerciseId(exerciseID)
 		e.SetClassroomId(cmd.ClassroomID)
+		e.SetCreatorProfileId(cmd.CreatorProfileID)
+		visibility := cmd.Visibility
+		if visibility == "" {
+			visibility = string(enum.ClassroomExerciseVisibilityPublic)
+		}
+		e.SetVisibility(visibility)
 		e.SetProgramId(cmd.ProgramID)
 		e.SetTitle(cmd.Title)
 		e.SetChapterName(cmd.ChapterName)

@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
+	exerciseDomain "math-ai.com/math-ai/internal/domain/classroomexercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -62,6 +63,26 @@ func (s *Service) requireManager(ctx context.Context, classroomID, profileID int
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
 			errors.New("manager role required"))
 	}
+}
+
+// requirePrivateAccess enforces the visibility gate. PUBLIC exercises
+// pass for any caller that already cleared the upstream member/manager
+// check; PRIVATE exercises pass only when the caller is the creator —
+// not even other classroom managers can touch them. Called after
+// requireMember / requireManager so the upstream membership errors
+// surface first.
+func requirePrivateAccess(ctx context.Context, e *exerciseDomain.Exercise, callerProfileID int64) error {
+	if e == nil {
+		return nil
+	}
+	if e.Visibility() != string(enum.ClassroomExerciseVisibilityPrivate) {
+		return nil
+	}
+	if e.CreatorProfileId() == callerProfileID {
+		return nil
+	}
+	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_PRIVATE_DENIED, nil,
+		errors.New("private exercise — only the creator can access"))
 }
 
 // isManager returns true when the caller is OWNER or CO_TEACHER, used

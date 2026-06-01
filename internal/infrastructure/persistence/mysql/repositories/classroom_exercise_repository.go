@@ -17,7 +17,8 @@ import (
 const (
 	classroomExerciseTable = "ma_classroom_exercises"
 
-	classroomExerciseColumns = `e.id, e.classroom_exercise_id, e.classroom_id, e.program_id,
+	classroomExerciseColumns = `e.id, e.classroom_exercise_id, e.classroom_id,
+		e.creator_profile_id, e.visibility, e.program_id,
 		e.title, e.chapter_name, e.lesson_name, e.total_questions,
 		e.questions, e.answers, e.start_date, e.end_date,
 		e.note, e.exercise_status, e.status,
@@ -44,7 +45,8 @@ func NewClassroomExerciseRepository(db database.Executor) domain.IRepository {
 
 func scanClassroomExercise(s database.RowScanner) (*models.ClassroomExerciseModel, error) {
 	var m models.ClassroomExerciseModel
-	if err := s.Scan(&m.Id, &m.ClassroomExerciseId, &m.ClassroomId, &m.ProgramId,
+	if err := s.Scan(&m.Id, &m.ClassroomExerciseId, &m.ClassroomId,
+		&m.CreatorProfileId, &m.Visibility, &m.ProgramId,
 		&m.Title, &m.ChapterName, &m.LessonName, &m.TotalQuestions,
 		&m.Questions, &m.Answers, &m.StartDate, &m.EndDate,
 		&m.Note, &m.ExerciseStatus, &m.Status,
@@ -108,6 +110,18 @@ func (r *ClassroomExerciseRepository) ListExercises(ctx context.Context, params 
 		filterClause += ` AND e.exercise_status = ?`
 		filterArgs = append(filterArgs, *params.Status)
 	}
+	// Visibility filter: PUBLIC rows are visible to every member;
+	// PRIVATE rows are only visible to their creator. When the caller is
+	// unknown (CallerProfileID == 0) only PUBLIC rows survive, which is
+	// the safe default for any code path that forgets to set it.
+	if params.CallerProfileID != 0 {
+		filterClause += ` AND (e.visibility = ? OR e.creator_profile_id = ?)`
+		filterArgs = append(filterArgs,
+			enum.ClassroomExerciseVisibilityPublic, params.CallerProfileID)
+	} else {
+		filterClause += ` AND e.visibility = ?`
+		filterArgs = append(filterArgs, enum.ClassroomExerciseVisibilityPublic)
+	}
 
 	countArgs := append(classroomExerciseActiveArgs(), filterArgs...)
 	countQuery := `SELECT COUNT(*) FROM ` + classroomExerciseTable + ` e WHERE ` +
@@ -155,16 +169,23 @@ func (r *ClassroomExerciseRepository) Create(ctx context.Context, e *domain.Exer
 		endArg = e.EndDate().Time
 	}
 
+	visibility := e.Visibility()
+	if visibility == "" {
+		visibility = string(enum.ClassroomExerciseVisibilityPublic)
+	}
+
 	query := `
 		INSERT INTO ` + classroomExerciseTable + `
-			(classroom_exercise_id, classroom_id, program_id,
+			(classroom_exercise_id, classroom_id, creator_profile_id, visibility,
+			 program_id,
 			 title, chapter_name, lesson_name, total_questions,
 			 questions, answers, start_date, end_date,
 			 note, exercise_status, create_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
-		e.ClassroomExerciseId(), e.ClassroomId(), e.ProgramId(),
+		e.ClassroomExerciseId(), e.ClassroomId(), e.CreatorProfileId(), visibility,
+		e.ProgramId(),
 		e.Title(), e.ChapterName(), e.LessonName(), e.TotalQuestions(),
 		e.Questions(), e.Answers(), startArg, endArg,
 		e.Note(), e.ExerciseStatus(), e.CreateId())
@@ -210,6 +231,7 @@ func (r *ClassroomExerciseRepository) Update(ctx context.Context, classroomExerc
 			end_date        = COALESCE(?, end_date),
 			note            = COALESCE(?, note),
 			exercise_status = COALESCE(?, exercise_status),
+			visibility      = COALESCE(?, visibility),
 			modify_id       = COALESCE(?, modify_id),
 			modify_dt       = ?
 		WHERE classroom_exercise_id = ?
@@ -217,7 +239,7 @@ func (r *ClassroomExerciseRepository) Update(ctx context.Context, classroomExerc
 	if _, err := r.db.Exec(ctx, query,
 		patch.Title, patch.ChapterName, patch.LessonName,
 		startArg, endArg,
-		patch.Note, patch.ExerciseStatus, patch.ModifyID,
+		patch.Note, patch.ExerciseStatus, patch.Visibility, patch.ModifyID,
 		mtime.Now().Time, classroomExerciseId); err != nil {
 		return fmt.Errorf("classroom exercise repo update: %w", err)
 	}
@@ -248,6 +270,10 @@ func modelToDomainClassroomExercise(m *models.ClassroomExerciseModel) *domain.Ex
 	e.SetId(m.Id)
 	e.SetClassroomExerciseId(m.ClassroomExerciseId)
 	e.SetClassroomId(m.ClassroomId)
+	if m.CreatorProfileId != nil {
+		e.SetCreatorProfileId(*m.CreatorProfileId)
+	}
+	e.SetVisibility(m.Visibility)
 	e.SetProgramId(m.ProgramId)
 	e.SetTitle(m.Title)
 	e.SetChapterName(m.ChapterName)

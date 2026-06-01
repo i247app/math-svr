@@ -126,11 +126,13 @@ func ValidateUpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq) e
 	return nil
 }
 
+// ValidateGetClassroom keeps classroom_id required but treats profile_id
+// as optional. When supplied, the service still resolves and
+// session-validates it so the per-caller relationship/my_role fields
+// hydrate; when absent, the response carries Relationship=NONE and the
+// classroom itself is still returned. classroom_id is the only hard
+// requirement because the endpoint is fundamentally an id-lookup.
 func ValidateGetClassroom(ctx context.Context, req *dto.GetClassroomReq) error {
-	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
-	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
 			errors.New("classroom_id is required"))

@@ -156,3 +156,29 @@ func (s ClassroomExerciseStatusType) IsValid() bool {
 		return false
 	}
 }
+
+// ClassroomExerciseVisibilityType controls who can see/edit/delete an
+// exercise. PUBLIC is the default and matches the original behavior —
+// every classroom member can see and every manager can mutate. PRIVATE
+// restricts read + mutation to the creator (creator_profile_id), even
+// other managers cannot touch a PRIVATE row.
+type ClassroomExerciseVisibilityType string
+
+const (
+	ClassroomExerciseVisibilityPublic  ClassroomExerciseVisibilityType = "PUBLIC"
+	ClassroomExerciseVisibilityPrivate ClassroomExerciseVisibilityType = "PRIVATE"
+)
+
+func (v ClassroomExerciseVisibilityType) String() string {
+	return string(v)
+}
+
+func (v ClassroomExerciseVisibilityType) IsValid() bool {
+	switch v {
+	case ClassroomExerciseVisibilityPublic,
+		ClassroomExerciseVisibilityPrivate:
+		return true
+	default:
+		return false
+	}
+}

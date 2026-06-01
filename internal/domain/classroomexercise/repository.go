@@ -10,11 +10,21 @@ import (
 // ListExercisesParams narrows the listing query. ClassroomID is required
 // for the public endpoint (members only see their own classroom's
 // exercises); Status filters on exercise_status when set.
+//
+// CallerProfileID drives the visibility filter:
+//
+//	WHERE visibility = 'PUBLIC' OR creator_profile_id = CallerProfileID
+//
+// The service layer is expected to supply the caller's acting profile_id
+// so PRIVATE rows owned by other profiles are invisible at the SQL level.
+// Zero (when no caller is known) keeps PUBLIC-only behavior — a safe
+// default for any code path that forgets to set it.
 type ListExercisesParams struct {
-	ClassroomID int64
-	Status      *string
-	Page        int64
-	Limit       int64
+	ClassroomID     int64
+	CallerProfileID int64
+	Status          *string
+	Page            int64
+	Limit           int64
 }
 
 // UpdatePatch is the COALESCE-style update payload. Any nil field is
@@ -23,7 +33,10 @@ type ListExercisesParams struct {
 //
 // StartDate / EndDate are pointers to MathTime so a zero-value (clear)
 // can be expressed by passing a zero MathTime, distinct from "leave
-// unchanged" (nil).
+// unchanged" (nil). Visibility is patchable so a creator can flip an
+// exercise between PUBLIC and PRIVATE without re-supplying the rest of
+// the row; creator_profile_id is intentionally absent — ownership is
+// set once at create time and never changes.
 type UpdatePatch struct {
 	Title          *string
 	ChapterName    *string
@@ -32,6 +45,7 @@ type UpdatePatch struct {
 	EndDate        *mtime.MathTime
 	Note           *string
 	ExerciseStatus *string
+	Visibility     *string
 	ModifyID       *int64
 }
 

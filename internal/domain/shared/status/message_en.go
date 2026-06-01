@@ -520,6 +520,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "You do not have permission to manage this exercise"
 	case CLASSROOM_EXERCISE_GENERATION_FAILED:
 		return "Failed to generate classroom exercise"
+	case CLASSROOM_EXERCISE_INVALID_VISIBILITY:
+		return "Visibility must be PUBLIC or PRIVATE"
+	case CLASSROOM_EXERCISE_PRIVATE_DENIED:
+		return "Only the creator can access this private exercise"
 	default:
 		return ""
 	}

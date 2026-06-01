@@ -139,19 +139,25 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 	actor := caller.ProfileId()
 	questionsStr := string(questionsJSON)
 	answersStr := string(answersJSON)
+	visibility := string(enum.ClassroomExerciseVisibilityPublic)
+	if req.Visibility != nil && *req.Visibility != "" {
+		visibility = *req.Visibility
+	}
 	saved, err := s.createExerciseCmd.Handle(ctx, command.CreateClassroomExerciseCommand{
-		ActorID:        &actor,
-		ClassroomID:    req.ClassroomID,
-		ProgramID:      programID,
-		Title:          req.Title,
-		ChapterName:    req.ChapterName,
-		LessonName:     req.LessonName,
-		TotalQuestions: len(generated.Questions),
-		QuestionsJSON:  &questionsStr,
-		AnswersJSON:    &answersStr,
-		StartDate:      req.StartDate,
-		EndDate:        req.EndDate,
-		Note:           req.Note,
+		ActorID:          &actor,
+		ClassroomID:      req.ClassroomID,
+		CreatorProfileID: caller.ProfileId(),
+		Visibility:       visibility,
+		ProgramID:        programID,
+		Title:            req.Title,
+		ChapterName:      req.ChapterName,
+		LessonName:       req.LessonName,
+		TotalQuestions:   len(generated.Questions),
+		QuestionsJSON:    &questionsStr,
+		AnswersJSON:      &answersStr,
+		StartDate:        req.StartDate,
+		EndDate:          req.EndDate,
+		Note:             req.Note,
 	})
 	if err != nil {
 		return nil, err
@@ -188,6 +194,9 @@ func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq
 	if _, err := s.requireManager(ctx, existing.ClassroomId(), caller.ProfileId()); err != nil {
 		return nil, err
 	}
+	if err := requirePrivateAccess(ctx, existing, caller.ProfileId()); err != nil {
+		return nil, err
+	}
 
 	actor := caller.ProfileId()
 	updated, err := s.updateExerciseCmd.Handle(ctx, command.UpdateClassroomExerciseCommand{
@@ -200,6 +209,7 @@ func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq
 		EndDate:             req.EndDate,
 		Note:                req.Note,
 		ExerciseStatus:      req.ExerciseStatus,
+		Visibility:          req.Visibility,
 	})
 	if err != nil {
 		return nil, err
@@ -231,6 +241,9 @@ func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sess
 	if err != nil {
 		return nil, err
 	}
+	if err := requirePrivateAccess(ctx, exercise, caller.ProfileId()); err != nil {
+		return nil, err
+	}
 
 	return &dto.GetExerciseRes{
 		Exercise: dto.DomainToResponse(exercise, isManagerRole(callerMember)),
@@ -251,10 +264,11 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 	}
 
 	exercises, pg, err := s.listExercisesQuery.Handle(ctx, query.ListClassroomExercisesQuery{
-		ClassroomID: req.ClassroomID,
-		Status:      req.Status,
-		Page:        int64(req.Page),
-		Limit:       int64(req.Size),
+		ClassroomID:     req.ClassroomID,
+		CallerProfileID: caller.ProfileId(),
+		Status:          req.Status,
+		Page:            int64(req.Page),
+		Limit:           int64(req.Size),
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -283,6 +297,9 @@ func (s *Service) SoftDeleteExercise(ctx context.Context, req *dto.DeleteExercis
 			errors.New("classroom exercise not found"))
 	}
 	if _, err := s.requireManager(ctx, existing.ClassroomId(), caller.ProfileId()); err != nil {
+		return nil, err
+	}
+	if err := requirePrivateAccess(ctx, existing, caller.ProfileId()); err != nil {
 		return nil, err
 	}
 

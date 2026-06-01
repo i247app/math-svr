@@ -21,6 +21,8 @@ type ExerciseResponse struct {
 	ID                  int64                   `json:"id"`
 	ClassroomExerciseID int64                   `json:"classroom_exercise_id"`
 	ClassroomID         int64                   `json:"classroom_id"`
+	CreatorProfileID    int64                   `json:"creator_profile_id"`
+	Visibility          string                  `json:"visibility"`
 	ProgramID           *int64                  `json:"program_id,omitempty"`
 	Title               string                  `json:"title"`
 	ChapterName         string                  `json:"chapter_name"`
@@ -52,6 +54,10 @@ type CreateExerciseReq struct {
 	EndDate      mtime.MathTime    `json:"end_date,omitempty"`
 	Note         *string           `json:"note,omitempty"`
 	Language     enum.LanguageType `json:"language,omitempty"`
+	// Visibility is optional. Omitted / blank defaults to PUBLIC so the
+	// existing wire contract keeps working. Accepted values: PUBLIC,
+	// PRIVATE.
+	Visibility *string `json:"visibility,omitempty"`
 }
 
 type CreateExerciseRes struct {
@@ -71,6 +77,7 @@ type UpdateExerciseReq struct {
 	EndDate             *mtime.MathTime `json:"end_date,omitempty"`
 	Note                *string         `json:"note,omitempty"`
 	ExerciseStatus      *string         `json:"exercise_status,omitempty"`
+	Visibility          *string         `json:"visibility,omitempty"`
 }
 
 type UpdateExerciseRes struct {
@@ -119,6 +126,8 @@ func DomainToResponse(e *domain.Exercise, includeRightAnswers bool) *ExerciseRes
 		ID:                  e.Id(),
 		ClassroomExerciseID: e.ClassroomExerciseId(),
 		ClassroomID:         e.ClassroomId(),
+		CreatorProfileID:    e.CreatorProfileId(),
+		Visibility:          e.Visibility(),
 		ProgramID:           e.ProgramId(),
 		Title:               e.Title(),
 		ChapterName:         e.ChapterName(),

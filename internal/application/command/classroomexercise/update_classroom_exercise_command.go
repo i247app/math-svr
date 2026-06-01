@@ -29,6 +29,7 @@ type UpdateClassroomExerciseCommand struct {
 	EndDate             *mtime.MathTime
 	Note                *string
 	ExerciseStatus      *string
+	Visibility          *string
 }
 
 type UpdateClassroomExerciseCommandHandler struct {
@@ -60,6 +61,7 @@ func (h *UpdateClassroomExerciseCommandHandler) Handle(ctx context.Context, cmd 
 			EndDate:        cmd.EndDate,
 			Note:           cmd.Note,
 			ExerciseStatus: cmd.ExerciseStatus,
+			Visibility:     cmd.Visibility,
 			ModifyID:       cmd.ActorID,
 		}
 		if err := repos.ClassroomExercise.Update(ctx, cmd.ClassroomExerciseID, patch); err != nil {

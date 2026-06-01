@@ -207,13 +207,27 @@ func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomR
 	return &dto.UpdateClassroomRes{Classroom: resp}, nil
 }
 
+// GetClassroom returns the classroom by id. profile_id is OPTIONAL —
+// when supplied, the service still session-validates it via
+// resolveActingProfile and hydrates the caller's relationship + my_role
+// against the row. When omitted, the classroom is still returned, with
+// Relationship defaulting to NONE and my_role nil. Owner profile data
+// is hydrated unconditionally so any caller (member or not) renders a
+// complete card. The previous member-only gate is intentionally
+// dropped: the Relationship field now carries the same information the
+// gate used to enforce, in a form the client can branch on directly.
 func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, sessionUserID int64) (*dto.GetClassroomRes, error) {
 	if err := ValidateGetClassroom(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
-	if err != nil {
-		return nil, err
+
+	var callerProfileID int64
+	if req.ProfileID != 0 {
+		caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+		if err != nil {
+			return nil, err
+		}
+		callerProfileID = caller.ProfileId()
 	}
 
 	found, err := s.getClassroomQuery.Handle(ctx, query.GetClassroomByIdQuery{ClassroomID: req.ClassroomID})
@@ -224,12 +238,21 @@ func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, se
 		return nil, errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
 			errors.New("classroom not found"))
 	}
-	if _, err := s.requireMember(ctx, found.ClassroomId(), caller.ProfileId()); err != nil {
-		return nil, err
-	}
 
 	resp := dto.DomainToResponse(found)
 	s.populateCoverUrl(ctx, resp)
+	// hydrateOwnersAndRelationships handles callerProfileID == 0 — it
+	// skips the membership lookup and leaves Relationship=NONE, but
+	// always hydrates the owner summary, so the get-by-id response
+	// shape matches the list response shape regardless of profile_id.
+	if err := s.hydrateOwnersAndRelationships(
+		ctx,
+		[]*classroomDomain.Classroom{found},
+		[]*dto.ClassroomResponse{resp},
+		callerProfileID,
+	); err != nil {
+		return nil, err
+	}
 	if err := s.hydratePendingRequestCounts(ctx, []*classroomDomain.Classroom{found}, []*dto.ClassroomResponse{resp}); err != nil {
 		return nil, err
 	}

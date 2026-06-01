@@ -70,6 +70,17 @@ func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) err
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOTE_TOO_LONG, nil,
 			errors.New("note too long"))
 	}
+	if req.Visibility != nil {
+		v := strings.ToUpper(strings.TrimSpace(*req.Visibility))
+		if v == "" {
+			req.Visibility = nil
+		} else if !enum.ClassroomExerciseVisibilityType(v).IsValid() {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_VISIBILITY, nil,
+				errors.New("invalid visibility"))
+		} else {
+			req.Visibility = &v
+		}
+	}
 	return nil
 }
 
@@ -125,6 +136,17 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 		if !enum.ClassroomExerciseStatusType(*req.ExerciseStatus).IsValid() {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
 				errors.New("invalid exercise_status"))
+		}
+	}
+	if req.Visibility != nil {
+		v := strings.ToUpper(strings.TrimSpace(*req.Visibility))
+		if v == "" {
+			req.Visibility = nil
+		} else if !enum.ClassroomExerciseVisibilityType(v).IsValid() {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_VISIBILITY, nil,
+				errors.New("invalid visibility"))
+		} else {
+			req.Visibility = &v
 		}
 	}
 	return nil

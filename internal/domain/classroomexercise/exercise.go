@@ -23,6 +23,8 @@ type Exercise struct {
 	id                  int64
 	classroomExerciseId int64
 	classroomId         int64
+	creatorProfileId    int64
+	visibility          string
 	programId           *int64
 	title               string
 	chapterName         string
@@ -49,6 +51,10 @@ func (e *Exercise) ClassroomExerciseId() int64      { return e.classroomExercise
 func (e *Exercise) SetClassroomExerciseId(id int64) { e.classroomExerciseId = id }
 func (e *Exercise) ClassroomId() int64              { return e.classroomId }
 func (e *Exercise) SetClassroomId(id int64)         { e.classroomId = id }
+func (e *Exercise) CreatorProfileId() int64         { return e.creatorProfileId }
+func (e *Exercise) SetCreatorProfileId(id int64)    { e.creatorProfileId = id }
+func (e *Exercise) Visibility() string              { return e.visibility }
+func (e *Exercise) SetVisibility(v string)          { e.visibility = v }
 func (e *Exercise) ProgramId() *int64               { return e.programId }
 func (e *Exercise) SetProgramId(id *int64)          { e.programId = id }
 func (e *Exercise) Title() string                   { return e.title }
