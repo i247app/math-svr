@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 
+	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/classroom"
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
 	profileDTO "math-ai.com/math-ai/internal/application/dto/profile"
 	query "math-ai.com/math-ai/internal/application/query/classroom"
+	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
 // SendInvitation creates one PENDING ma_classroom_members row per
@@ -149,10 +152,83 @@ func (s *Service) ListClassroomInvitations(ctx context.Context, req *dto.ListCla
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
+	invitations := dto.InvitationDomainListToResponse(rows, nil)
+	if err := s.hydrateInvitationClassrooms(ctx, rows, invitations); err != nil {
+		return nil, err
+	}
 	return &dto.ListClassroomInvitationsRes{
-		Invitations: dto.InvitationDomainListToResponse(rows, nil),
+		Invitations: invitations,
 		Pagination:  pg,
 	}, nil
+}
+
+// hydrateInvitationClassrooms batches one ma_classrooms lookup for the
+// page of invitation rows and attaches an InvitationClassroomSummary to
+// each response. A missing classroom (deleted under the invitation row)
+// leaves Classroom nil so the client can still render the rest of the
+// row. Cover URLs are short-lived and reuse coverUrlTTL.
+func (s *Service) hydrateInvitationClassrooms(
+	ctx context.Context,
+	members []*classroomDomain.Member,
+	responses []*dto.InvitationResponse,
+) error {
+	if len(members) == 0 || s.classroomRepo == nil {
+		return nil
+	}
+	idSet := make(map[int64]struct{}, len(members))
+	for _, m := range members {
+		idSet[m.ClassroomId()] = struct{}{}
+	}
+	ids := make([]int64, 0, len(idSet))
+	for id := range idSet {
+		ids = append(ids, id)
+	}
+	classrooms, err := s.classroomRepo.ListClassroomsByIds(ctx, ids)
+	if err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	summaries := make(map[int64]*dto.InvitationClassroomSummary, len(classrooms))
+	for _, c := range classrooms {
+		summary := &dto.InvitationClassroomSummary{
+			ClassroomID:     c.ClassroomId(),
+			Name:            c.Name(),
+			Description:     c.Description(),
+			ClassroomCode:   c.ClassroomCode(),
+			SchoolID:        c.SchoolId(),
+			GradeID:         c.GradeId(),
+			CoverKey:        c.CoverKey(),
+			ClassroomStatus: c.ClassroomStatus(),
+		}
+		s.signInvitationCoverURL(ctx, summary)
+		summaries[c.ClassroomId()] = summary
+	}
+	for i, m := range members {
+		if responses[i] == nil {
+			continue
+		}
+		if summary, ok := summaries[m.ClassroomId()]; ok {
+			responses[i].Classroom = summary
+		}
+	}
+	return nil
+}
+
+// signInvitationCoverURL mirrors populateCoverUrl: presigns a short-lived
+// URL for the classroom cover_key. No-op when storage is disabled or
+// the classroom has no cover.
+func (s *Service) signInvitationCoverURL(ctx context.Context, summary *dto.InvitationClassroomSummary) {
+	if summary == nil || s.storageProvider == nil || summary.CoverKey == nil || *summary.CoverKey == "" {
+		return
+	}
+	url, err := s.storageProvider.CreatePresignedUrl(ctx, &storage.CreatePresignedUrlRequest{
+		Key:        *summary.CoverKey,
+		Expiration: coverUrlTTL,
+	})
+	if err != nil {
+		logger.From(ctx).Warnf("classroom.invitation_cover presign failed classroom_id=%d err=%v", summary.ClassroomID, err)
+		return
+	}
+	summary.CoverURL = &url
 }
 
 // AcceptInvitation flips a PENDING row owned by the caller to ACTIVE
@@ -166,10 +242,12 @@ func (s *Service) AcceptInvitation(ctx context.Context, req *dto.AcceptInvitatio
 		return nil, err
 	}
 	actor := caller.ProfileId()
+
 	saved, err := s.acceptInvitationCmd.Handle(ctx, command.AcceptInvitationCommand{
-		ClassroomID:     req.ClassroomID,
-		CallerProfileID: caller.ProfileId(),
-		ActorID:         &actor,
+		ClassroomID:      req.ClassroomID,
+		InviteeProfileID: req.InviteeProfileID,
+		InviterProfileID: req.InviterProfileID,
+		ActorID:          &actor,
 	})
 	if err != nil {
 		return nil, err

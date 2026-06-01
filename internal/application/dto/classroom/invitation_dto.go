@@ -6,15 +6,35 @@ import (
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
+// InvitationClassroomSummary is the slim classroom shape carried on an
+// invitation response so the mobile client can render an invitation
+// card (classroom name + cover) without an extra GetClassroom round
+// trip. CoverURL is a short-lived presigned URL when storage is wired
+// and the classroom has a cover_key; nil otherwise.
+type InvitationClassroomSummary struct {
+	ClassroomID     int64   `json:"classroom_id"`
+	Name            string  `json:"name"`
+	Description     *string `json:"description,omitempty"`
+	ClassroomCode   *string `json:"classroom_code,omitempty"`
+	SchoolID        *int64  `json:"school_id,omitempty"`
+	GradeID         *int64  `json:"grade_id,omitempty"`
+	CoverKey        *string `json:"cover_key,omitempty"`
+	CoverURL        *string `json:"cover_url,omitempty"`
+	ClassroomStatus *string `json:"classroom_status,omitempty"`
+}
+
 // InvitationResponse is the wire shape for an ma_classroom_members row
 // viewed through the invitation lens. It re-uses the underlying member
 // row but renames a few fields so a mobile client treating invitations
 // as a distinct concept doesn't have to know the unified storage model.
 // member_status carries PENDING / ACTIVE / REJECTED / etc — the same
-// values as MemberResponse.MemberStatus.
+// values as MemberResponse.MemberStatus. Classroom is hydrated by the
+// service from ma_classrooms using a batched IN-lookup so a page costs
+// one extra round trip regardless of size.
 type InvitationResponse struct {
 	InvitationID int64                       `json:"invitation_id"`
 	ClassroomID  int64                       `json:"classroom_id"`
+	Classroom    *InvitationClassroomSummary `json:"classroom,omitempty"`
 	ProfileID    int64                       `json:"profile_id"`
 	MemberRole   string                      `json:"member_role"`
 	MemberStatus *string                     `json:"member_status,omitempty"`
@@ -90,6 +110,7 @@ type ListClassroomInvitationsRes struct {
 }
 
 type AcceptInvitationReq struct {
+	InviteeProfileID int64 `json:"invitee_profile_id"`
 	InviterProfileID int64 `json:"inviter_profile_id"`
 	ClassroomID      int64 `json:"classroom_id"`
 }

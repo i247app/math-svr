@@ -93,6 +93,10 @@ func (r *ClassroomMemberRepository) FindByClassroomAndProfile(ctx context.Contex
 	return r.findOneBy(ctx, "m.classroom_id = ? AND m.profile_id = ?", classroomId, profileId)
 }
 
+func (r *ClassroomMemberRepository) FindByClassroomAndProfileAndInvitedBy(ctx context.Context, classroomId, profileId, inviterProfileId int64) (*classroom.Member, error) {
+	return r.findOneBy(ctx, "m.classroom_id = ? AND m.profile_id = ? AND m.invite_by = ?", classroomId, profileId, inviterProfileId)
+}
+
 func (r *ClassroomMemberRepository) ListMembers(ctx context.Context, params *classroom.ListMembersParams) ([]*classroom.Member, *pagination.Pagination, error) {
 	filterWhere, filterArgs := buildClassroomMemberFilter(params)
 

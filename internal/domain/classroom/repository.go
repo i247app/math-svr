@@ -110,6 +110,7 @@ type ListMembersParams struct {
 type IMemberRepository interface {
 	FindByMemberId(ctx context.Context, memberId int64) (*Member, error)
 	FindByClassroomAndProfile(ctx context.Context, classroomId, profileId int64) (*Member, error)
+	FindByClassroomAndProfileAndInvitedBy(ctx context.Context, classroomId, profileId int64, inviterProfileId int64) (*Member, error)
 	ListMembers(ctx context.Context, params *ListMembersParams) ([]*Member, *pagination.Pagination, error)
 	// ListByProfileAndClassroomIds fetches the rows where (profile_id =
 	// profileId AND classroom_id IN classroomIds), excluding DELETED.

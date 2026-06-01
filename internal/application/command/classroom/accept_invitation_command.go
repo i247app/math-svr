@@ -18,9 +18,10 @@ import (
 // focus on the state-machine invariant: only PENDING accepts, never
 // ACTIVE / REJECTED / LEFT / REMOVED.
 type AcceptInvitationCommand struct {
-	ClassroomID     int64
-	CallerProfileID int64
-	ActorID         *int64
+	ClassroomID      int64
+	InviteeProfileID int64
+	InviterProfileID int64
+	ActorID          *int64
 }
 
 type AcceptInvitationCommandHandler struct {
@@ -53,7 +54,7 @@ func (h *AcceptInvitationCommandHandler) Handle(ctx context.Context, cmd AcceptI
 				errors.New("classroom is full"))
 		}
 
-		existing, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, cmd.ClassroomID, cmd.CallerProfileID)
+		existing, err := repos.ClassroomMember.FindByClassroomAndProfileAndInvitedBy(ctx, cmd.ClassroomID, cmd.InviteeProfileID, cmd.InviterProfileID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
