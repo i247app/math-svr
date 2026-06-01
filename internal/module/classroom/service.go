@@ -242,6 +242,11 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 	// 	return nil, err
 	// }
 
+	// profileCaller,err:= s.profileRepo.ListByUserId()(ctx, req.ProfileID)
+	// if err != nil {
+	// 	return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	// }
+
 	// // Default "my classrooms": filter by caller's profile membership.
 	// // Explicit OwnerProfileID overrides; we don't apply both because the
 	// // AND semantics rarely match what the caller wants.
