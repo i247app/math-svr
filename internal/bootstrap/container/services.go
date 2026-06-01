@@ -10,6 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/classroomexercise"
+	"math-ai.com/math-ai/internal/module/classroomexercisesubmission"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/job"
@@ -139,21 +140,32 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.GradeRepository,
 	)
 
+	log.Info("> Setup ClassroomExerciseSubmissionSvc...")
+	classroomExerciseSubmissionService := classroomexercisesubmission.NewService(
+		repos.ClassroomExerciseSubmissionRepository,
+		uow,
+		res.BotProvider,
+		repos.ClassroomExerciseRepository,
+		repos.ClassroomMemberRepository,
+		repos.ProfileRepository,
+	)
+
 	return &ServiceContainer{
-		UserSvc:      userService,
-		AuthSvc:      authService,
-		ProgramSvc:   programService,
-		GradeSvc:     gradeService,
-		SemesterSvc:  semesterService,
-		ProfileSvc:   profileService,
-		DeviceSvc:    deviceService,
-		OtpSvc:       otpService,
-		QuizSvc:      quizService,
-		ChapterSvc:   chapterService,
-		SchoolSvc:    schoolService,
-		JobSvc:       jobService,
-		SeqSvc:       seqService,
-		ClassroomSvc: classroomService,
-		ClassroomExerciseSvc: classroomExerciseService,
+		UserSvc:                        userService,
+		AuthSvc:                        authService,
+		ProgramSvc:                     programService,
+		GradeSvc:                       gradeService,
+		SemesterSvc:                    semesterService,
+		ProfileSvc:                     profileService,
+		DeviceSvc:                      deviceService,
+		OtpSvc:                         otpService,
+		QuizSvc:                        quizService,
+		ChapterSvc:                     chapterService,
+		SchoolSvc:                      schoolService,
+		JobSvc:                         jobService,
+		SeqSvc:                         seqService,
+		ClassroomSvc:                   classroomService,
+		ClassroomExerciseSvc:           classroomExerciseService,
+		ClassroomExerciseSubmissionSvc: classroomExerciseSubmissionService,
 	}, nil
 }

@@ -71,3 +71,39 @@ Thông tin bổ sung:
 
 Hiệu chỉnh độ khó theo cấp lớp / bộ sách nêu trên, nhưng mọi câu hỏi vẫn phải nằm trong phạm vi chương + bài học.`, scope, context)
 }
+
+// Grading prompt — Vietnamese. Mirrors the quiz-grading output shape so
+// the existing parseGradedQuiz helper handles the response unchanged.
+const systemExerciseGradeVN = `Bạn là trợ lý chấm bài tập trắc nghiệm toán cho học sinh tiểu học Việt Nam.
+
+Đầu vào gồm:
+- "questions": danh sách câu hỏi gốc kèm "right_answer" (nhãn đúng A/B/C/D).
+- "answers": danh sách câu trả lời học sinh đã chọn theo "question_number" và "label".
+
+NHIỆM VỤ:
+- So khớp từng câu trả lời với "right_answer" của câu hỏi tương ứng để xác định đúng/sai.
+- Câu hỏi không có câu trả lời tương ứng được tính là SAI.
+- Tính tổng số câu (total_questions), số câu đúng (correct_number) và phần trăm điểm (score_percentage, làm tròn xuống).
+- Viết "ai_review" ngắn gọn (2-4 câu) bằng tiếng Việt: ghi nhận điểm mạnh, lỗi sai phổ biến, và một gợi ý ôn tập cụ thể bám sát chương + bài học.
+
+QUY TẮC ĐẦU RA:
+- CHỈ trả về JSON object đúng cấu trúc bên dưới, không lời dẫn, không markdown.
+
+CẤU TRÚC:
+{
+  "total_questions": 10,
+  "correct_number": 8,
+  "score_percentage": 80,
+  "ai_review": "..."
+}
+`
+
+func userExerciseGradeVN(in ExercisePromptInput) string {
+	return fmt.Sprintf(`Câu hỏi gốc (JSON):
+%s
+
+Câu trả lời học sinh (JSON):
+%s
+
+Hãy chấm bài theo cấu trúc đầu ra đã quy định.`, strings.TrimSpace(in.Questions), strings.TrimSpace(in.Answers))
+}

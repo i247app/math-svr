@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS ma_classroom_exercise_submissions (
     submitted_dt                    DATETIME(6) DEFAULT NULL,
     graded_dt                       DATETIME(6) DEFAULT NULL,
     note                            VARCHAR(500) DEFAULT NULL,
-    submission_status               VARCHAR(32) DEFAULT 'PENDING', -- PENDING, SUBMITTED, GRADED, DELETED
+    submission_status               VARCHAR(32) DEFAULT 'SUBMITTED', -- PENDING, SUBMITTED, GRADED, DELETED
     status                          VARCHAR(32) DEFAULT 'ACTIVE',
     create_id                       BIGINT UNSIGNED DEFAULT NULL,
     create_dt                       DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
@@ -31,3 +31,11 @@ CREATE TABLE IF NOT EXISTS ma_classroom_exercise_submissions (
     KEY ix_classroom_profile (classroom_id, profile_id),
     KEY ix_exercise_status (classroom_exercise_id, submission_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+-- ALTER TABLE ma_classroom_exercise_submissions
+--     MODIFY COLUMN submission_status VARCHAR(32) DEFAULT 'SUBMITTED';
+
+-- ALTER TABLE ma_classroom_exercise_submissions
+--     ADD KEY ix_profile_status (profile_id, submission_status),
+--     ADD KEY ix_exercise_profile_submitted (classroom_exercise_id, profile_id, submitted_dt);

@@ -1,0 +1,302 @@
+package repositories
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"strings"
+
+	domain "math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
+	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/infrastructure/database"
+	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
+	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/pagination"
+)
+
+const (
+	classroomExerciseSubmissionTable = "ma_classroom_exercise_submissions"
+
+	classroomExerciseSubmissionColumns = `s.id, s.classroom_exercise_submission_id,
+		s.classroom_exercise_id, s.classroom_id, s.profile_id,
+		s.answers, s.ai_review,
+		s.total_questions, s.correct_number, s.score_percentage,
+		s.submitted_dt, s.graded_dt,
+		s.note, s.submission_status, s.status,
+		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
+
+	// Active-where mirrors the classroom-exercise convention: hide rows
+	// the system has flagged INACTIVE plus the business-DELETED tombstone.
+	classroomExerciseSubmissionActiveWhere = `s.status = ? AND s.deleted_dt IS NULL
+		AND (s.submission_status IS NULL OR s.submission_status != ?)`
+)
+
+func classroomExerciseSubmissionActiveArgs() []any {
+	return []any{enum.StatusActive, enum.ClassroomExerciseSubmissionStatusDeleted}
+}
+
+type ClassroomExerciseSubmissionRepository struct {
+	db database.Executor
+}
+
+func NewClassroomExerciseSubmissionRepository(db database.Executor) domain.IRepository {
+	return &ClassroomExerciseSubmissionRepository{db: db}
+}
+
+func scanClassroomExerciseSubmission(s database.RowScanner) (*models.ClassroomExerciseSubmissionModel, error) {
+	var m models.ClassroomExerciseSubmissionModel
+	if err := s.Scan(&m.Id, &m.ClassroomExerciseSubmissionId,
+		&m.ClassroomExerciseId, &m.ClassroomId, &m.ProfileId,
+		&m.Answers, &m.AIReview,
+		&m.TotalQuestions, &m.CorrectNumber, &m.ScorePercentage,
+		&m.SubmittedDt, &m.GradedDt,
+		&m.Note, &m.SubmissionStatus, &m.Status,
+		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+		return nil, err
+	}
+	return &m, nil
+}
+
+func (r *ClassroomExerciseSubmissionRepository) findOneBy(ctx context.Context, where string, args ...any) (*domain.Submission, error) {
+	fullArgs := append(classroomExerciseSubmissionActiveArgs(), args...)
+	query := `SELECT ` + classroomExerciseSubmissionColumns + ` FROM ` + classroomExerciseSubmissionTable + ` s WHERE ` +
+		classroomExerciseSubmissionActiveWhere + ` AND (` + where + `)`
+
+	m, err := scanClassroomExerciseSubmission(r.db.QueryRow(ctx, query, fullArgs...))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("classroom exercise submission repo find (%s): %w", where, err)
+	}
+	return modelToDomainClassroomExerciseSubmission(m), nil
+}
+
+func (r *ClassroomExerciseSubmissionRepository) findBareById(ctx context.Context, id int64) (*domain.Submission, error) {
+	args := append(classroomExerciseSubmissionActiveArgs(), id)
+	query := `SELECT ` + classroomExerciseSubmissionColumns + ` FROM ` + classroomExerciseSubmissionTable + ` s WHERE ` +
+		classroomExerciseSubmissionActiveWhere + ` AND s.id = ?`
+
+	m, err := scanClassroomExerciseSubmission(r.db.QueryRow(ctx, query, args...))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("classroom exercise submission repo find bare by id: %w", err)
+	}
+	return modelToDomainClassroomExerciseSubmission(m), nil
+}
+
+func (r *ClassroomExerciseSubmissionRepository) FindBySubmissionId(ctx context.Context, submissionId int64) (*domain.Submission, error) {
+	return r.findOneBy(ctx, "s.classroom_exercise_submission_id = ?", submissionId)
+}
+
+func (r *ClassroomExerciseSubmissionRepository) FindByExerciseAndProfile(ctx context.Context, classroomExerciseId, profileId int64) (*domain.Submission, error) {
+	return r.findOneBy(ctx, "s.classroom_exercise_id = ? AND s.profile_id = ?", classroomExerciseId, profileId)
+}
+
+func (r *ClassroomExerciseSubmissionRepository) ListSubmissions(ctx context.Context, params domain.ListSubmissionsParams) ([]*domain.Submission, *pagination.Pagination, error) {
+	if params.Limit <= 0 {
+		params.Limit = pagination.DefaultPageSize
+	}
+	if params.Page < 1 {
+		params.Page = 1
+	}
+
+	filterClause, filterArgs := buildClassroomExerciseSubmissionFilter(params)
+	orderBy := buildClassroomExerciseSubmissionOrderBy(params)
+
+	countArgs := append(classroomExerciseSubmissionActiveArgs(), filterArgs...)
+	countQuery := `SELECT COUNT(*) FROM ` + classroomExerciseSubmissionTable + ` s WHERE ` +
+		classroomExerciseSubmissionActiveWhere + filterClause
+
+	var total int64
+	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
+		return nil, nil, fmt.Errorf("classroom exercise submission repo count: %w", err)
+	}
+
+	pg := pagination.NewPagination(params.Page, params.Limit, total)
+
+	listArgs := append(classroomExerciseSubmissionActiveArgs(), filterArgs...)
+	listArgs = append(listArgs, pg.Size, pg.Skip)
+	query := `SELECT ` + classroomExerciseSubmissionColumns + ` FROM ` + classroomExerciseSubmissionTable + ` s WHERE ` +
+		classroomExerciseSubmissionActiveWhere + filterClause +
+		` ORDER BY ` + orderBy + ` LIMIT ? OFFSET ?`
+
+	rows, err := r.db.Query(ctx, query, listArgs...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("classroom exercise submission repo list: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*domain.Submission
+	for rows.Next() {
+		m, err := scanClassroomExerciseSubmission(rows)
+		if err != nil {
+			return nil, nil, fmt.Errorf("classroom exercise submission repo scan row: %w", err)
+		}
+		out = append(out, modelToDomainClassroomExerciseSubmission(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("classroom exercise submission repo rows iteration: %w", err)
+	}
+	return out, pg, nil
+}
+
+func buildClassroomExerciseSubmissionFilter(params domain.ListSubmissionsParams) (string, []any) {
+	var (
+		clause strings.Builder
+		args   []any
+	)
+	if params.ClassroomExerciseID != 0 {
+		clause.WriteString(` AND s.classroom_exercise_id = ?`)
+		args = append(args, params.ClassroomExerciseID)
+	}
+	if params.ClassroomID != 0 {
+		clause.WriteString(` AND s.classroom_id = ?`)
+		args = append(args, params.ClassroomID)
+	}
+	if params.ProfileID != 0 {
+		clause.WriteString(` AND s.profile_id = ?`)
+		args = append(args, params.ProfileID)
+	}
+	if params.Status != nil && *params.Status != "" {
+		clause.WriteString(` AND s.submission_status = ?`)
+		args = append(args, *params.Status)
+	}
+	return clause.String(), args
+}
+
+func buildClassroomExerciseSubmissionOrderBy(params domain.ListSubmissionsParams) string {
+	column := "s.submitted_dt"
+	if params.SortBy != nil {
+		switch *params.SortBy {
+		case "submitted":
+			column = "s.submitted_dt"
+		case "graded":
+			column = "s.graded_dt"
+		case "score":
+			column = "s.score_percentage"
+		case "created":
+			column = "s.create_dt"
+		}
+	}
+	direction := "DESC"
+	if params.SortOrder != nil && *params.SortOrder == "asc" {
+		direction = "ASC"
+	}
+	return column + " " + direction + ", s.id " + direction
+}
+
+func (r *ClassroomExerciseSubmissionRepository) Create(ctx context.Context, sub *domain.Submission) (*domain.Submission, error) {
+	var submittedArg, gradedArg any
+	if sub.SubmittedDt().IsValid() {
+		submittedArg = sub.SubmittedDt().Time
+	}
+	if sub.GradedDt().IsValid() {
+		gradedArg = sub.GradedDt().Time
+	}
+
+	query := `
+		INSERT INTO ` + classroomExerciseSubmissionTable + `
+			(classroom_exercise_submission_id, classroom_exercise_id, classroom_id, profile_id,
+			 answers, ai_review,
+			 total_questions, correct_number, score_percentage,
+			 submitted_dt, graded_dt,
+			 note, submission_status, create_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`
+	result, err := r.db.Exec(ctx, query,
+		sub.ClassroomExerciseSubmissionId(), sub.ClassroomExerciseId(), sub.ClassroomId(), sub.ProfileId(),
+		sub.Answers(), sub.AIReview(),
+		sub.TotalQuestions(), sub.CorrectNumber(), sub.ScorePercentage(),
+		submittedArg, gradedArg,
+		sub.Note(), sub.SubmissionStatus(), sub.CreateId())
+	if err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo create: %w", err)
+	}
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo last insert id: %w", err)
+	}
+	return r.findBareById(ctx, id)
+}
+
+// UpdateGrading applies the bot's grading result via COALESCE so a
+// caller can refine partial scores without nulling out prior progress.
+// GradedDt is written explicitly (non-COALESCE) when valid because the
+// row is typically transitioning from un-graded to graded in one shot.
+func (r *ClassroomExerciseSubmissionRepository) UpdateGrading(ctx context.Context, submissionId int64, patch domain.GradingPatch) error {
+	var gradedArg any
+	if patch.GradedDt.IsValid() {
+		gradedArg = patch.GradedDt.Time
+	}
+
+	query := `
+		UPDATE ` + classroomExerciseSubmissionTable + `
+		SET ai_review         = COALESCE(?, ai_review),
+			total_questions   = COALESCE(?, total_questions),
+			correct_number    = COALESCE(?, correct_number),
+			score_percentage  = COALESCE(?, score_percentage),
+			graded_dt         = COALESCE(?, graded_dt),
+			submission_status = COALESCE(?, submission_status),
+			modify_id         = COALESCE(?, modify_id),
+			modify_dt         = ?
+		WHERE classroom_exercise_submission_id = ?
+	`
+	if _, err := r.db.Exec(ctx, query,
+		patch.AIReview, patch.TotalQuestions, patch.CorrectNumber, patch.ScorePercentage,
+		gradedArg, patch.SubmissionStatus, patch.ModifyID,
+		mtime.Now().Time, submissionId); err != nil {
+		return fmt.Errorf("classroom exercise submission repo update grading: %w", err)
+	}
+	return nil
+}
+
+func (r *ClassroomExerciseSubmissionRepository) SoftDelete(ctx context.Context, submissionId int64, actorID *int64) error {
+	query := `
+		UPDATE ` + classroomExerciseSubmissionTable + `
+		SET submission_status = ?,
+			status            = ?,
+			deleted_dt        = ?,
+			modify_id         = COALESCE(?, modify_id),
+			modify_dt         = ?
+		WHERE classroom_exercise_submission_id = ?
+	`
+	now := mtime.Now().Time
+	if _, err := r.db.Exec(ctx, query,
+		enum.ClassroomExerciseSubmissionStatusDeleted, enum.StatusInactive,
+		now, actorID, now, submissionId); err != nil {
+		return fmt.Errorf("classroom exercise submission repo soft delete: %w", err)
+	}
+	return nil
+}
+
+func modelToDomainClassroomExerciseSubmission(m *models.ClassroomExerciseSubmissionModel) *domain.Submission {
+	s := domain.NewSubmission()
+	s.SetId(m.Id)
+	s.SetClassroomExerciseSubmissionId(m.ClassroomExerciseSubmissionId)
+	s.SetClassroomExerciseId(m.ClassroomExerciseId)
+	s.SetClassroomId(m.ClassroomId)
+	s.SetProfileId(m.ProfileId)
+	s.SetAnswers(m.Answers)
+	s.SetAIReview(m.AIReview)
+	s.SetTotalQuestions(m.TotalQuestions)
+	s.SetCorrectNumber(m.CorrectNumber)
+	s.SetScorePercentage(m.ScorePercentage)
+	if m.SubmittedDt != nil {
+		s.SetSubmittedDt(mtime.MathTime{Time: *m.SubmittedDt})
+	}
+	if m.GradedDt != nil {
+		s.SetGradedDt(mtime.MathTime{Time: *m.GradedDt})
+	}
+	s.SetNote(m.Note)
+	s.SetSubmissionStatus(m.SubmissionStatus)
+	s.SetStatus(m.Status)
+	s.SetCreateId(m.CreateId)
+	s.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	s.SetModifyId(m.ModifyId)
+	s.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	return s
+}

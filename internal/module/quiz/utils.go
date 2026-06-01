@@ -193,6 +193,13 @@ func parseGradedQuiz(content string) (*quizDto.QuizGradingResult, error) {
 	return &out, nil
 }
 
+// ParseGradedQuiz is the exported wrapper around parseGradedQuiz. The
+// exercise submission module reuses it so the grading-response shape
+// stays unified across quiz and exercise flows.
+func ParseGradedQuiz(content string) (*quizDto.QuizGradingResult, error) {
+	return parseGradedQuiz(content)
+}
+
 // codeFenceRe matches ```lang\n...\n``` wrappers some backends emit even
 // when JSON mode is requested. Strip them so json.Unmarshal sees the
 // payload directly.

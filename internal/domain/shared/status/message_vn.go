@@ -524,6 +524,32 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Chế độ hiển thị phải là PUBLIC hoặc PRIVATE"
 	case CLASSROOM_EXERCISE_PRIVATE_DENIED:
 		return "Chỉ người tạo mới có quyền truy cập bài tập riêng tư này"
+	case CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND:
+		return "Không tìm thấy bài nộp"
+	case CLASSROOM_EXERCISE_SUBMISSION_MISSING_ID:
+		return "classroom_exercise_submission_id là bắt buộc"
+	case CLASSROOM_EXERCISE_SUBMISSION_MISSING_EXERCISE_ID:
+		return "classroom_exercise_id là bắt buộc"
+	case CLASSROOM_EXERCISE_SUBMISSION_MISSING_ANSWERS:
+		return "answers là bắt buộc"
+	case CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS:
+		return "Dữ liệu câu trả lời không hợp lệ"
+	case CLASSROOM_EXERCISE_SUBMISSION_ALREADY_EXISTS:
+		return "Bạn đã nộp bài tập này rồi"
+	case CLASSROOM_EXERCISE_SUBMISSION_WINDOW_NOT_OPEN:
+		return "Bài tập chưa mở để làm"
+	case CLASSROOM_EXERCISE_SUBMISSION_WINDOW_CLOSED:
+		return "Bài tập đã hết hạn nộp"
+	case CLASSROOM_EXERCISE_SUBMISSION_EXERCISE_UNAVAILABLE:
+		return "Bài tập hiện không khả dụng để nộp"
+	case CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED:
+		return "Bạn không có quyền truy cập bài nộp này"
+	case CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED:
+		return "Chấm bài tự động thất bại"
+	case CLASSROOM_EXERCISE_SUBMISSION_NOTE_TOO_LONG:
+		return "Ghi chú quá dài"
+	case CLASSROOM_EXERCISE_SUBMISSION_ALREADY_DELETED:
+		return "Bài nộp đã bị xoá"
 	default:
 		return ""
 	}

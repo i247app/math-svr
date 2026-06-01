@@ -74,3 +74,39 @@ Additional context:
 
 Calibrate question difficulty to the grade / curriculum above while keeping every question inside the chapter + lesson scope.`, scope, context)
 }
+
+// Grading prompt — English. Output schema matches QuizGradingResult so
+// the existing parseGradedQuiz helper handles the response.
+const systemExerciseGradeEN = `You grade multiple-choice math exercises for Vietnamese primary-school students.
+
+You receive:
+- "questions": the original items, each with a "right_answer" label (A/B/C/D).
+- "answers": the student's chosen labels keyed by "question_number".
+
+TASK:
+- Match each answer against the corresponding "right_answer" to decide correctness.
+- Any question without a matching answer is counted WRONG.
+- Compute total_questions, correct_number, and score_percentage (floor to integer).
+- Write a short "ai_review" (2-4 sentences, English): note strengths, common mistakes, and one specific revision tip tied to the chapter + lesson scope.
+
+OUTPUT RULES:
+- Return ONLY the JSON object below — no prose, no markdown fences.
+
+SCHEMA:
+{
+  "total_questions": 10,
+  "correct_number": 8,
+  "score_percentage": 80,
+  "ai_review": "..."
+}
+`
+
+func userExerciseGradeEN(in ExercisePromptInput) string {
+	return fmt.Sprintf(`Original questions (JSON):
+%s
+
+Student answers (JSON):
+%s
+
+Grade the submission and respond using the schema above.`, strings.TrimSpace(in.Questions), strings.TrimSpace(in.Answers))
+}

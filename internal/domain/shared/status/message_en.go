@@ -524,6 +524,32 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Visibility must be PUBLIC or PRIVATE"
 	case CLASSROOM_EXERCISE_PRIVATE_DENIED:
 		return "Only the creator can access this private exercise"
+	case CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND:
+		return "Submission not found"
+	case CLASSROOM_EXERCISE_SUBMISSION_MISSING_ID:
+		return "classroom_exercise_submission_id is required"
+	case CLASSROOM_EXERCISE_SUBMISSION_MISSING_EXERCISE_ID:
+		return "classroom_exercise_id is required"
+	case CLASSROOM_EXERCISE_SUBMISSION_MISSING_ANSWERS:
+		return "answers is required"
+	case CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS:
+		return "Invalid answers payload"
+	case CLASSROOM_EXERCISE_SUBMISSION_ALREADY_EXISTS:
+		return "You have already submitted this exercise"
+	case CLASSROOM_EXERCISE_SUBMISSION_WINDOW_NOT_OPEN:
+		return "Submission window has not opened yet"
+	case CLASSROOM_EXERCISE_SUBMISSION_WINDOW_CLOSED:
+		return "Submission window has closed"
+	case CLASSROOM_EXERCISE_SUBMISSION_EXERCISE_UNAVAILABLE:
+		return "Exercise is not available for submission"
+	case CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED:
+		return "You do not have permission to access this submission"
+	case CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED:
+		return "Failed to grade the submission"
+	case CLASSROOM_EXERCISE_SUBMISSION_NOTE_TOO_LONG:
+		return "Note too long"
+	case CLASSROOM_EXERCISE_SUBMISSION_ALREADY_DELETED:
+		return "Submission is already deleted"
 	default:
 		return ""
 	}

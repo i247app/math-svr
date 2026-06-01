@@ -1,0 +1,370 @@
+package classroomexercisesubmission
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"time"
+
+	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
+	command "math-ai.com/math-ai/internal/application/command/classroomexercisesubmission"
+	dto "math-ai.com/math-ai/internal/application/dto/classroomexercisesubmission"
+	query "math-ai.com/math-ai/internal/application/query/classroomexercisesubmission"
+	"math-ai.com/math-ai/internal/application/transaction"
+	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
+	exerciseDomain "math-ai.com/math-ai/internal/domain/classroomexercise"
+	domain "math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
+	profileDomain "math-ai.com/math-ai/internal/domain/profile"
+	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	"math-ai.com/math-ai/internal/shared/enum"
+)
+
+// Service is the classroomexercisesubmission module's public façade.
+// It composes the CQRS handlers behind validators and per-aggregate
+// permission helpers, and owns the bot grading call.
+type Service struct {
+	getSubmissionQuery   *query.GetSubmissionByIdQueryHandler
+	listSubmissionsQuery *query.ListSubmissionsQueryHandler
+	submitAnswersCmd     *command.SubmitExerciseAnswersCommandHandler
+	softDeleteCmd        *command.SoftDeleteSubmissionCommandHandler
+
+	submissionRepo      domain.IRepository
+	exerciseRepo        exerciseDomain.IRepository
+	classroomMemberRepo classroomDomain.IMemberRepository
+	profileRepo         profileDomain.IRepository
+	bot                 *botClient
+}
+
+func NewService(
+	submissionRepo domain.IRepository,
+	uow transaction.UnitOfWork,
+	botAdp *botAdapter.Adapter,
+	exerciseRepo exerciseDomain.IRepository,
+	classroomMemberRepo classroomDomain.IMemberRepository,
+	profileRepo profileDomain.IRepository,
+) *Service {
+	return &Service{
+		getSubmissionQuery:   query.NewGetSubmissionByIdQueryHandler(submissionRepo),
+		listSubmissionsQuery: query.NewListSubmissionsQueryHandler(submissionRepo),
+		submitAnswersCmd:     command.NewSubmitExerciseAnswersCommandHandler(uow),
+		softDeleteCmd:        command.NewSoftDeleteSubmissionCommandHandler(uow),
+		submissionRepo:       submissionRepo,
+		exerciseRepo:         exerciseRepo,
+		classroomMemberRepo:  classroomMemberRepo,
+		profileRepo:          profileRepo,
+		bot:                  newBotClient(botAdp),
+	}
+}
+
+// SubmitExerciseAnswers validates → loads the exercise → enforces
+// membership + window + duplicate guards → marshals the answers payload
+// → calls the bot OUTSIDE the UoW → persists inside one short UoW.
+// The result is the freshly graded submission.
+func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExerciseAnswersReq, sessionUserID int64) (*dto.SubmitExerciseAnswersRes, error) {
+	log := logger.From(ctx)
+
+	if err := ValidateSubmitExerciseAnswers(ctx, req); err != nil {
+		return nil, err
+	}
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	exercise, err := s.exerciseRepo.FindByClassroomExerciseId(ctx, req.ClassroomExerciseID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if exercise == nil {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
+			errors.New("classroom exercise not found"))
+	}
+	if !exerciseAvailableForSubmission(exercise) {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_EXERCISE_UNAVAILABLE, nil,
+			errors.New("exercise is not available"))
+	}
+	if _, err := s.requireMember(ctx, exercise.ClassroomId(), caller.ProfileId()); err != nil {
+		return nil, err
+	}
+	if err := enforceExerciseAccess(ctx, exercise, caller.ProfileId()); err != nil {
+		return nil, err
+	}
+	if err := enforceSubmissionWindow(ctx, exercise); err != nil {
+		return nil, err
+	}
+
+	existing, err := s.submissionRepo.FindByExerciseAndProfile(ctx, exercise.ClassroomExerciseId(), caller.ProfileId())
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if existing != nil {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_ALREADY_EXISTS, nil,
+			errors.New("submission already exists"))
+	}
+
+	answersJSON, err := json.Marshal(req.Answers)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS, nil,
+			fmt.Errorf("submission: marshal answers: %w", err))
+	}
+
+	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+
+	questions := ""
+	if exercise.Questions() != nil {
+		questions = *exercise.Questions()
+	}
+	if questions == "" {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED, nil,
+			errors.New("exercise has no questions to grade"))
+	}
+
+	grading, err := s.bot.GradeExercise(ctx, gradeExerciseInput{
+		Language:  lang,
+		Questions: questions,
+		Answers:   string(answersJSON),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	actor := caller.ProfileId()
+	cmd := command.SubmitExerciseAnswersCommand{
+		ActorID:             &actor,
+		ClassroomExerciseID: exercise.ClassroomExerciseId(),
+		ClassroomID:         exercise.ClassroomId(),
+		ProfileID:           caller.ProfileId(),
+		AnswersJSON:         string(answersJSON),
+		Note:                req.Note,
+	}
+	if grading != nil {
+		if grading.AIReview != "" {
+			ai := grading.AIReview
+			cmd.AIReview = &ai
+		}
+		if grading.TotalQuestions > 0 {
+			v := int64(grading.TotalQuestions)
+			cmd.TotalQuestions = &v
+		}
+		if grading.CorrectNumber >= 0 {
+			v := int64(grading.CorrectNumber)
+			cmd.CorrectNumber = &v
+		}
+		if grading.ScorePercentage >= 0 {
+			v := int64(grading.ScorePercentage)
+			cmd.ScorePercentage = &v
+		}
+	}
+
+	saved, err := s.submitAnswersCmd.Handle(ctx, cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("classroom_exercise_submission.submitted",
+		"classroom_exercise_id", saved.ClassroomExerciseId(),
+		"profile_id", saved.ProfileId(),
+		"score_percentage", grading.ScorePercentage,
+	)
+
+	return &dto.SubmitExerciseAnswersRes{Submission: dto.DomainToResponse(saved)}, nil
+}
+
+// GetSubmission resolves the row → enforces "caller is the owner OR
+// caller is a manager of the parent classroom" before returning.
+func (s *Service) GetSubmission(ctx context.Context, req *dto.GetSubmissionReq, sessionUserID int64) (*dto.GetSubmissionRes, error) {
+	if err := ValidateGetSubmission(ctx, req); err != nil {
+		return nil, err
+	}
+
+	sub, err := s.getSubmissionQuery.Handle(ctx, query.GetSubmissionByIdQuery{
+		ClassroomExerciseSubmissionID: req.ClassroomExerciseSubmissionID,
+	})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if sub == nil {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND, nil,
+			errors.New("submission not found"))
+	}
+
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.authorizeSubmissionRead(ctx, sub, caller.ProfileId()); err != nil {
+		return nil, err
+	}
+	return &dto.GetSubmissionRes{Submission: dto.DomainToResponse(sub)}, nil
+}
+
+// ListMySubmissions returns the caller's own submissions across every
+// classroom. The repo filter is anchored on profile_id so a caller can
+// never see another profile's history.
+func (s *Service) ListMySubmissions(ctx context.Context, req *dto.ListMySubmissionsReq, sessionUserID int64) (*dto.ListMySubmissionsRes, error) {
+	if err := ValidateListMySubmissions(ctx, req); err != nil {
+		return nil, err
+	}
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	q := query.ListSubmissionsQuery{
+		ProfileID: caller.ProfileId(),
+		Status:    req.Status,
+		SortBy:    req.SortBy,
+		SortOrder: req.SortOrder,
+		Page:      int64(req.Page),
+		Limit:     int64(req.Size),
+	}
+	if req.ClassroomID != nil {
+		q.ClassroomID = *req.ClassroomID
+	}
+	if req.ClassroomExerciseID != nil {
+		q.ClassroomExerciseID = *req.ClassroomExerciseID
+	}
+
+	rows, pg, err := s.listSubmissionsQuery.Handle(ctx, q)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	return &dto.ListMySubmissionsRes{
+		Submissions: dto.DomainListToResponse(rows),
+		Pagination:  pg,
+	}, nil
+}
+
+// ListSubmissionsByExercise is the teacher view: every submission for
+// a single exercise. Manager-gated.
+func (s *Service) ListSubmissionsByExercise(ctx context.Context, req *dto.ListSubmissionsByExerciseReq, sessionUserID int64) (*dto.ListSubmissionsByExerciseRes, error) {
+	if err := ValidateListSubmissionsByExercise(ctx, req); err != nil {
+		return nil, err
+	}
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	exercise, err := s.exerciseRepo.FindByClassroomExerciseId(ctx, req.ClassroomExerciseID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if exercise == nil {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
+			errors.New("classroom exercise not found"))
+	}
+	if _, err := s.requireManager(ctx, exercise.ClassroomId(), caller.ProfileId()); err != nil {
+		return nil, err
+	}
+
+	rows, pg, err := s.listSubmissionsQuery.Handle(ctx, query.ListSubmissionsQuery{
+		ClassroomExerciseID: exercise.ClassroomExerciseId(),
+		Status:              req.Status,
+		SortBy:              req.SortBy,
+		SortOrder:           req.SortOrder,
+		Page:                int64(req.Page),
+		Limit:               int64(req.Size),
+	})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	return &dto.ListSubmissionsByExerciseRes{
+		Submissions: dto.DomainListToResponse(rows),
+		Pagination:  pg,
+	}, nil
+}
+
+// SoftDeleteSubmission is manager-only — the use case is invalidating
+// a spammed / bad attempt, not student-side withdrawal.
+func (s *Service) SoftDeleteSubmission(ctx context.Context, req *dto.DeleteSubmissionReq, sessionUserID int64) (*dto.DeleteSubmissionRes, error) {
+	if err := ValidateDeleteSubmission(ctx, req); err != nil {
+		return nil, err
+	}
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	sub, err := s.submissionRepo.FindBySubmissionId(ctx, req.ClassroomExerciseSubmissionID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if sub == nil {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND, nil,
+			errors.New("submission not found"))
+	}
+	if _, err := s.requireManager(ctx, sub.ClassroomId(), caller.ProfileId()); err != nil {
+		return nil, err
+	}
+
+	actor := caller.ProfileId()
+	if err := s.softDeleteCmd.Handle(ctx, command.SoftDeleteSubmissionCommand{
+		ActorID:                       &actor,
+		ClassroomExerciseSubmissionID: req.ClassroomExerciseSubmissionID,
+	}); err != nil {
+		return nil, err
+	}
+	return &dto.DeleteSubmissionRes{}, nil
+}
+
+// authorizeSubmissionRead lets the row's own profile read it directly;
+// for everyone else, the caller must be a manager of the parent
+// classroom. Used by GetSubmission only — list endpoints scope by
+// caller-profile or by manager gate up front.
+func (s *Service) authorizeSubmissionRead(ctx context.Context, sub *domain.Submission, callerProfileID int64) error {
+	if sub.ProfileId() == callerProfileID {
+		return nil
+	}
+	if _, err := s.requireManager(ctx, sub.ClassroomId(), callerProfileID); err != nil {
+		return err
+	}
+	return nil
+}
+
+// exerciseAvailableForSubmission rejects ARCHIVED / DELETED exercises.
+func exerciseAvailableForSubmission(e *exerciseDomain.Exercise) bool {
+	if e == nil {
+		return false
+	}
+	if e.ExerciseStatus() == nil {
+		return true
+	}
+	return *e.ExerciseStatus() == string(enum.ClassroomExerciseStatusTypeActive)
+}
+
+// enforceExerciseAccess re-applies the visibility access gate from the
+// exercise module — PRIVATE rows are still creator-only.
+func enforceExerciseAccess(ctx context.Context, e *exerciseDomain.Exercise, callerProfileID int64) error {
+	if e == nil {
+		return nil
+	}
+	if e.Visibility() != string(enum.ClassroomExerciseVisibilityPrivate) {
+		return nil
+	}
+	if e.CreatorProfileId() == callerProfileID {
+		return nil
+	}
+	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_PRIVATE_DENIED, nil,
+		errors.New("private exercise — only the creator can submit"))
+}
+
+// enforceSubmissionWindow rejects out-of-window submissions. start_date
+// and end_date are both optional; missing values are treated as "no
+// lower / upper bound".
+func enforceSubmissionWindow(ctx context.Context, e *exerciseDomain.Exercise) error {
+	now := time.Now().UTC()
+	if e.StartDate().IsValid() && now.Before(e.StartDate().Time) {
+		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_WINDOW_NOT_OPEN, nil,
+			errors.New("submission window has not opened"))
+	}
+	if e.EndDate().IsValid() && now.After(e.EndDate().Time) {
+		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_WINDOW_CLOSED, nil,
+			errors.New("submission window has closed"))
+	}
+	return nil
+}

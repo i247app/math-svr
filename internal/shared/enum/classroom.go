@@ -182,3 +182,30 @@ func (v ClassroomExerciseVisibilityType) IsValid() bool {
 		return false
 	}
 }
+
+// ClassroomExerciseSubmissionStatusType is the submission-row lifecycle.
+// Rows are inserted at submit time so SUBMITTED is the entry state; the
+// row flips to GRADED after the bot returns. DELETED is the soft-delete
+// tombstone used by the manager-side moderation flow.
+type ClassroomExerciseSubmissionStatusType string
+
+const (
+	ClassroomExerciseSubmissionStatusSubmitted ClassroomExerciseSubmissionStatusType = "SUBMITTED"
+	ClassroomExerciseSubmissionStatusGraded    ClassroomExerciseSubmissionStatusType = "GRADED"
+	ClassroomExerciseSubmissionStatusDeleted   ClassroomExerciseSubmissionStatusType = "DELETED"
+)
+
+func (s ClassroomExerciseSubmissionStatusType) String() string {
+	return string(s)
+}
+
+func (s ClassroomExerciseSubmissionStatusType) IsValid() bool {
+	switch s {
+	case ClassroomExerciseSubmissionStatusSubmitted,
+		ClassroomExerciseSubmissionStatusGraded,
+		ClassroomExerciseSubmissionStatusDeleted:
+		return true
+	default:
+		return false
+	}
+}

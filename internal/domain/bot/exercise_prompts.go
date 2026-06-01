@@ -5,20 +5,26 @@ import (
 	"strings"
 )
 
-// ExercisePromptKind enumerates the exercise-side LLM calls. Today there
-// is only Generate; grading lives in a future ma_classroom_exercise_submissions
-// flow and will introduce its own kind.
+// ExercisePromptKind enumerates the exercise-side LLM calls.
+//
+//	Generate — teacher-issued exercise generation.
+//	Grade    — student-submission grading; reads `{questions, answers}`,
+//	           emits the standard `{total_questions, correct_number,
+//	           score_percentage, ai_review}` shape so the existing
+//	           parseGradedQuiz parser handles the response unchanged.
 type ExercisePromptKind int
 
 const (
 	ExercisePromptKindGenerate ExercisePromptKind = iota + 1
+	ExercisePromptKindGrade
 )
 
 // ExercisePromptInput is the union of fields the exercise prompts may
 // consume. Unlike quizzes (which derive their topic from curriculum
 // rows), exercises are anchored on teacher-supplied chapter + lesson
 // names, with grade + program added when the parent classroom has them
-// pinned.
+// pinned. Grading reuses Questions / Answers as the JSON blobs being
+// scored.
 type ExercisePromptInput struct {
 	Language     QuizLanguage
 	Grade        string
@@ -26,6 +32,11 @@ type ExercisePromptInput struct {
 	ChapterName  string
 	LessonName   string
 	NumQuestions int
+	// Questions / Answers carry the raw JSON the grading prompt operates
+	// on. Both are required for ExercisePromptKindGrade and are ignored
+	// for Generate.
+	Questions string
+	Answers   string
 }
 
 // BuildExercisePrompt returns the (system, user) message contents for
@@ -47,9 +58,30 @@ func BuildExercisePrompt(kind ExercisePromptKind, in ExercisePromptInput) (syste
 			return "", "", err
 		}
 		return buildExerciseGeneratePrompt(lang, in), buildExerciseGenerateUser(lang, in), nil
+	case ExercisePromptKindGrade:
+		if err := requireFields(
+			in.Questions, "Questions",
+			in.Answers, "Answers"); err != nil {
+			return "", "", err
+		}
+		return buildExerciseGradePrompt(lang), buildExerciseGradeUser(lang, in), nil
 	default:
 		return "", "", fmt.Errorf("bot: unknown exercise prompt kind %d", kind)
 	}
+}
+
+func buildExerciseGradePrompt(lang QuizLanguage) string {
+	if lang == QuizLanguageEnglish {
+		return systemExerciseGradeEN
+	}
+	return systemExerciseGradeVN
+}
+
+func buildExerciseGradeUser(lang QuizLanguage, in ExercisePromptInput) string {
+	if lang == QuizLanguageEnglish {
+		return userExerciseGradeEN(in)
+	}
+	return userExerciseGradeVN(in)
 }
 
 func buildExerciseGeneratePrompt(lang QuizLanguage, in ExercisePromptInput) string {
