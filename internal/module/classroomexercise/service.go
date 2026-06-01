@@ -264,11 +264,19 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 	}
 
 	exercises, pg, err := s.listExercisesQuery.Handle(ctx, query.ListClassroomExercisesQuery{
-		ClassroomID:     req.ClassroomID,
-		CallerProfileID: caller.ProfileId(),
-		Status:          req.Status,
-		Page:            int64(req.Page),
-		Limit:           int64(req.Size),
+		ClassroomID:      req.ClassroomID,
+		CallerProfileID:  caller.ProfileId(),
+		Status:           req.Status,
+		Visibility:       req.Visibility,
+		CreatorProfileID: req.CreatorProfileID,
+		ProgramID:        req.ProgramID,
+		ChapterName:      req.ChapterName,
+		LessonName:       req.LessonName,
+		Search:           req.Search,
+		SortBy:           req.SortBy,
+		SortOrder:        req.SortOrder,
+		Page:             int64(req.Page),
+		Limit:            int64(req.Size),
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)

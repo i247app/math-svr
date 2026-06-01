@@ -17,7 +17,23 @@ const (
 	lessonNameMaxLen  = 255
 	noteMaxLen        = 500
 	maxNumQuestions   = 50
+	searchMaxLen      = 128
 )
+
+// ValidSortByValues are the sort_by tokens accepted by /classroom-exercises/list.
+// The repo whitelist-maps each to a real column so user input can never
+// reach raw SQL.
+var validExerciseSortBy = map[string]struct{}{
+	"created":    {},
+	"modified":   {},
+	"title":      {},
+	"start_date": {},
+}
+
+var validExerciseSortOrder = map[string]struct{}{
+	"asc":  {},
+	"desc": {},
+}
 
 // DefaultNumQuestions mirrors quiz.DefaultNumQuestions — when the
 // teacher omits it, we generate this many MCQ items. Kept in lockstep
@@ -170,6 +186,102 @@ func ValidateListExercises(ctx context.Context, req *dto.ListExercisesReq) error
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_CLASSROOM_ID, nil,
 			errors.New("classroom_id is required"))
+	}
+
+	// Optional enum filters — trim + uppercase, then validate.
+	if req.Status != nil {
+		v := strings.ToUpper(strings.TrimSpace(*req.Status))
+		if v == "" {
+			req.Status = nil
+		} else if !enum.ClassroomExerciseStatusType(v).IsValid() {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
+				errors.New("invalid status"))
+		} else {
+			req.Status = &v
+		}
+	}
+	if req.Visibility != nil {
+		v := strings.ToUpper(strings.TrimSpace(*req.Visibility))
+		if v == "" {
+			req.Visibility = nil
+		} else if !enum.ClassroomExerciseVisibilityType(v).IsValid() {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_VISIBILITY, nil,
+				errors.New("invalid visibility"))
+		} else {
+			req.Visibility = &v
+		}
+	}
+
+	// Optional numeric filters — collapse zero to nil so the repo skips
+	// the predicate instead of matching id=0.
+	if req.CreatorProfileID != nil && *req.CreatorProfileID == 0 {
+		req.CreatorProfileID = nil
+	}
+	if req.ProgramID != nil && *req.ProgramID == 0 {
+		req.ProgramID = nil
+	}
+
+	// Optional exact-match string filters — trim and drop empties.
+	if req.ChapterName != nil {
+		v := strings.TrimSpace(*req.ChapterName)
+		if v == "" {
+			req.ChapterName = nil
+		} else if len([]rune(v)) > chapterNameMaxLen {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_CHAPTER_NAME_TOO_LONG, nil,
+				errors.New("chapter_name too long"))
+		} else {
+			req.ChapterName = &v
+		}
+	}
+	if req.LessonName != nil {
+		v := strings.TrimSpace(*req.LessonName)
+		if v == "" {
+			req.LessonName = nil
+		} else if len([]rune(v)) > lessonNameMaxLen {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_LESSON_NAME_TOO_LONG, nil,
+				errors.New("lesson_name too long"))
+		} else {
+			req.LessonName = &v
+		}
+	}
+
+	// Free-text search — trim, cap length, drop empty. The repo escapes
+	// % and _ before assembling the LIKE pattern.
+	if req.Search != nil {
+		v := strings.TrimSpace(*req.Search)
+		if v == "" {
+			req.Search = nil
+		} else if len([]rune(v)) > searchMaxLen {
+			return errs.NewError(ctx, status.FAIL, nil,
+				errors.New("search too long"))
+		} else {
+			req.Search = &v
+		}
+	}
+
+	// Sort tokens — whitelist. Unknown values are rejected rather than
+	// silently ignored so callers notice typos.
+	if req.SortBy != nil {
+		v := strings.ToLower(strings.TrimSpace(*req.SortBy))
+		if v == "" {
+			req.SortBy = nil
+		} else if _, ok := validExerciseSortBy[v]; !ok {
+			return errs.NewError(ctx, status.FAIL, nil,
+				errors.New("invalid sort_by"))
+		} else {
+			req.SortBy = &v
+		}
+	}
+	if req.SortOrder != nil {
+		v := strings.ToLower(strings.TrimSpace(*req.SortOrder))
+		if v == "" {
+			req.SortOrder = nil
+		} else if _, ok := validExerciseSortOrder[v]; !ok {
+			return errs.NewError(ctx, status.FAIL, nil,
+				errors.New("invalid sort_order"))
+		} else {
+			req.SortOrder = &v
+		}
 	}
 	return nil
 }

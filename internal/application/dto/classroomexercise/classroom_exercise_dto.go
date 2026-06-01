@@ -93,12 +93,40 @@ type GetExerciseRes struct {
 	Exercise *ExerciseResponse `json:"exercise"`
 }
 
+// ListExercisesReq narrows the exercise list. ClassroomID is required;
+// every other field is an optional filter or sort hint.
+//
+// Filters
+//
+//	status              ACTIVE | ARCHIVED (DELETED is hidden by the repo)
+//	visibility          PUBLIC | PRIVATE (combines with the access filter —
+//	                    e.g. visibility=PRIVATE returns only the caller's own
+//	                    private rows)
+//	creator_profile_id  exact match on creator_profile_id
+//	program_id          exact match on program_id
+//	chapter_name        exact match on chapter_name
+//	lesson_name         exact match on lesson_name
+//	search              case-insensitive LIKE %?% across title, chapter_name,
+//	                    lesson_name (relies on utf8mb4_0900_ai_ci)
+//
+// Sort
+//
+//	sort_by    created | modified | title | start_date (default: created)
+//	sort_order asc | desc (default: desc)
 type ListExercisesReq struct {
-	ProfileID   *int64  `json:"profile_id,omitempty"`
-	ClassroomID int64   `json:"classroom_id"`
-	Status      *string `json:"status,omitempty"`
-	Page        int     `json:"page,omitempty"`
-	Size        int     `json:"size,omitempty"`
+	ProfileID        *int64  `json:"profile_id,omitempty"`
+	ClassroomID      int64   `json:"classroom_id"`
+	Status           *string `json:"status,omitempty"`
+	Visibility       *string `json:"visibility,omitempty"`
+	CreatorProfileID *int64  `json:"creator_profile_id,omitempty"`
+	ProgramID        *int64  `json:"program_id,omitempty"`
+	ChapterName      *string `json:"chapter_name,omitempty"`
+	LessonName       *string `json:"lesson_name,omitempty"`
+	Search           *string `json:"search,omitempty"`
+	SortBy           *string `json:"sort_by,omitempty"`
+	SortOrder        *string `json:"sort_order,omitempty"`
+	Page             int     `json:"page,omitempty"`
+	Size             int     `json:"size,omitempty"`
 }
 
 type ListExercisesRes struct {

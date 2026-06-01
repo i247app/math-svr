@@ -22,9 +22,24 @@ import (
 type ListExercisesParams struct {
 	ClassroomID     int64
 	CallerProfileID int64
-	Status          *string
-	Page            int64
-	Limit           int64
+
+	// Optional filters. Nil/zero values mean "skip this predicate".
+	Status           *string
+	Visibility       *string
+	CreatorProfileID *int64
+	ProgramID        *int64
+	ChapterName      *string
+	LessonName       *string
+	Search           *string
+
+	// Sort hints. Both default to the repo's preferred ordering
+	// (created DESC). Validator-normalized tokens only — see
+	// classroomexercise.validExerciseSortBy / validExerciseSortOrder.
+	SortBy    *string
+	SortOrder *string
+
+	Page  int64
+	Limit int64
 }
 
 // UpdatePatch is the COALESCE-style update payload. Any nil field is

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	domain "math-ai.com/math-ai/internal/domain/classroomexercise"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
@@ -98,30 +99,8 @@ func (r *ClassroomExerciseRepository) ListExercises(ctx context.Context, params 
 		params.Page = 1
 	}
 
-	var (
-		filterClause string
-		filterArgs   []any
-	)
-	if params.ClassroomID != 0 {
-		filterClause += ` AND e.classroom_id = ?`
-		filterArgs = append(filterArgs, params.ClassroomID)
-	}
-	if params.Status != nil && *params.Status != "" {
-		filterClause += ` AND e.exercise_status = ?`
-		filterArgs = append(filterArgs, *params.Status)
-	}
-	// Visibility filter: PUBLIC rows are visible to every member;
-	// PRIVATE rows are only visible to their creator. When the caller is
-	// unknown (CallerProfileID == 0) only PUBLIC rows survive, which is
-	// the safe default for any code path that forgets to set it.
-	if params.CallerProfileID != 0 {
-		filterClause += ` AND (e.visibility = ? OR e.creator_profile_id = ?)`
-		filterArgs = append(filterArgs,
-			enum.ClassroomExerciseVisibilityPublic, params.CallerProfileID)
-	} else {
-		filterClause += ` AND e.visibility = ?`
-		filterArgs = append(filterArgs, enum.ClassroomExerciseVisibilityPublic)
-	}
+	filterClause, filterArgs := buildClassroomExerciseFilter(params)
+	orderBy := buildClassroomExerciseOrderBy(params)
 
 	countArgs := append(classroomExerciseActiveArgs(), filterArgs...)
 	countQuery := `SELECT COUNT(*) FROM ` + classroomExerciseTable + ` e WHERE ` +
@@ -138,7 +117,7 @@ func (r *ClassroomExerciseRepository) ListExercises(ctx context.Context, params 
 	listArgs = append(listArgs, pg.Size, pg.Skip)
 	query := `SELECT ` + classroomExerciseColumns + ` FROM ` + classroomExerciseTable + ` e WHERE ` +
 		classroomExerciseActiveWhere + filterClause +
-		` ORDER BY e.id DESC LIMIT ? OFFSET ?`
+		` ORDER BY ` + orderBy + ` LIMIT ? OFFSET ?`
 
 	rows, err := r.db.Query(ctx, query, listArgs...)
 	if err != nil {
@@ -158,6 +137,103 @@ func (r *ClassroomExerciseRepository) ListExercises(ctx context.Context, params 
 		return nil, nil, fmt.Errorf("classroom exercise repo rows iteration: %w", err)
 	}
 	return out, pg, nil
+}
+
+// buildClassroomExerciseFilter composes the parameterised WHERE
+// fragments used by both the count and the page query in ListExercises.
+// All user-supplied values arrive as bound parameters; only the
+// fragment string itself is composed from constants. The visibility
+// access gate (PUBLIC OR creator=caller) is always applied — the
+// optional user-facing visibility filter ANDs on top, so a student
+// asking for PRIVATE rows still gets only the rows they own.
+func buildClassroomExerciseFilter(params domain.ListExercisesParams) (string, []any) {
+	var (
+		clause strings.Builder
+		args   []any
+	)
+	if params.ClassroomID != 0 {
+		clause.WriteString(` AND e.classroom_id = ?`)
+		args = append(args, params.ClassroomID)
+	}
+	if params.Status != nil && *params.Status != "" {
+		clause.WriteString(` AND e.exercise_status = ?`)
+		args = append(args, *params.Status)
+	}
+	// Visibility access gate.
+	if params.CallerProfileID != 0 {
+		clause.WriteString(` AND (e.visibility = ? OR e.creator_profile_id = ?)`)
+		args = append(args,
+			enum.ClassroomExerciseVisibilityPublic, params.CallerProfileID)
+	} else {
+		clause.WriteString(` AND e.visibility = ?`)
+		args = append(args, enum.ClassroomExerciseVisibilityPublic)
+	}
+	// Optional user-facing filters.
+	if params.Visibility != nil && *params.Visibility != "" {
+		clause.WriteString(` AND e.visibility = ?`)
+		args = append(args, *params.Visibility)
+	}
+	if params.CreatorProfileID != nil && *params.CreatorProfileID != 0 {
+		clause.WriteString(` AND e.creator_profile_id = ?`)
+		args = append(args, *params.CreatorProfileID)
+	}
+	if params.ProgramID != nil && *params.ProgramID != 0 {
+		clause.WriteString(` AND e.program_id = ?`)
+		args = append(args, *params.ProgramID)
+	}
+	if params.ChapterName != nil && *params.ChapterName != "" {
+		clause.WriteString(` AND e.chapter_name = ?`)
+		args = append(args, *params.ChapterName)
+	}
+	if params.LessonName != nil && *params.LessonName != "" {
+		clause.WriteString(` AND e.lesson_name = ?`)
+		args = append(args, *params.LessonName)
+	}
+	if params.Search != nil && *params.Search != "" {
+		pattern := "%" + escapeLikePattern(*params.Search) + "%"
+		clause.WriteString(` AND (e.title LIKE ? ESCAPE '\\' OR e.chapter_name LIKE ? ESCAPE '\\' OR e.lesson_name LIKE ? ESCAPE '\\')`)
+		args = append(args, pattern, pattern, pattern)
+	}
+	return clause.String(), args
+}
+
+// buildClassroomExerciseOrderBy maps the validated sort_by token to a
+// real column. Unknown tokens fall back to created_dt DESC so the
+// function is total — the validator is the source of truth for what's
+// "allowed" in the first place.
+func buildClassroomExerciseOrderBy(params domain.ListExercisesParams) string {
+	column := "e.create_dt"
+	if params.SortBy != nil {
+		switch *params.SortBy {
+		case "created":
+			column = "e.create_dt"
+		case "modified":
+			column = "e.modify_dt"
+		case "title":
+			column = "e.title"
+		case "start_date":
+			column = "e.start_date"
+		}
+	}
+	direction := "DESC"
+	if params.SortOrder != nil && *params.SortOrder == "asc" {
+		direction = "ASC"
+	}
+	// Stable secondary sort on e.id so equal primary keys paginate
+	// deterministically.
+	return column + " " + direction + ", e.id " + direction
+}
+
+// escapeLikePattern escapes the two LIKE wildcards plus the backslash
+// so user-supplied search text matches literally. The query uses
+// ESCAPE '\\' to make backslash the escape char.
+func escapeLikePattern(s string) string {
+	replacer := strings.NewReplacer(
+		`\`, `\\`,
+		`%`, `\%`,
+		`_`, `\_`,
+	)
+	return replacer.Replace(s)
 }
 
 func (r *ClassroomExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*domain.Exercise, error) {
