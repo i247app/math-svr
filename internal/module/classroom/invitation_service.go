@@ -264,7 +264,7 @@ func (s *Service) RejectInvitation(ctx context.Context, req *dto.RejectInvitatio
 	if err := ValidateRejectInvitation(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.InviterProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.InviteeProfileID, sessionUserID)
 	if err != nil {
 		return nil, err
 	}
