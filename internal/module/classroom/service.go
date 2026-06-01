@@ -230,6 +230,9 @@ func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, se
 
 	resp := dto.DomainToResponse(found)
 	s.populateCoverUrl(ctx, resp)
+	if err := s.hydratePendingRequestCounts(ctx, []*classroomDomain.Classroom{found}, []*dto.ClassroomResponse{resp}); err != nil {
+		return nil, err
+	}
 	return &dto.GetClassroomRes{Classroom: resp}, nil
 }
 
@@ -263,6 +266,9 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 		s.populateCoverUrl(ctx, r)
 	}
 	if err := s.hydrateOwnersAndRelationships(ctx, classrooms, responses, req.ProfileID); err != nil {
+		return nil, err
+	}
+	if err := s.hydratePendingRequestCounts(ctx, classrooms, responses); err != nil {
 		return nil, err
 	}
 	return &dto.ListClassroomsRes{
@@ -302,6 +308,9 @@ func (s *Service) ListMyJoinedClassrooms(ctx context.Context, req *dto.ListMyJoi
 		s.populateCoverUrl(ctx, r)
 	}
 	if err := s.hydrateOwnersAndRelationships(ctx, classrooms, responses, profileID); err != nil {
+		return nil, err
+	}
+	if err := s.hydratePendingRequestCounts(ctx, classrooms, responses); err != nil {
 		return nil, err
 	}
 	return &dto.ListMyJoinedClassroomsRes{
@@ -520,6 +529,35 @@ func relationshipFromMember(m *classroomDomain.Member) (enum.ClassroomRelationsh
 	default:
 		return enum.ClassroomRelationshipTypeNone, nil
 	}
+}
+
+// hydratePendingRequestCounts groups the PENDING_REQUEST member rows
+// for the given classroom ids in one round trip and writes the result
+// onto each response's PendingRequestCount field. Classrooms with zero
+// pending requests are absent from the repo map and default to 0.
+func (s *Service) hydratePendingRequestCounts(
+	ctx context.Context,
+	classrooms []*classroomDomain.Classroom,
+	responses []*dto.ClassroomResponse,
+) error {
+	if len(classrooms) == 0 || s.classroomMemberRepo == nil {
+		return nil
+	}
+	ids := make([]int64, 0, len(classrooms))
+	for _, c := range classrooms {
+		ids = append(ids, c.ClassroomId())
+	}
+	counts, err := s.classroomMemberRepo.CountPendingRequestsByClassroomIds(ctx, ids)
+	if err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	for i, c := range classrooms {
+		if responses[i] == nil {
+			continue
+		}
+		responses[i].PendingRequestCount = counts[c.ClassroomId()]
+	}
+	return nil
 }
 
 // signOwnerAvatarURL mutates the owner summary in place to add a

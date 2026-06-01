@@ -47,6 +47,7 @@ type ClassroomResponse struct {
 	MemberCount            int64                  `json:"member_count"`
 	StudentCount           int64                  `json:"student_count"`
 	TeacherCount           int64                  `json:"teacher_count"`
+	PendingRequestCount    int64                  `json:"pending_request_count"`
 	CoverKey               *string                `json:"cover_key,omitempty"`
 	CoverURL               *string                `json:"cover_url,omitempty"`
 	Note                   *string                `json:"note,omitempty"`

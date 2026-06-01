@@ -225,6 +225,42 @@ func (r *ClassroomMemberRepository) CountActiveByClassroomId(ctx context.Context
 	return n, nil
 }
 
+// CountPendingRequestsByClassroomIds groups the PENDING_REQUEST rows
+// for the given classroom ids in one round trip. Zero-count classrooms
+// are absent from the map — the service layer treats a missing key as 0.
+func (r *ClassroomMemberRepository) CountPendingRequestsByClassroomIds(ctx context.Context, classroomIds []int64) (map[int64]int64, error) {
+	if len(classroomIds) == 0 {
+		return map[int64]int64{}, nil
+	}
+	placeholders := strings.Repeat("?,", len(classroomIds))
+	placeholders = placeholders[:len(placeholders)-1]
+	query := `SELECT m.classroom_id, COUNT(*) FROM ` + classroomMemberTable + ` m WHERE ` +
+		classroomMemberActiveWhere + ` AND m.member_status = ? AND m.classroom_id IN (` + placeholders + `) GROUP BY m.classroom_id`
+	args := append(classroomMemberActiveArgs(), enum.ClassroomMemberStatusTypePendingRequest)
+	for _, id := range classroomIds {
+		args = append(args, id)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("classroom_member repo count pending requests: %w", err)
+	}
+	defer rows.Close()
+
+	out := make(map[int64]int64, len(classroomIds))
+	for rows.Next() {
+		var cid, n int64
+		if err := rows.Scan(&cid, &n); err != nil {
+			return nil, fmt.Errorf("classroom_member repo count pending requests scan: %w", err)
+		}
+		out[cid] = n
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom_member repo count pending requests iteration: %w", err)
+	}
+	return out, nil
+}
+
 func (r *ClassroomMemberRepository) Create(ctx context.Context, m *classroom.Member) (*classroom.Member, error) {
 	var joinedArg, leftArg, removedArg, lastSeenArg, inviteDtArg any
 	if m.JoinedDt().IsValid() {

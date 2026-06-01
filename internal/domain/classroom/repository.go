@@ -120,6 +120,13 @@ type IMemberRepository interface {
 	// one round trip, preventing N+1 lookups across the page.
 	ListByProfileAndClassroomIds(ctx context.Context, profileId int64, classroomIds []int64) ([]*Member, error)
 	CountActiveByClassroomId(ctx context.Context, classroomId int64) (int64, error)
+	// CountPendingRequestsByClassroomIds returns the number of
+	// member_status = PENDING_REQUEST rows per classroom for the given
+	// ids, keyed by classroom_id. Classrooms with zero pending requests
+	// are omitted from the result; callers should default missing keys
+	// to 0. Used to hydrate ClassroomResponse.PendingRequestCount on
+	// list/get endpoints in one batched round trip.
+	CountPendingRequestsByClassroomIds(ctx context.Context, classroomIds []int64) (map[int64]int64, error)
 	Create(ctx context.Context, m *Member) (*Member, error)
 	Update(ctx context.Context, m *Member) error
 	SetRole(ctx context.Context, memberId int64, role string) error
