@@ -7,6 +7,7 @@ import (
 type ProfileModel struct {
 	Id            int64
 	ProfileId     int64
+	ProfileCode   string
 	UserId        int64
 	Name          string
 	Role          string

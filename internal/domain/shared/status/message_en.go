@@ -90,6 +90,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Program id is required"
 	case PROFILE_INVALID_LANGUAGE:
 		return "Language is invalid"
+	case PROFILE_CODE_TAKEN:
+		return "Profile code is already taken"
+	case PROFILE_CODE_GENERATION_FAILED:
+		return "Could not generate a unique profile code"
 
 	// Program
 	case PROGRAM_NOT_FOUND:

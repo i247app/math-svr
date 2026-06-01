@@ -90,6 +90,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Mã chương trình học là bắt buộc"
 	case PROFILE_INVALID_LANGUAGE:
 		return "Ngôn ngữ không hợp lệ"
+	case PROFILE_CODE_TAKEN:
+		return "Mã hồ sơ đã được sử dụng"
+	case PROFILE_CODE_GENERATION_FAILED:
+		return "Không thể tạo mã hồ sơ duy nhất"
 
 	// Program
 	case PROGRAM_NOT_FOUND:

@@ -52,6 +52,8 @@ const (
 	PROFILE_INVALID_LANGUAGE         StatusCode = 4110
 	PROFILE_AVATAR_CONFLICT          StatusCode = 4111
 	PROFILE_AVATAR_INVALID_REFERENCE StatusCode = 4112
+	PROFILE_CODE_TAKEN               StatusCode = 4113
+	PROFILE_CODE_GENERATION_FAILED   StatusCode = 4114
 
 	PROGRAM_NOT_FOUND                  StatusCode = 4301
 	PROGRAM_INVALID_LANGUAGE           StatusCode = 4302

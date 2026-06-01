@@ -44,8 +44,18 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 		if err != nil {
 			return err
 		}
+		// Mint a fresh AA-1234 profile_code inside the same tx so the
+		// FindByProfileCode probe and the subsequent INSERT see one
+		// snapshot. The DB UNIQUE constraint backstops the race
+		// window; the generator retries on collision.
+		profileCode, err := mintUniqueProfileCode(ctx, repos)
+		if err != nil {
+			return err
+		}
+
 		p := BuildProfile(cmd)
 		p.SetProfileId(profileID)
+		p.SetProfileCode(profileCode)
 
 		saved, err := repos.Profile.Create(ctx, p)
 		if err != nil {

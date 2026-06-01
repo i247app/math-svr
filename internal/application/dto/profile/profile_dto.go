@@ -18,6 +18,7 @@ import (
 type ProfileResponse struct {
 	ID            int64                         `json:"id"`
 	ProfileID     int64                         `json:"profile_id"`
+	ProfileCode   string                        `json:"profile_code"`
 	UserID        int64                         `json:"user_id"`
 	Name          string                        `json:"name"`
 	Role          string                        `json:"role"`
@@ -199,6 +200,7 @@ func DomainToResponse(p *domain.Profile) *ProfileResponse {
 	return &ProfileResponse{
 		ID:            p.Id(),
 		ProfileID:     p.ProfileId(),
+		ProfileCode:   p.ProfileCode(),
 		UserID:        p.UserId(),
 		Name:          p.Name(),
 		Role:          p.Role(),

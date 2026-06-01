@@ -18,7 +18,7 @@ import (
 const (
 	profileTable = "ma_profiles"
 
-	profileColumns = `p.id, p.profile_id, p.user_id, p.name, p.role, p.avatar_key, p.dob,
+	profileColumns = `p.id, p.profile_id, p.profile_code, p.user_id, p.name, p.role, p.avatar_key, p.dob,
 		p.school_id, p.program_id, p.grade_id, p.semester_id, p.is_default,
 		p.id_type, p.teacher_id, p.student_id,
 		p.note, p.profile_status, p.status,
@@ -41,7 +41,7 @@ func NewProfileRepository(db database.Executor) profile.IRepository {
 
 func scanProfile(s database.RowScanner) (*models.ProfileModel, error) {
 	var m models.ProfileModel
-	if err := s.Scan(&m.Id, &m.ProfileId, &m.UserId, &m.Name, &m.Role, &m.AvatarKey, &m.Dob,
+	if err := s.Scan(&m.Id, &m.ProfileId, &m.ProfileCode, &m.UserId, &m.Name, &m.Role, &m.AvatarKey, &m.Dob,
 		&m.SchoolId, &m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault,
 		&m.IdType, &m.TeacherId, &m.StudentId,
 		&m.Note, &m.ProfileStatus, &m.Status,
@@ -83,6 +83,10 @@ func (r *ProfileRepository) findBareById(ctx context.Context, id int64) (*profil
 
 func (r *ProfileRepository) FindByProfileId(ctx context.Context, profileId int64) (*profile.Profile, error) {
 	return r.findOneBy(ctx, "p.profile_id = ?", profileId)
+}
+
+func (r *ProfileRepository) FindByProfileCode(ctx context.Context, profileCode string) (*profile.Profile, error) {
+	return r.findOneBy(ctx, "p.profile_code = ?", profileCode)
 }
 
 func (r *ProfileRepository) ListByUserId(ctx context.Context, userId int64) ([]*profile.Profile, error) {
@@ -249,8 +253,15 @@ func buildProfileListFilter(params *profile.ListProfilesParams) (string, []any) 
 	if params.Search != nil {
 		needle := strings.TrimSpace(*params.Search)
 		if needle != "" {
-			clause.WriteString(` AND p.name LIKE ?`)
-			args = append(args, "%"+needle+"%")
+			// OR'd LIKE on name + profile_code so a single needle
+			// covers partial names, partial codes, and full codes
+			// uniformly. utf8mb4_0900_ai_ci makes both predicates
+			// case-insensitive without an UPPER() wrap. Args are
+			// bound positionally — same wildcarded value twice keeps
+			// the planner's choice opaque to the caller.
+			clause.WriteString(` AND (p.name LIKE ? OR p.profile_code LIKE ?)`)
+			wildcard := "%" + needle + "%"
+			args = append(args, wildcard, wildcard)
 		}
 	}
 	return clause.String(), args
@@ -288,13 +299,13 @@ func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId i
 func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*profile.Profile, error) {
 	query := `
 		INSERT INTO ` + profileTable + `
-			(profile_id, user_id, name, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default,
+			(profile_id, profile_code, user_id, name, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default,
 			 id_type, teacher_id, student_id, note, profile_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
-		p.ProfileId(), p.UserId(), p.Name(), p.Role(), p.AvatarKey(), p.Dob(),
+		p.ProfileId(), p.ProfileCode(), p.UserId(), p.Name(), p.Role(), p.AvatarKey(), p.Dob(),
 		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(),
 		p.IdType(), p.TeacherId(), p.StudentId(), p.Note(), p.ProfileStatus())
 	if err != nil {
@@ -463,6 +474,7 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p := profile.NewProfile()
 	p.SetId(m.Id)
 	p.SetProfileId(m.ProfileId)
+	p.SetProfileCode(m.ProfileCode)
 	p.SetUserId(m.UserId)
 	p.SetName(m.Name)
 	p.SetRole(m.Role)

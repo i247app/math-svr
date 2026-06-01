@@ -8,9 +8,11 @@ import (
 
 // ListProfilesParams narrows the listing query. Every filter is optional:
 // when all are zero/nil the list returns every active profile, paginated.
-// Search matches case-insensitively against name (LIKE %?%). IsDefault is
-// a pointer so callers can distinguish "filter to is_default=false" from
-// "no filter".
+// Search matches case-insensitively against BOTH p.name and p.profile_code
+// (LIKE %?% on each, OR'd together) so a single client-supplied needle
+// covers full-code, partial-code, and name-fragment lookups uniformly.
+// IsDefault is a pointer so callers can distinguish "filter to
+// is_default=false" from "no filter".
 type ListProfilesParams struct {
 	UserId        *int64
 	Role          *string
@@ -31,6 +33,12 @@ type ListProfilesParams struct {
 // COALESCE on every other column.
 type IRepository interface {
 	FindByProfileId(ctx context.Context, profileId int64) (*Profile, error)
+	// FindByProfileCode looks up by the human-readable code (e.g.
+	// "AA-1234"). Used by the create command to probe for uniqueness
+	// before insert so a colliding code surfaces PROFILE_CODE_TAKEN
+	// rather than a raw constraint error. Returns (nil, nil) when no
+	// active row matches.
+	FindByProfileCode(ctx context.Context, profileCode string) (*Profile, error)
 	ListByProfileIds(ctx context.Context, profileIds []int64) ([]*Profile, error)
 	ListByUserId(ctx context.Context, userId int64) ([]*Profile, error)
 	ListProfiles(ctx context.Context, params *ListProfilesParams) ([]*Profile, *pagination.Pagination, error)

@@ -11,6 +11,7 @@ import (
 type Profile struct {
 	id            int64
 	profileId     int64
+	profileCode   string
 	userId        int64
 	name          string
 	role          string
@@ -51,6 +52,17 @@ func (p *Profile) ProfileId() int64 {
 
 func (p *Profile) SetProfileId(profileId int64) {
 	p.profileId = profileId
+}
+
+// ProfileCode is the human-readable id (e.g. "AA-1234") minted at
+// create time and unique across ma_profiles. Used by clients for
+// display + search alongside the numeric profile_id.
+func (p *Profile) ProfileCode() string {
+	return p.profileCode
+}
+
+func (p *Profile) SetProfileCode(code string) {
+	p.profileCode = code
 }
 
 func (p *Profile) UserId() int64 {
