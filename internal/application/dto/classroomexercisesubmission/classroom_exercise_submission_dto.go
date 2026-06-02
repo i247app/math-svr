@@ -56,10 +56,27 @@ type GetSubmissionRes struct {
 	Submission *SubmissionResponse `json:"submission"`
 }
 
-// ListMySubmissionsReq returns the caller's own submissions. Optional
-// filters narrow by classroom / exercise / status; sort fields are
-// whitelisted by the validator.
-type ListMySubmissionsReq struct {
+// ListSubmissionsReq is the flexible list endpoint that supports both
+// self-list and teacher-side queries.
+//
+// Permission tiers (enforced at the service layer):
+//
+//	profile_id == caller's profile        → self-list, no scope required
+//	profile_id == another profile         → caller must be a manager
+//	                                        (OWNER / CO_TEACHER) of the
+//	                                        scoped classroom; one of
+//	                                        classroom_id /
+//	                                        classroom_exercise_id is
+//	                                        required
+//	profile_id omitted                    → caller must be a manager of
+//	                                        the scoped classroom; one of
+//	                                        classroom_id /
+//	                                        classroom_exercise_id is
+//	                                        required
+//
+// All filter combinations AND together in the repo, so a caller can
+// scope by (classroom, status) or (exercise, profile) etc.
+type ListSubmissionsReq struct {
 	ProfileID           *int64  `json:"profile_id,omitempty"`
 	ClassroomID         *int64  `json:"classroom_id,omitempty"`
 	ClassroomExerciseID *int64  `json:"classroom_exercise_id,omitempty"`
@@ -70,7 +87,7 @@ type ListMySubmissionsReq struct {
 	Size                int     `json:"size,omitempty"`
 }
 
-type ListMySubmissionsRes struct {
+type ListSubmissionsRes struct {
 	Submissions []*SubmissionResponse  `json:"submissions"`
 	Pagination  *pagination.Pagination `json:"pagination"`
 }

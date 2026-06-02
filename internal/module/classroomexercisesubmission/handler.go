@@ -82,9 +82,12 @@ func (h *ClassroomExerciseSubmissionHandler) HandleGetSubmission(w http.Response
 	response.WriteJson(w, res, nil)
 }
 
-// POST /classroom-exercise-submissions/my-list
-func (h *ClassroomExerciseSubmissionHandler) HandleListMySubmissions(w http.ResponseWriter, r *http.Request) {
-	var req dto.ListMySubmissionsReq
+// POST /classroom-exercise-submissions/list
+//
+// Flexible list endpoint. profile_id is optional — see
+// dto.ListSubmissionsReq for the full permission matrix.
+func (h *ClassroomExerciseSubmissionHandler) HandleListSubmissions(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListSubmissionsReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -94,7 +97,7 @@ func (h *ClassroomExerciseSubmissionHandler) HandleListMySubmissions(w http.Resp
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.svc.ListMySubmissions(r.Context(), &req, uid)
+	res, err := h.svc.ListSubmissions(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

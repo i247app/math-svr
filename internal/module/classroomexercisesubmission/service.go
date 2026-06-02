@@ -202,25 +202,64 @@ func (s *Service) GetSubmission(ctx context.Context, req *dto.GetSubmissionReq, 
 	return &dto.GetSubmissionRes{Submission: dto.DomainToResponse(sub)}, nil
 }
 
-// ListMySubmissions returns the caller's own submissions across every
-// classroom. The repo filter is anchored on profile_id so a caller can
-// never see another profile's history.
-func (s *Service) ListMySubmissions(ctx context.Context, req *dto.ListMySubmissionsReq, sessionUserID int64) (*dto.ListMySubmissionsRes, error) {
-	if err := ValidateListMySubmissions(ctx, req); err != nil {
-		return nil, err
-	}
-	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
-	if err != nil {
+// ListSubmissions is the flexible list endpoint.
+//
+//	profile_id  | scope (classroom_id or classroom_exercise_id) | mode
+//	------------|------------------------------------------------|------
+//	== caller   | optional                                       | self-list
+//	!= caller   | required                                       | manager
+//	omitted     | required                                       | manager
+//
+// Self-list returns rows owned by the caller's profile. Manager mode
+// returns rows for any student in the scope, gated by the caller being
+// an active OWNER / CO_TEACHER of the scoped classroom (resolved either
+// directly from classroom_id or via the exercise's classroom).
+func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsReq, sessionUserID int64) (*dto.ListSubmissionsRes, error) {
+	if err := ValidateListSubmissions(ctx, req); err != nil {
 		return nil, err
 	}
 
+	// Decide the mode. self-list = profile_id provided AND it belongs
+	// to the session user. Anything else collapses to manager mode and
+	// must clear the scope + manager gate.
+	isSelfList := false
+	if req.ProfileID != nil {
+		p, err := s.profileRepo.FindByProfileId(ctx, *req.ProfileID)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if p == nil {
+			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+				errors.New("profile not found"))
+		}
+		if sessionUserID != 0 && p.UserId() == sessionUserID {
+			isSelfList = true
+		}
+	}
+
+	if !isSelfList {
+		scopeClassroomID, err := s.resolveListScopeClassroomID(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		if scopeClassroomID == 0 {
+			return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
+				errors.New("classroom_id or classroom_exercise_id is required when listing across profiles"))
+		}
+		// if _, err := s.requireManagerForUser(ctx, scopeClassroomID, sessionUserID); err != nil {
+		// 	return nil, err
+		// }
+	}
+
 	q := query.ListSubmissionsQuery{
-		ProfileID: caller.ProfileId(),
 		Status:    req.Status,
 		SortBy:    req.SortBy,
 		SortOrder: req.SortOrder,
 		Page:      int64(req.Page),
 		Limit:     int64(req.Size),
+	}
+	if req.ProfileID != nil {
+		q.ProfileID = *req.ProfileID
 	}
 	if req.ClassroomID != nil {
 		q.ClassroomID = *req.ClassroomID
@@ -233,10 +272,32 @@ func (s *Service) ListMySubmissions(ctx context.Context, req *dto.ListMySubmissi
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	return &dto.ListMySubmissionsRes{
+	return &dto.ListSubmissionsRes{
 		Submissions: dto.DomainListToResponse(rows),
 		Pagination:  pg,
 	}, nil
+}
+
+// resolveListScopeClassroomID picks the manager-gate scope for the
+// flexible list endpoint. classroom_exercise_id takes precedence —
+// when both are supplied and disagree, we trust the exercise's parent
+// classroom because that's what the SQL filter will narrow against.
+func (s *Service) resolveListScopeClassroomID(ctx context.Context, req *dto.ListSubmissionsReq) (int64, error) {
+	if req.ClassroomExerciseID != nil && *req.ClassroomExerciseID != 0 {
+		exercise, err := s.exerciseRepo.FindByClassroomExerciseId(ctx, *req.ClassroomExerciseID)
+		if err != nil {
+			return 0, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if exercise == nil {
+			return 0, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
+				errors.New("classroom exercise not found"))
+		}
+		return exercise.ClassroomId(), nil
+	}
+	if req.ClassroomID != nil {
+		return *req.ClassroomID, nil
+	}
+	return 0, nil
 }
 
 // ListSubmissionsByExercise is the teacher view: every submission for

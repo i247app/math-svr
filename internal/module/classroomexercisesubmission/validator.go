@@ -83,9 +83,16 @@ func ValidateGetSubmission(ctx context.Context, req *dto.GetSubmissionReq) error
 	return nil
 }
 
-func ValidateListMySubmissions(ctx context.Context, req *dto.ListMySubmissionsReq) error {
+// ValidateListSubmissions normalises the shared list filters but does
+// NOT enforce the profile / scope permission rules — that logic lives
+// in the service layer because it needs to resolve the acting profile
+// and load the parent classroom for the manager check.
+func ValidateListSubmissions(ctx context.Context, req *dto.ListSubmissionsReq) error {
 	if req == nil {
 		return errs.NewError(ctx, status.FAIL, nil, errors.New("nil request"))
+	}
+	if req.ProfileID != nil && *req.ProfileID == 0 {
+		req.ProfileID = nil
 	}
 	if req.ClassroomID != nil && *req.ClassroomID == 0 {
 		req.ClassroomID = nil

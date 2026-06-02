@@ -91,6 +91,7 @@ TASK:
 
 OUTPUT RULES:
 - Return ONLY the JSON object below — no prose, no markdown fences.
+- ai_review must be <= 200 characters, mention one strength and one concrete area to improve. No newlines.
 
 SCHEMA:
 {

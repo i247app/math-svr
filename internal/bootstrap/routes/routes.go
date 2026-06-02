@@ -203,11 +203,11 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		// classroom exercise submissions — student submit + history,
 		// teacher roster + soft-delete. Every route is auth-gated.
 		submissionHandler := classroomexercisesubmission.NewClassroomExerciseSubmissionHandler(res, services.ClassroomExerciseSubmissionSvc)
-		gexSvr.AddRoute("POST /classroom-exercise-submissions/submit", submissionHandler.HandleSubmitExerciseAnswers, authMiddleware)
-		gexSvr.AddRoute("GET  /classroom-exercise-submissions/{id}", submissionHandler.HandleGetSubmission, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercise-submissions/my-list", submissionHandler.HandleListMySubmissions, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercise-submissions/by-exercise", submissionHandler.HandleListSubmissionsByExercise, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercise-submissions/soft-delete", submissionHandler.HandleSoftDeleteSubmission, authMiddleware)
+		gexSvr.AddRoute("POST /classroom-exercise/submissions/submit", submissionHandler.HandleSubmitExerciseAnswers, authMiddleware)
+		gexSvr.AddRoute("GET  /classroom-exercise/submissions/{id}", submissionHandler.HandleGetSubmission, authMiddleware)
+		gexSvr.AddRoute("POST /classroom-exercise/submissions/list", submissionHandler.HandleListSubmissions, authMiddleware)
+		gexSvr.AddRoute("POST /classroom-exercise/submissions/by-exercise", submissionHandler.HandleListSubmissionsByExercise, authMiddleware)
+		gexSvr.AddRoute("POST /classroom-exercise/submissions/soft-delete", submissionHandler.HandleSoftDeleteSubmission, authMiddleware)
 	}
 
 	// health routes

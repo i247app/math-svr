@@ -85,6 +85,39 @@ func (s *Service) requireManager(ctx context.Context, classroomID, profileID int
 	}
 }
 
+// requireManagerForUser is the user-scoped counterpart to requireManager:
+// the caller is identified only by sessionUserID (no specific profile
+// has been claimed), so we walk every profile owned by the user and
+// allow if ANY of them is an active OWNER / CO_TEACHER of the target
+// classroom. Used by the flexible list endpoint where the caller may
+// omit profile_id entirely and still need a manager gate. Returns the
+// matching member row.
+func (s *Service) requireManagerForUser(ctx context.Context, classroomID, sessionUserID int64) (*classroomDomain.Member, error) {
+	if sessionUserID == 0 {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
+			errors.New("session is required"))
+	}
+	profiles, err := s.profileRepo.ListByUserId(ctx, sessionUserID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	for _, p := range profiles {
+		m, err := s.classroomMemberRepo.FindByClassroomAndProfile(ctx, classroomID, p.ProfileId())
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if m == nil || m.MemberStatus() == nil ||
+			*m.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
+			continue
+		}
+		if isManagerRole(m) {
+			return m, nil
+		}
+	}
+	return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
+		errors.New("manager role required"))
+}
+
 // isManagerRole returns true when the caller is OWNER or CO_TEACHER —
 // used to decide whether the manager-only read path is allowed for a
 // given submission.
