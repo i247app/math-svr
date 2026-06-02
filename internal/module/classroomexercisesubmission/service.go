@@ -8,7 +8,7 @@ import (
 	"time"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
-	// "math-ai.com/math-ai/internal/adapter/storage"
+	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/classroomexercisesubmission"
 	dto "math-ai.com/math-ai/internal/application/dto/classroomexercisesubmission"
 	query "math-ai.com/math-ai/internal/application/query/classroomexercisesubmission"
@@ -41,6 +41,7 @@ type Service struct {
 	exerciseRepo        exerciseDomain.IRepository
 	classroomMemberRepo classroomDomain.IMemberRepository
 	profileRepo         profileDomain.IRepository
+	storageProvider     *storage.Adapter
 	bot                 *botClient
 }
 
@@ -51,6 +52,7 @@ func NewService(
 	exerciseRepo exerciseDomain.IRepository,
 	classroomMemberRepo classroomDomain.IMemberRepository,
 	profileRepo profileDomain.IRepository,
+	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
 		getSubmissionQuery:   query.NewGetSubmissionByIdQueryHandler(submissionRepo),
@@ -61,6 +63,7 @@ func NewService(
 		exerciseRepo:         exerciseRepo,
 		classroomMemberRepo:  classroomMemberRepo,
 		profileRepo:          profileRepo,
+		storageProvider:      storageProvider,
 		bot:                  newBotClient(botAdp),
 	}
 }
@@ -204,7 +207,11 @@ func (s *Service) GetSubmission(ctx context.Context, req *dto.GetSubmissionReq, 
 	if err := s.authorizeSubmissionRead(ctx, sub, caller.ProfileId()); err != nil {
 		return nil, err
 	}
-	return &dto.GetSubmissionRes{Submission: dto.DomainToResponse(sub)}, nil
+	resp := dto.DomainToResponse(sub)
+	if err := s.hydrateSubmissions(ctx, []*domain.Submission{sub}, []*dto.SubmissionResponse{resp}); err != nil {
+		return nil, err
+	}
+	return &dto.GetSubmissionRes{Submission: resp}, nil
 }
 
 // ListSubmissions is the flexible list endpoint.
@@ -279,7 +286,9 @@ func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsR
 	}
 
 	responses := dto.DomainListToResponse(rows)
-
+	if err := s.hydrateSubmissions(ctx, rows, responses); err != nil {
+		return nil, err
+	}
 	return &dto.ListSubmissionsRes{
 		Submissions: responses,
 		Pagination:  pg,
@@ -342,8 +351,12 @@ func (s *Service) ListSubmissionsByExercise(ctx context.Context, req *dto.ListSu
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
+	responses := dto.DomainListToResponse(rows)
+	if err := s.hydrateSubmissions(ctx, rows, responses); err != nil {
+		return nil, err
+	}
 	return &dto.ListSubmissionsByExerciseRes{
-		Submissions: dto.DomainListToResponse(rows),
+		Submissions: responses,
 		Pagination:  pg,
 	}, nil
 }
@@ -436,4 +449,114 @@ func enforceSubmissionWindow(ctx context.Context, e *exerciseDomain.Exercise) er
 			errors.New("You can not submit after end time"))
 	}
 	return nil
+}
+
+// hydrateSubmissions attaches the slim ExerciseSummary and
+// ProfileSummary blocks to each response. Two batched lookups per page
+// (one ma_classroom_exercises IN-query, one ma_profiles IN-query); the
+// cost is independent of page size so N+1 is structurally impossible.
+// Missing rows (deleted exercise / profile under a submission) leave
+// the corresponding field nil so the rest of the row still renders.
+func (s *Service) hydrateSubmissions(
+	ctx context.Context,
+	rows []*domain.Submission,
+	responses []*dto.SubmissionResponse,
+) error {
+	if len(rows) == 0 {
+		return nil
+	}
+
+	exerciseIDSet := make(map[int64]struct{}, len(rows))
+	profileIDSet := make(map[int64]struct{}, len(rows))
+	for _, r := range rows {
+		exerciseIDSet[r.ClassroomExerciseId()] = struct{}{}
+		profileIDSet[r.ProfileId()] = struct{}{}
+	}
+	exerciseIDs := make([]int64, 0, len(exerciseIDSet))
+	for id := range exerciseIDSet {
+		exerciseIDs = append(exerciseIDs, id)
+	}
+	profileIDs := make([]int64, 0, len(profileIDSet))
+	for id := range profileIDSet {
+		profileIDs = append(profileIDs, id)
+	}
+
+	exerciseSummaries := make(map[int64]*dto.SubmissionExerciseSummary, len(exerciseIDs))
+	if s.exerciseRepo != nil && len(exerciseIDs) > 0 {
+		exercises, err := s.exerciseRepo.ListByClassroomExerciseIds(ctx, exerciseIDs)
+		if err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		for _, e := range exercises {
+			summary := &dto.SubmissionExerciseSummary{
+				ClassroomExerciseID: e.ClassroomExerciseId(),
+				ClassroomID:         e.ClassroomId(),
+				CreatorProfileID:    e.CreatorProfileId(),
+				Visibility:          e.Visibility(),
+				Title:               e.Title(),
+				Description:         e.Description(),
+				ChapterName:         e.ChapterName(),
+				LessonName:          e.LessonName(),
+				TotalQuestions:      e.TotalQuestions(),
+				ExerciseStatus:      e.ExerciseStatus(),
+			}
+			if e.StartDate().IsValid() {
+				summary.StartDate = e.StartDate().String()
+			}
+			if e.EndDate().IsValid() {
+				summary.EndDate = e.EndDate().String()
+			}
+			exerciseSummaries[e.ClassroomExerciseId()] = summary
+		}
+	}
+
+	profileSummaries := make(map[int64]*dto.SubmissionProfileSummary, len(profileIDs))
+	if s.profileRepo != nil && len(profileIDs) > 0 {
+		profiles, err := s.profileRepo.ListByProfileIds(ctx, profileIDs)
+		if err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		for _, p := range profiles {
+			summary := &dto.SubmissionProfileSummary{
+				ProfileID: p.ProfileId(),
+				Name:      p.Name(),
+				Role:      p.Role(),
+				AvatarKey: p.AvatarKey(),
+			}
+			s.signSubmissionAvatarURL(ctx, summary)
+			profileSummaries[p.ProfileId()] = summary
+		}
+	}
+
+	for i, r := range rows {
+		if responses[i] == nil {
+			continue
+		}
+		if summary, ok := exerciseSummaries[r.ClassroomExerciseId()]; ok {
+			responses[i].ClassroomExercise = summary
+		}
+		if summary, ok := profileSummaries[r.ProfileId()]; ok {
+			responses[i].Profile = summary
+		}
+	}
+	return nil
+}
+
+// signSubmissionAvatarURL mirrors signOwnerAvatarURL from the classroom
+// module — presigns a short-lived URL for the profile avatar_key when
+// storage is configured. No-op when storage is disabled or the profile
+// has no avatar.
+func (s *Service) signSubmissionAvatarURL(ctx context.Context, summary *dto.SubmissionProfileSummary) {
+	if summary == nil || s.storageProvider == nil || summary.AvatarKey == nil || *summary.AvatarKey == "" {
+		return
+	}
+	url, err := s.storageProvider.CreatePresignedUrl(ctx, &storage.CreatePresignedUrlRequest{
+		Key:        *summary.AvatarKey,
+		Expiration: avatarUrlTTL,
+	})
+	if err != nil {
+		logger.From(ctx).Warnf("classroom_exercise_submission.profile_avatar presign failed profile_id=%d err=%v", summary.ProfileID, err)
+		return
+	}
+	summary.AvatarURL = &url
 }

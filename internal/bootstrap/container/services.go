@@ -148,6 +148,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ClassroomExerciseRepository,
 		repos.ClassroomMemberRepository,
 		repos.ProfileRepository,
+		res.StorageProvider,
 	)
 
 	return &ServiceContainer{
