@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -60,7 +59,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 			if existByPhone != nil {
 				return errs.NewError(ctx, status.USER_PHONE_ALREADY_EXISTS, nil,
-					errors.New("phone already exists"))
+					ErrPhoneAlreadyExists)
 			}
 		}
 
@@ -71,7 +70,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 			if existByUserName != nil {
 				return errs.NewError(ctx, status.USER_USERNAME_ALREADY_EXISTS, nil,
-					errors.New("username already exists"))
+					ErrUsernameAlreadyExists)
 			}
 		}
 

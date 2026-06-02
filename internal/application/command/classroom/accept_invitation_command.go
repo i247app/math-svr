@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
@@ -42,16 +41,16 @@ func (h *AcceptInvitationCommandHandler) Handle(ctx context.Context, cmd AcceptI
 		}
 		if c == nil {
 			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
-				errors.New("classroom not found"))
+				ErrClassroomNotFound)
 		}
 		if c.ClassroomStatus() != nil &&
 			*c.ClassroomStatus() == string(enum.ClassroomStatusTypeArchived) {
 			return errs.NewError(ctx, status.CLASSROOM_ALREADY_ARCHIVED, nil,
-				errors.New("classroom is archived"))
+				ErrClassroomArchived)
 		}
 		if c.MaxMembers() != nil && c.MemberCount() >= *c.MaxMembers() {
 			return errs.NewError(ctx, status.CLASSROOM_MAX_MEMBERS_REACHED, nil,
-				errors.New("classroom is full"))
+				ErrClassroomFull)
 		}
 
 		existing, err := repos.ClassroomMember.FindByClassroomAndProfileAndInvitedBy(ctx, cmd.ClassroomID, cmd.InviteeProfileID, cmd.InviterProfileID)
@@ -60,7 +59,7 @@ func (h *AcceptInvitationCommandHandler) Handle(ctx context.Context, cmd AcceptI
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.CLASSROOM_INVITATION_NOT_FOUND, nil,
-				errors.New("invitation not found"))
+				ErrInvitationNotFound)
 		}
 		currentStatus := ""
 		if existing.MemberStatus() != nil {
@@ -68,7 +67,7 @@ func (h *AcceptInvitationCommandHandler) Handle(ctx context.Context, cmd AcceptI
 		}
 		if currentStatus != string(enum.ClassroomMemberStatusTypePendingInvitation) {
 			return errs.NewError(ctx, status.CLASSROOM_INVITATION_NOT_PENDING, nil,
-				errors.New("invitation is not pending"))
+				ErrInvitationNotPending)
 		}
 
 		if err := repos.ClassroomMember.Activate(ctx, existing.MemberId()); err != nil {

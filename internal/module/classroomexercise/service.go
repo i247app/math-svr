@@ -3,7 +3,6 @@ package classroomexercise
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
@@ -97,7 +96,7 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 	}
 	if classroom == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
-			errors.New("classroom not found"))
+			ErrClassroomNotFound)
 	}
 
 	programID, err := s.resolveExerciseProgram(ctx, req.ClassroomID, req.ProgramID)
@@ -195,7 +194,7 @@ func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq
 	}
 	if existing == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
-			errors.New("classroom exercise not found"))
+			ErrClassroomExerciseNotFound)
 	}
 	if _, err := s.requireManager(ctx, existing.ClassroomId(), caller.ProfileId()); err != nil {
 		return nil, err
@@ -237,7 +236,7 @@ func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sess
 	}
 	if exercise == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
-			errors.New("classroom exercise not found"))
+			ErrClassroomExerciseNotFound)
 	}
 
 	// caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
@@ -310,7 +309,7 @@ func (s *Service) SoftDeleteExercise(ctx context.Context, req *dto.DeleteExercis
 	}
 	if existing == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
-			errors.New("classroom exercise not found"))
+			ErrClassroomExerciseNotFound)
 	}
 	if _, err := s.requireManager(ctx, existing.ClassroomId(), caller.ProfileId()); err != nil {
 		return nil, err
@@ -340,7 +339,7 @@ func (s *Service) resolveCaller(ctx context.Context, profileID *int64, sessionUs
 	// No ProfileID supplied — require the session and look up by user.
 	if sessionUserID == 0 {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	profiles, err := s.profileRepo.ListByUserId(ctx, sessionUserID)
 	if err != nil {
@@ -350,7 +349,7 @@ func (s *Service) resolveCaller(ctx context.Context, profileID *int64, sessionUs
 		return profiles[0], nil
 	}
 	return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
-		errors.New("profile_id is required when the user owns multiple profiles"))
+		ErrProfileIDRequiredMultiProfile)
 }
 
 // resolveExerciseProgram verifies the supplied program belongs to the
@@ -371,7 +370,7 @@ func (s *Service) resolveExerciseProgram(ctx context.Context, classroomID int64,
 		}
 	}
 	return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PROGRAM_NOT_IN_CLASSROOM, nil,
-		errors.New("program is not associated with this classroom"))
+		ErrProgramNotAssociated)
 }
 
 // resolveCurriculumLabels best-effort hydrates grade + program labels

@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
@@ -49,7 +48,7 @@ func (h *UpdateProfileCommandHandler) Handle(ctx context.Context, cmd UpdateProf
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-				errors.New("profile not found"))
+				ErrProfileNotFound)
 		}
 
 		patch := BuildUpdateProfile(cmd)

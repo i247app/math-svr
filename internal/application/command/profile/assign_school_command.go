@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
@@ -37,7 +36,7 @@ func (h *AssignSchoolCommandHandler) Handle(ctx context.Context, cmd AssignSchoo
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-				errors.New("profile not found"))
+				ErrProfileNotFound)
 		}
 
 		school, err := repos.School.FindBySchoolId(ctx, cmd.SchoolID)
@@ -46,7 +45,7 @@ func (h *AssignSchoolCommandHandler) Handle(ctx context.Context, cmd AssignSchoo
 		}
 		if school == nil {
 			return errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil,
-				errors.New("school not found"))
+				ErrSchoolNotFound)
 		}
 
 		schoolID := cmd.SchoolID

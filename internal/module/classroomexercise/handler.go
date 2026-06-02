@@ -2,7 +2,6 @@ package classroomexercise
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	dto "math-ai.com/math-ai/internal/application/dto/classroomexercise"
@@ -34,7 +33,7 @@ func (h *ClassroomExerciseHandler) sessionUID(r *http.Request) (int64, error) {
 	uid, ok := sess.UID()
 	if !ok {
 		return 0, errs.NewError(r.Context(), status.UNAUTHORIZED, nil,
-			errors.New("uid not found from session"))
+			ErrUIDNotFoundFromSession)
 	}
 	return uid, nil
 }

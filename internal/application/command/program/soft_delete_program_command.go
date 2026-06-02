@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -34,7 +33,7 @@ func (h *SoftDeleteProgramCommandHandler) Handle(ctx context.Context, cmd SoftDe
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.PROGRAM_NOT_FOUND, nil,
-				errors.New("program not found"))
+				ErrProgramNotFound)
 		}
 
 		if err := repos.ProgramTranslation.SoftDeleteByProgramId(ctx, cmd.ProgramID); err != nil {

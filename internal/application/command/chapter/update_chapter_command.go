@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -51,7 +50,7 @@ func (h *UpdateChapterCommandHandler) Handle(ctx context.Context, cmd UpdateChap
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.CHAPTER_NOT_FOUND, nil,
-				errors.New("chapter not found"))
+				ErrChapterNotFound)
 		}
 
 		patched := chapter.NewChapter()
@@ -91,12 +90,12 @@ func (h *UpdateChapterCommandHandler) Handle(ctx context.Context, cmd UpdateChap
 			lang := strings.ToLower(strings.TrimSpace(in.Language))
 			if lang == "" {
 				return errs.NewError(ctx, status.CHAPTER_INVALID_TRANSLATION, nil,
-					errors.New("translation language is required"))
+					ErrTranslationLanguageRequired)
 			}
 			if _, dup := seen[lang]; dup {
 				return errs.NewError(ctx, status.CHAPTER_TRANSLATION_ALREADY_EXISTS,
 					map[string]any{"language": lang},
-					errors.New("duplicate translation language in payload"))
+					ErrDuplicateTranslationLanguage)
 			}
 			seen[lang] = struct{}{}
 
@@ -141,7 +140,7 @@ func (h *UpdateChapterCommandHandler) Handle(ctx context.Context, cmd UpdateChap
 		}
 		if refreshed == nil {
 			return errs.NewError(ctx, status.CHAPTER_NOT_FOUND, nil,
-				errors.New("chapter not found after update"))
+				ErrChapterNotFoundAfterUpdate)
 		}
 		translations, err := repos.ChapterTranslation.ListByChapterId(ctx, cmd.ChapterID)
 		if err != nil {

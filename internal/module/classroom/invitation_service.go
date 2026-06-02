@@ -2,7 +2,6 @@ package classroom
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/classroom"
@@ -57,7 +56,7 @@ func (s *Service) SendInvitation(ctx context.Context, req *dto.SendInvitationReq
 			return nil, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if profileExists == nil {
-			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, errors.New("profile not found"))
+			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
 		}
 
 		targets = append(targets, command.SendInvitationTarget{

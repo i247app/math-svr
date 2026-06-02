@@ -2,7 +2,6 @@ package classroom
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"time"
 
@@ -26,31 +25,31 @@ const (
 func ValidateCreateClassroom(ctx context.Context, req *dto.CreateClassroomReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if strings.TrimSpace(req.Name) == "" {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_NAME, nil,
-			errors.New("name is required"))
+			ErrNameRequired)
 	}
 	if len(req.Name) > nameMaxLen {
 		return errs.NewError(ctx, status.CLASSROOM_NAME_TOO_LONG, nil,
-			errors.New("name too long"))
+			ErrNameTooLong)
 	}
 	if req.Description != nil && len(*req.Description) > descriptionMaxLen {
 		return errs.NewError(ctx, status.CLASSROOM_DESCRIPTION_TOO_LONG, nil,
-			errors.New("description too long"))
+			ErrDescriptionTooLong)
 	}
 	if req.CoverKey != nil && len(*req.CoverKey) > coverKeyMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("cover_key too long"))
+			ErrCoverKeyTooLong)
 	}
 	if req.Note != nil && len(*req.Note) > noteMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("note too long"))
+			ErrNoteTooLong)
 	}
 	if req.MaxMembers != nil && *req.MaxMembers <= 0 {
 		return errs.NewError(ctx, status.CLASSROOM_INVALID_MAX_MEMBERS, nil,
-			errors.New("max_members must be > 0"))
+			ErrMaxMembersInvalid)
 	}
 	if normalized, err := normalizeProgramIDList(ctx, req.ProgramIDs); err != nil {
 		return err
@@ -65,14 +64,14 @@ func ValidateCreateClassroom(ctx context.Context, req *dto.CreateClassroomReq) e
 			req.ClassroomCode = nil
 		} else if len(code) > classroomCodeMaxLen {
 			return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
-				errors.New("classroom_code too long"))
+				ErrClassroomCodeTooLong)
 		} else {
 			req.ClassroomCode = &code
 		}
 	}
 	if req.ClassroomCodeExpiresDt.IsValid() && req.ClassroomCodeExpiresDt.Time.Before(time.Now()) {
 		return errs.NewError(ctx, status.CLASSROOM_CODE_EXPIRED, nil,
-			errors.New("classroom_code_expires_dt must be in the future"))
+			ErrClassroomCodeExpiresMustBeFuture)
 	}
 	return nil
 }
@@ -80,37 +79,37 @@ func ValidateCreateClassroom(ctx context.Context, req *dto.CreateClassroomReq) e
 func ValidateUpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	if req.Name != nil {
 		if strings.TrimSpace(*req.Name) == "" {
 			return errs.NewError(ctx, status.CLASSROOM_MISSING_NAME, nil,
-				errors.New("name cannot be blank"))
+				ErrNameBlank)
 		}
 		if len(*req.Name) > nameMaxLen {
 			return errs.NewError(ctx, status.CLASSROOM_NAME_TOO_LONG, nil,
-				errors.New("name too long"))
+				ErrNameTooLong)
 		}
 	}
 	if req.Description != nil && len(*req.Description) > descriptionMaxLen {
 		return errs.NewError(ctx, status.CLASSROOM_DESCRIPTION_TOO_LONG, nil,
-			errors.New("description too long"))
+			ErrDescriptionTooLong)
 	}
 	if req.AvatarKey != nil && len(*req.AvatarKey) > coverKeyMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("cover_key too long"))
+			ErrCoverKeyTooLong)
 	}
 	if req.Note != nil && len(*req.Note) > noteMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("note too long"))
+			ErrNoteTooLong)
 	}
 	if req.MaxMembers != nil && *req.MaxMembers <= 0 {
 		return errs.NewError(ctx, status.CLASSROOM_INVALID_MAX_MEMBERS, nil,
-			errors.New("max_members must be > 0"))
+			ErrMaxMembersInvalid)
 	}
 	if req.ProgramIDs != nil {
 		normalized, err := normalizeProgramIDList(ctx, *req.ProgramIDs)
@@ -135,7 +134,7 @@ func ValidateUpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq) e
 func ValidateGetClassroom(ctx context.Context, req *dto.GetClassroomReq) error {
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	return nil
 }
@@ -143,7 +142,7 @@ func ValidateGetClassroom(ctx context.Context, req *dto.GetClassroomReq) error {
 func ValidateListClassrooms(ctx context.Context, req *dto.ListClassroomsReq) error {
 	// if req.ProfileID == 0 {
 	// 	return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-	// 		errors.New("profile_id is required"))
+	// 		ErrProfileIDRequired)
 	// }
 	// Collapse blank optional filters to nil so the repo skips the predicate.
 	if req.OwnerProfileID != nil && *req.OwnerProfileID == 0 {
@@ -180,7 +179,7 @@ func ValidateListClassrooms(ctx context.Context, req *dto.ListClassroomsReq) err
 			req.Search = nil
 		} else if len(s) > searchMaxLen {
 			return errs.NewError(ctx, status.FAIL, nil,
-				errors.New("search too long"))
+				ErrSearchTooLong)
 		}
 	}
 	return nil
@@ -192,7 +191,7 @@ func ValidateListClassrooms(ctx context.Context, req *dto.ListClassroomsReq) err
 func ValidateListMyJoinedClassrooms(ctx context.Context, req *dto.ListMyJoinedClassroomsReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.Search != nil {
 		s := strings.TrimSpace(*req.Search)
@@ -200,7 +199,7 @@ func ValidateListMyJoinedClassrooms(ctx context.Context, req *dto.ListMyJoinedCl
 			req.Search = nil
 		} else if len(s) > searchMaxLen {
 			return errs.NewError(ctx, status.FAIL, nil,
-				errors.New("search too long"))
+				ErrSearchTooLong)
 		}
 	}
 	return nil
@@ -209,11 +208,11 @@ func ValidateListMyJoinedClassrooms(ctx context.Context, req *dto.ListMyJoinedCl
 func ValidateArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroomReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	return nil
 }
@@ -221,11 +220,11 @@ func ValidateArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroomReq)
 func ValidateRestoreClassroom(ctx context.Context, req *dto.RestoreClassroomReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	return nil
 }
@@ -233,11 +232,11 @@ func ValidateRestoreClassroom(ctx context.Context, req *dto.RestoreClassroomReq)
 func ValidateDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	return nil
 }
@@ -261,7 +260,7 @@ func normalizeProgramIDList(ctx context.Context, in []int64) ([]int64, error) {
 	for _, raw := range in {
 		if _, dup := seen[raw]; dup {
 			return nil, errs.NewError(ctx, status.CLASSROOM_PROGRAM_DUPLICATE, nil,
-				errors.New("duplicate program_id in list"))
+				ErrDuplicateProgramIDInList)
 		}
 		seen[raw] = struct{}{}
 		out = append(out, raw)
@@ -272,16 +271,16 @@ func normalizeProgramIDList(ctx context.Context, in []int64) ([]int64, error) {
 func ValidateJoinByCode(ctx context.Context, req *dto.JoinByCodeReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	code := strings.TrimSpace(req.ClassroomCode)
 	if code == "" {
 		return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
-			errors.New("classroom_code is required"))
+			ErrClassroomCodeRequired)
 	}
 	if len(code) > classroomCodeMaxLen {
 		return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
-			errors.New("classroom_code too long"))
+			ErrClassroomCodeTooLong)
 	}
 	req.ClassroomCode = code
 	return nil
@@ -290,11 +289,11 @@ func ValidateJoinByCode(ctx context.Context, req *dto.JoinByCodeReq) error {
 func ValidateLeaveClassroom(ctx context.Context, req *dto.LeaveClassroomReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	return nil
 }
@@ -302,19 +301,19 @@ func ValidateLeaveClassroom(ctx context.Context, req *dto.LeaveClassroomReq) err
 func ValidateRemoveMember(ctx context.Context, req *dto.RemoveMemberReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	if req.TargetProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
-			errors.New("target_profile_id is required"))
+			ErrTargetProfileIDRequired)
 	}
 	if req.TargetProfileID == req.ProfileID {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
-			errors.New("cannot remove yourself; use leave instead"))
+			ErrCannotRemoveSelf)
 	}
 	return nil
 }
@@ -322,27 +321,27 @@ func ValidateRemoveMember(ctx context.Context, req *dto.RemoveMemberReq) error {
 func ValidateUpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRoleReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	if req.TargetProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
-			errors.New("target_profile_id is required"))
+			ErrTargetProfileIDRequired)
 	}
 	role := strings.TrimSpace(req.NewRole)
 	if role == "" {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
-			errors.New("new_role is required"))
+			ErrNewRoleRequired)
 	}
 	// OWNER is intentionally not allowed here — transfer-ownership is
 	// the only way to mint a new owner.
 	if role != string(enum.ClassroomMemberRoleTypeCoTeacher) &&
 		role != string(enum.ClassroomMemberRoleTypeStudent) {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
-			errors.New("new_role must be CO_TEACHER or STUDENT"))
+			ErrNewRoleInvalid)
 	}
 	req.NewRole = role
 	return nil
@@ -351,19 +350,19 @@ func ValidateUpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRoleReq)
 func ValidateTransferOwnership(ctx context.Context, req *dto.TransferOwnershipReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	if req.NewOwnerProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
-			errors.New("new_owner_profile_id is required"))
+			ErrNewOwnerProfileIDRequired)
 	}
 	if req.NewOwnerProfileID == req.ProfileID {
 		return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil,
-			errors.New("cannot transfer ownership to yourself"))
+			ErrCannotTransferToSelf)
 	}
 	return nil
 }
@@ -374,7 +373,7 @@ func ValidateListMembers(ctx context.Context, req *dto.ListMembersReq) error {
 	// member of the classroom. classroom_id stays required.
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	if req.Role != nil {
 		r := strings.TrimSpace(*req.Role)

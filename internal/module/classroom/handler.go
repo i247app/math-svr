@@ -2,7 +2,6 @@ package classroom
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -84,7 +83,7 @@ func (h *ClassroomHandler) sessionUID(r *http.Request) (int64, error) {
 	uid, ok := sess.UID()
 	if !ok {
 		return 0, errs.NewError(r.Context(), status.UNAUTHORIZED, nil,
-			errors.New("uid not found from session"))
+			ErrUIDNotFoundFromSession)
 	}
 	return uid, nil
 }

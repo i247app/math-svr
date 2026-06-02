@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -34,7 +33,7 @@ func (h *TransferOwnershipCommandHandler) Handle(ctx context.Context, cmd Transf
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		if cmd.CurrentOwnerID == cmd.NewOwnerProfileID {
 			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil,
-				errors.New("new owner must differ from current owner"))
+				ErrTransferSameOwner)
 		}
 		currentOwner, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, cmd.ClassroomID, cmd.CurrentOwnerID)
 		if err != nil {
@@ -42,7 +41,7 @@ func (h *TransferOwnershipCommandHandler) Handle(ctx context.Context, cmd Transf
 		}
 		if currentOwner == nil || currentOwner.MemberRole() != string(enum.ClassroomMemberRoleTypeOwner) {
 			return errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
-				errors.New("caller is not the current owner"))
+				ErrCallerNotCurrentOwner)
 		}
 
 		newOwner, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, cmd.ClassroomID, cmd.NewOwnerProfileID)
@@ -51,11 +50,11 @@ func (h *TransferOwnershipCommandHandler) Handle(ctx context.Context, cmd Transf
 		}
 		if newOwner == nil {
 			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil,
-				errors.New("new owner must be an existing member"))
+				ErrNewOwnerNotMember)
 		}
 		if newOwner.MemberStatus() == nil || *newOwner.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
 			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil,
-				errors.New("new owner must be an active member"))
+				ErrNewOwnerNotActiveMember)
 		}
 
 		if err := repos.ClassroomMember.SetRole(ctx, currentOwner.MemberId(),

@@ -2,7 +2,6 @@ package classroom
 
 import (
 	"context"
-	"errors"
 	"strings"
 	"time"
 
@@ -236,7 +235,7 @@ func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, se
 	}
 	if found == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
-			errors.New("classroom not found"))
+			ErrClassroomNotFound)
 	}
 
 	resp := dto.DomainToResponse(found)
@@ -427,7 +426,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 		}
 		if sc == nil {
 			return errs.NewError(ctx, status.CLASSROOM_INVALID_SCHOOL, nil,
-				errors.New("school not found"))
+				ErrSchoolNotFound)
 		}
 	}
 	for _, pid := range programIDs {
@@ -440,7 +439,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 		}
 		if p == nil {
 			return errs.NewError(ctx, status.CLASSROOM_INVALID_PROGRAM, nil,
-				errors.New("program not found"))
+				ErrProgramNotFound)
 		}
 	}
 	if gradeID != nil && *gradeID != 0 {
@@ -450,7 +449,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 		}
 		if g == nil {
 			return errs.NewError(ctx, status.CLASSROOM_INVALID_GRADE, nil,
-				errors.New("grade not found"))
+				ErrGradeNotFound)
 		}
 	}
 	return nil

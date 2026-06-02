@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -35,15 +34,15 @@ func (h *LeaveClassroomCommandHandler) Handle(ctx context.Context, cmd LeaveClas
 		}
 		if m == nil {
 			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_MEMBER, nil,
-				errors.New("not a member of this classroom"))
+				ErrNotClassroomMember)
 		}
 		if m.MemberStatus() == nil || *m.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
 			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_MEMBER, nil,
-				errors.New("membership is not active"))
+				ErrMembershipNotActive)
 		}
 		if m.MemberRole() == string(enum.ClassroomMemberRoleTypeOwner) {
 			return errs.NewError(ctx, status.CLASSROOM_OWNER_CANNOT_LEAVE, nil,
-				errors.New("owner must transfer ownership before leaving"))
+				ErrOwnerMustTransferBeforeLeave)
 		}
 		if err := repos.ClassroomMember.MarkLeft(ctx, m.MemberId()); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)

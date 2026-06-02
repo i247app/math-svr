@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -34,11 +33,11 @@ func (h *RestoreClassroomCommandHandler) Handle(ctx context.Context, cmd Restore
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
-				errors.New("classroom not found"))
+				ErrClassroomNotFound)
 		}
 		if existing.ClassroomStatus() == nil || *existing.ClassroomStatus() != string(enum.ClassroomStatusTypeArchived) {
 			return errs.NewError(ctx, status.CLASSROOM_NOT_ARCHIVED, nil,
-				errors.New("classroom is not archived"))
+				ErrClassroomNotArchived)
 		}
 		if err := repos.Classroom.RestoreByClassroomId(ctx, cmd.ClassroomID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)

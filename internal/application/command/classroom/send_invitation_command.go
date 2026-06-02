@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
@@ -81,12 +80,12 @@ func (h *SendInvitationCommandHandler) Handle(ctx context.Context, cmd SendInvit
 		}
 		if c == nil {
 			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
-				errors.New("classroom not found"))
+				ErrClassroomNotFound)
 		}
 		if c.ClassroomStatus() != nil &&
 			*c.ClassroomStatus() == string(enum.ClassroomStatusTypeArchived) {
 			return errs.NewError(ctx, status.CLASSROOM_ALREADY_ARCHIVED, nil,
-				errors.New("classroom is archived"))
+				ErrClassroomArchived)
 		}
 
 		pendingStatus := string(enum.ClassroomMemberStatusTypePendingInvitation)

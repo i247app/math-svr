@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -79,5 +78,5 @@ func mintUniqueProfileCode(ctx context.Context, repos transaction.Repositories) 
 		}
 	}
 	return "", errs.NewError(ctx, status.PROFILE_CODE_GENERATION_FAILED, nil,
-		errors.New("could not mint a unique profile code"))
+		ErrProfileCodeMintExhausted)
 }

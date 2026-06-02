@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
@@ -41,15 +40,15 @@ func (h *UpdateMemberRoleCommandHandler) Handle(ctx context.Context, cmd UpdateM
 		}
 		if target == nil {
 			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_FOUND, nil,
-				errors.New("target member not found"))
+				ErrTargetMemberNotFound)
 		}
 		if target.MemberStatus() == nil || *target.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
 			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_MEMBER, nil,
-				errors.New("target member is not active"))
+				ErrTargetMemberNotActive)
 		}
 		if target.MemberRole() == string(enum.ClassroomMemberRoleTypeOwner) {
 			return errs.NewError(ctx, status.CLASSROOM_MEMBER_CANNOT_DEMOTE_OWNER, nil,
-				errors.New("owner role cannot be changed via update; use transfer"))
+				ErrOwnerRoleUpdateForbidden)
 		}
 		if target.MemberRole() == cmd.NewRole {
 			updated = target

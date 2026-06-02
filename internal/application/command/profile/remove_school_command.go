@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
@@ -36,7 +35,7 @@ func (h *RemoveSchoolCommandHandler) Handle(ctx context.Context, cmd RemoveSchoo
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-				errors.New("profile not found"))
+				ErrProfileNotFound)
 		}
 
 		if err := repos.Profile.SetSchoolId(ctx, cmd.ProfileID, nil); err != nil {

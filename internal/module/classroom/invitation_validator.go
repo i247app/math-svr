@@ -2,7 +2,6 @@ package classroom
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
@@ -25,15 +24,15 @@ const (
 func ValidateSendInvitation(ctx context.Context, req *dto.SendInvitationReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	if len(req.Targets) == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_INVITATION_MISSING_TARGET, nil,
-			errors.New("at least one target is required"))
+			ErrAtLeastOneTargetRequired)
 	}
 	if req.Note != nil {
 		n := strings.TrimSpace(*req.Note)
@@ -41,7 +40,7 @@ func ValidateSendInvitation(ctx context.Context, req *dto.SendInvitationReq) err
 			req.Note = nil
 		} else if len(n) > invitationNoteMaxLen {
 			return errs.NewError(ctx, status.FAIL, nil,
-				errors.New("note too long"))
+				ErrNoteTooLong)
 		} else {
 			req.Note = &n
 		}
@@ -91,7 +90,7 @@ func ValidateSendInvitation(ctx context.Context, req *dto.SendInvitationReq) err
 func ValidateListMyPendingInvitations(ctx context.Context, req *dto.ListMyPendingInvitationsReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	return nil
 }
@@ -99,11 +98,11 @@ func ValidateListMyPendingInvitations(ctx context.Context, req *dto.ListMyPendin
 func ValidateListClassroomInvitations(ctx context.Context, req *dto.ListClassroomInvitationsReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	return nil
 }
@@ -111,11 +110,11 @@ func ValidateListClassroomInvitations(ctx context.Context, req *dto.ListClassroo
 func ValidateAcceptInvitation(ctx context.Context, req *dto.AcceptInvitationReq) error {
 	if req.InviterProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	return nil
 }
@@ -123,11 +122,11 @@ func ValidateAcceptInvitation(ctx context.Context, req *dto.AcceptInvitationReq)
 func ValidateRejectInvitation(ctx context.Context, req *dto.RejectInvitationReq) error {
 	if req.InviterProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	return nil
 }
@@ -135,15 +134,15 @@ func ValidateRejectInvitation(ctx context.Context, req *dto.RejectInvitationReq)
 func ValidateCancelInvitation(ctx context.Context, req *dto.CancelInvitationReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	if req.TargetProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
-			errors.New("target_profile_id is required"))
+			ErrTargetProfileIDRequired)
 	}
 	return nil
 }

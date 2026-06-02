@@ -2,7 +2,6 @@ package classroomexercise
 
 import (
 	"context"
-	"errors"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
@@ -54,7 +53,7 @@ func (c *botClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 	log := logger.From(ctx)
 	if c.adapter == nil {
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil,
-			errors.New("classroom exercise: bot adapter is not configured"))
+			ErrBotAdapterNotConfigured)
 	}
 
 	system, user, err := domainBot.BuildExercisePrompt(

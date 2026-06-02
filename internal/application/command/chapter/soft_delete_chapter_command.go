@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -33,7 +32,7 @@ func (h *SoftDeleteChapterCommandHandler) Handle(ctx context.Context, cmd SoftDe
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.CHAPTER_NOT_FOUND, nil,
-				errors.New("chapter not found"))
+				ErrChapterNotFound)
 		}
 
 		if err := repos.ChapterTranslation.SoftDeleteByChapterId(ctx, cmd.ChapterID); err != nil {

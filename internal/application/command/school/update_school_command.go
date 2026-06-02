@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/school"
@@ -42,7 +41,7 @@ func (h *UpdateSchoolCommandHandler) Handle(ctx context.Context, cmd UpdateSchoo
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil,
-				errors.New("school not found"))
+				ErrSchoolNotFound)
 		}
 
 		patch := school.NewSchool()
@@ -77,7 +76,7 @@ func (h *UpdateSchoolCommandHandler) Handle(ctx context.Context, cmd UpdateSchoo
 		}
 		if refreshed == nil {
 			return errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil,
-				errors.New("school not found after update"))
+				ErrSchoolNotFoundAfterUpdate)
 		}
 		updated = refreshed
 		return nil

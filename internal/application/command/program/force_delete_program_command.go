@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -33,7 +32,7 @@ func (h *ForceDeleteProgramCommandHandler) Handle(ctx context.Context, cmd Force
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.PROGRAM_NOT_FOUND, nil,
-				errors.New("program not found"))
+				ErrProgramNotFound)
 		}
 
 		if err := repos.ProgramTranslation.ForceDeleteByProgramId(ctx, cmd.ProgramID); err != nil {

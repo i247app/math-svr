@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -30,7 +29,7 @@ func (h *LogoutCommandHandler) Handle(ctx context.Context, cmd LogoutCommand) er
 			return errs.NewError(ctx, status.AUTH_LOGOUT_FAILED, nil, err)
 		}
 		if ll == nil {
-			return errs.NewError(ctx, status.AUTH_INVALID_TOKEN, nil, errors.New("token not found or already revoked"))
+			return errs.NewError(ctx, status.AUTH_INVALID_TOKEN, nil, ErrTokenNotFoundOrRevoked)
 		}
 
 		if err := repos.LoginLog.MarkStatusByLoginLogId(

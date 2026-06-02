@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -33,7 +32,7 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 	trimmed := strings.TrimSpace(identifier)
 	if trimmed == "" {
 		return out, errs.NewError(ctx, status.CLASSROOM_INVITATION_INVALID_IDENTIFIER, nil,
-			errors.New("identifier is required"))
+			ErrInvitationIdentifierRequired)
 	}
 
 	switch identifierType {
@@ -44,7 +43,7 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 		profileID := utils.StringToInt64(trimmed, 0)
 		if profileID == 0 {
 			return out, errs.NewError(ctx, status.CLASSROOM_INVITATION_INVALID_IDENTIFIER, nil,
-				errors.New("profile_id must be a positive integer"))
+				ErrProfileIDMustBePositive)
 		}
 		p, err := repos.Profile.FindByProfileId(ctx, profileID)
 		if err != nil {
@@ -87,6 +86,6 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 
 	default:
 		return out, errs.NewError(ctx, status.CLASSROOM_INVITATION_INVALID_IDENTIFIER_TYPE, nil,
-			errors.New("identifier_type must be EMAIL, PHONE, or PROFILE_ID"))
+			ErrInvalidIdentifierType)
 	}
 }

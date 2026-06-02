@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/classroomexercise"
@@ -51,7 +50,7 @@ func (h *UpdateClassroomExerciseCommandHandler) Handle(ctx context.Context, cmd 
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
-				errors.New("classroom exercise not found"))
+				ErrExerciseNotFound)
 		}
 
 		patch := domain.UpdatePatch{

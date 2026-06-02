@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -50,15 +49,15 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 		}
 		if c == nil {
 			return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
-				errors.New("invite code not found"))
+				ErrClassroomCodeNotFound)
 		}
 		if c.ClassroomStatus() != nil && *c.ClassroomStatus() == string(enum.ClassroomStatusTypeArchived) {
 			return errs.NewError(ctx, status.CLASSROOM_CODE_DISABLED, nil,
-				errors.New("classroom is archived"))
+				ErrClassroomArchived)
 		}
 		if c.ClassroomCodeExpiresDt().IsValid() && c.ClassroomCodeExpiresDt().Time.Before(time.Now()) {
 			return errs.NewError(ctx, status.CLASSROOM_CODE_EXPIRED, nil,
-				errors.New("invite code expired"))
+				ErrClassroomCodeExpired)
 		}
 
 		memberRole := memberRoleForProfileRole(cmd.ProfileRole)
@@ -75,16 +74,16 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 			switch currentStatus {
 			case string(enum.ClassroomMemberStatusTypeActive):
 				return errs.NewError(ctx, status.CLASSROOM_MEMBER_ALREADY_MEMBER, nil,
-					errors.New("already an active member"))
+					ErrAlreadyActiveMember)
 			case string(enum.ClassroomMemberStatusTypePendingInvitation):
 				// A teacher has already reached out — the user should
 				// accept that invitation rather than open a separate
 				// request thread.
 				return errs.NewError(ctx, status.CLASSROOM_INVITATION_ALREADY_INVITED, nil,
-					errors.New("a pending invitation already exists; accept it instead"))
+					ErrPendingInvitationExists)
 			case string(enum.ClassroomMemberStatusTypePendingRequest):
 				return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_ALREADY_PENDING, nil,
-					errors.New("a pending join request already exists"))
+					ErrPendingJoinRequestExists)
 			}
 			// REJECTED / LEFT / REMOVED → reactivate the existing row
 			// as a fresh PENDING_REQUEST so the UNIQUE

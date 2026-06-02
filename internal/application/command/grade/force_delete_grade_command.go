@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -33,7 +32,7 @@ func (h *ForceDeleteGradeCommandHandler) Handle(ctx context.Context, cmd ForceDe
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.GRADE_NOT_FOUND, nil,
-				errors.New("grade not found"))
+				ErrGradeNotFound)
 		}
 
 		if err := repos.GradeTranslation.ForceDeleteByGradeId(ctx, cmd.GradeID); err != nil {

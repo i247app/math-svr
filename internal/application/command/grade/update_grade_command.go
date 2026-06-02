@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -49,7 +48,7 @@ func (h *UpdateGradeCommandHandler) Handle(ctx context.Context, cmd UpdateGradeC
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.GRADE_NOT_FOUND, nil,
-				errors.New("grade not found"))
+				ErrGradeNotFound)
 		}
 
 		patched := grade.NewGrade()
@@ -84,12 +83,12 @@ func (h *UpdateGradeCommandHandler) Handle(ctx context.Context, cmd UpdateGradeC
 			lang := strings.ToLower(strings.TrimSpace(in.Language))
 			if lang == "" {
 				return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION, nil,
-					errors.New("translation language is required"))
+					ErrTranslationLanguageRequired)
 			}
 			if _, dup := seen[lang]; dup {
 				return errs.NewError(ctx, status.GRADE_TRANSLATION_ALREADY_EXISTS,
 					map[string]any{"language": lang},
-					errors.New("duplicate translation language in payload"))
+					ErrDuplicateTranslationLanguage)
 			}
 			seen[lang] = struct{}{}
 
@@ -134,7 +133,7 @@ func (h *UpdateGradeCommandHandler) Handle(ctx context.Context, cmd UpdateGradeC
 		}
 		if refreshed == nil {
 			return errs.NewError(ctx, status.GRADE_NOT_FOUND, nil,
-				errors.New("grade not found after update"))
+				ErrGradeNotFoundAfterUpdate)
 		}
 		translations, err := repos.GradeTranslation.ListByGradeId(ctx, cmd.GradeID)
 		if err != nil {

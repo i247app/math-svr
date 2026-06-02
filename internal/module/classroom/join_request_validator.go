@@ -2,7 +2,6 @@ package classroom
 
 import (
 	"context"
-	"errors"
 
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -12,15 +11,15 @@ import (
 func ValidateApproveJoinRequest(ctx context.Context, req *dto.ApproveJoinRequestReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	if req.TargetProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
-			errors.New("target_profile_id is required"))
+			ErrTargetProfileIDRequired)
 	}
 	return nil
 }
@@ -28,15 +27,15 @@ func ValidateApproveJoinRequest(ctx context.Context, req *dto.ApproveJoinRequest
 func ValidateRejectJoinRequest(ctx context.Context, req *dto.RejectJoinRequestReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	if req.TargetProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil,
-			errors.New("target_profile_id is required"))
+			ErrTargetProfileIDRequired)
 	}
 	return nil
 }
@@ -44,11 +43,11 @@ func ValidateRejectJoinRequest(ctx context.Context, req *dto.RejectJoinRequestRe
 func ValidateCancelJoinRequest(ctx context.Context, req *dto.CancelJoinRequestReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	return nil
 }
@@ -56,11 +55,11 @@ func ValidateCancelJoinRequest(ctx context.Context, req *dto.CancelJoinRequestRe
 func ValidateListJoinRequestsByClassroom(ctx context.Context, req *dto.ListJoinRequestsByClassroomReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
-			errors.New("classroom_id is required"))
+			ErrClassroomIDRequired)
 	}
 	return nil
 }
@@ -68,7 +67,7 @@ func ValidateListJoinRequestsByClassroom(ctx context.Context, req *dto.ListJoinR
 func ValidateListMyJoinRequests(ctx context.Context, req *dto.ListMyJoinRequestsReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	return nil
 }

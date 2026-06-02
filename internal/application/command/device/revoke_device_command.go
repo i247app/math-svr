@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -34,11 +33,11 @@ func (h *RevokeDeviceCommandHandler) Handle(ctx context.Context, cmd RevokeDevic
 			return errs.NewError(ctx, status.DEVICE_REVOKE_FAIL, nil, err)
 		}
 		if d == nil {
-			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, errors.New("device not found"))
+			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
 		}
 		if d.UserId() == nil || *d.UserId() != cmd.UserID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
-				errors.New("device does not belong to user"))
+				ErrDeviceNotOwnedByUser)
 		}
 
 		if err := repos.Device.MarkVerified(ctx, cmd.DeviceID, false); err != nil {

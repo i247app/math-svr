@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -33,7 +32,7 @@ func (h *SoftDeleteGradeCommandHandler) Handle(ctx context.Context, cmd SoftDele
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.GRADE_NOT_FOUND, nil,
-				errors.New("grade not found"))
+				ErrGradeNotFound)
 		}
 
 		if err := repos.GradeTranslation.SoftDeleteByGradeId(ctx, cmd.GradeID); err != nil {

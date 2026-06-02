@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -29,10 +28,10 @@ func NewRevokeOtpCommandHandler(uow transaction.UnitOfWork) *RevokeOtpCommandHan
 
 func (h *RevokeOtpCommandHandler) Handle(ctx context.Context, cmd RevokeOtpCommand) error {
 	if !cmd.OtpType.IsValid() {
-		return errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, errors.New("invalid otp type"))
+		return errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, ErrInvalidOtpType)
 	}
 	if cmd.Identifier == "" {
-		return errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, errors.New("identifier is required"))
+		return errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
 	}
 
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {

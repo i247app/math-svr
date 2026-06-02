@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -33,7 +32,7 @@ func (h *ForceDeleteSemesterCommandHandler) Handle(ctx context.Context, cmd Forc
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil,
-				errors.New("semester not found"))
+				ErrSemesterNotFound)
 		}
 
 		if err := repos.SemesterTranslation.ForceDeleteBySemesterId(ctx, cmd.SemesterID); err != nil {

@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -192,16 +191,16 @@ func BuildLoginLog(userId int64, cmd LoginCommand) *loginlog.LoginLog {
 
 func ValidateLoginCommand(ctx context.Context, cmd LoginCommand) error {
 	if strings.TrimSpace(cmd.Phone) == "" {
-		return errs.NewError(ctx, status.AUTH_MISSING_PHONE, nil, errors.New("phone is required"))
+		return errs.NewError(ctx, status.AUTH_MISSING_PHONE, nil, ErrPhoneRequired)
 	}
 	if strings.TrimSpace(cmd.DeviceUUID) == "" {
-		return errs.NewError(ctx, status.AUTH_MISSING_DEVICE_UUID, nil, errors.New("device_uuid is required"))
+		return errs.NewError(ctx, status.AUTH_MISSING_DEVICE_UUID, nil, ErrDeviceUUIDRequired)
 	}
 	if strings.TrimSpace(cmd.IPAddress) == "" {
-		return errs.NewError(ctx, status.AUTH_MISSING_IP_ADDRESS, nil, errors.New("ip_address is required"))
+		return errs.NewError(ctx, status.AUTH_MISSING_IP_ADDRESS, nil, ErrIPAddressRequired)
 	}
 	if strings.TrimSpace(cmd.DevicePushToken) == "" {
-		return errs.NewError(ctx, status.AUTH_MISSING_DEVICE_PUSH_TOKEN, nil, errors.New("device_push_token is required"))
+		return errs.NewError(ctx, status.AUTH_MISSING_DEVICE_PUSH_TOKEN, nil, ErrDevicePushTokenRequired)
 	}
 	return nil
 }

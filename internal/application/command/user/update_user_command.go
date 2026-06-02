@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -42,7 +41,7 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if u == nil {
-			return errs.NewError(ctx, status.FAIL, nil, errors.New("user not found"))
+			return errs.NewError(ctx, status.FAIL, nil, ErrUserNotFound)
 		}
 
 		// user_name lives on the user row only — no alias mirror to keep

@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -33,7 +32,7 @@ func (h *ForceDeleteSchoolCommandHandler) Handle(ctx context.Context, cmd ForceD
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil,
-				errors.New("school not found"))
+				ErrSchoolNotFound)
 		}
 
 		if err := repos.School.ForceDeleteBySchoolId(ctx, cmd.SchoolID); err != nil {

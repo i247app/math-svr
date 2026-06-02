@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -35,7 +34,7 @@ func (h *SetAvatarKeyCommandHandler) Handle(ctx context.Context, cmd SetAvatarKe
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.USER_NOT_FOUND, nil,
-				errors.New("user not found"))
+				ErrUserNotFound)
 		}
 		if err := repos.User.UpdateAvatarKey(ctx, cmd.UserID, cmd.AvatarKey); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)

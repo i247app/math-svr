@@ -2,7 +2,6 @@ package classroom
 
 import (
 	"context"
-	"errors"
 
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
@@ -24,11 +23,11 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 	}
 	if p == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile not found"))
+			ErrProfileNotFound)
 	}
 	if sessionUserID != 0 && sessionUserID != p.UserId() {
 		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
-			errors.New("profile does not belong to the authenticated user"))
+			ErrProfileNotOwnedByUser)
 	}
 	return p, nil
 }
@@ -38,7 +37,7 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 func (s *Service) requireTeacherRole(ctx context.Context, p *profileDomain.Profile) error {
 	if p.Role() != string(enum.RoleProfileTypeTeacher) {
 		return errs.NewError(ctx, status.CLASSROOM_INVALID_OWNER_ROLE, nil,
-			errors.New("only a teacher profile can own a classroom"))
+			ErrTeacherOwnershipOnly)
 	}
 	return nil
 }
@@ -52,11 +51,11 @@ func (s *Service) requireMember(ctx context.Context, classroomID, profileID int6
 	}
 	if m == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
-			errors.New("not a member of this classroom"))
+			ErrNotClassroomMember)
 	}
 	if m.MemberStatus() == nil || *m.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
 		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
-			errors.New("membership is not active"))
+			ErrMembershipNotActive)
 	}
 	return m, nil
 }
@@ -74,7 +73,7 @@ func (s *Service) requireManager(ctx context.Context, classroomID, profileID int
 		return m, nil
 	default:
 		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
-			errors.New("manager role required"))
+			ErrManagerRoleRequired)
 	}
 }
 
@@ -87,7 +86,7 @@ func (s *Service) requireOwner(ctx context.Context, classroomID, profileID int64
 	}
 	if m.MemberRole() != string(enum.ClassroomMemberRoleTypeOwner) {
 		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
-			errors.New("owner role required"))
+			ErrOwnerRoleRequired)
 	}
 	return m, nil
 }
@@ -99,11 +98,11 @@ func (s *Service) requireOwner(ctx context.Context, classroomID, profileID int64
 func guardClassroomMutable(ctx context.Context, c *classroomDomain.Classroom) error {
 	if c == nil {
 		return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
-			errors.New("classroom not found"))
+			ErrClassroomNotFound)
 	}
 	if c.ClassroomStatus() != nil && *c.ClassroomStatus() == string(enum.ClassroomStatusTypeArchived) {
 		return errs.NewError(ctx, status.CLASSROOM_ALREADY_ARCHIVED, nil,
-			errors.New("classroom is archived"))
+			ErrClassroomArchived)
 	}
 	return nil
 }

@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/classroomexercise"
@@ -90,7 +89,7 @@ func (h *CreateClassroomExerciseCommandHandler) Handle(ctx context.Context, cmd 
 		}
 		if saved == nil {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
-				errors.New("classroom exercise not found after insert"))
+				ErrExerciseNotFoundAfterInsert)
 		}
 		created = saved
 		return nil

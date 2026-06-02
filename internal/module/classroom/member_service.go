@@ -2,7 +2,6 @@ package classroom
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/classroom"
@@ -87,14 +86,14 @@ func (s *Service) RemoveMember(ctx context.Context, req *dto.RemoveMemberReq, se
 	}
 	if target == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_FOUND, nil,
-			errors.New("target member not found"))
+			ErrTargetMemberNotFound)
 	}
 	// CO_TEACHER can only remove STUDENT targets; OWNER can remove
 	// CO_TEACHER and STUDENT.
 	if callerMember.MemberRole() == string(enum.ClassroomMemberRoleTypeCoTeacher) &&
 		target.MemberRole() != string(enum.ClassroomMemberRoleTypeStudent) {
 		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
-			errors.New("co-teacher can only remove students"))
+			ErrCoTeacherCanOnlyRemoveStudent)
 	}
 	if err := s.removeMemberCmd.Handle(ctx, command.RemoveMemberCommand{
 		ClassroomID:     req.ClassroomID,
@@ -128,11 +127,11 @@ func (s *Service) UpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRol
 		}
 		if targetProfile == nil {
 			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-				errors.New("target profile not found"))
+				ErrTargetProfileNotFound)
 		}
 		if targetProfile.Role() != string(enum.RoleProfileTypeTeacher) {
 			return nil, errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
-				errors.New("only teacher profiles can become co-teachers"))
+				ErrTeacherCoTeacherOnly)
 		}
 	}
 
@@ -171,7 +170,7 @@ func (s *Service) TransferOwnership(ctx context.Context, req *dto.TransferOwners
 	}
 	if newOwnerProfile == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("new owner profile not found"))
+			ErrNewOwnerProfileNotFound)
 	}
 	if err := s.requireTeacherRole(ctx, newOwnerProfile); err != nil {
 		return nil, err
@@ -241,7 +240,7 @@ func (s *Service) ListMembers(ctx context.Context, req *dto.ListMembersReq, sess
 func (s *Service) resolveMemberProfileForUser(ctx context.Context, sessionUserID, classroomID int64) (int64, error) {
 	if sessionUserID == 0 {
 		return 0, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
-			errors.New("profile_id is required when no session is attached"))
+			ErrProfileIDRequiredNoSession)
 	}
 	profiles, err := s.profileRepo.ListByUserId(ctx, sessionUserID)
 	if err != nil {
@@ -249,7 +248,7 @@ func (s *Service) resolveMemberProfileForUser(ctx context.Context, sessionUserID
 	}
 	if len(profiles) == 0 {
 		return 0, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("no profile found for the authenticated user"))
+			ErrNoProfileForUser)
 	}
 	for _, p := range profiles {
 		m, err := s.classroomMemberRepo.FindByClassroomAndProfile(ctx, classroomID, p.ProfileId())
@@ -264,7 +263,7 @@ func (s *Service) resolveMemberProfileForUser(ctx context.Context, sessionUserID
 		}
 	}
 	return 0, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
-		errors.New("not a member of this classroom"))
+		ErrNotClassroomMember)
 }
 
 // hydrateMemberProfiles batches one ma_profiles lookup for the page of

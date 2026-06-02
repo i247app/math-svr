@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -34,12 +33,12 @@ func (h *SoftDeleteSubmissionCommandHandler) Handle(ctx context.Context, cmd Sof
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND, nil,
-				errors.New("submission not found"))
+				ErrSubmissionNotFound)
 		}
 		if existing.SubmissionStatus() != nil &&
 			*existing.SubmissionStatus() == string(enum.ClassroomExerciseSubmissionStatusDeleted) {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_ALREADY_DELETED, nil,
-				errors.New("submission already deleted"))
+				ErrSubmissionAlreadyDeleted)
 		}
 		if err := repos.ClassroomExerciseSubmission.SoftDelete(ctx, cmd.ClassroomExerciseSubmissionID, cmd.ActorID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)

@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/school"
@@ -54,7 +53,7 @@ func (h *CreateSchoolCommandHandler) Handle(ctx context.Context, cmd CreateSchoo
 		}
 		if saved == nil {
 			return errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil,
-				errors.New("school not found after insert"))
+				ErrSchoolNotFoundAfterInsert)
 		}
 		created = saved
 		return nil

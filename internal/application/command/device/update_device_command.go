@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
@@ -38,11 +37,11 @@ func (h *UpdateDeviceCommandHandler) Handle(ctx context.Context, cmd UpdateDevic
 			return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, errors.New("device not found"))
+			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
 		}
 		if existing.UserId() == nil || *existing.UserId() != cmd.UserID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
-				errors.New("device does not belong to user"))
+				ErrDeviceNotOwnedByUser)
 		}
 
 		patch := device.NewDevice()

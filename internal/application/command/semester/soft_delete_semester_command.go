@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -34,7 +33,7 @@ func (h *SoftDeleteSemesterCommandHandler) Handle(ctx context.Context, cmd SoftD
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil,
-				errors.New("semester not found"))
+				ErrSemesterNotFound)
 		}
 
 		if err := repos.SemesterTranslation.SoftDeleteBySemesterId(ctx, cmd.SemesterID); err != nil {

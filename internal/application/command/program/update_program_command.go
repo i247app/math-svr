@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -49,7 +48,7 @@ func (h *UpdateProgramCommandHandler) Handle(ctx context.Context, cmd UpdateProg
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.PROGRAM_NOT_FOUND, nil,
-				errors.New("program not found"))
+				ErrProgramNotFound)
 		}
 
 		patched := program.NewProgram()
@@ -84,12 +83,12 @@ func (h *UpdateProgramCommandHandler) Handle(ctx context.Context, cmd UpdateProg
 			lang := strings.ToLower(strings.TrimSpace(in.Language))
 			if lang == "" {
 				return errs.NewError(ctx, status.PROGRAM_INVALID_TRANSLATION, nil,
-					errors.New("translation language is required"))
+					ErrTranslationLanguageRequired)
 			}
 			if _, dup := seen[lang]; dup {
 				return errs.NewError(ctx, status.PROGRAM_TRANSLATION_ALREADY_EXISTS,
 					map[string]any{"language": lang},
-					errors.New("duplicate translation language in payload"))
+					ErrDuplicateTranslationLanguage)
 			}
 			seen[lang] = struct{}{}
 
@@ -134,7 +133,7 @@ func (h *UpdateProgramCommandHandler) Handle(ctx context.Context, cmd UpdateProg
 		}
 		if refreshed == nil {
 			return errs.NewError(ctx, status.PROGRAM_NOT_FOUND, nil,
-				errors.New("program not found after update"))
+				ErrProgramNotFoundAfterUpdate)
 		}
 		translations, err := repos.ProgramTranslation.ListByProgramId(ctx, cmd.ProgramID)
 		if err != nil {

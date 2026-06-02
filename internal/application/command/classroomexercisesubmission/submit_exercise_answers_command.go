@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -87,7 +86,7 @@ func (h *SubmitExerciseAnswersCommandHandler) Handle(ctx context.Context, cmd Su
 		}
 		if saved == nil {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND, nil,
-				errors.New("submission not found after insert"))
+				ErrSubmissionNotFoundAfterInsert)
 		}
 		created = saved
 		return nil

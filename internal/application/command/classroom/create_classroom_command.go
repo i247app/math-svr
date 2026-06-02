@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -65,7 +64,7 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 				}
 				if existing != nil {
 					return errs.NewError(ctx, status.CLASSROOM_CODE_TAKEN, nil,
-						errors.New("invite code already taken"))
+						ErrClassroomCodeTaken)
 				}
 				classroomCodeArg = &trimmed
 			}
@@ -110,7 +109,7 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 		}
 		if saved == nil {
 			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
-				errors.New("classroom not found after insert"))
+				ErrClassroomNotFoundAfterInsert)
 		}
 
 		memberID, err := nextSeqID(ctx, repos, seq.NameClassroomMember)

@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
@@ -56,10 +55,10 @@ func NewSendOtpCommandHandler(uow transaction.UnitOfWork, delivery *otp_delivery
 
 func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) (*SendOtpCommandResult, error) {
 	if !cmd.OtpType.IsValid() {
-		return nil, errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, errors.New("invalid otp type"))
+		return nil, errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, ErrInvalidOtpType)
 	}
 	if cmd.Identifier == "" {
-		return nil, errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, errors.New("identifier is required"))
+		return nil, errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
 	}
 
 	channel, err := h.resolveChannel(ctx, cmd)
@@ -111,7 +110,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 			return errs.NewError(ctx, status.OTP_RATE_LIMITED, map[string]any{
 				"window_seconds": int(OtpSendWindow.Seconds()),
 				"limit":          OtpMaxSendsPerWindow,
-			}, errors.New("send-window cap reached"))
+			}, ErrOtpSendWindowReached)
 		}
 
 		// 3. Revoke prior PENDING rows
@@ -194,12 +193,12 @@ func (h *SendOtpCommandHandler) resolveChannel(ctx context.Context, cmd SendOtpC
 		}
 	default:
 		return "", errs.NewError(ctx, status.OTP_NO_DELIVERY_CHANNEL, nil,
-			errors.New("unknown channel"))
+			ErrOtpUnknownChannel)
 	}
 	if !h.delivery.HasChannel(channel) {
 		return "", errs.NewError(ctx, status.OTP_NO_DELIVERY_CHANNEL, map[string]any{
 			"channel": string(channel),
-		}, errors.New("channel not registered"))
+		}, ErrOtpChannelNotRegistered)
 	}
 	return channel, nil
 }

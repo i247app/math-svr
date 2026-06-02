@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
@@ -52,7 +51,7 @@ func (h *UpdateClassroomCommandHandler) Handle(ctx context.Context, cmd UpdateCl
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
-				errors.New("classroom not found"))
+				ErrClassroomNotFound)
 		}
 
 		patch := classroom.NewClassroom()
@@ -97,7 +96,7 @@ func (h *UpdateClassroomCommandHandler) Handle(ctx context.Context, cmd UpdateCl
 		}
 		if refreshed == nil {
 			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
-				errors.New("classroom not found after update"))
+				ErrClassroomNotFoundAfterUpdate)
 		}
 		// Hydrate the response with the current link set so the API
 		// reply reflects exactly what's on disk, regardless of whether

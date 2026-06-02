@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -34,12 +33,12 @@ func (h *SoftDeleteClassroomExerciseCommandHandler) Handle(ctx context.Context, 
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
-				errors.New("classroom exercise not found"))
+				ErrExerciseNotFound)
 		}
 		if existing.ExerciseStatus() != nil &&
 			*existing.ExerciseStatus() == string(enum.ClassroomExerciseStatusTypeDeleted) {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_ALREADY_DELETED, nil,
-				errors.New("classroom exercise already deleted"))
+				ErrExerciseAlreadyDeleted)
 		}
 		if err := repos.ClassroomExercise.SoftDelete(ctx, cmd.ClassroomExerciseID, cmd.ActorID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)

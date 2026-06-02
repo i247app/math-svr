@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -36,7 +35,7 @@ func (h *RejectJoinRequestCommandHandler) Handle(ctx context.Context, cmd Reject
 		}
 		if existing == nil {
 			return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_NOT_FOUND, nil,
-				errors.New("join request not found"))
+				ErrJoinRequestNotFound)
 		}
 		currentStatus := ""
 		if existing.MemberStatus() != nil {
@@ -44,7 +43,7 @@ func (h *RejectJoinRequestCommandHandler) Handle(ctx context.Context, cmd Reject
 		}
 		if currentStatus != string(enum.ClassroomMemberStatusTypePendingRequest) {
 			return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_NOT_PENDING, nil,
-				errors.New("join request is not pending"))
+				ErrJoinRequestNotPending)
 		}
 		if err := repos.ClassroomMember.Reject(ctx, existing.MemberId()); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)

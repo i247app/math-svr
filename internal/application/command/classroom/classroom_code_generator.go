@@ -3,7 +3,6 @@ package command
 import (
 	"context"
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
 
@@ -76,5 +75,5 @@ func mintUniqueClassroomCode(ctx context.Context, repos transaction.Repositories
 		}
 	}
 	return "", errs.NewError(ctx, status.CLASSROOM_CODE_GENERATION_FAILED, nil,
-		errors.New("could not mint a unique classroom code"))
+		ErrClassroomCodeMintExhausted)
 }

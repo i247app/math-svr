@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -37,13 +36,13 @@ func NewVerifyOtpCommandHandler(uow transaction.UnitOfWork) *VerifyOtpCommandHan
 
 func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpCommand) (*VerifyOtpCommandResult, error) {
 	if !cmd.OtpType.IsValid() {
-		return nil, errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, errors.New("invalid otp type"))
+		return nil, errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, ErrInvalidOtpType)
 	}
 	if cmd.Identifier == "" {
-		return nil, errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, errors.New("identifier is required"))
+		return nil, errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
 	}
 	if cmd.Code == "" {
-		return nil, errs.NewError(ctx, status.OTP_MISSING_CODE, nil, errors.New("otp code is required"))
+		return nil, errs.NewError(ctx, status.OTP_MISSING_CODE, nil, ErrOtpCodeRequired)
 	}
 
 	var result *VerifyOtpCommandResult
@@ -57,13 +56,13 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 			// No PENDING row — either never sent, or already consumed
 			// /revoked /expired. Treat all of them as "not found" to
 			// keep response shape uniform and avoid leaking lifecycle.
-			return errs.NewError(ctx, status.OTP_NOT_FOUND, nil, errors.New("no pending otp"))
+			return errs.NewError(ctx, status.OTP_NOT_FOUND, nil, ErrNoPendingOtp)
 		}
 
 		// Expiry check. Mark EXPIRED so the row is greppable in audit.
 		if o.OtpExpireDt().IsValid() && time.Now().UTC().After(o.OtpExpireDt().Time) {
 			_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeExpired)
-			return errs.NewError(ctx, status.OTP_EXPIRED, nil, errors.New("otp expired"))
+			return errs.NewError(ctx, status.OTP_EXPIRED, nil, ErrOtpExpired)
 		}
 
 		// Increment attempts BEFORE comparing — otherwise an attacker can
@@ -75,7 +74,7 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 		if newCount > OtpMaxAttempts {
 			_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeRevoked)
 			return errs.NewError(ctx, status.OTP_TOO_MANY_ATTEMPTS, nil,
-				errors.New("attempt cap exceeded"))
+				ErrOtpAttemptCapExceeded)
 		}
 
 		if !codesMatch(cmd.Code, o.OtpCode()) {
@@ -88,7 +87,7 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 			}
 			return errs.NewError(ctx, status.OTP_INVALID_CODE, map[string]any{
 				"attempts_remaining": maxInt(0, OtpMaxAttempts-newCount),
-			}, errors.New("code mismatch"))
+			}, ErrOtpCodeMismatch)
 		}
 
 		if err := repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeVerified); err != nil {

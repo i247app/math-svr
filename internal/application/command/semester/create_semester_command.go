@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -68,7 +67,7 @@ func (h *CreateSemesterCommandHandler) Handle(ctx context.Context, cmd CreateSem
 		}
 		if saved == nil {
 			return errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil,
-				errors.New("semester not found after insert"))
+				ErrSemesterNotFoundAfterInsert)
 		}
 
 		seen := make(map[string]struct{}, len(cmd.Translations))
@@ -77,12 +76,12 @@ func (h *CreateSemesterCommandHandler) Handle(ctx context.Context, cmd CreateSem
 			lang := strings.ToLower(strings.TrimSpace(in.Language))
 			if lang == "" {
 				return errs.NewError(ctx, status.SEMESTER_INVALID_TRANSLATION, nil,
-					errors.New("translation language is required"))
+					ErrTranslationLanguageRequired)
 			}
 			if _, dup := seen[lang]; dup {
 				return errs.NewError(ctx, status.SEMESTER_TRANSLATION_ALREADY_EXISTS,
 					map[string]any{"language": lang},
-					errors.New("duplicate translation language in payload"))
+					ErrDuplicateTranslationLanguage)
 			}
 			seen[lang] = struct{}{}
 

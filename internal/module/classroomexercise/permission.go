@@ -2,7 +2,6 @@ package classroomexercise
 
 import (
 	"context"
-	"errors"
 
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/classroomexercise"
@@ -23,11 +22,11 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 	}
 	if p == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile not found"))
+			ErrProfileNotFound)
 	}
 	if sessionUserID != 0 && sessionUserID != p.UserId() {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
-			errors.New("profile does not belong to the authenticated user"))
+			ErrProfileNotOwnedByUser)
 	}
 	return p, nil
 }
@@ -39,11 +38,11 @@ func (s *Service) requireMember(ctx context.Context, classroomID, profileID int6
 	}
 	if m == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
-			errors.New("not a member of this classroom"))
+			ErrNotClassroomMember)
 	}
 	if m.MemberStatus() == nil || *m.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
-			errors.New("membership is not active"))
+			ErrMembershipNotActive)
 	}
 	return m, nil
 }
@@ -61,7 +60,7 @@ func (s *Service) requireManager(ctx context.Context, classroomID, profileID int
 		return m, nil
 	default:
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
-			errors.New("manager role required"))
+			ErrManagerRoleRequired)
 	}
 }
 
@@ -82,7 +81,7 @@ func requirePrivateAccess(ctx context.Context, e *exerciseDomain.Exercise, calle
 		return nil
 	}
 	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_PRIVATE_DENIED, nil,
-		errors.New("private exercise — only the creator can access"))
+		ErrPrivateExerciseOwnerOnly)
 }
 
 // isManager returns true when the caller is OWNER or CO_TEACHER, used
