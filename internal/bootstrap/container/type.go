@@ -35,44 +35,44 @@ import (
 )
 
 type ServiceContainer struct {
-	UserSvc      *user.Service
-	AuthSvc      *auth.Service
-	ProgramSvc   *program.Service
-	GradeSvc     *grade.Service
-	SemesterSvc  *semester.Service
-	ProfileSvc   *profile.Service
-	DeviceSvc    *device.Service
-	OtpSvc       *otp.Service
-	QuizSvc      *quiz.Service
-	ChapterSvc   *chapter.Service
-	SchoolSvc    *school.Service
-	JobSvc       *job.Service
-	SeqSvc       *seq.Service
+	UserSvc                        *user.Service
+	AuthSvc                        *auth.Service
+	ProgramSvc                     *program.Service
+	GradeSvc                       *grade.Service
+	SemesterSvc                    *semester.Service
+	ProfileSvc                     *profile.Service
+	DeviceSvc                      *device.Service
+	OtpSvc                         *otp.Service
+	QuizSvc                        *quiz.Service
+	ChapterSvc                     *chapter.Service
+	SchoolSvc                      *school.Service
+	JobSvc                         *job.Service
+	SeqSvc                         *seq.Service
 	ClassroomSvc                   *classroom.Service
 	ClassroomExerciseSvc           *classroomexercise.Service
 	ClassroomExerciseSubmissionSvc *classroomexercisesubmission.Service
 }
 
 type RepositoryContainer struct {
-	UserRepository                userDomain.IRepository
-	ProgramRepository             programDomain.IRepository
-	GradeRepository               gradeDomain.IRepository
-	SemesterRepository            semesterDomain.IRepository
-	ProfileRepository             profileDomain.IRepository
-	LoginLogRepository            loginLogDomain.IRepository
-	DeviceRepository              deviceDomain.IRepository
-	OtpRepository                 otpDomain.IRepository
-	QuizRepository                quizDomain.IRepository
-	ChapterRepository             chapterDomain.IRepository
-	ChapterTranslationRepository  chapterDomain.ITranslationRepository
-	GradeTranslationRepository    gradeDomain.ITranslationRepository
-	SemesterTranslationRepository semesterDomain.ITranslationRepository
-	ProgramTranslationRepository  programDomain.ITranslationRepository
-	SchoolRepository              schoolDomain.IRepository
-	SeqRepository                 seqDomain.IRepository
-	ClassroomRepository           classroomDomain.IRepository
-	ClassroomMemberRepository     classroomDomain.IMemberRepository
-	ClassroomProgramRepository    classroomDomain.IClassroomProgramRepository
-	ClassroomExerciseRepository             classroomexerciseDomain.IRepository
-	ClassroomExerciseSubmissionRepository   classroomexercisesubmissionDomain.IRepository
+	UserRepository                        userDomain.IRepository
+	ProgramRepository                     programDomain.IRepository
+	GradeRepository                       gradeDomain.IRepository
+	SemesterRepository                    semesterDomain.IRepository
+	ProfileRepository                     profileDomain.IRepository
+	LoginLogRepository                    loginLogDomain.IRepository
+	DeviceRepository                      deviceDomain.IRepository
+	OtpRepository                         otpDomain.IRepository
+	QuizRepository                        quizDomain.IRepository
+	ChapterRepository                     chapterDomain.IRepository
+	ChapterTranslationRepository          chapterDomain.ITranslationRepository
+	GradeTranslationRepository            gradeDomain.ITranslationRepository
+	SemesterTranslationRepository         semesterDomain.ITranslationRepository
+	ProgramTranslationRepository          programDomain.ITranslationRepository
+	SchoolRepository                      schoolDomain.IRepository
+	SeqRepository                         seqDomain.IRepository
+	ClassroomRepository                   classroomDomain.IRepository
+	ClassroomMemberRepository             classroomDomain.IMemberRepository
+	ClassroomProgramRepository            classroomDomain.IClassroomProgramRepository
+	ClassroomExerciseRepository           classroomexerciseDomain.IRepository
+	ClassroomExerciseSubmissionRepository classroomexercisesubmissionDomain.IRepository
 }

@@ -2,7 +2,6 @@ package user
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -347,15 +346,15 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
 	if userID == 0 {
 		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil,
-			errors.New("user_id is required"))
+			ErrUserIDRequired)
 	}
 	if s.storageProvider == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			errors.New("storage adapter is not configured"))
+			ErrStorageAdapterNotConfigured)
 	}
 	if file == nil || filename == "" {
 		return nil, errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil,
-			errors.New("avatar file is required"))
+			ErrAvatarFileRequired)
 	}
 
 	// Verify the user exists BEFORE uploading so we don't leave orphan
@@ -366,7 +365,7 @@ func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, cont
 	}
 	if existing == nil {
 		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil,
-			errors.New("user not found"))
+			ErrUserNotFound)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
@@ -387,7 +386,7 @@ func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, cont
 	}
 	if uploaded == nil || uploaded.Key == "" {
 		return nil, errs.NewError(ctx, status.USER_AVATAR_UPLOAD_FAILED, nil,
-			errors.New("upload returned an empty key"))
+			ErrUploadReturnedEmptyKey)
 	}
 
 	if err := s.setAvatarKeyCmd.Handle(ctx, command.SetAvatarKeyCommand{

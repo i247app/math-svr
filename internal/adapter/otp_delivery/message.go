@@ -14,9 +14,9 @@ import (
 // Code is the plaintext 6-digit value — the only place it surfaces is in the
 // delivered message. The persisted ma_otps.otp_code stores its SHA-256 hash.
 type Message struct {
-	Identifier string        // phone (E.164) or email
-	Code       string        // plaintext code to deliver (never logged)
-	OtpType    enum.OtpType  // selects the template
+	Identifier string       // phone (E.164) or email
+	Code       string       // plaintext code to deliver (never logged)
+	OtpType    enum.OtpType // selects the template
 	Language   enum.LanguageType
 	ExpiresAt  time.Time
 }

@@ -117,7 +117,7 @@ func (s *Service) EnqueueTask(ctx context.Context, req *EnqueueTaskRequest) (*Ac
 
 func runtimeUnavailable(ctx context.Context) error {
 	return errs.NewError(ctx, status.JOB_RUNTIME_UNAVAILABLE, nil,
-		stderrors.New("job runtime is not initialised"))
+		ErrJobRuntimeNotInitialised)
 }
 
 // mapRuntimeError translates the runtime's sentinel errors into the

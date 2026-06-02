@@ -21,10 +21,10 @@ var (
 	ErrClassroomFull                = errors.New("classroom is full")
 
 	// Classroom code (a.k.a. legacy "invite code") flows.
-	ErrClassroomCodeTaken           = errors.New("invite code already taken")
-	ErrClassroomCodeNotFound        = errors.New("invite code not found")
-	ErrClassroomCodeExpired         = errors.New("invite code expired")
-	ErrClassroomCodeMintExhausted   = errors.New("could not mint a unique classroom code")
+	ErrClassroomCodeTaken         = errors.New("invite code already taken")
+	ErrClassroomCodeNotFound      = errors.New("invite code not found")
+	ErrClassroomCodeExpired       = errors.New("invite code expired")
+	ErrClassroomCodeMintExhausted = errors.New("could not mint a unique classroom code")
 
 	// Membership / role.
 	ErrNotClassroomMember           = errors.New("not a member of this classroom")
@@ -39,18 +39,18 @@ var (
 	ErrPendingJoinRequestExists     = errors.New("a pending join request already exists")
 
 	// Invitations.
-	ErrInvitationNotFound  = errors.New("invitation not found")
+	ErrInvitationNotFound   = errors.New("invitation not found")
 	ErrInvitationNotPending = errors.New("invitation is not pending")
 
 	// Join requests.
-	ErrJoinRequestNotFound  = errors.New("join request not found")
+	ErrJoinRequestNotFound   = errors.New("join request not found")
 	ErrJoinRequestNotPending = errors.New("join request is not pending")
 
 	// Transfer ownership.
-	ErrTransferSameOwner         = errors.New("new owner must differ from current owner")
-	ErrCallerNotCurrentOwner     = errors.New("caller is not the current owner")
-	ErrNewOwnerNotMember         = errors.New("new owner must be an existing member")
-	ErrNewOwnerNotActiveMember   = errors.New("new owner must be an active member")
+	ErrTransferSameOwner       = errors.New("new owner must differ from current owner")
+	ErrCallerNotCurrentOwner   = errors.New("caller is not the current owner")
+	ErrNewOwnerNotMember       = errors.New("new owner must be an existing member")
+	ErrNewOwnerNotActiveMember = errors.New("new owner must be an active member")
 
 	// Invitation identifier resolver.
 	ErrInvitationIdentifierRequired = errors.New("identifier is required")

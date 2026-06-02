@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	dto "math-ai.com/math-ai/internal/application/dto/auth"
@@ -12,7 +11,7 @@ import (
 
 func ValidateLogin(ctx context.Context, req *dto.LoginReq) error {
 	if strings.TrimSpace(req.Phone) == "" {
-		return errs.NewError(ctx, status.AUTH_MISSING_PHONE, nil, errors.New("phone is required"))
+		return errs.NewError(ctx, status.AUTH_MISSING_PHONE, nil, ErrPhoneRequired)
 	}
 	return nil
 }

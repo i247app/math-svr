@@ -2,7 +2,6 @@ package job
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -11,14 +10,14 @@ import (
 
 func validateJobName(ctx context.Context, name string) error {
 	if strings.TrimSpace(name) == "" {
-		return errs.NewError(ctx, status.JOB_MISSING_NAME, nil, errors.New("job name is required"))
+		return errs.NewError(ctx, status.JOB_MISSING_NAME, nil, ErrJobNameRequired)
 	}
 	return nil
 }
 
 func validateTaskName(ctx context.Context, name string) error {
 	if strings.TrimSpace(name) == "" {
-		return errs.NewError(ctx, status.TASK_MISSING_NAME, nil, errors.New("task name is required"))
+		return errs.NewError(ctx, status.TASK_MISSING_NAME, nil, ErrTaskNameRequired)
 	}
 	return nil
 }

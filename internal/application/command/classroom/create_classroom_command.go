@@ -22,16 +22,16 @@ import (
 // runs, and the DB UNIQUE on (classroom_id, program_id) remains the
 // hard backstop.
 type CreateClassroomCommand struct {
-	ActorID             *int64
-	OwnerProfileID      int64
-	Name                string
-	Description         *string
-	SchoolID            *int64
-	ProgramIDs          []int64
-	GradeID             *int64
-	MaxMembers          *int64
-	CoverKey            *string
-	Note                *string
+	ActorID                *int64
+	OwnerProfileID         int64
+	Name                   string
+	Description            *string
+	SchoolID               *int64
+	ProgramIDs             []int64
+	GradeID                *int64
+	MaxMembers             *int64
+	CoverKey               *string
+	Note                   *string
 	ClassroomCode          *string
 	ClassroomCodeExpiresDt mtime.MathTime
 }

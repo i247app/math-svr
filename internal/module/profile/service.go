@@ -2,7 +2,6 @@ package profile
 
 import (
 	"context"
-	"errors"
 	"io"
 	"strings"
 	"time"
@@ -98,7 +97,7 @@ func (s *Service) GetProfileById(ctx context.Context, req *dto.GetProfileByIdReq
 	}
 	if p == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile not found"))
+			ErrProfileNotFound)
 	}
 
 	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{p}, req.Language)
@@ -236,7 +235,7 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 	}
 	if existProfile == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile not found"))
+			ErrProfileNotFound)
 	}
 
 	// Same mutex as create — string ref OR file upload, never both.
@@ -314,7 +313,7 @@ func (s *Service) SoftDeleteProfile(ctx context.Context, req *dto.DeleteProfileR
 	}
 	if p == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile not found"))
+			ErrProfileNotFound)
 	}
 
 	if err := s.softDeleteProfileCmd.Handle(ctx, command.SoftDeleteProfileCommand{
@@ -336,7 +335,7 @@ func (s *Service) ForceDeleteProfile(ctx context.Context, req *dto.DeleteProfile
 	}
 	if existProfile == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile not found"))
+			ErrProfileNotFound)
 	}
 
 	p, err := s.getProfileByIdQuery.Handle(ctx, query.GetProfileByIdQuery{ProfileId: req.ProfileID})
@@ -345,7 +344,7 @@ func (s *Service) ForceDeleteProfile(ctx context.Context, req *dto.DeleteProfile
 	}
 	if p == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile not found"))
+			ErrProfileNotFound)
 	}
 
 	if err := s.forceDeleteProfileCmd.Handle(ctx, command.ForceDeleteProfileCommand{
@@ -372,15 +371,15 @@ func (s *Service) ForceDeleteProfile(ctx context.Context, req *dto.DeleteProfile
 func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
 	if profileID == 0 {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if s.storageProvider == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			errors.New("storage adapter is not configured"))
+			ErrStorageAdapterNotConfigured)
 	}
 	if file == nil || filename == "" {
 		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil,
-			errors.New("avatar file is required"))
+			ErrAvatarFileRequired)
 	}
 
 	// Verify the profile exists *before* uploading so we don't leave
@@ -391,7 +390,7 @@ func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, c
 	}
 	if existing == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile not found"))
+			ErrProfileNotFound)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
@@ -412,7 +411,7 @@ func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, c
 	}
 	if uploaded == nil || uploaded.Key == "" {
 		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
-			errors.New("upload returned an empty key"))
+			ErrUploadReturnedEmptyKey)
 	}
 
 	if err := s.setAvatarKeyCmd.Handle(ctx, command.SetAvatarKeyCommand{

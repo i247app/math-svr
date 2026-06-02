@@ -2,7 +2,6 @@ package quiz
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	dto "math-ai.com/math-ai/internal/application/dto/quiz"
@@ -30,7 +29,7 @@ func validateLanguage(ctx context.Context, lang enum.LanguageType) error {
 		return nil
 	default:
 		return errs.NewError(ctx, status.QUIZ_INVALID_LANGUAGE, nil,
-			errors.New("language must be 'vn' or 'en'"))
+			ErrLanguageMustBeVnOrEn)
 	}
 }
 
@@ -42,11 +41,11 @@ func validateQuizPurpose(ctx context.Context, p string) (enum.QuizPurpose, error
 	upper := enum.QuizPurpose(strings.ToUpper(strings.TrimSpace(p)))
 	if upper == "" {
 		return "", errs.NewError(ctx, status.QUIZ_MISSING_TYPE, nil,
-			errors.New("purpose is required"))
+			ErrPurposeRequired)
 	}
 	if !upper.IsValid() {
 		return "", errs.NewError(ctx, status.QUIZ_INVALID_TYPE, nil,
-			errors.New("purpose must be one of ASSESSMENT, PRACTICE, EXAM"))
+			ErrPurposeMustBeOneOfAssessmentPracticeExam)
 	}
 	return upper, nil
 }
@@ -66,7 +65,7 @@ func resolveTypeOfQuiz(ctx context.Context, raw string, hasPrevious bool) (enum.
 	}
 	if !upper.IsValid() {
 		return "", errs.NewError(ctx, status.QUIZ_INVALID_TYPE_OF_QUIZ, nil,
-			errors.New("type_of_quiz must be one of GENERAL, REINFORCEMENT"))
+			ErrTypeOfQuizMustBeOneOfGeneralReinforcement)
 	}
 	return upper, nil
 }
@@ -104,23 +103,23 @@ func ValidateGenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (valida
 func ValidateSubmitAnswers(ctx context.Context, req *dto.SubmitQuizAnswersReq) error {
 	if req.QuizID == 0 {
 		return errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
-			errors.New("quiz_id is required"))
+			ErrQuizIDRequired)
 	}
 	if err := validateLanguage(ctx, req.Language); err != nil {
 		return err
 	}
 	if len(req.Answers) == 0 {
 		return errs.NewError(ctx, status.QUIZ_MISSING_ANSWERS, nil,
-			errors.New("answers are required"))
+			ErrAnswersRequired)
 	}
 	for i, a := range req.Answers {
 		if a.QuestionNumber <= 0 {
 			return errs.NewError(ctx, status.QUIZ_INVALID_ANSWERS,
-				map[string]any{"index": i}, errors.New("question_number must be positive"))
+				map[string]any{"index": i}, ErrQuestionNumberMustBePositive)
 		}
 		if strings.TrimSpace(a.Label) == "" {
 			return errs.NewError(ctx, status.QUIZ_INVALID_ANSWERS,
-				map[string]any{"index": i}, errors.New("label is required"))
+				map[string]any{"index": i}, ErrLabelRequired)
 		}
 	}
 	return nil
@@ -129,7 +128,7 @@ func ValidateSubmitAnswers(ctx context.Context, req *dto.SubmitQuizAnswersReq) e
 func ValidateGetQuiz(ctx context.Context, req *dto.GetQuizByQuizIdReq) error {
 	if req.QuizID == 0 {
 		return errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
-			errors.New("quiz_id is required"))
+			ErrQuizIDRequired)
 	}
 	return nil
 }
@@ -143,7 +142,7 @@ func ValidateListQuizzes(ctx context.Context, req *dto.ListQuizzesReq) error {
 	}
 	if req.ProfileID == nil && req.UserID == nil {
 		return errs.NewError(ctx, status.QUIZ_MISSING_PROFILE_ID, nil,
-			errors.New("at least one of profile_id or user_id is required"))
+			ErrAtLeastOneOfProfileIDOrUserIDRequired)
 	}
 	return nil
 }
@@ -151,7 +150,7 @@ func ValidateListQuizzes(ctx context.Context, req *dto.ListQuizzesReq) error {
 func ValidateDeleteQuiz(ctx context.Context, req *dto.DeleteQuizReq) error {
 	if req.QuizID == 0 {
 		return errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
-			errors.New("quiz_id is required"))
+			ErrQuizIDRequired)
 	}
 	return nil
 }

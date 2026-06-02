@@ -228,7 +228,7 @@ func DomainToResponse(c *domain.Classroom) *ClassroomResponse {
 		SchoolID:        c.SchoolId(),
 		ProgramIDs:      programIDs,
 		GradeID:         c.GradeId(),
-		ClassroomCode:      c.ClassroomCode(),
+		ClassroomCode:   c.ClassroomCode(),
 		MaxMembers:      c.MaxMembers(),
 		MemberCount:     c.MemberCount(),
 		StudentCount:    c.StudentCount(),

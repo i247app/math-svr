@@ -2,7 +2,6 @@ package profile
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	gradeDto "math-ai.com/math-ai/internal/application/dto/grade"
@@ -28,7 +27,7 @@ func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateProf
 	}
 	if s.storageProvider == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			errors.New("storage adapter is not configured"))
+			ErrStorageAdapterNotConfigured)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
@@ -49,7 +48,7 @@ func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateProf
 	}
 	if uploaded == nil || uploaded.Key == "" {
 		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
-			errors.New("upload returned an empty key"))
+			ErrUploadReturnedEmptyKey)
 	}
 	return &uploaded.Key, nil
 }
@@ -63,7 +62,7 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProf
 	}
 	if s.storageProvider == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			errors.New("storage adapter is not configured"))
+			ErrStorageAdapterNotConfigured)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
@@ -84,7 +83,7 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProf
 	}
 	if uploaded == nil || uploaded.Key == "" {
 		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
-			errors.New("upload returned an empty key"))
+			ErrUploadReturnedEmptyKey)
 	}
 
 	log.Info("avatar.uploaded",
@@ -101,7 +100,7 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProf
 func (s *Service) normalizeAvatarKey(ctx context.Context, raw string, invalidStatus status.StatusCode) (string, error) {
 	if s.storageProvider == nil {
 		return "", errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			errors.New("storage adapter is not configured"))
+			ErrStorageAdapterNotConfigured)
 	}
 	key, err := s.storageProvider.NormalizeKey(ctx, &storage.NormalizeKeyRequest{
 		Raw: raw,
@@ -111,7 +110,7 @@ func (s *Service) normalizeAvatarKey(ctx context.Context, raw string, invalidSta
 	}
 	if key == "" {
 		return "", errs.NewError(ctx, invalidStatus, nil,
-			errors.New("avatar reference resolved to empty key"))
+			ErrAvatarReferenceResolvedToEmptyKey)
 	}
 	return key, nil
 }

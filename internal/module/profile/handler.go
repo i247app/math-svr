@@ -2,7 +2,6 @@ package profile
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -220,7 +219,7 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 	if profileIDStr == "" {
 		response.WriteJson(w, nil,
 			errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-				errors.New("profile_id form field is required")))
+				ErrProfileIDFormFieldRequired))
 		return
 	}
 

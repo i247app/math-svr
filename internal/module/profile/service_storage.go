@@ -2,7 +2,6 @@ package profile
 
 import (
 	"context"
-	"errors"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	dto "math-ai.com/math-ai/internal/application/dto/profile"
@@ -32,7 +31,7 @@ func (s *Service) UploadAvatarStatic(ctx context.Context, req *dto.UploadFileReq
 	}
 	if uploaded == nil || uploaded.Key == "" {
 		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
-			errors.New("upload returned an empty key"))
+			ErrUploadReturnedEmptyKey)
 	}
 
 	return &dto.UploadFileResponse{

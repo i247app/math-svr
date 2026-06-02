@@ -94,10 +94,10 @@ func (s ClassroomMemberStatusType) IsValid() bool {
 type ClassroomRelationshipType string
 
 const (
-	ClassroomRelationshipTypeMember             ClassroomRelationshipType = "MEMBER"
-	ClassroomRelationshipTypePendingInvitation  ClassroomRelationshipType = "PENDING_INVITATION"
-	ClassroomRelationshipTypePendingRequest     ClassroomRelationshipType = "PENDING_REQUEST"
-	ClassroomRelationshipTypeNone               ClassroomRelationshipType = "NONE"
+	ClassroomRelationshipTypeMember            ClassroomRelationshipType = "MEMBER"
+	ClassroomRelationshipTypePendingInvitation ClassroomRelationshipType = "PENDING_INVITATION"
+	ClassroomRelationshipTypePendingRequest    ClassroomRelationshipType = "PENDING_REQUEST"
+	ClassroomRelationshipTypeNone              ClassroomRelationshipType = "NONE"
 )
 
 func (s ClassroomRelationshipType) String() string {

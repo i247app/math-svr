@@ -3,7 +3,6 @@ package quiz
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -100,7 +99,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		}
 		if p == nil {
 			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-				errors.New("profile not found"))
+				ErrProfileNotFound)
 		}
 		profile = p
 	}
@@ -128,18 +127,18 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		}
 		if prev == nil {
 			return nil, errs.NewError(ctx, status.QUIZ_PREVIOUS_NOT_FOUND, nil,
-				errors.New("previous quiz not found"))
+				ErrPreviousQuizNotFound)
 		}
 		if prev.AIReview() == nil || prev.Answers() == nil {
 			return nil, errs.NewError(ctx, status.QUIZ_PREVIOUS_NOT_GRADED, nil,
-				errors.New("previous quiz must be submitted before generating a reinforce round"))
+				ErrPreviousQuizMustBeSubmittedBeforeGeneratingReinforceRound)
 		}
 		// Ownership check only applies when both sides have a profile.
 		// An anonymous reinforce round (or a reinforce off an anonymous
 		// previous quiz) is allowed — they share no owner to mismatch.
 		if profile != nil && prev.ProfileId() != nil && *prev.ProfileId() != profile.ProfileId() {
 			return nil, errs.NewError(ctx, status.QUIZ_NOT_OWNED, nil,
-				errors.New("previous quiz does not belong to this profile"))
+				ErrPreviousQuizDoesNotBelongToThisProfile)
 		}
 		genIn.PreviousQuestions = derefString(prev.Questions())
 		genIn.PreviousAnswers = derefString(prev.Answers())
@@ -216,15 +215,15 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 	}
 	if existing == nil {
 		return nil, errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
-			errors.New("quiz not found"))
+			ErrQuizNotFound)
 	}
 	if existing.QuizStatus() != nil && *existing.QuizStatus() == string(enum.QuizStatusTypeSubmitted) {
 		return nil, errs.NewError(ctx, status.QUIZ_ALREADY_SUBMITTED, nil,
-			errors.New("quiz has already been submitted"))
+			ErrQuizHasAlreadyBeenSubmitted)
 	}
 	if existing.Questions() == nil || *existing.Questions() == "" {
 		return nil, errs.NewError(ctx, status.QUIZ_GRADING_FAILED, nil,
-			errors.New("quiz has no questions to grade"))
+			ErrQuizHasNoQuestionsToGrade)
 	}
 
 	answersJSON, err := json.Marshal(req.Answers)
@@ -315,7 +314,7 @@ func (s *Service) GetQuizByQuizId(ctx context.Context, req *dto.GetQuizByQuizIdR
 	}
 	if q == nil {
 		return nil, errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
-			errors.New("quiz not found"))
+			ErrQuizNotFound)
 	}
 
 	includeAnswers := false
@@ -358,7 +357,7 @@ func (s *Service) SoftDeleteQuiz(ctx context.Context, req *dto.DeleteQuizReq) (*
 	}
 	if q == nil {
 		return nil, errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
-			errors.New("quiz not found"))
+			ErrQuizNotFound)
 	}
 
 	if err := s.softDeleteQuizCmd.Handle(ctx, command.SoftDeleteQuizCommand{QuizID: req.QuizID}); err != nil {

@@ -2,7 +2,6 @@ package classroomexercisesubmission
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	dto "math-ai.com/math-ai/internal/application/dto/classroomexercisesubmission"
@@ -40,19 +39,19 @@ var validSubmissionSortOrder = map[string]struct{}{
 
 func ValidateSubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExerciseAnswersReq) error {
 	if req == nil {
-		return errs.NewError(ctx, status.FAIL, nil, errors.New("nil request"))
+		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_EXERCISE_ID, nil,
-			errors.New("classroom_exercise_id is required"))
+			ErrClassroomExerciseIDRequired)
 	}
 	if len(req.Answers) == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_ANSWERS, nil,
-			errors.New("answers is required"))
+			ErrAnswersRequired)
 	}
 	if len(req.Answers) > submissionMaxAnswerCount {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS, nil,
-			errors.New("too many answers"))
+			ErrTooManyAnswers)
 	}
 	// Per-item shape check. We don't enforce that question_numbers form
 	// a contiguous 1..N range — the bot prompt scores missing entries
@@ -61,32 +60,32 @@ func ValidateSubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExerciseA
 	for _, a := range req.Answers {
 		if a.QuestionNumber <= 0 {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS, nil,
-				errors.New("question_number must be > 0"))
+				ErrQuestionNumberMustBe0)
 		}
 		if _, dup := seen[a.QuestionNumber]; dup {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS, nil,
-				errors.New("duplicate question_number"))
+				ErrDuplicateQuestionNumber)
 		}
 		seen[a.QuestionNumber] = struct{}{}
 		if strings.TrimSpace(a.Label) == "" {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS, nil,
-				errors.New("answer label is required"))
+				ErrAnswerLabelRequired)
 		}
 	}
 	if req.Note != nil && len([]rune(*req.Note)) > submissionNoteMaxLen {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOTE_TOO_LONG, nil,
-			errors.New("note too long"))
+			ErrNoteTooLong)
 	}
 	return nil
 }
 
 func ValidateGetSubmission(ctx context.Context, req *dto.GetSubmissionReq) error {
 	if req == nil {
-		return errs.NewError(ctx, status.FAIL, nil, errors.New("nil request"))
+		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseSubmissionID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_ID, nil,
-			errors.New("classroom_exercise_submission_id is required"))
+			ErrClassroomExerciseSubmissionIDRequired)
 	}
 	return nil
 }
@@ -97,7 +96,7 @@ func ValidateGetSubmission(ctx context.Context, req *dto.GetSubmissionReq) error
 // and load the parent classroom for the manager check.
 func ValidateListSubmissions(ctx context.Context, req *dto.ListSubmissionsReq) error {
 	if req == nil {
-		return errs.NewError(ctx, status.FAIL, nil, errors.New("nil request"))
+		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ProfileID != nil && *req.ProfileID == 0 {
 		req.ProfileID = nil
@@ -113,11 +112,11 @@ func ValidateListSubmissions(ctx context.Context, req *dto.ListSubmissionsReq) e
 
 func ValidateListSubmissionsByExercise(ctx context.Context, req *dto.ListSubmissionsByExerciseReq) error {
 	if req == nil {
-		return errs.NewError(ctx, status.FAIL, nil, errors.New("nil request"))
+		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_EXERCISE_ID, nil,
-			errors.New("classroom_exercise_id is required"))
+			ErrClassroomExerciseIDRequired)
 	}
 	return normalizeSubmissionListShared(ctx, &req.Status, &req.SortBy, &req.SortOrder)
 }
@@ -126,11 +125,11 @@ func ValidateListSubmissionsByExercise(ctx context.Context, req *dto.ListSubmiss
 // request. Shared by both submitted-members and non-submitted-members.
 func ValidateListAudienceMembers(ctx context.Context, req *dto.ListAudienceMembersReq) error {
 	if req == nil {
-		return errs.NewError(ctx, status.FAIL, nil, errors.New("nil request"))
+		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_EXERCISE_ID, nil,
-			errors.New("classroom_exercise_id is required"))
+			ErrClassroomExerciseIDRequired)
 	}
 	if req.Search != nil {
 		v := strings.TrimSpace(*req.Search)
@@ -138,7 +137,7 @@ func ValidateListAudienceMembers(ctx context.Context, req *dto.ListAudienceMembe
 			req.Search = nil
 		} else if len([]rune(v)) > audienceSearchMaxLen {
 			return errs.NewError(ctx, status.FAIL, nil,
-				errors.New("search too long"))
+				ErrSearchTooLong)
 		} else {
 			req.Search = &v
 		}
@@ -149,7 +148,7 @@ func ValidateListAudienceMembers(ctx context.Context, req *dto.ListAudienceMembe
 			req.SortBy = nil
 		} else if _, ok := validAudienceSortBy[v]; !ok {
 			return errs.NewError(ctx, status.FAIL, nil,
-				errors.New("invalid sort_by"))
+				ErrInvalidSortBy)
 		} else {
 			req.SortBy = &v
 		}
@@ -160,7 +159,7 @@ func ValidateListAudienceMembers(ctx context.Context, req *dto.ListAudienceMembe
 			req.SortOrder = nil
 		} else if _, ok := validSubmissionSortOrder[v]; !ok {
 			return errs.NewError(ctx, status.FAIL, nil,
-				errors.New("invalid sort_order"))
+				ErrInvalidSortOrder)
 		} else {
 			req.SortOrder = &v
 		}
@@ -170,11 +169,11 @@ func ValidateListAudienceMembers(ctx context.Context, req *dto.ListAudienceMembe
 
 func ValidateDeleteSubmission(ctx context.Context, req *dto.DeleteSubmissionReq) error {
 	if req == nil {
-		return errs.NewError(ctx, status.FAIL, nil, errors.New("nil request"))
+		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseSubmissionID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_ID, nil,
-			errors.New("classroom_exercise_submission_id is required"))
+			ErrClassroomExerciseSubmissionIDRequired)
 	}
 	return nil
 }
@@ -188,7 +187,7 @@ func normalizeSubmissionListShared(ctx context.Context, statusPtr, sortByPtr, so
 			*statusPtr = nil
 		} else if !enum.ClassroomExerciseSubmissionStatusType(v).IsValid() {
 			return errs.NewError(ctx, status.FAIL, nil,
-				errors.New("invalid submission status"))
+				ErrInvalidSubmissionStatus)
 		} else {
 			*statusPtr = &v
 		}
@@ -199,7 +198,7 @@ func normalizeSubmissionListShared(ctx context.Context, statusPtr, sortByPtr, so
 			*sortByPtr = nil
 		} else if _, ok := validSubmissionSortBy[v]; !ok {
 			return errs.NewError(ctx, status.FAIL, nil,
-				errors.New("invalid sort_by"))
+				ErrInvalidSortBy)
 		} else {
 			*sortByPtr = &v
 		}
@@ -210,7 +209,7 @@ func normalizeSubmissionListShared(ctx context.Context, statusPtr, sortByPtr, so
 			*sortOrderPtr = nil
 		} else if _, ok := validSubmissionSortOrder[v]; !ok {
 			return errs.NewError(ctx, status.FAIL, nil,
-				errors.New("invalid sort_order"))
+				ErrInvalidSortOrder)
 		} else {
 			*sortOrderPtr = &v
 		}

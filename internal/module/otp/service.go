@@ -2,7 +2,6 @@ package otp
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
@@ -83,13 +82,13 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	switch req.OtpType {
 	case string(enum.OtpTypeLogin2FA):
 		if user == nil {
-			return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil, errors.New("user not found"))
+			return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil, ErrUserNotFound)
 		}
 
 		userId = &user.UserID
 	case string(enum.OtpTypeRegister):
 		if user != nil {
-			return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, errors.New("user already exists"))
+			return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, ErrUserAlreadyExists)
 		}
 		userId = nil
 	default:

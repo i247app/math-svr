@@ -2,7 +2,6 @@ package school
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
@@ -127,7 +126,7 @@ func (s *Service) GetSchool(ctx context.Context, req *dto.GetSchoolReq) (*dto.Ge
 	}
 	if found == nil {
 		return nil, errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil,
-			errors.New("school not found"))
+			ErrSchoolNotFound)
 	}
 
 	resp := dto.DomainToResponse(found)

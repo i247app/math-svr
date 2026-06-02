@@ -2,7 +2,6 @@ package school
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	dto "math-ai.com/math-ai/internal/application/dto/school"
@@ -25,31 +24,31 @@ const (
 func ValidateCreateSchool(ctx context.Context, req *dto.CreateSchoolReq) error {
 	if strings.TrimSpace(req.Name) == "" {
 		return errs.NewError(ctx, status.SCHOOL_MISSING_NAME, nil,
-			errors.New("name is required"))
+			ErrNameRequired)
 	}
 	if len(req.Name) > nameMaxLen {
 		return errs.NewError(ctx, status.SCHOOL_NAME_TOO_LONG, nil,
-			errors.New("name too long"))
+			ErrNameTooLong)
 	}
 	if req.Description != nil && len(*req.Description) > descriptionMaxLen {
 		return errs.NewError(ctx, status.SCHOOL_DESCRIPTION_TOO_LONG, nil,
-			errors.New("description too long"))
+			ErrDescriptionTooLong)
 	}
 	if req.ImageKey != nil && len(*req.ImageKey) > imageKeyMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("image_key too long"))
+			ErrImageKeyTooLong)
 	}
 	if req.District != nil && len(*req.District) > districtMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("district too long"))
+			ErrDistrictTooLong)
 	}
 	if req.Province != nil && len(*req.Province) > provinceMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("province too long"))
+			ErrProvinceTooLong)
 	}
 	if req.Note != nil && len(*req.Note) > noteMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("note too long"))
+			ErrNoteTooLong)
 	}
 	return nil
 }
@@ -57,37 +56,37 @@ func ValidateCreateSchool(ctx context.Context, req *dto.CreateSchoolReq) error {
 func ValidateUpdateSchool(ctx context.Context, req *dto.UpdateSchoolReq) error {
 	if req.SchoolID == 0 {
 		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
-			errors.New("school_id is required"))
+			ErrSchoolIDRequired)
 	}
 	if req.Name != nil {
 		if strings.TrimSpace(*req.Name) == "" {
 			return errs.NewError(ctx, status.SCHOOL_MISSING_NAME, nil,
-				errors.New("name cannot be blank"))
+				ErrNameCannotBeBlank)
 		}
 		if len(*req.Name) > nameMaxLen {
 			return errs.NewError(ctx, status.SCHOOL_NAME_TOO_LONG, nil,
-				errors.New("name too long"))
+				ErrNameTooLong)
 		}
 	}
 	if req.Description != nil && len(*req.Description) > descriptionMaxLen {
 		return errs.NewError(ctx, status.SCHOOL_DESCRIPTION_TOO_LONG, nil,
-			errors.New("description too long"))
+			ErrDescriptionTooLong)
 	}
 	if req.ImageKey != nil && len(*req.ImageKey) > imageKeyMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("image_key too long"))
+			ErrImageKeyTooLong)
 	}
 	if req.District != nil && len(*req.District) > districtMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("district too long"))
+			ErrDistrictTooLong)
 	}
 	if req.Province != nil && len(*req.Province) > provinceMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("province too long"))
+			ErrProvinceTooLong)
 	}
 	if req.Note != nil && len(*req.Note) > noteMaxLen {
 		return errs.NewError(ctx, status.FAIL, nil,
-			errors.New("note too long"))
+			ErrNoteTooLong)
 	}
 	return nil
 }
@@ -95,7 +94,7 @@ func ValidateUpdateSchool(ctx context.Context, req *dto.UpdateSchoolReq) error {
 func ValidateGetSchool(ctx context.Context, req *dto.GetSchoolReq) error {
 	if req.SchoolID == 0 {
 		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
-			errors.New("school_id is required"))
+			ErrSchoolIDRequired)
 	}
 	return nil
 }
@@ -144,7 +143,7 @@ func sanitizeSchoolIDs(ids []int64) []int64 {
 func ValidateDeleteSchool(ctx context.Context, req *dto.DeleteSchoolReq) error {
 	if req.SchoolID == 0 {
 		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
-			errors.New("school_id is required"))
+			ErrSchoolIDRequired)
 	}
 	return nil
 }

@@ -237,8 +237,8 @@ func buildClassroomListFilter(params *classroom.ListClassroomsParams) (string, [
 	if params.Search != nil {
 		needle := strings.TrimSpace(*params.Search)
 		if needle != "" {
-			clause += ` AND c.name LIKE ?`
-			args = append(args, "%"+needle+"%")
+			clause += ` AND (c.name LIKE ? OR c.classroom_code LIKE ?) `
+			args = append(args, "%"+needle+"%", "%"+needle+"%")
 		}
 	}
 	if !params.IncludeArchived {

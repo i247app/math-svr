@@ -2,7 +2,6 @@ package program
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
@@ -128,7 +127,7 @@ func (s *Service) GetProgram(ctx context.Context, req *dto.GetProgramReq) (*dto.
 	}
 	if p == nil {
 		return nil, errs.NewError(ctx, status.PROGRAM_NOT_FOUND, nil,
-			errors.New("program not found"))
+			ErrProgramNotFound)
 	}
 	resp := dto.DomainToResponse(p)
 	s.populateImageUrl(ctx, resp)

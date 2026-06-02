@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	command "math-ai.com/math-ai/internal/application/command/auth"
@@ -61,7 +60,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 	if result == nil {
 		return &dto.LoginRes{
 			User: nil,
-		}, errs.NewError(ctx, status.NO_DATA, nil, errors.New("user not found"))
+		}, errs.NewError(ctx, status.NO_DATA, nil, ErrUserNotFound)
 	}
 
 	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: result.UserID})
@@ -96,7 +95,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 
 func (s *Service) LoginResume(ctx context.Context, sess *session.AppSession) (*dto.LoginRes, error) {
 	if !sess.IsValid() {
-		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, errors.New("session is not valid"))
+		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrSessionNotValid)
 	}
 
 	uid, ok := sess.UID()
@@ -143,7 +142,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 	if result == nil {
 		return &dto.LoginWithOTPRes{
 			User: nil,
-		}, errs.NewError(ctx, status.NO_DATA, nil, errors.New("user not found"))
+		}, errs.NewError(ctx, status.NO_DATA, nil, ErrUserNotFound)
 	}
 
 	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: result.UserID})

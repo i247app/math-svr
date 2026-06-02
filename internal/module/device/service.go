@@ -2,7 +2,6 @@ package device
 
 import (
 	"context"
-	"errors"
 
 	command "math-ai.com/math-ai/internal/application/command/device"
 	dto "math-ai.com/math-ai/internal/application/dto/device"
@@ -25,13 +24,13 @@ import (
 // first sight, and returns the resulting device entity so the caller can
 // branch on is_verified.
 type Service struct {
-	getDeviceByIdQuery      *query.GetDeviceByIdQueryHandler
+	getDeviceByIdQuery       *query.GetDeviceByIdQueryHandler
 	listDevicesByUserIdQuery *query.ListDevicesByUserIdQueryHandler
-	markVerifiedCmd         *command.MarkDeviceVerifiedCommandHandler
-	updateDeviceCmd         *command.UpdateDeviceCommandHandler
-	revokeDeviceCmd         *command.RevokeDeviceCommandHandler
-	softDeleteDeviceCmd     *command.SoftDeleteDeviceCommandHandler
-	repo                    domain.IRepository
+	markVerifiedCmd          *command.MarkDeviceVerifiedCommandHandler
+	updateDeviceCmd          *command.UpdateDeviceCommandHandler
+	revokeDeviceCmd          *command.RevokeDeviceCommandHandler
+	softDeleteDeviceCmd      *command.SoftDeleteDeviceCommandHandler
+	repo                     domain.IRepository
 }
 
 func NewService(repo domain.IRepository, uow transaction.UnitOfWork) *Service {
@@ -55,7 +54,7 @@ func (s *Service) GetDeviceById(ctx context.Context, req *dto.GetDeviceByIdReq) 
 		return nil, err
 	}
 	if d == nil {
-		return nil, errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, errors.New("device not found"))
+		return nil, errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
 	}
 	return &dto.GetDeviceByIdRes{Device: dto.DomainToResponse(d)}, nil
 }

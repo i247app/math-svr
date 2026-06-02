@@ -3,7 +3,6 @@ package classroomexercisesubmission
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -89,11 +88,11 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 	}
 	if exercise == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
-			errors.New("classroom exercise not found"))
+			ErrClassroomExerciseNotFound)
 	}
 	if !exerciseAvailableForSubmission(exercise) {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_EXERCISE_UNAVAILABLE, nil,
-			errors.New("exercise is not available"))
+			ErrExerciseNotAvailable)
 	}
 	if _, err := s.requireMember(ctx, exercise.ClassroomId(), caller.ProfileId()); err != nil {
 		return nil, err
@@ -111,7 +110,7 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 	}
 	if existing != nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_ALREADY_EXISTS, nil,
-			errors.New("submission already exists"))
+			ErrSubmissionAlreadyExists)
 	}
 
 	answersJSON, err := json.Marshal(req.Answers)
@@ -128,7 +127,7 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 	}
 	if questions == "" {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED, nil,
-			errors.New("exercise has no questions to grade"))
+			ErrExerciseHasNoQuestionsToGrade)
 	}
 
 	grading, err := s.bot.GradeExercise(ctx, gradeExerciseInput{
@@ -197,7 +196,7 @@ func (s *Service) GetSubmission(ctx context.Context, req *dto.GetSubmissionReq, 
 	}
 	if sub == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND, nil,
-			errors.New("submission not found"))
+			ErrSubmissionNotFound)
 	}
 
 	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
@@ -242,7 +241,7 @@ func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsR
 		}
 		if p == nil {
 			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-				errors.New("profile not found"))
+				ErrProfileNotFound)
 		}
 		if sessionUserID != 0 && p.UserId() == sessionUserID {
 			isSelfList = true
@@ -256,7 +255,7 @@ func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsR
 		}
 		if scopeClassroomID == 0 {
 			return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
-				errors.New("classroom_id or classroom_exercise_id is required when listing across profiles"))
+				ErrClassroomIDOrClassroomExerciseIDRequiredWhenListingAcrossProfiles)
 		}
 		// if _, err := s.requireManagerForUser(ctx, scopeClassroomID, sessionUserID); err != nil {
 		// 	return nil, err
@@ -307,7 +306,7 @@ func (s *Service) resolveListScopeClassroomID(ctx context.Context, req *dto.List
 		}
 		if exercise == nil {
 			return 0, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
-				errors.New("classroom exercise not found"))
+				ErrClassroomExerciseNotFound)
 		}
 		return exercise.ClassroomId(), nil
 	}
@@ -334,7 +333,7 @@ func (s *Service) ListSubmissionsByExercise(ctx context.Context, req *dto.ListSu
 	}
 	if exercise == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
-			errors.New("classroom exercise not found"))
+			ErrClassroomExerciseNotFound)
 	}
 	if _, err := s.requireManager(ctx, exercise.ClassroomId(), caller.ProfileId()); err != nil {
 		return nil, err
@@ -396,7 +395,7 @@ func (s *Service) listAudienceMembers(ctx context.Context, req *dto.ListAudience
 	}
 	if exercise == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
-			errors.New("classroom exercise not found"))
+			ErrClassroomExerciseNotFound)
 	}
 	if _, err := s.requireManager(ctx, exercise.ClassroomId(), caller.ProfileId()); err != nil {
 		return nil, err
@@ -557,7 +556,7 @@ func (s *Service) SoftDeleteSubmission(ctx context.Context, req *dto.DeleteSubmi
 	}
 	if sub == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND, nil,
-			errors.New("submission not found"))
+			ErrSubmissionNotFound)
 	}
 	if _, err := s.requireManager(ctx, sub.ClassroomId(), caller.ProfileId()); err != nil {
 		return nil, err
@@ -611,7 +610,7 @@ func enforceExerciseAccess(ctx context.Context, e *exerciseDomain.Exercise, call
 		return nil
 	}
 	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_PRIVATE_DENIED, nil,
-		errors.New("private exercise — only the creator can submit"))
+		ErrPrivateExerciseOnlyCreatorCanSubmit)
 }
 
 // enforceSubmissionWindow rejects out-of-window submissions. start_date
@@ -621,11 +620,11 @@ func enforceSubmissionWindow(ctx context.Context, e *exerciseDomain.Exercise) er
 	now := time.Now().UTC()
 	if e.StartDate().IsValid() && now.Before(e.StartDate().Time) {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_WINDOW_NOT_OPEN, nil,
-			errors.New("You can not submit before start time"))
+			ErrYouCanNotSubmitBeforeStartTime)
 	}
 	if e.EndDate().IsValid() && now.After(e.EndDate().Time) {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_WINDOW_CLOSED, nil,
-			errors.New("You can not submit after end time"))
+			ErrYouCanNotSubmitAfterEndTime)
 	}
 	return nil
 }

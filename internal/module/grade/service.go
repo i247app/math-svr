@@ -2,7 +2,6 @@ package grade
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
@@ -126,7 +125,7 @@ func (s *Service) GetGrade(ctx context.Context, req *dto.GetGradeReq) (*dto.GetG
 	}
 	if g == nil {
 		return nil, errs.NewError(ctx, status.GRADE_NOT_FOUND, nil,
-			errors.New("grade not found"))
+			ErrGradeNotFound)
 	}
 	resp := dto.DomainToResponse(g)
 	s.populateImageUrl(ctx, resp)

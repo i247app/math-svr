@@ -2,7 +2,6 @@ package chapter
 
 import (
 	"context"
-	"errors"
 
 	command "math-ai.com/math-ai/internal/application/command/chapter"
 	dto "math-ai.com/math-ai/internal/application/dto/chapter"
@@ -125,7 +124,7 @@ func (s *Service) GetChapter(ctx context.Context, req *dto.GetChapterReq) (*dto.
 	}
 	if c == nil {
 		return nil, errs.NewError(ctx, status.CHAPTER_NOT_FOUND, nil,
-			errors.New("chapter not found"))
+			ErrChapterNotFound)
 	}
 	return &dto.GetChapterRes{Chapter: dto.DomainToResponse(c)}, nil
 }

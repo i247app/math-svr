@@ -2,7 +2,6 @@ package classroomexercisesubmission
 
 import (
 	"context"
-	"errors"
 
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
@@ -22,11 +21,11 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 	}
 	if p == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile not found"))
+			ErrProfileNotFound)
 	}
 	if sessionUserID != 0 && sessionUserID != p.UserId() {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
-			errors.New("profile does not belong to the authenticated user"))
+			ErrProfileDoesNotBelongToAuthenticatedUser)
 	}
 	return p, nil
 }
@@ -40,7 +39,7 @@ func (s *Service) resolveCaller(ctx context.Context, profileID *int64, sessionUs
 	}
 	if sessionUserID == 0 {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	profiles, err := s.profileRepo.ListByUserId(ctx, sessionUserID)
 	if err != nil {
@@ -50,7 +49,7 @@ func (s *Service) resolveCaller(ctx context.Context, profileID *int64, sessionUs
 		return profiles[0], nil
 	}
 	return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
-		errors.New("profile_id is required when the user owns multiple profiles"))
+		ErrProfileIDRequiredWhenUserOwnsMultipleProfiles)
 }
 
 func (s *Service) requireMember(ctx context.Context, classroomID, profileID int64) (*classroomDomain.Member, error) {
@@ -60,11 +59,11 @@ func (s *Service) requireMember(ctx context.Context, classroomID, profileID int6
 	}
 	if m == nil {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
-			errors.New("not a member of this classroom"))
+			ErrNotMemberOfThisClassroom)
 	}
 	if m.MemberStatus() == nil || *m.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
-			errors.New("membership is not active"))
+			ErrMembershipNotActive)
 	}
 	return m, nil
 }
@@ -81,7 +80,7 @@ func (s *Service) requireManager(ctx context.Context, classroomID, profileID int
 		return m, nil
 	default:
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
-			errors.New("manager role required"))
+			ErrManagerRoleRequired)
 	}
 }
 
@@ -95,7 +94,7 @@ func (s *Service) requireManager(ctx context.Context, classroomID, profileID int
 func (s *Service) requireManagerForUser(ctx context.Context, classroomID, sessionUserID int64) (*classroomDomain.Member, error) {
 	if sessionUserID == 0 {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
-			errors.New("session is required"))
+			ErrSessionRequired)
 	}
 	profiles, err := s.profileRepo.ListByUserId(ctx, sessionUserID)
 	if err != nil {
@@ -115,7 +114,7 @@ func (s *Service) requireManagerForUser(ctx context.Context, classroomID, sessio
 		}
 	}
 	return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
-		errors.New("manager role required"))
+		ErrManagerRoleRequired)
 }
 
 // isManagerRole returns true when the caller is OWNER or CO_TEACHER —

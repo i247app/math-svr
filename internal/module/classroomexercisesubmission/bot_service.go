@@ -2,7 +2,6 @@ package classroomexercisesubmission
 
 import (
 	"context"
-	"errors"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
@@ -36,7 +35,7 @@ func (c *botClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*
 	log := logger.From(ctx)
 	if c.adapter == nil {
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil,
-			errors.New("classroom exercise submission: bot adapter is not configured"))
+			ErrClassroomExerciseSubmissionBotAdapterNotConfigured)
 	}
 
 	system, user, err := domainBot.BuildExercisePrompt(

@@ -19,18 +19,18 @@ type Classroom struct {
 	gradeId                *int64
 	classroomCode          *string
 	classroomCodeExpiresDt mtime.MathTime
-	maxMembers          *int64
-	memberCount         int64
-	studentCount        int64
-	teacherCount        int64
-	coverKey            *string
-	note                *string
-	classroomStatus     *string
-	status              string
-	createId            *int64
-	createDt            mtime.MathTime
-	modifyId            *int64
-	modifyDt            mtime.MathTime
+	maxMembers             *int64
+	memberCount            int64
+	studentCount           int64
+	teacherCount           int64
+	coverKey               *string
+	note                   *string
+	classroomStatus        *string
+	status                 string
+	createId               *int64
+	createDt               mtime.MathTime
+	modifyId               *int64
+	modifyDt               mtime.MathTime
 
 	// programIds is the in-memory denormalisation of the
 	// ma_classroom_programs junction rows for this classroom. It is set
@@ -44,22 +44,22 @@ func NewClassroom() *Classroom {
 	return &Classroom{}
 }
 
-func (c *Classroom) Id() int64                           { return c.id }
-func (c *Classroom) SetId(id int64)                      { c.id = id }
-func (c *Classroom) ClassroomId() int64                  { return c.classroomId }
-func (c *Classroom) SetClassroomId(id int64)             { c.classroomId = id }
-func (c *Classroom) OwnerProfileId() int64               { return c.ownerProfileId }
-func (c *Classroom) SetOwnerProfileId(id int64)          { c.ownerProfileId = id }
-func (c *Classroom) Name() string                        { return c.name }
-func (c *Classroom) SetName(n string)                    { c.name = n }
-func (c *Classroom) Description() *string                { return c.description }
-func (c *Classroom) SetDescription(d *string)            { c.description = d }
-func (c *Classroom) SchoolId() *int64                    { return c.schoolId }
-func (c *Classroom) SetSchoolId(id *int64)               { c.schoolId = id }
-func (c *Classroom) ProgramIds() []int64                 { return c.programIds }
-func (c *Classroom) SetProgramIds(ids []int64)           { c.programIds = ids }
-func (c *Classroom) GradeId() *int64                     { return c.gradeId }
-func (c *Classroom) SetGradeId(id *int64)                { c.gradeId = id }
+func (c *Classroom) Id() int64                              { return c.id }
+func (c *Classroom) SetId(id int64)                         { c.id = id }
+func (c *Classroom) ClassroomId() int64                     { return c.classroomId }
+func (c *Classroom) SetClassroomId(id int64)                { c.classroomId = id }
+func (c *Classroom) OwnerProfileId() int64                  { return c.ownerProfileId }
+func (c *Classroom) SetOwnerProfileId(id int64)             { c.ownerProfileId = id }
+func (c *Classroom) Name() string                           { return c.name }
+func (c *Classroom) SetName(n string)                       { c.name = n }
+func (c *Classroom) Description() *string                   { return c.description }
+func (c *Classroom) SetDescription(d *string)               { c.description = d }
+func (c *Classroom) SchoolId() *int64                       { return c.schoolId }
+func (c *Classroom) SetSchoolId(id *int64)                  { c.schoolId = id }
+func (c *Classroom) ProgramIds() []int64                    { return c.programIds }
+func (c *Classroom) SetProgramIds(ids []int64)              { c.programIds = ids }
+func (c *Classroom) GradeId() *int64                        { return c.gradeId }
+func (c *Classroom) SetGradeId(id *int64)                   { c.gradeId = id }
 func (c *Classroom) ClassroomCode() *string                 { return c.classroomCode }
 func (c *Classroom) SetClassroomCode(v *string)             { c.classroomCode = v }
 func (c *Classroom) ClassroomCodeExpiresDt() mtime.MathTime { return c.classroomCodeExpiresDt }

@@ -2,7 +2,6 @@ package quiz
 
 import (
 	"context"
-	"errors"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
@@ -64,7 +63,7 @@ func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) (*ge
 	log := logger.From(ctx)
 	if c.adapter == nil {
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil,
-			errors.New("quiz: bot adapter is not configured"))
+			ErrQuizBotAdapterNotConfigured)
 	}
 
 	// Prompt kind is driven by the persisted learning intent. We still
@@ -138,7 +137,7 @@ func (c *botClient) GradeQuiz(ctx context.Context, in gradeQuizInput) (*quizDto.
 	log := logger.From(ctx)
 	if c.adapter == nil {
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil,
-			errors.New("quiz: bot adapter is not configured"))
+			ErrQuizBotAdapterNotConfigured)
 	}
 
 	kind := domainBot.QuizPromptKindGrade

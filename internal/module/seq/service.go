@@ -43,7 +43,7 @@ func NewService(uow transaction.UnitOfWork) *Service {
 func (s *Service) NextID(ctx context.Context, name string) (int64, error) {
 	if name == "" {
 		return 0, errs.NewError(ctx, status.SEQ_MISSING_NAME, nil,
-			errors.New("seq name is required"))
+			ErrSeqNameRequired)
 	}
 
 	var id int64
@@ -74,7 +74,7 @@ func (s *Service) NextID(ctx context.Context, name string) (int64, error) {
 func ResolveNext(ctx context.Context, repo domain.IRepository, name string) (int64, error) {
 	if name == "" {
 		return 0, errs.NewError(ctx, status.SEQ_MISSING_NAME, nil,
-			errors.New("seq name is required"))
+			ErrSeqNameRequired)
 	}
 	id, err := repo.Next(ctx, name)
 	if err != nil {

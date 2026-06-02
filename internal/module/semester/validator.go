@@ -2,7 +2,6 @@ package semester
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	dto "math-ai.com/math-ai/internal/application/dto/semester"
@@ -24,7 +23,7 @@ func validateLanguage(ctx context.Context, lang enum.LanguageType) error {
 		return nil
 	default:
 		return errs.NewError(ctx, status.SEMESTER_INVALID_LANGUAGE, nil,
-			errors.New("language must be 'vn' or 'en'"))
+			ErrLanguageMustBeVnOrEn)
 	}
 }
 
@@ -35,11 +34,11 @@ func validateTranslationLanguage(ctx context.Context, raw string) error {
 	v := strings.TrimSpace(raw)
 	if v == "" {
 		return errs.NewError(ctx, status.SEMESTER_INVALID_TRANSLATION, nil,
-			errors.New("translation language is required"))
+			ErrTranslationLanguageRequired)
 	}
 	if len(v) > 10 {
 		return errs.NewError(ctx, status.SEMESTER_INVALID_TRANSLATION, nil,
-			errors.New("translation language is too long"))
+			ErrTranslationLanguageTooLong)
 	}
 	return nil
 }
@@ -49,7 +48,7 @@ func validateTranslations(ctx context.Context, ts []*dto.SemesterTranslationDTO)
 	for i, t := range ts {
 		if t == nil {
 			return errs.NewError(ctx, status.SEMESTER_INVALID_TRANSLATION,
-				map[string]any{"index": i}, errors.New("translation is nil"))
+				map[string]any{"index": i}, ErrTranslationNil)
 		}
 		if err := validateTranslationLanguage(ctx, t.Language); err != nil {
 			return err
@@ -58,17 +57,17 @@ func validateTranslations(ctx context.Context, ts []*dto.SemesterTranslationDTO)
 		if _, dup := seen[lang]; dup {
 			return errs.NewError(ctx, status.SEMESTER_TRANSLATION_ALREADY_EXISTS,
 				map[string]any{"language": lang},
-				errors.New("duplicate translation language in payload"))
+				ErrDuplicateTranslationLanguageInPayload)
 		}
 		seen[lang] = struct{}{}
 		if strings.TrimSpace(t.Name) == "" {
 			return errs.NewError(ctx, status.SEMESTER_MISSING_NAME,
-				map[string]any{"language": lang}, errors.New("translation name is required"))
+				map[string]any{"language": lang}, ErrTranslationNameRequired)
 		}
 		if len(t.Name) > nameMaxLen {
 			return errs.NewError(ctx, status.SEMESTER_INVALID_TRANSLATION,
 				map[string]any{"language": lang, "field": "name"},
-				errors.New("translation name too long"))
+				ErrTranslationNameTooLong)
 		}
 	}
 	return nil
@@ -77,15 +76,15 @@ func validateTranslations(ctx context.Context, ts []*dto.SemesterTranslationDTO)
 func ValidateCreateSemester(ctx context.Context, req *dto.CreateSemesterReq) error {
 	if strings.TrimSpace(req.Name) == "" {
 		return errs.NewError(ctx, status.SEMESTER_MISSING_NAME, nil,
-			errors.New("name is required"))
+			ErrNameRequired)
 	}
 	if len(req.Name) > nameMaxLen {
 		return errs.NewError(ctx, status.SEMESTER_MISSING_NAME, nil,
-			errors.New("name too long"))
+			ErrNameTooLong)
 	}
 	if req.DisplayOrder < 0 {
 		return errs.NewError(ctx, status.SEMESTER_INVALID_DISPLAY_ORDER, nil,
-			errors.New("display_order must be >= 0"))
+			ErrDisplayOrderMustBe0)
 	}
 	return validateTranslations(ctx, req.Translations)
 }
@@ -93,21 +92,21 @@ func ValidateCreateSemester(ctx context.Context, req *dto.CreateSemesterReq) err
 func ValidateUpdateSemester(ctx context.Context, req *dto.UpdateSemesterReq) error {
 	if req.SemesterID == 0 {
 		return errs.NewError(ctx, status.SEMESTER_MISSING_ID, nil,
-			errors.New("semester_id is required"))
+			ErrSemesterIDRequired)
 	}
 	if req.Name != nil {
 		if strings.TrimSpace(*req.Name) == "" {
 			return errs.NewError(ctx, status.SEMESTER_MISSING_NAME, nil,
-				errors.New("name cannot be blank"))
+				ErrNameCannotBeBlank)
 		}
 		if len(*req.Name) > nameMaxLen {
 			return errs.NewError(ctx, status.SEMESTER_MISSING_NAME, nil,
-				errors.New("name too long"))
+				ErrNameTooLong)
 		}
 	}
 	if req.DisplayOrder != nil && *req.DisplayOrder < 0 {
 		return errs.NewError(ctx, status.SEMESTER_INVALID_DISPLAY_ORDER, nil,
-			errors.New("display_order must be >= 0"))
+			ErrDisplayOrderMustBe0)
 	}
 	return validateTranslations(ctx, req.Translations)
 }
@@ -115,7 +114,7 @@ func ValidateUpdateSemester(ctx context.Context, req *dto.UpdateSemesterReq) err
 func ValidateGetSemester(ctx context.Context, req *dto.GetSemesterReq) error {
 	if req.SemesterID == 0 {
 		return errs.NewError(ctx, status.SEMESTER_MISSING_ID, nil,
-			errors.New("semester_id is required"))
+			ErrSemesterIDRequired)
 	}
 	return validateLanguage(ctx, req.Language)
 }
@@ -127,7 +126,7 @@ func ValidateListSemesters(ctx context.Context, req *dto.ListSemestersReq) error
 func ValidateDeleteSemester(ctx context.Context, req *dto.DeleteSemesterReq) error {
 	if req.SemesterID == 0 {
 		return errs.NewError(ctx, status.SEMESTER_MISSING_ID, nil,
-			errors.New("semester_id is required"))
+			ErrSemesterIDRequired)
 	}
 	return nil
 }

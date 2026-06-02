@@ -2,7 +2,6 @@ package quiz
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -82,7 +81,7 @@ func parseGeneration(content string) (string, []quizDto.QuizQuestion, error) {
 		return "", nil, fmt.Errorf("quiz: parse generated questions (after salvage): %w", err)
 	}
 	if len(out) == 0 {
-		return "", nil, errors.New("quiz: model returned zero questions")
+		return "", nil, ErrQuizModelReturnedZeroQuestions
 	}
 	return title, out, nil
 }

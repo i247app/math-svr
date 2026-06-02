@@ -2,7 +2,6 @@ package device
 
 import (
 	"context"
-	"errors"
 
 	dto "math-ai.com/math-ai/internal/application/dto/device"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -11,14 +10,14 @@ import (
 
 func validateUserID(ctx context.Context, userID int64) error {
 	if userID == 0 {
-		return errs.NewError(ctx, status.DEVICE_MISSING_USER_ID, nil, errors.New("user_id is required"))
+		return errs.NewError(ctx, status.DEVICE_MISSING_USER_ID, nil, ErrUserIDRequired)
 	}
 	return nil
 }
 
 func validateDeviceID(ctx context.Context, deviceID int64) error {
 	if deviceID == 0 {
-		return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, errors.New("device_id is required"))
+		return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceIDRequired)
 	}
 	return nil
 }

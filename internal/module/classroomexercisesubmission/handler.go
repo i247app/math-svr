@@ -2,7 +2,6 @@ package classroomexercisesubmission
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -33,7 +32,7 @@ func (h *ClassroomExerciseSubmissionHandler) sessionUID(r *http.Request) (int64,
 	uid, ok := sess.UID()
 	if !ok {
 		return 0, errs.NewError(r.Context(), status.UNAUTHORIZED, nil,
-			errors.New("uid not found from session"))
+			ErrUidNotFoundFromSession)
 	}
 	return uid, nil
 }

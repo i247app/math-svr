@@ -2,7 +2,6 @@ package chapter
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	dto "math-ai.com/math-ai/internal/application/dto/chapter"
@@ -29,7 +28,7 @@ func validateLanguage(ctx context.Context, lang enum.LanguageType) error {
 		return nil
 	default:
 		return errs.NewError(ctx, status.CHAPTER_INVALID_LANGUAGE, nil,
-			errors.New("language must be 'vn' or 'en'"))
+			ErrLanguageMustBeVnOrEn)
 	}
 }
 
@@ -40,11 +39,11 @@ func validateTranslationLanguage(ctx context.Context, raw string) error {
 	v := strings.TrimSpace(raw)
 	if v == "" {
 		return errs.NewError(ctx, status.CHAPTER_INVALID_TRANSLATION, nil,
-			errors.New("translation language is required"))
+			ErrTranslationLanguageRequired)
 	}
 	if len(v) > 10 {
 		return errs.NewError(ctx, status.CHAPTER_INVALID_TRANSLATION, nil,
-			errors.New("translation language is too long"))
+			ErrTranslationLanguageTooLong)
 	}
 	return nil
 }
@@ -54,7 +53,7 @@ func validateTranslations(ctx context.Context, ts []*dto.ChapterTranslationDTO) 
 	for i, t := range ts {
 		if t == nil {
 			return errs.NewError(ctx, status.CHAPTER_INVALID_TRANSLATION,
-				map[string]any{"index": i}, errors.New("translation is nil"))
+				map[string]any{"index": i}, ErrTranslationNil)
 		}
 		if err := validateTranslationLanguage(ctx, t.Language); err != nil {
 			return err
@@ -63,26 +62,26 @@ func validateTranslations(ctx context.Context, ts []*dto.ChapterTranslationDTO) 
 		if _, dup := seen[lang]; dup {
 			return errs.NewError(ctx, status.CHAPTER_TRANSLATION_ALREADY_EXISTS,
 				map[string]any{"language": lang},
-				errors.New("duplicate translation language in payload"))
+				ErrDuplicateTranslationLanguageInPayload)
 		}
 		seen[lang] = struct{}{}
 		if strings.TrimSpace(t.Label) == "" {
 			return errs.NewError(ctx, status.CHAPTER_MISSING_LABEL,
-				map[string]any{"language": lang}, errors.New("translation label is required"))
+				map[string]any{"language": lang}, ErrTranslationLabelRequired)
 		}
 		if len(t.Label) > labelMaxLen {
 			return errs.NewError(ctx, status.CHAPTER_INVALID_TRANSLATION,
 				map[string]any{"language": lang, "field": "label"},
-				errors.New("translation label too long"))
+				ErrTranslationLabelTooLong)
 		}
 		if strings.TrimSpace(t.Description) == "" {
 			return errs.NewError(ctx, status.CHAPTER_MISSING_DESCRIPTION,
-				map[string]any{"language": lang}, errors.New("translation description is required"))
+				map[string]any{"language": lang}, ErrTranslationDescriptionRequired)
 		}
 		if len(t.Description) > descriptionMaxLen {
 			return errs.NewError(ctx, status.CHAPTER_INVALID_TRANSLATION,
 				map[string]any{"language": lang, "field": "description"},
-				errors.New("translation description too long"))
+				ErrTranslationDescriptionTooLong)
 		}
 	}
 	return nil
@@ -91,35 +90,35 @@ func validateTranslations(ctx context.Context, ts []*dto.ChapterTranslationDTO) 
 func ValidateCreateChapter(ctx context.Context, req *dto.CreateChapterReq) error {
 	if req.ProgramID == 0 {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_PROGRAM_ID, nil,
-			errors.New("program_id is required"))
+			ErrProgramIDRequired)
 	}
 	if req.GradeID == 0 {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_GRADE_ID, nil,
-			errors.New("grade_id is required"))
+			ErrGradeIDRequired)
 	}
 	if req.SemesterID == 0 {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_SEMESTER_ID, nil,
-			errors.New("semester_id is required"))
+			ErrSemesterIDRequired)
 	}
 	if req.Label == "" {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_LABEL, nil,
-			errors.New("label is required"))
+			ErrLabelRequired)
 	}
 	if len(req.Label) > labelMaxLen {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_LABEL, nil,
-			errors.New("label too long"))
+			ErrLabelTooLong)
 	}
 	if strings.TrimSpace(req.Description) == "" {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_DESCRIPTION, nil,
-			errors.New("description is required"))
+			ErrDescriptionRequired)
 	}
 	if len(req.Description) > descriptionMaxLen {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_DESCRIPTION, nil,
-			errors.New("description too long"))
+			ErrDescriptionTooLong)
 	}
 	if req.DisplayOrder < 0 {
 		return errs.NewError(ctx, status.CHAPTER_INVALID_DISPLAY_ORDER, nil,
-			errors.New("display_order must be >= 0"))
+			ErrDisplayOrderMustBe0)
 	}
 	return validateTranslations(ctx, req.Translations)
 }
@@ -127,43 +126,43 @@ func ValidateCreateChapter(ctx context.Context, req *dto.CreateChapterReq) error
 func ValidateUpdateChapter(ctx context.Context, req *dto.UpdateChapterReq) error {
 	if req.ChapterID == 0 {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_ID, nil,
-			errors.New("chapter_id is required"))
+			ErrChapterIDRequired)
 	}
 	if req.Label != nil {
 		if strings.TrimSpace(*req.Label) == "" {
 			return errs.NewError(ctx, status.CHAPTER_MISSING_LABEL, nil,
-				errors.New("label cannot be blank"))
+				ErrLabelCannotBeBlank)
 		}
 		if len(*req.Label) > labelMaxLen {
 			return errs.NewError(ctx, status.CHAPTER_MISSING_LABEL, nil,
-				errors.New("label too long"))
+				ErrLabelTooLong)
 		}
 	}
 	if req.Description != nil {
 		if strings.TrimSpace(*req.Description) == "" {
 			return errs.NewError(ctx, status.CHAPTER_MISSING_DESCRIPTION, nil,
-				errors.New("description cannot be blank"))
+				ErrDescriptionCannotBeBlank)
 		}
 		if len(*req.Description) > descriptionMaxLen {
 			return errs.NewError(ctx, status.CHAPTER_MISSING_DESCRIPTION, nil,
-				errors.New("description too long"))
+				ErrDescriptionTooLong)
 		}
 	}
 	if req.ProgramID != nil && *req.ProgramID == 0 {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_PROGRAM_ID, nil,
-			errors.New("program_id cannot be blank"))
+			ErrProgramIDCannotBeBlank)
 	}
 	if req.GradeID != nil && *req.GradeID == 0 {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_GRADE_ID, nil,
-			errors.New("grade_id cannot be blank"))
+			ErrGradeIDCannotBeBlank)
 	}
 	if req.SemesterID != nil && *req.SemesterID == 0 {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_SEMESTER_ID, nil,
-			errors.New("semester_id cannot be blank"))
+			ErrSemesterIDCannotBeBlank)
 	}
 	if req.DisplayOrder != nil && *req.DisplayOrder < 0 {
 		return errs.NewError(ctx, status.CHAPTER_INVALID_DISPLAY_ORDER, nil,
-			errors.New("display_order must be >= 0"))
+			ErrDisplayOrderMustBe0)
 	}
 	return validateTranslations(ctx, req.Translations)
 }
@@ -171,7 +170,7 @@ func ValidateUpdateChapter(ctx context.Context, req *dto.UpdateChapterReq) error
 func ValidateGetChapter(ctx context.Context, req *dto.GetChapterReq) error {
 	if req.ChapterID == 0 {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_ID, nil,
-			errors.New("chapter_id is required"))
+			ErrChapterIDRequired)
 	}
 	return validateLanguage(ctx, req.Language)
 }
@@ -192,7 +191,7 @@ func ValidateListChapters(ctx context.Context, req *dto.ListChaptersReq) error {
 func ValidateDeleteChapter(ctx context.Context, req *dto.DeleteChapterReq) error {
 	if req.ChapterID == 0 {
 		return errs.NewError(ctx, status.CHAPTER_MISSING_ID, nil,
-			errors.New("chapter_id is required"))
+			ErrChapterIDRequired)
 	}
 	return nil
 }

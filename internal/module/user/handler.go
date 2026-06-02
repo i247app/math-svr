@@ -2,7 +2,6 @@ package user
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -218,7 +217,7 @@ func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request)
 	if userIDStr == "" {
 		response.WriteJson(w, nil,
 			errs.NewError(ctx, status.USER_NOT_FOUND, nil,
-				errors.New("user_id form field is required")))
+				ErrUserIDFormFieldRequired))
 		return
 	}
 	userID := utils.StringToInt64(userIDStr, 0)

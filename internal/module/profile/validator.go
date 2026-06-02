@@ -2,7 +2,6 @@ package profile
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	dto "math-ai.com/math-ai/internal/application/dto/profile"
@@ -27,34 +26,34 @@ func validateLanguage(ctx context.Context, lang enum.LanguageType) error {
 		return nil
 	default:
 		return errs.NewError(ctx, status.PROFILE_INVALID_LANGUAGE, nil,
-			errors.New("language must be 'vn' or 'en'"))
+			ErrLanguageMustBeVnOrEn)
 	}
 }
 
 func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error {
 	if req.UserID == 0 {
 		return errs.NewError(ctx, status.PROFILE_MISSING_USER_ID, nil,
-			errors.New("user_id is required"))
+			ErrUserIDRequired)
 	}
 	if strings.TrimSpace(req.Name) == "" {
 		return errs.NewError(ctx, status.PROFILE_MISSING_NAME, nil,
-			errors.New("name is required"))
+			ErrNameRequired)
 	}
 	if strings.TrimSpace(req.Avatar) != "" && req.AvatarFile != nil {
 		return errs.NewError(ctx, status.PROFILE_AVATAR_CONFLICT, nil,
-			errors.New("provide either avatar file or avatar reference"))
+			ErrProvideEitherAvatarFileOrAvatarReference)
 	}
 	// if req.ProgramID == nil {
 	// 	return errs.NewError(ctx, status.PROFILE_MISSING_PROGRAM_ID, nil,
-	// 		errors.New("program_id is required"))
+	// 		ErrProgramIDRequired)
 	// }
 	// if req.GradeID == nil {
 	// 	return errs.NewError(ctx, status.PROFILE_MISSING_GRADE_ID, nil,
-	// 		errors.New("grade_id is required"))
+	// 		ErrGradeIDRequired)
 	// }
 	// if req.SemesterID == nil {
 	// 	return errs.NewError(ctx, status.PROFILE_MISSING_SEMESTER_ID, nil,
-	// 		errors.New("semester_id is required"))
+	// 		ErrSemesterIDRequired)
 	// }
 	return nil
 }
@@ -62,19 +61,19 @@ func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error
 func ValidateUpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
 		return errs.NewError(ctx, status.PROFILE_MISSING_NAME, nil,
-			errors.New("name cannot be blank"))
+			ErrNameCannotBeBlank)
 	}
 	if req.Avatar != nil && strings.TrimSpace(*req.Avatar) == "" {
 		return errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_REFERENCE, nil,
-			errors.New("avatar reference must be non-empty when provided"))
+			ErrAvatarReferenceMustBeNonEmptyWhenProvided)
 	}
 	if req.Avatar != nil && strings.TrimSpace(*req.Avatar) != "" && req.AvatarFile != nil {
 		return errs.NewError(ctx, status.PROFILE_AVATAR_CONFLICT, nil,
-			errors.New("provide either avatar file or avatar reference"))
+			ErrProvideEitherAvatarFileOrAvatarReference)
 	}
 	return nil
 }
@@ -82,7 +81,7 @@ func ValidateUpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) error
 func ValidateGetProfile(ctx context.Context, req *dto.GetProfileByIdReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	return validateLanguage(ctx, req.Language)
 }
@@ -116,7 +115,7 @@ func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
 		} else {
 			if !enum.RoleProfileType(role).IsValid() {
 				return errs.NewError(ctx, status.FAIL, nil,
-					errors.New("role is invalid"))
+					ErrRoleInvalid)
 			}
 			req.Role = &role
 		}
@@ -128,7 +127,7 @@ func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
 		} else {
 			if !enum.ProfileStatusType(ps).IsValid() {
 				return errs.NewError(ctx, status.FAIL, nil,
-					errors.New("profile_status is invalid"))
+					ErrProfileStatusInvalid)
 			}
 			req.ProfileStatus = &ps
 		}
@@ -139,7 +138,7 @@ func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
 			req.Search = nil
 		} else if len(s) > profileSearchMaxLen {
 			return errs.NewError(ctx, status.FAIL, nil,
-				errors.New("search too long"))
+				ErrSearchTooLong)
 		} else {
 			req.Search = &s
 		}
@@ -150,7 +149,7 @@ func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
 func ValidateDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	return nil
 }
@@ -158,11 +157,11 @@ func ValidateDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) error
 func ValidateAssignSchool(ctx context.Context, req *dto.AssignSchoolReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	if req.SchoolID == 0 {
 		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
-			errors.New("school_id is required"))
+			ErrSchoolIDRequired)
 	}
 	return nil
 }
@@ -170,7 +169,7 @@ func ValidateAssignSchool(ctx context.Context, req *dto.AssignSchoolReq) error {
 func ValidateRemoveSchool(ctx context.Context, req *dto.RemoveSchoolReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-			errors.New("profile_id is required"))
+			ErrProfileIDRequired)
 	}
 	return nil
 }

@@ -2,7 +2,6 @@ package semester
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
@@ -126,7 +125,7 @@ func (s *Service) GetSemester(ctx context.Context, req *dto.GetSemesterReq) (*dt
 	}
 	if sm == nil {
 		return nil, errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil,
-			errors.New("semester not found"))
+			ErrSemesterNotFound)
 	}
 	resp := dto.DomainToResponse(sm)
 	s.populateImageUrl(ctx, resp)
