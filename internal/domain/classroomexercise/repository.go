@@ -70,6 +70,12 @@ type UpdatePatch struct {
 // object (id already minted), a patch-style Update, and a SoftDelete.
 type IRepository interface {
 	FindByClassroomExerciseId(ctx context.Context, id int64) (*Exercise, error)
+	// ListByClassroomExerciseIds batches the per-id lookup for hydration
+	// flows (e.g. the submission list embedding exercise summaries).
+	// One round trip per page regardless of size; rows missing from the
+	// result are simply absent from the returned slice — callers should
+	// treat missing ids as "exercise deleted or not visible".
+	ListByClassroomExerciseIds(ctx context.Context, ids []int64) ([]*Exercise, error)
 	ListExercises(ctx context.Context, params ListExercisesParams) ([]*Exercise, *pagination.Pagination, error)
 	Create(ctx context.Context, e *Exercise) (*Exercise, error)
 	Update(ctx context.Context, classroomExerciseId int64, patch UpdatePatch) error

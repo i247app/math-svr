@@ -37,8 +37,12 @@ type ITranslationRepository interface {
 	ForceDeleteByTranslationId(ctx context.Context, gradeTranslationId int64) error
 }
 
+// ListGradesParams narrows the listing query. GradeIds restricts the
+// result set to the supplied external ids via an IN clause; nil or empty
+// leaves it unfiltered. TakeAll bypasses pagination for admin exports.
 type ListGradesParams struct {
 	Language enum.LanguageType
+	GradeIds []int64
 	Page     int64
 	Limit    int64
 	TakeAll  bool

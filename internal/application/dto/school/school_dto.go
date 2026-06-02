@@ -70,11 +70,12 @@ type GetSchoolRes struct {
 }
 
 type ListSchoolsReq struct {
-	Search   *string `json:"search,omitempty"`
-	District *string `json:"district,omitempty"`
-	Province *string `json:"province,omitempty"`
-	Page     int64   `json:"page"`
-	Size     int64   `json:"size"`
+	Search    *string `json:"search,omitempty"`
+	District  *string `json:"district,omitempty"`
+	Province  *string `json:"province,omitempty"`
+	SchoolIDs []int64 `json:"school_ids,omitempty"`
+	Page      int64   `json:"page"`
+	Size      int64   `json:"size"`
 }
 
 type ListSchoolsRes struct {

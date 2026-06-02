@@ -81,6 +81,7 @@ type GetGradeRes struct {
 
 type ListGradesReq struct {
 	Language enum.LanguageType `json:"language,omitempty"`
+	GradeIDs []int64           `json:"grade_ids,omitempty"`
 	Page     int64             `json:"page"`
 	Size     int64             `json:"size"`
 }

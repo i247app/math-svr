@@ -141,11 +141,12 @@ func (s *Service) ListSchools(ctx context.Context, req *dto.ListSchoolsReq) (*dt
 	}
 
 	schools, pg, err := s.listSchoolsQuery.Handle(ctx, query.ListSchoolsQuery{
-		Search:   req.Search,
-		District: req.District,
-		Province: req.Province,
-		Page:     req.Page,
-		Limit:    req.Size,
+		Search:    req.Search,
+		District:  req.District,
+		Province:  req.Province,
+		SchoolIDs: req.SchoolIDs,
+		Page:      req.Page,
+		Limit:     req.Size,
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)

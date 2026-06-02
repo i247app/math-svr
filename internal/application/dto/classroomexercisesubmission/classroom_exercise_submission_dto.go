@@ -8,6 +8,39 @@ import (
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
+// SubmissionExerciseSummary is the slim exercise shape embedded on
+// each submission response so the mobile client can render rich rows
+// without an extra GetExercise round trip. AnswersKey / Questions are
+// intentionally omitted — the submission carries its own answers blob,
+// and the right-answer key stays on the dedicated exercise endpoint
+// where the manager-only gate decides whether to expose it.
+type SubmissionExerciseSummary struct {
+	ClassroomExerciseID int64   `json:"classroom_exercise_id"`
+	ClassroomID         int64   `json:"classroom_id"`
+	CreatorProfileID    int64   `json:"creator_profile_id"`
+	Visibility          string  `json:"visibility"`
+	Title               string  `json:"title"`
+	Description         *string `json:"description,omitempty"`
+	ChapterName         string  `json:"chapter_name"`
+	LessonName          string  `json:"lesson_name"`
+	TotalQuestions      int     `json:"total_questions"`
+	StartDate           string  `json:"start_date,omitempty"`
+	EndDate             string  `json:"end_date,omitempty"`
+	ExerciseStatus      *string `json:"exercise_status,omitempty"`
+}
+
+// SubmissionProfileSummary is the slim profile shape for the row's
+// student. Mirrors the ClassroomOwnerSummary / MemberProfileSummary
+// pattern from the classroom module so list rendering stays
+// consistent across aggregates.
+type SubmissionProfileSummary struct {
+	ProfileID int64   `json:"profile_id"`
+	Name      string  `json:"name"`
+	Role      string  `json:"role"`
+	AvatarKey *string `json:"avatar_key,omitempty"`
+	AvatarURL *string `json:"avatar_url,omitempty"`
+}
+
 // SubmissionResponse is the wire shape returned by every classroom
 // exercise submission endpoint. Answers parses out as the shared
 // QuizStudentAnswer shape so the mobile client can render student
@@ -16,12 +49,19 @@ import (
 // total_questions / correct_number / score_percentage / ai_review are
 // surfaced as the optional Grading block — nil when the row hasn't
 // been graded yet (e.g. SUBMITTED state after a bot failure).
+//
+// Exercise and Profile are hydrated by the service via batched
+// IN-lookups (one round trip per page each). They are nil when the
+// referenced row is missing (deleted exercise / profile under the
+// submission) so the rest of the response still renders.
 type SubmissionResponse struct {
 	ID                            int64                       `json:"id"`
 	ClassroomExerciseSubmissionID int64                       `json:"classroom_exercise_submission_id"`
 	ClassroomExerciseID           int64                       `json:"classroom_exercise_id"`
+	ClassroomExercise             *SubmissionExerciseSummary  `json:"classroom_exercise,omitempty"`
 	ClassroomID                   int64                       `json:"classroom_id"`
 	ProfileID                     int64                       `json:"profile_id"`
+	Profile                       *SubmissionProfileSummary   `json:"profile,omitempty"`
 	Answers                       []quizDto.QuizStudentAnswer `json:"answers,omitempty"`
 	Grading                       *quizDto.QuizGradingResult  `json:"grading,omitempty"`
 	SubmittedDt                   string                      `json:"submitted_dt,omitempty"`

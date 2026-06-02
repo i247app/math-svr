@@ -145,6 +145,7 @@ func (s *Service) ListGrades(ctx context.Context, req *dto.ListGradesReq) (*dto.
 
 	grades, pg, err := s.listGradesQuery.Handle(ctx, &query.ListGradesQuery{
 		Language: language,
+		GradeIDs: req.GradeIDs,
 		Page:     req.Page,
 		Limit:    req.Size,
 	})

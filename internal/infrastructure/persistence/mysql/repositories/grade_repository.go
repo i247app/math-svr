@@ -121,17 +121,21 @@ func (r *GradeRepository) ListGrades(ctx context.Context, params *grade.ListGrad
 		lang = enum.LanguageTypeVietnamese
 	}
 
+	filterWhere, filterArgs := buildGradeListFilterClause(params)
+
 	countArgs := append(gradeJoinArgs(lang), gradeActiveArgs()...)
+	countArgs = append(countArgs, filterArgs...)
 	countQuery := `SELECT COUNT(*) FROM ` + gradeFromJoin +
-		` WHERE ` + gradeActiveWhere
+		` WHERE ` + gradeActiveWhere + filterWhere
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("grade repo count: %w", err)
 	}
 
 	listArgs := append(gradeJoinArgs(lang), gradeActiveArgs()...)
+	listArgs = append(listArgs, filterArgs...)
 	query := `SELECT ` + gradeColumns + ` FROM ` + gradeFromJoin +
-		` WHERE ` + gradeActiveWhere +
+		` WHERE ` + gradeActiveWhere + filterWhere +
 		` ORDER BY g.display_order ASC, g.id ASC`
 
 	var pg *pagination.Pagination
@@ -162,6 +166,23 @@ func (r *GradeRepository) ListGrades(ctx context.Context, params *grade.ListGrad
 	}
 
 	return grades, pg, nil
+}
+
+// buildGradeListFilterClause appends optional narrowing predicates onto
+// the base active-where. Today only the GradeIds IN(...) filter is
+// supported; keeping it in a helper means the count and list queries
+// stay in lockstep and future predicates only have one place to land.
+func buildGradeListFilterClause(params *grade.ListGradesParams) (string, []any) {
+	if params == nil || len(params.GradeIds) == 0 {
+		return "", nil
+	}
+	placeholders := make([]string, len(params.GradeIds))
+	args := make([]any, 0, len(params.GradeIds))
+	for i, id := range params.GradeIds {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+	return ` AND g.grade_id IN (` + strings.Join(placeholders, ",") + `)`, args
 }
 
 // ListGradesByIds — see program_repository's equivalent for rationale.

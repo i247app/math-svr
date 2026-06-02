@@ -8,15 +8,18 @@ import (
 
 // ListSchoolsParams narrows the listing/search query. Search is matched
 // case-insensitively against name + district + province; District and
-// Province narrow by exact match when set. TakeAll bypasses pagination
-// for admin exports.
+// Province narrow by exact match when set. SchoolIds restricts the
+// result set to the supplied external ids via an IN clause; nil or
+// empty leaves it unfiltered. TakeAll bypasses pagination for admin
+// exports.
 type ListSchoolsParams struct {
-	Search   *string
-	District *string
-	Province *string
-	Page     int64
-	Limit    int64
-	TakeAll  bool
+	Search    *string
+	District  *string
+	Province  *string
+	SchoolIds []int64
+	Page      int64
+	Limit     int64
+	TakeAll   bool
 }
 
 // IRepository owns ma_schools persistence. There is no translation

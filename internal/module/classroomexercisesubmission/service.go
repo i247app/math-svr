@@ -8,6 +8,7 @@ import (
 	"time"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
+	// "math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/classroomexercisesubmission"
 	dto "math-ai.com/math-ai/internal/application/dto/classroomexercisesubmission"
 	query "math-ai.com/math-ai/internal/application/query/classroomexercisesubmission"
@@ -22,6 +23,10 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
+
+// avatarUrlTTL bounds how long a generated avatar URL is valid. Mirrors
+// the classroom / school modules' coverUrlTTL.
+const avatarUrlTTL = 1 * time.Hour
 
 // Service is the classroomexercisesubmission module's public façade.
 // It composes the CQRS handlers behind validators and per-aggregate
@@ -272,8 +277,11 @@ func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsR
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
+
+	responses := dto.DomainListToResponse(rows)
+
 	return &dto.ListSubmissionsRes{
-		Submissions: dto.DomainListToResponse(rows),
+		Submissions: responses,
 		Pagination:  pg,
 	}, nil
 }

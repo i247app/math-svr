@@ -91,6 +91,43 @@ func (r *ClassroomExerciseRepository) FindByClassroomExerciseId(ctx context.Cont
 	return r.findOneBy(ctx, "e.classroom_exercise_id = ?", id)
 }
 
+// ListByClassroomExerciseIds runs a single IN-query against the active
+// rows. Returns the rows in whatever order the storage engine yields;
+// callers index them by id when hydrating.
+func (r *ClassroomExerciseRepository) ListByClassroomExerciseIds(ctx context.Context, ids []int64) ([]*domain.Exercise, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	placeholders := make([]string, len(ids))
+	args := classroomExerciseActiveArgs()
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+	query := `SELECT ` + classroomExerciseColumns + ` FROM ` + classroomExerciseTable + ` e WHERE ` +
+		classroomExerciseActiveWhere +
+		` AND e.classroom_exercise_id IN (` + strings.Join(placeholders, ", ") + `)`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("classroom exercise repo list by ids: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]*domain.Exercise, 0, len(ids))
+	for rows.Next() {
+		m, err := scanClassroomExercise(rows)
+		if err != nil {
+			return nil, fmt.Errorf("classroom exercise repo list by ids scan: %w", err)
+		}
+		out = append(out, modelToDomainClassroomExercise(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom exercise repo list by ids iteration: %w", err)
+	}
+	return out, nil
+}
+
 func (r *ClassroomExerciseRepository) ListExercises(ctx context.Context, params domain.ListExercisesParams) ([]*domain.Exercise, *pagination.Pagination, error) {
 	if params.Limit <= 0 {
 		params.Limit = pagination.DefaultPageSize

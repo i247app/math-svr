@@ -169,6 +169,14 @@ func buildSchoolListFilterClause(params *school.ListSchoolsParams) (string, []an
 		clause += ` AND s.province = ?`
 		args = append(args, strings.TrimSpace(*params.Province))
 	}
+	if len(params.SchoolIds) > 0 {
+		placeholders := make([]string, len(params.SchoolIds))
+		for i, id := range params.SchoolIds {
+			placeholders[i] = "?"
+			args = append(args, id)
+		}
+		clause += ` AND s.school_id IN (` + strings.Join(placeholders, ",") + `)`
+	}
 	return clause, args
 }
 
