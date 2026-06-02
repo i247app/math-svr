@@ -361,6 +361,185 @@ func (s *Service) ListSubmissionsByExercise(ctx context.Context, req *dto.ListSu
 	}, nil
 }
 
+// ListSubmittedMembers is the teacher-side roster of classroom members
+// who already submitted the exercise. Returns each member's profile
+// detail and submission metadata.
+func (s *Service) ListSubmittedMembers(ctx context.Context, req *dto.ListAudienceMembersReq, sessionUserID int64) (*dto.ListAudienceMembersRes, error) {
+	return s.listAudienceMembers(ctx, req, sessionUserID, true)
+}
+
+// ListNonSubmittedMembers is the teacher-side roster of classroom
+// members who have NOT submitted the exercise. Submission summary is
+// omitted on each row.
+func (s *Service) ListNonSubmittedMembers(ctx context.Context, req *dto.ListAudienceMembersReq, sessionUserID int64) (*dto.ListAudienceMembersRes, error) {
+	return s.listAudienceMembers(ctx, req, sessionUserID, false)
+}
+
+// listAudienceMembers is the shared implementation behind the two
+// audience endpoints. submitted=true uses the INNER JOIN flavor of the
+// repo query and additionally hydrates submission metadata onto each
+// row; submitted=false uses the LEFT JOIN ... IS NULL flavor and skips
+// the submission lookup. Permission, classroom resolution, and the
+// page query stay identical between the two paths.
+func (s *Service) listAudienceMembers(ctx context.Context, req *dto.ListAudienceMembersReq, sessionUserID int64, submitted bool) (*dto.ListAudienceMembersRes, error) {
+	if err := ValidateListAudienceMembers(ctx, req); err != nil {
+		return nil, err
+	}
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	exercise, err := s.exerciseRepo.FindByClassroomExerciseId(ctx, req.ClassroomExerciseID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if exercise == nil {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
+			errors.New("classroom exercise not found"))
+	}
+	if _, err := s.requireManager(ctx, exercise.ClassroomId(), caller.ProfileId()); err != nil {
+		return nil, err
+	}
+
+	members, pg, err := s.classroomMemberRepo.ListMembersByExerciseSubmission(ctx,
+		&classroomDomain.ListMembersByExerciseSubmissionParams{
+			ClassroomId:         exercise.ClassroomId(),
+			ClassroomExerciseId: exercise.ClassroomExerciseId(),
+			Submitted:           submitted,
+			Search:              req.Search,
+			SortBy:              req.SortBy,
+			SortOrder:           req.SortOrder,
+			Page:                int64(req.Page),
+			Limit:               int64(req.Size),
+		})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	responses := make([]*dto.AudienceMemberResponse, 0, len(members))
+	profileIDs := make([]int64, 0, len(members))
+	for _, m := range members {
+		resp := &dto.AudienceMemberResponse{
+			MemberID:     m.MemberId(),
+			ClassroomID:  m.ClassroomId(),
+			ProfileID:    m.ProfileId(),
+			MemberRole:   m.MemberRole(),
+			MemberStatus: m.MemberStatus(),
+		}
+		if m.JoinedDt().IsValid() {
+			resp.JoinedDt = m.JoinedDt().String()
+		}
+		responses = append(responses, resp)
+		profileIDs = append(profileIDs, m.ProfileId())
+	}
+
+	if err := s.hydrateAudienceProfiles(ctx, profileIDs, responses); err != nil {
+		return nil, err
+	}
+	if submitted {
+		if err := s.hydrateAudienceSubmissions(ctx, exercise.ClassroomExerciseId(), profileIDs, responses); err != nil {
+			return nil, err
+		}
+	}
+
+	return &dto.ListAudienceMembersRes{
+		Members:    responses,
+		Pagination: pg,
+	}, nil
+}
+
+// hydrateAudienceProfiles attaches the slim AudienceProfileDetail to
+// each row via one batched ma_profiles IN-query.
+func (s *Service) hydrateAudienceProfiles(ctx context.Context, profileIDs []int64, responses []*dto.AudienceMemberResponse) error {
+	if len(profileIDs) == 0 || s.profileRepo == nil {
+		return nil
+	}
+	profiles, err := s.profileRepo.ListByProfileIds(ctx, profileIDs)
+	if err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	byID := make(map[int64]*dto.AudienceProfileDetail, len(profiles))
+	for _, p := range profiles {
+		detail := &dto.AudienceProfileDetail{
+			ProfileID:   p.ProfileId(),
+			ProfileCode: p.ProfileCode(),
+			Name:        p.Name(),
+			Role:        p.Role(),
+			AvatarKey:   p.AvatarKey(),
+			StudentID:   p.StudentId(),
+			TeacherID:   p.TeacherId(),
+		}
+		s.signAudienceAvatarURL(ctx, detail)
+		byID[p.ProfileId()] = detail
+	}
+	for _, resp := range responses {
+		if resp == nil {
+			continue
+		}
+		if detail, ok := byID[resp.ProfileID]; ok {
+			resp.Profile = detail
+		}
+	}
+	return nil
+}
+
+// hydrateAudienceSubmissions attaches the submission summary to each
+// submitted-members row via one batched IN-query.
+func (s *Service) hydrateAudienceSubmissions(ctx context.Context, classroomExerciseID int64, profileIDs []int64, responses []*dto.AudienceMemberResponse) error {
+	if len(profileIDs) == 0 || s.submissionRepo == nil {
+		return nil
+	}
+	subs, err := s.submissionRepo.ListByExerciseAndProfileIds(ctx, classroomExerciseID, profileIDs)
+	if err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	byProfile := make(map[int64]*dto.AudienceSubmissionSummary, len(subs))
+	for _, sub := range subs {
+		summary := &dto.AudienceSubmissionSummary{
+			ClassroomExerciseSubmissionID: sub.ClassroomExerciseSubmissionId(),
+			SubmissionStatus:              sub.SubmissionStatus(),
+			TotalQuestions:                sub.TotalQuestions(),
+			CorrectNumber:                 sub.CorrectNumber(),
+			ScorePercentage:               sub.ScorePercentage(),
+			Note:                          sub.Note(),
+		}
+		if sub.SubmittedDt().IsValid() {
+			summary.SubmittedDt = sub.SubmittedDt().String()
+		}
+		if sub.GradedDt().IsValid() {
+			summary.GradedDt = sub.GradedDt().String()
+		}
+		byProfile[sub.ProfileId()] = summary
+	}
+	for _, resp := range responses {
+		if resp == nil {
+			continue
+		}
+		if summary, ok := byProfile[resp.ProfileID]; ok {
+			resp.Submission = summary
+		}
+	}
+	return nil
+}
+
+// signAudienceAvatarURL mirrors signSubmissionAvatarURL — presigns a
+// short-lived URL for the profile avatar_key when storage is wired.
+func (s *Service) signAudienceAvatarURL(ctx context.Context, detail *dto.AudienceProfileDetail) {
+	if detail == nil || s.storageProvider == nil || detail.AvatarKey == nil || *detail.AvatarKey == "" {
+		return
+	}
+	url, err := s.storageProvider.CreatePresignedUrl(ctx, &storage.CreatePresignedUrlRequest{
+		Key:        *detail.AvatarKey,
+		Expiration: avatarUrlTTL,
+	})
+	if err != nil {
+		logger.From(ctx).Warnf("classroom_exercise_submission.audience_avatar presign failed profile_id=%d err=%v", detail.ProfileID, err)
+		return
+	}
+	detail.AvatarURL = &url
+}
+
 // SoftDeleteSubmission is manager-only — the use case is invalidating
 // a spammed / bad attempt, not student-side withdrawal.
 func (s *Service) SoftDeleteSubmission(ctx context.Context, req *dto.DeleteSubmissionReq, sessionUserID int64) (*dto.DeleteSubmissionRes, error) {

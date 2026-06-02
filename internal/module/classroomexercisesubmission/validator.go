@@ -14,7 +14,15 @@ import (
 const (
 	submissionNoteMaxLen     = 500
 	submissionMaxAnswerCount = 200
+	audienceSearchMaxLen     = 128
 )
+
+// Sort whitelists for the audience endpoints. Repo whitelist-maps each
+// to a real column.
+var validAudienceSortBy = map[string]struct{}{
+	"joined": {},
+	"name":   {},
+}
 
 // Sort whitelists. Matches the columns the repo maps in
 // buildClassroomExerciseSubmissionOrderBy.
@@ -112,6 +120,52 @@ func ValidateListSubmissionsByExercise(ctx context.Context, req *dto.ListSubmiss
 			errors.New("classroom_exercise_id is required"))
 	}
 	return normalizeSubmissionListShared(ctx, &req.Status, &req.SortBy, &req.SortOrder)
+}
+
+// ValidateListAudienceMembers normalises the audience-endpoint
+// request. Shared by both submitted-members and non-submitted-members.
+func ValidateListAudienceMembers(ctx context.Context, req *dto.ListAudienceMembersReq) error {
+	if req == nil {
+		return errs.NewError(ctx, status.FAIL, nil, errors.New("nil request"))
+	}
+	if req.ClassroomExerciseID == 0 {
+		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_EXERCISE_ID, nil,
+			errors.New("classroom_exercise_id is required"))
+	}
+	if req.Search != nil {
+		v := strings.TrimSpace(*req.Search)
+		if v == "" {
+			req.Search = nil
+		} else if len([]rune(v)) > audienceSearchMaxLen {
+			return errs.NewError(ctx, status.FAIL, nil,
+				errors.New("search too long"))
+		} else {
+			req.Search = &v
+		}
+	}
+	if req.SortBy != nil {
+		v := strings.ToLower(strings.TrimSpace(*req.SortBy))
+		if v == "" {
+			req.SortBy = nil
+		} else if _, ok := validAudienceSortBy[v]; !ok {
+			return errs.NewError(ctx, status.FAIL, nil,
+				errors.New("invalid sort_by"))
+		} else {
+			req.SortBy = &v
+		}
+	}
+	if req.SortOrder != nil {
+		v := strings.ToLower(strings.TrimSpace(*req.SortOrder))
+		if v == "" {
+			req.SortOrder = nil
+		} else if _, ok := validSubmissionSortOrder[v]; !ok {
+			return errs.NewError(ctx, status.FAIL, nil,
+				errors.New("invalid sort_order"))
+		} else {
+			req.SortOrder = &v
+		}
+	}
+	return nil
 }
 
 func ValidateDeleteSubmission(ctx context.Context, req *dto.DeleteSubmissionReq) error {

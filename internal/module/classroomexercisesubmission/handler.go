@@ -125,6 +125,51 @@ func (h *ClassroomExerciseSubmissionHandler) HandleListSubmissionsByExercise(w h
 	response.WriteJson(w, res, nil)
 }
 
+// POST /classroom-exercises/submissions/submitted-members
+//
+// Teacher-side roster of members who already submitted the exercise.
+func (h *ClassroomExerciseSubmissionHandler) HandleListSubmittedMembers(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListAudienceMembersReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.svc.ListSubmittedMembers(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /classroom-exercises/submissions/non-submitted-members
+//
+// Teacher-side roster of ACTIVE classroom members who have NOT
+// submitted the exercise.
+func (h *ClassroomExerciseSubmissionHandler) HandleListNonSubmittedMembers(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListAudienceMembersReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.svc.ListNonSubmittedMembers(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // POST /classroom-exercise-submissions/soft-delete
 func (h *ClassroomExerciseSubmissionHandler) HandleSoftDeleteSubmission(w http.ResponseWriter, r *http.Request) {
 	var req dto.DeleteSubmissionReq

@@ -102,6 +102,24 @@ type ListMembersParams struct {
 	TakeAll     bool
 }
 
+// ListMembersByExerciseSubmissionParams powers the teacher-side
+// "submitted vs non-submitted" roster split. ClassroomID +
+// ClassroomExerciseID are required; Search is an optional LIKE filter
+// on ma_profiles.name. SortBy is whitelisted by the module-layer
+// validator ("joined", "name").
+type ListMembersByExerciseSubmissionParams struct {
+	ClassroomId         int64
+	ClassroomExerciseId int64
+	// Submitted toggles between INNER JOIN (true) and LEFT JOIN+IS NULL
+	// (false) against the submission table.
+	Submitted bool
+	Search    *string
+	SortBy    *string
+	SortOrder *string
+	Page      int64
+	Limit     int64
+}
+
 // IMemberRepository owns ma_classroom_members — both the membership and
 // the invitation lifecycle now ride this single table (member_status
 // PENDING → ACTIVE/REJECTED → LEFT/REMOVED). The (classroom_id,
@@ -120,6 +138,15 @@ type IMemberRepository interface {
 	// the caller's relationship to each classroom on a single page in
 	// one round trip, preventing N+1 lookups across the page.
 	ListByProfileAndClassroomIds(ctx context.Context, profileId int64, classroomIds []int64) ([]*Member, error)
+	// ListMembersByExerciseSubmission returns the ACTIVE members of a
+	// classroom split by submission state for a given exercise.
+	// Submitted=true performs an INNER JOIN against the (non-DELETED)
+	// submission row; Submitted=false performs a LEFT JOIN ... IS NULL
+	// for the "haven't submitted yet" view. The query is single-shot
+	// and avoids N+1 — pagination is applied AFTER the join so the
+	// caller's page count reflects the filtered cohort, not the raw
+	// roster. Search joins ma_profiles for name matching.
+	ListMembersByExerciseSubmission(ctx context.Context, params *ListMembersByExerciseSubmissionParams) ([]*Member, *pagination.Pagination, error)
 	CountActiveByClassroomId(ctx context.Context, classroomId int64) (int64, error)
 	// CountPendingRequestsByClassroomIds returns the number of
 	// member_status = PENDING_REQUEST rows per classroom for the given

@@ -229,6 +229,140 @@ func (r *ClassroomMemberRepository) CountActiveByClassroomId(ctx context.Context
 	return n, nil
 }
 
+// ListMembersByExerciseSubmission powers the teacher-side roster split
+// for a given exercise. ACTIVE members are filtered through a JOIN
+// against ma_classroom_exercise_submissions:
+//
+//	Submitted=true   → INNER JOIN  (only members with a non-DELETED
+//	                                 submission for the exercise)
+//	Submitted=false  → LEFT JOIN s ON … WHERE s.id IS NULL  (members
+//	                                 with no submission row)
+//
+// Search joins ma_profiles for a case-insensitive LIKE on
+// ma_profiles.name (utf8mb4_0900_ai_ci collation). One SQL query per
+// page; pagination is applied AFTER the JOIN so the page total
+// reflects the filtered cohort.
+func (r *ClassroomMemberRepository) ListMembersByExerciseSubmission(
+	ctx context.Context,
+	params *classroom.ListMembersByExerciseSubmissionParams,
+) ([]*classroom.Member, *pagination.Pagination, error) {
+	if params == nil || params.ClassroomId == 0 || params.ClassroomExerciseId == 0 {
+		return nil, nil, fmt.Errorf("classroom_member repo list-by-submission: classroom_id and classroom_exercise_id are required")
+	}
+	if params.Limit <= 0 {
+		params.Limit = pagination.DefaultPageSize
+	}
+	if params.Page < 1 {
+		params.Page = 1
+	}
+
+	joinKind := "LEFT JOIN"
+	if params.Submitted {
+		joinKind = "INNER JOIN"
+	}
+
+	subOn := `s.classroom_exercise_id = ?
+		AND s.profile_id = m.profile_id
+		AND s.status = ?
+		AND (s.submission_status IS NULL OR s.submission_status != ?)
+		AND s.deleted_dt IS NULL`
+
+	// Member is always ACTIVE — both endpoints are roster-scoped to
+	// currently participating students.
+	memberWhere := `m.classroom_id = ?
+		AND m.status = ?
+		AND m.deleted_dt IS NULL
+		AND m.member_role IN (?, ?)
+		AND m.member_status = ?`
+
+	args := []any{
+		// JOIN args
+		params.ClassroomExerciseId,
+		enum.StatusActive,
+		enum.ClassroomExerciseSubmissionStatusDeleted,
+		// Member where args
+		params.ClassroomId,
+		enum.StatusActive,
+		enum.ClassroomMemberRoleTypeTeacher,
+		enum.ClassroomMemberRoleTypeStudent,
+		enum.ClassroomMemberStatusTypeActive,
+	}
+
+	searchClause := ""
+	if params.Search != nil {
+		if v := strings.TrimSpace(*params.Search); v != "" {
+			pattern := "%" + escapeLikePattern(v) + "%"
+			searchClause = ` AND p.name LIKE ? ESCAPE '\\'`
+			args = append(args, pattern)
+		}
+	}
+
+	// LEFT JOIN ma_profiles for the search predicate. The join stays in
+	// place even when no search is supplied so the WHERE shape doesn't
+	// branch — MySQL elides the unused join cheaply via index lookups
+	// on profile_id.
+	whereClause := ""
+	if params.Submitted {
+		whereClause = memberWhere + searchClause
+	} else {
+		whereClause = memberWhere + ` AND s.id IS NULL` + searchClause
+	}
+
+	from := classroomMemberTable + ` m
+		LEFT JOIN ma_profiles p ON p.profile_id = m.profile_id
+		` + joinKind + ` ` + classroomExerciseSubmissionTable + ` s ON ` + subOn
+
+	countQuery := `SELECT COUNT(*) FROM ` + from + ` WHERE ` + whereClause
+	var total int64
+	if err := r.db.QueryRow(ctx, countQuery, args...).Scan(&total); err != nil {
+		return nil, nil, fmt.Errorf("classroom_member repo list-by-submission count: %w", err)
+	}
+
+	pg := pagination.NewPagination(params.Page, params.Limit, total)
+
+	orderBy := buildClassroomMemberByExerciseOrderBy(params)
+	listArgs := append([]any{}, args...)
+	listArgs = append(listArgs, pg.Size, pg.Skip)
+	listQuery := `SELECT ` + classroomMemberColumns + ` FROM ` + from + ` WHERE ` + whereClause +
+		` ORDER BY ` + orderBy + ` LIMIT ? OFFSET ?`
+
+	rows, err := r.db.Query(ctx, listQuery, listArgs...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("classroom_member repo list-by-submission: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*classroom.Member
+	for rows.Next() {
+		m, err := scanClassroomMember(rows)
+		if err != nil {
+			return nil, nil, fmt.Errorf("classroom_member repo list-by-submission scan: %w", err)
+		}
+		out = append(out, ModelToDomainClassroomMember(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("classroom_member repo list-by-submission iteration: %w", err)
+	}
+	return out, pg, nil
+}
+
+func buildClassroomMemberByExerciseOrderBy(params *classroom.ListMembersByExerciseSubmissionParams) string {
+	column := "m.joined_dt"
+	if params.SortBy != nil {
+		switch *params.SortBy {
+		case "joined":
+			column = "m.joined_dt"
+		case "name":
+			column = "p.name"
+		}
+	}
+	direction := "DESC"
+	if params.SortOrder != nil && *params.SortOrder == "asc" {
+		direction = "ASC"
+	}
+	return column + " " + direction + ", m.id " + direction
+}
+
 // CountPendingRequestsByClassroomIds groups the PENDING_REQUEST rows
 // for the given classroom ids in one round trip. Zero-count classrooms
 // are absent from the map — the service layer treats a missing key as 0.

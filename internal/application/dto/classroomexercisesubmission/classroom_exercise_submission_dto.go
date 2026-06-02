@@ -157,6 +157,65 @@ type DeleteSubmissionReq struct {
 
 type DeleteSubmissionRes struct{}
 
+// AudienceProfileDetail is the rich profile shape returned on the
+// teacher-side roster endpoints (submitted-members / non-submitted-members).
+// student_id / teacher_id are role-conditional and only one is typically
+// populated.
+type AudienceProfileDetail struct {
+	ProfileID   int64   `json:"profile_id"`
+	ProfileCode string  `json:"profile_code,omitempty"`
+	Name        string  `json:"name"`
+	Role        string  `json:"role"`
+	AvatarKey   *string `json:"avatar_key,omitempty"`
+	AvatarURL   *string `json:"avatar_url,omitempty"`
+	StudentID   *string `json:"student_id,omitempty"`
+	TeacherID   *string `json:"teacher_id,omitempty"`
+}
+
+// AudienceSubmissionSummary carries the submission-side metadata on
+// each submitted-members row. Nil on the non-submitted endpoint.
+type AudienceSubmissionSummary struct {
+	ClassroomExerciseSubmissionID int64   `json:"classroom_exercise_submission_id"`
+	SubmissionStatus              *string `json:"submission_status,omitempty"`
+	SubmittedDt                   string  `json:"submitted_dt,omitempty"`
+	GradedDt                      string  `json:"graded_dt,omitempty"`
+	TotalQuestions                *int64  `json:"total_questions,omitempty"`
+	CorrectNumber                 *int64  `json:"correct_number,omitempty"`
+	ScorePercentage               *int64  `json:"score_percentage,omitempty"`
+	Note                          *string `json:"note,omitempty"`
+}
+
+// AudienceMemberResponse is the shared row shape for both audience
+// endpoints. Submission is populated on the submitted-members path
+// and nil on the non-submitted-members path.
+type AudienceMemberResponse struct {
+	MemberID     int64                      `json:"member_id"`
+	ClassroomID  int64                      `json:"classroom_id"`
+	ProfileID    int64                      `json:"profile_id"`
+	MemberRole   string                     `json:"member_role"`
+	MemberStatus *string                    `json:"member_status,omitempty"`
+	JoinedDt     string                     `json:"joined_dt,omitempty"`
+	Profile      *AudienceProfileDetail     `json:"profile,omitempty"`
+	Submission   *AudienceSubmissionSummary `json:"submission,omitempty"`
+}
+
+// ListAudienceMembersReq is shared by both endpoints — the URL decides
+// the submitted/non-submitted axis.
+type ListAudienceMembersReq struct {
+	ProfileID           *int64  `json:"profile_id,omitempty"`
+	ClassroomExerciseID int64   `json:"classroom_exercise_id"`
+	Search              *string `json:"search,omitempty"`
+	SortBy              *string `json:"sort_by,omitempty"`
+	SortOrder           *string `json:"sort_order,omitempty"`
+	Page                int     `json:"page,omitempty"`
+	Size                int     `json:"size,omitempty"`
+}
+
+type ListAudienceMembersRes struct {
+	Members    []*AudienceMemberResponse `json:"members"`
+	Pagination *pagination.Pagination    `json:"pagination"`
+}
+
 // DomainToResponse renders the submission. The answers blob is parsed
 // out on the way; a parse failure leaves Answers nil so the rest of the
 // row still renders.

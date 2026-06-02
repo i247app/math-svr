@@ -96,6 +96,44 @@ func (r *ClassroomExerciseSubmissionRepository) FindByExerciseAndProfile(ctx con
 	return r.findOneBy(ctx, "s.classroom_exercise_id = ? AND s.profile_id = ?", classroomExerciseId, profileId)
 }
 
+// ListByExerciseAndProfileIds returns the active submission rows for
+// (classroom_exercise_id, profile_id IN ids). One IN-query; rows that
+// don't exist are simply absent from the slice — callers index them
+// by profile_id when hydrating.
+func (r *ClassroomExerciseSubmissionRepository) ListByExerciseAndProfileIds(ctx context.Context, classroomExerciseId int64, profileIds []int64) ([]*domain.Submission, error) {
+	if classroomExerciseId == 0 || len(profileIds) == 0 {
+		return nil, nil
+	}
+	placeholders := strings.Repeat("?,", len(profileIds))
+	placeholders = placeholders[:len(placeholders)-1]
+	query := `SELECT ` + classroomExerciseSubmissionColumns + ` FROM ` + classroomExerciseSubmissionTable + ` s WHERE ` +
+		classroomExerciseSubmissionActiveWhere +
+		` AND s.classroom_exercise_id = ? AND s.profile_id IN (` + placeholders + `)`
+	args := append(classroomExerciseSubmissionActiveArgs(), classroomExerciseId)
+	for _, id := range profileIds {
+		args = append(args, id)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list by exercise and profile ids: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]*domain.Submission, 0, len(profileIds))
+	for rows.Next() {
+		m, err := scanClassroomExerciseSubmission(rows)
+		if err != nil {
+			return nil, fmt.Errorf("classroom exercise submission repo list by exercise and profile ids scan: %w", err)
+		}
+		out = append(out, modelToDomainClassroomExerciseSubmission(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list by exercise and profile ids iteration: %w", err)
+	}
+	return out, nil
+}
+
 // ListSubmittedExerciseIdsByProfile returns the subset of exerciseIds
 // the profile has already submitted (any non-DELETED row counts as
 // SUBMITTED for the student-facing list hint). One IN-query, projecting

@@ -60,6 +60,11 @@ type IRepository interface {
 	// stamp a "submission_status" hint on a page of exercises without
 	// going N+1 against this table.
 	ListSubmittedExerciseIdsByProfile(ctx context.Context, profileId int64, exerciseIds []int64) (map[int64]struct{}, error)
+	// ListByExerciseAndProfileIds fetches the submission row for each
+	// (exerciseId, profileId in profileIds) pair in one round trip,
+	// used by the teacher-side roster view to hydrate per-row
+	// submission metadata onto the submitted-members page.
+	ListByExerciseAndProfileIds(ctx context.Context, classroomExerciseId int64, profileIds []int64) ([]*Submission, error)
 	Create(ctx context.Context, sub *Submission) (*Submission, error)
 	UpdateGrading(ctx context.Context, submissionId int64, patch GradingPatch) error
 	SoftDelete(ctx context.Context, submissionId int64, actorID *int64) error

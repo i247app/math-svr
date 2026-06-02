@@ -207,6 +207,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("GET  /classroom-exercise/submissions/{id}", submissionHandler.HandleGetSubmission, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/list", submissionHandler.HandleListSubmissions, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/by-exercise", submissionHandler.HandleListSubmissionsByExercise, authMiddleware)
+		gexSvr.AddRoute("POST /classroom-exercise/submissions/submitted-members", submissionHandler.HandleListSubmittedMembers, authMiddleware)
+		gexSvr.AddRoute("POST /classroom-exercise/submissions/non-submitted-members", submissionHandler.HandleListNonSubmittedMembers, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/soft-delete", submissionHandler.HandleSoftDeleteSubmission, authMiddleware)
 	}
 
