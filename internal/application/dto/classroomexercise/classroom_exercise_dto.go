@@ -17,6 +17,16 @@ import (
 // Answers (the right-answer key) is only exposed when the caller is the
 // classroom manager — students get the response with answer keys
 // stripped so they cannot peek before submitting.
+// Student-facing submission hint surfaced on each exercise row by the
+// list / get endpoints. The lifecycle column on ma_classroom_exercise_submissions
+// has more states (SUBMITTED / GRADED / DELETED); for the caller's
+// "have I done this exercise?" UI we collapse "any non-DELETED row
+// exists" → SUBMITTED, everything else → NONE.
+const (
+	ExerciseSubmissionStatusNone      = "NONE"
+	ExerciseSubmissionStatusSubmitted = "SUBMITTED"
+)
+
 type ExerciseResponse struct {
 	ID                  int64                  `json:"id"`
 	ClassroomExerciseID int64                  `json:"classroom_exercise_id"`
@@ -34,9 +44,14 @@ type ExerciseResponse struct {
 	EndDate             *string                `json:"end_date,omitempty"`
 	Note                *string                `json:"note,omitempty"`
 	ExerciseStatus      *string                `json:"exercise_status,omitempty"`
-	CreateID            *int64                 `json:"create_id,omitempty"`
-	CreateDt            string                 `json:"create_dt"`
-	ModifyDt            string                 `json:"modify_dt"`
+	// SubmissionStatus is NONE by default; the service flips it to
+	// SUBMITTED for the rows the caller's profile has already submitted.
+	// When no caller profile is known (anonymous / no profile_id) the
+	// field stays NONE so the wire shape is stable.
+	SubmissionStatus string `json:"submission_status"`
+	CreateID         *int64 `json:"create_id,omitempty"`
+	CreateDt         string `json:"create_dt"`
+	ModifyDt         string `json:"modify_dt"`
 }
 
 // CreateExerciseReq is the teacher-side create payload. ProgramID is
@@ -167,6 +182,7 @@ func DomainToResponse(e *domain.Exercise, includeRightAnswers bool) *ExerciseRes
 		TotalQuestions:      e.TotalQuestions(),
 		Note:                e.Note(),
 		ExerciseStatus:      e.ExerciseStatus(),
+		SubmissionStatus:    ExerciseSubmissionStatusNone,
 		CreateID:            e.CreateId(),
 		CreateDt:            e.CreateDt().String(),
 		ModifyDt:            e.ModifyDt().String(),

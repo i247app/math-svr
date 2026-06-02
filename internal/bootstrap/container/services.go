@@ -130,6 +130,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup ClassroomExerciseSvc...")
 	classroomExerciseService := classroomexercise.NewService(
 		repos.ClassroomExerciseRepository,
+		repos.ClassroomExerciseSubmissionRepository,
 		uow,
 		res.BotProvider,
 		repos.ClassroomRepository,

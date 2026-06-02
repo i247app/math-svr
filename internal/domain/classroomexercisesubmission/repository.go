@@ -53,6 +53,13 @@ type IRepository interface {
 	FindBySubmissionId(ctx context.Context, submissionId int64) (*Submission, error)
 	FindByExerciseAndProfile(ctx context.Context, classroomExerciseId, profileId int64) (*Submission, error)
 	ListSubmissions(ctx context.Context, params ListSubmissionsParams) ([]*Submission, *pagination.Pagination, error)
+	// ListSubmittedExerciseIdsByProfile returns the set of
+	// classroom_exercise_id values for which the given profile already
+	// has a non-DELETED submission, intersected with the supplied
+	// exerciseIds. One IN-query per call — used by hydration paths that
+	// stamp a "submission_status" hint on a page of exercises without
+	// going N+1 against this table.
+	ListSubmittedExerciseIdsByProfile(ctx context.Context, profileId int64, exerciseIds []int64) (map[int64]struct{}, error)
 	Create(ctx context.Context, sub *Submission) (*Submission, error)
 	UpdateGrading(ctx context.Context, submissionId int64, patch GradingPatch) error
 	SoftDelete(ctx context.Context, submissionId int64, actorID *int64) error

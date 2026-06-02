@@ -12,6 +12,7 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	domain "math-ai.com/math-ai/internal/domain/classroomexercise"
+	submissionDomain "math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
@@ -35,6 +36,7 @@ type Service struct {
 	softDeleteCmd      *command.SoftDeleteClassroomExerciseCommandHandler
 
 	exerciseRepo         domain.IRepository
+	submissionRepo       submissionDomain.IRepository
 	classroomRepo        classroomDomain.IRepository
 	classroomMemberRepo  classroomDomain.IMemberRepository
 	classroomProgramRepo classroomDomain.IClassroomProgramRepository
@@ -46,6 +48,7 @@ type Service struct {
 
 func NewService(
 	exerciseRepo domain.IRepository,
+	submissionRepo submissionDomain.IRepository,
 	uow transaction.UnitOfWork,
 	bot *botAdapter.Adapter,
 	classroomRepo classroomDomain.IRepository,
@@ -62,6 +65,7 @@ func NewService(
 		updateExerciseCmd:    command.NewUpdateClassroomExerciseCommandHandler(uow),
 		softDeleteCmd:        command.NewSoftDeleteClassroomExerciseCommandHandler(uow),
 		exerciseRepo:         exerciseRepo,
+		submissionRepo:       submissionRepo,
 		classroomRepo:        classroomRepo,
 		classroomMemberRepo:  classroomMemberRepo,
 		classroomProgramRepo: classroomProgramRepo,
@@ -251,9 +255,13 @@ func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sess
 	// 	return nil, err
 	// }
 
+	resp := dto.DomainToResponse(exercise, true)
+	if err := s.hydrateSubmissionStatus(ctx, req.ProfileID, []*domain.Exercise{exercise}, []*dto.ExerciseResponse{resp}); err != nil {
+		return nil, err
+	}
 	return &dto.GetExerciseRes{
 		// Exercise: dto.DomainToResponse(exercise, isManagerRole(callerMember)),
-		Exercise: dto.DomainToResponse(exercise, true),
+		Exercise: resp,
 	}, nil
 }
 
@@ -288,8 +296,17 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
+	responses := dto.DomainListToResponse(exercises, isManagerRole(callerMember))
+	// Hydrate from the resolved caller's profile id, not from the raw
+	// req.ProfileID. Even when the caller omits it, resolveCaller has
+	// inferred the acting profile, so the field reflects the student's
+	// own submission state consistently.
+	callerProfileID := caller.ProfileId()
+	if err := s.hydrateSubmissionStatus(ctx, &callerProfileID, exercises, responses); err != nil {
+		return nil, err
+	}
 	return &dto.ListExercisesRes{
-		Exercises:  dto.DomainListToResponse(exercises, isManagerRole(callerMember)),
+		Exercises:  responses,
 		Pagination: pg,
 	}, nil
 }
@@ -371,6 +388,48 @@ func (s *Service) resolveExerciseProgram(ctx context.Context, classroomID int64,
 	}
 	return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PROGRAM_NOT_IN_CLASSROOM, nil,
 		ErrProgramNotAssociated)
+}
+
+// hydrateSubmissionStatus stamps the per-exercise SubmissionStatus
+// field on each response. One IN-query against
+// ma_classroom_exercise_submissions per page regardless of size —
+// projecting only the exercise id so the index ix_exercise_profile_submitted
+// covers the lookup. When profileID is nil/zero or the submission repo
+// is unwired, every row stays at the DTO default ("NONE") and no
+// round trip is made.
+func (s *Service) hydrateSubmissionStatus(
+	ctx context.Context,
+	profileID *int64,
+	exercises []*domain.Exercise,
+	responses []*dto.ExerciseResponse,
+) error {
+	if len(exercises) == 0 || s.submissionRepo == nil {
+		return nil
+	}
+	if profileID == nil || *profileID == 0 {
+		return nil
+	}
+	idSet := make(map[int64]struct{}, len(exercises))
+	for _, e := range exercises {
+		idSet[e.ClassroomExerciseId()] = struct{}{}
+	}
+	ids := make([]int64, 0, len(idSet))
+	for id := range idSet {
+		ids = append(ids, id)
+	}
+	submitted, err := s.submissionRepo.ListSubmittedExerciseIdsByProfile(ctx, *profileID, ids)
+	if err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	for i, e := range exercises {
+		if responses[i] == nil {
+			continue
+		}
+		if _, ok := submitted[e.ClassroomExerciseId()]; ok {
+			responses[i].SubmissionStatus = dto.ExerciseSubmissionStatusSubmitted
+		}
+	}
+	return nil
 }
 
 // resolveCurriculumLabels best-effort hydrates grade + program labels

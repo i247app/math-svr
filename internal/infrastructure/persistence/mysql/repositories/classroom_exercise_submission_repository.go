@@ -96,6 +96,45 @@ func (r *ClassroomExerciseSubmissionRepository) FindByExerciseAndProfile(ctx con
 	return r.findOneBy(ctx, "s.classroom_exercise_id = ? AND s.profile_id = ?", classroomExerciseId, profileId)
 }
 
+// ListSubmittedExerciseIdsByProfile returns the subset of exerciseIds
+// the profile has already submitted (any non-DELETED row counts as
+// SUBMITTED for the student-facing list hint). One IN-query, projecting
+// only the exercise id so the index ix_exercise_profile_submitted
+// covers the lookup without touching the LONGTEXT columns.
+func (r *ClassroomExerciseSubmissionRepository) ListSubmittedExerciseIdsByProfile(ctx context.Context, profileId int64, exerciseIds []int64) (map[int64]struct{}, error) {
+	if profileId == 0 || len(exerciseIds) == 0 {
+		return map[int64]struct{}{}, nil
+	}
+	placeholders := strings.Repeat("?,", len(exerciseIds))
+	placeholders = placeholders[:len(placeholders)-1]
+	query := `SELECT s.classroom_exercise_id FROM ` + classroomExerciseSubmissionTable + ` s WHERE ` +
+		classroomExerciseSubmissionActiveWhere +
+		` AND s.profile_id = ? AND s.classroom_exercise_id IN (` + placeholders + `)`
+	args := append(classroomExerciseSubmissionActiveArgs(), profileId)
+	for _, id := range exerciseIds {
+		args = append(args, id)
+	}
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list submitted exercise ids: %w", err)
+	}
+	defer rows.Close()
+
+	out := make(map[int64]struct{}, len(exerciseIds))
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("classroom exercise submission repo list submitted scan: %w", err)
+		}
+		out[id] = struct{}{}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list submitted iteration: %w", err)
+	}
+	return out, nil
+}
+
 func (r *ClassroomExerciseSubmissionRepository) ListSubmissions(ctx context.Context, params domain.ListSubmissionsParams) ([]*domain.Submission, *pagination.Pagination, error) {
 	if params.Limit <= 0 {
 		params.Limit = pagination.DefaultPageSize
