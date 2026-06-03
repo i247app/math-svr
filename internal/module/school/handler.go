@@ -35,6 +35,7 @@ func (h *SchoolHandler) HandleCreateSchool(w http.ResponseWriter, r *http.Reques
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -51,6 +52,7 @@ func (h *SchoolHandler) HandleUpdateSchool(w http.ResponseWriter, r *http.Reques
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -67,6 +69,7 @@ func (h *SchoolHandler) HandleSoftDeleteSchool(w http.ResponseWriter, r *http.Re
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -83,6 +86,7 @@ func (h *SchoolHandler) HandleForceDeleteSchool(w http.ResponseWriter, r *http.R
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -95,6 +99,7 @@ func (h *SchoolHandler) HandleGetSchool(w http.ResponseWriter, r *http.Request) 
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -111,5 +116,6 @@ func (h *SchoolHandler) HandleListSchools(w http.ResponseWriter, r *http.Request
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
