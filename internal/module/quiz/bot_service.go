@@ -136,8 +136,7 @@ type gradeQuizInput struct {
 func (c *botClient) GradeQuiz(ctx context.Context, in gradeQuizInput) (*quizDto.QuizGradingResult, error) {
 	log := logger.From(ctx)
 	if c.adapter == nil {
-		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil,
-			ErrQuizBotAdapterNotConfigured)
+		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil, ErrQuizBotAdapterNotConfigured)
 	}
 
 	kind := domainBot.QuizPromptKindGrade
@@ -177,8 +176,7 @@ func (c *botClient) GradeQuiz(ctx context.Context, in gradeQuizInput) (*quizDto.
 	grading, err := parseGradedQuiz(res.Content)
 	if err != nil {
 		logger.From(ctx).Warnf("quiz.bot.grade_parse_failed err=%v", err)
-		return nil, errs.NewError(ctx, status.QUIZ_GRADING_FAILED,
-			map[string]any{"reason": err.Error()}, err)
+		return nil, errs.NewError(ctx, status.QUIZ_GRADING_FAILED, map[string]any{"reason": err.Error()}, err)
 	}
 	return grading, nil
 }

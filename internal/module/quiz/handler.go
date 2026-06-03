@@ -67,6 +67,7 @@ func (h *QuizHandler) HandleSubmitQuizAnswers(w http.ResponseWriter, r *http.Req
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -80,6 +81,7 @@ func (h *QuizHandler) HandleGetQuiz(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -96,6 +98,7 @@ func (h *QuizHandler) HandleListQuizzes(w http.ResponseWriter, r *http.Request) 
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -112,5 +115,6 @@ func (h *QuizHandler) HandleSoftDeleteQuiz(w http.ResponseWriter, r *http.Reques
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
