@@ -3,15 +3,12 @@ package classroom
 import (
 	"context"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/classroom"
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
 	profileDTO "math-ai.com/math-ai/internal/application/dto/profile"
 	query "math-ai.com/math-ai/internal/application/query/classroom"
-	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
 // SendInvitation creates one PENDING ma_classroom_members row per
@@ -37,18 +34,6 @@ func (s *Service) SendInvitation(ctx context.Context, req *dto.SendInvitationReq
 		return nil, err
 	}
 
-	// callerMember, err := s.requireManager(ctx, req.ClassroomID, caller.ProfileId())
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// callerIsOwner := callerMember.MemberRole() == string(enum.ClassroomMemberRoleTypeOwner)
-	// for _, t := range req.Targets {
-	// 	if !callerIsOwner && t.ProposedRole == string(enum.ClassroomMemberRoleTypeCoTeacher) {
-	// 		return nil, errs.NewError(ctx, status.CLASSROOM_INVITATION_PERMISSION_DENIED, nil,
-	// 			errors.New("only owner can invite co-teachers"))
-	// 	}
-	// }
-
 	targets := make([]command.SendInvitationTarget, 0, len(req.Targets))
 	for _, t := range req.Targets {
 		profileExists, err := s.profileRepo.FindByProfileId(ctx, t)
@@ -60,9 +45,6 @@ func (s *Service) SendInvitation(ctx context.Context, req *dto.SendInvitationReq
 		}
 
 		targets = append(targets, command.SendInvitationTarget{
-			// IdentifierType: t.IdentifierType,
-			// Identifier:     t.Identifier,
-			// ProposedRole:   t.ProposedRole,
 			ProfileID: t,
 			Role:      profileExists.Role(),
 		})
@@ -82,7 +64,6 @@ func (s *Service) SendInvitation(ctx context.Context, req *dto.SendInvitationReq
 
 	return &dto.SendInvitationRes{
 		Invitations: dto.InvitationDomainListToResponse(result.Invitations, nil),
-		// Skipped:     toSkippedInvitations(result.Skipped),
 	}, nil
 }
 
@@ -118,7 +99,6 @@ func (s *Service) ListMyPendingInvitations(ctx context.Context, req *dto.ListMyP
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	// listInviterRes := make([]*profileDTO.ProfileResponse, 0, len(inviters))
 	hashInviter := make(map[int64]*profileDTO.ProfileResponse)
 	for _, inviter := range inviters {
 		hashInviter[inviter.ProfileId()] = profileDTO.DomainToResponse(inviter)
@@ -163,75 +143,6 @@ func (s *Service) ListClassroomInvitations(ctx context.Context, req *dto.ListCla
 		Invitations: invitations,
 		Pagination:  pg,
 	}, nil
-}
-
-// hydrateInvitationClassrooms batches one ma_classrooms lookup for the
-// page of invitation rows and attaches an InvitationClassroomSummary to
-// each response. A missing classroom (deleted under the invitation row)
-// leaves Classroom nil so the client can still render the rest of the
-// row. Cover URLs are short-lived and reuse coverUrlTTL.
-func (s *Service) hydrateInvitationClassrooms(
-	ctx context.Context,
-	members []*classroomDomain.Member,
-	responses []*dto.InvitationResponse,
-) error {
-	if len(members) == 0 || s.classroomRepo == nil {
-		return nil
-	}
-	idSet := make(map[int64]struct{}, len(members))
-	for _, m := range members {
-		idSet[m.ClassroomId()] = struct{}{}
-	}
-	ids := make([]int64, 0, len(idSet))
-	for id := range idSet {
-		ids = append(ids, id)
-	}
-	classrooms, err := s.classroomRepo.ListClassroomsByIds(ctx, ids)
-	if err != nil {
-		return errs.NewError(ctx, status.FAIL, nil, err)
-	}
-	summaries := make(map[int64]*dto.InvitationClassroomSummary, len(classrooms))
-	for _, c := range classrooms {
-		summary := &dto.InvitationClassroomSummary{
-			ClassroomID:     c.ClassroomId(),
-			Name:            c.Name(),
-			Description:     c.Description(),
-			ClassroomCode:   c.ClassroomCode(),
-			SchoolID:        c.SchoolId(),
-			GradeID:         c.GradeId(),
-			CoverKey:        c.CoverKey(),
-			ClassroomStatus: c.ClassroomStatus(),
-		}
-		s.signInvitationCoverURL(ctx, summary)
-		summaries[c.ClassroomId()] = summary
-	}
-	for i, m := range members {
-		if responses[i] == nil {
-			continue
-		}
-		if summary, ok := summaries[m.ClassroomId()]; ok {
-			responses[i].Classroom = summary
-		}
-	}
-	return nil
-}
-
-// signInvitationCoverURL mirrors populateCoverUrl: presigns a short-lived
-// URL for the classroom cover_key. No-op when storage is disabled or
-// the classroom has no cover.
-func (s *Service) signInvitationCoverURL(ctx context.Context, summary *dto.InvitationClassroomSummary) {
-	if summary == nil || s.storageProvider == nil || summary.CoverKey == nil || *summary.CoverKey == "" {
-		return
-	}
-	url, err := s.storageProvider.CreatePresignedUrl(ctx, &storage.CreatePresignedUrlRequest{
-		Key:        *summary.CoverKey,
-		Expiration: coverUrlTTL,
-	})
-	if err != nil {
-		logger.From(ctx).Warnf("classroom.invitation_cover presign failed classroom_id=%d err=%v", summary.ClassroomID, err)
-		return
-	}
-	summary.CoverURL = &url
 }
 
 // AcceptInvitation flips a PENDING row owned by the caller to ACTIVE
@@ -301,16 +212,3 @@ func (s *Service) CancelInvitation(ctx context.Context, req *dto.CancelInvitatio
 	}
 	return &dto.CancelInvitationRes{}, nil
 }
-
-// func toSkippedInvitations(in []command.SendInvitationSkipReason) []dto.SkippedInvitation {
-// 	out := make([]dto.SkippedInvitation, len(in))
-// 	for i, s := range in {
-// 		out[i] = dto.SkippedInvitation{
-// 			IdentifierType: s.Target.IdentifierType,
-// 			Identifier:     s.Target.Identifier,
-// 			Reason:         int64(s.Reason),
-// 			Message:        s.Message,
-// 		}
-// 	}
-// 	return out
-// }

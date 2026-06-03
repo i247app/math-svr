@@ -12,6 +12,75 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
+// hydrateInvitationClassrooms batches one ma_classrooms lookup for the
+// page of invitation rows and attaches an InvitationClassroomSummary to
+// each response. A missing classroom (deleted under the invitation row)
+// leaves Classroom nil so the client can still render the rest of the
+// row. Cover URLs are short-lived and reuse coverUrlTTL.
+func (s *Service) hydrateInvitationClassrooms(
+	ctx context.Context,
+	members []*classroomDomain.Member,
+	responses []*dto.InvitationResponse,
+) error {
+	if len(members) == 0 || s.classroomRepo == nil {
+		return nil
+	}
+	idSet := make(map[int64]struct{}, len(members))
+	for _, m := range members {
+		idSet[m.ClassroomId()] = struct{}{}
+	}
+	ids := make([]int64, 0, len(idSet))
+	for id := range idSet {
+		ids = append(ids, id)
+	}
+	classrooms, err := s.classroomRepo.ListClassroomsByIds(ctx, ids)
+	if err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	summaries := make(map[int64]*dto.InvitationClassroomSummary, len(classrooms))
+	for _, c := range classrooms {
+		summary := &dto.InvitationClassroomSummary{
+			ClassroomID:     c.ClassroomId(),
+			Name:            c.Name(),
+			Description:     c.Description(),
+			ClassroomCode:   c.ClassroomCode(),
+			SchoolID:        c.SchoolId(),
+			GradeID:         c.GradeId(),
+			CoverKey:        c.CoverKey(),
+			ClassroomStatus: c.ClassroomStatus(),
+		}
+		s.signInvitationCoverURL(ctx, summary)
+		summaries[c.ClassroomId()] = summary
+	}
+	for i, m := range members {
+		if responses[i] == nil {
+			continue
+		}
+		if summary, ok := summaries[m.ClassroomId()]; ok {
+			responses[i].Classroom = summary
+		}
+	}
+	return nil
+}
+
+// signInvitationCoverURL mirrors populateCoverUrl: presigns a short-lived
+// URL for the classroom cover_key. No-op when storage is disabled or
+// the classroom has no cover.
+func (s *Service) signInvitationCoverURL(ctx context.Context, summary *dto.InvitationClassroomSummary) {
+	if summary == nil || s.storageProvider == nil || summary.CoverKey == nil || *summary.CoverKey == "" {
+		return
+	}
+	url, err := s.storageProvider.CreatePresignedUrl(ctx, &storage.CreatePresignedUrlRequest{
+		Key:        *summary.CoverKey,
+		Expiration: coverUrlTTL,
+	})
+	if err != nil {
+		logger.From(ctx).Warnf("classroom.invitation_cover presign failed classroom_id=%d err=%v", summary.ClassroomID, err)
+		return
+	}
+	summary.CoverURL = &url
+}
+
 // hydrateOwnersAndRelationships fills the Owner and Relationship fields
 // for a page of classroom responses using batched cross-aggregate
 // queries — one ListByProfileIds against ma_profiles and one
@@ -173,4 +242,103 @@ func (s *Service) populateCoverUrl(ctx context.Context, resp *dto.ClassroomRespo
 		return
 	}
 	resp.CoverURL = &url
+}
+
+// resolveMemberProfileForUser picks one of the session user's profiles
+// that is an ACTIVE member of the given classroom. It enumerates the
+// user's profiles (typically one or two), looks them up against
+// ma_classroom_members in one call, and returns the first matching
+// profile_id. Returns CLASSROOM_PERMISSION_DENIED when sessionUserID is
+// zero (anonymous) or no owned profile is a member.
+func (s *Service) resolveMemberProfileForUser(ctx context.Context, sessionUserID, classroomID int64) (int64, error) {
+	if sessionUserID == 0 {
+		return 0, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
+			ErrProfileIDRequiredNoSession)
+	}
+	profiles, err := s.profileRepo.ListByUserId(ctx, sessionUserID)
+	if err != nil {
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if len(profiles) == 0 {
+		return 0, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			ErrNoProfileForUser)
+	}
+	for _, p := range profiles {
+		m, err := s.classroomMemberRepo.FindByClassroomAndProfile(ctx, classroomID, p.ProfileId())
+		if err != nil {
+			return 0, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if m == nil || m.MemberStatus() == nil {
+			continue
+		}
+		if *m.MemberStatus() == string(enum.ClassroomMemberStatusTypeActive) {
+			return p.ProfileId(), nil
+		}
+	}
+	return 0, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
+		ErrNotClassroomMember)
+}
+
+// hydrateMemberProfiles batches one ma_profiles lookup for the page of
+// member rows and attaches a MemberProfileSummary to each response. A
+// missing profile (deleted out from under the membership row) leaves
+// MemberProfile nil so the client can still render the rest of the row.
+func (s *Service) hydrateMemberProfiles(
+	ctx context.Context,
+	members []*classroomDomain.Member,
+	responses []*dto.MemberResponse,
+) error {
+	if len(members) == 0 || s.profileRepo == nil {
+		return nil
+	}
+	idSet := make(map[int64]struct{}, len(members))
+	for _, m := range members {
+		idSet[m.ProfileId()] = struct{}{}
+	}
+	ids := make([]int64, 0, len(idSet))
+	for id := range idSet {
+		ids = append(ids, id)
+	}
+	profiles, err := s.profileRepo.ListByProfileIds(ctx, ids)
+	if err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	summaries := make(map[int64]*dto.MemberProfileSummary, len(profiles))
+	for _, p := range profiles {
+		summary := &dto.MemberProfileSummary{
+			ProfileID: p.ProfileId(),
+			Name:      p.Name(),
+			Role:      p.Role(),
+			AvatarKey: p.AvatarKey(),
+		}
+		s.signMemberAvatarURL(ctx, summary)
+		summaries[p.ProfileId()] = summary
+	}
+	for i, m := range members {
+		if responses[i] == nil {
+			continue
+		}
+		if summary, ok := summaries[m.ProfileId()]; ok {
+			responses[i].MemberProfile = summary
+		}
+	}
+	return nil
+}
+
+// signMemberAvatarURL mirrors signOwnerAvatarURL: presigns a short-lived
+// URL for the avatar_key when storage is configured. No-op when storage
+// is disabled or the profile has no avatar_key.
+func (s *Service) signMemberAvatarURL(ctx context.Context, summary *dto.MemberProfileSummary) {
+	if summary == nil || s.storageProvider == nil || summary.AvatarKey == nil || *summary.AvatarKey == "" {
+		return
+	}
+	url, err := s.storageProvider.CreatePresignedUrl(ctx, &storage.CreatePresignedUrlRequest{
+		Key:        *summary.AvatarKey,
+		Expiration: coverUrlTTL,
+	})
+	if err != nil {
+		logger.From(ctx).Warnf("classroom.member_avatar presign failed profile_id=%d err=%v", summary.ProfileID, err)
+		return
+	}
+	summary.AvatarURL = &url
 }

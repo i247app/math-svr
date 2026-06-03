@@ -2,12 +2,6 @@ package classroom
 
 import "errors"
 
-// Module-scoped sentinel errors for the classroom presentation
-// package. Used as the BaseError on MathError values built via
-// errs.NewError(...) — the user-facing message still comes from the
-// status code. Reusing one constant per recurring failure keeps the
-// per-call-site validator/service code readable and avoids drift
-// between near-identical error strings sprinkled across files.
 var (
 	// Validation — bounds & required fields.
 	ErrNameRequired                     = errors.New("name is required")

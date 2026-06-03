@@ -429,8 +429,6 @@ func (s *Service) SoftDeleteClassroom(ctx context.Context, req *dto.DeleteClassr
 	return &dto.DeleteClassroomRes{}, nil
 }
 
-// ForceDeleteClassroom is OWNER-gated like SoftDelete; admin-only
-// gating would land here when RBAC arrives (known-issues.md §11).
 func (s *Service) ForceDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq, sessionUserID int64) (*dto.DeleteClassroomRes, error) {
 	if err := ValidateDeleteClassroom(ctx, req); err != nil {
 		return nil, err
@@ -448,13 +446,6 @@ func (s *Service) ForceDeleteClassroom(ctx context.Context, req *dto.DeleteClass
 	return &dto.DeleteClassroomRes{}, nil
 }
 
-// validateRefs makes sure the caller-supplied school / programs / grade
-// references resolve to ACTIVE rows. Cheap existence check; only runs
-// when the pointer is non-nil so PATCH payloads stay lean.
-//
-// programIDs is treated as already deduped/trimmed by the validator
-// layer — we just walk and verify each one. An empty slice is allowed
-// (a classroom can carry zero programs).
 func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs []int64, gradeID *int64) error {
 	if schoolID != nil && *schoolID != 0 {
 		sc, err := s.schoolRepo.FindBySchoolId(ctx, *schoolID)
@@ -462,8 +453,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if sc == nil {
-			return errs.NewError(ctx, status.CLASSROOM_INVALID_SCHOOL, nil,
-				ErrSchoolNotFound)
+			return errs.NewError(ctx, status.CLASSROOM_INVALID_SCHOOL, nil, ErrSchoolNotFound)
 		}
 	}
 	for _, pid := range programIDs {
@@ -475,8 +465,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if p == nil {
-			return errs.NewError(ctx, status.CLASSROOM_INVALID_PROGRAM, nil,
-				ErrProgramNotFound)
+			return errs.NewError(ctx, status.CLASSROOM_INVALID_PROGRAM, nil, ErrProgramNotFound)
 		}
 	}
 	if gradeID != nil && *gradeID != 0 {
@@ -485,8 +474,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if g == nil {
-			return errs.NewError(ctx, status.CLASSROOM_INVALID_GRADE, nil,
-				ErrGradeNotFound)
+			return errs.NewError(ctx, status.CLASSROOM_INVALID_GRADE, nil, ErrGradeNotFound)
 		}
 	}
 	return nil

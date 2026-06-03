@@ -82,8 +82,7 @@ func (h *ClassroomHandler) sessionUID(r *http.Request) (int64, error) {
 	}
 	uid, ok := sess.UID()
 	if !ok {
-		return 0, errs.NewError(r.Context(), status.UNAUTHORIZED, nil,
-			ErrUIDNotFoundFromSession)
+		return 0, errs.NewError(r.Context(), status.UNAUTHORIZED, nil, ErrUIDNotFoundFromSession)
 	}
 	return uid, nil
 }
@@ -140,11 +139,13 @@ func (h *ClassroomHandler) HandleCreateClassroom(w http.ResponseWriter, r *http.
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.CreateClassroom(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -196,11 +197,13 @@ func (h *ClassroomHandler) HandleUpdateClassroom(w http.ResponseWriter, r *http.
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.UpdateClassroom(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -211,16 +214,19 @@ func (h *ClassroomHandler) HandleListClassrooms(w http.ResponseWriter, r *http.R
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.ListClassrooms(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -231,16 +237,19 @@ func (h *ClassroomHandler) HandleListMyJoinedClassrooms(w http.ResponseWriter, r
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.ListMyJoinedClassrooms(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -252,16 +261,19 @@ func (h *ClassroomHandler) HandleGetClassroom(w http.ResponseWriter, r *http.Req
 		ProfileID:   utils.StringToInt64(r.URL.Query().Get("profile_id"), 0),
 		ClassroomID: utils.StringToInt64(r.PathValue("id"), 0),
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.GetClassroom(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -272,16 +284,19 @@ func (h *ClassroomHandler) HandleArchiveClassroom(w http.ResponseWriter, r *http
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.ArchiveClassroom(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -292,16 +307,19 @@ func (h *ClassroomHandler) HandleRestoreClassroom(w http.ResponseWriter, r *http
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.RestoreClassroom(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -312,16 +330,19 @@ func (h *ClassroomHandler) HandleSoftDeleteClassroom(w http.ResponseWriter, r *h
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.SoftDeleteClassroom(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -332,34 +353,36 @@ func (h *ClassroomHandler) HandleForceDeleteClassroom(w http.ResponseWriter, r *
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.ForceDeleteClassroom(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
 // POST /classrooms/find-by-code
-// Read-only lookup that returns the classroom matching the supplied
-// join code. Takes no profile_id — the response is independent of the
-// caller's relationship to the classroom.
 func (h *ClassroomHandler) HandleFindClassroomByCode(w http.ResponseWriter, r *http.Request) {
 	var req dto.FindClassroomByCodeReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.FindClassroomByCode(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -370,16 +393,19 @@ func (h *ClassroomHandler) HandleJoinByCode(w http.ResponseWriter, r *http.Reque
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.JoinClassroomByCode(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -390,11 +416,13 @@ func (h *ClassroomHandler) HandleLeaveClassroom(w http.ResponseWriter, r *http.R
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.LeaveClassroom(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
@@ -410,16 +438,19 @@ func (h *ClassroomHandler) HandleRemoveMember(w http.ResponseWriter, r *http.Req
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.RemoveMember(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -430,16 +461,19 @@ func (h *ClassroomHandler) HandleUpdateMemberRole(w http.ResponseWriter, r *http
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.UpdateMemberRole(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -450,16 +484,19 @@ func (h *ClassroomHandler) HandleTransferOwnership(w http.ResponseWriter, r *htt
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.TransferOwnership(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -470,16 +507,19 @@ func (h *ClassroomHandler) HandleListMembers(w http.ResponseWriter, r *http.Requ
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.ListMembers(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -490,16 +530,19 @@ func (h *ClassroomHandler) HandleSendInvitation(w http.ResponseWriter, r *http.R
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.SendInvitation(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -510,16 +553,19 @@ func (h *ClassroomHandler) HandleListMyPendingInvitations(w http.ResponseWriter,
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.ListMyPendingInvitations(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -530,16 +576,19 @@ func (h *ClassroomHandler) HandleListClassroomInvitations(w http.ResponseWriter,
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.ListClassroomInvitations(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -550,16 +599,19 @@ func (h *ClassroomHandler) HandleAcceptInvitation(w http.ResponseWriter, r *http
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.AcceptInvitation(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -570,16 +622,19 @@ func (h *ClassroomHandler) HandleRejectInvitation(w http.ResponseWriter, r *http
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.RejectInvitation(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -590,16 +645,19 @@ func (h *ClassroomHandler) HandleCancelInvitation(w http.ResponseWriter, r *http
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.CancelInvitation(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -610,16 +668,19 @@ func (h *ClassroomHandler) HandleListJoinRequestsByClassroom(w http.ResponseWrit
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.ListJoinRequestsByClassroom(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -630,16 +691,19 @@ func (h *ClassroomHandler) HandleListMyJoinRequests(w http.ResponseWriter, r *ht
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.ListMyJoinRequests(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -650,16 +714,19 @@ func (h *ClassroomHandler) HandleApproveJoinRequest(w http.ResponseWriter, r *ht
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.ApproveJoinRequest(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -670,16 +737,19 @@ func (h *ClassroomHandler) HandleRejectJoinRequest(w http.ResponseWriter, r *htt
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.RejectJoinRequest(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -690,15 +760,18 @@ func (h *ClassroomHandler) HandleCancelJoinRequest(w http.ResponseWriter, r *htt
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.classroomSvc.CancelJoinRequest(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
