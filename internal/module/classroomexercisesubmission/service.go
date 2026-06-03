@@ -178,7 +178,9 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 		"score_percentage", grading.ScorePercentage,
 	)
 
-	return &dto.SubmitExerciseAnswersRes{Submission: dto.DomainToResponse(saved)}, nil
+	res := dto.DomainToResponse(saved)
+
+	return &dto.SubmitExerciseAnswersRes{Submission: res}, nil
 }
 
 // GetSubmission resolves the row → enforces "caller is the owner OR

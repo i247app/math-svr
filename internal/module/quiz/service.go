@@ -307,9 +307,11 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 		return nil, err
 	}
 
+	res := dto.DomainToResponse(updated, true)
+
 	// Submitted quizzes are review-mode — surface right_answer so the
 	// client can render correct/incorrect indicators.
-	return &dto.SubmitQuizAnswersRes{Quiz: dto.DomainToResponse(updated, true)}, nil
+	return &dto.SubmitQuizAnswersRes{Quiz: res}, nil
 }
 
 func (s *Service) GetQuizByQuizId(ctx context.Context, req *dto.GetQuizByQuizIdReq) (*dto.GetQuizByQuizIdRes, error) {

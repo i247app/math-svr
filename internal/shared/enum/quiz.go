@@ -27,6 +27,53 @@ func (p QuizPurpose) IsValid() bool {
 	}
 }
 
+type AcademicPerformance string
+
+const (
+	AcademicPerformanceExcellentEN AcademicPerformance = "Excellent"
+	AcademicPerformanceGoodEN      AcademicPerformance = "Good"
+	AcademicPerformanceAverageEN   AcademicPerformance = "Average"
+	AcademicPerformanceWeakEN      AcademicPerformance = "Weak"
+	AcademicPerformanceVeryWeakEN  AcademicPerformance = "Very Weak"
+
+	AcademicPerformanceExcellentVI AcademicPerformance = "Xuất sắc"
+	AcademicPerformanceGoodVI      AcademicPerformance = "Giỏi"
+	AcademicPerformanceAverageVI   AcademicPerformance = "Khá"
+	AcademicPerformanceWeakVI      AcademicPerformance = "Trung bình"
+	AcademicPerformanceVeryWeakVI  AcademicPerformance = "Yếu"
+)
+
+func DetectAcademicPerformanceByPercentage(percentage float64, language LanguageType) AcademicPerformance {
+	switch language {
+	case LanguageTypeEnglish:
+		if percentage >= 90 {
+			return AcademicPerformanceExcellentEN
+		} else if percentage >= 70 {
+			return AcademicPerformanceGoodEN
+		} else if percentage >= 50 {
+			return AcademicPerformanceAverageEN
+		} else if percentage >= 30 {
+			return AcademicPerformanceWeakEN
+		} else {
+			return AcademicPerformanceVeryWeakEN
+		}
+	case LanguageTypeVietnamese:
+		if percentage >= 90 {
+			return AcademicPerformanceExcellentVI
+		} else if percentage >= 70 {
+			return AcademicPerformanceGoodVI
+		} else if percentage >= 50 {
+			return AcademicPerformanceAverageVI
+		} else if percentage >= 30 {
+			return AcademicPerformanceWeakVI
+		} else {
+			return AcademicPerformanceVeryWeakVI
+		}
+	default:
+		return AcademicPerformanceAverageEN
+	}
+}
+
 // QuizTypeOfQuiz names the learning intent of the quiz: a GENERAL round
 // introduces new knowledge from the curriculum, a REINFORCEMENT round
 // consolidates / reviews material the student got wrong on a previous
