@@ -1,11 +1,11 @@
-package classroomexercisesubmission
+package classroomexercise
 
 import (
 	"encoding/json"
 	"net/http"
 	"strconv"
 
-	dto "math-ai.com/math-ai/internal/application/dto/classroomexercisesubmission"
+	dto "math-ai.com/math-ai/internal/application/dto/classroomexercise"
 	"math-ai.com/math-ai/internal/application/resource"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"

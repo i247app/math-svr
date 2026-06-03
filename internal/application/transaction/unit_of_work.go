@@ -6,7 +6,6 @@ import (
 	"math-ai.com/math-ai/internal/domain/chapter"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/classroomexercise"
-	"math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/grade"
 	"math-ai.com/math-ai/internal/domain/loginlog"
@@ -48,7 +47,7 @@ type Repositories struct {
 	ClassroomMember             classroom.IMemberRepository
 	ClassroomProgram            classroom.IClassroomProgramRepository
 	ClassroomExercise           classroomexercise.IRepository
-	ClassroomExerciseSubmission classroomexercisesubmission.IRepository
+	ClassroomExerciseSubmission classroomexercise.ISubmissionRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

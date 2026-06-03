@@ -1,4 +1,4 @@
-package classroomexercisesubmission
+package classroomexercise
 
 import (
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"

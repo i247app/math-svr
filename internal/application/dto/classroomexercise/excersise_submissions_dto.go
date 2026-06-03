@@ -1,10 +1,10 @@
-package classroomexercisesubmission
+package classroomexercise
 
 import (
 	"encoding/json"
 
 	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
-	domain "math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
+	domain "math-ai.com/math-ai/internal/domain/classroomexercise"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -219,7 +219,7 @@ type ListAudienceMembersRes struct {
 // DomainToResponse renders the submission. The answers blob is parsed
 // out on the way; a parse failure leaves Answers nil so the rest of the
 // row still renders.
-func DomainToResponse(s *domain.Submission) *SubmissionResponse {
+func DomainSubmissionToResponse(s *domain.Submission) *SubmissionResponse {
 	if s == nil {
 		return nil
 	}
@@ -250,10 +250,10 @@ func DomainToResponse(s *domain.Submission) *SubmissionResponse {
 	return res
 }
 
-func DomainListToResponse(items []*domain.Submission) []*SubmissionResponse {
+func DomainSubmissionListToResponse(items []*domain.Submission) []*SubmissionResponse {
 	out := make([]*SubmissionResponse, len(items))
 	for i, s := range items {
-		out[i] = DomainToResponse(s)
+		out[i] = DomainSubmissionToResponse(s)
 	}
 	return out
 }

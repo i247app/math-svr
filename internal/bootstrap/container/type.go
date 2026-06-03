@@ -4,7 +4,6 @@ import (
 	chapterDomain "math-ai.com/math-ai/internal/domain/chapter"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	classroomexerciseDomain "math-ai.com/math-ai/internal/domain/classroomexercise"
-	classroomexercisesubmissionDomain "math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	loginLogDomain "math-ai.com/math-ai/internal/domain/loginlog"
@@ -20,7 +19,6 @@ import (
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/classroomexercise"
-	"math-ai.com/math-ai/internal/module/classroomexercisesubmission"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/job"
@@ -35,22 +33,21 @@ import (
 )
 
 type ServiceContainer struct {
-	UserSvc                        *user.Service
-	AuthSvc                        *auth.Service
-	ProgramSvc                     *program.Service
-	GradeSvc                       *grade.Service
-	SemesterSvc                    *semester.Service
-	ProfileSvc                     *profile.Service
-	DeviceSvc                      *device.Service
-	OtpSvc                         *otp.Service
-	QuizSvc                        *quiz.Service
-	ChapterSvc                     *chapter.Service
-	SchoolSvc                      *school.Service
-	JobSvc                         *job.Service
-	SeqSvc                         *seq.Service
-	ClassroomSvc                   *classroom.Service
-	ClassroomExerciseSvc           *classroomexercise.Service
-	ClassroomExerciseSubmissionSvc *classroomexercisesubmission.Service
+	UserSvc              *user.Service
+	AuthSvc              *auth.Service
+	ProgramSvc           *program.Service
+	GradeSvc             *grade.Service
+	SemesterSvc          *semester.Service
+	ProfileSvc           *profile.Service
+	DeviceSvc            *device.Service
+	OtpSvc               *otp.Service
+	QuizSvc              *quiz.Service
+	ChapterSvc           *chapter.Service
+	SchoolSvc            *school.Service
+	JobSvc               *job.Service
+	SeqSvc               *seq.Service
+	ClassroomSvc         *classroom.Service
+	ClassroomExerciseSvc *classroomexercise.Service
 }
 
 type RepositoryContainer struct {
@@ -74,5 +71,5 @@ type RepositoryContainer struct {
 	ClassroomMemberRepository             classroomDomain.IMemberRepository
 	ClassroomProgramRepository            classroomDomain.IClassroomProgramRepository
 	ClassroomExerciseRepository           classroomexerciseDomain.IRepository
-	ClassroomExerciseSubmissionRepository classroomexercisesubmissionDomain.IRepository
+	ClassroomExerciseSubmissionRepository classroomexerciseDomain.ISubmissionRepository
 }

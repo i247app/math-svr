@@ -3,7 +3,7 @@ package query
 import (
 	"context"
 
-	domain "math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
+	domain "math-ai.com/math-ai/internal/domain/classroomexercise"
 )
 
 type GetSubmissionByIdQuery struct {
@@ -11,10 +11,10 @@ type GetSubmissionByIdQuery struct {
 }
 
 type GetSubmissionByIdQueryHandler struct {
-	repo domain.IRepository
+	repo domain.ISubmissionRepository
 }
 
-func NewGetSubmissionByIdQueryHandler(repo domain.IRepository) *GetSubmissionByIdQueryHandler {
+func NewGetSubmissionByIdQueryHandler(repo domain.ISubmissionRepository) *GetSubmissionByIdQueryHandler {
 	return &GetSubmissionByIdQueryHandler{repo: repo}
 }
 

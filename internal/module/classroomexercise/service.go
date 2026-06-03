@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
+	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/classroomexercise"
 	dto "math-ai.com/math-ai/internal/application/dto/classroomexercise"
 	query "math-ai.com/math-ai/internal/application/query/classroomexercise"
 	"math-ai.com/math-ai/internal/application/transaction"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	domain "math-ai.com/math-ai/internal/domain/classroomexercise"
-	submissionDomain "math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
@@ -34,8 +34,13 @@ type Service struct {
 	updateExerciseCmd  *command.UpdateClassroomExerciseCommandHandler
 	softDeleteCmd      *command.SoftDeleteClassroomExerciseCommandHandler
 
+	getSubmissionQuery      *query.GetSubmissionByIdQueryHandler
+	listSubmissionsQuery    *query.ListSubmissionsQueryHandler
+	submitAnswersCmd        *command.SubmitExerciseAnswersCommandHandler
+	softDeleteSubmissionCmd *command.SoftDeleteSubmissionCommandHandler
+
 	exerciseRepo         domain.IRepository
-	submissionRepo       submissionDomain.IRepository
+	submissionRepo       domain.ISubmissionRepository
 	classroomRepo        classroomDomain.IRepository
 	classroomMemberRepo  classroomDomain.IMemberRepository
 	classroomProgramRepo classroomDomain.IClassroomProgramRepository
@@ -43,11 +48,12 @@ type Service struct {
 	programRepo          programDomain.IRepository
 	gradeRepo            gradeDomain.IRepository
 	bot                  *botClient
+	storageProvider      *storage.Adapter
 }
 
 func NewService(
 	exerciseRepo domain.IRepository,
-	submissionRepo submissionDomain.IRepository,
+	submissionRepo domain.ISubmissionRepository,
 	uow transaction.UnitOfWork,
 	bot *botAdapter.Adapter,
 	classroomRepo classroomDomain.IRepository,
@@ -56,13 +62,20 @@ func NewService(
 	profileRepo profileDomain.IRepository,
 	programRepo programDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
+	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
-		getExerciseQuery:     query.NewGetClassroomExerciseByIdQueryHandler(exerciseRepo),
-		listExercisesQuery:   query.NewListClassroomExercisesQueryHandler(exerciseRepo),
-		createExerciseCmd:    command.NewCreateClassroomExerciseCommandHandler(uow),
-		updateExerciseCmd:    command.NewUpdateClassroomExerciseCommandHandler(uow),
-		softDeleteCmd:        command.NewSoftDeleteClassroomExerciseCommandHandler(uow),
+		getExerciseQuery:   query.NewGetClassroomExerciseByIdQueryHandler(exerciseRepo),
+		listExercisesQuery: query.NewListClassroomExercisesQueryHandler(exerciseRepo),
+		createExerciseCmd:  command.NewCreateClassroomExerciseCommandHandler(uow),
+		updateExerciseCmd:  command.NewUpdateClassroomExerciseCommandHandler(uow),
+		softDeleteCmd:      command.NewSoftDeleteClassroomExerciseCommandHandler(uow),
+
+		getSubmissionQuery:      query.NewGetSubmissionByIdQueryHandler(submissionRepo),
+		listSubmissionsQuery:    query.NewListSubmissionsQueryHandler(submissionRepo),
+		submitAnswersCmd:        command.NewSubmitExerciseAnswersCommandHandler(uow),
+		softDeleteSubmissionCmd: command.NewSoftDeleteSubmissionCommandHandler(uow),
+
 		exerciseRepo:         exerciseRepo,
 		submissionRepo:       submissionRepo,
 		classroomRepo:        classroomRepo,
@@ -72,6 +85,7 @@ func NewService(
 		programRepo:          programRepo,
 		gradeRepo:            gradeRepo,
 		bot:                  newBotClient(bot),
+		storageProvider:      storageProvider,
 	}
 }
 

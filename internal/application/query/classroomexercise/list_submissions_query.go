@@ -3,7 +3,7 @@ package query
 import (
 	"context"
 
-	domain "math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
+	domain "math-ai.com/math-ai/internal/domain/classroomexercise"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -26,10 +26,10 @@ type ListSubmissionsQuery struct {
 }
 
 type ListSubmissionsQueryHandler struct {
-	repo domain.IRepository
+	repo domain.ISubmissionRepository
 }
 
-func NewListSubmissionsQueryHandler(repo domain.IRepository) *ListSubmissionsQueryHandler {
+func NewListSubmissionsQueryHandler(repo domain.ISubmissionRepository) *ListSubmissionsQueryHandler {
 	return &ListSubmissionsQueryHandler{repo: repo}
 }
 

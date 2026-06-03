@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	domain "math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
+	domain "math-ai.com/math-ai/internal/domain/classroomexercise"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	domain "math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
+	domain "math-ai.com/math-ai/internal/domain/classroomexercise"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
@@ -40,7 +40,7 @@ type ClassroomExerciseSubmissionRepository struct {
 	db database.Executor
 }
 
-func NewClassroomExerciseSubmissionRepository(db database.Executor) domain.IRepository {
+func NewClassroomExerciseSubmissionRepository(db database.Executor) domain.ISubmissionRepository {
 	return &ClassroomExerciseSubmissionRepository{db: db}
 }
 

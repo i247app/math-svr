@@ -1,4 +1,4 @@
-package classroomexercisesubmission
+package classroomexercise
 
 import (
 	"context"
@@ -6,16 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	"math-ai.com/math-ai/internal/adapter/storage"
-	command "math-ai.com/math-ai/internal/application/command/classroomexercisesubmission"
-	dto "math-ai.com/math-ai/internal/application/dto/classroomexercisesubmission"
-	query "math-ai.com/math-ai/internal/application/query/classroomexercisesubmission"
-	"math-ai.com/math-ai/internal/application/transaction"
+	command "math-ai.com/math-ai/internal/application/command/classroomexercise"
+	dto "math-ai.com/math-ai/internal/application/dto/classroomexercise"
+	query "math-ai.com/math-ai/internal/application/query/classroomexercise"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
+	domain "math-ai.com/math-ai/internal/domain/classroomexercise"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/classroomexercise"
-	domain "math-ai.com/math-ai/internal/domain/classroomexercisesubmission"
-	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -26,46 +23,6 @@ import (
 // avatarUrlTTL bounds how long a generated avatar URL is valid. Mirrors
 // the classroom / school modules' coverUrlTTL.
 const avatarUrlTTL = 1 * time.Hour
-
-// Service is the classroomexercisesubmission module's public façade.
-// It composes the CQRS handlers behind validators and per-aggregate
-// permission helpers, and owns the bot grading call.
-type Service struct {
-	getSubmissionQuery   *query.GetSubmissionByIdQueryHandler
-	listSubmissionsQuery *query.ListSubmissionsQueryHandler
-	submitAnswersCmd     *command.SubmitExerciseAnswersCommandHandler
-	softDeleteCmd        *command.SoftDeleteSubmissionCommandHandler
-
-	submissionRepo      domain.IRepository
-	exerciseRepo        exerciseDomain.IRepository
-	classroomMemberRepo classroomDomain.IMemberRepository
-	profileRepo         profileDomain.IRepository
-	storageProvider     *storage.Adapter
-	bot                 *botClient
-}
-
-func NewService(
-	submissionRepo domain.IRepository,
-	uow transaction.UnitOfWork,
-	botAdp *botAdapter.Adapter,
-	exerciseRepo exerciseDomain.IRepository,
-	classroomMemberRepo classroomDomain.IMemberRepository,
-	profileRepo profileDomain.IRepository,
-	storageProvider *storage.Adapter,
-) *Service {
-	return &Service{
-		getSubmissionQuery:   query.NewGetSubmissionByIdQueryHandler(submissionRepo),
-		listSubmissionsQuery: query.NewListSubmissionsQueryHandler(submissionRepo),
-		submitAnswersCmd:     command.NewSubmitExerciseAnswersCommandHandler(uow),
-		softDeleteCmd:        command.NewSoftDeleteSubmissionCommandHandler(uow),
-		submissionRepo:       submissionRepo,
-		exerciseRepo:         exerciseRepo,
-		classroomMemberRepo:  classroomMemberRepo,
-		profileRepo:          profileRepo,
-		storageProvider:      storageProvider,
-		bot:                  newBotClient(botAdp),
-	}
-}
 
 // SubmitExerciseAnswers validates → loads the exercise → enforces
 // membership + window + duplicate guards → marshals the answers payload
@@ -178,7 +135,7 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 		"score_percentage", grading.ScorePercentage,
 	)
 
-	res := dto.DomainToResponse(saved)
+	res := dto.DomainSubmissionToResponse(saved)
 
 	return &dto.SubmitExerciseAnswersRes{Submission: res}, nil
 }
@@ -208,7 +165,7 @@ func (s *Service) GetSubmission(ctx context.Context, req *dto.GetSubmissionReq, 
 	if err := s.authorizeSubmissionRead(ctx, sub, caller.ProfileId()); err != nil {
 		return nil, err
 	}
-	resp := dto.DomainToResponse(sub)
+	resp := dto.DomainSubmissionToResponse(sub)
 	if err := s.hydrateSubmissions(ctx, []*domain.Submission{sub}, []*dto.SubmissionResponse{resp}); err != nil {
 		return nil, err
 	}
@@ -286,7 +243,7 @@ func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsR
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	responses := dto.DomainListToResponse(rows)
+	responses := dto.DomainSubmissionListToResponse(rows)
 	if err := s.hydrateSubmissions(ctx, rows, responses); err != nil {
 		return nil, err
 	}
@@ -352,7 +309,7 @@ func (s *Service) ListSubmissionsByExercise(ctx context.Context, req *dto.ListSu
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	responses := dto.DomainListToResponse(rows)
+	responses := dto.DomainSubmissionListToResponse(rows)
 	if err := s.hydrateSubmissions(ctx, rows, responses); err != nil {
 		return nil, err
 	}
@@ -565,7 +522,7 @@ func (s *Service) SoftDeleteSubmission(ctx context.Context, req *dto.DeleteSubmi
 	}
 
 	actor := caller.ProfileId()
-	if err := s.softDeleteCmd.Handle(ctx, command.SoftDeleteSubmissionCommand{
+	if err := s.softDeleteSubmissionCmd.Handle(ctx, command.SoftDeleteSubmissionCommand{
 		ActorID:                       &actor,
 		ClassroomExerciseSubmissionID: req.ClassroomExerciseSubmissionID,
 	}); err != nil {
