@@ -27,6 +27,7 @@ func (h *DeviceHandler) HandleGetDeviceById(w http.ResponseWriter, r *http.Reque
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -43,6 +44,7 @@ func (h *DeviceHandler) HandleListDevices(w http.ResponseWriter, r *http.Request
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -59,6 +61,7 @@ func (h *DeviceHandler) HandleUpdateDevice(w http.ResponseWriter, r *http.Reques
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -75,6 +78,7 @@ func (h *DeviceHandler) HandleRevokeDevice(w http.ResponseWriter, r *http.Reques
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -91,5 +95,6 @@ func (h *DeviceHandler) HandleSoftDeleteDevice(w http.ResponseWriter, r *http.Re
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
