@@ -88,7 +88,6 @@ func (h *AuthHandler) HandleLoginOTP(w http.ResponseWriter, r *http.Request) {
 			response.WriteJson(w, res, err)
 			return
 		}
-
 		response.WriteJson(w, nil, err)
 		return
 	}

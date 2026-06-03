@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 
 	command "math-ai.com/math-ai/internal/application/command/auth"
 	dto "math-ai.com/math-ai/internal/application/dto/auth"
@@ -44,7 +43,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 
 	normalizePhone, err := utils.NormalizePhone(req.Phone)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to normalize phone: %w", err))
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
 	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
@@ -100,8 +99,7 @@ func (s *Service) LoginResume(ctx context.Context, sess *session.AppSession) (*d
 
 	uid, ok := sess.UID()
 	if !ok {
-		// return nil, m_status.UNAUTHORIZED, fmt.Errorf("failed to resume session: uid not found in session")
-		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, fmt.Errorf("uid not found in session"))
+		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUIDNotFoundInSession)
 	}
 
 	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: uid})
@@ -126,7 +124,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 
 	normalizePhone, err := utils.NormalizePhone(req.Phone)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to normalize phone: %w", err))
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
 	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
