@@ -172,7 +172,7 @@ func (s *Service) populateImageUrl(ctx context.Context, resp *dto.ProgramRespons
 		Expiration: imageUrlTTL,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("program.image presign failed program_id=%s err=%v", resp.ProgramID, err)
+		logger.From(ctx).Warnf("program.image presign failed program_id=%d err=%v", resp.ProgramID, err)
 		return
 	}
 	resp.ImageUrl = &url

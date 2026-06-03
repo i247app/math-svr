@@ -98,8 +98,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 			return nil, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if p == nil {
-			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
-				ErrProfileNotFound)
+			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
 		}
 		profile = p
 	} else {
@@ -139,15 +138,13 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 				ErrPreviousQuizNotFound)
 		}
 		if prev.AIReview() == nil || prev.Answers() == nil {
-			return nil, errs.NewError(ctx, status.QUIZ_PREVIOUS_NOT_GRADED, nil,
-				ErrPreviousQuizMustBeSubmittedBeforeGeneratingReinforceRound)
+			return nil, errs.NewError(ctx, status.QUIZ_PREVIOUS_NOT_GRADED, nil, ErrPreviousQuizMustBeSubmittedBeforeGeneratingReinforceRound)
 		}
 		// Ownership check only applies when both sides have a profile.
 		// An anonymous reinforce round (or a reinforce off an anonymous
 		// previous quiz) is allowed — they share no owner to mismatch.
 		if profile != nil && prev.ProfileId() != nil && *prev.ProfileId() != profile.ProfileId() {
-			return nil, errs.NewError(ctx, status.QUIZ_NOT_OWNED, nil,
-				ErrPreviousQuizDoesNotBelongToThisProfile)
+			return nil, errs.NewError(ctx, status.QUIZ_NOT_OWNED, nil, ErrPreviousQuizDoesNotBelongToThisProfile)
 		}
 		genIn.PreviousQuestions = derefString(prev.Questions())
 		genIn.PreviousAnswers = derefString(prev.Answers())
@@ -223,22 +220,18 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if existing == nil {
-		return nil, errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
-			ErrQuizNotFound)
+		return nil, errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil, ErrQuizNotFound)
 	}
 	if existing.QuizStatus() != nil && *existing.QuizStatus() == string(enum.QuizStatusTypeSubmitted) {
-		return nil, errs.NewError(ctx, status.QUIZ_ALREADY_SUBMITTED, nil,
-			ErrQuizHasAlreadyBeenSubmitted)
+		return nil, errs.NewError(ctx, status.QUIZ_ALREADY_SUBMITTED, nil, ErrQuizHasAlreadyBeenSubmitted)
 	}
 	if existing.Questions() == nil || *existing.Questions() == "" {
-		return nil, errs.NewError(ctx, status.QUIZ_GRADING_FAILED, nil,
-			ErrQuizHasNoQuestionsToGrade)
+		return nil, errs.NewError(ctx, status.QUIZ_GRADING_FAILED, nil, ErrQuizHasNoQuestionsToGrade)
 	}
 
 	answersJSON, err := json.Marshal(req.Answers)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.QUIZ_INVALID_ANSWERS, nil,
-			fmt.Errorf("quiz: marshal answers: %w", err))
+		return nil, errs.NewError(ctx, status.QUIZ_INVALID_ANSWERS, nil, fmt.Errorf("quiz: marshal answers: %w", err))
 	}
 
 	// Derive the learning intent from the persisted column when present;
@@ -523,7 +516,7 @@ func (s *Service) resolveProfileChapterDescriptions(ctx context.Context,
 		TakeAll:    true,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("quiz.resolve_chapters_failed program_id=%s grade_id=%s semester_id=%s err=%v",
+		logger.From(ctx).Warnf("quiz.resolve_chapters_failed program_id=%d grade_id=%d semester_id=%d err=%v",
 			*programID, *gradeID, *semesterID, err)
 		return nil
 	}

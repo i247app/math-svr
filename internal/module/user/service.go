@@ -408,7 +408,7 @@ func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, cont
 		// Key is persisted; failing here just means we can't return a
 		// preview URL now. Log and return the key without it — the
 		// client can re-fetch via /users/me to get a fresh presigned URL.
-		logger.From(ctx).Warnf("user.avatar presign failed user_id=%s err=%v", userID, err)
+		logger.From(ctx).Warnf("user.avatar presign failed user_id=%d err=%v", userID, err)
 		signed = ""
 	}
 

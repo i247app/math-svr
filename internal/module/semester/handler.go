@@ -48,6 +48,7 @@ func (h *SemesterHandler) HandleCreateSemester(w http.ResponseWriter, r *http.Re
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -64,6 +65,7 @@ func (h *SemesterHandler) HandleUpdateSemester(w http.ResponseWriter, r *http.Re
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -80,6 +82,7 @@ func (h *SemesterHandler) HandleSoftDeleteSemester(w http.ResponseWriter, r *htt
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -96,6 +99,7 @@ func (h *SemesterHandler) HandleForceDeleteSemester(w http.ResponseWriter, r *ht
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -111,5 +115,6 @@ func (h *SemesterHandler) HandleGetSemester(w http.ResponseWriter, r *http.Reque
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }

@@ -20,6 +20,7 @@ func (h *UserHandler) HandleSoftDeleteUser(w http.ResponseWriter, r *http.Reques
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJsonNoContent(w)
 }
 
@@ -35,5 +36,6 @@ func (h *UserHandler) HandleForceDeleteUser(w http.ResponseWriter, r *http.Reque
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJsonNoContent(w)
 }

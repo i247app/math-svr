@@ -22,8 +22,7 @@ func ValidateCreateUser(ctx context.Context, req *dto.CreateUserReq) error {
 	// to pick a winner silently. Format/host validity lives in the
 	// service layer (normalizeAvatarKey).
 	if strings.TrimSpace(req.Avatar) != "" && req.AvatarFile != nil {
-		return errs.NewError(ctx, status.USER_AVATAR_CONFLICT, nil,
-			ErrProvideEitherAvatarFileOrAvatarReference)
+		return errs.NewError(ctx, status.USER_AVATAR_CONFLICT, nil, ErrProvideEitherAvatarFileOrAvatarReference)
 	}
 	return nil
 }
@@ -41,12 +40,10 @@ func ValidateUpdateUser(ctx context.Context, req *dto.UpdateUserReq) error {
 	// avatar reference; an empty string is not a valid reference.
 	// Pointer-nil means "no change" and is allowed.
 	if req.Avatar != nil && strings.TrimSpace(*req.Avatar) == "" {
-		return errs.NewError(ctx, status.USER_AVATAR_INVALID_REFERENCE, nil,
-			ErrAvatarReferenceMustBeNonEmptyWhenProvided)
+		return errs.NewError(ctx, status.USER_AVATAR_INVALID_REFERENCE, nil, ErrAvatarReferenceMustBeNonEmptyWhenProvided)
 	}
 	if req.Avatar != nil && strings.TrimSpace(*req.Avatar) != "" && req.AvatarFile != nil {
-		return errs.NewError(ctx, status.USER_AVATAR_CONFLICT, nil,
-			ErrProvideEitherAvatarFileOrAvatarReference)
+		return errs.NewError(ctx, status.USER_AVATAR_CONFLICT, nil, ErrProvideEitherAvatarFileOrAvatarReference)
 	}
 	return nil
 }

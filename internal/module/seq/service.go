@@ -42,8 +42,7 @@ func NewService(uow transaction.UnitOfWork) *Service {
 // every other failure mode.
 func (s *Service) NextID(ctx context.Context, name string) (int64, error) {
 	if name == "" {
-		return 0, errs.NewError(ctx, status.SEQ_MISSING_NAME, nil,
-			ErrSeqNameRequired)
+		return 0, errs.NewError(ctx, status.SEQ_MISSING_NAME, nil, ErrSeqNameRequired)
 	}
 
 	var id int64
@@ -51,11 +50,9 @@ func (s *Service) NextID(ctx context.Context, name string) (int64, error) {
 		next, err := repos.Seq.Next(ctx, name)
 		if err != nil {
 			if errors.Is(err, domain.ErrNotFound) {
-				return errs.NewError(ctx, status.SEQ_NOT_FOUND,
-					map[string]any{"name": name}, err)
+				return errs.NewError(ctx, status.SEQ_NOT_FOUND, map[string]any{"name": name}, err)
 			}
-			return errs.NewError(ctx, status.SEQ_GENERATION_FAILED,
-				map[string]any{"name": name}, err)
+			return errs.NewError(ctx, status.SEQ_GENERATION_FAILED, map[string]any{"name": name}, err)
 		}
 		id = next
 		return nil
@@ -79,11 +76,9 @@ func ResolveNext(ctx context.Context, repo domain.IRepository, name string) (int
 	id, err := repo.Next(ctx, name)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			return 0, errs.NewError(ctx, status.SEQ_NOT_FOUND,
-				map[string]any{"name": name}, err)
+			return 0, errs.NewError(ctx, status.SEQ_NOT_FOUND, map[string]any{"name": name}, err)
 		}
-		return 0, errs.NewError(ctx, status.SEQ_GENERATION_FAILED,
-			map[string]any{"name": name}, err)
+		return 0, errs.NewError(ctx, status.SEQ_GENERATION_FAILED, map[string]any{"name": name}, err)
 	}
 	return id, nil
 }

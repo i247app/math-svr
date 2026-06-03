@@ -124,8 +124,7 @@ func (s *Service) GetSemester(ctx context.Context, req *dto.GetSemesterReq) (*dt
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if sm == nil {
-		return nil, errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil,
-			ErrSemesterNotFound)
+		return nil, errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil, ErrSemesterNotFound)
 	}
 	resp := dto.DomainToResponse(sm)
 	s.populateImageUrl(ctx, resp)
@@ -170,7 +169,7 @@ func (s *Service) populateImageUrl(ctx context.Context, resp *dto.SemesterRespon
 		Expiration: imageUrlTTL,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("semester.image presign failed semester_id=%s err=%v", resp.SemesterID, err)
+		logger.From(ctx).Warnf("semester.image presign failed semester_id=%d err=%v", resp.SemesterID, err)
 		return
 	}
 	resp.ImageUrl = &url

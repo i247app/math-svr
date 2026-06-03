@@ -241,5 +241,6 @@ func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request)
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }

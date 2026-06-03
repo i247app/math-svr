@@ -125,8 +125,7 @@ func (s *Service) GetSchool(ctx context.Context, req *dto.GetSchoolReq) (*dto.Ge
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if found == nil {
-		return nil, errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil,
-			ErrSchoolNotFound)
+		return nil, errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil, ErrSchoolNotFound)
 	}
 
 	resp := dto.DomainToResponse(found)
@@ -173,7 +172,7 @@ func (s *Service) populateImageUrl(ctx context.Context, resp *dto.SchoolResponse
 		Expiration: imageUrlTTL,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("school.image presign failed school_id=%s err=%v", resp.SchoolID, err)
+		logger.From(ctx).Warnf("school.image presign failed school_id=%d err=%v", resp.SchoolID, err)
 		return
 	}
 	resp.ImageUrl = &url
