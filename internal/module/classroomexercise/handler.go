@@ -45,16 +45,19 @@ func (h *ClassroomExerciseHandler) HandleCreateExercise(w http.ResponseWriter, r
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.svc.CreateExercise(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -65,32 +68,38 @@ func (h *ClassroomExerciseHandler) HandleUpdateExercise(w http.ResponseWriter, r
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.svc.UpdateExercise(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
 // GET /classroom-exercises/{id}
 func (h *ClassroomExerciseHandler) HandleGetExercise(w http.ResponseWriter, r *http.Request) {
 	id := utils.StringToInt64(r.PathValue("id"), 0)
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.svc.GetExercise(r.Context(), &dto.GetExerciseReq{ClassroomExerciseID: id}, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -101,16 +110,19 @@ func (h *ClassroomExerciseHandler) HandleListExercises(w http.ResponseWriter, r 
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.svc.ListExercises(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -121,15 +133,18 @@ func (h *ClassroomExerciseHandler) HandleSoftDeleteExercise(w http.ResponseWrite
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	uid, err := h.sessionUID(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.svc.SoftDeleteExercise(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }

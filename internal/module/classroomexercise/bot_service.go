@@ -94,8 +94,7 @@ func (c *botClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 	_, questions, err := quizParser.ParseGeneration(res.Content)
 	if err != nil {
 		log.Warnf("classroom_exercise.bot.parse_failed err=%v", err)
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_GENERATION_FAILED,
-			map[string]any{"reason": err.Error()}, err)
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_GENERATION_FAILED, map[string]any{"reason": err.Error()}, err)
 	}
 	return &generateExerciseOutput{Questions: questions}, nil
 }
