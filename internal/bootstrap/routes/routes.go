@@ -183,6 +183,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /classrooms/invitations/cancel", classroomHandler.HandleCancelInvitation, authMiddleware)
 
 		// join requests — user-initiated, member_status = PENDING_REQUEST
+		gexSvr.AddRoute("POST /classrooms/find-by-code", classroomHandler.HandleFindClassroomByCode, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/join-by-code", classroomHandler.HandleJoinByCode, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/join-requests/list", classroomHandler.HandleListJoinRequestsByClassroom, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/join-requests/my-pending", classroomHandler.HandleListMyJoinRequests, authMiddleware)

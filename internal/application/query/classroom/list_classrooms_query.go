@@ -22,6 +22,7 @@ type ListClassroomsQuery struct {
 	ProgramIDs      []int64
 	GradeID         *int64
 	Search          *string
+	ClassCode       *string
 	IncludeArchived bool
 	Page            int64
 	Limit           int64
@@ -55,6 +56,7 @@ func (h *ListClassroomsQueryHandler) Handle(ctx context.Context, q ListClassroom
 		ProgramIds:      q.ProgramIDs,
 		GradeId:         q.GradeID,
 		Search:          q.Search,
+		ClassCode:       q.ClassCode,
 		IncludeArchived: q.IncludeArchived,
 		Page:            q.Page,
 		Limit:           q.Limit,

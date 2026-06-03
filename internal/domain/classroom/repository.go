@@ -25,6 +25,7 @@ type ListClassroomsParams struct {
 	ProgramIds      []int64
 	GradeId         *int64
 	Search          *string
+	ClassCode       *string
 	IncludeArchived bool
 	Page            int64
 	Limit           int64

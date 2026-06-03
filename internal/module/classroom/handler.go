@@ -345,6 +345,24 @@ func (h *ClassroomHandler) HandleForceDeleteClassroom(w http.ResponseWriter, r *
 	response.WriteJson(w, res, nil)
 }
 
+// POST /classrooms/find-by-code
+// Read-only lookup that returns the classroom matching the supplied
+// join code. Takes no profile_id — the response is independent of the
+// caller's relationship to the classroom.
+func (h *ClassroomHandler) HandleFindClassroomByCode(w http.ResponseWriter, r *http.Request) {
+	var req dto.FindClassroomByCodeReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.classroomSvc.FindClassroomByCode(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // POST /classrooms/join-by-code
 func (h *ClassroomHandler) HandleJoinByCode(w http.ResponseWriter, r *http.Request) {
 	var req dto.JoinByCodeReq

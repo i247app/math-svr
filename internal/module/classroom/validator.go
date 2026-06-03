@@ -268,6 +268,24 @@ func normalizeProgramIDList(ctx context.Context, in []int64) ([]int64, error) {
 	return out, nil
 }
 
+// ValidateFindClassroomByCode trims the supplied code and rejects blank
+// or over-long input. Mirrors ValidateJoinByCode so the read-only
+// preview endpoint surfaces the same CLASSROOM_CODE_INVALID code as
+// the join path for malformed input.
+func ValidateFindClassroomByCode(ctx context.Context, req *dto.FindClassroomByCodeReq) error {
+	code := strings.TrimSpace(req.ClassCode)
+	if code == "" {
+		return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
+			ErrClassroomCodeRequired)
+	}
+	if len(code) > classroomCodeMaxLen {
+		return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
+			ErrClassroomCodeTooLong)
+	}
+	req.ClassCode = code
+	return nil
+}
+
 func ValidateJoinByCode(ctx context.Context, req *dto.JoinByCodeReq) error {
 	if req.ProfileID == 0 {
 		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,

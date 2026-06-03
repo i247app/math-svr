@@ -142,6 +142,19 @@ type GetClassroomRes struct {
 	Classroom *ClassroomResponse `json:"classroom"`
 }
 
+// FindClassroomByCodeReq is an exact lookup of a single classroom by its
+// human-readable join code. Separate from JoinByCodeReq because this
+// path returns the classroom shape without performing a membership
+// mutation — the client uses it to preview the classroom before
+// confirming a join.
+type FindClassroomByCodeReq struct {
+	ClassCode string `json:"class_code"`
+}
+
+type FindClassroomByCodeRes struct {
+	Classroom *ClassroomResponse `json:"classroom"`
+}
+
 // ListClassroomsReq powers "my classrooms" (ProfileID set) and owner
 // filters. When neither ProfileID nor OwnerProfileID is set the handler
 // rejects the request — the unauthenticated "all classrooms" path is
@@ -158,6 +171,7 @@ type ListClassroomsReq struct {
 	ProgramIDs      []int64 `json:"program_ids,omitempty"`
 	GradeID         *int64  `json:"grade_id,omitempty"`
 	Search          *string `json:"search,omitempty"`
+	ClassCode       *string `json:"class_code,omitempty"`
 	IncludeArchived bool    `json:"include_archived"`
 	Page            int64   `json:"page"`
 	Size            int64   `json:"size"`

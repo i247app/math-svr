@@ -30,6 +30,7 @@ const coverUrlTTL = 1 * time.Hour
 // API so handlers can enforce the §0 Q1 contract.
 type Service struct {
 	getClassroomQuery                  *query.GetClassroomByIdQueryHandler
+	findClassroomByCodeQuery           *query.FindClassroomByCodeQueryHandler
 	listClassroomsQuery                *query.ListClassroomsQueryHandler
 	listMembersQuery                   *query.ListMembersQueryHandler
 	listMyPendingInvitationsQuery      *query.ListMyPendingInvitationsQueryHandler
@@ -78,6 +79,7 @@ func NewService(
 ) *Service {
 	return &Service{
 		getClassroomQuery:                  query.NewGetClassroomByIdQueryHandler(classroomRepo, classroomProgramRepo),
+		findClassroomByCodeQuery:           query.NewFindClassroomByCodeQueryHandler(classroomRepo, classroomProgramRepo),
 		listClassroomsQuery:                query.NewListClassroomsQueryHandler(classroomRepo, classroomProgramRepo),
 		listMembersQuery:                   query.NewListMembersQueryHandler(classroomMemberRepo),
 		listMyPendingInvitationsQuery:      query.NewListMyPendingInvitationsQueryHandler(classroomMemberRepo),
@@ -257,6 +259,42 @@ func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, se
 	return &dto.GetClassroomRes{Classroom: resp}, nil
 }
 
+// FindClassroomByCode resolves a classroom from its human-readable join
+// code. Read-only preview path that does NOT mutate membership — the
+// client typically calls this before /classrooms/join-by-code to show
+// the user what they're about to join. Owner is hydrated for the card
+// render; Relationship is left at NONE because the endpoint takes no
+// profile_id (the caller may not even own a profile yet).
+func (s *Service) FindClassroomByCode(ctx context.Context, req *dto.FindClassroomByCodeReq) (*dto.FindClassroomByCodeRes, error) {
+	if err := ValidateFindClassroomByCode(ctx, req); err != nil {
+		return nil, err
+	}
+
+	found, err := s.findClassroomByCodeQuery.Handle(ctx, query.FindClassroomByCodeQuery{ClassroomCode: req.ClassCode})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if found == nil {
+		return nil, errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
+			ErrClassroomNotFound)
+	}
+
+	resp := dto.DomainToResponse(found)
+	s.populateCoverUrl(ctx, resp)
+	if err := s.hydrateOwnersAndRelationships(
+		ctx,
+		[]*classroomDomain.Classroom{found},
+		[]*dto.ClassroomResponse{resp},
+		0,
+	); err != nil {
+		return nil, err
+	}
+	if err := s.hydratePendingRequestCounts(ctx, []*classroomDomain.Classroom{found}, []*dto.ClassroomResponse{resp}); err != nil {
+		return nil, err
+	}
+	return &dto.FindClassroomByCodeRes{Classroom: resp}, nil
+}
+
 func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq, sessionUserID int64) (*dto.ListClassroomsRes, error) {
 	if err := ValidateListClassrooms(ctx, req); err != nil {
 		return nil, err
@@ -274,6 +312,7 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 		ProgramIDs:      req.ProgramIDs,
 		GradeID:         req.GradeID,
 		Search:          req.Search,
+		ClassCode:       req.ClassCode,
 		IncludeArchived: req.IncludeArchived,
 		Page:            req.Page,
 		Limit:           req.Size,
