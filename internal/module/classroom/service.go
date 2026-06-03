@@ -275,8 +275,7 @@ func (s *Service) FindClassroomByCode(ctx context.Context, req *dto.FindClassroo
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if found == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
-			ErrClassroomNotFound)
+		return nil, errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil, ErrClassroomNotFound)
 	}
 
 	resp := dto.DomainToResponse(found)
@@ -285,7 +284,7 @@ func (s *Service) FindClassroomByCode(ctx context.Context, req *dto.FindClassroo
 		ctx,
 		[]*classroomDomain.Classroom{found},
 		[]*dto.ClassroomResponse{resp},
-		0,
+		req.ProfileID,
 	); err != nil {
 		return nil, err
 	}

@@ -27,23 +27,49 @@ const (
 	ExerciseSubmissionStatusSubmitted = "SUBMITTED"
 )
 
+// ExerciseClassroomSummary is the slim classroom shape embedded on
+// each exercise response so the mobile client can render rich rows
+// without an extra GetClassroom round trip. Mirrors the
+// SubmissionExerciseSummary / SubmissionProfileSummary pattern from the
+// submission module.
+type ExerciseClassroomSummary struct {
+	ClassroomID    int64   `json:"classroom_id"`
+	Name           string  `json:"name"`
+	Description    *string `json:"description,omitempty"`
+	ClassroomCode  *string `json:"classroom_code,omitempty"`
+	OwnerProfileID int64   `json:"owner_profile_id"`
+	SchoolID       *int64  `json:"school_id,omitempty"`
+	GradeID        *int64  `json:"grade_id,omitempty"`
+}
+
+// ExerciseProgramSummary is the slim program shape embedded on each
+// exercise response. Mirrors program/ProgramResponse but drops the
+// translations + audit columns the list/get callers don't need.
+type ExerciseProgramSummary struct {
+	ProgramID   int64  `json:"program_id"`
+	Label       string `json:"label"`
+	Description string `json:"description,omitempty"`
+}
+
 type ExerciseResponse struct {
-	ID                  int64                  `json:"id"`
-	ClassroomExerciseID int64                  `json:"classroom_exercise_id"`
-	ClassroomID         int64                  `json:"classroom_id"`
-	CreatorProfileID    int64                  `json:"creator_profile_id"`
-	Visibility          string                 `json:"visibility"`
-	ProgramID           *int64                 `json:"program_id,omitempty"`
-	Title               string                 `json:"title"`
-	Description         *string                `json:"description,omitempty"`
-	ChapterName         string                 `json:"chapter_name"`
-	LessonName          string                 `json:"lesson_name"`
-	TotalQuestions      int                    `json:"total_questions"`
-	Questions           []quizDto.QuizQuestion `json:"questions,omitempty"`
-	StartDate           *string                `json:"start_date,omitempty"`
-	EndDate             *string                `json:"end_date,omitempty"`
-	Note                *string                `json:"note,omitempty"`
-	ExerciseStatus      *string                `json:"exercise_status,omitempty"`
+	ID                  int64                     `json:"id"`
+	ClassroomExerciseID int64                     `json:"classroom_exercise_id"`
+	ClassroomID         int64                     `json:"classroom_id"`
+	Classroom           *ExerciseClassroomSummary `json:"classroom,omitempty"`
+	CreatorProfileID    int64                     `json:"creator_profile_id"`
+	Visibility          string                    `json:"visibility"`
+	ProgramID           *int64                    `json:"program_id,omitempty"`
+	Program             *ExerciseProgramSummary   `json:"program,omitempty"`
+	Title               string                    `json:"title"`
+	Description         *string                   `json:"description,omitempty"`
+	ChapterName         string                    `json:"chapter_name"`
+	LessonName          string                    `json:"lesson_name"`
+	TotalQuestions      int                       `json:"total_questions"`
+	Questions           []quizDto.QuizQuestion    `json:"questions,omitempty"`
+	StartDate           *string                   `json:"start_date,omitempty"`
+	EndDate             *string                   `json:"end_date,omitempty"`
+	Note                *string                   `json:"note,omitempty"`
+	ExerciseStatus      *string                   `json:"exercise_status,omitempty"`
 	// SubmissionStatus is NONE by default; the service flips it to
 	// SUBMITTED for the rows the caller's profile has already submitted.
 	// When no caller profile is known (anonymous / no profile_id) the

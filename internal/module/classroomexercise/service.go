@@ -256,7 +256,12 @@ func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sess
 	// }
 
 	resp := dto.DomainToResponse(exercise, true)
-	if err := s.hydrateSubmissionStatus(ctx, req.ProfileID, []*domain.Exercise{exercise}, []*dto.ExerciseResponse{resp}); err != nil {
+	exercises := []*domain.Exercise{exercise}
+	responses := []*dto.ExerciseResponse{resp}
+	if err := s.hydrateSubmissionStatus(ctx, req.ProfileID, exercises, responses); err != nil {
+		return nil, err
+	}
+	if err := s.hydrateClassroomAndProgram(ctx, exercises, responses); err != nil {
 		return nil, err
 	}
 	return &dto.GetExerciseRes{
@@ -303,6 +308,9 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 	// own submission state consistently.
 	callerProfileID := caller.ProfileId()
 	if err := s.hydrateSubmissionStatus(ctx, &callerProfileID, exercises, responses); err != nil {
+		return nil, err
+	}
+	if err := s.hydrateClassroomAndProgram(ctx, exercises, responses); err != nil {
 		return nil, err
 	}
 	return &dto.ListExercisesRes{
@@ -427,6 +435,89 @@ func (s *Service) hydrateSubmissionStatus(
 		}
 		if _, ok := submitted[e.ClassroomExerciseId()]; ok {
 			responses[i].SubmissionStatus = dto.ExerciseSubmissionStatusSubmitted
+		}
+	}
+	return nil
+}
+
+// hydrateClassroomAndProgram attaches the slim Classroom and Program
+// blocks to each response. Two batched IN-lookups per page (one against
+// ma_classrooms, one against ma_programs); cost is independent of page
+// size so N+1 is structurally impossible. Missing rows (deleted
+// classroom / program under an exercise) leave the corresponding field
+// nil so the rest of the row still renders.
+func (s *Service) hydrateClassroomAndProgram(
+	ctx context.Context,
+	exercises []*domain.Exercise,
+	responses []*dto.ExerciseResponse,
+) error {
+	if len(exercises) == 0 {
+		return nil
+	}
+
+	classroomIDSet := make(map[int64]struct{}, len(exercises))
+	programIDSet := make(map[int64]struct{}, len(exercises))
+	for _, e := range exercises {
+		classroomIDSet[e.ClassroomId()] = struct{}{}
+		if pid := e.ProgramId(); pid != nil && *pid != 0 {
+			programIDSet[*pid] = struct{}{}
+		}
+	}
+
+	classroomSummaries := make(map[int64]*dto.ExerciseClassroomSummary, len(classroomIDSet))
+	if s.classroomRepo != nil && len(classroomIDSet) > 0 {
+		ids := make([]int64, 0, len(classroomIDSet))
+		for id := range classroomIDSet {
+			ids = append(ids, id)
+		}
+		rows, err := s.classroomRepo.ListClassroomsByIds(ctx, ids)
+		if err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		for _, c := range rows {
+			classroomSummaries[c.ClassroomId()] = &dto.ExerciseClassroomSummary{
+				ClassroomID:    c.ClassroomId(),
+				Name:           c.Name(),
+				Description:    c.Description(),
+				ClassroomCode:  c.ClassroomCode(),
+				OwnerProfileID: c.OwnerProfileId(),
+				SchoolID:       c.SchoolId(),
+				GradeID:        c.GradeId(),
+			}
+		}
+	}
+
+	programSummaries := make(map[int64]*dto.ExerciseProgramSummary, len(programIDSet))
+	if s.programRepo != nil && len(programIDSet) > 0 {
+		ids := make([]int64, 0, len(programIDSet))
+		for id := range programIDSet {
+			ids = append(ids, id)
+		}
+		lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+		rows, err := s.programRepo.ListProgramsByIds(ctx, ids, lang)
+		if err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		for _, p := range rows {
+			programSummaries[p.ProgramId()] = &dto.ExerciseProgramSummary{
+				ProgramID:   p.ProgramId(),
+				Label:       p.Label(),
+				Description: p.Description(),
+			}
+		}
+	}
+
+	for i, e := range exercises {
+		if responses[i] == nil {
+			continue
+		}
+		if summary, ok := classroomSummaries[e.ClassroomId()]; ok {
+			responses[i].Classroom = summary
+		}
+		if pid := e.ProgramId(); pid != nil && *pid != 0 {
+			if summary, ok := programSummaries[*pid]; ok {
+				responses[i].Program = summary
+			}
 		}
 	}
 	return nil

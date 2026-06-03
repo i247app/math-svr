@@ -148,6 +148,7 @@ type GetClassroomRes struct {
 // mutation — the client uses it to preview the classroom before
 // confirming a join.
 type FindClassroomByCodeReq struct {
+	ProfileID int64  `json:"profile_id,omitempty"`
 	ClassCode string `json:"class_code"`
 }
 
