@@ -48,6 +48,7 @@ func (h *ProgramHandler) HandleCreateProgram(w http.ResponseWriter, r *http.Requ
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -64,6 +65,7 @@ func (h *ProgramHandler) HandleUpdateProgram(w http.ResponseWriter, r *http.Requ
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -80,6 +82,7 @@ func (h *ProgramHandler) HandleSoftDeleteProgram(w http.ResponseWriter, r *http.
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -96,6 +99,7 @@ func (h *ProgramHandler) HandleForceDeleteProgram(w http.ResponseWriter, r *http
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -111,5 +115,6 @@ func (h *ProgramHandler) HandleGetProgram(w http.ResponseWriter, r *http.Request
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }

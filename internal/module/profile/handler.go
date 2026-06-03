@@ -84,6 +84,7 @@ func (h *ProfileHandler) HandleCreateProfile(w http.ResponseWriter, r *http.Requ
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -95,10 +96,12 @@ func (h *ProfileHandler) HandleGetProfileById(w http.ResponseWriter, r *http.Req
 		ProfileID: utils.StringToInt64(idStr, 0),
 		Language:  metadata.GetClientLanguage(r.Context()).ToEnumLanguage(),
 	})
+
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -109,6 +112,7 @@ func (h *ProfileHandler) HandleListProfiles(w http.ResponseWriter, r *http.Reque
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	if req.Language == "" {
 		req.Language = metadata.GetClientLanguage(r.Context()).ToEnumLanguage()
 	}
@@ -118,6 +122,7 @@ func (h *ProfileHandler) HandleListProfiles(w http.ResponseWriter, r *http.Reque
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -182,6 +187,7 @@ func (h *ProfileHandler) HandleSoftDeleteProfile(w http.ResponseWriter, r *http.
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -198,6 +204,7 @@ func (h *ProfileHandler) HandleForceDeleteProfile(w http.ResponseWriter, r *http
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -242,6 +249,7 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -258,6 +266,7 @@ func (h *ProfileHandler) HandleAssignSchool(w http.ResponseWriter, r *http.Reque
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -274,5 +283,6 @@ func (h *ProfileHandler) HandleRemoveSchool(w http.ResponseWriter, r *http.Reque
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
