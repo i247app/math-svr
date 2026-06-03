@@ -12,6 +12,7 @@ var (
 	ErrPreviousQuizMustBeSubmittedBeforeGeneratingReinforceRound = errors.New("previous quiz must be submitted before generating a reinforce round")
 	ErrPreviousQuizNotFound                                      = errors.New("previous quiz not found")
 	ErrProfileNotFound                                           = errors.New("profile not found")
+	ErrDefaultProfileNotFound                                    = errors.New("default profile not found")
 	ErrPurposeRequired                                           = errors.New("purpose is required")
 	ErrPurposeMustBeOneOfAssessmentPracticeExam                  = errors.New("purpose must be one of ASSESSMENT, PRACTICE, EXAM")
 	ErrQuestionNumberMustBePositive                              = errors.New("question_number must be positive")

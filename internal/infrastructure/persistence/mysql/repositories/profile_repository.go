@@ -85,6 +85,10 @@ func (r *ProfileRepository) FindByProfileId(ctx context.Context, profileId int64
 	return r.findOneBy(ctx, "p.profile_id = ?", profileId)
 }
 
+func (r *ProfileRepository) FindDefaultProfileByUserId(ctx context.Context, userId int64) (*profile.Profile, error) {
+	return r.findOneBy(ctx, "p.user_id = ? AND p.is_default = true", userId)
+}
+
 func (r *ProfileRepository) FindByProfileCode(ctx context.Context, profileCode string) (*profile.Profile, error) {
 	return r.findOneBy(ctx, "p.profile_code = ?", profileCode)
 }

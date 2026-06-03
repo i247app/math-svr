@@ -33,6 +33,7 @@ type ListProfilesParams struct {
 // COALESCE on every other column.
 type IRepository interface {
 	FindByProfileId(ctx context.Context, profileId int64) (*Profile, error)
+	FindDefaultProfileByUserId(ctx context.Context, userId int64) (*Profile, error)
 	// FindByProfileCode looks up by the human-readable code (e.g.
 	// "AA-1234"). Used by the create command to probe for uniqueness
 	// before insert so a colliding code surfaces PROFILE_CODE_TAKEN

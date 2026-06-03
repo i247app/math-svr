@@ -102,6 +102,15 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 				ErrProfileNotFound)
 		}
 		profile = p
+	} else {
+		defaultProfile, err := s.profileRepo.FindDefaultProfileByUserId(ctx, *req.UserID)
+		if err != nil {
+			return nil, err
+		}
+		if defaultProfile == nil {
+			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrDefaultProfileNotFound)
+		}
+		profile = defaultProfile
 	}
 
 	cc, err := s.resolveCurriculumContext(ctx, req, profile)
