@@ -37,6 +37,7 @@ func (h *OtpHandler) HandleSend(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -60,5 +61,6 @@ func (h *OtpHandler) HandleVerify(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
