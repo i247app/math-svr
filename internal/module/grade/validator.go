@@ -39,12 +39,10 @@ func validateLanguage(ctx context.Context, lang enum.LanguageType) error {
 func validateTranslationLanguage(ctx context.Context, raw string) error {
 	v := strings.TrimSpace(raw)
 	if v == "" {
-		return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION, nil,
-			ErrTranslationLanguageRequired)
+		return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION, nil, ErrTranslationLanguageRequired)
 	}
 	if len(v) > 10 {
-		return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION, nil,
-			ErrTranslationLanguageTooLong)
+		return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION, nil, ErrTranslationLanguageTooLong)
 	}
 	return nil
 }
@@ -53,8 +51,7 @@ func validateTranslations(ctx context.Context, ts []*dto.GradeTranslationDTO) er
 	seen := make(map[string]struct{}, len(ts))
 	for i, t := range ts {
 		if t == nil {
-			return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION,
-				map[string]any{"index": i}, ErrTranslationNil)
+			return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION, map[string]any{"index": i}, ErrTranslationNil)
 		}
 		if err := validateTranslationLanguage(ctx, t.Language); err != nil {
 			return err
@@ -62,27 +59,20 @@ func validateTranslations(ctx context.Context, ts []*dto.GradeTranslationDTO) er
 		lang := strings.ToLower(strings.TrimSpace(t.Language))
 		if _, dup := seen[lang]; dup {
 			return errs.NewError(ctx, status.GRADE_TRANSLATION_ALREADY_EXISTS,
-				map[string]any{"language": lang},
-				ErrDuplicateTranslationLanguageInPayload)
+				map[string]any{"language": lang}, ErrDuplicateTranslationLanguageInPayload)
 		}
 		seen[lang] = struct{}{}
 		if strings.TrimSpace(t.Label) == "" {
-			return errs.NewError(ctx, status.GRADE_MISSING_LABEL,
-				map[string]any{"language": lang}, ErrTranslationLabelRequired)
+			return errs.NewError(ctx, status.GRADE_MISSING_LABEL, map[string]any{"language": lang}, ErrTranslationLabelRequired)
 		}
 		if len(t.Label) > labelMaxLen {
-			return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION,
-				map[string]any{"language": lang, "field": "label"},
-				ErrTranslationLabelTooLong)
+			return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION, map[string]any{"language": lang, "field": "label"}, ErrTranslationLabelTooLong)
 		}
 		if strings.TrimSpace(t.Description) == "" {
-			return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION,
-				map[string]any{"language": lang}, ErrTranslationDescriptionRequired)
+			return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, map[string]any{"language": lang}, ErrTranslationDescriptionRequired)
 		}
 		if len(t.Description) > descriptionMaxLen {
-			return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION,
-				map[string]any{"language": lang, "field": "description"},
-				ErrTranslationDescriptionTooLong)
+			return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION, map[string]any{"language": lang, "field": "description"}, ErrTranslationDescriptionTooLong)
 		}
 	}
 	return nil
@@ -90,64 +80,52 @@ func validateTranslations(ctx context.Context, ts []*dto.GradeTranslationDTO) er
 
 func ValidateCreateGrade(ctx context.Context, req *dto.CreateGradeReq) error {
 	if strings.TrimSpace(req.Label) == "" {
-		return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil,
-			ErrLabelRequired)
+		return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil, ErrLabelRequired)
 	}
 	if len(req.Label) > labelMaxLen {
-		return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil,
-			ErrLabelTooLong)
+		return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil, ErrLabelTooLong)
 	}
 	if strings.TrimSpace(req.Description) == "" {
-		return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil,
-			ErrDescriptionRequired)
+		return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil, ErrDescriptionRequired)
 	}
 	if len(req.Description) > descriptionMaxLen {
-		return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil,
-			ErrDescriptionTooLong)
+		return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil, ErrDescriptionTooLong)
 	}
 	if req.DisplayOrder < 0 {
-		return errs.NewError(ctx, status.GRADE_INVALID_DISPLAY_ORDER, nil,
-			ErrDisplayOrderMustBe0)
+		return errs.NewError(ctx, status.GRADE_INVALID_DISPLAY_ORDER, nil, ErrDisplayOrderMustBe0)
 	}
 	return validateTranslations(ctx, req.Translations)
 }
 
 func ValidateUpdateGrade(ctx context.Context, req *dto.UpdateGradeReq) error {
 	if req.GradeID == 0 {
-		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil,
-			ErrGradeIDRequired)
+		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil, ErrGradeIDRequired)
 	}
 	if req.Label != nil {
 		if strings.TrimSpace(*req.Label) == "" {
-			return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil,
-				ErrLabelCannotBeBlank)
+			return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil, ErrLabelCannotBeBlank)
 		}
 		if len(*req.Label) > labelMaxLen {
-			return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil,
-				ErrLabelTooLong)
+			return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil, ErrLabelTooLong)
 		}
 	}
 	if req.Description != nil {
 		if strings.TrimSpace(*req.Description) == "" {
-			return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil,
-				ErrDescriptionCannotBeBlank)
+			return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil, ErrDescriptionCannotBeBlank)
 		}
 		if len(*req.Description) > descriptionMaxLen {
-			return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil,
-				ErrDescriptionTooLong)
+			return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil, ErrDescriptionTooLong)
 		}
 	}
 	if req.DisplayOrder != nil && *req.DisplayOrder < 0 {
-		return errs.NewError(ctx, status.GRADE_INVALID_DISPLAY_ORDER, nil,
-			ErrDisplayOrderMustBe0)
+		return errs.NewError(ctx, status.GRADE_INVALID_DISPLAY_ORDER, nil, ErrDisplayOrderMustBe0)
 	}
 	return validateTranslations(ctx, req.Translations)
 }
 
 func ValidateGetGrade(ctx context.Context, req *dto.GetGradeReq) error {
 	if req.GradeID == 0 {
-		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil,
-			ErrGradeIDRequired)
+		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil, ErrGradeIDRequired)
 	}
 	return validateLanguage(ctx, req.Language)
 }
@@ -188,8 +166,7 @@ func sanitizeGradeIDs(ids []int64) []int64 {
 
 func ValidateDeleteGrade(ctx context.Context, req *dto.DeleteGradeReq) error {
 	if req.GradeID == 0 {
-		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil,
-			ErrGradeIDRequired)
+		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil, ErrGradeIDRequired)
 	}
 	return nil
 }

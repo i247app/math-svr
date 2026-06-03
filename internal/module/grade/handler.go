@@ -48,6 +48,7 @@ func (h *GradeHandler) HandleCreateGrade(w http.ResponseWriter, r *http.Request)
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -64,6 +65,7 @@ func (h *GradeHandler) HandleUpdateGrade(w http.ResponseWriter, r *http.Request)
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -80,6 +82,7 @@ func (h *GradeHandler) HandleSoftDeleteGrade(w http.ResponseWriter, r *http.Requ
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -96,6 +99,7 @@ func (h *GradeHandler) HandleForceDeleteGrade(w http.ResponseWriter, r *http.Req
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
@@ -111,5 +115,6 @@ func (h *GradeHandler) HandleGetGrade(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
