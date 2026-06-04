@@ -52,11 +52,12 @@ func (r *AliasRepository) findOneBy(ctx context.Context, where string, args ...a
 
 func (r *AliasRepository) Create(ctx context.Context, alias *user.Alias) (*user.Alias, error) {
 	query := `
-		INSERT INTO ` + aliasTable + ` (alias_id, user_id, aka, alias_status, note)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO ` + aliasTable + ` (alias_id, user_id, aka, alias_status, note, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.Exec(ctx, query, alias.AliasId(), alias.UserId(), alias.Aka(), alias.AliasStatus(), alias.Note())
+	result, err := r.db.Exec(ctx, query, alias.AliasId(), alias.UserId(),
+		alias.Aka(), alias.AliasStatus(), alias.Note(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, err
 	}

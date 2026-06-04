@@ -92,12 +92,12 @@ func (r *GradeTranslationRepository) FindByGradeIdAndLanguage(ctx context.Contex
 func (r *GradeTranslationRepository) Create(ctx context.Context, t *grade.GradeTranslation) (*grade.GradeTranslation, error) {
 	query := `
 		INSERT INTO ` + gradeTranslationsTable + `
-			(grade_translation_id, grade_id, language, label, description, note, gt_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+			(grade_translation_id, grade_id, language, label, description, note, gt_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	if _, err := r.db.Exec(ctx, query,
 		t.GradeTranslationId(), t.GradeId(), t.Language(),
-		t.Label(), t.Description(), t.Note(), t.GtStatus()); err != nil {
+		t.Label(), t.Description(), t.Note(), t.GtStatus(), mtime.Now().Time, mtime.Now().Time); err != nil {
 		return nil, fmt.Errorf("grade translation repo create: %w", err)
 	}
 	return r.FindByGradeIdAndLanguage(ctx, t.GradeId(), t.Language())

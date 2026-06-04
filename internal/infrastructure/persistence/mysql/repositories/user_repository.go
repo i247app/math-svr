@@ -117,11 +117,11 @@ func (r *UserRepository) FindByUserName(ctx context.Context, userName string) (*
 
 func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, error) {
 	query := `
-		INSERT INTO ` + userTable + ` (user_id, name, phone, email, avatar_key, user_status, note)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO ` + userTable + ` (user_id, name, phone, email, avatar_key, user_status, note, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.AvatarKey(), u.UserStatus(), u.Note())
+	result, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.AvatarKey(), u.UserStatus(), u.Note(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("user repo create: %w", err)
 	}

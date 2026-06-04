@@ -95,12 +95,12 @@ func (r *ProgramTranslationRepository) FindByProgramIdAndLanguage(ctx context.Co
 func (r *ProgramTranslationRepository) Create(ctx context.Context, t *program.ProgramTranslation) (*program.ProgramTranslation, error) {
 	query := `
 		INSERT INTO ` + programTranslationsTable + `
-			(program_translation_id, program_id, language, label, description, note, gt_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+			(program_translation_id, program_id, language, label, description, note, gt_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	if _, err := r.db.Exec(ctx, query,
 		t.ProgramTranslationId(), t.ProgramId(), t.Language(),
-		t.Label(), t.Description(), t.Note(), t.PtStatus()); err != nil {
+		t.Label(), t.Description(), t.Note(), t.PtStatus(), mtime.Now().Time, mtime.Now().Time); err != nil {
 		return nil, fmt.Errorf("program translation repo create: %w", err)
 	}
 	return r.FindByProgramIdAndLanguage(ctx, t.ProgramId(), t.Language())

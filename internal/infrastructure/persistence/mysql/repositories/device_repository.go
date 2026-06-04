@@ -115,13 +115,14 @@ func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) (*devic
 	query := `
 		INSERT INTO ` + deviceTable + `
 			(device_id, user_id, device_uuid, device_name, device_push_token,
-			 is_verified, note, device_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			 is_verified, note, device_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
 		d.DeviceId(), d.UserId(), d.DeviceUUID(), d.DeviceName(), d.DevicePushToken(),
-		d.IsVerified(), d.Note(), d.DeviceStatus())
+		d.IsVerified(), d.Note(), d.DeviceStatus(),
+		mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("device repo create: %w", err)
 	}

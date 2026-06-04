@@ -223,12 +223,12 @@ func (r *SchoolRepository) ListSchoolsByIds(ctx context.Context, ids []int64) ([
 func (r *SchoolRepository) Create(ctx context.Context, s *school.School) (*school.School, error) {
 	query := `
 		INSERT INTO ` + schoolTable + `
-			(school_id, name, description, image_key, district, province, note, school_status, create_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(school_id, name, description, image_key, district, province, note, school_status, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		s.SchoolId(), s.Name(), s.Description(), s.ImageKey(),
-		s.District(), s.Province(), s.Note(), s.SchoolStatus(), s.CreateId())
+		s.District(), s.Province(), s.Note(), s.SchoolStatus(), s.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("school repo create: %w", err)
 	}

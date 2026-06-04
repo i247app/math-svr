@@ -94,8 +94,8 @@ func (r *SemesterTranslationRepository) FindBySemesterIdAndLanguage(ctx context.
 func (r *SemesterTranslationRepository) Create(ctx context.Context, t *semester.SemesterTranslation) (*semester.SemesterTranslation, error) {
 	query := `
 		INSERT INTO ` + semesterTranslationsTable + `
-			(semester_translation_id, semester_id, language, name, description, note, st_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+			(semester_translation_id, semester_id, language, name, description, note, st_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	var description any
 	if t.Description() != "" {
@@ -103,7 +103,7 @@ func (r *SemesterTranslationRepository) Create(ctx context.Context, t *semester.
 	}
 	if _, err := r.db.Exec(ctx, query,
 		t.SemesterTranslationId(), t.SemesterId(), t.Language(),
-		t.Name(), description, t.Note(), t.StStatus()); err != nil {
+		t.Name(), description, t.Note(), t.StStatus(), mtime.Now().Time, mtime.Now().Time); err != nil {
 		return nil, fmt.Errorf("semester translation repo create: %w", err)
 	}
 	return r.FindBySemesterIdAndLanguage(ctx, t.SemesterId(), enum.LanguageType(t.Language()))

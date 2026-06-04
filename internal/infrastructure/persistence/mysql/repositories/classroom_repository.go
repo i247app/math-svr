@@ -296,8 +296,8 @@ func (r *ClassroomRepository) Create(ctx context.Context, c *classroom.Classroom
 			 classroom_code, classroom_code_expires_dt,
 			 max_members, member_count, student_count, teacher_count,
 			 cover_key, note,
-			 classroom_status, create_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 classroom_status, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		c.ClassroomId(), c.OwnerProfileId(), c.Name(), c.Description(),
@@ -305,7 +305,7 @@ func (r *ClassroomRepository) Create(ctx context.Context, c *classroom.Classroom
 		c.ClassroomCode(), expiresArg,
 		c.MaxMembers(), c.MemberCount(), c.StudentCount(), c.TeacherCount(),
 		c.CoverKey(), c.Note(),
-		c.ClassroomStatus(), c.CreateId())
+		c.ClassroomStatus(), c.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("classroom repo create: %w", err)
 	}

@@ -117,8 +117,8 @@ func (r *OtpRepository) Create(ctx context.Context, o *otp.Otp) (*otp.Otp, error
 	query := `
 		INSERT INTO ` + otpTable + `
 			(otp_id, otp_type, user_id, identifier, device_uuid, device_name,
-			 otp_code, otp_create_dt, otp_expire_dt, attempt_count, note, otp_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 otp_code, otp_create_dt, otp_expire_dt, attempt_count, note, otp_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	var createDtArg, expireDtArg any
@@ -131,7 +131,7 @@ func (r *OtpRepository) Create(ctx context.Context, o *otp.Otp) (*otp.Otp, error
 
 	result, err := r.db.Exec(ctx, query,
 		o.OtpId(), o.OtpType(), o.UserId(), o.Identifier(), o.DeviceUUID(), o.DeviceName(),
-		o.OtpCode(), createDtArg, expireDtArg, o.AttemptCount(), o.Note(), o.OtpStatus())
+		o.OtpCode(), createDtArg, expireDtArg, o.AttemptCount(), o.Note(), o.OtpStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("otp repo create: %w", err)
 	}

@@ -94,12 +94,13 @@ func (r *ChapterTranslationRepository) FindByChapterIdAndLanguage(ctx context.Co
 func (r *ChapterTranslationRepository) Create(ctx context.Context, t *chapter.ChapterTranslation) (*chapter.ChapterTranslation, error) {
 	query := `
 		INSERT INTO ` + chapterTranslationsTable + `
-			(chapter_translation_id, chapter_id, language, label, description, note, ct_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+			(chapter_translation_id, chapter_id, language, label, description, note, ct_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	if _, err := r.db.Exec(ctx, query,
 		t.ChapterTranslationId(), t.ChapterId(), t.Language(),
-		t.Label(), t.Description(), t.Note(), t.CtStatus()); err != nil {
+		t.Label(), t.Description(), t.Note(), t.CtStatus(),
+		mtime.Now().Time, mtime.Now().Time); err != nil {
 		return nil, fmt.Errorf("chapter translation repo create: %w", err)
 	}
 	return r.FindByChapterIdAndLanguage(ctx, t.ChapterId(), t.Language())

@@ -421,13 +421,14 @@ func (r *ClassroomMemberRepository) Create(ctx context.Context, m *classroom.Mem
 		INSERT INTO ` + classroomMemberTable + `
 			(member_id, classroom_id, profile_id, member_role,
 			 invitation_id, joined_dt, left_dt, removed_by_profile_id, removed_dt,
-			 last_seen_dt, note, invite_by, invite_dt, member_status, create_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 last_seen_dt, note, invite_by, invite_dt, member_status, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		m.MemberId(), m.ClassroomId(), m.ProfileId(), m.MemberRole(),
 		m.InvitationId(), joinedArg, leftArg, m.RemovedByProfileId(), removedArg,
-		lastSeenArg, m.Note(), m.InviteBy(), inviteDtArg, m.MemberStatus(), m.CreateId())
+		lastSeenArg, m.Note(), m.InviteBy(), inviteDtArg, m.MemberStatus(), m.CreateId(),
+		mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("classroom_member repo create: %w", err)
 	}

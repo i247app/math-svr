@@ -211,8 +211,8 @@ func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []int64
 func (r *SemesterRepository) Create(ctx context.Context, s *semester.Semester) (*semester.Semester, error) {
 	query := `
 		INSERT INTO ` + semesterTable + `
-			(semester_id, name, description, image_key, display_order, note, semester_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+			(semester_id, name, description, image_key, display_order, note, semester_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	// description column is nullable TEXT; persist as NULL when empty
 	// so reads coalesce cleanly.
@@ -223,7 +223,7 @@ func (r *SemesterRepository) Create(ctx context.Context, s *semester.Semester) (
 
 	result, err := r.db.Exec(ctx, query,
 		s.SemesterId(), s.Name(), description, s.ImageKey(),
-		s.DisplayOrder(), s.Note(), s.SemesterStatus())
+		s.DisplayOrder(), s.Note(), s.SemesterStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("semester repo create: %w", err)
 	}

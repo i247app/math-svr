@@ -228,12 +228,12 @@ func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []int64, lang
 func (r *GradeRepository) Create(ctx context.Context, g *grade.Grade) (*grade.Grade, error) {
 	query := `
 		INSERT INTO ` + gradeTable + `
-			(grade_id, label, description, image_key, display_order, note, grade_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+			(grade_id, label, description, image_key, display_order, note, grade_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		g.GradeId(), g.Label(), g.Description(), g.ImageKey(),
-		g.DisplayOrder(), g.Note(), g.GradeStatus())
+		g.DisplayOrder(), g.Note(), g.GradeStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("grade repo create: %w", err)
 	}

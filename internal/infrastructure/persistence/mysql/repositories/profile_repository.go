@@ -304,14 +304,14 @@ func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*pr
 	query := `
 		INSERT INTO ` + profileTable + `
 			(profile_id, profile_code, user_id, name, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default,
-			 id_type, teacher_id, student_id, note, profile_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 id_type, teacher_id, student_id, note, profile_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
 		p.ProfileId(), p.ProfileCode(), p.UserId(), p.Name(), p.Role(), p.AvatarKey(), p.Dob(),
 		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(),
-		p.IdType(), p.TeacherId(), p.StudentId(), p.Note(), p.ProfileStatus())
+		p.IdType(), p.TeacherId(), p.StudentId(), p.Note(), p.ProfileStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("profile repo create: %w", err)
 	}

@@ -193,13 +193,13 @@ func buildChapterListFilterClause(params *chapter.ListChaptersParams) (string, [
 func (r *ChapterRepository) Create(ctx context.Context, c *chapter.Chapter) (*chapter.Chapter, error) {
 	query := `
 		INSERT INTO ` + chapterTable + `
-			(chapter_id, program_id, grade_id, semester_id, label, description, display_order, note, chapter_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(chapter_id, program_id, grade_id, semester_id, label, description, display_order, note, chapter_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		c.ChapterId(), c.ProgramId(), c.GradeId(), c.SemesterId(),
 		c.Label(), c.Description(), c.DisplayOrder(),
-		c.Note(), c.ChapterStatus())
+		c.Note(), c.ChapterStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("chapter repo create: %w", err)
 	}

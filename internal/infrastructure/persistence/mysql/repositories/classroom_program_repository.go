@@ -128,12 +128,12 @@ func (r *ClassroomProgramRepository) findBareById(ctx context.Context, id int64)
 func (r *ClassroomProgramRepository) Create(ctx context.Context, cp *classroom.ClassroomProgram) (*classroom.ClassroomProgram, error) {
 	query := `
 		INSERT INTO ` + classroomProgramTable + `
-			(classroom_program_id, classroom_id, program_id, note, create_id)
-		VALUES (?, ?, ?, ?, ?)
+			(classroom_program_id, classroom_id, program_id, note, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		cp.ClassroomProgramId(), cp.ClassroomId(), cp.ProgramId(),
-		cp.Note(), cp.CreateId())
+		cp.Note(), cp.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("classroom_program repo create: %w", err)
 	}

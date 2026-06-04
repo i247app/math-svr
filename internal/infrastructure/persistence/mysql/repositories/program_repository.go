@@ -210,12 +210,12 @@ func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []int64, 
 func (r *ProgramRepository) Create(ctx context.Context, p *program.Program) (*program.Program, error) {
 	query := `
 		INSERT INTO ` + programTable + `
-			(program_id, label, description, image_key, display_order, note, program_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+			(program_id, label, description, image_key, display_order, note, program_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		p.ProgramId(), p.Label(), p.Description(), p.ImageKey(),
-		p.DisplayOrder(), p.Note(), p.ProgramStatus())
+		p.DisplayOrder(), p.Note(), p.ProgramStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("program repo create: %w", err)
 	}

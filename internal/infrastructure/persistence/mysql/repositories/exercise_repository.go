@@ -293,15 +293,15 @@ func (r *ExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*d
 			 program_id,
 			 title, description, chapter_name, lesson_name, total_questions,
 			 questions, answers, start_date, end_date,
-			 note, exercise_status, create_id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 note, exercise_status, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		e.ClassroomExerciseId(), e.ClassroomId(), e.CreatorProfileId(), visibility,
 		e.ProgramId(),
 		e.Title(), e.Description(), e.ChapterName(), e.LessonName(), e.TotalQuestions(),
 		e.Questions(), e.Answers(), startArg, endArg,
-		e.Note(), e.ExerciseStatus(), e.CreateId())
+		e.Note(), e.ExerciseStatus(), e.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("classroom exercise repo create: %w", err)
 	}

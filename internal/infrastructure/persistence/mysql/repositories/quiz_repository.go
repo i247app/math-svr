@@ -160,14 +160,14 @@ func (r *QuizRepository) Create(ctx context.Context, q *quiz.Quiz) (*quiz.Quiz, 
 	query := `
 		INSERT INTO ` + quizTable + `
 			(quiz_id, user_id, profile_id, purpose, type_of_quiz, title, questions, answers,
-			 ai_review, ai_detect_grade, previous_quiz_id, note, quiz_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 ai_review, ai_detect_grade, previous_quiz_id, note, quiz_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
 		q.QuizId(), q.UserId(), q.ProfileId(), q.Purpose(), q.TypeOfQuiz(), q.Title(),
 		q.Questions(), q.Answers(), q.AIReview(), q.AIDetectGrade(),
-		q.PreviousQuizId(), q.Note(), q.QuizStatus())
+		q.PreviousQuizId(), q.Note(), q.QuizStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("quiz repo create: %w", err)
 	}

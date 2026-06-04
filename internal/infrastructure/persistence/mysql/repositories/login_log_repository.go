@@ -120,13 +120,13 @@ func (r *LoginLogRepository) ListByUserId(ctx context.Context, userId int64) ([]
 func (r *LoginLogRepository) Create(ctx context.Context, l *loginlog.LoginLog) (*loginlog.LoginLog, error) {
 	query := `
 		INSERT INTO ` + loginLogTable + `
-			(login_log_id, user_id, ip_address, device_uuid, token, note, login_log_status)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+			(login_log_id, user_id, ip_address, device_uuid, token, note, login_log_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
 		l.LoginLogId(), l.UserId(), l.IpAddress(), l.DeviceUUID(),
-		l.Token(), l.Note(), l.LoginLogStatus())
+		l.Token(), l.Note(), l.LoginLogStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("login_log repo create: %w", err)
 	}
