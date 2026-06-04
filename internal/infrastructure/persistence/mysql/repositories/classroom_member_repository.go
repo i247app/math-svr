@@ -231,7 +231,7 @@ func (r *ClassroomMemberRepository) CountActiveByClassroomId(ctx context.Context
 
 // ListMembersByExerciseSubmission powers the teacher-side roster split
 // for a given exercise. ACTIVE members are filtered through a JOIN
-// against ma_classroom_exercise_submissions:
+// against ma_exercise_submissions:
 //
 //	Submitted=true   → INNER JOIN  (only members with a non-DELETED
 //	                                 submission for the exercise)
@@ -310,7 +310,7 @@ func (r *ClassroomMemberRepository) ListMembersByExerciseSubmission(
 
 	from := classroomMemberTable + ` m
 		LEFT JOIN ma_profiles p ON p.profile_id = m.profile_id
-		` + joinKind + ` ` + classroomExerciseSubmissionTable + ` s ON ` + subOn
+		` + joinKind + ` ` + exerciseSubmissionTable + ` s ON ` + subOn
 
 	countQuery := `SELECT COUNT(*) FROM ` + from + ` WHERE ` + whereClause
 	var total int64

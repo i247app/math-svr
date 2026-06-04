@@ -9,8 +9,8 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
-	"math-ai.com/math-ai/internal/module/classroomexercise"
 	"math-ai.com/math-ai/internal/module/device"
+	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/job"
 	"math-ai.com/math-ai/internal/module/otp"
@@ -126,10 +126,10 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		res.StorageProvider,
 	)
 
-	log.Info("> Setup ClassroomExerciseSvc...")
-	classroomExerciseService := classroomexercise.NewService(
-		repos.ClassroomExerciseRepository,
-		repos.ClassroomExerciseSubmissionRepository,
+	log.Info("> Setup ExerciseSvc...")
+	exerciseService := exercise.NewService(
+		repos.ExerciseRepository,
+		repos.ExerciseSubmissionRepository,
 		uow,
 		res.BotProvider,
 		repos.ClassroomRepository,
@@ -142,20 +142,20 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	)
 
 	return &ServiceContainer{
-		UserSvc:              userService,
-		AuthSvc:              authService,
-		ProgramSvc:           programService,
-		GradeSvc:             gradeService,
-		SemesterSvc:          semesterService,
-		ProfileSvc:           profileService,
-		DeviceSvc:            deviceService,
-		OtpSvc:               otpService,
-		QuizSvc:              quizService,
-		ChapterSvc:           chapterService,
-		SchoolSvc:            schoolService,
-		JobSvc:               jobService,
-		SeqSvc:               seqService,
-		ClassroomSvc:         classroomService,
-		ClassroomExerciseSvc: classroomExerciseService,
+		UserSvc:      userService,
+		AuthSvc:      authService,
+		ProgramSvc:   programService,
+		GradeSvc:     gradeService,
+		SemesterSvc:  semesterService,
+		ProfileSvc:   profileService,
+		DeviceSvc:    deviceService,
+		OtpSvc:       otpService,
+		QuizSvc:      quizService,
+		ChapterSvc:   chapterService,
+		SchoolSvc:    schoolService,
+		JobSvc:       jobService,
+		SeqSvc:       seqService,
+		ClassroomSvc: classroomService,
+		ExerciseSvc:  exerciseService,
 	}, nil
 }

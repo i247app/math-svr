@@ -8,8 +8,8 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
-	"math-ai.com/math-ai/internal/module/classroomexercise"
 	"math-ai.com/math-ai/internal/module/device"
+	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
 	"math-ai.com/math-ai/internal/module/job"
@@ -193,7 +193,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 	// classroom exercise routes — teacher-issued, AI-generated assignments
 	{
-		exerciseHandler := classroomexercise.NewClassroomExerciseHandler(res, services.ClassroomExerciseSvc)
+		exerciseHandler := exercise.NewClassroomExerciseHandler(res, services.ExerciseSvc)
 		gexSvr.AddRoute("POST /classroom-exercises/create", exerciseHandler.HandleCreateExercise, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercises/update", exerciseHandler.HandleUpdateExercise, authMiddleware)
 		gexSvr.AddRoute("GET  /classroom-exercises/{id}", exerciseHandler.HandleGetExercise, authMiddleware)
@@ -202,7 +202,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 		// classroom exercise submissions — student submit + history,
 		// teacher roster + soft-delete. Every route is auth-gated.
-		submissionHandler := classroomexercise.NewClassroomExerciseSubmissionHandler(res, services.ClassroomExerciseSvc)
+		submissionHandler := exercise.NewClassroomExerciseSubmissionHandler(res, services.ExerciseSvc)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/submit", submissionHandler.HandleSubmitExerciseAnswers, authMiddleware)
 		gexSvr.AddRoute("GET  /classroom-exercise/submissions/{id}", submissionHandler.HandleGetSubmission, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/list", submissionHandler.HandleListSubmissions, authMiddleware)

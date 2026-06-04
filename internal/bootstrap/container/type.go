@@ -3,8 +3,8 @@ package container
 import (
 	chapterDomain "math-ai.com/math-ai/internal/domain/chapter"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
-	classroomexerciseDomain "math-ai.com/math-ai/internal/domain/classroomexercise"
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
+	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	loginLogDomain "math-ai.com/math-ai/internal/domain/loginlog"
 	otpDomain "math-ai.com/math-ai/internal/domain/otp"
@@ -18,8 +18,8 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
-	"math-ai.com/math-ai/internal/module/classroomexercise"
 	"math-ai.com/math-ai/internal/module/device"
+	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/job"
 	"math-ai.com/math-ai/internal/module/otp"
@@ -33,43 +33,43 @@ import (
 )
 
 type ServiceContainer struct {
-	UserSvc              *user.Service
-	AuthSvc              *auth.Service
-	ProgramSvc           *program.Service
-	GradeSvc             *grade.Service
-	SemesterSvc          *semester.Service
-	ProfileSvc           *profile.Service
-	DeviceSvc            *device.Service
-	OtpSvc               *otp.Service
-	QuizSvc              *quiz.Service
-	ChapterSvc           *chapter.Service
-	SchoolSvc            *school.Service
-	JobSvc               *job.Service
-	SeqSvc               *seq.Service
-	ClassroomSvc         *classroom.Service
-	ClassroomExerciseSvc *classroomexercise.Service
+	UserSvc      *user.Service
+	AuthSvc      *auth.Service
+	ProgramSvc   *program.Service
+	GradeSvc     *grade.Service
+	SemesterSvc  *semester.Service
+	ProfileSvc   *profile.Service
+	DeviceSvc    *device.Service
+	OtpSvc       *otp.Service
+	QuizSvc      *quiz.Service
+	ChapterSvc   *chapter.Service
+	SchoolSvc    *school.Service
+	JobSvc       *job.Service
+	SeqSvc       *seq.Service
+	ClassroomSvc *classroom.Service
+	ExerciseSvc  *exercise.Service
 }
 
 type RepositoryContainer struct {
-	UserRepository                        userDomain.IRepository
-	ProgramRepository                     programDomain.IRepository
-	GradeRepository                       gradeDomain.IRepository
-	SemesterRepository                    semesterDomain.IRepository
-	ProfileRepository                     profileDomain.IRepository
-	LoginLogRepository                    loginLogDomain.IRepository
-	DeviceRepository                      deviceDomain.IRepository
-	OtpRepository                         otpDomain.IRepository
-	QuizRepository                        quizDomain.IRepository
-	ChapterRepository                     chapterDomain.IRepository
-	ChapterTranslationRepository          chapterDomain.ITranslationRepository
-	GradeTranslationRepository            gradeDomain.ITranslationRepository
-	SemesterTranslationRepository         semesterDomain.ITranslationRepository
-	ProgramTranslationRepository          programDomain.ITranslationRepository
-	SchoolRepository                      schoolDomain.IRepository
-	SeqRepository                         seqDomain.IRepository
-	ClassroomRepository                   classroomDomain.IRepository
-	ClassroomMemberRepository             classroomDomain.IMemberRepository
-	ClassroomProgramRepository            classroomDomain.IClassroomProgramRepository
-	ClassroomExerciseRepository           classroomexerciseDomain.IRepository
-	ClassroomExerciseSubmissionRepository classroomexerciseDomain.ISubmissionRepository
+	UserRepository                userDomain.IRepository
+	ProgramRepository             programDomain.IRepository
+	GradeRepository               gradeDomain.IRepository
+	SemesterRepository            semesterDomain.IRepository
+	ProfileRepository             profileDomain.IRepository
+	LoginLogRepository            loginLogDomain.IRepository
+	DeviceRepository              deviceDomain.IRepository
+	OtpRepository                 otpDomain.IRepository
+	QuizRepository                quizDomain.IRepository
+	ChapterRepository             chapterDomain.IRepository
+	ChapterTranslationRepository  chapterDomain.ITranslationRepository
+	GradeTranslationRepository    gradeDomain.ITranslationRepository
+	SemesterTranslationRepository semesterDomain.ITranslationRepository
+	ProgramTranslationRepository  programDomain.ITranslationRepository
+	SchoolRepository              schoolDomain.IRepository
+	SeqRepository                 seqDomain.IRepository
+	ClassroomRepository           classroomDomain.IRepository
+	ClassroomMemberRepository     classroomDomain.IMemberRepository
+	ClassroomProgramRepository    classroomDomain.IClassroomProgramRepository
+	ExerciseRepository            exerciseDomain.IRepository
+	ExerciseSubmissionRepository  exerciseDomain.ISubmissionRepository
 }

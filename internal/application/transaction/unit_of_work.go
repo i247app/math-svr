@@ -5,8 +5,8 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/chapter"
 	"math-ai.com/math-ai/internal/domain/classroom"
-	"math-ai.com/math-ai/internal/domain/classroomexercise"
 	"math-ai.com/math-ai/internal/domain/device"
+	"math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/grade"
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/domain/otp"
@@ -26,28 +26,28 @@ import (
 // mints a new external ID should call Seq.Next(ctx, seq.NameX) instead
 // of generating a UUID, so concurrent inserts share one atomic counter.
 type Repositories struct {
-	User                        user.IRepository
-	Alias                       user.IAliasRepository
-	Profile                     profile.IRepository
-	LoginLog                    loginlog.IRepository
-	Device                      device.IRepository
-	Otp                         otp.IRepository
-	Quiz                        quiz.IRepository
-	Chapter                     chapter.IRepository
-	ChapterTranslation          chapter.ITranslationRepository
-	Grade                       grade.IRepository
-	GradeTranslation            grade.ITranslationRepository
-	Semester                    semester.IRepository
-	SemesterTranslation         semester.ITranslationRepository
-	Program                     program.IRepository
-	ProgramTranslation          program.ITranslationRepository
-	School                      school.IRepository
-	Seq                         seq.IRepository
-	Classroom                   classroom.IRepository
-	ClassroomMember             classroom.IMemberRepository
-	ClassroomProgram            classroom.IClassroomProgramRepository
-	ClassroomExercise           classroomexercise.IRepository
-	ClassroomExerciseSubmission classroomexercise.ISubmissionRepository
+	User                user.IRepository
+	Alias               user.IAliasRepository
+	Profile             profile.IRepository
+	LoginLog            loginlog.IRepository
+	Device              device.IRepository
+	Otp                 otp.IRepository
+	Quiz                quiz.IRepository
+	Chapter             chapter.IRepository
+	ChapterTranslation  chapter.ITranslationRepository
+	Grade               grade.IRepository
+	GradeTranslation    grade.ITranslationRepository
+	Semester            semester.IRepository
+	SemesterTranslation semester.ITranslationRepository
+	Program             program.IRepository
+	ProgramTranslation  program.ITranslationRepository
+	School              school.IRepository
+	Seq                 seq.IRepository
+	Classroom           classroom.IRepository
+	ClassroomMember     classroom.IMemberRepository
+	ClassroomProgram    classroom.IClassroomProgramRepository
+	Exercise            exercise.IRepository
+	ExerciseSubmission  exercise.ISubmissionRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

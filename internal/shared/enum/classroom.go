@@ -130,7 +130,7 @@ func (s ClassroomInviteeIdentifierType) IsValid() bool {
 	}
 }
 
-// ClassroomExerciseStatusType is the lifecycle on ma_classroom_exercises.
+// ClassroomExerciseStatusType is the lifecycle on ma_exercises.
 // Mirrors ClassroomStatusType but kept separate because the legal
 // transitions are independent (an exercise can be archived without
 // touching the classroom).
