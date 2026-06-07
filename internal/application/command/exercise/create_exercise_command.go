@@ -25,6 +25,7 @@ type CreateClassroomExerciseCommand struct {
 	ClassroomID      int64
 	CreatorProfileID int64
 	Visibility       string
+	Purpose          string
 	ProgramID        *int64
 	Title            string
 	Description      *string
@@ -64,6 +65,11 @@ func (h *CreateClassroomExerciseCommandHandler) Handle(ctx context.Context, cmd 
 			visibility = string(enum.ClassroomExerciseVisibilityPublic)
 		}
 		e.SetVisibility(visibility)
+		purpose := cmd.Purpose
+		if purpose == "" {
+			purpose = string(enum.ClassroomExercisePurposeHomework)
+		}
+		e.SetPurpose(purpose)
 		e.SetProgramId(cmd.ProgramID)
 		e.SetTitle(cmd.Title)
 		e.SetDescription(cmd.Description)

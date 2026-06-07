@@ -10,6 +10,7 @@ type ExerciseModel struct {
 	ClassroomId         int64
 	CreatorProfileId    *int64
 	Visibility          string
+	Purpose             string
 	ProgramId           *int64
 	Title               string
 	Description         *string

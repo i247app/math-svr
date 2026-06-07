@@ -62,7 +62,12 @@ type UpdatePatch struct {
 	Note           *string
 	ExerciseStatus *string
 	Visibility     *string
-	ModifyID       *int64
+	// Purpose flips the exercise intent (HOMEWORK / EXAM). Nil leaves
+	// the column untouched; the repo's COALESCE preserves the prior
+	// value. Validator must normalise + whitelist before this reaches
+	// the repo since the column is NOT NULL.
+	Purpose  *string
+	ModifyID *int64
 }
 
 // IRepository owns all classroom_exercise persistence. The shape mirrors

@@ -58,6 +58,7 @@ type ExerciseResponse struct {
 	Classroom           *ExerciseClassroomSummary `json:"classroom,omitempty"`
 	CreatorProfileID    int64                     `json:"creator_profile_id"`
 	Visibility          string                    `json:"visibility"`
+	Purpose             string                    `json:"purpose"`
 	ProgramID           *int64                    `json:"program_id,omitempty"`
 	Program             *ExerciseProgramSummary   `json:"program,omitempty"`
 	Title               string                    `json:"title"`
@@ -101,6 +102,10 @@ type CreateExerciseReq struct {
 	// existing wire contract keeps working. Accepted values: PUBLIC,
 	// PRIVATE.
 	Visibility *string `json:"visibility,omitempty"`
+	// Purpose is optional. Omitted / blank defaults to HOMEWORK so the
+	// existing wire contract keeps working. Accepted values: HOMEWORK,
+	// EXAM.
+	Purpose *string `json:"purpose,omitempty"`
 }
 
 type CreateExerciseRes struct {
@@ -122,6 +127,7 @@ type UpdateExerciseReq struct {
 	Note                *string         `json:"note,omitempty"`
 	ExerciseStatus      *string         `json:"exercise_status,omitempty"`
 	Visibility          *string         `json:"visibility,omitempty"`
+	Purpose             *string         `json:"purpose,omitempty"`
 }
 
 type UpdateExerciseRes struct {
@@ -200,6 +206,7 @@ func DomainToResponse(e *domain.Exercise, includeRightAnswers bool) *ExerciseRes
 		ClassroomID:         e.ClassroomId(),
 		CreatorProfileID:    e.CreatorProfileId(),
 		Visibility:          e.Visibility(),
+		Purpose:             e.Purpose(),
 		ProgramID:           e.ProgramId(),
 		Title:               e.Title(),
 		Description:         e.Description(),

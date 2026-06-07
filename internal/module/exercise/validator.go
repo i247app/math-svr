@@ -127,6 +127,17 @@ func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) err
 			req.Visibility = &v
 		}
 	}
+	if req.Purpose != nil {
+		v := strings.ToUpper(strings.TrimSpace(*req.Purpose))
+		if v == "" {
+			req.Purpose = nil
+		} else if !enum.ClassroomExercisePurposeType(v).IsValid() {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_PURPOSE, nil,
+				ErrInvalidPurpose)
+		} else {
+			req.Purpose = &v
+		}
+	}
 	return nil
 }
 
@@ -209,6 +220,17 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 				ErrInvalidVisibility)
 		} else {
 			req.Visibility = &v
+		}
+	}
+	if req.Purpose != nil {
+		v := strings.ToUpper(strings.TrimSpace(*req.Purpose))
+		if v == "" {
+			req.Purpose = nil
+		} else if !enum.ClassroomExercisePurposeType(v).IsValid() {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_PURPOSE, nil,
+				ErrInvalidPurpose)
+		} else {
+			req.Purpose = &v
 		}
 	}
 	return nil

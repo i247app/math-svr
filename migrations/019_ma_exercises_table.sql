@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS ma_exercises (
     classroom_id            BIGINT UNSIGNED NOT NULL,
     creator_profile_id      BIGINT UNSIGNED DEFAULT NULL,
     visibility              VARCHAR(32) NOT NULL DEFAULT 'PRIVATE',
+    purpose                 VARCHAR(32) NOT NULL DEFAULT 'HOMEWORK', -- HOMEWORK, EXAM
     program_id              BIGINT UNSIGNED DEFAULT NULL,
     title                   VARCHAR(255) NOT NULL,
     description             VARCHAR(500) DEFAULT NULL,

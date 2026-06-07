@@ -528,6 +528,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Chế độ hiển thị phải là PUBLIC hoặc PRIVATE"
 	case CLASSROOM_EXERCISE_PRIVATE_DENIED:
 		return "Chỉ người tạo mới có quyền truy cập bài tập riêng tư này"
+	case CLASSROOM_EXERCISE_INVALID_PURPOSE:
+		return "Mục đích phải là HOMEWORK hoặc EXAM"
 	case CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND:
 		return "Không tìm thấy bài nộp"
 	case CLASSROOM_EXERCISE_SUBMISSION_MISSING_ID:

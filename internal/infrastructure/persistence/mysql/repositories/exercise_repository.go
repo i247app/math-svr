@@ -19,7 +19,7 @@ const (
 	exerciseTable = "ma_exercises"
 
 	exerciseColumns = `e.id, e.classroom_exercise_id, e.classroom_id,
-		e.creator_profile_id, e.visibility, e.program_id,
+		e.creator_profile_id, e.visibility, e.purpose, e.program_id,
 		e.title, e.description, e.chapter_name, e.lesson_name, e.total_questions,
 		e.questions, e.answers, e.start_date, e.end_date,
 		e.note, e.exercise_status, e.status,
@@ -47,7 +47,7 @@ func NewExerciseRepository(db database.Executor) domain.IRepository {
 func scanClassroomExercise(s database.RowScanner) (*models.ExerciseModel, error) {
 	var m models.ExerciseModel
 	if err := s.Scan(&m.Id, &m.ClassroomExerciseId, &m.ClassroomId,
-		&m.CreatorProfileId, &m.Visibility, &m.ProgramId,
+		&m.CreatorProfileId, &m.Visibility, &m.Purpose, &m.ProgramId,
 		&m.Title, &m.Description, &m.ChapterName, &m.LessonName, &m.TotalQuestions,
 		&m.Questions, &m.Answers, &m.StartDate, &m.EndDate,
 		&m.Note, &m.ExerciseStatus, &m.Status,
@@ -287,17 +287,25 @@ func (r *ExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*d
 		visibility = string(enum.ClassroomExerciseVisibilityPublic)
 	}
 
+	// Purpose is NOT NULL with a HOMEWORK default in schema; fall back
+	// here so callers that haven't yet been updated still produce a
+	// valid row instead of an SQL constraint error.
+	purpose := e.Purpose()
+	if purpose == "" {
+		purpose = string(enum.ClassroomExercisePurposeHomework)
+	}
+
 	query := `
 		INSERT INTO ` + exerciseTable + `
-			(classroom_exercise_id, classroom_id, creator_profile_id, visibility,
+			(classroom_exercise_id, classroom_id, creator_profile_id, visibility, purpose,
 			 program_id,
 			 title, description, chapter_name, lesson_name, total_questions,
 			 questions, answers, start_date, end_date,
 			 note, exercise_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
-		e.ClassroomExerciseId(), e.ClassroomId(), e.CreatorProfileId(), visibility,
+		e.ClassroomExerciseId(), e.ClassroomId(), e.CreatorProfileId(), visibility, purpose,
 		e.ProgramId(),
 		e.Title(), e.Description(), e.ChapterName(), e.LessonName(), e.TotalQuestions(),
 		e.Questions(), e.Answers(), startArg, endArg,
@@ -346,6 +354,7 @@ func (r *ExerciseRepository) Update(ctx context.Context, classroomExerciseId int
 			note            = COALESCE(?, note),
 			exercise_status = COALESCE(?, exercise_status),
 			visibility      = COALESCE(?, visibility),
+			purpose         = COALESCE(?, purpose),
 			modify_id       = COALESCE(?, modify_id),
 			modify_dt       = ?
 		WHERE classroom_exercise_id = ?
@@ -353,7 +362,7 @@ func (r *ExerciseRepository) Update(ctx context.Context, classroomExerciseId int
 	if _, err := r.db.Exec(ctx, query,
 		patch.Title, patch.Description, patch.ChapterName, patch.LessonName,
 		startArg, endArg,
-		patch.Note, patch.ExerciseStatus, patch.Visibility, patch.ModifyID,
+		patch.Note, patch.ExerciseStatus, patch.Visibility, patch.Purpose, patch.ModifyID,
 		mtime.Now().Time, classroomExerciseId); err != nil {
 		return fmt.Errorf("classroom exercise repo update: %w", err)
 	}
@@ -388,6 +397,7 @@ func modelToDomainClassroomExercise(m *models.ExerciseModel) *domain.Exercise {
 		e.SetCreatorProfileId(*m.CreatorProfileId)
 	}
 	e.SetVisibility(m.Visibility)
+	e.SetPurpose(m.Purpose)
 	e.SetProgramId(m.ProgramId)
 	e.SetTitle(m.Title)
 	e.SetDescription(m.Description)

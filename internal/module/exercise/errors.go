@@ -21,6 +21,7 @@ var (
 	ErrInvalidStatus                 = errors.New("invalid status")
 	ErrInvalidExerciseStatus         = errors.New("invalid exercise_status")
 	ErrInvalidVisibility             = errors.New("invalid visibility")
+	ErrInvalidPurpose                = errors.New("invalid purpose")
 	ErrInvalidSortBy                 = errors.New("invalid sort_by")
 	ErrInvalidSortOrder              = errors.New("invalid sort_order")
 	ErrClassroomExerciseIDRequired   = errors.New("classroom_exercise_id is required")

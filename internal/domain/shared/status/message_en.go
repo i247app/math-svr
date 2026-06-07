@@ -528,6 +528,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Visibility must be PUBLIC or PRIVATE"
 	case CLASSROOM_EXERCISE_PRIVATE_DENIED:
 		return "Only the creator can access this private exercise"
+	case CLASSROOM_EXERCISE_INVALID_PURPOSE:
+		return "Purpose must be HOMEWORK or EXAM"
 	case CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND:
 		return "Submission not found"
 	case CLASSROOM_EXERCISE_SUBMISSION_MISSING_ID:

@@ -183,6 +183,32 @@ func (v ClassroomExerciseVisibilityType) IsValid() bool {
 	}
 }
 
+// ClassroomExercisePurposeType labels an exercise by intent so the
+// teacher-facing UI (and downstream analytics) can distinguish a
+// graded EXAM checkpoint from routine HOMEWORK. The column is
+// NOT NULL with default HOMEWORK at the schema layer, mirroring the
+// visibility column above.
+type ClassroomExercisePurposeType string
+
+const (
+	ClassroomExercisePurposeHomework ClassroomExercisePurposeType = "HOMEWORK"
+	ClassroomExercisePurposeExam     ClassroomExercisePurposeType = "EXAM"
+)
+
+func (p ClassroomExercisePurposeType) String() string {
+	return string(p)
+}
+
+func (p ClassroomExercisePurposeType) IsValid() bool {
+	switch p {
+	case ClassroomExercisePurposeHomework,
+		ClassroomExercisePurposeExam:
+		return true
+	default:
+		return false
+	}
+}
+
 // ClassroomExerciseSubmissionStatusType is the submission-row lifecycle.
 // Rows are inserted at submit time so SUBMITTED is the entry state; the
 // row flips to GRADED after the bot returns. DELETED is the soft-delete

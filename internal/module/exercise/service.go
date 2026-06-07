@@ -162,11 +162,16 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 	if req.Visibility != nil && *req.Visibility != "" {
 		visibility = *req.Visibility
 	}
+	purpose := string(enum.ClassroomExercisePurposeHomework)
+	if req.Purpose != nil && *req.Purpose != "" {
+		purpose = *req.Purpose
+	}
 	saved, err := s.createExerciseCmd.Handle(ctx, command.CreateClassroomExerciseCommand{
 		ActorID:          &actor,
 		ClassroomID:      req.ClassroomID,
 		CreatorProfileID: caller.ProfileId(),
 		Visibility:       visibility,
+		Purpose:          purpose,
 		ProgramID:        programID,
 		Title:            req.Title,
 		Description:      req.Description,
@@ -230,6 +235,7 @@ func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq
 		Note:                req.Note,
 		ExerciseStatus:      req.ExerciseStatus,
 		Visibility:          req.Visibility,
+		Purpose:             req.Purpose,
 	})
 	if err != nil {
 		return nil, err
