@@ -59,9 +59,9 @@ func (h *ForceDeleteUserCommandHandler) Handle(ctx context.Context, cmd ForceDel
 		return nil
 	})
 	if err != nil {
-		log.Printf("[admin.force_delete_user] user_id=%s action=force_delete outcome=error err=%v", cmd.UserID, err)
+		log.Printf("[admin.force_delete_user] user_id=%d action=force_delete outcome=error err=%v", cmd.UserID, err)
 		return nil, err
 	}
-	log.Printf("[admin.force_delete_user] user_id=%s action=force_delete outcome=success avatar_keys=%d", cmd.UserID, len(result.AvatarKeys))
+	log.Printf("[admin.force_delete_user] user_id=%d action=force_delete outcome=success avatar_keys=%d", cmd.UserID, len(result.AvatarKeys))
 	return result, nil
 }

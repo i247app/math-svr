@@ -30,7 +30,7 @@ func (h *ForceDeleteProfileCommandHandler) Handle(ctx context.Context, cmd Force
 		return nil
 	})
 	if err != nil {
-		log.Warnf("profile.soft_delete profile_id=%s outcome=error err=%v", cmd.ProfileID, err)
+		log.Warnf("profile.soft_delete profile_id=%d outcome=error err=%v", cmd.ProfileID, err)
 		return err
 	}
 	log.Info("profile.soft_delete", "profile_id", cmd.ProfileID, "outcome", "success")
