@@ -2,10 +2,15 @@ package jobs
 
 import "time"
 
-var projectTimezone = loadProjectTimezone()
+var (
+	HoChiMinhTimezone  = loadProjectTimezone("Asia/Ho_Chi_Minh")
+	TokyoTimezone      = loadProjectTimezone("Asia/Tokyo")
+	NewYorkTimezone    = loadProjectTimezone("America/New_York")
+	LosAngelesTimezone = loadProjectTimezone("America/Los_Angeles")
+)
 
-func loadProjectTimezone() *time.Location {
-	if loc, err := time.LoadLocation("Asia/Ho_Chi_Minh"); err == nil {
+func loadProjectTimezone(timezone string) *time.Location {
+	if loc, err := time.LoadLocation(timezone); err == nil {
 		return loc
 	}
 	return time.UTC

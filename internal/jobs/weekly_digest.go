@@ -37,7 +37,7 @@ const weeklyDigestCronName = "digest.weekly_fanout"
 
 func (j *WeeklyDigestCronJob) Name() string { return weeklyDigestCronName }
 func (j *WeeklyDigestCronJob) Schedule() job.Schedule {
-	return job.WeeklyAt(time.Monday, 9, 0, projectTimezone)
+	return job.WeeklyAt(time.Monday, 9, 0, loadProjectTimezone("Asia/Ho_Chi_Minh"))
 }
 func (j *WeeklyDigestCronJob) Timeout() time.Duration { return 5 * time.Minute }
 

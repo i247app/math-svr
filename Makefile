@@ -3,6 +3,11 @@
 # 	perf-vegeta perf-vegeta-create perf-vegeta-get perf-vegeta-me perf-vegeta-list perf-vegeta-update \
 # 	perf-clean
 
+.PHONY: help
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
+
 RHOST ?= none
 
 .PHONY: tidy
@@ -20,15 +25,6 @@ build-ec2-arm: tidy ## build AWS EC2 ARM64
 .PHONY: build-ec2-amd
 build-ec2-amd: tidy ## build AWS EC2 AMD64
 	GOOS=linux GOARCH=amd64 go build -o dist/mathsvr-amd64 ./cmd/mathsvr
-
-.PHONY: deploy-ec2
-deploy-ec2: build-ec2-arm ## build and deploy locally on ec2
-	@echo "make[$@] TODO build and deploy locally on ec2..."
-
-.PHONY: deploy-ec2-remote
-deploy-ec2-remote: build-ec2-arm ## build and deploy from mac to ec2
-	./bin/remote-deploy $(RHOST)
-	@echo "make[$@] done"
 
 .PHONY: run
 run: tidy ## run current or local machine
@@ -70,75 +66,72 @@ deploy-rollback:
 deploy-amd:
 	@BUILD_ARCH=amd64 ./bin/deploy $(RHOST)
 
-# ── Load testing (user module) ────────────────────────────
-# All targets read parameters from perf/.env (copy from perf/.env.example).
-# Source it before running, e.g.: `source perf/.env && make perf-seed`
-#
-# Overridable inline: `make perf-vegeta-create RATE=200 DURATION=120s`
-
 RATE     ?= 100
 DURATION ?= 60s
 
-# Seed 10k users + aliases + sessions (writes perf/sessions.gob + perf/sessions.csv).
-.PHONY: perf-seed
-perf-seed: ## seed 10k users + aliases + sessions
-	@go run ./perf/seeder
+.PHONY: perf-jmeter-local
+perf-jmeter-local: ## load test jmeter local
+	@jmeter -n -t perf/jmeter/numi_local.jmx -l perf/jmeter/results/out.jtl -e -o perf/jmeter/report
 
-.PHONY: perf-targets
-perf-targets: ## generate Vegeta target files from perf/sessions.csv
-	@./perf/vegeta/targets-gen.sh
+.PHONY: perf-jmeter-ec2
+perf-jmeter-ec2: ## load test jmeter ec2
+	@jmeter -n -t perf/jmeter/numi_ec2.jmx -l perf/jmeter/results/out.jtl -e -o perf/jmeter/report
 
-# ── k6 (ramping VU scenarios) ──
-.PHONY: perf-k6-create
-perf-k6-create: ## k6 create
-	@k6 run perf/k6/create.js
+# ── Vegeta load testing ──────────────────────────────────
+# Usage: make perf-vegeta TARGET=health [PROFILE=baseline] [ENV=local]
+TARGET  ?= health
+PROFILE ?= baseline
+ENV     ?= local
 
-.PHONY: perf-k6-get
-perf-k6-get: ## k6 get by id
-	@k6 run perf/k6/get_by_id.js
-
-.PHONY: perf-k6-me
-perf-k6-me: ## k6 me
-	@k6 run perf/k6/me.js
-
-.PHONY: perf-k6-list
-perf-k6-list: ## k6 list
-	@k6 run perf/k6/list.js
-
-.PHONY: perf-k6-update
-perf-k6-update: ## k6 update
-	@k6 run perf/k6/update.js
-
-# Run every k6 scenario sequentially.
-.PHONY: perf-k6
-perf-k6: perf-k6-create perf-k6-get perf-k6-me perf-k6-list perf-k6-update
-
-# ── Vegeta (flat-rate attacks) ──
-.PHONY: perf-vegeta-create
-perf-vegeta-create: ## vegeta create
-	@./perf/vegeta/run.sh create $(RATE) $(DURATION)
-
-.PHONY: perf-vegeta-get
-perf-vegeta-get: ## vegeta get by id
-	@./perf/vegeta/run.sh get_by_id $(RATE) $(DURATION)
-
-.PHONY: perf-vegeta-me
-perf-vegeta-me: ## vegeta me
-	@./perf/vegeta/run.sh me $(RATE) $(DURATION)
-
-.PHONY: perf-vegeta-list
-perf-vegeta-list: ## vegeta list
-	@./perf/vegeta/run.sh list $(RATE) $(DURATION)
-
-.PHONY: perf-vegeta-update
-perf-vegeta-update: ## vegeta update
-	@./perf/vegeta/run.sh update $(RATE) $(DURATION)
-
-# Run every Vegeta attack sequentially at $(RATE) for $(DURATION).
 .PHONY: perf-vegeta
-perf-vegeta: perf-vegeta-create perf-vegeta-get perf-vegeta-me perf-vegeta-list perf-vegeta-update
+perf-vegeta: ## vegeta attack — vars: TARGET, PROFILE, ENV
+	@./perf/vegeta/scripts/attack.sh $(TARGET) $(PROFILE) $(ENV)
 
-.PHONY: perf-clean
-perf-clean: ## wipe generated artefacts (does NOT touch DB rows — see perf/README.md for cleanup SQL)
-	@rm -rf perf/sessions.gob perf/sessions.csv perf/vegeta/targets perf/runs
-	@echo "perf artefacts removed (DB rows untouched)"
+.PHONY: perf-vegeta-bootstrap
+perf-vegeta-bootstrap: ## mint a secure session token — var: ENV
+	@./perf/vegeta/scripts/bootstrap_session.sh $(ENV)
+
+.PHONY: perf-vegeta-seed
+perf-vegeta-seed: ## create [PERF] fixture entities — var: ENV
+	@./perf/vegeta/scripts/perf_seed.sh $(ENV)
+
+.PHONY: perf-vegeta-clean
+perf-vegeta-clean: ## wipe [PERF] rows from DB — var: ENV; needs DB_* env
+	@./perf/vegeta/scripts/perf_clean.sh $(ENV)
+
+.PHONY: perf-vegeta-gate
+perf-vegeta-gate: ## attack + SLO check; non-zero on breach — vars: TARGET, PROFILE, ENV
+	@./perf/vegeta/scripts/gate.sh $(TARGET) $(PROFILE) $(ENV)
+
+.PHONY: perf-vegeta-promote
+perf-vegeta-promote: ## attack + archive to history/<git-sha>/ — vars: TARGET, PROFILE, ENV
+	@./perf/vegeta/scripts/promote.sh $(TARGET) $(PROFILE) $(ENV)
+
+.PHONY: perf-vegeta-compare
+perf-vegeta-compare: ## diff two most recent runs of TARGET — vars: TARGET, PROFILE, ENV
+	@./perf/vegeta/scripts/compare.sh $(TARGET) $(PROFILE) $(ENV)
+
+.PHONY: perf-vegeta-report
+perf-vegeta-report: ## re-render a .bin — vars: BIN=results/foo.bin
+	@./perf/vegeta/scripts/report.sh $(BIN)
+
+# ── Observability stack (Prometheus + Grafana) ───────────
+
+.PHONY: obs-up
+obs-up: ## start prometheus + grafana
+	@docker compose -f docker/docker-compose.yml up -d
+	@echo "Prometheus → http://localhost:9090"
+	@echo "Grafana    → http://localhost:3000  (admin / admin)"
+
+.PHONY: obs-down
+obs-down: ## stop the observability stack (keeps volumes)
+	@docker compose -f docker/docker-compose.yml down
+
+.PHONY: obs-logs
+obs-logs: ## tail prometheus + grafana logs
+	@docker compose -f docker/docker-compose.yml logs -f --tail=100
+
+.PHONY: obs-reset
+obs-reset: ## stop and wipe volumes (destroys saved dashboards/data)
+	@docker compose -f docker/docker-compose.yml down -v
+

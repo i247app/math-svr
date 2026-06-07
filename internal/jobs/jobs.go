@@ -49,7 +49,7 @@ func RegisterAll(reg *job.Registry, deps Deps) {
 	// reg.RegisterCron(NewSessionCleanupJob(deps.SessionManager))
 	// reg.RegisterCron(NewQuizCleanupJob())
 	// reg.RegisterCron(NewWeeklyDigestCronJob(deps.Runtime))
-	// reg.RegisterCron(NewNoopJob())
+	reg.RegisterCron(NewNoopJob())
 
 	// Tasks (one-shot, payload).
 	// reg.RegisterTask(NewWeeklyDigestTask(deps.EmailProvider))

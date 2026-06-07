@@ -18,8 +18,10 @@ const quizCleanupName = "quiz.cleanup_soft_deleted"
 // delete. 30 days lets ops restore an accidentally-deleted quiz.
 const quizRetention = 30 * 24 * time.Hour
 
-func (j *QuizCleanupJob) Name() string           { return quizCleanupName }
-func (j *QuizCleanupJob) Schedule() job.Schedule { return job.DailyAt(3, 0, projectTimezone) }
+func (j *QuizCleanupJob) Name() string { return quizCleanupName }
+func (j *QuizCleanupJob) Schedule() job.Schedule {
+	return job.DailyAt(3, 0, loadProjectTimezone("Asia/Ho_Chi_Minh"))
+}
 func (j *QuizCleanupJob) Timeout() time.Duration { return 10 * time.Minute }
 
 func (j *QuizCleanupJob) Run(ctx context.Context) error {

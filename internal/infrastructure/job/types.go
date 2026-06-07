@@ -94,13 +94,24 @@ func (s Schedule) Next(now time.Time) time.Time {
 		}
 		return now.Add(s.Every)
 	case ScheduleDaily:
-		t := time.Date(now.Year(), now.Month(), now.Day(), s.Hour, s.Minute, 0, 0, loc)
+		// Year/Month/Day must be read in loc, not in now's location —
+		// otherwise a server in Asia/Ho_Chi_Minh computing the "today"
+		// for an America/Los_Angeles schedule picks up VN's date and
+		// schedules a full day late.
+		nowLoc := now.In(loc)
+		println("nowLoc", nowLoc.String())
+		println("s.Hour", s.Hour)
+		println("s.Minute", s.Minute)
+		println("loc", loc.String())
+
+		t := time.Date(nowLoc.Year(), nowLoc.Month(), nowLoc.Day(), s.Hour, s.Minute, 0, 0, loc)
 		if !t.After(now) {
 			t = t.AddDate(0, 0, 1)
 		}
 		return t
 	case ScheduleWeekly:
-		t := time.Date(now.Year(), now.Month(), now.Day(), s.Hour, s.Minute, 0, 0, loc)
+		nowLoc := now.In(loc)
+		t := time.Date(nowLoc.Year(), nowLoc.Month(), nowLoc.Day(), s.Hour, s.Minute, 0, 0, loc)
 		diff := (int(s.Weekday) - int(t.Weekday()) + 7) % 7
 		t = t.AddDate(0, 0, diff)
 		if !t.After(now) {

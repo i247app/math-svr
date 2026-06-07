@@ -4,8 +4,18 @@
 *.swp
 .gocache
 
+# loadtest
+load-test/
+*jmeter.log
+
+# erdplus
+*erdplus
+
 # Obsidian
 .obsidian/
+
+# Docker
+docker/
 
 # Peformance
 perf/

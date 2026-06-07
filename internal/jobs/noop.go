@@ -19,8 +19,11 @@ func NewNoopJob() *NoopJob { return &NoopJob{} }
 
 const noopName = "system.noop"
 
-func (j *NoopJob) Name() string           { return noopName }
-func (j *NoopJob) Schedule() job.Schedule { return job.EveryDuration(1 * time.Hour) }
+func (j *NoopJob) Name() string { return noopName }
+func (j *NoopJob) Schedule() job.Schedule {
+	return job.DailyAt(22, 52, LosAngelesTimezone)
+}
+
 func (j *NoopJob) Timeout() time.Duration { return 10 * time.Second }
 
 func (j *NoopJob) Run(ctx context.Context) error {
