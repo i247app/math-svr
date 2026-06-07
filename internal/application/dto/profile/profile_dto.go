@@ -21,6 +21,8 @@ type ProfileResponse struct {
 	ProfileCode   string                        `json:"profile_code"`
 	UserID        int64                         `json:"user_id"`
 	Name          string                        `json:"name"`
+	Phone         *string                       `json:"phone"`
+	Email         *string                       `json:"email"`
 	Role          string                        `json:"role"`
 	AvatarKey     *string                       `json:"avatar_key,omitempty"`
 	AvatarUrl     *string                       `json:"avatar_url"` // pre-signed url from avatar_key
@@ -45,6 +47,8 @@ type ProfileResponse struct {
 type CreateProfileReq struct {
 	UserID     int64   `json:"user_id"`
 	Name       string  `json:"name"`
+	Phone      *string `json:"phone,omitempty"`
+	Email      *string `json:"email,omitempty"`
 	Role       string  `json:"role"`
 	IsDefault  bool    `json:"is_default"`
 	Dob        *string `json:"dob,omitempty"`
@@ -74,6 +78,8 @@ type CreateProfileRes struct {
 type UpdateProfileReq struct {
 	ProfileID  int64   `json:"profile_id"`
 	Name       *string `json:"name,omitempty"`
+	Phone      *string `json:"phone,omitempty"`
+	Email      *string `json:"email,omitempty"`
 	Role       *string `json:"role,omitempty"`
 	IsDefault  *bool   `json:"is_default,omitempty"`
 	Dob        *string `json:"dob,omitempty"`
@@ -203,6 +209,8 @@ func DomainToResponse(p *domain.Profile) *ProfileResponse {
 		ProfileCode:   p.ProfileCode(),
 		UserID:        p.UserId(),
 		Name:          p.Name(),
+		Phone:         p.Phone(),
+		Email:         p.Email(),
 		Role:          p.Role(),
 		AvatarKey:     p.AvatarKey(),
 		Dob:           p.Dob().String(),

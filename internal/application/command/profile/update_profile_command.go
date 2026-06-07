@@ -14,6 +14,8 @@ import (
 type UpdateProfileCommand struct {
 	ProfileID  int64
 	Name       *string
+	Phone      *string
+	Email      *string
 	Role       *string
 	IsDefault  *bool
 	Dob        *mtime.MathTime
@@ -89,6 +91,12 @@ func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 	patch.SetProfileId(cmd.ProfileID)
 	if cmd.Name != nil {
 		patch.SetName(*cmd.Name)
+	}
+	if cmd.Phone != nil {
+		patch.SetPhone(cmd.Phone)
+	}
+	if cmd.Email != nil {
+		patch.SetEmail(cmd.Email)
 	}
 	if cmd.Role != nil {
 		patch.SetRole(*cmd.Role)

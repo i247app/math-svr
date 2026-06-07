@@ -109,11 +109,16 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		// if err != nil {
 		// 	return err
 		// }
+		profileCode, err := mintUniqueProfileCode(ctx, repos)
+		if err != nil {
+			return err
+		}
 
-		profileDomain := BuildProfile(cmd)
+		profileDomain := BuildProfile(ctx, cmd)
 		profileDomain.SetUserId(u.UserId())
 		profileDomain.SetProfileId(userID)
 		profileDomain.SetIsDefault(true)
+		profileDomain.SetProfileCode(profileCode)
 
 		if _, err = repos.Profile.Create(ctx, profileDomain); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
@@ -140,7 +145,7 @@ func BuildUser(cmd CreateUserCommand) *user.User {
 	return u
 }
 
-func BuildProfile(cmd CreateUserCommand) *profile.Profile {
+func BuildProfile(ctx context.Context, cmd CreateUserCommand) *profile.Profile {
 	role := cmd.Role
 	if role == "" {
 		role = enum.RoleProfileTypeStudent
@@ -148,6 +153,8 @@ func BuildProfile(cmd CreateUserCommand) *profile.Profile {
 
 	p := profile.NewProfile()
 	p.SetName(cmd.UserName)
+	p.SetPhone(&cmd.Phone)
+	p.SetEmail(cmd.Email)
 	p.SetRole(role.String())
 	p.SetAvatarKey(cmd.AvatarKey)
 	p.SetStatus(enum.StatusActive.String())

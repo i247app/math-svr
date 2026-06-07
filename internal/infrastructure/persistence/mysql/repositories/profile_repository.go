@@ -18,7 +18,7 @@ import (
 const (
 	profileTable = "ma_profiles"
 
-	profileColumns = `p.id, p.profile_id, p.profile_code, p.user_id, p.name, p.role, p.avatar_key, p.dob,
+	profileColumns = `p.id, p.profile_id, p.profile_code, p.user_id, p.name, p.phone, p.email, p.role, p.avatar_key, p.dob,
 		p.school_id, p.program_id, p.grade_id, p.semester_id, p.is_default,
 		p.id_type, p.teacher_id, p.student_id,
 		p.note, p.profile_status, p.status,
@@ -41,7 +41,7 @@ func NewProfileRepository(db database.Executor) profile.IRepository {
 
 func scanProfile(s database.RowScanner) (*models.ProfileModel, error) {
 	var m models.ProfileModel
-	if err := s.Scan(&m.Id, &m.ProfileId, &m.ProfileCode, &m.UserId, &m.Name, &m.Role, &m.AvatarKey, &m.Dob,
+	if err := s.Scan(&m.Id, &m.ProfileId, &m.ProfileCode, &m.UserId, &m.Name, &m.Phone, &m.Email, &m.Role, &m.AvatarKey, &m.Dob,
 		&m.SchoolId, &m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault,
 		&m.IdType, &m.TeacherId, &m.StudentId,
 		&m.Note, &m.ProfileStatus, &m.Status,
@@ -303,13 +303,13 @@ func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId i
 func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*profile.Profile, error) {
 	query := `
 		INSERT INTO ` + profileTable + `
-			(profile_id, profile_code, user_id, name, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default,
+			(profile_id, profile_code, user_id, name, phone, email, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default,
 			 id_type, teacher_id, student_id, note, profile_status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
-		p.ProfileId(), p.ProfileCode(), p.UserId(), p.Name(), p.Role(), p.AvatarKey(), p.Dob(),
+		p.ProfileId(), p.ProfileCode(), p.UserId(), p.Name(), p.Phone(), p.Email(), p.Role(), p.AvatarKey(), p.Dob(),
 		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(),
 		p.IdType(), p.TeacherId(), p.StudentId(), p.Note(), p.ProfileStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
@@ -327,6 +327,8 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 	query := `
 		UPDATE ` + profileTable + `
 		SET name           = COALESCE(?, name),
+			phone          = COALESCE(?, phone),
+			email          = COALESCE(?, email),
 			role           = COALESCE(?, role),
 			is_default     = COALESCE(?, is_default),
 			dob            = COALESCE(?, dob),
@@ -364,7 +366,7 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 	}
 
 	if _, err := r.db.Exec(ctx, query,
-		nameArg, roleArg, isDefaultArg, dobArg, p.SchoolId(), p.ProgramId(), p.GradeId(),
+		nameArg, p.Phone(), p.Email(), roleArg, isDefaultArg, dobArg, p.SchoolId(), p.ProgramId(), p.GradeId(),
 		p.SemesterId(), p.IdType(), p.TeacherId(), p.StudentId(), p.ProfileStatus(),
 		p.Note(), p.AvatarKey(), p.ProfileId()); err != nil {
 		return fmt.Errorf("profile repo update: %w", err)
@@ -481,6 +483,8 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p.SetProfileCode(m.ProfileCode)
 	p.SetUserId(m.UserId)
 	p.SetName(m.Name)
+	p.SetPhone(m.Phone)
+	p.SetEmail(m.Email)
 	p.SetRole(m.Role)
 	p.SetAvatarKey(m.AvatarKey)
 	if m.Dob != nil {

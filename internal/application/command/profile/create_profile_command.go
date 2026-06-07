@@ -14,6 +14,8 @@ import (
 type CreateProfileCommand struct {
 	UserID     int64
 	Name       string
+	Phone      *string
+	Email      *string
 	Role       string
 	IsDefault  bool
 	Dob        *mtime.MathTime
@@ -83,6 +85,8 @@ func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
 	p := profile.NewProfile()
 	p.SetUserId(cmd.UserID)
 	p.SetName(cmd.Name)
+	p.SetPhone(cmd.Phone)
+	p.SetEmail(cmd.Email)
 	p.SetRole(cmd.Role)
 	p.SetSchoolId(cmd.SchoolID)
 	p.SetProgramId(cmd.ProgramID)

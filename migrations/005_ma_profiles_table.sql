@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS ma_profiles (
   profile_code    VARCHAR(128) NOT NULL UNIQUE,
   user_id         BIGINT UNSIGNED NOT NULL,
   name            varchar(128) NOT NULL,
+  phone           varchar(128) DEFAULT NULL,
+  email           varchar(128) DEFAULT NULL,
   role            varchar(64) NOT NULL, -- e.g. "STUDENT", "TEACHER", "PARENT"
   avatar_key      varchar(256) DEFAULT NULL,
   dob             datetime(3) DEFAULT NULL,

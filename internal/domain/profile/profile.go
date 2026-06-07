@@ -14,6 +14,8 @@ type Profile struct {
 	profileCode   string
 	userId        int64
 	name          string
+	phone         *string
+	email         *string
 	role          string
 	avatarKey     *string
 	dob           mtime.MathTime
@@ -79,6 +81,22 @@ func (p *Profile) Name() string {
 
 func (p *Profile) SetName(name string) {
 	p.name = name
+}
+
+func (p *Profile) Phone() *string {
+	return p.phone
+}
+
+func (p *Profile) SetPhone(phone *string) {
+	p.phone = phone
+}
+
+func (p *Profile) Email() *string {
+	return p.email
+}
+
+func (p *Profile) SetEmail(email *string) {
+	p.email = email
 }
 
 func (p *Profile) Role() string {

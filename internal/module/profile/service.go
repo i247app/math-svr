@@ -187,6 +187,8 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 	created, err := s.createProfileCmd.Handle(ctx, command.CreateProfileCommand{
 		UserID:     req.UserID,
 		Name:       req.Name,
+		Phone:      req.Phone,
+		Email:      req.Email,
 		Role:       req.Role,
 		IsDefault:  req.IsDefault,
 		Dob:        &dob,
@@ -268,6 +270,8 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 	updated, err := s.updateProfileCmd.Handle(ctx, command.UpdateProfileCommand{
 		ProfileID:  req.ProfileID,
 		Name:       req.Name,
+		Phone:      req.Phone,
+		Email:      req.Email,
 		Role:       req.Role,
 		IsDefault:  req.IsDefault,
 		Dob:        &dob,

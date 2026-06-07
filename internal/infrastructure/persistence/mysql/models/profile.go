@@ -10,6 +10,8 @@ type ProfileModel struct {
 	ProfileCode   string
 	UserId        int64
 	Name          string
+	Phone         *string
+	Email         *string
 	Role          string
 	AvatarKey     *string
 	Dob           *time.Time
