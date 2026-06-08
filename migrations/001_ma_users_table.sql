@@ -17,4 +17,4 @@ CREATE TABLE IF NOT EXISTS ma_users (
   PRIMARY KEY (id),
   UNIQUE KEY user_id (user_id),
   UNIQUE KEY name (name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

@@ -71,6 +71,25 @@ func (h *QuizHandler) HandleSubmitQuizAnswers(w http.ResponseWriter, r *http.Req
 	response.WriteJson(w, res, nil)
 }
 
+// POST /quizzes/submit/v2 — deterministic, no bot call. Same request /
+// response shape as HandleSubmitQuizAnswers so mobile clients can swap
+// the URL without DTO changes.
+func (h *QuizHandler) HandleSubmitQuizV2(w http.ResponseWriter, r *http.Request) {
+	var req dto.SubmitQuizAnswersReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.quizSvc.SubmitQuizAnswersV2(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	response.WriteJson(w, res, nil)
+}
+
 // GET /quizzes/{id}
 func (h *QuizHandler) HandleGetQuiz(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")

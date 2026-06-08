@@ -23,6 +23,12 @@ CONTENT RULES:
 - Use ASCII fractions like "1/2", never "½".
 - Do not repeat questions.
 
+METADATA RULES (REQUIRED for deterministic auto-grading):
+- "right_answer" is the label (A/B/C/D) of the correct option.
+- "correct_answer" is the LITERAL VALUE in the correct option's "content" field — it MUST match that "content" character-for-character (e.g. "8", "1/2").
+- "topic" is a short snake_case English skill tag. Prefer one of: addition_within_100, subtraction_within_100, addition_regrouping, subtraction_regrouping, multiplication_single_digit, multiplication_multi_digit, division_single_digit, division_multi_digit, fractions_basic, fractions_compare, fractions_add_sub, decimals_basic, place_value, word_problem, mixed_operations, geometry_basic, measurement, time_money. If none fits, mint a new short tag (<= 32 chars).
+- "difficulty" is an integer 1..5 (1 easiest, 5 hardest) reflecting challenge level for the targeted grade.
+
 TITLE RULES:
 - "title" is a short, specific phrase that names the math topic of the questions (e.g. "Addition and subtraction within 100", "Basic fractions and comparison", "Single-digit multiplication").
 - Maximum 80 characters, written in English, DO NOT include the grade level, DO NOT include the quiz type (ASSESSMENT/PRACTICE), and DO NOT use generic titles like "Math quiz", "Practice quiz", or "Quiz".
@@ -45,7 +51,10 @@ SCHEMA:
         {"label": "C", "content": "10"},
         {"label": "D", "content": "7"}
       ],
-      "right_answer": "A"
+      "right_answer": "A",
+      "correct_answer": "8",
+      "topic": "addition_within_100",
+      "difficulty": 1
     }
   ]
 }
@@ -60,6 +69,12 @@ CONTENT RULES:
 - "question_name" contains ONLY numbers and operators — no narrative, no LaTeX, no Vietnamese text.
 - Use ASCII fractions like "1/2".
 - Do not repeat questions verbatim from the previous quiz; create variations that target the same skills.
+
+METADATA RULES (REQUIRED for deterministic auto-grading):
+- "right_answer" is the label (A/B/C/D) of the correct option.
+- "correct_answer" is the LITERAL VALUE in the correct option's "content" field — it MUST match that "content" character-for-character.
+- "topic" is a short snake_case English skill tag. Reuse one of the standard tags from the generation prompt (addition_within_100, subtraction_regrouping, fractions_compare, ...); mint a new one only if no standard tag fits.
+- "difficulty" is an integer 1..5 reflecting challenge level for the targeted grade.
 
 TITLE RULES:
 - "title" is a short, specific phrase that names the skills being reinforced (e.g. "Reinforce: subtraction with regrouping", "Reinforce: equivalent fractions").
@@ -83,7 +98,10 @@ SCHEMA:
         {"label": "C", "content": "10"},
         {"label": "D", "content": "7"}
       ],
-      "right_answer": "A"
+      "right_answer": "A",
+      "correct_answer": "8",
+      "topic": "subtraction_regrouping",
+      "difficulty": 3
     }
   ]
 }

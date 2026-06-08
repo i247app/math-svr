@@ -28,6 +28,7 @@ type ListClassroomExercisesQuery struct {
 	ChapterName      *string
 	LessonName       *string
 	Search           *string
+	Purpose          *string
 
 	SortBy    *string
 	SortOrder *string
@@ -55,6 +56,7 @@ func (h *ListClassroomExercisesQueryHandler) Handle(ctx context.Context, q ListC
 		ChapterName:      q.ChapterName,
 		LessonName:       q.LessonName,
 		Search:           q.Search,
+		Purpose:          q.Purpose,
 		SortBy:           q.SortBy,
 		SortOrder:        q.SortOrder,
 		Page:             q.Page,

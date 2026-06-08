@@ -22,6 +22,12 @@ QUY TẮC NỘI DUNG:
 - Dùng phân số ASCII như "1/2", không dùng "½".
 - Không lặp lại câu hỏi.
 
+QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
+- "right_answer" là nhãn (A/B/C/D) của phương án đúng.
+- "correct_answer" là GIÁ TRỊ chữ trong "content" của phương án đúng — phải khớp ký tự với "content" tương ứng (vd. "8", "1/2").
+- "topic" là một mã kỹ năng ngắn bằng tiếng Anh viết thường, dùng dấu gạch dưới (snake_case). Chọn trong danh sách gợi ý: phép cộng trong phạm vi 100, phép trừ trong phạm vi 100, phép cộng có nhớ, phép trừ có nhớ, phép nhân với số có một chữ số, phép nhân với số có nhiều chữ số, phép chia cho số có một chữ số, phép chia cho số có nhiều chữ số, phân số cơ bản, phân số so sánh, cộng trừ phân số, số thập phân cơ bản, giá trị theo vị trí, bài toán có lời văn, phép tính hỗn hợp, hình học cơ bản, phép đo, thời gian và tiền tệ. Nếu thực sự không phù hợp, tạo mã mới ngắn gọn (≤32 ký tự).
+- "difficulty" là số nguyên 1..5 (1 dễ nhất, 5 khó nhất) phản ánh mức độ thử thách so với lớp đang nhắm tới.
+
 QUY TẮC TIÊU ĐỀ:
 - "title" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề toán của bộ câu hỏi (ví dụ: "Phép cộng và phép trừ trong phạm vi 100", "Phân số cơ bản và so sánh", "Phép nhân với số có một chữ số").
 - Tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng tiêu đề chung chung như "Bài kiểm tra Toán", "Bài luyện tập" hay "Quiz".
@@ -44,7 +50,10 @@ CẤU TRÚC:
         {"label": "C", "content": "10"},
         {"label": "D", "content": "7"}
       ],
-      "right_answer": "A"
+      "right_answer": "A",
+      "correct_answer": "8",
+      "topic": "phép cộng trong phạm vi 100",
+      "difficulty": 1
     }
   ]
 }
@@ -59,6 +68,12 @@ QUY TẮC NỘI DUNG:
 - "question_name" chỉ chứa số và toán tử — không lời văn, không LaTeX, không chữ tiếng Việt.
 - Dùng phân số ASCII như "1/2".
 - Không sao chép nguyên văn câu hỏi cũ; tạo biến thể nhắm vào cùng kỹ năng.
+
+QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
+- "right_answer" là nhãn (A/B/C/D) của phương án đúng.
+- "correct_answer" là GIÁ TRỊ chữ trong "content" của phương án đúng — phải khớp ký tự với "content" tương ứng.
+- "topic" là mã kỹ năng ngắn bằng tiếng Việt viết thường, snake_case (vd. phép cộng trong phạm vi 100, phép trừ trong phạm vi 100). Tận dụng lại các mã đã có trong danh sách gợi ý của prompt sinh; chỉ tạo mã mới khi thật sự cần.
+- "difficulty" là số nguyên 1..5 phản ánh độ khó so với lớp đang nhắm tới.
 
 QUY TẮC TIÊU ĐỀ:
 - "title" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề được củng cố (ví dụ: "Củng cố phép trừ có nhớ", "Ôn lại phân số bằng nhau").
@@ -82,7 +97,10 @@ CẤU TRÚC:
         {"label": "C", "content": "10"},
         {"label": "D", "content": "7"}
       ],
-      "right_answer": "A"
+      "right_answer": "A",
+      "correct_answer": "8",
+      "topic": "phép cộng trong phạm vi 100",
+      "difficulty": 3
     }
   ]
 }

@@ -29,18 +29,19 @@ import (
 // curriculum-name lookups so the bot prompts always see resolved labels
 // rather than raw UUIDs.
 type Service struct {
-	getQuizByIdQuery     *query.GetQuizByQuizIdQueryHandler
-	listQuizzesQuery     *query.ListQuizzesQueryHandler
-	createQuizCmd        *command.CreateQuizCommandHandler
-	submitQuizAnswersCmd *command.SubmitQuizAnswersCommandHandler
-	softDeleteQuizCmd    *command.SoftDeleteQuizCommandHandler
-	quizRepo             domain.IRepository
-	profileRepo          profileDomain.IRepository
-	programRepo          programDomain.IRepository
-	gradeRepo            gradeDomain.IRepository
-	semesterRepo         semesterDomain.IRepository
-	chapterRepo          chapterDomain.IRepository
-	bot                  *botClient
+	getQuizByIdQuery       *query.GetQuizByQuizIdQueryHandler
+	listQuizzesQuery       *query.ListQuizzesQueryHandler
+	createQuizCmd          *command.CreateQuizCommandHandler
+	submitQuizAnswersCmd   *command.SubmitQuizAnswersCommandHandler
+	submitQuizAnswersV2Cmd *command.SubmitQuizAnswersV2CommandHandler
+	softDeleteQuizCmd      *command.SoftDeleteQuizCommandHandler
+	quizRepo               domain.IRepository
+	profileRepo            profileDomain.IRepository
+	programRepo            programDomain.IRepository
+	gradeRepo              gradeDomain.IRepository
+	semesterRepo           semesterDomain.IRepository
+	chapterRepo            chapterDomain.IRepository
+	bot                    *botClient
 }
 
 // NewService wires the quiz module. botAdapter may be nil — in a deploy
@@ -61,18 +62,19 @@ func NewService(
 	chapterRepo chapterDomain.IRepository,
 ) *Service {
 	return &Service{
-		getQuizByIdQuery:     query.NewGetQuizByQuizIdQueryHandler(quizRepo),
-		listQuizzesQuery:     query.NewListQuizzesQueryHandler(quizRepo),
-		createQuizCmd:        command.NewCreateQuizCommandHandler(uow),
-		submitQuizAnswersCmd: command.NewSubmitQuizAnswersCommandHandler(uow),
-		softDeleteQuizCmd:    command.NewSoftDeleteQuizCommandHandler(uow),
-		quizRepo:             quizRepo,
-		profileRepo:          profileRepo,
-		programRepo:          programRepo,
-		gradeRepo:            gradeRepo,
-		semesterRepo:         semesterRepo,
-		chapterRepo:          chapterRepo,
-		bot:                  newBotClient(bot),
+		getQuizByIdQuery:       query.NewGetQuizByQuizIdQueryHandler(quizRepo),
+		listQuizzesQuery:       query.NewListQuizzesQueryHandler(quizRepo),
+		createQuizCmd:          command.NewCreateQuizCommandHandler(uow),
+		submitQuizAnswersCmd:   command.NewSubmitQuizAnswersCommandHandler(uow),
+		submitQuizAnswersV2Cmd: command.NewSubmitQuizAnswersV2CommandHandler(uow),
+		softDeleteQuizCmd:      command.NewSoftDeleteQuizCommandHandler(uow),
+		quizRepo:               quizRepo,
+		profileRepo:            profileRepo,
+		programRepo:            programRepo,
+		gradeRepo:              gradeRepo,
+		semesterRepo:           semesterRepo,
+		chapterRepo:            chapterRepo,
+		bot:                    newBotClient(bot),
 	}
 }
 
@@ -305,6 +307,35 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 	// Submitted quizzes are review-mode — surface right_answer so the
 	// client can render correct/incorrect indicators.
 	return &dto.SubmitQuizAnswersRes{Quiz: res}, nil
+}
+
+// SubmitQuizAnswersV2 grades the answers deterministically in process —
+// no bot call. It exists alongside SubmitQuizAnswers (which still calls
+// the bot) so existing mobile clients keep working unchanged; the v2
+// endpoint is the cost-saver path the new client is expected to adopt.
+//
+// Identical validation + read-after-write semantics as v1, minus:
+//   - no curriculum lookup (the deterministic review needs nothing
+//     beyond per-question topic tags persisted in the row);
+//   - no bot client construction;
+//   - no ai_detect_grade signal (see scorer.go design note §3).
+func (s *Service) SubmitQuizAnswersV2(ctx context.Context, req *dto.SubmitQuizAnswersReq) (*dto.SubmitQuizAnswersRes, error) {
+	if err := ValidateSubmitAnswers(ctx, req); err != nil {
+		return nil, err
+	}
+
+	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+
+	updated, err := s.submitQuizAnswersV2Cmd.Handle(ctx, command.SubmitQuizAnswersV2Command{
+		QuizID:   req.QuizID,
+		Answers:  req.Answers,
+		Language: lang,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.SubmitQuizAnswersRes{Quiz: dto.DomainToResponse(updated, true)}, nil
 }
 
 func (s *Service) GetQuizByQuizId(ctx context.Context, req *dto.GetQuizByQuizIdReq) (*dto.GetQuizByQuizIdRes, error) {

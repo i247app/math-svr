@@ -192,6 +192,7 @@ type ClassroomExercisePurposeType string
 
 const (
 	ClassroomExercisePurposeHomework ClassroomExercisePurposeType = "HOMEWORK"
+	ClassroomExercisePurposeQuiz     ClassroomExercisePurposeType = "QUIZ"
 	ClassroomExercisePurposeExam     ClassroomExercisePurposeType = "EXAM"
 )
 
@@ -202,6 +203,7 @@ func (p ClassroomExercisePurposeType) String() string {
 func (p ClassroomExercisePurposeType) IsValid() bool {
 	switch p {
 	case ClassroomExercisePurposeHomework,
+		ClassroomExercisePurposeQuiz,
 		ClassroomExercisePurposeExam:
 		return true
 	default:

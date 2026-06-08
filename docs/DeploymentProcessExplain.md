@@ -16,7 +16,7 @@ against a `math-svr` checkout. It covers the local orchestrator (`bin/`), the re
 
 ```makefile
 deploy:
-	@./bin/deploy.sh $(RHOST)
+	@./bin/deploy.sh $(RHOST)k
 ```
 
 Related targets that hit the same script with flags:

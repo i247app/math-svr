@@ -346,6 +346,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Hồ sơ cần có chương trình học, lớp và học kỳ trước khi tạo bài kiểm tra"
 	case QUIZ_INVALID_TYPE_OF_QUIZ:
 		return "Hình thức bài học không hợp lệ"
+	case QUIZ_ANSWER_SCHEMA_INVALID:
+		return "Định dạng câu trả lời không hợp lệ"
 
 	// Job
 	case JOB_NOT_FOUND:
@@ -556,6 +558,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Ghi chú quá dài"
 	case CLASSROOM_EXERCISE_SUBMISSION_ALREADY_DELETED:
 		return "Bài nộp đã bị xoá"
+
+	// Server lifecycle
+	case SERVER_SHUTTING_DOWN:
+		return "Máy chủ đang tắt"
 	default:
 		return ""
 	}

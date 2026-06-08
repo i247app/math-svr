@@ -346,6 +346,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Profile must have a program, grade, and semester set before generating a quiz"
 	case QUIZ_INVALID_TYPE_OF_QUIZ:
 		return "Quiz learning type is invalid"
+	case QUIZ_ANSWER_SCHEMA_INVALID:
+		return "Answer payload schema is invalid"
 
 	// Job
 	case JOB_NOT_FOUND:
@@ -556,6 +558,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Note too long"
 	case CLASSROOM_EXERCISE_SUBMISSION_ALREADY_DELETED:
 		return "Submission is already deleted"
+
+	// Server lifecycle
+	case SERVER_SHUTTING_DOWN:
+		return "Server is shutting down"
 	default:
 		return ""
 	}

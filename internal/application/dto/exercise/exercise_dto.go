@@ -173,6 +173,7 @@ type ListExercisesReq struct {
 	ChapterName      *string `json:"chapter_name,omitempty"`
 	LessonName       *string `json:"lesson_name,omitempty"`
 	Search           *string `json:"search,omitempty"`
+	Purpose          *string `json:"purpose,omitempty"`
 	SortBy           *string `json:"sort_by,omitempty"`
 	SortOrder        *string `json:"sort_order,omitempty"`
 	Page             int     `json:"page,omitempty"`

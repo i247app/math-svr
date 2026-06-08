@@ -19,6 +19,7 @@ import (
 	"math-ai.com/math-ai/internal/module/quiz"
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
+	"math-ai.com/math-ai/internal/module/server"
 	"math-ai.com/math-ai/internal/module/session"
 	"math-ai.com/math-ai/internal/module/user"
 )
@@ -26,6 +27,18 @@ import (
 func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *container.ServiceContainer) {
 	// middleware
 	authMiddleware := middleware.AuthRequiredMiddleware(res.SessionManager)
+
+	// health routes
+	{
+		healthHandler := health.NewHealthHandler()
+		gexSvr.AddRoute("GET /ping", healthHandler.HandlePing)
+	}
+
+	// server lifecycle routes
+	{
+		serverHandler := server.NewHandler()
+		gexSvr.AddRoute("POST /server/shutdown", serverHandler.HandleShutdown, authMiddleware)
+	}
 
 	// session routes
 	{
@@ -150,6 +163,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /quizzes/list", quizHandler.HandleListQuizzes, authMiddleware)
 		gexSvr.AddRoute("POST /quizzes/generate", quizHandler.HandleGenerateQuiz, authMiddleware)
 		gexSvr.AddRoute("POST /quizzes/submit", quizHandler.HandleSubmitQuizAnswers, authMiddleware)
+		gexSvr.AddRoute("POST /quizzes/submit/v2", quizHandler.HandleSubmitQuizV2, authMiddleware)
 		gexSvr.AddRoute("POST /quizzes/soft-delete", quizHandler.HandleSoftDeleteQuiz, authMiddleware)
 	}
 
@@ -210,12 +224,6 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/submitted-members", submissionHandler.HandleListSubmittedMembers, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/non-submitted-members", submissionHandler.HandleListNonSubmittedMembers, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/soft-delete", submissionHandler.HandleSoftDeleteSubmission, authMiddleware)
-	}
-
-	// health routes
-	{
-		healthHandler := health.NewHealthHandler()
-		gexSvr.AddRoute("GET /ping", healthHandler.HandlePing)
 	}
 
 	// jobs routes

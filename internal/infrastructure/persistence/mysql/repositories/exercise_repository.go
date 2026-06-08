@@ -226,6 +226,10 @@ func buildClassroomExerciseFilter(params domain.ListExercisesParams) (string, []
 		clause.WriteString(` AND e.lesson_name = ?`)
 		args = append(args, *params.LessonName)
 	}
+	if params.Purpose != nil && *params.Purpose != "" {
+		clause.WriteString(` AND e.purpose = ?`)
+		args = append(args, *params.Purpose)
+	}
 	if params.Search != nil && *params.Search != "" {
 		pattern := "%" + escapeLikePattern(*params.Search) + "%"
 		clause.WriteString(` AND (e.title LIKE ? ESCAPE '\\' OR e.chapter_name LIKE ? ESCAPE '\\' OR e.lesson_name LIKE ? ESCAPE '\\')`)

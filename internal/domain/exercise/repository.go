@@ -31,6 +31,7 @@ type ListExercisesParams struct {
 	ChapterName      *string
 	LessonName       *string
 	Search           *string
+	Purpose          *string
 
 	// Sort hints. Both default to the repo's preferred ordering
 	// (created DESC). Validator-normalized tokens only — see

@@ -19,11 +19,21 @@ type QuizAnswerChoice struct {
 // QuizQuestion is one MCQ item as produced by the bot. RightAnswer is
 // the label of the correct option and is only included in responses
 // once the quiz has been graded (otherwise it would leak the answer key).
+//
+// CorrectAnswer, Topic, and Difficulty are populated by quizzes generated
+// after the v2 prompt rollout. They power the deterministic /quizzes/submit/v2
+// scorer (value fallback, per-topic review aggregation, difficulty signal)
+// and are absent on legacy quizzes — the v2 scorer degrades gracefully
+// (single-MCQ label match only, generic review wording). All three are
+// `omitempty` so the response payload stays identical for legacy rows.
 type QuizQuestion struct {
 	QuestionNumber int                `json:"question_number"`
 	QuestionName   string             `json:"question_name"`
 	Answers        []QuizAnswerChoice `json:"answers"`
 	RightAnswer    string             `json:"right_answer,omitempty"`
+	CorrectAnswer  string             `json:"correct_answer,omitempty"`
+	Topic          string             `json:"topic,omitempty"`
+	Difficulty     int                `json:"difficulty,omitempty"`
 }
 
 // QuizStudentAnswer is the student's chosen label for a single question.
@@ -181,6 +191,7 @@ func DomainToResponse(q *domain.Quiz, includeRightAnswers bool) *QuizResponse {
 		if !includeRightAnswers {
 			for i := range questions {
 				questions[i].RightAnswer = ""
+				questions[i].CorrectAnswer = ""
 			}
 		}
 		res.Questions = questions
