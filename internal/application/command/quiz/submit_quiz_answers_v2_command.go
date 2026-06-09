@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"math-ai.com/math-ai/internal/application/command/shared/scorer"
 	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/quiz"
@@ -68,12 +69,13 @@ func (h *SubmitQuizAnswersV2CommandHandler) Handle(ctx context.Context, cmd Subm
 				fmt.Errorf("quiz v2: quiz %d has no questions", cmd.QuizID))
 		}
 
-		score, err := ScoreQuiz(*existing.Questions(), cmd.Answers, cmd.Language)
+		score, err := scorer.Score(*existing.Questions(), cmd.Answers, cmd.Language)
 		if err != nil {
 			return errs.NewError(ctx, status.QUIZ_GRADING_FAILED, nil, err)
 		}
 
-		log.Infof("quiz.v2.scored quiz_id=%d total=%d correct=%d pct=%d", cmd.QuizID, score.TotalQuestions, score.CorrectNumber, score.ScorePercentage)
+		log.Infof("quiz.v2.scored quiz_id=%d total=%d correct=%d pct=%d review_source=%s",
+			cmd.QuizID, score.TotalQuestions, score.CorrectNumber, score.ScorePercentage, scorer.ReviewSourceMarker)
 
 		grading := quiz.GradingUpdate{
 			AIReview:        score.AIReview,

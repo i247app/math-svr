@@ -20,6 +20,12 @@ QUY TẮC NỘI DUNG:
 - Không lặp lại câu hỏi.
 - Tất cả câu hỏi phải nằm trong phạm vi chương + bài học giáo viên đã đặt; không lan sang chủ đề khác kể cả khi vẫn phù hợp với cấp lớp.
 
+QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
+- "right_answer" là nhãn (A/B/C/D) của phương án đúng.
+- "correct_answer" là GIÁ TRỊ chữ trong "content" của phương án đúng — phải khớp ký tự với "content" tương ứng (vd. "8", "1/2").
+- "topic" là mã kỹ năng ngắn bằng tiếng Việt viết thường, snake_case. Ưu tiên dùng các mã: phép cộng trong phạm vi 10, phép trừ trong phạm vi 10, phép nhân 1 chữ số, phép chia 1 chữ số, phép cộng trong phạm vi 100, phép trừ trong phạm vi 100, phép nhân nhiều chữ số, phép chia nhiều chữ số, phân số cơ bản, phân số so sánh, phân số cộng trừ, số thập phân cơ bản, giá trị chỗ, bài toán đố, phép toán hỗn hợp, hình học cơ bản, đo lường, thời gian tiền tệ. Nếu không phù hợp, tạo mã mới ngắn gọn (≤32 ký tự).
+- "difficulty" là số nguyên 1..5 phản ánh mức độ thử thách so với bài học đang nhắm tới.
+
 QUY TẮC TIÊU ĐỀ:
 - "title" là tiêu đề ngắn gọn, cụ thể, mô tả kỹ năng toán của bộ câu hỏi (ví dụ: "Phép cộng trong phạm vi 10", "Phân số bằng nhau").
 - Tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG dùng từ "bài tập" làm tiêu đề chung.
@@ -41,7 +47,10 @@ CẤU TRÚC:
         {"label": "C", "content": "10"},
         {"label": "D", "content": "7"}
       ],
-      "right_answer": "A"
+      "right_answer": "A",
+      "correct_answer": "8",
+      "topic": "phép cộng trong phạm vi 10",
+      "difficulty": 1
     }
   ]
 }

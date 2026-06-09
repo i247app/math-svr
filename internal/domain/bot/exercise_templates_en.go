@@ -23,6 +23,12 @@ CONTENT RULES:
 - Do not repeat questions.
 - Stay inside the teacher's chapter + lesson scope; do not drift to other topics even if the grade allows them.
 
+METADATA RULES (REQUIRED for deterministic auto-grading):
+- "right_answer" is the label (A/B/C/D) of the correct option.
+- "correct_answer" is the LITERAL VALUE in the correct option's "content" field — it MUST match that "content" character-for-character (e.g. "8", "1/2").
+- "topic" is a short snake_case English skill tag. Prefer one of: addition_within_100, subtraction_within_100, addition_regrouping, subtraction_regrouping, multiplication_single_digit, multiplication_multi_digit, division_single_digit, division_multi_digit, fractions_basic, fractions_compare, fractions_add_sub, decimals_basic, place_value, word_problem, mixed_operations, geometry_basic, measurement, time_money. If none fits, mint a new short tag (<= 32 chars).
+- "difficulty" is an integer 1..5 (1 easiest, 5 hardest) reflecting challenge level for the targeted lesson.
+
 TITLE RULES:
 - "title" is a short, specific phrase that names the math skill of the questions (e.g. "Addition within 10", "Equivalent fractions").
 - Maximum 80 characters, English, DO NOT include the grade level or the word "exercise".
@@ -44,7 +50,10 @@ SCHEMA:
         {"label": "C", "content": "10"},
         {"label": "D", "content": "7"}
       ],
-      "right_answer": "A"
+      "right_answer": "A",
+      "correct_answer": "8",
+      "topic": "addition_within_100",
+      "difficulty": 1
     }
   ]
 }

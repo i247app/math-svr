@@ -140,6 +140,88 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 	return &dto.SubmitExerciseAnswersRes{Submission: res}, nil
 }
 
+// SubmitExerciseAnswersV2 is the deterministic counterpart of
+// SubmitExerciseAnswers. It runs the same membership / window /
+// duplicate-guard checks as v1, then hands the exercise's questions JSON
+// off to the shared scorer instead of the bot. Persistence still goes
+// through the same UoW path (seq mint + Create) the v1 command uses.
+//
+// Identical permission semantics as v1, minus:
+//   - no curriculum-label resolution (the deterministic review uses
+//     per-question topic tags directly from the row);
+//   - no bot client construction;
+//   - no `grading.ScorePercentage` log line until after the scorer runs
+//     — the scored values come from the command's log line itself.
+func (s *Service) SubmitExerciseAnswersV2(ctx context.Context, req *dto.SubmitExerciseAnswersReq, sessionUserID int64) (*dto.SubmitExerciseAnswersRes, error) {
+	if err := ValidateSubmitExerciseAnswers(ctx, req); err != nil {
+		return nil, err
+	}
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	if err != nil {
+		return nil, err
+	}
+
+	exercise, err := s.exerciseRepo.FindByClassroomExerciseId(ctx, req.ClassroomExerciseID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if exercise == nil {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
+			ErrClassroomExerciseNotFound)
+	}
+	if !exerciseAvailableForSubmission(exercise) {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_EXERCISE_UNAVAILABLE, nil,
+			ErrExerciseNotAvailable)
+	}
+	if _, err := s.requireMember(ctx, exercise.ClassroomId(), caller.ProfileId()); err != nil {
+		return nil, err
+	}
+	if err := enforceExerciseAccess(ctx, exercise, caller.ProfileId()); err != nil {
+		return nil, err
+	}
+	if err := enforceSubmissionWindow(ctx, exercise); err != nil {
+		return nil, err
+	}
+
+	existing, err := s.submissionRepo.FindByExerciseAndProfile(ctx, exercise.ClassroomExerciseId(), caller.ProfileId())
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if existing != nil {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_ALREADY_EXISTS, nil,
+			ErrSubmissionAlreadyExists)
+	}
+
+	questions := ""
+	if exercise.Questions() != nil {
+		questions = *exercise.Questions()
+	}
+	if questions == "" {
+		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED, nil,
+			ErrExerciseHasNoQuestionsToGrade)
+	}
+
+	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+
+	actor := caller.ProfileId()
+	saved, err := s.submitAnswersV2Cmd.Handle(ctx, command.SubmitExerciseAnswersV2Command{
+		ActorID:             &actor,
+		ClassroomExerciseID: exercise.ClassroomExerciseId(),
+		ClassroomID:         exercise.ClassroomId(),
+		ProfileID:           caller.ProfileId(),
+		QuestionsJSON:       questions,
+		Answers:             req.Answers,
+		Note:                req.Note,
+		Language:            lang,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	res := dto.DomainSubmissionToResponse(saved)
+	return &dto.SubmitExerciseAnswersRes{Submission: res}, nil
+}
+
 // GetSubmission resolves the row → enforces "caller is the owner OR
 // caller is a manager of the parent classroom" before returning.
 func (s *Service) GetSubmission(ctx context.Context, req *dto.GetSubmissionReq, sessionUserID int64) (*dto.GetSubmissionRes, error) {

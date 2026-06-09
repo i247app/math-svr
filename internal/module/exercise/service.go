@@ -37,6 +37,7 @@ type Service struct {
 	getSubmissionQuery      *query.GetSubmissionByIdQueryHandler
 	listSubmissionsQuery    *query.ListSubmissionsQueryHandler
 	submitAnswersCmd        *command.SubmitExerciseAnswersCommandHandler
+	submitAnswersV2Cmd      *command.SubmitExerciseAnswersV2CommandHandler
 	softDeleteSubmissionCmd *command.SoftDeleteSubmissionCommandHandler
 
 	exerciseRepo         domain.IRepository
@@ -74,6 +75,7 @@ func NewService(
 		getSubmissionQuery:      query.NewGetSubmissionByIdQueryHandler(submissionRepo),
 		listSubmissionsQuery:    query.NewListSubmissionsQueryHandler(submissionRepo),
 		submitAnswersCmd:        command.NewSubmitExerciseAnswersCommandHandler(uow),
+		submitAnswersV2Cmd:      command.NewSubmitExerciseAnswersV2CommandHandler(uow),
 		softDeleteSubmissionCmd: command.NewSoftDeleteSubmissionCommandHandler(uow),
 
 		exerciseRepo:         exerciseRepo,

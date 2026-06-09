@@ -57,6 +57,28 @@ func (h *ClassroomExerciseSubmissionHandler) HandleSubmitExerciseAnswers(w http.
 	response.WriteJson(w, res, nil)
 }
 
+// POST /classroom-exercise/submissions/submit/v2 — deterministic, no
+// bot call. Same request / response shape as HandleSubmitExerciseAnswers
+// so mobile clients can swap the URL without DTO changes.
+func (h *ClassroomExerciseSubmissionHandler) HandleSubmitExerciseAnswersV2(w http.ResponseWriter, r *http.Request) {
+	var req dto.SubmitExerciseAnswersReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, err := h.sessionUID(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.svc.SubmitExerciseAnswersV2(r.Context(), &req, uid)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // GET /classroom-exercise-submissions/{id}
 func (h *ClassroomExerciseSubmissionHandler) HandleGetSubmission(w http.ResponseWriter, r *http.Request) {
 	idStr := r.PathValue("id")

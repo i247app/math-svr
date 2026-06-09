@@ -162,8 +162,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("GET  /quizzes/{id}", quizHandler.HandleGetQuiz, authMiddleware)
 		gexSvr.AddRoute("POST /quizzes/list", quizHandler.HandleListQuizzes, authMiddleware)
 		gexSvr.AddRoute("POST /quizzes/generate", quizHandler.HandleGenerateQuiz, authMiddleware)
-		gexSvr.AddRoute("POST /quizzes/submit", quizHandler.HandleSubmitQuizAnswers, authMiddleware)
-		gexSvr.AddRoute("POST /quizzes/submit/v2", quizHandler.HandleSubmitQuizV2, authMiddleware)
+		gexSvr.AddRoute("POST /quizzes/submit/cost-ai", quizHandler.HandleSubmitQuizAnswers, authMiddleware)
+		gexSvr.AddRoute("POST /quizzes/submit", quizHandler.HandleSubmitQuizV2, authMiddleware)
 		gexSvr.AddRoute("POST /quizzes/soft-delete", quizHandler.HandleSoftDeleteQuiz, authMiddleware)
 	}
 
@@ -217,7 +217,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		// classroom exercise submissions — student submit + history,
 		// teacher roster + soft-delete. Every route is auth-gated.
 		submissionHandler := exercise.NewClassroomExerciseSubmissionHandler(res, services.ExerciseSvc)
-		gexSvr.AddRoute("POST /classroom-exercise/submissions/submit", submissionHandler.HandleSubmitExerciseAnswers, authMiddleware)
+		gexSvr.AddRoute("POST /classroom-exercise/submissions/submit/cost-ai", submissionHandler.HandleSubmitExerciseAnswers, authMiddleware)
+		gexSvr.AddRoute("POST /classroom-exercise/submissions/submit", submissionHandler.HandleSubmitExerciseAnswersV2, authMiddleware)
 		gexSvr.AddRoute("GET  /classroom-exercise/submissions/{id}", submissionHandler.HandleGetSubmission, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/list", submissionHandler.HandleListSubmissions, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/by-exercise", submissionHandler.HandleListSubmissionsByExercise, authMiddleware)

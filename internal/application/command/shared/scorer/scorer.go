@@ -1,4 +1,24 @@
-package command
+// Package scorer is the deterministic, bot-free grader for MCQ-style
+// quizzes and classroom exercises. Both aggregates ship the same
+// `{question_number, question_name, answers:[{label, content}],
+// right_answer, correct_answer?, topic?, difficulty?}` schema, so a
+// single scoring engine serves both submit/v2 endpoints:
+//
+//   - /quizzes/submit/v2          → quiz module
+//   - /classroom-exercise/submissions/submit/v2 → exercise module
+//
+// The package lives under application/command/shared so the two command
+// packages can both depend on it without depending on each other (which
+// would be a layer-smell cross-aggregate dep at the application layer).
+//
+// What it does NOT do:
+//   - persistence (no UoW, no repos);
+//   - request validation (the per-module validator catches duplicate
+//     question_numbers and missing labels before Score is called);
+//   - free-form / multi-select / ordering question types (none are
+//     emitted by the live prompts; the design note next to the v2
+//     endpoints documents the constraint).
+package scorer
 
 import (
 	"encoding/json"
@@ -12,48 +32,51 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// ReviewSourceDeterministicV2 is the audit marker prefixed onto every
-// ai_review produced by the deterministic submit path. It lets ops grep
-// the column to attribute a review to v1 (bot) vs v2 (server) without a
-// schema change. The mobile client renders it inline; the column is
-// VARCHAR(255) so the prefix is part of the budget the builder respects.
-const ReviewSourceDeterministicV2 = "[v2]"
+// ReviewSourceMarker is the deterministic-path identifier kept here for
+// callers that want to audit/tag a v2-graded row separately from a bot
+// row (e.g. log lines, future analytics columns). The Score function
+// does NOT prefix the generated review with it — by design, the
+// persisted review is plain prose so the mobile client renders identical
+// shapes whether v1 (bot) or v2 (server) produced it.
+const ReviewSourceMarker = "deterministic_v2"
 
-// reviewMaxLen mirrors ma_quizzes.ai_review's VARCHAR(255) cap. We trim
-// slightly under the column width so a future schema bump (e.g. adding a
-// UTF-8 multibyte tail) cannot truncate mid-grapheme on write.
+// reviewMaxLen mirrors the tightest column ai_review may land in —
+// today ma_quizzes.ai_review's VARCHAR(255). ma_exercise_submissions
+// uses LONGTEXT so it has plenty of headroom; clamping both paths to the
+// same budget keeps the review compact and consistent across aggregates.
 const reviewMaxLen = 250
 
-// ScoreResult is the deterministic counterpart of QuizGradingResult. It
-// carries the same shape the bot grader returns so the command/handler
-// layer can persist v1 and v2 outputs through the same code path.
-type ScoreResult struct {
+// Result is the deterministic counterpart of quizDto.QuizGradingResult.
+// Both quiz and exercise commands map this into their respective
+// row-update / row-insert types (quiz.GradingUpdate for quiz,
+// SubmitExerciseAnswersV2Command's per-column fields for exercise).
+type Result struct {
 	TotalQuestions  int
 	CorrectNumber   int
 	ScorePercentage int
 	AIReview        string
-	// AIDetectGrade is intentionally left nil by the deterministic
-	// scorer today — see design note §3. Reserved for a follow-up that
-	// derives a coarse grade signal from per-question difficulty.
+	// AIDetectGrade stays nil today — only quiz writes this column, and
+	// deriving a coarse grade signal from difficulty is reserved for a
+	// follow-up once topic+difficulty tags appear in real traffic.
 	AIDetectGrade *string
 }
 
-// ScoreQuiz grades the student's answers against the quiz's questions
-// payload entirely in process. No bot call, no I/O. lang controls the
-// language the review string is built in; VN is the default to match
-// errs.NewError's hardcode.
+// Score grades the student's answers against the questions payload
+// entirely in process. No bot call, no I/O. lang controls the language
+// the review string is built in.
 //
-// questionsJSON is the row's `questions` column verbatim. answers is the
-// parsed student payload from the v2 submit request.
+// questionsJSON is the row's `questions` column verbatim. answers is
+// the parsed student payload from the v2 submit request.
 //
-// Returns a ScoreResult shaped to slot into quiz.GradingUpdate.
-func ScoreQuiz(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang enum.LanguageType) (*ScoreResult, error) {
+// Returns a Result shaped to slot into either aggregate's grading-write
+// path.
+func Score(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang enum.LanguageType) (*Result, error) {
 	questions, err := parseQuestionsForScoring(questionsJSON)
 	if err != nil {
 		return nil, err
 	}
 	if len(questions) == 0 {
-		return nil, fmt.Errorf("scorer: quiz has no questions")
+		return nil, fmt.Errorf("scorer: payload has no questions")
 	}
 
 	answerByNumber, err := indexStudentAnswers(answers)
@@ -64,9 +87,9 @@ func ScoreQuiz(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang e
 	total := len(questions)
 	correct := 0
 
-	// Per-topic accuracy table. When a question carries no topic tag
-	// (legacy generation), it is bucketed under "" and the review builder
-	// degrades to a generic wording.
+	// Per-topic accuracy table. Questions with no topic tag (legacy
+	// generation) bucket under "" and the review builder degrades to a
+	// generic wording.
 	topics := make(map[string]*topicBucket, total)
 
 	for _, q := range questions {
@@ -80,8 +103,8 @@ func ScoreQuiz(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang e
 
 		studentLabel, present := answerByNumber[q.QuestionNumber]
 		if !present {
-			// Skipped — counts as incorrect, matching v1's
-			// "round(correct/total*100)" semantics. No partial credit.
+			// Skipped — counts as incorrect. Matches both the quiz and
+			// exercise bot-grade prompts: missing answer ⇒ wrong.
 			continue
 		}
 		if questionIsCorrect(q, studentLabel) {
@@ -102,7 +125,7 @@ func ScoreQuiz(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang e
 		Language: lang,
 	})
 
-	return &ScoreResult{
+	return &Result{
 		TotalQuestions:  total,
 		CorrectNumber:   correct,
 		ScorePercentage: percentage,
@@ -111,10 +134,10 @@ func ScoreQuiz(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang e
 	}, nil
 }
 
-// parseQuestionsForScoring decodes the row's `questions` LONGTEXT into the
-// DTO shape. Returns an error rather than nil so the caller can map it to
-// QUIZ_GRADING_FAILED — empty payloads are the v1 path's existing
-// "quiz has no questions to grade" condition.
+// parseQuestionsForScoring decodes the row's `questions` LONGTEXT into
+// the DTO shape. Returns an error on empty / malformed input so the
+// caller can surface the right status code (QUIZ_GRADING_FAILED /
+// CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED).
 func parseQuestionsForScoring(raw string) ([]quizDto.QuizQuestion, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -128,9 +151,9 @@ func parseQuestionsForScoring(raw string) ([]quizDto.QuizQuestion, error) {
 }
 
 // indexStudentAnswers folds the answer slice into a map keyed by
-// question_number. Duplicate numbers fail loudly — that's malformed
-// client payload, distinct from a missing answer (which is allowed and
-// scored as incorrect).
+// question_number. Duplicate numbers fail loudly — the per-module
+// validator catches it earlier, but the scorer guards too so out-of-band
+// callers can't smuggle them past.
 func indexStudentAnswers(answers []quizDto.QuizStudentAnswer) (map[int]string, error) {
 	out := make(map[int]string, len(answers))
 	for i, a := range answers {
@@ -142,9 +165,8 @@ func indexStudentAnswers(answers []quizDto.QuizStudentAnswer) (map[int]string, e
 	return out, nil
 }
 
-// questionIsCorrect implements the design note's matching rules:
-// label match first (the v1-compatible path), value compare as fallback
-// only when right_answer is absent.
+// questionIsCorrect: label match first (the v1-compatible path), value
+// compare as fallback only when right_answer is absent.
 func questionIsCorrect(q quizDto.QuizQuestion, studentLabel string) bool {
 	rightLabel := strings.ToUpper(strings.TrimSpace(q.RightAnswer))
 	if rightLabel != "" {
@@ -163,11 +185,11 @@ func questionIsCorrect(q quizDto.QuizQuestion, studentLabel string) bool {
 	return false
 }
 
-// valuesEqual implements the design note's canonical compare:
+// valuesEqual: canonical compare. Order of checks:
 //   - trim + whitespace-collapse both sides
 //   - convert Vietnamese decimal comma to dot when both look numeric
-//   - float compare with absolute tolerance 1e-9
 //   - ASCII fraction "a/b" cross-multiplication compare when both match
+//   - float compare with absolute tolerance 1e-9
 //   - fall back to case-insensitive string equality
 func valuesEqual(a, b string) bool {
 	a = collapseWS(a)
@@ -179,14 +201,9 @@ func valuesEqual(a, b string) bool {
 		return false
 	}
 
-	// Strip leading + and a single trailing . from each side before the
-	// numeric branches so "+8" and "8." compare equal to "8".
 	aNum := normalizeNumericString(a)
 	bNum := normalizeNumericString(b)
 
-	// Fraction compare. Both must parse cleanly as `int/int` (no decimals
-	// in either operand) for this branch — otherwise fall through to the
-	// float branch which handles mixed cases like "0.5" vs "1/2".
 	if aN, aD, ok := parseAsciiFraction(aNum); ok {
 		if bN, bD, okB := parseAsciiFraction(bNum); okB {
 			return aN*bD == bN*aD
@@ -236,15 +253,14 @@ func normalizeNumericString(s string) string {
 }
 
 // parseFloatVN parses a number that may use either '.' or ',' as the
-// decimal separator. Returns ok=false for any value that doesn't look
-// purely numeric.
+// decimal separator. Returns ok=false when the value doesn't look purely
+// numeric. The VN form is accepted only when there's exactly one comma
+// and no dot — anything else looks like a thousands separator and we
+// leave it alone.
 func parseFloatVN(s string) (float64, bool) {
 	if s == "" {
 		return 0, false
 	}
-	// VN convention writes "1,5" for 1.5. Accept the comma form only when
-	// there's exactly one comma and no dot — mixed punctuation looks like
-	// a thousands separator and we leave it alone.
 	if strings.Count(s, ",") == 1 && !strings.Contains(s, ".") {
 		s = strings.Replace(s, ",", ".", 1)
 	}
@@ -256,7 +272,8 @@ func parseFloatVN(s string) (float64, bool) {
 }
 
 // parseAsciiFraction parses "a/b" with integer numerator and denominator.
-// Denominator must be non-zero. Negative sign on either side is honoured.
+// Denominator must be non-zero. Negative sign on either side is honoured
+// by strconv.ParseInt.
 func parseAsciiFraction(s string) (int64, int64, bool) {
 	idx := strings.Index(s, "/")
 	if idx <= 0 || idx == len(s)-1 {
@@ -274,7 +291,7 @@ func parseAsciiFraction(s string) (int64, int64, bool) {
 }
 
 // topicBucket counts correct vs total questions per topic tag. Used by
-// both ScoreQuiz (bucketing pass) and rankTopics (review-builder pass).
+// both Score (bucketing pass) and rankTopics (review-builder pass).
 type topicBucket struct {
 	correct int
 	total   int
@@ -287,9 +304,9 @@ type reviewInputs struct {
 	Language enum.LanguageType
 }
 
-// buildDeterministicReview is split out so it can be exercised
-// independently in tests. It always emits a string within reviewMaxLen
-// runes and always carries the ReviewSourceDeterministicV2 prefix.
+// buildDeterministicReview emits a plain-prose review under reviewMaxLen
+// runes. No source marker is prefixed; auditing is done via the caller's
+// structured log line (see ReviewSourceMarker docstring).
 func buildDeterministicReview(in reviewInputs) string {
 	en := in.Language == enum.LanguageTypeEnglish
 
@@ -298,7 +315,6 @@ func buildDeterministicReview(in reviewInputs) string {
 	var body string
 	switch {
 	case len(weakTopics) == 0 && strongTopic == "":
-		// No topic tags at all — degrade to a generic summary.
 		body = genericSummary(en, in.Correct, in.Total)
 	case len(weakTopics) == 0:
 		body = strongOnlySummary(en, strongTopic, in.Correct, in.Total)
@@ -308,18 +324,15 @@ func buildDeterministicReview(in reviewInputs) string {
 		body = fullSummary(en, strongTopic, weakTopics, in.Correct, in.Total)
 	}
 
-	// out := ReviewSourceDeterministicV2 + " " + body
-	out := body
-	if runes := []rune(out); len(runes) > reviewMaxLen {
-		out = string(runes[:reviewMaxLen-1]) + "…"
+	if runes := []rune(body); len(runes) > reviewMaxLen {
+		body = string(runes[:reviewMaxLen-1]) + "…"
 	}
-	return out
+	return body
 }
 
-// rankTopics returns up to two weakest topics (accuracy ascending, tie
-// broken by topic name for determinism) and the single strongest topic.
-// The empty-string bucket ("no topic tag") is skipped — it doesn't
-// represent a real skill, it's the legacy-schema fallback.
+// rankTopics: up to two weakest topics (accuracy ascending, name as tie
+// breaker for determinism), single strongest topic. Empty-string bucket
+// ("no topic tag") is skipped — it isn't a real skill.
 func rankTopics(topics map[string]*topicBucket) (weakest []string, strongest string) {
 	type ranked struct {
 		topic    string
@@ -348,17 +361,12 @@ func rankTopics(topics map[string]*topicBucket) (weakest []string, strongest str
 		return all[i].topic < all[j].topic
 	})
 
-	// Strongest = the highest-accuracy topic that isn't a 0% bucket; the
-	// weakest list is anything below 100% to surface real friction. Cap
-	// at two so the review string stays short.
 	for _, r := range all {
 		if r.accuracy < 1.0 && len(weakest) < 2 {
 			weakest = append(weakest, r.topic)
 		}
 	}
 	strongest = all[len(all)-1].topic
-	// If the "strongest" is also one of the weak entries (everything is
-	// imperfect), don't list it as a strength.
 	if slices.Contains(weakest, strongest) {
 		strongest = ""
 	}
