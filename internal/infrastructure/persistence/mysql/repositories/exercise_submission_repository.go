@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
@@ -349,6 +350,162 @@ func (r *ExerciseSubmissionRepository) SoftDelete(ctx context.Context, submissio
 		return fmt.Errorf("classroom exercise submission repo soft delete: %w", err)
 	}
 	return nil
+}
+
+// bucketLabelExpr returns the SQL expression that formats a row's
+// submitted_dt into the chart's bucket label, plus the number of tz
+// placeholder binds that expression consumes. The bucket value is
+// validator-normalised upstream (enum.ProgressBucket); an unrecognised
+// value falls through to DAY so the query stays well-formed.
+//
+// DAY  → 1 tz placeholder (one CONVERT_TZ call)
+// WEEK → 2 tz placeholders (two CONVERT_TZ calls, for the WEEKDAY
+//                           shift to Monday and the date formatting)
+// MONTH → 1 tz placeholder
+func bucketLabelExpr(bucket string) (string, int) {
+	switch bucket {
+	case string(enum.ProgressBucketWeek):
+		return `DATE_FORMAT(DATE_SUB(CONVERT_TZ(s.submitted_dt,'+00:00',?),` +
+			` INTERVAL WEEKDAY(CONVERT_TZ(s.submitted_dt,'+00:00',?)) DAY),'%Y-%m-%d')`, 2
+	case string(enum.ProgressBucketMonth):
+		return `DATE_FORMAT(CONVERT_TZ(s.submitted_dt,'+00:00',?),'%Y-%m')`, 1
+	default: // DAY (and any unrecognised value)
+		return `DATE_FORMAT(CONVERT_TZ(s.submitted_dt,'+00:00',?),'%Y-%m-%d')`, 1
+	}
+}
+
+// ListBucketedScores aggregates submission scores into chart-shaped
+// rows. The bucket-label SQL expression lives in bucketLabelExpr; this
+// method composes it into a single GROUP BY + ORDER BY query against
+// ix_classroom_submitted (covered by migration 021).
+//
+// Args ordering matches the SQL placeholder order left-to-right:
+//
+//	1. tz arg(s) for the SELECT expression (1 for DAY/MONTH, 2 for WEEK)
+//	2. active-where args (status, deleted-status)
+//	3. classroom_id, from, to
+//	4. optional filter profile_id
+//
+// The score_percentage IS NOT NULL filter is added explicitly because
+// the active-where only covers row-lifecycle (status / deleted_dt /
+// submission_status) — un-graded SUBMITTED rows still pass active-where
+// and must be excluded here so the AVG/MIN/MAX numbers reflect graded
+// scores only.
+func (r *ExerciseSubmissionRepository) ListBucketedScores(ctx context.Context, params domain.BucketedScoresParams) ([]*domain.BucketedScoreRow, error) {
+	if params.ClassroomID == 0 {
+		return nil, nil
+	}
+
+	labelExpr, tzPlaceholders := bucketLabelExpr(params.Bucket)
+
+	var b strings.Builder
+	b.WriteString(`SELECT `)
+	b.WriteString(labelExpr)
+	b.WriteString(` AS bucket_label,
+		COUNT(*) AS n,
+		AVG(s.score_percentage) AS avg_pct,
+		MIN(s.score_percentage) AS min_pct,
+		MAX(s.score_percentage) AS max_pct
+		FROM `)
+	b.WriteString(exerciseSubmissionTable)
+	b.WriteString(` s WHERE `)
+	b.WriteString(exerciseSubmissionActiveWhere)
+	b.WriteString(` AND s.classroom_id = ?
+		AND s.submitted_dt IS NOT NULL
+		AND s.score_percentage IS NOT NULL
+		AND s.submitted_dt BETWEEN ? AND ?`)
+
+	args := make([]any, 0, tzPlaceholders+len(exerciseSubmissionActiveArgs())+4)
+	for range tzPlaceholders {
+		args = append(args, params.TzOffset)
+	}
+	args = append(args, exerciseSubmissionActiveArgs()...)
+	args = append(args, params.ClassroomID, params.From.Time, params.To.Time)
+
+	if params.FilterProfileID != nil {
+		b.WriteString(` AND s.profile_id = ?`)
+		args = append(args, *params.FilterProfileID)
+	}
+
+	b.WriteString(` GROUP BY bucket_label ORDER BY bucket_label ASC`)
+
+	rows, err := r.db.Query(ctx, b.String(), args...)
+	if err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list bucketed scores: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]*domain.BucketedScoreRow, 0)
+	for rows.Next() {
+		var row domain.BucketedScoreRow
+		if err := rows.Scan(&row.BucketLabel, &row.SubmissionCount, &row.AvgPct, &row.MinPct, &row.MaxPct); err != nil {
+			return nil, fmt.Errorf("classroom exercise submission repo list bucketed scores scan: %w", err)
+		}
+		out = append(out, &row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list bucketed scores iteration: %w", err)
+	}
+	return out, nil
+}
+
+// ListForProgress streams the minimum tuple needed by the per-student
+// trend math: (profile_id, score_percentage, submitted_dt). Rows come
+// back ordered by (profile_id ASC, submitted_dt ASC) so the
+// application layer can fold them into per-student slices in one pass.
+// Covered by ix_classroom_profile_submitted (migration 021).
+//
+// score_percentage / submitted_dt IS NOT NULL filters are explicit —
+// see the rationale on ListBucketedScores above.
+func (r *ExerciseSubmissionRepository) ListForProgress(ctx context.Context, params domain.ProgressRangeParams) ([]*domain.ProgressRow, error) {
+	if params.ClassroomID == 0 {
+		return nil, nil
+	}
+
+	var b strings.Builder
+	b.WriteString(`SELECT s.profile_id, s.classroom_exercise_id, s.score_percentage, s.submitted_dt
+		FROM `)
+	b.WriteString(exerciseSubmissionTable)
+	b.WriteString(` s WHERE `)
+	b.WriteString(exerciseSubmissionActiveWhere)
+	b.WriteString(` AND s.classroom_id = ?
+		AND s.submitted_dt IS NOT NULL
+		AND s.score_percentage IS NOT NULL
+		AND s.submitted_dt BETWEEN ? AND ?`)
+
+	args := make([]any, 0, len(exerciseSubmissionActiveArgs())+4)
+	args = append(args, exerciseSubmissionActiveArgs()...)
+	args = append(args, params.ClassroomID, params.From.Time, params.To.Time)
+
+	if params.FilterProfileID != nil {
+		b.WriteString(` AND s.profile_id = ?`)
+		args = append(args, *params.FilterProfileID)
+	}
+
+	b.WriteString(` ORDER BY s.profile_id ASC, s.submitted_dt ASC`)
+
+	rows, err := r.db.Query(ctx, b.String(), args...)
+	if err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list for progress: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]*domain.ProgressRow, 0)
+	for rows.Next() {
+		var (
+			row         domain.ProgressRow
+			submittedDt time.Time
+		)
+		if err := rows.Scan(&row.ProfileID, &row.ClassroomExerciseID, &row.ScorePercentage, &submittedDt); err != nil {
+			return nil, fmt.Errorf("classroom exercise submission repo list for progress scan: %w", err)
+		}
+		row.SubmittedDt = mtime.MathTime{Time: submittedDt}
+		out = append(out, &row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list for progress iteration: %w", err)
+	}
+	return out, nil
 }
 
 func modelToDomainClassroomExerciseSubmission(m *models.ExerciseSubmissionModel) *domain.Submission {

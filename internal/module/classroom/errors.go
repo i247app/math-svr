@@ -51,4 +51,10 @@ var (
 	ErrUIDNotFoundFromSession = errors.New("uid not found from session")
 	ErrNoProfileForUser       = errors.New("no profile found for the authenticated user")
 	ErrProfileNotOwnedByUser  = errors.New("profile does not belong to the authenticated user")
+
+	// Class-learning-progress validators.
+	ErrProgressInvalidBucket    = errors.New("bucket must be DAY, WEEK, or MONTH")
+	ErrProgressInvalidDateRange = errors.New("from_dt must be before to_dt")
+	ErrProgressRangeTooLong     = errors.New("date range exceeds the 2-year cap")
+	ErrProgressInvalidTz        = errors.New("tz must be a numeric offset like +07:00")
 )

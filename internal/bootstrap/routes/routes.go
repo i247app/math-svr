@@ -67,7 +67,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		authHandler := auth.NewAuthHandler(res, services.AuthSvc)
 		gexSvr.AddRoute("POST /auth/login", authHandler.HandleLogin)
-		gexSvr.AddRoute("POST /auth/login-resume", authHandler.HandleLoginResume, authMiddleware)
+		gexSvr.AddRoute("POST /auth/login-resume", authHandler.HandleLoginResume)
 		gexSvr.AddRoute("POST /auth/otp", authHandler.HandleLoginOTP)
 		gexSvr.AddRoute("POST /auth/logout", authHandler.HandleLogout, authMiddleware)
 	}
@@ -203,6 +203,11 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /classrooms/join-requests/approve", classroomHandler.HandleApproveJoinRequest, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/join-requests/reject", classroomHandler.HandleRejectJoinRequest, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/join-requests/cancel", classroomHandler.HandleCancelJoinRequest, authMiddleware)
+
+		// class-learning-progress — teacher dashboard endpoints; STUDENTs
+		// can also call with filter_profile_id == self per FEATURE-SPEC §5.
+		gexSvr.AddRoute("POST /classrooms/progress/scores-over-time", classroomHandler.HandleProgressScoresOverTime, authMiddleware)
+		gexSvr.AddRoute("POST /classrooms/progress/students", classroomHandler.HandleProgressStudents, authMiddleware)
 	}
 
 	// classroom exercise routes — teacher-issued, AI-generated assignments

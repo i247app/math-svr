@@ -99,10 +99,6 @@ func (s Schedule) Next(now time.Time) time.Time {
 		// for an America/Los_Angeles schedule picks up VN's date and
 		// schedules a full day late.
 		nowLoc := now.In(loc)
-		println("nowLoc", nowLoc.String())
-		println("s.Hour", s.Hour)
-		println("s.Minute", s.Minute)
-		println("loc", loc.String())
 
 		t := time.Date(nowLoc.Year(), nowLoc.Month(), nowLoc.Day(), s.Hour, s.Minute, 0, 0, loc)
 		if !t.After(now) {

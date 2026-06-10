@@ -146,7 +146,75 @@ type ISubmissionRepository interface {
 	// used by the teacher-side roster view to hydrate per-row
 	// submission metadata onto the submitted-members page.
 	ListByExerciseAndProfileIds(ctx context.Context, classroomExerciseId int64, profileIds []int64) ([]*Submission, error)
+	// ListBucketedScores aggregates submission scores into chart-shaped
+	// rows for the /classrooms/progress/scores-over-time endpoint —
+	// one row per (bucket_label) inside [From, To], with COUNT plus
+	// AVG/MIN/MAX of score_percentage. The bucket label format is
+	// driven by params.Bucket (DAY|WEEK|MONTH); see the SQL builder
+	// in the mysql impl for the exact DATE_FORMAT/CONVERT_TZ shape.
+	// Caller is responsible for zero-filling missing buckets.
+	ListBucketedScores(ctx context.Context, params BucketedScoresParams) ([]*BucketedScoreRow, error)
+	// ListForProgress streams the (profile_id, score_percentage,
+	// submitted_dt) tuples for a classroom inside [From, To],
+	// ordered by (profile_id, submitted_dt ASC). One round trip; the
+	// caller groups by profile_id and runs the trend / slope /
+	// comment math in-process. FilterProfileID is optional — when
+	// non-nil, the result is narrowed to that profile only.
+	ListForProgress(ctx context.Context, params ProgressRangeParams) ([]*ProgressRow, error)
 	Create(ctx context.Context, sub *Submission) (*Submission, error)
 	UpdateGrading(ctx context.Context, submissionId int64, patch GradingPatch) error
 	SoftDelete(ctx context.Context, submissionId int64, actorID *int64) error
+}
+
+// BucketedScoresParams drives ListBucketedScores. Bucket is one of
+// "DAY", "WEEK", "MONTH" — validator-normalised at the module layer
+// against enum.ProgressBucket. TzOffset is a CONVERT_TZ-friendly
+// offset string ("+07:00", "-05:30"); the mysql impl substitutes it
+// verbatim into CONVERT_TZ(submitted_dt, '+00:00', ?). FilterProfileID
+// narrows the aggregation to a single student when non-nil.
+type BucketedScoresParams struct {
+	ClassroomID     int64
+	Bucket          string
+	TzOffset        string
+	From            mtime.MathTime
+	To              mtime.MathTime
+	FilterProfileID *int64
+}
+
+// BucketedScoreRow is one chart point's raw aggregation, on the DB's
+// native 0–100 score_percentage scale. The application layer converts
+// to the 10-point scale for the UI; both forms ride the wire (decision
+// #13 in the feature spec).
+type BucketedScoreRow struct {
+	BucketLabel     string
+	SubmissionCount int64
+	AvgPct          float64
+	MinPct          int64
+	MaxPct          int64
+}
+
+// ProgressRangeParams drives ListForProgress. The query returns the
+// minimum tuple needed to run the per-student trend math — no joins,
+// no expensive columns. FilterProfileID narrows the result to a single
+// student when non-nil (the §15 self-exception path).
+type ProgressRangeParams struct {
+	ClassroomID     int64
+	From            mtime.MathTime
+	To              mtime.MathTime
+	FilterProfileID *int64
+}
+
+// ProgressRow is one submission's score and timestamp, scoped to a
+// classroom. Ordered (profile_id ASC, submitted_dt ASC) by the repo
+// so the caller can stream-group by profile_id without an extra sort.
+//
+// ClassroomExerciseID is included so the application layer can build
+// the per-exercise trend series (trend_series_by_exercise on the
+// /classrooms/progress/students endpoint) and look up the exercise
+// title via exercise.IRepository.ListByClassroomExerciseIds.
+type ProgressRow struct {
+	ProfileID           int64
+	ClassroomExerciseID int64
+	ScorePercentage     int64
+	SubmittedDt         mtime.MathTime
 }

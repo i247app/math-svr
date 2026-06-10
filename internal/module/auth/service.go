@@ -93,6 +93,8 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 }
 
 func (s *Service) LoginResume(ctx context.Context, sess *session.AppSession) (*dto.LoginRes, error) {
+	log := logger.From(ctx)
+
 	if !sess.IsValid() {
 		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrSessionNotValid)
 	}
@@ -111,6 +113,20 @@ func (s *Service) LoginResume(ctx context.Context, sess *session.AppSession) (*d
 			User: nil,
 		}, nil
 	}
+
+	log.Info("Login successful, updating session data...")
+	sessionData := session.InitData{
+		Source:    "login",
+		IsSecure:  true,
+		UID:       userRes.User.UserID,
+		LoginName: userRes.User.Phone,
+	}
+
+	if userRes.User.Email != nil {
+		sessionData.Email = *userRes.User.Email
+	}
+
+	sess.Init(sessionData)
 
 	return &dto.LoginRes{
 		User: userRes.User,

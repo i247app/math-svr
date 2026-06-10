@@ -123,6 +123,8 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ProgramRepository,
 		repos.GradeRepository,
 		repos.SchoolRepository,
+		repos.ExerciseSubmissionRepository,
+		repos.ExerciseRepository,
 		res.StorageProvider,
 	)
 

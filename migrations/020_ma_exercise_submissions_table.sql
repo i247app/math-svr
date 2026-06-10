@@ -39,3 +39,7 @@ CREATE TABLE IF NOT EXISTS ma_exercise_submissions (
 -- ALTER TABLE ma_exercise_submissions
 --     ADD KEY ix_profile_status (profile_id, submission_status),
 --     ADD KEY ix_exercise_profile_submitted (classroom_exercise_id, profile_id, submitted_dt);
+
+-- ALTER TABLE ma_exercise_submissions
+--   ADD KEY ix_classroom_submitted (classroom_id, submitted_dt),
+--   ADD KEY ix_classroom_profile_submitted (classroom_id, profile_id, submitted_dt);
