@@ -14,10 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/colors"
 	"math-ai.com/math-ai/internal/shared/utils"
-
-	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
 // LogRequestMiddleware logs every HTTP request/response pair through the
@@ -541,6 +540,7 @@ func decodeResponseBody(body []byte, encoding string) ([]byte, string) {
 		return body, ""
 	case "gzip":
 		return decodeGzip(body)
+		// return body, ""
 	default:
 		return nil, "[" + enc + "-encoded]"
 	}

@@ -14,6 +14,7 @@ import (
 
 	"math-ai.com/math-ai/internal/shared/colors"
 	sctx "math-ai.com/math-ai/internal/shared/context"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 const (
@@ -154,8 +155,8 @@ func tokenSuffixOr(ctx context.Context) string {
 }
 
 func uidOr(ctx context.Context) string {
-	if v := sctx.UserID(ctx); v != "" {
-		return v
+	if v := sctx.UserID(ctx); v != 0 {
+		return utils.Int64ToString(v)
 	}
 	return anonUID
 }

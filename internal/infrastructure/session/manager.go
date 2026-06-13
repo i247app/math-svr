@@ -11,7 +11,7 @@ import (
 type SessionRequestContextKey string
 
 const (
-	SessionContextKey = SessionRequestContextKey("ezmonex_session")
+	SessionContextKey = SessionRequestContextKey("math_session")
 )
 
 func Dump(sessionManager *SessionManager) *map[string]map[string]any {

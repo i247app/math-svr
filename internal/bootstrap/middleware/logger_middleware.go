@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/resource"
-	kctx "math-ai.com/math-ai/internal/shared/context"
+	sctx "math-ai.com/math-ai/internal/shared/context"
 
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
@@ -33,12 +33,12 @@ func LoggerMiddleware(p *logger.Provider, res *resource.Resource) func(http.Hand
 
 			// Set token suffix for logger
 			if tail := bearerTail(r); tail != "" {
-				ctx = kctx.WithTokenSuffix(ctx, tail)
+				ctx = sctx.WithTokenSuffix(ctx, tail)
 			}
 
 			// Set user ID for logger
 			if uid, err := res.GetRequestUID(r); err == nil {
-				ctx = kctx.WithUserID(ctx, uid)
+				ctx = sctx.WithUserID(ctx, uid)
 			}
 
 			lg := p.New(ctx, r)

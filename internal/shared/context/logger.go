@@ -1,6 +1,8 @@
 package context
 
-import "context"
+import (
+	"context"
+)
 
 const (
 	ctxKeyUserID      contextKey = "math-ai.user_id"
@@ -18,11 +20,11 @@ func WithUserID(ctx context.Context, uid int64) context.Context {
 // UserID returns the authenticated end-user id bound to ctx, or 0 when
 // absent. Logger callers convert 0 to "anon" — UserID itself does not
 // pre-format.
-func UserID(ctx context.Context) string {
+func UserID(ctx context.Context) int64 {
 	if ctx == nil {
-		return ""
+		return 0
 	}
-	v, _ := ctx.Value(ctxKeyUserID).(string)
+	v, _ := ctx.Value(ctxKeyUserID).(int64)
 	return v
 }
 
