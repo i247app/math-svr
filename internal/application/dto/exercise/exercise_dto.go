@@ -61,7 +61,8 @@ type ExerciseResponse struct {
 	Purpose             string                    `json:"purpose"`
 	ProgramID           *int64                    `json:"program_id,omitempty"`
 	Program             *ExerciseProgramSummary   `json:"program,omitempty"`
-	Title               string                    `json:"title"`
+	NewTitle            string                    `json:"title,omitempty"`
+	Title               string                    `json:"short_text,omitempty"`
 	Description         *string                   `json:"description,omitempty"`
 	ChapterName         string                    `json:"chapter_name"`
 	LessonName          string                    `json:"lesson_name"`
@@ -209,6 +210,7 @@ func DomainToResponse(e *domain.Exercise, includeRightAnswers bool) *ExerciseRes
 		Visibility:          e.Visibility(),
 		Purpose:             e.Purpose(),
 		ProgramID:           e.ProgramId(),
+		NewTitle:            "Grade 1 - Level 1",
 		Title:               e.Title(),
 		Description:         e.Description(),
 		ChapterName:         e.ChapterName(),

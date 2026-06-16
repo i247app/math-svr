@@ -70,7 +70,8 @@ type QuizResponse struct {
 	ProfileID      *int64              `json:"profile_id,omitempty"`
 	Purpose        string              `json:"purpose"`
 	TypeOfQuiz     *string             `json:"type_of_quiz,omitempty"`
-	Title          *string             `json:"title,omitempty"`
+	NewTitle       string              `json:"title,omitempty"`
+	Title          *string             `json:"short_text,omitempty"`
 	PreviousQuizID *int64              `json:"previous_quiz_id,omitempty"`
 	Questions      []QuizQuestion      `json:"questions,omitempty"`
 	Answers        []QuizStudentAnswer `json:"answers,omitempty"`
@@ -180,6 +181,7 @@ func DomainToResponse(q *domain.Quiz, includeRightAnswers bool) *QuizResponse {
 		ProfileID:      q.ProfileId(),
 		Purpose:        q.Purpose(),
 		TypeOfQuiz:     q.TypeOfQuiz(),
+		NewTitle:       "Grade 1 - Level 1",
 		Title:          q.Title(),
 		PreviousQuizID: q.PreviousQuizId(),
 		QuizStatus:     q.QuizStatus(),
