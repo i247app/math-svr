@@ -50,12 +50,15 @@ type generateQuizInput struct {
 	PreviousAIReview    string
 }
 
-// generateQuizOutput pairs the parsed quiz title with its questions.
-// Title is the AI-generated topic name and may be empty when the model
-// omits it or the payload was truncated past recovery; callers must
-// tolerate "" without aborting the quiz.
+// generateQuizOutput pairs the parsed quiz title + short_text with its
+// questions. Title is the AI-generated grade/level label (e.g. "Grade 1 -
+// Level 1") and ShortText is the AI-generated topic description (e.g.
+// "Các số trong phạm vi 20"). Both may be empty when the model omits them
+// or the payload was truncated past recovery; callers must tolerate ""
+// without aborting the quiz.
 type generateQuizOutput struct {
 	Title     string
+	ShortText string
 	Questions []quizDto.QuizQuestion
 }
 
@@ -110,13 +113,13 @@ func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) (*ge
 
 	log.Infof("BOT RESPONSE: %s", res.Content)
 
-	title, questions, err := parseGeneration(res.Content)
+	title, shortText, questions, err := parseGeneration(res.Content)
 	if err != nil {
 		logger.From(ctx).Warnf("quiz.bot.generate_parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.QUIZ_GENERATION_FAILED,
 			map[string]any{"reason": err.Error()}, err)
 	}
-	return &generateQuizOutput{Title: title, Questions: questions}, nil
+	return &generateQuizOutput{Title: title, ShortText: shortText, Questions: questions}, nil
 }
 
 // gradeQuizInput pairs the persisted row's purpose + learning intent

@@ -29,7 +29,8 @@ type Quiz struct {
 	profileId       *int64
 	purpose         string
 	typeOfQuiz      *string
-	title           *string
+	title           *string // AI-generated grade/level label, e.g. "Grade 1 - Level 1"
+	shortText       *string // AI-generated short topic description, e.g. "Các số trong phạm vi 20"
 	questions       *string
 	answers         *string
 	aiReview        *string
@@ -65,6 +66,8 @@ func (q *Quiz) TypeOfQuiz() *string        { return q.typeOfQuiz }
 func (q *Quiz) SetTypeOfQuiz(t *string)    { q.typeOfQuiz = t }
 func (q *Quiz) Title() *string             { return q.title }
 func (q *Quiz) SetTitle(t *string)         { q.title = t }
+func (q *Quiz) ShortText() *string         { return q.shortText }
+func (q *Quiz) SetShortText(s *string)     { q.shortText = s }
 func (q *Quiz) Questions() *string         { return q.questions }
 func (q *Quiz) SetQuestions(s *string)     { q.questions = s }
 func (q *Quiz) Answers() *string           { return q.answers }

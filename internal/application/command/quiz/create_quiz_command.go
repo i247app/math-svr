@@ -28,6 +28,7 @@ type CreateQuizCommand struct {
 	Purpose        enum.QuizPurpose
 	TypeOfQuiz     enum.QuizTypeOfQuiz
 	Title          *string
+	ShortText      *string
 	QuestionsJSON  string
 	PreviousQuizID *int64
 }
@@ -61,6 +62,9 @@ func (h *CreateQuizCommandHandler) Handle(ctx context.Context, cmd CreateQuizCom
 		}
 		if cmd.Title != nil {
 			q.SetTitle(cmd.Title)
+		}
+		if cmd.ShortText != nil {
+			q.SetShortText(cmd.ShortText)
 		}
 		questions := cmd.QuestionsJSON
 		q.SetQuestions(&questions)

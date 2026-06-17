@@ -89,9 +89,9 @@ func (c *botClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 	log.Infof("BOT RESPONSE: %s", res.Content)
 
 	// Reuse the quiz parser. The exercise schema is the same
-	// {title, questions} shape as a quiz; we ignore the title because
-	// the teacher already supplied one.
-	_, questions, err := quizParser.ParseGeneration(res.Content)
+	// {title, short_text, questions} shape as a quiz; we ignore the title
+	// and short_text because the teacher already supplied a title.
+	_, _, questions, err := quizParser.ParseGeneration(res.Content)
 	if err != nil {
 		log.Warnf("classroom_exercise.bot.parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_GENERATION_FAILED, map[string]any{"reason": err.Error()}, err)

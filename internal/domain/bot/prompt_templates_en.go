@@ -29,10 +29,11 @@ METADATA RULES (REQUIRED for deterministic auto-grading):
 - "topic" is a short snake_case English skill tag. Prefer one of: addition_within_100, subtraction_within_100, addition_regrouping, subtraction_regrouping, multiplication_single_digit, multiplication_multi_digit, division_single_digit, division_multi_digit, fractions_basic, fractions_compare, fractions_add_sub, decimals_basic, place_value, word_problem, mixed_operations, geometry_basic, measurement, time_money. If none fits, mint a new short tag (<= 32 chars).
 - "difficulty" is an integer 1..5 (1 easiest, 5 hardest) reflecting challenge level for the targeted grade.
 
-TITLE RULES:
-- "title" is a short, specific phrase that names the math topic of the questions (e.g. "Addition and subtraction within 100", "Basic fractions and comparison", "Single-digit multiplication").
-- Maximum 80 characters, written in English, DO NOT include the grade level, DO NOT include the quiz type (ASSESSMENT/PRACTICE), and DO NOT use generic titles like "Math quiz", "Practice quiz", or "Quiz".
-- Each call must produce a title that reflects the exact skills appearing in "questions" so titles do not repeat across rounds.
+TITLE & SHORT_TEXT RULES:
+- "title" is the grade/level label of the quiz, formatted as "Grade <N> - Level <M>" (e.g. "Grade 1 - Level 1"). Take <N> from the grade in the academic context the user provides; choose <M> (1..5) from the overall difficulty of the questions you generated (1 = easiest). DO NOT put the math topic in "title".
+- "short_text" is a short, specific phrase that names the math topic of the questions (e.g. "Addition and subtraction within 100", "Basic fractions and comparison", "Single-digit multiplication").
+- "short_text" is at most 80 characters, written in English, DO NOT include the grade level, DO NOT include the quiz type (ASSESSMENT/PRACTICE), and DO NOT use generic phrases like "Math quiz", "Practice quiz", or "Quiz".
+- Each call must produce a "short_text" that reflects the exact skills appearing in "questions" so it does not repeat across rounds.
 
 OUTPUT RULES:
 - Return ONLY a JSON object matching the schema below. No prose, no markdown fences, no trailing commentary.
@@ -40,7 +41,8 @@ OUTPUT RULES:
 
 SCHEMA:
 {
-  "title": "Addition and subtraction within 100",
+  "title": "Grade 1 - Level 1",
+  "short_text": "Addition and subtraction within 100",
   "questions":[
     {
       "question_number": 1,
@@ -76,10 +78,11 @@ METADATA RULES (REQUIRED for deterministic auto-grading):
 - "topic" is a short snake_case English skill tag. Reuse one of the standard tags from the generation prompt (addition_within_100, subtraction_regrouping, fractions_compare, ...); mint a new one only if no standard tag fits.
 - "difficulty" is an integer 1..5 reflecting challenge level for the targeted grade.
 
-TITLE RULES:
-- "title" is a short, specific phrase that names the skills being reinforced (e.g. "Reinforce: subtraction with regrouping", "Reinforce: equivalent fractions").
-- Maximum 80 characters, written in English, DO NOT include the grade level or the quiz type (ASSESSMENT/PRACTICE), and DO NOT use generic titles like "Reinforce quiz" or "Practice quiz".
-- The title must reflect the actual skills targeted in the NEW "questions"; do not copy the previous quiz's title.
+TITLE & SHORT_TEXT RULES:
+- "title" is the grade/level label of the quiz, formatted as "Grade <N> - Level <M>" (e.g. "Grade 1 - Level 1"). Take <N> from the grade in the academic context the user provides; choose <M> (1..5) from the overall difficulty of the NEW questions (1 = easiest). DO NOT put the math topic in "title".
+- "short_text" is a short, specific phrase that names the skills being reinforced (e.g. "Reinforce: subtraction with regrouping", "Reinforce: equivalent fractions").
+- "short_text" is at most 80 characters, written in English, DO NOT include the grade level or the quiz type (ASSESSMENT/PRACTICE), and DO NOT use generic phrases like "Reinforce quiz" or "Practice quiz".
+- "short_text" must reflect the actual skills targeted in the NEW "questions"; do not copy the previous quiz's short_text.
 
 OUTPUT RULES:
 - Return ONLY a JSON object matching the schema below. No prose, no markdown fences.
@@ -87,7 +90,8 @@ OUTPUT RULES:
 
 SCHEMA:
 {
-  "title": "Reinforce: subtraction with regrouping",
+  "title": "Grade 1 - Level 2",
+  "short_text": "Reinforce: subtraction with regrouping",
   "questions":[
     {
       "question_number": 1,

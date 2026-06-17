@@ -12,6 +12,7 @@ type QuizModel struct {
 	Purpose         string
 	TypeOfQuiz      *string
 	Title           *string
+	ShortText       *string
 	Questions       *string
 	Answers         *string
 	AIReview        *string

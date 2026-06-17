@@ -183,7 +183,8 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		ProfileID:      ownerProfileID,
 		Purpose:        validated.Purpose,
 		TypeOfQuiz:     validated.TypeOfQuiz,
-		Title:          sanitizeQuizTitle(generated.Title),
+		Title:          sanitizeQuizText(generated.Title),
+		ShortText:      sanitizeQuizText(generated.ShortText),
 		QuestionsJSON:  string(questionsJSON),
 		PreviousQuizID: req.PreviousQuizID,
 	})
@@ -197,6 +198,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		"purpose", created.Purpose(),
 		"type_of_quiz", derefString(created.TypeOfQuiz()),
 		"title", derefString(created.Title()),
+		"short_text", derefString(created.ShortText()),
 	)
 
 	// Live quizzes do NOT expose right_answer — the student would see

@@ -28,10 +28,11 @@ QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
 - "topic" là một mã kỹ năng ngắn bằng tiếng Anh viết thường, dùng dấu gạch dưới (snake_case). Chọn trong danh sách gợi ý: phép cộng trong phạm vi 100, phép trừ trong phạm vi 100, phép cộng có nhớ, phép trừ có nhớ, phép nhân với số có một chữ số, phép nhân với số có nhiều chữ số, phép chia cho số có một chữ số, phép chia cho số có nhiều chữ số, phân số cơ bản, phân số so sánh, cộng trừ phân số, số thập phân cơ bản, giá trị theo vị trí, bài toán có lời văn, phép tính hỗn hợp, hình học cơ bản, phép đo, thời gian và tiền tệ. Nếu thực sự không phù hợp, tạo mã mới ngắn gọn (≤32 ký tự).
 - "difficulty" là số nguyên 1..5 (1 dễ nhất, 5 khó nhất) phản ánh mức độ thử thách so với lớp đang nhắm tới.
 
-QUY TẮC TIÊU ĐỀ:
-- "title" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề toán của bộ câu hỏi (ví dụ: "Phép cộng và phép trừ trong phạm vi 100", "Phân số cơ bản và so sánh", "Phép nhân với số có một chữ số").
-- Tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng tiêu đề chung chung như "Bài kiểm tra Toán", "Bài luyện tập" hay "Quiz".
-- Mỗi lần sinh hãy chọn tiêu đề phản ánh chính xác các kỹ năng xuất hiện trong "questions" để không lặp lại giữa các bài.
+QUY TẮC TITLE & SHORT_TEXT:
+- "title" là nhãn cấp lớp/cấp độ của bài, theo định dạng "Grade <N> - Level <M>" (ví dụ: "Grade 1 - Level 1"). Lấy <N> từ cấp lớp trong thông tin học vấn người dùng cung cấp; chọn <M> (1..5) dựa trên độ khó tổng thể của các câu hỏi bạn tạo (1 = dễ nhất). KHÔNG đặt chủ đề toán vào "title".
+- "short_text" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề toán của bộ câu hỏi (ví dụ: "Phép cộng và phép trừ trong phạm vi 100", "Phân số cơ bản và so sánh", "Phép nhân với số có một chữ số").
+- "short_text" tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng cụm chung chung như "Bài kiểm tra Toán", "Bài luyện tập" hay "Quiz".
+- Mỗi lần sinh hãy chọn "short_text" phản ánh chính xác các kỹ năng xuất hiện trong "questions" để không lặp lại giữa các bài.
 
 QUY TẮC ĐẦU RA:
 - CHỈ trả về JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không bình luận thêm.
@@ -39,7 +40,8 @@ QUY TẮC ĐẦU RA:
 
 CẤU TRÚC:
 {
-  "title": "Phép cộng và phép trừ trong phạm vi 100",
+  "title": "Grade 1 - Level 1",
+  "short_text": "Phép cộng và phép trừ trong phạm vi 100",
   "questions":[
     {
       "question_number": 1,
@@ -75,10 +77,11 @@ QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
 - "topic" là mã kỹ năng ngắn bằng tiếng Việt viết thường, snake_case (vd. phép cộng trong phạm vi 100, phép trừ trong phạm vi 100). Tận dụng lại các mã đã có trong danh sách gợi ý của prompt sinh; chỉ tạo mã mới khi thật sự cần.
 - "difficulty" là số nguyên 1..5 phản ánh độ khó so với lớp đang nhắm tới.
 
-QUY TẮC TIÊU ĐỀ:
-- "title" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề được củng cố (ví dụ: "Củng cố phép trừ có nhớ", "Ôn lại phân số bằng nhau").
-- Tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng tiêu đề chung chung như "Bài củng cố", "Bài ôn tập" hay "Quiz".
-- Tiêu đề phải phản ánh đúng kỹ năng được nhắm tới trong "questions" của bài mới — không sao chép tiêu đề bài cũ.
+QUY TẮC TITLE & SHORT_TEXT:
+- "title" là nhãn cấp lớp/cấp độ của bài, theo định dạng "Grade <N> - Level <M>" (ví dụ: "Grade 1 - Level 1"). Lấy <N> từ cấp lớp trong thông tin học vấn người dùng cung cấp; chọn <M> (1..5) dựa trên độ khó tổng thể của các câu hỏi MỚI (1 = dễ nhất). KHÔNG đặt chủ đề toán vào "title".
+- "short_text" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề được củng cố (ví dụ: "Củng cố phép trừ có nhớ", "Ôn lại phân số bằng nhau").
+- "short_text" tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng cụm chung chung như "Bài củng cố", "Bài ôn tập" hay "Quiz".
+- "short_text" phải phản ánh đúng kỹ năng được nhắm tới trong "questions" của bài mới — không sao chép short_text của bài cũ.
 
 QUY TẮC ĐẦU RA:
 - CHỈ trả về JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown.
@@ -86,7 +89,8 @@ QUY TẮC ĐẦU RA:
 
 CẤU TRÚC:
 {
-  "title": "Củng cố phép trừ có nhớ",
+  "title": "Grade 1 - Level 2",
+  "short_text": "Củng cố phép trừ có nhớ",
   "questions":[
     {
       "question_number": 1,

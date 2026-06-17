@@ -18,80 +18,90 @@ func normalizeLanguage(lang enum.LanguageType) string {
 	return s
 }
 
-// parseGeneration extracts the AI-generated quiz title + questions from
-// the LLM response. The prompt schema is
-// `{"title": "...", "questions": [...]}` so the happy path is the object
-// wrapper; the bare-array and truncation-salvage branches are kept as
-// defence-in-depth for backends that drift from the schema or hit a
-// max-tokens cut. Title is best-effort: an empty string flows through
-// to a NULL DB column, which the response layer omits.
+// parseGeneration extracts the AI-generated quiz title + short_text +
+// questions from the LLM response. The prompt schema is
+// `{"title": "...", "short_text": "...", "questions": [...]}` so the
+// happy path is the object wrapper; the bare-array and truncation-salvage
+// branches are kept as defence-in-depth for backends that drift from the
+// schema or hit a max-tokens cut. title (grade/level label) and
+// short_text (topic description) are both best-effort: an empty string
+// flows through to a NULL DB column, which the response layer omits.
 // ParseGeneration is the exported entry point for sibling modules that
 // drive the same generation JSON contract (e.g. classroomexercise). It
 // reuses the same payload-extraction + salvage pipeline as the in-
 // package parseGeneration so any future schema tweak only has to be
 // made in one place.
-func ParseGeneration(content string) (string, []quizDto.QuizQuestion, error) {
+func ParseGeneration(content string) (title string, shortText string, questions []quizDto.QuizQuestion, err error) {
 	return parseGeneration(content)
 }
 
-func parseGeneration(content string) (string, []quizDto.QuizQuestion, error) {
+func parseGeneration(content string) (title string, shortText string, questions []quizDto.QuizQuestion, err error) {
 	payload := extractJSONPayload(content)
 
 	var wrap struct {
 		Title     string                 `json:"title"`
+		ShortText string                 `json:"short_text"`
 		Questions []quizDto.QuizQuestion `json:"questions"`
 		Items     []quizDto.QuizQuestion `json:"items"`
 		Data      []quizDto.QuizQuestion `json:"data"`
 		Quiz      []quizDto.QuizQuestion `json:"quiz"`
 	}
 	if err := json.Unmarshal([]byte(payload), &wrap); err == nil {
+		t := strings.TrimSpace(wrap.Title)
+		st := strings.TrimSpace(wrap.ShortText)
 		switch {
 		case len(wrap.Questions) > 0:
-			return strings.TrimSpace(wrap.Title), wrap.Questions, nil
+			return t, st, wrap.Questions, nil
 		case len(wrap.Items) > 0:
-			return strings.TrimSpace(wrap.Title), wrap.Items, nil
+			return t, st, wrap.Items, nil
 		case len(wrap.Data) > 0:
-			return strings.TrimSpace(wrap.Title), wrap.Data, nil
+			return t, st, wrap.Data, nil
 		case len(wrap.Quiz) > 0:
-			return strings.TrimSpace(wrap.Title), wrap.Quiz, nil
+			return t, st, wrap.Quiz, nil
 		}
 	}
 
-	// Some backends drop the wrapper and return a bare array; title is
-	// unavailable on this branch but the questions are still usable.
+	// Some backends drop the wrapper and return a bare array; title and
+	// short_text are unavailable on this branch but the questions are
+	// still usable.
 	var out []quizDto.QuizQuestion
 	if err := json.Unmarshal([]byte(payload), &out); err == nil && len(out) > 0 {
-		return "", out, nil
+		return "", "", out, nil
 	}
 
 	// LLM truncated mid-array (max_tokens hit, safety cut, network
-	// reset, …). The title appears before the questions array in our
-	// schema, so we can usually recover it via regex even when the
-	// array body is truncated.
-	title := extractTitleFromTruncated(payload)
+	// reset, …). title and short_text appear before the questions array
+	// in our schema, so we can usually recover them via regex even when
+	// the array body is truncated.
+	t := extractStringFieldFromTruncated(payload, titleFieldRe)
+	st := extractStringFieldFromTruncated(payload, shortTextFieldRe)
 	arr := extractQuestionsArrayPrefix(payload)
 	if arr == "" {
-		return "", nil, fmt.Errorf("quiz: parse generated questions: payload not recoverable")
+		return "", "", nil, fmt.Errorf("quiz: parse generated questions: payload not recoverable")
 	}
 	repaired, ok := salvageTruncatedJSONArray(arr)
 	if !ok {
-		return "", nil, fmt.Errorf("quiz: parse generated questions: payload not recoverable")
+		return "", "", nil, fmt.Errorf("quiz: parse generated questions: payload not recoverable")
 	}
 	if err := json.Unmarshal([]byte(repaired), &out); err != nil {
-		return "", nil, fmt.Errorf("quiz: parse generated questions (after salvage): %w", err)
+		return "", "", nil, fmt.Errorf("quiz: parse generated questions (after salvage): %w", err)
 	}
 	if len(out) == 0 {
-		return "", nil, ErrQuizModelReturnedZeroQuestions
+		return "", "", nil, ErrQuizModelReturnedZeroQuestions
 	}
-	return title, out, nil
+	return t, st, out, nil
 }
 
-// titleFieldRe finds the first top-level `"title": "..."` pair. Used as a
-// truncation-tolerant fallback for parseGeneration.
-var titleFieldRe = regexp.MustCompile(`"title"\s*:\s*"((?:[^"\\]|\\.)*)"`)
+// titleFieldRe / shortTextFieldRe find the first top-level `"title": "..."`
+// and `"short_text": "..."` pairs. Used as truncation-tolerant fallbacks
+// for parseGeneration.
+var (
+	titleFieldRe     = regexp.MustCompile(`"title"\s*:\s*"((?:[^"\\]|\\.)*)"`)
+	shortTextFieldRe = regexp.MustCompile(`"short_text"\s*:\s*"((?:[^"\\]|\\.)*)"`)
+)
 
-func extractTitleFromTruncated(payload string) string {
-	m := titleFieldRe.FindStringSubmatch(payload)
+func extractStringFieldFromTruncated(payload string, re *regexp.Regexp) string {
+	m := re.FindStringSubmatch(payload)
 	if len(m) < 2 {
 		return ""
 	}
@@ -212,21 +222,23 @@ func extractJSONPayload(s string) string {
 	return s
 }
 
-// maxQuizTitleLen mirrors the VARCHAR(255) limit on ma_quizzes.title.
-// The prompt asks the model for <= 80 characters; the clamp here is a
-// defensive backstop against drift, not a primary enforcement point.
-const maxQuizTitleLen = 255
+// maxQuizTextLen mirrors the VARCHAR(255) limit on ma_quizzes.title and
+// ma_quizzes.short_text. The prompt asks the model for <= 80 characters;
+// the clamp here is a defensive backstop against drift, not a primary
+// enforcement point.
+const maxQuizTextLen = 255
 
-// sanitizeQuizTitle trims whitespace and clamps the title to the DB
-// column's rune budget. Returns nil when nothing usable is left so the
-// row stores a real NULL (which DomainToResponse then omits).
-func sanitizeQuizTitle(title string) *string {
-	t := strings.TrimSpace(title)
+// sanitizeQuizText trims whitespace and clamps an AI-generated text field
+// (title or short_text) to the DB column's rune budget. Returns nil when
+// nothing usable is left so the row stores a real NULL (which
+// DomainToResponse then omits).
+func sanitizeQuizText(text string) *string {
+	t := strings.TrimSpace(text)
 	if t == "" {
 		return nil
 	}
-	if runes := []rune(t); len(runes) > maxQuizTitleLen {
-		t = string(runes[:maxQuizTitleLen])
+	if runes := []rune(t); len(runes) > maxQuizTextLen {
+		t = string(runes[:maxQuizTextLen])
 	}
 	return &t
 }
