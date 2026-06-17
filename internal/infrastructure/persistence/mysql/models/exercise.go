@@ -13,6 +13,7 @@ type ExerciseModel struct {
 	Purpose             string
 	ProgramId           *int64
 	Title               string
+	ShortText           *string
 	Description         *string
 	ChapterName         string
 	LessonName          string

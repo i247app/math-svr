@@ -20,7 +20,7 @@ const (
 
 	exerciseColumns = `e.id, e.classroom_exercise_id, e.classroom_id,
 		e.creator_profile_id, e.visibility, e.purpose, e.program_id,
-		e.title, e.description, e.chapter_name, e.lesson_name, e.total_questions,
+		e.title, e.short_text, e.description, e.chapter_name, e.lesson_name, e.total_questions,
 		e.questions, e.answers, e.start_date, e.end_date,
 		e.note, e.exercise_status, e.status,
 		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
@@ -48,7 +48,7 @@ func scanClassroomExercise(s database.RowScanner) (*models.ExerciseModel, error)
 	var m models.ExerciseModel
 	if err := s.Scan(&m.Id, &m.ClassroomExerciseId, &m.ClassroomId,
 		&m.CreatorProfileId, &m.Visibility, &m.Purpose, &m.ProgramId,
-		&m.Title, &m.Description, &m.ChapterName, &m.LessonName, &m.TotalQuestions,
+		&m.Title, &m.ShortText, &m.Description, &m.ChapterName, &m.LessonName, &m.TotalQuestions,
 		&m.Questions, &m.Answers, &m.StartDate, &m.EndDate,
 		&m.Note, &m.ExerciseStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -303,15 +303,15 @@ func (r *ExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*d
 		INSERT INTO ` + exerciseTable + `
 			(classroom_exercise_id, classroom_id, creator_profile_id, visibility, purpose,
 			 program_id,
-			 title, description, chapter_name, lesson_name, total_questions,
+			 title, short_text, description, chapter_name, lesson_name, total_questions,
 			 questions, answers, start_date, end_date,
 			 note, exercise_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		e.ClassroomExerciseId(), e.ClassroomId(), e.CreatorProfileId(), visibility, purpose,
 		e.ProgramId(),
-		e.Title(), e.Description(), e.ChapterName(), e.LessonName(), e.TotalQuestions(),
+		e.Title(), e.ShortText(), e.Description(), e.ChapterName(), e.LessonName(), e.TotalQuestions(),
 		e.Questions(), e.Answers(), startArg, endArg,
 		e.Note(), e.ExerciseStatus(), e.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
@@ -404,6 +404,7 @@ func modelToDomainClassroomExercise(m *models.ExerciseModel) *domain.Exercise {
 	e.SetPurpose(m.Purpose)
 	e.SetProgramId(m.ProgramId)
 	e.SetTitle(m.Title)
+	e.SetShortText(m.ShortText)
 	e.SetDescription(m.Description)
 	e.SetChapterName(m.ChapterName)
 	e.SetLessonName(m.LessonName)

@@ -6,7 +6,9 @@ import (
 )
 
 // Exercise prompt templates — Vietnamese. JSON keys stay English; only
-// the system text and (when emitted) "title" use Vietnamese.
+// the system text and the "short_text" value use Vietnamese. The teacher
+// supplies the exercise title separately, so the model only emits
+// "short_text" (the auto-generated topic description) here.
 
 const systemExerciseGenerateVNTmpl = `Bạn là trợ lý tạo bài tập toán cho học sinh tiểu học Việt Nam (Lớp 1-5).
 
@@ -26,9 +28,10 @@ QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
 - "topic" là mã kỹ năng ngắn bằng tiếng Việt viết thường, snake_case. Ưu tiên dùng các mã: phép cộng trong phạm vi 10, phép trừ trong phạm vi 10, phép nhân 1 chữ số, phép chia 1 chữ số, phép cộng trong phạm vi 100, phép trừ trong phạm vi 100, phép nhân nhiều chữ số, phép chia nhiều chữ số, phân số cơ bản, phân số so sánh, phân số cộng trừ, số thập phân cơ bản, giá trị chỗ, bài toán đố, phép toán hỗn hợp, hình học cơ bản, đo lường, thời gian tiền tệ. Nếu không phù hợp, tạo mã mới ngắn gọn (≤32 ký tự).
 - "difficulty" là số nguyên 1..5 phản ánh mức độ thử thách so với bài học đang nhắm tới.
 
-QUY TẮC TIÊU ĐỀ:
-- "title" là tiêu đề ngắn gọn, cụ thể, mô tả kỹ năng toán của bộ câu hỏi (ví dụ: "Phép cộng trong phạm vi 10", "Phân số bằng nhau").
-- Tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG dùng từ "bài tập" làm tiêu đề chung.
+QUY TẮC SHORT_TEXT:
+- "short_text" là mô tả ngắn gọn, cụ thể về kỹ năng toán của bộ câu hỏi (ví dụ: "Phép cộng trong phạm vi 10", "Phân số bằng nhau").
+- Tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG dùng từ "bài tập" làm mô tả chung.
+- "short_text" phải phản ánh đúng các kỹ năng xuất hiện trong "questions"; đây là mô tả nội dung tự sinh (tiêu đề do giáo viên tự đặt riêng).
 
 QUY TẮC ĐẦU RA:
 - CHỈ trả về JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không bình luận thêm.
@@ -36,7 +39,7 @@ QUY TẮC ĐẦU RA:
 
 CẤU TRÚC:
 {
-  "title": "Phép cộng trong phạm vi 10",
+  "short_text": "Phép cộng trong phạm vi 10",
   "questions":[
     {
       "question_number": 1,

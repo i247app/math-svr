@@ -46,6 +46,10 @@ type generateExerciseInput struct {
 }
 
 type generateExerciseOutput struct {
+	// ShortText is the AI-generated short topic description (e.g. "Phép
+	// cộng trong phạm vi 10"). The teacher supplies the exercise title
+	// separately, so only short_text is consumed from the model here.
+	ShortText string
 	Questions []quizDto.QuizQuestion
 }
 
@@ -88,15 +92,16 @@ func (c *botClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 
 	log.Infof("BOT RESPONSE: %s", res.Content)
 
-	// Reuse the quiz parser. The exercise schema is the same
-	// {title, short_text, questions} shape as a quiz; we ignore the title
-	// and short_text because the teacher already supplied a title.
-	_, _, questions, err := quizParser.ParseGeneration(res.Content)
+	// Reuse the quiz parser. The exercise schema shares the quiz's
+	// {short_text, questions} shape; we ignore the AI title because the
+	// teacher supplies the exercise title, but we keep the AI short_text
+	// as the auto-generated topic description.
+	_, shortText, questions, err := quizParser.ParseGeneration(res.Content)
 	if err != nil {
 		log.Warnf("classroom_exercise.bot.parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_GENERATION_FAILED, map[string]any{"reason": err.Error()}, err)
 	}
-	return &generateExerciseOutput{Questions: questions}, nil
+	return &generateExerciseOutput{ShortText: shortText, Questions: questions}, nil
 }
 
 type gradeExerciseInput struct {

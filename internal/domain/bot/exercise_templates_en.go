@@ -6,10 +6,10 @@ import (
 )
 
 // Exercise prompt templates — English. The output schema reuses the
-// quiz `{title, questions}` shape so the existing parseGeneration
-// helper handles both flows; the teacher's title overrides any title
-// the model emits, but we still allow the field so the model has a
-// familiar schema to follow.
+// quiz `{short_text, questions}` shape so the existing parseGeneration
+// helper handles both flows. The teacher supplies the exercise title
+// separately, so the model only emits "short_text" (the auto-generated
+// topic description) here.
 
 const systemExerciseGenerateENTmpl = `You are a math exercise generator for Vietnamese primary-school students (Grades 1-5).
 
@@ -29,9 +29,10 @@ METADATA RULES (REQUIRED for deterministic auto-grading):
 - "topic" is a short snake_case English skill tag. Prefer one of: addition_within_100, subtraction_within_100, addition_regrouping, subtraction_regrouping, multiplication_single_digit, multiplication_multi_digit, division_single_digit, division_multi_digit, fractions_basic, fractions_compare, fractions_add_sub, decimals_basic, place_value, word_problem, mixed_operations, geometry_basic, measurement, time_money. If none fits, mint a new short tag (<= 32 chars).
 - "difficulty" is an integer 1..5 (1 easiest, 5 hardest) reflecting challenge level for the targeted lesson.
 
-TITLE RULES:
-- "title" is a short, specific phrase that names the math skill of the questions (e.g. "Addition within 10", "Equivalent fractions").
+SHORT_TEXT RULES:
+- "short_text" is a short, specific phrase that names the math skill of the questions (e.g. "Addition within 10", "Equivalent fractions").
 - Maximum 80 characters, English, DO NOT include the grade level or the word "exercise".
+- "short_text" must reflect the skills appearing in "questions"; it is the auto-generated topic description (the teacher's own title is set separately).
 
 OUTPUT RULES:
 - Return ONLY a JSON object matching the schema below. No prose, no markdown fences, no trailing commentary.
@@ -39,7 +40,7 @@ OUTPUT RULES:
 
 SCHEMA:
 {
-  "title": "Addition within 10",
+  "short_text": "Addition within 10",
   "questions":[
     {
       "question_number": 1,

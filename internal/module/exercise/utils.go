@@ -16,6 +16,24 @@ func normalizeLanguage(lang enum.LanguageType) string {
 	return s
 }
 
+// shortTextMaxLen mirrors the VARCHAR(255) limit on ma_exercises.short_text.
+const shortTextMaxLen = 255
+
+// sanitizeExerciseText trims whitespace and clamps an AI-generated text
+// field (short_text) to the DB column's rune budget. Returns nil when
+// nothing usable is left so the row stores a real NULL (which
+// DomainToResponse then omits).
+func sanitizeExerciseText(text string) *string {
+	t := strings.TrimSpace(text)
+	if t == "" {
+		return nil
+	}
+	if runes := []rune(t); len(runes) > shortTextMaxLen {
+		t = string(runes[:shortTextMaxLen])
+	}
+	return &t
+}
+
 // buildAnswerKey extracts {question_number: right_answer_label} from the
 // generated questions and serialises it. Stored separately so a future
 // submission grader can compare against this column without having to

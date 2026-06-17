@@ -713,6 +713,7 @@ func (s *Service) hydrateSubmissions(
 				CreatorProfileID:    e.CreatorProfileId(),
 				Visibility:          e.Visibility(),
 				Title:               e.Title(),
+				ShortText:           e.ShortText(),
 				Description:         e.Description(),
 				ChapterName:         e.ChapterName(),
 				LessonName:          e.LessonName(),

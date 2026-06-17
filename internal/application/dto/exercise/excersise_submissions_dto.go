@@ -20,6 +20,7 @@ type SubmissionExerciseSummary struct {
 	CreatorProfileID    int64   `json:"creator_profile_id"`
 	Visibility          string  `json:"visibility"`
 	Title               string  `json:"title"`
+	ShortText           *string `json:"short_text,omitempty"`
 	Description         *string `json:"description,omitempty"`
 	ChapterName         string  `json:"chapter_name"`
 	LessonName          string  `json:"lesson_name"`

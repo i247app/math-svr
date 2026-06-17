@@ -176,6 +176,7 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 		Purpose:          purpose,
 		ProgramID:        programID,
 		Title:            req.Title,
+		ShortText:        sanitizeExerciseText(generated.ShortText),
 		Description:      req.Description,
 		ChapterName:      req.ChapterName,
 		LessonName:       req.LessonName,
