@@ -2,8 +2,6 @@ package server
 
 import (
 	"net/http"
-	"os"
-	"syscall"
 	"time"
 
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -22,11 +20,16 @@ func NewHandler() *Handler {
 	return &Handler{}
 }
 
-// HandleShutdown acknowledges the request, then schedules SIGTERM against
-// our own PID so the existing gex signal handler (SIGINT/SIGTERM) runs
-// every OnShutdown hook — JobRuntime drain + session serialization — and
-// then gracefully stops the HTTP server. We do not call os.Exit so the
-// deferred cleanup in cmd/mathsvr (app.Close → DB + log file) still runs.
+// HandleShutdown acknowledges the request, then triggers a self-shutdown so
+// the existing gex signal handler (SIGINT/SIGTERM) runs every OnShutdown hook
+// — JobRuntime drain + session serialization — and then gracefully stops the
+// HTTP server. We do not call os.Exit so the deferred cleanup in cmd/mathsvr
+// (app.Close → DB + log file) still runs.
+//
+// The actual self-shutdown mechanism is OS-specific: on Unix it raises
+// SIGTERM against our own PID (selfShutdown in shutdown_unix.go), while on
+// Windows — which has no POSIX signals — it falls back to a plain exit
+// (shutdown_windows.go). Windows is build/dev-only here.
 func (h *Handler) HandleShutdown(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.From(ctx)
@@ -42,7 +45,7 @@ func (h *Handler) HandleShutdown(w http.ResponseWriter, r *http.Request) {
 	response.WriteJsonNoContent(w)
 
 	time.AfterFunc(shutdownDelay, func() {
-		if err := syscall.Kill(os.Getpid(), syscall.SIGTERM); err != nil {
+		if err := selfShutdown(); err != nil {
 			logger.From(ctx).Errorf("server.shutdown.signal_failed err=%v", err)
 		}
 	})
