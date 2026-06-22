@@ -17,6 +17,7 @@ type UpdateUserCommand struct {
 	UserName  *string `json:"user_name,omitempty"`
 	Email     *string `json:"email,omitempty"`
 	Phone     *string `json:"phone,omitempty"`
+	Role      *string `json:"role,omitempty"`
 	AvatarKey *string `json:"avatar_key,omitempty"`
 }
 
@@ -50,6 +51,13 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 		// existing value when UserName is empty/nil.
 		if cmd.UserName != nil && *cmd.UserName != "" && u.UserName() != *cmd.UserName {
 			u.SetUserName(*cmd.UserName)
+		}
+
+		// role lives on the user row only (no alias mirror). The
+		// module-layer validator has already normalised + whitelisted the
+		// value, so a non-empty pointer here is a valid RoleType.
+		if cmd.Role != nil && *cmd.Role != "" && u.Role() != *cmd.Role {
+			u.SetRole(*cmd.Role)
 		}
 
 		if u.AvatarKey() != nil && cmd.AvatarKey != nil && *u.AvatarKey() != *cmd.AvatarKey {

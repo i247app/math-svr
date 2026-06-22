@@ -10,6 +10,7 @@ var (
 	ErrEmailRequired                             = errors.New("email is required")
 	ErrNameRequired                              = errors.New("name is required")
 	ErrPhoneRequired                             = errors.New("phone is required")
+	ErrRoleInvalid                               = errors.New("role is invalid")
 	ErrProvideEitherAvatarFileOrAvatarReference  = errors.New("provide either avatar file or avatar reference")
 	ErrStorageAdapterNotConfigured               = errors.New("storage adapter is not configured")
 	ErrUploadReturnedEmptyKey                    = errors.New("upload returned an empty key")

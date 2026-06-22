@@ -48,6 +48,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Provide either an avatar file or an avatar reference, not both"
 	case USER_AVATAR_INVALID_REFERENCE:
 		return "Avatar reference is invalid"
+	case USER_INVALID_ROLE:
+		return "Role is invalid"
 
 	// Auth
 	case AUTH_MISSING_PHONE:

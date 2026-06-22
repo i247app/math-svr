@@ -19,7 +19,7 @@ import (
 const (
 	userTable = "ma_users"
 
-	userColumns = `u.id, u.user_id, u.name, u.phone, u.email, u.avatar_key, u.user_status, u.status,
+	userColumns = `u.id, u.user_id, u.name, u.phone, u.email, u.avatar_key, u.role, u.user_status, u.status,
 	u.note, u.create_id, u.create_dt, u.modify_id, u.modify_dt`
 
 	userFromJoin = userTable + ` u
@@ -53,7 +53,7 @@ func NewUserRepository(db database.Executor) user.IRepository {
 
 func scanUser(s database.RowScanner) (*models.UserModel, error) {
 	var m models.UserModel
-	if err := s.Scan(&m.Id, &m.UserId, &m.UserName, &m.Phone, &m.Email, &m.AvatarKey, &m.UserStatus, &m.Status,
+	if err := s.Scan(&m.Id, &m.UserId, &m.UserName, &m.Phone, &m.Email, &m.AvatarKey, &m.Role, &m.UserStatus, &m.Status,
 		&m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -117,11 +117,11 @@ func (r *UserRepository) FindByUserName(ctx context.Context, userName string) (*
 
 func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, error) {
 	query := `
-		INSERT INTO ` + userTable + ` (user_id, name, phone, email, avatar_key, user_status, note, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO ` + userTable + ` (user_id, name, phone, email, avatar_key, role, user_status, note, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.AvatarKey(), u.UserStatus(), u.Note(), mtime.Now().Time, mtime.Now().Time)
+	result, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.AvatarKey(), u.Role(), u.UserStatus(), u.Note(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("user repo create: %w", err)
 	}
@@ -196,17 +196,26 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 		userName = u.UserName()
 	}
 
+	// role is NOT NULL in ma_users — an empty string from the domain means
+	// "do not change", so pass NULL into COALESCE to preserve the existing
+	// value. Mirrors the user_name handling above and ma_profiles.role.
+	var roleArg any
+	if u.Role() != "" {
+		roleArg = u.Role()
+	}
+
 	query := `
 		UPDATE ` + userTable + `
 		SET
 			name = COALESCE(?, name),
 			email = COALESCE(?, email),
 			phone = COALESCE(?, phone),
-			avatar_key = COALESCE(?, avatar_key)
+			avatar_key = COALESCE(?, avatar_key),
+			role = COALESCE(?, role)
 		WHERE id = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.AvatarKey(), u.Id()); err != nil {
+	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.AvatarKey(), roleArg, u.Id()); err != nil {
 		return fmt.Errorf("user repo update: %w", err)
 	}
 	return nil
@@ -261,6 +270,7 @@ func DomainToModel(u *user.User) *models.UserModel {
 		Email:      u.Email(),
 		Phone:      u.Phone(),
 		AvatarKey:  u.AvatarKey(),
+		Role:       u.Role(),
 		UserStatus: u.UserStatus(),
 		Status:     u.Status(),
 		Note:       u.Note(),
@@ -279,6 +289,7 @@ func ModelToDomain(m *models.UserModel) *user.User {
 	u.SetEmail(m.Email)
 	u.SetPhone(m.Phone)
 	u.SetAvatarKey(m.AvatarKey)
+	u.SetRole(m.Role)
 	u.SetUserStatus(m.UserStatus)
 	u.SetStatus(m.Status)
 	u.SetNote(m.Note)

@@ -312,6 +312,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 		UserName:  req.Name,
 		Email:     req.Email,
 		Phone:     req.Phone,
+		Role:      req.Role,
 		AvatarKey: avatarKey,
 	})
 	if err != nil {

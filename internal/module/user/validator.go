@@ -6,6 +6,7 @@ import (
 
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/enum"
 
 	dto "math-ai.com/math-ai/internal/application/dto/user"
 )
@@ -16,6 +17,19 @@ func ValidateCreateUser(ctx context.Context, req *dto.CreateUserReq) error {
 	}
 	if strings.TrimSpace(req.Name) == "" {
 		return errs.NewError(ctx, status.USER_MISSING_NAME, nil, ErrNameRequired)
+	}
+	// role is optional on the wire — the create command defaults an empty
+	// value to STUDENT (ma_users.role is NOT NULL). When supplied it must
+	// be a valid RoleType. Normalised in place so the command sees the
+	// trimmed token.
+	role := strings.TrimSpace(req.Role)
+	if role == "" {
+		req.Role = ""
+	} else {
+		if !enum.RoleType(role).IsValid() {
+			return errs.NewError(ctx, status.USER_INVALID_ROLE, nil, ErrRoleInvalid)
+		}
+		req.Role = role
 	}
 	// Avatar can come as a file upload OR a string reference, never both
 	// — the two sources collide semantically and would force the service
@@ -35,6 +49,20 @@ func ValidateUpdateUser(ctx context.Context, req *dto.UpdateUserReq) error {
 	// — ma_users.user_name is NOT NULL so an empty rewrite would fail.
 	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
 		return errs.NewError(ctx, status.USER_MISSING_NAME, nil, ErrUserNameMustBeNonEmptyWhenProvided)
+	}
+	// role patch is optional. A blank value is treated as "no change"
+	// (nil); a non-blank value must be a valid RoleType. Mirrors the
+	// profile update validator.
+	if req.Role != nil {
+		role := strings.TrimSpace(*req.Role)
+		if role == "" {
+			req.Role = nil
+		} else {
+			if !enum.RoleType(role).IsValid() {
+				return errs.NewError(ctx, status.USER_INVALID_ROLE, nil, ErrRoleInvalid)
+			}
+			req.Role = &role
+		}
 	}
 	// A non-nil Avatar pointer means the client wants to change the
 	// avatar reference; an empty string is not a valid reference.

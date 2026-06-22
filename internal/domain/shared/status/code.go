@@ -31,6 +31,7 @@ const (
 	USER_AVATAR_UPLOAD_FAILED     StatusCode = 4013
 	USER_AVATAR_CONFLICT          StatusCode = 4014
 	USER_AVATAR_INVALID_REFERENCE StatusCode = 4015
+	USER_INVALID_ROLE             StatusCode = 4016
 
 	AUTH_MISSING_PHONE             StatusCode = 4201
 	AUTH_MISSING_DEVICE_UUID       StatusCode = 4202

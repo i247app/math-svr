@@ -14,6 +14,7 @@ type UserResponse struct {
 	Name   string  `json:"name"`
 	Email  *string `json:"email,omitempty"`
 	Phone  string  `json:"phone,omitempty"`
+	Role   string  `json:"role"`
 	// AvatarKey is the raw S3 object key persisted on the user row.
 	// AvatarUrl is a short-lived presigned URL the module layer fills
 	// in on the way out (see populateImageUrl in module/user). Clients
@@ -75,6 +76,10 @@ type UpdateUserReq struct {
 	Name   *string `json:"name,omitempty"`
 	Email  *string `json:"email,omitempty"`
 	Phone  *string `json:"phone,omitempty"`
+	// Role patches ma_users.role. nil = leave unchanged; non-nil must be a
+	// valid RoleType (STUDENT / TEACHER / PARENT). Mirrors the profile
+	// update contract.
+	Role *string `json:"role,omitempty"`
 
 	// Avatar is a client-supplied reference to an object already in our
 	// storage — either a bare S3 key or a URL pointing at the bucket.
@@ -143,6 +148,7 @@ func DomainToResponse(u *user.User) *UserResponse {
 		Name:      u.UserName(),
 		Email:     u.Email(),
 		Phone:     normalizedPhone,
+		Role:      u.Role(),
 		AvatarKey: u.AvatarKey(),
 		CreateDt:  u.CreateDt().String(),
 		ModifyDt:  u.ModifyDt().String(),

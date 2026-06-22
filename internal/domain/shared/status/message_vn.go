@@ -48,6 +48,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Chỉ chọn một trong hai: tệp ảnh hoặc đường dẫn ảnh"
 	case USER_AVATAR_INVALID_REFERENCE:
 		return "Đường dẫn ảnh đại diện không hợp lệ"
+	case USER_INVALID_ROLE:
+		return "Vai trò không hợp lệ"
 
 	// Auth
 	case AUTH_MISSING_PHONE:

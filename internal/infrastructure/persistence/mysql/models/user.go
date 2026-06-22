@@ -11,6 +11,7 @@ type UserModel struct {
 	Phone      string
 	Email      *string
 	AvatarKey  *string
+	Role       string
 	UserStatus *string
 	Status     string
 	Note       *string

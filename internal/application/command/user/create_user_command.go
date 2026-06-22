@@ -135,11 +135,20 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 }
 
 func BuildUser(cmd CreateUserCommand) *user.User {
+	// ma_users.role is NOT NULL — default to STUDENT when the caller omits
+	// it, the same fallback BuildProfile applies so the user row and its
+	// bootstrap profile start with a consistent role.
+	role := cmd.Role
+	if role == "" {
+		role = enum.RoleTypeStudent
+	}
+
 	u := user.NewUser()
 	// u.SetUserId(utils.GenerateUUID().String())
 	u.SetUserName(cmd.UserName)
 	u.SetEmail(cmd.Email)
 	u.SetPhone(cmd.Phone)
+	u.SetRole(role.String())
 	u.SetAvatarKey(cmd.AvatarKey)
 	u.SetStatus(enum.StatusActive.String())
 	return u

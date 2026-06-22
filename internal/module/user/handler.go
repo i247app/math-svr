@@ -173,6 +173,7 @@ func (h *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		req.Name = utils.ToStringPtr(r.FormValue("name"))
 		req.Phone = utils.ToStringPtr(r.FormValue("phone"))
 		req.Email = utils.ToStringPtr(r.FormValue("email"))
+		req.Role = utils.ToStringPtr(r.FormValue("role"))
 		req.Avatar = utils.ToStringPtr(r.FormValue("avatar_key"))
 
 		// Handle avatar file

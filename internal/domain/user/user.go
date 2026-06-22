@@ -11,6 +11,7 @@ type User struct {
 	phone      string
 	email      *string
 	avatarKey  *string
+	role       string
 	userStatus *string
 	status     string
 	note       *string
@@ -70,6 +71,17 @@ func (u *User) AvatarKey() *string {
 
 func (u *User) SetAvatarKey(avatarKey *string) {
 	u.avatarKey = avatarKey
+}
+
+// Role is the account-level role on ma_users (STUDENT / TEACHER / PARENT),
+// mirroring ma_profiles.role. NOT NULL at the schema layer — the create
+// command defaults it to STUDENT when the caller omits it.
+func (u *User) Role() string {
+	return u.role
+}
+
+func (u *User) SetRole(role string) {
+	u.role = role
 }
 
 func (u *User) UserStatus() *string {
