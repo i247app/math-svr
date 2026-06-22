@@ -568,6 +568,16 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	// Server lifecycle
 	case SERVER_SHUTTING_DOWN:
 		return "Máy chủ đang tắt"
+
+	// Home layout
+	case HOME_MISSING_PROFILE_ID:
+		return "Thiếu profile_id"
+	case HOME_PROFILE_NOT_FOUND:
+		return "Không tìm thấy hồ sơ"
+	case HOME_PROFILE_NOT_OWNED:
+		return "Hồ sơ này không thuộc về người dùng hiện tại"
+	case HOME_UNSUPPORTED_ROLE:
+		return "Vai trò hồ sơ không được hỗ trợ cho trang chủ"
 	default:
 		return ""
 	}

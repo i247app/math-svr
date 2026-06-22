@@ -12,6 +12,7 @@ import (
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
+	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
@@ -230,6 +231,12 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/submitted-members", submissionHandler.HandleListSubmittedMembers, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/non-submitted-members", submissionHandler.HandleListNonSubmittedMembers, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/soft-delete", submissionHandler.HandleSoftDeleteSubmission, authMiddleware)
+	}
+
+	// home routes — role-aware dashboard composed per acting profile
+	{
+		homeHandler := home.NewHandler(res, services.HomeSvc)
+		gexSvr.AddRoute("POST /home/layout", homeHandler.HandleGetHomeLayout, authMiddleware)
 	}
 
 	// jobs routes

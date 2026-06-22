@@ -21,6 +21,7 @@ import (
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
+	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
@@ -48,6 +49,7 @@ type ServiceContainer struct {
 	SeqSvc       *seq.Service
 	ClassroomSvc *classroom.Service
 	ExerciseSvc  *exercise.Service
+	HomeSvc      *home.Service
 }
 
 type RepositoryContainer struct {

@@ -13,8 +13,8 @@ type MathTime struct {
 	time.Time
 }
 
-// NewbinbaseTime creates a new MathTime from a standard time.Time
-func NewbinbaseTime(t time.Time) MathTime {
+// NewTime creates a new MathTime from a standard time.Time
+func NewTime(t time.Time) MathTime {
 	return MathTime{Time: t}
 }
 

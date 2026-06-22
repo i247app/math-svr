@@ -11,7 +11,7 @@ import "math-ai.com/math-ai/internal/shared/enum"
 // STUDENT and PARENT (and any unknown role) land as STUDENT.
 func memberRoleForProfileRole(profileRole string) string {
 	switch profileRole {
-	case string(enum.RoleProfileTypeTeacher):
+	case string(enum.RoleTypeTeacher):
 		return string(enum.ClassroomMemberRoleTypeCoTeacher)
 	default:
 		return string(enum.ClassroomMemberRoleTypeStudent)

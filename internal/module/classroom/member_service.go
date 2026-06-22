@@ -126,7 +126,7 @@ func (s *Service) UpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRol
 			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 				ErrTargetProfileNotFound)
 		}
-		if targetProfile.Role() != string(enum.RoleProfileTypeTeacher) {
+		if targetProfile.Role() != string(enum.RoleTypeTeacher) {
 			return nil, errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
 				ErrTeacherCoTeacherOnly)
 		}

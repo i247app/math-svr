@@ -128,6 +128,77 @@ func (r *ExerciseRepository) ListByClassroomExerciseIds(ctx context.Context, ids
 	return out, nil
 }
 
+// ListByClassroomIds powers the home/layout dashboard read. It selects
+// active exercises across a set of classrooms in a single round trip,
+// applying the optional visibility gate, creator filter, lifecycle
+// filter, and "still open" (not-expired) filter. All user-supplied
+// values arrive as bound parameters; only the fragment strings are
+// composed from constants.
+func (r *ExerciseRepository) ListByClassroomIds(ctx context.Context, params domain.ListByClassroomIdsParams) ([]*domain.Exercise, error) {
+	if len(params.ClassroomIDs) == 0 {
+		return nil, nil
+	}
+	limit := params.Limit
+	if limit <= 0 {
+		limit = 100
+	}
+
+	placeholders := make([]string, len(params.ClassroomIDs))
+	args := exerciseActiveArgs()
+	for i, id := range params.ClassroomIDs {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+
+	var clause strings.Builder
+	clause.WriteString(` AND e.classroom_id IN (` + strings.Join(placeholders, ", ") + `)`)
+
+	// Visibility access gate — mirrors buildClassroomExerciseFilter.
+	if params.CallerProfileID != 0 {
+		clause.WriteString(` AND (e.visibility = ? OR e.creator_profile_id = ?)`)
+		args = append(args, enum.ClassroomExerciseVisibilityPublic, params.CallerProfileID)
+	} else {
+		clause.WriteString(` AND e.visibility = ?`)
+		args = append(args, enum.ClassroomExerciseVisibilityPublic)
+	}
+	if params.CreatorProfileID != nil && *params.CreatorProfileID != 0 {
+		clause.WriteString(` AND e.creator_profile_id = ?`)
+		args = append(args, *params.CreatorProfileID)
+	}
+	if params.OnlyActive {
+		clause.WriteString(` AND (e.exercise_status IS NULL OR e.exercise_status = ?)`)
+		args = append(args, enum.ClassroomExerciseStatusTypeActive)
+	}
+	if params.NotExpiredAsOf != nil && params.NotExpiredAsOf.IsValid() {
+		clause.WriteString(` AND (e.end_date IS NULL OR e.end_date >= ?)`)
+		args = append(args, params.NotExpiredAsOf.Time)
+	}
+
+	args = append(args, limit)
+	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e WHERE ` +
+		exerciseActiveWhere + clause.String() +
+		` ORDER BY e.create_dt DESC, e.id DESC LIMIT ?`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("classroom exercise repo list by classroom ids: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]*domain.Exercise, 0)
+	for rows.Next() {
+		m, err := scanClassroomExercise(rows)
+		if err != nil {
+			return nil, fmt.Errorf("classroom exercise repo list by classroom ids scan: %w", err)
+		}
+		out = append(out, modelToDomainClassroomExercise(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom exercise repo list by classroom ids iteration: %w", err)
+	}
+	return out, nil
+}
+
 func (r *ExerciseRepository) ListExercises(ctx context.Context, params domain.ListExercisesParams) ([]*domain.Exercise, *pagination.Pagination, error) {
 	if params.Limit <= 0 {
 		params.Limit = pagination.DefaultPageSize

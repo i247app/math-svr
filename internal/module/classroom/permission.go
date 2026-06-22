@@ -33,7 +33,7 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 // requireTeacherRole gates classroom ownership to TEACHER profiles only
 // (§0 Q2). PARENT/STUDENT cannot create or own a classroom.
 func (s *Service) requireTeacherRole(ctx context.Context, p *profileDomain.Profile) error {
-	if p.Role() != string(enum.RoleProfileTypeTeacher) {
+	if p.Role() != string(enum.RoleTypeTeacher) {
 		return errs.NewError(ctx, status.CLASSROOM_INVALID_OWNER_ROLE, nil, ErrTeacherOwnershipOnly)
 	}
 	return nil

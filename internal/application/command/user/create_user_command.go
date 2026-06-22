@@ -23,7 +23,7 @@ import (
 // module's service. The command itself is storage-agnostic — keeping the
 // adapter out of the application layer.
 type CreateUserCommand struct {
-	Role      enum.RoleProfileType
+	Role      enum.RoleType
 	Phone     string
 	Email     *string
 	UserName  string
@@ -148,7 +148,7 @@ func BuildUser(cmd CreateUserCommand) *user.User {
 func BuildProfile(ctx context.Context, cmd CreateUserCommand) *profile.Profile {
 	role := cmd.Role
 	if role == "" {
-		role = enum.RoleProfileTypeStudent
+		role = enum.RoleTypeStudent
 	}
 
 	p := profile.NewProfile()

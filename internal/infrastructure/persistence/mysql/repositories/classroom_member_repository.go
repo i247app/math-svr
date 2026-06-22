@@ -216,6 +216,48 @@ func (r *ClassroomMemberRepository) ListByProfileAndClassroomIds(ctx context.Con
 	return out, nil
 }
 
+// ListActiveByProfileIds returns every ACTIVE membership row for the
+// given profiles in one IN-query. Used by the home/layout flow to
+// resolve the caller's (or a parent's children's) live classrooms
+// without N+1. Pending/terminal rows are excluded by the explicit
+// member_status = ACTIVE predicate on top of the active-where filter.
+func (r *ClassroomMemberRepository) ListActiveByProfileIds(ctx context.Context, profileIds []int64) ([]*classroom.Member, error) {
+	if len(profileIds) == 0 {
+		return nil, nil
+	}
+	placeholders := make([]string, len(profileIds))
+	args := classroomMemberActiveArgs()
+	for i, id := range profileIds {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+	args = append(args, enum.ClassroomMemberStatusTypeActive)
+	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m WHERE ` +
+		classroomMemberActiveWhere +
+		` AND m.profile_id IN (` + strings.Join(placeholders, ", ") + `)` +
+		` AND m.member_status = ?` +
+		` ORDER BY m.joined_dt DESC, m.id DESC`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("classroom_member repo list active by profile ids: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*classroom.Member
+	for rows.Next() {
+		m, err := scanClassroomMember(rows)
+		if err != nil {
+			return nil, fmt.Errorf("classroom_member repo list active by profile ids scan: %w", err)
+		}
+		out = append(out, ModelToDomainClassroomMember(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom_member repo list active by profile ids iteration: %w", err)
+	}
+	return out, nil
+}
+
 func (r *ClassroomMemberRepository) CountActiveByClassroomId(ctx context.Context, classroomId int64) (int64, error) {
 	query := `SELECT COUNT(*) FROM ` + classroomMemberTable + ` m WHERE ` +
 		classroomMemberActiveWhere + ` AND m.classroom_id = ? AND m.member_status = ?`

@@ -71,11 +71,36 @@ type UpdatePatch struct {
 	ModifyID *int64
 }
 
+// ListByClassroomIdsParams drives the batched home/layout exercise read.
+// ClassroomIDs is required (empty → no rows). The optional filters mirror
+// the per-classroom ListExercises gate but operate across a set of
+// classrooms in a single round trip so the home dashboard never goes N+1.
+//
+//	CallerProfileID  visibility gate — PUBLIC OR creator = caller. Zero
+//	                 keeps PUBLIC-only (safe default).
+//	CreatorProfileID exact creator filter (teacher's "exercises I assigned").
+//	OnlyActive       drop ARCHIVED rows (keep exercise_status NULL/ACTIVE).
+//	NotExpiredAsOf   end_date IS NULL OR end_date >= asOf — "still open".
+//	Limit            hard cap on the returned rows (defaults applied by repo).
+type ListByClassroomIdsParams struct {
+	ClassroomIDs     []int64
+	CallerProfileID  int64
+	CreatorProfileID *int64
+	OnlyActive       bool
+	NotExpiredAsOf   *mtime.MathTime
+	Limit            int64
+}
+
 // IRepository owns all classroom_exercise persistence. The shape mirrors
 // quiz.IRepository: a single Create that takes the fully-built domain
 // object (id already minted), a patch-style Update, and a SoftDelete.
 type IRepository interface {
 	FindByClassroomExerciseId(ctx context.Context, id int64) (*Exercise, error)
+	// ListByClassroomIds returns active exercises across a set of
+	// classrooms for the home/layout dashboard, applying the optional
+	// visibility / creator / lifecycle / expiry filters in one query.
+	// Ordered create_dt DESC so the most recently assigned surface first.
+	ListByClassroomIds(ctx context.Context, params ListByClassroomIdsParams) ([]*Exercise, error)
 	// ListByClassroomExerciseIds batches the per-id lookup for hydration
 	// flows (e.g. the submission list embedding exercise summaries).
 	// One round trip per page regardless of size; rows missing from the
@@ -133,6 +158,12 @@ type GradingPatch struct {
 type ISubmissionRepository interface {
 	FindBySubmissionId(ctx context.Context, submissionId int64) (*Submission, error)
 	FindByExerciseAndProfile(ctx context.Context, classroomExerciseId, profileId int64) (*Submission, error)
+	// ListRecentByProfileIds returns the most recent non-DELETED
+	// submissions across the given set of profiles, ordered by
+	// submitted_dt DESC. Used by the parent home/layout to surface
+	// "exercises my children just completed" in one round trip. Limit
+	// caps the result (repo applies a default when zero).
+	ListRecentByProfileIds(ctx context.Context, profileIds []int64, limit int64) ([]*Submission, error)
 	ListSubmissions(ctx context.Context, params ListSubmissionsParams) ([]*Submission, *pagination.Pagination, error)
 	// ListSubmittedExerciseIdsByProfile returns the set of
 	// classroom_exercise_id values for which the given profile already

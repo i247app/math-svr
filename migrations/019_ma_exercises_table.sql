@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS ma_exercises (
     purpose                 VARCHAR(32) NOT NULL DEFAULT 'HOMEWORK', -- HOMEWORK, QUIZ, EXAM
     program_id              BIGINT UNSIGNED DEFAULT NULL,
     title                   VARCHAR(255) NOT NULL,
+    short_text              VARCHAR(255) DEFAULT NULL,
     description             VARCHAR(500) DEFAULT NULL,
     chapter_name            VARCHAR(255) NOT NULL,
     lesson_name             VARCHAR(255) NOT NULL,
@@ -29,3 +30,6 @@ CREATE TABLE IF NOT EXISTS ma_exercises (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ALTER TABLE ma_exercises ADD KEY ix_classroom_visibility_creator (classroom_id, visibility, creator_profile_id);
+
+-- ALTER TABLE ma_exercises
+--   ADD COLUMN short_text VARCHAR(255) DEFAULT NULL AFTER title;

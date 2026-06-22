@@ -568,6 +568,16 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	// Server lifecycle
 	case SERVER_SHUTTING_DOWN:
 		return "Server is shutting down"
+
+	// Home layout
+	case HOME_MISSING_PROFILE_ID:
+		return "profile_id is required"
+	case HOME_PROFILE_NOT_FOUND:
+		return "Profile not found"
+	case HOME_PROFILE_NOT_OWNED:
+		return "This profile does not belong to the current user"
+	case HOME_UNSUPPORTED_ROLE:
+		return "Unsupported profile role for the home layout"
 	default:
 		return ""
 	}

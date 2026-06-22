@@ -174,6 +174,48 @@ func (r *ExerciseSubmissionRepository) ListSubmittedExerciseIdsByProfile(ctx con
 	return out, nil
 }
 
+// ListRecentByProfileIds returns the most recent non-DELETED submissions
+// across the given profiles, ordered by submitted_dt DESC. Powers the
+// parent home/layout "children just completed" feed in one round trip.
+func (r *ExerciseSubmissionRepository) ListRecentByProfileIds(ctx context.Context, profileIds []int64, limit int64) ([]*domain.Submission, error) {
+	if len(profileIds) == 0 {
+		return nil, nil
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	placeholders := strings.Repeat("?,", len(profileIds))
+	placeholders = placeholders[:len(placeholders)-1]
+	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE ` +
+		exerciseSubmissionActiveWhere +
+		` AND s.profile_id IN (` + placeholders + `)` +
+		` ORDER BY s.submitted_dt DESC, s.id DESC LIMIT ?`
+	args := exerciseSubmissionActiveArgs()
+	for _, id := range profileIds {
+		args = append(args, id)
+	}
+	args = append(args, limit)
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list recent by profile ids: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]*domain.Submission, 0)
+	for rows.Next() {
+		m, err := scanExerciseSubmission(rows)
+		if err != nil {
+			return nil, fmt.Errorf("classroom exercise submission repo list recent by profile ids scan: %w", err)
+		}
+		out = append(out, modelToDomainClassroomExerciseSubmission(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list recent by profile ids iteration: %w", err)
+	}
+	return out, nil
+}
+
 func (r *ExerciseSubmissionRepository) ListSubmissions(ctx context.Context, params domain.ListSubmissionsParams) ([]*domain.Submission, *pagination.Pagination, error) {
 	if params.Limit <= 0 {
 		params.Limit = pagination.DefaultPageSize

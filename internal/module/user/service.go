@@ -177,7 +177,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	// }
 
 	created, err := s.createUserCmd.Handle(ctx, command.CreateUserCommand{
-		Role:      enum.RoleProfileType(req.Role),
+		Role:      enum.RoleType(req.Role),
 		Phone:     phoneForString,
 		Email:     email,
 		UserName:  req.Name,

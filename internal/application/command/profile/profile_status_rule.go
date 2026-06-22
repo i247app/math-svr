@@ -18,11 +18,11 @@ import (
 // any field that is absent or NULL.
 func DeriveProfileStatus(role, idType, teacherId, studentId string) enum.ProfileStatusType {
 	switch role {
-	case enum.RoleProfileTypeTeacher.String():
+	case enum.RoleTypeTeacher.String():
 		if strings.TrimSpace(idType) != "" && strings.TrimSpace(teacherId) != "" {
 			return enum.ProfileStatusTypeOfficial
 		}
-	case enum.RoleProfileTypeStudent.String():
+	case enum.RoleTypeStudent.String():
 		if strings.TrimSpace(studentId) != "" {
 			return enum.ProfileStatusTypeOfficial
 		}

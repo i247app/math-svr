@@ -139,6 +139,14 @@ type IMemberRepository interface {
 	// the caller's relationship to each classroom on a single page in
 	// one round trip, preventing N+1 lookups across the page.
 	ListByProfileAndClassroomIds(ctx context.Context, profileId int64, classroomIds []int64) ([]*Member, error)
+	// ListActiveByProfileIds returns every ACTIVE membership row for the
+	// given set of profiles in one round trip. Used by the home/layout
+	// flow to resolve "which classrooms is this profile (or, for a parent,
+	// these children) currently in" without going N+1 across profiles.
+	// Only member_status = ACTIVE rows are returned — pending/terminal
+	// states are excluded since the home dashboard surfaces live
+	// memberships only.
+	ListActiveByProfileIds(ctx context.Context, profileIds []int64) ([]*Member, error)
 	// ListMembersByExerciseSubmission returns the ACTIVE members of a
 	// classroom split by submission state for a given exercise.
 	// Submitted=true performs an INNER JOIN against the (non-DELETED)
