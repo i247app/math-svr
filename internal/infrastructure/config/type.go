@@ -22,11 +22,11 @@ type Env struct {
 
 // Config holds the database connection configuration.
 type DBConfig struct {
-	DBUser   string
-	DBPasswd string
-	DBHost   string
-	DBPort   string
-	DBName   string
+	DBUser string
+	DBPass string
+	DBHost string
+	DBPort string
+	DBName string
 
 	// Connection pool settings (optional, sensible defaults applied)
 	MaxOpenConns    int

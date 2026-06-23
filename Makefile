@@ -66,6 +66,10 @@ deploy-rollback:
 deploy-amd:
 	@BUILD_ARCH=amd64 ./bin/deploy $(RHOST)
 
+.PHONY: connect-mysql
+connect-mysql: ## connect to remote mysql
+	@./bin/connect-mysql.sh
+
 RATE     ?= 100
 DURATION ?= 60s
 

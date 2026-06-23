@@ -30,7 +30,7 @@ func NewDatabaseConnect(dbConfig config.DBConfig) (*sql.DB, error) {
 
 	dsn := mysql.Config{
 		User:                 dbConfig.DBUser,
-		Passwd:               dbConfig.DBPasswd,
+		Passwd:               dbConfig.DBPass,
 		Net:                  "tcp",
 		Addr:                 address,
 		DBName:               dbConfig.DBName,

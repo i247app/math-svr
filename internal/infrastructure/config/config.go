@@ -30,11 +30,11 @@ func NewEnv(envpath string) (*Env, error) {
 		EnableOTP:             getBoolConfigWithDefault("ENABLE_OTP", false),
 
 		DBConfig: DBConfig{
-			DBHost:   getConfig("DB_HOST"),
-			DBPort:   getConfig("DB_PORT"),
-			DBUser:   getConfig("DB_USER"),
-			DBPasswd: getConfig("DB_PASSWORD"),
-			DBName:   getConfig("DB_NAME"),
+			DBHost: getConfig("DB_HOST"),
+			DBPort: getConfig("DB_PORT"),
+			DBUser: getConfig("DB_USER"),
+			DBPass: getConfig("DB_PASS"),
+			DBName: getConfig("DB_NAME"),
 
 			MaxOpenConns:    getIntConfigOptional("DB_MAX_OPEN_CONNS"),
 			MaxIdleConns:    getIntConfigOptional("DB_MAX_IDLE_CONNS"),
