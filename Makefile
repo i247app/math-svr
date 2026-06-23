@@ -70,6 +70,14 @@ deploy-amd:
 connect-mysql: ## connect to remote mysql
 	@./bin/connect-mysql.sh
 
+.PHONY: clear-data-local
+clear-data-local: ## wipe LOCAL user data, keep reference data (uses .env DB_*)
+	@./bin/clear-data.sh local
+
+.PHONY: clear-data-ec2
+clear-data-ec2: ## wipe EC2 user data, keep reference data — var: RHOST=ec2|t1|t2|t3|t4
+	@./bin/clear-data.sh $(RHOST)
+
 RATE     ?= 100
 DURATION ?= 60s
 
@@ -81,43 +89,6 @@ perf-jmeter-local: ## load test jmeter local
 perf-jmeter-ec2: ## load test jmeter ec2
 	@jmeter -n -t perf/jmeter/numi_ec2.jmx -l perf/jmeter/results/out.jtl -e -o perf/jmeter/report
 
-# ── Vegeta load testing ──────────────────────────────────
-# Usage: make perf-vegeta TARGET=health [PROFILE=baseline] [ENV=local]
-TARGET  ?= health
-PROFILE ?= baseline
-ENV     ?= local
-
-.PHONY: perf-vegeta
-perf-vegeta: ## vegeta attack — vars: TARGET, PROFILE, ENV
-	@./perf/vegeta/scripts/attack.sh $(TARGET) $(PROFILE) $(ENV)
-
-.PHONY: perf-vegeta-bootstrap
-perf-vegeta-bootstrap: ## mint a secure session token — var: ENV
-	@./perf/vegeta/scripts/bootstrap_session.sh $(ENV)
-
-.PHONY: perf-vegeta-seed
-perf-vegeta-seed: ## create [PERF] fixture entities — var: ENV
-	@./perf/vegeta/scripts/perf_seed.sh $(ENV)
-
-.PHONY: perf-vegeta-clean
-perf-vegeta-clean: ## wipe [PERF] rows from DB — var: ENV; needs DB_* env
-	@./perf/vegeta/scripts/perf_clean.sh $(ENV)
-
-.PHONY: perf-vegeta-gate
-perf-vegeta-gate: ## attack + SLO check; non-zero on breach — vars: TARGET, PROFILE, ENV
-	@./perf/vegeta/scripts/gate.sh $(TARGET) $(PROFILE) $(ENV)
-
-.PHONY: perf-vegeta-promote
-perf-vegeta-promote: ## attack + archive to history/<git-sha>/ — vars: TARGET, PROFILE, ENV
-	@./perf/vegeta/scripts/promote.sh $(TARGET) $(PROFILE) $(ENV)
-
-.PHONY: perf-vegeta-compare
-perf-vegeta-compare: ## diff two most recent runs of TARGET — vars: TARGET, PROFILE, ENV
-	@./perf/vegeta/scripts/compare.sh $(TARGET) $(PROFILE) $(ENV)
-
-.PHONY: perf-vegeta-report
-perf-vegeta-report: ## re-render a .bin — vars: BIN=results/foo.bin
-	@./perf/vegeta/scripts/report.sh $(BIN)
 
 # ── Observability stack (Prometheus + Grafana) ───────────
 
