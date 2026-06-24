@@ -38,9 +38,22 @@ type HomeLayoutData struct {
 	Exercises   []*exerciseDomain.Exercise
 	Submissions []*exerciseDomain.Submission
 
+	// PendingExercises is the parent-only "children's to-do" feed: one
+	// entry per (child, still-open exercise the child has not submitted).
+	PendingExercises []PendingExerciseForChild
+
 	ExerciseByID  map[int64]*exerciseDomain.Exercise
 	ClassroomByID map[int64]*classroomDomain.Classroom
 	ProfileByID   map[int64]*profileDomain.Profile
+}
+
+// PendingExerciseForChild pairs a not-yet-completed exercise with the
+// child it is pending for. The module maps each into a
+// ParentPendingExerciseCard, hydrating the child / classroom refs from the
+// HomeLayoutData lookup maps.
+type PendingExerciseForChild struct {
+	ChildProfileID int64
+	Exercise       *exerciseDomain.Exercise
 }
 
 // GetHomeLayoutQuery carries the already-resolved acting profile. The
@@ -273,7 +286,97 @@ func (h *GetHomeLayoutQueryHandler) buildParent(ctx context.Context, p *profileD
 			data.ExerciseByID[e.ClassroomExerciseId()] = e
 		}
 	}
+
+	if err := h.loadParentPendingExercises(ctx, childIDs, members, data); err != nil {
+		return nil, err
+	}
 	return data, nil
+}
+
+// loadParentPendingExercises computes the parent's per-child "not
+// completed yet" feed: still-open PUBLIC exercises in the children's
+// (non-archived) classrooms that the child has not submitted. Candidate
+// exercises are fetched once across every classroom; the submitted-set
+// lookup is one read per child (children per parent is small). The same
+// exercise yields one pending entry per child who still owes it.
+func (h *GetHomeLayoutQueryHandler) loadParentPendingExercises(
+	ctx context.Context,
+	childIDs []int64,
+	members []*classroomDomain.Member,
+	data *HomeLayoutData,
+) error {
+	if len(data.Classrooms) == 0 {
+		return nil
+	}
+
+	// child -> the loaded classrooms they are an active member of.
+	childClassrooms := make(map[int64][]int64, len(childIDs))
+	for _, m := range members {
+		if _, ok := data.ClassroomByID[m.ClassroomId()]; !ok {
+			continue // archived / not loaded
+		}
+		childClassrooms[m.ProfileId()] = append(childClassrooms[m.ProfileId()], m.ClassroomId())
+	}
+
+	// CallerProfileID stays zero so only PUBLIC exercises surface, matching
+	// the student-side pending view (children cannot see PRIVATE rows).
+	now := mtime.Now()
+	candidates, err := h.exerciseRepo.ListByClassroomIds(ctx, exerciseDomain.ListByClassroomIdsParams{
+		ClassroomIDs:   activeClassroomIDs(data.Classrooms),
+		OnlyActive:     true,
+		NotExpiredAsOf: &now,
+		Limit:          homeExerciseFetchLimit,
+	})
+	if err != nil {
+		return err
+	}
+	if len(candidates) == 0 {
+		return nil
+	}
+
+	// Group candidates by classroom so each child only inspects the
+	// exercises in their own classrooms.
+	exByClassroom := make(map[int64][]*exerciseDomain.Exercise, len(data.Classrooms))
+	for _, e := range candidates {
+		exByClassroom[e.ClassroomId()] = append(exByClassroom[e.ClassroomId()], e)
+	}
+
+	pending := make([]PendingExerciseForChild, 0)
+	for _, childID := range childIDs {
+		classroomIDs := childClassrooms[childID]
+		if len(classroomIDs) == 0 {
+			continue
+		}
+		childExercises := make([]*exerciseDomain.Exercise, 0)
+		for _, cid := range classroomIDs {
+			childExercises = append(childExercises, exByClassroom[cid]...)
+		}
+		if len(childExercises) == 0 {
+			continue
+		}
+		exerciseIDs := make([]int64, len(childExercises))
+		for i, e := range childExercises {
+			exerciseIDs[i] = e.ClassroomExerciseId()
+		}
+		submitted, err := h.submissionRepo.ListSubmittedExerciseIdsByProfile(ctx, childID, exerciseIDs)
+		if err != nil {
+			return err
+		}
+		for _, e := range childExercises {
+			if _, done := submitted[e.ClassroomExerciseId()]; done {
+				continue
+			}
+			pending = append(pending, PendingExerciseForChild{ChildProfileID: childID, Exercise: e})
+			if len(pending) >= homeExerciseRenderCap {
+				break
+			}
+		}
+		if len(pending) >= homeExerciseRenderCap {
+			break
+		}
+	}
+	data.PendingExercises = pending
+	return nil
 }
 
 // loadClassrooms fetches the classroom rows for the given ids (skipping

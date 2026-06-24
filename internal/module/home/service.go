@@ -115,6 +115,7 @@ func (s *Service) buildLayout(ctx context.Context, caller *profileDomain.Profile
 		layout.Parent = &dto.ParentLayout{
 			Children:          s.childSummaries(ctx, data),
 			Classrooms:        s.classroomCards(ctx, data),
+			PendingExercises:  s.parentPendingCards(ctx, data),
 			RecentCompletions: s.completionCards(ctx, data),
 		}
 	}
@@ -185,6 +186,33 @@ func (s *Service) completionCards(ctx context.Context, data *query.HomeLayoutDat
 			card.Exercise = dto.ExerciseToCard(ex)
 		}
 		if c, ok := data.ClassroomByID[sub.ClassroomId()]; ok {
+			card.Classroom = dto.ClassroomToRef(c)
+		}
+		cards = append(cards, card)
+	}
+	return cards
+}
+
+// parentPendingCards maps the parent's per-child "not completed yet" feed,
+// hydrating the child profile and classroom refs from the batched lookup
+// maps. Mirrors completionCards so the to-do and done feeds share shape.
+func (s *Service) parentPendingCards(ctx context.Context, data *query.HomeLayoutData) []*dto.ParentPendingExerciseCard {
+	cards := make([]*dto.ParentPendingExerciseCard, 0, len(data.PendingExercises))
+	for _, item := range data.PendingExercises {
+		if item.Exercise == nil {
+			continue
+		}
+		card := &dto.ParentPendingExerciseCard{
+			ClassroomExerciseID: item.Exercise.ClassroomExerciseId(),
+			ClassroomID:         item.Exercise.ClassroomId(),
+			Exercise:            dto.ExerciseToCard(item.Exercise),
+		}
+		if child, ok := data.ProfileByID[item.ChildProfileID]; ok {
+			summary := dto.ProfileToSummary(child)
+			s.signProfileAvatar(ctx, summary)
+			card.Child = summary
+		}
+		if c, ok := data.ClassroomByID[item.Exercise.ClassroomId()]; ok {
 			card.Classroom = dto.ClassroomToRef(c)
 		}
 		cards = append(cards, card)

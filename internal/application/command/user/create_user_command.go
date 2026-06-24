@@ -52,14 +52,23 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 	result := &CreateUserCommandResult{}
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
+		if cmd.Email != nil && *cmd.Email != "" {
+			existByEmail, err := repos.User.FindByEmail(ctx, *cmd.Email)
+			if err != nil {
+				return errs.NewError(ctx, status.FAIL, nil, err)
+			}
+			if existByEmail != nil {
+				return errs.NewError(ctx, status.USER_EMAIL_ALREADY_EXISTS, nil, ErrEmailAlreadyExists)
+			}
+		}
+
 		if cmd.Phone != "" {
 			existByPhone, err := repos.User.FindByPhone(ctx, cmd.Phone)
 			if err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			if existByPhone != nil {
-				return errs.NewError(ctx, status.USER_PHONE_ALREADY_EXISTS, nil,
-					ErrPhoneAlreadyExists)
+				return errs.NewError(ctx, status.USER_PHONE_ALREADY_EXISTS, nil, ErrPhoneAlreadyExists)
 			}
 		}
 
@@ -69,8 +78,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			if existByUserName != nil {
-				return errs.NewError(ctx, status.USER_USERNAME_ALREADY_EXISTS, nil,
-					ErrUsernameAlreadyExists)
+				return errs.NewError(ctx, status.USER_USERNAME_ALREADY_EXISTS, nil, ErrUsernameAlreadyExists)
 			}
 		}
 

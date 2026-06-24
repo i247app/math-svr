@@ -50,11 +50,13 @@ type StudentLayout struct {
 }
 
 // ParentLayout: the parent's children, every classroom those children are
-// in, and a recent feed of exercises the children have just completed.
+// in, the still-open exercises the children have not completed yet, and a
+// recent feed of exercises the children have just completed.
 type ParentLayout struct {
-	Children          []*ProfileSummary        `json:"children"`
-	Classrooms        []*ClassroomCard         `json:"classrooms"`
-	RecentCompletions []*CompletedExerciseCard `json:"recent_completions"`
+	Children          []*ProfileSummary            `json:"children"`
+	Classrooms        []*ClassroomCard             `json:"classrooms"`
+	PendingExercises  []*ParentPendingExerciseCard `json:"pending_exercises"`
+	RecentCompletions []*CompletedExerciseCard     `json:"recent_completions"`
 }
 
 // ProfileSummary is the slim profile shape shared across the home cards.
@@ -67,7 +69,7 @@ type ProfileSummary struct {
 	Name        string  `json:"name"`
 	Role        string  `json:"role"`
 	AvatarKey   *string `json:"avatar_key,omitempty"`
-	AvatarURL   *string `json:"avatar_url,omitempty"`
+	AvatarURL   *string `json:"avatar_url"`
 }
 
 // ClassroomCard is the slim classroom shape for a home dashboard tile.
@@ -141,6 +143,20 @@ type CompletedExerciseCard struct {
 	TotalQuestions                *int64          `json:"total_questions,omitempty"`
 	CorrectNumber                 *int64          `json:"correct_number,omitempty"`
 	ScorePercentage               *int64          `json:"score_percentage,omitempty"`
+}
+
+// ParentPendingExerciseCard is one row in the parent "pending" list: an
+// exercise one specific child has not completed yet, in a classroom that
+// child is enrolled in. Mirrors CompletedExerciseCard so the parent UI
+// can render the "to-do" and "done" feeds with the same widgets — Child
+// identifies which child still owes the exercise. The same exercise can
+// appear once per child who hasn't done it.
+type ParentPendingExerciseCard struct {
+	ClassroomExerciseID int64           `json:"classroom_exercise_id"`
+	ClassroomID         int64           `json:"classroom_id"`
+	Child               *ProfileSummary `json:"child,omitempty"`
+	Exercise            *ExerciseCard   `json:"exercise,omitempty"`
+	Classroom           *ClassroomRef   `json:"classroom,omitempty"`
 }
 
 // ProfileToSummary maps a profile domain entity to the slim card shape.

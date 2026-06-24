@@ -6,6 +6,7 @@ import "errors"
 var (
 	ErrUserNotFound             = errors.New("user not found")
 	ErrPhoneAlreadyExists       = errors.New("phone already exists")
+	ErrEmailAlreadyExists       = errors.New("email already exists")
 	ErrUsernameAlreadyExists    = errors.New("username already exists")
 	ErrProfileCodeMintExhausted = errors.New("could not mint a unique profile code")
 )
