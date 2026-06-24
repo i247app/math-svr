@@ -151,6 +151,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ExerciseRepository,
 		repos.ExerciseSubmissionRepository,
 		repos.ProfileRepository,
+		repos.QuizRepository,
 		res.StorageProvider,
 	)
 

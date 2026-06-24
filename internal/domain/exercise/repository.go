@@ -88,7 +88,12 @@ type ListByClassroomIdsParams struct {
 	CreatorProfileID *int64
 	OnlyActive       bool
 	NotExpiredAsOf   *mtime.MathTime
-	Limit            int64
+	// ExpiredAsOf is the inverse of NotExpiredAsOf — end_date IS NOT NULL
+	// AND end_date < asOf ("past the submission deadline"). Exercises with
+	// no end_date never expire and are excluded. Set at most one of
+	// NotExpiredAsOf / ExpiredAsOf per call.
+	ExpiredAsOf *mtime.MathTime
+	Limit       int64
 }
 
 // IRepository owns all classroom_exercise persistence. The shape mirrors

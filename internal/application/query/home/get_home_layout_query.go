@@ -6,6 +6,7 @@ import (
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
+	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -19,6 +20,9 @@ const (
 	homeExerciseFetchLimit = 200
 	homeExerciseRenderCap  = 50
 	homeCompletionLimit    = 20
+	// homeQuizLimit caps the acting profile's standalone quiz history on
+	// the home payload — most recent first, deep-link for older entries.
+	homeQuizLimit = 20
 )
 
 // HomeLayoutData is the domain-level assembly the module maps into the
@@ -35,12 +39,22 @@ type HomeLayoutData struct {
 	RoleByClassroom          map[int64]string
 	MemberProfileByClassroom map[int64]int64
 
+	// Quizzes is the acting profile's standalone (out-of-classroom) quiz
+	// history, most recent first — populated for every role.
+	Quizzes []*quizDomain.Quiz
+
 	Exercises   []*exerciseDomain.Exercise
 	Submissions []*exerciseDomain.Submission
 
+	// ExpiredExercises is the past-deadline counterpart of Exercises for
+	// the teacher (assigned) and student (missed) layouts.
+	ExpiredExercises []*exerciseDomain.Exercise
+
 	// PendingExercises is the parent-only "children's to-do" feed: one
 	// entry per (child, still-open exercise the child has not submitted).
+	// ExpiredByChild is its past-deadline counterpart (missed exercises).
 	PendingExercises []PendingExerciseForChild
+	ExpiredByChild   []PendingExerciseForChild
 
 	ExerciseByID  map[int64]*exerciseDomain.Exercise
 	ClassroomByID map[int64]*classroomDomain.Classroom
@@ -77,6 +91,7 @@ type GetHomeLayoutQueryHandler struct {
 	exerciseRepo   exerciseDomain.IRepository
 	submissionRepo exerciseDomain.ISubmissionRepository
 	profileRepo    profileDomain.IRepository
+	quizRepo       quizDomain.IRepository
 }
 
 func NewGetHomeLayoutQueryHandler(
@@ -85,6 +100,7 @@ func NewGetHomeLayoutQueryHandler(
 	exerciseRepo exerciseDomain.IRepository,
 	submissionRepo exerciseDomain.ISubmissionRepository,
 	profileRepo profileDomain.IRepository,
+	quizRepo quizDomain.IRepository,
 ) *GetHomeLayoutQueryHandler {
 	return &GetHomeLayoutQueryHandler{
 		classroomRepo:  classroomRepo,
@@ -92,6 +108,7 @@ func NewGetHomeLayoutQueryHandler(
 		exerciseRepo:   exerciseRepo,
 		submissionRepo: submissionRepo,
 		profileRepo:    profileRepo,
+		quizRepo:       quizRepo,
 	}
 }
 
@@ -106,6 +123,13 @@ func (h *GetHomeLayoutQueryHandler) Handle(ctx context.Context, q GetHomeLayoutQ
 		ProfileByID:              map[int64]*profileDomain.Profile{},
 	}
 
+	// The acting profile's standalone quiz history is role-independent —
+	// load it once before the role-specific assembly. The builders mutate
+	// and return the same data pointer, so the quizzes ride through.
+	if err := h.loadProfileQuizzes(ctx, p, data); err != nil {
+		return nil, err
+	}
+
 	switch enum.RoleType(p.Role()) {
 	case enum.RoleTypeTeacher:
 		return h.buildTeacher(ctx, p, data)
@@ -118,6 +142,21 @@ func (h *GetHomeLayoutQueryHandler) Handle(ctx context.Context, q GetHomeLayoutQ
 		// empty (role-only) payload defensively instead of erroring.
 		return data, nil
 	}
+}
+
+// loadProfileQuizzes fetches the acting profile's most-recent standalone
+// quizzes (out-of-classroom history), mirroring the /quizzes/list filter
+// scoped to a single profile_id.
+func (h *GetHomeLayoutQueryHandler) loadProfileQuizzes(ctx context.Context, p *profileDomain.Profile, data *HomeLayoutData) error {
+	profileID := p.ProfileId()
+	quizzes, _, err := h.quizRepo.ListQuizzes(ctx, quizDomain.ListQuizzesFilter{
+		ProfileID: &profileID,
+	}, 1, homeQuizLimit)
+	if err != nil {
+		return err
+	}
+	data.Quizzes = quizzes
+	return nil
 }
 
 // buildTeacher: classrooms the teacher manages (OWNER / CO_TEACHER) plus
@@ -148,8 +187,9 @@ func (h *GetHomeLayoutQueryHandler) buildTeacher(ctx context.Context, p *profile
 
 	now := mtime.Now()
 	creator := p.ProfileId()
+	classroomIDsForExercises := activeClassroomIDs(data.Classrooms)
 	exercises, err := h.exerciseRepo.ListByClassroomIds(ctx, exerciseDomain.ListByClassroomIdsParams{
-		ClassroomIDs:     activeClassroomIDs(data.Classrooms),
+		ClassroomIDs:     classroomIDsForExercises,
 		CallerProfileID:  p.ProfileId(),
 		CreatorProfileID: &creator,
 		OnlyActive:       true,
@@ -160,6 +200,19 @@ func (h *GetHomeLayoutQueryHandler) buildTeacher(ctx context.Context, p *profile
 		return nil, err
 	}
 	data.Exercises = exercises
+
+	expired, err := h.exerciseRepo.ListByClassroomIds(ctx, exerciseDomain.ListByClassroomIdsParams{
+		ClassroomIDs:     classroomIDsForExercises,
+		CallerProfileID:  p.ProfileId(),
+		CreatorProfileID: &creator,
+		OnlyActive:       true,
+		ExpiredAsOf:      &now,
+		Limit:            homeExerciseRenderCap,
+	})
+	if err != nil {
+		return nil, err
+	}
+	data.ExpiredExercises = expired
 	return data, nil
 }
 
@@ -186,41 +239,66 @@ func (h *GetHomeLayoutQueryHandler) buildStudent(ctx context.Context, p *profile
 		return data, nil
 	}
 
+	exerciseClassroomIDs := activeClassroomIDs(data.Classrooms)
+	pending, err := h.listUnsubmittedExercises(ctx, p.ProfileId(), exerciseClassroomIDs, false)
+	if err != nil {
+		return nil, err
+	}
+	data.Exercises = pending
+
+	expired, err := h.listUnsubmittedExercises(ctx, p.ProfileId(), exerciseClassroomIDs, true)
+	if err != nil {
+		return nil, err
+	}
+	data.ExpiredExercises = expired
+	return data, nil
+}
+
+// listUnsubmittedExercises returns the still-open (expired=false) or
+// past-deadline (expired=true) exercises in the given classrooms that the
+// profile has NOT submitted, capped at homeExerciseRenderCap. Shared by
+// the student layout's pending and expired buckets.
+func (h *GetHomeLayoutQueryHandler) listUnsubmittedExercises(ctx context.Context, profileID int64, classroomIDs []int64, expired bool) ([]*exerciseDomain.Exercise, error) {
 	now := mtime.Now()
-	candidates, err := h.exerciseRepo.ListByClassroomIds(ctx, exerciseDomain.ListByClassroomIdsParams{
-		ClassroomIDs:    activeClassroomIDs(data.Classrooms),
-		CallerProfileID: p.ProfileId(),
+	params := exerciseDomain.ListByClassroomIdsParams{
+		ClassroomIDs:    classroomIDs,
+		CallerProfileID: profileID,
 		OnlyActive:      true,
-		NotExpiredAsOf:  &now,
 		Limit:           homeExerciseFetchLimit,
-	})
+	}
+	if expired {
+		params.ExpiredAsOf = &now
+	} else {
+		params.NotExpiredAsOf = &now
+	}
+
+	candidates, err := h.exerciseRepo.ListByClassroomIds(ctx, params)
 	if err != nil {
 		return nil, err
 	}
 	if len(candidates) == 0 {
-		return data, nil
+		return nil, nil
 	}
 
 	exerciseIDs := make([]int64, len(candidates))
 	for i, e := range candidates {
 		exerciseIDs[i] = e.ClassroomExerciseId()
 	}
-	submitted, err := h.submissionRepo.ListSubmittedExerciseIdsByProfile(ctx, p.ProfileId(), exerciseIDs)
+	submitted, err := h.submissionRepo.ListSubmittedExerciseIdsByProfile(ctx, profileID, exerciseIDs)
 	if err != nil {
 		return nil, err
 	}
-	pending := make([]*exerciseDomain.Exercise, 0, len(candidates))
+	out := make([]*exerciseDomain.Exercise, 0, len(candidates))
 	for _, e := range candidates {
 		if _, done := submitted[e.ClassroomExerciseId()]; done {
 			continue
 		}
-		pending = append(pending, e)
-		if len(pending) >= homeExerciseRenderCap {
+		out = append(out, e)
+		if len(out) >= homeExerciseRenderCap {
 			break
 		}
 	}
-	data.Exercises = pending
-	return data, nil
+	return out, nil
 }
 
 // buildParent: every classroom the parent's children are enrolled in plus
@@ -298,11 +376,11 @@ func (h *GetHomeLayoutQueryHandler) buildParent(ctx context.Context, p *profileD
 }
 
 // loadParentPendingExercises computes the parent's per-child "not
-// completed yet" feed: still-open PUBLIC exercises in the children's
-// (non-archived) classrooms that the child has not submitted. Candidate
-// exercises are fetched once across every classroom; the submitted-set
-// lookup is one read per child (children per parent is small). The same
-// exercise yields one pending entry per child who still owes it.
+// completed yet" feeds, split into still-open (PendingExercises) and
+// past-deadline (ExpiredByChild) buckets. Each is the set of PUBLIC
+// exercises in the children's (non-archived) classrooms the child has not
+// submitted; the same exercise yields one entry per child who still owes
+// it.
 func (h *GetHomeLayoutQueryHandler) loadParentPendingExercises(
 	ctx context.Context,
 	childIDs []int64,
@@ -313,6 +391,32 @@ func (h *GetHomeLayoutQueryHandler) loadParentPendingExercises(
 		return nil
 	}
 
+	pending, err := h.collectParentChildExercises(ctx, childIDs, members, data, false)
+	if err != nil {
+		return err
+	}
+	data.PendingExercises = pending
+
+	expired, err := h.collectParentChildExercises(ctx, childIDs, members, data, true)
+	if err != nil {
+		return err
+	}
+	data.ExpiredByChild = expired
+	return nil
+}
+
+// collectParentChildExercises returns the per-child (child, exercise)
+// pairs for either the still-open (expired=false) or past-deadline
+// (expired=true) PUBLIC exercises the child has not submitted. Candidates
+// are fetched once across every classroom; the submitted-set lookup is one
+// read per child (children per parent is small).
+func (h *GetHomeLayoutQueryHandler) collectParentChildExercises(
+	ctx context.Context,
+	childIDs []int64,
+	members []*classroomDomain.Member,
+	data *HomeLayoutData,
+	expired bool,
+) ([]PendingExerciseForChild, error) {
 	// child -> the loaded classrooms they are an active member of.
 	childClassrooms := make(map[int64][]int64, len(childIDs))
 	for _, m := range members {
@@ -323,19 +427,24 @@ func (h *GetHomeLayoutQueryHandler) loadParentPendingExercises(
 	}
 
 	// CallerProfileID stays zero so only PUBLIC exercises surface, matching
-	// the student-side pending view (children cannot see PRIVATE rows).
+	// the student-side view (children cannot see PRIVATE rows).
 	now := mtime.Now()
-	candidates, err := h.exerciseRepo.ListByClassroomIds(ctx, exerciseDomain.ListByClassroomIdsParams{
-		ClassroomIDs:   activeClassroomIDs(data.Classrooms),
-		OnlyActive:     true,
-		NotExpiredAsOf: &now,
-		Limit:          homeExerciseFetchLimit,
-	})
+	params := exerciseDomain.ListByClassroomIdsParams{
+		ClassroomIDs: activeClassroomIDs(data.Classrooms),
+		OnlyActive:   true,
+		Limit:        homeExerciseFetchLimit,
+	}
+	if expired {
+		params.ExpiredAsOf = &now
+	} else {
+		params.NotExpiredAsOf = &now
+	}
+	candidates, err := h.exerciseRepo.ListByClassroomIds(ctx, params)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(candidates) == 0 {
-		return nil
+		return nil, nil
 	}
 
 	// Group candidates by classroom so each child only inspects the
@@ -345,7 +454,7 @@ func (h *GetHomeLayoutQueryHandler) loadParentPendingExercises(
 		exByClassroom[e.ClassroomId()] = append(exByClassroom[e.ClassroomId()], e)
 	}
 
-	pending := make([]PendingExerciseForChild, 0)
+	out := make([]PendingExerciseForChild, 0)
 	for _, childID := range childIDs {
 		classroomIDs := childClassrooms[childID]
 		if len(classroomIDs) == 0 {
@@ -364,23 +473,22 @@ func (h *GetHomeLayoutQueryHandler) loadParentPendingExercises(
 		}
 		submitted, err := h.submissionRepo.ListSubmittedExerciseIdsByProfile(ctx, childID, exerciseIDs)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		for _, e := range childExercises {
 			if _, done := submitted[e.ClassroomExerciseId()]; done {
 				continue
 			}
-			pending = append(pending, PendingExerciseForChild{ChildProfileID: childID, Exercise: e})
-			if len(pending) >= homeExerciseRenderCap {
+			out = append(out, PendingExerciseForChild{ChildProfileID: childID, Exercise: e})
+			if len(out) >= homeExerciseRenderCap {
 				break
 			}
 		}
-		if len(pending) >= homeExerciseRenderCap {
+		if len(out) >= homeExerciseRenderCap {
 			break
 		}
 	}
-	data.PendingExercises = pending
-	return nil
+	return out, nil
 }
 
 // loadClassrooms fetches the classroom rows for the given ids (skipping

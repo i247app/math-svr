@@ -10,6 +10,7 @@ import (
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
+	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -36,11 +37,12 @@ func NewService(
 	exerciseRepo exerciseDomain.IRepository,
 	submissionRepo exerciseDomain.ISubmissionRepository,
 	profileRepo profileDomain.IRepository,
+	quizRepo quizDomain.IRepository,
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
 		getHomeLayoutQuery: query.NewGetHomeLayoutQueryHandler(
-			classroomRepo, memberRepo, exerciseRepo, submissionRepo, profileRepo,
+			classroomRepo, memberRepo, exerciseRepo, submissionRepo, profileRepo, quizRepo,
 		),
 		profileRepo:     profileRepo,
 		storageProvider: storageProvider,
@@ -98,24 +100,28 @@ func (s *Service) buildLayout(ctx context.Context, caller *profileDomain.Profile
 	layout := &dto.HomeLayout{
 		Profile: profileSummary,
 		Role:    data.Role,
+		Quizzes: quizCards(data),
 	}
 
 	switch enum.RoleType(data.Role) {
 	case enum.RoleTypeTeacher:
 		layout.Teacher = &dto.TeacherLayout{
 			Classrooms:        s.classroomCards(ctx, data),
-			AssignedExercises: s.exerciseCards(data),
+			AssignedExercises: s.exerciseCards(data, data.Exercises),
+			ExpiredExercises:  s.exerciseCards(data, data.ExpiredExercises),
 		}
 	case enum.RoleTypeStudent:
 		layout.Student = &dto.StudentLayout{
 			Classrooms:       s.classroomCards(ctx, data),
-			PendingExercises: s.exerciseCards(data),
+			PendingExercises: s.exerciseCards(data, data.Exercises),
+			ExpiredExercises: s.exerciseCards(data, data.ExpiredExercises),
 		}
 	case enum.RoleTypeParent:
 		layout.Parent = &dto.ParentLayout{
 			Children:          s.childSummaries(ctx, data),
 			Classrooms:        s.classroomCards(ctx, data),
-			PendingExercises:  s.parentPendingCards(ctx, data),
+			PendingExercises:  s.parentPendingCards(ctx, data, data.PendingExercises),
+			ExpiredExercises:  s.parentPendingCards(ctx, data, data.ExpiredByChild),
 			RecentCompletions: s.completionCards(ctx, data),
 		}
 	}
@@ -152,11 +158,13 @@ func (s *Service) classroomCards(ctx context.Context, data *query.HomeLayoutData
 	return cards
 }
 
-// exerciseCards maps the teacher/student exercise list into slim cards,
+// exerciseCards maps a teacher/student exercise list into slim cards,
 // attaching each exercise's classroom ref from the batched classroom map.
-func (s *Service) exerciseCards(data *query.HomeLayoutData) []*dto.ExerciseCard {
-	cards := make([]*dto.ExerciseCard, 0, len(data.Exercises))
-	for _, e := range data.Exercises {
+// The slice is passed explicitly so the same mapper serves both the
+// open (assigned/pending) and the expired buckets.
+func (s *Service) exerciseCards(data *query.HomeLayoutData, exercises []*exerciseDomain.Exercise) []*dto.ExerciseCard {
+	cards := make([]*dto.ExerciseCard, 0, len(exercises))
+	for _, e := range exercises {
 		card := dto.ExerciseToCard(e)
 		if c, ok := data.ClassroomByID[e.ClassroomId()]; ok {
 			card.Classroom = dto.ClassroomToRef(c)
@@ -200,12 +208,23 @@ func (s *Service) completionCards(ctx context.Context, data *query.HomeLayoutDat
 	return cards
 }
 
-// parentPendingCards maps the parent's per-child "not completed yet" feed,
-// hydrating the child profile and classroom refs from the batched lookup
-// maps. Mirrors completionCards so the to-do and done feeds share shape.
-func (s *Service) parentPendingCards(ctx context.Context, data *query.HomeLayoutData) []*dto.ParentPendingExerciseCard {
-	cards := make([]*dto.ParentPendingExerciseCard, 0, len(data.PendingExercises))
-	for _, item := range data.PendingExercises {
+// quizCards maps the acting profile's standalone quiz history into slim
+// cards. No storage signing needed — quizzes carry no images.
+func quizCards(data *query.HomeLayoutData) []*dto.QuizCard {
+	cards := make([]*dto.QuizCard, 0, len(data.Quizzes))
+	for _, q := range data.Quizzes {
+		cards = append(cards, dto.QuizToCard(q))
+	}
+	return cards
+}
+
+// parentPendingCards maps a parent per-child exercise feed (pending or
+// expired) into cards, hydrating the child profile and classroom refs from
+// the batched lookup maps. The items slice is passed explicitly so the
+// same mapper serves both buckets.
+func (s *Service) parentPendingCards(ctx context.Context, data *query.HomeLayoutData, items []query.PendingExerciseForChild) []*dto.ParentPendingExerciseCard {
+	cards := make([]*dto.ParentPendingExerciseCard, 0, len(items))
+	for _, item := range items {
 		if item.Exercise == nil {
 			continue
 		}

@@ -173,6 +173,10 @@ func (r *ExerciseRepository) ListByClassroomIds(ctx context.Context, params doma
 		clause.WriteString(` AND (e.end_date IS NULL OR e.end_date >= ?)`)
 		args = append(args, params.NotExpiredAsOf.Time)
 	}
+	if params.ExpiredAsOf != nil && params.ExpiredAsOf.IsValid() {
+		clause.WriteString(` AND e.end_date IS NOT NULL AND e.end_date < ?`)
+		args = append(args, params.ExpiredAsOf.Time)
+	}
 
 	args = append(args, limit)
 	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e WHERE ` +

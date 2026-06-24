@@ -4,6 +4,7 @@ import (
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
+	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
 )
 
 // HomeLayoutReq is the single input to POST /home/layout. profile_id picks
@@ -29,33 +30,44 @@ type HomeLayout struct {
 	Profile *ProfileSummary `json:"profile"`
 	Role    string          `json:"role"`
 
+	// Quizzes is the acting profile's own (out-of-classroom) quiz history,
+	// most recent first. Role-independent — every role can take standalone
+	// quizzes — so it lives at the top level rather than inside a
+	// role-specific section. Empty (never null) when the profile has none.
+	Quizzes []*QuizCard `json:"quizzes"`
+
 	Teacher *TeacherLayout `json:"teacher,omitempty"`
 	Parent  *ParentLayout  `json:"parent,omitempty"`
 	Student *StudentLayout `json:"student,omitempty"`
 }
 
 // TeacherLayout: the classrooms the teacher manages plus the exercises
-// they have assigned that are still open (not past their end date).
+// they have assigned — split into still-open (assigned_exercises) and
+// past-deadline (expired_exercises) buckets.
 type TeacherLayout struct {
 	Classrooms        []*ClassroomCard `json:"classrooms"`
 	AssignedExercises []*ExerciseCard  `json:"assigned_exercises"`
+	ExpiredExercises  []*ExerciseCard  `json:"expired_exercises"`
 }
 
 // StudentLayout: the classrooms the student has joined plus the exercises
-// in those classrooms they have not yet completed (and that are still
-// open).
+// in those classrooms they have not completed — split into still-open
+// (pending_exercises) and past-deadline / missed (expired_exercises).
 type StudentLayout struct {
 	Classrooms       []*ClassroomCard `json:"classrooms"`
 	PendingExercises []*ExerciseCard  `json:"pending_exercises"`
+	ExpiredExercises []*ExerciseCard  `json:"expired_exercises"`
 }
 
 // ParentLayout: the parent's children, every classroom those children are
-// in, the still-open exercises the children have not completed yet, and a
-// recent feed of exercises the children have just completed.
+// in, the children's not-completed exercises split into still-open
+// (pending_exercises) and past-deadline (expired_exercises), and a recent
+// feed of exercises the children have just completed.
 type ParentLayout struct {
 	Children          []*ProfileSummary            `json:"children"`
 	Classrooms        []*ClassroomCard             `json:"classrooms"`
 	PendingExercises  []*ParentPendingExerciseCard `json:"pending_exercises"`
+	ExpiredExercises  []*ParentPendingExerciseCard `json:"expired_exercises"`
 	RecentCompletions []*CompletedExerciseCard     `json:"recent_completions"`
 }
 
@@ -107,6 +119,25 @@ type ClassroomCard struct {
 type ClassroomRef struct {
 	ClassroomID int64  `json:"classroom_id"`
 	Name        string `json:"name"`
+}
+
+// QuizCard is the slim shape for a standalone (out-of-classroom) quiz in
+// the profile's history. The questions/answers blobs are intentionally
+// excluded — like the exercise cards, the home screen only needs enough to
+// render a tile (and the score when graded) and deep-link into
+// GET /quizzes/{id} for the full detail. TotalQuestions / CorrectNumber /
+// ScorePercentage are nil until the quiz has been graded.
+type QuizCard struct {
+	QuizID          int64   `json:"quiz_id"`
+	Purpose         string  `json:"purpose"`
+	TypeOfQuiz      *string `json:"type_of_quiz,omitempty"`
+	Title           *string `json:"title,omitempty"`
+	ShortText       *string `json:"short_text,omitempty"`
+	QuizStatus      *string `json:"quiz_status,omitempty"`
+	TotalQuestions  *int    `json:"total_questions,omitempty"`
+	CorrectNumber   *int    `json:"correct_number,omitempty"`
+	ScorePercentage *int    `json:"score_percentage,omitempty"`
+	CreateDt        string  `json:"create_dt"`
 }
 
 // ExerciseCard is the slim exercise shape for the teacher "assigned" and
@@ -210,6 +241,25 @@ func ClassroomToRef(c *classroomDomain.Classroom) *ClassroomRef {
 		return nil
 	}
 	return &ClassroomRef{ClassroomID: c.ClassroomId(), Name: c.Name()}
+}
+
+// QuizToCard maps a standalone quiz domain entity to its slim card.
+func QuizToCard(q *quizDomain.Quiz) *QuizCard {
+	if q == nil {
+		return nil
+	}
+	return &QuizCard{
+		QuizID:          q.QuizId(),
+		Purpose:         q.Purpose(),
+		TypeOfQuiz:      q.TypeOfQuiz(),
+		Title:           q.Title(),
+		ShortText:       q.ShortText(),
+		QuizStatus:      q.QuizStatus(),
+		TotalQuestions:  q.TotalQuestions(),
+		CorrectNumber:   q.CorrectNumber(),
+		ScorePercentage: q.ScorePercentage(),
+		CreateDt:        q.CreateDt().String(),
+	}
 }
 
 // ExerciseToCard maps an exercise domain entity to a slim card. The
