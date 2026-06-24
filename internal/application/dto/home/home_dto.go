@@ -77,19 +77,24 @@ type ProfileSummary struct {
 // the teacher/student themselves, or (on a parent layout) the child who
 // is enrolled. CoverURL is presigned by the service.
 type ClassroomCard struct {
-	ClassroomID     int64   `json:"classroom_id"`
-	Name            string  `json:"name"`
-	Description     *string `json:"description,omitempty"`
-	OwnerProfileID  int64   `json:"owner_profile_id"`
-	SchoolID        *int64  `json:"school_id,omitempty"`
-	GradeID         *int64  `json:"grade_id,omitempty"`
-	CoverKey        *string `json:"cover_key,omitempty"`
-	CoverURL        *string `json:"cover_url,omitempty"`
-	MemberCount     int64   `json:"member_count"`
-	StudentCount    int64   `json:"student_count"`
-	TeacherCount    int64   `json:"teacher_count"`
-	ClassroomStatus *string `json:"classroom_status,omitempty"`
-	MyRole          *string `json:"my_role,omitempty"`
+	ClassroomID    int64   `json:"classroom_id"`
+	Name           string  `json:"name"`
+	Description    *string `json:"description,omitempty"`
+	OwnerProfileID int64   `json:"owner_profile_id"`
+	// Teacher is the slim profile of the classroom owner — the teacher
+	// running the class (classroom ownership is gated to TEACHER profiles).
+	// Hydrated by the service from ma_profiles via a batched lookup; nil if
+	// the owner profile was deleted out from under the classroom.
+	Teacher         *ProfileSummary `json:"teacher,omitempty"`
+	SchoolID        *int64          `json:"school_id,omitempty"`
+	GradeID         *int64          `json:"grade_id,omitempty"`
+	CoverKey        *string         `json:"cover_key,omitempty"`
+	CoverURL        *string         `json:"cover_url,omitempty"`
+	MemberCount     int64           `json:"member_count"`
+	StudentCount    int64           `json:"student_count"`
+	TeacherCount    int64           `json:"teacher_count"`
+	ClassroomStatus *string         `json:"classroom_status,omitempty"`
+	MyRole          *string         `json:"my_role,omitempty"`
 	// MemberProfileID is the child's profile_id this card is enrolled
 	// under, surfaced only on the parent layout so the UI can group
 	// classrooms by child. Nil for teacher/student layouts.

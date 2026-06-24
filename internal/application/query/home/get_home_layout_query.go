@@ -44,7 +44,11 @@ type HomeLayoutData struct {
 
 	ExerciseByID  map[int64]*exerciseDomain.Exercise
 	ClassroomByID map[int64]*classroomDomain.Classroom
-	ProfileByID   map[int64]*profileDomain.Profile
+	// ProfileByID is the layout's general profile cache keyed by
+	// profile_id: classroom owners (teachers) for every role, plus the
+	// parent's children. The module reads it to hydrate the teacher on each
+	// classroom card and the child on each completion/pending row.
+	ProfileByID map[int64]*profileDomain.Profile
 }
 
 // PendingExerciseForChild pairs a not-yet-completed exercise with the
@@ -390,12 +394,43 @@ func (h *GetHomeLayoutQueryHandler) loadClassrooms(ctx context.Context, ids []in
 	if err != nil {
 		return err
 	}
+	ownerIDSet := make(map[int64]struct{}, len(classrooms))
 	for _, c := range classrooms {
 		if isArchived(c) {
 			continue
 		}
 		data.Classrooms = append(data.Classrooms, c)
 		data.ClassroomByID[c.ClassroomId()] = c
+		ownerIDSet[c.OwnerProfileId()] = struct{}{}
+	}
+	// Batch-load the owner (teacher) profiles so each classroom card can
+	// surface who runs the class without an N+1 per row.
+	return h.hydrateProfiles(ctx, ownerIDSet, data)
+}
+
+// hydrateProfiles loads the profiles named by idSet into data.ProfileByID
+// in one batched read, skipping ids already cached. Shared by the teacher
+// hydration on every classroom card and reused for any other profile refs.
+func (h *GetHomeLayoutQueryHandler) hydrateProfiles(ctx context.Context, idSet map[int64]struct{}, data *HomeLayoutData) error {
+	ids := make([]int64, 0, len(idSet))
+	for id := range idSet {
+		if id == 0 {
+			continue
+		}
+		if _, ok := data.ProfileByID[id]; ok {
+			continue
+		}
+		ids = append(ids, id)
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	profiles, err := h.profileRepo.ListByProfileIds(ctx, ids)
+	if err != nil {
+		return err
+	}
+	for _, p := range profiles {
+		data.ProfileByID[p.ProfileId()] = p
 	}
 	return nil
 }

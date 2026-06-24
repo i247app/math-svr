@@ -140,6 +140,13 @@ func (s *Service) classroomCards(ctx context.Context, data *query.HomeLayoutData
 		}
 		card := dto.ClassroomToCard(c, myRole, memberProfileID)
 		s.signCoverURL(ctx, card)
+		// Teacher = the classroom owner profile (ownership is gated to
+		// TEACHER), hydrated from the query's batched profile cache.
+		if owner, ok := data.ProfileByID[c.OwnerProfileId()]; ok {
+			summary := dto.ProfileToSummary(owner)
+			s.signProfileAvatar(ctx, summary)
+			card.Teacher = summary
+		}
 		cards = append(cards, card)
 	}
 	return cards
