@@ -66,8 +66,8 @@ type HomeLayoutData struct {
 }
 
 // PendingExerciseForChild pairs a not-yet-completed exercise with the
-// child it is pending for. The module maps each into a
-// ParentPendingExerciseCard, hydrating the child / classroom refs from the
+// child it is pending for. The module maps each into a TaskCard (task_type
+// pending or expired), hydrating the child / classroom refs from the
 // HomeLayoutData lookup maps.
 type PendingExerciseForChild struct {
 	ChildProfileID int64

@@ -91,41 +91,43 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 	return p, nil
 }
 
-// buildLayout maps the domain assembly into the wire DTO, populating only
-// the role-specific section that matches the acting profile.
+// buildLayout maps the domain assembly into the flat wire DTO. sub_profiles
+// / rooms / quizzes are role-agnostic (the query layer only populates the
+// relevant data per role, so non-applicable slices come back empty); tasks
+// merges every exercise feed into one discriminated list.
 func (s *Service) buildLayout(ctx context.Context, caller *profileDomain.Profile, data *query.HomeLayoutData) *dto.HomeLayout {
 	profileSummary := dto.ProfileToSummary(caller)
 	s.signProfileAvatar(ctx, profileSummary)
 
-	layout := &dto.HomeLayout{
-		Profile: profileSummary,
-		Role:    data.Role,
-		Quizzes: quizCards(data),
+	return &dto.HomeLayout{
+		Profile:     profileSummary,
+		SubProfiles: s.childSummaries(ctx, data),
+		Rooms:       s.classroomCards(ctx, data),
+		Tasks:       s.tasks(ctx, data),
+		Messages:    []any{},
+		Quizzes:     quizCards(data),
 	}
+}
 
+// tasks merges the acting profile's exercise feeds into one discriminated
+// list. The query layer populates data per role, so the role both decides
+// which buckets exist and how data.Exercises is labelled — a teacher's are
+// "assigned", a student's are "pending".
+func (s *Service) tasks(ctx context.Context, data *query.HomeLayoutData) []*dto.TaskCard {
+	out := make([]*dto.TaskCard, 0)
 	switch enum.RoleType(data.Role) {
 	case enum.RoleTypeTeacher:
-		layout.Teacher = &dto.TeacherLayout{
-			Classrooms:        s.classroomCards(ctx, data),
-			AssignedExercises: s.exerciseCards(data, data.Exercises),
-			ExpiredExercises:  s.exerciseCards(data, data.ExpiredExercises),
-		}
+		out = append(out, s.exerciseTasks(data, data.Exercises, dto.TaskTypeAssigned)...)
+		out = append(out, s.exerciseTasks(data, data.ExpiredExercises, dto.TaskTypeExpired)...)
 	case enum.RoleTypeStudent:
-		layout.Student = &dto.StudentLayout{
-			Classrooms:       s.classroomCards(ctx, data),
-			PendingExercises: s.exerciseCards(data, data.Exercises),
-			ExpiredExercises: s.exerciseCards(data, data.ExpiredExercises),
-		}
+		out = append(out, s.exerciseTasks(data, data.Exercises, dto.TaskTypePending)...)
+		out = append(out, s.exerciseTasks(data, data.ExpiredExercises, dto.TaskTypeExpired)...)
 	case enum.RoleTypeParent:
-		layout.Parent = &dto.ParentLayout{
-			Children:          s.childSummaries(ctx, data),
-			Classrooms:        s.classroomCards(ctx, data),
-			PendingExercises:  s.parentPendingCards(ctx, data, data.PendingExercises),
-			ExpiredExercises:  s.parentPendingCards(ctx, data, data.ExpiredByChild),
-			RecentCompletions: s.completionCards(ctx, data),
-		}
+		out = append(out, s.childExerciseTasks(ctx, data, data.PendingExercises, dto.TaskTypePending)...)
+		out = append(out, s.childExerciseTasks(ctx, data, data.ExpiredByChild, dto.TaskTypeExpired)...)
+		out = append(out, s.completionTasks(ctx, data)...)
 	}
-	return layout
+	return out
 }
 
 // classroomCards maps the loaded classrooms into dashboard tiles, tagging
@@ -158,14 +160,17 @@ func (s *Service) classroomCards(ctx context.Context, data *query.HomeLayoutData
 	return cards
 }
 
-// exerciseCards maps a teacher/student exercise list into slim cards,
-// attaching each exercise's classroom ref from the batched classroom map.
-// The slice is passed explicitly so the same mapper serves both the
-// open (assigned/pending) and the expired buckets.
-func (s *Service) exerciseCards(data *query.HomeLayoutData, exercises []*exerciseDomain.Exercise) []*dto.ExerciseCard {
-	cards := make([]*dto.ExerciseCard, 0, len(exercises))
+// exerciseTasks maps a plain exercise list (teacher assigned / student
+// pending / either's expired) into task cards tagged with taskType. No
+// child — these are self-scoped tasks. The classroom ref comes from the
+// batched classroom map.
+func (s *Service) exerciseTasks(data *query.HomeLayoutData, exercises []*exerciseDomain.Exercise, taskType string) []*dto.TaskCard {
+	cards := make([]*dto.TaskCard, 0, len(exercises))
 	for _, e := range exercises {
-		card := dto.ExerciseToCard(e)
+		card := &dto.TaskCard{
+			TaskType: taskType,
+			Exercise: dto.ExerciseToCard(e),
+		}
 		if c, ok := data.ClassroomByID[e.ClassroomId()]; ok {
 			card.Classroom = dto.ClassroomToRef(c)
 		}
@@ -186,22 +191,26 @@ func (s *Service) childSummaries(ctx context.Context, data *query.HomeLayoutData
 	return cards
 }
 
-// completionCards maps the parent's recent-completion feed, hydrating the
-// child, exercise, and classroom refs from the batched lookup maps.
-func (s *Service) completionCards(ctx context.Context, data *query.HomeLayoutData) []*dto.CompletedExerciseCard {
-	cards := make([]*dto.CompletedExerciseCard, 0, len(data.Submissions))
+// completionTasks maps the parent's recent-completion feed into
+// recent_completion task cards, hydrating the child, exercise, and
+// classroom refs plus the submission detail from the batched lookup maps.
+func (s *Service) completionTasks(ctx context.Context, data *query.HomeLayoutData) []*dto.TaskCard {
+	cards := make([]*dto.TaskCard, 0, len(data.Submissions))
 	for _, sub := range data.Submissions {
-		card := dto.SubmissionToCompletedCard(sub)
-		if child, ok := data.ProfileByID[sub.ProfileId()]; ok {
-			summary := dto.ProfileToSummary(child)
-			s.signProfileAvatar(ctx, summary)
-			card.Child = summary
+		card := &dto.TaskCard{
+			TaskType:   dto.TaskTypeCompleted,
+			Submission: dto.SubmissionToTaskSubmission(sub),
 		}
 		if ex, ok := data.ExerciseByID[sub.ClassroomExerciseId()]; ok {
 			card.Exercise = dto.ExerciseToCard(ex)
 		}
 		if c, ok := data.ClassroomByID[sub.ClassroomId()]; ok {
 			card.Classroom = dto.ClassroomToRef(c)
+		}
+		if child, ok := data.ProfileByID[sub.ProfileId()]; ok {
+			summary := dto.ProfileToSummary(child)
+			s.signProfileAvatar(ctx, summary)
+			card.Child = summary
 		}
 		cards = append(cards, card)
 	}
@@ -218,28 +227,27 @@ func quizCards(data *query.HomeLayoutData) []*dto.QuizCard {
 	return cards
 }
 
-// parentPendingCards maps a parent per-child exercise feed (pending or
-// expired) into cards, hydrating the child profile and classroom refs from
-// the batched lookup maps. The items slice is passed explicitly so the
-// same mapper serves both buckets.
-func (s *Service) parentPendingCards(ctx context.Context, data *query.HomeLayoutData, items []query.PendingExerciseForChild) []*dto.ParentPendingExerciseCard {
-	cards := make([]*dto.ParentPendingExerciseCard, 0, len(items))
+// childExerciseTasks maps a parent per-child exercise feed (pending or
+// expired) into task cards tagged with taskType, hydrating the owning
+// child and classroom ref from the batched lookup maps. The items slice is
+// passed explicitly so the same mapper serves both buckets.
+func (s *Service) childExerciseTasks(ctx context.Context, data *query.HomeLayoutData, items []query.PendingExerciseForChild, taskType string) []*dto.TaskCard {
+	cards := make([]*dto.TaskCard, 0, len(items))
 	for _, item := range items {
 		if item.Exercise == nil {
 			continue
 		}
-		card := &dto.ParentPendingExerciseCard{
-			ClassroomExerciseID: item.Exercise.ClassroomExerciseId(),
-			ClassroomID:         item.Exercise.ClassroomId(),
-			Exercise:            dto.ExerciseToCard(item.Exercise),
+		card := &dto.TaskCard{
+			TaskType: taskType,
+			Exercise: dto.ExerciseToCard(item.Exercise),
+		}
+		if c, ok := data.ClassroomByID[item.Exercise.ClassroomId()]; ok {
+			card.Classroom = dto.ClassroomToRef(c)
 		}
 		if child, ok := data.ProfileByID[item.ChildProfileID]; ok {
 			summary := dto.ProfileToSummary(child)
 			s.signProfileAvatar(ctx, summary)
 			card.Child = summary
-		}
-		if c, ok := data.ClassroomByID[item.Exercise.ClassroomId()]; ok {
-			card.Classroom = dto.ClassroomToRef(c)
 		}
 		cards = append(cards, card)
 	}

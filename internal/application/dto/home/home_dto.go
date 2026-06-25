@@ -20,55 +20,63 @@ type HomeLayoutRes struct {
 	Home *HomeLayout `json:"home"`
 }
 
-// HomeLayout is a role-discriminated dashboard. The Role field is the
-// switch the frontend branches on; exactly one of Teacher / Parent /
-// Student is populated to match it, the others stay null. Keeping the
-// payloads in named, role-specific sub-objects (instead of a flat union)
-// lets the mobile client model each home screen as its own strongly-typed
-// shape without inspecting optional fields that belong to another role.
+// HomeLayout is the flat home dashboard. Its shape is role-agnostic —
+// every role returns the same top-level fields and the frontend branches
+// on profile.role plus each task's task_type rather than on a per-role
+// sub-object.
+//
+//   - sub_profiles: the acting profile's children (PARENT only; empty for
+//     TEACHER / STUDENT).
+//   - rooms: the classrooms in scope for this profile.
+//   - tasks: every exercise feed (assigned / pending / expired /
+//     recent_completion) merged into one discriminated list.
+//   - messages: reserved for a future feature; always an empty array today.
+//   - quizzes: the acting profile's standalone (out-of-classroom) quiz
+//     history, most recent first.
+//
+// Every slice is emitted as [] (never null) so the wire shape is stable.
 type HomeLayout struct {
-	Profile *ProfileSummary `json:"profile"`
-	Role    string          `json:"role"`
-
-	// Quizzes is the acting profile's own (out-of-classroom) quiz history,
-	// most recent first. Role-independent — every role can take standalone
-	// quizzes — so it lives at the top level rather than inside a
-	// role-specific section. Empty (never null) when the profile has none.
-	Quizzes []*QuizCard `json:"quizzes"`
-
-	Teacher *TeacherLayout `json:"teacher,omitempty"`
-	Parent  *ParentLayout  `json:"parent,omitempty"`
-	Student *StudentLayout `json:"student,omitempty"`
+	Profile     *ProfileSummary   `json:"profile"`
+	SubProfiles []*ProfileSummary `json:"sub_profiles"`
+	Rooms       []*ClassroomCard  `json:"rooms"`
+	Tasks       []*TaskCard       `json:"tasks"`
+	Messages    []any             `json:"messages"`
+	Quizzes     []*QuizCard       `json:"quizzes"`
 }
 
-// TeacherLayout: the classrooms the teacher manages plus the exercises
-// they have assigned — split into still-open (assigned_exercises) and
-// past-deadline (expired_exercises) buckets.
-type TeacherLayout struct {
-	Classrooms        []*ClassroomCard `json:"classrooms"`
-	AssignedExercises []*ExerciseCard  `json:"assigned_exercises"`
-	ExpiredExercises  []*ExerciseCard  `json:"expired_exercises"`
+// Task type discriminators for the unified tasks feed. Each maps 1:1 onto
+// one of the previous role-specific exercise buckets.
+const (
+	TaskTypeAssigned  = "assigned"  // teacher-issued exercise (still open)
+	TaskTypePending   = "pending"   // not completed yet (still open)
+	TaskTypeExpired   = "expired"   // not completed, past deadline
+	TaskTypeCompleted = "completed" // recently submitted/graded
+)
+
+// TaskCard is one entry in the unified tasks feed. TaskType is the
+// discriminator the frontend branches on. Exercise and Classroom are
+// populated for every task; Child is set only for parent-scoped tasks
+// (which child the task belongs to); Submission is set only for
+// recent_completion tasks.
+type TaskCard struct {
+	TaskType   string          `json:"task_type"`
+	Exercise   *ExerciseCard   `json:"exercise,omitempty"`
+	Classroom  *ClassroomRef   `json:"classroom,omitempty"`
+	Child      *ProfileSummary `json:"child,omitempty"`
+	Submission *TaskSubmission `json:"submission,omitempty"`
 }
 
-// StudentLayout: the classrooms the student has joined plus the exercises
-// in those classrooms they have not completed — split into still-open
-// (pending_exercises) and past-deadline / missed (expired_exercises).
-type StudentLayout struct {
-	Classrooms       []*ClassroomCard `json:"classrooms"`
-	PendingExercises []*ExerciseCard  `json:"pending_exercises"`
-	ExpiredExercises []*ExerciseCard  `json:"expired_exercises"`
-}
-
-// ParentLayout: the parent's children, every classroom those children are
-// in, the children's not-completed exercises split into still-open
-// (pending_exercises) and past-deadline (expired_exercises), and a recent
-// feed of exercises the children have just completed.
-type ParentLayout struct {
-	Children          []*ProfileSummary            `json:"children"`
-	Classrooms        []*ClassroomCard             `json:"classrooms"`
-	PendingExercises  []*ParentPendingExerciseCard `json:"pending_exercises"`
-	ExpiredExercises  []*ParentPendingExerciseCard `json:"expired_exercises"`
-	RecentCompletions []*CompletedExerciseCard     `json:"recent_completions"`
+// TaskSubmission carries the submission / grading detail for a
+// recent_completion task. The score fields are nil until the submission is
+// graded.
+type TaskSubmission struct {
+	ClassroomExerciseSubmissionID int64   `json:"classroom_exercise_submission_id"`
+	SubmissionStatus              *string `json:"submission_status,omitempty"`
+	SubmittedDt                   string  `json:"submitted_dt,omitempty"`
+	GradedDt                      string  `json:"graded_dt,omitempty"`
+	TotalQuestions                *int64  `json:"total_questions,omitempty"`
+	CorrectNumber                 *int64  `json:"correct_number,omitempty"`
+	ScorePercentage               *int64  `json:"score_percentage,omitempty"`
 }
 
 // ProfileSummary is the slim profile shape shared across the home cards.
@@ -159,40 +167,6 @@ type ExerciseCard struct {
 	EndDate             *string       `json:"end_date,omitempty"`
 	ExerciseStatus      *string       `json:"exercise_status,omitempty"`
 	CreateDt            string        `json:"create_dt"`
-}
-
-// CompletedExerciseCard is one row in the parent "recent completions"
-// feed: which child completed which exercise, in which classroom, with
-// the grading result when available. Child / Exercise / Classroom are
-// hydrated by the service via batched lookups; any may be nil if the
-// referenced row was deleted out from under the submission.
-type CompletedExerciseCard struct {
-	ClassroomExerciseSubmissionID int64           `json:"classroom_exercise_submission_id"`
-	ClassroomExerciseID           int64           `json:"classroom_exercise_id"`
-	ClassroomID                   int64           `json:"classroom_id"`
-	Child                         *ProfileSummary `json:"child,omitempty"`
-	Exercise                      *ExerciseCard   `json:"exercise,omitempty"`
-	Classroom                     *ClassroomRef   `json:"classroom,omitempty"`
-	SubmissionStatus              *string         `json:"submission_status,omitempty"`
-	SubmittedDt                   string          `json:"submitted_dt,omitempty"`
-	GradedDt                      string          `json:"graded_dt,omitempty"`
-	TotalQuestions                *int64          `json:"total_questions,omitempty"`
-	CorrectNumber                 *int64          `json:"correct_number,omitempty"`
-	ScorePercentage               *int64          `json:"score_percentage,omitempty"`
-}
-
-// ParentPendingExerciseCard is one row in the parent "pending" list: an
-// exercise one specific child has not completed yet, in a classroom that
-// child is enrolled in. Mirrors CompletedExerciseCard so the parent UI
-// can render the "to-do" and "done" feeds with the same widgets — Child
-// identifies which child still owes the exercise. The same exercise can
-// appear once per child who hasn't done it.
-type ParentPendingExerciseCard struct {
-	ClassroomExerciseID int64           `json:"classroom_exercise_id"`
-	ClassroomID         int64           `json:"classroom_id"`
-	Child               *ProfileSummary `json:"child,omitempty"`
-	Exercise            *ExerciseCard   `json:"exercise,omitempty"`
-	Classroom           *ClassroomRef   `json:"classroom,omitempty"`
 }
 
 // ProfileToSummary maps a profile domain entity to the slim card shape.
@@ -292,26 +266,25 @@ func ExerciseToCard(e *exerciseDomain.Exercise) *ExerciseCard {
 	return card
 }
 
-// SubmissionToCompletedCard maps a submission to the parent feed row. The
-// Child / Exercise / Classroom embeds are attached by the service.
-func SubmissionToCompletedCard(s *exerciseDomain.Submission) *CompletedExerciseCard {
+// SubmissionToTaskSubmission maps a submission to the recent_completion
+// task's submission detail. The owning child, exercise, and classroom are
+// attached by the service from its batched lookup maps.
+func SubmissionToTaskSubmission(s *exerciseDomain.Submission) *TaskSubmission {
 	if s == nil {
 		return nil
 	}
-	card := &CompletedExerciseCard{
+	ts := &TaskSubmission{
 		ClassroomExerciseSubmissionID: s.ClassroomExerciseSubmissionId(),
-		ClassroomExerciseID:           s.ClassroomExerciseId(),
-		ClassroomID:                   s.ClassroomId(),
 		SubmissionStatus:              s.SubmissionStatus(),
 		TotalQuestions:                s.TotalQuestions(),
 		CorrectNumber:                 s.CorrectNumber(),
 		ScorePercentage:               s.ScorePercentage(),
 	}
 	if s.SubmittedDt().IsValid() {
-		card.SubmittedDt = s.SubmittedDt().String()
+		ts.SubmittedDt = s.SubmittedDt().String()
 	}
 	if s.GradedDt().IsValid() {
-		card.GradedDt = s.GradedDt().String()
+		ts.GradedDt = s.GradedDt().String()
 	}
-	return card
+	return ts
 }
