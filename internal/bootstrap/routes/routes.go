@@ -6,6 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/bootstrap/container"
 	"math-ai.com/math-ai/internal/bootstrap/middleware"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
@@ -155,6 +156,14 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /chapters/update", chapterHandler.HandleUpdateChapter, authMiddleware)
 		gexSvr.AddRoute("POST /chapters/soft-delete", chapterHandler.HandleSoftDeleteChapter, authMiddleware)
 		gexSvr.AddRoute("POST /chapters/force-delete", chapterHandler.HandleForceDeleteChapter, authMiddleware)
+	}
+
+	// ai routes — LLM connection warm-up. Public + globally throttled so
+	// the frontend can prime the AI connection early (e.g. on the home or
+	// splash screen) and the first real quiz/exercise generation is fast.
+	{
+		botHandler := bot.NewHandler(services.BotSvc)
+		gexSvr.AddRoute("POST /connect/warmup", botHandler.HandleWarmup)
 	}
 
 	// quiz routes

@@ -7,6 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
@@ -144,6 +145,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		res.StorageProvider,
 	)
 
+	log.Info("> Setup BotSvc...")
+	botService := bot.NewService(res.BotProvider)
+
 	log.Info("> Setup HomeSvc...")
 	homeService := home.NewService(
 		repos.ClassroomRepository,
@@ -172,5 +176,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		ClassroomSvc: classroomService,
 		ExerciseSvc:  exerciseService,
 		HomeSvc:      homeService,
+		BotSvc:       botService,
 	}, nil
 }

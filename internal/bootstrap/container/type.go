@@ -16,6 +16,7 @@ import (
 	seqDomain "math-ai.com/math-ai/internal/domain/seq"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
@@ -50,6 +51,7 @@ type ServiceContainer struct {
 	ClassroomSvc *classroom.Service
 	ExerciseSvc  *exercise.Service
 	HomeSvc      *home.Service
+	BotSvc       *bot.Service
 }
 
 type RepositoryContainer struct {
