@@ -9,7 +9,6 @@ import (
 	command "math-ai.com/math-ai/internal/application/command/classroom"
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
 	query "math-ai.com/math-ai/internal/application/query/classroom"
-	progressQuery "math-ai.com/math-ai/internal/application/query/classroomprogress"
 	"math-ai.com/math-ai/internal/application/transaction"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
@@ -57,10 +56,6 @@ type Service struct {
 	cancelJoinRequestCmd               *command.CancelJoinRequestCommandHandler
 	listJoinRequestsByClassroomQuery   *query.ListJoinRequestsByClassroomQueryHandler
 	listMyJoinRequestsQuery            *query.ListMyJoinRequestsQueryHandler
-
-	// Class-learning-progress reads — see module/classroom/progress_service.go.
-	scoresOverTimeQuery   *progressQuery.ScoresOverTimeQueryHandler
-	studentsProgressQuery *progressQuery.StudentsProgressQueryHandler
 
 	classroomRepo        classroomDomain.IRepository
 	classroomMemberRepo  classroomDomain.IMemberRepository
@@ -112,8 +107,6 @@ func NewService(
 		cancelJoinRequestCmd:               command.NewCancelJoinRequestCommandHandler(uow),
 		listJoinRequestsByClassroomQuery:   query.NewListJoinRequestsByClassroomQueryHandler(classroomMemberRepo),
 		listMyJoinRequestsQuery:            query.NewListMyJoinRequestsQueryHandler(classroomMemberRepo),
-		scoresOverTimeQuery:                progressQuery.NewScoresOverTimeQueryHandler(submissionRepo),
-		studentsProgressQuery:              progressQuery.NewStudentsProgressQueryHandler(classroomMemberRepo, profileRepo, submissionRepo, exerciseRepo),
 		classroomRepo:                      classroomRepo,
 		classroomMemberRepo:                classroomMemberRepo,
 		classroomProgramRepo:               classroomProgramRepo,

@@ -182,21 +182,6 @@ type ISubmissionRepository interface {
 	// used by the teacher-side roster view to hydrate per-row
 	// submission metadata onto the submitted-members page.
 	ListByExerciseAndProfileIds(ctx context.Context, classroomExerciseId int64, profileIds []int64) ([]*Submission, error)
-	// ListBucketedScores aggregates submission scores into chart-shaped
-	// rows for the /classrooms/progress/scores-over-time endpoint —
-	// one row per (bucket_label) inside [From, To], with COUNT plus
-	// AVG/MIN/MAX of score_percentage. The bucket label format is
-	// driven by params.Bucket (DAY|WEEK|MONTH); see the SQL builder
-	// in the mysql impl for the exact DATE_FORMAT/CONVERT_TZ shape.
-	// Caller is responsible for zero-filling missing buckets.
-	ListBucketedScores(ctx context.Context, params BucketedScoresParams) ([]*BucketedScoreRow, error)
-	// ListForProgress streams the (profile_id, score_percentage,
-	// submitted_dt) tuples for a classroom inside [From, To],
-	// ordered by (profile_id, submitted_dt ASC). One round trip; the
-	// caller groups by profile_id and runs the trend / slope /
-	// comment math in-process. FilterProfileID is optional — when
-	// non-nil, the result is narrowed to that profile only.
-	ListForProgress(ctx context.Context, params ProgressRangeParams) ([]*ProgressRow, error)
 	Create(ctx context.Context, sub *Submission) (*Submission, error)
 	UpdateGrading(ctx context.Context, submissionId int64, patch GradingPatch) error
 	SoftDelete(ctx context.Context, submissionId int64, actorID *int64) error

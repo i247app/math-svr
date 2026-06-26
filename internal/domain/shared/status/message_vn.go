@@ -432,12 +432,6 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Mã mời đã được sử dụng"
 	case CLASSROOM_PROGRAM_DUPLICATE:
 		return "Danh sách chương trình bị trùng"
-	case CLASSROOM_PROGRESS_INVALID_BUCKET:
-		return "Đơn vị thời gian không hợp lệ"
-	case CLASSROOM_PROGRESS_INVALID_DATE_RANGE:
-		return "Khoảng thời gian không hợp lệ"
-	case CLASSROOM_PROGRESS_INVALID_TZ:
-		return "Múi giờ không hợp lệ"
 
 	// Classroom member
 	case CLASSROOM_MEMBER_NOT_FOUND:
