@@ -204,9 +204,6 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /classrooms/join-requests/approve", classroomHandler.HandleApproveJoinRequest, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/join-requests/reject", classroomHandler.HandleRejectJoinRequest, authMiddleware)
 		gexSvr.AddRoute("POST /classrooms/join-requests/cancel", classroomHandler.HandleCancelJoinRequest, authMiddleware)
-
-		// gexSvr.AddRoute("POST /classrooms/progress/scores-over-time", classroomHandler.HandleProgressScoresOverTime, authMiddleware)
-		// gexSvr.AddRoute("POST /classrooms/progress/students", classroomHandler.HandleProgressStudents, authMiddleware)
 	}
 
 	// classroom exercise routes — teacher-issued, AI-generated assignments
