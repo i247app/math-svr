@@ -238,7 +238,7 @@ func (s *Service) populateCoverUrl(ctx context.Context, resp *dto.ClassroomRespo
 		Expiration: coverUrlTTL,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("classroom.cover presign failed classroom_id=%s err=%v", resp.ClassroomID, err)
+		logger.From(ctx).Warnf("classroom.cover presign failed classroom_id=%d err=%v", resp.ClassroomID, err)
 		return
 	}
 	resp.CoverURL = &url

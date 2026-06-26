@@ -219,7 +219,7 @@ func (s *Service) populateAvatarUrl(ctx context.Context, resp *dto.ProfileRespon
 		Expiration: avatarUrlTTL,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("profile.avatar presign failed profile_id=%s err=%v", resp.ProfileID, err)
+		logger.From(ctx).Warnf("profile.avatar presign failed profile_id=%d err=%v", resp.ProfileID, err)
 		return
 	}
 	resp.AvatarUrl = &url
@@ -234,7 +234,7 @@ func (s *Service) signProgramImageUrl(ctx context.Context, r *programDto.Program
 		Expiration: refImageUrlTTL,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("profile.program image presign failed program_id=%s err=%v", r.ProgramID, err)
+		logger.From(ctx).Warnf("profile.program image presign failed program_id=%d err=%v", r.ProgramID, err)
 		return
 	}
 	r.ImageUrl = &url
@@ -249,7 +249,7 @@ func (s *Service) signGradeImageUrl(ctx context.Context, r *gradeDto.GradeRespon
 		Expiration: refImageUrlTTL,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("profile.grade image presign failed grade_id=%s err=%v", r.GradeID, err)
+		logger.From(ctx).Warnf("profile.grade image presign failed grade_id=%d err=%v", r.GradeID, err)
 		return
 	}
 	r.ImageUrl = &url
@@ -264,7 +264,7 @@ func (s *Service) signSchoolImageUrl(ctx context.Context, r *schoolDto.SchoolRes
 		Expiration: refImageUrlTTL,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("profile.school image presign failed school_id=%s err=%v", r.SchoolID, err)
+		logger.From(ctx).Warnf("profile.school image presign failed school_id=%d err=%v", r.SchoolID, err)
 		return
 	}
 	r.ImageUrl = &url
@@ -279,7 +279,7 @@ func (s *Service) signSemesterImageUrl(ctx context.Context, r *semesterDto.Semes
 		Expiration: refImageUrlTTL,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("profile.semester image presign failed semester_id=%s err=%v", r.SemesterID, err)
+		logger.From(ctx).Warnf("profile.semester image presign failed semester_id=%d err=%v", r.SemesterID, err)
 		return
 	}
 	r.ImageUrl = &url

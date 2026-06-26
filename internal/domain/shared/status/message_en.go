@@ -432,6 +432,12 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Invite code is already in use"
 	case CLASSROOM_PROGRAM_DUPLICATE:
 		return "Duplicate program id in the list"
+	case CLASSROOM_PROGRESS_INVALID_DATE_RANGE:
+		return "Invalid date range."
+	case CLASSROOM_PROGRESS_INVALID_TZ:
+		return "Invalid time zone."
+	case CLASSROOM_PROGRESS_INVALID_PURPOSE:
+		return "Invalid exercise type."
 
 	// Classroom member
 	case CLASSROOM_MEMBER_NOT_FOUND:

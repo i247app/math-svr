@@ -182,9 +182,25 @@ type ISubmissionRepository interface {
 	// used by the teacher-side roster view to hydrate per-row
 	// submission metadata onto the submitted-members page.
 	ListByExerciseAndProfileIds(ctx context.Context, classroomExerciseId int64, profileIds []int64) ([]*Submission, error)
+	// ListProfileSubmissionsInRange returns one student's graded, active
+	// submissions in a classroom within [From, To], ordered by
+	// submitted_dt ASC. score_percentage IS NOT NULL is enforced so every
+	// returned row is chartable. No JOIN — the exercise title/purpose are
+	// hydrated by the caller via exercise.IRepository.
+	ListProfileSubmissionsInRange(ctx context.Context, params ProfileSubmissionsRangeParams) ([]*Submission, error)
 	Create(ctx context.Context, sub *Submission) (*Submission, error)
 	UpdateGrading(ctx context.Context, submissionId int64, patch GradingPatch) error
 	SoftDelete(ctx context.Context, submissionId int64, actorID *int64) error
+}
+
+// ProfileSubmissionsRangeParams drives ListProfileSubmissionsInRange —
+// the single-student progress detail read (002-profile-learning-progress).
+// All four fields are required; From/To bound submitted_dt inclusively.
+type ProfileSubmissionsRangeParams struct {
+	ClassroomID int64
+	ProfileID   int64
+	From        mtime.MathTime
+	To          mtime.MathTime
 }
 
 // BucketedScoresParams drives ListBucketedScores. Bucket is one of

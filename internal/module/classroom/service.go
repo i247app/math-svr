@@ -9,6 +9,7 @@ import (
 	command "math-ai.com/math-ai/internal/application/command/classroom"
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
 	query "math-ai.com/math-ai/internal/application/query/classroom"
+	progressQuery "math-ai.com/math-ai/internal/application/query/classroomprogress"
 	"math-ai.com/math-ai/internal/application/transaction"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
@@ -56,6 +57,7 @@ type Service struct {
 	cancelJoinRequestCmd               *command.CancelJoinRequestCommandHandler
 	listJoinRequestsByClassroomQuery   *query.ListJoinRequestsByClassroomQueryHandler
 	listMyJoinRequestsQuery            *query.ListMyJoinRequestsQueryHandler
+	profileProgressQuery               *progressQuery.ProfileProgressQueryHandler
 
 	classroomRepo        classroomDomain.IRepository
 	classroomMemberRepo  classroomDomain.IMemberRepository
@@ -107,6 +109,7 @@ func NewService(
 		cancelJoinRequestCmd:               command.NewCancelJoinRequestCommandHandler(uow),
 		listJoinRequestsByClassroomQuery:   query.NewListJoinRequestsByClassroomQueryHandler(classroomMemberRepo),
 		listMyJoinRequestsQuery:            query.NewListMyJoinRequestsQueryHandler(classroomMemberRepo),
+		profileProgressQuery:               progressQuery.NewProfileProgressQueryHandler(submissionRepo, exerciseRepo),
 		classroomRepo:                      classroomRepo,
 		classroomMemberRepo:                classroomMemberRepo,
 		classroomProgramRepo:               classroomProgramRepo,

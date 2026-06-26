@@ -436,7 +436,7 @@ func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, c
 	if err != nil {
 		// The key is persisted; failing here just means we can't return
 		// a preview URL now. Log and return the key without it.
-		logger.From(ctx).Warnf("profile.avatar presign failed profile_id=%s err=%v", profileID, err)
+		logger.From(ctx).Warnf("profile.avatar presign failed profile_id=%d err=%v", profileID, err)
 		signed = ""
 	}
 

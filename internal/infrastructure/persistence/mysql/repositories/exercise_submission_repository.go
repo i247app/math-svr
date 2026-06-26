@@ -215,6 +215,45 @@ func (r *ExerciseSubmissionRepository) ListRecentByProfileIds(ctx context.Contex
 	return out, nil
 }
 
+// ListProfileSubmissionsInRange returns one student's graded, active
+// submissions in a classroom within [From, To], ordered by submitted_dt
+// ASC. Powers the single-student progress detail
+// (002-profile-learning-progress). Only chartable rows are returned
+// (submitted_dt + score_percentage NOT NULL). No JOIN — the caller
+// hydrates exercise titles/purpose separately.
+func (r *ExerciseSubmissionRepository) ListProfileSubmissionsInRange(ctx context.Context, params domain.ProfileSubmissionsRangeParams) ([]*domain.Submission, error) {
+	if params.ClassroomID == 0 || params.ProfileID == 0 {
+		return nil, nil
+	}
+	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE ` +
+		exerciseSubmissionActiveWhere +
+		` AND s.classroom_id = ? AND s.profile_id = ?` +
+		` AND s.submitted_dt IS NOT NULL AND s.submitted_dt BETWEEN ? AND ?` +
+		` AND s.score_percentage IS NOT NULL` +
+		` ORDER BY s.submitted_dt ASC, s.id ASC`
+	args := append(exerciseSubmissionActiveArgs(),
+		params.ClassroomID, params.ProfileID, params.From, params.To)
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list-profile-range: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]*domain.Submission, 0)
+	for rows.Next() {
+		m, err := scanExerciseSubmission(rows)
+		if err != nil {
+			return nil, fmt.Errorf("classroom exercise submission repo list-profile-range scan: %w", err)
+		}
+		out = append(out, modelToDomainClassroomExerciseSubmission(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom exercise submission repo list-profile-range iteration: %w", err)
+	}
+	return out, nil
+}
+
 func (r *ExerciseSubmissionRepository) ListSubmissions(ctx context.Context, params domain.ListSubmissionsParams) ([]*domain.Submission, *pagination.Pagination, error) {
 	if params.Limit <= 0 {
 		params.Limit = pagination.DefaultPageSize

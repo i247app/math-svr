@@ -57,4 +57,5 @@ var (
 	ErrProgressInvalidDateRange = errors.New("from_dt must be before to_dt")
 	ErrProgressRangeTooLong     = errors.New("date range exceeds the 2-year cap")
 	ErrProgressInvalidTz        = errors.New("tz must be a numeric offset like +07:00")
+	ErrProgressInvalidPurpose   = errors.New("purpose must be HOMEWORK, QUIZ, or EXAM")
 )

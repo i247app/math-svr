@@ -226,6 +226,11 @@ const (
 	CLASSROOM_CODE_TAKEN                   StatusCode = 12223
 	CLASSROOM_PROGRAM_DUPLICATE            StatusCode = 12224
 
+	// Profile-learning-progress (002-profile-learning-progress).
+	CLASSROOM_PROGRESS_INVALID_DATE_RANGE StatusCode = 12225
+	CLASSROOM_PROGRESS_INVALID_TZ         StatusCode = 12226
+	CLASSROOM_PROGRESS_INVALID_PURPOSE    StatusCode = 12227
+
 	CLASSROOM_MEMBER_NOT_FOUND            StatusCode = 12301
 	CLASSROOM_MEMBER_MISSING_ID           StatusCode = 12302
 	CLASSROOM_MEMBER_MISSING_CLASSROOM_ID StatusCode = 12303

@@ -171,7 +171,7 @@ func (s *Service) populateImageUrl(ctx context.Context, resp *dto.GradeResponse)
 		Expiration: imageUrlTTL,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("grade.image presign failed grade_id=%s err=%v", resp.GradeID, err)
+		logger.From(ctx).Warnf("grade.image presign failed grade_id=%d err=%v", resp.GradeID, err)
 		return
 	}
 	resp.ImageUrl = &url
