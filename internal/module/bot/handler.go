@@ -15,7 +15,7 @@ func NewHandler(svc *Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-// HandleWarmup serves POST /connect/init-ai.
+// HandleWarmup serves POST /ai/shake.
 //
 // It is a best-effort priming of the LLM connection pool: the frontend
 // calls it early (e.g. on entering the home screen) so the cold-connection

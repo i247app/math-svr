@@ -13,7 +13,7 @@ import (
 
 const (
 	// warmupTTL is how long a successful warm-up is considered "fresh".
-	// Within this window repeated /connect/init-ai calls short-circuit to a cached
+	// Within this window repeated /ai/shake calls short-circuit to a cached
 	// response instead of contacting the LLM again. It bounds the global
 	// vendor cost to at most one tiny probe per window no matter how many
 	// clients (or how often) call the endpoint — which is exactly what makes
