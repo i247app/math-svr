@@ -163,7 +163,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// splash screen) and the first real quiz/exercise generation is fast.
 	{
 		botHandler := bot.NewHandler(services.BotSvc)
-		gexSvr.AddRoute("POST /ai/shake", botHandler.HandleWarmup)
+		gexSvr.AddRoute("POST /ai/shake", botHandler.HandleShake)
 	}
 
 	// quiz routes

@@ -12,34 +12,34 @@ import (
 )
 
 const (
-	// warmupTTL is how long a successful warm-up is considered "fresh".
+	// shakeTTL is how long a successful handshake is considered "fresh".
 	// Within this window repeated /ai/shake calls short-circuit to a cached
 	// response instead of contacting the LLM again. It bounds the global
 	// vendor cost to at most one tiny probe per window no matter how many
 	// clients (or how often) call the endpoint — which is exactly what makes
 	// the route safe to expose without auth and to call from any screen.
-	warmupTTL = 60 * time.Second
+	shakeTTL = 60 * time.Second
 
-	// warmupTimeout caps a single warm-up round trip so a stuck upstream can
+	// shakeTimeout caps a single handshake round trip so a stuck upstream can
 	// not pin the handler. It is deliberately generous because the first
 	// (cold) connection is precisely the slow case we are paying down.
-	warmupTimeout = 30 * time.Second
+	shakeTimeout = 30 * time.Second
 
-	// warmupPrompt is the smallest valid prompt that still forces the full
+	// shakePrompt is the smallest valid prompt that still forces the full
 	// network path (DNS, TLS, HTTP/2 handshake) to the vendor. Paired with
 	// MaxTokens=1 it costs ~nothing while priming the connection pool.
-	warmupPrompt = "ping"
+	shakePrompt = "ping"
 )
 
-// Service owns AI connection warm-up. The expensive part of the very first
+// Service owns AI connection handshake. The expensive part of the very first
 // AI request in a process — or the first one after the keep-alive pool has
 // gone idle — is establishing the connection to the LLM vendor, not the
-// generation itself. Warm-up pays that cost ahead of time, off the critical
+// generation itself. Handshake pays that cost ahead of time, off the critical
 // path of a real quiz/exercise generation, so the user-visible AI call is
 // fast.
 //
-// State is process-global on purpose: the connection pool a warm-up primes
-// is shared by every request, so one fresh warm-up serves all callers. The
+// State is process-global on purpose: the connection pool a handshake primes
+// is shared by every request, so one fresh handshake serves all callers. The
 // two-mutex design keeps the cached fast-path from blocking behind an
 // in-flight probe.
 type Service struct {
@@ -50,35 +50,35 @@ type Service struct {
 	// fall through to the refreshed cache.
 	flightMu sync.Mutex
 
-	// stateMu guards the cached warm-up snapshot below.
+	// stateMu guards the cached handshake snapshot below.
 	stateMu      sync.Mutex
-	lastWarmedAt time.Time
+	lastShakedAt time.Time
 	provider     string
 	model        string
 }
 
-// NewService wires the warm-up service. bot may be nil when the deploy runs
-// with BOT_PROVIDER="" / "disabled"; Warmup then reports warmed=false with
+// NewService wires the handshake service. bot may be nil when the deploy runs
+// with BOT_PROVIDER="" / "disabled"; Handshake then reports shaked=false with
 // reason "bot_disabled" instead of erroring, so a best-effort FE ping never
 // sees a hard failure.
 func NewService(bot *botAdapter.Adapter) *Service {
 	return &Service{bot: bot}
 }
 
-// Warmup primes the LLM connection pool. It never returns an error: a
-// warm-up is best-effort and must not surface as a failure on whatever
+// Handshake primes the LLM connection pool. It never returns an error: a
+// shake is best-effort and must not surface as a failure on whatever
 // screen triggered it. Outcomes are reported in the result
-// (Warmed / Cached / Reason) for observability.
-func (s *Service) Warmup(ctx context.Context) *dto.WarmupRes {
+// (Shaked / Cached / Reason) for observability.
+func (s *Service) Shake(ctx context.Context) *dto.ShakeRes {
 	log := logger.From(ctx)
 
 	if s.bot == nil {
-		return &dto.WarmupRes{Warmed: false, Reason: "bot_disabled"}
+		return &dto.ShakeRes{Shaked: false, Reason: "bot_disabled"}
 	}
 
-	// Fast path: a recent successful warm-up is still fresh.
+	// Fast path: a recent successful shake is still fresh.
 	if res, ok := s.cachedIfFresh(); ok {
-		log.Info("Fast path: a recent successful warm-up is still fresh")
+		log.Info("Fast path: a recent successful shake is still fresh")
 		return res
 	}
 
@@ -94,14 +94,14 @@ func (s *Service) Warmup(ctx context.Context) *dto.WarmupRes {
 	}
 
 	// Detach from the request context so a fire-and-forget client that drops
-	// the connection still completes the warm-up: the goal is to prime the
+	// the connection still completes the shake: the goal is to prime the
 	// shared pool, not merely to serve this one response.
-	callCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), warmupTimeout)
+	callCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), shakeTimeout)
 	defer cancel()
 
 	start := time.Now()
 	out, err := s.bot.Chat(callCtx, botAdapter.ChatRequest{
-		Messages:    []botAdapter.Message{{Role: botAdapter.RoleUser, Content: warmupPrompt}},
+		Messages:    []botAdapter.Message{{Role: botAdapter.RoleUser, Content: shakePrompt}},
 		MaxTokens:   10,
 		Temperature: 0,
 	})
@@ -110,10 +110,10 @@ func (s *Service) Warmup(ctx context.Context) *dto.WarmupRes {
 	if err != nil {
 		// The adapter already logged the cause at the right severity; keep
 		// this best-effort and let the caller decide to ignore it.
-		log.Warnf("bot.warmup_failed latency_ms=%d err=%v", latency.Milliseconds(), err)
-		return &dto.WarmupRes{
-			Warmed:    false,
-			Reason:    "warmup_failed",
+		log.Warnf("bot.shake_failed latency_ms=%d err=%v", latency.Milliseconds(), err)
+		return &dto.ShakeRes{
+			Shaked:    false,
+			Reason:    "shake_failed",
 			LatencyMs: latency.Milliseconds(),
 		}
 	}
@@ -125,15 +125,15 @@ func (s *Service) Warmup(ctx context.Context) *dto.WarmupRes {
 	model := strings.TrimSpace(out.Model)
 
 	s.stateMu.Lock()
-	s.lastWarmedAt = time.Now()
+	s.lastShakedAt = time.Now()
 	s.provider = provider
 	s.model = model
 	s.stateMu.Unlock()
 
-	log.Infof("bot.warmup_ok provider=%s model=%s latency_ms=%d", provider, model, latency.Milliseconds())
+	log.Infof("bot.shake_ok provider=%s model=%s latency_ms=%d", provider, model, latency.Milliseconds())
 
-	return &dto.WarmupRes{
-		Warmed:    true,
+	return &dto.ShakeRes{
+		Shaked:    true,
 		Cached:    false,
 		Provider:  provider,
 		Model:     model,
@@ -141,16 +141,16 @@ func (s *Service) Warmup(ctx context.Context) *dto.WarmupRes {
 	}
 }
 
-// cachedIfFresh returns a cached "already warm" result when the last
-// successful warm-up is still within warmupTTL.
-func (s *Service) cachedIfFresh() (*dto.WarmupRes, bool) {
+// cachedIfFresh returns a cached "already shake" result when the last
+// successful shake is still within shakeTTL.
+func (s *Service) cachedIfFresh() (*dto.ShakeRes, bool) {
 	s.stateMu.Lock()
 	defer s.stateMu.Unlock()
-	if s.lastWarmedAt.IsZero() || time.Since(s.lastWarmedAt) >= warmupTTL {
+	if s.lastShakedAt.IsZero() || time.Since(s.lastShakedAt) >= shakeTTL {
 		return nil, false
 	}
-	return &dto.WarmupRes{
-		Warmed:    true,
+	return &dto.ShakeRes{
+		Shaked:    true,
 		Cached:    true,
 		Provider:  s.provider,
 		Model:     s.model,

@@ -1,19 +1,19 @@
 package bot
 
-// WarmupRes is the result of an AI connection warm-up.
+// ShakeRes is the result of an AI connection handshake.
 //
-// It always travels in a Success envelope (mstatus=200): a warm-up is
+// It always travels in a Success envelope (mstatus=200): a handshake is
 // best-effort by definition, so a failure to reach the LLM is reported via
-// Warmed=false + Reason rather than an error envelope. That way the screen
+// Shaked=false + Reason rather than an error envelope. That way the screen
 // that triggered the ping (typically the home screen) never shows the user
-// a scary error just because the warm-up could not run.
-type WarmupRes struct {
-	// Warmed is true when the LLM connection is primed — either a probe
+// a scary error just because the handshake could not run.
+type ShakeRes struct {
+	// Shaked is true when the LLM connection is primed — either a probe
 	// just succeeded, or a recent one is still fresh (see Cached).
-	Warmed bool `json:"warmed"`
+	Shaked bool `json:"shaked"`
 
 	// Cached is true when this response was served from a still-fresh
-	// previous warm-up without contacting the LLM again.
+	// previous handshake without contacting the LLM again.
 	Cached bool `json:"cached"`
 
 	// Provider is the bot provider that serves AI requests, e.g.
@@ -27,7 +27,7 @@ type WarmupRes struct {
 	// cached or disabled result.
 	LatencyMs int64 `json:"latency_ms"`
 
-	// Reason carries a machine-readable explanation when Warmed=false
-	// ("bot_disabled", "warmup_failed"). Empty on success.
+	// Reason carries a machine-readable explanation when Shaked=false
+	// ("bot_disabled", "shake_failed"). Empty on success.
 	Reason string `json:"reason,omitempty"`
 }
