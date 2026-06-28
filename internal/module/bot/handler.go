@@ -15,7 +15,7 @@ func NewHandler(svc *Service) *Handler {
 	return &Handler{svc: svc}
 }
 
-// HandleWarmup serves POST /connect/init-ai.
+// HandleShake serves POST /ai/shake.
 //
 // It is a best-effort priming of the LLM connection pool: the frontend
 // calls it early (e.g. on entering the home screen) so the cold-connection
@@ -25,7 +25,7 @@ func NewHandler(svc *Service) *Handler {
 // single-flight in the service coalesce calls so the upstream LLM is hit at
 // most once per warm-up window regardless of caller volume. The response is
 // always a Success envelope; check the body's `warmed` flag.
-func (h *Handler) HandleWarmup(w http.ResponseWriter, r *http.Request) {
-	res := h.svc.Warmup(r.Context())
+func (h *Handler) HandleShake(w http.ResponseWriter, r *http.Request) {
+	res := h.svc.Shake(r.Context())
 	response.WriteJson(w, res, nil)
 }

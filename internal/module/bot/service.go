@@ -65,11 +65,11 @@ func NewService(bot *botAdapter.Adapter) *Service {
 	return &Service{bot: bot}
 }
 
-// Warmup primes the LLM connection pool. It never returns an error: a
+// Shake primes the LLM connection pool. It never returns an error: a
 // warm-up is best-effort and must not surface as a failure on whatever
 // screen triggered it. Outcomes are reported in the result
 // (Warmed / Cached / Reason) for observability.
-func (s *Service) Warmup(ctx context.Context) *dto.WarmupRes {
+func (s *Service) Shake(ctx context.Context) *dto.WarmupRes {
 	log := logger.From(ctx)
 
 	if s.bot == nil {
