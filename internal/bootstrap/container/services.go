@@ -9,6 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
+	"math-ai.com/math-ai/internal/module/conversation"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exercise"
@@ -148,6 +149,15 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup BotSvc...")
 	botService := bot.NewService(res.BotProvider)
 
+	log.Info("> Setup ConversationSvc...")
+	conversationService := conversation.NewService(
+		uow,
+		repos.ConversationRepository,
+		repos.ConversationMessageRepository,
+		res.BotProvider,
+		res.Env.ConversationConfig,
+	)
+
 	log.Info("> Setup HomeSvc...")
 	homeService := home.NewService(
 		repos.ClassroomRepository,
@@ -174,8 +184,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		JobSvc:       jobService,
 		SeqSvc:       seqService,
 		ClassroomSvc: classroomService,
-		ExerciseSvc:  exerciseService,
-		HomeSvc:      homeService,
-		BotSvc:       botService,
+		ExerciseSvc:     exerciseService,
+		HomeSvc:         homeService,
+		BotSvc:          botService,
+		ConversationSvc: conversationService,
 	}, nil
 }

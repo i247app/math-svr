@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
+	"math-ai.com/math-ai/internal/module/conversation"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exercise"
@@ -164,6 +165,15 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		botHandler := bot.NewHandler(services.BotSvc)
 		gexSvr.AddRoute("POST /ai/shake", botHandler.HandleShake)
+	}
+
+	// ai conversation routes — contextual multi-turn chat (auth-gated)
+	{
+		conversationHandler := conversation.NewHandler(res, services.ConversationSvc)
+		gexSvr.AddRoute("POST /ai/conversations/send", conversationHandler.HandleSend, authMiddleware)
+		gexSvr.AddRoute("POST /ai/conversations/list", conversationHandler.HandleList, authMiddleware)
+		gexSvr.AddRoute("GET  /ai/conversations/{id}", conversationHandler.HandleGet, authMiddleware)
+		gexSvr.AddRoute("POST /ai/conversations/soft-delete", conversationHandler.HandleSoftDelete, authMiddleware)
 	}
 
 	// quiz routes

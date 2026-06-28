@@ -580,6 +580,20 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "This profile does not belong to the current user"
 	case HOME_UNSUPPORTED_ROLE:
 		return "Unsupported profile role for the home layout"
+
+	// AI conversation
+	case AI_CONVERSATION_NOT_FOUND:
+		return "Conversation not found"
+	case AI_CONVERSATION_NOT_OWNED:
+		return "This conversation does not belong to the current user"
+	case AI_CONVERSATION_MISSING_MESSAGE:
+		return "Message is required"
+	case AI_CONVERSATION_MESSAGE_TOO_LONG:
+		return "Message is too long"
+	case AI_CONVERSATION_GENERATION_FAILED:
+		return "Failed to generate a reply"
+	case AI_CONVERSATION_DISABLED:
+		return "AI chat is currently unavailable"
 	default:
 		return ""
 	}

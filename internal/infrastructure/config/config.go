@@ -95,6 +95,12 @@ func NewEnv(envpath string) (*Env, error) {
 			RetryDelay:    getDurationConfigOptional("BOT_RETRY_DELAY"),
 			RequireAtBoot: getBoolConfigWithDefault("BOT_REQUIRE_AT_BOOT", false),
 		},
+
+		ConversationConfig: ConversationConfig{
+			HistoryWindowEnabled: getBoolConfigWithDefault("CONVERSATION_HISTORY_WINDOW_ENABLED", true),
+			HistoryWindowSize:    getIntConfigOptionalWithDefault("CONVERSATION_HISTORY_WINDOW_SIZE", 20),
+			MaxMessageChars:      getIntConfigOptionalWithDefault("CONVERSATION_MAX_MESSAGE_CHARS", 4000),
+		},
 	}
 	return &result, nil
 }

@@ -28,5 +28,7 @@ func SetupRepositories(db *database.DatabaseWithLogs) *RepositoryContainer {
 		ClassroomProgramRepository:    repositories.NewClassroomProgramRepository(db),
 		ExerciseRepository:            repositories.NewExerciseRepository(db),
 		ExerciseSubmissionRepository:  repositories.NewExerciseSubmissionRepository(db),
+		ConversationRepository:        repositories.NewConversationRepository(db),
+		ConversationMessageRepository: repositories.NewConversationMessageRepository(db),
 	}
 }

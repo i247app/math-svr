@@ -580,6 +580,20 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Hồ sơ này không thuộc về người dùng hiện tại"
 	case HOME_UNSUPPORTED_ROLE:
 		return "Vai trò hồ sơ không được hỗ trợ cho trang chủ"
+
+	// AI conversation
+	case AI_CONVERSATION_NOT_FOUND:
+		return "Không tìm thấy cuộc trò chuyện"
+	case AI_CONVERSATION_NOT_OWNED:
+		return "Cuộc trò chuyện này không thuộc về người dùng hiện tại"
+	case AI_CONVERSATION_MISSING_MESSAGE:
+		return "Nội dung tin nhắn là bắt buộc"
+	case AI_CONVERSATION_MESSAGE_TOO_LONG:
+		return "Tin nhắn quá dài"
+	case AI_CONVERSATION_GENERATION_FAILED:
+		return "Không thể tạo câu trả lời"
+	case AI_CONVERSATION_DISABLED:
+		return "Tính năng trò chuyện AI hiện không khả dụng"
 	default:
 		return ""
 	}

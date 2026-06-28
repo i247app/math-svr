@@ -27,7 +27,7 @@ const (
 
 	// shakePrompt is the smallest valid prompt that still forces the full
 	// network path (DNS, TLS, HTTP/2 handshake) to the vendor. Paired with
-	// MaxTokens=1 it costs ~nothing while priming the connection pool.
+	// MaxTokens=10 it costs ~nothing while priming the connection pool.
 	shakePrompt = "ping"
 )
 

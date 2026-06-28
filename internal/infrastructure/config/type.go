@@ -13,11 +13,12 @@ type Env struct {
 	HttpsKeyFile          *string
 	EnableOTP             bool
 
-	DBConfig      DBConfig
-	EmailConfig   EmailConfig
-	StorageConfig StorageConfig
-	SMSConfig     SMSConfig
-	BotConfig     BotConfig
+	DBConfig           DBConfig
+	EmailConfig        EmailConfig
+	StorageConfig      StorageConfig
+	SMSConfig          SMSConfig
+	BotConfig          BotConfig
+	ConversationConfig ConversationConfig
 }
 
 // Config holds the database connection configuration.
@@ -117,4 +118,17 @@ type BotConfig struct {
 	MaxRetries    int           // env BOT_MAX_RETRIES,    default 2
 	RetryDelay    time.Duration // env BOT_RETRY_DELAY,    e.g. "500ms"
 	RequireAtBoot bool          // env BOT_REQUIRE_AT_BOOT, default false
+}
+
+// ConversationConfig tunes the AI conversation history window and message
+// length cap at deploy time. The conversation service clamps these defensively
+// (window size to [0, 200]; max chars to (0, 60000]); non-positive values
+// fall back to the defaults.
+//
+//	HistoryWindowEnabled false → each turn sends only the system prompt + the
+//	new user message (no prior context re-sent); messages are still persisted.
+type ConversationConfig struct {
+	HistoryWindowEnabled bool // env CONVERSATION_HISTORY_WINDOW_ENABLED, default true
+	HistoryWindowSize    int  // env CONVERSATION_HISTORY_WINDOW_SIZE,    default 20
+	MaxMessageChars      int  // env CONVERSATION_MAX_MESSAGE_CHARS,      default 4000
 }
