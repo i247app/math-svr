@@ -41,7 +41,7 @@ QUY TẮC ĐẦU RA:
 CẤU TRÚC:
 {
   "title": "Grade 1 - Level 1",
-  "short_text": "Phép cộng và phép trừ trong phạm vi 100",
+  "short_text": "Phép cộng và phép trừ trong phạm vi ...",
   "questions":[
     {
       "question_number": 1,
@@ -54,7 +54,7 @@ CẤU TRÚC:
       ],
       "right_answer": "A",
       "correct_answer": "8",
-      "topic": "phép cộng trong phạm vi 100",
+      "topic": "phép cộng trong phạm vi ...",
       "difficulty": 1
     }
   ]

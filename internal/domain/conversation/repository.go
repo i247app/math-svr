@@ -20,6 +20,12 @@ type ListConversationsParams struct {
 // the same tx as a message insert so the derived seq_no stays race-free.
 type IRepository interface {
 	FindByConversationId(ctx context.Context, conversationId int64) (*Conversation, error)
+	// FindLatestActiveByProfileAndPurpose returns the most recently active
+	// conversation owned by a profile for a given purpose (e.g. the
+	// per-profile QUIZ_TUTORING thread), or (nil, nil) when none exists.
+	// Used by feature modules that keep a single long-lived thread per
+	// subject rather than per chat session.
+	FindLatestActiveByProfileAndPurpose(ctx context.Context, profileId int64, purpose string) (*Conversation, error)
 	ListByUserId(ctx context.Context, params *ListConversationsParams) ([]*Conversation, *pagination.Pagination, error)
 	Create(ctx context.Context, c *Conversation) (*Conversation, error)
 	IncMessageCount(ctx context.Context, conversationId int64, delta int64) error

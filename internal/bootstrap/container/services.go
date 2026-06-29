@@ -92,6 +92,16 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	authService := auth.NewService(userService, otpService, uow)
 
 	log.Info("> Setup QuizSvc...")
+	// Tutoring-memory window: reuse the conversation history config. The
+	// env toggle doubles as the kill-switch for quiz tutoring memory; the
+	// size is clamped to the same [0, 200] range the chat path uses.
+	tutoringWindow := int64(res.Env.ConversationConfig.HistoryWindowSize)
+	if tutoringWindow <= 0 {
+		tutoringWindow = 20
+	}
+	if tutoringWindow > 200 {
+		tutoringWindow = 200
+	}
 	quizService := quiz.NewService(
 		repos.QuizRepository,
 		uow,
@@ -101,6 +111,10 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.GradeRepository,
 		repos.SemesterRepository,
 		repos.ChapterRepository,
+		repos.ConversationRepository,
+		repos.ConversationMessageRepository,
+		res.Env.ConversationConfig.HistoryWindowEnabled,
+		tutoringWindow,
 	)
 
 	log.Info("> Setup ChapterSvc...")

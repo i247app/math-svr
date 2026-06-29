@@ -87,6 +87,25 @@ func (r *ConversationRepository) FindByConversationId(ctx context.Context, conve
 	return r.findOneBy(ctx, "c.conversation_id = ?", conversationId)
 }
 
+// FindLatestActiveByProfileAndPurpose returns the most recently modified
+// active conversation for (profile_id, purpose), or (nil, nil) when none
+// exists. The active filter excludes soft-deleted threads.
+func (r *ConversationRepository) FindLatestActiveByProfileAndPurpose(ctx context.Context, profileId int64, purpose string) (*conversation.Conversation, error) {
+	args := append(conversationActiveArgs(), profileId, purpose)
+	query := `SELECT ` + conversationColumns + ` FROM ` + conversationTable + ` c WHERE ` +
+		conversationActiveWhere + ` AND c.profile_id = ? AND c.purpose = ?` +
+		` ORDER BY c.modify_dt DESC, c.id DESC LIMIT 1`
+
+	m, err := scanConversation(r.db.QueryRow(ctx, query, args...))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("conversation repo find latest by profile+purpose: %w", err)
+	}
+	return ModelToDomainConversation(m), nil
+}
+
 func (r *ConversationRepository) ListByUserId(ctx context.Context, params *conversation.ListConversationsParams) ([]*conversation.Conversation, *pagination.Pagination, error) {
 	if params == nil {
 		return nil, nil, fmt.Errorf("conversation repo list: params is required")
