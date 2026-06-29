@@ -31,6 +31,8 @@ TRUNCATE TABLE ma_classroom_programs;
 TRUNCATE TABLE ma_exercises;
 TRUNCATE TABLE ma_exercise_submissions;
 TRUNCATE TABLE ma_contact_us;
+TRUNCATE TABLE ma_ai_conversations;
+TRUNCATE TABLE ma_ai_messages;
 
 SET FOREIGN_KEY_CHECKS = 1;
 
@@ -52,7 +54,9 @@ WHERE seq_name IN (
   'classroom_invitation',
   'classroom_program',
   'classroom_exercise',
-  'classroom_exercise_submission'
+  'classroom_exercise_submission',
+  'ai_conversation',
+  'ai_message'
 );
 
 -- ── Verify (printed after the run) ───────────────────────

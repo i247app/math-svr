@@ -1,0 +1,30 @@
+[Unit]
+Description=MathAI Go server (mathsvr)
+After=network-online.target mysql.service
+Wants=network-online.target
+Requires=mysql.service
+
+[Service]
+Type=simple
+User=mot
+Group=mot
+WorkingDirectory=/apps/math
+ExecStart=/apps/math/dist/mathsvr
+
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+Restart=on-failure
+RestartSec=5s
+
+StandardOutput=append:/apps/math/mathsvr.log
+StandardError=append:/apps/math/mathsvr.log
+SyslogIdentifier=mathsvr
+
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

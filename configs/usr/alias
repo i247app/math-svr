@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# mai - MathAI server control script (systemd wrapper)
+
+SERVICE="mathsvr.service"
+
+usage() {
+    echo "Usage: $0 {start|stop|restart|status|watch}"
+    echo "  start   - Start the MathAI server (via systemd)"
+    echo "  stop    - Stop the MathAI server gracefully (SIGTERM)"
+    echo "  restart - Restart the MathAI server"
+    echo "  status  - Show service status"
+    echo "  watch   - Tail server logs in real-time"
+    exit 1
+}
+
+start()   { sudo systemctl start   "$SERVICE"; }
+stop()    { sudo systemctl stop    "$SERVICE"; }
+restart() { sudo systemctl restart "$SERVICE"; }
+status()  { sudo systemctl status  "$SERVICE" --no-pager; }
+watch()   { sudo tail -n 500 -f /apps/math/mathsvr.log; }
+
+[ $# -ne 1 ] && usage
+
+case "$1" in
+    start)   start   ;;
+    stop)    stop    ;;
+    restart) restart ;;
+    status)  status  ;;
+    watch)   watch   ;;
+    *)       usage   ;;
+esac
+
+exit
