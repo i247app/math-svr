@@ -6,6 +6,7 @@ import (
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	command "math-ai.com/math-ai/internal/application/command/conversation"
+	appconv "math-ai.com/math-ai/internal/application/conversation"
 	dto "math-ai.com/math-ai/internal/application/dto/conversation"
 	query "math-ai.com/math-ai/internal/application/query/conversation"
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -15,6 +16,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	"math-ai.com/math-ai/internal/libs/langchain"
 )
 
 // conversationGetMessageLimit caps how many messages GetConversationById
@@ -58,11 +60,14 @@ func sanitizeConfig(c config.ConversationConfig) windowConfig {
 // Service is the conversation module façade. It orchestrates two UoW writes
 // around one out-of-tx bot call (the LLM must not hold a transaction open).
 type Service struct {
+	createConvCmd      *command.CreateConversationCommandHandler
 	appendUserCmd      *command.AppendUserMessageCommandHandler
 	appendAssistantCmd *command.AppendAssistantMessageCommandHandler
 	softDeleteCmd      *command.SoftDeleteConversationCommandHandler
 	getQuery           *query.GetConversationByIdQueryHandler
 	listQuery          *query.ListConversationsQueryHandler
+	convRepo           domain.IRepository
+	msgRepo            domain.IMessageRepository
 	bot                *botAdapter.Adapter
 	cfg                windowConfig
 }
@@ -78,20 +83,24 @@ func NewService(
 	cfg config.ConversationConfig,
 ) *Service {
 	return &Service{
+		createConvCmd:      command.NewCreateConversationCommandHandler(uow),
 		appendUserCmd:      command.NewAppendUserMessageCommandHandler(uow),
 		appendAssistantCmd: command.NewAppendAssistantMessageCommandHandler(uow),
 		softDeleteCmd:      command.NewSoftDeleteConversationCommandHandler(uow),
 		getQuery:           query.NewGetConversationByIdQueryHandler(convRepo, msgRepo),
 		listQuery:          query.NewListConversationsQueryHandler(convRepo),
+		convRepo:           convRepo,
+		msgRepo:            msgRepo,
 		bot:                bot,
 		cfg:                sanitizeConfig(cfg),
 	}
 }
 
-// SendMessage runs one chat turn: persist the user message (UoW #1), call
-// the LLM with the windowed history (outside any tx), persist the assistant
-// reply (UoW #2). On LLM failure the user message stays persisted so the
-// client can retry.
+// SendMessage runs one chat turn through langchaingo's memory framework:
+// resolve (find/create) the conversation, let a ConversationWindowBuffer
+// (backed by the MySQL ChatMessageHistory) load the windowed prior turns,
+// call the model on our client, then let the same buffer SAVE the new turn
+// back to MySQL. The LLM call stays outside any tx.
 func (s *Service) SendMessage(ctx context.Context, req *dto.SendMessageReq) (*dto.SendMessageRes, error) {
 	log := logger.From(ctx)
 
@@ -104,23 +113,38 @@ func (s *Service) SendMessage(ctx context.Context, req *dto.SendMessageReq) (*dt
 	if err := ValidateSend(ctx, req, s.cfg.maxChars); err != nil {
 		return nil, err
 	}
+	uid := *req.UserID
+	input := strings.TrimSpace(req.Message)
 
-	// UoW #1 — find/create conversation + persist the user turn.
-	userRes, err := s.appendUserCmd.Handle(ctx, command.AppendUserMessageCommand{
-		ConversationID: req.ConversationID,
-		UserID:         *req.UserID,
-		Content:        strings.TrimSpace(req.Message),
-	})
+	// Resolve the thread (ownership-checked) BEFORE any LLM cost.
+	conversationID, err := s.resolveConversation(ctx, req.ConversationID, uid)
 	if err != nil {
 		return nil, err
 	}
-	conversationID := userRes.Conversation.ConversationId()
 
-	// Build the prompt: system + (windowed history | just this turn).
-	messages, err := s.buildPromptMessages(ctx, conversationID, userRes.UserMessage)
-	if err != nil {
-		return nil, err
+	// Framework memory: window buffer over the MySQL chat-history store.
+	windowSize := int(s.cfg.size)
+	history := appconv.NewChatMessageHistory(
+		s.appendUserCmd, s.appendAssistantCmd, s.msgRepo, conversationID, uid, s.cfg.size*2)
+	mem := langchain.NewWindowMemory(history, windowSize)
+
+	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+	messages := []botAdapter.Message{
+		{Role: botAdapter.RoleSystem, Content: systemPrompt(lang)},
 	}
+	if s.cfg.enabled {
+		prior, err := langchain.LoadHistoryString(ctx, mem)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if strings.TrimSpace(prior) != "" {
+			messages = append(messages, botAdapter.Message{
+				Role:    botAdapter.RoleSystem,
+				Content: priorContextHeader(lang) + "\n" + prior,
+			})
+		}
+	}
+	messages = append(messages, botAdapter.Message{Role: botAdapter.RoleUser, Content: input})
 
 	// LLM call — OUTSIDE any tx.
 	out, err := s.bot.Chat(ctx, botAdapter.ChatRequest{
@@ -130,69 +154,59 @@ func (s *Service) SendMessage(ctx context.Context, req *dto.SendMessageReq) (*dt
 	})
 	if err != nil {
 		log.Warnf("conversation.generation_failed conversation_id=%d uid=%d err=%v",
-			conversationID, *req.UserID, err)
+			conversationID, uid, err)
 		return nil, errs.NewError(ctx, status.AI_CONVERSATION_GENERATION_FAILED, nil, err)
 	}
 	reply := strings.TrimSpace(out.Content)
 
-	// UoW #2 — persist the assistant turn.
-	assistant, err := s.appendAssistantCmd.Handle(ctx, command.AppendAssistantMessageCommand{
-		ConversationID: conversationID,
-		Content:        reply,
-	})
-	if err != nil {
+	// Framework memory persists BOTH turns (user input + AI reply) through the
+	// MySQL history store.
+	if err := langchain.SaveTurn(ctx, mem, input, reply); err != nil {
 		return nil, err
 	}
 
 	log.Infof("conversation.turn conversation_id=%d uid=%d window=%t reply_len=%d",
-		conversationID, *req.UserID, s.cfg.enabled, len(reply))
+		conversationID, uid, s.cfg.enabled, len(reply))
+
+	// Surface the just-saved assistant turn in the response.
+	var msgResp dto.MessageResponse
+	if recent, rerr := s.msgRepo.ListRecentByConversationId(ctx, conversationID, 1); rerr == nil && len(recent) > 0 {
+		msgResp = dto.MessageDomainToResponse(recent[len(recent)-1])
+	}
 
 	return &dto.SendMessageRes{
 		ConversationID: conversationID,
 		Reply:          reply,
-		Message:        dto.MessageDomainToResponse(assistant),
+		Message:        msgResp,
 	}, nil
 }
 
-// buildPromptMessages assembles the system prompt plus, when the history
-// window is enabled, the recent turns (already ending with the just-saved
-// user message). When disabled it sends only the system prompt + this turn.
-func (s *Service) buildPromptMessages(ctx context.Context, conversationID int64, userMessage *domain.Message) ([]botAdapter.Message, error) {
-	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
-	messages := []botAdapter.Message{
-		{Role: botAdapter.RoleSystem, Content: systemPrompt(lang)},
-	}
-
-	if !s.cfg.enabled {
-		messages = append(messages, botAdapter.Message{
-			Role:    botAdapter.RoleUser,
-			Content: userMessage.Content(),
+// resolveConversation creates a new chat thread when id is nil, otherwise
+// loads the existing one and enforces ownership — all before the LLM call so
+// a not-found / not-owned request never burns vendor quota.
+func (s *Service) resolveConversation(ctx context.Context, id *int64, uid int64) (int64, error) {
+	if id == nil {
+		conv, err := s.createConvCmd.Handle(ctx, command.CreateConversationCommand{
+			UserID:  uid,
+			Purpose: domain.PurposeChat,
 		})
-		return messages, nil
+		if err != nil {
+			return 0, err
+		}
+		return conv.ConversationId(), nil
 	}
 
-	res, err := s.getQuery.Handle(ctx, query.GetConversationByIdQuery{
-		ConversationID: conversationID,
-		MessageLimit:   s.cfg.size,
-	})
+	conv, err := s.convRepo.FindByConversationId(ctx, *id)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	if res == nil {
-		// Should not happen (we just wrote a row), but degrade to this turn.
-		messages = append(messages, botAdapter.Message{
-			Role:    botAdapter.RoleUser,
-			Content: userMessage.Content(),
-		})
-		return messages, nil
+	if conv == nil {
+		return 0, errs.NewError(ctx, status.AI_CONVERSATION_NOT_FOUND, nil, ErrConversationNotFound)
 	}
-	for _, m := range res.Messages {
-		messages = append(messages, botAdapter.Message{
-			Role:    botAdapter.Role(m.Role()),
-			Content: m.Content(),
-		})
+	if conv.UserId() != uid {
+		return 0, errs.NewError(ctx, status.AI_CONVERSATION_NOT_OWNED, nil, ErrConversationNotOwned)
 	}
-	return messages, nil
+	return conv.ConversationId(), nil
 }
 
 func (s *Service) ListConversations(ctx context.Context, req *dto.ListConversationsReq) (*dto.ListConversationsRes, error) {

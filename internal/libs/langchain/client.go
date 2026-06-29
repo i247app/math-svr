@@ -186,9 +186,16 @@ func (c *Client) Generate(ctx context.Context, req ChatRequest) (*ChatResponse, 
 	content := toLLMContent(req.Messages)
 	opts := c.buildCallOptions(req)
 
-	resp, err := c.withRetry(callCtx, func(retryCtx context.Context) (*llms.ContentResponse, error) {
+	// Attach an httptrace so we can log whether this outbound call opened a
+	// fresh connection (TLS handshake) or reused a pooled keep-alive one.
+	traceCtx, ct := withConnTrace(callCtx)
+
+	resp, err := c.withRetry(traceCtx, func(retryCtx context.Context) (*llms.ContentResponse, error) {
 		return c.llm.GenerateContent(retryCtx, content, opts...)
 	})
+
+	log.Infof("langchain.conn captured=%t reused=%t was_idle=%t idle_ms=%d tls_handshake_ms=%d remote=%s",
+		ct.gotConn, ct.reused, ct.wasIdle, ct.idleMs, ct.tlsDoneMs, ct.remote)
 
 	// print json resp
 	jsonResp, _ := json.Marshal(resp)

@@ -159,12 +159,13 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /chapters/force-delete", chapterHandler.HandleForceDeleteChapter, authMiddleware)
 	}
 
-	// ai routes — LLM connection warm-up. Public + globally throttled so
-	// the frontend can prime the AI connection early (e.g. on the home or
-	// splash screen) and the first real quiz/exercise generation is fast.
+	// ai routes — handshake + per-user AI session init (auth required). Warms
+	// the LLM connection (globally throttled) AND ensures the logged-in user's
+	// CHAT conversation thread, returning its conversation_id for follow-up
+	// turns on /ai/conversations/send.
 	{
-		botHandler := bot.NewHandler(services.BotSvc)
-		gexSvr.AddRoute("POST /ai/shake", botHandler.HandleShake)
+		botHandler := bot.NewHandler(res, services.BotSvc)
+		gexSvr.AddRoute("POST /ai/shake", botHandler.HandleShake, authMiddleware)
 	}
 
 	// ai conversation routes — contextual multi-turn chat (auth-gated)

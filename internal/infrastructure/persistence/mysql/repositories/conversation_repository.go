@@ -106,6 +106,24 @@ func (r *ConversationRepository) FindLatestActiveByProfileAndPurpose(ctx context
 	return ModelToDomainConversation(m), nil
 }
 
+// FindLatestActiveByUserAndPurpose returns the most recently modified active
+// conversation for (user_id, purpose), or (nil, nil) when none exists.
+func (r *ConversationRepository) FindLatestActiveByUserAndPurpose(ctx context.Context, userId int64, purpose string) (*conversation.Conversation, error) {
+	args := append(conversationActiveArgs(), userId, purpose)
+	query := `SELECT ` + conversationColumns + ` FROM ` + conversationTable + ` c WHERE ` +
+		conversationActiveWhere + ` AND c.user_id = ? AND c.purpose = ?` +
+		` ORDER BY c.modify_dt DESC, c.id DESC LIMIT 1`
+
+	m, err := scanConversation(r.db.QueryRow(ctx, query, args...))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("conversation repo find latest by user+purpose: %w", err)
+	}
+	return ModelToDomainConversation(m), nil
+}
+
 func (r *ConversationRepository) ListByUserId(ctx context.Context, params *conversation.ListConversationsParams) ([]*conversation.Conversation, *pagination.Pagination, error) {
 	if params == nil {
 		return nil, nil, fmt.Errorf("conversation repo list: params is required")

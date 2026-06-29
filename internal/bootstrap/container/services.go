@@ -161,7 +161,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	)
 
 	log.Info("> Setup BotSvc...")
-	botService := bot.NewService(res.BotProvider)
+	botService := bot.NewService(res.BotProvider, repos.ConversationRepository, uow)
 
 	log.Info("> Setup ConversationSvc...")
 	conversationService := conversation.NewService(

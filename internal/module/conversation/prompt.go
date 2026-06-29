@@ -22,3 +22,12 @@ func systemPrompt(lang enum.LanguageType) string {
 			"nhàng hướng các em quay lại việc học."
 	}
 }
+
+// priorContextHeader labels the windowed prior conversation that the
+// framework memory injects into the prompt.
+func priorContextHeader(lang enum.LanguageType) string {
+	if lang == enum.LanguageTypeEnglish {
+		return "Earlier in this conversation:"
+	}
+	return "Nội dung đã trao đổi trước đó trong cuộc trò chuyện này:"
+}

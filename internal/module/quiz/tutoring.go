@@ -6,81 +6,86 @@ import (
 	"strings"
 
 	convcommand "math-ai.com/math-ai/internal/application/command/conversation"
-	convquery "math-ai.com/math-ai/internal/application/query/conversation"
+	appconv "math-ai.com/math-ai/internal/application/conversation"
 	conversationDomain "math-ai.com/math-ai/internal/domain/conversation"
 	domain "math-ai.com/math-ai/internal/domain/quiz"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	"math-ai.com/math-ai/internal/libs/langchain"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// maxTutoringLineChars caps each prior-context line forwarded to the LLM so
-// a long ai_review can't blow up the prompt size.
-const maxTutoringLineChars = 500
-
-// loadTutoringContext reads the profile's recent QUIZ_TUTORING turns and
-// renders them into a compact prompt block. Best-effort: any failure (or
-// cold start) returns "" and the quiz is generated/graded without it.
+// loadTutoringContext reads the profile's recent QUIZ_TUTORING turns via the
+// framework memory and returns them as a prompt-ready string. Best-effort:
+// any failure or cold start returns "".
 func (s *Service) loadTutoringContext(ctx context.Context, profileID int64) string {
-	if s.tutoringContextQuery == nil {
-		return ""
-	}
-	msgs, err := s.tutoringContextQuery.Handle(ctx, convquery.GetTutoringContextQuery{
-		ProfileID: profileID,
-		Purpose:   conversationDomain.PurposeQuizTutoring,
-		Limit:     s.tutoringWindow,
-	})
+	conv, err := s.convRepo.FindLatestActiveByProfileAndPurpose(ctx, profileID, conversationDomain.PurposeQuizTutoring)
 	if err != nil {
 		logger.From(ctx).Warnf("quiz.tutoring_context_failed profile_id=%d err=%v", profileID, err)
 		return ""
 	}
-	if len(msgs) == 0 {
+	if conv == nil {
 		return ""
 	}
-	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
-	return formatTutoringContext(msgs, lang)
+
+	history := appconv.NewChatMessageHistory(
+		s.appendUserCmd, s.appendAssistantCmd, s.convMsgRepo,
+		conv.ConversationId(), conv.UserId(), s.tutoringWindow*2)
+	mem := langchain.NewWindowMemory(history, int(s.tutoringWindow))
+
+	str, err := langchain.LoadHistoryString(ctx, mem)
+	if err != nil {
+		logger.From(ctx).Warnf("quiz.tutoring_context_failed profile_id=%d err=%v", profileID, err)
+		return ""
+	}
+	return strings.TrimSpace(str)
 }
 
 // recordTutoringExchange appends the graded quiz's performance summary and
-// AI review to the profile's tutoring thread. Best-effort: grading is
-// already persisted, so a memory write failure is only logged.
+// review to the profile's tutoring thread (find-or-create), through the
+// framework memory's SaveContext. Best-effort: grading is already persisted,
+// so a memory failure is only logged.
 func (s *Service) recordTutoringExchange(ctx context.Context, q *domain.Quiz, summary, review string) {
-	if s.recordTutoringCmd == nil || q.UserId() == nil || q.ProfileId() == nil {
+	if q.UserId() == nil || q.ProfileId() == nil {
 		return
 	}
-	if _, err := s.recordTutoringCmd.Handle(ctx, convcommand.RecordTutoringExchangeCommand{
-		UserID:          *q.UserId(),
-		ProfileID:       *q.ProfileId(),
-		Purpose:         conversationDomain.PurposeQuizTutoring,
-		UserSummary:     summary,
-		AssistantReview: review,
-	}); err != nil {
+	userID := *q.UserId()
+	profileID := *q.ProfileId()
+
+	conversationID, err := s.ensureTutoringConversation(ctx, userID, profileID)
+	if err != nil {
+		logger.From(ctx).Warnf("quiz.tutoring_record_failed quiz_id=%d err=%v", q.QuizId(), err)
+		return
+	}
+
+	history := appconv.NewChatMessageHistory(
+		s.appendUserCmd, s.appendAssistantCmd, s.convMsgRepo,
+		conversationID, userID, s.tutoringWindow*2)
+	mem := langchain.NewWindowMemory(history, int(s.tutoringWindow))
+
+	if err := langchain.SaveTurn(ctx, mem, summary, review); err != nil {
 		logger.From(ctx).Warnf("quiz.tutoring_record_failed quiz_id=%d err=%v", q.QuizId(), err)
 	}
 }
 
-// formatTutoringContext renders prior tutoring turns into a single system
-// message body. Roles are flattened — only the content matters as context.
-func formatTutoringContext(msgs []*conversationDomain.Message, lang enum.LanguageType) string {
-	header := "Bối cảnh học tập gần đây của học sinh (dùng để cá nhân hoá đề bài và nhận xét; KHÔNG lặp lại nguyên văn):"
-	if lang == enum.LanguageTypeEnglish {
-		header = "Recent learning context for this student (use it to personalise the quiz and feedback; do NOT repeat verbatim):"
+// ensureTutoringConversation resolves (find-or-create) the profile's
+// QUIZ_TUTORING thread and returns its external id.
+func (s *Service) ensureTutoringConversation(ctx context.Context, userID, profileID int64) (int64, error) {
+	conv, err := s.convRepo.FindLatestActiveByProfileAndPurpose(ctx, profileID, conversationDomain.PurposeQuizTutoring)
+	if err != nil {
+		return 0, err
 	}
-
-	var b strings.Builder
-	b.WriteString(header)
-	for _, m := range msgs {
-		line := strings.TrimSpace(m.Content())
-		if line == "" {
-			continue
-		}
-		if len([]rune(line)) > maxTutoringLineChars {
-			line = string([]rune(line)[:maxTutoringLineChars]) + "…"
-		}
-		b.WriteString("\n- ")
-		b.WriteString(line)
+	if conv != nil {
+		return conv.ConversationId(), nil
 	}
-	return b.String()
+	created, err := s.createConvCmd.Handle(ctx, convcommand.CreateConversationCommand{
+		UserID:    userID,
+		ProfileID: &profileID,
+		Purpose:   conversationDomain.PurposeQuizTutoring,
+	})
+	if err != nil {
+		return 0, err
+	}
+	return created.ConversationId(), nil
 }
 
 // buildPerformanceSummary turns a graded result into a one-line learning

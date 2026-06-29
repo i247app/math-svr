@@ -10,7 +10,6 @@ import (
 	convcommand "math-ai.com/math-ai/internal/application/command/conversation"
 	command "math-ai.com/math-ai/internal/application/command/quiz"
 	dto "math-ai.com/math-ai/internal/application/dto/quiz"
-	convquery "math-ai.com/math-ai/internal/application/query/conversation"
 	query "math-ai.com/math-ai/internal/application/query/quiz"
 	"math-ai.com/math-ai/internal/application/transaction"
 	chapterDomain "math-ai.com/math-ai/internal/domain/chapter"
@@ -46,14 +45,19 @@ type Service struct {
 	chapterRepo            chapterDomain.IRepository
 	bot                    *botClient
 
-	// Tutoring memory (Hướng A): read a per-profile QUIZ_TUTORING thread to
-	// seed generate/grade prompts, and append a compact summary after
-	// grading. Disabled when tutoringEnabled is false (env kill-switch) or
+	// Tutoring memory (Hướng A, framework-backed): a per-profile
+	// QUIZ_TUTORING thread, read to seed generate/grade prompts and appended
+	// to after grading. History/windowing/persistence go through langchaingo's
+	// memory (ConversationWindowBuffer) over the MySQL ChatMessageHistory
+	// adapter. Disabled when tutoringEnabled is false (env kill-switch) or
 	// when a quiz has no profile.
-	tutoringContextQuery *convquery.GetTutoringContextQueryHandler
-	recordTutoringCmd    *convcommand.RecordTutoringExchangeCommandHandler
-	tutoringEnabled      bool
-	tutoringWindow       int64
+	convRepo           conversationDomain.IRepository
+	convMsgRepo        conversationDomain.IMessageRepository
+	createConvCmd      *convcommand.CreateConversationCommandHandler
+	appendUserCmd      *convcommand.AppendUserMessageCommandHandler
+	appendAssistantCmd *convcommand.AppendAssistantMessageCommandHandler
+	tutoringEnabled    bool
+	tutoringWindow     int64
 }
 
 // NewService wires the quiz module. botAdapter may be nil — in a deploy
@@ -91,8 +95,11 @@ func NewService(
 		semesterRepo:           semesterRepo,
 		chapterRepo:            chapterRepo,
 		bot:                    newBotClient(bot),
-		tutoringContextQuery:   convquery.NewGetTutoringContextQueryHandler(convRepo, convMsgRepo),
-		recordTutoringCmd:      convcommand.NewRecordTutoringExchangeCommandHandler(uow),
+		convRepo:               convRepo,
+		convMsgRepo:            convMsgRepo,
+		createConvCmd:          convcommand.NewCreateConversationCommandHandler(uow),
+		appendUserCmd:          convcommand.NewAppendUserMessageCommandHandler(uow),
+		appendAssistantCmd:     convcommand.NewAppendAssistantMessageCommandHandler(uow),
 		tutoringEnabled:        tutoringEnabled,
 		tutoringWindow:         tutoringWindow,
 	}
