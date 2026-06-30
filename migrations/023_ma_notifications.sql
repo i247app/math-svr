@@ -1,5 +1,5 @@
 -- migration up
-CREATE TABLE IF NOT EXISTS vcbm_notifications (
+CREATE TABLE IF NOT EXISTS ma_notifications (
   id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   uid                   BIGINT UNSIGNED NOT NULL,
   title                 VARCHAR(255) NOT NULL,
@@ -16,6 +16,6 @@ CREATE TABLE IF NOT EXISTS vcbm_notifications (
   create_dt             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
   modify_id             BIGINT UNSIGNED DEFAULT NULL,
   modify_dt             DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-  deleted_dt        DATETIME(6) DEFAULT NULL,
+  deleted_dt            DATETIME(6) DEFAULT NULL,
   KEY idx_uid (uid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
