@@ -33,8 +33,18 @@ type RequestMetadata struct {
 	TraceID   string `json:"trace_id,omitempty"`
 	RequestID string `json:"request_id,omitempty"`
 
-	// Client information
-	ClientInfo ClientInfo `json:"client_info,omitempty"`
+	// // Client information
+	// ClientInfo ClientInfo `json:"client_info,omitempty"`
+
+	AppVersion      string         `json:"app_version,omitempty"`       // Client app version (e.g., "1.2.3")
+	Platform        string         `json:"platform,omitempty"`          // Platform (e.g., "ios", "android", "web")
+	DeviceModel     string         `json:"device_model,omitempty"`      // Device model (e.g., "iPhone 14", "Pixel 7")
+	OSVersion       string         `json:"os_version,omitempty"`        // OS version (e.g., "iOS 16.0", "Android 13")
+	DeviceID        string         `json:"device_id,omitempty"`         // Unique device identifier
+	DeviceName      string         `json:"device_name,omitempty"`       // Device name (e.g., "John's iPhone")
+	DevicePushToken string         `json:"device_push_token,omitempty"` // Device push token
+	IPAddress       string         `json:"ip_address,omitempty"`        // IP address of the client
+	Language        ClientLanguage `json:"language,omitempty"`          // language (e.g., "vi-VN", "en-EN")
 
 	// User context
 	UserContext UserContext `json:"user_context,omitempty"`
@@ -66,13 +76,13 @@ type UserContext struct {
 // NewRequestMetadata creates a new RequestMetadata instance with default values
 func NewRequestMetadata() *RequestMetadata {
 	return &RequestMetadata{
-		Timestamp:   time.Now(),
-		ClientInfo:  ClientInfo{},
+		Timestamp: time.Now(),
+		// ClientInfo:  ClientInfo{},
 		UserContext: UserContext{},
 	}
 }
 
-// IsEmpty checks if the metadata is empty or not populated
-func (m *RequestMetadata) IsEmpty() bool {
-	return m.TraceID == "" && m.RequestID == "" && m.ClientInfo.Platform == ""
-}
+// // IsEmpty checks if the metadata is empty or not populated
+// func (m *RequestMetadata) IsEmpty() bool {
+// 	return m.TraceID == "" && m.RequestID == "" && m.ClientInfo.Platform == ""
+// }

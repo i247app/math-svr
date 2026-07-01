@@ -53,40 +53,40 @@ func GetLanguage(ctx context.Context) string {
 
 // GetPlatform is a convenience function to get the client platform from context
 func GetPlatform(ctx context.Context) string {
-	return FromContext(ctx).ClientInfo.Platform
+	return FromContext(ctx).Platform
 }
 
 // GetAppVersion is a convenience function to get the client app version from context
 func GetAppVersion(ctx context.Context) string {
-	return FromContext(ctx).ClientInfo.AppVersion
+	return FromContext(ctx).AppVersion
 }
 
 // GetDeviceModel is a convenience function to get the client device model from context
 func GetDeviceModel(ctx context.Context) string {
-	return FromContext(ctx).ClientInfo.DeviceModel
+	return FromContext(ctx).DeviceModel
 }
 
 // GetDeviceID is a convenience function to get the client device ID from context
 func GetDeviceID(ctx context.Context) string {
-	return FromContext(ctx).ClientInfo.DeviceID
+	return FromContext(ctx).DeviceID
 }
 
 // GetDeviceName is a convenience function to get the client device name from context
 func GetDeviceName(ctx context.Context) string {
-	return FromContext(ctx).ClientInfo.DeviceName
+	return FromContext(ctx).DeviceName
 }
 
 // GetDevicePushToken is a convenience function to get the client device push token from context
 func GetDevicePushToken(ctx context.Context) string {
-	return FromContext(ctx).ClientInfo.DevicePushToken
+	return FromContext(ctx).DevicePushToken
 }
 
 // GetIPAddress is a convenience function to get the client IP address from context
 func GetIPAddress(ctx context.Context) string {
-	return FromContext(ctx).ClientInfo.IPAddress
+	return FromContext(ctx).IPAddress
 }
 
 // GetClientLanguage is a convenience function to get the client language from context
 func GetClientLanguage(ctx context.Context) ClientLanguage {
-	return FromContext(ctx).ClientInfo.Language
+	return FromContext(ctx).Language
 }

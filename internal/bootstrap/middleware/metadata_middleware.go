@@ -41,7 +41,7 @@ func MetadataMiddleware() func(http.Handler) http.Handler {
 			if requestMetadata.TraceID != "" {
 				log.Info("Extracted metadata - TraceID: %s, Platform: %s, Locale: %s",
 					requestMetadata.TraceID,
-					requestMetadata.ClientInfo.Platform,
+					requestMetadata.Platform,
 					requestMetadata.UserContext.Locale)
 			}
 
@@ -130,7 +130,7 @@ func extractMetadataFromMultipart(r *http.Request, log *logger.AppLogger) *metad
 	// Parse the JSON string into RequestMetadata
 	requestMetadata := metadata.NewRequestMetadata()
 	if err := json.Unmarshal([]byte(metadataJSON), requestMetadata); err != nil {
-		log.Error("Failed to parse __metadata from multipart form: %v", err)
+		log.Error("Failed to parse metadata from multipart form: %v", err)
 		return metadata.NewRequestMetadata()
 	}
 
