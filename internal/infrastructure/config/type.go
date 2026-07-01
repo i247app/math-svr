@@ -12,6 +12,7 @@ type Env struct {
 	HttpsCertFile         *string
 	HttpsKeyFile          *string
 	EnableOTP             bool
+	TrustDeviceTTLDays    int
 
 	DBConfig           DBConfig
 	EmailConfig        EmailConfig

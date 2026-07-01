@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 	"strings"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
@@ -38,11 +39,12 @@ type LoginCommandResult struct {
 }
 
 type LoginCommandHandler struct {
-	uow transaction.UnitOfWork
+	uow                transaction.UnitOfWork
+	trustDeviceTTLDays int
 }
 
-func NewLoginCommandHandler(uow transaction.UnitOfWork) *LoginCommandHandler {
-	return &LoginCommandHandler{uow: uow}
+func NewLoginCommandHandler(uow transaction.UnitOfWork, trustDeviceTTLDays int) *LoginCommandHandler {
+	return &LoginCommandHandler{uow: uow, trustDeviceTTLDays: trustDeviceTTLDays}
 }
 
 // Handle resolves the user by phone, ensures a device registration exists for
@@ -80,8 +82,7 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		}
 
 		result.DeviceID = d.DeviceId()
-		println("result.IsTrustedDevice", d.IsVerified())
-		result.IsTrustedDevice = d.IsVerified()
+		result.IsTrustedDevice = d.IsVerified() && !d.IsTrustExpired(h.trustDeviceTTLDays, time.Now().UTC())
 
 		// if !d.IsVerified() {
 		// 	result = &LoginCommandResult{

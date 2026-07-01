@@ -1,6 +1,8 @@
 package device
 
 import (
+	"time"
+
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
@@ -19,6 +21,7 @@ type Device struct {
 	deviceName      string
 	devicePushToken *string
 	isVerified      bool
+	trustDt         mtime.MathTime
 	note            *string
 	deviceStatus    *string
 	status          string
@@ -86,6 +89,29 @@ func (d *Device) IsVerified() bool {
 
 func (d *Device) SetIsVerified(isVerified bool) {
 	d.isVerified = isVerified
+}
+
+func (d *Device) TrustDt() mtime.MathTime {
+	return d.trustDt
+}
+
+func (d *Device) SetTrustDt(trustDt mtime.MathTime) {
+	d.trustDt = trustDt
+}
+
+// IsTrustExpired reports whether the device's trust grant has aged past
+// ttlDays. ttlDays <= 0 disables the TTL (trust never expires by age — the
+// device still has to be independently marked verified). A device that was
+// never trusted (zero-value trustDt) is treated as expired so it falls back
+// to the 2FA gate.
+func (d *Device) IsTrustExpired(ttlDays int, now time.Time) bool {
+	if ttlDays <= 0 {
+		return false
+	}
+	if !d.trustDt.IsValid() {
+		return true
+	}
+	return now.After(d.trustDt.Time.AddDate(0, 0, ttlDays))
 }
 
 func (d *Device) Note() *string {

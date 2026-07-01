@@ -18,7 +18,7 @@ const (
 	deviceTable = "ma_devices"
 
 	deviceColumns = `d.id, d.device_id, d.user_id, d.device_uuid, d.device_name,
-		d.device_push_token, d.is_verified, d.note, d.device_status, d.status,
+		d.device_push_token, d.is_verified, d.trust_dt, d.note, d.device_status, d.status,
 		d.create_id, d.create_dt, d.modify_id, d.modify_dt`
 
 	deviceActiveWhere = `d.status IN (?) AND d.deleted_dt IS NULL`
@@ -39,7 +39,7 @@ func NewDeviceRepository(db database.Executor) device.IRepository {
 func scanDevice(s database.RowScanner) (*models.DeviceModel, error) {
 	var m models.DeviceModel
 	if err := s.Scan(&m.Id, &m.DeviceId, &m.UserId, &m.DeviceUUID, &m.DeviceName,
-		&m.DevicePushToken, &m.IsVerified, &m.Note, &m.DeviceStatus, &m.Status,
+		&m.DevicePushToken, &m.IsVerified, &m.TrustDt, &m.Note, &m.DeviceStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -160,15 +160,20 @@ func (r *DeviceRepository) Update(ctx context.Context, d *device.Device) error {
 }
 
 // MarkVerified flips is_verified. Called by the (future) 2FA flow on success,
-// or by revoke to un-trust the device.
+// or by revoke to un-trust the device. trust_dt is stamped with the current
+// time whenever isVerified=true (starting the TTL clock) and cleared back to
+// NULL whenever isVerified=false, so a revoked device shows no stale trust
+// timestamp and is forced through 2FA again regardless of TTL.
 func (r *DeviceRepository) MarkVerifiedByUserDevice(ctx context.Context, userId int64, deviceUUID string, isVerified bool) error {
 	query := `
 		UPDATE ` + deviceTable + `
 		SET is_verified = ?,
+			trust_dt    = CASE WHEN ? THEN ? ELSE NULL END,
 			modify_dt   = ?
 		WHERE user_id = ? AND device_uuid = ?
 	`
-	if _, err := r.db.Exec(ctx, query, isVerified, mtime.Now().Time, userId, deviceUUID); err != nil {
+	now := mtime.Now().Time
+	if _, err := r.db.Exec(ctx, query, isVerified, isVerified, now, now, userId, deviceUUID); err != nil {
 		return fmt.Errorf("device repo mark verified by user device: %w", err)
 	}
 	return nil
@@ -239,6 +244,9 @@ func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
 	d.SetDeviceName(m.DeviceName)
 	d.SetDevicePushToken(m.DevicePushToken)
 	d.SetIsVerified(m.IsVerified)
+	if m.TrustDt != nil {
+		d.SetTrustDt(mtime.MathTime{Time: *m.TrustDt})
+	}
 	d.SetNote(m.Note)
 	d.SetDeviceStatus(m.DeviceStatus)
 	d.SetStatus(m.Status)

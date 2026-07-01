@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS ma_devices (
   device_name       VARCHAR(255) NOT NULL,
   device_push_token VARCHAR(255) DEFAULT NULL,
   is_verified       TINYINT(1) DEFAULT '0',
+  trust_dt          DATETIME(6) DEFAULT NULL,
   note              VARCHAR(500) DEFAULT NULL,
   device_status     VARCHAR(32) DEFAULT 'ACTIVE',
   status            VARCHAR(32) DEFAULT 'ACTIVE',

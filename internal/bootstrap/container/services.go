@@ -90,7 +90,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	otpService := otp.NewService(userService, deviceService, repos.OtpRepository, uow, res.OtpDelivery)
 
 	log.Info("> Setup AuthSvc...")
-	authService := auth.NewService(userService, otpService, uow)
+	authService := auth.NewService(userService, otpService, uow, res.Env.TrustDeviceTTLDays)
 
 	log.Info("> Setup QuizSvc...")
 	// Tutoring-memory window: reuse the conversation history config. The

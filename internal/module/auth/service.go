@@ -26,11 +26,11 @@ type Service struct {
 	logoutCmd *command.LogoutCommandHandler
 }
 
-func NewService(userSvc *user.Service, otpSvc *otp.Service, uow transaction.UnitOfWork) *Service {
+func NewService(userSvc *user.Service, otpSvc *otp.Service, uow transaction.UnitOfWork, trustDeviceTTLDays int) *Service {
 	return &Service{
 		userSvc:   userSvc,
 		otpSvc:    otpSvc,
-		loginCmd:  command.NewLoginCommandHandler(uow),
+		loginCmd:  command.NewLoginCommandHandler(uow, trustDeviceTTLDays),
 		logoutCmd: command.NewLogoutCommandHandler(uow),
 	}
 }

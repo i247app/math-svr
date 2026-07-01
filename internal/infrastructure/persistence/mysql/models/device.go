@@ -12,6 +12,7 @@ type DeviceModel struct {
 	DeviceName      string
 	DevicePushToken *string
 	IsVerified      bool
+	TrustDt         *time.Time
 	Note            *string
 	DeviceStatus    *string
 	Status          string
