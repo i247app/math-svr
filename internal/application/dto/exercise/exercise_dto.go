@@ -5,7 +5,8 @@ import (
 
 	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+
+	// mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
@@ -95,8 +96,8 @@ type CreateExerciseReq struct {
 	ChapterName  string            `json:"chapter_name"`
 	LessonName   string            `json:"lesson_name"`
 	NumQuestions int               `json:"num_questions,omitempty"`
-	StartDate    mtime.MathTime    `json:"start_date,omitempty"`
-	EndDate      mtime.MathTime    `json:"end_date,omitempty"`
+	StartDate    string            `json:"start_date,omitempty"`
+	EndDate      string            `json:"end_date,omitempty"`
 	Note         *string           `json:"note,omitempty"`
 	Language     enum.LanguageType `json:"language,omitempty"`
 	// Visibility is optional. Omitted / blank defaults to PUBLIC so the
@@ -117,18 +118,18 @@ type CreateExerciseRes struct {
 // the row. StartDate / EndDate accept a zero MathTime to clear the
 // column; non-zero replaces it.
 type UpdateExerciseReq struct {
-	ProfileID           *int64          `json:"profile_id,omitempty"`
-	ClassroomExerciseID int64           `json:"classroom_exercise_id"`
-	Title               *string         `json:"title,omitempty"`
-	Description         *string         `json:"description,omitempty"`
-	ChapterName         *string         `json:"chapter_name,omitempty"`
-	LessonName          *string         `json:"lesson_name,omitempty"`
-	StartDate           *mtime.MathTime `json:"start_date,omitempty"`
-	EndDate             *mtime.MathTime `json:"end_date,omitempty"`
-	Note                *string         `json:"note,omitempty"`
-	ExerciseStatus      *string         `json:"exercise_status,omitempty"`
-	Visibility          *string         `json:"visibility,omitempty"`
-	Purpose             *string         `json:"purpose,omitempty"`
+	ProfileID           *int64  `json:"profile_id,omitempty"`
+	ClassroomExerciseID int64   `json:"classroom_exercise_id"`
+	Title               *string `json:"title,omitempty"`
+	Description         *string `json:"description,omitempty"`
+	ChapterName         *string `json:"chapter_name,omitempty"`
+	LessonName          *string `json:"lesson_name,omitempty"`
+	StartDate           *string `json:"start_date,omitempty"`
+	EndDate             *string `json:"end_date,omitempty"`
+	Note                *string `json:"note,omitempty"`
+	ExerciseStatus      *string `json:"exercise_status,omitempty"`
+	Visibility          *string `json:"visibility,omitempty"`
+	Purpose             *string `json:"purpose,omitempty"`
 }
 
 type UpdateExerciseRes struct {

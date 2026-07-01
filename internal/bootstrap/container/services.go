@@ -16,6 +16,7 @@ import (
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
+	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
@@ -37,6 +38,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	uow := mysql.NewSqlUnitOfWork(res.DB)
 
 	log.Info("SetupServiceContainer")
+
+	log.Info("> Setup MiscSvc...")
+	miscService := misc.NewService()
 
 	log.Info("> Setup UserSvc...")
 	userService := user.NewService(repos.UserRepository, uow, res.StorageProvider)
@@ -193,6 +197,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	)
 
 	return &ServiceContainer{
+		MiscSvc:         miscService,
 		UserSvc:         userService,
 		AuthSvc:         authService,
 		ProgramSvc:      programService,

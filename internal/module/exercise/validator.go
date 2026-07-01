@@ -7,6 +7,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/exercise"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -107,10 +108,24 @@ func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) err
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_NUM_QUESTIONS, nil,
 			ErrNumQuestionsOutOfRange)
 	}
-	if req.StartDate.IsValid() && req.EndDate.IsValid() &&
-		req.EndDate.Time.Before(req.StartDate.Time) {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil,
-			ErrEndDateBeforeStart)
+	// if req.StartDate.IsValid() && req.EndDate.IsValid() &&
+	// 	req.EndDate.Time.Before(req.StartDate.Time) {
+	// 	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil,
+	// 		ErrEndDateBeforeStart)
+	// }
+
+	if req.StartDate != "" && req.EndDate != "" {
+		parseStartDate, err := mtime.ParseFromString(req.StartDate)
+		if err != nil {
+			return err
+		}
+		parseEndDate, err := mtime.ParseFromString(req.EndDate)
+		if err != nil {
+			return err
+		}
+		if parseEndDate.IsValid() && parseEndDate.Time.Before(parseStartDate.Time) {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil, ErrEndDateBeforeStart)
+		}
 	}
 	if req.Note != nil && len([]rune(*req.Note)) > noteMaxLen {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOTE_TOO_LONG, nil,
@@ -195,12 +210,27 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 				ErrLessonNameTooLong)
 		}
 	}
-	if req.StartDate != nil && req.EndDate != nil &&
-		req.StartDate.IsValid() && req.EndDate.IsValid() &&
-		req.EndDate.Time.Before(req.StartDate.Time) {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil,
-			ErrEndDateBeforeStart)
+	// if req.StartDate != nil && req.EndDate != nil &&
+	// 	req.StartDate.IsValid() && req.EndDate.IsValid() &&
+	// 	req.EndDate.Time.Before(req.StartDate.Time) {
+	// 	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil,
+	// 		ErrEndDateBeforeStart)
+	// }
+
+	if req.StartDate != nil && req.EndDate != nil {
+		parseStartDate, err := mtime.ParseFromString(*req.StartDate)
+		if err != nil {
+			return err
+		}
+		parseEndDate, err := mtime.ParseFromString(*req.EndDate)
+		if err != nil {
+			return err
+		}
+		if parseEndDate.IsValid() && parseEndDate.Time.Before(parseStartDate.Time) {
+			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil, ErrEndDateBeforeStart)
+		}
 	}
+
 	if req.Note != nil && len([]rune(*req.Note)) > noteMaxLen {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOTE_TOO_LONG, nil,
 			ErrNoteTooLong)

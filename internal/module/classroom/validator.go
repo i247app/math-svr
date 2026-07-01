@@ -8,6 +8,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -69,9 +70,14 @@ func ValidateCreateClassroom(ctx context.Context, req *dto.CreateClassroomReq) e
 			req.ClassroomCode = &code
 		}
 	}
-	if req.ClassroomCodeExpiresDt.IsValid() && req.ClassroomCodeExpiresDt.Time.Before(time.Now()) {
-		return errs.NewError(ctx, status.CLASSROOM_CODE_EXPIRED, nil,
-			ErrClassroomCodeExpiresMustBeFuture)
+	if req.ClassroomCodeExpiresDt != "" {
+		parseTime, err := mtime.ParseFromString(req.ClassroomCodeExpiresDt)
+		if err != nil {
+			return err
+		}
+		if parseTime.IsValid() && parseTime.Time.Before(time.Now()) {
+			return errs.NewError(ctx, status.CLASSROOM_CODE_EXPIRED, nil, ErrClassroomCodeExpiresMustBeFuture)
+		}
 	}
 	return nil
 }

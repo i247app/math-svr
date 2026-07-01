@@ -7,6 +7,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/classroomprogress"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -25,15 +26,22 @@ func (s *Service) ValidateProfileProgress(ctx context.Context, req *dto.ProfileP
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileIDRequired)
 	}
 
-	if !req.FromDt.IsValid() || !req.ToDt.IsValid() {
+	if req.FromDt == "" || req.ToDt == "" {
 		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
 	}
-	from := req.FromDt.ToTime()
-	to := req.ToDt.ToTime()
-	if !from.Before(to) {
+	from, err := mtime.ParseFromString(req.FromDt)
+	if err != nil {
 		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
 	}
-	if to.Sub(from).Hours() > maxProgressRangeHours {
+	to, err := mtime.ParseFromString(req.ToDt)
+	if err != nil {
+		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
+	}
+
+	if !from.Time.Before(to.Time) {
+		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
+	}
+	if to.Time.Sub(from.Time).Hours() > maxProgressRangeHours {
 		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressRangeTooLong)
 	}
 

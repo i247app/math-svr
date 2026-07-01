@@ -24,8 +24,8 @@ const PassScorePctThreshold int64 = 50
 type ProfileProgressQuery struct {
 	ClassroomID     int64
 	TargetProfileID int64
-	From            mtime.MathTime
-	To              mtime.MathTime
+	From            string
+	To              string
 	Purpose         *string // nil => all exercise purposes
 }
 
@@ -52,13 +52,29 @@ func NewProfileProgressQueryHandler(
 }
 
 func (h *ProfileProgressQueryHandler) Handle(ctx context.Context, q ProfileProgressQuery) (*ProfileProgressResult, error) {
-	// Current period.
-	curSubs, err := h.submissionRepo.ListProfileSubmissionsInRange(ctx, exercise.ProfileSubmissionsRangeParams{
+	queryParams := exercise.ProfileSubmissionsRangeParams{
 		ClassroomID: q.ClassroomID,
 		ProfileID:   q.TargetProfileID,
-		From:        q.From,
-		To:          q.To,
-	})
+		// From:        q.From,
+		// To:          q.To,
+	}
+
+	if q.From != "" && q.To != "" {
+		parseFromDate, err := mtime.ParseFromString(q.From)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		queryParams.From = parseFromDate
+
+		parseToDate, err := mtime.ParseFromString(q.To)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		queryParams.To = parseToDate
+	}
+
+	// Current period.
+	curSubs, err := h.submissionRepo.ListProfileSubmissionsInRange(ctx, queryParams)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -83,14 +99,22 @@ func (h *ProfileProgressQueryHandler) Handle(ctx context.Context, q ProfileProgr
 // q.From and returns its 10-point average, or nil when that window has
 // no graded submissions (after the purpose filter).
 func (h *ProfileProgressQueryHandler) priorPeriodAvg10(ctx context.Context, q ProfileProgressQuery) (*float64, error) {
-	from := q.From.ToTime()
-	to := q.To.ToTime()
-	dur := to.Sub(from)
+	parseFromDate, err := mtime.ParseFromString(q.From)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	parseToDate, err := mtime.ParseFromString(q.To)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	dur := parseToDate.Sub(parseFromDate.Time)
 	if dur <= 0 {
 		return nil, nil
 	}
-	priorTo := from.Add(-time.Microsecond)
-	priorFrom := from.Add(-dur)
+	priorTo := parseFromDate.Time.Add(-time.Microsecond)
+	priorFrom := parseFromDate.Time.Add(-dur)
 
 	subs, err := h.submissionRepo.ListProfileSubmissionsInRange(ctx, exercise.ProfileSubmissionsRangeParams{
 		ClassroomID: q.ClassroomID,
@@ -166,7 +190,7 @@ func buildPoints(subs []*exercise.Submission, exMap map[int64]*exercise.Exercise
 		out = append(out, dto.ExercisePoint{
 			ExerciseID:     exID,
 			Title:          title,
-			SubmittedDt:    s.SubmittedDt(),
+			SubmittedDt:    s.SubmittedDt().String(),
 			Score:          PctTo10Pt(float64(pct)),
 			ScorePct:       pct,
 			CorrectNumber:  s.CorrectNumber(),

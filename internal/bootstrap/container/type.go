@@ -27,6 +27,7 @@ import (
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
+	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
@@ -39,6 +40,7 @@ import (
 )
 
 type ServiceContainer struct {
+	MiscSvc         *misc.Service
 	UserSvc         *user.Service
 	AuthSvc         *auth.Service
 	ProgramSvc      *program.Service

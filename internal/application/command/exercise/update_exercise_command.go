@@ -25,8 +25,8 @@ type UpdateClassroomExerciseCommand struct {
 	Description         *string
 	ChapterName         *string
 	LessonName          *string
-	StartDate           *mtime.MathTime
-	EndDate             *mtime.MathTime
+	StartDate           *string
+	EndDate             *string
 	Note                *string
 	ExerciseStatus      *string
 	Visibility          *string
@@ -55,18 +55,33 @@ func (h *UpdateClassroomExerciseCommandHandler) Handle(ctx context.Context, cmd 
 		}
 
 		patch := domain.UpdatePatch{
-			Title:          cmd.Title,
-			Description:    cmd.Description,
-			ChapterName:    cmd.ChapterName,
-			LessonName:     cmd.LessonName,
-			StartDate:      cmd.StartDate,
-			EndDate:        cmd.EndDate,
+			Title:       cmd.Title,
+			Description: cmd.Description,
+			ChapterName: cmd.ChapterName,
+			LessonName:  cmd.LessonName,
+			// StartDate:      cmd.StartDate,
+			// EndDate:        cmd.EndDate,
 			Note:           cmd.Note,
 			ExerciseStatus: cmd.ExerciseStatus,
 			Visibility:     cmd.Visibility,
 			Purpose:        cmd.Purpose,
 			ModifyID:       cmd.ActorID,
 		}
+		if cmd.StartDate != nil {
+			parseStartDate, err := mtime.ParseFromString(*cmd.StartDate)
+			if err != nil {
+				return err
+			}
+			patch.StartDate = &parseStartDate
+		}
+		if cmd.EndDate != nil {
+			parseEndDate, err := mtime.ParseFromString(*cmd.EndDate)
+			if err != nil {
+				return err
+			}
+			patch.EndDate = &parseEndDate
+		}
+
 		if err := repos.Exercise.Update(ctx, cmd.ClassroomExerciseID, patch); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}

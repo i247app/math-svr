@@ -1,15 +1,9 @@
 package time
 
-import "time"
-
-// Parse parses a time string using the default format (RFC3339)
-func Parse(value string) (MathTime, error) {
-	t, err := time.Parse(DefaultFormat, value)
-	if err != nil {
-		return MathTime{}, err
-	}
-	return MathTime{Time: t}, nil
-}
+import (
+	"fmt"
+	"time"
+)
 
 // allowedLayouts defines all supported date/time formats for parsing
 var allowedLayouts = []string{
@@ -46,6 +40,22 @@ func ParseWithFormat(layout, value string) (MathTime, error) {
 	}
 
 	return MathTime{}, err
+}
+
+func ParseFromString(value string) (MathTime, error) {
+	if value == "" {
+		return MathTime{}, nil
+	}
+
+	// Try all allowed layouts as fallbacks
+	for _, l := range allowedLayouts {
+		t, err := time.Parse(l, value)
+		if err == nil {
+			return MathTime{Time: t}, nil
+		}
+	}
+
+	return MathTime{}, fmt.Errorf("failed to parse time: wrong format with %s or not in supported format", value)
 }
 
 // ParseInLocation parses a time string in the given location using the default format

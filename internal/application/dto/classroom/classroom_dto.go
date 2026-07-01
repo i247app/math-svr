@@ -4,7 +4,7 @@ import (
 	"io"
 
 	domain "math-ai.com/math-ai/internal/domain/classroom"
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	// mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -85,7 +85,7 @@ type CreateClassroomReq struct {
 	// ClassroomCodeExpiresDt is the optional expiry that pairs with
 	// ClassroomCode. A zero value (omitted in JSON) means the code never
 	// expires. Required to be in the future when supplied.
-	ClassroomCodeExpiresDt mtime.MathTime `json:"classroom_code_expires_dt,omitempty"`
+	ClassroomCodeExpiresDt string `json:"classroom_code_expires_dt,omitempty"`
 
 	// File upload fields for handling cover image
 	AvatarFile        io.Reader `json:"-"`

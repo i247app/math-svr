@@ -33,7 +33,7 @@ type CreateClassroomCommand struct {
 	CoverKey               *string
 	Note                   *string
 	ClassroomCode          *string
-	ClassroomCodeExpiresDt mtime.MathTime
+	ClassroomCodeExpiresDt string
 }
 
 type CreateClassroomCommandHandler struct {
@@ -90,8 +90,12 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 		c.SetSchoolId(cmd.SchoolID)
 		c.SetGradeId(cmd.GradeID)
 		c.SetClassroomCode(classroomCodeArg)
-		if cmd.ClassroomCodeExpiresDt.IsValid() {
-			c.SetClassroomCodeExpiresDt(cmd.ClassroomCodeExpiresDt)
+		if cmd.ClassroomCodeExpiresDt != "" {
+			parseTime, err := mtime.ParseFromString(cmd.ClassroomCodeExpiresDt)
+			if err != nil {
+				return errs.NewError(ctx, status.FAIL, nil, err)
+			}
+			c.SetClassroomCodeExpiresDt(parseTime)
 		}
 		c.SetMaxMembers(cmd.MaxMembers)
 		// Seed counters in sync with the OWNER member row inserted

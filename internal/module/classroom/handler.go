@@ -10,8 +10,6 @@ import (
 	"math-ai.com/math-ai/internal/application/resource"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
-	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -109,13 +107,14 @@ func (h *ClassroomHandler) HandleCreateClassroom(w http.ResponseWriter, r *http.
 		req.ProgramIDs = parseProgramIDsFromForm(r)
 		req.GradeID = utils.StringToInt64Ptr(r.FormValue("grade_id"))
 		req.ClassroomCode = utils.ToStringPtr(r.FormValue("classroom_code"))
-		if expires := r.FormValue("classroom_code_expires_dt"); expires != "" {
-			if parsed, err := mtime.Parse(expires); err == nil {
-				req.ClassroomCodeExpiresDt = parsed
-			} else {
-				logger.From(r.Context()).Warnf("classroom.create classroom_code_expires_dt parse failed value=%s err=%v", expires, err)
-			}
-		}
+		// if expires := r.FormValue("classroom_code_expires_dt"); expires != "" {
+		// 	if parsed, err := mtime.ParseFromString(expires); err == nil {
+		// 		req.ClassroomCodeExpiresDt = parsed
+		// 	} else {
+		// 		logger.From(r.Context()).Warnf("classroom.create classroom_code_expires_dt parse failed value=%s err=%v", expires, err)
+		// 	}
+		// }
+		req.ClassroomCodeExpiresDt = r.FormValue("classroom_code_expires_dt")
 		maxNumbers := r.FormValue("max_members")
 		if maxNumbers != "" {
 			num, err := utils.StringToInt64Err(maxNumbers)

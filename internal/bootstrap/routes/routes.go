@@ -16,6 +16,7 @@ import (
 	"math-ai.com/math-ai/internal/module/health"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
+	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
@@ -31,6 +32,12 @@ import (
 func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *container.ServiceContainer) {
 	// middleware
 	authMiddleware := middleware.AuthRequiredMiddleware(res.SessionManager)
+
+	// misc routes
+	{
+		miscHandler := misc.NewHandler(services.MiscSvc)
+		gexSvr.AddRoute("POST /misc/logs-time-format", miscHandler.LogsTimeFormat)
+	}
 
 	// health routes
 	{

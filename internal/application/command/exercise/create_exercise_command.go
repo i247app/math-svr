@@ -35,8 +35,8 @@ type CreateClassroomExerciseCommand struct {
 	TotalQuestions   int
 	QuestionsJSON    *string
 	AnswersJSON      *string
-	StartDate        mtime.MathTime
-	EndDate          mtime.MathTime
+	StartDate        string
+	EndDate          string
 	Note             *string
 }
 
@@ -80,11 +80,19 @@ func (h *CreateClassroomExerciseCommandHandler) Handle(ctx context.Context, cmd 
 		e.SetTotalQuestions(cmd.TotalQuestions)
 		e.SetQuestions(cmd.QuestionsJSON)
 		e.SetAnswers(cmd.AnswersJSON)
-		if cmd.StartDate.IsValid() {
-			e.SetStartDate(cmd.StartDate)
+		if cmd.StartDate != "" {
+			parseStartDate, err := mtime.ParseFromString(cmd.StartDate)
+			if err != nil {
+				return err
+			}
+			e.SetStartDate(parseStartDate)
 		}
-		if cmd.EndDate.IsValid() {
-			e.SetEndDate(cmd.EndDate)
+		if cmd.EndDate != "" {
+			parseEndDate, err := mtime.ParseFromString(cmd.EndDate)
+			if err != nil {
+				return err
+			}
+			e.SetEndDate(parseEndDate)
 		}
 		e.SetNote(cmd.Note)
 		active := string(enum.ClassroomExerciseStatusTypeActive)
