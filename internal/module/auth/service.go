@@ -36,6 +36,8 @@ func NewService(userSvc *user.Service, otpSvc *otp.Service, uow transaction.Unit
 }
 
 func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.LoginReq) (*dto.LoginRes, error) {
+	log := logger.From(ctx)
+
 	if err := ValidateLogin(ctx, req); err != nil {
 		return nil, err
 	}
@@ -71,24 +73,21 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		}, nil
 	}
 
-	// if req.OTPEnabled && !result.IsTrustedDevice {
-	// 	log.Info("Sending OTP to user because this is not trusted device")
-	// 	otpRes, err := s.otpSvc.Send(ctx, &dtoOtp.SendOtpReq{
-	// 		OtpType:    string(enum.OtpTypeLogin2FA),
-	// 		Identifier: normalizePhone,
-	// 		UserID:     &result.UserID,
-	// 	})
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// 	return &dto.LoginRes{
-	// 		User:            userRes.User,
-	// 		OTPCode:         otpRes.OTPCode,
-	// 		ExpiresAt:       otpRes.ExpiresAt,
-	// 		IsTrustedDevice: result.IsTrustedDevice,
-	// 		RequiredOTP:     !result.IsTrustedDevice,
-	// 	}, nil
-	// }
+	if result.IsTrustedDevice {
+		log.Info("Login successful, updating session data...")
+		sessionData := session.InitData{
+			Source:    "login",
+			IsSecure:  true,
+			UID:       userRes.User.UserID,
+			LoginName: req.Phone,
+		}
+
+		if userRes.User.Email != nil {
+			sessionData.Email = *userRes.User.Email
+		}
+
+		sess.Init(sessionData)
+	}
 
 	return &dto.LoginRes{
 		// TwoFactorRequired: result.TwoFactorRequired,
