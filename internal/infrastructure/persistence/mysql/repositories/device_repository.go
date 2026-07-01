@@ -161,15 +161,15 @@ func (r *DeviceRepository) Update(ctx context.Context, d *device.Device) error {
 
 // MarkVerified flips is_verified. Called by the (future) 2FA flow on success,
 // or by revoke to un-trust the device.
-func (r *DeviceRepository) MarkVerified(ctx context.Context, deviceId int64, isVerified bool) error {
+func (r *DeviceRepository) MarkVerifiedByUserDevice(ctx context.Context, userId int64, deviceUUID string, isVerified bool) error {
 	query := `
 		UPDATE ` + deviceTable + `
 		SET is_verified = ?,
 			modify_dt   = ?
-		WHERE device_id = ?
+		WHERE user_id = ? AND device_uuid = ?
 	`
-	if _, err := r.db.Exec(ctx, query, isVerified, mtime.Now().Time, deviceId); err != nil {
-		return fmt.Errorf("device repo mark verified: %w", err)
+	if _, err := r.db.Exec(ctx, query, isVerified, mtime.Now().Time, userId, deviceUUID); err != nil {
+		return fmt.Errorf("device repo mark verified by user device: %w", err)
 	}
 	return nil
 }

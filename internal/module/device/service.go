@@ -24,24 +24,26 @@ import (
 // first sight, and returns the resulting device entity so the caller can
 // branch on is_verified.
 type Service struct {
-	getDeviceByIdQuery       *query.GetDeviceByIdQueryHandler
-	listDevicesByUserIdQuery *query.ListDevicesByUserIdQueryHandler
-	markVerifiedCmd          *command.MarkDeviceVerifiedCommandHandler
-	updateDeviceCmd          *command.UpdateDeviceCommandHandler
-	revokeDeviceCmd          *command.RevokeDeviceCommandHandler
-	softDeleteDeviceCmd      *command.SoftDeleteDeviceCommandHandler
-	repo                     domain.IRepository
+	getDeviceByIdQuery         *query.GetDeviceByIdQueryHandler
+	getDeviceByUserDeviceQuery *query.GetDeviceByUserDeviceQueryHandler
+	listDevicesByUserIdQuery   *query.ListDevicesByUserIdQueryHandler
+	markVerifiedCmd            *command.MarkDeviceVerifiedCommandHandler
+	updateDeviceCmd            *command.UpdateDeviceCommandHandler
+	revokeDeviceCmd            *command.RevokeDeviceCommandHandler
+	softDeleteDeviceCmd        *command.SoftDeleteDeviceCommandHandler
+	repo                       domain.IRepository
 }
 
 func NewService(repo domain.IRepository, uow transaction.UnitOfWork) *Service {
 	return &Service{
-		getDeviceByIdQuery:       query.NewGetDeviceByIdQueryHandler(repo),
-		listDevicesByUserIdQuery: query.NewListDevicesByUserIdQueryHandler(repo),
-		markVerifiedCmd:          command.NewMarkDeviceVerifiedCommandHandler(uow),
-		updateDeviceCmd:          command.NewUpdateDeviceCommandHandler(uow),
-		revokeDeviceCmd:          command.NewRevokeDeviceCommandHandler(uow),
-		softDeleteDeviceCmd:      command.NewSoftDeleteDeviceCommandHandler(uow),
-		repo:                     repo,
+		getDeviceByIdQuery:         query.NewGetDeviceByIdQueryHandler(repo),
+		getDeviceByUserDeviceQuery: query.NewGetDeviceByUserDeviceQueryHandler(repo),
+		listDevicesByUserIdQuery:   query.NewListDevicesByUserIdQueryHandler(repo),
+		markVerifiedCmd:            command.NewMarkDeviceVerifiedCommandHandler(uow),
+		updateDeviceCmd:            command.NewUpdateDeviceCommandHandler(uow),
+		revokeDeviceCmd:            command.NewRevokeDeviceCommandHandler(uow),
+		softDeleteDeviceCmd:        command.NewSoftDeleteDeviceCommandHandler(uow),
+		repo:                       repo,
 	}
 }
 
@@ -93,12 +95,12 @@ func (s *Service) RevokeDevice(ctx context.Context, req *dto.RevokeDeviceReq) (*
 		return nil, err
 	}
 	if err := s.revokeDeviceCmd.Handle(ctx, command.RevokeDeviceCommand{
-		UserID:   req.UserID,
-		DeviceID: req.DeviceID,
+		UserID:     req.UserID,
+		DeviceUUID: req.DevicUUID,
 	}); err != nil {
 		return nil, err
 	}
-	logger.From(ctx).Info("device.revoked", "device_id", req.DeviceID, "user_id", req.UserID)
+	logger.From(ctx).Info("device.revoked", "device_id", req.DevicUUID, "user_id", req.UserID)
 	return &dto.RevokeDeviceRes{}, nil
 }
 
@@ -125,15 +127,18 @@ func (s *Service) VerifyDevice(ctx context.Context, req *dto.VerifyDeviceReq) (*
 		return nil, err
 	}
 	if err := s.markVerifiedCmd.Handle(ctx, command.MarkDeviceVerifiedCommand{
-		UserID:   req.UserID,
-		DeviceID: req.DeviceID,
+		UserID:     req.UserID,
+		DeviceUUID: req.DeviceUUID,
 	}); err != nil {
 		return nil, err
 	}
-	d, err := s.getDeviceByIdQuery.Handle(ctx, query.GetDeviceByIdQuery{DeviceID: req.DeviceID})
+	d, err := s.getDeviceByUserDeviceQuery.Handle(ctx, query.GetDeviceByUserDeviceQuery{
+		UserID:     req.UserID,
+		DeviceUUID: req.DeviceUUID})
 	if err != nil {
 		return nil, err
 	}
-	logger.From(ctx).Info("device.verified", "device_id", req.DeviceID, "user_id", req.UserID)
+
+	logger.From(ctx).Info("device.verified", "device_id", req.DeviceUUID, "user_id", req.UserID)
 	return &dto.VerifyDeviceRes{Device: dto.DomainToResponse(d)}, nil
 }

@@ -87,7 +87,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	deviceService := device.NewService(repos.DeviceRepository, uow)
 
 	log.Info("> Setup OtpSvc...")
-	otpService := otp.NewService(userService, repos.OtpRepository, uow, res.OtpDelivery)
+	otpService := otp.NewService(userService, deviceService, repos.OtpRepository, uow, res.OtpDelivery)
 
 	log.Info("> Setup AuthSvc...")
 	authService := auth.NewService(userService, otpService, uow)

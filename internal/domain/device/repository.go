@@ -12,7 +12,7 @@ type IRepository interface {
 	ListByUserId(ctx context.Context, userId int64) ([]*Device, error)
 	Create(ctx context.Context, device *Device) (*Device, error)
 	Update(ctx context.Context, device *Device) error
-	MarkVerified(ctx context.Context, deviceId int64, isVerified bool) error
+	MarkVerifiedByUserDevice(ctx context.Context, userId int64, deviceUUID string, isVerified bool) error
 	MarkStatusByDeviceId(ctx context.Context, deviceId int64, status enum.DeviceStatusType) error
 	SoftDeleteByDeviceId(ctx context.Context, deviceId int64) error
 	// ClearPushTokens nulls device_push_token for any device whose token is

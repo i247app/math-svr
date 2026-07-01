@@ -6,8 +6,10 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	command "math-ai.com/math-ai/internal/application/command/otp"
+	deviceDTO "math-ai.com/math-ai/internal/application/dto/device"
 	dto "math-ai.com/math-ai/internal/application/dto/otp"
 	userDto "math-ai.com/math-ai/internal/application/dto/user"
+	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/user"
 
 	query "math-ai.com/math-ai/internal/application/query/otp"
@@ -29,6 +31,7 @@ import (
 //     could call Verify() directly to keep the response shape uniform.
 type Service struct {
 	userSvc      *user.Service
+	deviceSvc    *device.Service
 	sendCmd      *command.SendOtpCommandHandler
 	verifyCmd    *command.VerifyOtpCommandHandler
 	revokeCmd    *command.RevokeOtpCommandHandler
@@ -38,12 +41,14 @@ type Service struct {
 
 func NewService(
 	userSvc *user.Service,
+	deviceSvc *device.Service,
 	repo domain.IRepository,
 	uow transaction.UnitOfWork,
 	delivery *otp_delivery.Adapter,
 ) *Service {
 	return &Service{
 		userSvc:      userSvc,
+		deviceSvc:    deviceSvc,
 		sendCmd:      command.NewSendOtpCommandHandler(uow, delivery),
 		verifyCmd:    command.NewVerifyOtpCommandHandler(uow),
 		revokeCmd:    command.NewRevokeOtpCommandHandler(uow),
@@ -153,6 +158,16 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 		// Update session
 		switch req.OtpType {
 		case string(enum.OtpTypeLogin2FA):
+			deviceUUID := metadata.GetDeviceID(ctx)
+			log.Info("Mark device as trusted")
+			_, err := s.deviceSvc.VerifyDevice(ctx, &deviceDTO.VerifyDeviceReq{
+				UserID:     *result.UserID,
+				DeviceUUID: deviceUUID,
+			})
+			if err != nil {
+				return nil, err
+			}
+
 			log.Info("Login successful, updating session data...")
 			sessionData := session.InitData{
 				Source:    "login",

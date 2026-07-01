@@ -5,7 +5,8 @@ import (
 )
 
 type LoginReq struct {
-	Phone string `json:"phone"`
+	OTPEnabled bool   `json:"otp_enabled"`
+	Phone      string `json:"phone"`
 }
 
 // LoginRes carries one of two shapes depending on device trust:
@@ -15,9 +16,11 @@ type LoginReq struct {
 //   - TwoFactorRequired=false → User and DeviceID are populated; the session
 //     is established.
 type LoginRes struct {
-	// TwoFactorRequired bool               `json:"2fa_required,omitempty"`
-	OTPEnabled bool               `json:"otp_enabled"`
-	User       *user.UserResponse `json:"user"`
+	IsTrustedDevice bool               `json:"is_trusted_device"`
+	RequiredOTP     bool               `json:"required_otp"`       // if true, the client must complete the 2FA challenge for DeviceID, then re-issue /auth/login.
+	OTPCode         string             `json:"otp_code,omitempty"` // otp_code exist if device not trusted
+	ExpiresAt       string             `json:"expires_at,omitempty"`
+	User            *user.UserResponse `json:"user"`
 }
 
 type LoginWithOTPRes struct {

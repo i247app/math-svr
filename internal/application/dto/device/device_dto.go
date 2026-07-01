@@ -75,8 +75,8 @@ type UpdateDeviceRes struct {
 }
 
 type RevokeDeviceReq struct {
-	UserID   int64 `json:"user_id"`
-	DeviceID int64 `json:"device_id"`
+	UserID    int64  `json:"user_id"`
+	DevicUUID string `json:"device_uuid"`
 }
 
 type RevokeDeviceRes struct{}
@@ -93,8 +93,8 @@ type DeleteDeviceRes struct{}
 // command directly through the Service. Kept here as the canonical shape so
 // the contract is discoverable.
 type VerifyDeviceReq struct {
-	UserID   int64 `json:"user_id"`
-	DeviceID int64 `json:"device_id"`
+	UserID     int64  `json:"user_id"`
+	DeviceUUID string `json:"device_uuid"`
 }
 
 type VerifyDeviceRes struct {

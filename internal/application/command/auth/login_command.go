@@ -7,6 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/loginlog"
+	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -30,10 +31,10 @@ type LoginCommand struct {
 //     inserted (any prior active session for the same device was revoked).
 //     LoginLogID identifies the new session.
 type LoginCommandResult struct {
-	UserID            int64
-	DeviceID          string
-	LoginLogID        string
-	TwoFactorRequired bool
+	UserID          int64
+	DeviceID        int64
+	LoginLogID      int64
+	IsTrustedDevice bool
 }
 
 type LoginCommandHandler struct {
@@ -68,21 +69,25 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		}
 
 		result = &LoginCommandResult{
-			UserID:            u.UserId(),
-			TwoFactorRequired: true,
+			UserID:          u.UserId(),
+			IsTrustedDevice: true,
 		}
-		return nil
+		// return nil
 
-		// d, err := ensureDevice(ctx, repos, u.UserId(), cmd)
-		// if err != nil {
-		// 	return err
-		// }
+		d, err := ensureDevice(ctx, repos, u.UserId(), cmd)
+		if err != nil {
+			return err
+		}
+
+		result.DeviceID = d.DeviceId()
+		println("result.IsTrustedDevice", d.IsVerified())
+		result.IsTrustedDevice = d.IsVerified()
 
 		// if !d.IsVerified() {
 		// 	result = &LoginCommandResult{
 		// 		UserID:            u.UserId(),
 		// 		DeviceID:          d.DeviceId(),
-		// 		TwoFactorRequired: true,
+		// 		TwoFactorRequired: d.IsVerified(),
 		// 	}
 		// 	return nil
 		// }
@@ -104,7 +109,8 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		// 	DeviceID:   d.DeviceId(),
 		// 	LoginLogID: created.LoginLogId(),
 		// }
-		// return nil
+
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -149,7 +155,12 @@ func ensureDevice(
 	}
 
 	d := device.NewDevice()
-	// d.SetDeviceId(utils.GenerateUUID().String())
+	deviceID, err := nextSeqID(ctx, repos, seq.NameDevice)
+	if err != nil {
+		return nil, err
+	}
+
+	d.SetDeviceId(deviceID)
 	d.SetUserId(&userId)
 	d.SetDeviceUUID(cmd.DeviceUUID)
 	d.SetDeviceName(deviceNameOrDefault(cmd.DeviceName))

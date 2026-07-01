@@ -6,6 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
 // MarkDeviceVerifiedCommand promotes a device to the trusted set. The future
@@ -16,8 +17,8 @@ import (
 // Ownership is enforced so a leaked DeviceID for a different user cannot be
 // flipped.
 type MarkDeviceVerifiedCommand struct {
-	UserID   int64
-	DeviceID int64
+	UserID     int64
+	DeviceUUID string
 }
 
 type MarkDeviceVerifiedCommandHandler struct {
@@ -29,8 +30,9 @@ func NewMarkDeviceVerifiedCommandHandler(uow transaction.UnitOfWork) *MarkDevice
 }
 
 func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkDeviceVerifiedCommand) error {
+	log := logger.From(ctx)
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		d, err := repos.Device.FindByDeviceId(ctx, cmd.DeviceID)
+		d, err := repos.Device.FindByUserDevice(ctx, cmd.UserID, cmd.DeviceUUID)
 		if err != nil {
 			return errs.NewError(ctx, status.DEVICE_VERIFICATION_FAIL, nil, err)
 		}
@@ -42,11 +44,11 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 				ErrDeviceNotOwnedByUser)
 		}
 		if d.IsVerified() {
-			return errs.NewError(ctx, status.DEVICE_ALREADY_VERIFIED, nil,
-				ErrDeviceAlreadyVerified)
+			// return errs.NewError(ctx, status.DEVICE_ALREADY_VERIFIED, nil, ErrDeviceAlreadyVerified)
+			log.Info("device is already verified")
 		}
 
-		if err := repos.Device.MarkVerified(ctx, cmd.DeviceID, true); err != nil {
+		if err := repos.Device.MarkVerifiedByUserDevice(ctx, cmd.UserID, cmd.DeviceUUID, true); err != nil {
 			return errs.NewError(ctx, status.DEVICE_VERIFICATION_FAIL, nil, err)
 		}
 		return nil
