@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -48,7 +49,7 @@ type RequestMetadata struct {
 	UserContext UserContext `json:"user_context,omitempty"`
 
 	// Timestamp when request was received
-	// Timestamp time.Time `json:"timestamp,omitempty"`
+	Timestamp string `json:"timestamp,omitempty"`
 }
 
 // ClientInfo contains information about the client making the request
@@ -74,7 +75,7 @@ type UserContext struct {
 // NewRequestMetadata creates a new RequestMetadata instance with default values
 func NewRequestMetadata() *RequestMetadata {
 	return &RequestMetadata{
-		// Timestamp: time.Now(),
+		Timestamp: time.Now().String(),
 		// ClientInfo:  ClientInfo{},
 		UserContext: UserContext{},
 	}

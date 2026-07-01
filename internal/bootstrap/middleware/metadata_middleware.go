@@ -83,7 +83,7 @@ func extractMetadataFromJSON(r *http.Request, log *logger.AppLogger) *metadata.R
 		if err == nil {
 			requestMetadata = metadata.NewRequestMetadata()
 			if err := json.Unmarshal(metadataBytes, requestMetadata); err != nil {
-				log.Error("Failed to parse __metadata: %v", err)
+				log.Error("Failed to parse metadata: %v", err)
 				requestMetadata = metadata.NewRequestMetadata()
 			}
 		}
