@@ -4,9 +4,12 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
+	"math-ai.com/math-ai/internal/domain/device"
+	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // MarkDeviceVerifiedCommand promotes a device to the trusted set. The future
@@ -37,7 +40,26 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			return errs.NewError(ctx, status.DEVICE_VERIFICATION_FAIL, nil, err)
 		}
 		if d == nil {
-			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
+			// return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
+			d := device.NewDevice()
+			deviceID, err := nextSeqID(ctx, repos, seq.NameDevice)
+			if err != nil {
+				return err
+			}
+
+			d.SetDeviceId(deviceID)
+			d.SetUserId(&cmd.UserID)
+			d.SetDeviceUUID(cmd.DeviceUUID)
+			d.SetIsVerified(true)
+			active := enum.DeviceStatusTypeActive.String()
+			d.SetDeviceStatus(&active)
+			d.SetStatus(enum.StatusActive.String())
+
+			_, err = repos.Device.Create(ctx, d)
+			if err != nil {
+				return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+			}
+			return nil
 		}
 		if d.UserId() == nil || *d.UserId() != cmd.UserID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
