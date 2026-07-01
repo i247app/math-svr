@@ -11,6 +11,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/bot"
 	"math-ai.com/math-ai/internal/adapter/email"
+	"math-ai.com/math-ai/internal/adapter/notification"
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	"math-ai.com/math-ai/internal/adapter/sms"
 	"math-ai.com/math-ai/internal/adapter/storage"
@@ -106,6 +107,14 @@ func SetupResource(res *resource.Resource) error {
 		return fmt.Errorf("failed to setup bot adapter: %w", err)
 	}
 	res.BotProvider = botAdapter
+
+	log.Info("> Setup NotificationAdapter...")
+	log.Infof("> Notification Provider: %s", env.NotificationConfig.Provider)
+	notificationAdapter, err := notification.NewFromConfig(context.Background(), env.NotificationConfig)
+	if err != nil {
+		return fmt.Errorf("failed to setup notification adapter: %w", err)
+	}
+	res.NotificationProvider = notificationAdapter
 
 	log.Info("> Setup OtpDeliveryAdapter...")
 	res.OtpDelivery = otp_delivery.NewFromAdapters(context.Background(), smsAdapter, emailAdapter)

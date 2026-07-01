@@ -8,6 +8,7 @@ import (
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	loginLogDomain "math-ai.com/math-ai/internal/domain/loginlog"
+	notificationDomain "math-ai.com/math-ai/internal/domain/notification"
 	otpDomain "math-ai.com/math-ai/internal/domain/otp"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
@@ -26,6 +27,7 @@ import (
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
+	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -37,24 +39,25 @@ import (
 )
 
 type ServiceContainer struct {
-	UserSvc      *user.Service
-	AuthSvc      *auth.Service
-	ProgramSvc   *program.Service
-	GradeSvc     *grade.Service
-	SemesterSvc  *semester.Service
-	ProfileSvc   *profile.Service
-	DeviceSvc    *device.Service
-	OtpSvc       *otp.Service
-	QuizSvc      *quiz.Service
-	ChapterSvc   *chapter.Service
-	SchoolSvc    *school.Service
-	JobSvc       *job.Service
-	SeqSvc       *seq.Service
-	ClassroomSvc *classroom.Service
+	UserSvc         *user.Service
+	AuthSvc         *auth.Service
+	ProgramSvc      *program.Service
+	GradeSvc        *grade.Service
+	SemesterSvc     *semester.Service
+	ProfileSvc      *profile.Service
+	DeviceSvc       *device.Service
+	OtpSvc          *otp.Service
+	QuizSvc         *quiz.Service
+	ChapterSvc      *chapter.Service
+	SchoolSvc       *school.Service
+	JobSvc          *job.Service
+	SeqSvc          *seq.Service
+	ClassroomSvc    *classroom.Service
 	ExerciseSvc     *exercise.Service
 	HomeSvc         *home.Service
 	BotSvc          *bot.Service
 	ConversationSvc *conversation.Service
+	NotificationSvc *notification.Service
 }
 
 type RepositoryContainer struct {
@@ -81,4 +84,5 @@ type RepositoryContainer struct {
 	ExerciseSubmissionRepository  exerciseDomain.ISubmissionRepository
 	ConversationRepository        conversationDomain.IRepository
 	ConversationMessageRepository conversationDomain.IMessageRepository
+	NotificationRepository        notificationDomain.IRepository
 }

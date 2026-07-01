@@ -6,6 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/bot"
 	"math-ai.com/math-ai/internal/adapter/email"
+	"math-ai.com/math-ai/internal/adapter/notification"
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	"math-ai.com/math-ai/internal/adapter/sms"
 	"math-ai.com/math-ai/internal/adapter/storage"
@@ -23,16 +24,17 @@ import (
 // disabled in this deploy (e.g. SMS in local dev without Twilio
 // credentials); callers must nil-guard.
 type Resource struct {
-	Env             *config.Env
-	HostConfig      gex.HostConfig
-	DB              *database.DatabaseWithLogs
-	SessionManager  *session.SessionManager
-	SessionProvider sessionprovider.SessionProvider
-	EmailProvider   *email.Adapter
-	SMSProvider     *sms.Adapter
-	StorageProvider *storage.Adapter
-	BotProvider     *bot.Adapter
-	OtpDelivery     *otp_delivery.Adapter
+	Env                  *config.Env
+	HostConfig           gex.HostConfig
+	DB                   *database.DatabaseWithLogs
+	SessionManager       *session.SessionManager
+	SessionProvider      sessionprovider.SessionProvider
+	EmailProvider        *email.Adapter
+	SMSProvider          *sms.Adapter
+	StorageProvider      *storage.Adapter
+	BotProvider          *bot.Adapter
+	NotificationProvider *notification.Adapter
+	OtpDelivery          *otp_delivery.Adapter
 
 	// JobRegistry holds the static name → handler map for both
 	// CronJobs and TaskHandlers. Populated in bootstrap before the

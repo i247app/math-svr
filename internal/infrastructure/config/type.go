@@ -19,6 +19,7 @@ type Env struct {
 	SMSConfig          SMSConfig
 	BotConfig          BotConfig
 	ConversationConfig ConversationConfig
+	NotificationConfig NotificationConfig
 }
 
 // Config holds the database connection configuration.
@@ -131,4 +132,23 @@ type ConversationConfig struct {
 	HistoryWindowEnabled bool // env CONVERSATION_HISTORY_WINDOW_ENABLED, default true
 	HistoryWindowSize    int  // env CONVERSATION_HISTORY_WINDOW_SIZE,    default 20
 	MaxMessageChars      int  // env CONVERSATION_MAX_MESSAGE_CHARS,      default 4000
+}
+
+// NotificationConfig configures the push-notification adapter
+// (`internal/adapter/notification`). Today the only provider is Firebase
+// Cloud Messaging.
+//
+// Behaviour matrix for Provider:
+//
+//	""  or "disabled" → adapter is nil; module services must nil-guard.
+//	"firebase"        → Firebase provider, registered + defaulted.
+//	anything else     → MathError(NOTIFICATION_CONFIG_INVALID) at boot.
+//
+// FirebaseCredentialsFile is a path to a service-account JSON (kept under
+// keys/ — never logged, never committed to images).
+type NotificationConfig struct {
+	Provider string // env NOTIFICATION_PROVIDER; "firebase" | "" | "disabled"
+
+	FirebaseCredentialsFile string // env FIREBASE_CREDENTIALS_FILE
+	FirebaseProjectID       string // env FIREBASE_PROJECT_ID; optional
 }

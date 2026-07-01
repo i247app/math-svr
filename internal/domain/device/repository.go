@@ -15,4 +15,8 @@ type IRepository interface {
 	MarkVerified(ctx context.Context, deviceId int64, isVerified bool) error
 	MarkStatusByDeviceId(ctx context.Context, deviceId int64, status enum.DeviceStatusType) error
 	SoftDeleteByDeviceId(ctx context.Context, deviceId int64) error
+	// ClearPushTokens nulls device_push_token for any device whose token is
+	// in tokens. Called after a push send when FCM reports those tokens as
+	// dead (unregistered / invalid) so they are not retried.
+	ClearPushTokens(ctx context.Context, tokens []string) error
 }

@@ -10,6 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/grade"
 	"math-ai.com/math-ai/internal/domain/loginlog"
+	"math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/program"
@@ -51,6 +52,7 @@ type Repositories struct {
 	ExerciseSubmission  exercise.ISubmissionRepository
 	Conversation        conversation.IRepository
 	ConversationMessage conversation.IMessageRepository
+	Notification        notification.IRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

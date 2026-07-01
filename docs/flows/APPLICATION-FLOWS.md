@@ -69,7 +69,7 @@ separate worker process today.
    `SERIALIZED_SESSION_FILE` if set.
 8. `routes.SetupHttpRoutes` ([bootstrap/routes/routes.go](internal/bootstrap/routes/routes.go))
    registers every route — users / auth / OTP / device / profile / classroom
-   / quiz / chapter / school / curriculum / job / health.
+   / quiz / school / curriculum / job / health.
 
 ### Shutdown
 

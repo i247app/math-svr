@@ -8,14 +8,15 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
-	"math-ai.com/math-ai/internal/module/conversation"
 	"math-ai.com/math-ai/internal/module/classroom"
+	"math-ai.com/math-ai/internal/module/conversation"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
+	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -249,6 +250,17 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/submitted-members", submissionHandler.HandleListSubmittedMembers, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/non-submitted-members", submissionHandler.HandleListNonSubmittedMembers, authMiddleware)
 		gexSvr.AddRoute("POST /classroom-exercise/submissions/soft-delete", submissionHandler.HandleSoftDeleteSubmission, authMiddleware)
+	}
+
+	// notification routes — per-user in-app inbox + push delivery (auth-gated)
+	{
+		notificationHandler := notification.NewHandler(res, services.NotificationSvc)
+		gexSvr.AddRoute("POST /notifications/list", notificationHandler.HandleList, authMiddleware)
+		gexSvr.AddRoute("POST /notifications/unread-count", notificationHandler.HandleUnreadCount, authMiddleware)
+		gexSvr.AddRoute("POST /notifications/send", notificationHandler.HandleSend, authMiddleware)
+		gexSvr.AddRoute("POST /notifications/mark-read", notificationHandler.HandleMarkRead, authMiddleware)
+		gexSvr.AddRoute("POST /notifications/mark-all-read", notificationHandler.HandleMarkAllRead, authMiddleware)
+		gexSvr.AddRoute("POST /notifications/soft-delete", notificationHandler.HandleSoftDelete, authMiddleware)
 	}
 
 	// home routes — role-aware dashboard composed per acting profile

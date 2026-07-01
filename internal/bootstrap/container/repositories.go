@@ -30,5 +30,6 @@ func SetupRepositories(db *database.DatabaseWithLogs) *RepositoryContainer {
 		ExerciseSubmissionRepository:  repositories.NewExerciseSubmissionRepository(db),
 		ConversationRepository:        repositories.NewConversationRepository(db),
 		ConversationMessageRepository: repositories.NewConversationMessageRepository(db),
+		NotificationRepository:        repositories.NewNotificationRepository(db),
 	}
 }

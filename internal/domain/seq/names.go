@@ -28,4 +28,5 @@ const (
 	NameClassroomExerciseSubmission = "classroom_exercise_submission"
 	NameAiConversation              = "ai_conversation"
 	NameAiMessage                   = "ai_message"
+	NameNotification                = "notification"
 )

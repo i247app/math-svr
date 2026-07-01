@@ -268,6 +268,18 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Mức ưu tiên không hợp lệ"
 	case NOTIFICATION_NOT_FOUND:
 		return "Không tìm thấy thông báo"
+	case NOTIFICATION_SEND_FAILED:
+		return "Gửi thông báo thất bại"
+	case NOTIFICATION_NO_DEVICE_TOKEN:
+		return "Người nhận không có thiết bị nào để nhận thông báo"
+	case NOTIFICATION_DISABLED:
+		return "Dịch vụ thông báo đang bị tắt"
+	case NOTIFICATION_NOT_OWNED:
+		return "Thông báo không thuộc về người dùng hiện tại"
+	case NOTIFICATION_CONFIG_INVALID:
+		return "Cấu hình thông báo không hợp lệ"
+	case NOTIFICATION_CONNECT_FAILED:
+		return "Không thể kết nối tới dịch vụ thông báo"
 
 	// Messaging
 	case MESSAGING_PUBLISH_FAILED:

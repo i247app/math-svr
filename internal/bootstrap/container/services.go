@@ -9,13 +9,14 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
-	"math-ai.com/math-ai/internal/module/conversation"
 	"math-ai.com/math-ai/internal/module/classroom"
+	"math-ai.com/math-ai/internal/module/conversation"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
+	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -172,6 +173,14 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		res.Env.ConversationConfig,
 	)
 
+	log.Info("> Setup NotificationSvc...")
+	notificationService := notification.NewService(
+		uow,
+		repos.NotificationRepository,
+		repos.DeviceRepository,
+		res.NotificationProvider,
+	)
+
 	log.Info("> Setup HomeSvc...")
 	homeService := home.NewService(
 		repos.ClassroomRepository,
@@ -184,23 +193,24 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	)
 
 	return &ServiceContainer{
-		UserSvc:      userService,
-		AuthSvc:      authService,
-		ProgramSvc:   programService,
-		GradeSvc:     gradeService,
-		SemesterSvc:  semesterService,
-		ProfileSvc:   profileService,
-		DeviceSvc:    deviceService,
-		OtpSvc:       otpService,
-		QuizSvc:      quizService,
-		ChapterSvc:   chapterService,
-		SchoolSvc:    schoolService,
-		JobSvc:       jobService,
-		SeqSvc:       seqService,
-		ClassroomSvc: classroomService,
+		UserSvc:         userService,
+		AuthSvc:         authService,
+		ProgramSvc:      programService,
+		GradeSvc:        gradeService,
+		SemesterSvc:     semesterService,
+		ProfileSvc:      profileService,
+		DeviceSvc:       deviceService,
+		OtpSvc:          otpService,
+		QuizSvc:         quizService,
+		ChapterSvc:      chapterService,
+		SchoolSvc:       schoolService,
+		JobSvc:          jobService,
+		SeqSvc:          seqService,
+		ClassroomSvc:    classroomService,
 		ExerciseSvc:     exerciseService,
 		HomeSvc:         homeService,
 		BotSvc:          botService,
 		ConversationSvc: conversationService,
+		NotificationSvc: notificationService,
 	}, nil
 }

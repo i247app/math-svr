@@ -101,6 +101,13 @@ func NewEnv(envpath string) (*Env, error) {
 			HistoryWindowSize:    getIntConfigOptionalWithDefault("CONVERSATION_HISTORY_WINDOW_SIZE", 20),
 			MaxMessageChars:      getIntConfigOptionalWithDefault("CONVERSATION_MAX_MESSAGE_CHARS", 4000),
 		},
+
+		NotificationConfig: NotificationConfig{
+			Provider: getConfigOptionalString("NOTIFICATION_PROVIDER"),
+
+			FirebaseCredentialsFile: getConfigOptionalString("FIREBASE_CREDENTIALS_FILE"),
+			FirebaseProjectID:       getConfigOptionalString("FIREBASE_PROJECT_ID"),
+		},
 	}
 	return &result, nil
 }

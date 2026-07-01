@@ -268,6 +268,18 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Notification priority is invalid"
 	case NOTIFICATION_NOT_FOUND:
 		return "Notification not found"
+	case NOTIFICATION_SEND_FAILED:
+		return "Failed to send notification"
+	case NOTIFICATION_NO_DEVICE_TOKEN:
+		return "No device token available for the recipient"
+	case NOTIFICATION_DISABLED:
+		return "Notification service is disabled"
+	case NOTIFICATION_NOT_OWNED:
+		return "Notification does not belong to the current user"
+	case NOTIFICATION_CONFIG_INVALID:
+		return "Notification configuration is invalid"
+	case NOTIFICATION_CONNECT_FAILED:
+		return "Failed to connect to the notification provider"
 
 	// Messaging
 	case MESSAGING_PUBLISH_FAILED:

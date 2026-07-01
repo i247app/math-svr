@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 
 	"math-ai.com/math-ai/internal/domain/device"
 	mtime "math-ai.com/math-ai/internal/domain/shared/time"
@@ -197,6 +198,34 @@ func (r *DeviceRepository) SoftDeleteByDeviceId(ctx context.Context, deviceId in
 	if _, err := r.db.Exec(ctx, query,
 		enum.DeviceStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, deviceId); err != nil {
 		return fmt.Errorf("device repo soft delete: %w", err)
+	}
+	return nil
+}
+
+// ClearPushTokens nulls device_push_token for every device whose current
+// token appears in tokens. Used to prune dead FCM tokens reported by a push
+// send. Empty input is a no-op.
+func (r *DeviceRepository) ClearPushTokens(ctx context.Context, tokens []string) error {
+	if len(tokens) == 0 {
+		return nil
+	}
+
+	placeholders := make([]string, len(tokens))
+	args := make([]any, 0, len(tokens)+1)
+	args = append(args, mtime.Now().Time)
+	for i, t := range tokens {
+		placeholders[i] = "?"
+		args = append(args, t)
+	}
+
+	query := `
+		UPDATE ` + deviceTable + `
+		SET device_push_token = NULL,
+			modify_dt         = ?
+		WHERE device_push_token IN (` + strings.Join(placeholders, ", ") + `)
+	`
+	if _, err := r.db.Exec(ctx, query, args...); err != nil {
+		return fmt.Errorf("device repo clear push tokens: %w", err)
 	}
 	return nil
 }
