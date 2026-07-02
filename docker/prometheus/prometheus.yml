@@ -1,8 +1,9 @@
 # Prometheus scrape config for math-svr (local).
 #
-# The Go app runs on the HOST, so we scrape it through host.docker.internal.
-# IMPORTANT: the app must listen on 0.0.0.0 (not 127.0.0.1) for this to work.
-# Set SERVER_HOST= (empty) or SERVER_HOST=0.0.0.0 in your .env.
+# The Go app runs on the HOST and serves /metrics on a DEDICATED listener
+# (OBS_METRICS_ADDR, default :9091) — separate from the API port and free of
+# the app middleware chain. That listener binds 0.0.0.0 by default, so no
+# SERVER_HOST change is needed. We scrape it via host.docker.internal.
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
@@ -13,10 +14,10 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  # The math-svr application.
+  # The math-svr application (dedicated metrics listener, OBS_METRICS_ADDR).
   - job_name: math-svr
     metrics_path: /metrics
     static_configs:
-      - targets: ["host.docker.internal:8080"] # SERVER_PORT (default 8080)
+      - targets: ["host.docker.internal:9091"] # OBS_METRICS_ADDR (default :9091)
         labels:
           service: math-svr

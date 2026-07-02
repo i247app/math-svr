@@ -31,17 +31,22 @@ func NewTxWithLogs(ctx context.Context, tx *sql.Tx) *TxWithLogs {
 }
 
 func (t *TxWithLogs) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	span := startDBSpan(ctx, query)
 	logInputSQL(ctx, colors.FGCyan, query, args...)
 	rows, err := t.tx.Query(query, args...)
 	if err != nil {
 		logQueryError(ctx, err)
+		endDBSpan(span, err)
 		return nil, err
 	}
 	logQueryRowsResult(t.ctx, rows)
+	endDBSpan(span, nil)
 	return rows, nil
 }
 
 func (t *TxWithLogs) QueryRow(ctx context.Context, query string, args ...any) *sql.Row {
+	span := startDBSpan(ctx, query)
+	defer span.End()
 	logInputSQL(ctx, colors.FGCyan, query, args...)
 	row := t.tx.QueryRow(query, args...)
 	logQueryRowResult(ctx, row)
@@ -49,12 +54,15 @@ func (t *TxWithLogs) QueryRow(ctx context.Context, query string, args ...any) *s
 }
 
 func (t *TxWithLogs) Exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	span := startDBSpan(ctx, query)
 	logInputSQL(ctx, colors.FGYellow, query, args...)
 	result, err := t.tx.Exec(query, args...)
 	if err != nil {
 		logQueryError(ctx, err)
+		endDBSpan(span, err)
 		return nil, err
 	}
 	logExecResult(ctx, result)
+	endDBSpan(span, nil)
 	return result, nil
 }

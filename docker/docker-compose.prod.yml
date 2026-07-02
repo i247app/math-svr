@@ -1,0 +1,63 @@
+# Production hardening OVERRIDE for the observability stack.
+#
+# Merge on top of the base compose file:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml up -d
+#
+# This is a STARTING POINT, not a turnkey prod config. Review every value for
+# your environment. Key differences vs. local:
+#   - Grafana: anonymous access OFF, admin password required from the host env.
+#   - Prometheus: on-disk retention bounded.
+#   - Memory limits on every service.
+#
+# Still edit the mounted config files for full prod tuning:
+#   - Loki retention:  docker/loki/loki-config.yml  (limits_config.retention_period)
+#   - Tempo retention: docker/tempo/tempo.yml        (compactor.block_retention)
+#   - Prometheus scrape target: docker/prometheus/prometheus.yml
+#       In prod the app's /metrics is bound to 127.0.0.1:9091 (OBS_METRICS_ADDR);
+#       run a node-local Prometheus/agent, or scrape over your private network.
+services:
+  prometheus:
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+      - --enable-feature=exemplar-storage
+      - --web.enable-remote-write-receiver
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  tempo:
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  loki:
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  alloy:
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+
+  grafana:
+    environment:
+      # Admin password MUST be supplied by the host env — compose fails fast if
+      # unset. Never commit real credentials.
+      - GF_SECURITY_ADMIN_USER=${GF_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD:?set GF_ADMIN_PASSWORD in the host env}
+      # Lock it down: no anonymous access, no self sign-up.
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_FEATURE_TOGGLES_ENABLE=traceToMetrics
+    deploy:
+      resources:
+        limits:
+          memory: 512m

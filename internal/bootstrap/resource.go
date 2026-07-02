@@ -16,8 +16,10 @@ import (
 	"math-ai.com/math-ai/internal/adapter/sms"
 	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/resource"
+	"math-ai.com/math-ai/internal/infrastructure/httproute"
 	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/infrastructure/metrics"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 )
 
@@ -33,6 +35,20 @@ func SetupResource(res *resource.Resource) error {
 	log.Info("> Setup JobRegistry + JobRuntime...")
 	res.JobRegistry = jobruntime.NewRegistry()
 	res.JobRuntime = jobruntime.NewRuntime(jobruntime.Config{}, res.JobRegistry)
+
+	// Route classifier keeps metric/span route labels bounded. Populated in
+	// routes.SetupHttpRoutes; middleware read it per request (after boot).
+	res.RouteClassifier = httproute.NewClassifier()
+
+	if env.ObservabilityConfig.MetricsEnabled {
+		log.Info("> Setup Metrics (Prometheus)...")
+		res.Metrics = metrics.New(
+			env.ObservabilityConfig.ServiceName,
+			env.ObservabilityConfig.ServiceVersion,
+		)
+	} else {
+		log.Info("> Metrics disabled (OBS_METRICS_ENABLED=false)")
+	}
 
 	log.Info("> Setup SessionManager...")
 	sessionManager := session.NewSessionManager()

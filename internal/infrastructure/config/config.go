@@ -22,6 +22,9 @@ func NewEnv(envpath string) (*Env, error) {
 		ServerHost:            getConfig("SERVER_HOST"),
 		ServerPort:            getConfig("SERVER_PORT"),
 		LogFile:               getConfigOptionalString("LOG_FILE"),
+		LogFormat:             getConfigOptionalString("LOG_FORMAT"), // "" = use per-destination formats below
+		LogConsoleFormat:      getConfigOptionalStringWithDefault("LOG_CONSOLE_FORMAT", "text"),
+		LogFileFormat:         getConfigOptionalStringWithDefault("LOG_FILE_FORMAT", "json"),
 		SerializedSessionFile: getConfigOptionalString("SERIALIZED_SESSION_FILE"),
 		GexSessionDriver:      getConfigOptionalString("GEX_SESSION_DRIVER"),
 		SharedKeyBytes:        getFileBytesConfig("GEX_SHARED_KEY"),
@@ -108,6 +111,20 @@ func NewEnv(envpath string) (*Env, error) {
 
 			FirebaseCredentialsFile: getConfigOptionalString("FIREBASE_CREDENTIALS_FILE"),
 			FirebaseProjectID:       getConfigOptionalString("FIREBASE_PROJECT_ID"),
+		},
+
+		ObservabilityConfig: ObservabilityConfig{
+			ServiceName:    getConfigOptionalStringWithDefault("OBS_SERVICE_NAME", "math-svr"),
+			ServiceVersion: getConfigOptionalStringWithDefault("OBS_SERVICE_VERSION", "dev"),
+			Environment:    getConfigOptionalStringWithDefault("OBS_ENV", "local"),
+
+			MetricsEnabled: getBoolConfigWithDefault("OBS_METRICS_ENABLED", true),
+			MetricsAddr:    getConfigOptionalStringWithDefault("OBS_METRICS_ADDR", ":9091"),
+
+			TracingEnabled:   getBoolConfigWithDefault("OBS_TRACING_ENABLED", false),
+			OTLPEndpoint:     getConfigOptionalStringWithDefault("OBS_OTLP_ENDPOINT", "localhost:4318"),
+			OTLPInsecure:     getBoolConfigWithDefault("OBS_OTLP_INSECURE", true),
+			TraceSampleRatio: getFloatConfigWithDefault("OBS_TRACE_SAMPLE_RATIO", 1.0),
 		},
 	}
 	return &result, nil

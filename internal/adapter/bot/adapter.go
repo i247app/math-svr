@@ -5,10 +5,17 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
+
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
+
+const botTracerName = "math-svr/bot"
 
 // Adapter is the entry point callers use to dispatch AI requests. It
 // holds one or more registered providers and a designated default used
@@ -85,10 +92,16 @@ func (a *Adapter) ChatVia(ctx context.Context, name BotProviderName, req ChatReq
 		return nil, fmt.Errorf("bot: provider %q is not registered", name)
 	}
 
+	ctx, span := startLLMSpan(ctx, name, "chat")
+	defer span.End()
+
 	res, err := provider.Chat(ctx, req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, logAndReturn(ctx, log, name, "chat", err)
 	}
+	setLLMResultAttrs(span, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
 	log.Infof("bot.chat provider=%s model=%s prompt_tokens=%d completion_tokens=%d total_tokens=%d",
 		name, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
 	return res, nil
@@ -123,10 +136,16 @@ func (a *Adapter) StreamVia(ctx context.Context, name BotProviderName, req ChatR
 		return nil, fmt.Errorf("bot: provider %q is not registered", name)
 	}
 
+	ctx, span := startLLMSpan(ctx, name, "stream")
+	defer span.End()
+
 	res, err := provider.Stream(ctx, req, onChunk)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, logAndReturn(ctx, log, name, "stream", err)
 	}
+	setLLMResultAttrs(span, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
 	log.Infof("bot.stream provider=%s model=%s prompt_tokens=%d completion_tokens=%d",
 		name, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens)
 	return res, nil
@@ -155,12 +174,43 @@ func (a *Adapter) EmbedVia(ctx context.Context, name BotProviderName, req EmbedR
 		return nil, fmt.Errorf("bot: provider %q is not registered", name)
 	}
 
+	ctx, span := startLLMSpan(ctx, name, "embed")
+	defer span.End()
+
 	res, err := provider.Embed(ctx, req)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, logAndReturn(ctx, log, name, "embed", err)
 	}
+	span.SetAttributes(attribute.String("gen_ai.response.model", res.Model))
 	log.Infof("bot.embed provider=%s model=%s inputs=%d", name, res.Model, len(req.Inputs))
 	return res, nil
+}
+
+// startLLMSpan opens a client span for one LLM operation as a child of the
+// span in ctx. Returns a no-op span when tracing is disabled.
+//
+// Log/trace discipline: only operator metadata (provider, operation, model,
+// token counts) is attached — never the prompt content or the response body.
+func startLLMSpan(ctx context.Context, name BotProviderName, op string) (context.Context, trace.Span) {
+	return otel.Tracer(botTracerName).Start(ctx, "llm."+op,
+		trace.WithSpanKind(trace.SpanKindClient),
+		trace.WithAttributes(
+			attribute.String("gen_ai.system", string(name)),
+			attribute.String("gen_ai.operation.name", op),
+		),
+	)
+}
+
+// setLLMResultAttrs stamps the model + token usage onto a finished span.
+func setLLMResultAttrs(span trace.Span, model string, promptTokens, completionTokens, totalTokens int) {
+	span.SetAttributes(
+		attribute.String("gen_ai.response.model", model),
+		attribute.Int("gen_ai.usage.input_tokens", promptTokens),
+		attribute.Int("gen_ai.usage.output_tokens", completionTokens),
+		attribute.Int("gen_ai.usage.total_tokens", totalTokens),
+	)
 }
 
 // logAndReturn is the common error-finalisation path: classify, log at

@@ -3,9 +3,16 @@ package config
 import "time"
 
 type Env struct {
-	ServerHost            string
-	ServerPort            string
-	LogFile               string
+	ServerHost string
+	ServerPort string
+	LogFile    string
+	// Log encodings per destination. Default split: console=text (readable),
+	// file=json (shipped to Loki). LogFormat, when set, overrides BOTH (a
+	// back-compat uniform mode).
+	LogFormat        string // env LOG_FORMAT;         "" | "text" | "json" (override both)
+	LogConsoleFormat string // env LOG_CONSOLE_FORMAT; default "text"
+	LogFileFormat    string // env LOG_FILE_FORMAT;    default "json"
+
 	SerializedSessionFile string
 	GexSessionDriver      string
 	SharedKeyBytes        []byte
@@ -14,13 +21,37 @@ type Env struct {
 	EnableOTP             bool
 	TrustDeviceTTLDays    int
 
-	DBConfig           DBConfig
-	EmailConfig        EmailConfig
-	StorageConfig      StorageConfig
-	SMSConfig          SMSConfig
-	BotConfig          BotConfig
-	ConversationConfig ConversationConfig
-	NotificationConfig NotificationConfig
+	DBConfig            DBConfig
+	EmailConfig         EmailConfig
+	StorageConfig       StorageConfig
+	SMSConfig           SMSConfig
+	BotConfig           BotConfig
+	ConversationConfig  ConversationConfig
+	NotificationConfig  NotificationConfig
+	ObservabilityConfig ObservabilityConfig
+}
+
+// ObservabilityConfig tunes metrics + distributed tracing. Both pillars are
+// independently switchable so a deploy can run metrics-only (the safe local
+// default) or add tracing when a Tempo/OTLP endpoint is available.
+//
+// Behaviour:
+//
+//	MetricsEnabled false → no /metrics route, metrics middleware is a no-op.
+//	TracingEnabled false → no TracerProvider is installed; every span is a
+//	                       no-op (safe) and nothing is exported.
+type ObservabilityConfig struct {
+	ServiceName    string // env OBS_SERVICE_NAME;    default "math-svr"
+	ServiceVersion string // env OBS_SERVICE_VERSION; default "dev"
+	Environment    string // env OBS_ENV;             default "local"
+
+	MetricsEnabled bool   // env OBS_METRICS_ENABLED; default true
+	MetricsAddr    string // env OBS_METRICS_ADDR;    default ":9091" (separate listener, no app middleware)
+
+	TracingEnabled   bool    // env OBS_TRACING_ENABLED;    default false
+	OTLPEndpoint     string  // env OBS_OTLP_ENDPOINT;      default "localhost:4318"
+	OTLPInsecure     bool    // env OBS_OTLP_INSECURE;      default true (local: no TLS)
+	TraceSampleRatio float64 // env OBS_TRACE_SAMPLE_RATIO; default 1.0 (sample everything)
 }
 
 // Config holds the database connection configuration.

@@ -12,7 +12,6 @@ package logger
 import (
 	"context"
 	"fmt"
-	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -41,21 +40,62 @@ type AppLogger struct {
 // New constructs an AppLogger bound to ctx and r. r may be nil for
 // background work — the request-line slot then renders as "[-]".
 func New(ctx context.Context, r *http.Request, opts Options) *AppLogger {
-	out := io.Writer(os.Stdout)
-	if opts.Output != nil {
-		out = opts.Output
+	// Resolve the console destination. If nothing is configured at all, fall
+	// back to stdout so a zero-value Options still logs somewhere.
+	consoleW := opts.ConsoleWriter
+	if consoleW == nil && opts.FileWriter == nil {
+		consoleW = os.Stdout
+	}
+	consoleFmt := opts.ConsoleFormat
+	if consoleFmt == "" {
+		consoleFmt = FormatText
+	}
+	fileFmt := opts.FileFormat
+	if fileFmt == "" {
+		fileFmt = FormatJSON
 	}
 
-	h := newPrefixHandler(out, r, opts.Level, opts.BackgroundColor, opts.WithColor)
+	var handlers []slog.Handler
+	jsonPresent := false
+
+	if consoleW != nil {
+		if consoleFmt == FormatJSON {
+			handlers = append(handlers, newJSONHandler(consoleW, r, opts.Level))
+			jsonPresent = true
+		} else {
+			handlers = append(handlers, newPrefixHandler(consoleW, r, opts.Level, opts.BackgroundColor, opts.WithColor))
+		}
+	}
+	if opts.FileWriter != nil {
+		if fileFmt == FormatJSON {
+			handlers = append(handlers, newJSONHandler(opts.FileWriter, r, opts.Level))
+			jsonPresent = true
+		} else {
+			// A file is machine-tailed or archived — never colorize it.
+			handlers = append(handlers, newPrefixHandler(opts.FileWriter, r, opts.Level, opts.BackgroundColor, false))
+		}
+	}
+
+	var h slog.Handler
+	if len(handlers) == 1 {
+		h = handlers[0]
+	} else {
+		h = newMultiHandler(handlers...)
+	}
+
+	// colorEnabled drives INLINE coloring done by callers (e.g. the SQL trace
+	// helper embeds ANSI into the message). If any destination is JSON, that
+	// must be off or escape codes would pollute the JSON `msg` field. Whole-
+	// line level color on a text console is applied by the prefixHandler
+	// itself and is unaffected by this flag.
+	colorEnabled := opts.WithColor && !jsonPresent
+
 	al := &AppLogger{
 		sLogger:         slog.New(h),
 		request:         r,
 		ctx:             ctx,
 		backgroundColor: opts.BackgroundColor,
-		colorEnabled:    opts.WithColor,
-	}
-	if f, ok := out.(*os.File); ok {
-		al.outFile = f
+		colorEnabled:    colorEnabled,
 	}
 	return al
 }

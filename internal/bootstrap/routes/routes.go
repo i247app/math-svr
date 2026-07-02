@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"net/http"
+
 	"github.com/i247app/gex"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/bootstrap/container"
@@ -30,141 +32,155 @@ import (
 )
 
 func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *container.ServiceContainer) {
+	// reg registers a route with gex AND mirrors its spec into the route
+	// classifier, so observability middleware can label metrics / name spans
+	// by the matched template (keeping cardinality bounded). Use reg instead
+	// of gexSvr.AddRoute for every route below.
+	reg := func(spec string, handler http.HandlerFunc, mw ...gex.Middleware) {
+		gexSvr.AddRoute(spec, handler, mw...)
+		res.RouteClassifier.Add(spec)
+	}
+
 	// middleware
 	authMiddleware := middleware.AuthRequiredMiddleware(res.SessionManager)
 
 	// misc routes
 	{
 		miscHandler := misc.NewHandler(services.MiscSvc)
-		gexSvr.AddRoute("POST /misc/logs-time-format", miscHandler.LogsTimeFormat)
+		reg("POST /misc/logs-time-format", miscHandler.LogsTimeFormat)
 	}
 
 	// health routes
 	{
 		healthHandler := health.NewHealthHandler()
-		gexSvr.AddRoute("GET /ping", healthHandler.HandlePing)
+		reg("GET /ping", healthHandler.HandlePing)
 	}
+
+	// NOTE: /metrics is intentionally NOT registered here. It is served on a
+	// separate, middleware-free listener (see bootstrap.App.setupMetricsServer)
+	// to avoid the app middleware chain double-gzipping the Prometheus
+	// exposition format and spamming session/request logs on every scrape.
 
 	// server lifecycle routes
 	{
 		serverHandler := server.NewHandler()
-		gexSvr.AddRoute("POST /server/shutdown", serverHandler.HandleShutdown, authMiddleware)
+		reg("POST /server/shutdown", serverHandler.HandleShutdown, authMiddleware)
 	}
 
 	// session routes
 	{
 		sessionHandler := session.NewHandler(res)
-		gexSvr.AddRoute("POST /sessions/dump", sessionHandler.HandleSessionDump)
-		gexSvr.AddRoute("POST /sessions/delete-unsecure", sessionHandler.HandleDeleteUnSecureSessions, authMiddleware)
-		gexSvr.AddRoute("POST /sessions/delete-all", sessionHandler.HandleDeleteAllSessions)
+		reg("POST /sessions/dump", sessionHandler.HandleSessionDump)
+		reg("POST /sessions/delete-unsecure", sessionHandler.HandleDeleteUnSecureSessions, authMiddleware)
+		reg("POST /sessions/delete-all", sessionHandler.HandleDeleteAllSessions)
 	}
 
 	// user routes
 	{
 		userHandler := user.NewUserHandler(res, services.UserSvc)
-		gexSvr.AddRoute("GET  /users/{id}", userHandler.HandleGetUserById, authMiddleware)
-		gexSvr.AddRoute("POST /users/me", userHandler.HandleGetUserMe, authMiddleware)
-		gexSvr.AddRoute("POST /users/list", userHandler.HandleListUsers, authMiddleware)
-		gexSvr.AddRoute("POST /users/create", userHandler.HandleCreateUser)
-		gexSvr.AddRoute("POST /users/update", userHandler.HandleUpdateUser, authMiddleware)
-		gexSvr.AddRoute("POST /users/upload-avatar", userHandler.HandleUploadAvatar, authMiddleware)
+		reg("GET  /users/{id}", userHandler.HandleGetUserById, authMiddleware)
+		reg("POST /users/me", userHandler.HandleGetUserMe, authMiddleware)
+		reg("POST /users/list", userHandler.HandleListUsers, authMiddleware)
+		reg("POST /users/create", userHandler.HandleCreateUser)
+		reg("POST /users/update", userHandler.HandleUpdateUser, authMiddleware)
+		reg("POST /users/upload-avatar", userHandler.HandleUploadAvatar, authMiddleware)
 
 		// admin routes
-		gexSvr.AddRoute("POST /users/soft-delete", userHandler.HandleSoftDeleteUser, authMiddleware)
-		gexSvr.AddRoute("POST /users/force-delete", userHandler.HandleForceDeleteUser, authMiddleware)
+		reg("POST /users/soft-delete", userHandler.HandleSoftDeleteUser, authMiddleware)
+		reg("POST /users/force-delete", userHandler.HandleForceDeleteUser, authMiddleware)
 	}
 
 	// auth routes
 	{
 		authHandler := auth.NewAuthHandler(res, services.AuthSvc)
-		gexSvr.AddRoute("POST /auth/login", authHandler.HandleLogin)
-		gexSvr.AddRoute("POST /auth/login-resume", authHandler.HandleLoginResume)
-		gexSvr.AddRoute("POST /auth/otp", authHandler.HandleLoginOTP)
-		gexSvr.AddRoute("POST /auth/logout", authHandler.HandleLogout, authMiddleware)
+		reg("POST /auth/login", authHandler.HandleLogin)
+		reg("POST /auth/login-resume", authHandler.HandleLoginResume)
+		reg("POST /auth/otp", authHandler.HandleLoginOTP)
+		reg("POST /auth/logout", authHandler.HandleLogout, authMiddleware)
 	}
 
 	// curriculum reference routes (read-only)
 	{
 		programHandler := program.NewProgramHandler(services.ProgramSvc)
-		gexSvr.AddRoute("POST /programs/list", programHandler.HandleListPrograms)
-		gexSvr.AddRoute("GET  /programs/{id}", programHandler.HandleGetProgram, authMiddleware)
-		gexSvr.AddRoute("POST /programs/create", programHandler.HandleCreateProgram, authMiddleware)
-		gexSvr.AddRoute("POST /programs/update", programHandler.HandleUpdateProgram, authMiddleware)
-		gexSvr.AddRoute("POST /programs/soft-delete", programHandler.HandleSoftDeleteProgram, authMiddleware)
-		gexSvr.AddRoute("POST /programs/force-delete", programHandler.HandleForceDeleteProgram, authMiddleware)
+		reg("POST /programs/list", programHandler.HandleListPrograms)
+		reg("GET  /programs/{id}", programHandler.HandleGetProgram, authMiddleware)
+		reg("POST /programs/create", programHandler.HandleCreateProgram, authMiddleware)
+		reg("POST /programs/update", programHandler.HandleUpdateProgram, authMiddleware)
+		reg("POST /programs/soft-delete", programHandler.HandleSoftDeleteProgram, authMiddleware)
+		reg("POST /programs/force-delete", programHandler.HandleForceDeleteProgram, authMiddleware)
 
 		gradeHandler := grade.NewGradeHandler(services.GradeSvc)
-		gexSvr.AddRoute("POST /grades/list", gradeHandler.HandleListGrades)
-		gexSvr.AddRoute("GET  /grades/{id}", gradeHandler.HandleGetGrade, authMiddleware)
-		gexSvr.AddRoute("POST /grades/create", gradeHandler.HandleCreateGrade, authMiddleware)
-		gexSvr.AddRoute("POST /grades/update", gradeHandler.HandleUpdateGrade, authMiddleware)
-		gexSvr.AddRoute("POST /grades/soft-delete", gradeHandler.HandleSoftDeleteGrade, authMiddleware)
-		gexSvr.AddRoute("POST /grades/force-delete", gradeHandler.HandleForceDeleteGrade, authMiddleware)
+		reg("POST /grades/list", gradeHandler.HandleListGrades)
+		reg("GET  /grades/{id}", gradeHandler.HandleGetGrade, authMiddleware)
+		reg("POST /grades/create", gradeHandler.HandleCreateGrade, authMiddleware)
+		reg("POST /grades/update", gradeHandler.HandleUpdateGrade, authMiddleware)
+		reg("POST /grades/soft-delete", gradeHandler.HandleSoftDeleteGrade, authMiddleware)
+		reg("POST /grades/force-delete", gradeHandler.HandleForceDeleteGrade, authMiddleware)
 
 		semesterHandler := semester.NewSemesterHandler(services.SemesterSvc)
-		gexSvr.AddRoute("POST /semesters/list", semesterHandler.HandleListSemesters)
-		gexSvr.AddRoute("GET  /semesters/{id}", semesterHandler.HandleGetSemester, authMiddleware)
-		gexSvr.AddRoute("POST /semesters/create", semesterHandler.HandleCreateSemester, authMiddleware)
-		gexSvr.AddRoute("POST /semesters/update", semesterHandler.HandleUpdateSemester, authMiddleware)
-		gexSvr.AddRoute("POST /semesters/soft-delete", semesterHandler.HandleSoftDeleteSemester, authMiddleware)
-		gexSvr.AddRoute("POST /semesters/force-delete", semesterHandler.HandleForceDeleteSemester, authMiddleware)
+		reg("POST /semesters/list", semesterHandler.HandleListSemesters)
+		reg("GET  /semesters/{id}", semesterHandler.HandleGetSemester, authMiddleware)
+		reg("POST /semesters/create", semesterHandler.HandleCreateSemester, authMiddleware)
+		reg("POST /semesters/update", semesterHandler.HandleUpdateSemester, authMiddleware)
+		reg("POST /semesters/soft-delete", semesterHandler.HandleSoftDeleteSemester, authMiddleware)
+		reg("POST /semesters/force-delete", semesterHandler.HandleForceDeleteSemester, authMiddleware)
 	}
 
 	// profile routes
 	{
 		profileHandler := profile.NewProfileHandler(services.ProfileSvc)
-		gexSvr.AddRoute("GET  /profiles/{id}", profileHandler.HandleGetProfileById, authMiddleware)
-		gexSvr.AddRoute("POST /profiles/list", profileHandler.HandleListProfiles, authMiddleware)
-		gexSvr.AddRoute("POST /profiles/create", profileHandler.HandleCreateProfile, authMiddleware)
-		gexSvr.AddRoute("POST /profiles/update", profileHandler.HandleUpdateProfile, authMiddleware)
-		gexSvr.AddRoute("POST /profiles/soft-delete", profileHandler.HandleSoftDeleteProfile, authMiddleware)
-		gexSvr.AddRoute("POST /profiles/force-delete", profileHandler.HandleForceDeleteProfile, authMiddleware)
-		gexSvr.AddRoute("POST /profiles/upload-avatar", profileHandler.HandleUploadAvatar, authMiddleware)
-		gexSvr.AddRoute("POST /profiles/assign-school", profileHandler.HandleAssignSchool, authMiddleware)
-		gexSvr.AddRoute("POST /profiles/remove-school", profileHandler.HandleRemoveSchool, authMiddleware)
+		reg("GET  /profiles/{id}", profileHandler.HandleGetProfileById, authMiddleware)
+		reg("POST /profiles/list", profileHandler.HandleListProfiles, authMiddleware)
+		reg("POST /profiles/create", profileHandler.HandleCreateProfile, authMiddleware)
+		reg("POST /profiles/update", profileHandler.HandleUpdateProfile, authMiddleware)
+		reg("POST /profiles/soft-delete", profileHandler.HandleSoftDeleteProfile, authMiddleware)
+		reg("POST /profiles/force-delete", profileHandler.HandleForceDeleteProfile, authMiddleware)
+		reg("POST /profiles/upload-avatar", profileHandler.HandleUploadAvatar, authMiddleware)
+		reg("POST /profiles/assign-school", profileHandler.HandleAssignSchool, authMiddleware)
+		reg("POST /profiles/remove-school", profileHandler.HandleRemoveSchool, authMiddleware)
 
 		// admin routes
-		gexSvr.AddRoute("POST /profiles/upload-static-file", profileHandler.HandleUploadStaticFile, authMiddleware)
-		gexSvr.AddRoute("POST /profiles/delete-static-file", profileHandler.HandleDeleteStaticFile, authMiddleware)
+		reg("POST /profiles/upload-static-file", profileHandler.HandleUploadStaticFile, authMiddleware)
+		reg("POST /profiles/delete-static-file", profileHandler.HandleDeleteStaticFile, authMiddleware)
 	}
 
 	// school routes
 	{
 		schoolHandler := school.NewSchoolHandler(res, services.SchoolSvc)
-		gexSvr.AddRoute("GET  /schools/{id}", schoolHandler.HandleGetSchool, authMiddleware)
-		gexSvr.AddRoute("POST /schools/list", schoolHandler.HandleListSchools, authMiddleware)
-		gexSvr.AddRoute("POST /schools/create", schoolHandler.HandleCreateSchool, authMiddleware)
-		gexSvr.AddRoute("POST /schools/update", schoolHandler.HandleUpdateSchool, authMiddleware)
-		gexSvr.AddRoute("POST /schools/soft-delete", schoolHandler.HandleSoftDeleteSchool, authMiddleware)
-		gexSvr.AddRoute("POST /schools/force-delete", schoolHandler.HandleForceDeleteSchool, authMiddleware)
+		reg("GET  /schools/{id}", schoolHandler.HandleGetSchool, authMiddleware)
+		reg("POST /schools/list", schoolHandler.HandleListSchools, authMiddleware)
+		reg("POST /schools/create", schoolHandler.HandleCreateSchool, authMiddleware)
+		reg("POST /schools/update", schoolHandler.HandleUpdateSchool, authMiddleware)
+		reg("POST /schools/soft-delete", schoolHandler.HandleSoftDeleteSchool, authMiddleware)
+		reg("POST /schools/force-delete", schoolHandler.HandleForceDeleteSchool, authMiddleware)
 	}
 
 	// device routes
 	{
 		deviceHandler := device.NewDeviceHandler(services.DeviceSvc)
-		gexSvr.AddRoute("GET  /devices/{id}", deviceHandler.HandleGetDeviceById)
-		gexSvr.AddRoute("POST /devices/list", deviceHandler.HandleListDevices)
-		gexSvr.AddRoute("POST /devices/update", deviceHandler.HandleUpdateDevice)
-		gexSvr.AddRoute("POST /devices/revoke", deviceHandler.HandleRevokeDevice)
-		gexSvr.AddRoute("POST /devices/soft-delete", deviceHandler.HandleSoftDeleteDevice)
+		reg("GET  /devices/{id}", deviceHandler.HandleGetDeviceById)
+		reg("POST /devices/list", deviceHandler.HandleListDevices)
+		reg("POST /devices/update", deviceHandler.HandleUpdateDevice)
+		reg("POST /devices/revoke", deviceHandler.HandleRevokeDevice)
+		reg("POST /devices/soft-delete", deviceHandler.HandleSoftDeleteDevice)
 	}
 
 	// otp routes
 	{
 		otpHandler := otp.NewOtpHandler(res, services.OtpSvc)
-		gexSvr.AddRoute("POST /otps/send", otpHandler.HandleSend)
-		gexSvr.AddRoute("POST /otps/verify", otpHandler.HandleVerify)
+		reg("POST /otps/send", otpHandler.HandleSend)
+		reg("POST /otps/verify", otpHandler.HandleVerify)
 	}
 
 	// chapter routes
 	{
 		chapterHandler := chapter.NewChapterHandler(res, services.ChapterSvc)
-		gexSvr.AddRoute("GET  /chapters/{id}", chapterHandler.HandleGetChapter, authMiddleware)
-		gexSvr.AddRoute("POST /chapters/list", chapterHandler.HandleListChapters, authMiddleware)
-		gexSvr.AddRoute("POST /chapters/create", chapterHandler.HandleCreateChapter, authMiddleware)
-		gexSvr.AddRoute("POST /chapters/update", chapterHandler.HandleUpdateChapter, authMiddleware)
-		gexSvr.AddRoute("POST /chapters/soft-delete", chapterHandler.HandleSoftDeleteChapter, authMiddleware)
-		gexSvr.AddRoute("POST /chapters/force-delete", chapterHandler.HandleForceDeleteChapter, authMiddleware)
+		reg("GET  /chapters/{id}", chapterHandler.HandleGetChapter, authMiddleware)
+		reg("POST /chapters/list", chapterHandler.HandleListChapters, authMiddleware)
+		reg("POST /chapters/create", chapterHandler.HandleCreateChapter, authMiddleware)
+		reg("POST /chapters/update", chapterHandler.HandleUpdateChapter, authMiddleware)
+		reg("POST /chapters/soft-delete", chapterHandler.HandleSoftDeleteChapter, authMiddleware)
+		reg("POST /chapters/force-delete", chapterHandler.HandleForceDeleteChapter, authMiddleware)
 	}
 
 	// ai routes — handshake + per-user AI session init (auth required). Warms
@@ -173,116 +189,116 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// turns on /ai/conversations/send.
 	{
 		botHandler := bot.NewHandler(res, services.BotSvc)
-		gexSvr.AddRoute("POST /ai/shake", botHandler.HandleShake, authMiddleware)
+		reg("POST /ai/shake", botHandler.HandleShake, authMiddleware)
 	}
 
 	// ai conversation routes — contextual multi-turn chat (auth-gated)
 	{
 		conversationHandler := conversation.NewHandler(res, services.ConversationSvc)
-		gexSvr.AddRoute("POST /ai/conversations/send", conversationHandler.HandleSend, authMiddleware)
-		gexSvr.AddRoute("POST /ai/conversations/list", conversationHandler.HandleList, authMiddleware)
-		gexSvr.AddRoute("GET  /ai/conversations/{id}", conversationHandler.HandleGet, authMiddleware)
-		gexSvr.AddRoute("POST /ai/conversations/soft-delete", conversationHandler.HandleSoftDelete, authMiddleware)
+		reg("POST /ai/conversations/send", conversationHandler.HandleSend, authMiddleware)
+		reg("POST /ai/conversations/list", conversationHandler.HandleList, authMiddleware)
+		reg("GET  /ai/conversations/{id}", conversationHandler.HandleGet, authMiddleware)
+		reg("POST /ai/conversations/soft-delete", conversationHandler.HandleSoftDelete, authMiddleware)
 	}
 
 	// quiz routes
 	{
 		quizHandler := quiz.NewQuizHandler(res, services.QuizSvc)
-		gexSvr.AddRoute("GET  /quizzes/{id}", quizHandler.HandleGetQuiz, authMiddleware)
-		gexSvr.AddRoute("POST /quizzes/list", quizHandler.HandleListQuizzes, authMiddleware)
-		gexSvr.AddRoute("POST /quizzes/generate", quizHandler.HandleGenerateQuiz, authMiddleware)
-		gexSvr.AddRoute("POST /quizzes/submit/cost-ai", quizHandler.HandleSubmitQuizAnswers, authMiddleware)
-		gexSvr.AddRoute("POST /quizzes/submit", quizHandler.HandleSubmitQuizV2, authMiddleware)
-		gexSvr.AddRoute("POST /quizzes/soft-delete", quizHandler.HandleSoftDeleteQuiz, authMiddleware)
+		reg("GET  /quizzes/{id}", quizHandler.HandleGetQuiz, authMiddleware)
+		reg("POST /quizzes/list", quizHandler.HandleListQuizzes, authMiddleware)
+		reg("POST /quizzes/generate", quizHandler.HandleGenerateQuiz, authMiddleware)
+		reg("POST /quizzes/submit/cost-ai", quizHandler.HandleSubmitQuizAnswers, authMiddleware)
+		reg("POST /quizzes/submit", quizHandler.HandleSubmitQuizV2, authMiddleware)
+		reg("POST /quizzes/soft-delete", quizHandler.HandleSoftDeleteQuiz, authMiddleware)
 	}
 
 	// classroom routes
 	{
 		classroomHandler := classroom.NewClassroomHandler(res, services.ClassroomSvc)
-		gexSvr.AddRoute("GET  /classrooms/{id}", classroomHandler.HandleGetClassroom, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/list", classroomHandler.HandleListClassrooms, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/my-joined", classroomHandler.HandleListMyJoinedClassrooms, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/create", classroomHandler.HandleCreateClassroom, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/update", classroomHandler.HandleUpdateClassroom, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/archive", classroomHandler.HandleArchiveClassroom, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/restore", classroomHandler.HandleRestoreClassroom, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/soft-delete", classroomHandler.HandleSoftDeleteClassroom, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/force-delete", classroomHandler.HandleForceDeleteClassroom, authMiddleware)
+		reg("GET  /classrooms/{id}", classroomHandler.HandleGetClassroom, authMiddleware)
+		reg("POST /classrooms/list", classroomHandler.HandleListClassrooms, authMiddleware)
+		reg("POST /classrooms/my-joined", classroomHandler.HandleListMyJoinedClassrooms, authMiddleware)
+		reg("POST /classrooms/create", classroomHandler.HandleCreateClassroom, authMiddleware)
+		reg("POST /classrooms/update", classroomHandler.HandleUpdateClassroom, authMiddleware)
+		reg("POST /classrooms/archive", classroomHandler.HandleArchiveClassroom, authMiddleware)
+		reg("POST /classrooms/restore", classroomHandler.HandleRestoreClassroom, authMiddleware)
+		reg("POST /classrooms/soft-delete", classroomHandler.HandleSoftDeleteClassroom, authMiddleware)
+		reg("POST /classrooms/force-delete", classroomHandler.HandleForceDeleteClassroom, authMiddleware)
 
 		// membership
-		gexSvr.AddRoute("POST /classrooms/leave", classroomHandler.HandleLeaveClassroom, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/transfer-ownership", classroomHandler.HandleTransferOwnership, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/members/list", classroomHandler.HandleListMembers, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/members/remove", classroomHandler.HandleRemoveMember, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/members/update-role", classroomHandler.HandleUpdateMemberRole, authMiddleware)
+		reg("POST /classrooms/leave", classroomHandler.HandleLeaveClassroom, authMiddleware)
+		reg("POST /classrooms/transfer-ownership", classroomHandler.HandleTransferOwnership, authMiddleware)
+		reg("POST /classrooms/members/list", classroomHandler.HandleListMembers, authMiddleware)
+		reg("POST /classrooms/members/remove", classroomHandler.HandleRemoveMember, authMiddleware)
+		reg("POST /classrooms/members/update-role", classroomHandler.HandleUpdateMemberRole, authMiddleware)
 
 		// invitations — teacher-initiated, member_status = PENDING_INVITATION
-		gexSvr.AddRoute("POST /classrooms/invitations/send", classroomHandler.HandleSendInvitation, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/invitations/list", classroomHandler.HandleListClassroomInvitations, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/invitations/my-pending", classroomHandler.HandleListMyPendingInvitations, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/invitations/accept", classroomHandler.HandleAcceptInvitation, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/invitations/reject", classroomHandler.HandleRejectInvitation, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/invitations/cancel", classroomHandler.HandleCancelInvitation, authMiddleware)
+		reg("POST /classrooms/invitations/send", classroomHandler.HandleSendInvitation, authMiddleware)
+		reg("POST /classrooms/invitations/list", classroomHandler.HandleListClassroomInvitations, authMiddleware)
+		reg("POST /classrooms/invitations/my-pending", classroomHandler.HandleListMyPendingInvitations, authMiddleware)
+		reg("POST /classrooms/invitations/accept", classroomHandler.HandleAcceptInvitation, authMiddleware)
+		reg("POST /classrooms/invitations/reject", classroomHandler.HandleRejectInvitation, authMiddleware)
+		reg("POST /classrooms/invitations/cancel", classroomHandler.HandleCancelInvitation, authMiddleware)
 
 		// join requests — user-initiated, member_status = PENDING_REQUEST
-		gexSvr.AddRoute("POST /classrooms/find-by-code", classroomHandler.HandleFindClassroomByCode, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/join-by-code", classroomHandler.HandleJoinByCode, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/join-requests/list", classroomHandler.HandleListJoinRequestsByClassroom, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/join-requests/my-pending", classroomHandler.HandleListMyJoinRequests, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/join-requests/approve", classroomHandler.HandleApproveJoinRequest, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/join-requests/reject", classroomHandler.HandleRejectJoinRequest, authMiddleware)
-		gexSvr.AddRoute("POST /classrooms/join-requests/cancel", classroomHandler.HandleCancelJoinRequest, authMiddleware)
+		reg("POST /classrooms/find-by-code", classroomHandler.HandleFindClassroomByCode, authMiddleware)
+		reg("POST /classrooms/join-by-code", classroomHandler.HandleJoinByCode, authMiddleware)
+		reg("POST /classrooms/join-requests/list", classroomHandler.HandleListJoinRequestsByClassroom, authMiddleware)
+		reg("POST /classrooms/join-requests/my-pending", classroomHandler.HandleListMyJoinRequests, authMiddleware)
+		reg("POST /classrooms/join-requests/approve", classroomHandler.HandleApproveJoinRequest, authMiddleware)
+		reg("POST /classrooms/join-requests/reject", classroomHandler.HandleRejectJoinRequest, authMiddleware)
+		reg("POST /classrooms/join-requests/cancel", classroomHandler.HandleCancelJoinRequest, authMiddleware)
 
 		// Profile learning-progress detail (002-profile-learning-progress).
-		gexSvr.AddRoute("POST /classrooms/progress/profile", classroomHandler.HandleProfileProgress, authMiddleware)
+		reg("POST /classrooms/progress/profile", classroomHandler.HandleProfileProgress, authMiddleware)
 	}
 
 	// classroom exercise routes — teacher-issued, AI-generated assignments
 	{
 		exerciseHandler := exercise.NewClassroomExerciseHandler(res, services.ExerciseSvc)
-		gexSvr.AddRoute("POST /classroom-exercises/create", exerciseHandler.HandleCreateExercise, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercises/update", exerciseHandler.HandleUpdateExercise, authMiddleware)
-		gexSvr.AddRoute("GET  /classroom-exercises/{id}", exerciseHandler.HandleGetExercise, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercises/list", exerciseHandler.HandleListExercises, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercises/soft-delete", exerciseHandler.HandleSoftDeleteExercise, authMiddleware)
+		reg("POST /classroom-exercises/create", exerciseHandler.HandleCreateExercise, authMiddleware)
+		reg("POST /classroom-exercises/update", exerciseHandler.HandleUpdateExercise, authMiddleware)
+		reg("GET  /classroom-exercises/{id}", exerciseHandler.HandleGetExercise, authMiddleware)
+		reg("POST /classroom-exercises/list", exerciseHandler.HandleListExercises, authMiddleware)
+		reg("POST /classroom-exercises/soft-delete", exerciseHandler.HandleSoftDeleteExercise, authMiddleware)
 
 		// classroom exercise submissions — student submit + history,
 		// teacher roster + soft-delete. Every route is auth-gated.
 		submissionHandler := exercise.NewClassroomExerciseSubmissionHandler(res, services.ExerciseSvc)
-		gexSvr.AddRoute("POST /classroom-exercise/submissions/submit/cost-ai", submissionHandler.HandleSubmitExerciseAnswers, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercise/submissions/submit", submissionHandler.HandleSubmitExerciseAnswersV2, authMiddleware)
-		gexSvr.AddRoute("GET  /classroom-exercise/submissions/{id}", submissionHandler.HandleGetSubmission, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercise/submissions/list", submissionHandler.HandleListSubmissions, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercise/submissions/by-exercise", submissionHandler.HandleListSubmissionsByExercise, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercise/submissions/submitted-members", submissionHandler.HandleListSubmittedMembers, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercise/submissions/non-submitted-members", submissionHandler.HandleListNonSubmittedMembers, authMiddleware)
-		gexSvr.AddRoute("POST /classroom-exercise/submissions/soft-delete", submissionHandler.HandleSoftDeleteSubmission, authMiddleware)
+		reg("POST /classroom-exercise/submissions/submit/cost-ai", submissionHandler.HandleSubmitExerciseAnswers, authMiddleware)
+		reg("POST /classroom-exercise/submissions/submit", submissionHandler.HandleSubmitExerciseAnswersV2, authMiddleware)
+		reg("GET  /classroom-exercise/submissions/{id}", submissionHandler.HandleGetSubmission, authMiddleware)
+		reg("POST /classroom-exercise/submissions/list", submissionHandler.HandleListSubmissions, authMiddleware)
+		reg("POST /classroom-exercise/submissions/by-exercise", submissionHandler.HandleListSubmissionsByExercise, authMiddleware)
+		reg("POST /classroom-exercise/submissions/submitted-members", submissionHandler.HandleListSubmittedMembers, authMiddleware)
+		reg("POST /classroom-exercise/submissions/non-submitted-members", submissionHandler.HandleListNonSubmittedMembers, authMiddleware)
+		reg("POST /classroom-exercise/submissions/soft-delete", submissionHandler.HandleSoftDeleteSubmission, authMiddleware)
 	}
 
 	// notification routes — per-user in-app inbox + push delivery (auth-gated)
 	{
 		notificationHandler := notification.NewHandler(res, services.NotificationSvc)
-		gexSvr.AddRoute("POST /notifications/list", notificationHandler.HandleList, authMiddleware)
-		gexSvr.AddRoute("POST /notifications/unread-count", notificationHandler.HandleUnreadCount, authMiddleware)
-		gexSvr.AddRoute("POST /notifications/send", notificationHandler.HandleSend, authMiddleware)
-		gexSvr.AddRoute("POST /notifications/mark-read", notificationHandler.HandleMarkRead, authMiddleware)
-		gexSvr.AddRoute("POST /notifications/mark-all-read", notificationHandler.HandleMarkAllRead, authMiddleware)
-		gexSvr.AddRoute("POST /notifications/soft-delete", notificationHandler.HandleSoftDelete, authMiddleware)
+		reg("POST /notifications/list", notificationHandler.HandleList, authMiddleware)
+		reg("POST /notifications/unread-count", notificationHandler.HandleUnreadCount, authMiddleware)
+		reg("POST /notifications/send", notificationHandler.HandleSend, authMiddleware)
+		reg("POST /notifications/mark-read", notificationHandler.HandleMarkRead, authMiddleware)
+		reg("POST /notifications/mark-all-read", notificationHandler.HandleMarkAllRead, authMiddleware)
+		reg("POST /notifications/soft-delete", notificationHandler.HandleSoftDelete, authMiddleware)
 	}
 
 	// home routes — role-aware dashboard composed per acting profile
 	{
 		homeHandler := home.NewHandler(res, services.HomeSvc)
-		gexSvr.AddRoute("POST /home/layout", homeHandler.HandleGetHomeLayout, authMiddleware)
+		reg("POST /home/layout", homeHandler.HandleGetHomeLayout, authMiddleware)
 	}
 
 	// jobs routes
 	{
 		jobHandler := job.NewJobHandler(services.JobSvc)
-		gexSvr.AddRoute("POST /jobs/list", jobHandler.HandleListJobs, authMiddleware)
-		gexSvr.AddRoute("POST /jobs/trigger", jobHandler.HandleTriggerJob, authMiddleware)
-		gexSvr.AddRoute("POST /jobs/pause", jobHandler.HandlePauseJob, authMiddleware)
-		gexSvr.AddRoute("POST /jobs/resume", jobHandler.HandleResumeJob, authMiddleware)
-		gexSvr.AddRoute("POST /tasks/enqueue", jobHandler.HandleEnqueueTask, authMiddleware)
+		reg("POST /jobs/list", jobHandler.HandleListJobs, authMiddleware)
+		reg("POST /jobs/trigger", jobHandler.HandleTriggerJob, authMiddleware)
+		reg("POST /jobs/pause", jobHandler.HandlePauseJob, authMiddleware)
+		reg("POST /jobs/resume", jobHandler.HandleResumeJob, authMiddleware)
+		reg("POST /tasks/enqueue", jobHandler.HandleEnqueueTask, authMiddleware)
 	}
 }

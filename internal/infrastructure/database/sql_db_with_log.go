@@ -40,17 +40,24 @@ func (d *DatabaseWithLogs) WithContext(ctx context.Context) *DatabaseWithLogs {
 }
 
 func (d *DatabaseWithLogs) Query(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	span := startDBSpan(ctx, query)
 	logInputSQL(ctx, colors.FGCyan, query, args...)
 	rows, err := d.db.Query(query, args...)
 	if err != nil {
 		logQueryError(ctx, err)
+		endDBSpan(span, err)
 		return nil, err
 	}
 	logQueryRowsResult(ctx, rows)
+	endDBSpan(span, nil)
 	return rows, nil
 }
 
 func (d *DatabaseWithLogs) QueryRow(ctx context.Context, query string, args ...any) *sql.Row {
+	// database/sql executes the query during QueryRow (Scan just reads the
+	// buffered first row), so the span duration reflects real query time.
+	span := startDBSpan(ctx, query)
+	defer span.End()
 	logInputSQL(ctx, colors.FGCyan, query, args...)
 	row := d.db.QueryRow(query, args...)
 	logQueryRowResult(ctx, row)
@@ -58,23 +65,29 @@ func (d *DatabaseWithLogs) QueryRow(ctx context.Context, query string, args ...a
 }
 
 func (d *DatabaseWithLogs) Exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	span := startDBSpan(ctx, query)
 	logInputSQL(ctx, colors.FGYellow, query, args...)
 	result, err := d.db.Exec(query, args...)
 	if err != nil {
 		logQueryError(ctx, err)
+		endDBSpan(span, err)
 		return nil, err
 	}
 	logExecResult(ctx, result)
+	endDBSpan(span, nil)
 	return result, nil
 }
 
 func (d *DatabaseWithLogs) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
+	span := startDBSpan(ctx, "BEGIN")
 	logInputSQL(ctx, colors.FGMagenta, "BEGIN TRANSACTION")
 	tx, err := d.db.BeginTx(ctx, opts)
 	if err != nil {
 		logQueryError(ctx, err)
+		endDBSpan(span, err)
 		return nil, err
 	}
+	endDBSpan(span, nil)
 	return tx, nil
 }
 

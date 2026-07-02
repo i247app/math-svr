@@ -12,7 +12,9 @@ import (
 	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/database"
+	"math-ai.com/math-ai/internal/infrastructure/httproute"
 	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
+	"math-ai.com/math-ai/internal/infrastructure/metrics"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 
 	"github.com/i247app/gex"
@@ -45,6 +47,16 @@ type Resource struct {
 	// Nil only during bootstrap; once Start has returned, all access
 	// is safe. Stop is called from the gex OnShutdown hook.
 	JobRuntime *jobruntime.Runtime
+
+	// Metrics holds the Prometheus registry + HTTP collectors. Nil when
+	// OBS_METRICS_ENABLED=false — every Metrics method is a no-op on nil,
+	// and the /metrics route is not registered.
+	Metrics *metrics.Metrics
+
+	// RouteClassifier maps a request to its registered route template so the
+	// metrics `route` label and span names stay low-cardinality. Created at
+	// boot; populated by routes.SetupHttpRoutes as each route is registered.
+	RouteClassifier *httproute.Classifier
 }
 
 func (a *Resource) GetRequestSession(r *http.Request) (*session.AppSession, error) {

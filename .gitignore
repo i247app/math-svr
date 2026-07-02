@@ -17,6 +17,9 @@ load-test/
 # Docker
 # docker/
 
+# Logs
+logs/
+
 # Docs
 docs
 

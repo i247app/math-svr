@@ -33,17 +33,18 @@ type Provider struct {
 func NewProvider(opts Options, logFile string) (*Provider, error) {
 	p := &Provider{opts: opts}
 
-	writers := []io.Writer{os.Stdout}
+	// Console is always stdout; the file (when configured) is a second,
+	// independently-encoded destination that this Provider owns and closes.
+	p.opts.ConsoleWriter = os.Stdout
 	if logFile != "" {
 		f, err := openLogFile(logFile)
 		if err != nil {
 			return nil, fmt.Errorf("logger: open log file %q: %w", logFile, err)
 		}
-		writers = append(writers, f)
+		p.opts.FileWriter = f
 		p.closers = append(p.closers, f)
 	}
 
-	p.opts.Output = io.MultiWriter(writers...)
 	return p, nil
 }
 
