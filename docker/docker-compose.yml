@@ -1,0 +1,108 @@
+# Observability stack for math-svr (local development).
+#
+# Topology: the Go app runs on the HOST (`make run`); this stack runs in
+# Docker. Prometheus scrapes the host app via `host.docker.internal`; Alloy
+# tails the app's JSON log file bind-mounted from ../logs; the app pushes
+# traces to Tempo on localhost:4318.
+#
+# Bring up:  make obs-up     |  Tear down: make obs-down
+# Grafana:   http://localhost:3000  (admin / admin)
+name: math-svr-observability
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: msvr-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+      # exemplar-storage: lets latency histograms carry a trace_id so you can
+      # jump from a spike on a graph straight to the trace.
+      - --enable-feature=exemplar-storage
+      # remote-write-receiver: accepts span-metrics/service-graph samples that
+      # Tempo's metrics_generator pushes back in.
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    # Maps host.docker.internal → the host machine so Prometheus (in Docker)
+    # can scrape the Go app running on the host. On Docker Desktop this is
+    # automatic, but declaring it keeps Linux hosts working too.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.7.1
+    container_name: msvr-tempo
+    command: ["-config.file=/etc/tempo/tempo.yml"]
+    volumes:
+      - ./tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "3200:3200"   # Tempo HTTP API (Grafana queries this)
+      - "4317:4317"   # OTLP gRPC ingest
+      - "4318:4318"   # OTLP HTTP ingest  ← the Go app pushes here
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.3.2
+    container_name: msvr-loki
+    command: ["-config.file=/etc/loki/loki-config.yml"]
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.5.1
+    container_name: msvr-alloy
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # The app's JSON logs live in ../logs on the host; Alloy tails them.
+      - ../logs:/var/log/math-svr:ro
+      - alloy-data:/var/lib/alloy/data
+    ports:
+      - "12345:12345"   # Alloy UI (component graph / debugging)
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: msvr-grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      # Local-only convenience: skip the login screen. Do NOT do this in prod.
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_FEATURE_TOGGLES_ENABLE=traceToMetrics
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  tempo-data:
+  loki-data:
+  alloy-data:
+  grafana-data:

@@ -1,0 +1,22 @@
+# Prometheus scrape config for math-svr (local).
+#
+# The Go app runs on the HOST, so we scrape it through host.docker.internal.
+# IMPORTANT: the app must listen on 0.0.0.0 (not 127.0.0.1) for this to work.
+# Set SERVER_HOST= (empty) or SERVER_HOST=0.0.0.0 in your .env.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Prometheus scraping itself — handy sanity check that scraping works.
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # The math-svr application.
+  - job_name: math-svr
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["host.docker.internal:8080"] # SERVER_PORT (default 8080)
+        labels:
+          service: math-svr

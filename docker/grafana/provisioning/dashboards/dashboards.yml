@@ -1,0 +1,15 @@
+# Auto-load any dashboard JSON dropped into /var/lib/grafana/dashboards.
+# The RED dashboard itself is added in Phase 4.
+apiVersion: 1
+
+providers:
+  - name: math-svr
+    orgId: 1
+    folder: math-svr
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

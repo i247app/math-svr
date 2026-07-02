@@ -1,0 +1,53 @@
+// Grafana Alloy pipeline: tail the app's JSON log file → parse → push to Loki.
+//
+// The host directory ../logs is bind-mounted to /var/log/math-svr in the
+// alloy container (see docker-compose.yml). The Go app writes app.log there
+// once LOG_FORMAT=json + LOG_FILE=./logs/app.log are set (Phase 2).
+
+// 1. Discover the log file(s) to tail. Extra keys besides __path__ become
+//    labels on every line read from the matched files.
+local.file_match "applogs" {
+  path_targets = [{
+    __path__ = "/var/log/math-svr/*.log",
+    service  = "math-svr",
+  }]
+}
+
+// 2. Read the files, forward raw lines to the processing stage.
+loki.source.file "applogs" {
+  targets    = local.file_match.applogs.targets
+  forward_to = [loki.process.applogs.receiver]
+}
+
+// 3. Parse each JSON line. Promote `level` to a label (low cardinality) and
+//    keep `trace_id` as structured metadata (high cardinality — must NOT be a
+//    label) so Grafana can link a log line to its trace in Tempo.
+loki.process "applogs" {
+  stage.json {
+    expressions = {
+      level    = "level",
+      trace_id = "trace_id",
+    }
+  }
+
+  stage.labels {
+    values = {
+      level = "level",
+    }
+  }
+
+  stage.structured_metadata {
+    values = {
+      trace_id = "trace_id",
+    }
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+// 4. Ship to Loki.
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

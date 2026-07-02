@@ -42,6 +42,9 @@ log_file
 webhook.log
 deploy.log
 
+# Observability: runtime app logs (keep the dir via .gitkeep)
+logs/*.log
+
 # AI files
 .cursor/
 .claude/

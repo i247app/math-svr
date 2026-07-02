@@ -1,0 +1,55 @@
+# Grafana datasources, provisioned on startup (no manual clicking).
+# Correlation wiring (Loki→Tempo derived field, Tempo→Loki, exemplars) is set
+# here so log↔trace↔metric navigation works as soon as data flows in.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      # Let latency histogram exemplars jump to the matching trace in Tempo.
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo
+
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      # Turn the trace_id (attached as structured metadata by Alloy) into a
+      # clickable link that opens the trace in Tempo.
+      derivedFields:
+        - name: trace_id
+          matcherType: label
+          matcherRegex: trace_id
+          datasourceUid: tempo
+          url: "${__value.raw}"
+          urlDisplayLabel: "View trace"
+
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      # From a span, jump to the logs of the same service/time window.
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: "-1h"
+        spanEndTimeShift: "1h"
+        filterByTraceID: true
+        tags:
+          - key: service.name
+            value: service
+      tracesToMetrics:
+        datasourceUid: prometheus
+      serviceMap:
+        datasourceUid: prometheus
+      nodeGraph:
+        enabled: true
