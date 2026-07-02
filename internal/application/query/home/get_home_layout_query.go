@@ -7,7 +7,7 @@ import (
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 

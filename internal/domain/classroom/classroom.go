@@ -1,7 +1,7 @@
 package classroom
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Classroom models ma_classrooms. owner_profile_id is denormalized for

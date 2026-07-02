@@ -1,7 +1,7 @@
 package grade
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 type Grade struct {

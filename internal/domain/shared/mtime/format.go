@@ -1,4 +1,4 @@
-package time
+package mtime
 
 var (
 	DefaultFormat       = "2006-01-02T15:04:05.000000Z07:00" // RFC3339 format

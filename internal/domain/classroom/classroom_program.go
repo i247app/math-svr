@@ -1,7 +1,7 @@
 package classroom
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // ClassroomProgram models a row in ma_classroom_programs — the junction

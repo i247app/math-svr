@@ -9,8 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 
-	"math-ai.com/math-ai/internal/domain/shared/time"
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 const (
@@ -127,7 +126,7 @@ func (r *AliasRepository) MarkStatusByUserId(ctx context.Context, userId int64, 
 		WHERE user_id = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, status, time.Now().Time, userId); err != nil {
+	if _, err := r.db.Exec(ctx, query, status, mtime.Now().Time, userId); err != nil {
 		return fmt.Errorf("alias repo mark status by uid: %w", err)
 	}
 	return nil
@@ -142,7 +141,7 @@ func (r *AliasRepository) SoftDeleteByUserId(ctx context.Context, userId int64) 
 		WHERE user_id = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, enum.UserAliasStatusTypeDeleted, enum.StatusInactive, time.Now().Time, userId); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.UserAliasStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, userId); err != nil {
 		return fmt.Errorf("alias repo soft delete by user id: %w", err)
 	}
 	return nil

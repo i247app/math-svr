@@ -1,7 +1,7 @@
 package seq
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Sequence is one row of ma_seqs — the central registry that drives

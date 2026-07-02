@@ -1,7 +1,7 @@
 package conversation
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Conversation models ma_ai_conversations — one AI chat "session". The

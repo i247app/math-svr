@@ -3,7 +3,7 @@ package device
 import (
 	"time"
 
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Device is a (user, device_uuid) registration. The is_verified flag is the

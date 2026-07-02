@@ -2,7 +2,6 @@ package device
 
 import (
 	"math-ai.com/math-ai/internal/domain/device"
-	// mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
 // DeviceResponse is the wire shape of a device row. device_uuid is included so

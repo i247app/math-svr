@@ -4,7 +4,7 @@ import (
 	"context"
 
 	dto "math-ai.com/math-ai/internal/application/dto/misc"
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 type Service struct {

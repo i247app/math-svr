@@ -1,7 +1,7 @@
 package exercise
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Exercise is a teacher-issued, AI-generated assignment scoped to a

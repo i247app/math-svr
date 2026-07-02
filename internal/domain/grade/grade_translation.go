@@ -1,7 +1,7 @@
 package grade
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // GradeTranslation is a per-language override of a Grade's display

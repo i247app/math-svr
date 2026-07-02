@@ -6,8 +6,8 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 )
 
 // UpdateClassroomExerciseCommand patches metadata only — title, chapter,

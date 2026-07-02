@@ -1,7 +1,7 @@
 package classroom
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Member models ma_classroom_members — the (classroom, profile) join

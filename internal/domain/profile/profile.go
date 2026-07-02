@@ -1,7 +1,7 @@
 package profile
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Profile is a child managed by a parent (User). One row per child; the

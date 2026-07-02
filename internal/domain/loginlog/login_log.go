@@ -1,7 +1,7 @@
 package loginlog
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 type LoginLog struct {

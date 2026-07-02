@@ -1,7 +1,7 @@
 package notification
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Notification models ma_notifications — one persisted in-app notification

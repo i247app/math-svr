@@ -1,7 +1,5 @@
 package classroomprogress
 
-// mtime "math-ai.com/math-ai/internal/domain/shared/time"
-
 // ProfileProgressReq is the request body for
 // POST /classrooms/progress/profile — the single-student progress
 // detail (002-profile-learning-progress).

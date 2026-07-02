@@ -3,7 +3,7 @@ package classroom
 import (
 	"context"
 
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 

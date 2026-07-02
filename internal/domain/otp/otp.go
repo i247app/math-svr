@@ -1,7 +1,7 @@
 package otp
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Otp is a one-time password issuance. The plaintext code never lives in the

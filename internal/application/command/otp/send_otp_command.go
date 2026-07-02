@@ -9,8 +9,8 @@ import (
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 

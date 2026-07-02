@@ -1,7 +1,7 @@
 package chapter
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // ChapterTranslation is a per-language override of a Chapter's display

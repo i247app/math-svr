@@ -1,7 +1,7 @@
 package quiz
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Quiz is a single round of AI-generated questions tied to a specific

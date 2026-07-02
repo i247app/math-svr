@@ -10,11 +10,6 @@ type LoginReq struct {
 }
 
 // LoginRes carries one of two shapes depending on device trust:
-//
-//   - TwoFactorRequired=true → User is nil; the client must complete the 2FA
-//     challenge for DeviceID, then re-issue /auth/login.
-//   - TwoFactorRequired=false → User and DeviceID are populated; the session
-//     is established.
 type LoginRes struct {
 	IsTrusted   bool               `json:"is_trusted"`
 	RequiredOTP bool               `json:"required_otp"`       // if true, the client must complete the 2FA challenge for DeviceID, then re-issue /auth/login.

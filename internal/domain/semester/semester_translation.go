@@ -1,7 +1,7 @@
 package semester
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // SemesterTranslation is a per-language override of a Semester's display

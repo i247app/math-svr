@@ -1,4 +1,4 @@
-package time
+package mtime
 
 import (
 	"database/sql/driver"

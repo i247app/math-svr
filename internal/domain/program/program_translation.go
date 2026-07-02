@@ -1,7 +1,7 @@
 package program
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // ProgramTranslation is a per-language override of a Program's display

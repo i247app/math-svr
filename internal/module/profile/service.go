@@ -17,8 +17,8 @@ import (
 	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 

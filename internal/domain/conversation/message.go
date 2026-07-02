@@ -1,7 +1,7 @@
 package conversation
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Message models ma_ai_messages — one turn in a conversation. role is

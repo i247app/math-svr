@@ -1,7 +1,7 @@
 package exercise
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Submission is a single student's attempt at a classroom exercise. The

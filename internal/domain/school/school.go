@@ -1,7 +1,7 @@
 package school
 
 import (
-	mtime "math-ai.com/math-ai/internal/domain/shared/time"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // School models ma_schools. Address fields (district, province) are
