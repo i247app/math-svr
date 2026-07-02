@@ -15,10 +15,10 @@ load-test/
 .obsidian/
 
 # Docker
-docker/
+# docker/
 
-# Doc
-docs/
+# Docs
+docs
 
 # Peformance
 perf/
