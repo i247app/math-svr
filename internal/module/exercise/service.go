@@ -292,18 +292,24 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 	if err := ValidateListExercises(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
-	if err != nil {
-		return nil, err
+	// caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	var callerProfileId int64
+	if req.ProfileID != nil {
+		callerProfileId = *req.ProfileID
 	}
-	callerMember, err := s.requireMember(ctx, req.ClassroomID, caller.ProfileId())
+
+	callerMember, err := s.requireMember(ctx, req.ClassroomID, callerProfileId)
 	if err != nil {
 		return nil, err
 	}
 
 	exercises, pg, err := s.listExercisesQuery.Handle(ctx, query.ListClassroomExercisesQuery{
 		ClassroomID:      req.ClassroomID,
-		CallerProfileID:  caller.ProfileId(),
+		CallerProfileID:  callerProfileId,
 		Status:           req.Status,
 		Visibility:       req.Visibility,
 		CreatorProfileID: req.CreatorProfileID,
@@ -325,8 +331,8 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 	// req.ProfileID. Even when the caller omits it, resolveCaller has
 	// inferred the acting profile, so the field reflects the student's
 	// own submission state consistently.
-	callerProfileID := caller.ProfileId()
-	if err := s.hydrateSubmissionStatus(ctx, &callerProfileID, exercises, responses); err != nil {
+	// callerProfileID := caller.ProfileId()
+	if err := s.hydrateSubmissionStatus(ctx, &callerProfileId, exercises, responses); err != nil {
 		return nil, err
 	}
 	if err := s.hydrateClassroomAndProgram(ctx, exercises, responses); err != nil {

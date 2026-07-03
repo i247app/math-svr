@@ -37,7 +37,7 @@ func (s *Service) GetProfileProgress(ctx context.Context, req dto.ProfileProgres
 		return nil, err
 	}
 
-	target := caller.ProfileId()
+	var target int64
 	if req.TargetProfileID != nil && *req.TargetProfileID != 0 {
 		target = *req.TargetProfileID
 	}
