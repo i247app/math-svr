@@ -112,7 +112,7 @@ const (
 	QuizStatusTypeGenerated QuizStatusType = "GENERATED"
 
 	// QuizStatusTypeSubmitted marks a quiz the student has answered and
-	// the bot has graded. ai_review / ai_detect_grade are populated.
+	// the bot has graded. ai_review / assessment_grade are populated.
 	QuizStatusTypeSubmitted QuizStatusType = "SUBMITTED"
 
 	// QuizStatusTypeDeleted is the soft-delete marker. Filtered out by

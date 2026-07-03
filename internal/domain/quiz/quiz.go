@@ -19,7 +19,7 @@ import (
 // They are stored verbatim from / to the LLM to avoid leaky parsing
 // invariants — application-layer code parses on read.
 //
-// aiReview / aiDetectGrade are populated only after submission; both are
+// aiReview / assessmentGrade are populated only after submission; both are
 // nullable on the schema (see migration 012) to allow generate-then-grade
 // in separate steps.
 type Quiz struct {
@@ -34,7 +34,7 @@ type Quiz struct {
 	questions       *string
 	answers         *string
 	aiReview        *string
-	aiDetectGrade   *string
+	assessmentGrade *string
 	totalQuestions  *int
 	correctNumber   *int
 	scorePercentage *int
@@ -74,8 +74,8 @@ func (q *Quiz) Answers() *string           { return q.answers }
 func (q *Quiz) SetAnswers(s *string)       { q.answers = s }
 func (q *Quiz) AIReview() *string          { return q.aiReview }
 func (q *Quiz) SetAIReview(s *string)      { q.aiReview = s }
-func (q *Quiz) AIDetectGrade() *string     { return q.aiDetectGrade }
-func (q *Quiz) SetAIDetectGrade(s *string) { q.aiDetectGrade = s }
+func (q *Quiz) AssessmentGrade() *string     { return q.assessmentGrade }
+func (q *Quiz) SetAssessmentGrade(s *string) { q.assessmentGrade = s }
 func (q *Quiz) TotalQuestions() *int       { return q.totalQuestions }
 func (q *Quiz) SetTotalQuestions(n *int)   { q.totalQuestions = n }
 func (q *Quiz) CorrectNumber() *int        { return q.correctNumber }

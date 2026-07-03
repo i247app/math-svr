@@ -42,7 +42,7 @@ type QuizStudentAnswer struct {
 	Label          string `json:"label"`
 }
 
-// QuizGradingResult is the bot's grading output. AIDetectGrade is only
+// QuizGradingResult is the bot's grading output. AssessmentGrade is only
 // populated for ASSESSMENT (and reinforce-assessment); PRACTICE rounds
 // omit it.
 type QuizGradingResult struct {
@@ -50,7 +50,7 @@ type QuizGradingResult struct {
 	CorrectNumber   int     `json:"correct_number"`
 	ScorePercentage int     `json:"score_percentage"`
 	AIReview        string  `json:"ai_review"`
-	AIDetectGrade   *string `json:"ai_detect_grade,omitempty"`
+	AssessmentGrade *string `json:"assessment_grade,omitempty"`
 }
 
 // QuizResponse is the wire shape returned by every quiz endpoint.
@@ -64,21 +64,22 @@ type QuizGradingResult struct {
 // be NULL — the column has a DB-level default but Go-side we don't
 // assume it.
 type QuizResponse struct {
-	ID             int64               `json:"id"`
-	QuizID         int64               `json:"quiz_id"`
-	UserID         *int64              `json:"user_id,omitempty"`
-	ProfileID      *int64              `json:"profile_id,omitempty"`
-	Purpose        string              `json:"purpose"`
-	TypeOfQuiz     *string             `json:"type_of_quiz,omitempty"`
-	Title          *string             `json:"title,omitempty"`      // AI grade/level label, e.g. "Grade 1 - Level 1"
-	ShortText      *string             `json:"short_text,omitempty"` // AI short topic description
-	PreviousQuizID *int64              `json:"previous_quiz_id,omitempty"`
-	Questions      []QuizQuestion      `json:"questions,omitempty"`
-	Answers        []QuizStudentAnswer `json:"answers,omitempty"`
-	Grading        *QuizGradingResult  `json:"grading,omitempty"`
-	QuizStatus     *string             `json:"quiz_status,omitempty"`
-	CreateDt       string              `json:"create_dt"`
-	ModifyDt       string              `json:"modify_dt"`
+	ID              int64               `json:"id"`
+	QuizID          int64               `json:"quiz_id"`
+	UserID          *int64              `json:"user_id,omitempty"`
+	ProfileID       *int64              `json:"profile_id,omitempty"`
+	Purpose         string              `json:"purpose"`
+	TypeOfQuiz      *string             `json:"type_of_quiz,omitempty"`
+	Title           *string             `json:"title,omitempty"`            // AI grade/level label, e.g. "Grade 1 - Level 1"
+	ShortText       *string             `json:"short_text,omitempty"`       // AI short topic description
+	AssessmentGrade *string             `json:"assessment_grade,omitempty"` // grade the AI calibrated the quiz to, set at generation
+	PreviousQuizID  *int64              `json:"previous_quiz_id,omitempty"`
+	Questions       []QuizQuestion      `json:"questions,omitempty"`
+	Answers         []QuizStudentAnswer `json:"answers,omitempty"`
+	Grading         *QuizGradingResult  `json:"grading,omitempty"`
+	QuizStatus      *string             `json:"quiz_status,omitempty"`
+	CreateDt        string              `json:"create_dt"`
+	ModifyDt        string              `json:"modify_dt"`
 }
 
 // GenerateQuizReq carries the quiz-generation request. Both ProfileID
@@ -175,18 +176,19 @@ func DomainToResponse(q *domain.Quiz, includeRightAnswers bool) *QuizResponse {
 	}
 
 	res := &QuizResponse{
-		ID:             q.Id(),
-		QuizID:         q.QuizId(),
-		UserID:         q.UserId(),
-		ProfileID:      q.ProfileId(),
-		Purpose:        q.Purpose(),
-		TypeOfQuiz:     q.TypeOfQuiz(),
-		Title:          q.Title(),
-		ShortText:      q.ShortText(),
-		PreviousQuizID: q.PreviousQuizId(),
-		QuizStatus:     q.QuizStatus(),
-		CreateDt:       q.CreateDt().String(),
-		ModifyDt:       q.ModifyDt().String(),
+		ID:              q.Id(),
+		QuizID:          q.QuizId(),
+		UserID:          q.UserId(),
+		ProfileID:       q.ProfileId(),
+		Purpose:         q.Purpose(),
+		TypeOfQuiz:      q.TypeOfQuiz(),
+		Title:           q.Title(),
+		ShortText:       q.ShortText(),
+		AssessmentGrade: q.AssessmentGrade(),
+		PreviousQuizID:  q.PreviousQuizId(),
+		QuizStatus:      q.QuizStatus(),
+		CreateDt:        q.CreateDt().String(),
+		ModifyDt:        q.ModifyDt().String(),
 	}
 
 	if questions := parseQuestions(q.Questions()); len(questions) > 0 {
@@ -249,8 +251,8 @@ func parseGrading(q *domain.Quiz) *QuizGradingResult {
 		return nil
 	}
 	g := &QuizGradingResult{
-		AIReview:      *q.AIReview(),
-		AIDetectGrade: q.AIDetectGrade(),
+		AIReview:        *q.AIReview(),
+		AssessmentGrade: q.AssessmentGrade(),
 	}
 	if q.TotalQuestions() != nil {
 		g.TotalQuestions = *q.TotalQuestions()

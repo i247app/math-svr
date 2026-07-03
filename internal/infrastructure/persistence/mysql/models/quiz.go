@@ -16,7 +16,7 @@ type QuizModel struct {
 	Questions       *string
 	Answers         *string
 	AIReview        *string
-	AIDetectGrade   *string
+	AssessmentGrade *string
 	TotalQuestions  *int
 	CorrectNumber   *int
 	ScorePercentage *int

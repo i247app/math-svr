@@ -55,10 +55,10 @@ type Result struct {
 	CorrectNumber   int
 	ScorePercentage int
 	AIReview        string
-	// AIDetectGrade stays nil today — only quiz writes this column, and
+	// AssessmentGrade stays nil today — only quiz writes this column, and
 	// deriving a coarse grade signal from difficulty is reserved for a
 	// follow-up once topic+difficulty tags appear in real traffic.
-	AIDetectGrade *string
+	AssessmentGrade *string
 }
 
 // Score grades the student's answers against the questions payload
@@ -130,7 +130,7 @@ func Score(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang enum.
 		CorrectNumber:   correct,
 		ScorePercentage: percentage,
 		AIReview:        review,
-		AIDetectGrade:   nil,
+		AssessmentGrade: nil,
 	}, nil
 }
 

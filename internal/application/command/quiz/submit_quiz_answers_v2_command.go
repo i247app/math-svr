@@ -79,7 +79,7 @@ func (h *SubmitQuizAnswersV2CommandHandler) Handle(ctx context.Context, cmd Subm
 
 		grading := quiz.GradingUpdate{
 			AIReview:        score.AIReview,
-			AIDetectGrade:   score.AIDetectGrade,
+			AssessmentGrade: score.AssessmentGrade,
 			TotalQuestions:  &score.TotalQuestions,
 			CorrectNumber:   &score.CorrectNumber,
 			ScorePercentage: &score.ScorePercentage,

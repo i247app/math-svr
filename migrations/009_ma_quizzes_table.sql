@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS ma_quizzes (
   questions           LONGTEXT,
   answers             LONGTEXT,
   ai_review           VARCHAR(255) DEFAULT NULL,
-  ai_detect_grade     VARCHAR(16) DEFAULT NULL,
+  assessment_grade    VARCHAR(16) DEFAULT NULL,
   total_questions     INT UNSIGNED DEFAULT NULL,
   correct_number      INT UNSIGNED DEFAULT NULL,
   score_percentage    INT UNSIGNED DEFAULT NULL,

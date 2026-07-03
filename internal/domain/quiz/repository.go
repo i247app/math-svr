@@ -12,7 +12,7 @@ import (
 // scoring; today PRACTICE and ASSESSMENT both populate all three.
 type GradingUpdate struct {
 	AIReview        string
-	AIDetectGrade   *string
+	AssessmentGrade *string
 	TotalQuestions  *int
 	CorrectNumber   *int
 	ScorePercentage *int

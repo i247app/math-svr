@@ -32,72 +32,77 @@ func normalizeLanguage(lang enum.LanguageType) string {
 // package parseGeneration so any future schema tweak only has to be
 // made in one place.
 func ParseGeneration(content string) (title string, shortText string, questions []quizDto.QuizQuestion, err error) {
-	return parseGeneration(content)
+	t, st, _, q, err := parseGeneration(content)
+	return t, st, q, err
 }
 
-func parseGeneration(content string) (title string, shortText string, questions []quizDto.QuizQuestion, err error) {
+func parseGeneration(content string) (title string, shortText string, assessmentGrade string, questions []quizDto.QuizQuestion, err error) {
 	payload := extractJSONPayload(content)
 
 	var wrap struct {
-		Title     string                 `json:"title"`
-		ShortText string                 `json:"short_text"`
-		Questions []quizDto.QuizQuestion `json:"questions"`
-		Items     []quizDto.QuizQuestion `json:"items"`
-		Data      []quizDto.QuizQuestion `json:"data"`
-		Quiz      []quizDto.QuizQuestion `json:"quiz"`
+		Title           string                 `json:"title"`
+		ShortText       string                 `json:"short_text"`
+		AssessmentGrade string                 `json:"assessment_grade"`
+		Questions       []quizDto.QuizQuestion `json:"questions"`
+		Items           []quizDto.QuizQuestion `json:"items"`
+		Data            []quizDto.QuizQuestion `json:"data"`
+		Quiz            []quizDto.QuizQuestion `json:"quiz"`
 	}
 	if err := json.Unmarshal([]byte(payload), &wrap); err == nil {
 		t := strings.TrimSpace(wrap.Title)
 		st := strings.TrimSpace(wrap.ShortText)
+		ag := strings.TrimSpace(wrap.AssessmentGrade)
 		switch {
 		case len(wrap.Questions) > 0:
-			return t, st, wrap.Questions, nil
+			return t, st, ag, wrap.Questions, nil
 		case len(wrap.Items) > 0:
-			return t, st, wrap.Items, nil
+			return t, st, ag, wrap.Items, nil
 		case len(wrap.Data) > 0:
-			return t, st, wrap.Data, nil
+			return t, st, ag, wrap.Data, nil
 		case len(wrap.Quiz) > 0:
-			return t, st, wrap.Quiz, nil
+			return t, st, ag, wrap.Quiz, nil
 		}
 	}
 
-	// Some backends drop the wrapper and return a bare array; title and
-	// short_text are unavailable on this branch but the questions are
-	// still usable.
+	// Some backends drop the wrapper and return a bare array; title,
+	// short_text and assessment_grade are unavailable on this branch but
+	// the questions are still usable.
 	var out []quizDto.QuizQuestion
 	if err := json.Unmarshal([]byte(payload), &out); err == nil && len(out) > 0 {
-		return "", "", out, nil
+		return "", "", "", out, nil
 	}
 
 	// LLM truncated mid-array (max_tokens hit, safety cut, network
-	// reset, …). title and short_text appear before the questions array
-	// in our schema, so we can usually recover them via regex even when
-	// the array body is truncated.
+	// reset, …). title, short_text and assessment_grade appear before the
+	// questions array in our schema, so we can usually recover them via
+	// regex even when the array body is truncated.
 	t := extractStringFieldFromTruncated(payload, titleFieldRe)
 	st := extractStringFieldFromTruncated(payload, shortTextFieldRe)
+	ag := extractStringFieldFromTruncated(payload, assessmentGradeFieldRe)
 	arr := extractQuestionsArrayPrefix(payload)
 	if arr == "" {
-		return "", "", nil, fmt.Errorf("quiz: parse generated questions: payload not recoverable")
+		return "", "", "", nil, fmt.Errorf("quiz: parse generated questions: payload not recoverable")
 	}
 	repaired, ok := salvageTruncatedJSONArray(arr)
 	if !ok {
-		return "", "", nil, fmt.Errorf("quiz: parse generated questions: payload not recoverable")
+		return "", "", "", nil, fmt.Errorf("quiz: parse generated questions: payload not recoverable")
 	}
 	if err := json.Unmarshal([]byte(repaired), &out); err != nil {
-		return "", "", nil, fmt.Errorf("quiz: parse generated questions (after salvage): %w", err)
+		return "", "", "", nil, fmt.Errorf("quiz: parse generated questions (after salvage): %w", err)
 	}
 	if len(out) == 0 {
-		return "", "", nil, ErrQuizModelReturnedZeroQuestions
+		return "", "", "", nil, ErrQuizModelReturnedZeroQuestions
 	}
-	return t, st, out, nil
+	return t, st, ag, out, nil
 }
 
 // titleFieldRe / shortTextFieldRe find the first top-level `"title": "..."`
 // and `"short_text": "..."` pairs. Used as truncation-tolerant fallbacks
 // for parseGeneration.
 var (
-	titleFieldRe     = regexp.MustCompile(`"title"\s*:\s*"((?:[^"\\]|\\.)*)"`)
-	shortTextFieldRe = regexp.MustCompile(`"short_text"\s*:\s*"((?:[^"\\]|\\.)*)"`)
+	titleFieldRe           = regexp.MustCompile(`"title"\s*:\s*"((?:[^"\\]|\\.)*)"`)
+	shortTextFieldRe       = regexp.MustCompile(`"short_text"\s*:\s*"((?:[^"\\]|\\.)*)"`)
+	assessmentGradeFieldRe = regexp.MustCompile(`"assessment_grade"\s*:\s*"((?:[^"\\]|\\.)*)"`)
 )
 
 func extractStringFieldFromTruncated(payload string, re *regexp.Regexp) string {

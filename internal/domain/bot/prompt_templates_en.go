@@ -35,6 +35,9 @@ TITLE & SHORT_TEXT RULES:
 - "short_text" is at most 80 characters, written in English, DO NOT include the grade level, DO NOT include the quiz type (ASSESSMENT/PRACTICE), and DO NOT use generic phrases like "Math quiz", "Practice quiz", or "Quiz".
 - Each call must produce a "short_text" that reflects the exact skills appearing in "questions" so it does not repeat across rounds.
 
+ASSESSMENT_GRADE RULE:
+- "assessment_grade" is the grade level this quiz assesses and MUST be one of: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Base it on the grade in the academic context and the overall difficulty of the questions you generated.
+
 OUTPUT RULES:
 - Return ONLY a JSON object matching the schema below. No prose, no markdown fences, no trailing commentary.
 - "questions" MUST be an array with exactly %d items, "question_number" 1..%d in order.
@@ -43,6 +46,7 @@ SCHEMA:
 {
   "title": "Grade 1 - Level 1",
   "short_text": "Addition and subtraction within 100",
+  "assessment_grade": "Grade 1",
   "questions":[
     {
       "question_number": 1,
@@ -84,6 +88,9 @@ TITLE & SHORT_TEXT RULES:
 - "short_text" is at most 80 characters, written in English, DO NOT include the grade level or the quiz type (ASSESSMENT/PRACTICE), and DO NOT use generic phrases like "Reinforce quiz" or "Practice quiz".
 - "short_text" must reflect the actual skills targeted in the NEW "questions"; do not copy the previous quiz's short_text.
 
+ASSESSMENT_GRADE RULE:
+- "assessment_grade" is the grade level this quiz assesses and MUST be one of: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Base it on the grade in the academic context and the overall difficulty of the NEW questions.
+
 OUTPUT RULES:
 - Return ONLY a JSON object matching the schema below. No prose, no markdown fences.
 - "questions" MUST be an array with exactly %d items, "question_number" 1..%d in order.
@@ -92,6 +99,7 @@ SCHEMA:
 {
   "title": "Grade 1 - Level 2",
   "short_text": "Reinforce: subtraction with regrouping",
+  "assessment_grade": "Grade 1",
   "questions":[
     {
       "question_number": 1,
@@ -127,7 +135,7 @@ GRADING RULES:
 - Match each answer by "question_number" to the corresponding question's "right_answer".
 - score_percentage = round(correct_number / total_questions * 100).
 - "ai_review" must be in English, <= 200 characters, mention one strength and one concrete area to improve. No newlines.
-- "ai_detect_grade" must be one of: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Base it on observed accuracy AND question difficulty, not accuracy alone.
+- "assessment_grade" must be one of: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Base it on observed accuracy AND question difficulty, not accuracy alone.
 
 OUTPUT RULES:
 - Return ONLY a single JSON object matching the schema below. No prose, no markdown fences, no newlines inside string values.
@@ -138,7 +146,7 @@ SCHEMA:
   "correct_number": 4,
   "score_percentage": 80,
   "ai_review": "Strong basic arithmetic; review subtraction with regrouping.",
-  "ai_detect_grade": "Grade 3"
+  "assessment_grade": "Grade 3"
 }
 `
 
@@ -171,7 +179,7 @@ GRADING RULES:
 - Match each answer by "question_number" to "right_answer".
 - score_percentage = round(correct_number / total_questions * 100).
 - "ai_review" must be in English, <= 200 characters; reference progress relative to the previous quiz. No newlines.
-- "ai_detect_grade" must be one of: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Consider the student's current grade as the anchor; only diverge when accuracy is decisive.
+- "assessment_grade" must be one of: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Consider the student's current grade as the anchor; only diverge when accuracy is decisive.
 
 OUTPUT RULES:
 - Return ONLY a single JSON object matching the schema below. No prose, no markdown fences, no newlines inside string values.
@@ -182,7 +190,7 @@ SCHEMA:
   "correct_number": 4,
   "score_percentage": 80,
   "ai_review": "Improved on subtraction; keep practicing multi-digit addition.",
-  "ai_detect_grade": "Grade 3"
+  "assessment_grade": "Grade 3"
 }
 `
 

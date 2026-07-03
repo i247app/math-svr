@@ -80,7 +80,11 @@ type generateQuizInput struct {
 type generateQuizOutput struct {
 	Title     string
 	ShortText string
-	Questions []quizDto.QuizQuestion
+	// AssessmentGrade is the grade level the model calibrated the quiz to
+	// (one of "Kindergarten", "Grade 1".."Grade 5"). May be "" when the
+	// model omits it or the payload was truncated past recovery.
+	AssessmentGrade string
+	Questions       []quizDto.QuizQuestion
 }
 
 func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) (*generateQuizOutput, error) {
@@ -131,13 +135,18 @@ func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) (*ge
 
 	log.Infof("BOT RESPONSE: %s", res.Content)
 
-	title, shortText, questions, err := parseGeneration(res.Content)
+	title, shortText, assessmentGrade, questions, err := parseGeneration(res.Content)
 	if err != nil {
 		logger.From(ctx).Warnf("quiz.bot.generate_parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.QUIZ_GENERATION_FAILED,
 			map[string]any{"reason": err.Error()}, err)
 	}
-	return &generateQuizOutput{Title: title, ShortText: shortText, Questions: questions}, nil
+	return &generateQuizOutput{
+		Title:           title,
+		ShortText:       shortText,
+		AssessmentGrade: assessmentGrade,
+		Questions:       questions,
+	}, nil
 }
 
 // gradeQuizInput pairs the persisted row's purpose + learning intent

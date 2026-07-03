@@ -23,14 +23,17 @@ import (
 // Purpose ↔ ma_quizzes.purpose (ASSESSMENT / PRACTICE / EXAM).
 // TypeOfQuiz ↔ ma_quizzes.type_of_quiz (GENERAL / REINFORCEMENT).
 type CreateQuizCommand struct {
-	UserID         *int64
-	ProfileID      *int64
-	Purpose        enum.QuizPurpose
-	TypeOfQuiz     enum.QuizTypeOfQuiz
-	Title          *string
-	ShortText      *string
-	QuestionsJSON  string
-	PreviousQuizID *int64
+	UserID     *int64
+	ProfileID  *int64
+	Purpose    enum.QuizPurpose
+	TypeOfQuiz enum.QuizTypeOfQuiz
+	Title      *string
+	ShortText  *string
+	// AssessmentGrade is the grade level the model calibrated the quiz to,
+	// produced during generation. Optional — nil when the model omitted it.
+	AssessmentGrade *string
+	QuestionsJSON   string
+	PreviousQuizID  *int64
 }
 
 type CreateQuizCommandHandler struct {
@@ -65,6 +68,9 @@ func (h *CreateQuizCommandHandler) Handle(ctx context.Context, cmd CreateQuizCom
 		}
 		if cmd.ShortText != nil {
 			q.SetShortText(cmd.ShortText)
+		}
+		if cmd.AssessmentGrade != nil {
+			q.SetAssessmentGrade(cmd.AssessmentGrade)
 		}
 		questions := cmd.QuestionsJSON
 		q.SetQuestions(&questions)

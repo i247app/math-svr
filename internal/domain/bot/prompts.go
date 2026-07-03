@@ -23,7 +23,7 @@ const (
 	// targeting the student's weak spots from a prior quiz.
 	QuizPromptKindReinforce
 	// QuizPromptKindGrade asks the model to score the student's answers
-	// to a fresh quiz and (for ASSESSMENT) predict ai_detect_grade.
+	// to a fresh quiz and (for ASSESSMENT) predict assessment_grade.
 	QuizPromptKindGrade
 	// QuizPromptKindGradeReinforce grades a reinforce quiz; the prompt
 	// carries the student's currently configured grade as context so the

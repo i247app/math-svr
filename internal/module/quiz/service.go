@@ -117,6 +117,9 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		return nil, err
 	}
 
+	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+	log.Infof("Languge from metadat: %s", metadata.GetClientLanguage(ctx))
+
 	// profile_id is optional. When supplied we must find the row (an
 	// explicit profile_id pointing nowhere is a client error). When
 	// absent, profile stays nil and the quiz is generated anonymously.
@@ -147,7 +150,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 	}
 
 	genIn := generateQuizInput{
-		Language:            metadata.GetClientLanguage(ctx).ToEnumLanguage(),
+		Language:            lang,
 		Purpose:             validated.Purpose,
 		TypeOfQuiz:          validated.TypeOfQuiz,
 		GradeLabel:          cc.GradeLabel,
@@ -214,14 +217,15 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		ownerProfileID = &pid
 	}
 	created, err := s.createQuizCmd.Handle(ctx, command.CreateQuizCommand{
-		UserID:         ownerUserID,
-		ProfileID:      ownerProfileID,
-		Purpose:        validated.Purpose,
-		TypeOfQuiz:     validated.TypeOfQuiz,
-		Title:          sanitizeQuizText(generated.Title),
-		ShortText:      sanitizeQuizText(generated.ShortText),
-		QuestionsJSON:  string(questionsJSON),
-		PreviousQuizID: req.PreviousQuizID,
+		UserID:          ownerUserID,
+		ProfileID:       ownerProfileID,
+		Purpose:         validated.Purpose,
+		TypeOfQuiz:      validated.TypeOfQuiz,
+		Title:           sanitizeQuizText(generated.Title),
+		ShortText:       sanitizeQuizText(generated.ShortText),
+		AssessmentGrade: sanitizeQuizText(generated.AssessmentGrade),
+		QuestionsJSON:   string(questionsJSON),
+		PreviousQuizID:  req.PreviousQuizID,
 	})
 	if err != nil {
 		return nil, err
@@ -316,9 +320,9 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 	gradingUpdate := domain.GradingUpdate{
 		AIReview: grading.AIReview,
 	}
-	if grading.AIDetectGrade != nil && *grading.AIDetectGrade != "" {
-		log.Infof("quiz.submitted.ai_detect_grade: %s", *grading.AIDetectGrade)
-		gradingUpdate.AIDetectGrade = grading.AIDetectGrade
+	if grading.AssessmentGrade != nil && *grading.AssessmentGrade != "" {
+		log.Infof("quiz.submitted.assessment_grade: %s", *grading.AssessmentGrade)
+		gradingUpdate.AssessmentGrade = grading.AssessmentGrade
 	}
 	if grading.TotalQuestions > 0 {
 		log.Infof("quiz.submitted.total_questions: %d", grading.TotalQuestions)
@@ -349,7 +353,7 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 	// persisted, so a memory failure must not fail the submit.
 	if s.tutoringEnabled {
 		summary := buildPerformanceSummary(topicOf(existing), grading.CorrectNumber,
-			grading.TotalQuestions, derefString(grading.AIDetectGrade), lang)
+			grading.TotalQuestions, derefString(grading.AssessmentGrade), lang)
 		s.recordTutoringExchange(ctx, existing, summary, grading.AIReview)
 	}
 
@@ -369,13 +373,15 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 //   - no curriculum lookup (the deterministic review needs nothing
 //     beyond per-question topic tags persisted in the row);
 //   - no bot client construction;
-//   - no ai_detect_grade signal (see scorer.go design note §3).
+//   - no assessment_grade signal (see scorer.go design note §3).
 func (s *Service) SubmitQuizAnswersV2(ctx context.Context, req *dto.SubmitQuizAnswersReq) (*dto.SubmitQuizAnswersRes, error) {
+	log := logger.From(ctx)
 	if err := ValidateSubmitAnswers(ctx, req); err != nil {
 		return nil, err
 	}
 
 	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+	log.Infof("Languge for submit: %s", lang)
 
 	updated, err := s.submitQuizAnswersV2Cmd.Handle(ctx, command.SubmitQuizAnswersV2Command{
 		QuizID:   req.QuizID,
@@ -394,7 +400,7 @@ func (s *Service) SubmitQuizAnswersV2(ctx context.Context, req *dto.SubmitQuizAn
 	if s.tutoringEnabled {
 		summary := buildPerformanceSummary(topicOf(updated),
 			derefInt(updated.CorrectNumber()), derefInt(updated.TotalQuestions()),
-			derefString(updated.AIDetectGrade()), lang)
+			derefString(updated.AssessmentGrade()), lang)
 		s.recordTutoringExchange(ctx, updated, summary, derefString(updated.AIReview()))
 	}
 

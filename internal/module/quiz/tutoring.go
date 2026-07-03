@@ -92,9 +92,9 @@ func (s *Service) ensureTutoringConversation(ctx context.Context, userID, profil
 // note (NOT the raw quiz JSON) stored as the user turn of the exchange.
 // Source-agnostic so both the AI-graded (v1) and deterministic (v2) paths
 // feed the tutoring thread the same way.
-func buildPerformanceSummary(topic string, correct, total int, detectGrade string, lang enum.LanguageType) string {
+func buildPerformanceSummary(topic string, correct, total int, assessmentGrade string, lang enum.LanguageType) string {
 	topic = strings.TrimSpace(topic)
-	grade := strings.TrimSpace(detectGrade)
+	grade := strings.TrimSpace(assessmentGrade)
 
 	if lang == enum.LanguageTypeEnglish {
 		s := "Completed a quiz"

@@ -34,6 +34,9 @@ QUY TẮC TITLE & SHORT_TEXT:
 - "short_text" tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng cụm chung chung như "Bài kiểm tra Toán", "Bài luyện tập" hay "Quiz".
 - Mỗi lần sinh hãy chọn "short_text" phản ánh chính xác các kỹ năng xuất hiện trong "questions" để không lặp lại giữa các bài.
 
+QUY TẮC ASSESSMENT_GRADE:
+- "assessment_grade" là cấp lớp mà bài kiểm tra này đánh giá, PHẢI là một trong: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Căn cứ vào cấp lớp trong thông tin học vấn và độ khó tổng thể của các câu hỏi bạn tạo.
+
 QUY TẮC ĐẦU RA:
 - CHỈ trả về JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không bình luận thêm.
 - "questions" phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
@@ -42,6 +45,7 @@ CẤU TRÚC:
 {
   "title": "Grade 1 - Level 1",
   "short_text": "Phép cộng và phép trừ trong phạm vi ...",
+  "assessment_grade": "Grade 1",
   "questions":[
     {
       "question_number": 1,
@@ -83,6 +87,9 @@ QUY TẮC TITLE & SHORT_TEXT:
 - "short_text" tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng cụm chung chung như "Bài củng cố", "Bài ôn tập" hay "Quiz".
 - "short_text" phải phản ánh đúng kỹ năng được nhắm tới trong "questions" của bài mới — không sao chép short_text của bài cũ.
 
+QUY TẮC ASSESSMENT_GRADE:
+- "assessment_grade" là cấp lớp mà bài kiểm tra này đánh giá, PHẢI là một trong: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Căn cứ vào cấp lớp trong thông tin học vấn và độ khó tổng thể của các câu hỏi MỚI.
+
 QUY TẮC ĐẦU RA:
 - CHỈ trả về JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown.
 - "questions" phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
@@ -91,6 +98,7 @@ CẤU TRÚC:
 {
   "title": "Grade 1 - Level 2",
   "short_text": "Củng cố phép trừ có nhớ",
+  "assessment_grade": "Grade 1",
   "questions":[
     {
       "question_number": 1,
@@ -126,7 +134,7 @@ QUY TẮC CHẤM:
 - Đối chiếu từng câu trả lời theo "question_number" với "right_answer" của câu hỏi.
 - score_percentage = round(correct_number / total_questions * 100).
 - "ai_review" viết bằng tiếng Việt, dài tối đa 200 ký tự, nêu một điểm mạnh và một điểm cần cải thiện cụ thể. Không xuống dòng.
-- "ai_detect_grade" phải là một trong: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Căn cứ vào độ khó câu hỏi VÀ mức chính xác quan sát được, không chỉ dựa vào tỷ lệ đúng.
+- "assessment_grade" phải là một trong: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Căn cứ vào độ khó câu hỏi VÀ mức chính xác quan sát được, không chỉ dựa vào tỷ lệ đúng.
 
 QUY TẮC ĐẦU RA:
 - CHỈ trả về MỘT JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không xuống dòng trong giá trị chuỗi.
@@ -137,7 +145,7 @@ CẤU TRÚC:
   "correct_number": 4,
   "score_percentage": 80,
   "ai_review": "Phép cộng cơ bản tốt; cần luyện thêm phép trừ có nhớ.",
-  "ai_detect_grade": "Grade 3"
+  "assessment_grade": "Grade 3"
 }
 `
 
@@ -170,7 +178,7 @@ QUY TẮC CHẤM:
 - Đối chiếu từng câu trả lời theo "question_number" với "right_answer".
 - score_percentage = round(correct_number / total_questions * 100).
 - "ai_review" viết bằng tiếng Việt, tối đa 200 ký tự; có so sánh tiến bộ so với bài kiểm tra trước. Không xuống dòng.
-- "ai_detect_grade" phải là một trong: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Lấy cấp lớp hiện tại làm mốc; chỉ điều chỉnh khi kết quả thực sự rõ ràng.
+- "assessment_grade" phải là một trong: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Lấy cấp lớp hiện tại làm mốc; chỉ điều chỉnh khi kết quả thực sự rõ ràng.
 
 QUY TẮC ĐẦU RA:
 - CHỈ trả về MỘT JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không xuống dòng trong giá trị chuỗi.
@@ -181,7 +189,7 @@ CẤU TRÚC:
   "correct_number": 4,
   "score_percentage": 80,
   "ai_review": "Phép trừ tốt hơn; cần luyện thêm cộng nhiều chữ số.",
-  "ai_detect_grade": "Grade 3"
+  "assessment_grade": "Grade 3"
 }
 `
 
