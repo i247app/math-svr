@@ -19,6 +19,8 @@ type Message struct {
 // fields fall back to provider defaults when left at their zero value
 // (Temperature < 0, TopP < 0, MaxTokens == 0).
 type ChatRequest struct {
+	Provider BotProviderName
+
 	// Model overrides the provider's configured default model id.
 	Model string
 

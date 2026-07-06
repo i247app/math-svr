@@ -94,6 +94,14 @@ func NewEnv(envpath string) (*Env, error) {
 			LangChainTopP:        getFloatConfigWithDefault("BOT_LANGCHAIN_TOP_P", -1),
 			LangChainMaxTokens:   getIntConfigOptional("BOT_LANGCHAIN_MAX_TOKENS"),
 
+			EinoBackend:     getConfigOptionalString("BOT_EINO_BACKEND"),
+			EinoAPIKey:      getConfigOptionalString("BOT_EINO_API_KEY"),
+			EinoBaseURL:     getConfigOptionalString("BOT_EINO_BASE_URL"),
+			EinoModel:       getConfigOptionalString("BOT_EINO_MODEL"),
+			EinoTemperature: getFloatConfigWithDefault("BOT_EINO_TEMPERATURE", -1),
+			EinoTopP:        getFloatConfigWithDefault("BOT_EINO_TOP_P", -1),
+			EinoMaxTokens:   getIntConfigOptional("BOT_EINO_MAX_TOKENS"),
+
 			Timeout:       getDurationConfigOptional("BOT_TIMEOUT"),
 			MaxRetries:    getIntConfigOptional("BOT_MAX_RETRIES"),
 			RetryDelay:    getDurationConfigOptional("BOT_RETRY_DELAY"),

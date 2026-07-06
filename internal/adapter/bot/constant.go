@@ -22,6 +22,12 @@ const (
 	// backend vendor (Gemini, OpenAI, etc.) is selected inside that
 	// library by BotConfig.LangChainBackend.
 	ProviderLangChain BotProviderName = "langchain"
+
+	// ProviderEino dispatches via internal/libs/eino (cloudwego/eino +
+	// eino-ext). The backend vendor is selected inside that library by
+	// BotConfig.EinoBackend. Registered alongside langchain when
+	// configured; BOT_PROVIDER picks which one is the default.
+	ProviderEino BotProviderName = "eino"
 )
 
 // Role enumerates the chat message roles the adapter recognises. The

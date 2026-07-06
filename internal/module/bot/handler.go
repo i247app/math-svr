@@ -1,8 +1,10 @@
 package bot
 
 import (
+	"encoding/json"
 	"net/http"
 
+	dto "math-ai.com/math-ai/internal/application/dto/bot"
 	"math-ai.com/math-ai/internal/application/resource"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -30,6 +32,12 @@ func NewHandler(appResource *resource.Resource, svc *Service) *Handler {
 // Note: identity is server-side (the session). The LLM provider is stateless
 // and does not recognise end users.
 func (h *Handler) HandleShake(w http.ResponseWriter, r *http.Request) {
+	var req dto.ShakeReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
 	session, err := h.appResource.GetRequestSession(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
@@ -45,6 +53,7 @@ func (h *Handler) HandleShake(w http.ResponseWriter, r *http.Request) {
 	// vendor — useful for observing connection reuse across two calls.
 	force := r.URL.Query().Get("force") == "true"
 
-	res := h.svc.Shake(r.Context(), uid, force)
+	req.UID = uid
+	res := h.svc.Shake(r.Context(), req, force)
 	response.WriteJson(w, res, nil)
 }

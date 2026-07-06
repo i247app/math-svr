@@ -1,5 +1,10 @@
 package bot
 
+type ShakeReq struct {
+	ProviderBotName string `json:"provider"`
+	UID             int64  `json:"-"`
+}
+
 // ShakeRes is the result of an AI connection handshake.
 //
 // It always travels in a Success envelope (mstatus=200): a handshake is
@@ -40,5 +45,5 @@ type ShakeRes struct {
 	// ensured/created by the handshake. The client passes it to
 	// /ai/conversations/send so subsequent turns continue the same
 	// server-tracked context. 0 when the session could not be initialized.
-	ConversationID int64 `json:"conversation_id,omitempty"`
+	ConversationID int64 `json:"-"`
 }

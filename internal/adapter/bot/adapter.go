@@ -68,10 +68,15 @@ func (a *Adapter) Has(name BotProviderName) bool {
 // Chat dispatches req through the default provider after running
 // ChatRequest.Validate.
 func (a *Adapter) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error) {
+	log := logger.From(ctx)
+	log.Infof("bot provider default %s", a.defaultName)
+	log.Infof("bot provider request %s", req.Provider)
+
 	if a.defaultName == "" {
 		return nil, errors.New("bot: no default provider configured")
 	}
-	return a.ChatVia(ctx, a.defaultName, req)
+
+	return a.ChatVia(ctx, req.Provider, req)
 }
 
 // ChatVia dispatches req through the provider registered under name.
@@ -81,6 +86,10 @@ func (a *Adapter) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error
 // an invalid payload, which keeps vendor billing clean.
 func (a *Adapter) ChatVia(ctx context.Context, name BotProviderName, req ChatRequest) (*ChatResult, error) {
 	log := logger.From(ctx)
+
+	if name == "" {
+		name = a.defaultName
+	}
 
 	if err := req.Validate(); err != nil {
 		return nil, errs.NewError(ctx, status.BOT_INVALID_PROMPT,

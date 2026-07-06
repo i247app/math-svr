@@ -73,10 +73,10 @@ func NewService(bot *botAdapter.Adapter, convRepo conversationDomain.IRepository
 // force bypasses the warm-up TTL cache so each call really hits the vendor —
 // use it (e.g. /ai/shake?force=true) to observe connection reuse across two
 // calls; otherwise a 2nd call within shakeTTL is served from cache.
-func (s *Service) Shake(ctx context.Context, userID int64, force bool) *dto.ShakeRes {
-	res := s.warm(ctx, force)
-	res.UserID = userID
-	res.ConversationID = s.ensureUserSession(ctx, userID)
+func (s *Service) Shake(ctx context.Context, req dto.ShakeReq, force bool) *dto.ShakeRes {
+	res := s.warm(ctx, req, force)
+	res.UserID = req.UID
+	res.ConversationID = s.ensureUserSession(ctx, req.UID)
 	return res
 }
 
@@ -111,7 +111,7 @@ func (s *Service) ensureUserSession(ctx context.Context, userID int64) int64 {
 }
 
 // warm primes the shared LLM connection pool, globally throttled by shakeTTL.
-func (s *Service) warm(ctx context.Context, force bool) *dto.ShakeRes {
+func (s *Service) warm(ctx context.Context, req dto.ShakeReq, force bool) *dto.ShakeRes {
 	log := logger.From(ctx)
 
 	if s.bot == nil {
@@ -140,13 +140,16 @@ func (s *Service) warm(ctx context.Context, force bool) *dto.ShakeRes {
 
 	start := time.Now()
 	out, err := s.bot.Chat(callCtx, botAdapter.ChatRequest{
+		Provider:    botAdapter.BotProviderName(req.ProviderBotName),
 		Messages:    []botAdapter.Message{{Role: botAdapter.RoleUser, Content: shakePrompt}},
-		MaxTokens:   10,
+		MaxTokens:   7,
 		Temperature: 0,
 	})
 	latency := time.Since(start)
 
-	log.Infof("BOT RESPONSE: %s", out.Content)
+	if out != nil {
+		log.Infof("BOT RESPONSE: %s", out.Content)
+	}
 
 	if err != nil {
 		log.Warnf("bot.shake_failed latency_ms=%d err=%v", latency.Milliseconds(), err)

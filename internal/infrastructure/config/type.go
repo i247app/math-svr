@@ -130,14 +130,15 @@ type SMSConfig struct {
 //
 // Behaviour matrix for BotProvider:
 //
-//	""  or "disabled" → adapter is nil; module services must nil-guard.
-//	"langchain"       → langchain provider, dispatching to the configured backend.
-//	anything else     → MathError(BOT_CONFIG_INVALID) at boot.
+//	""  or "disabled"    → adapter is nil; module services must nil-guard.
+//	"langchain" | "eino" → every framework whose backend key is set gets
+//	                       registered; BotProvider names the DEFAULT one.
+//	anything else        → MathError(BOT_CONFIG_INVALID) at boot.
 type BotConfig struct {
-	BotProvider string // env BOT_PROVIDER; "langchain" | "" | "disabled"
+	BotProvider string // env BOT_PROVIDER; "langchain" | "eino" | "" | "disabled"
 
-	// LangChain-backed provider settings. Only consumed when
-	// BotProvider == "langchain".
+	// LangChain-backed provider settings. Consumed (and the provider
+	// registered) whenever LangChainBackend is non-empty.
 	LangChainBackend     string  // env BOT_LANGCHAIN_BACKEND; "googleai" | "openai" | "anthropic" | "ollama"
 	LangChainAPIKey      string  // env BOT_LANGCHAIN_API_KEY — SECRET
 	LangChainBaseURL     string  // env BOT_LANGCHAIN_BASE_URL; optional vendor override / required for ollama
@@ -147,6 +148,18 @@ type BotConfig struct {
 	LangChainTopP        float64 // env BOT_LANGCHAIN_TOP_P;        <0 means vendor default
 	LangChainMaxTokens   int     // env BOT_LANGCHAIN_MAX_TOKENS;   0  means vendor default
 
+	// Eino-backed provider settings (cloudwego/eino + eino-ext). Consumed
+	// (and the provider registered) whenever EinoBackend is non-empty.
+	// No embed model: the eino provider reports Embed as unsupported.
+	EinoBackend     string  // env BOT_EINO_BACKEND; "googleai" | "openai" | "anthropic" | "ollama"
+	EinoAPIKey      string  // env BOT_EINO_API_KEY — SECRET
+	EinoBaseURL     string  // env BOT_EINO_BASE_URL; optional vendor override / required for ollama
+	EinoModel       string  // env BOT_EINO_MODEL; e.g. "gemini-1.5-flash"
+	EinoTemperature float64 // env BOT_EINO_TEMPERATURE; <0 means vendor default
+	EinoTopP        float64 // env BOT_EINO_TOP_P;        <0 means vendor default
+	EinoMaxTokens   int     // env BOT_EINO_MAX_TOKENS;   0  means vendor default
+
+	// Transport tuning shared by BOTH providers.
 	Timeout       time.Duration // env BOT_TIMEOUT,        e.g. "60s"
 	MaxRetries    int           // env BOT_MAX_RETRIES,    default 2
 	RetryDelay    time.Duration // env BOT_RETRY_DELAY,    e.g. "500ms"
