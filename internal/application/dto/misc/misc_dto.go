@@ -12,3 +12,9 @@ type LogTimeFormatRes struct {
 	Format17FSP         string `json:"format_17_fsp"`
 	Format20FSP         string `json:"format_20_fsp"`
 }
+
+// ClearDataRes reports what was wiped by POST /misc/clear-data.
+type ClearDataRes struct {
+	TablesCleared []string `json:"tables_cleared"`
+	SeqsReset     []string `json:"seqs_reset"`
+}

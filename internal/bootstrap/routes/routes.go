@@ -47,6 +47,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		miscHandler := misc.NewHandler(services.MiscSvc)
 		reg("POST /misc/logs-time-format", miscHandler.LogsTimeFormat)
+		// Destructive: wipes all user-generated data. Auth-gated (secure session).
+		reg("POST /misc/clear-data", miscHandler.ClearData, authMiddleware)
 	}
 
 	// health routes

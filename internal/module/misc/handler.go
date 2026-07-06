@@ -33,3 +33,13 @@ func (h *Handler) LogsTimeFormat(w http.ResponseWriter, r *http.Request) {
 
 	response.WriteJson(w, res, nil)
 }
+
+func (h *Handler) ClearData(w http.ResponseWriter, r *http.Request) {
+	res, err := h.svc.ClearData(r.Context())
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	response.WriteJson(w, res, nil)
+}

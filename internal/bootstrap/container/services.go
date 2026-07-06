@@ -6,6 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql"
+	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/repositories"
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
@@ -39,7 +40,8 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("SetupServiceContainer")
 
 	log.Info("> Setup MiscSvc...")
-	miscService := misc.NewService()
+	maintenanceRepo := repositories.NewMaintenanceRepository(res.DB)
+	miscService := misc.NewService(maintenanceRepo)
 
 	log.Info("> Setup UserSvc...")
 	userService := user.NewService(repos.UserRepository, uow, res.StorageProvider)
