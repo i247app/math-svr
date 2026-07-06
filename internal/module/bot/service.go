@@ -104,13 +104,19 @@ func (s *Service) Shake(ctx context.Context, req dto.ShakeReq, force bool) *dto.
 
 	log.Infof("bot.shake_ok provider=%s model=%s latency_ms=%d", provider, model, latency.Milliseconds())
 
-	return &dto.ShakeRes{
+	res := &dto.ShakeRes{
 		Shaked:    true,
 		Cached:    false,
 		Provider:  provider,
 		Model:     model,
 		LatencyMs: latency.Milliseconds(),
 	}
+
+	if out != nil {
+		res.Content = out.Content
+	}
+
+	return res
 }
 
 func (s *Service) cachedIfFresh() (*dto.ShakeRes, bool) {

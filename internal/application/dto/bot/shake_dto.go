@@ -35,4 +35,6 @@ type ShakeRes struct {
 	// Reason carries a machine-readable explanation when Shaked=false
 	// ("bot_disabled", "shake_failed"). Empty on success.
 	Reason string `json:"reason,omitempty"`
+
+	Content string `json:"content"`
 }
