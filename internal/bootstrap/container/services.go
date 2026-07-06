@@ -10,7 +10,6 @@ import (
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
-	"math-ai.com/math-ai/internal/module/conversation"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
@@ -97,16 +96,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	authService := auth.NewService(userService, otpService, uow, res.Env.TrustDeviceTTLDays)
 
 	log.Info("> Setup QuizSvc...")
-	// Tutoring-memory window: reuse the conversation history config. The
-	// env toggle doubles as the kill-switch for quiz tutoring memory; the
-	// size is clamped to the same [0, 200] range the chat path uses.
-	tutoringWindow := int64(res.Env.ConversationConfig.HistoryWindowSize)
-	if tutoringWindow <= 0 {
-		tutoringWindow = 20
-	}
-	if tutoringWindow > 200 {
-		tutoringWindow = 200
-	}
 	quizService := quiz.NewService(
 		repos.QuizRepository,
 		uow,
@@ -116,10 +105,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.GradeRepository,
 		repos.SemesterRepository,
 		repos.ChapterRepository,
-		repos.ConversationRepository,
-		repos.ConversationMessageRepository,
-		res.Env.ConversationConfig.HistoryWindowEnabled,
-		tutoringWindow,
 	)
 
 	log.Info("> Setup ChapterSvc...")
@@ -166,16 +151,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	)
 
 	log.Info("> Setup BotSvc...")
-	botService := bot.NewService(res.BotProvider, repos.ConversationRepository, uow)
-
-	log.Info("> Setup ConversationSvc...")
-	conversationService := conversation.NewService(
-		uow,
-		repos.ConversationRepository,
-		repos.ConversationMessageRepository,
-		res.BotProvider,
-		res.Env.ConversationConfig,
-	)
+	botService := bot.NewService(res.BotProvider)
 
 	log.Info("> Setup NotificationSvc...")
 	notificationService := notification.NewService(
@@ -215,7 +191,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		ExerciseSvc:     exerciseService,
 		HomeSvc:         homeService,
 		BotSvc:          botService,
-		ConversationSvc: conversationService,
 		NotificationSvc: notificationService,
 	}, nil
 }

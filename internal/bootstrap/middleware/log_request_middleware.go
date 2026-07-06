@@ -161,10 +161,6 @@ var sensitiveBodyKeys = map[string]struct{}{
 	"cvv":              {},
 	"private_key":      {},
 	"signature":        {},
-	// AI conversation message bodies are user (often child) PII — never log.
-	"message": {},
-	"content": {},
-	"reply":   {},
 }
 
 func shouldSkipLogging(path string) bool {

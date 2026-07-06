@@ -43,8 +43,6 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 			ClassroomProgram:    repositories.NewClassroomProgramRepository(loggedTx),
 			Exercise:            repositories.NewExerciseRepository(loggedTx),
 			ExerciseSubmission:  repositories.NewExerciseSubmissionRepository(loggedTx),
-			Conversation:        repositories.NewConversationRepository(loggedTx),
-			ConversationMessage: repositories.NewConversationMessageRepository(loggedTx),
 			Notification:        repositories.NewNotificationRepository(loggedTx),
 		}
 		return fn(txCtx, repos)

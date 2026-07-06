@@ -7,17 +7,12 @@ import (
 	"time"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
-	convcommand "math-ai.com/math-ai/internal/application/command/conversation"
 	dto "math-ai.com/math-ai/internal/application/dto/bot"
-	"math-ai.com/math-ai/internal/application/transaction"
-	conversationDomain "math-ai.com/math-ai/internal/domain/conversation"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
 const (
-	// shakeTTL bounds how often the connection warm-up actually hits the
-	// vendor. The per-user session init below is NOT throttled (it is a cheap
-	// idempotent DB lookup).
+	// shakeTTL bounds how often the warm-up actually hits the vendor.
 	shakeTTL = 60 * time.Second
 
 	// shakeTimeout caps a single warm-up round trip.
@@ -28,27 +23,13 @@ const (
 	shakePrompt = "ping"
 )
 
-// Service backs POST /ai/shake. It does two independent things per call:
-//
-//  1. Warms the shared LLM connection pool (handshake + keep-alive priming),
-//     globally throttled by shakeTTL — a transport optimization with no user
-//     identity.
-//  2. Initializes the AUTHENTICATED user's AI session: ensures (find-or-create)
-//     that user's CHAT conversation thread and returns its conversation_id.
-//
-// Important: the LLM provider is stateless and cannot recognise end users —
-// the connection it warms carries only the server's API key. "Which user is
-// this" lives entirely on the server: the session (login) identifies the user,
-// and the returned conversation_id is the durable, per-user context handle the
-// client reuses on /ai/conversations/send.
+// Service backs POST /ai/shake: it warms the shared LLM connection pool
+// (handshake + keep-alive priming) so the first real quiz/exercise call is
+// fast. Globally throttled by shakeTTL + single-flight so the vendor is hit
+// at most once per window regardless of caller volume.
 type Service struct {
 	bot *botAdapter.Adapter
 
-	// per-user session init
-	convRepo      conversationDomain.IRepository
-	createConvCmd *convcommand.CreateConversationCommandHandler
-
-	// warm-up throttle state
 	flightMu sync.Mutex
 
 	stateMu      sync.Mutex
@@ -58,60 +39,15 @@ type Service struct {
 }
 
 // NewService wires the handshake service. bot may be nil (BOT_PROVIDER
-// disabled) — the warm-up then reports shaked=false while the per-user
-// session init (DB only) still works.
-func NewService(bot *botAdapter.Adapter, convRepo conversationDomain.IRepository, uow transaction.UnitOfWork) *Service {
-	return &Service{
-		bot:           bot,
-		convRepo:      convRepo,
-		createConvCmd: convcommand.NewCreateConversationCommandHandler(uow),
-	}
+// disabled) — Shake then reports shaked=false.
+func NewService(bot *botAdapter.Adapter) *Service {
+	return &Service{bot: bot}
 }
 
-// Shake warms the LLM connection and initializes the user's AI session,
-// returning the user's conversation_id for subsequent turns.
-// force bypasses the warm-up TTL cache so each call really hits the vendor —
-// use it (e.g. /ai/shake?force=true) to observe connection reuse across two
-// calls; otherwise a 2nd call within shakeTTL is served from cache.
+// Shake warms the LLM connection. force bypasses the TTL cache so each call
+// really hits the vendor — use /ai/shake?force=true to observe connection
+// reuse across two calls; otherwise a 2nd call within shakeTTL is cached.
 func (s *Service) Shake(ctx context.Context, req dto.ShakeReq, force bool) *dto.ShakeRes {
-	res := s.warm(ctx, req, force)
-	res.UserID = req.UID
-	res.ConversationID = s.ensureUserSession(ctx, req.UID)
-	return res
-}
-
-// ensureUserSession resolves (find-or-create) the user's CHAT thread and
-// returns its external id. Best-effort: returns 0 on any failure so a session
-// hiccup never turns the handshake into a hard error.
-func (s *Service) ensureUserSession(ctx context.Context, userID int64) int64 {
-	if s.convRepo == nil || s.createConvCmd == nil {
-		return 0
-	}
-	log := logger.From(ctx)
-
-	conv, err := s.convRepo.FindLatestActiveByUserAndPurpose(ctx, userID, conversationDomain.PurposeChat)
-	if err != nil {
-		log.Warnf("bot.shake_session_failed uid=%d err=%v", userID, err)
-		return 0
-	}
-	if conv != nil {
-		return conv.ConversationId()
-	}
-
-	created, err := s.createConvCmd.Handle(ctx, convcommand.CreateConversationCommand{
-		UserID:  userID,
-		Purpose: conversationDomain.PurposeChat,
-	})
-	if err != nil {
-		log.Warnf("bot.shake_session_failed uid=%d err=%v", userID, err)
-		return 0
-	}
-	log.Infof("bot.shake_session_created uid=%d conversation_id=%d", userID, created.ConversationId())
-	return created.ConversationId()
-}
-
-// warm primes the shared LLM connection pool, globally throttled by shakeTTL.
-func (s *Service) warm(ctx context.Context, req dto.ShakeReq, force bool) *dto.ShakeRes {
 	log := logger.From(ctx)
 
 	if s.bot == nil {
@@ -136,20 +72,14 @@ func (s *Service) warm(ctx context.Context, req dto.ShakeReq, force bool) *dto.S
 	callCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), shakeTimeout)
 	defer cancel()
 
-	log.Infof("PROMPT SHAKE: %s", shakePrompt)
-
 	start := time.Now()
 	out, err := s.bot.Chat(callCtx, botAdapter.ChatRequest{
 		Provider:    botAdapter.BotProviderName(req.ProviderBotName),
 		Messages:    []botAdapter.Message{{Role: botAdapter.RoleUser, Content: shakePrompt}},
-		MaxTokens:   7,
+		MaxTokens:   10,
 		Temperature: 0,
 	})
 	latency := time.Since(start)
-
-	if out != nil {
-		log.Infof("BOT RESPONSE: %s", out.Content)
-	}
 
 	if err != nil {
 		log.Warnf("bot.shake_failed latency_ms=%d err=%v", latency.Milliseconds(), err)

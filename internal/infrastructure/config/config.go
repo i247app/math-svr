@@ -108,12 +108,6 @@ func NewEnv(envpath string) (*Env, error) {
 			RequireAtBoot: getBoolConfigWithDefault("BOT_REQUIRE_AT_BOOT", false),
 		},
 
-		ConversationConfig: ConversationConfig{
-			HistoryWindowEnabled: getBoolConfigWithDefault("CONVERSATION_HISTORY_WINDOW_ENABLED", true),
-			HistoryWindowSize:    getIntConfigOptionalWithDefault("CONVERSATION_HISTORY_WINDOW_SIZE", 20),
-			MaxMessageChars:      getIntConfigOptionalWithDefault("CONVERSATION_MAX_MESSAGE_CHARS", 4000),
-		},
-
 		NotificationConfig: NotificationConfig{
 			Provider: getConfigOptionalString("NOTIFICATION_PROVIDER"),
 

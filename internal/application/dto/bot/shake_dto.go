@@ -35,15 +35,4 @@ type ShakeRes struct {
 	// Reason carries a machine-readable explanation when Shaked=false
 	// ("bot_disabled", "shake_failed"). Empty on success.
 	Reason string `json:"reason,omitempty"`
-
-	// UserID is the authenticated user this handshake initialized a session
-	// for (the server-side identity — the LLM provider itself is stateless
-	// and does not recognise end users).
-	UserID int64 `json:"user_id,omitempty"`
-
-	// ConversationID is the user's AI session thread (the CHAT conversation),
-	// ensured/created by the handshake. The client passes it to
-	// /ai/conversations/send so subsequent turns continue the same
-	// server-tracked context. 0 when the session could not be initialized.
-	ConversationID int64 `json:"-"`
 }

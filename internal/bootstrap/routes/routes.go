@@ -11,7 +11,6 @@ import (
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
-	"math-ai.com/math-ai/internal/module/conversation"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
@@ -183,22 +182,12 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /chapters/force-delete", chapterHandler.HandleForceDeleteChapter, authMiddleware)
 	}
 
-	// ai routes — handshake + per-user AI session init (auth required). Warms
-	// the LLM connection (globally throttled) AND ensures the logged-in user's
-	// CHAT conversation thread, returning its conversation_id for follow-up
-	// turns on /ai/conversations/send.
+	// ai routes — LLM connection warm-up (public + globally throttled) so the
+	// frontend can prime the AI connection early and the first real
+	// quiz/exercise generation is fast.
 	{
-		botHandler := bot.NewHandler(res, services.BotSvc)
-		reg("POST /ai/shake", botHandler.HandleShake, authMiddleware)
-	}
-
-	// ai conversation routes — contextual multi-turn chat (auth-gated)
-	{
-		conversationHandler := conversation.NewHandler(res, services.ConversationSvc)
-		reg("POST /ai/conversations/send", conversationHandler.HandleSend, authMiddleware)
-		reg("POST /ai/conversations/list", conversationHandler.HandleList, authMiddleware)
-		reg("GET  /ai/conversations/{id}", conversationHandler.HandleGet, authMiddleware)
-		reg("POST /ai/conversations/soft-delete", conversationHandler.HandleSoftDelete, authMiddleware)
+		botHandler := bot.NewHandler(services.BotSvc)
+		reg("POST /ai/shake", botHandler.HandleShake)
 	}
 
 	// quiz routes

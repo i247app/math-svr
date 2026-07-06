@@ -7,13 +7,11 @@ import (
 	"strings"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
-	convcommand "math-ai.com/math-ai/internal/application/command/conversation"
 	command "math-ai.com/math-ai/internal/application/command/quiz"
 	dto "math-ai.com/math-ai/internal/application/dto/quiz"
 	query "math-ai.com/math-ai/internal/application/query/quiz"
 	"math-ai.com/math-ai/internal/application/transaction"
 	chapterDomain "math-ai.com/math-ai/internal/domain/chapter"
-	conversationDomain "math-ai.com/math-ai/internal/domain/conversation"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
@@ -44,20 +42,6 @@ type Service struct {
 	semesterRepo           semesterDomain.IRepository
 	chapterRepo            chapterDomain.IRepository
 	bot                    *botClient
-
-	// Tutoring memory (Hướng A, framework-backed): a per-profile
-	// QUIZ_TUTORING thread, read to seed generate/grade prompts and appended
-	// to after grading. History/windowing/persistence go through langchaingo's
-	// memory (ConversationWindowBuffer) over the MySQL ChatMessageHistory
-	// adapter. Disabled when tutoringEnabled is false (env kill-switch) or
-	// when a quiz has no profile.
-	convRepo           conversationDomain.IRepository
-	convMsgRepo        conversationDomain.IMessageRepository
-	createConvCmd      *convcommand.CreateConversationCommandHandler
-	appendUserCmd      *convcommand.AppendUserMessageCommandHandler
-	appendAssistantCmd *convcommand.AppendAssistantMessageCommandHandler
-	tutoringEnabled    bool
-	tutoringWindow     int64
 }
 
 // NewService wires the quiz module. botAdapter may be nil — in a deploy
@@ -76,10 +60,6 @@ func NewService(
 	gradeRepo gradeDomain.IRepository,
 	semesterRepo semesterDomain.IRepository,
 	chapterRepo chapterDomain.IRepository,
-	convRepo conversationDomain.IRepository,
-	convMsgRepo conversationDomain.IMessageRepository,
-	tutoringEnabled bool,
-	tutoringWindow int64,
 ) *Service {
 	return &Service{
 		getQuizByIdQuery:       query.NewGetQuizByQuizIdQueryHandler(quizRepo),
@@ -95,13 +75,6 @@ func NewService(
 		semesterRepo:           semesterRepo,
 		chapterRepo:            chapterRepo,
 		bot:                    newBotClient(bot),
-		convRepo:               convRepo,
-		convMsgRepo:            convMsgRepo,
-		createConvCmd:          convcommand.NewCreateConversationCommandHandler(uow),
-		appendUserCmd:          convcommand.NewAppendUserMessageCommandHandler(uow),
-		appendAssistantCmd:     convcommand.NewAppendAssistantMessageCommandHandler(uow),
-		tutoringEnabled:        tutoringEnabled,
-		tutoringWindow:         tutoringWindow,
 	}
 }
 
@@ -182,14 +155,6 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		genIn.PreviousAnswers = derefString(prev.Answers())
 		genIn.PreviousAIReview = *prev.AIReview()
 	}
-
-	// Tutoring memory: seed the generation prompt with the student's recent
-	// learning context (profile-bound quizzes only).
-	if s.tutoringEnabled && profile != nil {
-		genIn.TutoringContext = s.loadTutoringContext(ctx, profile.ProfileId())
-	}
-
-	log.Infof("genIn.TutoringContext: %s", genIn.TutoringContext)
 
 	generated, err := s.bot.GenerateQuiz(ctx, genIn)
 	if err != nil {
@@ -307,11 +272,6 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 		gradeIn.CurrentGrade = currentLabel
 	}
 
-	// Tutoring memory: seed the grading prompt with prior learning context.
-	if s.tutoringEnabled && existing.ProfileId() != nil {
-		gradeIn.TutoringContext = s.loadTutoringContext(ctx, *existing.ProfileId())
-	}
-
 	grading, err := s.bot.GradeQuiz(ctx, gradeIn)
 	if err != nil {
 		return nil, err
@@ -348,15 +308,6 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 		return nil, err
 	}
 
-	// Tutoring memory: append a compact performance summary + AI review to
-	// the student's tutoring thread. Best-effort — grading is already
-	// persisted, so a memory failure must not fail the submit.
-	if s.tutoringEnabled {
-		summary := buildPerformanceSummary(topicOf(existing), grading.CorrectNumber,
-			grading.TotalQuestions, derefString(grading.AssessmentGrade), lang)
-		s.recordTutoringExchange(ctx, existing, summary, grading.AIReview)
-	}
-
 	res := dto.DomainToResponse(updated, true)
 
 	// Submitted quizzes are review-mode — surface right_answer so the
@@ -390,18 +341,6 @@ func (s *Service) SubmitQuizAnswersV2(ctx context.Context, req *dto.SubmitQuizAn
 	})
 	if err != nil {
 		return nil, err
-	}
-
-	// Tutoring memory: V2 makes no AI call, so it can't *use* prior context
-	// in its own grading — but it still FEEDS the tutoring thread so the next
-	// AI quiz generation remembers this attempt. The review stored here is
-	// the deterministic scorer's text (carries per-topic weakness), which is
-	// still useful learning signal. Best-effort; profile-bound quizzes only.
-	if s.tutoringEnabled {
-		summary := buildPerformanceSummary(topicOf(updated),
-			derefInt(updated.CorrectNumber()), derefInt(updated.TotalQuestions()),
-			derefString(updated.AssessmentGrade()), lang)
-		s.recordTutoringExchange(ctx, updated, summary, derefString(updated.AIReview()))
 	}
 
 	return &dto.SubmitQuizAnswersRes{Quiz: dto.DomainToResponse(updated, true)}, nil

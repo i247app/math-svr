@@ -2,7 +2,6 @@ package quiz
 
 import (
 	"context"
-	"strings"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
@@ -33,22 +32,6 @@ func newBotClient(adapter *botAdapter.Adapter) *botClient {
 	return &botClient{adapter: adapter}
 }
 
-// buildQuizMessages assembles the chat messages for a quiz call. When
-// tutoring is non-empty it is inserted as an extra system message between
-// the main system prompt and the user prompt — this carries the student's
-// prior learning context (from the conversation tutoring thread) WITHOUT
-// touching the JSON-schema-bearing user prompt, so JSONMode and the parsers
-// stay intact.
-func buildQuizMessages(system, tutoring, user string) []botAdapter.Message {
-	msgs := make([]botAdapter.Message, 0, 3)
-	msgs = append(msgs, botAdapter.Message{Role: botAdapter.RoleSystem, Content: system})
-	if strings.TrimSpace(tutoring) != "" {
-		msgs = append(msgs, botAdapter.Message{Role: botAdapter.RoleSystem, Content: tutoring})
-	}
-	msgs = append(msgs, botAdapter.Message{Role: botAdapter.RoleUser, Content: user})
-	return msgs
-}
-
 // generateQuizInput carries every field GenerateQuiz may consume. The
 // reinforce branch is selected explicitly via TypeOfQuiz (the persisted
 // learning intent) rather than inferred from PreviousQuestions, so the
@@ -65,10 +48,6 @@ type generateQuizInput struct {
 	PreviousQuestions   string
 	PreviousAnswers     string
 	PreviousAIReview    string
-	// TutoringContext is an optional compact summary of the student's prior
-	// learning (from the per-profile tutoring thread). Empty for anonymous
-	// quizzes or when the history window is disabled.
-	TutoringContext string
 }
 
 // generateQuizOutput pairs the parsed quiz title + short_text with its
@@ -124,7 +103,10 @@ func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) (*ge
 	log.Infof("PROMPT GENERATE QUIZ: system=%s user=%s", system, user)
 
 	res, err := c.adapter.Chat(ctx, botAdapter.ChatRequest{
-		Messages:    buildQuizMessages(system, in.TutoringContext, user),
+		Messages: []botAdapter.Message{
+			{Role: botAdapter.RoleSystem, Content: system},
+			{Role: botAdapter.RoleUser, Content: user},
+		},
 		Temperature: 0.2,
 		TopP:        0.95,
 		JSONMode:    true,
@@ -161,8 +143,6 @@ type gradeQuizInput struct {
 	Questions    string
 	Answers      string
 	CurrentGrade string
-	// TutoringContext — see generateQuizInput.TutoringContext.
-	TutoringContext string
 }
 
 func (c *botClient) GradeQuiz(ctx context.Context, in gradeQuizInput) (*quizDto.QuizGradingResult, error) {
@@ -191,7 +171,10 @@ func (c *botClient) GradeQuiz(ctx context.Context, in gradeQuizInput) (*quizDto.
 	log.Infof("PROMPT GRADE QUIZ: system=%s user=%s", system, user)
 
 	res, err := c.adapter.Chat(ctx, botAdapter.ChatRequest{
-		Messages:    buildQuizMessages(system, in.TutoringContext, user),
+		Messages: []botAdapter.Message{
+			{Role: botAdapter.RoleSystem, Content: system},
+			{Role: botAdapter.RoleUser, Content: user},
+		},
 		Temperature: 0.1,
 		TopP:        0.95,
 		JSONMode:    true,

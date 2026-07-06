@@ -26,7 +26,6 @@ type Env struct {
 	StorageConfig       StorageConfig
 	SMSConfig           SMSConfig
 	BotConfig           BotConfig
-	ConversationConfig  ConversationConfig
 	NotificationConfig  NotificationConfig
 	ObservabilityConfig ObservabilityConfig
 }
@@ -166,18 +165,6 @@ type BotConfig struct {
 	RequireAtBoot bool          // env BOT_REQUIRE_AT_BOOT, default false
 }
 
-// ConversationConfig tunes the AI conversation history window and message
-// length cap at deploy time. The conversation service clamps these defensively
-// (window size to [0, 200]; max chars to (0, 60000]); non-positive values
-// fall back to the defaults.
-//
-//	HistoryWindowEnabled false → each turn sends only the system prompt + the
-//	new user message (no prior context re-sent); messages are still persisted.
-type ConversationConfig struct {
-	HistoryWindowEnabled bool // env CONVERSATION_HISTORY_WINDOW_ENABLED, default true
-	HistoryWindowSize    int  // env CONVERSATION_HISTORY_WINDOW_SIZE,    default 20
-	MaxMessageChars      int  // env CONVERSATION_MAX_MESSAGE_CHARS,      default 4000
-}
 
 // NotificationConfig configures the push-notification adapter
 // (`internal/adapter/notification`). Today the only provider is Firebase

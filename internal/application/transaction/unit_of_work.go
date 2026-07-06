@@ -5,7 +5,6 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/chapter"
 	"math-ai.com/math-ai/internal/domain/classroom"
-	"math-ai.com/math-ai/internal/domain/conversation"
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/grade"
@@ -50,8 +49,6 @@ type Repositories struct {
 	ClassroomProgram    classroom.IClassroomProgramRepository
 	Exercise            exercise.IRepository
 	ExerciseSubmission  exercise.ISubmissionRepository
-	Conversation        conversation.IRepository
-	ConversationMessage conversation.IMessageRepository
 	Notification        notification.IRepository
 }
 

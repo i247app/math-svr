@@ -3,7 +3,6 @@ package container
 import (
 	chapterDomain "math-ai.com/math-ai/internal/domain/chapter"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
-	conversationDomain "math-ai.com/math-ai/internal/domain/conversation"
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
@@ -21,7 +20,6 @@ import (
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
-	"math-ai.com/math-ai/internal/module/conversation"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
@@ -58,7 +56,6 @@ type ServiceContainer struct {
 	ExerciseSvc     *exercise.Service
 	HomeSvc         *home.Service
 	BotSvc          *bot.Service
-	ConversationSvc *conversation.Service
 	NotificationSvc *notification.Service
 }
 
@@ -84,7 +81,5 @@ type RepositoryContainer struct {
 	ClassroomProgramRepository    classroomDomain.IClassroomProgramRepository
 	ExerciseRepository            exerciseDomain.IRepository
 	ExerciseSubmissionRepository  exerciseDomain.ISubmissionRepository
-	ConversationRepository        conversationDomain.IRepository
-	ConversationMessageRepository conversationDomain.IMessageRepository
 	NotificationRepository        notificationDomain.IRepository
 }
