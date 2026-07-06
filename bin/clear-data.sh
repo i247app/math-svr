@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # bin/clear-data.sh — wipe user-generated data, keep reference/seed data.
 #
-# Runs sql/clear_user_data.sql against either the LOCAL database (DB_* read
+# Runs sql/clear_data.sql against either the LOCAL database (DB_* read
 # from .env) or an EC2 REMOTE database (connection read from /apps/math/.env on
 # the host, reached over SSH using .env.ec2-credentials).
 #
@@ -22,7 +22,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$PROJECT_DIR"
 
-SQL_FILE="$PROJECT_DIR/sql/clear_user_data.sql"
+SQL_FILE="$PROJECT_DIR/sql/clear_data.sql"
 [[ -f "$SQL_FILE" ]] || { echo "error: missing $SQL_FILE" >&2; exit 1; }
 
 TARGET="${1:-local}"

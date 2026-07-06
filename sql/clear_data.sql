@@ -1,4 +1,4 @@
--- clear_user_data.sql
+-- clear_data.sql
 --
 -- Wipe USER-GENERATED data, KEEP REFERENCE/SEED data.
 --
