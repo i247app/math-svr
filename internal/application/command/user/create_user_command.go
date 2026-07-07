@@ -72,15 +72,15 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 
-		if cmd.UserName != "" {
-			existByUserName, err := repos.User.FindByUserName(ctx, cmd.UserName)
-			if err != nil {
-				return errs.NewError(ctx, status.FAIL, nil, err)
-			}
-			if existByUserName != nil {
-				return errs.NewError(ctx, status.USER_USERNAME_ALREADY_EXISTS, nil, ErrUsernameAlreadyExists)
-			}
-		}
+		// if cmd.UserName != "" {
+		// 	existByUserName, err := repos.User.FindByUserName(ctx, cmd.UserName)
+		// 	if err != nil {
+		// 		return errs.NewError(ctx, status.FAIL, nil, err)
+		// 	}
+		// 	if existByUserName != nil {
+		// 		return errs.NewError(ctx, status.USER_USERNAME_ALREADY_EXISTS, nil, ErrUsernameAlreadyExists)
+		// 	}
+		// }
 
 		userID, err := nextSeqID(ctx, repos, seq.NameUser)
 		if err != nil {
