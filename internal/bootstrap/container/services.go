@@ -43,8 +43,11 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	maintenanceRepo := repositories.NewMaintenanceRepository(res.DB)
 	miscService := misc.NewService(maintenanceRepo)
 
+	log.Info("> Setup DeviceSvc...")
+	deviceService := device.NewService(repos.DeviceRepository, uow)
+
 	log.Info("> Setup UserSvc...")
-	userService := user.NewService(repos.UserRepository, uow, res.StorageProvider)
+	userService := user.NewService(deviceService, repos.UserRepository, uow, res.StorageProvider)
 
 	log.Info("> Setup ProgramSvc...")
 	programService := program.NewService(
@@ -87,9 +90,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.SemesterRepository,
 		repos.SchoolRepository,
 	)
-
-	log.Info("> Setup DeviceSvc...")
-	deviceService := device.NewService(repos.DeviceRepository, uow)
 
 	log.Info("> Setup OtpSvc...")
 	otpService := otp.NewService(userService, deviceService, repos.OtpRepository, uow, res.OtpDelivery)

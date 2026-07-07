@@ -8,6 +8,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/user"
+	deviceDTO "math-ai.com/math-ai/internal/application/dto/device"
 	dto "math-ai.com/math-ai/internal/application/dto/user"
 	query "math-ai.com/math-ai/internal/application/query/user"
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -15,7 +16,9 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	domain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -29,6 +32,7 @@ import (
 const avatarFolder = "user-avatars"
 
 type Service struct {
+	deviceSvc            *device.Service
 	getUserByUserIdQuery *query.GetUserByUserIdQueryHandler
 	getUserByPhoneQuery  *query.GetUserByPhoneQueryHandler
 	getUserByEmailQuery  *query.GetUserByEmailQueryHandler
@@ -42,11 +46,13 @@ type Service struct {
 }
 
 func NewService(
+	deviceSvc *device.Service,
 	repo domain.IRepository,
 	uow transaction.UnitOfWork,
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
+		deviceSvc:            deviceSvc,
 		getUserByUserIdQuery: query.NewGetUserByUserIdQueryHandler(repo),
 		getUserByPhoneQuery:  query.NewGetUserByPhoneQueryHandler(repo),
 		getUserByEmailQuery:  query.NewGetUserByEmailQueryHandler(repo),
@@ -193,6 +199,15 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 				log.Warnf("user.create avatar orphan cleanup failed key=%s err=%v", *avatarKey, delErr)
 			}
 		}
+		return nil, err
+	}
+
+	log.Info("Mark device as trusted")
+	_, err = s.deviceSvc.VerifyDevice(ctx, &deviceDTO.VerifyDeviceReq{
+		UserID:     created.User.UserId(),
+		DeviceUUID: metadata.GetDeviceID(ctx),
+	})
+	if err != nil {
 		return nil, err
 	}
 

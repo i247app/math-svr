@@ -7,6 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -51,6 +52,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			d.SetUserId(&cmd.UserID)
 			d.SetDeviceUUID(cmd.DeviceUUID)
 			d.SetIsVerified(true)
+			d.SetTrustDt(mtime.Now())
 			active := enum.DeviceStatusTypeActive.String()
 			d.SetDeviceStatus(&active)
 			d.SetStatus(enum.StatusActive.String())
@@ -62,8 +64,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			return nil
 		}
 		if d.UserId() == nil || *d.UserId() != cmd.UserID {
-			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
-				ErrDeviceNotOwnedByUser)
+			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil, ErrDeviceNotOwnedByUser)
 		}
 		if d.IsVerified() {
 			// return errs.NewError(ctx, status.DEVICE_ALREADY_VERIFIED, nil, ErrDeviceAlreadyVerified)

@@ -94,6 +94,7 @@ type DeleteDeviceRes struct{}
 type VerifyDeviceReq struct {
 	UserID     int64  `json:"user_id"`
 	DeviceUUID string `json:"device_uuid"`
+	DeviceName string `json:"device_name,omitempty"`
 }
 
 type VerifyDeviceRes struct {
