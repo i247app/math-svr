@@ -161,6 +161,11 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		return nil, err
 	}
 
+	// Clamp render discriminators + log any icon-token drift before the
+	// questions are persisted. Grading is label-based, so this never
+	// changes correctness — it only keeps the stored JSON renderable.
+	generated.Questions = normalizeGeneratedQuestions(ctx, generated.Questions)
+
 	questionsJSON, err := json.Marshal(generated.Questions)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.QUIZ_GENERATION_FAILED, nil,

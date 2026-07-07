@@ -8,6 +8,9 @@
 load-test/
 *jmeter.log
 
+# assets
+assets/
+
 # erdplus
 *erdplus
 

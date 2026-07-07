@@ -101,6 +101,13 @@ func (c *botClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 		log.Warnf("classroom_exercise.bot.parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_GENERATION_FAILED, map[string]any{"reason": err.Error()}, err)
 	}
+
+	// Clamp render discriminators + log any icon-token drift, reusing the
+	// quiz normalizer so the visual contract is enforced identically for
+	// classroom exercises. Grading is label-based, so this never changes
+	// correctness.
+	questions = quizParser.NormalizeGeneratedQuestions(ctx, questions)
+
 	return &generateExerciseOutput{ShortText: shortText, Questions: questions}, nil
 }
 

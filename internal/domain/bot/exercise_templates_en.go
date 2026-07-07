@@ -18,7 +18,7 @@ A teacher has set a topic by chapter and lesson. Generate EXACTLY %d multiple-ch
 CONTENT RULES:
 - Each question has EXACTLY 4 answers labeled A, B, C, D.
 - Exactly one answer is correct.
-- "question_name" contains ONLY numbers and operators (+, -, *, /, ^, parentheses, "?") — no narrative, no LaTeX, no images, no Vietnamese text.
+- For ARITHMETIC questions "question_name" contains ONLY numbers and operators (+, -, *, /, ^, parentheses, "?") — no narrative, no LaTeX, no Vietnamese text. Other question types follow the VISUAL QUESTION RULES at the end of this prompt.
 - Use ASCII fractions like "1/2", never "½".
 - Do not repeat questions.
 - Stay inside the teacher's chapter + lesson scope; do not drift to other topics even if the grade allows them.
@@ -44,6 +44,7 @@ SCHEMA:
   "questions":[
     {
       "question_number": 1,
+      "question_type": "ARITHMETIC",
       "question_name": "5 + 3 = ?",
       "answers": [
         {"label": "A", "content": "8"},
@@ -60,8 +61,23 @@ SCHEMA:
 }
 `
 
+// visualExerciseRulesEN mirrors the quiz visual contract but is tuned for
+// teacher-scoped exercises: COUNT is used ONLY when it fits the chapter +
+// lesson (no fixed ratio), so an icon question never drifts off-topic. The
+// icon whitelist matches the quiz normalizer's geometryIconWhitelist.
+const visualExerciseRulesEN = `
+VISUAL QUESTION RULES:
+- Every question carries a "question_type": either ARITHMETIC (plain text, the default) or COUNT (icon-based counting). Do NOT produce any other question_type.
+- Use COUNT ONLY when it fits the teacher's chapter + lesson — e.g. counting, quantity comparison, early addition/subtraction, or basic shapes. For any lesson that is not about counting/quantity, use ARITHMETIC for every question. Never let an icon question drift outside the lesson scope.
+- COUNT: "question_name" shows objects to count or add, using icons plus operators (+, "?"). Answers are numbers; keep "topic" tied to the lesson. Icons may be emoji OR shape tokens (see ICONS), e.g. "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" or "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
+
+ICONS (only for COUNT; NEVER in ARITHMETIC):
+- Emoji: for countable objects use common, child-friendly emoji inserted literally and space-separated, e.g. 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Use ONE emoji type per question.
+- Shapes: use ONLY the token form "[icon:NAME]" where NAME is one of: triangle, square, rectangle, circle, star, diamond, oval, pentagon, hexagon, heart. Repeat the token to show several shapes, e.g. "[icon:triangle] [icon:triangle] [icon:triangle]". Use ONE shape type per question. NEVER invent other "[icon:...]" names — if a shape is not listed, use an emoji instead.
+`
+
 func buildSystemExerciseGenerateEN(n int) string {
-	return fmt.Sprintf(systemExerciseGenerateENTmpl, n, n, n)
+	return fmt.Sprintf(systemExerciseGenerateENTmpl, n, n, n) + visualExerciseRulesEN
 }
 
 func userExerciseGenerateEN(in ExercisePromptInput) string {

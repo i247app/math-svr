@@ -1,14 +1,82 @@
 package quiz
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 
 	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
+
+// validQuestionTypes is the closed render set the client understands.
+// Anything else (including empty) normalizes to ARITHMETIC.
+var validQuestionTypes = map[string]struct{}{
+	quizDto.QuestionTypeArithmetic:    {},
+	quizDto.QuestionTypeCount:         {},
+	quizDto.QuestionTypePickByIcon:    {},
+	quizDto.QuestionTypeIdentifyShape: {},
+}
+
+// geometryIconWhitelist is the closed set of shape tokens the client ships
+// SVG assets for. The prompt tells the model to stay inside this set;
+// normalization only LOGS drift — it never drops a question, because a
+// stray token still renders as a client-side fallback and the MCQ
+// structure (labels + right_answer) stays valid and gradable.
+var geometryIconWhitelist = map[string]struct{}{
+	"triangle": {}, "square": {}, "rectangle": {}, "circle": {},
+	"star": {}, "diamond": {}, "oval": {}, "pentagon": {},
+	"hexagon": {}, "heart": {},
+}
+
+// iconTokenRe matches the "[icon:NAME]" shape tokens embedded in a stem or
+// answer content. Emoji are literal UTF-8 and are intentionally not matched.
+var iconTokenRe = regexp.MustCompile(`\[icon:([a-zA-Z_]+)\]`)
+
+// normalizeGeneratedQuestions clamps each question's QuestionType to the
+// known set (unknown/empty -> ARITHMETIC) and logs any [icon:NAME] token
+// outside the geometry whitelist. It mutates in place and returns the
+// slice. Visual drift never fails generation — grading is label-based and
+// unaffected by icon content.
+func normalizeGeneratedQuestions(ctx context.Context, questions []quizDto.QuizQuestion) []quizDto.QuizQuestion {
+	log := logger.From(ctx)
+
+	warnTokens := func(s string, qnum int) {
+		for _, m := range iconTokenRe.FindAllStringSubmatch(s, -1) {
+			if _, ok := geometryIconWhitelist[strings.ToLower(m[1])]; !ok {
+				log.Warnf("quiz.normalize.unknown_icon_token token=%q q=%d", m[1], qnum)
+			}
+		}
+	}
+
+	for i := range questions {
+		q := &questions[i]
+		qt := strings.ToUpper(strings.TrimSpace(q.QuestionType))
+		if _, ok := validQuestionTypes[qt]; !ok {
+			if qt != "" {
+				log.Warnf("quiz.normalize.unknown_question_type type=%q q=%d -> ARITHMETIC", q.QuestionType, q.QuestionNumber)
+			}
+			qt = quizDto.QuestionTypeArithmetic
+		}
+		q.QuestionType = qt
+
+		warnTokens(q.QuestionName, q.QuestionNumber)
+		for _, a := range q.Answers {
+			warnTokens(a.Content, q.QuestionNumber)
+		}
+	}
+	return questions
+}
+
+// NormalizeGeneratedQuestions is the exported entry point so sibling
+// modules that share the generation JSON contract (e.g. classroomexercise)
+// apply the same question_type clamp + icon-token validation as quizzes.
+func NormalizeGeneratedQuestions(ctx context.Context, questions []quizDto.QuizQuestion) []quizDto.QuizQuestion {
+	return normalizeGeneratedQuestions(ctx, questions)
+}
 
 func normalizeLanguage(lang enum.LanguageType) string {
 	s := strings.ToLower(strings.TrimSpace(string(lang)))

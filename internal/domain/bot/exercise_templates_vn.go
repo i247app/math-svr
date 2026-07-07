@@ -17,7 +17,7 @@ Giáo viên đã chọn sẵn chủ đề theo chương và bài học. Hãy t�
 QUY TẮC NỘI DUNG:
 - Mỗi câu có ĐÚNG 4 phương án A, B, C, D.
 - Chỉ có một phương án đúng.
-- "question_name" chỉ chứa số và toán tử (+, -, *, /, ^, dấu ngoặc, "?") — không lời văn, không LaTeX, không hình ảnh, không chữ tiếng Việt.
+- Với câu ARITHMETIC, "question_name" chỉ chứa số và toán tử (+, -, *, /, ^, dấu ngoặc, "?") — không lời văn, không LaTeX, không chữ tiếng Việt. Các loại câu khác tuân theo VISUAL QUESTION RULES ở cuối prompt.
 - Dùng phân số ASCII như "1/2", không dùng "½".
 - Không lặp lại câu hỏi.
 - Tất cả câu hỏi phải nằm trong phạm vi chương + bài học giáo viên đã đặt; không lan sang chủ đề khác kể cả khi vẫn phù hợp với cấp lớp.
@@ -43,6 +43,7 @@ CẤU TRÚC:
   "questions":[
     {
       "question_number": 1,
+      "question_type": "ARITHMETIC",
       "question_name": "5 + 3 = ?",
       "answers": [
         {"label": "A", "content": "8"},
@@ -59,8 +60,23 @@ CẤU TRÚC:
 }
 `
 
+// visualExerciseRulesVN mirrors visualExerciseRulesEN — tuned for
+// teacher-scoped exercises (COUNT only when it fits the lesson, no fixed
+// ratio). JSON keys stay English; the icon whitelist matches the quiz
+// normalizer's geometryIconWhitelist.
+const visualExerciseRulesVN = `
+VISUAL QUESTION RULES:
+- Mỗi câu có "question_type": ARITHMETIC (câu chữ thuần, mặc định) hoặc COUNT (đếm bằng icon). KHÔNG tạo bất kỳ question_type nào khác.
+- CHỈ dùng COUNT khi phù hợp với chương + bài học của giáo viên — ví dụ đếm số lượng, so sánh số lượng, phép cộng/trừ đơn giản, hoặc hình cơ bản. Với bài học không liên quan đếm/số lượng, dùng ARITHMETIC cho mọi câu. Tuyệt đối không để câu icon lệch khỏi phạm vi bài học.
+- COUNT: "question_name" hiển thị các vật để đếm hoặc cộng bằng icon kèm toán tử (+, "?"). Đáp án là số; giữ "topic" bám theo bài học. Icon có thể là emoji HOẶC token hình (xem ICONS), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" hoặc "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
+
+ICONS (chỉ dùng cho COUNT; TUYỆT ĐỐI không dùng trong ARITHMETIC):
+- Emoji: với vật đếm được, dùng emoji phổ thông, thân thiện trẻ em, chèn trực tiếp và cách nhau bởi dấu cách, ví dụ 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Mỗi câu chỉ dùng MỘT loại emoji.
+- Hình học: CHỈ dùng token "[icon:NAME]" với NAME thuộc: triangle, square, rectangle, circle, star, diamond, oval, pentagon, hexagon, heart. Lặp token để biểu diễn nhiều hình, ví dụ "[icon:triangle] [icon:triangle] [icon:triangle]". Mỗi câu chỉ dùng MỘT loại hình. TUYỆT ĐỐI không tự đặt tên "[icon:...]" khác — nếu hình không có trong danh sách, hãy dùng emoji.
+`
+
 func buildSystemExerciseGenerateVN(n int) string {
-	return fmt.Sprintf(systemExerciseGenerateVNTmpl, n, n, n)
+	return fmt.Sprintf(systemExerciseGenerateVNTmpl, n, n, n) + visualExerciseRulesVN
 }
 
 func userExerciseGenerateVN(in ExercisePromptInput) string {

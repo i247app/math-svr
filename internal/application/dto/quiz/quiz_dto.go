@@ -16,6 +16,23 @@ type QuizAnswerChoice struct {
 	Content string `json:"content"`
 }
 
+// Question type discriminators. QuestionType tells the client how to
+// render a question and its answers; it never affects grading (which is
+// always label-based). Missing / unknown values normalize to
+// QuestionTypeArithmetic so legacy quizzes and any schema drift from the
+// model degrade to a plain text question.
+//
+//   - ARITHMETIC     — text-only stem (numbers + operators), text answers.
+//   - COUNT          — stem embeds emoji / [icon:NAME] tokens to count or add.
+//   - PICK_BY_ICON   — text stem; each answer's content embeds emoji / icons.
+//   - IDENTIFY_SHAPE — stem is a single [icon:NAME] token; text answers.
+const (
+	QuestionTypeArithmetic    = "ARITHMETIC"
+	QuestionTypeCount         = "COUNT"
+	QuestionTypePickByIcon    = "PICK_BY_ICON"
+	QuestionTypeIdentifyShape = "IDENTIFY_SHAPE"
+)
+
 // QuizQuestion is one MCQ item as produced by the bot. RightAnswer is
 // the label of the correct option and is only included in responses
 // once the quiz has been graded (otherwise it would leak the answer key).
@@ -26,8 +43,15 @@ type QuizAnswerChoice struct {
 // and are absent on legacy quizzes — the v2 scorer degrades gracefully
 // (single-MCQ label match only, generic review wording). All three are
 // `omitempty` so the response payload stays identical for legacy rows.
+//
+// QuestionType is the render discriminator (see the QuestionType* consts).
+// It is `omitempty`; an absent value means ARITHMETIC, so the wire shape
+// for legacy text quizzes is byte-for-byte unchanged. Icons live inline in
+// QuestionName / QuizAnswerChoice.Content: emoji are literal UTF-8, while
+// geometric shapes use the "[icon:NAME]" token whitelist.
 type QuizQuestion struct {
 	QuestionNumber int                `json:"question_number"`
+	QuestionType   string             `json:"question_type,omitempty"`
 	QuestionName   string             `json:"question_name"`
 	Answers        []QuizAnswerChoice `json:"answers"`
 	RightAnswer    string             `json:"right_answer,omitempty"`

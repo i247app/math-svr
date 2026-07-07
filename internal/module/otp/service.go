@@ -157,7 +157,7 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 
 		// Update session
 		switch req.OtpType {
-		case string(enum.OtpTypeLogin2FA):
+		case string(enum.OtpTypeLogin2FA), string(enum.OtpTypeRegister):
 			deviceUUID := metadata.GetDeviceID(ctx)
 			log.Info("Mark device as trusted")
 			_, err := s.deviceSvc.VerifyDevice(ctx, &deviceDTO.VerifyDeviceReq{

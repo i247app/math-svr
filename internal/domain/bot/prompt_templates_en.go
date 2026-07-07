@@ -19,7 +19,7 @@ Generate EXACTLY %d multiple-choice questions calibrated to the academic context
 CONTENT RULES:
 - Each question has EXACTLY 4 answers labeled A, B, C, D.
 - Exactly one answer is correct.
-- "question_name" contains ONLY numbers and operators (+, -, *, /, ^, parentheses, "?") — no narrative, no LaTeX, no images, no Vietnamese text.
+- For ARITHMETIC questions "question_name" contains ONLY numbers and operators (+, -, *, /, ^, parentheses, "?") — no narrative, no LaTeX, no Vietnamese text. Other question types follow the VISUAL QUESTION RULES at the end of this prompt.
 - Use ASCII fractions like "1/2", never "½".
 - Do not repeat questions.
 
@@ -50,6 +50,7 @@ SCHEMA:
   "questions":[
     {
       "question_number": 1,
+      "question_type": "ARITHMETIC",
       "question_name": "5 + 3 = ?",
       "answers": [
         {"label": "A", "content": "8"},
@@ -72,7 +73,7 @@ You will be given the student's previous quiz, their answers, and an AI review o
 
 CONTENT RULES:
 - Each question has EXACTLY 4 answers labeled A, B, C, D; exactly one correct.
-- "question_name" contains ONLY numbers and operators — no narrative, no LaTeX, no Vietnamese text.
+- For ARITHMETIC questions "question_name" contains ONLY numbers and operators — no narrative, no LaTeX, no Vietnamese text. Other question types follow the VISUAL QUESTION RULES at the end of this prompt.
 - Use ASCII fractions like "1/2".
 - Do not repeat questions verbatim from the previous quiz; create variations that target the same skills.
 
@@ -103,6 +104,7 @@ SCHEMA:
   "questions":[
     {
       "question_number": 1,
+      "question_type": "ARITHMETIC",
       "question_name": "5 + 3 = ?",
       "answers": [
         {"label": "A", "content": "8"},
@@ -119,12 +121,47 @@ SCHEMA:
 }
 `
 
+// visualQuestionRulesEN is appended to both the generate and reinforce
+// system prompts. It is the single source of truth for the icon/visual
+// question contract; JSON keys stay English, only answer text switches
+// language. Grading is label-based, so these rules only affect rendering.
+// const visualQuestionRulesEN = `
+// VISUAL QUESTION RULES:
+// - Every question carries a "question_type": one of ARITHMETIC, COUNT, PICK_BY_ICON, IDENTIFY_SHAPE. ARITHMETIC (plain text) is the default.
+// - Balance types by GRADE: Grades 1-2 SHOULD mix in COUNT / PICK_BY_ICON / IDENTIFY_SHAPE for concrete visual reasoning; Grade 3 uses them sparingly; Grades 4-5 are almost entirely ARITHMETIC.
+// - COUNT: "question_name" shows objects to count or add using icons plus operators (+, "?"), e.g. "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?". Answers are numbers; "topic" is "counting".
+// - PICK_BY_ICON: "question_name" is a short prompt asking which option matches (e.g. "Which option has 3 triangles?"); each answer "content" is a group of icons; "topic" is "geometry_basic".
+// - IDENTIFY_SHAPE: "question_name" is EXACTLY ONE shape token (e.g. "[icon:triangle]"); answers are shape names in the target language; "topic" is "geometry_basic".
+
+// ICONS (only for the visual types above; NEVER in ARITHMETIC):
+// - Emoji: for countable objects use common, child-friendly emoji inserted literally and space-separated, e.g. 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Use ONE emoji type per question.
+// - Shapes: use ONLY the token form "[icon:NAME]" where NAME is one of: triangle, square, rectangle, circle, star, diamond, oval, pentagon, hexagon, heart. Repeat the token to show several shapes, e.g. "[icon:triangle] [icon:triangle] [icon:triangle]". NEVER invent other "[icon:...]" names — if a shape is not listed, use an emoji instead.
+
+// VISUAL EXAMPLES (single question objects, same schema as above):
+// {"question_number": 2, "question_type": "COUNT", "question_name": "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?", "answers": [{"label":"A","content":"5"},{"label":"B","content":"6"},{"label":"C","content":"7"},{"label":"D","content":"4"}], "right_answer": "B", "correct_answer": "6", "topic": "counting", "difficulty": 1}
+// {"question_number": 3, "question_type": "IDENTIFY_SHAPE", "question_name": "[icon:triangle]", "answers": [{"label":"A","content":"Triangle"},{"label":"B","content":"Circle"},{"label":"C","content":"Square"},{"label":"D","content":"Rectangle"}], "right_answer": "A", "correct_answer": "Triangle", "topic": "geometry_basic", "difficulty": 1}
+// `
+
+const visualQuestionRulesEN = `
+VISUAL QUESTION RULES:
+- Every question carries a "question_type": either ARITHMETIC (plain text, the default) or COUNT (icon-based counting). Do NOT produce any other question_type.
+- Balance the mix roughly 50% ARITHMETIC and 50% COUNT, alternating between them.
+- COUNT: "question_name" shows objects to count or add, using icons plus operators (+, "?"). Answers are numbers; "topic" is "counting". Icons may be emoji OR shape tokens (see ICONS), e.g. "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" or "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
+
+ICONS (only for COUNT; NEVER in ARITHMETIC):
+- Emoji: for countable objects use common, child-friendly emoji inserted literally and space-separated, e.g. 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Use ONE emoji type per question.
+
+VISUAL EXAMPLES (single question objects, same schema as above):
+{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "What is 2 + 3?", "answers": [{"label":"A","content":"4"},{"label":"B","content":"5"},{"label":"C","content":"6"},{"label":"D","content":"7"}], "right_answer": "B", "correct_answer": "5", "topic": "addition_basic", "difficulty": 1}
+{"question_number": 2, "question_type": "COUNT", "question_name": "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?", "answers": [{"label":"A","content":"5"},{"label":"B","content":"6"},{"label":"C","content":"7"},{"label":"D","content":"4"}], "right_answer": "B", "correct_answer": "6", "topic": "addition_basic", "difficulty": 1}
+`
+
 func buildSystemGenerateEN(n int) string {
-	return fmt.Sprintf(systemGenerateENTmpl, n, n, n)
+	return fmt.Sprintf(systemGenerateENTmpl, n, n, n) + visualQuestionRulesEN
 }
 
 func buildSystemReinforceEN(n int) string {
-	return fmt.Sprintf(systemReinforceENTmpl, n, n, n)
+	return fmt.Sprintf(systemReinforceENTmpl, n, n, n) + visualQuestionRulesEN
 }
 
 const systemGradeAssessmentEN = `You are a math quiz grading assistant for Vietnamese primary-school students.

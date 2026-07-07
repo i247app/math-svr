@@ -18,7 +18,7 @@ Hãy tạo CHÍNH XÁC %d câu hỏi trắc nghiệm phù hợp với thông tin
 QUY TẮC NỘI DUNG:
 - Mỗi câu có ĐÚNG 4 phương án A, B, C, D.
 - Chỉ có một phương án đúng.
-- "question_name" chỉ chứa số và toán tử (+, -, *, /, ^, dấu ngoặc, "?") — không lời văn, không LaTeX, không hình ảnh, không chữ tiếng Việt.
+- Với câu ARITHMETIC, "question_name" chỉ chứa số và toán tử (+, -, *, /, ^, dấu ngoặc, "?") — không lời văn, không LaTeX, không chữ tiếng Việt. Các loại câu khác tuân theo VISUAL QUESTION RULES ở cuối prompt.
 - Dùng phân số ASCII như "1/2", không dùng "½".
 - Không lặp lại câu hỏi.
 
@@ -49,6 +49,7 @@ CẤU TRÚC:
   "questions":[
     {
       "question_number": 1,
+      "question_type": "ARITHMETIC",
       "question_name": "5 + 3 = ?",
       "answers": [
         {"label": "A", "content": "8"},
@@ -71,7 +72,7 @@ Bạn sẽ nhận được bài kiểm tra trước, câu trả lời của họ
 
 QUY TẮC NỘI DUNG:
 - Mỗi câu có ĐÚNG 4 phương án A, B, C, D; chỉ một đáp án đúng.
-- "question_name" chỉ chứa số và toán tử — không lời văn, không LaTeX, không chữ tiếng Việt.
+- Với câu ARITHMETIC, "question_name" chỉ chứa số và toán tử — không lời văn, không LaTeX, không chữ tiếng Việt. Các loại câu khác tuân theo VISUAL QUESTION RULES ở cuối prompt.
 - Dùng phân số ASCII như "1/2".
 - Không sao chép nguyên văn câu hỏi cũ; tạo biến thể nhắm vào cùng kỹ năng.
 
@@ -102,6 +103,7 @@ CẤU TRÚC:
   "questions":[
     {
       "question_number": 1,
+      "question_type": "ARITHMETIC",
       "question_name": "5 + 3 = ?",
       "answers": [
         {"label": "A", "content": "8"},
@@ -118,12 +120,46 @@ CẤU TRÚC:
 }
 `
 
+// visualQuestionRulesVN mirrors visualQuestionRulesEN. JSON keys stay
+// English; only answer text (e.g. shape names) is Vietnamese. Single
+// source of truth for the icon contract, appended to both VN prompts.
+// const visualQuestionRulesVN = `
+// VISUAL QUESTION RULES:
+// - Mỗi câu có "question_type": một trong ARITHMETIC, COUNT, PICK_BY_ICON, IDENTIFY_SHAPE. Mặc định là ARITHMETIC (câu chữ thuần).
+// - Cân bằng theo LỚP: Lớp 1-2 NÊN xen COUNT / PICK_BY_ICON / IDENTIFY_SHAPE để tư duy trực quan; Lớp 3 dùng ít; Lớp 4-5 gần như toàn ARITHMETIC.
+// - COUNT: "question_name" hiển thị các vật để đếm hoặc cộng bằng icon kèm toán tử (+, "?"), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?". Đáp án là số; "topic" là "phép đếm".
+// - PICK_BY_ICON: "question_name" là câu hỏi ngắn chọn phương án đúng (ví dụ "Đáp án nào có 3 hình tam giác?"); mỗi "content" của đáp án là một nhóm icon; "topic" là "hình học cơ bản".
+// - IDENTIFY_SHAPE: "question_name" là ĐÚNG MỘT token hình (ví dụ "[icon:triangle]"); đáp án là tên hình bằng tiếng Việt; "topic" là "hình học cơ bản".
+
+// ICONS (chỉ dùng cho các loại visual trên; TUYỆT ĐỐI không dùng trong ARITHMETIC):
+// - Emoji: với vật đếm được, dùng emoji phổ thông, thân thiện trẻ em, chèn trực tiếp và cách nhau bởi dấu cách, ví dụ 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Mỗi câu chỉ dùng MỘT loại emoji.
+// - Hình học: CHỈ dùng token "[icon:NAME]" với NAME thuộc: triangle, square, rectangle, circle, star, diamond, oval, pentagon, hexagon, heart. Lặp token để biểu diễn nhiều hình, ví dụ "[icon:triangle] [icon:triangle] [icon:triangle]". TUYỆT ĐỐI không tự đặt tên "[icon:...]" khác — nếu hình không có trong danh sách, hãy dùng emoji.
+
+// VÍ DỤ VISUAL (từng object câu hỏi, cùng schema như trên):
+// {"question_number": 2, "question_type": "COUNT", "question_name": "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?", "answers": [{"label":"A","content":"5"},{"label":"B","content":"6"},{"label":"C","content":"7"},{"label":"D","content":"4"}], "right_answer": "B", "correct_answer": "6", "topic": "phép đếm", "difficulty": 1}
+// {"question_number": 3, "question_type": "IDENTIFY_SHAPE", "question_name": "[icon:triangle]", "answers": [{"label":"A","content":"Hình tam giác"},{"label":"B","content":"Hình tròn"},{"label":"C","content":"Hình vuông"},{"label":"D","content":"Hình chữ nhật"}], "right_answer": "A", "correct_answer": "Hình tam giác", "topic": "hình học cơ bản", "difficulty": 1}
+// `
+
+const visualQuestionRulesVN = `
+VISUAL QUESTION RULES:
+- Mỗi câu có "question_type": ARITHMETIC (câu chữ thuần, mặc định) hoặc COUNT (đếm bằng icon). KHÔNG tạo bất kỳ question_type nào khác.
+- Cân bằng tỉ lệ khoảng 50% ARITHMETIC và 50% COUNT, xen kẽ nhau.
+- COUNT: "question_name" hiển thị các vật để đếm hoặc cộng bằng icon kèm toán tử (+, "?"). Đáp án là số; "topic" là "counting". Icon có thể là emoji HOẶC token hình (xem ICONS), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" hoặc "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
+
+ICONS (chỉ dùng cho COUNT; TUYỆT ĐỐI không dùng trong ARITHMETIC):
+- Emoji: với vật đếm được, dùng emoji phổ thông, thân thiện trẻ em, chèn trực tiếp và cách nhau bởi dấu cách, ví dụ 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Mỗi câu chỉ dùng MỘT loại emoji.
+
+VÍ DỤ VISUAL (từng object câu hỏi, cùng schema như trên):
+{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "What is 2 + 3?", "answers": [{"label":"A","content":"4"},{"label":"B","content":"5"},{"label":"C","content":"6"},{"label":"D","content":"7"}], "right_answer": "B", "correct_answer": "5", "topic": "phép cộng", "difficulty": 1}
+{"question_number": 2, "question_type": "COUNT", "question_name": "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?", "answers": [{"label":"A","content":"5"},{"label":"B","content":"6"},{"label":"C","content":"7"},{"label":"D","content":"4"}], "right_answer": "B", "correct_answer": "6", "topic": "phép cộng", "difficulty": 1}
+`
+
 func buildSystemGenerateVN(n int) string {
-	return fmt.Sprintf(systemGenerateVNTmpl, n, n, n)
+	return fmt.Sprintf(systemGenerateVNTmpl, n, n, n) + visualQuestionRulesVN
 }
 
 func buildSystemReinforceVN(n int) string {
-	return fmt.Sprintf(systemReinforceVNTmpl, n, n, n)
+	return fmt.Sprintf(systemReinforceVNTmpl, n, n, n) + visualQuestionRulesVN
 }
 
 const systemGradeAssessmentVN = `Bạn là trợ lý chấm điểm bài kiểm tra toán cho học sinh tiểu học Việt Nam.
