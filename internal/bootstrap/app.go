@@ -64,6 +64,13 @@ func NewFromEnv(envPath string) (*App, error) {
 		traceShutdown = func(context.Context) error { return nil }
 	}
 
+	// Breadcrumb: this is the last step before the "[DB] Connected" line. If the
+	// process stalls here, DB connect is hanging (unreachable host or TLS
+	// mismatch — the driver forces TLS 1.2), not erroring.
+	logProvider.Background(context.Background()).
+		Infof("connecting to database host=%s:%s db=%s user=%s ...",
+			env.DBConfig.DBHost, env.DBConfig.DBPort, env.DBConfig.DBName, env.DBConfig.DBUser)
+
 	sqlDB, err := database.NewSqlDB(env.DBConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
