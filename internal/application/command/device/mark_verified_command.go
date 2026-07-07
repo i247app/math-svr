@@ -23,6 +23,7 @@ import (
 type MarkDeviceVerifiedCommand struct {
 	UserID     int64
 	DeviceUUID string
+	DeviceName string
 }
 
 type MarkDeviceVerifiedCommandHandler struct {
@@ -51,6 +52,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			d.SetDeviceId(deviceID)
 			d.SetUserId(&cmd.UserID)
 			d.SetDeviceUUID(cmd.DeviceUUID)
+			d.SetDeviceName(cmd.DeviceName)
 			d.SetIsVerified(true)
 			d.SetTrustDt(mtime.Now())
 			active := enum.DeviceStatusTypeActive.String()

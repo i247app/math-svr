@@ -206,6 +206,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	_, err = s.deviceSvc.VerifyDevice(ctx, &deviceDTO.VerifyDeviceReq{
 		UserID:     created.User.UserId(),
 		DeviceUUID: metadata.GetDeviceID(ctx),
+		DeviceName: metadata.GetDeviceName(ctx),
 	})
 	if err != nil {
 		return nil, err
