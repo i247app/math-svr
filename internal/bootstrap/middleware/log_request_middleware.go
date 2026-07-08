@@ -41,6 +41,14 @@ func LogRequestMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		// WebSocket upgrades hijack the connection: the response recorder can
+		// neither be hijacked through nor buffer an unbounded stream. Pass the
+		// original writer straight through.
+		if isWebSocketUpgrade(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		started := time.Now()
 		lg := logger.From(r.Context())
 

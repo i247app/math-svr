@@ -25,6 +25,7 @@ import (
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/seq"
+	"math-ai.com/math-ai/internal/module/socket"
 	"math-ai.com/math-ai/internal/module/user"
 )
 
@@ -38,6 +39,11 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	uow := mysql.NewSqlUnitOfWork(res.DB)
 
 	log.Info("SetupServiceContainer")
+
+	var socketService *socket.Service
+	if res.SocketHub != nil {
+		socketService = socket.NewService(res.SocketHub, nil, res.Env.SocketConfig.AllowedOrigins)
+	}
 
 	log.Info("> Setup MiscSvc...")
 	maintenanceRepo := repositories.NewMaintenanceRepository(res.DB)
@@ -161,6 +167,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.NotificationRepository,
 		repos.DeviceRepository,
 		res.NotificationProvider,
+		res.SocketPublisher,
 	)
 
 	log.Info("> Setup HomeSvc...")
@@ -175,6 +182,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	)
 
 	return &ServiceContainer{
+		SocketSvc:       socketService,
 		MiscSvc:         miscService,
 		UserSvc:         userService,
 		AuthSvc:         authService,

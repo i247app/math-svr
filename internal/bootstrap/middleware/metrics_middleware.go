@@ -63,6 +63,15 @@ func MetricsMiddleware(m *metrics.Metrics, classifier *httproute.Classifier) fun
 				return
 			}
 
+			// WebSocket connections are long-lived: measuring them as a single
+			// request pollutes the latency histogram and pins an in-flight
+			// slot for the connection's whole lifetime. Skip; the socket
+			// runtime exports its own gauges/counters instead.
+			if isWebSocketUpgrade(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			start := time.Now()
 			m.IncInFlight()
 			defer m.DecInFlight()

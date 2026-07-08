@@ -592,6 +592,20 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "This profile does not belong to the current user"
 	case HOME_UNSUPPORTED_ROLE:
 		return "Unsupported profile role for the home layout"
+
+	// Socket / WebSocket
+	case SOCKET_UNAUTHORIZED:
+		return "Unauthorized WebSocket connection"
+	case SOCKET_MISSING_TOPIC:
+		return "topic is required"
+	case SOCKET_TOPIC_FORBIDDEN:
+		return "Not allowed to subscribe to this topic"
+	case SOCKET_INVALID_MESSAGE:
+		return "Invalid WebSocket message"
+	case SOCKET_TOO_MANY_CONNECTIONS:
+		return "Too many active connections"
+	case SOCKET_DISABLED:
+		return "Realtime channel is disabled"
 	default:
 		return ""
 	}

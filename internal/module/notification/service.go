@@ -7,6 +7,7 @@ import (
 	command "math-ai.com/math-ai/internal/application/command/notification"
 	dto "math-ai.com/math-ai/internal/application/dto/notification"
 	query "math-ai.com/math-ai/internal/application/query/notification"
+	appsocket "math-ai.com/math-ai/internal/application/socket"
 	"math-ai.com/math-ai/internal/application/transaction"
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
 	domain "math-ai.com/math-ai/internal/domain/notification"
@@ -29,16 +30,19 @@ type Service struct {
 	unreadCountQuery *query.UnreadCountQueryHandler
 	deviceRepo       deviceDomain.IRepository
 	push             *pushService
+	socket           appsocket.Publisher
 }
 
 // NewService wires the notification module. push may be nil when the deploy
 // runs with NOTIFICATION_PROVIDER=""/"disabled"; the inbox still works and
-// delivery is skipped (zeroed push counts).
+// delivery is skipped (zeroed push counts). socketPub may be nil when
+// SOCKET_ENABLED=false; realtime delivery is then skipped.
 func NewService(
 	uow transaction.UnitOfWork,
 	repo domain.IRepository,
 	deviceRepo deviceDomain.IRepository,
 	pushAdapter *notifAdapter.Adapter,
+	socketPub appsocket.Publisher,
 ) *Service {
 	return &Service{
 		createCmd:        command.NewCreateNotificationCommandHandler(uow),
@@ -50,6 +54,7 @@ func NewService(
 		unreadCountQuery: query.NewUnreadCountQueryHandler(repo),
 		deviceRepo:       deviceRepo,
 		push:             newPushService(pushAdapter),
+		socket:           socketPub,
 	}
 }
 
@@ -110,6 +115,20 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 					}
 				}
 			}
+		}
+	}
+
+	// Realtime delivery — out of any tx, best-effort. Mirrors the FCM push: the
+	// inbox row is authoritative, so a socket publish failure is logged only.
+	// Reaches only the recipient's currently-connected sockets (nil when the
+	// socket runtime is disabled).
+	if s.socket != nil {
+		topic := appsocket.NotificationsTopic(req.UserID)
+		event := "notification.created"
+		log.Infof("send socket event to user %d : %v", req.UserID, event)
+		if perr := s.socket.Publish(ctx, topic, event, res.Notification); perr != nil {
+			log.Warnf("notification.socket_publish_failed notification_id=%d user_id=%d err=%v",
+				created.NotificationId(), req.UserID, perr)
 		}
 	}
 

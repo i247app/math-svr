@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -115,6 +116,16 @@ func NewEnv(envpath string) (*Env, error) {
 			FirebaseProjectID:       getConfigOptionalString("FIREBASE_PROJECT_ID"),
 		},
 
+		SocketConfig: SocketConfig{
+			Enabled:         getBoolConfigWithDefault("SOCKET_ENABLED", true),
+			AllowedOrigins:  getCSVConfig("SOCKET_ALLOWED_ORIGINS"),
+			PingInterval:    getDurationConfigOptional("SOCKET_PING_INTERVAL"),
+			WriteTimeout:    getDurationConfigOptional("SOCKET_WRITE_TIMEOUT"),
+			ReadLimit:       int64(getIntConfigOptional("SOCKET_READ_LIMIT")),
+			WriteBuffer:     getIntConfigOptional("SOCKET_WRITE_BUFFER"),
+			MaxConnsPerUser: getIntConfigOptional("SOCKET_MAX_CONNS_PER_USER"),
+		},
+
 		ObservabilityConfig: ObservabilityConfig{
 			ServiceName:    getConfigOptionalStringWithDefault("OBS_SERVICE_NAME", "math-svr"),
 			ServiceVersion: getConfigOptionalStringWithDefault("OBS_SERVICE_VERSION", "dev"),
@@ -211,6 +222,23 @@ func getConfigOptionalStringWithDefault(key, def string) string {
 		return def
 	}
 	return val
+}
+
+// getCSVConfig parses a comma-separated env value into a trimmed, non-empty
+// slice. Returns nil when the key is unset or blank.
+func getCSVConfig(key string) []string {
+	raw := getConfigOptionalString(key)
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func getConfigOptionalString(key string) string {

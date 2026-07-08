@@ -88,6 +88,23 @@ func (m *Metrics) ObserveHTTP(method, route string, status int, seconds float64,
 	obs.Observe(seconds)
 }
 
+// RegisterSocketConnections wires a live gauge of active WebSocket connections,
+// sampled from fn at scrape time (WebSocket connections are long-lived, so a
+// pull-based gauge fits better than hot-path counters). No-op on a nil
+// receiver, so it is safe to call unconditionally when metrics are disabled.
+func (m *Metrics) RegisterSocketConnections(fn func() int) {
+	if m == nil {
+		return
+	}
+	m.Registry.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Name: "socket_active_connections",
+			Help: "Active realtime WebSocket connections.",
+		},
+		func() float64 { return float64(fn()) },
+	))
+}
+
 // IncInFlight / DecInFlight bracket a request. No-op on a nil receiver.
 func (m *Metrics) IncInFlight() {
 	if m != nil {

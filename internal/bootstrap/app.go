@@ -282,6 +282,13 @@ func (a *App) reloadSessions() {
 
 func (a *App) setupShutdownHooks(gexSvr *gex.Server, _ *container.ServiceContainer) {
 	gexSvr.OnShutdown(func() {
+		// Close every WebSocket first (StatusGoingAway) so clients get a clean
+		// close frame and can reconnect, instead of hanging on a dropped socket.
+		if a.Resource.SocketHub != nil {
+			log.Println("Closing WebSocket connections...")
+			a.Resource.SocketHub.Shutdown("server shutting down")
+		}
+
 		// Drain the job runtime first: stops new schedules from
 		// firing, cancels in-flight execution contexts, waits up to
 		// JobRuntime.Config().DrainTimeout for graceful exit. Done

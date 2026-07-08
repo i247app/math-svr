@@ -27,6 +27,7 @@ import (
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/server"
 	"math-ai.com/math-ai/internal/module/session"
+	"math-ai.com/math-ai/internal/module/socket"
 	"math-ai.com/math-ai/internal/module/user"
 )
 
@@ -281,6 +282,14 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		homeHandler := home.NewHandler(res, services.HomeSvc)
 		reg("POST /home/layout", homeHandler.HandleGetHomeLayout, authMiddleware)
+	}
+
+	// socket routes — realtime WebSocket channel (auth-gated). Registered only
+	// when the socket runtime is enabled (SOCKET_ENABLED=true → SocketHub set).
+	// The upgrade relies on the WS-aware middleware chain (see middleware pkg).
+	if res.SocketHub != nil && services.SocketSvc != nil {
+		socketHandler := socket.NewHandler(services.SocketSvc)
+		reg("GET /ws/connect", socketHandler.HandleConnect)
 	}
 
 	// jobs routes

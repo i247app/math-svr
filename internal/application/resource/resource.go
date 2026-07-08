@@ -10,12 +10,14 @@ import (
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	"math-ai.com/math-ai/internal/adapter/sms"
 	"math-ai.com/math-ai/internal/adapter/storage"
+	appsocket "math-ai.com/math-ai/internal/application/socket"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/httproute"
 	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
 	"math-ai.com/math-ai/internal/infrastructure/metrics"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	socketrt "math-ai.com/math-ai/internal/infrastructure/socket"
 
 	"github.com/i247app/gex"
 	"github.com/i247app/gex/sessionprovider"
@@ -57,6 +59,14 @@ type Resource struct {
 	// metrics `route` label and span names stay low-cardinality. Created at
 	// boot; populated by routes.SetupHttpRoutes as each route is registered.
 	RouteClassifier *httproute.Classifier
+
+	// SocketHub owns realtime WebSocket connections + topic fan-out. Nil when
+	// SOCKET_ENABLED=false — the /ws/connect route is then not registered.
+	SocketHub *socketrt.Hub
+
+	// SocketPublisher is the producer-facing port over SocketHub. Nil when the
+	// socket runtime is disabled — producers must nil-guard.
+	SocketPublisher appsocket.Publisher
 }
 
 func (a *Resource) GetRequestSession(r *http.Request) (*session.AppSession, error) {

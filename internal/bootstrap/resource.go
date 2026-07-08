@@ -21,6 +21,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metrics"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	socketrt "math-ai.com/math-ai/internal/infrastructure/socket"
 )
 
 const (
@@ -53,6 +54,22 @@ func SetupResource(res *resource.Resource) error {
 	log.Info("> Setup SessionManager...")
 	sessionManager := session.NewSessionManager()
 	res.SessionManager = sessionManager
+
+	if env.SocketConfig.Enabled {
+		log.Info("> Setup SocketHub...")
+		res.SocketHub = socketrt.NewHub(socketrt.Config{
+			MaxConnsPerUser: env.SocketConfig.MaxConnsPerUser,
+			BufferSize:      env.SocketConfig.WriteBuffer,
+			PingInterval:    env.SocketConfig.PingInterval,
+			WriteTimeout:    env.SocketConfig.WriteTimeout,
+			ReadLimit:       env.SocketConfig.ReadLimit,
+		})
+		res.SocketPublisher = socketrt.NewPublisher(res.SocketHub)
+		// No-op when metrics are disabled (nil receiver).
+		res.Metrics.RegisterSocketConnections(func() int { return res.SocketHub.Stats().Connections })
+	} else {
+		log.Info("> Socket runtime disabled (SOCKET_ENABLED=false)")
+	}
 
 	log.Info("> jwtHelper...")
 	var jwtHelper jwtutil.JwtHelper

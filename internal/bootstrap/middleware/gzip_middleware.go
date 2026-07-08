@@ -9,6 +9,14 @@ import (
 // GzipMiddleware compresses HTTP responses for clients that support it.
 func GzipMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// WebSocket upgrades must not be wrapped: gzipResponseWriter is not an
+		// http.Hijacker and setting Content-Encoding would corrupt the 101
+		// handshake. Browsers still send Accept-Encoding: gzip on the upgrade.
+		if isWebSocketUpgrade(r) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		// Skip compression if the client doesn't accept gzip
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
 			next.ServeHTTP(w, r)

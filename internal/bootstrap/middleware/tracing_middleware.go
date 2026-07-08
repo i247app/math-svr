@@ -34,6 +34,14 @@ func TracingMiddleware(enabled bool, classifier *httproute.Classifier) func(http
 		tracer := otel.Tracer(httpTracerName)
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// A WebSocket connection lives for minutes/hours; a per-request
+			// server span would stay open that whole time. Skip the span and
+			// let the socket handler create short-lived spans per operation.
+			if isWebSocketUpgrade(r) {
+				next.ServeHTTP(w, r)
+				return
+			}
+
 			ctx := propagator.Extract(r.Context(), propagation.HeaderCarrier(r.Header))
 
 			route := routeLabel(classifier, r)

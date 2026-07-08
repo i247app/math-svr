@@ -28,6 +28,26 @@ type Env struct {
 	BotConfig           BotConfig
 	NotificationConfig  NotificationConfig
 	ObservabilityConfig ObservabilityConfig
+	SocketConfig        SocketConfig
+}
+
+// SocketConfig tunes the in-process WebSocket runtime (infrastructure/socket).
+// Zero-valued numeric/duration fields fall back to the Hub's package defaults,
+// so a minimal .env only needs SOCKET_ALLOWED_ORIGINS in production.
+//
+//	Enabled false → no /ws/connect route, Hub is not built.
+//
+// AllowedOrigins is the CSRF guard for cookie/header-authenticated upgrades: it
+// is passed to websocket.Accept as OriginPatterns. Empty Origin (native mobile)
+// is always allowed; an empty list rejects every browser origin.
+type SocketConfig struct {
+	Enabled         bool          // env SOCKET_ENABLED; default true
+	AllowedOrigins  []string      // env SOCKET_ALLOWED_ORIGINS; comma-separated host patterns
+	PingInterval    time.Duration // env SOCKET_PING_INTERVAL; Go duration (e.g. "30s")
+	WriteTimeout    time.Duration // env SOCKET_WRITE_TIMEOUT; Go duration
+	ReadLimit       int64         // env SOCKET_READ_LIMIT; bytes
+	WriteBuffer     int           // env SOCKET_WRITE_BUFFER; outbound queue depth
+	MaxConnsPerUser int           // env SOCKET_MAX_CONNS_PER_USER
 }
 
 // ObservabilityConfig tunes metrics + distributed tracing. Both pillars are

@@ -1,6 +1,7 @@
 package container
 
 import (
+	// "math-ai.com/math-ai/internal/application/socket"
 	chapterDomain "math-ai.com/math-ai/internal/domain/chapter"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
@@ -34,10 +35,12 @@ import (
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/seq"
+	"math-ai.com/math-ai/internal/module/socket"
 	"math-ai.com/math-ai/internal/module/user"
 )
 
 type ServiceContainer struct {
+	SocketSvc       *socket.Service
 	MiscSvc         *misc.Service
 	UserSvc         *user.Service
 	AuthSvc         *auth.Service

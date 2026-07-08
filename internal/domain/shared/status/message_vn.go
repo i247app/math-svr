@@ -592,6 +592,20 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Hồ sơ này không thuộc về người dùng hiện tại"
 	case HOME_UNSUPPORTED_ROLE:
 		return "Vai trò hồ sơ không được hỗ trợ cho trang chủ"
+
+	// Socket / WebSocket
+	case SOCKET_UNAUTHORIZED:
+		return "Kết nối WebSocket không được xác thực"
+	case SOCKET_MISSING_TOPIC:
+		return "Thiếu topic"
+	case SOCKET_TOPIC_FORBIDDEN:
+		return "Không được phép đăng ký topic này"
+	case SOCKET_INVALID_MESSAGE:
+		return "Tin nhắn WebSocket không hợp lệ"
+	case SOCKET_TOO_MANY_CONNECTIONS:
+		return "Quá nhiều kết nối đang hoạt động"
+	case SOCKET_DISABLED:
+		return "Kênh realtime đang bị tắt"
 	default:
 		return ""
 	}

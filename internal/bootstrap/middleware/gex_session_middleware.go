@@ -25,6 +25,31 @@ func GexSessionMiddleware(
 				return
 			}
 
+			// WebSocket upgrades still need the session resolved (auth reuses
+			// the same Bearer token), but must NOT be wrapped: responseWriter-
+			// Wrapper is not hijackable and buffers the response, both of which
+			// break the hijack. Resolve, bind to ctx, and pass the original
+			// writer straight through — no wrapping, no post-write buffering.
+			if isWebSocketUpgrade(r) {
+				sessionResult, err := sessionProvider.GetSessionFromRequest(r)
+				if err != nil {
+					response.WriteJson(w, nil, err)
+					return
+				}
+				if sessionResult == nil || sessionResult.Session == nil {
+					next.ServeHTTP(w, r)
+					return
+				}
+				// Mirror the normal path's downstream Authorization injection so
+				// handlers/logging see a consistent header.
+				if r.Header.Get("Authorization") == "" && sessionResult.AuthToken != "" {
+					r.Header.Set("Authorization", "Bearer "+sessionResult.AuthToken)
+				}
+				ctx := context.WithValue(r.Context(), sessionContextKey, sessionResult.Session)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
 			// Get session with metadata from the provider
 			sessionResult, err := sessionProvider.GetSessionFromRequest(r)
 			if err != nil {
