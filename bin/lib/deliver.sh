@@ -9,7 +9,9 @@ run_deliver() {
     migrations/ \
     pre-deploy/ \
     post-deploy/ \
-    dist/mathsvr
+    dist/mathsvr \
+    keys/ \
+    deploy/logrotate/mathsvr
 
   info "Files synced successfully"
 

@@ -36,6 +36,28 @@ func (h *Handler) uidFromSession(w http.ResponseWriter, r *http.Request) (int64,
 	return uid, true
 }
 
+// POST /notifications/ping
+func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
+	var req dto.PingNotificationReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	uid, ok := h.uidFromSession(w, r)
+	if !ok {
+		return
+	}
+	req.UserID = uid
+
+	res, err := h.svc.Ping(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // POST /notifications/send — create + push a notification to a recipient.
 func (h *Handler) HandleSend(w http.ResponseWriter, r *http.Request) {
 	var req dto.SendNotificationReq

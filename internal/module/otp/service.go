@@ -161,8 +161,10 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 			deviceUUID := metadata.GetDeviceID(ctx)
 			log.Info("Mark device as trusted")
 			_, err := s.deviceSvc.VerifyDevice(ctx, &deviceDTO.VerifyDeviceReq{
-				UserID:     *result.UserID,
-				DeviceUUID: deviceUUID,
+				UserID:          *result.UserID,
+				DeviceUUID:      deviceUUID,
+				DeviceName:      metadata.GetDeviceName(ctx),
+				DevicePushToken: utils.ToStringPtr(metadata.GetDevicePushToken(ctx)),
 			})
 			if err != nil {
 				return nil, err

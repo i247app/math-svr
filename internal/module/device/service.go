@@ -127,9 +127,10 @@ func (s *Service) VerifyDevice(ctx context.Context, req *dto.VerifyDeviceReq) (*
 		return nil, err
 	}
 	if err := s.markVerifiedCmd.Handle(ctx, command.MarkDeviceVerifiedCommand{
-		UserID:     req.UserID,
-		DeviceUUID: req.DeviceUUID,
-		DeviceName: req.DeviceName,
+		UserID:          req.UserID,
+		DeviceUUID:      req.DeviceUUID,
+		DeviceName:      req.DeviceName,
+		DevicePushToken: req.DevicePushToken,
 	}); err != nil {
 		return nil, err
 	}

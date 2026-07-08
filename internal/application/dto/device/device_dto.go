@@ -92,9 +92,10 @@ type DeleteDeviceRes struct{}
 // command directly through the Service. Kept here as the canonical shape so
 // the contract is discoverable.
 type VerifyDeviceReq struct {
-	UserID     int64  `json:"user_id"`
-	DeviceUUID string `json:"device_uuid"`
-	DeviceName string `json:"device_name,omitempty"`
+	UserID          int64   `json:"user_id"`
+	DeviceUUID      string  `json:"device_uuid"`
+	DeviceName      string  `json:"device_name,omitempty"`
+	DevicePushToken *string `json:"device_push_token,omitempty"`
 }
 
 type VerifyDeviceRes struct {

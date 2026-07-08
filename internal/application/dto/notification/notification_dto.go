@@ -7,6 +7,14 @@ import (
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
+type PingNotificationReq struct {
+	UserID int64 `json:"-"`
+}
+
+type PingNotificationRes struct {
+	Notification NotificationResponse `json:"notification"`
+}
+
 // SendNotificationReq creates a notification for a recipient (UserID) and
 // pushes it to that user's devices. Used by the admin/test endpoint and as the
 // wire shape other modules can map onto when calling the service in-process.

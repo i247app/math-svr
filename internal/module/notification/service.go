@@ -58,6 +58,46 @@ func NewService(
 	}
 }
 
+func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.PingNotificationRes, error) {
+	log := logger.From(ctx)
+
+	if err := ValidatePing(ctx, req); err != nil {
+		return nil, err
+	}
+
+	notiDomain := domain.NewNotification()
+	notiDomain.SetUserId(req.UserID)
+	notiDomain.SetTitle("Ping")
+	notiDomain.SetShortText("Have a great day!")
+
+	if s.push.enabled() {
+		tokens, terr := s.recipientTokens(ctx, req.UserID)
+		if terr != nil {
+			log.Warnf("notification.token_lookup_failed user_id=%d err=%v", req.UserID, terr)
+		} else if len(tokens) > 0 {
+			sendRes, serr := s.push.send(ctx, tokens, notiDomain)
+			if serr != nil {
+				log.Warnf("notification.push_failed user_id=%d err=%v", req.UserID, serr)
+			} else {
+				if len(sendRes.InvalidTokens) > 0 {
+					if cerr := s.clearTokensCmd.Handle(ctx, command.ClearDeadTokensCommand{
+						Tokens: sendRes.InvalidTokens,
+					}); cerr != nil {
+						log.Warnf("notification.clear_dead_tokens_failed count=%d err=%v",
+							len(sendRes.InvalidTokens), cerr)
+					}
+				}
+			}
+		}
+	}
+
+	res := &dto.PingNotificationRes{
+		Notification: dto.DomainToResponse(notiDomain),
+	}
+
+	return res, nil
+}
+
 // SendNotification persists a notification for req.UserID then pushes it to that
 // user's device tokens. Persistence is authoritative — a push failure is
 // logged but never fails the request (the in-app inbox row already exists).

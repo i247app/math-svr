@@ -11,6 +11,13 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
+func ValidatePing(ctx context.Context, req *dto.PingNotificationReq) error {
+	if req.UserID <= 0 {
+		return errs.NewError(ctx, status.NOTIFICATION_MISSING_UID, nil, ErrUidRequired)
+	}
+	return nil
+}
+
 // ValidateSend checks the create-and-push request.
 func ValidateSend(ctx context.Context, req *dto.SendNotificationReq) error {
 	if req.UserID <= 0 {

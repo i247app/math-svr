@@ -1,0 +1,20 @@
+# logrotate config for the mathsvr systemd service log.
+# Install to: /etc/logrotate.d/mathsvr  (see README.md in this directory)
+#
+# Strategy: copytruncate — systemd opens mathsvr.log with `append:` and holds
+# the file descriptor, so we truncate the original inode in place instead of
+# renaming it. This avoids restarting the service (which would trigger the
+# app's expensive graceful shutdown: drain jobs + serialize sessions).
+
+/apps/math/mathsvr.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    dateext
+    su mot mot
+    create 0640 mot mot
+}

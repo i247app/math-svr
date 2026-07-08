@@ -270,6 +270,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// notification routes — per-user in-app inbox + push delivery (auth-gated)
 	{
 		notificationHandler := notification.NewHandler(res, services.NotificationSvc)
+		reg("POST /notifications/ping", notificationHandler.HandlePing, authMiddleware)
 		reg("POST /notifications/list", notificationHandler.HandleList, authMiddleware)
 		reg("POST /notifications/unread-count", notificationHandler.HandleUnreadCount, authMiddleware)
 		reg("POST /notifications/send", notificationHandler.HandleSend, authMiddleware)

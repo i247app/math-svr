@@ -21,9 +21,10 @@ import (
 // Ownership is enforced so a leaked DeviceID for a different user cannot be
 // flipped.
 type MarkDeviceVerifiedCommand struct {
-	UserID     int64
-	DeviceUUID string
-	DeviceName string
+	UserID          int64
+	DeviceUUID      string
+	DeviceName      string
+	DevicePushToken *string
 }
 
 type MarkDeviceVerifiedCommandHandler struct {
@@ -53,6 +54,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			d.SetUserId(&cmd.UserID)
 			d.SetDeviceUUID(cmd.DeviceUUID)
 			d.SetDeviceName(cmd.DeviceName)
+			d.SetDevicePushToken(cmd.DevicePushToken)
 			d.SetIsVerified(true)
 			d.SetTrustDt(mtime.Now())
 			active := enum.DeviceStatusTypeActive.String()
