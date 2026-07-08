@@ -8,7 +8,11 @@ import (
 )
 
 func main() {
+	// Surface startup failures. run() wraps every fatal error with context
+	// (config load, DB connect, resource setup); previously main swallowed it
+	// with a bare return, so the process exited with no reason logged.
 	if err := run(); err != nil {
+		log.Printf("startup failed: %+v", err)
 		return
 	}
 }
