@@ -93,8 +93,8 @@ type NotificationResponse struct {
 	ActionType     *string         `json:"action_type,omitempty"`
 	ActionData     json.RawMessage `json:"action_data,omitempty"`
 	Priority       *string         `json:"priority,omitempty"`
-	CreateDt       string          `json:"create_dt"`
-	ModifyDt       string          `json:"modify_dt"`
+	CreateDt       string          `json:"create_dt,omitempty"`
+	ModifyDt       string          `json:"modify_dt,omitempty"`
 }
 
 func DomainToResponse(n *domain.Notification) NotificationResponse {

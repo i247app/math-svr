@@ -48,3 +48,25 @@ func (p NotificationPriorityType) IsValid() bool {
 		return false
 	}
 }
+
+type NotificationCategoryType string
+
+const (
+	NotificationCategoryTypeInfo    NotificationCategoryType = "INFO"
+	NotificationCategoryTypeWarning NotificationCategoryType = "WARNING"
+	NotificationCategoryTypeError   NotificationCategoryType = "ERROR"
+	NotificationCategoryTypeSuccess NotificationCategoryType = "SUCCESS"
+)
+
+func (c NotificationCategoryType) String() string {
+	return string(c)
+}
+
+func (c NotificationCategoryType) IsValid() bool {
+	switch c {
+	case NotificationCategoryTypeInfo, NotificationCategoryTypeWarning, NotificationCategoryTypeError, NotificationCategoryTypeSuccess:
+		return true
+	default:
+		return false
+	}
+}

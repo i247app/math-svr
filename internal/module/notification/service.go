@@ -2,6 +2,7 @@ package notification
 
 import (
 	"context"
+	"fmt"
 
 	notifAdapter "math-ai.com/math-ai/internal/adapter/notification"
 	command "math-ai.com/math-ai/internal/application/command/notification"
@@ -13,7 +14,9 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/notification"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // Service is the notification module façade. It persists notification rows
@@ -28,6 +31,7 @@ type Service struct {
 	clearTokensCmd   *command.ClearDeadTokensCommandHandler
 	listQuery        *query.ListNotificationsQueryHandler
 	unreadCountQuery *query.UnreadCountQueryHandler
+	userRepo         userDomain.IRepository
 	deviceRepo       deviceDomain.IRepository
 	push             *pushService
 	socket           appsocket.Publisher
@@ -40,6 +44,7 @@ type Service struct {
 func NewService(
 	uow transaction.UnitOfWork,
 	repo domain.IRepository,
+	userRepo userDomain.IRepository,
 	deviceRepo deviceDomain.IRepository,
 	pushAdapter *notifAdapter.Adapter,
 	socketPub appsocket.Publisher,
@@ -52,6 +57,7 @@ func NewService(
 		clearTokensCmd:   command.NewClearDeadTokensCommandHandler(uow),
 		listQuery:        query.NewListNotificationsQueryHandler(repo),
 		unreadCountQuery: query.NewUnreadCountQueryHandler(repo),
+		userRepo:         userRepo,
 		deviceRepo:       deviceRepo,
 		push:             newPushService(pushAdapter),
 		socket:           socketPub,
@@ -65,10 +71,20 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 		return nil, err
 	}
 
+	user, err := s.userRepo.FindById(ctx, req.UserID)
+	if err != nil {
+		return nil, err
+	}
+
 	notiDomain := domain.NewNotification()
-	notiDomain.SetUserId(req.UserID)
+	notiDomain.SetUserId(user.UserId())
 	notiDomain.SetTitle("Ping")
-	notiDomain.SetShortText("Have a great day!")
+
+	shortText := fmt.Sprintf("Hello %s, have a great day! ", user.UserName())
+	notiDomain.SetShortText(shortText)
+
+	cate := enum.NotificationCategoryTypeInfo.String()
+	notiDomain.SetCategory(&cate)
 
 	if s.push.enabled() {
 		tokens, terr := s.recipientTokens(ctx, req.UserID)

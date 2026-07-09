@@ -43,6 +43,3 @@ mai status
   rights for the `mathsvr.service` control verbs.
 - `mai watch` tails the console log file directly (`/apps/math/mathsvr.log`),
   the same file rotated by [`../logrotate/`](../logrotate/).
-- **Shebang caveat:** the first line is `#!/usr/local/bin bash`, which is not a
-  valid interpreter path. Run it as `bash alias_mai <cmd>` or fix the shebang to
-  `#!/usr/bin/env bash` before relying on direct execution / the symlink above.

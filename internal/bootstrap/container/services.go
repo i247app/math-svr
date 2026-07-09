@@ -165,6 +165,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	notificationService := notification.NewService(
 		uow,
 		repos.NotificationRepository,
+		repos.UserRepository,
 		repos.DeviceRepository,
 		res.NotificationProvider,
 		res.SocketPublisher,
