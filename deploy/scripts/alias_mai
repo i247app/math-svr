@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/local/bin bash
 # mai - MathAI server control script (systemd wrapper)
 
 SERVICE="mathsvr.service"
