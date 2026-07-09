@@ -1,0 +1,16 @@
+# Oneshot unit that rotates /apps/math/mathsvr.log when it exceeds the size
+# threshold defined in the logrotate config. Triggered by mathsvr-logrotate.timer.
+#
+# Install to: /etc/systemd/system/mathsvr-logrotate.service (see README.md)
+#
+# Runs logrotate against only the mathsvr config, using the default shared state
+# file, so it stays consistent with the system-wide daily logrotate run (no
+# double rotation).
+
+[Unit]
+Description=Rotate mathsvr log when it exceeds the size threshold
+Documentation=file:///apps/math/deploy/logrotate/README.md
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/logrotate /etc/logrotate.d/mathsvr

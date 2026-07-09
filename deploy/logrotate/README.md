@@ -3,8 +3,9 @@
 Log rotation config for the `mathsvr` systemd service, to stop
 `/apps/math/mathsvr.log` from growing unbounded.
 
-- Config file: [`mathsvr`](./mathsvr)
-- Install target on EC2: `/etc/logrotate.d/mathsvr`
+- Config file: [`mathsvr`](./mathsvr) → `/etc/logrotate.d/mathsvr`
+- Timer unit: [`mathsvr-logrotate.timer`](./mathsvr-logrotate.timer) → `/etc/systemd/system/`
+- Service unit: [`mathsvr-logrotate.service`](./mathsvr-logrotate.service) → `/etc/systemd/system/`
 
 ## Background
 
@@ -29,36 +30,63 @@ graceful shutdown (drain the job runtime + serialize sessions to
 
 ## Current policy
 
+Rotation is **size-based (100M)**, checked hourly by a dedicated systemd timer.
+
 | Directive | Value | Meaning |
 |---|---|---|
-| `daily` | — | Rotate every day |
-| `rotate 14` | 14 | Keep ~2 weeks of history, then drop the oldest |
+| `size 100M` | 100M | Rotate when the file reaches 100M (only when logrotate runs — see below) |
+| `rotate 14` | 14 | Keep 14 old files, then drop the oldest (up to ~1.4G total: 14 × 100M before compression) |
 | `compress` + `delaycompress` | — | gzip old files, delay compression by one cycle (safe with `copytruncate`) |
 | `copytruncate` | — | Truncate in place, no service restart |
-| `dateext` | — | Name rotated files by date: `mathsvr.log-YYYYMMDD` |
 | `su mot mot` / `create 0640 mot mot` | — | Operate on / create files as user `mot` |
 
+Rotated files use numbered suffixes (`mathsvr.log.1`, `mathsvr.log.2.gz`, …).
+`dateext` is intentionally omitted: with sub-daily size-based rotation the
+default date suffix (`-YYYYMMDD`) would collide when the file rotates more than
+once a day.
+
 Tune `rotate N` to the actual disk capacity on the EC2 host.
+
+### Why a dedicated timer
+
+`size` only triggers a rotation **when logrotate actually runs**. The system-wide
+logrotate timer runs once a day, which is too coarse for a size threshold — the
+file could grow well past 100M between daily checks. So `mathsvr-logrotate.timer`
+runs `mathsvr-logrotate.service` **every hour**, which invokes logrotate against
+this config. It uses the default shared logrotate state file, so it stays
+consistent with the daily system run (no double rotation).
 
 ## Installation (run on EC2)
 
 ```bash
-# 1. Copy the config into the directory logrotate scans
+# 1. Copy the logrotate config into the directory logrotate scans
 sudo cp /apps/math/deploy/logrotate/mathsvr /etc/logrotate.d/mathsvr
 
 # 2. logrotate refuses config files that are group/other writable
 sudo chown root:root /etc/logrotate.d/mathsvr
 sudo chmod 0644 /etc/logrotate.d/mathsvr
 
-# 3. Dry-run: check syntax + see what logrotate would do (no execution)
+# 3. Install the timer + service units that enforce the size threshold hourly
+sudo cp /apps/math/deploy/logrotate/mathsvr-logrotate.service /etc/systemd/system/
+sudo cp /apps/math/deploy/logrotate/mathsvr-logrotate.timer   /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now mathsvr-logrotate.timer
+
+# 4. Dry-run: check syntax + see what logrotate would do (no execution)
 sudo logrotate -d /etc/logrotate.d/mathsvr
 
-# 4. Force one real run to confirm
-sudo logrotate -fv /etc/logrotate.d/mathsvr
+# 5. Confirm the timer is scheduled and the service works
+systemctl list-timers | grep mathsvr-logrotate
+sudo systemctl start mathsvr-logrotate.service   # run the rotation check once now
+journalctl -u mathsvr-logrotate.service --no-pager
 
-# 5. Check the result: rotated file created, original truncated to ~0
+# 6. Check the result once the file has exceeded 100M and a rotation has run:
+#    rotated file created, original truncated to ~0
 ls -lh /apps/math/mathsvr.log*
 ```
+
+> `logrotate -fv` (force) still works for a manual one-off rotation regardless
+> of size, but is not needed for normal operation — the timer handles it.
 
 ## Decisive test
 
@@ -71,27 +99,17 @@ tail -f /apps/math/mathsvr.log
 
 If new log lines still flow into `mathsvr.log`, it works.
 
-## Confirm logrotate runs on a schedule
+## Tuning the cadence
 
-logrotate does not run itself; it is triggered by a system timer/cron:
+The hourly timer bounds worst-case overshoot to ~1 hour of logs above 100M. If
+the log grows fast enough to overshoot within an hour, tighten the timer:
 
-```bash
-# Systems using a systemd timer (Amazon Linux 2023, recent Ubuntu)
-systemctl list-timers | grep logrotate
-
-# Older systems using cron.daily
-ls -l /etc/cron.daily/logrotate
+```ini
+# in mathsvr-logrotate.timer
+OnCalendar=*:0/15   # every 15 minutes
 ```
 
-## Later: switch to size-based rotation
+Then `sudo systemctl daemon-reload && sudo systemctl restart mathsvr-logrotate.timer`.
 
-If log volume spikes unpredictably, add `maxsize` to rotate early once a
-threshold is exceeded (while keeping the `daily` cadence):
-
-```
-    maxsize 200M
-```
-
-Note: size-based rotation depends on logrotate being invoked often enough. The
-default timer usually runs once a day — add a dedicated hourly timer if you need
-finer granularity.
+Conversely, `rotate 14` at 100M each can use up to ~1.4G before compression —
+lower it if disk is tight on the EC2 host.

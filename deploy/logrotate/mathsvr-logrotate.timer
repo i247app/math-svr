@@ -1,0 +1,17 @@
+# Runs mathsvr-logrotate.service every hour so the size-based rotation threshold
+# is actually enforced (the default system logrotate timer only runs once a day).
+#
+# Install to: /etc/systemd/system/mathsvr-logrotate.timer (see README.md)
+#
+# If the log grows fast enough to overshoot 100M within an hour, tighten the
+# cadence (e.g. OnCalendar=*:0/15 for every 15 minutes).
+
+[Unit]
+Description=Hourly size check for mathsvr log rotation
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

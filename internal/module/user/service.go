@@ -177,11 +177,6 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	}
 	log.Infof("Phone for string: %s", phoneForString)
 
-	// phoneDecoded, err := url.QueryUnescape(req.Phone)
-	// if err != nil {
-	// 	return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to decode phone: %w", err))
-	// }
-
 	created, err := s.createUserCmd.Handle(ctx, command.CreateUserCommand{
 		Role:      enum.RoleType(req.Role),
 		Phone:     phoneForString,

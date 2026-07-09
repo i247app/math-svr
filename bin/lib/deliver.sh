@@ -11,7 +11,7 @@ run_deliver() {
     post-deploy/ \
     dist/mathsvr \
     keys/ \
-    deploy/logrotate/mathsvr
+    deploy/
 
   info "Files synced successfully"
 
