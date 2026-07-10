@@ -94,17 +94,15 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
-// GET /users/{id}
+// POST /users/detail
 func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-
-	uid, err := utils.StringToInt64Err(idStr)
-	if err != nil {
+	var req user.GetUserByUserIdReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
 
-	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: uid})
+	res, err := h.userSvc.GetUserById(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

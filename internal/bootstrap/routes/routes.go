@@ -55,7 +55,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// health routes
 	{
 		healthHandler := health.NewHealthHandler()
-		reg("GET /ping", healthHandler.HandlePing)
+		reg("POST /ping", healthHandler.HandlePing)
 	}
 
 	// NOTE: /metrics is intentionally NOT registered here. It is served on a
@@ -80,7 +80,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// user routes
 	{
 		userHandler := user.NewUserHandler(res, services.UserSvc)
-		reg("GET  /users/{id}", userHandler.HandleGetUserById, authMiddleware)
+		reg("POST /users/detail", userHandler.HandleGetUserById, authMiddleware)
 		reg("POST /users/me", userHandler.HandleGetUserMe, authMiddleware)
 		reg("POST /users/list", userHandler.HandleListUsers, authMiddleware)
 		reg("POST /users/create", userHandler.HandleCreateUser)
@@ -105,7 +105,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		programHandler := program.NewProgramHandler(services.ProgramSvc)
 		reg("POST /programs/list", programHandler.HandleListPrograms)
-		reg("GET  /programs/{id}", programHandler.HandleGetProgram, authMiddleware)
+		reg("POST /programs/detail", programHandler.HandleGetProgram, authMiddleware)
 		reg("POST /programs/create", programHandler.HandleCreateProgram, authMiddleware)
 		reg("POST /programs/update", programHandler.HandleUpdateProgram, authMiddleware)
 		reg("POST /programs/soft-delete", programHandler.HandleSoftDeleteProgram, authMiddleware)
@@ -113,7 +113,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 		gradeHandler := grade.NewGradeHandler(services.GradeSvc)
 		reg("POST /grades/list", gradeHandler.HandleListGrades)
-		reg("GET  /grades/{id}", gradeHandler.HandleGetGrade, authMiddleware)
+		reg("POST /grades/detail", gradeHandler.HandleGetGrade, authMiddleware)
 		reg("POST /grades/create", gradeHandler.HandleCreateGrade, authMiddleware)
 		reg("POST /grades/update", gradeHandler.HandleUpdateGrade, authMiddleware)
 		reg("POST /grades/soft-delete", gradeHandler.HandleSoftDeleteGrade, authMiddleware)
@@ -121,7 +121,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 		semesterHandler := semester.NewSemesterHandler(services.SemesterSvc)
 		reg("POST /semesters/list", semesterHandler.HandleListSemesters)
-		reg("GET  /semesters/{id}", semesterHandler.HandleGetSemester, authMiddleware)
+		reg("POST /semesters/detail", semesterHandler.HandleGetSemester, authMiddleware)
 		reg("POST /semesters/create", semesterHandler.HandleCreateSemester, authMiddleware)
 		reg("POST /semesters/update", semesterHandler.HandleUpdateSemester, authMiddleware)
 		reg("POST /semesters/soft-delete", semesterHandler.HandleSoftDeleteSemester, authMiddleware)
@@ -131,7 +131,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// profile routes
 	{
 		profileHandler := profile.NewProfileHandler(services.ProfileSvc)
-		reg("GET  /profiles/{id}", profileHandler.HandleGetProfileById, authMiddleware)
+		reg("POST /profiles/detail", profileHandler.HandleGetProfileById, authMiddleware)
 		reg("POST /profiles/list", profileHandler.HandleListProfiles, authMiddleware)
 		reg("POST /profiles/create", profileHandler.HandleCreateProfile, authMiddleware)
 		reg("POST /profiles/update", profileHandler.HandleUpdateProfile, authMiddleware)
@@ -149,7 +149,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// school routes
 	{
 		schoolHandler := school.NewSchoolHandler(res, services.SchoolSvc)
-		reg("GET  /schools/{id}", schoolHandler.HandleGetSchool, authMiddleware)
+		reg("POST /schools/detail", schoolHandler.HandleGetSchool, authMiddleware)
 		reg("POST /schools/list", schoolHandler.HandleListSchools, authMiddleware)
 		reg("POST /schools/create", schoolHandler.HandleCreateSchool, authMiddleware)
 		reg("POST /schools/update", schoolHandler.HandleUpdateSchool, authMiddleware)
@@ -160,7 +160,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// device routes
 	{
 		deviceHandler := device.NewDeviceHandler(services.DeviceSvc)
-		reg("GET  /devices/{id}", deviceHandler.HandleGetDeviceById)
+		reg("POST /devices/detail", deviceHandler.HandleGetDeviceById)
 		reg("POST /devices/list", deviceHandler.HandleListDevices)
 		reg("POST /devices/update", deviceHandler.HandleUpdateDevice)
 		reg("POST /devices/revoke", deviceHandler.HandleRevokeDevice)
@@ -177,7 +177,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// chapter routes
 	{
 		chapterHandler := chapter.NewChapterHandler(res, services.ChapterSvc)
-		reg("GET  /chapters/{id}", chapterHandler.HandleGetChapter, authMiddleware)
+		reg("POST /chapters/detail", chapterHandler.HandleGetChapter, authMiddleware)
 		reg("POST /chapters/list", chapterHandler.HandleListChapters, authMiddleware)
 		reg("POST /chapters/create", chapterHandler.HandleCreateChapter, authMiddleware)
 		reg("POST /chapters/update", chapterHandler.HandleUpdateChapter, authMiddleware)
@@ -196,7 +196,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// quiz routes
 	{
 		quizHandler := quiz.NewQuizHandler(res, services.QuizSvc)
-		reg("GET  /quizzes/{id}", quizHandler.HandleGetQuiz, authMiddleware)
+		reg("POST /quizzes/detail", quizHandler.HandleGetQuiz, authMiddleware)
 		reg("POST /quizzes/list", quizHandler.HandleListQuizzes, authMiddleware)
 		reg("POST /quizzes/generate", quizHandler.HandleGenerateQuiz, authMiddleware)
 		reg("POST /quizzes/submit/cost-ai", quizHandler.HandleSubmitQuizAnswers, authMiddleware)
@@ -207,7 +207,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// classroom routes
 	{
 		classroomHandler := classroom.NewClassroomHandler(res, services.ClassroomSvc)
-		reg("GET  /classrooms/{id}", classroomHandler.HandleGetClassroom, authMiddleware)
+		reg("POST /classrooms/detail", classroomHandler.HandleGetClassroom, authMiddleware)
 		reg("POST /classrooms/list", classroomHandler.HandleListClassrooms, authMiddleware)
 		reg("POST /classrooms/my-joined", classroomHandler.HandleListMyJoinedClassrooms, authMiddleware)
 		reg("POST /classrooms/create", classroomHandler.HandleCreateClassroom, authMiddleware)
@@ -250,7 +250,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		exerciseHandler := exercise.NewClassroomExerciseHandler(res, services.ExerciseSvc)
 		reg("POST /classroom-exercises/create", exerciseHandler.HandleCreateExercise, authMiddleware)
 		reg("POST /classroom-exercises/update", exerciseHandler.HandleUpdateExercise, authMiddleware)
-		reg("GET  /classroom-exercises/{id}", exerciseHandler.HandleGetExercise, authMiddleware)
+		reg("POST /classroom-exercises/detail", exerciseHandler.HandleGetExercise, authMiddleware)
 		reg("POST /classroom-exercises/list", exerciseHandler.HandleListExercises, authMiddleware)
 		reg("POST /classroom-exercises/soft-delete", exerciseHandler.HandleSoftDeleteExercise, authMiddleware)
 
@@ -259,7 +259,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		submissionHandler := exercise.NewClassroomExerciseSubmissionHandler(res, services.ExerciseSvc)
 		reg("POST /classroom-exercise/submissions/submit/cost-ai", submissionHandler.HandleSubmitExerciseAnswers, authMiddleware)
 		reg("POST /classroom-exercise/submissions/submit", submissionHandler.HandleSubmitExerciseAnswersV2, authMiddleware)
-		reg("GET  /classroom-exercise/submissions/{id}", submissionHandler.HandleGetSubmission, authMiddleware)
+		reg("POST /classroom-exercise/submissions/detail", submissionHandler.HandleGetSubmission, authMiddleware)
 		reg("POST /classroom-exercise/submissions/list", submissionHandler.HandleListSubmissions, authMiddleware)
 		reg("POST /classroom-exercise/submissions/by-exercise", submissionHandler.HandleListSubmissionsByExercise, authMiddleware)
 		reg("POST /classroom-exercise/submissions/submitted-members", submissionHandler.HandleListSubmittedMembers, authMiddleware)

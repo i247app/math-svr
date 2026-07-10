@@ -7,7 +7,6 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/semester"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/response"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type SemesterHandler struct {
@@ -103,11 +102,16 @@ func (h *SemesterHandler) HandleForceDeleteSemester(w http.ResponseWriter, r *ht
 	response.WriteJson(w, res, nil)
 }
 
-// GET /semesters/{id}
+// POST /semesters/detail
 func (h *SemesterHandler) HandleGetSemester(w http.ResponseWriter, r *http.Request) {
-	req := dto.GetSemesterReq{
-		SemesterID: utils.StringToInt64(r.PathValue("id"), 0),
-		Language:   metadata.GetClientLanguage(r.Context()).ToEnumLanguage(),
+	var req dto.GetSemesterReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	if req.Language == "" {
+		req.Language = metadata.GetClientLanguage(r.Context()).ToEnumLanguage()
 	}
 
 	res, err := h.semesterSvc.GetSemester(r.Context(), &req)

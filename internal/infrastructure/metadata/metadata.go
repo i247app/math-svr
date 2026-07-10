@@ -10,59 +10,73 @@ type ClientLanguage string
 const (
 	ClientLanguageViVN ClientLanguage = "vi-VN"
 	ClientLanguageEnEN ClientLanguage = "en-EN"
+	ClientLanguageVi   ClientLanguage = "vi"
+	ClientLanguageEn   ClientLanguage = "en"
 )
 
 func (c ClientLanguage) String() string {
 	return string(c)
 }
 
+// ToEnumLanguage maps the client-reported language onto the internal
+// enum. Both the short ("vi"/"en") and long ("vi-VN"/"en-EN") forms are
+// accepted because the mobile app sends the short code. Unknown / empty
+// values fall back to Vietnamese — the project default (see CLAUDE.md).
 func (c ClientLanguage) ToEnumLanguage() enum.LanguageType {
 	switch c {
-	case ClientLanguageViVN:
+	case ClientLanguageViVN, ClientLanguageVi:
 		return enum.LanguageTypeVietnamese
-	case ClientLanguageEnEN:
+	case ClientLanguageEnEN, ClientLanguageEn:
 		return enum.LanguageTypeEnglish
 	}
-	return enum.LanguageTypeEnglish
+	return enum.LanguageTypeVietnamese
 }
 
-// RequestMetadata contains metadata information sent by clients with every request
+// RequestMetadata is the `metadata` object every client request carries in
+// its body (JSON object, or a `metadata` form field for multipart uploads).
+// It is parsed by MetadataMiddleware into the request context.
+//
+// JSON tags mirror the mobile client's payload exactly — do not rename a tag
+// without coordinating with the app team.
 type RequestMetadata struct {
 	// Request tracking
 	TraceID   string `json:"trace_id,omitempty"`
 	RequestID string `json:"request_id,omitempty"`
 
-	// // Client information
-	// ClientInfo ClientInfo `json:"client_info,omitempty"`
+	// App / build
+	AppVersion string `json:"app_version,omitempty"` // formatted string, e.g. "Version: 1.0.0 + 12"
+	Version    string `json:"version,omitempty"`     // semantic version, e.g. "1.0.0"
+	Build      string `json:"build,omitempty"`       // build number, e.g. "12"
 
-	AppVersion      string         `json:"app_version,omitempty"`       // Client app version (e.g., "1.2.3")
-	Platform        string         `json:"platform,omitempty"`          // Platform (e.g., "ios", "android", "web")
-	DeviceModel     string         `json:"device_model,omitempty"`      // Device model (e.g., "iPhone 14", "Pixel 7")
-	OSVersion       string         `json:"os_version,omitempty"`        // OS version (e.g., "iOS 16.0", "Android 13")
-	DeviceID        string         `json:"device_id,omitempty"`         // Unique device identifier
-	DeviceName      string         `json:"device_name,omitempty"`       // Device name (e.g., "John's iPhone")
-	DevicePushToken string         `json:"device_push_token,omitempty"` // Device push token
-	IPAddress       string         `json:"ip_address,omitempty"`        // IP address of the client
-	Language        ClientLanguage `json:"language,omitempty"`          // language (e.g., "vi-VN", "en-EN")
+	// Device
+	Platform        string `json:"platform,omitempty"`          // "ios" | "android" | "web"
+	ModelName       string `json:"model_name,omitempty"`        // manufacturer / make, e.g. "google", "Apple"
+	OSVersion       string `json:"system_version,omitempty"`    // OS version, e.g. "35", "iOS 16.0"
+	DeviceID        string `json:"device_uuid,omitempty"`       // unique device identifier
+	DeviceName      string `json:"device_name,omitempty"`       // e.g. "Pixel 8"
+	DevicePushToken string `json:"device_push_token,omitempty"` // FCM / APNS push token
+
+	// Locale / negotiation
+	Language       ClientLanguage `json:"language,omitempty"`        // "vi" | "en" | "vi-VN" | "en-EN"
+	AcceptLanguage string         `json:"accept_language,omitempty"` // e.g. "vi"
+	Accept         string         `json:"accept,omitempty"`          // e.g. "application/json"
+	ContentType    string         `json:"content_type,omitempty"`    // e.g. "application/json"
+
+	// Network — client-reported; the server also derives the real peer IP in
+	// the logging middleware. Treat this as advisory, not authoritative.
+	IPAddress string `json:"ip_address,omitempty"`
+
+	// Authorization carries the session token ("Bearer <jwt>") the client
+	// reports in metadata. Informational only — session resolution uses the
+	// real Authorization header / cookie via GexSessionMiddleware, not this
+	// field. Should be redacted in request logs.
+	Authorization string `json:"authorization,omitempty"`
 
 	// User context
 	UserContext UserContext `json:"user_context,omitempty"`
 
-	// Timestamp when request was received
+	// Timestamp when the request was created on the client
 	Timestamp string `json:"timestamp,omitempty"`
-}
-
-// ClientInfo contains information about the client making the request
-type ClientInfo struct {
-	AppVersion      string         `json:"app_version,omitempty"`       // Client app version (e.g., "1.2.3")
-	Platform        string         `json:"platform,omitempty"`          // Platform (e.g., "ios", "android", "web")
-	DeviceModel     string         `json:"device_model,omitempty"`      // Device model (e.g., "iPhone 14", "Pixel 7")
-	OSVersion       string         `json:"os_version,omitempty"`        // OS version (e.g., "iOS 16.0", "Android 13")
-	DeviceID        string         `json:"device_id,omitempty"`         // Unique device identifier
-	DeviceName      string         `json:"device_name,omitempty"`       // Device name (e.g., "John's iPhone")
-	DevicePushToken string         `json:"device_push_token,omitempty"` // Device push token
-	IPAddress       string         `json:"ip_address,omitempty"`        // IP address of the client
-	Language        ClientLanguage `json:"language,omitempty"`          // language (e.g., "vi-VN", "en-EN")
 }
 
 // UserContext contains user-specific context information
@@ -75,13 +89,7 @@ type UserContext struct {
 // NewRequestMetadata creates a new RequestMetadata instance with default values
 func NewRequestMetadata() *RequestMetadata {
 	return &RequestMetadata{
-		Timestamp: mtime.Now().String(),
-		// ClientInfo:  ClientInfo{},
+		Timestamp:   mtime.Now().String(),
 		UserContext: UserContext{},
 	}
 }
-
-// // IsEmpty checks if the metadata is empty or not populated
-// func (m *RequestMetadata) IsEmpty() bool {
-// 	return m.TraceID == "" && m.RequestID == "" && m.ClientInfo.Platform == ""
-// }

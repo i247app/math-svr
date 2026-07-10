@@ -169,6 +169,12 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, res *resource.Resource, _ *con
 		// log line for the request can carry its trace_id. Pass-through when
 		// tracing is disabled.
 		middleware.TracingMiddleware(res.Env.ObservabilityConfig.TracingEnabled, res.RouteClassifier),
+		// SessionTokenMiddleware runs just outside the session middleware: the
+		// session token is taken ONLY from the request body's
+		// metadata.authorization and lifted into the Authorization header so
+		// GexSessionMiddleware resolves the session. Any client-supplied
+		// Authorization header is dropped — the header is never trusted.
+		middleware.SessionTokenMiddleware,
 		middleware.GexSessionMiddleware(res.SessionProvider, session.SessionContextKey),
 		middleware.LoggerMiddleware(a.Logger, res),
 		middleware.LogRequestMiddleware,

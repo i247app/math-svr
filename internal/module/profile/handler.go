@@ -88,15 +88,19 @@ func (h *ProfileHandler) HandleCreateProfile(w http.ResponseWriter, r *http.Requ
 	response.WriteJson(w, res, nil)
 }
 
-// GET /profiles/{id}?language=vn|en
+// POST /profiles/detail
 func (h *ProfileHandler) HandleGetProfileById(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
+	var req dto.GetProfileByIdReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
 
-	res, err := h.profileSvc.GetProfileById(r.Context(), &dto.GetProfileByIdReq{
-		ProfileID: utils.StringToInt64(idStr, 0),
-		Language:  metadata.GetClientLanguage(r.Context()).ToEnumLanguage(),
-	})
+	if req.Language == "" {
+		req.Language = metadata.GetClientLanguage(r.Context()).ToEnumLanguage()
+	}
 
+	res, err := h.profileSvc.GetProfileById(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

@@ -9,7 +9,6 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/response"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type QuizHandler struct {
@@ -90,12 +89,15 @@ func (h *QuizHandler) HandleSubmitQuizV2(w http.ResponseWriter, r *http.Request)
 	response.WriteJson(w, res, nil)
 }
 
-// GET /quizzes/{id}
+// POST /quizzes/detail
 func (h *QuizHandler) HandleGetQuiz(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	quizId := utils.StringToInt64(idStr, 0)
+	var req dto.GetQuizByQuizIdReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
 
-	res, err := h.quizSvc.GetQuizByQuizId(r.Context(), &dto.GetQuizByQuizIdReq{QuizID: quizId})
+	res, err := h.quizSvc.GetQuizByQuizId(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

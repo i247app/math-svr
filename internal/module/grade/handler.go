@@ -7,7 +7,6 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/grade"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/response"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type GradeHandler struct {
@@ -103,11 +102,16 @@ func (h *GradeHandler) HandleForceDeleteGrade(w http.ResponseWriter, r *http.Req
 	response.WriteJson(w, res, nil)
 }
 
-// GET /grades/{id}
+// POST /grades/detail
 func (h *GradeHandler) HandleGetGrade(w http.ResponseWriter, r *http.Request) {
-	req := dto.GetGradeReq{
-		GradeID:  utils.StringToInt64(r.PathValue("id"), 0),
-		Language: metadata.GetClientLanguage(r.Context()).ToEnumLanguage(),
+	var req dto.GetGradeReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	if req.Language == "" {
+		req.Language = metadata.GetClientLanguage(r.Context()).ToEnumLanguage()
 	}
 
 	res, err := h.gradeSvc.GetGrade(r.Context(), &req)

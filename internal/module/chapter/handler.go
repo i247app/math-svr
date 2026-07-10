@@ -6,9 +6,8 @@ import (
 
 	dto "math-ai.com/math-ai/internal/application/dto/chapter"
 	"math-ai.com/math-ai/internal/application/resource"
-	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/response"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type ChapterHandler struct {
@@ -87,15 +86,20 @@ func (h *ChapterHandler) HandleForceDeleteChapter(w http.ResponseWriter, r *http
 	response.WriteJson(w, res, nil)
 }
 
-// GET /chapters/{id}
+// POST /chapters/detail
 //
 // Reads the optional `language` query parameter so callers can request a
 // specific locale without sending a JSON body. Falls back to the project
 // default (vn) when omitted.
 func (h *ChapterHandler) HandleGetChapter(w http.ResponseWriter, r *http.Request) {
-	req := dto.GetChapterReq{
-		ChapterID: utils.StringToInt64(r.PathValue("id"), 0),
-		Language:  enum.LanguageType(r.URL.Query().Get("language")),
+	var req dto.GetChapterReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	if req.Language == "" {
+		req.Language = metadata.GetClientLanguage(r.Context()).ToEnumLanguage()
 	}
 
 	res, err := h.chapterSvc.GetChapter(r.Context(), &req)

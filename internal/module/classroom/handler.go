@@ -252,13 +252,14 @@ func (h *ClassroomHandler) HandleListMyJoinedClassrooms(w http.ResponseWriter, r
 	response.WriteJson(w, res, nil)
 }
 
-// GET /classrooms/{id}?profile_id=...
-// profile_id arrives as a query parameter for the GET path; POST callers
-// can use /classrooms/get (not yet exposed — GET is the canonical read).
+// POST /classrooms/detail
+// Both profile_id (the membership-gating caller) and classroom_id now
+// arrive in the JSON request body.
 func (h *ClassroomHandler) HandleGetClassroom(w http.ResponseWriter, r *http.Request) {
-	req := dto.GetClassroomReq{
-		ProfileID:   utils.StringToInt64(r.URL.Query().Get("profile_id"), 0),
-		ClassroomID: utils.StringToInt64(r.PathValue("id"), 0),
+	var req dto.GetClassroomReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
 	}
 
 	uid, err := h.sessionUID(r)

@@ -9,7 +9,6 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/response"
-	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type ClassroomExerciseHandler struct {
@@ -84,9 +83,13 @@ func (h *ClassroomExerciseHandler) HandleUpdateExercise(w http.ResponseWriter, r
 	response.WriteJson(w, res, nil)
 }
 
-// GET /classroom-exercises/{id}
+// POST /classroom-exercises/detail
 func (h *ClassroomExerciseHandler) HandleGetExercise(w http.ResponseWriter, r *http.Request) {
-	id := utils.StringToInt64(r.PathValue("id"), 0)
+	var req dto.GetExerciseReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
 
 	uid, err := h.sessionUID(r)
 	if err != nil {
@@ -94,7 +97,7 @@ func (h *ClassroomExerciseHandler) HandleGetExercise(w http.ResponseWriter, r *h
 		return
 	}
 
-	res, err := h.svc.GetExercise(r.Context(), &dto.GetExerciseReq{ClassroomExerciseID: id}, uid)
+	res, err := h.svc.GetExercise(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

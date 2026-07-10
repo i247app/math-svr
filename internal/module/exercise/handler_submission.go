@@ -3,7 +3,6 @@ package exercise
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	dto "math-ai.com/math-ai/internal/application/dto/exercise"
 	"math-ai.com/math-ai/internal/application/resource"
@@ -71,21 +70,27 @@ func (h *ClassroomExerciseSubmissionHandler) HandleSubmitExerciseAnswersV2(w htt
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	res, err := h.svc.SubmitExerciseAnswersV2(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
 	response.WriteJson(w, res, nil)
 }
 
-// GET /classroom-exercise-submissions/{id}
+// POST /classroom-exercise/submissions/detail
 func (h *ClassroomExerciseSubmissionHandler) HandleGetSubmission(w http.ResponseWriter, r *http.Request) {
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil || id == 0 {
+	var req dto.GetSubmissionReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	if req.ClassroomExerciseSubmissionID == 0 {
 		response.WriteJson(w, nil, errs.NewError(r.Context(),
-			status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_ID, nil, err))
+			status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_ID, nil, nil))
 		return
 	}
 	uid, err := h.sessionUID(r)
@@ -93,9 +98,7 @@ func (h *ClassroomExerciseSubmissionHandler) HandleGetSubmission(w http.Response
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.svc.GetSubmission(r.Context(), &dto.GetSubmissionReq{
-		ClassroomExerciseSubmissionID: id,
-	}, uid)
+	res, err := h.svc.GetSubmission(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

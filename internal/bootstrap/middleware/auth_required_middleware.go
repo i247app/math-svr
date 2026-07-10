@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/response"
 )
@@ -21,6 +21,8 @@ func AuthRequiredMiddleware(sessionManager *session.SessionManager) func(http.Ha
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
+			log := logger.From(ctx)
+
 			// Check if session exists
 			session := session.GetRequestSession(r)
 			if session == nil {
@@ -29,17 +31,19 @@ func AuthRequiredMiddleware(sessionManager *session.SessionManager) func(http.Ha
 			}
 			sessionKey, _ := session.Get("key") // retrieve the session key to log during errors
 
+			log.Infof("sessionKey: %s", sessionKey)
+
 			// Check for is_secure as a sanity check
 			isSecure, ok := session.Get("is_secure")
 			if !ok {
-				log.Printf("- session key: %s\n", sessionKey)
+				log.Warnf("- session key: %s\n", sessionKey)
 				response.WriteJson(w, nil, errs.NewUnauthorizedError(ctx, ErrSessionIsSecureMissing))
 				return
 			}
 
 			// Check for is_secure == false
 			if !isSecure.(bool) {
-				log.Printf("- session key: %s\n", sessionKey)
+				log.Warnf("- session key: %s\n", sessionKey)
 				response.WriteJson(w, nil, errs.NewUnauthorizedError(ctx, ErrSessionIsNotSecureLoginRequired))
 				return
 			}

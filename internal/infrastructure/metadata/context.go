@@ -61,9 +61,43 @@ func GetAppVersion(ctx context.Context) string {
 	return FromContext(ctx).AppVersion
 }
 
-// GetDeviceModel is a convenience function to get the client device model from context
+// GetModelName is a convenience function to get the client device
+// manufacturer / make (e.g. "google", "Apple") from context.
+func GetModelName(ctx context.Context) string {
+	return FromContext(ctx).ModelName
+}
+
+// GetDeviceModel is retained for backward compatibility; the client now
+// reports the make via model_name, so this returns the same value.
 func GetDeviceModel(ctx context.Context) string {
-	return FromContext(ctx).DeviceModel
+	return FromContext(ctx).ModelName
+}
+
+// GetOSVersion is a convenience function to get the client OS version
+// (system_version) from context.
+func GetOSVersion(ctx context.Context) string {
+	return FromContext(ctx).OSVersion
+}
+
+// GetVersion returns the semantic app version (e.g. "1.0.0").
+func GetVersion(ctx context.Context) string {
+	return FromContext(ctx).Version
+}
+
+// GetBuild returns the app build number (e.g. "12").
+func GetBuild(ctx context.Context) string {
+	return FromContext(ctx).Build
+}
+
+// GetAcceptLanguage returns the client's accept_language value.
+func GetAcceptLanguage(ctx context.Context) string {
+	return FromContext(ctx).AcceptLanguage
+}
+
+// GetAuthorization returns the raw "Bearer <jwt>" the client supplied in
+// metadata. Handlers normally rely on the resolved session instead.
+func GetAuthorization(ctx context.Context) string {
+	return FromContext(ctx).Authorization
 }
 
 // GetDeviceID is a convenience function to get the client device ID from context
