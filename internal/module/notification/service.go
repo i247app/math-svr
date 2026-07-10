@@ -151,32 +151,32 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 
 	res := &dto.SendNotificationRes{Notification: dto.DomainToResponse(created)}
 
-	// Push delivery — out of any tx, best-effort.
-	if s.push.enabled() {
-		tokens, terr := s.recipientTokens(ctx, req.UserID)
-		if terr != nil {
-			log.Warnf("notification.token_lookup_failed user_id=%d err=%v", req.UserID, terr)
-		} else if len(tokens) > 0 {
-			sendRes, serr := s.push.send(ctx, tokens, created)
-			if serr != nil {
-				// Inbox row is already persisted; surface delivery failure in
-				// logs only so the caller still sees a created notification.
-				log.Warnf("notification.push_failed notification_id=%d user_id=%d err=%v",
-					created.NotificationId(), req.UserID, serr)
-			} else {
-				res.PushSuccess = sendRes.SuccessCount
-				res.PushFailure = sendRes.FailureCount
-				if len(sendRes.InvalidTokens) > 0 {
-					if cerr := s.clearTokensCmd.Handle(ctx, command.ClearDeadTokensCommand{
-						Tokens: sendRes.InvalidTokens,
-					}); cerr != nil {
-						log.Warnf("notification.clear_dead_tokens_failed count=%d err=%v",
-							len(sendRes.InvalidTokens), cerr)
-					}
-				}
-			}
-		}
-	}
+	// // Push delivery — out of any tx, best-effort.
+	// if s.push.enabled() {
+	// 	tokens, terr := s.recipientTokens(ctx, req.UserID)
+	// 	if terr != nil {
+	// 		log.Warnf("notification.token_lookup_failed user_id=%d err=%v", req.UserID, terr)
+	// 	} else if len(tokens) > 0 {
+	// 		sendRes, serr := s.push.send(ctx, tokens, created)
+	// 		if serr != nil {
+	// 			// Inbox row is already persisted; surface delivery failure in
+	// 			// logs only so the caller still sees a created notification.
+	// 			log.Warnf("notification.push_failed notification_id=%d user_id=%d err=%v",
+	// 				created.NotificationId(), req.UserID, serr)
+	// 		} else {
+	// 			res.PushSuccess = sendRes.SuccessCount
+	// 			res.PushFailure = sendRes.FailureCount
+	// 			if len(sendRes.InvalidTokens) > 0 {
+	// 				if cerr := s.clearTokensCmd.Handle(ctx, command.ClearDeadTokensCommand{
+	// 					Tokens: sendRes.InvalidTokens,
+	// 				}); cerr != nil {
+	// 					log.Warnf("notification.clear_dead_tokens_failed count=%d err=%v",
+	// 						len(sendRes.InvalidTokens), cerr)
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	// Realtime delivery — out of any tx, best-effort. Mirrors the FCM push: the
 	// inbox row is authoritative, so a socket publish failure is logged only.
