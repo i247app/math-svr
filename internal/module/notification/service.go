@@ -71,9 +71,13 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 		return nil, err
 	}
 
-	user, err := s.userRepo.FindById(ctx, req.UserID)
+	user, err := s.userRepo.FindByUserId(ctx, req.UserID)
 	if err != nil {
 		return nil, err
+	}
+
+	if user == nil {
+		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil, ErrUserNotFound)
 	}
 
 	notiDomain := domain.NewNotification()

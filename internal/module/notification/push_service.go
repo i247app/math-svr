@@ -6,6 +6,7 @@ import (
 
 	notifAdapter "math-ai.com/math-ai/internal/adapter/notification"
 	domain "math-ai.com/math-ai/internal/domain/notification"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
 // pushService is the typed seam over the notification adapter — it keeps the
@@ -26,6 +27,7 @@ func (p *pushService) enabled() bool { return p.adapter != nil }
 // notification onto the push payload. action_type / action_data ride along in
 // the data map so the mobile client can deep-link.
 func (p *pushService) send(ctx context.Context, tokens []string, n *domain.Notification) (*notifAdapter.SendResult, error) {
+	log := logger.From(ctx)
 	data := map[string]string{
 		"notification_id": strconv.FormatInt(n.NotificationId(), 10),
 	}
@@ -37,6 +39,10 @@ func (p *pushService) send(ctx context.Context, tokens []string, n *domain.Notif
 	}
 	if n.Category() != nil {
 		data["category"] = *n.Category()
+	}
+
+	for _, token := range tokens {
+		log.Infof("FCM to token: %s", token)
 	}
 
 	return p.adapter.Send(ctx, notifAdapter.PushMessage{

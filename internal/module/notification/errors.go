@@ -4,6 +4,7 @@ import "errors"
 
 // Module-scoped sentinel errors. See conventions.md §Errors.
 var (
+	ErrUserNotFound           = errors.New("user not found")
 	ErrUidRequired            = errors.New("uid is required")
 	ErrTitleRequired          = errors.New("title is required")
 	ErrShortTextRequired      = errors.New("short_text is required")
