@@ -1,7 +1,7 @@
 // Package logger provides a per-request, slog-backed logger that emits
 // binbase-svr's house log format:
 //
-//	2026/04/27 08:20:33 [6MEuCw] [623119] [POST /lookups/sync] msg key=val ...
+//	2026/04/27 08:20:33 [Req: 1] [6MEuCw] [623119] [POST /lookups/sync] msg key=val ...
 //
 // Middleware (internal/bootstrap/middleware.LoggerMiddleware) constructs one
 // AppLogger per HTTP request and binds it to the request context. Handlers

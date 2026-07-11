@@ -60,6 +60,9 @@ func (h *jsonHandler) Handle(ctx context.Context, rec slog.Record) error {
 	m["level"] = levelString(rec.Level)
 	m["msg"] = rec.Message
 
+	if rid := sctx.RequestID(ctx); rid != 0 {
+		m["request_id"] = rid
+	}
 	if tok := tokenSuffixOr(ctx); tok != "" && tok != anonToken {
 		m["token"] = tok
 	}

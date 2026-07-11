@@ -31,6 +31,13 @@ func LoggerMiddleware(p *logger.Provider, res *resource.Resource) func(http.Hand
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
+			// Assign a monotonic per-request id (atomic, race-free) so every
+			// log line emitted while handling this request carries the same
+			// [Req: N] tag. This is what lets an operator gather the lines of
+			// one request out of the interleaved output of many concurrent
+			// requests. Must be set before p.New so the logger binds it.
+			ctx = sctx.WithRequestID(ctx, sctx.NextRequestID())
+
 			// Set token suffix for logger
 			if tail := bearerTail(r); tail != "" {
 				ctx = sctx.WithTokenSuffix(ctx, tail)

@@ -26,7 +26,7 @@ const (
 
 // prefixHandler is the slog.Handler that produces the binbase-svr log line:
 //
-//	YYYY/MM/DD HH:MM:SS [<token6>] [<uid>] [<METHOD> <path>] msg key=val ...
+//	YYYY/MM/DD HH:MM:SS [Req: <n>] [<token6>] [<uid>] [<METHOD> <path>] msg key=val ...
 //
 // One handler is constructed per AppLogger (i.e. per request) so it can hold
 // the request reference. Concurrent Handle calls are serialised via mu to
@@ -70,7 +70,9 @@ func (h *prefixHandler) Handle(ctx context.Context, rec slog.Record) error {
 	b.WriteString(rec.Time.UTC().Format(timeFormat))
 	b.WriteByte(' ')
 
-	b.WriteByte('[')
+	b.WriteString("[Req: ")
+	b.WriteString(requestIDOr(ctx))
+	b.WriteString("] [")
 	b.WriteString(tokenSuffixOr(ctx))
 	b.WriteString("] [")
 	b.WriteString(uidOr(ctx))
@@ -145,6 +147,13 @@ func (h *prefixHandler) requestLine() string {
 		path = h.request.URL.Path
 	}
 	return h.request.Method + " " + path
+}
+
+func requestIDOr(ctx context.Context) string {
+	if v := sctx.RequestID(ctx); v != 0 {
+		return strconv.FormatUint(v, 10)
+	}
+	return noRequest
 }
 
 func tokenSuffixOr(ctx context.Context) string {
