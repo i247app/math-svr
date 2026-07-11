@@ -70,7 +70,7 @@ func (h *prefixHandler) Handle(ctx context.Context, rec slog.Record) error {
 	b.WriteString(rec.Time.UTC().Format(timeFormat))
 	b.WriteByte(' ')
 
-	b.WriteString("[Req: ")
+	b.WriteString("[ReqID: ")
 	b.WriteString(requestIDOr(ctx))
 	b.WriteString("] [")
 	b.WriteString(tokenSuffixOr(ctx))
