@@ -24,3 +24,11 @@ func (s RoleType) IsValid() bool {
 		return false
 	}
 }
+
+func ListRoles() []string {
+	return []string{
+		RoleTypeStudent.String(),
+		RoleTypeTeacher.String(),
+		RoleTypeParent.String(),
+	}
+}

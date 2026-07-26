@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/grade"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -47,7 +48,7 @@ func (h *CreateGradeCommandHandler) Handle(ctx context.Context, cmd CreateGradeC
 	var created *grade.Grade
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		gradeID, err := nextSeqID(ctx, repos, seq.NameGrade)
+		gradeID, err := seqgen.Next(ctx, repos.Seq, seq.NameGrade)
 		if err != nil {
 			return err
 		}
@@ -85,7 +86,7 @@ func (h *CreateGradeCommandHandler) Handle(ctx context.Context, cmd CreateGradeC
 			}
 			seen[lang] = struct{}{}
 
-			translationID, err := nextSeqID(ctx, repos, seq.NameGradeTranslation)
+			translationID, err := seqgen.Next(ctx, repos.Seq, seq.NameGradeTranslation)
 			if err != nil {
 				return err
 			}

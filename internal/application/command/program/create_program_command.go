@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/program"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -47,7 +48,7 @@ func (h *CreateProgramCommandHandler) Handle(ctx context.Context, cmd CreateProg
 	var created *program.Program
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		programID, err := nextSeqID(ctx, repos, seq.NameProgram)
+		programID, err := seqgen.Next(ctx, repos.Seq, seq.NameProgram)
 		if err != nil {
 			return err
 		}
@@ -85,7 +86,7 @@ func (h *CreateProgramCommandHandler) Handle(ctx context.Context, cmd CreateProg
 			}
 			seen[lang] = struct{}{}
 
-			translationID, err := nextSeqID(ctx, repos, seq.NameProgramTranslation)
+			translationID, err := seqgen.Next(ctx, repos.Seq, seq.NameProgramTranslation)
 			if err != nil {
 				return err
 			}

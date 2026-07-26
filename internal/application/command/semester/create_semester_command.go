@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/semester"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -47,7 +48,7 @@ func (h *CreateSemesterCommandHandler) Handle(ctx context.Context, cmd CreateSem
 	var created *semester.Semester
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		semesterID, err := nextSeqID(ctx, repos, seq.NameSemester)
+		semesterID, err := seqgen.Next(ctx, repos.Seq, seq.NameSemester)
 		if err != nil {
 			return err
 		}
@@ -85,7 +86,7 @@ func (h *CreateSemesterCommandHandler) Handle(ctx context.Context, cmd CreateSem
 			}
 			seen[lang] = struct{}{}
 
-			translationID, err := nextSeqID(ctx, repos, seq.NameSemesterTranslation)
+			translationID, err := seqgen.Next(ctx, repos.Seq, seq.NameSemesterTranslation)
 			if err != nil {
 				return err
 			}

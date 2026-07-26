@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/grade"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -97,7 +98,7 @@ func (h *UpdateGradeCommandHandler) Handle(ctx context.Context, cmd UpdateGradeC
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			if current == nil {
-				translationID, err := nextSeqID(ctx, repos, seq.NameGradeTranslation)
+				translationID, err := seqgen.Next(ctx, repos.Seq, seq.NameGradeTranslation)
 				if err != nil {
 					return err
 				}

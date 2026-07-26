@@ -49,7 +49,7 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case USER_AVATAR_INVALID_REFERENCE:
 		return "Avatar reference is invalid"
 	case USER_INVALID_ROLE:
-		return "Role is invalid"
+		return "Role is invalid, Supported roles: {roles}"
 
 	// Auth
 	case AUTH_MISSING_LOGIN_NAME:

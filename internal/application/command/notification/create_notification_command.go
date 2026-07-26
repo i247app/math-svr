@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -39,7 +40,7 @@ func (h *CreateNotificationCommandHandler) Handle(ctx context.Context, cmd Creat
 	var created *notification.Notification
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		id, err := nextSeqID(ctx, repos, seq.NameNotification)
+		id, err := seqgen.Next(ctx, repos.Seq, seq.NameNotification)
 		if err != nil {
 			return err
 		}

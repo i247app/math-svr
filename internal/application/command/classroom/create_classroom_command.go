@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -77,7 +78,7 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 			classroomCodeArg = &minted
 		}
 
-		classroomID, err := nextSeqID(ctx, repos, seq.NameClassroom)
+		classroomID, err := seqgen.Next(ctx, repos.Seq, seq.NameClassroom)
 		if err != nil {
 			return err
 		}
@@ -116,7 +117,7 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 				ErrClassroomNotFoundAfterInsert)
 		}
 
-		memberID, err := nextSeqID(ctx, repos, seq.NameClassroomMember)
+		memberID, err := seqgen.Next(ctx, repos.Seq, seq.NameClassroomMember)
 		if err != nil {
 			return err
 		}

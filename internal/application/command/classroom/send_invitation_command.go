@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -149,7 +150,7 @@ func (h *SendInvitationCommandHandler) Handle(ctx context.Context, cmd SendInvit
 				continue
 			}
 
-			memberID, err := nextSeqID(ctx, repos, seq.NameClassroomMember)
+			memberID, err := seqgen.Next(ctx, repos.Seq, seq.NameClassroomMember)
 			if err != nil {
 				return err
 			}

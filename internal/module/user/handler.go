@@ -17,21 +17,6 @@ const (
 	MaxAvatarUploadSize = 10 << 20 // 10 MB
 )
 
-// multipartTextValue returns (value, true) if the named text part was
-// present in the multipart form, and ("", false) otherwise. Used to
-// distinguish "field absent" (leave avatar_key alone) from "field
-// present and empty" (reject as invalid reference) in update flows.
-func multipartTextValue(r *http.Request, name string) (string, bool) {
-	if r.MultipartForm == nil || r.MultipartForm.Value == nil {
-		return "", false
-	}
-	vs, ok := r.MultipartForm.Value[name]
-	if !ok || len(vs) == 0 {
-		return "", false
-	}
-	return vs[0], true
-}
-
 type UserHandler struct {
 	appResource *resource.Resource
 	userSvc     *Service

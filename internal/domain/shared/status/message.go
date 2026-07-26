@@ -14,12 +14,12 @@ func GetMessage(language enum.LanguageType, statusCode StatusCode, args map[stri
 
 	// Get template and static message based on language
 	switch language {
-	case enum.LanguageTypeEnglish:
-		message = GetENMessage(statusCode)
-	case enum.LanguageTypeVietnamese:
+	case enum.LanguageTypeVietnamese, enum.LanguageTypeVietnameseV2:
 		message = GetVNMessage(statusCode)
-	default:
+	case enum.LanguageTypeEnglish, enum.LanguageTypeEnglishV2:
 		message = GetENMessage(statusCode)
+	default:
+		message = GetVNMessage(statusCode)
 	}
 
 	// If we have args and a template exists, use the template

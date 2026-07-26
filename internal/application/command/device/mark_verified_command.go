@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -45,7 +46,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 		if d == nil {
 			// return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
 			d := device.NewDevice()
-			deviceID, err := nextSeqID(ctx, repos, seq.NameDevice)
+			deviceID, err := seqgen.Next(ctx, repos.Seq, seq.NameDevice)
 			if err != nil {
 				return err
 			}

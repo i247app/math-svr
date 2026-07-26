@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/loginlog"
@@ -157,7 +158,7 @@ func ensureDevice(
 	}
 
 	deviceBuild := BuildDevice(userId, cmd)
-	deviceID, err := nextSeqID(ctx, repos, seq.NameDevice)
+	deviceID, err := seqgen.Next(ctx, repos.Seq, seq.NameDevice)
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/quiz"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -50,7 +51,7 @@ func (h *CreateQuizCommandHandler) Handle(ctx context.Context, cmd CreateQuizCom
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
 		q := quiz.NewQuiz()
 		// q.SetQuizId(utils.GenerateUUID().String())
-		quizID, err := nextSeqID(ctx, repos, seq.NameQuiz)
+		quizID, err := seqgen.Next(ctx, repos.Seq, seq.NameQuiz)
 		if err != nil {
 			return err
 		}

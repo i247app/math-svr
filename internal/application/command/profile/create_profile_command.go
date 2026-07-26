@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -42,7 +43,7 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 	var created *profile.Profile
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
-		profileID, err := nextSeqID(ctx, repos, seq.NameUser)
+		profileID, err := seqgen.Next(ctx, repos.Seq, seq.NameUser)
 		if err != nil {
 			return err
 		}

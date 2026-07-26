@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/chapter"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -48,7 +49,7 @@ func (h *CreateChapterCommandHandler) Handle(ctx context.Context, cmd CreateChap
 	var created *chapter.Chapter
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		chapterID, err := nextSeqID(ctx, repos, seq.NameChapter)
+		chapterID, err := seqgen.Next(ctx, repos.Seq, seq.NameChapter)
 		if err != nil {
 			return err
 		}
@@ -87,7 +88,7 @@ func (h *CreateChapterCommandHandler) Handle(ctx context.Context, cmd CreateChap
 			}
 			seen[lang] = struct{}{}
 
-			translationID, err := nextSeqID(ctx, repos, seq.NameChapterTranslation)
+			translationID, err := seqgen.Next(ctx, repos.Seq, seq.NameChapterTranslation)
 			if err != nil {
 				return err
 			}

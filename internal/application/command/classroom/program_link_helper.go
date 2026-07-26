@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -44,7 +45,7 @@ func insertClassroomPrograms(
 		return []int64{}, nil
 	}
 	for _, pid := range ids {
-		linkID, err := nextSeqID(ctx, repos, seq.NameClassroomProgram)
+		linkID, err := seqgen.Next(ctx, repos.Seq, seq.NameClassroomProgram)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +102,7 @@ func replaceClassroomPrograms(
 		if _, exists := currentIndex[id]; exists {
 			continue
 		}
-		linkID, err := nextSeqID(ctx, repos, seq.NameClassroomProgram)
+		linkID, err := seqgen.Next(ctx, repos.Seq, seq.NameClassroomProgram)
 		if err != nil {
 			return nil, err
 		}

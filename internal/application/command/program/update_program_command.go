@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/program"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -97,7 +98,7 @@ func (h *UpdateProgramCommandHandler) Handle(ctx context.Context, cmd UpdateProg
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			if current == nil {
-				translationID, err := nextSeqID(ctx, repos, seq.NameProgramTranslation)
+				translationID, err := seqgen.Next(ctx, repos.Seq, seq.NameProgramTranslation)
 				if err != nil {
 					return err
 				}

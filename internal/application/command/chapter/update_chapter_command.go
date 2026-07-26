@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/chapter"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -104,7 +105,7 @@ func (h *UpdateChapterCommandHandler) Handle(ctx context.Context, cmd UpdateChap
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			if current == nil {
-				translationID, err := nextSeqID(ctx, repos, seq.NameChapterTranslation)
+				translationID, err := seqgen.Next(ctx, repos.Seq, seq.NameChapterTranslation)
 				if err != nil {
 					return err
 				}

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/command/shared/scorer"
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
@@ -79,7 +80,7 @@ func (h *SubmitExerciseAnswersV2CommandHandler) Handle(ctx context.Context, cmd 
 	var created *domain.Submission
 
 	err = h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		submissionID, err := nextSeqID(ctx, repos, seq.NameClassroomExerciseSubmission)
+		submissionID, err := seqgen.Next(ctx, repos.Seq, seq.NameClassroomExerciseSubmission)
 		if err != nil {
 			return err
 		}

@@ -27,7 +27,10 @@ func ValidateCreateUser(ctx context.Context, req *dto.CreateUserReq) error {
 		req.Role = ""
 	} else {
 		if !enum.RoleType(role).IsValid() {
-			return errs.NewError(ctx, status.USER_INVALID_ROLE, nil, ErrRoleInvalid)
+			args := map[string]any{
+				"roles": enum.ListRoles(),
+			}
+			return errs.NewError(ctx, status.USER_INVALID_ROLE, args, ErrRoleInvalid)
 		}
 		req.Role = role
 	}

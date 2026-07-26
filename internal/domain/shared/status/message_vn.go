@@ -49,7 +49,7 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case USER_AVATAR_INVALID_REFERENCE:
 		return "Đường dẫn ảnh đại diện không hợp lệ"
 	case USER_INVALID_ROLE:
-		return "Vai trò không hợp lệ"
+		return "Vai trò không hợp lệ, các vai trò được hỗ trợ: {roles}"
 
 	// Auth
 	case AUTH_MISSING_LOGIN_NAME:

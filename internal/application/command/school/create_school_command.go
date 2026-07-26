@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -32,7 +33,7 @@ func (h *CreateSchoolCommandHandler) Handle(ctx context.Context, cmd CreateSchoo
 	var created *school.School
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		schoolID, err := nextSeqID(ctx, repos, seq.NameSchool)
+		schoolID, err := seqgen.Next(ctx, repos.Seq, seq.NameSchool)
 		if err != nil {
 			return err
 		}

@@ -3,6 +3,7 @@ package command
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -82,7 +83,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		// 	}
 		// }
 
-		userID, err := nextSeqID(ctx, repos, seq.NameUser)
+		userID, err := seqgen.Next(ctx, repos.Seq, seq.NameUser)
 		if err != nil {
 			return err
 		}
@@ -99,7 +100,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		for _, aka := range aliases {
 			if aka != nil && *aka != "" {
 				alias := user.NewAlias()
-				aliasID, err := nextSeqID(ctx, repos, seq.NameAlias)
+				aliasID, err := seqgen.Next(ctx, repos.Seq, seq.NameAlias)
 				if err != nil {
 					return err
 				}
@@ -113,10 +114,6 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 
-		// profileID, err := nextSeqID(ctx, repos, seq.NameUser)
-		// if err != nil {
-		// 	return err
-		// }
 		profileCode, err := mintUniqueProfileCode(ctx, repos)
 		if err != nil {
 			return err

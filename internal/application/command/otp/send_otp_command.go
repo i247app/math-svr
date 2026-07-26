@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
+	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -121,7 +122,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		// 4. Insert fresh row
 		o := otp.NewOtp()
 		// o.SetOtpId(utils.GenerateUUID().String())
-		otpID, err := nextSeqID(ctx, repos, seq.NameOtp)
+		otpID, err := seqgen.Next(ctx, repos.Seq, seq.NameOtp)
 		if err != nil {
 			return err
 		}

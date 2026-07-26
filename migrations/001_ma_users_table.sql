@@ -16,6 +16,5 @@ CREATE TABLE IF NOT EXISTS ma_users (
   modify_dt       DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   deleted_dt      DATETIME(6) DEFAULT NULL,
   PRIMARY KEY (id),
-  UNIQUE KEY user_id (user_id),
-  UNIQUE KEY name (name)
+  UNIQUE KEY user_id (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
