@@ -115,6 +115,10 @@ func (r *UserRepository) FindByUserName(ctx context.Context, userName string) (*
 	return r.findOneBy(ctx, "u.name = ?", userName)
 }
 
+func (r *UserRepository) FindByLoginName(ctx context.Context, loginName string) (*user.User, error) {
+	return r.findOneBy(ctx, "a.aka = ?", loginName)
+}
+
 func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, error) {
 	query := `
 		INSERT INTO ` + userTable + ` (user_id, name, phone, email, avatar_key, role, user_status, note, create_dt, modify_dt)

@@ -52,8 +52,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Role is invalid"
 
 	// Auth
-	case AUTH_MISSING_PHONE:
-		return "Please enter your phone"
+	case AUTH_MISSING_LOGIN_NAME:
+		return "Please enter your login name"
 	case AUTH_MISSING_DEVICE_UUID:
 		return "Device identifier is required"
 	case AUTH_MISSING_IP_ADDRESS:

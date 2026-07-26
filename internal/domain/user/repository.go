@@ -14,6 +14,7 @@ type IRepository interface {
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByPhone(ctx context.Context, phone string) (*User, error)
 	FindByUserName(ctx context.Context, userName string) (*User, error)
+	FindByLoginName(ctx context.Context, loginName string) (*User, error)
 	ListUsers(ctx context.Context, params *ListUsersParams) ([]*User, *pagination.Pagination, error)
 	Create(ctx context.Context, user *User) (*User, error)
 	Update(ctx context.Context, user *User) error

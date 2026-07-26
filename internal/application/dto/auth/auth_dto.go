@@ -6,7 +6,7 @@ import (
 
 type LoginReq struct {
 	OTPEnabled bool   `json:"otp_enabled"`
-	Phone      string `json:"phone"`
+	LoginName  string `json:"login_name"`
 }
 
 // LoginRes carries one of two shapes depending on device trust:

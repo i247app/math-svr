@@ -42,13 +42,17 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		return nil, err
 	}
 
-	normalizePhone, err := utils.NormalizePhone(req.Phone)
-	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	loginName := req.LoginName
+	if utils.ValidatePhone(req.LoginName) {
+		normalizePhone, err := utils.NormalizePhone(loginName)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		loginName = normalizePhone
 	}
 
 	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
-		Phone:           normalizePhone,
+		LoginName:       loginName,
 		DeviceUUID:      metadata.GetDeviceID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),
@@ -79,7 +83,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 			Source:    "login",
 			IsSecure:  true,
 			UID:       userRes.User.UserID,
-			LoginName: req.Phone,
+			LoginName: loginName,
 		}
 
 		if userRes.User.Email != nil {
@@ -90,7 +94,6 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 	}
 
 	return &dto.LoginRes{
-		// TwoFactorRequired: result.TwoFactorRequired,
 		User:        userRes.User,
 		IsTrusted:   result.IsTrustedDevice,
 		RequiredOTP: !result.IsTrustedDevice,
@@ -143,13 +146,17 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 		return nil, err
 	}
 
-	normalizePhone, err := utils.NormalizePhone(req.Phone)
-	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	loginName := req.LoginName
+	if utils.ValidatePhone(req.LoginName) {
+		normalizePhone, err := utils.NormalizePhone(loginName)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		loginName = normalizePhone
 	}
 
 	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
-		Phone:           normalizePhone,
+		LoginName:       loginName,
 		DeviceUUID:      metadata.GetDeviceID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),
@@ -176,7 +183,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 
 	otpCreated, err := s.otpSvc.Send(ctx, &dtoOtp.SendOtpReq{
 		OtpType:    string(enum.OtpTypeLogin2FA),
-		Identifier: normalizePhone,
+		Identifier: loginName,
 		UserID:     &userRes.User.UserID,
 	})
 	if err != nil {

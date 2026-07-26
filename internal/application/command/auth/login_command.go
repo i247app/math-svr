@@ -15,7 +15,7 @@ import (
 )
 
 type LoginCommand struct {
-	Phone           string
+	LoginName       string
 	DeviceUUID      string
 	DeviceName      string
 	IPAddress       string
@@ -62,10 +62,11 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 	var result *LoginCommandResult
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		u, err := repos.User.FindByPhone(ctx, cmd.Phone)
+		u, err := repos.User.FindByLoginName(ctx, cmd.LoginName)
 		if err != nil {
 			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 		}
+
 		if u == nil {
 			return nil
 		}
@@ -155,16 +156,25 @@ func ensureDevice(
 		return existing, nil
 	}
 
-	d := device.NewDevice()
+	deviceBuild := BuildDevice(userId, cmd)
 	deviceID, err := nextSeqID(ctx, repos, seq.NameDevice)
 	if err != nil {
 		return nil, err
 	}
+	deviceBuild.SetDeviceId(deviceID)
 
-	d.SetDeviceId(deviceID)
+	created, err := repos.Device.Create(ctx, deviceBuild)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+	}
+	return created, nil
+}
+
+func BuildDevice(userId int64, cmd LoginCommand) *device.Device {
+	d := device.NewDevice()
 	d.SetUserId(&userId)
 	d.SetDeviceUUID(cmd.DeviceUUID)
-	d.SetDeviceName(deviceNameOrDefault(cmd.DeviceName))
+	d.SetDeviceName(cmd.DeviceName)
 	if cmd.DevicePushToken != "" {
 		token := cmd.DevicePushToken
 		d.SetDevicePushToken(&token)
@@ -174,23 +184,11 @@ func ensureDevice(
 	d.SetDeviceStatus(&active)
 	d.SetStatus(enum.StatusActive.String())
 
-	created, err := repos.Device.Create(ctx, d)
-	if err != nil {
-		return nil, errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
-	}
-	return created, nil
-}
-
-func deviceNameOrDefault(name string) string {
-	if strings.TrimSpace(name) == "" {
-		return "Unknown device"
-	}
-	return name
+	return d
 }
 
 func BuildLoginLog(userId int64, cmd LoginCommand) *loginlog.LoginLog {
 	ll := loginlog.NewLoginLog()
-	// ll.SetLoginLogId(utils.GenerateUUID().String())
 	ll.SetUserId(userId)
 	ll.SetDeviceUUID(cmd.DeviceUUID)
 	ll.SetIpAddress(cmd.IPAddress)
@@ -202,9 +200,6 @@ func BuildLoginLog(userId int64, cmd LoginCommand) *loginlog.LoginLog {
 }
 
 func ValidateLoginCommand(ctx context.Context, cmd LoginCommand) error {
-	if strings.TrimSpace(cmd.Phone) == "" {
-		return errs.NewError(ctx, status.AUTH_MISSING_PHONE, nil, ErrPhoneRequired)
-	}
 	if strings.TrimSpace(cmd.DeviceUUID) == "" {
 		return errs.NewError(ctx, status.AUTH_MISSING_DEVICE_UUID, nil, ErrDeviceUUIDRequired)
 	}

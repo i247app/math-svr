@@ -52,8 +52,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Vai trò không hợp lệ"
 
 	// Auth
-	case AUTH_MISSING_PHONE:
-		return "Vui lòng nhập số điện thoại"
+	case AUTH_MISSING_LOGIN_NAME:
+		return "Vui lòng nhập tên đăng nhập"
 	case AUTH_MISSING_DEVICE_UUID:
 		return "Vui lòng cung cấp mã thiết bị"
 	case AUTH_MISSING_IP_ADDRESS:
