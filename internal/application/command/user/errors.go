@@ -9,4 +9,5 @@ var (
 	ErrEmailAlreadyExists       = errors.New("email already exists")
 	ErrUsernameAlreadyExists    = errors.New("username already exists")
 	ErrProfileCodeMintExhausted = errors.New("could not mint a unique profile code")
+	ErrEmailNotVerified         = errors.New("email not verified via a matching REGISTER otp within the trust window")
 )

@@ -8,9 +8,10 @@ type User struct {
 	id         int64
 	userId     int64
 	userName   string
-	phone      string
-	email      *string
-	avatarKey  *string
+	phone           string
+	email           *string
+	isEmailVerified bool
+	avatarKey       *string
 	role       string
 	userStatus *string
 	status     string
@@ -63,6 +64,14 @@ func (u *User) Email() *string {
 
 func (u *User) SetEmail(email *string) {
 	u.email = email
+}
+
+func (u *User) IsEmailVerified() bool {
+	return u.isEmailVerified
+}
+
+func (u *User) SetIsEmailVerified(isEmailVerified bool) {
+	u.isEmailVerified = isEmailVerified
 }
 
 func (u *User) AvatarKey() *string {

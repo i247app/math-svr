@@ -19,7 +19,7 @@ import (
 const (
 	userTable = "ma_users"
 
-	userColumns = `u.id, u.user_id, u.name, u.phone, u.email, u.avatar_key, u.role, u.user_status, u.status,
+	userColumns = `u.id, u.user_id, u.name, u.phone, u.email, u.is_email_verified, u.avatar_key, u.role, u.user_status, u.status,
 	u.note, u.create_id, u.create_dt, u.modify_id, u.modify_dt`
 
 	userFromJoin = userTable + ` u
@@ -53,7 +53,7 @@ func NewUserRepository(db database.Executor) user.IRepository {
 
 func scanUser(s database.RowScanner) (*models.UserModel, error) {
 	var m models.UserModel
-	if err := s.Scan(&m.Id, &m.UserId, &m.UserName, &m.Phone, &m.Email, &m.AvatarKey, &m.Role, &m.UserStatus, &m.Status,
+	if err := s.Scan(&m.Id, &m.UserId, &m.UserName, &m.Phone, &m.Email, &m.IsEmailVerified, &m.AvatarKey, &m.Role, &m.UserStatus, &m.Status,
 		&m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -121,11 +121,11 @@ func (r *UserRepository) FindByLoginName(ctx context.Context, loginName string) 
 
 func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, error) {
 	query := `
-		INSERT INTO ` + userTable + ` (user_id, name, phone, email, avatar_key, role, user_status, note, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO ` + userTable + ` (user_id, name, phone, email, is_email_verified, avatar_key, role, user_status, note, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.AvatarKey(), u.Role(), u.UserStatus(), u.Note(), mtime.Now().Time, mtime.Now().Time)
+	result, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.IsEmailVerified(), u.AvatarKey(), u.Role(), u.UserStatus(), u.Note(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("user repo create: %w", err)
 	}
@@ -291,6 +291,7 @@ func ModelToDomain(m *models.UserModel) *user.User {
 	u.SetUserId(m.UserId)
 	u.SetUserName(m.UserName)
 	u.SetEmail(m.Email)
+	u.SetIsEmailVerified(m.IsEmailVerified)
 	u.SetPhone(m.Phone)
 	u.SetAvatarKey(m.AvatarKey)
 	u.SetRole(m.Role)

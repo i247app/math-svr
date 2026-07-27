@@ -2,8 +2,10 @@ package command
 
 import (
 	"context"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
+	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -13,6 +15,12 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 )
+
+// emailVerificationWindow is how long a successful REGISTER OTP verification
+// stays trustworthy for a subsequent /users/create call. Hardcoded (not
+// env-configurable) per the business rule: verification is a point-in-time
+// proof, not a standing grant.
+const emailVerificationWindow = 15 * time.Minute
 
 // CreateUserCommand also creates the user's first child profile in the same
 // transaction. Onboarding is single-call: the parent registers, names their
@@ -29,6 +37,10 @@ type CreateUserCommand struct {
 	Email     *string
 	UserName  string
 	AvatarKey *string
+
+	// DeviceUUID is the requesting device (metadata.device_uuid), used only
+	// to decide is_email_verified — see emailOtpMatches.
+	DeviceUUID string
 }
 
 func (c CreateUserCommand) Validate() error {
@@ -88,8 +100,28 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			return err
 		}
 
+		// An email supplied without a matching REGISTER OTP verification is
+		// rejected outright — per business decision, the server never
+		// silently downgrades to an unverified account when the client
+		// claims an email. Omitting email entirely is still allowed (it
+		// stays optional); only a *supplied-but-unverified* email blocks
+		// creation.
+		hasEmail := cmd.Email != nil && *cmd.Email != ""
+		if hasEmail {
+			verified, err := repos.Otp.FindLatestVerified(ctx, enum.OtpTypeRegister, *cmd.Email)
+			if err != nil {
+				return errs.NewError(ctx, status.FAIL, nil, err)
+			}
+			if !emailOtpMatches(verified, cmd.DeviceUUID) {
+				return errs.NewError(ctx, status.USER_EMAIL_NOT_VERIFIED, nil, ErrEmailNotVerified)
+			}
+		}
+
 		userDomain := BuildUser(cmd)
 		userDomain.SetUserId(userID)
+		// Reaching here with hasEmail=true means the check above passed, so
+		// the email is provably verified.
+		userDomain.SetIsEmailVerified(hasEmail)
 
 		u, err := repos.User.Create(ctx, userDomain)
 		if err != nil {
@@ -137,6 +169,27 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		return nil, err
 	}
 	return result, nil
+}
+
+// emailOtpMatches reports whether a verified REGISTER OTP for the target
+// email is still trustworthy for this create-user request: verified from the
+// same device the request is coming from, and within emailVerificationWindow.
+// Empty device_uuid on either side never matches (fail-closed) — an absent
+// device identifier is not a valid basis for trust.
+func emailOtpMatches(verified *otp.Otp, deviceUUID string) bool {
+	if verified == nil {
+		return false
+	}
+	if deviceUUID == "" || verified.DeviceUUID() == nil || *verified.DeviceUUID() == "" {
+		return false
+	}
+	if *verified.DeviceUUID() != deviceUUID {
+		return false
+	}
+	if !verified.OtpVerifiedDt().IsValid() {
+		return false
+	}
+	return time.Now().UTC().Sub(verified.OtpVerifiedDt().Time) <= emailVerificationWindow
 }
 
 func BuildUser(cmd CreateUserCommand) *user.User {

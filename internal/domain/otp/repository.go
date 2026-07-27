@@ -15,6 +15,12 @@ type IRepository interface {
 	// VerifyOtpCommand and by the cooldown check in SendOtpCommand.
 	FindLatestPending(ctx context.Context, otpType enum.OtpType, identifier string) (*Otp, error)
 
+	// FindLatestVerified returns the newest VERIFIED OTP for the
+	// (type, identifier) pair, or (nil, nil) when none exist. Used by
+	// CreateUserCommand to decide whether a supplied email was actually
+	// OTP-verified (type=REGISTER) before trusting it.
+	FindLatestVerified(ctx context.Context, otpType enum.OtpType, identifier string) (*Otp, error)
+
 	// CountSentSince counts OTPs issued for (type, identifier) since `since`.
 	// Backs the per-window send-rate limit.
 	CountSentSince(ctx context.Context, otpType enum.OtpType, identifier string, since time.Time) (int, error)

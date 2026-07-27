@@ -50,6 +50,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Đường dẫn ảnh đại diện không hợp lệ"
 	case USER_INVALID_ROLE:
 		return "Vai trò không hợp lệ, các vai trò được hỗ trợ: {roles}"
+	case USER_EMAIL_NOT_VERIFIED:
+		return "Email chưa được xác thực. Vui lòng xác thực email bằng OTP trước khi đăng ký với email này"
 
 	// Auth
 	case AUTH_MISSING_LOGIN_NAME:

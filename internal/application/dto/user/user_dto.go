@@ -9,12 +9,13 @@ import (
 )
 
 type UserResponse struct {
-	ID     int64   `json:"id"`
-	UserID int64   `json:"user_id"`
-	Name   string  `json:"name"`
-	Email  *string `json:"email,omitempty"`
-	Phone  string  `json:"phone,omitempty"`
-	Role   string  `json:"role"`
+	ID              int64   `json:"id"`
+	UserID          int64   `json:"user_id"`
+	Name            string  `json:"name"`
+	Email           *string `json:"email,omitempty"`
+	IsEmailVerified bool    `json:"is_email_verified"`
+	Phone           string  `json:"phone,omitempty"`
+	Role            string  `json:"role"`
 	// AvatarKey is the raw S3 object key persisted on the user row.
 	// AvatarUrl is a short-lived presigned URL the module layer fills
 	// in on the way out (see populateImageUrl in module/user). Clients
@@ -143,15 +144,16 @@ func DomainToResponse(u *user.User) *UserResponse {
 	}
 
 	return &UserResponse{
-		ID:        u.Id(),
-		UserID:    u.UserId(),
-		Name:      u.UserName(),
-		Email:     u.Email(),
-		Phone:     normalizedPhone,
-		Role:      u.Role(),
-		AvatarKey: u.AvatarKey(),
-		CreateDt:  u.CreateDt().String(),
-		ModifyDt:  u.ModifyDt().String(),
+		ID:              u.Id(),
+		UserID:          u.UserId(),
+		Name:            u.UserName(),
+		Email:           u.Email(),
+		IsEmailVerified: u.IsEmailVerified(),
+		Phone:           normalizedPhone,
+		Role:            u.Role(),
+		AvatarKey:       u.AvatarKey(),
+		CreateDt:        u.CreateDt().String(),
+		ModifyDt:        u.ModifyDt().String(),
 	}
 }
 

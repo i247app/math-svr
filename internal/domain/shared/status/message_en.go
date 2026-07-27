@@ -5,7 +5,7 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case SUCCESS:
 		return "Success"
 	case BAD_REQUEST:
-		return "Bad Request"
+		return "Internal Server Error"
 	case UNAUTHORIZED:
 		return "Unauthorized"
 	case FORBIDDEN:
@@ -50,6 +50,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Avatar reference is invalid"
 	case USER_INVALID_ROLE:
 		return "Role is invalid, Supported roles: {roles}"
+	case USER_EMAIL_NOT_VERIFIED:
+		return "Email is not verified. Please verify your email via OTP before signing up with it"
 
 	// Auth
 	case AUTH_MISSING_LOGIN_NAME:

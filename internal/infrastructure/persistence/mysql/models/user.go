@@ -8,9 +8,10 @@ type UserModel struct {
 	Id         int64
 	UserId     int64
 	UserName   string
-	Phone      string
-	Email      *string
-	AvatarKey  *string
+	Phone           string
+	Email           *string
+	IsEmailVerified bool
+	AvatarKey       *string
 	Role       string
 	UserStatus *string
 	Status     string

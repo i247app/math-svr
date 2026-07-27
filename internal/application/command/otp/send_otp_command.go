@@ -160,7 +160,6 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	// 	Identifier: cmd.Identifier,
 	// 	Code:       plainCode,
 	// 	OtpType:    cmd.OtpType,
-	// 	Language:   cmd.Language,
 	// 	ExpiresAt:  expiresAt,
 	// })
 	// if deliverErr != nil {

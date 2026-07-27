@@ -20,8 +20,9 @@ type Otp struct {
 	deviceUUID   *string
 	deviceName   *string
 	otpCode      string
-	otpCreateDt  mtime.MathTime
-	otpExpireDt  mtime.MathTime
+	otpCreateDt   mtime.MathTime
+	otpExpireDt   mtime.MathTime
+	otpVerifiedDt mtime.MathTime
 	attemptCount int
 	note         *string
 	otpStatus    *string
@@ -54,6 +55,8 @@ func (o *Otp) OtpCreateDt() mtime.MathTime     { return o.otpCreateDt }
 func (o *Otp) SetOtpCreateDt(v mtime.MathTime) { o.otpCreateDt = v }
 func (o *Otp) OtpExpireDt() mtime.MathTime     { return o.otpExpireDt }
 func (o *Otp) SetOtpExpireDt(v mtime.MathTime) { o.otpExpireDt = v }
+func (o *Otp) OtpVerifiedDt() mtime.MathTime     { return o.otpVerifiedDt }
+func (o *Otp) SetOtpVerifiedDt(v mtime.MathTime) { o.otpVerifiedDt = v }
 func (o *Otp) AttemptCount() int               { return o.attemptCount }
 func (o *Otp) SetAttemptCount(v int)           { o.attemptCount = v }
 func (o *Otp) Note() *string                   { return o.note }

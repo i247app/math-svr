@@ -32,6 +32,7 @@ const (
 	USER_AVATAR_CONFLICT          StatusCode = 4014
 	USER_AVATAR_INVALID_REFERENCE StatusCode = 4015
 	USER_INVALID_ROLE             StatusCode = 4016
+	USER_EMAIL_NOT_VERIFIED       StatusCode = 4017
 
 	AUTH_MISSING_LOGIN_NAME        StatusCode = 4201
 	AUTH_MISSING_DEVICE_UUID       StatusCode = 4202

@@ -13,8 +13,9 @@ type OtpModel struct {
 	DeviceUUID   *string
 	DeviceName   *string
 	OtpCode      string
-	OtpCreateDt  *time.Time
-	OtpExpireDt  *time.Time
+	OtpCreateDt   *time.Time
+	OtpExpireDt   *time.Time
+	OtpVerifiedDt *time.Time
 	AttemptCount int
 	Note         *string
 	OtpStatus    *string

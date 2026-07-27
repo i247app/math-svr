@@ -18,7 +18,7 @@ const (
 	otpTable = "ma_otps"
 
 	otpColumns = `o.id, o.otp_id, o.otp_type, o.user_id, o.identifier,
-		o.device_uuid, o.device_name, o.otp_code, o.otp_create_dt, o.otp_expire_dt,
+		o.device_uuid, o.device_name, o.otp_code, o.otp_create_dt, o.otp_expire_dt, o.otp_verified_dt,
 		o.attempt_count, o.note, o.otp_status, o.status,
 		o.create_id, o.create_dt, o.modify_id, o.modify_dt`
 
@@ -40,7 +40,7 @@ func NewOtpRepository(db database.Executor) otp.IRepository {
 func scanOtp(s database.RowScanner) (*models.OtpModel, error) {
 	var m models.OtpModel
 	if err := s.Scan(&m.Id, &m.OtpId, &m.OtpType, &m.UserId, &m.Identifier,
-		&m.DeviceUUID, &m.DeviceName, &m.OtpCode, &m.OtpCreateDt, &m.OtpExpireDt,
+		&m.DeviceUUID, &m.DeviceName, &m.OtpCode, &m.OtpCreateDt, &m.OtpExpireDt, &m.OtpVerifiedDt,
 		&m.AttemptCount, &m.Note, &m.OtpStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -101,6 +101,26 @@ func (r *OtpRepository) FindLatestPending(ctx context.Context, otpType enum.OtpT
 	return ModelToDomainOtp(m), nil
 }
 
+// FindLatestVerified returns the freshest VERIFIED OTP for the given
+// (type, identifier), or (nil, nil) when none exist. Order by id DESC so a
+// later re-send/re-verify for the same identifier always wins over an older
+// verification.
+func (r *OtpRepository) FindLatestVerified(ctx context.Context, otpType enum.OtpType, identifier string) (*otp.Otp, error) {
+	args := append(otpActiveArgs(), otpType, identifier, enum.OtpStatusTypeVerified)
+	query := `SELECT ` + otpColumns + ` FROM ` + otpTable + ` o WHERE ` +
+		otpActiveWhere + ` AND o.otp_type = ? AND o.identifier = ? AND o.otp_status = ?
+		ORDER BY o.id DESC LIMIT 1`
+
+	m, err := scanOtp(r.db.QueryRow(ctx, query, args...))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("otp repo find latest verified: %w", err)
+	}
+	return ModelToDomainOtp(m), nil
+}
+
 func (r *OtpRepository) CountSentSince(ctx context.Context, otpType enum.OtpType, identifier string, since time.Time) (int, error) {
 	args := append(otpActiveArgs(), otpType, identifier, since)
 	query := `SELECT COUNT(*) FROM ` + otpTable + ` o WHERE ` +
@@ -143,14 +163,22 @@ func (r *OtpRepository) Create(ctx context.Context, o *otp.Otp) (*otp.Otp, error
 	return r.findBareById(ctx, id)
 }
 
+// MarkStatusByOtpId flips otp_status. When the transition is to VERIFIED, it
+// also stamps otp_verified_dt with the current time — the explicit "verified
+// at" marker consumers (e.g. CreateUserCommand's email-verification window
+// check) rely on, kept separate from modify_dt so it can't be perturbed by
+// unrelated future updates to the row.
 func (r *OtpRepository) MarkStatusByOtpId(ctx context.Context, otpId int64, st enum.OtpStatusType) error {
 	query := `
 		UPDATE ` + otpTable + `
-		SET otp_status = ?,
-			modify_dt  = ?
+		SET otp_status      = ?,
+			otp_verified_dt = CASE WHEN ? THEN ? ELSE otp_verified_dt END,
+			modify_dt       = ?
 		WHERE otp_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, st, mtime.Now().Time, otpId); err != nil {
+	now := mtime.Now().Time
+	isVerified := st == enum.OtpStatusTypeVerified
+	if _, err := r.db.Exec(ctx, query, st, isVerified, now, now, otpId); err != nil {
 		return fmt.Errorf("otp repo mark status: %w", err)
 	}
 	return nil
@@ -214,6 +242,9 @@ func ModelToDomainOtp(m *models.OtpModel) *otp.Otp {
 	}
 	if m.OtpExpireDt != nil {
 		o.SetOtpExpireDt(mtime.MathTime{Time: *m.OtpExpireDt})
+	}
+	if m.OtpVerifiedDt != nil {
+		o.SetOtpVerifiedDt(mtime.MathTime{Time: *m.OtpVerifiedDt})
 	}
 	o.SetAttemptCount(m.AttemptCount)
 	o.SetNote(m.Note)

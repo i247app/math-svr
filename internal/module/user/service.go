@@ -178,11 +178,12 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	log.Infof("Phone for string: %s", phoneForString)
 
 	created, err := s.createUserCmd.Handle(ctx, command.CreateUserCommand{
-		Role:      enum.RoleType(req.Role),
-		Phone:     phoneForString,
-		Email:     email,
-		UserName:  req.Name,
-		AvatarKey: avatarKey,
+		Role:       enum.RoleType(req.Role),
+		Phone:      phoneForString,
+		Email:      email,
+		UserName:   req.Name,
+		AvatarKey:  avatarKey,
+		DeviceUUID: metadata.GetDeviceID(ctx),
 	})
 	if err != nil {
 		// Only delete objects we just uploaded — a client-supplied

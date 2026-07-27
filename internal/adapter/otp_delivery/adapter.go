@@ -58,8 +58,7 @@ func (a *Adapter) SendVia(ctx context.Context, name ChannelName, msg Message) er
 			name, maskIdentifier(msg.Identifier), msg.OtpType, err)
 		return err
 	}
-	log.Infof("otp_delivery.sent channel=%s to=%s type=%s",
-		name, maskIdentifier(msg.Identifier), msg.OtpType)
+	log.Infof("otp_delivery.sent channel=%s to=%s type=%s", name, maskIdentifier(msg.Identifier), msg.OtpType)
 	return nil
 }
 
