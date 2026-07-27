@@ -4,14 +4,12 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/domain/semester"
-	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
 type ListSemestersQuery struct {
-	Language enum.LanguageType
-	Page     int64
-	Limit    int64
+	Page  int64
+	Limit int64
 }
 
 type ListSemestersQueryHandler struct {
@@ -24,9 +22,8 @@ func NewListSemestersQueryHandler(semesterRepo semester.IRepository) *ListSemest
 
 func (h *ListSemestersQueryHandler) Handle(ctx context.Context, query *ListSemestersQuery) ([]*semester.Semester, *pagination.Pagination, error) {
 	params := &semester.ListSemestersParams{
-		Language: query.Language,
-		Page:     query.Page,
-		Limit:    query.Limit,
+		Page:  query.Page,
+		Limit: query.Limit,
 	}
 
 	return h.semesterRepo.ListSemesters(ctx, params)

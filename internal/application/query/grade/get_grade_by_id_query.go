@@ -4,42 +4,23 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/domain/grade"
-	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// GetGradeByIdQuery returns the grade row with its full translation
-// set attached. The base read uses Language for the LEFT JOIN override;
-// the translation list is independent of Language so the caller always
-// sees every defined locale.
+// GetGradeByIdQuery returns the grade row.
 type GetGradeByIdQuery struct {
-	GradeID  int64
-	Language enum.LanguageType
+	GradeID int64
 }
 
 type GetGradeByIdQueryHandler struct {
-	gradeRepo       grade.IRepository
-	translationRepo grade.ITranslationRepository
+	gradeRepo grade.IRepository
 }
 
-func NewGetGradeByIdQueryHandler(gradeRepo grade.IRepository, translationRepo grade.ITranslationRepository) *GetGradeByIdQueryHandler {
+func NewGetGradeByIdQueryHandler(gradeRepo grade.IRepository) *GetGradeByIdQueryHandler {
 	return &GetGradeByIdQueryHandler{
-		gradeRepo:       gradeRepo,
-		translationRepo: translationRepo,
+		gradeRepo: gradeRepo,
 	}
 }
 
 func (h *GetGradeByIdQueryHandler) Handle(ctx context.Context, q GetGradeByIdQuery) (*grade.Grade, error) {
-	g, err := h.gradeRepo.FindByGradeId(ctx, q.GradeID, q.Language)
-	if err != nil {
-		return nil, err
-	}
-	if g == nil {
-		return nil, nil
-	}
-	translations, err := h.translationRepo.ListByGradeId(ctx, q.GradeID)
-	if err != nil {
-		return nil, err
-	}
-	g.SetTranslations(translations)
-	return g, nil
+	return h.gradeRepo.FindByGradeId(ctx, q.GradeID)
 }

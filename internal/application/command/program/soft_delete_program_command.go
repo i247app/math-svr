@@ -6,13 +6,10 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// SoftDeleteProgramCommand soft-deletes the parent row AND every
-// translation row in one transaction. Soft-deleted translations stay
-// queryable for audit / history paths but are filtered out of every
-// standard read.
+// SoftDeleteProgramCommand soft-deletes the parent row. The soft-deleted
+// row stays in the table but is filtered out of every standard read.
 type SoftDeleteProgramCommand struct {
 	ProgramID int64
 }
@@ -27,7 +24,7 @@ func NewSoftDeleteProgramCommandHandler(uow transaction.UnitOfWork) *SoftDeleteP
 
 func (h *SoftDeleteProgramCommandHandler) Handle(ctx context.Context, cmd SoftDeleteProgramCommand) error {
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		existing, err := repos.Program.FindByProgramId(ctx, cmd.ProgramID, enum.LanguageTypeVietnamese)
+		existing, err := repos.Program.FindByProgramId(ctx, cmd.ProgramID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -36,9 +33,6 @@ func (h *SoftDeleteProgramCommandHandler) Handle(ctx context.Context, cmd SoftDe
 				ErrProgramNotFound)
 		}
 
-		if err := repos.ProgramTranslation.SoftDeleteByProgramId(ctx, cmd.ProgramID); err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
 		if err := repos.Program.SoftDeleteByProgramId(ctx, cmd.ProgramID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}

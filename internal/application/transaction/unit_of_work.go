@@ -37,11 +37,8 @@ type Repositories struct {
 	Chapter             chapter.IRepository
 	ChapterTranslation  chapter.ITranslationRepository
 	Grade               grade.IRepository
-	GradeTranslation    grade.ITranslationRepository
 	Semester            semester.IRepository
-	SemesterTranslation semester.ITranslationRepository
 	Program             program.IRepository
-	ProgramTranslation  program.ITranslationRepository
 	School              school.IRepository
 	Seq                 seq.IRepository
 	Classroom           classroom.IRepository

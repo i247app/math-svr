@@ -100,7 +100,7 @@ func (s *Service) GetProfileById(ctx context.Context, req *dto.GetProfileByIdReq
 			ErrProfileNotFound)
 	}
 
-	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{p}, req.Language)
+	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{p})
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func (s *Service) ListProfiles(ctx context.Context, req *dto.ListProfilesReq) (*
 		return nil, err
 	}
 
-	responses, err := s.composeProfileResponses(ctx, profiles, req.Language)
+	responses, err := s.composeProfileResponses(ctx, profiles)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 		"name_len", len(created.Name()),
 	)
 
-	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{created}, "")
+	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{created})
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +299,7 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 		}
 	}
 
-	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{updated}, "")
+	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{updated})
 	if err != nil {
 		return nil, err
 	}
@@ -468,7 +468,7 @@ func (s *Service) AssignSchool(ctx context.Context, req *dto.AssignSchoolReq) (*
 		return nil, err
 	}
 
-	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{updated}, "")
+	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{updated})
 	if err != nil {
 		return nil, err
 	}
@@ -489,7 +489,7 @@ func (s *Service) RemoveSchool(ctx context.Context, req *dto.RemoveSchoolReq) (*
 		return nil, err
 	}
 
-	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{updated}, "")
+	responses, err := s.composeProfileResponses(ctx, []*domain.Profile{updated})
 	if err != nil {
 		return nil, err
 	}

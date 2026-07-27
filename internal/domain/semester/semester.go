@@ -18,20 +18,10 @@ type Semester struct {
 	createDt       mtime.MathTime
 	modifyId       *int64
 	modifyDt       mtime.MathTime
-
-	// translations is hydrated only by detail reads; list reads keep it
-	// nil to avoid an N+1 fetch per semester. Nil and empty are
-	// equivalent at the API boundary.
-	translations []*SemesterTranslation
 }
 
 func NewSemester() *Semester {
 	return &Semester{}
-}
-
-func (s *Semester) Translations() []*SemesterTranslation { return s.translations }
-func (s *Semester) SetTranslations(t []*SemesterTranslation) {
-	s.translations = t
 }
 
 func (s *Semester) Id() int64 {

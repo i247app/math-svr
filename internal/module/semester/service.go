@@ -13,7 +13,6 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/infrastructure/metadata"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -34,13 +33,12 @@ type Service struct {
 
 func NewService(
 	semesterRepo domain.IRepository,
-	translationRepo domain.ITranslationRepository,
 	uow transaction.UnitOfWork,
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
 		listSemestersQuery:     query.NewListSemestersQueryHandler(semesterRepo),
-		getSemesterQuery:       query.NewGetSemesterByIdQueryHandler(semesterRepo, translationRepo),
+		getSemesterQuery:       query.NewGetSemesterByIdQueryHandler(semesterRepo),
 		createSemesterCmd:      command.NewCreateSemesterCommandHandler(uow),
 		updateSemesterCmd:      command.NewUpdateSemesterCommandHandler(uow),
 		softDeleteSemesterCmd:  command.NewSoftDeleteSemesterCommandHandler(uow),
@@ -60,7 +58,6 @@ func (s *Service) CreateSemester(ctx context.Context, req *dto.CreateSemesterReq
 		ImageKey:     req.ImageKey,
 		DisplayOrder: req.DisplayOrder,
 		Note:         req.Note,
-		Translations: translationInputsFromDTO(req.Translations),
 	})
 	if err != nil {
 		return nil, err
@@ -82,7 +79,6 @@ func (s *Service) UpdateSemester(ctx context.Context, req *dto.UpdateSemesterReq
 		ImageKey:     req.ImageKey,
 		DisplayOrder: req.DisplayOrder,
 		Note:         req.Note,
-		Translations: translationInputsFromDTO(req.Translations),
 	})
 	if err != nil {
 		return nil, err
@@ -118,7 +114,6 @@ func (s *Service) GetSemester(ctx context.Context, req *dto.GetSemesterReq) (*dt
 	}
 	sm, err := s.getSemesterQuery.Handle(ctx, query.GetSemesterByIdQuery{
 		SemesterID: req.SemesterID,
-		Language:   req.Language,
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -136,15 +131,9 @@ func (s *Service) ListSemesters(ctx context.Context, req *dto.ListSemestersReq) 
 		return nil, err
 	}
 
-	language := req.Language
-	if language == "" {
-		language = metadata.GetClientLanguage(ctx).ToEnumLanguage()
-	}
-
 	semesters, pg, err := s.listSemestersQuery.Handle(ctx, &query.ListSemestersQuery{
-		Language: language,
-		Page:     req.Page,
-		Limit:    req.Size,
+		Page:  req.Page,
+		Limit: req.Size,
 	})
 	if err != nil {
 		return nil, err
@@ -173,23 +162,4 @@ func (s *Service) populateImageUrl(ctx context.Context, resp *dto.SemesterRespon
 		return
 	}
 	resp.ImageUrl = &url
-}
-
-func translationInputsFromDTO(in []*dto.SemesterTranslationDTO) []command.TranslationInput {
-	if len(in) == 0 {
-		return nil
-	}
-	out := make([]command.TranslationInput, 0, len(in))
-	for _, t := range in {
-		if t == nil {
-			continue
-		}
-		out = append(out, command.TranslationInput{
-			Language:    t.Language,
-			Name:        t.Name,
-			Description: t.Description,
-			Note:        t.Note,
-		})
-	}
-	return out
 }

@@ -58,7 +58,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup ProgramSvc...")
 	programService := program.NewService(
 		repos.ProgramRepository,
-		repos.ProgramTranslationRepository,
 		uow,
 		res.StorageProvider,
 	)
@@ -66,7 +65,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup GradeSvc...")
 	gradeService := grade.NewService(
 		repos.GradeRepository,
-		repos.GradeTranslationRepository,
 		uow,
 		res.StorageProvider,
 	)
@@ -74,7 +72,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup SemesterSvc...")
 	semesterService := semester.NewService(
 		repos.SemesterRepository,
-		repos.SemesterTranslationRepository,
 		uow,
 		res.StorageProvider,
 	)

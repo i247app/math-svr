@@ -16,38 +16,16 @@ import (
 )
 
 const (
-	gradeTable             = "ma_grades"
-	gradeTranslationsTable = "ma_grade_translations"
+	gradeTable = "ma_grades"
 
-	// LEFT JOIN so a grade without a translation in the requested
-	// language still surfaces with its base label / description.
-	gradeFromJoin = gradeTable + ` g
-	LEFT JOIN ` + gradeTranslationsTable + ` t
-	  ON t.grade_id = g.grade_id
-	  AND t.language = ?
-	  AND t.status = ?
-	  AND t.deleted_dt IS NULL`
-
-	gradeColumns = `g.id, g.grade_id,
-		COALESCE(t.label, g.label) AS label,
-		COALESCE(t.description, g.description) AS description,
+	gradeColumns = `g.id, g.grade_id, g.label, g.description,
 		g.image_key, g.display_order, g.note,
 		g.grade_status, g.status,
 		g.create_id, g.create_dt, g.modify_id, g.modify_dt`
 
 	gradeActiveWhere = `g.status = ? AND g.deleted_dt IS NULL
 		AND (g.grade_status IS NULL OR g.grade_status != ?)`
-
-	gradeBareActiveWhere = `g.status = ? AND g.deleted_dt IS NULL
-		AND (g.grade_status IS NULL OR g.grade_status != ?)`
 )
-
-func gradeJoinArgs(lang enum.LanguageType) []any {
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
-	return []any{lang, enum.StatusActive}
-}
 
 func gradeActiveArgs() []any {
 	return []any{enum.StatusActive, enum.StatusInactive}
@@ -74,10 +52,9 @@ func scanGrade(s database.RowScanner) (*models.GradeModel, error) {
 // findOneBy is the single-row read helper. `where` is a package-controlled
 // SQL fragment; args supply placeholders. gradeActiveWhere is prepended
 // so every read excludes soft-deleted and inactive rows.
-func (r *GradeRepository) findOneBy(ctx context.Context, lang enum.LanguageType, where string, args ...any) (*grade.Grade, error) {
-	fullArgs := append(gradeJoinArgs(lang), gradeActiveArgs()...)
-	fullArgs = append(fullArgs, args...)
-	query := `SELECT ` + gradeColumns + ` FROM ` + gradeFromJoin +
+func (r *GradeRepository) findOneBy(ctx context.Context, where string, args ...any) (*grade.Grade, error) {
+	fullArgs := append(gradeActiveArgs(), args...)
+	query := `SELECT ` + gradeColumns + ` FROM ` + gradeTable + ` g` +
 		` WHERE ` + gradeActiveWhere + ` AND (` + where + `)`
 
 	m, err := scanGrade(r.db.QueryRow(ctx, query, fullArgs...))
@@ -90,51 +67,23 @@ func (r *GradeRepository) findOneBy(ctx context.Context, lang enum.LanguageType,
 	return ModelToDomainGrade(m), nil
 }
 
-// findBareById hydrates a grade right after INSERT using its surrogate
-// id. The translation rows haven't been written yet at that point, so we
-// skip the LEFT JOIN and just read the base label/description.
-func (r *GradeRepository) findBareById(ctx context.Context, id int64) (*grade.Grade, error) {
-	query := `SELECT g.id, g.grade_id, g.label, g.description AS description,
-			g.image_key, g.display_order, g.note, g.grade_status, g.status,
-			g.create_id, g.create_dt, g.modify_id, g.modify_dt
-		FROM ` + gradeTable + ` g
-		WHERE ` + gradeBareActiveWhere + ` AND g.id = ?`
-	args := append(gradeActiveArgs(), id)
-
-	m, err := scanGrade(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("grade repo find bare by id: %w", err)
-	}
-	return ModelToDomainGrade(m), nil
-}
-
-func (r *GradeRepository) FindByGradeId(ctx context.Context, gradeId int64, language enum.LanguageType) (*grade.Grade, error) {
-	return r.findOneBy(ctx, language, "g.grade_id = ?", gradeId)
+func (r *GradeRepository) FindByGradeId(ctx context.Context, gradeId int64) (*grade.Grade, error) {
+	return r.findOneBy(ctx, "g.grade_id = ?", gradeId)
 }
 
 func (r *GradeRepository) ListGrades(ctx context.Context, params *grade.ListGradesParams) ([]*grade.Grade, *pagination.Pagination, error) {
-	lang := params.Language
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
-
 	filterWhere, filterArgs := buildGradeListFilterClause(params)
 
-	countArgs := append(gradeJoinArgs(lang), gradeActiveArgs()...)
-	countArgs = append(countArgs, filterArgs...)
-	countQuery := `SELECT COUNT(*) FROM ` + gradeFromJoin +
+	countArgs := append(gradeActiveArgs(), filterArgs...)
+	countQuery := `SELECT COUNT(*) FROM ` + gradeTable + ` g` +
 		` WHERE ` + gradeActiveWhere + filterWhere
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("grade repo count: %w", err)
 	}
 
-	listArgs := append(gradeJoinArgs(lang), gradeActiveArgs()...)
-	listArgs = append(listArgs, filterArgs...)
-	query := `SELECT ` + gradeColumns + ` FROM ` + gradeFromJoin +
+	listArgs := append(gradeActiveArgs(), filterArgs...)
+	query := `SELECT ` + gradeColumns + ` FROM ` + gradeTable + ` g` +
 		` WHERE ` + gradeActiveWhere + filterWhere +
 		` ORDER BY g.display_order ASC, g.id ASC`
 
@@ -186,22 +135,19 @@ func buildGradeListFilterClause(params *grade.ListGradesParams) (string, []any) 
 }
 
 // ListGradesByIds — see program_repository's equivalent for rationale.
-func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []int64, lang enum.LanguageType) ([]*grade.Grade, error) {
+func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []int64) ([]*grade.Grade, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
 
 	placeholders := make([]string, len(ids))
-	args := append(gradeJoinArgs(lang), gradeActiveArgs()...)
+	args := gradeActiveArgs()
 	for i, id := range ids {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
 
-	query := `SELECT ` + gradeColumns + ` FROM ` + gradeFromJoin +
+	query := `SELECT ` + gradeColumns + ` FROM ` + gradeTable + ` g` +
 		` WHERE ` + gradeActiveWhere +
 		` AND g.grade_id IN (` + strings.Join(placeholders, ",") + `)`
 
@@ -242,6 +188,11 @@ func (r *GradeRepository) Create(ctx context.Context, g *grade.Grade) (*grade.Gr
 		return nil, fmt.Errorf("grade repo last insert id: %w", err)
 	}
 	return r.findBareById(ctx, id)
+}
+
+// findBareById hydrates a grade right after INSERT using its surrogate id.
+func (r *GradeRepository) findBareById(ctx context.Context, id int64) (*grade.Grade, error) {
+	return r.findOneBy(ctx, "g.id = ?", id)
 }
 
 // Update applies a partial update using COALESCE(?, col) for every

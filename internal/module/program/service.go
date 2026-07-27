@@ -13,7 +13,6 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/infrastructure/metadata"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -36,13 +35,12 @@ type Service struct {
 // that case responses simply omit image_url.
 func NewService(
 	programRepo domain.IRepository,
-	translationRepo domain.ITranslationRepository,
 	uow transaction.UnitOfWork,
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
 		listProgramsQuery:     query.NewListProgramsQueryHandler(programRepo),
-		getProgramQuery:       query.NewGetProgramByIdQueryHandler(programRepo, translationRepo),
+		getProgramQuery:       query.NewGetProgramByIdQueryHandler(programRepo),
 		createProgramCmd:      command.NewCreateProgramCommandHandler(uow),
 		updateProgramCmd:      command.NewUpdateProgramCommandHandler(uow),
 		softDeleteProgramCmd:  command.NewSoftDeleteProgramCommandHandler(uow),
@@ -62,7 +60,6 @@ func (s *Service) CreateProgram(ctx context.Context, req *dto.CreateProgramReq) 
 		ImageKey:     req.ImageKey,
 		DisplayOrder: req.DisplayOrder,
 		Note:         req.Note,
-		Translations: translationInputsFromDTO(req.Translations),
 	})
 	if err != nil {
 		return nil, err
@@ -84,7 +81,6 @@ func (s *Service) UpdateProgram(ctx context.Context, req *dto.UpdateProgramReq) 
 		ImageKey:     req.ImageKey,
 		DisplayOrder: req.DisplayOrder,
 		Note:         req.Note,
-		Translations: translationInputsFromDTO(req.Translations),
 	})
 	if err != nil {
 		return nil, err
@@ -120,7 +116,6 @@ func (s *Service) GetProgram(ctx context.Context, req *dto.GetProgramReq) (*dto.
 	}
 	p, err := s.getProgramQuery.Handle(ctx, query.GetProgramByIdQuery{
 		ProgramID: req.ProgramID,
-		Language:  req.Language,
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -139,15 +134,9 @@ func (s *Service) ListPrograms(ctx context.Context, req *dto.ListProgramsReq) (*
 		return nil, err
 	}
 
-	language := req.Language
-	if language == "" {
-		language = metadata.GetClientLanguage(ctx).ToEnumLanguage()
-	}
-
 	programs, pg, err := s.listProgramsQuery.Handle(ctx, &query.ListProgramsQuery{
-		Language: language,
-		Page:     req.Page,
-		Limit:    req.Size,
+		Page:  req.Page,
+		Limit: req.Size,
 	})
 	if err != nil {
 		return nil, err
@@ -176,23 +165,4 @@ func (s *Service) populateImageUrl(ctx context.Context, resp *dto.ProgramRespons
 		return
 	}
 	resp.ImageUrl = &url
-}
-
-func translationInputsFromDTO(in []*dto.ProgramTranslationDTO) []command.TranslationInput {
-	if len(in) == 0 {
-		return nil
-	}
-	out := make([]command.TranslationInput, 0, len(in))
-	for _, t := range in {
-		if t == nil {
-			continue
-		}
-		out = append(out, command.TranslationInput{
-			Language:    t.Language,
-			Label:       t.Label,
-			Description: t.Description,
-			Note:        t.Note,
-		})
-	}
-	return out
 }

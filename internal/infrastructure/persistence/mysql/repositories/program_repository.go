@@ -16,38 +16,16 @@ import (
 )
 
 const (
-	programTable             = "ma_programs"
-	programTranslationsTable = "ma_program_translations"
+	programTable = "ma_programs"
 
-	// LEFT JOIN so a program without a translation in the requested
-	// language still surfaces with its base label / description.
-	programFromJoin = programTable + ` p
-	LEFT JOIN ` + programTranslationsTable + ` t
-	  ON t.program_id = p.program_id
-	  AND t.language = ?
-	  AND t.status = ?
-	  AND t.deleted_dt IS NULL`
-
-	programColumns = `p.id, p.program_id,
-		COALESCE(t.label, p.label) AS label,
-		COALESCE(t.description, p.description) AS description,
+	programColumns = `p.id, p.program_id, p.label, p.description,
 		p.image_key, p.display_order, p.note,
 		p.program_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
 	programActiveWhere = `p.status = ? AND p.deleted_dt IS NULL
 		AND (p.program_status IS NULL OR p.program_status != ?)`
-
-	programBareActiveWhere = `p.status = ? AND p.deleted_dt IS NULL
-		AND (p.program_status IS NULL OR p.program_status != ?)`
 )
-
-func programJoinArgs(lang enum.LanguageType) []any {
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
-	return []any{lang, enum.StatusActive}
-}
 
 func programActiveArgs() []any {
 	return []any{enum.StatusActive, enum.StatusInactive}
@@ -74,10 +52,9 @@ func scanProgram(s database.RowScanner) (*models.ProgramModel, error) {
 // findOneBy is the single-row read helper. `where` is a package-controlled
 // SQL fragment; args supply placeholders. programActiveWhere is prepended
 // so every read excludes soft-deleted and inactive rows.
-func (r *ProgramRepository) findOneBy(ctx context.Context, lang enum.LanguageType, where string, args ...any) (*program.Program, error) {
-	fullArgs := append(programJoinArgs(lang), programActiveArgs()...)
-	fullArgs = append(fullArgs, args...)
-	query := `SELECT ` + programColumns + ` FROM ` + programFromJoin +
+func (r *ProgramRepository) findOneBy(ctx context.Context, where string, args ...any) (*program.Program, error) {
+	fullArgs := append(programActiveArgs(), args...)
+	query := `SELECT ` + programColumns + ` FROM ` + programTable + ` p` +
 		` WHERE ` + programActiveWhere + ` AND (` + where + `)`
 
 	m, err := scanProgram(r.db.QueryRow(ctx, query, fullArgs...))
@@ -90,47 +67,20 @@ func (r *ProgramRepository) findOneBy(ctx context.Context, lang enum.LanguageTyp
 	return ModelToDomainProgram(m), nil
 }
 
-// findBareById hydrates a program right after INSERT using its surrogate
-// id. The translation rows haven't been written yet at that point, so we
-// skip the LEFT JOIN and just read the base label/description.
-func (r *ProgramRepository) findBareById(ctx context.Context, id int64) (*program.Program, error) {
-	query := `SELECT p.id, p.program_id, p.label, p.description AS description,
-			p.image_key, p.display_order, p.note, p.program_status, p.status,
-			p.create_id, p.create_dt, p.modify_id, p.modify_dt
-		FROM ` + programTable + ` p
-		WHERE ` + programBareActiveWhere + ` AND p.id = ?`
-	args := append(programActiveArgs(), id)
-
-	m, err := scanProgram(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("program repo find bare by id: %w", err)
-	}
-	return ModelToDomainProgram(m), nil
-}
-
-func (r *ProgramRepository) FindByProgramId(ctx context.Context, programId int64, language enum.LanguageType) (*program.Program, error) {
-	return r.findOneBy(ctx, language, "p.program_id = ?", programId)
+func (r *ProgramRepository) FindByProgramId(ctx context.Context, programId int64) (*program.Program, error) {
+	return r.findOneBy(ctx, "p.program_id = ?", programId)
 }
 
 func (r *ProgramRepository) ListPrograms(ctx context.Context, params *program.ListProgramsParams) ([]*program.Program, *pagination.Pagination, error) {
-	lang := params.Language
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
-
-	countArgs := append(programJoinArgs(lang), programActiveArgs()...)
-	countQuery := `SELECT COUNT(*) FROM ` + programFromJoin +
+	countQuery := `SELECT COUNT(*) FROM ` + programTable + ` p` +
 		` WHERE ` + programActiveWhere
 	var total int64
-	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
+	if err := r.db.QueryRow(ctx, countQuery, programActiveArgs()...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("program repo count: %w", err)
 	}
 
-	listArgs := append(programJoinArgs(lang), programActiveArgs()...)
-	query := `SELECT ` + programColumns + ` FROM ` + programFromJoin +
+	listArgs := programActiveArgs()
+	query := `SELECT ` + programColumns + ` FROM ` + programTable + ` p` +
 		` WHERE ` + programActiveWhere +
 		` ORDER BY p.display_order ASC, p.id ASC`
 
@@ -168,22 +118,19 @@ func (r *ProgramRepository) ListPrograms(ctx context.Context, params *program.Li
 // Caller (typically a service composing a parent aggregate response) is
 // responsible for keying the result by ProgramId() — order is not preserved
 // because the IN-clause makes no ordering guarantee.
-func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []int64, lang enum.LanguageType) ([]*program.Program, error) {
+func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []int64) ([]*program.Program, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
 
 	placeholders := make([]string, len(ids))
-	args := append(programJoinArgs(lang), programActiveArgs()...)
+	args := programActiveArgs()
 	for i, id := range ids {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
 
-	query := `SELECT ` + programColumns + ` FROM ` + programFromJoin +
+	query := `SELECT ` + programColumns + ` FROM ` + programTable + ` p` +
 		` WHERE ` + programActiveWhere +
 		` AND p.program_id IN (` + strings.Join(placeholders, ",") + `)`
 
@@ -224,6 +171,11 @@ func (r *ProgramRepository) Create(ctx context.Context, p *program.Program) (*pr
 		return nil, fmt.Errorf("program repo last insert id: %w", err)
 	}
 	return r.findBareById(ctx, id)
+}
+
+// findBareById hydrates a program right after INSERT using its surrogate id.
+func (r *ProgramRepository) findBareById(ctx context.Context, id int64) (*program.Program, error) {
+	return r.findOneBy(ctx, "p.id = ?", id)
 }
 
 // Update applies a partial update using COALESCE(?, col) for every

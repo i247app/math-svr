@@ -9,8 +9,6 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/infrastructure/metadata"
-	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // resolveCaller resolves ProfileID with a fallback: when the request
@@ -150,8 +148,7 @@ func (s *Service) hydrateClassroomAndProgram(
 		for id := range programIDSet {
 			ids = append(ids, id)
 		}
-		lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
-		rows, err := s.programRepo.ListProgramsByIds(ctx, ids, lang)
+		rows, err := s.programRepo.ListProgramsByIds(ctx, ids)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -183,12 +180,12 @@ func (s *Service) hydrateClassroomAndProgram(
 // resolveCurriculumLabels best-effort hydrates grade + program labels
 // for the bot prompt. Errors here are logged but do not fail the
 // request — the prompt renders only the lines whose label is non-empty.
-func (s *Service) resolveCurriculumLabels(ctx context.Context, gradeID, programID *int64, lang enum.LanguageType) (string, string) {
+func (s *Service) resolveCurriculumLabels(ctx context.Context, gradeID, programID *int64) (string, string) {
 	log := logger.From(ctx)
 	var gradeLabel, programLabel string
 
 	if gradeID != nil && *gradeID != 0 {
-		grades, err := s.gradeRepo.ListGradesByIds(ctx, []int64{*gradeID}, lang)
+		grades, err := s.gradeRepo.ListGradesByIds(ctx, []int64{*gradeID})
 		if err != nil {
 			log.Warnf("classroom_exercise.resolve_grade_failed grade_id=%d err=%v", *gradeID, err)
 		} else if len(grades) > 0 {
@@ -196,7 +193,7 @@ func (s *Service) resolveCurriculumLabels(ctx context.Context, gradeID, programI
 		}
 	}
 	if programID != nil && *programID != 0 {
-		programs, err := s.programRepo.ListProgramsByIds(ctx, []int64{*programID}, lang)
+		programs, err := s.programRepo.ListProgramsByIds(ctx, []int64{*programID})
 		if err != nil {
 			log.Warnf("classroom_exercise.resolve_program_failed program_id=%d err=%v", *programID, err)
 		} else if len(programs) > 0 {

@@ -100,8 +100,6 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	// Program
 	case PROGRAM_NOT_FOUND:
 		return "Không tìm thấy chương trình học"
-	case PROGRAM_INVALID_LANGUAGE:
-		return "Ngôn ngữ chương trình học không hợp lệ"
 	case PROGRAM_MISSING_ID:
 		return "Mã chương trình học là bắt buộc"
 	case PROGRAM_MISSING_LABEL:
@@ -110,18 +108,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Mô tả chương trình học là bắt buộc"
 	case PROGRAM_INVALID_DISPLAY_ORDER:
 		return "Thứ tự hiển thị của chương trình học không hợp lệ"
-	case PROGRAM_INVALID_TRANSLATION:
-		return "Dữ liệu bản dịch của chương trình học không hợp lệ"
-	case PROGRAM_TRANSLATION_ALREADY_EXISTS:
-		return "Bản dịch của chương trình học ở ngôn ngữ này đã tồn tại"
-	case PROGRAM_TRANSLATION_NOT_FOUND:
-		return "Không tìm thấy bản dịch của chương trình học"
 
 	// Grade
 	case GRADE_NOT_FOUND:
 		return "Không tìm thấy lớp"
-	case GRADE_INVALID_LANGUAGE:
-		return "Ngôn ngữ lớp không hợp lệ"
 	case GRADE_MISSING_ID:
 		return "Mã lớp là bắt buộc"
 	case GRADE_MISSING_LABEL:
@@ -130,18 +120,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Mô tả lớp là bắt buộc"
 	case GRADE_INVALID_DISPLAY_ORDER:
 		return "Thứ tự hiển thị của lớp không hợp lệ"
-	case GRADE_INVALID_TRANSLATION:
-		return "Dữ liệu bản dịch của lớp không hợp lệ"
-	case GRADE_TRANSLATION_ALREADY_EXISTS:
-		return "Bản dịch của lớp ở ngôn ngữ này đã tồn tại"
-	case GRADE_TRANSLATION_NOT_FOUND:
-		return "Không tìm thấy bản dịch của lớp"
 
 	// Semester
 	case SEMESTER_NOT_FOUND:
 		return "Không tìm thấy học kỳ"
-	case SEMESTER_INVALID_LANGUAGE:
-		return "Ngôn ngữ học kỳ không hợp lệ"
 	case SEMESTER_MISSING_ID:
 		return "Mã học kỳ là bắt buộc"
 	case SEMESTER_MISSING_NAME:
@@ -150,12 +132,6 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Mô tả học kỳ là bắt buộc"
 	case SEMESTER_INVALID_DISPLAY_ORDER:
 		return "Thứ tự hiển thị của học kỳ không hợp lệ"
-	case SEMESTER_INVALID_TRANSLATION:
-		return "Dữ liệu bản dịch của học kỳ không hợp lệ"
-	case SEMESTER_TRANSLATION_ALREADY_EXISTS:
-		return "Bản dịch của học kỳ ở ngôn ngữ này đã tồn tại"
-	case SEMESTER_TRANSLATION_NOT_FOUND:
-		return "Không tìm thấy bản dịch của học kỳ"
 
 	// Device
 	case DEVICE_NOT_FOUND:

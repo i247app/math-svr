@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/domain/grade"
-	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -12,7 +11,6 @@ import (
 // result set to the supplied external ids (IN-clause); empty leaves it
 // unfiltered.
 type ListGradesQuery struct {
-	Language enum.LanguageType
 	GradeIDs []int64
 	Page     int64
 	Limit    int64
@@ -28,7 +26,6 @@ func NewListGradesQueryHandler(gradeRepo grade.IRepository) *ListGradesQueryHand
 
 func (h *ListGradesQueryHandler) Handle(ctx context.Context, query *ListGradesQuery) ([]*grade.Grade, *pagination.Pagination, error) {
 	params := &grade.ListGradesParams{
-		Language: query.Language,
 		GradeIds: query.GradeIDs,
 		Page:     query.Page,
 		Limit:    query.Limit,

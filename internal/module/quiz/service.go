@@ -270,7 +270,7 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 	if typeOfQuiz == enum.QuizTypeOfQuizReinforcement && existing.ProfileId() != nil {
 		// Anonymous reinforce rounds have no profile to look up; the
 		// prompt's "current grade: unknown" branch handles that case.
-		currentLabel, err := s.resolveCurrentGradeLabel(ctx, *existing.ProfileId(), lang)
+		currentLabel, err := s.resolveCurrentGradeLabel(ctx, *existing.ProfileId())
 		if err != nil {
 			return nil, err
 		}
@@ -463,7 +463,7 @@ func (s *Service) resolveCurriculumContext(ctx context.Context, req *dto.Generat
 	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
 
 	if cc.ProgramLabel == "" && profile.ProgramId() != nil {
-		programs, err := s.programRepo.ListProgramsByIds(ctx, []int64{*profile.ProgramId()}, lang)
+		programs, err := s.programRepo.ListProgramsByIds(ctx, []int64{*profile.ProgramId()})
 		if err != nil {
 			return cc, errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -472,7 +472,7 @@ func (s *Service) resolveCurriculumContext(ctx context.Context, req *dto.Generat
 		}
 	}
 	if cc.GradeLabel == "" && profile.GradeId() != nil {
-		grades, err := s.gradeRepo.ListGradesByIds(ctx, []int64{*profile.GradeId()}, lang)
+		grades, err := s.gradeRepo.ListGradesByIds(ctx, []int64{*profile.GradeId()})
 		if err != nil {
 			return cc, errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -481,7 +481,7 @@ func (s *Service) resolveCurriculumContext(ctx context.Context, req *dto.Generat
 		}
 	}
 	if cc.SemesterLabel == "" && profile.SemesterId() != nil {
-		semesters, err := s.semesterRepo.ListSemestersByIds(ctx, []int64{*profile.SemesterId()}, lang)
+		semesters, err := s.semesterRepo.ListSemestersByIds(ctx, []int64{*profile.SemesterId()})
 		if err != nil {
 			return cc, errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -584,7 +584,7 @@ func (s *Service) resolveProfileChapterDescriptions(ctx context.Context,
 // used by reinforce grading where only the current grade matters. Returns
 // "" when the profile has no grade configured; the grade prompt handles
 // the "unknown" case gracefully.
-func (s *Service) resolveCurrentGradeLabel(ctx context.Context, profileID int64, lang enum.LanguageType) (string, error) {
+func (s *Service) resolveCurrentGradeLabel(ctx context.Context, profileID int64) (string, error) {
 	profile, err := s.profileRepo.FindByProfileId(ctx, profileID)
 	if err != nil {
 		return "", errs.NewError(ctx, status.FAIL, nil, err)
@@ -592,10 +592,7 @@ func (s *Service) resolveCurrentGradeLabel(ctx context.Context, profileID int64,
 	if profile == nil || profile.GradeId() == nil {
 		return "", nil
 	}
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
-	grades, err := s.gradeRepo.ListGradesByIds(ctx, []int64{*profile.GradeId()}, lang)
+	grades, err := s.gradeRepo.ListGradesByIds(ctx, []int64{*profile.GradeId()})
 	if err != nil {
 		return "", errs.NewError(ctx, status.FAIL, nil, err)
 	}

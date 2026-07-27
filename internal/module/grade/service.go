@@ -13,7 +13,6 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/infrastructure/metadata"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -34,13 +33,12 @@ type Service struct {
 
 func NewService(
 	gradeRepo domain.IRepository,
-	translationRepo domain.ITranslationRepository,
 	uow transaction.UnitOfWork,
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
 		listGradesQuery:     query.NewListGradesQueryHandler(gradeRepo),
-		getGradeQuery:       query.NewGetGradeByIdQueryHandler(gradeRepo, translationRepo),
+		getGradeQuery:       query.NewGetGradeByIdQueryHandler(gradeRepo),
 		createGradeCmd:      command.NewCreateGradeCommandHandler(uow),
 		updateGradeCmd:      command.NewUpdateGradeCommandHandler(uow),
 		softDeleteGradeCmd:  command.NewSoftDeleteGradeCommandHandler(uow),
@@ -60,7 +58,6 @@ func (s *Service) CreateGrade(ctx context.Context, req *dto.CreateGradeReq) (*dt
 		ImageKey:     req.ImageKey,
 		DisplayOrder: req.DisplayOrder,
 		Note:         req.Note,
-		Translations: translationInputsFromDTO(req.Translations),
 	})
 	if err != nil {
 		return nil, err
@@ -82,7 +79,6 @@ func (s *Service) UpdateGrade(ctx context.Context, req *dto.UpdateGradeReq) (*dt
 		ImageKey:     req.ImageKey,
 		DisplayOrder: req.DisplayOrder,
 		Note:         req.Note,
-		Translations: translationInputsFromDTO(req.Translations),
 	})
 	if err != nil {
 		return nil, err
@@ -117,8 +113,7 @@ func (s *Service) GetGrade(ctx context.Context, req *dto.GetGradeReq) (*dto.GetG
 		return nil, err
 	}
 	g, err := s.getGradeQuery.Handle(ctx, query.GetGradeByIdQuery{
-		GradeID:  req.GradeID,
-		Language: req.Language,
+		GradeID: req.GradeID,
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -137,13 +132,7 @@ func (s *Service) ListGrades(ctx context.Context, req *dto.ListGradesReq) (*dto.
 		return nil, err
 	}
 
-	language := req.Language
-	if language == "" {
-		language = metadata.GetClientLanguage(ctx).ToEnumLanguage()
-	}
-
 	grades, pg, err := s.listGradesQuery.Handle(ctx, &query.ListGradesQuery{
-		Language: language,
 		GradeIDs: req.GradeIDs,
 		Page:     req.Page,
 		Limit:    req.Size,
@@ -175,23 +164,4 @@ func (s *Service) populateImageUrl(ctx context.Context, resp *dto.GradeResponse)
 		return
 	}
 	resp.ImageUrl = &url
-}
-
-func translationInputsFromDTO(in []*dto.GradeTranslationDTO) []command.TranslationInput {
-	if len(in) == 0 {
-		return nil
-	}
-	out := make([]command.TranslationInput, 0, len(in))
-	for _, t := range in {
-		if t == nil {
-			continue
-		}
-		out = append(out, command.TranslationInput{
-			Language:    t.Language,
-			Label:       t.Label,
-			Description: t.Description,
-			Note:        t.Note,
-		})
-	}
-	return out
 }

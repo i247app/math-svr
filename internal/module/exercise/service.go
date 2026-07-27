@@ -127,7 +127,7 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 		lang = req.Language
 	}
 
-	gradeLabel, programLabel := s.resolveCurriculumLabels(ctx, classroom.GradeId(), programID, lang)
+	gradeLabel, programLabel := s.resolveCurriculumLabels(ctx, classroom.GradeId(), programID)
 
 	numQuestions := req.NumQuestions
 	if numQuestions <= 0 {

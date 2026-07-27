@@ -100,8 +100,6 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	// Program
 	case PROGRAM_NOT_FOUND:
 		return "Program not found"
-	case PROGRAM_INVALID_LANGUAGE:
-		return "Program language is invalid"
 	case PROGRAM_MISSING_ID:
 		return "Program id is required"
 	case PROGRAM_MISSING_LABEL:
@@ -110,18 +108,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Program description is required"
 	case PROGRAM_INVALID_DISPLAY_ORDER:
 		return "Program display order is invalid"
-	case PROGRAM_INVALID_TRANSLATION:
-		return "Program translation payload is invalid"
-	case PROGRAM_TRANSLATION_ALREADY_EXISTS:
-		return "A translation in this language already exists for the program"
-	case PROGRAM_TRANSLATION_NOT_FOUND:
-		return "Program translation not found"
 
 	// Grade
 	case GRADE_NOT_FOUND:
 		return "Grade not found"
-	case GRADE_INVALID_LANGUAGE:
-		return "Grade language is invalid"
 	case GRADE_MISSING_ID:
 		return "Grade id is required"
 	case GRADE_MISSING_LABEL:
@@ -130,18 +120,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Grade description is required"
 	case GRADE_INVALID_DISPLAY_ORDER:
 		return "Grade display order is invalid"
-	case GRADE_INVALID_TRANSLATION:
-		return "Grade translation payload is invalid"
-	case GRADE_TRANSLATION_ALREADY_EXISTS:
-		return "A translation in this language already exists for the grade"
-	case GRADE_TRANSLATION_NOT_FOUND:
-		return "Grade translation not found"
 
 	// Semester
 	case SEMESTER_NOT_FOUND:
 		return "Semester not found"
-	case SEMESTER_INVALID_LANGUAGE:
-		return "Semester language is invalid"
 	case SEMESTER_MISSING_ID:
 		return "Semester id is required"
 	case SEMESTER_MISSING_NAME:
@@ -150,12 +132,6 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Semester description is required"
 	case SEMESTER_INVALID_DISPLAY_ORDER:
 		return "Semester display order is invalid"
-	case SEMESTER_INVALID_TRANSLATION:
-		return "Semester translation payload is invalid"
-	case SEMESTER_TRANSLATION_ALREADY_EXISTS:
-		return "A translation in this language already exists for the semester"
-	case SEMESTER_TRANSLATION_NOT_FOUND:
-		return "Semester translation not found"
 
 	// Device
 	case DEVICE_NOT_FOUND:

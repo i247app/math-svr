@@ -6,12 +6,9 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// ForceDeleteProgramCommand physically removes the program and every
-// translation in one transaction. Translations go first so an FK
-// addition later won't break ordering.
+// ForceDeleteProgramCommand physically removes the program row.
 type ForceDeleteProgramCommand struct {
 	ProgramID int64
 }
@@ -26,7 +23,7 @@ func NewForceDeleteProgramCommandHandler(uow transaction.UnitOfWork) *ForceDelet
 
 func (h *ForceDeleteProgramCommandHandler) Handle(ctx context.Context, cmd ForceDeleteProgramCommand) error {
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		existing, err := repos.Program.FindByProgramId(ctx, cmd.ProgramID, enum.LanguageTypeVietnamese)
+		existing, err := repos.Program.FindByProgramId(ctx, cmd.ProgramID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -35,9 +32,6 @@ func (h *ForceDeleteProgramCommandHandler) Handle(ctx context.Context, cmd Force
 				ErrProgramNotFound)
 		}
 
-		if err := repos.ProgramTranslation.ForceDeleteByProgramId(ctx, cmd.ProgramID); err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
 		if err := repos.Program.ForceDeleteByProgramId(ctx, cmd.ProgramID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}

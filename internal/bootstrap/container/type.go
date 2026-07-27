@@ -74,9 +74,6 @@ type RepositoryContainer struct {
 	QuizRepository                quizDomain.IRepository
 	ChapterRepository             chapterDomain.IRepository
 	ChapterTranslationRepository  chapterDomain.ITranslationRepository
-	GradeTranslationRepository    gradeDomain.ITranslationRepository
-	SemesterTranslationRepository semesterDomain.ITranslationRepository
-	ProgramTranslationRepository  programDomain.ITranslationRepository
 	SchoolRepository              schoolDomain.IRepository
 	SeqRepository                 seqDomain.IRepository
 	ClassroomRepository           classroomDomain.IRepository

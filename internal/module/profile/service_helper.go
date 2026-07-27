@@ -13,8 +13,6 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/infrastructure/metadata"
-	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // uploadAvatarIfPresent ships the multipart avatar (if any) to S3 and returns
@@ -129,27 +127,22 @@ func (s *Service) normalizeAvatarKey(ctx context.Context, raw string, invalidSta
 // School lookups tolerate a missing/soft-deleted school silently —
 // resp.School stays nil, resp.SchoolID is preserved so the client can
 // still tell what the profile refers to.
-func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domain.Profile, lang enum.LanguageType) ([]*dto.ProfileResponse, error) {
+func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domain.Profile) ([]*dto.ProfileResponse, error) {
 	if len(profiles) == 0 {
 		return []*dto.ProfileResponse{}, nil
 	}
 
-	language := metadata.GetClientLanguage(ctx).ToEnumLanguage()
-	if lang != "" {
-		language = lang
-	}
-
 	progIds, gradeIds, semIds, schoolIds := collectRefIds(profiles)
 
-	programs, err := s.programRepo.ListProgramsByIds(ctx, progIds, language)
+	programs, err := s.programRepo.ListProgramsByIds(ctx, progIds)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	grades, err := s.gradeRepo.ListGradesByIds(ctx, gradeIds, language)
+	grades, err := s.gradeRepo.ListGradesByIds(ctx, gradeIds)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	semesters, err := s.semesterRepo.ListSemestersByIds(ctx, semIds, language)
+	semesters, err := s.semesterRepo.ListSemestersByIds(ctx, semIds)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}

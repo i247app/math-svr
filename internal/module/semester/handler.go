@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	dto "math-ai.com/math-ai/internal/application/dto/semester"
-	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -108,10 +107,6 @@ func (h *SemesterHandler) HandleGetSemester(w http.ResponseWriter, r *http.Reque
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
-	}
-
-	if req.Language == "" {
-		req.Language = metadata.GetClientLanguage(r.Context()).ToEnumLanguage()
 	}
 
 	res, err := h.semesterSvc.GetSemester(r.Context(), &req)

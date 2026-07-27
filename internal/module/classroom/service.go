@@ -19,7 +19,6 @@ import (
 	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // coverUrlTTL bounds how long a generated cover URL is valid. Mirrors
@@ -466,7 +465,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 		if pid == 0 {
 			continue
 		}
-		p, err := s.programRepo.FindByProgramId(ctx, pid, enum.LanguageTypeVietnamese)
+		p, err := s.programRepo.FindByProgramId(ctx, pid)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -475,7 +474,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 		}
 	}
 	if gradeID != nil && *gradeID != 0 {
-		g, err := s.gradeRepo.FindByGradeId(ctx, *gradeID, enum.LanguageTypeVietnamese)
+		g, err := s.gradeRepo.FindByGradeId(ctx, *gradeID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}

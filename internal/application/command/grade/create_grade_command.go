@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"strings"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -12,20 +11,8 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
-// TranslationInput is the per-language override the create / update
-// commands accept. Language identifies the row uniquely (within the
-// parent grade); Label and Description are required, Note is optional.
-type TranslationInput struct {
-	Language    string
-	Label       string
-	Description string
-	Note        *string
-}
-
-// CreateGradeCommand writes the parent ma_grades row and any supplied
-// translation rows in a single transaction. The translation set is
-// de-duplicated by language before insert so a payload with two
-// `language=vn` entries fails fast rather than producing two rows.
+// CreateGradeCommand writes the parent ma_grades row in a single
+// transaction.
 type CreateGradeCommand struct {
 	ActorID      *int64
 	Label        string
@@ -33,7 +20,6 @@ type CreateGradeCommand struct {
 	ImageKey     *string
 	DisplayOrder int8
 	Note         *string
-	Translations []TranslationInput
 }
 
 type CreateGradeCommandHandler struct {
@@ -70,45 +56,6 @@ func (h *CreateGradeCommandHandler) Handle(ctx context.Context, cmd CreateGradeC
 			return errs.NewError(ctx, status.GRADE_NOT_FOUND, nil,
 				ErrGradeNotFoundAfterInsert)
 		}
-
-		seen := make(map[string]struct{}, len(cmd.Translations))
-		hydrated := make([]*grade.GradeTranslation, 0, len(cmd.Translations))
-		for _, in := range cmd.Translations {
-			lang := strings.ToLower(strings.TrimSpace(in.Language))
-			if lang == "" {
-				return errs.NewError(ctx, status.GRADE_INVALID_TRANSLATION, nil,
-					ErrTranslationLanguageRequired)
-			}
-			if _, dup := seen[lang]; dup {
-				return errs.NewError(ctx, status.GRADE_TRANSLATION_ALREADY_EXISTS,
-					map[string]any{"language": lang},
-					ErrDuplicateTranslationLanguage)
-			}
-			seen[lang] = struct{}{}
-
-			translationID, err := seqgen.Next(ctx, repos.Seq, seq.NameGradeTranslation)
-			if err != nil {
-				return err
-			}
-
-			t := grade.NewGradeTranslation()
-			t.SetGradeTranslationId(translationID)
-			t.SetGradeId(saved.GradeId())
-			t.SetLanguage(lang)
-			t.SetLabel(in.Label)
-			t.SetDescription(in.Description)
-			t.SetNote(in.Note)
-			t.SetCreateId(cmd.ActorID)
-
-			stored, err := repos.GradeTranslation.Create(ctx, t)
-			if err != nil {
-				return errs.NewError(ctx, status.FAIL, nil, err)
-			}
-			if stored != nil {
-				hydrated = append(hydrated, stored)
-			}
-		}
-		saved.SetTranslations(hydrated)
 		created = saved
 		return nil
 	})

@@ -17,40 +17,19 @@ import (
 
 // Reference-data aggregate. Like program/grade, but the base table uses
 // `name` (not `label`) and `description TEXT` is nullable, so the SELECT
-// COALESCEs to ” to keep the scan target a plain string.
+// COALESCEs to '' to keep the scan target a plain string.
 const (
-	semesterTable             = "ma_semesters"
-	semesterTranslationsTable = "ma_semester_translations"
+	semesterTable = "ma_semesters"
 
-	// LEFT JOIN so a semester without a translation in the requested
-	// language still surfaces with its base name / description.
-	semesterFromJoin = semesterTable + ` s
-	LEFT JOIN ` + semesterTranslationsTable + ` t
-	  ON t.semester_id = s.semester_id
-	  AND t.language = ?
-	  AND t.status = ?
-	  AND t.deleted_dt IS NULL`
-
-	semesterColumns = `s.id, s.semester_id,
-		COALESCE(t.name, s.name) AS name,
-		COALESCE(t.description, s.description, '') AS description,
+	semesterColumns = `s.id, s.semester_id, s.name,
+		COALESCE(s.description, '') AS description,
 		s.image_key, s.display_order, s.note,
 		s.semester_status, s.status,
 		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
 
 	semesterActiveWhere = `s.status = ? AND s.deleted_dt IS NULL
 		AND (s.semester_status IS NULL OR s.semester_status != ?)`
-
-	semesterBareActiveWhere = `s.status = ? AND s.deleted_dt IS NULL
-		AND (s.semester_status IS NULL OR s.semester_status != ?)`
 )
-
-func semesterJoinArgs(lang enum.LanguageType) []any {
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
-	return []any{lang, enum.StatusActive}
-}
 
 func semesterActiveArgs() []any {
 	return []any{enum.StatusActive, enum.StatusInactive}
@@ -77,10 +56,9 @@ func scanSemester(s database.RowScanner) (*models.SemesterModel, error) {
 // findOneBy is the single-row read helper. `where` is a package-controlled
 // SQL fragment; args supply placeholders. semesterActiveWhere is prepended
 // so every read excludes soft-deleted and inactive rows.
-func (r *SemesterRepository) findOneBy(ctx context.Context, lang enum.LanguageType, where string, args ...any) (*semester.Semester, error) {
-	fullArgs := append(semesterJoinArgs(lang), semesterActiveArgs()...)
-	fullArgs = append(fullArgs, args...)
-	query := `SELECT ` + semesterColumns + ` FROM ` + semesterFromJoin +
+func (r *SemesterRepository) findOneBy(ctx context.Context, where string, args ...any) (*semester.Semester, error) {
+	fullArgs := append(semesterActiveArgs(), args...)
+	query := `SELECT ` + semesterColumns + ` FROM ` + semesterTable + ` s` +
 		` WHERE ` + semesterActiveWhere + ` AND (` + where + `)`
 
 	m, err := scanSemester(r.db.QueryRow(ctx, query, fullArgs...))
@@ -93,48 +71,20 @@ func (r *SemesterRepository) findOneBy(ctx context.Context, lang enum.LanguageTy
 	return ModelToDomainSemester(m), nil
 }
 
-// findBareById hydrates a semester right after INSERT using its surrogate
-// id. The translation rows haven't been written yet at that point, so we
-// skip the LEFT JOIN and just read the base name/description.
-func (r *SemesterRepository) findBareById(ctx context.Context, id int64) (*semester.Semester, error) {
-	query := `SELECT s.id, s.semester_id, s.name,
-			COALESCE(s.description, '') AS description,
-			s.image_key, s.display_order, s.note, s.semester_status, s.status,
-			s.create_id, s.create_dt, s.modify_id, s.modify_dt
-		FROM ` + semesterTable + ` s
-		WHERE ` + semesterBareActiveWhere + ` AND s.id = ?`
-	args := append(semesterActiveArgs(), id)
-
-	m, err := scanSemester(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("semester repo find bare by id: %w", err)
-	}
-	return ModelToDomainSemester(m), nil
-}
-
-func (r *SemesterRepository) FindBySemesterId(ctx context.Context, semesterId int64, language enum.LanguageType) (*semester.Semester, error) {
-	return r.findOneBy(ctx, language, "s.semester_id = ?", semesterId)
+func (r *SemesterRepository) FindBySemesterId(ctx context.Context, semesterId int64) (*semester.Semester, error) {
+	return r.findOneBy(ctx, "s.semester_id = ?", semesterId)
 }
 
 func (r *SemesterRepository) ListSemesters(ctx context.Context, params *semester.ListSemestersParams) ([]*semester.Semester, *pagination.Pagination, error) {
-	lang := params.Language
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
-
-	countArgs := append(semesterJoinArgs(lang), semesterActiveArgs()...)
-	countQuery := `SELECT COUNT(*) FROM ` + semesterFromJoin +
+	countQuery := `SELECT COUNT(*) FROM ` + semesterTable + ` s` +
 		` WHERE ` + semesterActiveWhere
 	var total int64
-	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
+	if err := r.db.QueryRow(ctx, countQuery, semesterActiveArgs()...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("semester repo count: %w", err)
 	}
 
-	listArgs := append(semesterJoinArgs(lang), semesterActiveArgs()...)
-	query := `SELECT ` + semesterColumns + ` FROM ` + semesterFromJoin +
+	listArgs := semesterActiveArgs()
+	query := `SELECT ` + semesterColumns + ` FROM ` + semesterTable + ` s` +
 		` WHERE ` + semesterActiveWhere +
 		` ORDER BY s.display_order ASC, s.id ASC`
 
@@ -169,22 +119,19 @@ func (r *SemesterRepository) ListSemesters(ctx context.Context, params *semester
 }
 
 // ListSemestersByIds — see program_repository's equivalent for rationale.
-func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []int64, lang enum.LanguageType) ([]*semester.Semester, error) {
+func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []int64) ([]*semester.Semester, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	if lang == "" {
-		lang = enum.LanguageTypeVietnamese
-	}
 
 	placeholders := make([]string, len(ids))
-	args := append(semesterJoinArgs(lang), semesterActiveArgs()...)
+	args := semesterActiveArgs()
 	for i, id := range ids {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
 
-	query := `SELECT ` + semesterColumns + ` FROM ` + semesterFromJoin +
+	query := `SELECT ` + semesterColumns + ` FROM ` + semesterTable + ` s` +
 		` WHERE ` + semesterActiveWhere +
 		` AND s.semester_id IN (` + strings.Join(placeholders, ",") + `)`
 
@@ -232,6 +179,11 @@ func (r *SemesterRepository) Create(ctx context.Context, s *semester.Semester) (
 		return nil, fmt.Errorf("semester repo last insert id: %w", err)
 	}
 	return r.findBareById(ctx, id)
+}
+
+// findBareById hydrates a semester right after INSERT using its surrogate id.
+func (r *SemesterRepository) findBareById(ctx context.Context, id int64) (*semester.Semester, error) {
+	return r.findOneBy(ctx, "s.id = ?", id)
 }
 
 // Update applies a partial update using COALESCE(?, col) for every
