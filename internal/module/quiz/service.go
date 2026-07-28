@@ -91,7 +91,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 	}
 
 	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
-	log.Infof("Languge from metadat: %s", metadata.GetClientLanguage(ctx))
+	log.Infof("Languge from metadata: %s", metadata.GetClientLanguage(ctx))
 
 	// profile_id is optional. When supplied we must find the row (an
 	// explicit profile_id pointing nowhere is a client error). When

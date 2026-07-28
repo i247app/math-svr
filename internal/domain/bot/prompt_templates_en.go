@@ -145,15 +145,11 @@ SCHEMA:
 const visualQuestionRulesEN = `
 VISUAL QUESTION RULES:
 - Every question carries a "question_type": either ARITHMETIC (plain text, the default) or COUNT (icon-based counting). Do NOT produce any other question_type.
-- Balance the mix roughly 50% ARITHMETIC and 50% COUNT, alternating between them.
-- COUNT: "question_name" shows objects to count or add, using icons plus operators (+, "?"). Answers are numbers; "topic" is "counting". Icons may be emoji OR shape tokens (see ICONS), e.g. "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" or "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
+- WHETHER and how often to use COUNT/icons is decided ENTIRELY by the Visual/icon policy in the GRADE PROFILE. If that policy is OFF (or no GRADE PROFILE is provided), use ARITHMETIC for every question and NEVER emit emoji or [icon:...] tokens. Only use COUNT when the policy explicitly allows it, and stay within the rate it states.
+- COUNT (only when the grade policy allows it): "question_name" shows objects to count or add, using emoji plus operators (+, "?"), e.g. "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?". Answers are numbers; "topic" is "counting".
 
 ICONS (only for COUNT; NEVER in ARITHMETIC):
 - Emoji: for countable objects use common, child-friendly emoji inserted literally and space-separated, e.g. 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Use ONE emoji type per question.
-
-VISUAL EXAMPLES (single question objects, same schema as above):
-{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "What is 2 + 3?", "answers": [{"label":"A","content":"4"},{"label":"B","content":"5"},{"label":"C","content":"6"},{"label":"D","content":"7"}], "right_answer": "B", "correct_answer": "5", "topic": "addition_basic", "difficulty": 1}
-{"question_number": 2, "question_type": "COUNT", "question_name": "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?", "answers": [{"label":"A","content":"5"},{"label":"B","content":"6"},{"label":"C","content":"7"},{"label":"D","content":"4"}], "right_answer": "B", "correct_answer": "6", "topic": "addition_basic", "difficulty": 1}
 `
 
 func buildSystemGenerateEN(n int) string {
@@ -264,23 +260,39 @@ func learningIntentEN(t QuizTypeOfQuiz) string {
 }
 
 func userGenerateEN(purpose QuizPurpose, in QuizPromptInput) string {
-	guidance := "Calibrate difficulty using the context above where provided; otherwise pick a balanced elementary-level set."
-	if purpose == QuizPurposePractice {
-		guidance = "Calibrate difficulty to the semester checkpoint when available; otherwise pick a balanced elementary-level practice set."
-	}
 	intent := learningIntentEN(in.TypeOfQuiz)
 	context := buildCurriculumContextEN(in)
+	gradeBlock := gradeProfileBlock(QuizLanguageEnglish, in.Grade)
+
 	if context == "" {
+		guidance := "Calibrate difficulty using any context provided; otherwise pick a balanced elementary-level set."
+		if purpose == QuizPurposePractice {
+			guidance = "Calibrate difficulty to the semester checkpoint when available; otherwise pick a balanced elementary-level practice set."
+		}
 		return fmt.Sprintf("Generate a %s quiz.\n\nLearning intent: %s.\n\nNo specific academic context was provided — use a balanced Vietnamese elementary-level (Grades 1-5) set.\n\n%s", purpose, intent, guidance)
 	}
-	return fmt.Sprintf("Generate a %s quiz for this student context:\n%s\n\nLearning intent: %s.\n\n%s", purpose, context, intent, guidance)
+
+	// With a resolved grade, the GRADE PROFILE is the difficulty authority
+	// and the curriculum context only refines the topic — so we drop the
+	// "balanced elementary" phrasing that used to pull difficulty toward
+	// grade 1.
+	guidance := "Calibrate every question to the GRADE PROFILE above; the curriculum context refines the topic, not the difficulty."
+	header := ""
+	if gradeBlock != "" {
+		header = gradeBlock + "\n\n"
+	} else {
+		guidance = "Calibrate difficulty to the student context above."
+	}
+	return fmt.Sprintf("%sGenerate a %s quiz for this student context:\n%s\n\nLearning intent: %s.\n\n%s", header, purpose, context, intent, guidance)
 }
 
 func userReinforceEN(purpose QuizPurpose, in QuizPromptInput) string {
-	closing := "Target the weak spots from the previous review while keeping difficulty appropriate to the context above; if no context was supplied, fall back to a balanced elementary-level set."
 	intent := learningIntentEN(QuizTypeOfQuizReinforcement)
 	context := buildCurriculumContextEN(in)
+	gradeBlock := gradeProfileBlock(QuizLanguageEnglish, in.Grade)
+
 	if context == "" {
+		closing := "Target the weak spots from the previous review while keeping difficulty at a balanced elementary level."
 		return fmt.Sprintf(`Generate a %s reinforce quiz.
 
 Learning intent: %s.
@@ -293,7 +305,14 @@ AI review of previous performance: %s
 
 %s`, purpose, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
 	}
-	return fmt.Sprintf(`Generate a %s reinforce quiz for this student context:
+	closing := "Target the weak spots from the previous review, but keep EVERY question at the difficulty defined by the GRADE PROFILE above."
+	header := ""
+	if gradeBlock != "" {
+		header = gradeBlock + "\n\n"
+	} else {
+		closing = "Target the weak spots from the previous review while keeping difficulty appropriate to the context above."
+	}
+	return fmt.Sprintf(`%sGenerate a %s reinforce quiz for this student context:
 %s
 
 Learning intent: %s.
@@ -302,7 +321,7 @@ Learning intent: %s.
 - Student's previous answers (JSON): %s
 - AI review of previous performance: %s
 
-%s`, purpose, context, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+%s`, header, purpose, context, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
 }
 
 func userGradeEN(purpose QuizPurpose, in QuizPromptInput) string {

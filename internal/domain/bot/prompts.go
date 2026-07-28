@@ -3,6 +3,8 @@ package bot
 import (
 	"fmt"
 	"strings"
+
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // QuizPromptKind discriminates the four supported quiz LLM calls. Each
@@ -164,9 +166,9 @@ func BuildQuizPrompt(kind QuizPromptKind, in QuizPromptInput) (system string, us
 
 func normalizeLanguage(lang QuizLanguage) (QuizLanguage, error) {
 	switch strings.ToLower(strings.TrimSpace(string(lang))) {
-	case "vn":
+	case string(enum.LanguageTypeVietnamese), string(enum.LanguageTypeVietnameseV2):
 		return QuizLanguageVietnamese, nil
-	case "", "en":
+	case string(enum.LanguageTypeEnglish), string(enum.LanguageTypeEnglishV2):
 		return QuizLanguageEnglish, nil
 	default:
 		return "", fmt.Errorf("bot: unsupported language %q", string(lang))

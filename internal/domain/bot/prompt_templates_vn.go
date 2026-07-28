@@ -143,15 +143,11 @@ CẤU TRÚC:
 const visualQuestionRulesVN = `
 VISUAL QUESTION RULES:
 - Mỗi câu có "question_type": ARITHMETIC (câu chữ thuần, mặc định) hoặc COUNT (đếm bằng icon). KHÔNG tạo bất kỳ question_type nào khác.
-- Cân bằng tỉ lệ khoảng 50% ARITHMETIC và 50% COUNT, xen kẽ nhau.
-- COUNT: "question_name" hiển thị các vật để đếm hoặc cộng bằng icon kèm toán tử (+, "?"). Đáp án là số; "topic" là "counting". Icon có thể là emoji HOẶC token hình (xem ICONS), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" hoặc "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
+- VIỆC dùng COUNT/icon hay không và với tần suất nào do CHÍNH SÁCH icon trong GRADE PROFILE quyết định HOÀN TOÀN. Nếu chính sách đó là TẮT (hoặc không có GRADE PROFILE), dùng ARITHMETIC cho mọi câu và TUYỆT ĐỐI không phát sinh emoji hay token [icon:...]. Chỉ dùng COUNT khi chính sách cho phép, và trong đúng tần suất nó nêu.
+- COUNT (chỉ khi chính sách theo lớp cho phép): "question_name" hiển thị các vật để đếm hoặc cộng bằng emoji kèm toán tử (+, "?"), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?". Đáp án là số; "topic" là "counting".
 
 ICONS (chỉ dùng cho COUNT; TUYỆT ĐỐI không dùng trong ARITHMETIC):
 - Emoji: với vật đếm được, dùng emoji phổ thông, thân thiện trẻ em, chèn trực tiếp và cách nhau bởi dấu cách, ví dụ 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Mỗi câu chỉ dùng MỘT loại emoji.
-
-VÍ DỤ VISUAL (từng object câu hỏi, cùng schema như trên):
-{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "What is 2 + 3?", "answers": [{"label":"A","content":"4"},{"label":"B","content":"5"},{"label":"C","content":"6"},{"label":"D","content":"7"}], "right_answer": "B", "correct_answer": "5", "topic": "phép cộng", "difficulty": 1}
-{"question_number": 2, "question_type": "COUNT", "question_name": "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?", "answers": [{"label":"A","content":"5"},{"label":"B","content":"6"},{"label":"C","content":"7"},{"label":"D","content":"4"}], "right_answer": "B", "correct_answer": "6", "topic": "phép cộng", "difficulty": 1}
 `
 
 func buildSystemGenerateVN(n int) string {
@@ -261,23 +257,38 @@ func learningIntentVN(t QuizTypeOfQuiz) string {
 }
 
 func userGenerateVN(purpose QuizPurpose, in QuizPromptInput) string {
-	guidance := "Điều chỉnh độ khó theo thông tin đã cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học."
-	if purpose == QuizPurposePractice {
-		guidance = "Điều chỉnh độ khó theo mốc học kỳ khi có; nếu không, hãy chọn bộ luyện tập cân bằng ở trình độ tiểu học."
-	}
 	intent := learningIntentVN(in.TypeOfQuiz)
 	context := buildCurriculumContextVN(in)
+	gradeBlock := gradeProfileBlock(QuizLanguageVietnamese, in.Grade)
+
 	if context == "" {
+		guidance := "Điều chỉnh độ khó theo thông tin đã cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học."
+		if purpose == QuizPurposePractice {
+			guidance = "Điều chỉnh độ khó theo mốc học kỳ khi có; nếu không, hãy chọn bộ luyện tập cân bằng ở trình độ tiểu học."
+		}
 		return fmt.Sprintf("Hãy tạo bài kiểm tra %s.\n\nMục tiêu học tập: %s.\n\nKhông có thông tin học vấn cụ thể — hãy dùng bộ câu hỏi toán cân bằng cho học sinh tiểu học Việt Nam (Lớp 1-5).\n\n%s", purpose, intent, guidance)
 	}
-	return fmt.Sprintf("Hãy tạo bài kiểm tra %s cho học sinh với thông tin sau:\n%s\n\nMục tiêu học tập: %s.\n\n%s", purpose, context, intent, guidance)
+
+	// Khi đã có lớp, GRADE PROFILE là nguồn quyết định độ khó; context
+	// chương trình chỉ tinh chỉnh chủ đề — bỏ cụm "cân bằng tiểu học" vốn
+	// kéo độ khó về lớp 1.
+	guidance := "Hiệu chỉnh mọi câu hỏi đúng theo GRADE PROFILE ở trên; thông tin chương trình chỉ tinh chỉnh chủ đề, không phải độ khó."
+	header := ""
+	if gradeBlock != "" {
+		header = gradeBlock + "\n\n"
+	} else {
+		guidance = "Điều chỉnh độ khó theo thông tin học sinh ở trên."
+	}
+	return fmt.Sprintf("%sHãy tạo bài kiểm tra %s cho học sinh với thông tin sau:\n%s\n\nMục tiêu học tập: %s.\n\n%s", header, purpose, context, intent, guidance)
 }
 
 func userReinforceVN(purpose QuizPurpose, in QuizPromptInput) string {
-	closing := "Tập trung vào điểm yếu trong nhận xét trước, đồng thời giữ độ khó phù hợp với thông tin nêu trên; nếu không có thông tin, dùng mức cân bằng cho học sinh tiểu học."
 	intent := learningIntentVN(QuizTypeOfQuizReinforcement)
 	context := buildCurriculumContextVN(in)
+	gradeBlock := gradeProfileBlock(QuizLanguageVietnamese, in.Grade)
+
 	if context == "" {
+		closing := "Tập trung vào điểm yếu trong nhận xét trước, đồng thời giữ độ khó ở mức cân bằng cho học sinh tiểu học."
 		return fmt.Sprintf(`Hãy tạo bài kiểm tra %s củng cố.
 
 Mục tiêu học tập: %s.
@@ -290,7 +301,15 @@ Nhận xét AI về kết quả trước: %s
 
 %s`, purpose, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
 	}
-	return fmt.Sprintf(`Hãy tạo bài kiểm tra %s củng cố cho học sinh với thông tin sau:
+
+	closing := "Tập trung vào điểm yếu trong nhận xét trước, nhưng giữ MỌI câu hỏi đúng độ khó mà GRADE PROFILE ở trên quy định."
+	header := ""
+	if gradeBlock != "" {
+		header = gradeBlock + "\n\n"
+	} else {
+		closing = "Tập trung vào điểm yếu trong nhận xét trước, đồng thời giữ độ khó phù hợp với thông tin nêu trên."
+	}
+	return fmt.Sprintf(`%sHãy tạo bài kiểm tra %s củng cố cho học sinh với thông tin sau:
 %s
 
 Mục tiêu học tập: %s.
@@ -299,7 +318,7 @@ Câu hỏi bài trước (JSON): %s
 Câu trả lời của học sinh (JSON): %s
 Nhận xét AI về kết quả trước: %s
 
-%s`, purpose, context, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+%s`, header, purpose, context, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
 }
 
 func userGradeVN(purpose QuizPurpose, in QuizPromptInput) string {

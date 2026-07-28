@@ -61,14 +61,14 @@ CẤU TRÚC:
 `
 
 // visualExerciseRulesVN mirrors visualExerciseRulesEN — tuned for
-// teacher-scoped exercises (COUNT only when it fits the lesson, no fixed
-// ratio). JSON keys stay English; the icon whitelist matches the quiz
-// normalizer's geometryIconWhitelist.
+// teacher-scoped exercises: COUNT is gated on BOTH the grade icon policy
+// (from the GRADE PROFILE) AND lesson fit. JSON keys stay English; the
+// icon whitelist matches the quiz normalizer's geometryIconWhitelist.
 const visualExerciseRulesVN = `
 VISUAL QUESTION RULES:
 - Mỗi câu có "question_type": ARITHMETIC (câu chữ thuần, mặc định) hoặc COUNT (đếm bằng icon). KHÔNG tạo bất kỳ question_type nào khác.
-- CHỈ dùng COUNT khi phù hợp với chương + bài học của giáo viên — ví dụ đếm số lượng, so sánh số lượng, phép cộng/trừ đơn giản, hoặc hình cơ bản. Với bài học không liên quan đếm/số lượng, dùng ARITHMETIC cho mọi câu. Tuyệt đối không để câu icon lệch khỏi phạm vi bài học.
-- COUNT: "question_name" hiển thị các vật để đếm hoặc cộng bằng icon kèm toán tử (+, "?"). Đáp án là số; giữ "topic" bám theo bài học. Icon có thể là emoji HOẶC token hình (xem ICONS), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" hoặc "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
+- CHỈ được dùng COUNT/icon khi CẢ HAI điều kiện đúng: (1) chính sách icon trong GRADE PROFILE cho phép — nếu là TẮT, hoặc không có GRADE PROFILE, dùng ARITHMETIC cho mọi câu và TUYỆT ĐỐI không phát sinh emoji hay token [icon:...]; VÀ (2) chương + bài học của giáo viên thực sự về đếm / số lượng / hình cơ bản. Ngược lại, dùng ARITHMETIC cho mọi câu.
+- COUNT (chỉ khi cả hai điều kiện trên đúng): "question_name" hiển thị các vật để đếm hoặc cộng bằng icon kèm toán tử (+, "?"). Đáp án là số; giữ "topic" bám theo bài học. Icon có thể là emoji HOẶC token hình (xem ICONS), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" hoặc "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
 
 ICONS (chỉ dùng cho COUNT; TUYỆT ĐỐI không dùng trong ARITHMETIC):
 - Emoji: với vật đếm được, dùng emoji phổ thông, thân thiện trẻ em, chèn trực tiếp và cách nhau bởi dấu cách, ví dụ 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Mỗi câu chỉ dùng MỘT loại emoji.
@@ -83,21 +83,31 @@ func userExerciseGenerateVN(in ExercisePromptInput) string {
 	scope := fmt.Sprintf("- Chương: %s\n- Bài học: %s",
 		strings.TrimSpace(in.ChapterName), strings.TrimSpace(in.LessonName))
 	context := buildExerciseContextVN(in)
+	gradeBlock := gradeProfileBlock(QuizLanguageVietnamese, in.Grade)
+
+	// GRADE PROFILE quyết định mức độ khó; chương + bài học của giáo viên
+	// quyết định chủ đề. Cả hai đều bắt buộc — grade không hạ dưới mức lớp,
+	// bài học không cho câu hỏi lệch chủ đề.
+	difficultyLine := "Hiệu chỉnh mọi câu hỏi đúng theo GRADE PROFILE ở trên, và giữ trong phạm vi chương + bài học — phạm vi này là bắt buộc."
+	header := gradeBlock + "\n\n"
+	if gradeBlock == "" {
+		difficultyLine = "Chọn độ khó cân bằng cho học sinh tiểu học Việt Nam (Lớp 1-5), và giữ mọi câu trong phạm vi chương + bài học — phạm vi này là bắt buộc."
+		header = ""
+	}
+
 	if context == "" {
-		return fmt.Sprintf(`Hãy tạo bài tập trên lớp theo chủ đề giáo viên đã đặt:
+		return fmt.Sprintf(`%sHãy tạo bài tập trên lớp theo chủ đề giáo viên đã đặt:
 %s
 
-Không có thêm thông tin về cấp lớp / bộ sách — hãy chọn độ khó cân bằng cho học sinh tiểu học Việt Nam (Lớp 1-5).
-
-Mọi câu hỏi đều phải nằm trong phạm vi chương + bài học nêu trên.`, scope)
+%s`, header, scope, difficultyLine)
 	}
-	return fmt.Sprintf(`Hãy tạo bài tập trên lớp theo chủ đề giáo viên đã đặt:
+	return fmt.Sprintf(`%sHãy tạo bài tập trên lớp theo chủ đề giáo viên đã đặt:
 %s
 
 Thông tin bổ sung:
 %s
 
-Dùng các thông tin bổ sung phía trên để điều chỉnh độ khó, trọng tâm và cách diễn đạt — KHÔNG ghi đè phạm vi chương + bài học vốn bắt buộc. Hướng dẫn của giáo viên (nếu có) chỉ là gợi ý, không phải cớ để lan sang chủ đề khác.`, scope, context)
+%s Hướng dẫn của giáo viên (nếu có) chỉ là gợi ý, không phải cớ để lan sang chủ đề khác.`, header, scope, context, difficultyLine)
 }
 
 // Grading prompt — Vietnamese. Mirrors the quiz-grading output shape so

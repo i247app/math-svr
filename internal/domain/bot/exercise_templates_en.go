@@ -61,15 +61,16 @@ SCHEMA:
 }
 `
 
-// visualExerciseRulesEN mirrors the quiz visual contract but is tuned for
-// teacher-scoped exercises: COUNT is used ONLY when it fits the chapter +
-// lesson (no fixed ratio), so an icon question never drifts off-topic. The
-// icon whitelist matches the quiz normalizer's geometryIconWhitelist.
+// visualExerciseRulesEN mirrors the quiz visual contract, tuned for
+// teacher-scoped exercises: COUNT is gated on BOTH the grade's icon
+// policy (from the GRADE PROFILE) AND lesson fit, so an icon question
+// never appears above level nor drifts off-topic. The icon whitelist
+// matches the quiz normalizer's geometryIconWhitelist.
 const visualExerciseRulesEN = `
 VISUAL QUESTION RULES:
 - Every question carries a "question_type": either ARITHMETIC (plain text, the default) or COUNT (icon-based counting). Do NOT produce any other question_type.
-- Use COUNT ONLY when it fits the teacher's chapter + lesson — e.g. counting, quantity comparison, early addition/subtraction, or basic shapes. For any lesson that is not about counting/quantity, use ARITHMETIC for every question. Never let an icon question drift outside the lesson scope.
-- COUNT: "question_name" shows objects to count or add, using icons plus operators (+, "?"). Answers are numbers; keep "topic" tied to the lesson. Icons may be emoji OR shape tokens (see ICONS), e.g. "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" or "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
+- COUNT/icons are allowed ONLY when BOTH conditions hold: (1) the Visual/icon policy in the GRADE PROFILE permits them — if it is OFF, or no GRADE PROFILE is provided, use ARITHMETIC for every question and NEVER emit emoji or [icon:...] tokens; AND (2) the teacher's chapter + lesson is genuinely about counting / quantity / basic shapes. Otherwise use ARITHMETIC for every question.
+- COUNT (only when both conditions above hold): "question_name" shows objects to count or add, using icons plus operators (+, "?"). Answers are numbers; keep "topic" tied to the lesson. Icons may be emoji OR shape tokens (see ICONS), e.g. "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" or "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
 
 ICONS (only for COUNT; NEVER in ARITHMETIC):
 - Emoji: for countable objects use common, child-friendly emoji inserted literally and space-separated, e.g. 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Use ONE emoji type per question.
@@ -84,21 +85,31 @@ func userExerciseGenerateEN(in ExercisePromptInput) string {
 	scope := fmt.Sprintf("- Chapter: %s\n- Lesson: %s",
 		strings.TrimSpace(in.ChapterName), strings.TrimSpace(in.LessonName))
 	context := buildExerciseContextEN(in)
+	gradeBlock := gradeProfileBlock(QuizLanguageEnglish, in.Grade)
+
+	// The GRADE PROFILE sets the difficulty level; the teacher's chapter +
+	// lesson sets the topic. Both are binding — grade never lowers below
+	// level, lesson never lets a question drift off-topic.
+	difficultyLine := "Calibrate every question to the GRADE PROFILE above, and keep it inside the chapter + lesson scope — the scope is binding."
+	header := gradeBlock + "\n\n"
+	if gradeBlock == "" {
+		difficultyLine = "Calibrate to a balanced elementary level (Grades 1-5), and keep every question inside the chapter + lesson scope — the scope is binding."
+		header = ""
+	}
+
 	if context == "" {
-		return fmt.Sprintf(`Generate an in-class exercise scoped to the following teacher-set topic:
+		return fmt.Sprintf(`%sGenerate an in-class exercise scoped to the following teacher-set topic:
 %s
 
-No additional grade / curriculum context was supplied — calibrate to a balanced elementary level (Grades 1-5).
-
-Keep every question inside the chapter + lesson scope above.`, scope)
+%s`, header, scope, difficultyLine)
 	}
-	return fmt.Sprintf(`Generate an in-class exercise scoped to the following teacher-set topic:
+	return fmt.Sprintf(`%sGenerate an in-class exercise scoped to the following teacher-set topic:
 %s
 
 Additional context:
 %s
 
-Use the additional context above to refine question difficulty, focus areas, and phrasing — without overriding the chapter + lesson scope, which is binding. The teacher's guidance, when present, is a hint, not a license to drift to other topics.`, scope, context)
+%s The teacher's guidance is a hint, not a license to drift to other topics.`, header, scope, context, difficultyLine)
 }
 
 // Grading prompt — English. Output schema matches QuizGradingResult so
