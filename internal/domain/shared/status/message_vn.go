@@ -156,6 +156,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Thu hồi thiết bị thất bại"
 	case DEVICE_2FA_REQUIRED:
 		return "Thiết bị này yêu cầu xác thực hai yếu tố"
+	case DEVICE_NOT_TRUSTED:
+		return "Thiết bị được chọn chưa được tin cậy (trusted)"
 
 	// School
 	case SCHOOL_NOT_FOUND:
@@ -232,6 +234,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Không thể tạo mã OTP"
 	case OTP_DISABLED:
 		return "Xác thực 2 bước đã bị tắt"
+	case OTP_TARGET_DEVICE_REQUIRES_LOGIN2FA:
+		return "target_device_id chỉ được hỗ trợ với type LOGIN_2FA"
 
 	// Notification
 	case NOTIFICATION_MISSING_UID:

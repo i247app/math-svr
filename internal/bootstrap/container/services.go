@@ -94,8 +94,18 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.SchoolRepository,
 	)
 
+	log.Info("> Setup NotificationSvc...")
+	notificationService := notification.NewService(
+		uow,
+		repos.NotificationRepository,
+		repos.UserRepository,
+		repos.DeviceRepository,
+		res.NotificationProvider,
+		res.SocketPublisher,
+	)
+
 	log.Info("> Setup OtpSvc...")
-	otpService := otp.NewService(userService, deviceService, repos.OtpRepository, uow, res.OtpDelivery)
+	otpService := otp.NewService(userService, deviceService, notificationService, repos.OtpRepository, uow, res.OtpDelivery, res.NotificationProvider)
 
 	log.Info("> Setup AuthSvc...")
 	authService := auth.NewService(userService, otpService, uow, res.Env.TrustDeviceTTLDays)
@@ -157,16 +167,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 
 	log.Info("> Setup BotSvc...")
 	botService := bot.NewService(res.BotProvider)
-
-	log.Info("> Setup NotificationSvc...")
-	notificationService := notification.NewService(
-		uow,
-		repos.NotificationRepository,
-		repos.UserRepository,
-		repos.DeviceRepository,
-		res.NotificationProvider,
-		res.SocketPublisher,
-	)
 
 	log.Info("> Setup HomeSvc...")
 	homeService := home.NewService(

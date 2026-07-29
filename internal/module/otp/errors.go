@@ -10,4 +10,5 @@ var (
 	ErrOTPTypeRequired    = errors.New("otp_type is required")
 	ErrUserAlreadyExists  = errors.New("user already exists")
 	ErrUserNotFound       = errors.New("user not found")
+	ErrTargetDeviceRequiresLogin2FA = errors.New("target_device_id is only supported for LOGIN_2FA")
 )

@@ -122,8 +122,6 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 // user's device tokens. Persistence is authoritative — a push failure is
 // logged but never fails the request (the in-app inbox row already exists).
 func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificationReq) (*dto.SendNotificationRes, error) {
-	log := logger.From(ctx)
-
 	if err := ValidateSend(ctx, req); err != nil {
 		return nil, err
 	}
@@ -182,15 +180,15 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 	// inbox row is authoritative, so a socket publish failure is logged only.
 	// Reaches only the recipient's currently-connected sockets (nil when the
 	// socket runtime is disabled).
-	if s.socket != nil {
-		topic := appsocket.NotificationsTopic(req.UserID)
-		event := "notification.created"
-		log.Infof("send socket event to user %d : %v", req.UserID, event)
-		if perr := s.socket.Publish(ctx, topic, event, res.Notification); perr != nil {
-			log.Warnf("notification.socket_publish_failed notification_id=%d user_id=%d err=%v",
-				created.NotificationId(), req.UserID, perr)
-		}
-	}
+	// if s.socket != nil {
+	// 	topic := appsocket.NotificationsTopic(req.UserID)
+	// 	event := "notification.created"
+	// 	log.Infof("send socket event to user %d : %v", req.UserID, event)
+	// 	if perr := s.socket.Publish(ctx, topic, event, res.Notification); perr != nil {
+	// 		log.Warnf("notification.socket_publish_failed notification_id=%d user_id=%d err=%v",
+	// 			created.NotificationId(), req.UserID, perr)
+	// 	}
+	// }
 
 	return res, nil
 }
@@ -198,7 +196,7 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 // recipientTokens returns the deduplicated, non-empty push tokens registered
 // to the user's active devices.
 func (s *Service) recipientTokens(ctx context.Context, userID int64) ([]string, error) {
-	devices, err := s.deviceRepo.ListByUserId(ctx, userID)
+	devices, err := s.deviceRepo.ListByUserId(ctx, &deviceDomain.ListDevicesParams{UserID: userID})
 	if err != nil {
 		return nil, err
 	}

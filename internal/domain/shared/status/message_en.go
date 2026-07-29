@@ -156,6 +156,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Device revoke failed"
 	case DEVICE_2FA_REQUIRED:
 		return "Two-factor authentication is required for this device"
+	case DEVICE_NOT_TRUSTED:
+		return "The selected device is not a trusted device"
 
 	// School
 	case SCHOOL_NOT_FOUND:
@@ -232,6 +234,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Failed to generate OTP"
 	case OTP_DISABLED:
 		return "OTP is disabled"
+	case OTP_TARGET_DEVICE_REQUIRES_LOGIN2FA:
+		return "target_device_id is only supported for LOGIN_2FA"
 
 	// Notification
 	case NOTIFICATION_MISSING_UID:

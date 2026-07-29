@@ -17,7 +17,7 @@ import (
 const (
 	deviceTable = "ma_devices"
 
-	deviceColumns = `d.id, d.device_id, d.user_id, d.device_uuid, d.device_name,
+	deviceColumns = `d.id, d.device_id, d.user_id, d.device_uuid, d.device_name, d.platform,
 		d.device_push_token, d.is_verified, d.trust_dt, d.note, d.device_status, d.status,
 		d.create_id, d.create_dt, d.modify_id, d.modify_dt`
 
@@ -38,7 +38,7 @@ func NewDeviceRepository(db database.Executor) device.IRepository {
 
 func scanDevice(s database.RowScanner) (*models.DeviceModel, error) {
 	var m models.DeviceModel
-	if err := s.Scan(&m.Id, &m.DeviceId, &m.UserId, &m.DeviceUUID, &m.DeviceName,
+	if err := s.Scan(&m.Id, &m.DeviceId, &m.UserId, &m.DeviceUUID, &m.DeviceName, &m.Platform,
 		&m.DevicePushToken, &m.IsVerified, &m.TrustDt, &m.Note, &m.DeviceStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -87,10 +87,12 @@ func (r *DeviceRepository) FindByUserDevice(ctx context.Context, userId int64, d
 	return r.findOneBy(ctx, "d.user_id = ? AND d.device_uuid = ?", userId, deviceUUID)
 }
 
-func (r *DeviceRepository) ListByUserId(ctx context.Context, userId int64) ([]*device.Device, error) {
-	args := append(deviceActiveArgs(), userId)
+func (r *DeviceRepository) ListByUserId(ctx context.Context, params *device.ListDevicesParams) ([]*device.Device, error) {
+	filterWhere, filterArgs := buildDeviceListFilter(params)
+
+	args := append(deviceActiveArgs(), filterArgs...)
 	query := `SELECT ` + deviceColumns + ` FROM ` + deviceTable + ` d WHERE ` +
-		deviceActiveWhere + ` AND d.user_id = ? ORDER BY d.id DESC`
+		deviceActiveWhere + filterWhere + ` ORDER BY d.id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -112,16 +114,38 @@ func (r *DeviceRepository) ListByUserId(ctx context.Context, userId int64) ([]*d
 	return devices, nil
 }
 
+// buildDeviceListFilter mirrors buildProfileListFilter's shape: it turns an
+// optional *ListDevicesParams into an appendable WHERE fragment + its bound
+// args. UserID is always required by the caller (see ListByUserId); IsVerified
+// is only added to the query when non-nil, so omitting it reproduces the
+// exact query this method ran before the filter existed.
+func buildDeviceListFilter(params *device.ListDevicesParams) (string, []any) {
+	if params == nil {
+		return "", nil
+	}
+	var (
+		clause strings.Builder
+		args   []any
+	)
+	clause.WriteString(` AND d.user_id = ?`)
+	args = append(args, params.UserID)
+	if params.IsVerified != nil {
+		clause.WriteString(` AND d.is_verified = ?`)
+		args = append(args, *params.IsVerified)
+	}
+	return clause.String(), args
+}
+
 func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) (*device.Device, error) {
 	query := `
 		INSERT INTO ` + deviceTable + `
-			(device_id, user_id, device_uuid, device_name, device_push_token,
+			(device_id, user_id, device_uuid, device_name, platform, device_push_token,
 			 is_verified, trust_dt, note, device_status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
-		d.DeviceId(), d.UserId(), d.DeviceUUID(), d.DeviceName(), d.DevicePushToken(),
+		d.DeviceId(), d.UserId(), d.DeviceUUID(), d.DeviceName(), d.Platform(), d.DevicePushToken(),
 		d.IsVerified(), d.TrustDt(), d.Note(), d.DeviceStatus(),
 		mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
@@ -242,6 +266,7 @@ func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
 	d.SetUserId(m.UserId)
 	d.SetDeviceUUID(m.DeviceUUID)
 	d.SetDeviceName(m.DeviceName)
+	d.SetPlatform(m.Platform)
 	d.SetDevicePushToken(m.DevicePushToken)
 	d.SetIsVerified(m.IsVerified)
 	if m.TrustDt != nil {

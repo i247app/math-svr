@@ -4,12 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	notifAdapter "math-ai.com/math-ai/internal/adapter/notification"
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	command "math-ai.com/math-ai/internal/application/command/otp"
 	deviceDTO "math-ai.com/math-ai/internal/application/dto/device"
+	notifDto "math-ai.com/math-ai/internal/application/dto/notification"
 	dto "math-ai.com/math-ai/internal/application/dto/otp"
 	userDto "math-ai.com/math-ai/internal/application/dto/user"
 	"math-ai.com/math-ai/internal/module/device"
+	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/user"
 
 	query "math-ai.com/math-ai/internal/application/query/otp"
@@ -30,30 +33,34 @@ import (
 //   - Other modules that need OTP plumbing — e.g. an auth/2fa orchestrator
 //     could call Verify() directly to keep the response shape uniform.
 type Service struct {
-	userSvc      *user.Service
-	deviceSvc    *device.Service
-	sendCmd      *command.SendOtpCommandHandler
-	verifyCmd    *command.VerifyOtpCommandHandler
-	revokeCmd    *command.RevokeOtpCommandHandler
-	getByIdQuery *query.GetOtpByIdQueryHandler
-	repo         domain.IRepository
+	userSvc         *user.Service
+	deviceSvc       *device.Service
+	notificationSvc *notification.Service
+	sendCmd         *command.SendOtpCommandHandler
+	verifyCmd       *command.VerifyOtpCommandHandler
+	revokeCmd       *command.RevokeOtpCommandHandler
+	getByIdQuery    *query.GetOtpByIdQueryHandler
+	repo            domain.IRepository
 }
 
 func NewService(
 	userSvc *user.Service,
 	deviceSvc *device.Service,
+	notificationSvc *notification.Service,
 	repo domain.IRepository,
 	uow transaction.UnitOfWork,
 	delivery *otp_delivery.Adapter,
+	pushAdapter *notifAdapter.Adapter,
 ) *Service {
 	return &Service{
-		userSvc:      userSvc,
-		deviceSvc:    deviceSvc,
-		sendCmd:      command.NewSendOtpCommandHandler(uow, delivery),
-		verifyCmd:    command.NewVerifyOtpCommandHandler(uow),
-		revokeCmd:    command.NewRevokeOtpCommandHandler(uow),
-		getByIdQuery: query.NewGetOtpByIdQueryHandler(repo),
-		repo:         repo,
+		userSvc:         userSvc,
+		deviceSvc:       deviceSvc,
+		notificationSvc: notificationSvc,
+		sendCmd:         command.NewSendOtpCommandHandler(uow, delivery, pushAdapter),
+		verifyCmd:       command.NewVerifyOtpCommandHandler(uow),
+		revokeCmd:       command.NewRevokeOtpCommandHandler(uow),
+		getByIdQuery:    query.NewGetOtpByIdQueryHandler(repo),
+		repo:            repo,
 	}
 }
 
@@ -103,12 +110,13 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	deviceName := metadata.GetDeviceName(ctx)
 
 	result, err := s.sendCmd.Handle(ctx, command.SendOtpCommand{
-		OtpType:    enum.OtpType(req.OtpType),
-		Identifier: req.Identifier,
-		UserID:     userId,
-		DeviceUUID: &deviceUUID,
-		DeviceName: &deviceName,
-		Channel:    channel,
+		OtpType:        enum.OtpType(req.OtpType),
+		Identifier:     req.Identifier,
+		UserID:         userId,
+		DeviceUUID:     &deviceUUID,
+		DeviceName:     &deviceName,
+		Channel:        channel,
+		TargetDeviceID: req.TargetDeviceID,
 		// Language: lang,
 	})
 	if err != nil {
@@ -116,6 +124,28 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	}
 
 	log.Infof("otp sent %s:", result.OTPCode)
+
+	// Trusted-device push 2FA: alert the account owner that a login was
+	// requested, independent of the OTP itself — this row never carries the
+	// code (see send_otp_command.go), it's a security notice only. Best
+	// effort: a notice failure must not fail the OTP send the user is
+	// actively waiting on.
+	if req.TargetDeviceID != nil && userId != nil && s.notificationSvc != nil {
+		requestingDevice := metadata.GetDeviceName(ctx)
+		if requestingDevice == "" {
+			requestingDevice = "một thiết bị"
+		}
+		category := enum.NotificationCategoryTypeWarning.String()
+		_, nerr := s.notificationSvc.SendNotification(ctx, &notifDto.SendNotificationReq{
+			UserID:    *userId,
+			Title:     "Cảnh báo đăng nhập",
+			ShortText: fmt.Sprintf("Có yêu cầu đăng nhập mới từ %s.Mã OTP của bạn là %s. Nếu không phải bạn, vui lòng đổi không được để lộ mã otp.", requestingDevice, result.OTPCode),
+			Category:  &category,
+		})
+		if nerr != nil {
+			log.Warnf("otp.login_security_notice_failed user_id=%d err=%v", *userId, nerr)
+		}
+	}
 
 	return &dto.SendOtpRes{
 		ExpiresAt: result.ExpiresAt.String(),
@@ -164,6 +194,7 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 				UserID:          *result.UserID,
 				DeviceUUID:      deviceUUID,
 				DeviceName:      metadata.GetDeviceName(ctx),
+				Platform:        metadata.GetPlatform(ctx),
 				DevicePushToken: utils.ToStringPtr(metadata.GetDevicePushToken(ctx)),
 			})
 			if err != nil {

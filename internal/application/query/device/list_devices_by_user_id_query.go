@@ -10,6 +10,10 @@ import (
 
 type ListDevicesByUserIdQuery struct {
 	UserID int64
+	// IsVerified is an optional tri-state filter: nil = no filter (all
+	// devices, current behavior), non-nil = restrict to that exact
+	// is_verified value.
+	IsVerified *bool
 }
 
 type ListDevicesByUserIdQueryHandler struct {
@@ -21,7 +25,10 @@ func NewListDevicesByUserIdQueryHandler(repo device.IRepository) *ListDevicesByU
 }
 
 func (h *ListDevicesByUserIdQueryHandler) Handle(ctx context.Context, q ListDevicesByUserIdQuery) ([]*device.Device, error) {
-	devices, err := h.repo.ListByUserId(ctx, q.UserID)
+	devices, err := h.repo.ListByUserId(ctx, &device.ListDevicesParams{
+		UserID:     q.UserID,
+		IsVerified: q.IsVerified,
+	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
 	}

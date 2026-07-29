@@ -18,6 +18,15 @@ type SendOtpReq struct {
 	// DeviceName *string    `json:"device_name,omitempty"`
 	// Channel    string     `json:"channel,omitempty"` // "", "SMS", "EMAIL"
 	// Language   string     `json:"language,omitempty"`
+
+	// TargetDeviceID is the external device_id (from POST /devices/list) of
+	// an already-trusted device that should receive this OTP via push
+	// notification instead of the default SMS/email channel. Only valid
+	// when OtpType is LOGIN_2FA — the trusted-device 2FA flow: an untrusted
+	// device logging in picks one of the account's trusted devices to
+	// receive the code. The server independently verifies ownership and
+	// trust of this device before pushing anything to it.
+	TargetDeviceID *int64 `json:"target_device_id,omitempty"`
 }
 
 // SendOtpRes never echoes the code. Clients use otp_id + expires_at to drive

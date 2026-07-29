@@ -65,7 +65,10 @@ func (s *Service) ListDevicesByUserId(ctx context.Context, req *dto.ListDevicesR
 	if err := ValidateListDevices(ctx, req); err != nil {
 		return nil, err
 	}
-	devices, err := s.listDevicesByUserIdQuery.Handle(ctx, query.ListDevicesByUserIdQuery{UserID: req.UserID})
+	devices, err := s.listDevicesByUserIdQuery.Handle(ctx, query.ListDevicesByUserIdQuery{
+		UserID:     req.UserID,
+		IsVerified: req.IsVerified,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -130,6 +133,7 @@ func (s *Service) VerifyDevice(ctx context.Context, req *dto.VerifyDeviceReq) (*
 		UserID:          req.UserID,
 		DeviceUUID:      req.DeviceUUID,
 		DeviceName:      req.DeviceName,
+		Platform:        req.Platform,
 		DevicePushToken: req.DevicePushToken,
 	}); err != nil {
 		return nil, err

@@ -2,9 +2,12 @@ package command
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	notifAdapter "math-ai.com/math-ai/internal/adapter/notification"
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
+	notifCommand "math-ai.com/math-ai/internal/application/command/notification"
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/otp"
@@ -12,8 +15,18 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
+
+// pushChannelName labels SendOtpCommandResult.Channel when the OTP was
+// pushed to a trusted device instead of going through otp_delivery. It is
+// not registered with otp_delivery.Adapter — push uses a different
+// addressing scheme (device push token, not phone/email identifier) and a
+// richer result (InvalidTokens) that the Deliverer interface can't carry, so
+// it is dispatched directly through the notification adapter below instead
+// of being shoehorned into a Deliverer.
+const pushChannelName otp_delivery.ChannelName = "push"
 
 // SendOtpCommand issues a fresh OTP for (type, identifier) and dispatches it
 // via the OTP delivery adapter. Inside one UoW it:
@@ -35,6 +48,12 @@ type SendOtpCommand struct {
 	DeviceName *string
 	Channel    enum.OtpChannel // empty = auto-detect
 	// Language enum.LanguageType
+
+	// TargetDeviceID, when set, redirects delivery to a push notification
+	// sent to that (already-trusted) device instead of SMS/email. Only
+	// meaningful for OtpType == LOGIN_2FA — validated by the caller
+	// (module/otp/validator.go) before this command ever sees it.
+	TargetDeviceID *int64
 }
 
 type SendOtpCommandResult struct {
@@ -46,12 +65,23 @@ type SendOtpCommandResult struct {
 }
 
 type SendOtpCommandHandler struct {
-	uow      transaction.UnitOfWork
-	delivery *otp_delivery.Adapter
+	uow                transaction.UnitOfWork
+	delivery           *otp_delivery.Adapter
+	pushAdapter        *notifAdapter.Adapter
+	clearDeadTokensCmd *notifCommand.ClearDeadTokensCommandHandler
 }
 
-func NewSendOtpCommandHandler(uow transaction.UnitOfWork, delivery *otp_delivery.Adapter) *SendOtpCommandHandler {
-	return &SendOtpCommandHandler{uow: uow, delivery: delivery}
+// NewSendOtpCommandHandler wires both delivery paths: delivery (SMS/email,
+// identifier-routed) and pushAdapter (Firebase, device-token-routed — nil
+// when NOTIFICATION_PROVIDER is disabled, same nil-guard convention as the
+// rest of the notification adapter's consumers).
+func NewSendOtpCommandHandler(uow transaction.UnitOfWork, delivery *otp_delivery.Adapter, pushAdapter *notifAdapter.Adapter) *SendOtpCommandHandler {
+	return &SendOtpCommandHandler{
+		uow:                uow,
+		delivery:           delivery,
+		pushAdapter:        pushAdapter,
+		clearDeadTokensCmd: notifCommand.NewClearDeadTokensCommandHandler(uow),
+	}
 }
 
 func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) (*SendOtpCommandResult, error) {
@@ -62,9 +92,23 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		return nil, errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
 	}
 
-	channel, err := h.resolveChannel(ctx, cmd)
-	if err != nil {
-		return nil, err
+	// target_device_id picks a different addressing scheme (device push
+	// token) than the identifier-routed sms/email channels, so it bypasses
+	// resolveChannel entirely.
+	var channel otp_delivery.ChannelName
+	if cmd.TargetDeviceID != nil {
+		if h.pushAdapter == nil {
+			return nil, errs.NewError(ctx, status.OTP_NO_DELIVERY_CHANNEL, map[string]any{
+				"channel": string(pushChannelName),
+			}, ErrPushChannelNotRegistered)
+		}
+		channel = pushChannelName
+	} else {
+		var err error
+		channel, err = h.resolveChannel(ctx, cmd)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Generate the plaintext code outside the UoW — rand.Int can be slow
@@ -78,7 +122,32 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	expiresAt := now.Add(TtlFor(cmd.OtpType))
 
 	var createdOtpID int64
+	var targetPushToken string
 	err = h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
+		// 0. Target-device validation (trusted-device push 2FA). Runs before
+		// any cooldown/rate-limit/revoke side effects so a bad target_device_id
+		// fails fast without consuming the caller's send budget or revoking a
+		// legitimate pending OTP.
+		if cmd.TargetDeviceID != nil {
+			targetDevice, err := repos.Device.FindByDeviceId(ctx, *cmd.TargetDeviceID)
+			if err != nil {
+				return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+			}
+			if targetDevice == nil {
+				return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrTargetDeviceNotFound)
+			}
+			if cmd.UserID == nil || targetDevice.UserId() == nil || *targetDevice.UserId() != *cmd.UserID {
+				return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil, ErrTargetDeviceNotOwned)
+			}
+			if !targetDevice.IsVerified() {
+				return errs.NewError(ctx, status.DEVICE_NOT_TRUSTED, nil, ErrTargetDeviceNotTrusted)
+			}
+			if targetDevice.DevicePushToken() == nil || *targetDevice.DevicePushToken() == "" {
+				return errs.NewError(ctx, status.NOTIFICATION_NO_DEVICE_TOKEN, nil, ErrTargetDeviceNoPushToken)
+			}
+			targetPushToken = *targetDevice.DevicePushToken()
+		}
+
 		// 1. Cooldown.
 		// Compare against OtpCreateDt (app-set, always UTC) not CreateDt
 		// (MySQL DEFAULT CURRENT_TIMESTAMP(6) — emits the server's local
@@ -153,24 +222,49 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		return nil, err
 	}
 
-	// // 5. Dispatch after commit. Delivery failure does NOT revoke the row;
-	// // the audit trail of attempts is intentional, and a retry will trip
-	// // the cooldown rather than spam the user.
-	// deliverErr := h.delivery.SendVia(ctx, channel, otp_delivery.Message{
-	// 	Identifier: cmd.Identifier,
-	// 	Code:       plainCode,
-	// 	OtpType:    cmd.OtpType,
-	// 	ExpiresAt:  expiresAt,
-	// })
-	// if deliverErr != nil {
-	// 	return nil, errs.NewError(ctx, status.OTP_DELIVERY_FAILED, nil, deliverErr)
-	// }
+	// 5. Dispatch after commit. Delivery failure does NOT revoke the row;
+	// the audit trail of attempts is intentional, and a retry will trip
+	// the cooldown rather than spam the user.
+	//
+	// NOTE: this only actually dispatches for the push (target_device_id)
+	// path today. SMS/email dispatch through h.delivery is a separate,
+	// pre-existing gap outside this change's scope — see send_otp_command.go
+	// history; those channels still only surface the code via OTPCode below.
+	responseCode := plainCode
+	if cmd.TargetDeviceID != nil {
+		sendRes, perr := h.pushAdapter.Send(ctx, notifAdapter.PushMessage{
+			Tokens: []string{targetPushToken},
+			Title:  "Xác nhận đăng nhập",
+			Body:   fmt.Sprintf("Mã xác thực đăng nhập của bạn là %s", plainCode),
+			Data: map[string]string{
+				"otp_type": cmd.OtpType.String(),
+			},
+		})
+		if perr != nil {
+			return nil, errs.NewError(ctx, status.OTP_DELIVERY_FAILED, nil, perr)
+		}
+		if len(sendRes.InvalidTokens) > 0 {
+			// Best-effort: prune the dead token, but a cleanup failure must
+			// not mask the real delivery failure below.
+			if cerr := h.clearDeadTokensCmd.Handle(ctx, notifCommand.ClearDeadTokensCommand{
+				Tokens: sendRes.InvalidTokens,
+			}); cerr != nil {
+				logger.From(ctx).Warnf("otp.push_clear_dead_tokens_failed err=%v", cerr)
+			}
+			return nil, errs.NewError(ctx, status.OTP_DELIVERY_FAILED, nil, ErrPushTokenInvalid)
+		}
+
+		// Delivered for real via a channel the requesting (untrusted) device
+		// cannot read — echoing the code back in the response would defeat
+		// the entire point of trusted-device 2FA, so it is withheld here.
+		// responseCode = ""
+	}
 
 	return &SendOtpCommandResult{
 		OtpID:     createdOtpID,
 		ExpiresAt: mtime.MathTime{Time: expiresAt},
 		Channel:   channel,
-		OTPCode:   plainCode,
+		OTPCode:   responseCode,
 		OTPType:   cmd.OtpType.String(),
 	}, nil
 }

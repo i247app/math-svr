@@ -10,6 +10,7 @@ type DeviceModel struct {
 	UserId          *int64
 	DeviceUUID      string
 	DeviceName      string
+	Platform        string
 	DevicePushToken *string
 	IsVerified      bool
 	TrustDt         *time.Time

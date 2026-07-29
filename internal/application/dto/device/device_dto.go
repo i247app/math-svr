@@ -12,6 +12,7 @@ type DeviceResponse struct {
 	UserID     *int64  `json:"user_id,omitempty"`
 	DeviceUUID string  `json:"device_uuid"`
 	DeviceName string  `json:"device_name"`
+	Platform   string  `json:"platform"`
 	IsVerified bool    `json:"is_verified"`
 	Note       *string `json:"note,omitempty"`
 	Status     string  `json:"status"`
@@ -29,6 +30,7 @@ func DomainToResponse(d *device.Device) *DeviceResponse {
 		UserID:     d.UserId(),
 		DeviceUUID: d.DeviceUUID(),
 		DeviceName: d.DeviceName(),
+		Platform:   d.Platform(),
 		IsVerified: d.IsVerified(),
 		Note:       d.Note(),
 		Status:     d.Status(),
@@ -55,6 +57,10 @@ type GetDeviceByIdRes struct {
 
 type ListDevicesReq struct {
 	UserID int64 `json:"user_id"`
+	// IsVerified is optional. Omitted (or null) → no filter, current
+	// behavior preserved. true/false → only devices whose is_verified
+	// matches exactly.
+	IsVerified *bool `json:"is_verified,omitempty"`
 }
 
 type ListDevicesRes struct {
@@ -95,6 +101,7 @@ type VerifyDeviceReq struct {
 	UserID          int64   `json:"user_id"`
 	DeviceUUID      string  `json:"device_uuid"`
 	DeviceName      string  `json:"device_name,omitempty"`
+	Platform        string  `json:"platform,omitempty"`
 	DevicePushToken *string `json:"device_push_token,omitempty"`
 }
 

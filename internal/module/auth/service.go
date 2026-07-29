@@ -55,6 +55,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		LoginName:       loginName,
 		DeviceUUID:      metadata.GetDeviceID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
+		Platform:        metadata.GetPlatform(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),
 		DevicePushToken: metadata.GetDevicePushToken(ctx),
 	})
@@ -159,6 +160,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 		LoginName:       loginName,
 		DeviceUUID:      metadata.GetDeviceID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
+		Platform:        metadata.GetPlatform(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),
 		DevicePushToken: metadata.GetDevicePushToken(ctx),
 	})

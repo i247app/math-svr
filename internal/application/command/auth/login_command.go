@@ -19,6 +19,7 @@ type LoginCommand struct {
 	LoginName       string
 	DeviceUUID      string
 	DeviceName      string
+	Platform        string
 	IPAddress       string
 	DevicePushToken string
 }
@@ -176,6 +177,7 @@ func BuildDevice(userId int64, cmd LoginCommand) *device.Device {
 	d.SetUserId(&userId)
 	d.SetDeviceUUID(cmd.DeviceUUID)
 	d.SetDeviceName(cmd.DeviceName)
+	d.SetPlatform(enum.ParsePlatformType(cmd.Platform).String())
 	if cmd.DevicePushToken != "" {
 		token := cmd.DevicePushToken
 		d.SetDevicePushToken(&token)

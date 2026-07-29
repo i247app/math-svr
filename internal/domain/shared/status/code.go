@@ -85,6 +85,7 @@ const (
 	DEVICE_VERIFICATION_FAIL StatusCode = 4608
 	DEVICE_REVOKE_FAIL       StatusCode = 4609
 	DEVICE_2FA_REQUIRED      StatusCode = 4610
+	DEVICE_NOT_TRUSTED       StatusCode = 4611
 
 	SCHOOL_NOT_FOUND            StatusCode = 4901
 	SCHOOL_MISSING_ID           StatusCode = 4902
@@ -123,6 +124,7 @@ const (
 	OTP_NO_DELIVERY_CHANNEL StatusCode = 4714
 	OTP_GENERATION_FAILED   StatusCode = 4715
 	OTP_DISABLED            StatusCode = 4716
+	OTP_TARGET_DEVICE_REQUIRES_LOGIN2FA StatusCode = 4717
 
 	NOTIFICATION_MISSING_UID        StatusCode = 5001
 	NOTIFICATION_MISSING_TITLE      StatusCode = 5002

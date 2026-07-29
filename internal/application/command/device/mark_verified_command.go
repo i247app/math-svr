@@ -25,6 +25,7 @@ type MarkDeviceVerifiedCommand struct {
 	UserID          int64
 	DeviceUUID      string
 	DeviceName      string
+	Platform        string
 	DevicePushToken *string
 }
 
@@ -55,6 +56,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			d.SetUserId(&cmd.UserID)
 			d.SetDeviceUUID(cmd.DeviceUUID)
 			d.SetDeviceName(cmd.DeviceName)
+			d.SetPlatform(enum.ParsePlatformType(cmd.Platform).String())
 			d.SetDevicePushToken(cmd.DevicePushToken)
 			d.SetIsVerified(true)
 			d.SetTrustDt(mtime.Now())

@@ -20,6 +20,9 @@ func ValidateSendOtp(ctx context.Context, req *dto.SendOtpReq) error {
 	if strings.TrimSpace(req.Identifier) == "" {
 		return errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
 	}
+	if req.TargetDeviceID != nil && req.OtpType != string(enum.OtpTypeLogin2FA) {
+		return errs.NewError(ctx, status.OTP_TARGET_DEVICE_REQUIRES_LOGIN2FA, nil, ErrTargetDeviceRequiresLogin2FA)
+	}
 	return nil
 }
 

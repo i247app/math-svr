@@ -203,6 +203,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		UserID:          created.User.UserId(),
 		DeviceUUID:      metadata.GetDeviceID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
+		Platform:        metadata.GetPlatform(ctx),
 		DevicePushToken: utils.ToStringPtr(metadata.GetDevicePushToken(ctx)),
 	})
 	if err != nil {

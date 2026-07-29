@@ -19,6 +19,7 @@ type Device struct {
 	userId          *int64
 	deviceUUID      string
 	deviceName      string
+	platform        string
 	devicePushToken *string
 	isVerified      bool
 	trustDt         mtime.MathTime
@@ -73,6 +74,17 @@ func (d *Device) DeviceName() string {
 
 func (d *Device) SetDeviceName(deviceName string) {
 	d.deviceName = deviceName
+}
+
+// Platform is the client platform (enum.PlatformType, e.g. "IOS") this
+// device row was registered from. Set once at creation — see BuildDevice
+// (login) and MarkDeviceVerifiedCommandHandler (2FA/registration auto-create).
+func (d *Device) Platform() string {
+	return d.platform
+}
+
+func (d *Device) SetPlatform(platform string) {
+	d.platform = platform
 }
 
 func (d *Device) DevicePushToken() *string {
