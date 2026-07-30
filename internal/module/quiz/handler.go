@@ -139,3 +139,31 @@ func (h *QuizHandler) HandleSoftDeleteQuiz(w http.ResponseWriter, r *http.Reques
 
 	response.WriteJson(w, res, nil)
 }
+
+// POST /quizzes/analytics/progress
+func (h *QuizHandler) HandleGetQuizProgress(w http.ResponseWriter, r *http.Request) {
+	var req dto.QuizProgressReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	session, err := h.appResource.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, ok := session.UID()
+	if !ok {
+		response.WriteJson(w, nil, errs.NewError(r.Context(), status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession))
+		return
+	}
+	req.UserID = &uid
+
+	res, err := h.quizSvc.GetQuizProgress(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}

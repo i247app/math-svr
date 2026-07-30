@@ -13,6 +13,7 @@ var (
 	ErrPreviousQuizNotFound                                      = errors.New("previous quiz not found")
 	ErrProfileNotFound                                           = errors.New("profile not found")
 	ErrDefaultProfileNotFound                                    = errors.New("default profile not found")
+	ErrProgressProfileNotOwned                                   = errors.New("profile does not belong to this user")
 	ErrProgressProfileRequired                                   = errors.New("profile_id is required")
 	ErrProgressInvalidDateRange                                  = errors.New("from_dt must be before to_dt and within 2 years")
 	ErrProgressInvalidTz                                         = errors.New("tz must be a numeric offset like +07:00")

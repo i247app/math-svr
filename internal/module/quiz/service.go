@@ -31,6 +31,7 @@ import (
 type Service struct {
 	getQuizByIdQuery       *query.GetQuizByQuizIdQueryHandler
 	listQuizzesQuery       *query.ListQuizzesQueryHandler
+	getQuizProgressQuery   *query.GetQuizProgressQueryHandler
 	createQuizCmd          *command.CreateQuizCommandHandler
 	submitQuizAnswersCmd   *command.SubmitQuizAnswersCommandHandler
 	submitQuizAnswersV2Cmd *command.SubmitQuizAnswersV2CommandHandler
@@ -64,6 +65,7 @@ func NewService(
 	return &Service{
 		getQuizByIdQuery:       query.NewGetQuizByQuizIdQueryHandler(quizRepo),
 		listQuizzesQuery:       query.NewListQuizzesQueryHandler(quizRepo),
+		getQuizProgressQuery:   query.NewGetQuizProgressQueryHandler(quizRepo),
 		createQuizCmd:          command.NewCreateQuizCommandHandler(uow),
 		submitQuizAnswersCmd:   command.NewSubmitQuizAnswersCommandHandler(uow),
 		submitQuizAnswersV2Cmd: command.NewSubmitQuizAnswersV2CommandHandler(uow),
@@ -412,6 +414,48 @@ func (s *Service) SoftDeleteQuiz(ctx context.Context, req *dto.DeleteQuizReq) (*
 		return nil, err
 	}
 	return &dto.DeleteQuizRes{}, nil
+}
+
+// GetQuizProgress returns the per-profile quiz learning-progress chart.
+// Validates input, enforces that the target profile belongs to the
+// session user, then delegates aggregation to the query handler.
+func (s *Service) GetQuizProgress(ctx context.Context, req *dto.QuizProgressReq) (*dto.QuizProgressRes, error) {
+	if err := ValidateQuizProgress(ctx, req); err != nil {
+		return nil, err
+	}
+
+	profile, err := s.profileRepo.FindByProfileId(ctx, req.ProfileID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if profile == nil {
+		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
+	}
+	if req.UserID == nil || profile.UserId() != *req.UserID {
+		return nil, errs.NewError(ctx, status.QUIZ_ANALYTICS_PROFILE_NOT_OWNED, nil, ErrProgressProfileNotOwned)
+	}
+
+	result, err := s.getQuizProgressQuery.Handle(ctx, query.GetQuizProgressQuery{
+		ProfileID: req.ProfileID,
+		Purpose:   req.Purpose,
+		From:      req.FromDt,
+		To:        req.ToDt,
+		Limit:     int64(req.Limit),
+	})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	return &dto.QuizProgressRes{
+		ProfileID: req.ProfileID,
+		FromDt:    req.FromDt,
+		ToDt:      req.ToDt,
+		Tz:        req.Tz,
+		Purpose:   req.Purpose,
+		Limit:     req.Limit,
+		Series:    result.Series,
+		Summary:   result.Summary,
+	}, nil
 }
 
 // curriculumContext is the resolved (request-or-profile-or-empty) view
