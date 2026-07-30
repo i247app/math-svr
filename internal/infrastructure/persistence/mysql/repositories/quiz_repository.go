@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"math-ai.com/math-ai/internal/domain/quiz"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
@@ -242,6 +243,88 @@ func (r *QuizRepository) ForceDeleteByUserId(ctx context.Context, userId int64) 
 		return fmt.Errorf("quiz repo force delete by user id: %w", err)
 	}
 	return nil
+}
+
+// progressPointColumns is the narrow projection for the analytics chart —
+// no LONGTEXT questions/answers. Order == scanProgressPoint's Scan order.
+const progressPointColumns = `q.quiz_id, q.purpose, q.type_of_quiz, q.title, q.short_text,
+	q.score_percentage, q.correct_number, q.total_questions, q.modify_dt`
+
+func scanProgressPoint(s database.RowScanner) (*quiz.ProgressPoint, error) {
+	var (
+		p          quiz.ProgressPoint
+		typeOfQuiz *string
+		title      *string
+		shortText  *string
+		correct    *int64
+		total      *int64
+		modifyDt   time.Time
+	)
+	if err := s.Scan(&p.QuizId, &p.Purpose, &typeOfQuiz, &title, &shortText,
+		&p.ScorePercentage, &correct, &total, &modifyDt); err != nil {
+		return nil, err
+	}
+	p.TypeOfQuiz = typeOfQuiz
+	p.Title = title
+	p.ShortText = shortText
+	p.CorrectNumber = correct
+	p.TotalQuestions = total
+	p.CompletedDt = mtime.NewTime(modifyDt)
+	return &p, nil
+}
+
+// ListProgressPoints returns completed (SUBMITTED, graded) quizzes for one
+// profile, newest first, capped at params.Limit. The caller reverses to
+// chronological order. Only the columns the chart needs are selected.
+func (r *QuizRepository) ListProgressPoints(ctx context.Context, params quiz.ProgressPointsParams) ([]*quiz.ProgressPoint, error) {
+	where := quizActiveWhere +
+		` AND q.quiz_status = ? AND q.profile_id = ? AND q.score_percentage IS NOT NULL`
+	args := append(quizActiveArgs(), string(enum.QuizStatusTypeSubmitted), params.ProfileID)
+
+	if params.Purpose != nil && *params.Purpose != "" {
+		where += ` AND q.purpose = ?`
+		args = append(args, *params.Purpose)
+	}
+	if params.From != nil && !params.From.IsZero() {
+		where += ` AND q.modify_dt >= ?`
+		args = append(args, params.From.Time)
+	}
+	if params.To != nil && !params.To.IsZero() {
+		where += ` AND q.modify_dt <= ?`
+		args = append(args, params.To.Time)
+	}
+	if params.CompletedBefore != nil && !params.CompletedBefore.IsZero() {
+		where += ` AND q.modify_dt < ?`
+		args = append(args, params.CompletedBefore.Time)
+	}
+
+	limit := params.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	args = append(args, limit)
+
+	query := `SELECT ` + progressPointColumns + ` FROM ` + quizTable + ` q WHERE ` +
+		where + ` ORDER BY q.modify_dt DESC, q.quiz_id DESC LIMIT ?`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("quiz repo list progress points: %w", err)
+	}
+	defer rows.Close()
+
+	var points []*quiz.ProgressPoint
+	for rows.Next() {
+		p, err := scanProgressPoint(rows)
+		if err != nil {
+			return nil, fmt.Errorf("quiz repo scan progress point: %w", err)
+		}
+		points = append(points, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("quiz repo progress points iteration: %w", err)
+	}
+	return points, nil
 }
 
 func ModelToDomainQuiz(m *models.QuizModel) *quiz.Quiz {
