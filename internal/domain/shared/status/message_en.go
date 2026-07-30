@@ -344,6 +344,16 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Quiz learning type is invalid"
 	case QUIZ_ANSWER_SCHEMA_INVALID:
 		return "Answer payload schema is invalid"
+	case QUIZ_ANALYTICS_MISSING_PROFILE:
+		return "Profile is required."
+	case QUIZ_ANALYTICS_PROFILE_NOT_OWNED:
+		return "This profile does not belong to you."
+	case QUIZ_ANALYTICS_INVALID_DATE_RANGE:
+		return "Invalid date range."
+	case QUIZ_ANALYTICS_INVALID_TZ:
+		return "Invalid time zone."
+	case QUIZ_ANALYTICS_INVALID_PURPOSE:
+		return "Invalid quiz type."
 
 	// Job
 	case JOB_NOT_FOUND:

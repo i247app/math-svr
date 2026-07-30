@@ -344,6 +344,16 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Hình thức bài học không hợp lệ"
 	case QUIZ_ANSWER_SCHEMA_INVALID:
 		return "Định dạng câu trả lời không hợp lệ"
+	case QUIZ_ANALYTICS_MISSING_PROFILE:
+		return "Hồ sơ học sinh là bắt buộc."
+	case QUIZ_ANALYTICS_PROFILE_NOT_OWNED:
+		return "Hồ sơ này không thuộc về bạn."
+	case QUIZ_ANALYTICS_INVALID_DATE_RANGE:
+		return "Khoảng thời gian không hợp lệ."
+	case QUIZ_ANALYTICS_INVALID_TZ:
+		return "Múi giờ không hợp lệ."
+	case QUIZ_ANALYTICS_INVALID_PURPOSE:
+		return "Loại quiz không hợp lệ."
 
 	// Job
 	case JOB_NOT_FOUND:
