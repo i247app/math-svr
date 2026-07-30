@@ -6,6 +6,7 @@ import (
 	"time"
 
 	dto "math-ai.com/math-ai/internal/application/dto/classroomprogress"
+	"math-ai.com/math-ai/internal/application/query/progress"
 	exercise "math-ai.com/math-ai/internal/domain/exercise"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
@@ -191,7 +192,7 @@ func buildPoints(subs []*exercise.Submission, exMap map[int64]*exercise.Exercise
 			ExerciseID:     exID,
 			Title:          title,
 			SubmittedDt:    s.SubmittedDt().String(),
-			Score:          PctTo10Pt(float64(pct)),
+			Score:          progress.PctTo10Pt(float64(pct)),
 			ScorePct:       pct,
 			CorrectNumber:  s.CorrectNumber(),
 			TotalQuestions: s.TotalQuestions(),
@@ -207,7 +208,7 @@ func avg10OfPoints(points []dto.ExercisePoint) float64 {
 	for _, p := range points {
 		sumPct += p.ScorePct
 	}
-	return PctTo10Pt(float64(sumPct) / float64(len(points)))
+	return progress.PctTo10Pt(float64(sumPct) / float64(len(points)))
 }
 
 // buildSummary aggregates the four cards + trend from the chart points.
@@ -241,15 +242,15 @@ func buildSummary(points []dto.ExercisePoint, priorAvg10 *float64) dto.ProgressS
 	}
 
 	avgPct := float64(sumPct) / float64(graded)
-	avg10 := PctTo10Pt(avgPct)
-	slope := LinearSlope(scores10)
+	avg10 := progress.PctTo10Pt(avgPct)
+	slope := progress.LinearSlope(scores10)
 
 	summary.AverageScore = &avg10
 	summary.AverageScorePct = &avgPct
 	summary.PassedCount = passed
 	correctRate := float64(passed) / float64(graded)
 	summary.CorrectRate = &correctRate
-	summary.Trend = string(Classify(int(graded), avg10, slope))
+	summary.Trend = string(progress.Classify(int(graded), avg10, slope))
 
 	if hi != nil {
 		hiScore := hi.Score

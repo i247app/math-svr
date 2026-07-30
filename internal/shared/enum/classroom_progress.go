@@ -6,7 +6,7 @@ import "regexp"
 // profile-learning-progress card (Xu hướng). The rule table and
 // evaluation order live in
 // docs/features/002-profile-learning-progress/FEATURE-SPEC.md §4 and are
-// implemented by application/query/classroomprogress.Classify.
+// implemented by application/query/progress.Classify.
 //
 // NO_DATA and INSUFFICIENT are sentinel values for "not enough
 // submissions to render a chip" — the client suppresses the colored
