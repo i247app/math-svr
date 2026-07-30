@@ -3,9 +3,11 @@ package quiz
 import (
 	"context"
 	"strings"
+	"time"
 
 	dto "math-ai.com/math-ai/internal/application/dto/quiz"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	mtime "math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -151,6 +153,68 @@ func ValidateDeleteQuiz(ctx context.Context, req *dto.DeleteQuizReq) error {
 	if req.QuizID == 0 {
 		return errs.NewError(ctx, status.QUIZ_NOT_FOUND, nil,
 			ErrQuizIDRequired)
+	}
+	return nil
+}
+
+// ProgressLimitDefault / Min / Max bound the number of chart points.
+const (
+	ProgressLimitDefault = 10
+	ProgressLimitMin     = 1
+	ProgressLimitMax     = 100
+	// progressMaxRange caps the date window to ~2 years (mirrors 002).
+	progressMaxRange = 2 * 365 * 24 * time.Hour
+)
+
+// ValidateQuizProgress checks the analytics request and normalises Limit
+// (clamped in place) + Tz (default applied) + Purpose (upper-cased).
+// ProfileID/ownership beyond presence is enforced in the service (needs a
+// repo lookup); this covers pure input.
+func ValidateQuizProgress(ctx context.Context, req *dto.QuizProgressReq) error {
+	if req.ProfileID <= 0 {
+		return errs.NewError(ctx, status.QUIZ_ANALYTICS_MISSING_PROFILE, nil, ErrProgressProfileRequired)
+	}
+
+	if req.Purpose != nil {
+		p := enum.QuizPurpose(strings.ToUpper(strings.TrimSpace(*req.Purpose)))
+		if !p.IsValid() {
+			return errs.NewError(ctx, status.QUIZ_ANALYTICS_INVALID_PURPOSE, nil, ErrProgressInvalidPurpose)
+		}
+		up := string(p)
+		req.Purpose = &up
+	}
+
+	if req.Tz == "" {
+		req.Tz = enum.DefaultProgressTz
+	} else if !enum.IsValidTzOffset(req.Tz) {
+		return errs.NewError(ctx, status.QUIZ_ANALYTICS_INVALID_TZ, nil, ErrProgressInvalidTz)
+	}
+
+	if req.FromDt != "" || req.ToDt != "" {
+		if req.FromDt == "" || req.ToDt == "" {
+			return errs.NewError(ctx, status.QUIZ_ANALYTICS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
+		}
+		from, err := mtime.ParseFromString(req.FromDt)
+		if err != nil {
+			return errs.NewError(ctx, status.QUIZ_ANALYTICS_INVALID_DATE_RANGE, nil, err)
+		}
+		to, err := mtime.ParseFromString(req.ToDt)
+		if err != nil {
+			return errs.NewError(ctx, status.QUIZ_ANALYTICS_INVALID_DATE_RANGE, nil, err)
+		}
+		if !from.Time.Before(to.Time) || to.Time.Sub(from.Time) > progressMaxRange {
+			return errs.NewError(ctx, status.QUIZ_ANALYTICS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
+		}
+	}
+
+	if req.Limit == 0 {
+		req.Limit = ProgressLimitDefault
+	}
+	if req.Limit < ProgressLimitMin {
+		req.Limit = ProgressLimitMin
+	}
+	if req.Limit > ProgressLimitMax {
+		req.Limit = ProgressLimitMax
 	}
 	return nil
 }
