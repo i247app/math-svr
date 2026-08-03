@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS ma_quizzes (
   deleted_dt          DATETIME(6) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- ALTER TABLE ma_quizzes ADD KEY ix_quiz_profile_status_modify (profile_id, quiz_status, modify_dt);
+
 -- ALTER TABLE ma_quizzes
 --   ADD INDEX idx_profile_status (profile_id, status, deleted_dt, id);
 

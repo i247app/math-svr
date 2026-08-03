@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS ma_devices (
   user_id           BIGINT UNSIGNED DEFAULT NULL,
   device_uuid       VARCHAR(255) NOT NULL,
   device_name       VARCHAR(255) NOT NULL,
+  platform          VARCHAR(20) DEFAULT 'UNKNOWN',
   device_push_token VARCHAR(255) DEFAULT NULL,
   is_verified       TINYINT(1) DEFAULT '0',
   trust_dt          DATETIME(6) DEFAULT NULL,

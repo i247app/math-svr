@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS ma_otps (
   otp_code        VARCHAR(128) NOT NULL,                         
   otp_create_dt   DATETIME(6) DEFAULT NULL,
   otp_expire_dt   DATETIME(6) DEFAULT NULL,
+  otp_verified_dt DATETIME(6) DEFAULT NULL,
   attempt_count   INT UNSIGNED NOT NULL DEFAULT 0,               -- incremented on every verify attempt; capped at OTP_MAX_ATTEMPTS
   note            VARCHAR(500) DEFAULT NULL,
   otp_status      VARCHAR(32) DEFAULT 'PENDING',                 -- PENDING, VERIFIED, EXPIRED, REVOKED
