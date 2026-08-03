@@ -5,6 +5,8 @@ import (
 
 	command "math-ai.com/math-ai/internal/application/command/auth"
 	dto "math-ai.com/math-ai/internal/application/dto/auth"
+
+	// dtoDevice "math-ai.com/math-ai/internal/application/dto/device"
 	dtoOtp "math-ai.com/math-ai/internal/application/dto/otp"
 	dtoUser "math-ai.com/math-ai/internal/application/dto/user"
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -13,6 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/user"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -22,11 +25,16 @@ import (
 type Service struct {
 	userSvc   *user.Service
 	otpSvc    *otp.Service
+	deviceSvc *device.Service
 	loginCmd  *command.LoginCommandHandler
 	logoutCmd *command.LogoutCommandHandler
 }
 
-func NewService(userSvc *user.Service, otpSvc *otp.Service, uow transaction.UnitOfWork, trustDeviceTTLDays int) *Service {
+func NewService(
+	userSvc *user.Service,
+	otpSvc *otp.Service,
+	uow transaction.UnitOfWork,
+	trustDeviceTTLDays int) *Service {
 	return &Service{
 		userSvc:   userSvc,
 		otpSvc:    otpSvc,

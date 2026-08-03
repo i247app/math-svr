@@ -87,6 +87,13 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		result.DeviceID = d.DeviceId()
 		result.IsTrustedDevice = d.IsVerified() && !d.IsTrustExpired(h.trustDeviceTTLDays, time.Now().UTC())
 
+		if result.IsTrustedDevice {
+			err := repos.Device.MarkVerifiedByUserDevice(ctx, u.UserId(), cmd.DeviceUUID, true)
+			if err != nil {
+				return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+			}
+		}
+
 		// if !d.IsVerified() {
 		// 	result = &LoginCommandResult{
 		// 		UserID:            u.UserId(),
