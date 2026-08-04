@@ -622,6 +622,12 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Đường dẫn nút quá dài"
 	case BANNER_NOTE_TOO_LONG:
 		return "Ghi chú quá dài"
+	case BANNER_MEDIA_INVALID_REFERENCE:
+		return "Tham chiếu media của banner không hợp lệ"
+	case BANNER_MEDIA_INVALID_FILE:
+		return "Tệp media của banner không hợp lệ"
+	case BANNER_MEDIA_UPLOAD_FAILED:
+		return "Tải media của banner lên thất bại"
 	default:
 		return ""
 	}

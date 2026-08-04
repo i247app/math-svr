@@ -14,21 +14,22 @@ import (
 // their *_translations) are intentionally excluded so the bilingual
 // curriculum data seeded outside the app survives. Mirrors sql/clear_data.sql.
 var clearDataTables = []string{
-	"ma_users",
-	"ma_aliases",
-	"ma_devices",
-	"ma_login_logs",
-	"ma_profiles",
-	"ma_otps",
-	"ma_quizzes",
-	"ma_classrooms",
-	"ma_classroom_members",
-	"ma_classroom_invitations",
-	"ma_classroom_programs",
-	"ma_exercises",
-	"ma_exercise_submissions",
-	"ma_contact_us",
-	"ma_notifications",
+	userTable,
+	aliasTable,
+	deviceTable,
+	loginLogTable,
+	profileTable,
+	otpTable,
+	quizTable,
+	classroomTable,
+	classroomMemberTable,
+	// classroomInvitationTable,
+	classroomProgramTable,
+	exerciseTable,
+	exerciseSubmissionTable,
+	// contactUsTable,
+	notificationTable,
+	bannerTable,
 }
 
 // clearDataSeqs lists the external-id counters reset back to 0 for the wiped
@@ -50,6 +51,7 @@ var clearDataSeqs = []string{
 	seq.NameClassroomExercise,
 	seq.NameClassroomExerciseSubmission,
 	seq.NameNotification,
+	seq.NameBanner,
 }
 
 // MaintenanceRepository owns destructive, cross-aggregate maintenance SQL that

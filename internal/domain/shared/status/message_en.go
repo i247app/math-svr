@@ -622,6 +622,12 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Button link URL is too long"
 	case BANNER_NOTE_TOO_LONG:
 		return "Note is too long"
+	case BANNER_MEDIA_INVALID_REFERENCE:
+		return "Invalid banner media reference"
+	case BANNER_MEDIA_INVALID_FILE:
+		return "Invalid banner media file"
+	case BANNER_MEDIA_UPLOAD_FAILED:
+		return "Failed to upload banner media"
 	default:
 		return ""
 	}

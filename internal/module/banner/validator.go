@@ -27,12 +27,9 @@ func ValidateCreateBanner(ctx context.Context, req *dto.CreateBannerReq) error {
 	if !mediaType.IsValid() {
 		return errs.NewError(ctx, status.BANNER_INVALID_MEDIA_TYPE, nil, ErrInvalidMediaType)
 	}
-	// IMAGE/VIDEO banners must reference a stored media object; TEXT banners
-	// // may leave the key empty.
-	// if mediaType.RequiresMediaKey() && strings.TrimSpace(req.MediaURLKey) == "" {
-	// 	return errs.NewError(ctx, status.BANNER_MISSING_MEDIA_URL, nil, ErrMediaURLKeyRequired)
-	// }
-
+	// Media is uploaded server-side (multipart file) or resolved from a
+	// reference, so there is no client-supplied media_url_key to require
+	// here; MediaType alone gates whether media is expected.
 	if len(req.MediaURLKey) > mediaURLKeyMaxLen {
 		return errs.NewError(ctx, status.BANNER_MEDIA_URL_TOO_LONG, nil, ErrMediaURLKeyTooLong)
 	}

@@ -26,7 +26,9 @@ import (
 // richer result (InvalidTokens) that the Deliverer interface can't carry, so
 // it is dispatched directly through the notification adapter below instead
 // of being shoehorned into a Deliverer.
-const pushChannelName otp_delivery.ChannelName = "push"
+var (
+	pushChannelName otp_delivery.ChannelName = "push"
+)
 
 // SendOtpCommand issues a fresh OTP for (type, identifier) and dispatches it
 // via the OTP delivery adapter. Inside one UoW it:
@@ -85,6 +87,7 @@ func NewSendOtpCommandHandler(uow transaction.UnitOfWork, delivery *otp_delivery
 }
 
 func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) (*SendOtpCommandResult, error) {
+	log := logger.From(ctx)
 	if !cmd.OtpType.IsValid() {
 		return nil, errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, ErrInvalidOtpType)
 	}
@@ -110,6 +113,8 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 			return nil, err
 		}
 	}
+
+	log.Infof("otp send command deliver to: %s via %s", cmd.Identifier, channel)
 
 	// Generate the plaintext code outside the UoW — rand.Int can be slow
 	// under crypto entropy pressure and shouldn't hold a tx open.
@@ -258,6 +263,18 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		// cannot read — echoing the code back in the response would defeat
 		// the entire point of trusted-device 2FA, so it is withheld here.
 		// responseCode = ""
+	}
+
+	if h.delivery != nil && channel == otp_delivery.ChannelEmail {
+		err := h.delivery.Send(ctx, otp_delivery.Message{
+			OtpType:    cmd.OtpType,
+			Identifier: cmd.Identifier,
+			Code:       plainCode,
+			ExpiresAt:  expiresAt,
+		})
+		if err != nil {
+			return nil, errs.NewError(ctx, status.OTP_DELIVERY_FAILED, nil, err)
+		}
 	}
 
 	return &SendOtpCommandResult{

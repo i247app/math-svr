@@ -17,15 +17,12 @@ import (
 )
 
 const (
-	// bannerFolder is the S3 prefix new avatar uploads land under.
+	// bannerFolder is the S3 prefix new banner media uploads land under.
 	bannerFolder = "banner-media"
-	// avatarUrlTTL bounds how long a generated avatar preview URL is valid.
-	// Short enough that a stale link in the wild expires quickly; long
-	// enough that a single screen render doesn't have to refresh mid-view.
+	// bannerUrlTTL bounds how long a generated banner media preview URL is
+	// valid. Short enough that a stale link in the wild expires quickly;
+	// long enough that a single screen render doesn't refresh mid-view.
 	bannerUrlTTL = 1 * time.Hour
-	// refImageUrlTTL bounds presigned URLs we hand back for embedded
-	// program/grade/semester image_keys.
-	bannerImageUrlTTL = 1 * time.Hour
 )
 
 // Service is the banner module's public façade. It composes the CQRS
@@ -72,7 +69,7 @@ func (s *Service) CreateBanner(ctx context.Context, req *dto.CreateBannerReq, ac
 	)
 	switch {
 	case strings.TrimSpace(req.Media) != "":
-		key, err := s.normalizeBannerKey(ctx, req.Media, status.PROFILE_AVATAR_INVALID_REFERENCE)
+		key, err := s.normalizeBannerKey(ctx, req.Media, status.BANNER_MEDIA_INVALID_REFERENCE)
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +131,7 @@ func (s *Service) UpdateBanner(ctx context.Context, req *dto.UpdateBannerReq, ac
 	)
 	switch {
 	case strings.TrimSpace(req.Media) != "":
-		key, err := s.normalizeBannerKey(ctx, req.Media, status.PROFILE_AVATAR_INVALID_REFERENCE)
+		key, err := s.normalizeBannerKey(ctx, req.Media, status.BANNER_MEDIA_INVALID_REFERENCE)
 		if err != nil {
 			return nil, err
 		}
@@ -169,13 +166,15 @@ func (s *Service) UpdateBanner(ctx context.Context, req *dto.UpdateBannerReq, ac
 		return nil, err
 	}
 
-	// delete old media if any
-	if existBanner.MediaURLKey() != "" &&
+	// Delete the old media object once it has been superseded — best-effort:
+	// the DB update already committed, so a failed S3 delete (or disabled
+	// storage) must not fail the request, only leave an orphan we log.
+	if s.storageProvider != nil && existBanner.MediaURLKey() != "" &&
 		mediaKey != nil && existBanner.MediaURLKey() != *mediaKey {
 		if err := s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{
 			Key: existBanner.MediaURLKey(),
 		}); err != nil {
-			return nil, err
+			log.Warnf("banner.update old media cleanup failed key=%s err=%v", existBanner.MediaURLKey(), err)
 		}
 	}
 

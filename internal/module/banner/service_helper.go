@@ -9,10 +9,10 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
-// normalizeAvatarKey resolves a client-supplied avatar reference into a
-// canonical S3 key under profile-avatars/. Host allowlist + prefix
-// enforcement live in the storage provider; the service layer just
-// translates a plain error into a typed MathError.
+// normalizeBannerKey resolves a client-supplied media reference into a
+// canonical S3 key. Host allowlist + prefix enforcement live in the
+// storage provider; the service layer just translates a plain error into
+// a typed MathError.
 func (s *Service) normalizeBannerKey(ctx context.Context, raw string, invalidStatus status.StatusCode) (string, error) {
 	if s.storageProvider == nil {
 		return "", errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
@@ -43,7 +43,7 @@ func (s *Service) uploadBannerIfPresent(ctx context.Context, req *dto.CreateBann
 		Filename:    req.MediaFilename,
 		ContentType: req.MediaContentType,
 	}); err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, status.BANNER_MEDIA_INVALID_FILE, nil, err)
 	}
 
 	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -53,10 +53,10 @@ func (s *Service) uploadBannerIfPresent(ctx context.Context, req *dto.CreateBann
 		Folder:      bannerFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, status.BANNER_MEDIA_UPLOAD_FAILED, nil, err)
 	}
 	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
+		return nil, errs.NewError(ctx, status.BANNER_MEDIA_UPLOAD_FAILED, nil,
 			ErrUploadReturnedEmptyKey)
 	}
 	return &uploaded.Key, nil
@@ -75,7 +75,7 @@ func (s *Service) updateBannerIfPresent(ctx context.Context, req *dto.UpdateBann
 		Filename:    req.MediaFilename,
 		ContentType: req.MediaContentType,
 	}); err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, status.BANNER_MEDIA_INVALID_FILE, nil, err)
 	}
 
 	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -85,10 +85,10 @@ func (s *Service) updateBannerIfPresent(ctx context.Context, req *dto.UpdateBann
 		Folder:      bannerFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, status.BANNER_MEDIA_UPLOAD_FAILED, nil, err)
 	}
 	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
+		return nil, errs.NewError(ctx, status.BANNER_MEDIA_UPLOAD_FAILED, nil,
 			ErrUploadReturnedEmptyKey)
 	}
 	return &uploaded.Key, nil

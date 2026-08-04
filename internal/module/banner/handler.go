@@ -68,7 +68,19 @@ func (h *BannerHandler) HandleCreateBanner(w http.ResponseWriter, r *http.Reques
 		buttonText := r.FormValue("button_text")
 		req.ButtonText = &buttonText
 
-		// Handle avatar file
+		buttonLink := r.FormValue("button_link_url")
+		req.ButtonLinkURL = &buttonLink
+
+		note := r.FormValue("note")
+		req.Note = &note
+
+		// Only set banner_status when supplied; an empty value would fail
+		// validation instead of falling through to the ACTIVE default.
+		if bannerStatus := r.FormValue("banner_status"); bannerStatus != "" {
+			req.BannerStatus = &bannerStatus
+		}
+
+		// Handle media file
 		file, header, err := r.FormFile("media")
 		if err == nil {
 			defer file.Close()
@@ -115,7 +127,19 @@ func (h *BannerHandler) HandleUpdateBanner(w http.ResponseWriter, r *http.Reques
 		buttonText := r.FormValue("button_text")
 		req.ButtonText = &buttonText
 
-		// Handle avatar file
+		buttonLink := r.FormValue("button_link_url")
+		req.ButtonLinkURL = &buttonLink
+
+		note := r.FormValue("note")
+		req.Note = &note
+
+		// Only set banner_status when supplied; an empty value would fail
+		// validation instead of leaving the field unchanged.
+		if bannerStatus := r.FormValue("banner_status"); bannerStatus != "" {
+			req.BannerStatus = &bannerStatus
+		}
+
+		// Handle media file
 		file, header, err := r.FormFile("media")
 		if err == nil {
 			defer file.Close()

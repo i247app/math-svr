@@ -117,7 +117,6 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 		DeviceName:     &deviceName,
 		Channel:        channel,
 		TargetDeviceID: req.TargetDeviceID,
-		// Language: lang,
 	})
 	if err != nil {
 		return nil, err

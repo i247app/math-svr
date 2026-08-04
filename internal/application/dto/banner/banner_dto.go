@@ -34,13 +34,15 @@ type CreateBannerReq struct {
 	MediaType     string  `json:"media_type"`
 	MediaURLKey   string  `json:"-"`
 	ButtonText    *string `json:"button_text,omitempty"`
-	ButtonLinkURL *string `json:"-,omitempty"`
+	ButtonLinkURL *string `json:"button_link_url,omitempty"`
 	Note          *string `json:"note,omitempty"`
 	// BannerStatus optionally overrides the default ACTIVE state on create
 	// (e.g. staging a banner as INACTIVE until it's ready to show).
 	BannerStatus *string `json:"banner_status,omitempty"`
 
-	Media string `json:"avatar,omitempty"`
+	// Media is an optional reference to an already-uploaded object; when set
+	// it is normalized into a canonical S3 key instead of uploading a file.
+	Media string `json:"media,omitempty"`
 
 	MediaFile        io.Reader `json:"-"` // multipart file reader
 	MediaFilename    string    `json:"-"` // original filename
@@ -65,7 +67,9 @@ type UpdateBannerReq struct {
 	Note          *string `json:"note,omitempty"`
 	BannerStatus  *string `json:"banner_status,omitempty"`
 
-	Media string `json:"avatar,omitempty"`
+	// Media is an optional reference to an already-uploaded object; when set
+	// it is normalized into a canonical S3 key instead of uploading a file.
+	Media string `json:"media,omitempty"`
 
 	MediaFile        io.Reader `json:"-"` // multipart file reader
 	MediaFilename    string    `json:"-"` // original filename
