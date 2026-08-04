@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/domain/banner"
 	"math-ai.com/math-ai/internal/domain/chapter"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/device"
@@ -47,6 +48,7 @@ type Repositories struct {
 	Exercise            exercise.IRepository
 	ExerciseSubmission  exercise.ISubmissionRepository
 	Notification        notification.IRepository
+	Banner              banner.IRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

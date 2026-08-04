@@ -598,6 +598,30 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Too many active connections"
 	case SOCKET_DISABLED:
 		return "Realtime channel is disabled"
+
+	// Banner
+	case BANNER_NOT_FOUND:
+		return "Banner not found"
+	case BANNER_MISSING_ID:
+		return "banner_id is required"
+	case BANNER_MISSING_MEDIA_URL:
+		return "media_url_key is required for image/video banners"
+	case BANNER_INVALID_MEDIA_TYPE:
+		return "Invalid media type"
+	case BANNER_INVALID_STATUS:
+		return "Invalid banner status"
+	case BANNER_TITLE_TOO_LONG:
+		return "Title is too long"
+	case BANNER_SHORT_TEXT_TOO_LONG:
+		return "Short text is too long"
+	case BANNER_MEDIA_URL_TOO_LONG:
+		return "media_url_key is too long"
+	case BANNER_BUTTON_TEXT_TOO_LONG:
+		return "Button text is too long"
+	case BANNER_BUTTON_LINK_TOO_LONG:
+		return "Button link URL is too long"
+	case BANNER_NOTE_TOO_LONG:
+		return "Note is too long"
 	default:
 		return ""
 	}

@@ -15,6 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
+	"math-ai.com/math-ai/internal/module/banner"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
 	"math-ai.com/math-ai/internal/module/misc"
@@ -155,6 +156,17 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /schools/update", schoolHandler.HandleUpdateSchool, authMiddleware)
 		reg("POST /schools/soft-delete", schoolHandler.HandleSoftDeleteSchool, authMiddleware)
 		reg("POST /schools/force-delete", schoolHandler.HandleForceDeleteSchool, authMiddleware)
+	}
+
+	// banner routes
+	{
+		bannerHandler := banner.NewBannerHandler(res, services.BannerSvc)
+		reg("POST /banners/detail", bannerHandler.HandleGetBanner, authMiddleware)
+		reg("POST /banners/list", bannerHandler.HandleListBanners, authMiddleware)
+		reg("POST /banners/create", bannerHandler.HandleCreateBanner, authMiddleware)
+		reg("POST /banners/update", bannerHandler.HandleUpdateBanner, authMiddleware)
+		reg("POST /banners/soft-delete", bannerHandler.HandleSoftDeleteBanner, authMiddleware)
+		reg("POST /banners/force-delete", bannerHandler.HandleForceDeleteBanner, authMiddleware)
 	}
 
 	// device routes

@@ -41,6 +41,7 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 			Exercise:            repositories.NewExerciseRepository(loggedTx),
 			ExerciseSubmission:  repositories.NewExerciseSubmissionRepository(loggedTx),
 			Notification:        repositories.NewNotificationRepository(loggedTx),
+			Banner:              repositories.NewBannerRepository(loggedTx),
 		}
 		return fn(txCtx, repos)
 	})

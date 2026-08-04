@@ -24,4 +24,5 @@ const (
 	NameClassroomExercise           = "classroom_exercise"
 	NameClassroomExerciseSubmission = "classroom_exercise_submission"
 	NameNotification                = "notification"
+	NameBanner                      = "banner"
 )

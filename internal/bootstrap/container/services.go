@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/repositories"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/banner"
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
@@ -168,6 +169,13 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup BotSvc...")
 	botService := bot.NewService(res.BotProvider)
 
+	log.Info("> Setup BannerSvc...")
+	bannerService := banner.NewService(
+		repos.BannerRepository,
+		uow,
+		res.StorageProvider,
+	)
+
 	log.Info("> Setup HomeSvc...")
 	homeService := home.NewService(
 		repos.ClassroomRepository,
@@ -200,5 +208,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		HomeSvc:         homeService,
 		BotSvc:          botService,
 		NotificationSvc: notificationService,
+		BannerSvc:       bannerService,
 	}, nil
 }

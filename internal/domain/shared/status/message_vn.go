@@ -598,6 +598,30 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Quá nhiều kết nối đang hoạt động"
 	case SOCKET_DISABLED:
 		return "Kênh realtime đang bị tắt"
+
+	// Banner
+	case BANNER_NOT_FOUND:
+		return "Không tìm thấy banner"
+	case BANNER_MISSING_ID:
+		return "Thiếu banner_id"
+	case BANNER_MISSING_MEDIA_URL:
+		return "media_url_key là bắt buộc đối với banner ảnh/video"
+	case BANNER_INVALID_MEDIA_TYPE:
+		return "Loại media không hợp lệ"
+	case BANNER_INVALID_STATUS:
+		return "Trạng thái banner không hợp lệ"
+	case BANNER_TITLE_TOO_LONG:
+		return "Tiêu đề quá dài"
+	case BANNER_SHORT_TEXT_TOO_LONG:
+		return "Đoạn mô tả ngắn quá dài"
+	case BANNER_MEDIA_URL_TOO_LONG:
+		return "media_url_key quá dài"
+	case BANNER_BUTTON_TEXT_TOO_LONG:
+		return "Nội dung nút quá dài"
+	case BANNER_BUTTON_LINK_TOO_LONG:
+		return "Đường dẫn nút quá dài"
+	case BANNER_NOTE_TOO_LONG:
+		return "Ghi chú quá dài"
 	default:
 		return ""
 	}

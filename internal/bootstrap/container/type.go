@@ -2,6 +2,7 @@ package container
 
 import (
 	// "math-ai.com/math-ai/internal/application/socket"
+	bannerDomain "math-ai.com/math-ai/internal/domain/banner"
 	chapterDomain "math-ai.com/math-ai/internal/domain/chapter"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
@@ -18,6 +19,7 @@ import (
 	seqDomain "math-ai.com/math-ai/internal/domain/seq"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/banner"
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/classroom"
@@ -60,6 +62,7 @@ type ServiceContainer struct {
 	HomeSvc         *home.Service
 	BotSvc          *bot.Service
 	NotificationSvc *notification.Service
+	BannerSvc       *banner.Service
 }
 
 type RepositoryContainer struct {
@@ -82,4 +85,5 @@ type RepositoryContainer struct {
 	ExerciseRepository            exerciseDomain.IRepository
 	ExerciseSubmissionRepository  exerciseDomain.ISubmissionRepository
 	NotificationRepository        notificationDomain.IRepository
+	BannerRepository              bannerDomain.IRepository
 }
