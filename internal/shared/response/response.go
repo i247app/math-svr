@@ -49,12 +49,12 @@ func WriteJson(w http.ResponseWriter, data any, err error) {
 		payload["mstatus"] = status.SUCCESS
 	}
 
-	if payload["mmessage"] == "" && err != nil {
-		payload["mmessage"] = err.Error()
-	}
-
 	if _, exists := payload["mstatus"]; !exists {
 		payload["mstatus"] = status.INTERNAL_SERVER_ERROR
+	}
+
+	if msg, ok := payload["mmessage"].(string); (!ok || msg == "") && err != nil {
+		payload["mmessage"] = err.Error()
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

@@ -36,6 +36,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Số điện thoại đã tồn tại"
 	case USER_USERNAME_ALREADY_EXISTS:
 		return "Username đã tồn tại"
+	case USER_ALREADY_EXISTS:
+		return "Người dùng đã tồn tại"
 	case USER_NOT_FOUND:
 		return "Không tìm thấy người dùng"
 	case USER_MISSING_NAME:

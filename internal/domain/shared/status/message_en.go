@@ -36,6 +36,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Phone already exists"
 	case USER_USERNAME_ALREADY_EXISTS:
 		return "Username already exists"
+	case USER_ALREADY_EXISTS:
+		return "User already exists"
 	case USER_NOT_FOUND:
 		return "User not found"
 	case USER_MISSING_NAME:
