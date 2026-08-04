@@ -16,6 +16,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -67,6 +68,8 @@ func NewService(
 func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.PingNotificationRes, error) {
 	log := logger.From(ctx)
 
+	deviceId := metadata.GetDeviceID(ctx)
+
 	if err := ValidatePing(ctx, req); err != nil {
 		return nil, err
 	}
@@ -91,11 +94,11 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 	notiDomain.SetCategory(&cate)
 
 	if s.push.enabled() {
-		tokens, terr := s.recipientTokens(ctx, req.UserID)
+		token, terr := s.determineToken(ctx, req.UserID, deviceId)
 		if terr != nil {
 			log.Warnf("notification.token_lookup_failed user_id=%d err=%v", req.UserID, terr)
-		} else if len(tokens) > 0 {
-			sendRes, serr := s.push.send(ctx, tokens, notiDomain)
+		} else if token != nil {
+			sendRes, serr := s.push.send(ctx, []string{*token}, notiDomain)
 			if serr != nil {
 				log.Warnf("notification.push_failed user_id=%d err=%v", req.UserID, serr)
 			} else {
@@ -214,6 +217,15 @@ func (s *Service) recipientTokens(ctx context.Context, userID int64) ([]string, 
 		tokens = append(tokens, *t)
 	}
 	return tokens, nil
+}
+
+func (s *Service) determineToken(ctx context.Context, userID int64, deviceId string) (*string, error) {
+	device, err := s.deviceRepo.FindByUserDevice(ctx, userID, deviceId)
+	if err != nil || device == nil {
+		return nil, nil
+	}
+
+	return device.DevicePushToken(), nil
 }
 
 func (s *Service) ListNotifications(ctx context.Context, req *dto.ListNotificationsReq) (*dto.ListNotificationsRes, error) {
