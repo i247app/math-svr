@@ -169,7 +169,7 @@ func (h *Hub) Publish(topic, event string, data any) int {
 	if err != nil {
 		return 0
 	}
-	return h.deliver(h.targets(h.topics[topic]), frame)
+	return h.deliver(h.topicTargets(topic), frame)
 }
 
 // BroadcastUser fans an event out to every connection owned by userID
@@ -183,14 +183,41 @@ func (h *Hub) BroadcastUser(userID int64, event string, data any) int {
 	if err != nil {
 		return 0
 	}
-	return h.deliver(h.targets(h.byUser[userID]), frame)
+	return h.deliver(h.userTargets(userID), frame)
 }
 
-// targets snapshots a connection set under the read lock so delivery happens
-// without holding mu.
-func (h *Hub) targets(set map[string]*Conn) []*Conn {
+// topicTargets snapshots the connections subscribed to topic.
+//
+// The map lookup MUST happen inside the lock. An earlier version took the
+// already-indexed inner map as an argument, which left `h.topics[topic]` to be
+// evaluated at the call site with no lock held — a data race against Subscribe
+// and unregister, both of which write h.topics under mu. A racing map access is
+// a runtime *throw* ("concurrent map read and map write"), not a recoverable
+// panic, so it takes the whole process down. See TestHubConcurrentPublishAndSubscribe.
+func (h *Hub) topicTargets(topic string) []*Conn {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
+	return snapshotConns(h.topics[topic])
+}
+
+// userTargets snapshots every connection owned by userID. Same locking rule as
+// topicTargets: the h.byUser lookup happens under the read lock.
+func (h *Hub) userTargets(userID int64) []*Conn {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return snapshotConns(h.byUser[userID])
+}
+
+// allTargets snapshots every registered connection.
+func (h *Hub) allTargets() []*Conn {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return snapshotConns(h.conns)
+}
+
+// snapshotConns copies a connection set so delivery can happen without holding
+// mu. Callers must already hold at least the read lock.
+func snapshotConns(set map[string]*Conn) []*Conn {
 	if len(set) == 0 {
 		return nil
 	}
@@ -217,7 +244,7 @@ func (h *Hub) deliver(targets []*Conn, frame []byte) int {
 // CloseAll signals every connection to close (used on graceful shutdown). The
 // connections' own Serve loops perform the unregister and socket close.
 func (h *Hub) CloseAll(code websocket.StatusCode, reason string) {
-	for _, c := range h.targets(h.conns) {
+	for _, c := range h.allTargets() {
 		c.triggerClose(code, reason)
 	}
 }

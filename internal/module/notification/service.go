@@ -38,6 +38,11 @@ type Service struct {
 	socket           appsocket.Publisher
 }
 
+// notificationCreatedEvent is the realtime event name emitted when an inbox row
+// is created. Clients subscribed to notifications:{uid} key off this string, so
+// treat it as part of the wire contract.
+const notificationCreatedEvent = "notification.created"
+
 // NewService wires the notification module. push may be nil when the deploy
 // runs with NOTIFICATION_PROVIDER=""/"disabled"; the inbox still works and
 // delivery is skipped (zeroed push counts). socketPub may be nil when
@@ -180,18 +185,18 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 	// }
 
 	// Realtime delivery — out of any tx, best-effort. Mirrors the FCM push: the
-	// inbox row is authoritative, so a socket publish failure is logged only.
-	// Reaches only the recipient's currently-connected sockets (nil when the
-	// socket runtime is disabled).
-	// if s.socket != nil {
-	// 	topic := appsocket.NotificationsTopic(req.UserID)
-	// 	event := "notification.created"
-	// 	log.Infof("send socket event to user %d : %v", req.UserID, event)
-	// 	if perr := s.socket.Publish(ctx, topic, event, res.Notification); perr != nil {
-	// 		log.Warnf("notification.socket_publish_failed notification_id=%d user_id=%d err=%v",
-	// 			created.NotificationId(), req.UserID, perr)
-	// 	}
-	// }
+	// inbox row is authoritative, so a socket publish failure is logged only and
+	// never fails the request. Reaches only the recipient's currently-connected
+	// sockets; an offline user picks the notification up from the inbox on next
+	// /notifications/list. s.socket is nil when SOCKET_ENABLED=false.
+	if s.socket != nil {
+		log := logger.From(ctx)
+		topic := appsocket.NotificationsTopic(req.UserID)
+		if perr := s.socket.Publish(ctx, topic, notificationCreatedEvent, res.Notification); perr != nil {
+			log.Warnf("notification.socket_publish_failed notification_id=%d user_id=%d err=%v",
+				created.NotificationId(), req.UserID, perr)
+		}
+	}
 
 	return res, nil
 }

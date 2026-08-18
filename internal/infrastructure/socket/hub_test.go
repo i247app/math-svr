@@ -2,6 +2,7 @@ package socket
 
 import (
 	"encoding/json"
+	"sync"
 	"testing"
 
 	"github.com/coder/websocket"
@@ -157,4 +158,52 @@ func TestHubCloseAll(t *testing.T) {
 	if !isClosed(a) || !isClosed(b) {
 		t.Fatal("CloseAll did not signal every connection")
 	}
+}
+
+// TestHubConcurrentPublishAndSubscribe guards the Hub's locking contract:
+// every map lookup must happen inside mu, not at the call site.
+//
+// Publish/BroadcastUser used to index h.topics / h.byUser before taking the
+// read lock, racing Subscribe and unregister. Go reports that as a runtime
+// throw ("concurrent map read and map write"), which RecoveryMiddleware cannot
+// catch — the whole server dies. Run with -race; without the fix this test
+// reports a DATA RACE between Publish and Subscribe.
+func TestHubConcurrentPublishAndSubscribe(t *testing.T) {
+	const iterations = 500
+
+	h := NewHub(Config{MaxConnsPerUser: iterations, BufferSize: 1024})
+
+	var wg sync.WaitGroup
+	wg.Add(3)
+
+	// Writer: registers connections and subscribes them to a shared topic.
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			c, err := h.NewConn(nil, int64(i))
+			if err != nil {
+				return
+			}
+			h.Subscribe(c, "room:1")
+		}
+	}()
+
+	// Reader A: topic fan-out.
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			h.Publish("room:1", "evt", nil)
+		}
+	}()
+
+	// Reader B: user-addressed fan-out + registry snapshot.
+	go func() {
+		defer wg.Done()
+		for i := 0; i < iterations; i++ {
+			h.BroadcastUser(int64(i), "evt", nil)
+			h.Stats()
+		}
+	}()
+
+	wg.Wait()
 }

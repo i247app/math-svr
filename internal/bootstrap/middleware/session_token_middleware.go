@@ -43,8 +43,12 @@ func SessionTokenMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		// Header is never trusted for auth — drop it up front.
-		// r.Header.Del("Authorization")
+		// Header is never trusted for auth — drop it up front, before the body
+		// is inspected. A request with no metadata.authorization therefore
+		// reaches GexSessionMiddleware with NO Authorization header at all, and
+		// an auth-gated route rejects it. Do not add a header fallback here:
+		// that reopens header-carried auth for every route.
+		r.Header.Del("Authorization")
 
 		token := extractBodyAuthorization(r)
 		if token != "" {
@@ -52,12 +56,6 @@ func SessionTokenMiddleware(next http.Handler) http.Handler {
 				token = "Bearer " + token
 			}
 			r.Header.Set("Authorization", token)
-		} else {
-			headerToken := r.Header.Get("Authorization")
-			if headerToken != "" {
-				println("Use token from header")
-				r.Header.Set("Authorization", headerToken)
-			}
 		}
 		next.ServeHTTP(w, r)
 	})

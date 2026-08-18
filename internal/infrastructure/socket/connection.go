@@ -155,7 +155,6 @@ func (c *Conn) Serve(ctx context.Context) {
 func (c *Conn) readPump(ctx context.Context) {
 	log := logger.From(ctx)
 	for {
-		log.Infof("Reading from connection")
 		typ, data, err := c.ws.Read(ctx)
 		if err != nil {
 			// Peer close, read limit, or context cancel. Signal the writePump so
@@ -163,12 +162,13 @@ func (c *Conn) readPump(ctx context.Context) {
 			c.triggerClose(websocket.StatusNormalClosure, "")
 			return
 		}
-		log.Infof("websocket.MessageText: %v", websocket.MessageText)
 		if typ != websocket.MessageText {
 			continue
 		}
 
-		log.Infof("Received message: %v", string(data))
+		// Debug level, size only: this runs once per inbound frame and the
+		// payload can carry user data.
+		log.Debugf("socket.frame_received conn=%s bytes=%d", c.id, len(data))
 
 		var in Inbound
 		if err := json.Unmarshal(data, &in); err != nil {
@@ -207,7 +207,7 @@ func (c *Conn) writePump(ctx context.Context) {
 		case <-c.closed:
 			return
 		case frame := <-c.send:
-			log.Infof("Writing frame: %s", string(frame))
+			log.Infof("socket.frame_sent conn=%s bytes=%d", c.id, len(frame))
 
 			wctx, cancel := context.WithTimeout(ctx, c.cfg.WriteTimeout)
 			err := c.ws.Write(wctx, websocket.MessageText, frame)
