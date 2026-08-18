@@ -17,7 +17,7 @@ import (
 	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
 	"math-ai.com/math-ai/internal/infrastructure/metrics"
 	"math-ai.com/math-ai/internal/infrastructure/session"
-	socketrt "math-ai.com/math-ai/internal/infrastructure/socket"
+	"math-ai.com/math-ai/internal/infrastructure/socket"
 
 	"github.com/i247app/gex"
 	"github.com/i247app/gex/sessionprovider"
@@ -62,7 +62,7 @@ type Resource struct {
 
 	// SocketHub owns realtime WebSocket connections + topic fan-out. Nil when
 	// SOCKET_ENABLED=false — the /ws/connect route is then not registered.
-	SocketHub *socketrt.Hub
+	SocketHub *socket.Hub
 
 	// SocketPublisher is the producer-facing port over SocketHub. Nil when the
 	// socket runtime is disabled — producers must nil-guard.
