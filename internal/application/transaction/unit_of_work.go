@@ -5,6 +5,7 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/banner"
 	"math-ai.com/math-ai/internal/domain/chapter"
+	"math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/exercise"
@@ -12,6 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/domain/otp"
+	"math-ai.com/math-ai/internal/domain/presence"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/program"
 	"math-ai.com/math-ai/internal/domain/quiz"
@@ -28,27 +30,31 @@ import (
 // mints a new external ID should call Seq.Next(ctx, seq.NameX) instead
 // of generating a UUID, so concurrent inserts share one atomic counter.
 type Repositories struct {
-	User                user.IRepository
-	Alias               user.IAliasRepository
-	Profile             profile.IRepository
-	LoginLog            loginlog.IRepository
-	Device              device.IRepository
-	Otp                 otp.IRepository
-	Quiz                quiz.IRepository
-	Chapter             chapter.IRepository
-	ChapterTranslation  chapter.ITranslationRepository
-	Grade               grade.IRepository
-	Semester            semester.IRepository
-	Program             program.IRepository
-	School              school.IRepository
-	Seq                 seq.IRepository
-	Classroom           classroom.IRepository
-	ClassroomMember     classroom.IMemberRepository
-	ClassroomProgram    classroom.IClassroomProgramRepository
-	Exercise            exercise.IRepository
-	ExerciseSubmission  exercise.ISubmissionRepository
-	Notification        notification.IRepository
-	Banner              banner.IRepository
+	User               user.IRepository
+	Alias              user.IAliasRepository
+	Profile            profile.IRepository
+	LoginLog           loginlog.IRepository
+	Device             device.IRepository
+	Otp                otp.IRepository
+	Quiz               quiz.IRepository
+	Chapter            chapter.IRepository
+	ChapterTranslation chapter.ITranslationRepository
+	Grade              grade.IRepository
+	Semester           semester.IRepository
+	Program            program.IRepository
+	School             school.IRepository
+	Seq                seq.IRepository
+	Classroom          classroom.IRepository
+	ClassroomMember    classroom.IMemberRepository
+	ClassroomProgram   classroom.IClassroomProgramRepository
+	Exercise           exercise.IRepository
+	ExerciseSubmission exercise.ISubmissionRepository
+	Notification       notification.IRepository
+	Banner             banner.IRepository
+	Presence           presence.IRepository
+	ChatConversation   chat.IRepository
+	ChatParticipant    chat.IParticipantRepository
+	ChatMessage        chat.IMessageRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

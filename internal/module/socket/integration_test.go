@@ -21,7 +21,7 @@ import (
 // dispatch end to end.
 func newTestServer(t *testing.T, hub *socketrt.Hub, uid int64) *httptest.Server {
 	t.Helper()
-	svc := NewService(hub, nil, nil) // DefaultAuthorizer, same-origin only
+	svc := NewService(hub, nil, nil, nil) // DefaultAuthorizer, same-origin only
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c, err := websocket.Accept(w, r, nil)
 		if err != nil {

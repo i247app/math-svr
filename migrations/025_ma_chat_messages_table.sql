@@ -25,29 +25,22 @@ CREATE TABLE IF NOT EXISTS ma_chat_messages (
   message_id               BIGINT UNSIGNED NOT NULL UNIQUE,   -- external id (minted via ma_seqs)
   conversation_id          BIGINT UNSIGNED NOT NULL,
   seq_no                   BIGINT UNSIGNED NOT NULL,          -- monotonic WITHIN the conversation
-
   sender_profile_id        BIGINT UNSIGNED DEFAULT NULL,      -- NULL for SYSTEM messages
   sender_user_id           BIGINT UNSIGNED DEFAULT NULL,
-
-  message_type             VARCHAR(32) NOT NULL DEFAULT 'TEXT',
-                                                              -- TEXT, IMAGE, VIDEO, AUDIO, FILE, SYSTEM
+  message_type             VARCHAR(32) NOT NULL DEFAULT 'TEXT', -- TEXT, IMAGE, VIDEO, AUDIO, FILE, SYSTEM
   content                  TEXT DEFAULT NULL,                 -- body, or caption for a media message
   attachment_count         TINYINT UNSIGNED NOT NULL DEFAULT 0,
-
   reply_to_message_id      BIGINT UNSIGNED DEFAULT NULL,      -- threaded reply to one message
   system_event             VARCHAR(64) DEFAULT NULL,          -- MEMBER_JOINED, MEMBER_LEFT, ...
   system_payload           JSON DEFAULT NULL,
   metadata                 JSON DEFAULT NULL,                 -- forward-compat bag; never indexed
-
   -- Idempotency for retries on a flaky mobile network. The client generates one
   -- value per composed message; the UNIQUE key below makes a duplicate send fail
   -- cleanly so the server can return the message it already created.
   client_msg_id            VARCHAR(64) DEFAULT NULL,
-
   sent_dt                  DATETIME(6) NOT NULL,              -- server-assigned send time
   edited_dt                DATETIME(6) DEFAULT NULL,
   revoked_dt               DATETIME(6) DEFAULT NULL,          -- "thu hồi" / unsend
-
   note                     VARCHAR(500) DEFAULT NULL,
   message_status           VARCHAR(32) DEFAULT 'SENT',        -- SENT, EDITED, REVOKED, DELETED
   status                   VARCHAR(32) DEFAULT 'ACTIVE',
@@ -56,7 +49,6 @@ CREATE TABLE IF NOT EXISTS ma_chat_messages (
   modify_id                BIGINT UNSIGNED DEFAULT NULL,
   modify_dt                DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   deleted_dt               DATETIME(6) DEFAULT NULL,
-
   -- Serves the thread view, backfill-after-reconnect, and uniqueness of seq_no
   -- in one index. MySQL 8 scans a B-tree backwards as efficiently as forwards,
   -- so no separate DESC index is needed.

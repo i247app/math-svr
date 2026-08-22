@@ -54,6 +54,8 @@ logs/*.log
 # AI files
 .cursor/
 .claude/
+.codex/
+.agents/
 .crush/
 .specify/
 .opencode/

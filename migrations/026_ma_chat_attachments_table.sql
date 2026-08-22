@@ -22,21 +22,18 @@ CREATE TABLE IF NOT EXISTS ma_chat_attachments (
   conversation_id          BIGINT UNSIGNED NOT NULL,
   uploader_profile_id      BIGINT UNSIGNED NOT NULL,
   display_order            TINYINT UNSIGNED NOT NULL DEFAULT 0, -- order within one message
-
   attachment_type          VARCHAR(32) NOT NULL,              -- IMAGE, VIDEO, AUDIO, FILE
   storage_key              VARCHAR(1000) NOT NULL,            -- S3 object key, presigned on read
   thumbnail_key            VARCHAR(1000) DEFAULT NULL,
   file_name                VARCHAR(255) DEFAULT NULL,
   mime_type                VARCHAR(128) DEFAULT NULL,
   byte_size                BIGINT UNSIGNED DEFAULT NULL,
-
   -- Dimensions let the client reserve the right-sized box before the bytes
   -- arrive, so the message list does not jump while images load.
   width_px                 INT UNSIGNED DEFAULT NULL,
   height_px                INT UNSIGNED DEFAULT NULL,
   duration_ms              INT UNSIGNED DEFAULT NULL,         -- video / audio
   checksum_sha256          CHAR(64) DEFAULT NULL,             -- de-duplicate repeat uploads
-
   note                     VARCHAR(500) DEFAULT NULL,
   attachment_status        VARCHAR(32) DEFAULT 'PENDING',     -- PENDING, READY, FAILED, DELETED
   status                   VARCHAR(32) DEFAULT 'ACTIVE',
@@ -45,7 +42,6 @@ CREATE TABLE IF NOT EXISTS ma_chat_attachments (
   modify_id                BIGINT UNSIGNED DEFAULT NULL,
   modify_dt                DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   deleted_dt               DATETIME(6) DEFAULT NULL,
-
   KEY ix_message (message_id, display_order),
   KEY ix_conversation_type (conversation_id, attachment_type, attachment_status),
   KEY ix_orphan (attachment_status, create_dt)

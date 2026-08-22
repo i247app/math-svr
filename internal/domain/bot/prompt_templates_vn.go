@@ -43,7 +43,7 @@ QUY TẮC ĐẦU RA:
 
 CẤU TRÚC:
 {
-  "title": "Grade 1 - Level 1",
+  "title": "Lớp 1 - Cấp độ 1",
   "short_text": "Phép cộng và phép trừ trong phạm vi ...",
   "assessment_grade": "Grade 1",
   "questions":[
@@ -97,7 +97,7 @@ QUY TẮC ĐẦU RA:
 
 CẤU TRÚC:
 {
-  "title": "Grade 1 - Level 2",
+  "title": "Lớp 1 - Cấp độ 2",
   "short_text": "Củng cố phép trừ có nhớ",
   "assessment_grade": "Grade 1",
   "questions":[
@@ -119,26 +119,6 @@ CẤU TRÚC:
   ]
 }
 `
-
-// visualQuestionRulesVN mirrors visualQuestionRulesEN. JSON keys stay
-// English; only answer text (e.g. shape names) is Vietnamese. Single
-// source of truth for the icon contract, appended to both VN prompts.
-// const visualQuestionRulesVN = `
-// VISUAL QUESTION RULES:
-// - Mỗi câu có "question_type": một trong ARITHMETIC, COUNT, PICK_BY_ICON, IDENTIFY_SHAPE. Mặc định là ARITHMETIC (câu chữ thuần).
-// - Cân bằng theo LỚP: Lớp 1-2 NÊN xen COUNT / PICK_BY_ICON / IDENTIFY_SHAPE để tư duy trực quan; Lớp 3 dùng ít; Lớp 4-5 gần như toàn ARITHMETIC.
-// - COUNT: "question_name" hiển thị các vật để đếm hoặc cộng bằng icon kèm toán tử (+, "?"), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?". Đáp án là số; "topic" là "phép đếm".
-// - PICK_BY_ICON: "question_name" là câu hỏi ngắn chọn phương án đúng (ví dụ "Đáp án nào có 3 hình tam giác?"); mỗi "content" của đáp án là một nhóm icon; "topic" là "hình học cơ bản".
-// - IDENTIFY_SHAPE: "question_name" là ĐÚNG MỘT token hình (ví dụ "[icon:triangle]"); đáp án là tên hình bằng tiếng Việt; "topic" là "hình học cơ bản".
-
-// ICONS (chỉ dùng cho các loại visual trên; TUYỆT ĐỐI không dùng trong ARITHMETIC):
-// - Emoji: với vật đếm được, dùng emoji phổ thông, thân thiện trẻ em, chèn trực tiếp và cách nhau bởi dấu cách, ví dụ 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Mỗi câu chỉ dùng MỘT loại emoji.
-// - Hình học: CHỈ dùng token "[icon:NAME]" với NAME thuộc: triangle, square, rectangle, circle, star, diamond, oval, pentagon, hexagon, heart. Lặp token để biểu diễn nhiều hình, ví dụ "[icon:triangle] [icon:triangle] [icon:triangle]". TUYỆT ĐỐI không tự đặt tên "[icon:...]" khác — nếu hình không có trong danh sách, hãy dùng emoji.
-
-// VÍ DỤ VISUAL (từng object câu hỏi, cùng schema như trên):
-// {"question_number": 2, "question_type": "COUNT", "question_name": "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?", "answers": [{"label":"A","content":"5"},{"label":"B","content":"6"},{"label":"C","content":"7"},{"label":"D","content":"4"}], "right_answer": "B", "correct_answer": "6", "topic": "phép đếm", "difficulty": 1}
-// {"question_number": 3, "question_type": "IDENTIFY_SHAPE", "question_name": "[icon:triangle]", "answers": [{"label":"A","content":"Hình tam giác"},{"label":"B","content":"Hình tròn"},{"label":"C","content":"Hình vuông"},{"label":"D","content":"Hình chữ nhật"}], "right_answer": "A", "correct_answer": "Hình tam giác", "topic": "hình học cơ bản", "difficulty": 1}
-// `
 
 const visualQuestionRulesVN = `
 VISUAL QUESTION RULES:

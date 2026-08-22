@@ -4,6 +4,7 @@ import (
 	// "math-ai.com/math-ai/internal/application/socket"
 	bannerDomain "math-ai.com/math-ai/internal/domain/banner"
 	chapterDomain "math-ai.com/math-ai/internal/domain/chapter"
+	chatDomain "math-ai.com/math-ai/internal/domain/chat"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
@@ -11,6 +12,7 @@ import (
 	loginLogDomain "math-ai.com/math-ai/internal/domain/loginlog"
 	notificationDomain "math-ai.com/math-ai/internal/domain/notification"
 	otpDomain "math-ai.com/math-ai/internal/domain/otp"
+	presenceDomain "math-ai.com/math-ai/internal/domain/presence"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
 	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
@@ -22,6 +24,7 @@ import (
 	"math-ai.com/math-ai/internal/module/banner"
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
+	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exercise"
@@ -31,6 +34,7 @@ import (
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
+	"math-ai.com/math-ai/internal/module/presence"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/quiz"
@@ -63,27 +67,33 @@ type ServiceContainer struct {
 	BotSvc          *bot.Service
 	NotificationSvc *notification.Service
 	BannerSvc       *banner.Service
+	PresenceSvc     *presence.Service
+	ChatSvc         *chat.Service
 }
 
 type RepositoryContainer struct {
-	UserRepository                userDomain.IRepository
-	ProgramRepository             programDomain.IRepository
-	GradeRepository               gradeDomain.IRepository
-	SemesterRepository            semesterDomain.IRepository
-	ProfileRepository             profileDomain.IRepository
-	LoginLogRepository            loginLogDomain.IRepository
-	DeviceRepository              deviceDomain.IRepository
-	OtpRepository                 otpDomain.IRepository
-	QuizRepository                quizDomain.IRepository
-	ChapterRepository             chapterDomain.IRepository
-	ChapterTranslationRepository  chapterDomain.ITranslationRepository
-	SchoolRepository              schoolDomain.IRepository
-	SeqRepository                 seqDomain.IRepository
-	ClassroomRepository           classroomDomain.IRepository
-	ClassroomMemberRepository     classroomDomain.IMemberRepository
-	ClassroomProgramRepository    classroomDomain.IClassroomProgramRepository
-	ExerciseRepository            exerciseDomain.IRepository
-	ExerciseSubmissionRepository  exerciseDomain.ISubmissionRepository
-	NotificationRepository        notificationDomain.IRepository
-	BannerRepository              bannerDomain.IRepository
+	UserRepository               userDomain.IRepository
+	ProgramRepository            programDomain.IRepository
+	GradeRepository              gradeDomain.IRepository
+	SemesterRepository           semesterDomain.IRepository
+	ProfileRepository            profileDomain.IRepository
+	LoginLogRepository           loginLogDomain.IRepository
+	DeviceRepository             deviceDomain.IRepository
+	OtpRepository                otpDomain.IRepository
+	QuizRepository               quizDomain.IRepository
+	ChapterRepository            chapterDomain.IRepository
+	ChapterTranslationRepository chapterDomain.ITranslationRepository
+	SchoolRepository             schoolDomain.IRepository
+	SeqRepository                seqDomain.IRepository
+	ClassroomRepository          classroomDomain.IRepository
+	ClassroomMemberRepository    classroomDomain.IMemberRepository
+	ClassroomProgramRepository   classroomDomain.IClassroomProgramRepository
+	ExerciseRepository           exerciseDomain.IRepository
+	ExerciseSubmissionRepository exerciseDomain.ISubmissionRepository
+	NotificationRepository       notificationDomain.IRepository
+	BannerRepository             bannerDomain.IRepository
+	PresenceRepository           presenceDomain.IRepository
+	ChatConversationRepository   chatDomain.IRepository
+	ChatParticipantRepository    chatDomain.IParticipantRepository
+	ChatMessageRepository        chatDomain.IMessageRepository
 }

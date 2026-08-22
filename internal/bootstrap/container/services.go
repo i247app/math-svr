@@ -11,6 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/module/banner"
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
+	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exercise"
@@ -20,6 +21,7 @@ import (
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
+	"math-ai.com/math-ai/internal/module/presence"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/quiz"
@@ -41,9 +43,44 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 
 	log.Info("SetupServiceContainer")
 
+	// Presence is built unconditionally: the chat member list reads it even
+	// when the realtime channel is off (everyone simply reads as OFFLINE).
+	log.Info("> Setup PresenceSvc...")
+	// res.SocketPublisher is nil when SOCKET_ENABLED=false: presence is still
+	// recorded, it is simply not announced to classmates.
+	var presencePublisher presence.Publisher
+	if res.SocketPublisher != nil {
+		presencePublisher = res.SocketPublisher
+	}
+	presenceService := presence.NewService(
+		uow,
+		repos.PresenceRepository,
+		repos.ClassroomMemberRepository,
+		presencePublisher,
+	)
+
+	log.Info("> Setup ChatSvc...")
+	// res.SocketPublisher is nil when SOCKET_ENABLED=false; the module treats
+	// that as "no realtime" and clients fall back to the list endpoints.
+	var chatRealtime chat.MessagePublisher
+	if res.SocketPublisher != nil {
+		chatRealtime = res.SocketPublisher
+	}
+	chatService := chat.NewService(
+		uow,
+		repos.ChatConversationRepository,
+		repos.ChatParticipantRepository,
+		repos.ChatMessageRepository,
+		repos.ProfileRepository,
+		repos.ClassroomMemberRepository,
+		repos.PresenceRepository,
+		res.StorageProvider,
+		chatRealtime,
+	)
+
 	var socketService *socket.Service
 	if res.SocketHub != nil {
-		socketService = socket.NewService(res.SocketHub, nil, res.Env.SocketConfig.AllowedOrigins)
+		socketService = socket.NewService(res.SocketHub, nil, res.Env.SocketConfig.AllowedOrigins, presenceService)
 	}
 
 	log.Info("> Setup MiscSvc...")
@@ -189,6 +226,8 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 
 	return &ServiceContainer{
 		SocketSvc:       socketService,
+		PresenceSvc:     presenceService,
+		ChatSvc:         chatService,
 		MiscSvc:         miscService,
 		UserSvc:         userService,
 		AuthSvc:         authService,

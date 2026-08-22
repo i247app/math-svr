@@ -630,6 +630,45 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Invalid banner media file"
 	case BANNER_MEDIA_UPLOAD_FAILED:
 		return "Failed to upload banner media"
+
+	// Chat
+	case CHAT_CONVERSATION_NOT_FOUND:
+		return "Conversation not found"
+	case CHAT_NOT_PARTICIPANT:
+		return "You are not a participant of this conversation"
+	case CHAT_MESSAGE_NOT_FOUND:
+		return "Message not found"
+	case CHAT_MESSAGE_EMPTY:
+		return "Message content is required"
+	case CHAT_MESSAGE_TOO_LONG:
+		return "Message content is too long"
+	case CHAT_TARGET_NOT_IN_CLASSROOM:
+		return "This member does not belong to the classroom"
+	case CHAT_CANNOT_MESSAGE_SELF:
+		return "You cannot message yourself"
+	case CHAT_SEQ_ALLOCATION_FAILED:
+		return "Failed to allocate a message sequence number"
+	case CHAT_MISSING_CONVERSATION_ID:
+		return "conversation_id is required"
+	case CHAT_MISSING_CLASSROOM_ID:
+		return "classroom_id is required"
+	case CHAT_MISSING_TARGET_PROFILE_ID:
+		return "target_profile_id is required"
+	case CHAT_CONVERSATION_CREATE_FAILED:
+		return "Failed to create the conversation"
+	case CHAT_MESSAGE_CREATE_FAILED:
+		return "Failed to send the message"
+	case CHAT_INVALID_MESSAGE_TYPE:
+		return "Invalid message type"
+	case CHAT_MISSING_PROFILE_ID:
+		return "profile_id is required"
+
+	// Presence
+	case PRESENCE_NOT_FOUND:
+		return "Presence record not found"
+	case PRESENCE_UPDATE_FAILED:
+		return "Failed to update presence"
+
 	default:
 		return ""
 	}

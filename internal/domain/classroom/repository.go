@@ -156,6 +156,19 @@ type IMemberRepository interface {
 	// caller's page count reflects the filtered cohort, not the raw
 	// roster. Search joins ma_profiles for name matching.
 	ListMembersByExerciseSubmission(ctx context.Context, params *ListMembersByExerciseSubmissionParams) ([]*Member, *pagination.Pagination, error)
+	// ListPeerUserIdsByUserId returns the user ids of everyone who shares at
+	// least one live classroom with the given user, excluding the user
+	// themselves.
+	//
+	// Keyed and returned by USER id, not profile id, because its consumer is
+	// presence: a WebSocket belongs to an account, so the online dot is an
+	// account-level fact that must reach every classmate of every profile the
+	// account holds. Deleted classrooms are excluded — sharing a removed
+	// classroom is not a reason to keep seeing someone's online status.
+	//
+	// Single query by design: this runs on every connect and disconnect, so a
+	// per-classroom loop would put N queries on the socket lifecycle path.
+	ListPeerUserIdsByUserId(ctx context.Context, userId int64) ([]int64, error)
 	CountActiveByClassroomId(ctx context.Context, classroomId int64) (int64, error)
 	// CountPendingRequestsByClassroomIds returns the number of
 	// member_status = PENDING_REQUEST rows per classroom for the given

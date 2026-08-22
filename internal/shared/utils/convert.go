@@ -441,6 +441,15 @@ func SafeIntPtr(i *int) *int {
 	return i
 }
 
+// optionalString maps the empty string to nil so an absent metadata field is
+// stored as SQL NULL rather than "".
+func OptionalString(v string) *string {
+	if v == "" {
+		return nil
+	}
+	return &v
+}
+
 // ============================================================
 // Interface/Any Conversions
 // ============================================================

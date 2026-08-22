@@ -108,22 +108,22 @@ const (
 	CHAPTER_TRANSLATION_ALREADY_EXISTS StatusCode = 4810
 	CHAPTER_TRANSLATION_NOT_FOUND      StatusCode = 4811
 
-	OTP_NOT_FOUND           StatusCode = 4701
-	OTP_MISSING_TYPE        StatusCode = 4702
-	OTP_MISSING_IDENTIFIER  StatusCode = 4703
-	OTP_MISSING_CODE        StatusCode = 4704
-	OTP_INVALID_TYPE        StatusCode = 4705
-	OTP_INVALID_CODE        StatusCode = 4706
-	OTP_EXPIRED             StatusCode = 4707
-	OTP_ALREADY_VERIFIED    StatusCode = 4708
-	OTP_REVOKED             StatusCode = 4709
-	OTP_TOO_MANY_ATTEMPTS   StatusCode = 4710
-	OTP_TOO_FREQUENT        StatusCode = 4711
-	OTP_RATE_LIMITED        StatusCode = 4712
-	OTP_DELIVERY_FAILED     StatusCode = 4713
-	OTP_NO_DELIVERY_CHANNEL StatusCode = 4714
-	OTP_GENERATION_FAILED   StatusCode = 4715
-	OTP_DISABLED            StatusCode = 4716
+	OTP_NOT_FOUND                       StatusCode = 4701
+	OTP_MISSING_TYPE                    StatusCode = 4702
+	OTP_MISSING_IDENTIFIER              StatusCode = 4703
+	OTP_MISSING_CODE                    StatusCode = 4704
+	OTP_INVALID_TYPE                    StatusCode = 4705
+	OTP_INVALID_CODE                    StatusCode = 4706
+	OTP_EXPIRED                         StatusCode = 4707
+	OTP_ALREADY_VERIFIED                StatusCode = 4708
+	OTP_REVOKED                         StatusCode = 4709
+	OTP_TOO_MANY_ATTEMPTS               StatusCode = 4710
+	OTP_TOO_FREQUENT                    StatusCode = 4711
+	OTP_RATE_LIMITED                    StatusCode = 4712
+	OTP_DELIVERY_FAILED                 StatusCode = 4713
+	OTP_NO_DELIVERY_CHANNEL             StatusCode = 4714
+	OTP_GENERATION_FAILED               StatusCode = 4715
+	OTP_DISABLED                        StatusCode = 4716
 	OTP_TARGET_DEVICE_REQUIRES_LOGIN2FA StatusCode = 4717
 
 	NOTIFICATION_MISSING_UID        StatusCode = 5001
@@ -339,4 +339,25 @@ const (
 	BANNER_MEDIA_INVALID_REFERENCE StatusCode = 13411
 	BANNER_MEDIA_INVALID_FILE      StatusCode = 13412
 	BANNER_MEDIA_UPLOAD_FAILED     StatusCode = 13413
+
+	// Chat (realtime messaging) — 13500-13599
+	CHAT_CONVERSATION_NOT_FOUND     StatusCode = 13500
+	CHAT_NOT_PARTICIPANT            StatusCode = 13501
+	CHAT_MESSAGE_NOT_FOUND          StatusCode = 13502
+	CHAT_MESSAGE_EMPTY              StatusCode = 13503
+	CHAT_MESSAGE_TOO_LONG           StatusCode = 13504
+	CHAT_TARGET_NOT_IN_CLASSROOM    StatusCode = 13505
+	CHAT_CANNOT_MESSAGE_SELF        StatusCode = 13506
+	CHAT_SEQ_ALLOCATION_FAILED      StatusCode = 13507
+	CHAT_MISSING_CONVERSATION_ID    StatusCode = 13508
+	CHAT_MISSING_CLASSROOM_ID       StatusCode = 13509
+	CHAT_MISSING_TARGET_PROFILE_ID  StatusCode = 13510
+	CHAT_CONVERSATION_CREATE_FAILED StatusCode = 13511
+	CHAT_MESSAGE_CREATE_FAILED      StatusCode = 13512
+	CHAT_INVALID_MESSAGE_TYPE       StatusCode = 13513
+	CHAT_MISSING_PROFILE_ID         StatusCode = 13514
+
+	// Presence (realtime online/offline) — 13600-13699
+	PRESENCE_NOT_FOUND     StatusCode = 13600
+	PRESENCE_UPDATE_FAILED StatusCode = 13601
 )

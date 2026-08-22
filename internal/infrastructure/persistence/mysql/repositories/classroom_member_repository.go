@@ -258,6 +258,54 @@ func (r *ClassroomMemberRepository) ListActiveByProfileIds(ctx context.Context, 
 	return out, nil
 }
 
+// ListPeerUserIdsByUserId walks profile → my memberships → co-memberships →
+// their profiles in one statement. The self-join on ma_classroom_members is
+// what expresses "shares a classroom"; DISTINCT collapses people the user
+// shares more than one classroom with.
+func (r *ClassroomMemberRepository) ListPeerUserIdsByUserId(ctx context.Context, userId int64) ([]int64, error) {
+	query := `SELECT DISTINCT peer_p.user_id
+		FROM ` + profileTable + ` me
+		INNER JOIN ` + classroomMemberTable + ` my_m
+		    ON my_m.profile_id = me.profile_id
+		   AND my_m.status = ? AND my_m.deleted_dt IS NULL AND my_m.member_status = ?
+		INNER JOIN ma_classrooms c
+		    ON c.classroom_id = my_m.classroom_id
+		   AND c.status = ? AND c.deleted_dt IS NULL AND c.classroom_status != ?
+		INNER JOIN ` + classroomMemberTable + ` peer_m
+		    ON peer_m.classroom_id = my_m.classroom_id
+		   AND peer_m.status = ? AND peer_m.deleted_dt IS NULL AND peer_m.member_status = ?
+		INNER JOIN ` + profileTable + ` peer_p
+		    ON peer_p.profile_id = peer_m.profile_id
+		   AND peer_p.status = ? AND peer_p.deleted_dt IS NULL
+		WHERE me.status = ? AND me.deleted_dt IS NULL
+		  AND me.user_id = ? AND peer_p.user_id != ?`
+
+	rows, err := r.db.Query(ctx, query,
+		enum.StatusActive, enum.ClassroomMemberStatusTypeActive,
+		enum.StatusActive, enum.ClassroomStatusTypeDeleted,
+		enum.StatusActive, enum.ClassroomMemberStatusTypeActive,
+		enum.StatusActive,
+		enum.StatusActive, userId, userId,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("classroom_member repo list peer user ids: %w", err)
+	}
+	defer rows.Close()
+
+	var out []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("classroom_member repo scan peer user id: %w", err)
+		}
+		out = append(out, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("classroom_member repo peer user id rows: %w", err)
+	}
+	return out, nil
+}
+
 func (r *ClassroomMemberRepository) CountActiveByClassroomId(ctx context.Context, classroomId int64) (int64, error) {
 	query := `SELECT COUNT(*) FROM ` + classroomMemberTable + ` m WHERE ` +
 		classroomMemberActiveWhere + ` AND m.classroom_id = ? AND m.member_status = ?`

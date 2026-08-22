@@ -20,24 +20,19 @@
 CREATE TABLE IF NOT EXISTS ma_chat_conversations (
   id                              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   conversation_id                 BIGINT UNSIGNED NOT NULL UNIQUE,  -- external id (minted via ma_seqs)
-
   conversation_type               VARCHAR(32) NOT NULL DEFAULT 'DIRECT', -- DIRECT, GROUP, CLASSROOM
   classroom_id                    BIGINT UNSIGNED DEFAULT NULL,     -- scope; NULL for a global 1-1 thread
-
   -- Deterministic key for DIRECT threads: 'p:{minProfileId}:{maxProfileId}'.
   -- The UNIQUE constraint is what stops two people who tap "message" at the same
   -- moment from creating two parallel 1-1 threads. NULL for GROUP/CLASSROOM —
   -- MySQL allows many NULLs in a UNIQUE index, so those rows never collide.
   dm_key                          VARCHAR(128) DEFAULT NULL,
-
   title                           VARCHAR(255) DEFAULT NULL,        -- GROUP / CLASSROOM only
   avatar_key                      VARCHAR(1000) DEFAULT NULL,       -- S3 object key, presigned on read
   owner_profile_id                BIGINT UNSIGNED DEFAULT NULL,
-
   participant_count               INT UNSIGNED NOT NULL DEFAULT 0,
   last_seq_no                     BIGINT UNSIGNED NOT NULL DEFAULT 0, -- message sequence allocator
   message_count                   BIGINT UNSIGNED NOT NULL DEFAULT 0,
-
   -- Denormalised preview for the conversation-list screen.
   last_message_id                 BIGINT UNSIGNED DEFAULT NULL,
   last_message_seq_no             BIGINT UNSIGNED DEFAULT NULL,
@@ -45,7 +40,6 @@ CREATE TABLE IF NOT EXISTS ma_chat_conversations (
   last_message_preview            VARCHAR(255) DEFAULT NULL,
   last_message_sender_profile_id  BIGINT UNSIGNED DEFAULT NULL,
   last_message_dt                 DATETIME(6) DEFAULT NULL,
-
   note                            VARCHAR(500) DEFAULT NULL,
   conversation_status             VARCHAR(32) DEFAULT 'ACTIVE',     -- ACTIVE, ARCHIVED, DELETED
   status                          VARCHAR(32) DEFAULT 'ACTIVE',
@@ -54,7 +48,6 @@ CREATE TABLE IF NOT EXISTS ma_chat_conversations (
   modify_id                       BIGINT UNSIGNED DEFAULT NULL,
   modify_dt                       DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   deleted_dt                      DATETIME(6) DEFAULT NULL,
-
   UNIQUE KEY uk_dm_key (dm_key),
   KEY ix_classroom (classroom_id, conversation_type, conversation_status, deleted_dt),
   KEY ix_recent (conversation_status, last_message_dt)

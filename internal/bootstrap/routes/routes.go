@@ -8,14 +8,15 @@ import (
 	"math-ai.com/math-ai/internal/bootstrap/container"
 	"math-ai.com/math-ai/internal/bootstrap/middleware"
 	"math-ai.com/math-ai/internal/module/auth"
+	"math-ai.com/math-ai/internal/module/banner"
 	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chapter"
+	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
-	"math-ai.com/math-ai/internal/module/banner"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
 	"math-ai.com/math-ai/internal/module/misc"
@@ -296,6 +297,20 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		homeHandler := home.NewHandler(res, services.HomeSvc)
 		reg("POST /home/layout", homeHandler.HandleGetHomeLayout, authMiddleware)
+	}
+
+	// chat routes — classroom messaging. All auth-gated; every handler also
+	// checks that the acting profile belongs to the session and that the two
+	// parties share a classroom (module/chat/permission.go).
+	{
+		chatHandler := chat.NewHandler(res, services.ChatSvc)
+		reg("POST /chats/classroom-members", chatHandler.HandleListClassroomMembers, authMiddleware)
+		reg("POST /chats/conversations/open", chatHandler.HandleOpenConversation, authMiddleware)
+		reg("POST /chats/conversations/list", chatHandler.HandleListConversations, authMiddleware)
+		reg("POST /chats/messages/list", chatHandler.HandleListMessages, authMiddleware)
+		reg("POST /chats/messages/send", chatHandler.HandleSendMessage, authMiddleware)
+		reg("POST /chats/messages/mark-read", chatHandler.HandleMarkRead, authMiddleware)
+		reg("POST /chats/unread-count", chatHandler.HandleUnreadCount, authMiddleware)
 	}
 
 	// socket routes — realtime WebSocket channel (auth-gated). Registered only

@@ -25,4 +25,7 @@ const (
 	NameClassroomExerciseSubmission = "classroom_exercise_submission"
 	NameNotification                = "notification"
 	NameBanner                      = "banner"
+	NameChatConversation            = "chat_conversation"
+	NameChatParticipant             = "chat_participant"
+	NameChatMessage                 = "chat_message"
 )

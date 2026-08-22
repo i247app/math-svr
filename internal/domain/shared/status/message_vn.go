@@ -630,6 +630,45 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Tệp media của banner không hợp lệ"
 	case BANNER_MEDIA_UPLOAD_FAILED:
 		return "Tải media của banner lên thất bại"
+
+	// Chat
+	case CHAT_CONVERSATION_NOT_FOUND:
+		return "Không tìm thấy cuộc trò chuyện"
+	case CHAT_NOT_PARTICIPANT:
+		return "Bạn không thuộc cuộc trò chuyện này"
+	case CHAT_MESSAGE_NOT_FOUND:
+		return "Không tìm thấy tin nhắn"
+	case CHAT_MESSAGE_EMPTY:
+		return "Nội dung tin nhắn là bắt buộc"
+	case CHAT_MESSAGE_TOO_LONG:
+		return "Nội dung tin nhắn quá dài"
+	case CHAT_TARGET_NOT_IN_CLASSROOM:
+		return "Thành viên này không thuộc lớp học"
+	case CHAT_CANNOT_MESSAGE_SELF:
+		return "Bạn không thể nhắn tin cho chính mình"
+	case CHAT_SEQ_ALLOCATION_FAILED:
+		return "Không cấp phát được số thứ tự tin nhắn"
+	case CHAT_MISSING_CONVERSATION_ID:
+		return "Thiếu conversation_id"
+	case CHAT_MISSING_CLASSROOM_ID:
+		return "Thiếu classroom_id"
+	case CHAT_MISSING_TARGET_PROFILE_ID:
+		return "Thiếu target_profile_id"
+	case CHAT_CONVERSATION_CREATE_FAILED:
+		return "Tạo cuộc trò chuyện thất bại"
+	case CHAT_MESSAGE_CREATE_FAILED:
+		return "Gửi tin nhắn thất bại"
+	case CHAT_INVALID_MESSAGE_TYPE:
+		return "Loại tin nhắn không hợp lệ"
+	case CHAT_MISSING_PROFILE_ID:
+		return "Thiếu profile_id"
+
+	// Presence
+	case PRESENCE_NOT_FOUND:
+		return "Không tìm thấy bản ghi trạng thái hoạt động"
+	case PRESENCE_UPDATE_FAILED:
+		return "Cập nhật trạng thái hoạt động thất bại"
+
 	default:
 		return ""
 	}

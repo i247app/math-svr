@@ -142,6 +142,13 @@ func (a *App) Init() error {
 	// Register middlewares
 	a.setupMiddleware(a.Server, a.Resource, services)
 
+	// Clear presence counters left behind by the previous process. Must run
+	// before the server starts accepting connections: the Hub's registry is
+	// process memory, so every non-zero counter still in ma_user_presence
+	// belongs to a socket that died with the old process. Skipping this leaves
+	// those users showing as online forever.
+	a.resetPresence(services)
+
 	// Setup jobs
 	a.setupJobs(a.Server, services)
 
@@ -190,6 +197,19 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, res *resource.Resource, _ *con
 	}
 
 	gexSvr.SetupServerCORS()
+}
+
+// resetPresence zeroes stale realtime-presence counters at boot. A failure is
+// logged, not fatal: a wrong status dot must never stop the server from
+// starting, and the next connect/disconnect cycle repairs the affected row.
+func (a *App) resetPresence(services *container.ServiceContainer) {
+	if services.PresenceSvc == nil {
+		return
+	}
+	ctx := context.Background()
+	if err := services.PresenceSvc.ResetAll(ctx); err != nil {
+		logger.From(ctx).Warnf("presence.boot_reset_failed err=%v", err)
+	}
 }
 
 // setupJobs populates the JobRegistry with every concrete CronJob /
@@ -293,13 +313,20 @@ func (a *App) reloadSessions() {
 	}
 }
 
-func (a *App) setupShutdownHooks(gexSvr *gex.Server, _ *container.ServiceContainer) {
+func (a *App) setupShutdownHooks(gexSvr *gex.Server, services *container.ServiceContainer) {
 	gexSvr.OnShutdown(func() {
 		// Close every WebSocket first (StatusGoingAway) so clients get a clean
 		// close frame and can reconnect, instead of hanging on a dropped socket.
 		if a.Resource.SocketHub != nil {
 			log.Println("Closing WebSocket connections...")
 			a.Resource.SocketHub.Shutdown("server shutting down")
+		}
+
+		// Cancel pending presence broadcasts. They are timer callbacks that
+		// read the database, so letting them fire during teardown would hit a
+		// closing pool for a status dot nobody is left to receive.
+		if services != nil && services.PresenceSvc != nil {
+			services.PresenceSvc.Shutdown()
 		}
 
 		// Drain the job runtime first: stops new schedules from

@@ -17,7 +17,7 @@ import (
 
 // Reference-data aggregate. Like program/grade, but the base table uses
 // `name` (not `label`) and `description TEXT` is nullable, so the SELECT
-// COALESCEs to '' to keep the scan target a plain string.
+// COALESCEs to ” to keep the scan target a plain string.
 const (
 	semesterTable = "ma_semesters"
 
