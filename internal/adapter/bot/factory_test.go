@@ -104,3 +104,71 @@ func TestNewFromConfigEinoOnlyRegistersAndDefaults(t *testing.T) {
 		t.Error("langchain must NOT register when its backend key is empty")
 	}
 }
+
+func TestNewFromConfigOpenRouterRegistersAndDefaults(t *testing.T) {
+	// The openrouter provider builds no vendor SDK and RequireAtBoot
+	// defaults to false, so construction performs no network I/O.
+	adapter, err := NewFromConfig(context.Background(), config.BotConfig{
+		BotProvider:      "openrouter",
+		OpenRouterAPIKey: "test-key",
+		OpenRouterModel:  "openai/gpt-4o-mini",
+	})
+	if err != nil {
+		t.Fatalf("NewFromConfig() error = %v", err)
+	}
+	if adapter == nil {
+		t.Fatal("adapter = nil, want registered adapter")
+	}
+	if adapter.DefaultName() != ProviderOpenRouter {
+		t.Errorf("DefaultName() = %s, want openrouter", adapter.DefaultName())
+	}
+	if !adapter.Has(ProviderOpenRouter) {
+		t.Error("openrouter provider not registered")
+	}
+	if adapter.Has(ProviderEino) || adapter.Has(ProviderLangChain) {
+		t.Error("only the configured framework may register")
+	}
+}
+
+func TestNewFromConfigOpenRouterMissingModel(t *testing.T) {
+	// There is deliberately no default model: an operator who supplies a
+	// key but no model must be told, not silently billed for a guess.
+	_, err := NewFromConfig(context.Background(), config.BotConfig{
+		BotProvider:      "openrouter",
+		OpenRouterAPIKey: "test-key",
+	})
+	assertConfigInvalid(t, err)
+}
+
+func TestNewFromConfigOpenRouterMissingCredential(t *testing.T) {
+	// BOT_PROVIDER=openrouter without BOT_OPENROUTER_API_KEY registers
+	// nothing, so SetDefault must fail loudly rather than boot a bot-less
+	// adapter that 500s on the first quiz.
+	_, err := NewFromConfig(context.Background(), config.BotConfig{
+		BotProvider:     "openrouter",
+		OpenRouterModel: "openai/gpt-4o-mini",
+	})
+	assertConfigInvalid(t, err)
+}
+
+func TestNewFromConfigOpenRouterAlongsideEino(t *testing.T) {
+	// Both frameworks configured, eino named as default: openrouter is
+	// still registered and reachable per-call via ChatVia.
+	adapter, err := NewFromConfig(context.Background(), config.BotConfig{
+		BotProvider:      "eino",
+		EinoBackend:      "ollama",
+		EinoBaseURL:      "http://127.0.0.1:1",
+		EinoModel:        "test-model",
+		OpenRouterAPIKey: "test-key",
+		OpenRouterModel:  "openai/gpt-4o-mini",
+	})
+	if err != nil {
+		t.Fatalf("NewFromConfig() error = %v", err)
+	}
+	if adapter.DefaultName() != ProviderEino {
+		t.Errorf("DefaultName() = %s, want eino", adapter.DefaultName())
+	}
+	if !adapter.Has(ProviderOpenRouter) {
+		t.Error("openrouter must register whenever its API key is set")
+	}
+}

@@ -139,22 +139,27 @@ type SMSConfig struct {
 }
 
 // BotConfig configures the AI bot adapter (`internal/adapter/bot`). The
-// factory translates these into provider-specific configs. Today the only
-// supported provider is "langchain", which itself can be backed by one of
-// several LLM vendors (googleai, openai, anthropic, ollama) selected by
-// LangChainBackend.
+// factory translates these into provider-specific configs. Three
+// frameworks are supported: "langchain" and "eino" (each SDK-backed and
+// pointed at one of googleai / openai / anthropic / ollama by their
+// respective Backend key) and "openrouter" (direct REST, vendor chosen by
+// the model id).
 //
-// LangChainAPIKey is a long-lived secret. It is never logged. The
-// libs/langchain package masks it out of every code path.
+// LangChainAPIKey, EinoAPIKey and OpenRouterAPIKey are long-lived secrets.
+// They are never logged; each libs package masks its key out of every code
+// path.
 //
 // Behaviour matrix for BotProvider:
 //
-//	""  or "disabled"    → adapter is nil; module services must nil-guard.
-//	"langchain" | "eino" → every framework whose backend key is set gets
-//	                       registered; BotProvider names the DEFAULT one.
-//	anything else        → MathError(BOT_CONFIG_INVALID) at boot.
+//	""  or "disabled" → adapter is nil; module services must nil-guard.
+//	"langchain" | "eino" | "openrouter"
+//	                  → every framework whose config key is set gets
+//	                    registered (BOT_LANGCHAIN_BACKEND /
+//	                    BOT_EINO_BACKEND / BOT_OPENROUTER_API_KEY);
+//	                    BotProvider names the DEFAULT one.
+//	anything else     → MathError(BOT_CONFIG_INVALID) at boot.
 type BotConfig struct {
-	BotProvider string // env BOT_PROVIDER; "langchain" | "eino" | "" | "disabled"
+	BotProvider string // env BOT_PROVIDER; "langchain" | "eino" | "openrouter" | "" | "disabled"
 
 	// LangChain-backed provider settings. Consumed (and the provider
 	// registered) whenever LangChainBackend is non-empty.
@@ -178,13 +183,31 @@ type BotConfig struct {
 	EinoTopP        float64 // env BOT_EINO_TOP_P;        <0 means vendor default
 	EinoMaxTokens   int     // env BOT_EINO_MAX_TOKENS;   0  means vendor default
 
-	// Transport tuning shared by BOTH providers.
+	// OpenRouter-backed provider settings (direct REST over
+	// internal/shared/http_client — no SDK). Consumed (and the provider
+	// registered) whenever OpenRouterAPIKey is non-empty.
+	//
+	// There is no backend key: OpenRouter routes to the vendor itself and
+	// OpenRouterModel ("vendor/model-name") makes the choice. The model is
+	// REQUIRED — there is no built-in default, because defaulting it would
+	// pick a vendor and a price on the operator's behalf.
+	//
+	// No embed model: the openrouter provider reports Embed as unsupported.
+	OpenRouterAPIKey      string  // env BOT_OPENROUTER_API_KEY — SECRET
+	OpenRouterBaseURL     string  // env BOT_OPENROUTER_BASE_URL; optional, defaults to https://openrouter.ai/api/v1
+	OpenRouterModel       string  // env BOT_OPENROUTER_MODEL; e.g. "openai/gpt-4o-mini"
+	OpenRouterSiteURL     string  // env BOT_OPENROUTER_SITE_URL;  optional "HTTP-Referer" — OpenRouter rankings attribution only
+	OpenRouterAppTitle    string  // env BOT_OPENROUTER_APP_TITLE; optional "X-OpenRouter-Title" — attribution only
+	OpenRouterTemperature float64 // env BOT_OPENROUTER_TEMPERATURE; <0 means vendor default
+	OpenRouterTopP        float64 // env BOT_OPENROUTER_TOP_P;        <0 means vendor default
+	OpenRouterMaxTokens   int     // env BOT_OPENROUTER_MAX_TOKENS;   0  means vendor default
+
+	// Transport tuning shared by ALL providers.
 	Timeout       time.Duration // env BOT_TIMEOUT,        e.g. "60s"
 	MaxRetries    int           // env BOT_MAX_RETRIES,    default 2
 	RetryDelay    time.Duration // env BOT_RETRY_DELAY,    e.g. "500ms"
 	RequireAtBoot bool          // env BOT_REQUIRE_AT_BOOT, default false
 }
-
 
 // NotificationConfig configures the push-notification adapter
 // (`internal/adapter/notification`). Today the only provider is Firebase

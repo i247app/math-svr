@@ -53,8 +53,19 @@ func WriteJson(w http.ResponseWriter, data any, err error) {
 		payload["mstatus"] = status.INTERNAL_SERVER_ERROR
 	}
 
-	if msg, ok := payload["mmessage"].(string); (!ok || msg == "") && err != nil {
-		payload["mmessage"] = err.Error()
+	switch msg := payload["mmessage"].(type) {
+	case string:
+		if msg == "" && err != nil {
+			payload["mmessage"] = err.Error()
+		}
+	case status.StatusMessage:
+		if msg == "" && err != nil {
+			payload["mmessage"] = err.Error()
+		}
+	default:
+		if err != nil {
+			payload["mmessage"] = err.Error()
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

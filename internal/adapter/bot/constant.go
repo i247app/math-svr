@@ -28,6 +28,15 @@ const (
 	// BotConfig.EinoBackend. Registered alongside langchain when
 	// configured; BOT_PROVIDER picks which one is the default.
 	ProviderEino BotProviderName = "eino"
+
+	// ProviderOpenRouter dispatches via internal/libs/openrouter, which
+	// calls the OpenRouter REST API directly over the shared http_client
+	// (no vendor SDK). There is no backend selector: OpenRouter is itself
+	// the router and the vendor is chosen by the model id
+	// ("vendor/model-name") in BotConfig.OpenRouterModel. Registered
+	// alongside the other frameworks when configured; BOT_PROVIDER picks
+	// which one is the default.
+	ProviderOpenRouter BotProviderName = "openrouter"
 )
 
 // Role enumerates the chat message roles the adapter recognises. The

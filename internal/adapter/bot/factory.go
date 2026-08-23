@@ -10,6 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/libs/eino"
 	"math-ai.com/math-ai/internal/libs/langchain"
+	"math-ai.com/math-ai/internal/libs/openrouter"
 )
 
 // NewFromConfig builds a fully-wired *Adapter from cfg, or returns
@@ -19,13 +20,17 @@ import (
 // Behaviour matrix:
 //
 //	cfg.BotProvider == "" or "disabled" → (nil, nil); boot continues.
-//	cfg.BotProvider == "langchain"|"eino" →
+//	cfg.BotProvider == "langchain"|"eino"|"openrouter" →
 //	    every configured framework is registered:
-//	      - langchain when cfg.LangChainBackend != ""
-//	      - eino      when cfg.EinoBackend      != ""
+//	      - langchain  when cfg.LangChainBackend != ""
+//	      - eino       when cfg.EinoBackend      != ""
+//	      - openrouter when cfg.OpenRouterAPIKey != ""
 //	    then cfg.BotProvider is set as the default. Callers can still
 //	    route per-call to a specific provider via ChatVia / StreamVia.
 //	cfg.BotProvider == anything else    → MathError(BOT_CONFIG_INVALID).
+//
+// openrouter keys off the API key rather than a backend name because
+// OpenRouter has no backend selector — the model id picks the vendor.
 //
 // Naming a default whose framework is not configured (e.g.
 // BOT_PROVIDER=eino without BOT_EINO_BACKEND) is a deploy mistake and
@@ -35,7 +40,8 @@ import (
 // LLM credentials can boot. Module services that consume the adapter
 // must nil-guard, the same way they do with res.SMSProvider in local dev.
 //
-// Errors from libs/langchain and libs/eino are translated here:
+// Errors from libs/langchain, libs/eino and libs/openrouter are
+// translated here:
 //
 //	ErrInvalidConfig → MathError(BOT_CONFIG_INVALID, {"reason": ...})
 //	anything else    → MathError(BOT_CONNECT_FAILED) wrapping the cause
@@ -45,7 +51,7 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 	switch cfg.BotProvider {
 	case "", "disabled":
 		return nil, nil
-	case string(ProviderLangChain), string(ProviderEino):
+	case string(ProviderLangChain), string(ProviderEino), string(ProviderOpenRouter):
 		// recognised — continue below
 	default:
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
@@ -106,6 +112,34 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 		}
 
 		adapter.Register(NewEinoProvider(client))
+	}
+
+	if cfg.OpenRouterAPIKey != "" {
+		client, err := openrouter.NewClient(ctx, openrouter.Config{
+			APIKey:        cfg.OpenRouterAPIKey,
+			BaseURL:       cfg.OpenRouterBaseURL,
+			Model:         cfg.OpenRouterModel,
+			SiteURL:       cfg.OpenRouterSiteURL,
+			AppTitle:      cfg.OpenRouterAppTitle,
+			Temperature:   cfg.OpenRouterTemperature,
+			TopP:          cfg.OpenRouterTopP,
+			MaxTokens:     cfg.OpenRouterMaxTokens,
+			Timeout:       cfg.Timeout,
+			MaxRetries:    cfg.MaxRetries,
+			RetryDelay:    cfg.RetryDelay,
+			RequireAtBoot: cfg.RequireAtBoot,
+		})
+		if err != nil {
+			if errors.Is(err, openrouter.ErrInvalidConfig) {
+				return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
+					map[string]any{"reason": err.Error()}, err)
+			}
+			log.Warnf("openrouter: client not ready: %v", err)
+			return nil, errs.NewError(ctx, status.BOT_CONNECT_FAILED,
+				map[string]any{"model": cfg.OpenRouterModel}, err)
+		}
+
+		adapter.Register(NewOpenRouterProvider(client))
 	}
 
 	if err := adapter.SetDefault(BotProviderName(cfg.BotProvider)); err != nil {

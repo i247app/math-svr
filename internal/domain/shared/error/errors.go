@@ -36,7 +36,6 @@ func (e *MathError) Error() string {
 // NewDynamicError creates a new DynamicError with status code and dynamic arguments
 func NewError(ctx context.Context, statusCode status.StatusCode, args map[string]any, baseError error) *MathError {
 	language := metadata.FromContext(ctx).Language
-	// language := enum.LanguageTypeEnglish
 
 	message := status.GetMessage(enum.LanguageType(language), statusCode, args)
 

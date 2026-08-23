@@ -29,7 +29,7 @@ QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
 - "difficulty" là số nguyên 1..5 (1 dễ nhất, 5 khó nhất) phản ánh mức độ thử thách so với lớp đang nhắm tới.
 
 QUY TẮC TITLE & SHORT_TEXT:
-- "title" là nhãn cấp lớp/cấp độ của bài, theo định dạng "Grade <N> - Level <M>" (ví dụ: "Grade 1 - Level 1"). Lấy <N> từ cấp lớp trong thông tin học vấn người dùng cung cấp; chọn <M> (1..5) dựa trên độ khó tổng thể của các câu hỏi bạn tạo (1 = dễ nhất). KHÔNG đặt chủ đề toán vào "title".
+- "title" là nhãn cấp lớp/cấp độ của bài, theo định dạng "Grade <N> - Level <M>" (ví dụ: "Lớp 1 - Cấp độ 1"). Lấy <N> từ cấp lớp trong thông tin học vấn người dùng cung cấp; chọn <M> (1..5) dựa trên độ khó tổng thể của các câu hỏi bạn tạo (1 = dễ nhất). KHÔNG đặt chủ đề toán vào "title".
 - "short_text" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề toán của bộ câu hỏi (ví dụ: "Phép cộng và phép trừ trong phạm vi 100", "Phân số cơ bản và so sánh", "Phép nhân với số có một chữ số").
 - "short_text" tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng cụm chung chung như "Bài kiểm tra Toán", "Bài luyện tập" hay "Quiz".
 - Mỗi lần sinh hãy chọn "short_text" phản ánh chính xác các kỹ năng xuất hiện trong "questions" để không lặp lại giữa các bài.
@@ -83,7 +83,7 @@ QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
 - "difficulty" là số nguyên 1..5 phản ánh độ khó so với lớp đang nhắm tới.
 
 QUY TẮC TITLE & SHORT_TEXT:
-- "title" là nhãn cấp lớp/cấp độ của bài, theo định dạng "Grade <N> - Level <M>" (ví dụ: "Grade 1 - Level 1"). Lấy <N> từ cấp lớp trong thông tin học vấn người dùng cung cấp; chọn <M> (1..5) dựa trên độ khó tổng thể của các câu hỏi MỚI (1 = dễ nhất). KHÔNG đặt chủ đề toán vào "title".
+- "title" là nhãn cấp lớp/cấp độ của bài, theo định dạng "Grade <N> - Level <M>" (ví dụ: "Lớp 1 - Cấp độ 1"). Lấy <N> từ cấp lớp trong thông tin học vấn người dùng cung cấp; chọn <M> (1..5) dựa trên độ khó tổng thể của các câu hỏi MỚI (1 = dễ nhất). KHÔNG đặt chủ đề toán vào "title".
 - "short_text" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề được củng cố (ví dụ: "Củng cố phép trừ có nhớ", "Ôn lại phân số bằng nhau").
 - "short_text" tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng cụm chung chung như "Bài củng cố", "Bài ôn tập" hay "Quiz".
 - "short_text" phải phản ánh đúng kỹ năng được nhắm tới trong "questions" của bài mới — không sao chép short_text của bài cũ.

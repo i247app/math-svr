@@ -103,6 +103,15 @@ func NewEnv(envpath string) (*Env, error) {
 			EinoTopP:        getFloatConfigWithDefault("BOT_EINO_TOP_P", -1),
 			EinoMaxTokens:   getIntConfigOptional("BOT_EINO_MAX_TOKENS"),
 
+			OpenRouterAPIKey:      getConfigOptionalString("BOT_OPENROUTER_API_KEY"),
+			OpenRouterBaseURL:     getConfigOptionalString("BOT_OPENROUTER_BASE_URL"),
+			OpenRouterModel:       getConfigOptionalString("BOT_OPENROUTER_MODEL"),
+			OpenRouterSiteURL:     getConfigOptionalString("BOT_OPENROUTER_SITE_URL"),
+			OpenRouterAppTitle:    getConfigOptionalString("BOT_OPENROUTER_APP_TITLE"),
+			OpenRouterTemperature: getFloatConfigWithDefault("BOT_OPENROUTER_TEMPERATURE", -1),
+			OpenRouterTopP:        getFloatConfigWithDefault("BOT_OPENROUTER_TOP_P", -1),
+			OpenRouterMaxTokens:   getIntConfigOptional("BOT_OPENROUTER_MAX_TOKENS"),
+
 			Timeout:       getDurationConfigOptional("BOT_TIMEOUT"),
 			MaxRetries:    getIntConfigOptional("BOT_MAX_RETRIES"),
 			RetryDelay:    getDurationConfigOptional("BOT_RETRY_DELAY"),
