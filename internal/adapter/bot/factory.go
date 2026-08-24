@@ -95,6 +95,7 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 			Temperature:   cfg.EinoTemperature,
 			TopP:          cfg.EinoTopP,
 			MaxTokens:     cfg.EinoMaxTokens,
+			Store:         cfg.EinoStore,
 			Timeout:       cfg.Timeout,
 			MaxRetries:    cfg.MaxRetries,
 			RetryDelay:    cfg.RetryDelay,

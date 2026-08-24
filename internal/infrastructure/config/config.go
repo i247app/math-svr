@@ -102,6 +102,7 @@ func NewEnv(envpath string) (*Env, error) {
 			EinoTemperature: getFloatConfigWithDefault("BOT_EINO_TEMPERATURE", -1),
 			EinoTopP:        getFloatConfigWithDefault("BOT_EINO_TOP_P", -1),
 			EinoMaxTokens:   getIntConfigOptional("BOT_EINO_MAX_TOKENS"),
+			EinoStore:       getBoolConfigWithDefault("BOT_EINO_STORE", false),
 
 			OpenRouterAPIKey:      getConfigOptionalString("BOT_OPENROUTER_API_KEY"),
 			OpenRouterBaseURL:     getConfigOptionalString("BOT_OPENROUTER_BASE_URL"),

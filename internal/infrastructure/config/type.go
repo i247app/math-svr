@@ -182,6 +182,11 @@ type BotConfig struct {
 	EinoTemperature float64 // env BOT_EINO_TEMPERATURE; <0 means vendor default
 	EinoTopP        float64 // env BOT_EINO_TOP_P;        <0 means vendor default
 	EinoMaxTokens   int     // env BOT_EINO_MAX_TOKENS;   0  means vendor default
+	// EinoStore sends chat-completions `store: true` so the request and
+	// response appear at platform.openai.com/logs. OPENAI BACKEND ONLY;
+	// ignored by googleai / anthropic / ollama. Default false — enabling it
+	// stores prompt + response content on OpenAI for 30 days.
+	EinoStore bool // env BOT_EINO_STORE; default false
 
 	// OpenRouter-backed provider settings (direct REST over
 	// internal/shared/http_client — no SDK). Consumed (and the provider

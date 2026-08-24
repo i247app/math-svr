@@ -97,3 +97,26 @@ func TestConfigApplyDefaults(t *testing.T) {
 		t.Errorf("applyDefaults overwrote explicit values: %+v", cfg2)
 	}
 }
+
+// TestOpenAIExtraFields pins the only route to chat-completions `store`:
+// eino-ext exposes no typed field for it, so it must ride in ExtraFields.
+func TestOpenAIExtraFields(t *testing.T) {
+	t.Run("off by default", func(t *testing.T) {
+		if got := openAIExtraFields(validConfig()); got != nil {
+			// nil, not an empty map: the request body must stay
+			// byte-identical for deploys that never opt in.
+			t.Errorf("openAIExtraFields() = %v, want nil", got)
+		}
+	})
+
+	t.Run("store enabled", func(t *testing.T) {
+		cfg := validConfig()
+		cfg.Backend = BackendOpenAI
+		cfg.Store = true
+
+		got := openAIExtraFields(cfg)
+		if len(got) != 1 || got["store"] != true {
+			t.Fatalf("openAIExtraFields() = %v, want {store: true}", got)
+		}
+	})
+}

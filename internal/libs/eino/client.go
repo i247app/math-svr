@@ -136,10 +136,11 @@ func newModels(ctx context.Context, cfg Config) (einomodel.BaseChatModel, einomo
 	case BackendOpenAI:
 		build := func(jsonMode bool) (einomodel.BaseChatModel, error) {
 			mc := &einoopenai.ChatModelConfig{
-				APIKey:  cfg.APIKey,
-				BaseURL: cfg.BaseURL,
-				Model:   cfg.Model,
-				Timeout: cfg.Timeout,
+				APIKey:      cfg.APIKey,
+				BaseURL:     cfg.BaseURL,
+				Model:       cfg.Model,
+				Timeout:     cfg.Timeout,
+				ExtraFields: openAIExtraFields(cfg),
 			}
 			if jsonMode {
 				mc.ResponseFormat = &einoopenai.ChatCompletionResponseFormat{
@@ -205,6 +206,20 @@ func newModels(ctx context.Context, cfg Config) (einomodel.BaseChatModel, einomo
 	default:
 		return nil, nil, nil, fmt.Errorf("%w: unknown backend %q", ErrInvalidConfig, cfg.Backend)
 	}
+}
+
+// openAIExtraFields builds the passthrough map for chat-completions
+// parameters that eino-ext's ChatModelConfig does not surface as typed
+// fields. eino-ext merges the map into the request JSON verbatim (see
+// go-openai internal/marshaller.go), which is the only route to `store`.
+//
+// Returns nil when there is nothing to add, so the request body stays
+// byte-identical to before for every deploy that leaves Store off.
+func openAIExtraFields(cfg Config) map[string]any {
+	if !cfg.Store {
+		return nil
+	}
+	return map[string]any{"store": true}
 }
 
 // probe makes a one-token Generate call to verify credentials and

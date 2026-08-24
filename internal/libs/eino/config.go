@@ -87,6 +87,19 @@ type Config struct {
 	// sets 500ms when zero.
 	RetryDelay time.Duration
 
+	// Store asks the upstream to persist the prompt and the completion so
+	// they show up on the vendor's dashboard log page. OPENAI BACKEND ONLY
+	// — it maps to the chat-completions `store: true` field, which defaults
+	// to false, and is what makes a request visible at
+	// platform.openai.com/logs. Silently ignored on googleai / anthropic /
+	// ollama, which have no equivalent.
+	//
+	// Opt-in on purpose: turning it on ships prompt + response content to
+	// OpenAI's storage (30 days, per their data-controls guide) and makes
+	// it readable by anyone with dashboard access. Quiz prompts carry
+	// curriculum context and student answers.
+	Store bool
+
 	// RequireAtBoot governs NewClient's startup probe. true → fail fast
 	// on a bad credential. false → log a warning and continue so dev
 	// environments without LLM credentials still boot.
