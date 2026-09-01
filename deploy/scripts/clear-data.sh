@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# bin/clear-data.sh — wipe user-generated data, keep reference/seed data.
+# deploy/scripts/clear-data.sh — wipe user-generated data, keep reference/seed data.
 #
 # Runs sql/clear_data.sql against either the LOCAL database (DB_* read
 # from .env) or an EC2 REMOTE database (connection read from /apps/math/.env on
 # the host, reached over SSH using .env.ec2-credentials).
 #
 # Usage:
-#   ./bin/clear-data.sh local            # local DB (default)
-#   ./bin/clear-data.sh                  # same as 'local'
-#   ./bin/clear-data.sh ec2              # remote, default HOST in creds
-#   ./bin/clear-data.sh t1|t2|t3|t4      # remote, HOST1..HOST4 in creds
+#   ./deploy/scripts/clear-data.sh local            # local DB (default)
+#   ./deploy/scripts/clear-data.sh                  # same as 'local'
+#   ./deploy/scripts/clear-data.sh ec2              # remote, default HOST in creds
+#   ./deploy/scripts/clear-data.sh t1|t2|t3|t4      # remote, HOST1..HOST4 in creds
 #
 # Safety:
 #   CLEAR_DATA_YES=1   skip the interactive confirmation prompt
@@ -19,7 +19,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_DIR"
 
 SQL_FILE="$PROJECT_DIR/sql/clear_data.sql"

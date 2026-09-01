@@ -135,7 +135,7 @@ are commented out, and every create operation mints its external id from that ta
 without a seed row the operation fails.
 
 > Migrations are forward-only; there are no down-migrations.
-> `bin/create_migration.sh` exists but writes into `migrations/up/` and
+> `deploy/scripts/create_migration.sh` exists but writes into `migrations/up/` and
 > `migrations/down/`, which does not match the flat `migrations/*.sql` layout the
 > runner reads. **[CẦN XÁC NHẬN]** whether that script is still intended for use.
 
@@ -182,7 +182,7 @@ Deployment targets an EC2 host over SSH and requires an `.env.ec2-credentials` f
 make deploy RHOST=t1
 ```
 
-`bin/deploy.sh` runs validate → build → prepare → deliver → activate and prompts for
+`deploy/scripts/deploy.sh` runs validate → build → prepare → deliver → activate and prompts for
 confirmation. Related targets: `make deploy-quick` (skip build), `make deploy-amd`,
 `make deploy-rollback`, `make watch-logs RHOST=…`, `make login RHOST=…`,
 `make connect-mysql`, and `make clear-data-local` / `make clear-data-ec2` (which run

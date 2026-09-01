@@ -27,9 +27,11 @@ var clearDataTables = []string{
 	classroomProgramTable,
 	exerciseTable,
 	exerciseSubmissionTable,
-	// contactUsTable,
 	notificationTable,
 	bannerTable,
+	chatConversationTable,
+	chatParticipantTable,
+	chatMessageTable,
 }
 
 // clearDataSeqs lists the external-id counters reset back to 0 for the wiped
@@ -46,12 +48,15 @@ var clearDataSeqs = []string{
 	seq.NameQuiz,
 	seq.NameClassroom,
 	seq.NameClassroomMember,
-	"classroom_invitation", // legacy seq (no constant); reset for parity with sql/clear_data.sql
+	seq.NameClassroomInviation,
 	seq.NameClassroomProgram,
 	seq.NameClassroomExercise,
 	seq.NameClassroomExerciseSubmission,
 	seq.NameNotification,
 	seq.NameBanner,
+	seq.NameChatConversation,
+	seq.NameChatParticipant,
+	seq.NameChatMessage,
 }
 
 // MaintenanceRepository owns destructive, cross-aggregate maintenance SQL that

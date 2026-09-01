@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# bin/deploy — deployment orchestrator
+# deploy/scripts/deploy.sh — deployment orchestrator
 #
 # Usage:
-#   ./bin/deploy <target>              Full deploy (validate -> build -> prepare -> deliver -> activate)
-#   ./bin/deploy <target> --rollback   Rollback to previous binary
-#   ./bin/deploy <target> --skip-build Skip build phase (use existing binary)
+#   ./deploy/scripts/deploy.sh <target>              Full deploy (validate -> build -> prepare -> deliver -> activate)
+#   ./deploy/scripts/deploy.sh <target> --rollback   Rollback to previous binary
+#   ./deploy/scripts/deploy.sh <target> --skip-build Skip build phase (use existing binary)
 #
 # Examples:
-#   ./bin/deploy t1
-#   ./bin/deploy t2 --skip-build
-#   ./bin/deploy t1 --rollback
+#   ./deploy/scripts/deploy.sh t1
+#   ./deploy/scripts/deploy.sh t2 --skip-build
+#   ./deploy/scripts/deploy.sh t1 --rollback
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 cd "$PROJECT_DIR"
 

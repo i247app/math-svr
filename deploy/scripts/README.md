@@ -1,45 +1,55 @@
-# Operator scripts
+# Local operator tooling
 
-Convenience shell scripts for operating the `mathsvr` service on the EC2 host.
+Shell scripts that run on a **developer machine**, against a `math-svr`
+checkout. Nothing here is installed on — or shipped to — the EC2 host:
+`lib/deliver.sh` excludes this directory from the rsync.
 
-- [`alias_mai`](./alias_mai) — a thin wrapper around `systemctl` for the
-  `mathsvr.service`, exposed as the `mai` command.
+Everything else under `deploy/` *is* delivered, to `/apps/math/deploy/`:
 
-## `alias_mai`
+| Sibling | Runs where | What it is |
+|---|---|---|
+| [`../pre-deploy/`](../pre-deploy/) | on the host, during PREPARE | Stop hooks this pipeline invokes over SSH |
+| [`../post-deploy/`](../post-deploy/) | on the host, during ACTIVATE | Start / health hooks this pipeline invokes over SSH |
+| [`../app-service/`](../app-service/) | on the host | systemd unit + the `mai` operator wrapper |
+| [`../logrotate/`](../logrotate/) | on the host | logrotate config + hourly timer |
+| [`../nginx/`](../nginx/) | on the host | nginx config |
 
-Wraps the common lifecycle commands so an operator can type `mai start` instead
-of `sudo systemctl start mathsvr.service`.
+So `deploy/` splits along one line: **`scripts/` is the only thing that stays
+local** — it is the machinery that pushes all of the above to the host.
 
-| Command | Action |
-|---|---|
-| `mai start` | Start the server (via systemd) |
-| `mai stop` | Stop the server gracefully (SIGTERM) |
-| `mai restart` | Restart the server |
-| `mai status` | Show service status |
-| `mai watch` | Tail `/apps/math/mathsvr.log` in real time |
+Every script is invoked **from the repository root** (that is what the `make`
+targets do). The three that need it re-derive the project root from their own
+location, so `./deploy/scripts/deploy.sh t1` works from anywhere; the rest read
+`.env.ec2-credentials` and `migrations/` relative to the current directory and
+therefore expect the repo root as the working directory.
 
-It targets `mathsvr.service` — the unit installed from
-[`../app-service/`](../app-service/).
+## Deployment pipeline
 
-## Installation (run on EC2)
+| Script | `make` target | Purpose |
+|---|---|---|
+| [`deploy.sh`](./deploy.sh) | `make deploy RHOST=t1` | Full pipeline: validate → build → prepare → deliver → activate |
+| | `make deploy-quick RHOST=t1` | Same, `--skip-build` (reuse `dist/mathsvr`) |
+| | `make deploy-rollback RHOST=t1` | `--rollback` — restore the previous binary on the host |
+| | `make deploy-amd RHOST=t1` | `BUILD_ARCH=amd64` — force an AMD64 build |
+| [`lib/`](./lib/) | — | The six phase libraries `deploy.sh` sources: `common`, `validate`, `build`, `prepare`, `deliver`, `activate`, `rollback` |
+| [`init_remote.sh`](./init_remote.sh) | — | One-off bootstrap of a brand-new host (creates the server dir, uploads keys + `.env`) |
 
-```bash
-# 1. Make it executable
-chmod +x /apps/math/deploy/scripts/alias_mai
+Full walkthrough of every phase: [`docs/DeploymentProcessExplain.md`](../../docs/DeploymentProcessExplain.md).
 
-# 2. Expose it as the `mai` command. Either symlink it onto PATH...
-sudo ln -sf /apps/math/deploy/scripts/alias_mai /usr/local/bin/mai
+## Day-to-day operations
 
-# 3. ...or add a shell alias (append to ~/.bashrc, then re-login):
-#    alias mai='/apps/math/deploy/scripts/alias_mai'
+| Script | `make` target | Purpose |
+|---|---|---|
+| [`login.sh`](./login.sh) | `make login RHOST=t1` | SSH into the host |
+| [`watch-logs.sh`](./watch-logs.sh) | `make watch-logs RHOST=t1` | Tail `/apps/math/mathsvr.log` |
+| [`connect-mysql.sh`](./connect-mysql.sh) | `make connect-mysql` | Open a `mysql` shell on the host using its `/apps/math/.env` |
+| [`clear-data.sh`](./clear-data.sh) | `make clear-data-local` / `make clear-data-ec2 RHOST=…` | Run `sql/clear_data.sql` — wipes user data, keeps reference data. **Destructive** |
+| [`create_migration.sh`](./create_migration.sh) | — | Scaffold a migration pair. ⚠️ Writes into `migrations/up/` + `migrations/down/`, which does **not** match this repo's flat, forward-only `migrations/NNN_*.sql` convention |
+| [`verify-graceful-shutdown.sh`](./verify-graceful-shutdown.sh) | — | Prove SIGTERM triggers session serialization (and that SIGHUP does not) |
 
-# 4. Verify
-mai status
-```
+## Credentials
 
-## Notes
-
-- The script calls `sudo systemctl ...` internally, so the operator needs sudo
-  rights for the `mathsvr.service` control verbs.
-- `mai watch` tails the console log file directly (`/apps/math/mathsvr.log`),
-  the same file rotated by [`../logrotate/`](../logrotate/).
+Every remote-facing script reads `.env.ec2-credentials` from the repository
+root — `SSH_KEY`, `USER`, and `HOST` / `HOST1`..`HOST4`. The file is
+gitignored and is never synced to the host. `RHOST=t1..t4` selects
+`HOST1`..`HOST4`; anything else falls back to `HOST`.

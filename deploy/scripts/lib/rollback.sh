@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/lib/rollback.sh — restore previous binary and restart
+# deploy/scripts/lib/rollback.sh — restore previous binary and restart
 
 run_rollback() {
   phase_start "ROLLBACK"
@@ -22,8 +22,8 @@ run_rollback() {
   "
 
   info "Starting restored server..."
-  remote_exec "bash $DEST_DIR/post-deploy/015_start-server.sh"
-  remote_exec "bash $DEST_DIR/post-deploy/025_restart-nginx.sh"
+  remote_exec "bash $DEST_DIR/deploy/post-deploy/015_start-server.sh"
+  remote_exec "bash $DEST_DIR/deploy/post-deploy/025_restart-nginx.sh"
 
   info "Verifying rollback..."
   sleep 3

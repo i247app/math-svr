@@ -20,6 +20,7 @@ const (
 	NameSchool                      = "school"
 	NameClassroom                   = "classroom"
 	NameClassroomMember             = "classroom_member"
+	NameClassroomInviation          = "classroom_invitation"
 	NameClassroomProgram            = "classroom_program"
 	NameClassroomExercise           = "classroom_exercise"
 	NameClassroomExerciseSubmission = "classroom_exercise_submission"

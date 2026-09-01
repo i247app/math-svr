@@ -1,10 +1,13 @@
 # systemd unit for `mathsvr`
 
 The main systemd service unit that runs the MathAI Go server (`mathsvr`) as a
-managed, auto-restarting, boot-time service on the EC2 host.
+managed, auto-restarting, boot-time service on the EC2 host, plus the operator
+wrapper used to drive it by hand.
 
 - Unit file: [`mathsvr.service`](./mathsvr.service)
-- Install target on EC2: `/etc/systemd/system/mathsvr.service`
+  → `/etc/systemd/system/mathsvr.service`
+- Operator script: [`alias_mai.sh`](./alias_mai.sh) — exposed as the `mai`
+  command; see [§ Operator script](#operator-script--alias_maish) below
 
 ## Background
 
@@ -74,7 +77,43 @@ sudo systemctl stop mathsvr.service
 tail -n 50 /apps/math/mathsvr.log     # look for drain / session-serialize lines
 ```
 
+## Operator script — `alias_mai.sh`
+
+A thin wrapper around the `systemctl` verbs above, so an operator can type
+`mai start` instead of `sudo systemctl start mathsvr.service`. It lives next to
+the unit it drives.
+
+| Command | Action |
+|---|---|
+| `mai start` | Start the server (via systemd) |
+| `mai stop` | Stop the server gracefully (SIGTERM) |
+| `mai restart` | Restart the server |
+| `mai status` | Show service status |
+| `mai watch` | Tail `/apps/math/mathsvr.log` in real time |
+
+### Installation (run on EC2)
+
+```bash
+# 1. Make it executable
+chmod +x /apps/math/deploy/app-service/alias_mai.sh
+
+# 2. Expose it as the `mai` command. Either symlink it onto PATH...
+sudo ln -sf /apps/math/deploy/app-service/alias_mai.sh /usr/local/bin/mai
+
+# 3. ...or add a shell alias (append to ~/.bashrc, then re-login):
+#    alias mai='/apps/math/deploy/app-service/alias_mai.sh'
+
+# 4. Verify
+mai status
+```
+
+The script calls `sudo systemctl ...` internally, so the operator needs sudo
+rights for the `mathsvr.service` control verbs. `mai watch` tails the console
+log file directly (`/apps/math/mathsvr.log`) — the same file rotated by
+[`../logrotate/`](../logrotate/).
+
 ## Related
 
 - Log rotation for `mathsvr.log`: [`../logrotate/`](../logrotate/)
-- Operator control script (`mai start|stop|...`): [`../scripts/`](../scripts/)
+- Local deploy tooling that ships this directory to the host:
+  [`../scripts/`](../scripts/) (never installed on the host itself)

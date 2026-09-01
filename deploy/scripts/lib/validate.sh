@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/lib/validate.sh — preflight checks
+# deploy/scripts/lib/validate.sh — preflight checks
 
 run_validate() {
   phase_start "VALIDATE"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/lib/build.sh — compile and verify binary
+# deploy/scripts/lib/build.sh — compile and verify binary
 
 run_build() {
   phase_start "BUILD"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/lib/common.sh — shared deployment utilities
+# deploy/scripts/lib/common.sh — shared deployment utilities
 # Sourced by all phase scripts. Never executed directly.
 
 set -euo pipefail

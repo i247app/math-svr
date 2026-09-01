@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# bin/verify-graceful-shutdown.sh — verify session serialization on shutdown.
+# deploy/scripts/verify-graceful-shutdown.sh — verify session serialization on shutdown.
 #
 # Positive test: SIGTERM → gex onShutdown hooks fire → session file written.
 # Regression test: SIGHUP → process dies via Go default → session file NOT
 # written (until/unless a SIGHUP handler is added to the app).
 #
 # Usage:
-#   ./bin/verify-graceful-shutdown.sh [session-file-path]
+#   ./deploy/scripts/verify-graceful-shutdown.sh [session-file-path]
 #
 # Prereqs:
 #   - A valid .env in the project root with SERIALIZED_SESSION_FILE set
@@ -14,7 +14,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_DIR"
 
 SESSION_FILE="${1:-}"
