@@ -147,7 +147,7 @@ func (a *App) Init() error {
 	// process memory, so every non-zero counter still in ma_user_presence
 	// belongs to a socket that died with the old process. Skipping this leaves
 	// those users showing as online forever.
-	a.resetPresence(services)
+	// a.resetPresence(services)
 
 	// Setup jobs
 	a.setupJobs(a.Server, services)

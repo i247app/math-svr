@@ -43,6 +43,12 @@ The app runs on the **host**; the stack runs in **Docker**:
 
 ## Production
 
+> **Setting this up on EC2 for the first time?** Follow
+> [`docs/ObservabilityProductionSetup.md`](../docs/ObservabilityProductionSetup.md)
+> — a step-by-step runbook for the Ubuntu host (Docker install, `.env` keys,
+> port lockdown, SSH-tunnel access, verification per pillar). The checklist
+> below is the reference; that document is the procedure.
+
 Merge the hardening override:
 
 ```bash
@@ -53,10 +59,30 @@ GF_ADMIN_PASSWORD=... docker compose \
 
 Checklist beyond the override file:
 
-1. **Secure `/metrics` (bind loopback).** Set `OBS_METRICS_ADDR=127.0.0.1:9091`
-   so the endpoint is unreachable from the public internet. Scrape it with a
-   node-local Prometheus/agent, or over a private network only. (There is no
-   auth on `/metrics` by design — network isolation is the control.)
+1. **Secure `/metrics` — but do NOT bind it to loopback when Prometheus runs
+   in Docker on the same host.** There is no auth on `/metrics` by design;
+   network isolation is the control.
+
+   The trap: Prometheus scrapes the host app via `host.docker.internal`, which
+   on Linux resolves to the Docker bridge gateway (`172.17.0.1`), **not** to
+   loopback. An app bound to `127.0.0.1:9091` refuses that connection, and the
+   `math-svr` target goes down with `connection refused`.
+
+   For the single-host EC2 layout, keep the default `OBS_METRICS_ADDR=:9091`
+   and close port 9091 at the **AWS Security Group** (inbound is default-deny,
+   so simply never open it). Optionally belt-and-braces on the host:
+
+   ```bash
+   sudo ufw allow from 172.17.0.0/16 to any port 9091 proto tcp
+   sudo ufw deny 9091
+   ```
+
+   Binding the app to `172.17.0.1:9091` instead would also work, but it makes
+   the API server refuse to start unless Docker is already up — coupling the
+   product's availability to its monitoring. Not worth it.
+
+   Only use `127.0.0.1:9091` when the scraper is a **host process** (a
+   node-local Prometheus agent), not a container.
 2. **Tracing endpoint.** Point `OBS_OTLP_ENDPOINT` at your real
    collector/agent (NOT `host.docker.internal`); set `OBS_OTLP_INSECURE=false`
    if it terminates TLS.

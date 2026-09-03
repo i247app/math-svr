@@ -4,6 +4,16 @@ import (
 	"fmt"
 	"log"
 
+	// Embed the IANA timezone database in the binary. Cron schedules
+	// resolve their Hour/Minute against a *time.Location, and
+	// /jobs/schedule/update lets an operator name any IANA zone — both
+	// go through time.LoadLocation, which otherwise reads
+	// /usr/share/zoneinfo from the host. A deploy target without tzdata
+	// installed would make every zone silently resolve to UTC and fire
+	// jobs at the wrong local time. ~450KB for a deterministic answer on
+	// every host.
+	_ "time/tzdata"
+
 	"math-ai.com/math-ai/internal/bootstrap"
 )
 

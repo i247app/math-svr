@@ -15,6 +15,21 @@
 #   - Prometheus scrape target: docker/prometheus/prometheus.yml
 #       In prod the app's /metrics is bound to 127.0.0.1:9091 (OBS_METRICS_ADDR);
 #       run a node-local Prometheus/agent, or scrape over your private network.
+# PORT BINDINGS — the single most important difference from local.
+#
+# The base file publishes every port as "3000:3000", which binds 0.0.0.0. On a
+# public host that exposes Grafana, Prometheus, Loki, Tempo and the Alloy UI to
+# the internet, none of which authenticate by default. A host firewall does NOT
+# save you: Docker publishes ports by writing its own nat/PREROUTING + FORWARD
+# rules, which bypass ufw's INPUT chain entirely.
+#
+# Every port below is therefore re-bound to 127.0.0.1. Reach them over an SSH
+# tunnel, e.g.:
+#     ssh -i "$SSH_KEY" -L 3000:localhost:3000 "$USER@$HOST"   → Grafana
+# Compose MERGES the `ports` list rather than replacing it, so each entry here
+# must be the FULL replacement set for that service — and the base file's
+# 0.0.0.0 entries would otherwise survive alongside these. Verify after any
+# change with:  docker compose ... config | grep -A3 ports
 services:
   prometheus:
     command:
@@ -24,24 +39,38 @@ services:
       - --web.enable-lifecycle
       - --enable-feature=exemplar-storage
       - --web.enable-remote-write-receiver
+    ports: !override
+      - "127.0.0.1:9090:9090"
     deploy:
       resources:
         limits:
           memory: 1g
 
   tempo:
+    # 4318 (OTLP/HTTP) MUST stay published: the Go app runs on the host and
+    # pushes traces to localhost:4318. 4317 (gRPC) is dropped — the app uses
+    # otlptracehttp only.
+    ports: !override
+      - "127.0.0.1:3200:3200"
+      - "127.0.0.1:4318:4318"
     deploy:
       resources:
         limits:
           memory: 1g
 
   loki:
+    # Only Alloy and Grafana talk to Loki, and both do so over the compose
+    # network. Loopback publishing is for operator debugging only.
+    ports: !override
+      - "127.0.0.1:3100:3100"
     deploy:
       resources:
         limits:
           memory: 1g
 
   alloy:
+    ports: !override
+      - "127.0.0.1:12345:12345"
     deploy:
       resources:
         limits:
@@ -57,6 +86,8 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=false
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_FEATURE_TOGGLES_ENABLE=traceToMetrics
+    ports: !override
+      - "127.0.0.1:3000:3000"
     deploy:
       resources:
         limits:

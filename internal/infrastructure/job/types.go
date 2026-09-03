@@ -80,6 +80,36 @@ func WeeklyAt(weekday time.Weekday, hour, minute int, loc *time.Location) Schedu
 	return Schedule{Kind: ScheduleWeekly, Weekday: weekday, Hour: hour, Minute: minute, Location: loc}
 }
 
+// Validate reports whether s is well-formed enough to schedule. It is
+// stricter than Next's zero-Time contract: Next only rejects what it
+// cannot compute at all, while Validate also rejects values that
+// time.Date would silently normalise into a surprising instant (hour
+// 25 → 01:00 next day, minute 90 → +1h30m). Callers that accept a
+// Schedule from outside the codebase — the /jobs/schedule/update
+// control plane — MUST validate before handing it to the Runtime.
+func (s Schedule) Validate() error {
+	switch s.Kind {
+	case ScheduleEvery:
+		if s.Every <= 0 {
+			return fmt.Errorf("%w: every must be > 0, got %s", ErrInvalidSchedule, s.Every)
+		}
+		return nil
+	case ScheduleDaily, ScheduleWeekly:
+		if s.Hour < 0 || s.Hour > 23 {
+			return fmt.Errorf("%w: hour must be in [0,23], got %d", ErrInvalidSchedule, s.Hour)
+		}
+		if s.Minute < 0 || s.Minute > 59 {
+			return fmt.Errorf("%w: minute must be in [0,59], got %d", ErrInvalidSchedule, s.Minute)
+		}
+		if s.Kind == ScheduleWeekly && (s.Weekday < time.Sunday || s.Weekday > time.Saturday) {
+			return fmt.Errorf("%w: weekday must be in [0,6], got %d", ErrInvalidSchedule, int(s.Weekday))
+		}
+		return nil
+	default:
+		return fmt.Errorf("%w: unknown kind %d", ErrInvalidSchedule, int(s.Kind))
+	}
+}
+
 // Next returns the next instant strictly after now at which the
 // schedule fires. Zero Time means "malformed — do not schedule".
 func (s Schedule) Next(now time.Time) time.Time {
@@ -99,7 +129,6 @@ func (s Schedule) Next(now time.Time) time.Time {
 		// for an America/Los_Angeles schedule picks up VN's date and
 		// schedules a full day late.
 		nowLoc := now.In(loc)
-
 		t := time.Date(nowLoc.Year(), nowLoc.Month(), nowLoc.Day(), s.Hour, s.Minute, 0, 0, loc)
 		if !t.After(now) {
 			t = t.AddDate(0, 0, 1)
@@ -245,8 +274,17 @@ const (
 // is intentionally close to what `ma_job_runs` will store in Tier 2 so
 // the HTTP response does not change when persistence lands.
 type JobInfo struct {
-	Name         string     `json:"name"`
-	Schedule     string     `json:"schedule"`
+	Name string `json:"name"`
+
+	// Schedule is the EFFECTIVE schedule — the runtime override when one
+	// has been set via UpdateSchedule, otherwise the job's declared
+	// Schedule(). ScheduleOverridden tells the two apart, and
+	// DefaultSchedule always reports what the code declares so an
+	// operator can see what ResetSchedule would restore.
+	Schedule           string `json:"schedule"`
+	DefaultSchedule    string `json:"default_schedule"`
+	ScheduleOverridden bool   `json:"schedule_overridden"`
+
 	Status       JobStatus  `json:"status"`
 	InFlight     bool       `json:"in_flight"`
 	NextRunAt    *time.Time `json:"next_run_at,omitempty"`

@@ -89,6 +89,61 @@ func (h *JobHandler) HandleResumeJob(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
+// POST /jobs/schedule/update
+//
+// Body: { "name": "system.noop", "schedule": { ... } }
+//
+// Retargets one CronJob's cadence without a redeploy. The schedule
+// object is one of:
+//
+//	{"kind":"every","every_seconds":60}      — every minute (the floor)
+//	{"kind":"every","every_seconds":3600}    — hourly
+//	{"kind":"every","every_seconds":7200}    — every 2 hours
+//	{"kind":"daily","hour":6,"minute":30,"timezone":"Asia/Ho_Chi_Minh"}
+//	{"kind":"weekly","weekday":1,"hour":8,"minute":0,"timezone":"Asia/Tokyo"}
+//
+// Takes effect immediately — the scheduler loop is woken rather than
+// left to finish its pending sleep. Responds with the job's resulting
+// state so the caller can confirm the resolved schedule (timezone
+// included) and the recomputed next_run_at.
+//
+// The override is in-memory: a restart reverts the job to the schedule
+// declared in internal/jobs/.
+func (h *JobHandler) HandleUpdateJobSchedule(w http.ResponseWriter, r *http.Request) {
+	var req UpdateScheduleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.svc.UpdateSchedule(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /jobs/schedule/reset
+//
+// Body: { "name": "system.noop" }
+//
+// Drops the runtime override so the job returns to its code-declared
+// schedule. Idempotent — resetting a job that was never overridden
+// succeeds and reports the declared schedule.
+func (h *JobHandler) HandleResetJobSchedule(w http.ResponseWriter, r *http.Request) {
+	var req JobNameRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.svc.ResetSchedule(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // POST /tasks/enqueue
 //
 // Body: { "name": "digest.send", "payload": {...}, "delay_seconds": 0,

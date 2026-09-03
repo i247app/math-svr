@@ -46,10 +46,9 @@ type Deps struct {
 // a useful "menu" of what runs in production.
 func RegisterAll(reg *job.Registry, deps Deps) {
 	// Cron jobs (recurring, no payload).
-	// reg.RegisterCron(NewSessionCleanupJob(deps.SessionManager))
-	// reg.RegisterCron(NewQuizCleanupJob())
-	// reg.RegisterCron(NewWeeklyDigestCronJob(deps.Runtime))
-	reg.RegisterCron(NewNoopJob())
+	// reg.RegisterCron(NewTestJob1())
+	// reg.RegisterCron(NewTestJob2())
+	// reg.RegisterCron(NewTestJob3())
 
 	// Tasks (one-shot, payload).
 	// reg.RegisterTask(NewWeeklyDigestTask(deps.EmailProvider))

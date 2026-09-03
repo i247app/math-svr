@@ -380,6 +380,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Tên task là bắt buộc"
 	case TASK_ENQUEUE_FAILED:
 		return "Đưa task vào hàng đợi thất bại"
+	case JOB_INVALID_SCHEDULE:
+		return "Lịch chạy job không hợp lệ"
+	case JOB_UPDATE_SCHEDULE_FAILED:
+		return "Cập nhật lịch chạy job thất bại"
 
 	// Sequence
 	case SEQ_NOT_FOUND:

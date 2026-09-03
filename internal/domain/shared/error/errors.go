@@ -60,7 +60,7 @@ func (e *MathError) Unwrap() error {
 	return e.BaseError
 }
 
-// IsbinbaseError checks if an error is a DynamicError
+// IsMathError checks if an error is a MathError
 func IsMathError(err error) (*MathError, bool) {
 	if err == nil {
 		return nil, false

@@ -328,6 +328,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /jobs/trigger", jobHandler.HandleTriggerJob, authMiddleware)
 		reg("POST /jobs/pause", jobHandler.HandlePauseJob, authMiddleware)
 		reg("POST /jobs/resume", jobHandler.HandleResumeJob, authMiddleware)
+		reg("POST /jobs/schedule/update", jobHandler.HandleUpdateJobSchedule, authMiddleware)
+		reg("POST /jobs/schedule/reset", jobHandler.HandleResetJobSchedule, authMiddleware)
 		reg("POST /tasks/enqueue", jobHandler.HandleEnqueueTask, authMiddleware)
 	}
 }

@@ -380,6 +380,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Task name is required"
 	case TASK_ENQUEUE_FAILED:
 		return "Failed to enqueue task"
+	case JOB_INVALID_SCHEDULE:
+		return "Invalid job schedule"
+	case JOB_UPDATE_SCHEDULE_FAILED:
+		return "Failed to update job schedule"
 
 	// Sequence
 	case SEQ_NOT_FOUND:

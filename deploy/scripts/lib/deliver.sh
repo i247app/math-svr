@@ -21,7 +21,18 @@ run_deliver() {
     migrations/ \
     dist/mathsvr \
     keys/ \
-    deploy/
+    deploy/ \
+    docker/
+
+  # docker/ carries the observability stack as code (compose files + Prometheus
+  # / Loki / Tempo / Alloy / Grafana configs). It lands at /apps/math/docker/,
+  # which is what makes the compose file's `../logs` bind mount resolve to
+  # /apps/math/logs — the directory the app writes app.log into.
+  #
+  # Shipping it means host-side edits to these configs are OVERWRITTEN on the
+  # next deploy: treat the repo as the source of truth and re-run
+  # `docker compose up -d` on the host to apply changes. Nothing secret lives
+  # here — Grafana's admin password comes from the host env at compose time.
 
   info "Files synced successfully"
 

@@ -50,6 +50,12 @@ type Runtime struct {
 type cronState struct {
 	job CronJob
 
+	// override, when non-nil, replaces job.Schedule() as the schedule
+	// the cron loop honours. Set by UpdateSchedule, cleared by
+	// ResetSchedule. It is deliberately in-memory only: like `paused`,
+	// it reverts to the code-declared default on restart (Tier 1).
+	override *Schedule
+
 	paused   bool
 	inFlight bool
 
@@ -59,11 +65,58 @@ type cronState struct {
 	lastError  *string
 	lastDur    *time.Duration
 
-	// wake is closed by PauseJob / ResumeJob / TriggerOnce(?) to
-	// interrupt the cron loop's current sleep. The loop reads it once
-	// per iteration under Runtime.mu so the replace-after-close pattern
-	// is safe.
+	// wake is closed by PauseJob / ResumeJob / UpdateSchedule /
+	// ResetSchedule to interrupt the cron loop's current sleep. The loop
+	// reads it once per iteration under Runtime.mu so the
+	// replace-after-close pattern is safe.
 	wake chan struct{}
+}
+
+// effectiveSchedule returns the override when set, else the job's
+// declared schedule. Caller MUST hold Runtime.mu.
+func (st *cronState) effectiveSchedule() Schedule {
+	if st.override != nil {
+		return *st.override
+	}
+	return st.job.Schedule()
+}
+
+// info renders the read-only view of this job. Caller MUST hold
+// Runtime.mu. Every JobInfo the runtime emits is built here so the
+// Snapshot list and the single-job read can never drift apart.
+func (st *cronState) info(name string) JobInfo {
+	info := JobInfo{
+		Name:               name,
+		Schedule:           st.effectiveSchedule().String(),
+		DefaultSchedule:    st.job.Schedule().String(),
+		ScheduleOverridden: st.override != nil,
+		Status:             JobStatusRunning,
+		InFlight:           st.inFlight,
+	}
+	if st.paused {
+		info.Status = JobStatusPaused
+	}
+	if st.nextRunAt != nil {
+		t := *st.nextRunAt
+		info.NextRunAt = &t
+	}
+	if st.lastRunAt != nil {
+		t := *st.lastRunAt
+		info.LastRunAt = &t
+	}
+	if st.lastStatus != nil {
+		s := *st.lastStatus
+		info.LastStatus = &s
+	}
+	if st.lastError != nil {
+		s := *st.lastError
+		info.LastError = &s
+	}
+	if st.lastDur != nil {
+		s := fmt.Sprintf("%d", st.lastDur.Milliseconds())
+		info.LastDuration = &s
+	}
+	return info
 }
 
 type taskEnvelope struct {
@@ -227,6 +280,84 @@ func (r *Runtime) ResumeJob(name string) error {
 	return nil
 }
 
+// UpdateSchedule replaces the named CronJob's schedule at runtime and
+// wakes its scheduler loop so the new cadence takes effect immediately
+// rather than after the pending sleep expires.
+//
+// s is validated before anything is mutated: an invalid schedule is
+// rejected with ErrInvalidSchedule and leaves the job untouched. This
+// is the guard that keeps a bad control-plane call from parking a
+// scheduler loop.
+//
+// The override survives pause/resume but NOT a process restart — on
+// the next boot the job reverts to its code-declared Schedule(). Same
+// posture as `paused`; persistence is a Tier 2 concern.
+func (r *Runtime) UpdateSchedule(name string, s Schedule) error {
+	if err := s.Validate(); err != nil {
+		return err
+	}
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.started || r.stopping {
+		return ErrRuntimeUnavailable
+	}
+	st, ok := r.states[name]
+	if !ok {
+		return ErrJobNotFound
+	}
+
+	cp := s
+	st.override = &cp
+	// The pending nextRunAt was computed from the old schedule. Clear it
+	// rather than report a value the loop is about to discard; the loop
+	// recomputes within microseconds of the wake below.
+	st.nextRunAt = nil
+	close(st.wake)
+	st.wake = make(chan struct{})
+	return nil
+}
+
+// ResetSchedule drops any runtime override so the job returns to its
+// code-declared Schedule(), and wakes the loop to apply it. It is
+// idempotent: resetting a job that was never overridden is a no-op
+// success, since "run on the declared schedule" is already true.
+func (r *Runtime) ResetSchedule(name string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.started || r.stopping {
+		return ErrRuntimeUnavailable
+	}
+	st, ok := r.states[name]
+	if !ok {
+		return ErrJobNotFound
+	}
+	if st.override == nil {
+		return nil
+	}
+
+	st.override = nil
+	st.nextRunAt = nil
+	close(st.wake)
+	st.wake = make(chan struct{})
+	return nil
+}
+
+// JobByName returns the read-only view of one CronJob. Used by the
+// control plane to echo back the resulting state after a mutation, so
+// the caller sees the schedule the runtime actually resolved —
+// including the timezone — instead of trusting that its request was
+// interpreted the way it intended.
+func (r *Runtime) JobByName(name string) (JobInfo, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	st, ok := r.states[name]
+	if !ok {
+		return JobInfo{}, false
+	}
+	return st.info(name), true
+}
+
 // TriggerOnce fires the named CronJob immediately, out of schedule. It
 // respects the same skip-if-still-running guard as the scheduler:
 // returns ErrJobInFlight if the job is already executing. The fire
@@ -309,36 +440,7 @@ func (r *Runtime) Snapshot() Snapshot {
 	r.mu.Lock()
 	jobs := make([]JobInfo, 0, len(r.states))
 	for name, st := range r.states {
-		info := JobInfo{
-			Name:     name,
-			Schedule: st.job.Schedule().String(),
-			Status:   JobStatusRunning,
-			InFlight: st.inFlight,
-		}
-		if st.paused {
-			info.Status = JobStatusPaused
-		}
-		if st.nextRunAt != nil {
-			t := *st.nextRunAt
-			info.NextRunAt = &t
-		}
-		if st.lastRunAt != nil {
-			t := *st.lastRunAt
-			info.LastRunAt = &t
-		}
-		if st.lastStatus != nil {
-			s := *st.lastStatus
-			info.LastStatus = &s
-		}
-		if st.lastError != nil {
-			s := *st.lastError
-			info.LastError = &s
-		}
-		if st.lastDur != nil {
-			s := fmt.Sprintf("%d", st.lastDur.Milliseconds())
-			info.LastDuration = &s
-		}
-		jobs = append(jobs, info)
+		jobs = append(jobs, st.info(name))
 	}
 	started := r.started && !r.stopping
 	r.mu.Unlock()
@@ -375,6 +477,10 @@ func (r *Runtime) cronLoop(j CronJob) {
 		st := r.states[j.Name()]
 		paused := st.paused
 		wake := st.wake
+		// Read the effective schedule under the same lock that guards
+		// pause/wake — UpdateSchedule mutates st.override and closes wake
+		// as one atomic step, so the pair we read here is always coherent.
+		sched := st.effectiveSchedule()
 		r.mu.Unlock()
 
 		if paused {
@@ -387,10 +493,22 @@ func (r *Runtime) cronLoop(j CronJob) {
 		}
 
 		now := time.Now()
-		next := j.Schedule().Next(now)
+		next := sched.Next(now)
 		if next.IsZero() {
-			logger.From(context.Background()).Warnf("job.cron.invalid_schedule name=%s — loop exiting", j.Name())
-			return
+			// Only reachable from a code-declared malformed schedule —
+			// UpdateSchedule validates before it ever lands in state. Park
+			// on wake instead of returning: an exiting loop is unrecoverable
+			// without a restart and would make a later UpdateSchedule
+			// silently ineffective.
+			logger.From(context.Background()).Warnf(
+				"job.cron.invalid_schedule name=%s schedule=%q — parked until schedule update",
+				j.Name(), sched.String())
+			select {
+			case <-r.stopCh:
+				return
+			case <-wake:
+				continue
+			}
 		}
 		r.mu.Lock()
 		if st := r.states[j.Name()]; st != nil {

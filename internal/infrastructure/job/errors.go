@@ -13,4 +13,10 @@ var (
 	ErrRuntimeUnavailable  = errors.New("job: runtime not started or already stopping")
 	ErrTaskHandlerNotFound = errors.New("job: task handler not registered")
 	ErrQueueFull           = errors.New("job: task queue is full")
+
+	// ErrInvalidSchedule is returned by Schedule.Validate and by
+	// UpdateSchedule when the supplied Schedule would not produce a
+	// sane fire time. Wrapped with a field-level reason — inspect with
+	// errors.Is, render with err.Error().
+	ErrInvalidSchedule = errors.New("job: invalid schedule")
 )

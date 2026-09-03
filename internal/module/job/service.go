@@ -10,6 +10,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
 // Service wraps *jobruntime.Runtime with the project's error contract:
@@ -73,6 +74,61 @@ func (s *Service) ResumeJob(ctx context.Context, req *JobNameRequest) (*ActionRe
 		return nil, mapRuntimeError(ctx, err, status.JOB_TRIGGER_FAILED)
 	}
 	return &ActionResponse{Name: req.Name, Result: "resumed"}, nil
+}
+
+// UpdateSchedule retargets a CronJob's cadence at runtime. The new
+// schedule takes effect immediately — the runtime wakes the scheduler
+// loop rather than letting the pending sleep run out.
+//
+// The override lives in memory only: a restart reverts the job to the
+// schedule declared in internal/jobs/. Treat this as an operations
+// lever (slow a noisy job down, speed one up to observe it), not as
+// configuration.
+func (s *Service) UpdateSchedule(ctx context.Context, req *UpdateScheduleRequest) (*ScheduleResponse, error) {
+	if err := validateJobName(ctx, req.Name); err != nil {
+		return nil, err
+	}
+	sched, err := parseSchedule(ctx, req.Schedule)
+	if err != nil {
+		return nil, err
+	}
+	if s.runtime == nil {
+		return nil, runtimeUnavailable(ctx)
+	}
+	if err := s.runtime.UpdateSchedule(req.Name, sched); err != nil {
+		return nil, mapRuntimeError(ctx, err, status.JOB_UPDATE_SCHEDULE_FAILED)
+	}
+	return s.scheduleResult(ctx, req.Name, "schedule_updated")
+}
+
+// ResetSchedule drops the runtime override so the job returns to the
+// schedule declared in code. Idempotent.
+func (s *Service) ResetSchedule(ctx context.Context, req *JobNameRequest) (*ScheduleResponse, error) {
+	if err := validateJobName(ctx, req.Name); err != nil {
+		return nil, err
+	}
+	if s.runtime == nil {
+		return nil, runtimeUnavailable(ctx)
+	}
+	if err := s.runtime.ResetSchedule(req.Name); err != nil {
+		return nil, mapRuntimeError(ctx, err, status.JOB_UPDATE_SCHEDULE_FAILED)
+	}
+	return s.scheduleResult(ctx, req.Name, "schedule_reset")
+}
+
+// scheduleResult reads the job's post-mutation state back out of the
+// runtime so the caller sees the resolved schedule and the recomputed
+// next_run_at rather than an echo of its own request.
+func (s *Service) scheduleResult(ctx context.Context, name, result string) (*ScheduleResponse, error) {
+	info, ok := s.runtime.JobByName(name)
+	if !ok {
+		// The job existed a moment ago inside the runtime's lock; states
+		// are never deleted, so this is unreachable in practice.
+		return nil, errs.NewError(ctx, status.JOB_NOT_FOUND, nil, jobruntime.ErrJobNotFound)
+	}
+	logger.From(ctx).Infof("job.schedule.%s name=%s schedule=%q next_run_at=%v",
+		result, info.Name, info.Schedule, info.NextRunAt)
+	return &ScheduleResponse{Result: result, Job: info}, nil
 }
 
 func (s *Service) EnqueueTask(ctx context.Context, req *EnqueueTaskRequest) (*ActionResponse, error) {
@@ -140,6 +196,10 @@ func mapRuntimeError(ctx context.Context, err error, fallback status.StatusCode)
 		return errs.NewError(ctx, status.TASK_HANDLER_NOT_FOUND, nil, err)
 	case stderrors.Is(err, jobruntime.ErrQueueFull):
 		return errs.NewError(ctx, status.TASK_QUEUE_FULL, nil, err)
+	case stderrors.Is(err, jobruntime.ErrInvalidSchedule):
+		// parseSchedule rejects these first; this covers the runtime's own
+		// re-validation so the caller still gets the precise status code.
+		return errs.NewError(ctx, status.JOB_INVALID_SCHEDULE, nil, err)
 	default:
 		return errs.NewError(ctx, fallback, nil, err)
 	}

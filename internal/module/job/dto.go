@@ -50,3 +50,52 @@ type ActionResponse struct {
 	Name   string `json:"name"`
 	Result string `json:"result"`
 }
+
+// ScheduleRequest is the wire form of jobruntime.Schedule. It is kept
+// separate from the runtime type because the wire contract must stay
+// stable and self-describing (string kind, IANA timezone) while the
+// runtime type is free to change representation.
+//
+//	{"kind":"every","every_seconds":900}                      → every 15m
+//	{"kind":"every","every_seconds":3600}                     → hourly
+//	{"kind":"daily","hour":6,"minute":30,"timezone":"Asia/Ho_Chi_Minh"}
+//	{"kind":"weekly","weekday":1,"hour":8,"minute":0,"timezone":"Asia/Tokyo"}
+type ScheduleRequest struct {
+	// Kind selects the variant: "every" | "daily" | "weekly".
+	Kind string `json:"kind"`
+
+	// EverySeconds is the interval for kind=every. Bounded by
+	// [minEveryInterval, maxEveryInterval] — see validator.go.
+	EverySeconds int `json:"every_seconds"`
+
+	// Hour (0-23) and Minute (0-59) apply to kind=daily and kind=weekly.
+	Hour   int `json:"hour"`
+	Minute int `json:"minute"`
+
+	// Weekday (0=Sunday … 6=Saturday) is required for kind=weekly. It is
+	// a pointer so an explicit 0 (Sunday) is distinguishable from
+	// "field omitted".
+	Weekday *int `json:"weekday"`
+
+	// Timezone is an IANA name resolving Hour/Minute/Weekday for
+	// kind=daily and kind=weekly; empty means UTC. Ignored by
+	// kind=every, which is interval-based and timezone-free.
+	Timezone string `json:"timezone"`
+}
+
+// UpdateScheduleRequest retargets one CronJob's cadence at runtime.
+type UpdateScheduleRequest struct {
+	Name     string           `json:"name"`
+	Schedule *ScheduleRequest `json:"schedule"`
+}
+
+// ScheduleResponse echoes the job's resulting state. It returns the
+// runtime's own JobInfo rather than repeating the request back, so the
+// caller sees the schedule as the runtime RESOLVED it — timezone
+// included — plus the recomputed next_run_at. A caller that meant
+// 06:30 Vietnam time but omitted the timezone sees "daily 06:30 UTC"
+// and a next_run_at seven hours off, instead of finding out days later.
+type ScheduleResponse struct {
+	Result string             `json:"result"`
+	Job    jobruntime.JobInfo `json:"job"`
+}

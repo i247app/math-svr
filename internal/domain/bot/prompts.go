@@ -226,7 +226,7 @@ func requireFields(pairs ...string) error {
 // module/quiz validator's DefaultNumQuestions (5), but duplicated here
 // so the domain prompt builder remains usable without going through the
 // module-layer validator.
-const defaultNumQuestions = 5
+const defaultNumQuestions = 10
 
 // maxPromptChapterLabelLen caps each rendered chapter line so an
 // over-long descriptor cannot bloat the prompt. The cap is generous
