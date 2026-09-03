@@ -78,7 +78,7 @@ func (h *SubmitQuizAnswersV2CommandHandler) Handle(ctx context.Context, cmd Subm
 			cmd.QuizID, score.TotalQuestions, score.CorrectNumber, score.ScorePercentage, scorer.ReviewSourceMarker)
 
 		grading := quiz.GradingUpdate{
-			AIReview:        score.AIReview,
+			Review:          score.Review,
 			AssessmentGrade: score.AssessmentGrade,
 			TotalQuestions:  &score.TotalQuestions,
 			CorrectNumber:   &score.CorrectNumber,

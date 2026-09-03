@@ -106,9 +106,9 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 		Note:                req.Note,
 	}
 	if grading != nil {
-		if grading.AIReview != "" {
-			ai := grading.AIReview
-			cmd.AIReview = &ai
+		if grading.Review != "" {
+			ai := grading.Review
+			cmd.Review = &ai
 		}
 		if grading.TotalQuestions > 0 {
 			v := int64(grading.TotalQuestions)

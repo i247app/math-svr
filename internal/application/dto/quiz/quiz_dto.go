@@ -73,7 +73,7 @@ type QuizGradingResult struct {
 	TotalQuestions  int     `json:"total_questions"`
 	CorrectNumber   int     `json:"correct_number"`
 	ScorePercentage int     `json:"score_percentage"`
-	AIReview        string  `json:"ai_review"`
+	Review          string  `json:"review"`
 	AssessmentGrade *string `json:"assessment_grade,omitempty"`
 }
 
@@ -271,11 +271,11 @@ func parseAnswers(raw *string) []QuizStudentAnswer {
 }
 
 func parseGrading(q *domain.Quiz) *QuizGradingResult {
-	if q.AIReview() == nil {
+	if q.Review() == nil {
 		return nil
 	}
 	g := &QuizGradingResult{
-		AIReview:        *q.AIReview(),
+		Review:          *q.Review(),
 		AssessmentGrade: q.AssessmentGrade(),
 	}
 	if q.TotalQuestions() != nil {

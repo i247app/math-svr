@@ -19,7 +19,7 @@ const (
 	quizTable = "ma_quizzes"
 
 	quizColumns = `q.id, q.quiz_id, q.user_id, q.profile_id, q.purpose, q.type_of_quiz, q.title, q.short_text,
-		q.questions, q.answers, q.ai_review, q.assessment_grade,
+		q.questions, q.answers, q.review, q.assessment_grade,
 		q.total_questions, q.correct_number, q.score_percentage,
 		q.previous_quiz_id, q.note, q.quiz_status, q.status,
 		q.create_id, q.create_dt, q.modify_id, q.modify_dt`
@@ -42,7 +42,7 @@ func NewQuizRepository(db database.Executor) quiz.IRepository {
 func scanQuiz(s database.RowScanner) (*models.QuizModel, error) {
 	var m models.QuizModel
 	if err := s.Scan(&m.Id, &m.QuizId, &m.UserId, &m.ProfileId, &m.Purpose, &m.TypeOfQuiz, &m.Title, &m.ShortText,
-		&m.Questions, &m.Answers, &m.AIReview, &m.AssessmentGrade,
+		&m.Questions, &m.Answers, &m.Review, &m.AssessmentGrade,
 		&m.TotalQuestions, &m.CorrectNumber, &m.ScorePercentage,
 		&m.PreviousQuizId, &m.Note, &m.QuizStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -161,13 +161,13 @@ func (r *QuizRepository) Create(ctx context.Context, q *quiz.Quiz) (*quiz.Quiz, 
 	query := `
 		INSERT INTO ` + quizTable + `
 			(quiz_id, user_id, profile_id, purpose, type_of_quiz, title, short_text, questions, answers,
-			 ai_review, assessment_grade, previous_quiz_id, note, quiz_status, create_dt, modify_dt)
+			 review, assessment_grade, previous_quiz_id, note, quiz_status, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
 		q.QuizId(), q.UserId(), q.ProfileId(), q.Purpose(), q.TypeOfQuiz(), q.Title(), q.ShortText(),
-		q.Questions(), q.Answers(), q.AIReview(), q.AssessmentGrade(),
+		q.Questions(), q.Answers(), q.Review(), q.AssessmentGrade(),
 		q.PreviousQuizId(), q.Note(), q.QuizStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("quiz repo create: %w", err)
@@ -189,7 +189,7 @@ func (r *QuizRepository) UpdateAnswersAndGrading(ctx context.Context, quizId int
 	query := `
 		UPDATE ` + quizTable + `
 		SET answers          = COALESCE(?, answers),
-			ai_review        = COALESCE(?, ai_review),
+			review        = COALESCE(?, review),
 			assessment_grade = COALESCE(?, assessment_grade),
 			total_questions  = COALESCE(?, total_questions),
 			correct_number   = COALESCE(?, correct_number),
@@ -199,7 +199,7 @@ func (r *QuizRepository) UpdateAnswersAndGrading(ctx context.Context, quizId int
 		WHERE quiz_id = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
-		answers, grading.AIReview, grading.AssessmentGrade,
+		answers, grading.Review, grading.AssessmentGrade,
 		grading.TotalQuestions, grading.CorrectNumber, grading.ScorePercentage,
 		quizStatus, mtime.Now().Time, quizId); err != nil {
 		return fmt.Errorf("quiz repo update answers and grading: %w", err)
@@ -339,7 +339,7 @@ func ModelToDomainQuiz(m *models.QuizModel) *quiz.Quiz {
 	q.SetShortText(m.ShortText)
 	q.SetQuestions(m.Questions)
 	q.SetAnswers(m.Answers)
-	q.SetAIReview(m.AIReview)
+	q.SetReview(m.Review)
 	q.SetAssessmentGrade(m.AssessmentGrade)
 	q.SetTotalQuestions(m.TotalQuestions)
 	q.SetCorrectNumber(m.CorrectNumber)

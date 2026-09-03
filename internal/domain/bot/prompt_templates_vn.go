@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Vietnamese prompt templates. ai_review is emitted in Vietnamese; all
+// Vietnamese prompt templates. review is emitted in Vietnamese; all
 // JSON keys remain English so persistence and grading code can use a
 // single struct shape regardless of QuizLanguage.
 
@@ -145,7 +145,7 @@ Bạn sẽ nhận được danh sách câu hỏi (JSON array) và câu trả l�
 QUY TẮC CHẤM:
 - Đối chiếu từng câu trả lời theo "question_number" với "right_answer" của câu hỏi.
 - score_percentage = round(correct_number / total_questions * 100).
-- "ai_review" viết bằng tiếng Việt, dài tối đa 200 ký tự, nêu một điểm mạnh và một điểm cần cải thiện cụ thể. Không xuống dòng.
+- "review" viết bằng tiếng Việt, dài tối đa 200 ký tự, nêu một điểm mạnh và một điểm cần cải thiện cụ thể. Không xuống dòng.
 - "assessment_grade" phải là một trong: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Căn cứ vào độ khó câu hỏi VÀ mức chính xác quan sát được, không chỉ dựa vào tỷ lệ đúng.
 
 QUY TẮC ĐẦU RA:
@@ -156,7 +156,7 @@ CẤU TRÚC:
   "total_questions": 5,
   "correct_number": 4,
   "score_percentage": 80,
-  "ai_review": "Phép cộng cơ bản tốt; cần luyện thêm phép trừ có nhớ.",
+  "review": "Phép cộng cơ bản tốt; cần luyện thêm phép trừ có nhớ.",
   "assessment_grade": "Grade 3"
 }
 `
@@ -168,7 +168,7 @@ Bạn sẽ nhận được danh sách câu hỏi (JSON array) và câu trả l�
 QUY TẮC CHẤM:
 - Đối chiếu từng câu trả lời theo "question_number" với "right_answer".
 - score_percentage = round(correct_number / total_questions * 100).
-- "ai_review" viết bằng tiếng Việt, dài tối đa 200 ký tự, nêu một điểm mạnh và một điểm cần cải thiện cụ thể. Không xuống dòng.
+- "review" viết bằng tiếng Việt, dài tối đa 200 ký tự, nêu một điểm mạnh và một điểm cần cải thiện cụ thể. Không xuống dòng.
 
 QUY TẮC ĐẦU RA:
 - CHỈ trả về MỘT JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không xuống dòng trong giá trị chuỗi.
@@ -178,7 +178,7 @@ CẤU TRÚC:
   "total_questions": 5,
   "correct_number": 4,
   "score_percentage": 80,
-  "ai_review": "Phép cộng cơ bản tốt; cần luyện thêm phép trừ có nhớ."
+  "review": "Phép cộng cơ bản tốt; cần luyện thêm phép trừ có nhớ."
 }
 `
 
@@ -189,7 +189,7 @@ Bạn sẽ nhận được câu hỏi của bài kiểm tra củng cố (JSON ar
 QUY TẮC CHẤM:
 - Đối chiếu từng câu trả lời theo "question_number" với "right_answer".
 - score_percentage = round(correct_number / total_questions * 100).
-- "ai_review" viết bằng tiếng Việt, tối đa 200 ký tự; có so sánh tiến bộ so với bài kiểm tra trước. Không xuống dòng.
+- "review" viết bằng tiếng Việt, tối đa 200 ký tự; có so sánh tiến bộ so với bài kiểm tra trước. Không xuống dòng.
 - "assessment_grade" phải là một trong: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Lấy cấp lớp hiện tại làm mốc; chỉ điều chỉnh khi kết quả thực sự rõ ràng.
 
 QUY TẮC ĐẦU RA:
@@ -200,7 +200,7 @@ CẤU TRÚC:
   "total_questions": 5,
   "correct_number": 4,
   "score_percentage": 80,
-  "ai_review": "Phép trừ tốt hơn; cần luyện thêm cộng nhiều chữ số.",
+  "review": "Phép trừ tốt hơn; cần luyện thêm cộng nhiều chữ số.",
   "assessment_grade": "Grade 3"
 }
 `
@@ -212,7 +212,7 @@ Bạn sẽ nhận được câu hỏi của bài luyện tập củng cố (JSON
 QUY TẮC CHẤM:
 - Đối chiếu từng câu trả lời theo "question_number" với "right_answer".
 - score_percentage = round(correct_number / total_questions * 100).
-- "ai_review" viết bằng tiếng Việt, tối đa 200 ký tự; có so sánh với đợt luyện trước. Không xuống dòng.
+- "review" viết bằng tiếng Việt, tối đa 200 ký tự; có so sánh với đợt luyện trước. Không xuống dòng.
 
 QUY TẮC ĐẦU RA:
 - CHỈ trả về MỘT JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không xuống dòng trong giá trị chuỗi.
@@ -222,7 +222,7 @@ CẤU TRÚC:
   "total_questions": 5,
   "correct_number": 4,
   "score_percentage": 80,
-  "ai_review": "Phép trừ tốt hơn; cần luyện thêm cộng nhiều chữ số."
+  "review": "Phép trừ tốt hơn; cần luyện thêm cộng nhiều chữ số."
 }
 `
 
@@ -279,7 +279,7 @@ Câu hỏi bài trước (JSON): %s
 Câu trả lời của học sinh (JSON): %s
 Nhận xét AI về kết quả trước: %s
 
-%s`, purpose, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+%s`, purpose, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousReview, closing)
 	}
 
 	closing := "Tập trung vào điểm yếu trong nhận xét trước, nhưng giữ MỌI câu hỏi đúng độ khó mà GRADE PROFILE ở trên quy định."
@@ -298,7 +298,7 @@ Câu hỏi bài trước (JSON): %s
 Câu trả lời của học sinh (JSON): %s
 Nhận xét AI về kết quả trước: %s
 
-%s`, header, purpose, context, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+%s`, header, purpose, context, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousReview, closing)
 }
 
 func userGradeVN(purpose QuizPurpose, in QuizPromptInput) string {

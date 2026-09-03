@@ -34,7 +34,7 @@ const (
 )
 
 // QuizLanguage is the response language requested from the model. The
-// model is instructed to emit ai_review in this language; JSON keys are
+// model is instructed to emit review in this language; JSON keys are
 // always English regardless.
 type QuizLanguage string
 
@@ -102,7 +102,7 @@ type QuizPromptInput struct {
 	// Previous-round payloads — required for Reinforce.
 	PreviousQuestions string
 	PreviousAnswers   string
-	PreviousAIReview  string
+	PreviousReview    string
 
 	// Current-round payloads — required for Grade / GradeReinforce.
 	Questions string
@@ -143,7 +143,7 @@ func BuildQuizPrompt(kind QuizPromptKind, in QuizPromptInput) (system string, us
 		if err := requireFields(
 			in.PreviousQuestions, "PreviousQuestions",
 			in.PreviousAnswers, "PreviousAnswers",
-			in.PreviousAIReview, "PreviousAIReview"); err != nil {
+			in.PreviousReview, "PreviousReview"); err != nil {
 			return "", "", err
 		}
 		return buildReinforcePrompt(lang, purpose, in), buildReinforceUser(lang, purpose, in), nil

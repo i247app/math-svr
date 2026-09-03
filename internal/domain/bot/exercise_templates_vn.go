@@ -122,7 +122,7 @@ NHIỆM VỤ:
 - So khớp từng câu trả lời với "right_answer" của câu hỏi tương ứng để xác định đúng/sai.
 - Câu hỏi không có câu trả lời tương ứng được tính là SAI.
 - Tính tổng số câu (total_questions), số câu đúng (correct_number) và phần trăm điểm (score_percentage, làm tròn xuống).
-- Viết "ai_review" ngắn gọn (2-4 câu) bằng tiếng Việt: ghi nhận điểm mạnh, lỗi sai phổ biến, và một gợi ý ôn tập cụ thể bám sát chương + bài học.
+- Viết "review" ngắn gọn (2-4 câu) bằng tiếng Việt: ghi nhận điểm mạnh, lỗi sai phổ biến, và một gợi ý ôn tập cụ thể bám sát chương + bài học.
 
 QUY TẮC ĐẦU RA:
 - CHỈ trả về JSON object đúng cấu trúc bên dưới, không lời dẫn, không markdown.
@@ -132,7 +132,7 @@ CẤU TRÚC:
   "total_questions": 10,
   "correct_number": 8,
   "score_percentage": 80,
-  "ai_review": "..."
+  "review": "..."
 }
 `
 

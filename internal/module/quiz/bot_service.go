@@ -47,7 +47,7 @@ type generateQuizInput struct {
 	NumQuestions        int
 	PreviousQuestions   string
 	PreviousAnswers     string
-	PreviousAIReview    string
+	PreviousReview      string
 }
 
 // generateQuizOutput pairs the parsed quiz title + short_text with its
@@ -94,7 +94,7 @@ func (c *botClient) GenerateQuiz(ctx context.Context, in generateQuizInput) (*ge
 		NumQuestions:        in.NumQuestions,
 		PreviousQuestions:   in.PreviousQuestions,
 		PreviousAnswers:     in.PreviousAnswers,
-		PreviousAIReview:    in.PreviousAIReview,
+		PreviousReview:      in.PreviousReview,
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.QUIZ_GENERATION_FAILED, nil, err)

@@ -124,18 +124,18 @@ TASK:
 - Match each answer against the corresponding "right_answer" to decide correctness.
 - Any question without a matching answer is counted WRONG.
 - Compute total_questions, correct_number, and score_percentage (floor to integer).
-- Write a short "ai_review" (2-4 sentences, English): note strengths, common mistakes, and one specific revision tip tied to the chapter + lesson scope.
+- Write a short "review" (2-4 sentences, English): note strengths, common mistakes, and one specific revision tip tied to the chapter + lesson scope.
 
 OUTPUT RULES:
 - Return ONLY the JSON object below — no prose, no markdown fences.
-- ai_review must be <= 200 characters, mention one strength and one concrete area to improve. No newlines.
+- review must be <= 200 characters, mention one strength and one concrete area to improve. No newlines.
 
 SCHEMA:
 {
   "total_questions": 10,
   "correct_number": 8,
   "score_percentage": 80,
-  "ai_review": "..."
+  "review": "..."
 }
 `
 

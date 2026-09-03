@@ -9,9 +9,9 @@ import (
 // caps each student at one submission per exercise — retries / multiple
 // attempts are not modeled today.
 //
-// answers and aiReview are opaque JSON blobs (LONGTEXT in the schema).
+// answers and review are opaque JSON blobs (LONGTEXT in the schema).
 // answers follows the {question_number, label} shape from
-// quizDto.QuizStudentAnswer; aiReview is whatever the grading prompt
+// quizDto.QuizStudentAnswer; review is whatever the grading prompt
 // returned and is parsed on the way out.
 //
 // The lifecycle column is submissionStatus (SUBMITTED → GRADED →
@@ -25,7 +25,7 @@ type Submission struct {
 	classroomId                   int64
 	profileId                     int64
 	answers                       *string
-	aiReview                      *string
+	review                        *string
 	totalQuestions                *int64
 	correctNumber                 *int64
 	scorePercentage               *int64
@@ -54,8 +54,8 @@ func (s *Submission) ProfileId() int64                          { return s.profi
 func (s *Submission) SetProfileId(id int64)                     { s.profileId = id }
 func (s *Submission) Answers() *string                          { return s.answers }
 func (s *Submission) SetAnswers(v *string)                      { s.answers = v }
-func (s *Submission) AIReview() *string                         { return s.aiReview }
-func (s *Submission) SetAIReview(v *string)                     { s.aiReview = v }
+func (s *Submission) Review() *string                           { return s.review }
+func (s *Submission) SetReview(v *string)                       { s.review = v }
 func (s *Submission) TotalQuestions() *int64                    { return s.totalQuestions }
 func (s *Submission) SetTotalQuestions(v *int64)                { s.totalQuestions = v }
 func (s *Submission) CorrectNumber() *int64                     { return s.correctNumber }

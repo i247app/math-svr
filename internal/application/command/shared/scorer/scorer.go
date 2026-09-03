@@ -40,8 +40,8 @@ import (
 // shapes whether v1 (bot) or v2 (server) produced it.
 const ReviewSourceMarker = "deterministic_v2"
 
-// reviewMaxLen mirrors the tightest column ai_review may land in —
-// today ma_quizzes.ai_review's VARCHAR(255). ma_exercise_submissions
+// reviewMaxLen mirrors the tightest column review may land in —
+// today ma_quizzes.review's VARCHAR(255). ma_exercise_submissions
 // uses LONGTEXT so it has plenty of headroom; clamping both paths to the
 // same budget keeps the review compact and consistent across aggregates.
 const reviewMaxLen = 250
@@ -54,7 +54,7 @@ type Result struct {
 	TotalQuestions  int
 	CorrectNumber   int
 	ScorePercentage int
-	AIReview        string
+	Review          string
 	// AssessmentGrade stays nil today — only quiz writes this column, and
 	// deriving a coarse grade signal from difficulty is reserved for a
 	// follow-up once topic+difficulty tags appear in real traffic.
@@ -129,7 +129,7 @@ func Score(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang enum.
 		TotalQuestions:  total,
 		CorrectNumber:   correct,
 		ScorePercentage: percentage,
-		AIReview:        review,
+		Review:          review,
 		AssessmentGrade: nil,
 	}, nil
 }

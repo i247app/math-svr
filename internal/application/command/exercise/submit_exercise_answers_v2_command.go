@@ -24,7 +24,7 @@ import (
 // in process — no bot adapter call — and persists the row through the
 // same repo write path as v1, including the seq-minted external ID.
 //
-// Compared to v1, the bot grading inputs (AIReview / TotalQuestions /
+// Compared to v1, the bot grading inputs (Review / TotalQuestions /
 // ...) are computed inline from the exercise row's `questions` JSON so
 // the caller doesn't have to plumb them in.
 //
@@ -57,7 +57,7 @@ func NewSubmitExerciseAnswersV2CommandHandler(uow transaction.UnitOfWork) *Submi
 //
 // The lifecycle column lands on GRADED because the deterministic scorer
 // always produces a non-empty review — same convention as v1's
-// "non-nil AIReview ⇒ GRADED" branch.
+// "non-nil Review ⇒ GRADED" branch.
 func (h *SubmitExerciseAnswersV2CommandHandler) Handle(ctx context.Context, cmd SubmitExerciseAnswersV2Command) (*domain.Submission, error) {
 	log := logger.From(ctx)
 
@@ -94,8 +94,8 @@ func (h *SubmitExerciseAnswersV2CommandHandler) Handle(ctx context.Context, cmd 
 		ans := string(answersJSON)
 		sub.SetAnswers(&ans)
 
-		review := score.AIReview
-		sub.SetAIReview(&review)
+		review := score.Review
+		sub.SetReview(&review)
 
 		total := int64(score.TotalQuestions)
 		correct := int64(score.CorrectNumber)
@@ -108,7 +108,7 @@ func (h *SubmitExerciseAnswersV2CommandHandler) Handle(ctx context.Context, cmd 
 		sub.SetSubmittedDt(now)
 		// Deterministic scoring always produces a review, so we always
 		// land on GRADED with graded_dt set — matching v1's success
-		// branch (which writes GRADED when AIReview != "").
+		// branch (which writes GRADED when Review != "").
 		statusVal := string(enum.ClassroomExerciseSubmissionStatusGraded)
 		sub.SetSubmissionStatus(&statusVal)
 		sub.SetGradedDt(now)

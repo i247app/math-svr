@@ -12,7 +12,7 @@ import (
 // counts are pointers because future EXAM types may opt out of full
 // scoring; today PRACTICE and ASSESSMENT both populate all three.
 type GradingUpdate struct {
-	AIReview        string
+	Review          string
 	AssessmentGrade *string
 	TotalQuestions  *int
 	CorrectNumber   *int

@@ -144,7 +144,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 			return nil, errs.NewError(ctx, status.QUIZ_PREVIOUS_NOT_FOUND, nil,
 				ErrPreviousQuizNotFound)
 		}
-		if prev.AIReview() == nil || prev.Answers() == nil {
+		if prev.Review() == nil || prev.Answers() == nil {
 			return nil, errs.NewError(ctx, status.QUIZ_PREVIOUS_NOT_GRADED, nil, ErrPreviousQuizMustBeSubmittedBeforeGeneratingReinforceRound)
 		}
 		// Ownership check only applies when both sides have a profile.
@@ -155,7 +155,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 		}
 		genIn.PreviousQuestions = derefString(prev.Questions())
 		genIn.PreviousAnswers = derefString(prev.Answers())
-		genIn.PreviousAIReview = *prev.AIReview()
+		genIn.PreviousReview = *prev.Review()
 	}
 
 	generated, err := s.bot.GenerateQuiz(ctx, genIn)
@@ -285,7 +285,7 @@ func (s *Service) SubmitQuizAnswersCost(ctx context.Context, req *dto.SubmitQuiz
 	}
 
 	gradingUpdate := domain.GradingUpdate{
-		AIReview: grading.AIReview,
+		Review: grading.Review,
 	}
 	if grading.AssessmentGrade != nil && *grading.AssessmentGrade != "" {
 		log.Infof("quiz.submitted.assessment_grade: %s", *grading.AssessmentGrade)

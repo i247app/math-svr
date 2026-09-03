@@ -5,7 +5,7 @@ CREATE TABLE ma_exercise_submissions (
   classroom_id                    BIGINT UNSIGNED NOT NULL,
   profile_id                      BIGINT UNSIGNED NOT NULL,
   answers                         LONGTEXT,
-  ai_review                       LONGTEXT,
+  review                          LONGTEXT,
   total_questions                 INT UNSIGNED DEFAULT NULL,
   correct_number                  INT UNSIGNED DEFAULT NULL,
   score_percentage                INT UNSIGNED DEFAULT NULL,

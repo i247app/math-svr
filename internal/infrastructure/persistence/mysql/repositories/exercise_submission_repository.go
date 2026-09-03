@@ -20,7 +20,7 @@ const (
 
 	exerciseSubmissionColumns = `s.id, s.classroom_exercise_submission_id,
 		s.classroom_exercise_id, s.classroom_id, s.profile_id,
-		s.answers, s.ai_review,
+		s.answers, s.review,
 		s.total_questions, s.correct_number, s.score_percentage,
 		s.submitted_dt, s.graded_dt,
 		s.note, s.submission_status, s.status,
@@ -48,7 +48,7 @@ func scanExerciseSubmission(s database.RowScanner) (*models.ExerciseSubmissionMo
 	var m models.ExerciseSubmissionModel
 	if err := s.Scan(&m.Id, &m.ClassroomExerciseSubmissionId,
 		&m.ClassroomExerciseId, &m.ClassroomId, &m.ProfileId,
-		&m.Answers, &m.AIReview,
+		&m.Answers, &m.Review,
 		&m.TotalQuestions, &m.CorrectNumber, &m.ScorePercentage,
 		&m.SubmittedDt, &m.GradedDt,
 		&m.Note, &m.SubmissionStatus, &m.Status,
@@ -359,7 +359,7 @@ func (r *ExerciseSubmissionRepository) Create(ctx context.Context, sub *domain.S
 	query := `
 		INSERT INTO ` + exerciseSubmissionTable + `
 			(classroom_exercise_submission_id, classroom_exercise_id, classroom_id, profile_id,
-			 answers, ai_review,
+			 answers, review,
 			 total_questions, correct_number, score_percentage,
 			 submitted_dt, graded_dt,
 			 note, submission_status, create_id, create_dt, modify_dt)
@@ -367,7 +367,7 @@ func (r *ExerciseSubmissionRepository) Create(ctx context.Context, sub *domain.S
 	`
 	result, err := r.db.Exec(ctx, query,
 		sub.ClassroomExerciseSubmissionId(), sub.ClassroomExerciseId(), sub.ClassroomId(), sub.ProfileId(),
-		sub.Answers(), sub.AIReview(),
+		sub.Answers(), sub.Review(),
 		sub.TotalQuestions(), sub.CorrectNumber(), sub.ScorePercentage(),
 		submittedArg, gradedArg,
 		sub.Note(), sub.SubmissionStatus(), sub.CreateId(),
@@ -394,7 +394,7 @@ func (r *ExerciseSubmissionRepository) UpdateGrading(ctx context.Context, submis
 
 	query := `
 		UPDATE ` + exerciseSubmissionTable + `
-		SET ai_review         = COALESCE(?, ai_review),
+		SET review         = COALESCE(?, review),
 			total_questions   = COALESCE(?, total_questions),
 			correct_number    = COALESCE(?, correct_number),
 			score_percentage  = COALESCE(?, score_percentage),
@@ -405,7 +405,7 @@ func (r *ExerciseSubmissionRepository) UpdateGrading(ctx context.Context, submis
 		WHERE classroom_exercise_submission_id = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
-		patch.AIReview, patch.TotalQuestions, patch.CorrectNumber, patch.ScorePercentage,
+		patch.Review, patch.TotalQuestions, patch.CorrectNumber, patch.ScorePercentage,
 		gradedArg, patch.SubmissionStatus, patch.ModifyID,
 		mtime.Now().Time, submissionId); err != nil {
 		return fmt.Errorf("classroom exercise submission repo update grading: %w", err)
@@ -440,7 +440,7 @@ func modelToDomainClassroomExerciseSubmission(m *models.ExerciseSubmissionModel)
 	s.SetClassroomId(m.ClassroomId)
 	s.SetProfileId(m.ProfileId)
 	s.SetAnswers(m.Answers)
-	s.SetAIReview(m.AIReview)
+	s.SetReview(m.Review)
 	s.SetTotalQuestions(m.TotalQuestions)
 	s.SetCorrectNumber(m.CorrectNumber)
 	s.SetScorePercentage(m.ScorePercentage)

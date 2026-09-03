@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// English prompt templates. ai_review is emitted in English. JSON keys
-// are always English regardless of QuizLanguage — only ai_review and
+// English prompt templates. review is emitted in English. JSON keys
+// are always English regardless of QuizLanguage — only review and
 // the user-facing parts of system text switch language.
 
 // systemGenerateENTmpl carries three %d placeholders: target count,
@@ -167,7 +167,7 @@ You will be given the quiz questions (JSON array) and the student's answers (JSO
 GRADING RULES:
 - Match each answer by "question_number" to the corresponding question's "right_answer".
 - score_percentage = round(correct_number / total_questions * 100).
-- "ai_review" must be in English, <= 200 characters, mention one strength and one concrete area to improve. No newlines.
+- "review" must be in English, <= 200 characters, mention one strength and one concrete area to improve. No newlines.
 - "assessment_grade" must be one of: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Base it on observed accuracy AND question difficulty, not accuracy alone.
 
 OUTPUT RULES:
@@ -178,7 +178,7 @@ SCHEMA:
   "total_questions": 5,
   "correct_number": 4,
   "score_percentage": 80,
-  "ai_review": "Strong basic arithmetic; review subtraction with regrouping.",
+  "review": "Strong basic arithmetic; review subtraction with regrouping.",
   "assessment_grade": "Grade 3"
 }
 `
@@ -190,7 +190,7 @@ You will be given the quiz questions (JSON array) and the student's answers (JSO
 GRADING RULES:
 - Match each answer by "question_number" to the corresponding question's "right_answer".
 - score_percentage = round(correct_number / total_questions * 100).
-- "ai_review" must be in English, <= 200 characters, mention one strength and one concrete area to improve. No newlines.
+- "review" must be in English, <= 200 characters, mention one strength and one concrete area to improve. No newlines.
 
 OUTPUT RULES:
 - Return ONLY a single JSON object matching the schema below. No prose, no markdown fences, no newlines inside string values.
@@ -200,7 +200,7 @@ SCHEMA:
   "total_questions": 5,
   "correct_number": 4,
   "score_percentage": 80,
-  "ai_review": "Strong basic arithmetic; review subtraction with regrouping."
+  "review": "Strong basic arithmetic; review subtraction with regrouping."
 }
 `
 
@@ -211,7 +211,7 @@ You will be given the reinforce-quiz questions (JSON array), the student's answe
 GRADING RULES:
 - Match each answer by "question_number" to "right_answer".
 - score_percentage = round(correct_number / total_questions * 100).
-- "ai_review" must be in English, <= 200 characters; reference progress relative to the previous quiz. No newlines.
+- "review" must be in English, <= 200 characters; reference progress relative to the previous quiz. No newlines.
 - "assessment_grade" must be one of: "Kindergarten", "Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5". Consider the student's current grade as the anchor; only diverge when accuracy is decisive.
 
 OUTPUT RULES:
@@ -222,7 +222,7 @@ SCHEMA:
   "total_questions": 5,
   "correct_number": 4,
   "score_percentage": 80,
-  "ai_review": "Improved on subtraction; keep practicing multi-digit addition.",
+  "review": "Improved on subtraction; keep practicing multi-digit addition.",
   "assessment_grade": "Grade 3"
 }
 `
@@ -234,7 +234,7 @@ You will be given the reinforce-practice questions (JSON array), the student's a
 GRADING RULES:
 - Match each answer by "question_number" to "right_answer".
 - score_percentage = round(correct_number / total_questions * 100).
-- "ai_review" must be in English, <= 200 characters; reference progress relative to the previous practice round. No newlines.
+- "review" must be in English, <= 200 characters; reference progress relative to the previous practice round. No newlines.
 
 OUTPUT RULES:
 - Return ONLY a single JSON object matching the schema below. No prose, no markdown fences, no newlines inside string values.
@@ -244,7 +244,7 @@ SCHEMA:
   "total_questions": 5,
   "correct_number": 4,
   "score_percentage": 80,
-  "ai_review": "Improved on subtraction; keep practicing multi-digit addition."
+  "review": "Improved on subtraction; keep practicing multi-digit addition."
 }
 `
 
@@ -303,7 +303,7 @@ Previous quiz questions (JSON): %s
 Student's previous answers (JSON): %s
 AI review of previous performance: %s
 
-%s`, purpose, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+%s`, purpose, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousReview, closing)
 	}
 	closing := "Target the weak spots from the previous review, but keep EVERY question at the difficulty defined by the GRADE PROFILE above."
 	header := ""
@@ -321,7 +321,7 @@ Learning intent: %s.
 - Student's previous answers (JSON): %s
 - AI review of previous performance: %s
 
-%s`, header, purpose, context, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousAIReview, closing)
+%s`, header, purpose, context, intent, in.PreviousQuestions, in.PreviousAnswers, in.PreviousReview, closing)
 }
 
 func userGradeEN(purpose QuizPurpose, in QuizPromptInput) string {

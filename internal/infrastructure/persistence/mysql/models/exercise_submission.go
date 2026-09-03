@@ -11,7 +11,7 @@ type ExerciseSubmissionModel struct {
 	ClassroomId                   int64
 	ProfileId                     int64
 	Answers                       *string
-	AIReview                      *string
+	Review                        *string
 	TotalQuestions                *int64
 	CorrectNumber                 *int64
 	ScorePercentage               *int64

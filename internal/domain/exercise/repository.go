@@ -138,13 +138,13 @@ type ListSubmissionsParams struct {
 	Limit int64
 }
 
-// GradingPatch holds the bot-supplied grading result. AIReview is the
+// GradingPatch holds the bot-supplied grading result. Review is the
 // qualitative review string; the other fields are numeric scores. Any
 // field left nil means "leave the existing value alone" — the repo
 // applies them via COALESCE so a retry can refine partial results
 // without nulling out prior progress.
 type GradingPatch struct {
-	AIReview        *string
+	Review          *string
 	TotalQuestions  *int64
 	CorrectNumber   *int64
 	ScorePercentage *int64

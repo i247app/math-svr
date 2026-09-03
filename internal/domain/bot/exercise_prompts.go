@@ -10,7 +10,7 @@ import (
 //	Generate — teacher-issued exercise generation.
 //	Grade    — student-submission grading; reads `{questions, answers}`,
 //	           emits the standard `{total_questions, correct_number,
-//	           score_percentage, ai_review}` shape so the existing
+//	           score_percentage, review}` shape so the existing
 //	           parseGradedQuiz parser handles the response unchanged.
 type ExercisePromptKind int
 

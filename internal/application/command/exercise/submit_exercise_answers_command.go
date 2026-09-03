@@ -16,7 +16,7 @@ import (
 
 // SubmitExerciseAnswersCommand persists a freshly graded submission.
 // The expensive bot grading call happens BEFORE this command — the
-// AIReview / score numbers arrive already computed so the UoW stays a
+// Review / score numbers arrive already computed so the UoW stays a
 // short DB-only insert.
 //
 // The DB UNIQUE (classroom_exercise_id, profile_id) protects against
@@ -30,7 +30,7 @@ type SubmitExerciseAnswersCommand struct {
 	ClassroomID         int64
 	ProfileID           int64
 	AnswersJSON         string
-	AIReview            *string
+	Review              *string
 	TotalQuestions      *int64
 	CorrectNumber       *int64
 	ScorePercentage     *int64
@@ -61,19 +61,19 @@ func (h *SubmitExerciseAnswersCommandHandler) Handle(ctx context.Context, cmd Su
 		sub.SetProfileId(cmd.ProfileID)
 		answers := cmd.AnswersJSON
 		sub.SetAnswers(&answers)
-		sub.SetAIReview(cmd.AIReview)
+		sub.SetReview(cmd.Review)
 		sub.SetTotalQuestions(cmd.TotalQuestions)
 		sub.SetCorrectNumber(cmd.CorrectNumber)
 		sub.SetScorePercentage(cmd.ScorePercentage)
 
 		now := mtime.Now()
 		sub.SetSubmittedDt(now)
-		// Treat a non-nil AIReview as the marker that grading happened
+		// Treat a non-nil Review as the marker that grading happened
 		// at submit time. The row goes straight to GRADED so the student
 		// sees the result on the same response; a regrade flow can roll
 		// it back later if needed.
 		statusVal := string(enum.ClassroomExerciseSubmissionStatusSubmitted)
-		if cmd.AIReview != nil && strings.TrimSpace(*cmd.AIReview) != "" {
+		if cmd.Review != nil && strings.TrimSpace(*cmd.Review) != "" {
 			statusVal = string(enum.ClassroomExerciseSubmissionStatusGraded)
 			sub.SetGradedDt(now)
 		}

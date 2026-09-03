@@ -47,7 +47,7 @@ type SubmissionProfileSummary struct {
 // QuizStudentAnswer shape so the mobile client can render student
 // responses with the same widgets it uses for quizzes.
 //
-// total_questions / correct_number / score_percentage / ai_review are
+// total_questions / correct_number / score_percentage / review are
 // surfaced as the optional Grading block — nil when the row hasn't
 // been graded yet (e.g. SUBMITTED state after a bot failure).
 //
@@ -277,7 +277,7 @@ func buildGrading(s *domain.Submission) *quizDto.QuizGradingResult {
 	if s == nil {
 		return nil
 	}
-	if s.AIReview() == nil && s.TotalQuestions() == nil &&
+	if s.Review() == nil && s.TotalQuestions() == nil &&
 		s.CorrectNumber() == nil && s.ScorePercentage() == nil {
 		return nil
 	}
@@ -291,8 +291,8 @@ func buildGrading(s *domain.Submission) *quizDto.QuizGradingResult {
 	if v := s.ScorePercentage(); v != nil {
 		g.ScorePercentage = int(*v)
 	}
-	if v := s.AIReview(); v != nil {
-		g.AIReview = *v
+	if v := s.Review(); v != nil {
+		g.Review = *v
 	}
 	return g
 }

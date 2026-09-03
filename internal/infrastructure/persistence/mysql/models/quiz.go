@@ -15,7 +15,7 @@ type QuizModel struct {
 	ShortText       *string
 	Questions       *string
 	Answers         *string
-	AIReview        *string
+	Review          *string
 	AssessmentGrade *string
 	TotalQuestions  *int
 	CorrectNumber   *int
