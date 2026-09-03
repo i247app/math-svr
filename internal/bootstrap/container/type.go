@@ -3,7 +3,6 @@ package container
 import (
 	// "math-ai.com/math-ai/internal/application/socket"
 	bannerDomain "math-ai.com/math-ai/internal/domain/banner"
-	chapterDomain "math-ai.com/math-ai/internal/domain/chapter"
 	chatDomain "math-ai.com/math-ai/internal/domain/chat"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
@@ -23,7 +22,6 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/banner"
 	"math-ai.com/math-ai/internal/module/bot"
-	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
@@ -57,7 +55,6 @@ type ServiceContainer struct {
 	DeviceSvc       *device.Service
 	OtpSvc          *otp.Service
 	QuizSvc         *quiz.Service
-	ChapterSvc      *chapter.Service
 	SchoolSvc       *school.Service
 	JobSvc          *job.Service
 	SeqSvc          *seq.Service
@@ -81,8 +78,6 @@ type RepositoryContainer struct {
 	DeviceRepository             deviceDomain.IRepository
 	OtpRepository                otpDomain.IRepository
 	QuizRepository               quizDomain.IRepository
-	ChapterRepository            chapterDomain.IRepository
-	ChapterTranslationRepository chapterDomain.ITranslationRepository
 	SchoolRepository             schoolDomain.IRepository
 	SeqRepository                seqDomain.IRepository
 	ClassroomRepository          classroomDomain.IRepository

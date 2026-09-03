@@ -10,7 +10,6 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/banner"
 	"math-ai.com/math-ai/internal/module/bot"
-	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
@@ -157,14 +156,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ProgramRepository,
 		repos.GradeRepository,
 		repos.SemesterRepository,
-		repos.ChapterRepository,
-	)
-
-	log.Info("> Setup ChapterSvc...")
-	chapterService := chapter.NewService(
-		repos.ChapterRepository,
-		repos.ChapterTranslationRepository,
-		uow,
 	)
 
 	log.Info("> Setup JobSvc...")
@@ -238,7 +229,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		DeviceSvc:       deviceService,
 		OtpSvc:          otpService,
 		QuizSvc:         quizService,
-		ChapterSvc:      chapterService,
 		SchoolSvc:       schoolService,
 		JobSvc:          jobService,
 		SeqSvc:          seqService,

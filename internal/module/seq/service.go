@@ -16,7 +16,7 @@ import (
 // Production callers should prefer the in-transaction form:
 //
 //	uow.Do(ctx, func(ctx, repos) error {
-//	    id, err := repos.Seq.Next(ctx, seq.NameChapter)
+//	    id, err := repos.Seq.Next(ctx, seq.NameQuiz)
 //	    ...
 //	})
 //

@@ -16,8 +16,6 @@ func SetupRepositories(db *database.DatabaseWithLogs) *RepositoryContainer {
 		DeviceRepository:             repositories.NewDeviceRepository(db),
 		OtpRepository:                repositories.NewOtpRepository(db),
 		QuizRepository:               repositories.NewQuizRepository(db),
-		ChapterRepository:            repositories.NewChapterRepository(db),
-		ChapterTranslationRepository: repositories.NewChapterTranslationRepository(db),
 		SchoolRepository:             repositories.NewSchoolRepository(db),
 		SeqRepository:                repositories.NewSeqRepository(db),
 		ClassroomRepository:          repositories.NewClassroomRepository(db),

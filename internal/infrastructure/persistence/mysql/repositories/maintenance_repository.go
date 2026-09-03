@@ -10,9 +10,9 @@ import (
 )
 
 // clearDataTables lists the user-generated tables wiped by ClearData.
-// Reference / seed tables (programs, grades, semesters, chapters, schools and
-// their *_translations) are intentionally excluded so the bilingual
-// curriculum data seeded outside the app survives. Mirrors sql/clear_data.sql.
+// Reference / seed tables (programs, grades, semesters, schools) are
+// intentionally excluded so the curriculum data seeded outside the app
+// survives. Mirrors sql/clear_data.sql.
 var clearDataTables = []string{
 	userTable,
 	aliasTable,
@@ -35,8 +35,8 @@ var clearDataTables = []string{
 }
 
 // clearDataSeqs lists the external-id counters reset back to 0 for the wiped
-// aggregates only. Reference sequences (program/grade/semester/chapter/school
-// + *_translation) are intentionally left untouched so seeded rows keep their
+// aggregates only. Reference sequences (program/grade/semester/school)
+// are intentionally left untouched so seeded rows keep their
 // ids. Mirrors sql/clear_data.sql.
 var clearDataSeqs = []string{
 	seq.NameUser,

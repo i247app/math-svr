@@ -10,7 +10,6 @@ import (
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/banner"
 	"math-ai.com/math-ai/internal/module/bot"
-	"math-ai.com/math-ai/internal/module/chapter"
 	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
@@ -185,17 +184,6 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		otpHandler := otp.NewOtpHandler(res, services.OtpSvc)
 		reg("POST /otps/send", otpHandler.HandleSend)
 		reg("POST /otps/verify", otpHandler.HandleVerify)
-	}
-
-	// chapter routes
-	{
-		chapterHandler := chapter.NewChapterHandler(res, services.ChapterSvc)
-		reg("POST /chapters/detail", chapterHandler.HandleGetChapter, authMiddleware)
-		reg("POST /chapters/list", chapterHandler.HandleListChapters, authMiddleware)
-		reg("POST /chapters/create", chapterHandler.HandleCreateChapter, authMiddleware)
-		reg("POST /chapters/update", chapterHandler.HandleUpdateChapter, authMiddleware)
-		reg("POST /chapters/soft-delete", chapterHandler.HandleSoftDeleteChapter, authMiddleware)
-		reg("POST /chapters/force-delete", chapterHandler.HandleForceDeleteChapter, authMiddleware)
 	}
 
 	// ai routes — LLM connection warm-up (public + globally throttled) so the

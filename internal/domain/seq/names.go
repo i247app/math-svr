@@ -14,8 +14,6 @@ const (
 	NameProgram                     = "program"
 	NameGrade                       = "grade"
 	NameSemester                    = "semester"
-	NameChapter                     = "chapter"
-	NameChapterTranslation          = "chapter_translation"
 	NameQuiz                        = "quiz"
 	NameSchool                      = "school"
 	NameClassroom                   = "classroom"

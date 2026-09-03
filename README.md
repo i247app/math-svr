@@ -18,9 +18,9 @@ What the server does, as implemented in `internal/module/` and
   SMS or email depending on the identifier shape (`internal/adapter/otp_delivery/`).
 - **Learner profiles** — a user account holds one or more profiles (`ma_profiles`),
   each pinned to a curriculum program, grade, semester, and optionally a school.
-- **Curriculum reference data** — programs, grades, semesters, chapters
-  (`/programs/*`, `/grades/*`, `/semesters/*`, `/chapters/*`). Only `chapter` is
-  bilingual (`ma_chapter_translations`).
+- **Curriculum reference data** — programs, grades, semesters
+  (`/programs/*`, `/grades/*`, `/semesters/*`). Single-language; rows are seeded
+  outside the app.
 - **AI quizzes** — `/quizzes/generate` builds a quiz through the bot adapter using
   curriculum context; `/quizzes/submit` grades deterministically, while
   `/quizzes/submit/cost-ai` grades through the LLM. Quizzes carry a *purpose*
@@ -253,7 +253,7 @@ All SQL lives in `internal/infrastructure/persistence/mysql/repositories/`
 `transaction.UnitOfWork.Do`, implemented by `SqlUnitOfWork`, which opens a `*sql.Tx`
 and hands the callback a `transaction.Repositories` bundle bound to it:
 
-> User, Alias, Profile, LoginLog, Device, Otp, Quiz, Chapter, ChapterTranslation,
+> User, Alias, Profile, LoginLog, Device, Otp, Quiz,
 > Grade, Semester, Program, School, Seq, Classroom, ClassroomMember,
 > ClassroomProgram, Exercise, ExerciseSubmission, Notification, Banner.
 

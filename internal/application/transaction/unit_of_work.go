@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/domain/banner"
-	"math-ai.com/math-ai/internal/domain/chapter"
 	"math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/device"
@@ -37,8 +36,6 @@ type Repositories struct {
 	Device             device.IRepository
 	Otp                otp.IRepository
 	Quiz               quiz.IRepository
-	Chapter            chapter.IRepository
-	ChapterTranslation chapter.ITranslationRepository
 	Grade              grade.IRepository
 	Semester           semester.IRepository
 	Program            program.IRepository

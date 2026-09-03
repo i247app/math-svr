@@ -116,12 +116,10 @@ type QuizResponse struct {
 //     to the profile's curriculum; if the profile has none, the bot
 //     prompt adapts and still generates a reasonable elementary-level
 //     quiz.
-//   - ChapterDescriptions, when non-empty, OVERRIDE the chapters the
-//     resolver would derive from the profile's (program, grade,
-//     semester) triple. This is what lets anonymous callers (no
-//     profile) still pin chapter focus, and lets profile-bearing
-//     callers override the curriculum-derived list when they want to
-//     scope the quiz to a subset of chapters.
+//   - ChapterDescriptions is the only source of chapter focus — the
+//     server derives none of its own. Anonymous and profile-bearing
+//     callers alike pin it here to scope the quiz to specific units;
+//     leaving it empty just drops the chapter block from the prompt.
 //
 // Purpose accepts the persisted ma_quizzes.purpose vocabulary
 // (ASSESSMENT / PRACTICE / EXAM). TypeOfQuiz is optional — when omitted

@@ -28,8 +28,6 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 			Device:             repositories.NewDeviceRepository(loggedTx),
 			Otp:                repositories.NewOtpRepository(loggedTx),
 			Quiz:               repositories.NewQuizRepository(loggedTx),
-			Chapter:            repositories.NewChapterRepository(loggedTx),
-			ChapterTranslation: repositories.NewChapterTranslationRepository(loggedTx),
 			Grade:              repositories.NewGradeRepository(loggedTx),
 			Semester:           repositories.NewSemesterRepository(loggedTx),
 			Program:            repositories.NewProgramRepository(loggedTx),

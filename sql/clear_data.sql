@@ -4,8 +4,8 @@
 --
 --   Wiped   : users, aliases, devices, login logs, profiles, otps, quizzes,
 --             classrooms (+ members, invitations, programs), exercises, contact-us.
---   Kept    : programs, grades, semesters, chapters (+ their *_translations) and
---             schools — the bilingual curriculum/reference data seeded outside the app.
+--   Kept    : programs, grades, semesters and schools — the curriculum /
+--             reference data seeded outside the app.
 --
 -- TRUNCATE resets each table's internal AUTO_INCREMENT `id`; we additionally
 -- reset the external-id counters in `ma_seqs` back to 0 for the wiped aggregates
@@ -41,7 +41,7 @@ TRUNCATE TABLE ma_chat_attachments;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ── Reset external-id counters for the wiped aggregates ──
--- Reference sequences (program/grade/semester/chapter/school + *_translation)
+-- Reference sequences (program/grade/semester/school)
 -- are intentionally NOT reset.
 UPDATE ma_seqs
 SET current_value = 0

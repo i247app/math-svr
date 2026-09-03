@@ -11,7 +11,6 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/quiz"
 	query "math-ai.com/math-ai/internal/application/query/quiz"
 	"math-ai.com/math-ai/internal/application/transaction"
-	chapterDomain "math-ai.com/math-ai/internal/domain/chapter"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
@@ -41,17 +40,12 @@ type Service struct {
 	programRepo            programDomain.IRepository
 	gradeRepo              gradeDomain.IRepository
 	semesterRepo           semesterDomain.IRepository
-	chapterRepo            chapterDomain.IRepository
 	bot                    *botClient
 }
 
 // NewService wires the quiz module. botAdapter may be nil — in a deploy
 // where the bot adapter is disabled, generate/submit endpoints return
 // MathError(BOT_CONFIG_INVALID) so consumers see a uniform error shape.
-// chapterRepo enables chapter-aware prompts: when the profile pins a
-// (program, grade, semester) triple, the resolver hydrates the matching
-// chapter labels and feeds them into the bot prompt. The arg may be nil
-// in dev/test wiring — chapter injection then silently no-ops.
 func NewService(
 	quizRepo domain.IRepository,
 	uow transaction.UnitOfWork,
@@ -60,7 +54,6 @@ func NewService(
 	programRepo programDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
 	semesterRepo semesterDomain.IRepository,
-	chapterRepo chapterDomain.IRepository,
 ) *Service {
 	return &Service{
 		getQuizByIdQuery:       query.NewGetQuizByQuizIdQueryHandler(quizRepo),
@@ -75,7 +68,6 @@ func NewService(
 		programRepo:            programRepo,
 		gradeRepo:              gradeRepo,
 		semesterRepo:           semesterRepo,
-		chapterRepo:            chapterRepo,
 		bot:                    newBotClient(bot),
 	}
 }
@@ -464,14 +456,8 @@ func (s *Service) GetQuizProgress(ctx context.Context, req *dto.QuizProgressReq)
 // non-empty so a partial or absent context still produces a valid quiz.
 //
 // ChapterDescriptions carries the curriculum chapters the quiz should
-// prioritise. It is filled in priority order:
-//  1. req.ChapterDescriptions — pinned by the client (works for
-//     anonymous quizzes that have no profile at all).
-//  2. The profile's (program, grade, semester) triple via the chapter
-//     repo — derived only when all three IDs are pinned because chapter
-//     rows are keyed on the full triple.
-//  3. Empty — the prompt degrades gracefully to grade/semester/program
-//     guidance only.
+// prioritise. It is client-supplied only (req.ChapterDescriptions); when
+// empty the prompt degrades gracefully to grade/semester/program guidance.
 type curriculumContext struct {
 	ProgramLabel        string
 	GradeLabel          string
@@ -504,8 +490,6 @@ func (s *Service) resolveCurriculumContext(ctx context.Context, req *dto.Generat
 		return cc, nil
 	}
 
-	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
-
 	if cc.ProgramLabel == "" && profile.ProgramId() != nil {
 		programs, err := s.programRepo.ListProgramsByIds(ctx, []int64{*profile.ProgramId()})
 		if err != nil {
@@ -533,10 +517,6 @@ func (s *Service) resolveCurriculumContext(ctx context.Context, req *dto.Generat
 			cc.SemesterLabel = semesters[0].Name()
 		}
 	}
-
-	if len(cc.ChapterDescriptions) == 0 {
-		cc.ChapterDescriptions = s.resolveProfileChapterDescriptions(ctx, profile, lang)
-	}
 	return cc, nil
 }
 
@@ -550,8 +530,8 @@ const maxPromptChapters = 20
 
 // normalizeRequestChapterDescriptions trims each client-supplied entry,
 // drops empties, and caps the slice at maxPromptChapters. Returns nil
-// when no entry survives so the resolver can fall back to the
-// profile-derived list with a simple len() == 0 check.
+// when no entry survives, so an all-blank payload reads the same as no
+// chapter preference at all.
 func normalizeRequestChapterDescriptions(raw []string) []string {
 	if len(raw) == 0 {
 		return nil
@@ -571,57 +551,6 @@ func normalizeRequestChapterDescriptions(raw []string) []string {
 		return nil
 	}
 	return out
-}
-
-// resolveProfileChapterLabels fetches chapters for the profile's
-// (program, grade, semester) triple and returns their localized labels
-// in display_order. Returns nil for every failure mode (missing
-// profile, partial curriculum, repo error, no rows) — chapter
-// injection is a *prompt enhancement*, never a hard requirement, so
-// errors are logged at warn level and the quiz still generates with
-// grade/semester/program-only context.
-func (s *Service) resolveProfileChapterDescriptions(ctx context.Context,
-	profile *profileDomain.Profile, lang enum.LanguageType) []string {
-
-	if s.chapterRepo == nil || profile == nil {
-		return nil
-	}
-	programID := profile.ProgramId()
-	gradeID := profile.GradeId()
-	semesterID := profile.SemesterId()
-	if programID == nil || gradeID == nil || semesterID == nil {
-		// Chapter rows are keyed on all three IDs; with any missing we'd
-		// either over-fetch (cross-curriculum) or under-fetch (empty).
-		// Skip silently — the prompt still has grade/semester/program.
-		return nil
-	}
-
-	chapters, _, err := s.chapterRepo.ListChapters(ctx, &chapterDomain.ListChaptersParams{
-		ProgramID:  programID,
-		GradeID:    gradeID,
-		SemesterID: semesterID,
-		Language:   lang,
-		TakeAll:    true,
-	})
-	if err != nil {
-		logger.From(ctx).Warnf("quiz.resolve_chapters_failed program_id=%d grade_id=%d semester_id=%d err=%v",
-			*programID, *gradeID, *semesterID, err)
-		return nil
-	}
-	if len(chapters) == 0 {
-		return nil
-	}
-
-	limit := min(len(chapters), maxPromptChapters)
-	descriptions := make([]string, 0, limit)
-	for _, c := range chapters[:limit] {
-		description := strings.TrimSpace(c.Description())
-		if description == "" {
-			continue
-		}
-		descriptions = append(descriptions, description)
-	}
-	return descriptions
 }
 
 // resolveCurrentGradeLabel fetches just the grade label for the profile —

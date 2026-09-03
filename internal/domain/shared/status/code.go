@@ -95,19 +95,6 @@ const (
 	SCHOOL_DESCRIPTION_TOO_LONG StatusCode = 4906
 	SCHOOL_PROFILE_LINK_FAILED  StatusCode = 4907
 
-	CHAPTER_NOT_FOUND                  StatusCode = 4801
-	CHAPTER_MISSING_ID                 StatusCode = 4802
-	CHAPTER_MISSING_PROGRAM_ID         StatusCode = 4803
-	CHAPTER_MISSING_GRADE_ID           StatusCode = 4804
-	CHAPTER_MISSING_SEMESTER_ID        StatusCode = 4812
-	CHAPTER_MISSING_LABEL              StatusCode = 4805
-	CHAPTER_MISSING_DESCRIPTION        StatusCode = 4806
-	CHAPTER_INVALID_DISPLAY_ORDER      StatusCode = 4807
-	CHAPTER_INVALID_LANGUAGE           StatusCode = 4808
-	CHAPTER_INVALID_TRANSLATION        StatusCode = 4809
-	CHAPTER_TRANSLATION_ALREADY_EXISTS StatusCode = 4810
-	CHAPTER_TRANSLATION_NOT_FOUND      StatusCode = 4811
-
 	OTP_NOT_FOUND                       StatusCode = 4701
 	OTP_MISSING_TYPE                    StatusCode = 4702
 	OTP_MISSING_IDENTIFIER              StatusCode = 4703
