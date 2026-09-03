@@ -286,6 +286,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Đã vượt quá giới hạn tần suất gọi AI"
 	case BOT_UNSUPPORTED_OP:
 		return "Thao tác AI không được nhà cung cấp hiện tại hỗ trợ"
+	case BOT_CONTENT_BLOCKED:
+		return "Nội dung đã bị nhà cung cấp AI chặn"
 
 	// Quiz
 	case QUIZ_NOT_FOUND:

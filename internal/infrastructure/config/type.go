@@ -152,15 +152,15 @@ type SMSConfig struct {
 // Behaviour matrix for BotProvider:
 //
 //	""  or "disabled" → adapter is nil; module services must nil-guard.
-//	"langchain" | "eino" | "openrouter" | "openai"
+//	"langchain" | "eino" | "openrouter" | "openai" | "gemini"
 //	                  → every framework whose config key is set gets
 //	                    registered (BOT_LANGCHAIN_BACKEND /
 //	                    BOT_EINO_BACKEND / BOT_OPENROUTER_API_KEY /
-//	                    BOT_OPENAI_API_KEY);
+//	                    BOT_OPENAI_API_KEY / BOT_GEMINI_API_KEY);
 //	                    BotProvider names the DEFAULT one.
 //	anything else     → MathError(BOT_CONFIG_INVALID) at boot.
 type BotConfig struct {
-	DefaultBotProvider string // env BOT_PROVIDER; "langchain" | "eino" | "openrouter" | "openai" | "" | "disabled"
+	DefaultBotProvider string // env BOT_PROVIDER; "langchain" | "eino" | "openrouter" | "openai" | "gemini" | "" | "disabled"
 
 	// LangChain-backed provider settings. Consumed (and the provider
 	// registered) whenever LangChainBackend is non-empty.
@@ -231,6 +231,25 @@ type BotConfig struct {
 	// platform.openai.com/logs. Default false — enabling it retains prompt
 	// + response content on OpenAI for 30 days.
 	OpenAIStore bool // env BOT_OPENAI_STORE; default false
+
+	// Direct-Gemini provider settings (REST over
+	// internal/shared/http_client — no SDK, no broker). Consumed (and the
+	// provider registered) whenever GeminiAPIKey is non-empty.
+	//
+	// No backend key: this client talks to Gemini only. GeminiModel is a
+	// bare model id ("gemini-2.0-flash"); the "models/" URL prefix is
+	// added by the client, and supplying it is harmless. REQUIRED — there
+	// is no built-in default, because defaulting it would pick a price on
+	// the operator's behalf.
+	//
+	// Supports Chat, Stream and Embed.
+	GeminiAPIKey      string  // env BOT_GEMINI_API_KEY — SECRET
+	GeminiBaseURL     string  // env BOT_GEMINI_BASE_URL; optional, defaults to the v1beta root
+	GeminiModel       string  // env BOT_GEMINI_MODEL; e.g. "gemini-2.0-flash"
+	GeminiEmbedModel  string  // env BOT_GEMINI_EMBED_MODEL; e.g. "text-embedding-004"
+	GeminiTemperature float64 // env BOT_GEMINI_TEMPERATURE; <0 means model default
+	GeminiTopP        float64 // env BOT_GEMINI_TOP_P;        <0 means model default
+	GeminiMaxTokens   int     // env BOT_GEMINI_MAX_TOKENS;   0  means model default
 
 	// Transport tuning shared by ALL providers.
 	Timeout       time.Duration // env BOT_TIMEOUT,        e.g. "60s"

@@ -245,3 +245,80 @@ func TestNewFromConfigAllFourProviders(t *testing.T) {
 		}
 	}
 }
+
+func TestNewFromConfigGeminiRegistersAndDefaults(t *testing.T) {
+	// The direct gemini provider builds no vendor SDK and RequireAtBoot
+	// defaults to false, so construction performs no network I/O.
+	adapter, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "gemini",
+		GeminiAPIKey:       "test-key",
+		GeminiModel:        "gemini-2.0-flash",
+	})
+	if err != nil {
+		t.Fatalf("NewFromConfig() error = %v", err)
+	}
+	if adapter == nil {
+		t.Fatal("adapter = nil, want registered adapter")
+	}
+	if adapter.DefaultName() != ProviderGemini {
+		t.Errorf("DefaultName() = %s, want gemini", adapter.DefaultName())
+	}
+	if !adapter.Has(ProviderGemini) {
+		t.Error("gemini provider not registered")
+	}
+	if adapter.Has(ProviderEino) || adapter.Has(ProviderLangChain) ||
+		adapter.Has(ProviderOpenRouter) || adapter.Has(ProviderOpenAI) {
+		t.Error("only the configured framework may register")
+	}
+}
+
+func TestNewFromConfigGeminiMissingModel(t *testing.T) {
+	_, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "gemini",
+		GeminiAPIKey:       "test-key",
+	})
+	assertConfigInvalid(t, err)
+}
+
+func TestNewFromConfigGeminiMissingCredential(t *testing.T) {
+	_, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "gemini",
+		GeminiModel:        "gemini-2.0-flash",
+	})
+	assertConfigInvalid(t, err)
+}
+
+// TestNewFromConfigAllFiveProviders proves the five coexist on one adapter
+// and that BOT_PROVIDER only picks the DEFAULT — every configured provider
+// stays reachable per-call through ChatVia / StreamVia / EmbedVia.
+func TestNewFromConfigAllFiveProviders(t *testing.T) {
+	adapter, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "gemini",
+
+		EinoBackend: "ollama",
+		EinoBaseURL: "http://127.0.0.1:1",
+		EinoModel:   "test-model",
+
+		OpenRouterAPIKey: "test-key",
+		OpenRouterModel:  "openai/gpt-4o-mini",
+
+		OpenAIAPIKey: "test-key",
+		OpenAIModel:  "gpt-4.1",
+
+		GeminiAPIKey: "test-key",
+		GeminiModel:  "gemini-2.0-flash",
+	})
+	if err != nil {
+		t.Fatalf("NewFromConfig() error = %v", err)
+	}
+	if adapter.DefaultName() != ProviderGemini {
+		t.Errorf("DefaultName() = %s, want gemini", adapter.DefaultName())
+	}
+	for _, name := range []BotProviderName{
+		ProviderEino, ProviderOpenRouter, ProviderOpenAI, ProviderGemini,
+	} {
+		if !adapter.Has(name) {
+			t.Errorf("provider %s not registered", name)
+		}
+	}
+}

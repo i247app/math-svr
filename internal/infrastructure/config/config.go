@@ -124,6 +124,14 @@ func NewEnv(envpath string) (*Env, error) {
 			OpenAIMaxTokens:    getIntConfigOptional("BOT_OPENAI_MAX_TOKENS"),
 			OpenAIStore:        getBoolConfigWithDefault("BOT_OPENAI_STORE", false),
 
+			GeminiAPIKey:      getConfigOptionalString("BOT_GEMINI_API_KEY"),
+			GeminiBaseURL:     getConfigOptionalString("BOT_GEMINI_BASE_URL"),
+			GeminiModel:       getConfigOptionalString("BOT_GEMINI_MODEL"),
+			GeminiEmbedModel:  getConfigOptionalString("BOT_GEMINI_EMBED_MODEL"),
+			GeminiTemperature: getFloatConfigWithDefault("BOT_GEMINI_TEMPERATURE", -1),
+			GeminiTopP:        getFloatConfigWithDefault("BOT_GEMINI_TOP_P", -1),
+			GeminiMaxTokens:   getIntConfigOptional("BOT_GEMINI_MAX_TOKENS"),
+
 			Timeout:       getDurationConfigOptional("BOT_TIMEOUT"),
 			MaxRetries:    getIntConfigOptional("BOT_MAX_RETRIES"),
 			RetryDelay:    getDurationConfigOptional("BOT_RETRY_DELAY"),

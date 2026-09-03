@@ -9,6 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/libs/eino"
+	"math-ai.com/math-ai/internal/libs/gemini"
 	"math-ai.com/math-ai/internal/libs/langchain"
 	"math-ai.com/math-ai/internal/libs/openai"
 	"math-ai.com/math-ai/internal/libs/openrouter"
@@ -21,19 +22,20 @@ import (
 // Behaviour matrix:
 //
 //	cfg.BotProvider == "" or "disabled" → (nil, nil); boot continues.
-//	cfg.BotProvider == "langchain"|"eino"|"openrouter"|"openai" →
+//	cfg.BotProvider == "langchain"|"eino"|"openrouter"|"openai"|"gemini" →
 //	    every configured framework is registered:
 //	      - langchain  when cfg.LangChainBackend != ""
 //	      - eino       when cfg.EinoBackend      != ""
 //	      - openrouter when cfg.OpenRouterAPIKey != ""
 //	      - openai     when cfg.OpenAIAPIKey     != ""
+//	      - gemini     when cfg.GeminiAPIKey     != ""
 //	    then cfg.BotProvider is set as the default. Callers can still
 //	    route per-call to a specific provider via ChatVia / StreamVia.
 //	cfg.BotProvider == anything else    → MathError(BOT_CONFIG_INVALID).
 //
-// openrouter and openai key off their API key rather than a backend name
-// because neither has a backend selector: OpenRouter's model id picks the
-// vendor, and the direct openai client talks to OpenAI only.
+// openrouter, openai and gemini key off their API key rather than a
+// backend name because none has a backend selector: OpenRouter's model id
+// picks the vendor, and the two direct clients each talk to one vendor.
 //
 // Naming a default whose framework is not configured (e.g.
 // BOT_PROVIDER=eino without BOT_EINO_BACKEND) is a deploy mistake and
@@ -43,8 +45,8 @@ import (
 // LLM credentials can boot. Module services that consume the adapter
 // must nil-guard, the same way they do with res.SMSProvider in local dev.
 //
-// Errors from libs/langchain, libs/eino, libs/openrouter and libs/openai
-// are translated here:
+// Errors from libs/langchain, libs/eino, libs/openrouter, libs/openai and
+// libs/gemini are translated here:
 //
 //	ErrInvalidConfig → MathError(BOT_CONFIG_INVALID, {"reason": ...})
 //	anything else    → MathError(BOT_CONNECT_FAILED) wrapping the cause
@@ -55,7 +57,7 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 	case "", "disabled":
 		return nil, nil
 	case string(ProviderLangChain), string(ProviderEino),
-		string(ProviderOpenRouter), string(ProviderOpenAI):
+		string(ProviderOpenRouter), string(ProviderOpenAI), string(ProviderGemini):
 		// recognised — continue below
 	default:
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
@@ -175,6 +177,33 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 		}
 
 		adapter.Register(NewOpenAIProvider(client))
+	}
+
+	if cfg.GeminiAPIKey != "" {
+		client, err := gemini.NewClient(ctx, gemini.Config{
+			APIKey:        cfg.GeminiAPIKey,
+			BaseURL:       cfg.GeminiBaseURL,
+			Model:         cfg.GeminiModel,
+			EmbedModel:    cfg.GeminiEmbedModel,
+			Temperature:   cfg.GeminiTemperature,
+			TopP:          cfg.GeminiTopP,
+			MaxTokens:     cfg.GeminiMaxTokens,
+			Timeout:       cfg.Timeout,
+			MaxRetries:    cfg.MaxRetries,
+			RetryDelay:    cfg.RetryDelay,
+			RequireAtBoot: cfg.RequireAtBoot,
+		})
+		if err != nil {
+			if errors.Is(err, gemini.ErrInvalidConfig) {
+				return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
+					map[string]any{"reason": err.Error()}, err)
+			}
+			log.Warnf("gemini: client not ready: %v", err)
+			return nil, errs.NewError(ctx, status.BOT_CONNECT_FAILED,
+				map[string]any{"model": cfg.GeminiModel}, err)
+		}
+
+		adapter.Register(NewGeminiProvider(client))
 	}
 
 	if err := adapter.SetDefault(BotProviderName(cfg.DefaultBotProvider)); err != nil {

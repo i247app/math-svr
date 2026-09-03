@@ -52,6 +52,20 @@ const (
 	//
 	// This is the only provider besides langchain that implements Embed.
 	ProviderOpenAI BotProviderName = "openai"
+
+	// ProviderGemini dispatches via internal/libs/gemini, which calls
+	// generativelanguage.googleapis.com directly over the shared
+	// http_client (no vendor SDK, no broker). Like openai it has no
+	// backend selector, and BotConfig.GeminiModel names a bare model id
+	// ("gemini-2.0-flash"); the "models/" URL prefix is added by the
+	// client.
+	//
+	// Same naming caution as ProviderOpenAI: "googleai" is the BACKEND
+	// name langchain and eino use to reach the same vendor through an SDK.
+	// This provider is the direct path.
+	//
+	// Supports Chat, Stream and Embed.
+	ProviderGemini BotProviderName = "gemini"
 )
 
 // Role enumerates the chat message roles the adapter recognises. The

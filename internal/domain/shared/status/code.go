@@ -151,6 +151,13 @@ const (
 	BOT_CONTEXT_TOO_LARGE StatusCode = 10006
 	BOT_RATE_LIMITED      StatusCode = 10007
 	BOT_UNSUPPORTED_OP    StatusCode = 10008
+	// BOT_CONTENT_BLOCKED is the provider's safety / recitation filter
+	// refusing to answer. Distinct from BOT_OP_FAILED on purpose: that one
+	// reads as transient and invites a retry, whereas a blocked prompt
+	// returns the same block every time and needs the prompt changed.
+	// Gemini surfaces this as finishReason SAFETY / RECITATION /
+	// PROHIBITED_CONTENT or promptFeedback.blockReason.
+	BOT_CONTENT_BLOCKED StatusCode = 10009
 
 	QUIZ_NOT_FOUND                    StatusCode = 11001
 	QUIZ_MISSING_PROFILE_ID           StatusCode = 11002

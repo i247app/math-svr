@@ -286,6 +286,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "AI provider rate limit exceeded"
 	case BOT_UNSUPPORTED_OP:
 		return "AI operation is not supported by the configured provider"
+	case BOT_CONTENT_BLOCKED:
+		return "The AI provider blocked this content"
 
 	// Quiz
 	case QUIZ_NOT_FOUND:
