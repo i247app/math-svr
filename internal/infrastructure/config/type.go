@@ -152,15 +152,16 @@ type SMSConfig struct {
 // Behaviour matrix for BotProvider:
 //
 //	""  or "disabled" → adapter is nil; module services must nil-guard.
-//	"langchain" | "eino" | "openrouter" | "openai" | "gemini"
+//	"langchain" | "eino" | "openrouter" | "openai" | "gemini" | "deepseek"
 //	                  → every framework whose config key is set gets
 //	                    registered (BOT_LANGCHAIN_BACKEND /
 //	                    BOT_EINO_BACKEND / BOT_OPENROUTER_API_KEY /
-//	                    BOT_OPENAI_API_KEY / BOT_GEMINI_API_KEY);
+//	                    BOT_OPENAI_API_KEY / BOT_GEMINI_API_KEY /
+//	                    BOT_DEEPSEEK_API_KEY);
 //	                    BotProvider names the DEFAULT one.
 //	anything else     → MathError(BOT_CONFIG_INVALID) at boot.
 type BotConfig struct {
-	DefaultBotProvider string // env BOT_PROVIDER; "langchain" | "eino" | "openrouter" | "openai" | "gemini" | "" | "disabled"
+	DefaultBotProvider string // env BOT_PROVIDER; "langchain" | "eino" | "openrouter" | "openai" | "gemini" | "deepseek" | "" | "disabled"
 
 	// LangChain-backed provider settings. Consumed (and the provider
 	// registered) whenever LangChainBackend is non-empty.
@@ -250,6 +251,28 @@ type BotConfig struct {
 	GeminiTemperature float64 // env BOT_GEMINI_TEMPERATURE; <0 means model default
 	GeminiTopP        float64 // env BOT_GEMINI_TOP_P;        <0 means model default
 	GeminiMaxTokens   int     // env BOT_GEMINI_MAX_TOKENS;   0  means model default
+
+	// Direct-DeepSeek provider settings (REST over
+	// internal/shared/http_client — no SDK, no broker). Consumed (and the
+	// provider registered) whenever DeepSeekAPIKey is non-empty.
+	//
+	// DeepSeek is OpenAI-compatible but reads `max_tokens` rather than
+	// `max_completion_tokens` and signals an empty balance with HTTP 402;
+	// that is why it has its own client rather than reusing the openai one.
+	//
+	// Supports Chat and Stream. Embed is unsupported (no endpoint).
+	DeepSeekAPIKey  string // env BOT_DEEPSEEK_API_KEY — SECRET
+	DeepSeekBaseURL string // env BOT_DEEPSEEK_BASE_URL; optional, defaults to https://api.deepseek.com
+	DeepSeekModel   string // env BOT_DEEPSEEK_MODEL; e.g. "deepseek-v4-flash"
+	// DeepSeekThinking / DeepSeekReasoningEffort control the reasoning
+	// block. Empty sends nothing, leaving the model's own default. Worth
+	// setting to "disabled" when only quiz JSON is needed: reasoning
+	// tokens are billed on top of the answer.
+	DeepSeekThinking        string  // env BOT_DEEPSEEK_THINKING; "enabled" | "disabled" | ""
+	DeepSeekReasoningEffort string  // env BOT_DEEPSEEK_REASONING_EFFORT; "low" | "high" | "max" | ""
+	DeepSeekTemperature     float64 // env BOT_DEEPSEEK_TEMPERATURE; <0 means model default
+	DeepSeekTopP            float64 // env BOT_DEEPSEEK_TOP_P;        <0 means model default
+	DeepSeekMaxTokens       int     // env BOT_DEEPSEEK_MAX_TOKENS;   0  means model default
 
 	// Transport tuning shared by ALL providers.
 	Timeout       time.Duration // env BOT_TIMEOUT,        e.g. "60s"

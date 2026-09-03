@@ -322,3 +322,91 @@ func TestNewFromConfigAllFiveProviders(t *testing.T) {
 		}
 	}
 }
+
+func TestNewFromConfigDeepSeekRegistersAndDefaults(t *testing.T) {
+	// The direct deepseek provider builds no vendor SDK and RequireAtBoot
+	// defaults to false, so construction performs no network I/O.
+	adapter, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "deepseek",
+		DeepSeekAPIKey:     "test-key",
+		DeepSeekModel:      "deepseek-v4-flash",
+	})
+	if err != nil {
+		t.Fatalf("NewFromConfig() error = %v", err)
+	}
+	if adapter == nil {
+		t.Fatal("adapter = nil, want registered adapter")
+	}
+	if adapter.DefaultName() != ProviderDeepSeek {
+		t.Errorf("DefaultName() = %s, want deepseek", adapter.DefaultName())
+	}
+	if !adapter.Has(ProviderDeepSeek) {
+		t.Error("deepseek provider not registered")
+	}
+}
+
+func TestNewFromConfigDeepSeekMissingModel(t *testing.T) {
+	_, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "deepseek",
+		DeepSeekAPIKey:     "test-key",
+	})
+	assertConfigInvalid(t, err)
+}
+
+func TestNewFromConfigDeepSeekMissingCredential(t *testing.T) {
+	_, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "deepseek",
+		DeepSeekModel:      "deepseek-v4-flash",
+	})
+	assertConfigInvalid(t, err)
+}
+
+// TestNewFromConfigDeepSeekBadThinkingValue: an unknown enum would be a
+// 400 on every single call, so it must fail at boot instead.
+func TestNewFromConfigDeepSeekBadThinkingValue(t *testing.T) {
+	_, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "deepseek",
+		DeepSeekAPIKey:     "test-key",
+		DeepSeekModel:      "deepseek-v4-flash",
+		DeepSeekThinking:   "on",
+	})
+	assertConfigInvalid(t, err)
+}
+
+// TestNewFromConfigAllSixProviders proves the six coexist on one adapter
+// and that BOT_PROVIDER only picks the DEFAULT — every configured provider
+// stays reachable per-call through ChatVia / StreamVia / EmbedVia.
+func TestNewFromConfigAllSixProviders(t *testing.T) {
+	adapter, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "deepseek",
+
+		EinoBackend: "ollama",
+		EinoBaseURL: "http://127.0.0.1:1",
+		EinoModel:   "test-model",
+
+		OpenRouterAPIKey: "test-key",
+		OpenRouterModel:  "openai/gpt-4o-mini",
+
+		OpenAIAPIKey: "test-key",
+		OpenAIModel:  "gpt-4.1",
+
+		GeminiAPIKey: "test-key",
+		GeminiModel:  "gemini-2.0-flash",
+
+		DeepSeekAPIKey: "test-key",
+		DeepSeekModel:  "deepseek-v4-flash",
+	})
+	if err != nil {
+		t.Fatalf("NewFromConfig() error = %v", err)
+	}
+	if adapter.DefaultName() != ProviderDeepSeek {
+		t.Errorf("DefaultName() = %s, want deepseek", adapter.DefaultName())
+	}
+	for _, name := range []BotProviderName{
+		ProviderEino, ProviderOpenRouter, ProviderOpenAI, ProviderGemini, ProviderDeepSeek,
+	} {
+		if !adapter.Has(name) {
+			t.Errorf("provider %s not registered", name)
+		}
+	}
+}

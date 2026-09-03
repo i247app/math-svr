@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/libs/deepseek"
 	"math-ai.com/math-ai/internal/libs/eino"
 	"math-ai.com/math-ai/internal/libs/gemini"
 	"math-ai.com/math-ai/internal/libs/langchain"
@@ -22,20 +23,21 @@ import (
 // Behaviour matrix:
 //
 //	cfg.BotProvider == "" or "disabled" → (nil, nil); boot continues.
-//	cfg.BotProvider == "langchain"|"eino"|"openrouter"|"openai"|"gemini" →
+//	cfg.BotProvider == "langchain"|"eino"|"openrouter"|"openai"|"gemini"|"deepseek" →
 //	    every configured framework is registered:
 //	      - langchain  when cfg.LangChainBackend != ""
 //	      - eino       when cfg.EinoBackend      != ""
 //	      - openrouter when cfg.OpenRouterAPIKey != ""
 //	      - openai     when cfg.OpenAIAPIKey     != ""
 //	      - gemini     when cfg.GeminiAPIKey     != ""
+//	      - deepseek   when cfg.DeepSeekAPIKey   != ""
 //	    then cfg.BotProvider is set as the default. Callers can still
 //	    route per-call to a specific provider via ChatVia / StreamVia.
 //	cfg.BotProvider == anything else    → MathError(BOT_CONFIG_INVALID).
 //
-// openrouter, openai and gemini key off their API key rather than a
-// backend name because none has a backend selector: OpenRouter's model id
-// picks the vendor, and the two direct clients each talk to one vendor.
+// openrouter, openai, gemini and deepseek key off their API key rather
+// than a backend name because none has a backend selector: OpenRouter's
+// model id picks the vendor, and each direct client talks to one vendor.
 //
 // Naming a default whose framework is not configured (e.g.
 // BOT_PROVIDER=eino without BOT_EINO_BACKEND) is a deploy mistake and
@@ -45,8 +47,8 @@ import (
 // LLM credentials can boot. Module services that consume the adapter
 // must nil-guard, the same way they do with res.SMSProvider in local dev.
 //
-// Errors from libs/langchain, libs/eino, libs/openrouter, libs/openai and
-// libs/gemini are translated here:
+// Errors from libs/langchain, libs/eino, libs/openrouter, libs/openai,
+// libs/gemini and libs/deepseek are translated here:
 //
 //	ErrInvalidConfig → MathError(BOT_CONFIG_INVALID, {"reason": ...})
 //	anything else    → MathError(BOT_CONNECT_FAILED) wrapping the cause
@@ -57,7 +59,8 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 	case "", "disabled":
 		return nil, nil
 	case string(ProviderLangChain), string(ProviderEino),
-		string(ProviderOpenRouter), string(ProviderOpenAI), string(ProviderGemini):
+		string(ProviderOpenRouter), string(ProviderOpenAI),
+		string(ProviderGemini), string(ProviderDeepSeek):
 		// recognised — continue below
 	default:
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
@@ -204,6 +207,34 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 		}
 
 		adapter.Register(NewGeminiProvider(client))
+	}
+
+	if cfg.DeepSeekAPIKey != "" {
+		client, err := deepseek.NewClient(ctx, deepseek.Config{
+			APIKey:          cfg.DeepSeekAPIKey,
+			BaseURL:         cfg.DeepSeekBaseURL,
+			Model:           cfg.DeepSeekModel,
+			Thinking:        cfg.DeepSeekThinking,
+			ReasoningEffort: cfg.DeepSeekReasoningEffort,
+			Temperature:     cfg.DeepSeekTemperature,
+			TopP:            cfg.DeepSeekTopP,
+			MaxTokens:       cfg.DeepSeekMaxTokens,
+			Timeout:         cfg.Timeout,
+			MaxRetries:      cfg.MaxRetries,
+			RetryDelay:      cfg.RetryDelay,
+			RequireAtBoot:   cfg.RequireAtBoot,
+		})
+		if err != nil {
+			if errors.Is(err, deepseek.ErrInvalidConfig) {
+				return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
+					map[string]any{"reason": err.Error()}, err)
+			}
+			log.Warnf("deepseek: client not ready: %v", err)
+			return nil, errs.NewError(ctx, status.BOT_CONNECT_FAILED,
+				map[string]any{"model": cfg.DeepSeekModel}, err)
+		}
+
+		adapter.Register(NewDeepSeekProvider(client))
 	}
 
 	if err := adapter.SetDefault(BotProviderName(cfg.DefaultBotProvider)); err != nil {

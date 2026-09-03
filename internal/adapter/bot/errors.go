@@ -6,6 +6,7 @@ import (
 
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/libs/deepseek"
 	"math-ai.com/math-ai/internal/libs/eino"
 	"math-ai.com/math-ai/internal/libs/gemini"
 	"math-ai.com/math-ai/internal/libs/langchain"
@@ -300,5 +301,75 @@ func mapGeminiError(ctx context.Context, err error) *errs.MathError {
 		return errs.NewError(ctx, status.BOT_SERIALIZE_FAILED, args, err)
 	}
 
+	return errs.NewError(ctx, status.BOT_OP_FAILED, args, err)
+}
+
+// mapDeepSeekError translates a libs/deepseek error into a domain-layer
+// MathError, mirroring its siblings so all six providers surface identical
+// status codes for identical failure shapes:
+//
+//   - deepseek.ErrInvalidConfig / IsConfigError → BOT_CONFIG_INVALID.
+//   - deepseek.ErrInsufficientBalance (402)     → BOT_CONFIG_INVALID.
+//   - deepseek.ErrContentFiltered               → BOT_CONTENT_BLOCKED.
+//   - deepseek.ErrUnsupportedOp                 → BOT_UNSUPPORTED_OP.
+//   - deepseek.ErrContextTooLarge               → BOT_CONTEXT_TOO_LARGE.
+//   - deepseek.ErrRateLimited / IsRateLimited   → BOT_RATE_LIMITED.
+//   - deepseek.ErrDecodeResponse                → BOT_SERIALIZE_FAILED.
+//   - deepseek.ErrServerOverloaded              → BOT_OP_FAILED (transient).
+//   - HTTP 401 (bad key)                        → BOT_CONFIG_INVALID.
+//   - anything else (incl. 422 / 5xx)           → BOT_OP_FAILED.
+//
+// Two mappings line up with decisions already made for the siblings.
+// HTTP 402 rides with the config failures exactly as openrouter's 402 and
+// openai's billing 429 do — an empty balance needs an operator, not a
+// retry. And ErrContentFiltered reuses BOT_CONTENT_BLOCKED, the code added
+// for Gemini's safety filter, because it is the same situation: the same
+// prompt is refused every time.
+//
+// API keys are never read here, and the raw upstream body never reaches
+// the args (libs/deepseek reports an undecodable body by size only).
+func mapDeepSeekError(ctx context.Context, err error) *errs.MathError {
+	if err == nil {
+		return nil
+	}
+
+	args := map[string]any{"provider": string(ProviderDeepSeek)}
+
+	var apiErr *deepseek.APIError
+	if errors.As(err, &apiErr) {
+		args["http_status"] = apiErr.HTTPStatus
+		if apiErr.Type != "" {
+			args["vendor_type"] = apiErr.Type
+		}
+		if apiErr.Code != "" {
+			args["vendor_code"] = apiErr.Code
+		}
+	}
+
+	switch {
+	case errors.Is(err, deepseek.ErrContentFiltered):
+		return errs.NewError(ctx, status.BOT_CONTENT_BLOCKED, args, err)
+
+	case errors.Is(err, deepseek.ErrInvalidConfig),
+		errors.Is(err, deepseek.ErrInsufficientBalance),
+		deepseek.IsConfigError(err):
+		return errs.NewError(ctx, status.BOT_CONFIG_INVALID, args, err)
+
+	case errors.Is(err, deepseek.ErrUnsupportedOp):
+		return errs.NewError(ctx, status.BOT_UNSUPPORTED_OP, args, err)
+
+	case errors.Is(err, deepseek.ErrContextTooLarge):
+		return errs.NewError(ctx, status.BOT_CONTEXT_TOO_LARGE, args, err)
+
+	case errors.Is(err, deepseek.ErrRateLimited), deepseek.IsRateLimited(err):
+		return errs.NewError(ctx, status.BOT_RATE_LIMITED, args, err)
+
+	case errors.Is(err, deepseek.ErrDecodeResponse):
+		return errs.NewError(ctx, status.BOT_SERIALIZE_FAILED, args, err)
+	}
+
+	// ErrServerOverloaded lands here on purpose: BOT_OP_FAILED is the
+	// adapter's transient bucket, which is exactly what an overloaded
+	// platform is.
 	return errs.NewError(ctx, status.BOT_OP_FAILED, args, err)
 }

@@ -132,6 +132,15 @@ func NewEnv(envpath string) (*Env, error) {
 			GeminiTopP:        getFloatConfigWithDefault("BOT_GEMINI_TOP_P", -1),
 			GeminiMaxTokens:   getIntConfigOptional("BOT_GEMINI_MAX_TOKENS"),
 
+			DeepSeekAPIKey:          getConfigOptionalString("BOT_DEEPSEEK_API_KEY"),
+			DeepSeekBaseURL:         getConfigOptionalString("BOT_DEEPSEEK_BASE_URL"),
+			DeepSeekModel:           getConfigOptionalString("BOT_DEEPSEEK_MODEL"),
+			DeepSeekThinking:        getConfigOptionalString("BOT_DEEPSEEK_THINKING"),
+			DeepSeekReasoningEffort: getConfigOptionalString("BOT_DEEPSEEK_REASONING_EFFORT"),
+			DeepSeekTemperature:     getFloatConfigWithDefault("BOT_DEEPSEEK_TEMPERATURE", -1),
+			DeepSeekTopP:            getFloatConfigWithDefault("BOT_DEEPSEEK_TOP_P", -1),
+			DeepSeekMaxTokens:       getIntConfigOptional("BOT_DEEPSEEK_MAX_TOKENS"),
+
 			Timeout:       getDurationConfigOptional("BOT_TIMEOUT"),
 			MaxRetries:    getIntConfigOptional("BOT_MAX_RETRIES"),
 			RetryDelay:    getDurationConfigOptional("BOT_RETRY_DELAY"),

@@ -66,6 +66,18 @@ const (
 	//
 	// Supports Chat, Stream and Embed.
 	ProviderGemini BotProviderName = "gemini"
+
+	// ProviderDeepSeek dispatches via internal/libs/deepseek, which calls
+	// api.deepseek.com directly over the shared http_client (no vendor
+	// SDK, no broker). Like openai and gemini it has no backend selector.
+	//
+	// DeepSeek's API is OpenAI-compatible but not identical: it reads
+	// `max_tokens` rather than `max_completion_tokens`, signals an empty
+	// balance with HTTP 402, and adds a thinking mode. See the libs
+	// package doc for why that warranted its own client.
+	//
+	// Supports Chat and Stream; Embed is unsupported (no endpoint).
+	ProviderDeepSeek BotProviderName = "deepseek"
 )
 
 // Role enumerates the chat message roles the adapter recognises. The
