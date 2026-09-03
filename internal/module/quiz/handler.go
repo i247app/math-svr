@@ -53,15 +53,15 @@ func (h *QuizHandler) HandleGenerateQuiz(w http.ResponseWriter, r *http.Request)
 	response.WriteJson(w, res, nil)
 }
 
-// POST /quizzes/submit
-func (h *QuizHandler) HandleSubmitQuizAnswers(w http.ResponseWriter, r *http.Request) {
+// POST /quizzes/submit/cost-ai
+func (h *QuizHandler) HandleSubmitQuizCost(w http.ResponseWriter, r *http.Request) {
 	var req dto.SubmitQuizAnswersReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
 
-	res, err := h.quizSvc.SubmitQuizAnswers(r.Context(), &req)
+	res, err := h.quizSvc.SubmitQuizAnswersCost(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -70,17 +70,17 @@ func (h *QuizHandler) HandleSubmitQuizAnswers(w http.ResponseWriter, r *http.Req
 	response.WriteJson(w, res, nil)
 }
 
-// POST /quizzes/submit/v2 — deterministic, no bot call. Same request /
+// POST /quizzes/submit — deterministic, no bot call. Same request /
 // response shape as HandleSubmitQuizAnswers so mobile clients can swap
 // the URL without DTO changes.
-func (h *QuizHandler) HandleSubmitQuizV2(w http.ResponseWriter, r *http.Request) {
+func (h *QuizHandler) HandleSubmitQuiz(w http.ResponseWriter, r *http.Request) {
 	var req dto.SubmitQuizAnswersReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
 
-	res, err := h.quizSvc.SubmitQuizAnswersV2(r.Context(), &req)
+	res, err := h.quizSvc.SubmitQuizAnswers(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

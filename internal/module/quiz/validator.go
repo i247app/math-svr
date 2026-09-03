@@ -18,7 +18,7 @@ import (
 // silently clamped rather than rejected, since the caller's intent
 // ("a longer quiz") is preserved.
 const (
-	DefaultNumQuestions = 5
+	DefaultNumQuestions = 10
 	MaxNumQuestions     = 20
 )
 

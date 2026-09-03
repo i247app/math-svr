@@ -17,12 +17,13 @@ CREATE TABLE IF NOT EXISTS ma_grades (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- comment it if you migrate-up again
--- INSERT INTO ma_grades (grade_id, label, description, image_key, display_order) VALUES
--- 	 ('d46c8252-06a7-4d6e-8f24-3525278214ae','Grade 1','First year of elementary education level.',NULL,1),
--- 	 ('c95bf9eb-7143-4395-9112-752d7aee8020','Grade 2','Second year of elementary education level.',NULL,2),
--- 	 ('d26786b6-7a0a-49c9-ba89-866a4ba55e19','Grade 3','Third year of elementary education level.',NULL,3),
--- 	 ('82023de6-8d1f-46d3-abc8-6dceab23a9f5','Grade 4','Four year of elementary education level.',NULL,4),
--- 	 ('ca93947f-f7b6-433e-968f-a7b70f36c201','Grade 5','Five year of elementary education level.',NULL,5);
+INSERT INTO ma_grades (grade_id, label, description, image_key, display_order) VALUES
+(1, 'Mẫu giáo', 'Chương trình học mẫu giáo', NULL, 1),
+(2, 'Lớp 1', 'Chương trình học lớp 1', NULL, 2),
+(3, 'Lớp 2', 'Chuơng trình học lớp 2', NULL, 3),
+(4, 'Lớp 3', 'Chương trình học lớp 3', NULL, 4),
+(5, 'Lớp 4', 'Chương trình học lớp 4', NULL, 5),
+(6, 'Lớp 5', 'Chương trình học lớp 5', NULL, 6);
 
 
 -- ALTER TABLE ma_grades ADD INDEX idx_status_order (status, deleted_dt, display_order);

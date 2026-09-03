@@ -59,7 +59,7 @@ var validSubmissionSortOrder = map[string]struct{}{
 // teacher omits it, we generate this many MCQ items. Kept in lockstep
 // with the bot domain's defaultNumQuestions so the user-facing default
 // matches what the prompt asks for.
-const DefaultNumQuestions = 5
+const DefaultNumQuestions = 10
 
 func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) error {
 	if req == nil {

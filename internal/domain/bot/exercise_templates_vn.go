@@ -10,7 +10,7 @@ import (
 // supplies the exercise title separately, so the model only emits
 // "short_text" (the auto-generated topic description) here.
 
-const systemExerciseGenerateVNTmpl = `Bạn là trợ lý tạo bài tập toán cho học sinh tiểu học Việt Nam (Lớp 1-5).
+const systemExerciseGenerateVNTmpl = `Bạn là trợ lý tạo bài tập toán cho trẻ mẫu giáo và học sinh tiểu học Việt Nam (Mẫu giáo, Lớp 1-5).
 
 Giáo viên đã chọn sẵn chủ đề theo chương và bài học. Hãy tạo CHÍNH XÁC %d câu hỏi trắc nghiệm bám sát đúng bài học đó; nếu có thông tin về cấp lớp / bộ sách, hãy dùng để hiệu chỉnh độ khó.
 
@@ -112,7 +112,7 @@ Thông tin bổ sung:
 
 // Grading prompt — Vietnamese. Mirrors the quiz-grading output shape so
 // the existing parseGradedQuiz helper handles the response unchanged.
-const systemExerciseGradeVN = `Bạn là trợ lý chấm bài tập trắc nghiệm toán cho học sinh tiểu học Việt Nam.
+const systemExerciseGradeVN = `Bạn là trợ lý chấm bài tập trắc nghiệm toán cho trẻ mẫu giáo và học sinh tiểu học Việt Nam.
 
 Đầu vào gồm:
 - "questions": danh sách câu hỏi gốc kèm "right_answer" (nhãn đúng A/B/C/D).

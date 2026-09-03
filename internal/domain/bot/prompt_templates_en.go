@@ -12,7 +12,7 @@ import (
 // systemGenerateENTmpl carries three %d placeholders: target count,
 // expected array length, and the upper bound of the question_number
 // range. All three are filled with the same value by buildSystemGenerateEN.
-const systemGenerateENTmpl = `You are a math quiz generator for Vietnamese primary-school students (Grades 1-5).
+const systemGenerateENTmpl = `You are a math quiz generator for Vietnamese kindergarten and primary-school students (Kindergarten, Grades 1-5).
 
 Generate EXACTLY %d multiple-choice questions calibrated to the academic context the user provides; if no context is supplied, choose a balanced elementary-level set.
 
@@ -30,7 +30,7 @@ METADATA RULES (REQUIRED for deterministic auto-grading):
 - "difficulty" is an integer 1..5 (1 easiest, 5 hardest) reflecting challenge level for the targeted grade.
 
 TITLE & SHORT_TEXT RULES:
-- "title" is the grade/level label of the quiz, formatted as "Grade <N> - Level <M>" (e.g. "Grade 1 - Level 1"). Take <N> from the grade in the academic context the user provides; choose <M> (1..5) from the overall difficulty of the questions you generated (1 = easiest). DO NOT put the math topic in "title".
+- "title" is the grade/level label of the quiz, formatted as "Grade <N> - Level <M>" (e.g. "Grade 1 - Level 1"). Take <N> from the grade in the academic context the user provides; if that grade is kindergarten use "Kindergarten - Level <M>" instead (no <N>); choose <M> (1..5) from the overall difficulty of the questions you generated (1 = easiest). DO NOT put the math topic in "title".
 - "short_text" is a short, specific phrase that names the math topic of the questions (e.g. "Addition and subtraction within 100", "Basic fractions and comparison", "Single-digit multiplication").
 - "short_text" is at most 80 characters, written in English, DO NOT include the grade level, DO NOT include the quiz type (ASSESSMENT/PRACTICE), and DO NOT use generic phrases like "Math quiz", "Practice quiz", or "Quiz".
 - Each call must produce a "short_text" that reflects the exact skills appearing in "questions" so it does not repeat across rounds.
@@ -67,7 +67,7 @@ SCHEMA:
 }
 `
 
-const systemReinforceENTmpl = `You are a math quiz generator for Vietnamese primary-school students (Grades 1-5).
+const systemReinforceENTmpl = `You are a math quiz generator for Vietnamese kindergarten and primary-school students (Kindergarten, Grades 1-5).
 
 You will be given the student's previous quiz, their answers, and an AI review of their performance. Generate a NEW quiz of EXACTLY %d multiple-choice questions that reinforces the topics the student got wrong or struggled with. Use any academic context the user supplies; if none is supplied, fall back to a balanced elementary-level set.
 
@@ -84,7 +84,7 @@ METADATA RULES (REQUIRED for deterministic auto-grading):
 - "difficulty" is an integer 1..5 reflecting challenge level for the targeted grade.
 
 TITLE & SHORT_TEXT RULES:
-- "title" is the grade/level label of the quiz, formatted as "Grade <N> - Level <M>" (e.g. "Grade 1 - Level 1"). Take <N> from the grade in the academic context the user provides; choose <M> (1..5) from the overall difficulty of the NEW questions (1 = easiest). DO NOT put the math topic in "title".
+- "title" is the grade/level label of the quiz, formatted as "Grade <N> - Level <M>" (e.g. "Grade 1 - Level 1"). Take <N> from the grade in the academic context the user provides; if that grade is kindergarten use "Kindergarten - Level <M>" instead (no <N>); choose <M> (1..5) from the overall difficulty of the NEW questions (1 = easiest). DO NOT put the math topic in "title".
 - "short_text" is a short, specific phrase that names the skills being reinforced (e.g. "Reinforce: subtraction with regrouping", "Reinforce: equivalent fractions").
 - "short_text" is at most 80 characters, written in English, DO NOT include the grade level or the quiz type (ASSESSMENT/PRACTICE), and DO NOT use generic phrases like "Reinforce quiz" or "Practice quiz".
 - "short_text" must reflect the actual skills targeted in the NEW "questions"; do not copy the previous quiz's short_text.
@@ -160,7 +160,7 @@ func buildSystemReinforceEN(n int) string {
 	return fmt.Sprintf(systemReinforceENTmpl, n, n, n) + visualQuestionRulesEN
 }
 
-const systemGradeAssessmentEN = `You are a math quiz grading assistant for Vietnamese primary-school students.
+const systemGradeAssessmentEN = `You are a math quiz grading assistant for Vietnamese kindergarten and primary-school students.
 
 You will be given the quiz questions (JSON array) and the student's answers (JSON object keyed by question_number). Score the quiz, then predict the most appropriate grade level for the student.
 
@@ -183,7 +183,7 @@ SCHEMA:
 }
 `
 
-const systemGradePracticeEN = `You are a math quiz grading assistant for Vietnamese primary-school students.
+const systemGradePracticeEN = `You are a math quiz grading assistant for Vietnamese kindergarten and primary-school students.
 
 You will be given the quiz questions (JSON array) and the student's answers (JSON object keyed by question_number). Score the quiz and return a short review.
 
@@ -204,7 +204,7 @@ SCHEMA:
 }
 `
 
-const systemGradeReinforceAssessmentEN = `You are a math quiz grading assistant for Vietnamese primary-school students.
+const systemGradeReinforceAssessmentEN = `You are a math quiz grading assistant for Vietnamese kindergarten and primary-school students.
 
 You will be given the reinforce-quiz questions (JSON array), the student's answers (JSON object keyed by question_number), and the student's currently configured grade. Score the quiz and predict whether the student has improved enough to advance, stay, or step back.
 
@@ -227,7 +227,7 @@ SCHEMA:
 }
 `
 
-const systemGradeReinforcePracticeEN = `You are a math quiz grading assistant for Vietnamese primary-school students.
+const systemGradeReinforcePracticeEN = `You are a math quiz grading assistant for Vietnamese kindergarten and primary-school students.
 
 You will be given the reinforce-practice questions (JSON array), the student's answers, and the student's currently configured grade. Score the quiz and return a short review focused on whether the remedial practice closed the gap.
 

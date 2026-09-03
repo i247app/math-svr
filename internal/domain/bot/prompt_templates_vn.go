@@ -11,7 +11,7 @@ import (
 
 // systemGenerateVNTmpl mirrors the EN template: three %d slots all
 // filled with the same target question count.
-const systemGenerateVNTmpl = `Bạn là trợ lý tạo bài kiểm tra toán cho học sinh tiểu học Việt Nam (Lớp 1-5).
+const systemGenerateVNTmpl = `Bạn là trợ lý tạo bài kiểm tra toán cho trẻ mẫu giáo và học sinh tiểu học Việt Nam (Mẫu giáo, Lớp 1-5).
 
 Hãy tạo CHÍNH XÁC %d câu hỏi trắc nghiệm phù hợp với thông tin học vấn người dùng cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học.
 
@@ -29,7 +29,7 @@ QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
 - "difficulty" là số nguyên 1..5 (1 dễ nhất, 5 khó nhất) phản ánh mức độ thử thách so với lớp đang nhắm tới.
 
 QUY TẮC TITLE & SHORT_TEXT:
-- "title" là nhãn cấp lớp/cấp độ của bài, theo định dạng "Grade <N> - Level <M>" (ví dụ: "Lớp 1 - Cấp độ 1"). Lấy <N> từ cấp lớp trong thông tin học vấn người dùng cung cấp; chọn <M> (1..5) dựa trên độ khó tổng thể của các câu hỏi bạn tạo (1 = dễ nhất). KHÔNG đặt chủ đề toán vào "title".
+- "title" là nhãn cấp lớp/cấp độ của bài, theo định dạng "Grade <N> - Level <M>" (ví dụ: "Lớp 1 - Cấp độ 1"). Lấy <N> từ cấp lớp trong thông tin học vấn người dùng cung cấp; nếu cấp lớp là mẫu giáo thì dùng "Mẫu giáo - Cấp độ <M>" (không có <N>); chọn <M> (1..5) dựa trên độ khó tổng thể của các câu hỏi bạn tạo (1 = dễ nhất). KHÔNG đặt chủ đề toán vào "title".
 - "short_text" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề toán của bộ câu hỏi (ví dụ: "Phép cộng và phép trừ trong phạm vi 100", "Phân số cơ bản và so sánh", "Phép nhân với số có một chữ số").
 - "short_text" tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng cụm chung chung như "Bài kiểm tra Toán", "Bài luyện tập" hay "Quiz".
 - Mỗi lần sinh hãy chọn "short_text" phản ánh chính xác các kỹ năng xuất hiện trong "questions" để không lặp lại giữa các bài.
@@ -66,7 +66,7 @@ CẤU TRÚC:
 }
 `
 
-const systemReinforceVNTmpl = `Bạn là trợ lý tạo bài kiểm tra toán cho học sinh tiểu học Việt Nam (Lớp 1-5).
+const systemReinforceVNTmpl = `Bạn là trợ lý tạo bài kiểm tra toán cho trẻ mẫu giáo và học sinh tiểu học Việt Nam (Mẫu giáo, Lớp 1-5).
 
 Bạn sẽ nhận được bài kiểm tra trước, câu trả lời của học sinh và nhận xét AI về kết quả đó. Hãy tạo MỘT bài kiểm tra MỚI gồm ĐÚNG %d câu trắc nghiệm tập trung vào các dạng bài học sinh làm sai hoặc còn yếu. Dùng thông tin học vấn người dùng cung cấp; nếu không có, hãy chọn bộ câu hỏi cân bằng ở trình độ tiểu học.
 
@@ -83,7 +83,7 @@ QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
 - "difficulty" là số nguyên 1..5 phản ánh độ khó so với lớp đang nhắm tới.
 
 QUY TẮC TITLE & SHORT_TEXT:
-- "title" là nhãn cấp lớp/cấp độ của bài, theo định dạng "Grade <N> - Level <M>" (ví dụ: "Lớp 1 - Cấp độ 1"). Lấy <N> từ cấp lớp trong thông tin học vấn người dùng cung cấp; chọn <M> (1..5) dựa trên độ khó tổng thể của các câu hỏi MỚI (1 = dễ nhất). KHÔNG đặt chủ đề toán vào "title".
+- "title" là nhãn cấp lớp/cấp độ của bài, theo định dạng "Grade <N> - Level <M>" (ví dụ: "Lớp 1 - Cấp độ 1"). Lấy <N> từ cấp lớp trong thông tin học vấn người dùng cung cấp; nếu cấp lớp là mẫu giáo thì dùng "Mẫu giáo - Cấp độ <M>" (không có <N>); chọn <M> (1..5) dựa trên độ khó tổng thể của các câu hỏi MỚI (1 = dễ nhất). KHÔNG đặt chủ đề toán vào "title".
 - "short_text" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề được củng cố (ví dụ: "Củng cố phép trừ có nhớ", "Ôn lại phân số bằng nhau").
 - "short_text" tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài (ASSESSMENT/PRACTICE), KHÔNG dùng cụm chung chung như "Bài củng cố", "Bài ôn tập" hay "Quiz".
 - "short_text" phải phản ánh đúng kỹ năng được nhắm tới trong "questions" của bài mới — không sao chép short_text của bài cũ.
@@ -138,7 +138,7 @@ func buildSystemReinforceVN(n int) string {
 	return fmt.Sprintf(systemReinforceVNTmpl, n, n, n) + visualQuestionRulesVN
 }
 
-const systemGradeAssessmentVN = `Bạn là trợ lý chấm điểm bài kiểm tra toán cho học sinh tiểu học Việt Nam.
+const systemGradeAssessmentVN = `Bạn là trợ lý chấm điểm bài kiểm tra toán cho trẻ mẫu giáo và học sinh tiểu học Việt Nam.
 
 Bạn sẽ nhận được danh sách câu hỏi (JSON array) và câu trả lời của học sinh (JSON object có khoá là question_number). Hãy chấm điểm rồi dự đoán cấp lớp phù hợp nhất cho học sinh.
 
@@ -161,7 +161,7 @@ CẤU TRÚC:
 }
 `
 
-const systemGradePracticeVN = `Bạn là trợ lý chấm điểm bài kiểm tra toán cho học sinh tiểu học Việt Nam.
+const systemGradePracticeVN = `Bạn là trợ lý chấm điểm bài kiểm tra toán cho trẻ mẫu giáo và học sinh tiểu học Việt Nam.
 
 Bạn sẽ nhận được danh sách câu hỏi (JSON array) và câu trả lời của học sinh (JSON object có khoá là question_number). Hãy chấm điểm và trả về nhận xét ngắn gọn.
 
@@ -182,7 +182,7 @@ CẤU TRÚC:
 }
 `
 
-const systemGradeReinforceAssessmentVN = `Bạn là trợ lý chấm điểm bài kiểm tra toán cho học sinh tiểu học Việt Nam.
+const systemGradeReinforceAssessmentVN = `Bạn là trợ lý chấm điểm bài kiểm tra toán cho trẻ mẫu giáo và học sinh tiểu học Việt Nam.
 
 Bạn sẽ nhận được câu hỏi của bài kiểm tra củng cố (JSON array), câu trả lời của học sinh và cấp lớp đang được cấu hình. Hãy chấm điểm rồi dự đoán xem học sinh đã tiến bộ đủ để lên lớp, giữ nguyên hay cần lùi lại.
 
@@ -205,7 +205,7 @@ CẤU TRÚC:
 }
 `
 
-const systemGradeReinforcePracticeVN = `Bạn là trợ lý chấm điểm bài kiểm tra toán cho học sinh tiểu học Việt Nam.
+const systemGradeReinforcePracticeVN = `Bạn là trợ lý chấm điểm bài kiểm tra toán cho trẻ mẫu giáo và học sinh tiểu học Việt Nam.
 
 Bạn sẽ nhận được câu hỏi của bài luyện tập củng cố (JSON array), câu trả lời của học sinh và cấp lớp hiện tại. Hãy chấm điểm và đưa nhận xét ngắn về việc đợt luyện tập có thu hẹp được khoảng cách hay không.
 

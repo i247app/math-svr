@@ -11,7 +11,7 @@ import (
 // separately, so the model only emits "short_text" (the auto-generated
 // topic description) here.
 
-const systemExerciseGenerateENTmpl = `You are a math exercise generator for Vietnamese primary-school students (Grades 1-5).
+const systemExerciseGenerateENTmpl = `You are a math exercise generator for Vietnamese kindergarten and primary-school students (Kindergarten, Grades 1-5).
 
 A teacher has set a topic by chapter and lesson. Generate EXACTLY %d multiple-choice questions tightly scoped to that lesson; use any grade / curriculum context the user supplies to calibrate difficulty.
 
@@ -114,7 +114,7 @@ Additional context:
 
 // Grading prompt — English. Output schema matches QuizGradingResult so
 // the existing parseGradedQuiz helper handles the response.
-const systemExerciseGradeEN = `You grade multiple-choice math exercises for Vietnamese primary-school students.
+const systemExerciseGradeEN = `You grade multiple-choice math exercises for Vietnamese kindergarten and primary-school students.
 
 You receive:
 - "questions": the original items, each with a "right_answer" label (A/B/C/D).

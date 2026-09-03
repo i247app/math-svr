@@ -212,8 +212,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /quizzes/detail", quizHandler.HandleGetQuiz, authMiddleware)
 		reg("POST /quizzes/list", quizHandler.HandleListQuizzes, authMiddleware)
 		reg("POST /quizzes/generate", quizHandler.HandleGenerateQuiz, authMiddleware)
-		reg("POST /quizzes/submit/cost-ai", quizHandler.HandleSubmitQuizAnswers, authMiddleware)
-		reg("POST /quizzes/submit", quizHandler.HandleSubmitQuizV2, authMiddleware)
+		reg("POST /quizzes/submit/cost-ai", quizHandler.HandleSubmitQuizCost, authMiddleware)
+		reg("POST /quizzes/submit", quizHandler.HandleSubmitQuiz, authMiddleware)
 		reg("POST /quizzes/soft-delete", quizHandler.HandleSoftDeleteQuiz, authMiddleware)
 		reg("POST /quizzes/analytics/progress", quizHandler.HandleGetQuizProgress, authMiddleware)
 	}

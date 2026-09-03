@@ -221,7 +221,7 @@ func (s *Service) GenerateQuiz(ctx context.Context, req *dto.GenerateQuizReq) (*
 // SubmitQuizAnswers grades the answers against the quiz's right-answers,
 // persists them, and returns the graded quiz. Bot call sits outside the
 // UoW; the UoW only does the row update.
-func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnswersReq) (*dto.SubmitQuizAnswersRes, error) {
+func (s *Service) SubmitQuizAnswersCost(ctx context.Context, req *dto.SubmitQuizAnswersReq) (*dto.SubmitQuizAnswersRes, error) {
 	log := logger.From(ctx)
 
 	if err := ValidateSubmitAnswers(ctx, req); err != nil {
@@ -322,7 +322,7 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 	return &dto.SubmitQuizAnswersRes{Quiz: res}, nil
 }
 
-// SubmitQuizAnswersV2 grades the answers deterministically in process —
+// SubmitQuizAnswers grades the answers deterministically in process —
 // no bot call. It exists alongside SubmitQuizAnswers (which still calls
 // the bot) so existing mobile clients keep working unchanged; the v2
 // endpoint is the cost-saver path the new client is expected to adopt.
@@ -332,7 +332,7 @@ func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnsw
 //     beyond per-question topic tags persisted in the row);
 //   - no bot client construction;
 //   - no assessment_grade signal (see scorer.go design note §3).
-func (s *Service) SubmitQuizAnswersV2(ctx context.Context, req *dto.SubmitQuizAnswersReq) (*dto.SubmitQuizAnswersRes, error) {
+func (s *Service) SubmitQuizAnswers(ctx context.Context, req *dto.SubmitQuizAnswersReq) (*dto.SubmitQuizAnswersRes, error) {
 	log := logger.From(ctx)
 	if err := ValidateSubmitAnswers(ctx, req); err != nil {
 		return nil, err

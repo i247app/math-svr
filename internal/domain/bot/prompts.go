@@ -223,7 +223,7 @@ func requireFields(pairs ...string) error {
 
 // defaultNumQuestions is the fallback used when callers leave
 // QuizPromptInput.NumQuestions at zero. Kept in sync with the
-// module/quiz validator's DefaultNumQuestions (5), but duplicated here
+// module/quiz validator's DefaultNumQuestions (10), but duplicated here
 // so the domain prompt builder remains usable without going through the
 // module-layer validator.
 const defaultNumQuestions = 10
