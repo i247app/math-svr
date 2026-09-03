@@ -84,7 +84,7 @@ func NewEnv(envpath string) (*Env, error) {
 		},
 
 		BotConfig: BotConfig{
-			BotProvider: getConfigOptionalString("BOT_PROVIDER"),
+			DefaultBotProvider: getConfigOptionalString("BOT_PROVIDER"),
 
 			LangChainBackend:     getConfigOptionalString("BOT_LANGCHAIN_BACKEND"),
 			LangChainAPIKey:      getConfigOptionalString("BOT_LANGCHAIN_API_KEY"),
@@ -112,6 +112,17 @@ func NewEnv(envpath string) (*Env, error) {
 			OpenRouterTemperature: getFloatConfigWithDefault("BOT_OPENROUTER_TEMPERATURE", -1),
 			OpenRouterTopP:        getFloatConfigWithDefault("BOT_OPENROUTER_TOP_P", -1),
 			OpenRouterMaxTokens:   getIntConfigOptional("BOT_OPENROUTER_MAX_TOKENS"),
+
+			OpenAIAPIKey:       getConfigOptionalString("BOT_OPENAI_API_KEY"),
+			OpenAIBaseURL:      getConfigOptionalString("BOT_OPENAI_BASE_URL"),
+			OpenAIModel:        getConfigOptionalString("BOT_OPENAI_MODEL"),
+			OpenAIEmbedModel:   getConfigOptionalString("BOT_OPENAI_EMBED_MODEL"),
+			OpenAIOrganization: getConfigOptionalString("BOT_OPENAI_ORGANIZATION"),
+			OpenAIProject:      getConfigOptionalString("BOT_OPENAI_PROJECT"),
+			OpenAITemperature:  getFloatConfigWithDefault("BOT_OPENAI_TEMPERATURE", -1),
+			OpenAITopP:         getFloatConfigWithDefault("BOT_OPENAI_TOP_P", -1),
+			OpenAIMaxTokens:    getIntConfigOptional("BOT_OPENAI_MAX_TOKENS"),
+			OpenAIStore:        getBoolConfigWithDefault("BOT_OPENAI_STORE", false),
 
 			Timeout:       getDurationConfigOptional("BOT_TIMEOUT"),
 			MaxRetries:    getIntConfigOptional("BOT_MAX_RETRIES"),

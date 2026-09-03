@@ -37,6 +37,21 @@ const (
 	// alongside the other frameworks when configured; BOT_PROVIDER picks
 	// which one is the default.
 	ProviderOpenRouter BotProviderName = "openrouter"
+
+	// ProviderOpenAI dispatches via internal/libs/openai, which calls
+	// api.openai.com directly over the shared http_client (no vendor SDK,
+	// no broker). Like openrouter it has no backend selector — it talks to
+	// OpenAI and only OpenAI, and BotConfig.OpenAIModel names a bare model
+	// id ("gpt-4.1", not "openai/gpt-4.1").
+	//
+	// Naming caution: "openai" is ALSO a valid value for
+	// BOT_LANGCHAIN_BACKEND / BOT_EINO_BACKEND, where it selects the vendor
+	// an SDK talks to. As a BOT_PROVIDER value it means the direct client
+	// below. The two never collide because they are read from different
+	// env keys, but read a config twice before assuming which one is meant.
+	//
+	// This is the only provider besides langchain that implements Embed.
+	ProviderOpenAI BotProviderName = "openai"
 )
 
 // Role enumerates the chat message roles the adapter recognises. The

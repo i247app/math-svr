@@ -134,7 +134,7 @@ func SetupResource(res *resource.Resource) error {
 
 	log.Info("> Setup BotAdapter...")
 	log.Infof("> Bot Provider (default): %s (langchain backend: %s, eino backend: %s)",
-		env.BotConfig.BotProvider, env.BotConfig.LangChainBackend, env.BotConfig.EinoBackend)
+		env.BotConfig.DefaultBotProvider, env.BotConfig.LangChainBackend, env.BotConfig.EinoBackend)
 	botAdapter, err := bot.NewFromConfig(context.Background(), env.BotConfig)
 	if err != nil {
 		return fmt.Errorf("failed to setup bot adapter: %w", err)

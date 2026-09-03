@@ -1,0 +1,434 @@
+{
+  "info": {
+    "_postman_id": "a62df96e-a5a7-4555-85b9-21da36be27e3",
+    "name": "OpenAI API",
+    "description": "Bo request chuan cho OpenAI API (base: https://api.openai.com/v1).\n\nYeu cau: import kem Environment 'OpenAI Environment' va dien bien openai_api_key.\n\nAuth duoc cau hinh o cap Collection (Bearer Token) => moi request con tu ke thua, khong can set header Authorization thu cong.\n\nHeader OpenAI-Organization va OpenAI-Project duoc dat o cap Collection nhung mac dinh TAT (disabled). Chi bat khi ban thuoc nhieu org/project.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "30937098",
+    "_collection_link": "https://go.postman.co/collection/30937098-a62df96e-a5a7-4555-85b9-21da36be27e3?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Responses",
+      "item": [
+        {
+          "name": "Create a response",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Luu response id de cac request Retrieve / Delete / List input items dung lai ngay",
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body && body.id) {",
+                  "        pm.environment.set('response_id', body.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "OpenAI-Organization",
+                "value": "{{openai_org_id}}",
+                "description": "Tuy chon. Chi bat khi ban thuoc nhieu organization.",
+                "type": "text",
+                "disabled": true
+              },
+              {
+                "key": "OpenAI-Project",
+                "value": "{{openai_project_id}}",
+                "description": "Tuy chon. Chi bat khi can chi dinh project cu the.",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"previous_response_id\": \"{{response_id}}\",\n  \"input\": \"2 + 2 = ?\",\n  \"store\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/responses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "responses"
+              ]
+            },
+            "description": "POST /v1/responses\n\nField toi thieu: model + input.\n'input' chap nhan chuoi don gian, hoac mang item de gui multi-turn / multimodal.\n\n'store': true => response duoc luu lai va co the Retrieve sau. Dat false neu ban chay stateless / ZDR.\n\nDe test streaming: them \"stream\": true (response tra ve dang SSE).\n\nTest script cua request nay tu dong luu field 'id' vao bien environment 'response_id'."
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve a response",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/responses/{{response_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "responses",
+                "{{response_id}}"
+              ]
+            },
+            "description": "GET /v1/responses/{response_id}\n\nChay 'Create a response' truoc de bien {{response_id}} co gia tri.\nChi retrieve duoc response da tao voi \"store\": true."
+          },
+          "response": []
+        },
+        {
+          "name": "List input items",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/responses/{{response_id}}/input_items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "responses",
+                "{{response_id}}",
+                "input_items"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Tuy chon. So luong item tra ve moi trang.",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "description": "Tuy chon. asc | desc.",
+                  "disabled": true
+                },
+                {
+                  "key": "after",
+                  "value": "",
+                  "description": "Tuy chon. Cursor phan trang - id cua item cuoi trang truoc.",
+                  "disabled": true
+                },
+                {
+                  "key": "include",
+                  "value": "",
+                  "description": "[CAN KIEM TRA LAI DOCS] Chua xac minh 100% cac gia tri hop le cua param nay.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /v1/responses/{response_id}/input_items\n\nLiet ke cac input item da duoc gui kem response.\nCac query param phan trang de disabled - bat khi can."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a response",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/responses/{{response_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "responses",
+                "{{response_id}}"
+              ]
+            },
+            "description": "DELETE /v1/responses/{response_id}\n\nCan than: thao tac khong hoan tac duoc.\nSau khi xoa, request Retrieve tren cung id se tra ve 404."
+          },
+          "response": []
+        }
+      ],
+      "description": "Responses API - be mat API duoc OpenAI khuyen nghi cho project moi."
+    },
+    {
+      "name": "Chat Completions",
+      "item": [
+        {
+          "name": "Create a chat completion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Luu completion id de request Retrieve dung lai ngay",
+                  "if (pm.response.code === 200) {",
+                  "    const body = pm.response.json();",
+                  "    if (body && body.id) {",
+                  "        pm.environment.set('chat_completion_id', body.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "X-Client-Request-Id",
+                "value": "{{$guid}}",
+                "description": "Tuy chon. Trace id tu sinh phia client, toi da 512 ky tu ASCII. Huu ich khi can doi chieu voi support neu request timeout.",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{model}}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are a concise technical assistant.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Explain what a database index is, in 2 sentences.\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"stream\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/chat/completions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "chat",
+                "completions"
+              ]
+            },
+            "description": "POST /v1/chat/completions\n\nField bat buoc: model + messages.\n\nLuu y: mot so model reasoning khong chap nhan 'temperature' - neu gap loi 400, xoa field do khoi body.\n\nDe test streaming: doi \"stream\": true (response la SSE).\n\nTest script tu dong luu 'id' vao bien 'chat_completion_id'."
+          },
+          "response": []
+        },
+        {
+          "name": "List chat completions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/chat/completions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "chat",
+                "completions"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Tuy chon. So luong ban ghi moi trang.",
+                  "disabled": true
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "description": "Tuy chon. asc | desc theo thoi diem tao.",
+                  "disabled": true
+                },
+                {
+                  "key": "after",
+                  "value": "",
+                  "description": "Tuy chon. Cursor phan trang.",
+                  "disabled": true
+                },
+                {
+                  "key": "model",
+                  "value": "",
+                  "description": "Tuy chon. Loc theo model.",
+                  "disabled": true
+                },
+                {
+                  "key": "metadata",
+                  "value": "",
+                  "description": "[CAN KIEM TRA LAI DOCS] Chua xac minh 100% cu phap truyen metadata filter qua query string.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /v1/chat/completions\n\nChi liet ke duoc cac completion da duoc luu lai (store).\nNeu tra ve mang rong, kha nang cao la cac request truoc chua bat luu tru."
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve a chat completion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/chat/completions/{{chat_completion_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "chat",
+                "completions",
+                "{{chat_completion_id}}"
+              ]
+            },
+            "description": "GET /v1/chat/completions/{completion_id}\n\nChay 'Create a chat completion' truoc de bien {{chat_completion_id}} co gia tri.\nChi retrieve duoc completion da duoc luu tru."
+          },
+          "response": []
+        }
+      ],
+      "description": "Chat Completions API - van duoc ho tro, thich hop khi migrate code cu hoac dung chung interface voi cac provider OpenAI-compatible."
+    },
+    {
+      "name": "Models",
+      "item": [
+        {
+          "name": "List models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/models",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "models"
+              ]
+            },
+            "description": "GET /v1/models\n\nTra ve danh sach model ma API key hien tai co quyen truy cap.\nDay la smoke test nhanh nhat de xac nhan key hop le (200 = OK, 401 = key sai).\n\nKhong co query param."
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve a model",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/models/{{model}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "models",
+                "{{model}}"
+              ]
+            },
+            "description": "GET /v1/models/{model}\n\nLay metadata cua mot model cu the. Dung bien {{model}} trong Environment.\nDoi bien {{model}} sang slug khac de tra cuu model khac."
+          },
+          "response": []
+        }
+      ],
+      "description": "Kham pha model kha dung cho API key hien tai."
+    },
+    {
+      "name": "Embeddings",
+      "item": [
+        {
+          "name": "Create an embedding",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"{{embedding_model}}\",\n  \"input\": \"Database indexes speed up read queries at the cost of slower writes.\",\n  \"encoding_format\": \"float\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/embeddings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "embeddings"
+              ]
+            },
+            "description": "POST /v1/embeddings\n\nField bat buoc: model + input.\n'input' chap nhan chuoi don, hoac mang chuoi de batch nhieu doan cung luc.\n\n'encoding_format': float (mac dinh) hoac base64.\nCo the them 'dimensions' de rut gon so chieu vector - chi ho tro tren cac model embedding doi moi."
+          },
+          "response": []
+        }
+      ],
+      "description": "Sinh vector embedding tu text."
+    },
+    {
+      "name": "Moderations",
+      "item": [
+        {
+          "name": "Create a moderation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"model\": \"omni-moderation-latest\",\n  \"input\": \"I want to learn how database indexes work.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/moderations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "moderations"
+              ]
+            },
+            "description": "POST /v1/moderations\n\nField bat buoc: input.\n'model' de mac dinh 'omni-moderation-latest' - khong dung bien {{model}} vi day la ho model rieng, khong phai model sinh van ban.\n\nEndpoint nay khong tinh phi theo token nhu cac endpoint sinh noi dung."
+          },
+          "response": []
+        }
+      ],
+      "description": "Phan loai noi dung co kha nang gay hai."
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{openai_api_key}}",
+        "type": "string"
+      }
+    ]
+  }
+}

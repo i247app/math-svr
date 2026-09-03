@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/libs/eino"
 	"math-ai.com/math-ai/internal/libs/langchain"
+	"math-ai.com/math-ai/internal/libs/openai"
 	"math-ai.com/math-ai/internal/libs/openrouter"
 )
 
@@ -169,6 +170,67 @@ func mapOpenRouterError(ctx context.Context, err error) *errs.MathError {
 		return errs.NewError(ctx, status.BOT_RATE_LIMITED, args, err)
 
 	case errors.Is(err, openrouter.ErrDecodeResponse):
+		return errs.NewError(ctx, status.BOT_SERIALIZE_FAILED, args, err)
+	}
+
+	return errs.NewError(ctx, status.BOT_OP_FAILED, args, err)
+}
+
+// mapOpenAIError translates a libs/openai error into a domain-layer
+// MathError, mirroring its siblings so all four providers surface
+// identical status codes for identical failure shapes:
+//
+//   - openai.ErrInvalidConfig / IsConfigError → BOT_CONFIG_INVALID.
+//   - openai.ErrQuotaExhausted (billing 429)  → BOT_CONFIG_INVALID.
+//   - openai.ErrUnsupportedOp                 → BOT_UNSUPPORTED_OP.
+//   - openai.ErrContextTooLarge               → BOT_CONTEXT_TOO_LARGE.
+//   - openai.ErrRateLimited / IsRateLimited   → BOT_RATE_LIMITED.
+//   - openai.ErrDecodeResponse                → BOT_SERIALIZE_FAILED.
+//   - HTTP 401 / 403 (bad key, geo block)     → BOT_CONFIG_INVALID.
+//   - anything else (incl. 408 / 5xx)         → BOT_OP_FAILED.
+//
+// The 429 split is the one asymmetry worth knowing: OpenAI reuses that
+// status for both throttling and an exhausted credit balance. Throttling
+// is transient (BOT_RATE_LIMITED, retried upstream); billing is not, so it
+// rides with the config failures — the same posture as openrouter's HTTP
+// 402, which is the equivalent signal on that provider.
+//
+// API keys are never read here, and the raw upstream body never reaches
+// the args (libs/openai reports an undecodable body by size only).
+func mapOpenAIError(ctx context.Context, err error) *errs.MathError {
+	if err == nil {
+		return nil
+	}
+
+	args := map[string]any{"provider": string(ProviderOpenAI)}
+
+	var apiErr *openai.APIError
+	if errors.As(err, &apiErr) {
+		args["http_status"] = apiErr.HTTPStatus
+		if apiErr.Type != "" {
+			args["vendor_type"] = apiErr.Type
+		}
+		if apiErr.Code != "" {
+			args["vendor_code"] = apiErr.Code
+		}
+	}
+
+	switch {
+	case errors.Is(err, openai.ErrInvalidConfig),
+		errors.Is(err, openai.ErrQuotaExhausted),
+		openai.IsConfigError(err):
+		return errs.NewError(ctx, status.BOT_CONFIG_INVALID, args, err)
+
+	case errors.Is(err, openai.ErrUnsupportedOp):
+		return errs.NewError(ctx, status.BOT_UNSUPPORTED_OP, args, err)
+
+	case errors.Is(err, openai.ErrContextTooLarge):
+		return errs.NewError(ctx, status.BOT_CONTEXT_TOO_LARGE, args, err)
+
+	case errors.Is(err, openai.ErrRateLimited), openai.IsRateLimited(err):
+		return errs.NewError(ctx, status.BOT_RATE_LIMITED, args, err)
+
+	case errors.Is(err, openai.ErrDecodeResponse):
 		return errs.NewError(ctx, status.BOT_SERIALIZE_FAILED, args, err)
 	}
 

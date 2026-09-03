@@ -10,6 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/libs/eino"
 	"math-ai.com/math-ai/internal/libs/langchain"
+	"math-ai.com/math-ai/internal/libs/openai"
 	"math-ai.com/math-ai/internal/libs/openrouter"
 )
 
@@ -20,17 +21,19 @@ import (
 // Behaviour matrix:
 //
 //	cfg.BotProvider == "" or "disabled" → (nil, nil); boot continues.
-//	cfg.BotProvider == "langchain"|"eino"|"openrouter" →
+//	cfg.BotProvider == "langchain"|"eino"|"openrouter"|"openai" →
 //	    every configured framework is registered:
 //	      - langchain  when cfg.LangChainBackend != ""
 //	      - eino       when cfg.EinoBackend      != ""
 //	      - openrouter when cfg.OpenRouterAPIKey != ""
+//	      - openai     when cfg.OpenAIAPIKey     != ""
 //	    then cfg.BotProvider is set as the default. Callers can still
 //	    route per-call to a specific provider via ChatVia / StreamVia.
 //	cfg.BotProvider == anything else    → MathError(BOT_CONFIG_INVALID).
 //
-// openrouter keys off the API key rather than a backend name because
-// OpenRouter has no backend selector — the model id picks the vendor.
+// openrouter and openai key off their API key rather than a backend name
+// because neither has a backend selector: OpenRouter's model id picks the
+// vendor, and the direct openai client talks to OpenAI only.
 //
 // Naming a default whose framework is not configured (e.g.
 // BOT_PROVIDER=eino without BOT_EINO_BACKEND) is a deploy mistake and
@@ -40,22 +43,23 @@ import (
 // LLM credentials can boot. Module services that consume the adapter
 // must nil-guard, the same way they do with res.SMSProvider in local dev.
 //
-// Errors from libs/langchain, libs/eino and libs/openrouter are
-// translated here:
+// Errors from libs/langchain, libs/eino, libs/openrouter and libs/openai
+// are translated here:
 //
 //	ErrInvalidConfig → MathError(BOT_CONFIG_INVALID, {"reason": ...})
 //	anything else    → MathError(BOT_CONNECT_FAILED) wrapping the cause
 func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) {
 	log := logger.From(ctx)
 
-	switch cfg.BotProvider {
+	switch cfg.DefaultBotProvider {
 	case "", "disabled":
 		return nil, nil
-	case string(ProviderLangChain), string(ProviderEino), string(ProviderOpenRouter):
+	case string(ProviderLangChain), string(ProviderEino),
+		string(ProviderOpenRouter), string(ProviderOpenAI):
 		// recognised — continue below
 	default:
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
-			map[string]any{"provider": cfg.BotProvider}, nil)
+			map[string]any{"provider": cfg.DefaultBotProvider}, nil)
 	}
 
 	adapter := NewAdapter()
@@ -143,10 +147,40 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 		adapter.Register(NewOpenRouterProvider(client))
 	}
 
-	if err := adapter.SetDefault(BotProviderName(cfg.BotProvider)); err != nil {
+	if cfg.OpenAIAPIKey != "" {
+		client, err := openai.NewClient(ctx, openai.Config{
+			APIKey:        cfg.OpenAIAPIKey,
+			BaseURL:       cfg.OpenAIBaseURL,
+			Model:         cfg.OpenAIModel,
+			EmbedModel:    cfg.OpenAIEmbedModel,
+			Organization:  cfg.OpenAIOrganization,
+			Project:       cfg.OpenAIProject,
+			Store:         cfg.OpenAIStore,
+			Temperature:   cfg.OpenAITemperature,
+			TopP:          cfg.OpenAITopP,
+			MaxTokens:     cfg.OpenAIMaxTokens,
+			Timeout:       cfg.Timeout,
+			MaxRetries:    cfg.MaxRetries,
+			RetryDelay:    cfg.RetryDelay,
+			RequireAtBoot: cfg.RequireAtBoot,
+		})
+		if err != nil {
+			if errors.Is(err, openai.ErrInvalidConfig) {
+				return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
+					map[string]any{"reason": err.Error()}, err)
+			}
+			log.Warnf("openai: client not ready: %v", err)
+			return nil, errs.NewError(ctx, status.BOT_CONNECT_FAILED,
+				map[string]any{"model": cfg.OpenAIModel}, err)
+		}
+
+		adapter.Register(NewOpenAIProvider(client))
+	}
+
+	if err := adapter.SetDefault(BotProviderName(cfg.DefaultBotProvider)); err != nil {
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
 			map[string]any{
-				"provider": cfg.BotProvider,
+				"provider": cfg.DefaultBotProvider,
 				"reason":   "default provider is not configured (missing BOT_<PROVIDER>_BACKEND?)",
 			}, err)
 	}

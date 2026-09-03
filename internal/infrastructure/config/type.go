@@ -152,14 +152,15 @@ type SMSConfig struct {
 // Behaviour matrix for BotProvider:
 //
 //	""  or "disabled" → adapter is nil; module services must nil-guard.
-//	"langchain" | "eino" | "openrouter"
+//	"langchain" | "eino" | "openrouter" | "openai"
 //	                  → every framework whose config key is set gets
 //	                    registered (BOT_LANGCHAIN_BACKEND /
-//	                    BOT_EINO_BACKEND / BOT_OPENROUTER_API_KEY);
+//	                    BOT_EINO_BACKEND / BOT_OPENROUTER_API_KEY /
+//	                    BOT_OPENAI_API_KEY);
 //	                    BotProvider names the DEFAULT one.
 //	anything else     → MathError(BOT_CONFIG_INVALID) at boot.
 type BotConfig struct {
-	BotProvider string // env BOT_PROVIDER; "langchain" | "eino" | "openrouter" | "" | "disabled"
+	DefaultBotProvider string // env BOT_PROVIDER; "langchain" | "eino" | "openrouter" | "openai" | "" | "disabled"
 
 	// LangChain-backed provider settings. Consumed (and the provider
 	// registered) whenever LangChainBackend is non-empty.
@@ -206,6 +207,30 @@ type BotConfig struct {
 	OpenRouterTemperature float64 // env BOT_OPENROUTER_TEMPERATURE; <0 means vendor default
 	OpenRouterTopP        float64 // env BOT_OPENROUTER_TOP_P;        <0 means vendor default
 	OpenRouterMaxTokens   int     // env BOT_OPENROUTER_MAX_TOKENS;   0  means vendor default
+
+	// Direct-OpenAI provider settings (REST over
+	// internal/shared/http_client — no SDK, no broker). Consumed (and the
+	// provider registered) whenever OpenAIAPIKey is non-empty.
+	//
+	// No backend key: this client talks to OpenAI only, and OpenAIModel is
+	// a BARE model id ("gpt-4.1"), not OpenRouter's "vendor/model" form.
+	// The model is REQUIRED — there is no built-in default, because
+	// defaulting it would pick a price on the operator's behalf.
+	//
+	// This is the only provider besides langchain that supports Embed.
+	OpenAIAPIKey       string  // env BOT_OPENAI_API_KEY — SECRET
+	OpenAIBaseURL      string  // env BOT_OPENAI_BASE_URL; optional, defaults to https://api.openai.com/v1
+	OpenAIModel        string  // env BOT_OPENAI_MODEL; e.g. "gpt-4.1"
+	OpenAIEmbedModel   string  // env BOT_OPENAI_EMBED_MODEL; e.g. "text-embedding-3-small"
+	OpenAIOrganization string  // env BOT_OPENAI_ORGANIZATION; optional "OpenAI-Organization" header
+	OpenAIProject      string  // env BOT_OPENAI_PROJECT; optional "OpenAI-Project" header
+	OpenAITemperature  float64 // env BOT_OPENAI_TEMPERATURE; <0 means model default
+	OpenAITopP         float64 // env BOT_OPENAI_TOP_P;        <0 means model default
+	OpenAIMaxTokens    int     // env BOT_OPENAI_MAX_TOKENS;   0  means model default
+	// OpenAIStore sends `store: true` so request and response appear at
+	// platform.openai.com/logs. Default false — enabling it retains prompt
+	// + response content on OpenAI for 30 days.
+	OpenAIStore bool // env BOT_OPENAI_STORE; default false
 
 	// Transport tuning shared by ALL providers.
 	Timeout       time.Duration // env BOT_TIMEOUT,        e.g. "60s"

@@ -30,7 +30,7 @@ func assertConfigInvalid(t *testing.T, err error) {
 
 func TestNewFromConfigDisabled(t *testing.T) {
 	for _, provider := range []string{"", "disabled"} {
-		adapter, err := NewFromConfig(context.Background(), config.BotConfig{BotProvider: provider})
+		adapter, err := NewFromConfig(context.Background(), config.BotConfig{DefaultBotProvider: provider})
 		if err != nil {
 			t.Errorf("provider=%q: err = %v, want nil", provider, err)
 		}
@@ -41,32 +41,32 @@ func TestNewFromConfigDisabled(t *testing.T) {
 }
 
 func TestNewFromConfigUnknownProvider(t *testing.T) {
-	_, err := NewFromConfig(context.Background(), config.BotConfig{BotProvider: "skynet"})
+	_, err := NewFromConfig(context.Background(), config.BotConfig{DefaultBotProvider: "skynet"})
 	assertConfigInvalid(t, err)
 }
 
 func TestNewFromConfigDefaultNotConfigured(t *testing.T) {
 	// BOT_PROVIDER=eino but no BOT_EINO_BACKEND (and no langchain either):
 	// nothing registers, SetDefault must fail loudly.
-	_, err := NewFromConfig(context.Background(), config.BotConfig{BotProvider: "eino"})
+	_, err := NewFromConfig(context.Background(), config.BotConfig{DefaultBotProvider: "eino"})
 	assertConfigInvalid(t, err)
 
 	// BOT_PROVIDER=langchain while only eino is configured — the default
 	// must point at a configured framework.
 	_, err = NewFromConfig(context.Background(), config.BotConfig{
-		BotProvider: "langchain",
-		EinoBackend: "ollama",
-		EinoBaseURL: "http://127.0.0.1:1",
-		EinoModel:   "test-model",
+		DefaultBotProvider: "langchain",
+		EinoBackend:        "ollama",
+		EinoBaseURL:        "http://127.0.0.1:1",
+		EinoModel:          "test-model",
 	})
 	assertConfigInvalid(t, err)
 }
 
 func TestNewFromConfigEinoInvalidBackend(t *testing.T) {
 	_, err := NewFromConfig(context.Background(), config.BotConfig{
-		BotProvider: "eino",
-		EinoBackend: "grok",
-		EinoModel:   "m",
+		DefaultBotProvider: "eino",
+		EinoBackend:        "grok",
+		EinoModel:          "m",
 	})
 	assertConfigInvalid(t, err)
 }
@@ -74,19 +74,19 @@ func TestNewFromConfigEinoInvalidBackend(t *testing.T) {
 func TestNewFromConfigEinoMissingCredential(t *testing.T) {
 	// googleai requires an API key; Validate fails before any network I/O.
 	_, err := NewFromConfig(context.Background(), config.BotConfig{
-		BotProvider: "eino",
-		EinoBackend: "googleai",
-		EinoModel:   "gemini-1.5-flash",
+		DefaultBotProvider: "eino",
+		EinoBackend:        "googleai",
+		EinoModel:          "gemini-1.5-flash",
 	})
 	assertConfigInvalid(t, err)
 }
 
 func TestNewFromConfigEinoOnlyRegistersAndDefaults(t *testing.T) {
 	adapter, err := NewFromConfig(context.Background(), config.BotConfig{
-		BotProvider: "eino",
-		EinoBackend: "ollama",
-		EinoBaseURL: "http://127.0.0.1:1",
-		EinoModel:   "test-model",
+		DefaultBotProvider: "eino",
+		EinoBackend:        "ollama",
+		EinoBaseURL:        "http://127.0.0.1:1",
+		EinoModel:          "test-model",
 	})
 	if err != nil {
 		t.Fatalf("NewFromConfig() error = %v", err)
@@ -109,9 +109,9 @@ func TestNewFromConfigOpenRouterRegistersAndDefaults(t *testing.T) {
 	// The openrouter provider builds no vendor SDK and RequireAtBoot
 	// defaults to false, so construction performs no network I/O.
 	adapter, err := NewFromConfig(context.Background(), config.BotConfig{
-		BotProvider:      "openrouter",
-		OpenRouterAPIKey: "test-key",
-		OpenRouterModel:  "openai/gpt-4o-mini",
+		DefaultBotProvider: "openrouter",
+		OpenRouterAPIKey:   "test-key",
+		OpenRouterModel:    "openai/gpt-4o-mini",
 	})
 	if err != nil {
 		t.Fatalf("NewFromConfig() error = %v", err)
@@ -134,8 +134,8 @@ func TestNewFromConfigOpenRouterMissingModel(t *testing.T) {
 	// There is deliberately no default model: an operator who supplies a
 	// key but no model must be told, not silently billed for a guess.
 	_, err := NewFromConfig(context.Background(), config.BotConfig{
-		BotProvider:      "openrouter",
-		OpenRouterAPIKey: "test-key",
+		DefaultBotProvider: "openrouter",
+		OpenRouterAPIKey:   "test-key",
 	})
 	assertConfigInvalid(t, err)
 }
@@ -145,8 +145,8 @@ func TestNewFromConfigOpenRouterMissingCredential(t *testing.T) {
 	// nothing, so SetDefault must fail loudly rather than boot a bot-less
 	// adapter that 500s on the first quiz.
 	_, err := NewFromConfig(context.Background(), config.BotConfig{
-		BotProvider:     "openrouter",
-		OpenRouterModel: "openai/gpt-4o-mini",
+		DefaultBotProvider: "openrouter",
+		OpenRouterModel:    "openai/gpt-4o-mini",
 	})
 	assertConfigInvalid(t, err)
 }
@@ -155,12 +155,12 @@ func TestNewFromConfigOpenRouterAlongsideEino(t *testing.T) {
 	// Both frameworks configured, eino named as default: openrouter is
 	// still registered and reachable per-call via ChatVia.
 	adapter, err := NewFromConfig(context.Background(), config.BotConfig{
-		BotProvider:      "eino",
-		EinoBackend:      "ollama",
-		EinoBaseURL:      "http://127.0.0.1:1",
-		EinoModel:        "test-model",
-		OpenRouterAPIKey: "test-key",
-		OpenRouterModel:  "openai/gpt-4o-mini",
+		DefaultBotProvider: "eino",
+		EinoBackend:        "ollama",
+		EinoBaseURL:        "http://127.0.0.1:1",
+		EinoModel:          "test-model",
+		OpenRouterAPIKey:   "test-key",
+		OpenRouterModel:    "openai/gpt-4o-mini",
 	})
 	if err != nil {
 		t.Fatalf("NewFromConfig() error = %v", err)
@@ -170,5 +170,78 @@ func TestNewFromConfigOpenRouterAlongsideEino(t *testing.T) {
 	}
 	if !adapter.Has(ProviderOpenRouter) {
 		t.Error("openrouter must register whenever its API key is set")
+	}
+}
+
+func TestNewFromConfigOpenAIRegistersAndDefaults(t *testing.T) {
+	// The direct openai provider builds no vendor SDK and RequireAtBoot
+	// defaults to false, so construction performs no network I/O.
+	adapter, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "openai",
+		OpenAIAPIKey:       "test-key",
+		OpenAIModel:        "gpt-4.1",
+	})
+	if err != nil {
+		t.Fatalf("NewFromConfig() error = %v", err)
+	}
+	if adapter == nil {
+		t.Fatal("adapter = nil, want registered adapter")
+	}
+	if adapter.DefaultName() != ProviderOpenAI {
+		t.Errorf("DefaultName() = %s, want openai", adapter.DefaultName())
+	}
+	if !adapter.Has(ProviderOpenAI) {
+		t.Error("openai provider not registered")
+	}
+	if adapter.Has(ProviderEino) || adapter.Has(ProviderLangChain) || adapter.Has(ProviderOpenRouter) {
+		t.Error("only the configured framework may register")
+	}
+}
+
+func TestNewFromConfigOpenAIMissingModel(t *testing.T) {
+	// No default model on purpose: an operator who supplies a key but no
+	// model must be told, not silently billed for a guess.
+	_, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "openai",
+		OpenAIAPIKey:       "test-key",
+	})
+	assertConfigInvalid(t, err)
+}
+
+func TestNewFromConfigOpenAIMissingCredential(t *testing.T) {
+	_, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "openai",
+		OpenAIModel:        "gpt-4.1",
+	})
+	assertConfigInvalid(t, err)
+}
+
+// TestNewFromConfigAllFourProviders proves the four coexist on one adapter
+// and that BOT_PROVIDER only picks the DEFAULT — every configured provider
+// stays reachable per-call through ChatVia / StreamVia / EmbedVia.
+func TestNewFromConfigAllFourProviders(t *testing.T) {
+	adapter, err := NewFromConfig(context.Background(), config.BotConfig{
+		DefaultBotProvider: "openai",
+
+		EinoBackend: "ollama",
+		EinoBaseURL: "http://127.0.0.1:1",
+		EinoModel:   "test-model",
+
+		OpenRouterAPIKey: "test-key",
+		OpenRouterModel:  "openai/gpt-4o-mini",
+
+		OpenAIAPIKey: "test-key",
+		OpenAIModel:  "gpt-4.1",
+	})
+	if err != nil {
+		t.Fatalf("NewFromConfig() error = %v", err)
+	}
+	if adapter.DefaultName() != ProviderOpenAI {
+		t.Errorf("DefaultName() = %s, want openai", adapter.DefaultName())
+	}
+	for _, name := range []BotProviderName{ProviderEino, ProviderOpenRouter, ProviderOpenAI} {
+		if !adapter.Has(name) {
+			t.Errorf("provider %s not registered", name)
+		}
 	}
 }
