@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS ma_user_quizzes (
   deleted_dt            DATETIME(6)  DEFAULT NULL,
 
   -- History list for one child (the /quizzes/list read path).
-  KEY ix_profile_status_modify (profile_id, quiz_status, modify_dt),
+  KEY ix_profile_status_modify (profile_id, user_quiz_status, modify_dt),
   -- Progress analytics: one profile, one purpose, over a date window.
   KEY ix_profile_purpose_create (profile_id, purpose, create_dt),
   -- Parent-scoped listing when only user_id is supplied.
