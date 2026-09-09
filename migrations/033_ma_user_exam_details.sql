@@ -3,16 +3,16 @@ CREATE TABLE IF NOT EXISTS ma_user_exam_details (
     user_exam_detail_id     BIGINT UNSIGNED NOT NULL,               -- external id (minted via ma_seqs)
     user_exam_id            BIGINT UNSIGNED NOT NULL,
     ai_exam_id              BIGINT UNSIGNED NOT NULL,
-    question_number         INT UNSIGNED    NOT NULL,
-    question_type           VARCHAR(32)     NULL DEFAULT 'ARITHMETIC',
-    question_name           TEXT            NULL,
-    topic                   VARCHAR(64)     NULL,
-    difficulty              TINYINT UNSIGNED NULL,
-    right_answer_label      VARCHAR(8)      NULL,
-    right_answer_content    VARCHAR(255)    NULL,
-    selected_label          VARCHAR(8)      NOT NULL,
-    selected_content        VARCHAR(255)    NULL,
-    is_correct              TINYINT(1)      NOT NULL,
+    question_number         INT UNSIGNED    NOT NULL,                   -- question number
+    question_type           VARCHAR(32)     NULL DEFAULT 'ARITHMETIC',  -- type of question (ARITHMETIC, ALGEBRA, GEOMETRY, ...)
+    question_name           TEXT            NULL,                       -- question text
+    question_topic          VARCHAR(64)     NULL,                       -- topic of question (generated from ai)
+    question_grade          TINYINT UNSIGNED NULL,                      -- grade of question (generated from ai)
+    right_answer_label      VARCHAR(8)      NULL,                       -- correct answer label (A, B, C, D, ...)
+    right_answer_content    VARCHAR(255)    NULL,                       -- correct answer content
+    selected_label          VARCHAR(8)      NOT NULL,                   -- selected answer label (A, B, C, D, ...)
+    selected_content        VARCHAR(255)    NULL,                       -- selected answer content
+    is_correct              TINYINT(1)      NOT NULL,                   -- 1 if correct, 0 if incorrect
     note                    VARCHAR(500)    NULL,
     user_exam_detail_status VARCHAR(32)     DEFAULT 'ACTIVE',         -- ACTIVE, DELETED
     status                  VARCHAR(32)     DEFAULT 'ACTIVE',         -- ACTIVE, INACTIVE

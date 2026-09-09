@@ -1,19 +1,19 @@
-CREATE TABLE IF NOT EXISTS ma_user_exams (
+CREATE TABLE IF NOT EXISTS ma_ai_exams (
     id                  BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     ai_exam_id          BIGINT UNSIGNED NOT NULL,                 -- external id (minted via ma_seqs)
-    ai_exam_type        VARCHAR(32)     NULL DEFAULT 'PRACTICE',  -- [ASSESSMENT, PRACTICE]
-    ai_grade            INT UNSIGNED    NULL,                     -- (1-5) , used to build prompt
-    ai_level            INT UNSIGNED    NULL,                     -- (1-10), used to build prompt
-    ai_num_ques         INT UNSIGNED    NULL,                     -- how many questions in this exam (from client request), used to build prompt
-    ai_semester         VARCHAR(128)    NULL,                     -- resolved semester label, used to build prompt
-    ai_program          VARCHAR(255)    NULL,                     -- resolved program label, used to build prompt
-    ai_extras           VARCHAR(255)    NULL,                     -- resolved extras (cache tags, combined by ai_exam_type, ai_grade, ai_level, ai_semester, ai_program)
-    title               VARCHAR(255)    NULL,                     -- resolved title (from ai generate)
-    short_text          VARCHAR(255)    NULL,                     -- resolved short text (from ai generate)
-    raw_ai_json         LONGTEXT        NOT NULL,                 -- JSON array, raw LLM response
-    note                VARCHAR(500)    NULL,                     
-    ai_exam_status      VARCHAR(32)     DEFAULT 'ACTIVE',         -- ACTIVE, DELETED
-    status              VARCHAR(32)     DEFAULT 'ACTIVE',         -- ACTIVE, INACTIVE
+    req_exam_type        VARCHAR(32)     NULL DEFAULT 'PRACTICE', -- [ASSESSMENT, PRACTICE, EXAM]
+    req_grade            INT UNSIGNED    NULL,                    -- (1-5) , used to build prompt
+    req_level            INT UNSIGNED    NULL,                    -- (1-10), used to build prompt
+    req_num_ques         INT UNSIGNED    NULL,                    -- how many questions in this exam (from client request), used to build prompt
+    req_semester         VARCHAR(128)    NULL,                    -- resolved semester label, used to build prompt
+    req_program          VARCHAR(255)    NULL,                    -- resolved program label, used to build prompt
+    req_extras           VARCHAR(255)    NULL,                    -- resolved extras (cache tags, combined by ai_exam_type, ai_grade, ai_level, ai_semester, ai_program)
+    ai_title            VARCHAR(255)    NULL,                    -- resolved title (from ai generate)
+    ai_short_text       VARCHAR(255)    NULL,                    -- resolved short text (from ai generate)
+    ai_questions_json   LONGTEXT        NOT NULL,                -- resolved question JSON array, (from ai generate)
+    note                VARCHAR(500)    NULL,                    
+    ai_exam_status      VARCHAR(32)     DEFAULT 'ACTIVE',        -- ACTIVE, DELETED
+    status              VARCHAR(32)     DEFAULT 'ACTIVE',        -- ACTIVE, INACTIVE
     create_id           BIGINT UNSIGNED DEFAULT NULL,
     create_dt           DATETIME(6)  DEFAULT CURRENT_TIMESTAMP(6),
     modify_id           BIGINT UNSIGNED DEFAULT NULL,
