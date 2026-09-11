@@ -50,26 +50,6 @@ func TestValidateGenerateExam(t *testing.T) {
 		}
 	})
 
-	t.Run("rejects a level outside the scale", func(t *testing.T) {
-		for _, level := range []int{0, 11, -3} {
-			l := level
-			req := &dto.GenerateExamReq{ProfileID: 1, ExamType: "PRACTICE", Level: &l}
-			if got := codeOf(t, mustFail(t, ctx, req)); got != status.EXAM_INVALID_LEVEL {
-				t.Errorf("level %d: code = %d, want EXAM_INVALID_LEVEL", level, got)
-			}
-		}
-	})
-
-	t.Run("accepts a level inside the scale", func(t *testing.T) {
-		for _, level := range []int{1, 5, 10} {
-			l := level
-			req := &dto.GenerateExamReq{ProfileID: 1, ExamType: "PRACTICE", Level: &l}
-			if _, err := ValidateGenerateExam(ctx, req); err != nil {
-				t.Errorf("level %d: unexpected error %v", level, err)
-			}
-		}
-	})
-
 	t.Run("normalises the type and clamps the length", func(t *testing.T) {
 		req := &dto.GenerateExamReq{ProfileID: 1, ExamType: " assessment ", NumQuestions: 500}
 		got, err := ValidateGenerateExam(ctx, req)

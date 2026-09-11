@@ -73,7 +73,6 @@ func TestBuildExamPromptAssessment(t *testing.T) {
 	_, user, err := BuildExamPrompt(ExamPromptInput{
 		ExamType:     enum.ExamTypeAssessment,
 		Grade:        1,
-		Level:        3,
 		NumQuestions: 10,
 		Semester:     "Học kỳ 1",
 		Program:      "Cánh diều",
@@ -84,11 +83,10 @@ func TestBuildExamPromptAssessment(t *testing.T) {
 
 	for _, want := range []string{
 		"GRADE PROFILE",
-		"LEVEL PROFILE",
 		"câu 3 và câu 6",
 		`"question_grade" = 2`,
 		`"question_grade" = 1`,
-		"Lớp 1 - Cấp độ 3",
+		`"title" phải đúng bằng: Lớp 1`,
 		"Học kỳ 1",
 		"Cánh diều",
 	} {
@@ -97,8 +95,8 @@ func TestBuildExamPromptAssessment(t *testing.T) {
 		}
 	}
 
-	// The two authoritative blocks must precede everything else, or the
-	// schema example teaches its own difficulty by imitation.
+	// The authoritative block must precede everything else, or the schema
+	// example teaches its own difficulty by imitation.
 	if strings.Index(user, "GRADE PROFILE") > strings.Index(user, "QUY TẮC CẤP LỚP") {
 		t.Error("GRADE PROFILE must come before the per-question grade rules")
 	}
@@ -110,7 +108,7 @@ func TestBuildExamPromptAssessment(t *testing.T) {
 // then fails to map onto the exam's columns.
 func TestExamPromptUsesExamVocabulary(t *testing.T) {
 	system, user, err := BuildExamPrompt(ExamPromptInput{
-		ExamType: enum.ExamTypeAssessment, Grade: 1, Level: 3, NumQuestions: 10,
+		ExamType: enum.ExamTypeAssessment, Grade: 1, NumQuestions: 10,
 	})
 	if err != nil {
 		t.Fatalf("BuildExamPrompt: %v", err)
@@ -124,7 +122,7 @@ func TestExamPromptUsesExamVocabulary(t *testing.T) {
 	}
 	for _, want := range []string{
 		`"right_answer_label"`, `"right_answer_content"`,
-		`"question_topic"`, `"question_grade"`, `"question_level"`,
+		`"question_topic"`, `"question_grade"`,
 	} {
 		if !strings.Contains(whole, want) {
 			t.Errorf("prompt never names %s", want)
@@ -136,7 +134,6 @@ func TestBuildExamPromptPracticeHasNoProbe(t *testing.T) {
 	_, user, err := BuildExamPrompt(ExamPromptInput{
 		ExamType:     enum.ExamTypePractice,
 		Grade:        4,
-		Level:        5,
 		NumQuestions: 10,
 	})
 	if err != nil {
@@ -150,23 +147,28 @@ func TestBuildExamPromptPracticeHasNoProbe(t *testing.T) {
 	}
 }
 
-// TestBuildExamPromptKindergartenClampsLevel is the case the clamp exists
-// for: kindergarten content cannot be pushed to level 9, so both the block
-// and the title must show the clamped value rather than what was asked.
-func TestBuildExamPromptKindergartenClampsLevel(t *testing.T) {
-	_, user, err := BuildExamPrompt(ExamPromptInput{
+// TestBuildExamPromptHasNoLevelAxis pins the decision that the exam prompt
+// carries no difficulty scale: no LEVEL PROFILE block, no question_level
+// key, no "Cấp độ" suffix on the title. The columns exist and stay NULL
+// until the teaching team defines a rule; until then the model must not be
+// told about a scale nobody can explain.
+func TestBuildExamPromptHasNoLevelAxis(t *testing.T) {
+	system, user, err := BuildExamPrompt(ExamPromptInput{
 		ExamType:     enum.ExamTypeAssessment,
 		Grade:        0,
-		Level:        9,
 		NumQuestions: 10,
 	})
 	if err != nil {
 		t.Fatalf("BuildExamPrompt: %v", err)
 	}
-	if !strings.Contains(user, "Mẫu giáo - Cấp độ 4") {
-		t.Error("title should carry the clamped level for kindergarten")
+	whole := system + "\n" + user
+
+	for _, stale := range []string{"LEVEL PROFILE", `"question_level"`, "Cấp độ", "cường độ"} {
+		if strings.Contains(whole, stale) {
+			t.Errorf("prompt still carries the level axis: %q", stale)
+		}
 	}
-	if strings.Contains(user, "cường độ bậc 9") {
-		t.Error("level 9 must not survive the kindergarten ceiling")
+	if !strings.Contains(user, `"title" phải đúng bằng: Mẫu giáo`) {
+		t.Error("kindergarten title should be the bare band name")
 	}
 }

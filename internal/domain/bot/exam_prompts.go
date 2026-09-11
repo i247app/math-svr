@@ -14,11 +14,17 @@ import (
 // child's work. That is why this file has no Grade/Reinforce counterpart
 // to the quiz prompts it replaces.
 //
-// Two axes steer the output, and their ranking is the point: GRADE
-// decides the content (number range, operations, icon policy) and LEVEL
-// decides the intensity inside that content. Both blocks are rendered at
-// the TOP of the user message so they outrank the schema example, which
+// GRADE is the one axis that steers the output today: it decides the
+// content (number range, operations, icon policy). Its block is rendered at
+// the TOP of the user message so it outranks the schema example, which
 // otherwise teaches its own difficulty by imitation.
+//
+// There is deliberately no LEVEL axis. The schema reserves nullable
+// req_level / res_level / question_level columns, but the teaching team
+// has not defined what a level IS or how it should move, and a difficulty
+// scale the product cannot explain must not be handed to the model as if
+// it could. The columns stay NULL until that rule exists; add the axis
+// back here when it does, not before.
 
 // ExamPromptInput is everything the generation prompt consumes. It mirrors
 // the req_* columns on ma_ai_exams, so what shaped a prompt can always be
@@ -26,10 +32,7 @@ import (
 type ExamPromptInput struct {
 	ExamType enum.ExamType
 	// Grade is the content band, 0..5 (0 = mẫu giáo).
-	Grade int
-	// Level is the intensity, 1..10. Zero means the caller had none to
-	// give, and the prompt falls back to the grade band alone.
-	Level        int
+	Grade        int
 	NumQuestions int
 	Semester     string
 	Program      string
@@ -101,17 +104,14 @@ func BuildExamPrompt(in ExamPromptInput) (system string, user string, err error)
 }
 
 // examBandTitle is the exact string the model must put in "title". It is
-// fully determined by (grade, level), so handing the model the finished
-// string removes the only reason it had to invent a level of its own.
-func examBandTitle(grade, level int) string {
+// fully determined by the grade, so handing the model the finished string
+// removes the only reason it had to invent a difficulty label of its own.
+func examBandTitle(grade int) string {
 	band := gradeBandName(QuizLanguageVietnamese, GradeLevel(grade))
 	if band == "" {
 		band = fmt.Sprintf("Lớp %d", grade)
 	}
-	if level <= 0 {
-		return band
-	}
-	return fmt.Sprintf("%s - Cấp độ %d", band, level)
+	return band
 }
 
 // examContextVN renders only the curriculum lines that carry a value, so a

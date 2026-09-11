@@ -1,12 +1,17 @@
-// Package placement turns a child's exam statistics into the three
-// server-derived fields on ma_user_exams: res_grade, res_level and
-// res_review.
+// Package placement turns a child's exam statistics into the two
+// server-derived fields on ma_user_exams: res_grade and res_review.
 //
-// It lives on its own, away from the submit command, because all three
-// are placeholders the teaching team intends to replace. Keeping them
-// behind one function means the real formula lands as a change to this
-// file and nothing else — no touching the transaction, the repository or
-// the response shape.
+// It lives on its own, away from the submit command, because both are
+// placeholders the teaching team intends to replace. Keeping them behind
+// one function means the real formula lands as a change to this file and
+// nothing else — no touching the transaction, the repository or the
+// response shape.
+//
+// res_level is NOT derived here, or anywhere. The column exists and stays
+// NULL: there is no agreed rule for what a level is, and an interim
+// formula would have been a rule nobody signed off on, written into every
+// child's row. When the teaching team defines one, it lands as a third
+// field on Result and nothing else changes.
 package placement
 
 import (
@@ -40,13 +45,11 @@ type Input struct {
 	LifetimeSkipped int
 }
 
-// Result carries the three derived fields. Grade and Level are pointers
-// because "not measured yet" is a real state that must reach the column
-// as NULL rather than as zero — zero is kindergarten, a very different
-// claim.
+// Result carries the derived fields. Grade is a pointer because "not
+// measured yet" is a real state that must reach the column as NULL rather
+// than as zero — zero is kindergarten, a very different claim.
 type Result struct {
 	Grade  *int
-	Level  *int
 	Review string
 }
 
@@ -58,17 +61,11 @@ type Result struct {
 // lifetime average, a child who has answered five hundred questions can no
 // longer move the number enough to be promoted, which is the opposite of
 // what a placement rule is for.
-//
-// Level: banded off the lifetime accuracy, as an interim measure so the
-// intensity axis does something at all. It is the crudest of the three
-// rules and the first that should be replaced.
 func Derive(in Input) Result {
 	grade := deriveGrade(in)
-	level := deriveLevel(in)
 	return Result{
 		Grade:  grade,
-		Level:  level,
-		Review: buildReview(in, grade, level),
+		Review: buildReview(in, grade),
 	}
 }
 
@@ -94,41 +91,6 @@ func deriveGrade(in Input) *int {
 	return &base
 }
 
-// Level bands. Interim: the teaching team has not defined how level
-// should move, so this maps lifetime accuracy onto the 1..10 scale
-// coarsely and honestly rather than pinning every exam at level 1.
-const (
-	levelStart      = 1
-	levelStruggling = 2
-	levelSteady     = 5
-	levelStrong     = 8
-
-	levelSteadyFloor = 50
-	levelStrongFloor = 80
-)
-
-func deriveLevel(in Input) *int {
-	level := levelStart
-	if in.LifetimeTotal > 0 {
-		accuracy := in.LifetimeCorrect * 100 / in.LifetimeTotal
-		switch {
-		case accuracy > levelStrongFloor:
-			level = levelStrong
-		case accuracy >= levelSteadyFloor:
-			level = levelSteady
-		default:
-			level = levelStruggling
-		}
-	}
-	if level < enum.ExamLevelMin {
-		level = enum.ExamLevelMin
-	}
-	if level > enum.ExamLevelMax {
-		level = enum.ExamLevelMax
-	}
-	return &level
-}
-
 // reviewMaxLen keeps the sentence inside a sane display width. The column
 // is TEXT, so this is about the parent reading it, not about the schema.
 const reviewMaxLen = 250
@@ -138,7 +100,7 @@ const reviewMaxLen = 250
 // history rather than the last sitting, because that is what the column
 // means: it is overwritten on every submit and there is one row per exam
 // type, not one per attempt.
-func buildReview(in Input, grade, level *int) string {
+func buildReview(in Input, grade *int) string {
 	if in.LifetimeTotal <= 0 {
 		return "Chưa có dữ liệu để đánh giá."
 	}
@@ -151,11 +113,7 @@ func buildReview(in Input, grade, level *int) string {
 		body += fmt.Sprintf(" Còn bỏ trống %d câu.", in.LifetimeSkipped)
 	}
 	if grade != nil {
-		body += fmt.Sprintf(" Đang ở mức %s", gradeLabel(*grade))
-		if level != nil {
-			body += fmt.Sprintf(" - cấp độ %d", *level)
-		}
-		body += "."
+		body += fmt.Sprintf(" Đang ở mức %s.", gradeLabel(*grade))
 	}
 
 	if runes := []rune(body); len(runes) > reviewMaxLen {

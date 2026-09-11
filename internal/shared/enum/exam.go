@@ -86,11 +86,15 @@ const (
 
 func (s UserExamDetailStatusType) String() string { return string(s) }
 
-// Bounds for the two difficulty axes.
+// Bounds for the grade axis.
 //
 // Grade is the CONTENT band and maps 1:1 onto the bot's grade profiles:
-// 0 is kindergarten (mẫu giáo), 5 is the last elementary year. Level is
-// the INTENSITY within whatever content the grade allows.
+// 0 is kindergarten (mẫu giáo), 5 is the last elementary year.
+//
+// There is no level axis in code. The req_level / res_level /
+// question_level columns exist and stay NULL: the teaching team has not
+// defined what a level is or how it moves, so nothing accepts, derives or
+// prompts for one. Reintroduce the bounds here when that rule lands.
 //
 // ExamQuestionGradeMax is one above ExamGradeMax on purpose: an
 // ASSESSMENT at grade 5 still has to probe upward, so its probe questions
@@ -98,7 +102,5 @@ func (s UserExamDetailStatusType) String() string { return string(s) }
 const (
 	ExamGradeMin         = 0
 	ExamGradeMax         = 5
-	ExamLevelMin         = 1
-	ExamLevelMax         = 10
 	ExamQuestionGradeMax = ExamGradeMax + 1
 )

@@ -36,7 +36,6 @@ func newBotClient(adapter *botAdapter.Adapter) *botClient {
 type generateExamInput struct {
 	ExamType     enum.ExamType
 	Grade        int
-	Level        *int
 	NumQuestions int
 	Semester     string
 	Program      string
@@ -60,9 +59,6 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		NumQuestions: in.NumQuestions,
 		Semester:     in.Semester,
 		Program:      in.Program,
-	}
-	if in.Level != nil {
-		promptIn.Level = *in.Level
 	}
 
 	system, user, err := domainBot.BuildExamPrompt(promptIn)
@@ -113,7 +109,7 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	// cosmetic: question_grade feeds placement, so a value the model
 	// invented could move a child up or down a year. The mismatches are
 	// logged because a run of them means the prompt has stopped landing.
-	questions, mismatches := NormalizeQuestionBands(questions, in.ExamType, in.Grade, in.Level)
+	questions, mismatches := NormalizeQuestionBands(questions, in.ExamType, in.Grade)
 	for _, m := range mismatches {
 		log.Warnf("exam.question_grade.mismatch q=%d model=%v applied=%d",
 			m.QuestionNumber, utils.DerefInt(m.ModelGrade), m.Applied)

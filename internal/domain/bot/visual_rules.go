@@ -14,7 +14,7 @@ const visualQuestionRulesVN = `
 VISUAL QUESTION RULES:
 - Mỗi câu có "question_type": ARITHMETIC (câu chữ thuần, mặc định) hoặc COUNT (đếm bằng icon). KHÔNG tạo bất kỳ question_type nào khác.
 - VIỆC dùng COUNT/icon hay không và với tần suất nào do CHÍNH SÁCH icon trong GRADE PROFILE quyết định HOÀN TOÀN. Nếu chính sách đó là TẮT (hoặc không có GRADE PROFILE), dùng ARITHMETIC cho mọi câu và TUYỆT ĐỐI không phát sinh emoji hay token [icon:...]. Chỉ dùng COUNT khi chính sách cho phép, và trong đúng tần suất nó nêu.
-- COUNT (chỉ khi chính sách theo lớp cho phép): "question_name" hiển thị các vật để đếm hoặc cộng bằng emoji kèm toán tử (+, "?"), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?". Đáp án là số; "topic" là "counting".
+- COUNT (chỉ khi chính sách theo lớp cho phép): "question_name" hiển thị các vật để đếm hoặc cộng bằng emoji kèm toán tử (+, "?"), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?". Đáp án là số; "topic" là "phép đếm".
 
 ICONS (chỉ dùng cho COUNT; TUYỆT ĐỐI không dùng trong ARITHMETIC):
 - Emoji: với vật đếm được, dùng emoji phổ thông, thân thiện trẻ em, chèn trực tiếp và cách nhau bởi dấu cách, ví dụ 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Mỗi câu chỉ dùng MỘT loại emoji.

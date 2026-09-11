@@ -24,7 +24,7 @@ type AiExam struct {
 
 	reqExamType string
 	reqGrade    int
-	reqLevel    *int
+	reqLevel    *int // mirrors nullable req_level; always NULL until a level rule exists
 	reqNumQues  int
 	reqSemester *string
 	reqProgram  *string

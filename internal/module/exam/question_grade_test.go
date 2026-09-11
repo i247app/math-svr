@@ -18,11 +18,11 @@ func questions(n int) []question.Question {
 func gradesOf(qs []question.Question) []int {
 	out := make([]int, 0, len(qs))
 	for _, q := range qs {
-		if q.Grade == nil {
+		if q.QuestionGrade == nil {
 			out = append(out, -1)
 			continue
 		}
-		out = append(out, *q.Grade)
+		out = append(out, *q.QuestionGrade)
 	}
 	return out
 }
@@ -85,7 +85,7 @@ func TestNormalizeQuestionBands(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, _ := NormalizeQuestionBands(questions(tc.count), tc.examType, tc.grade, nil)
+			got, _ := NormalizeQuestionBands(questions(tc.count), tc.examType, tc.grade)
 			if !equal(gradesOf(got), tc.want) {
 				t.Errorf("grades = %v, want %v", gradesOf(got), tc.want)
 			}
@@ -99,12 +99,12 @@ func TestNormalizeQuestionBands(t *testing.T) {
 func TestNormalizeQuestionBandsOverridesModel(t *testing.T) {
 	qs := questions(10)
 	wrong := 4
-	qs[2].Grade = &wrong // question 3 — a probe slot, model says grade 4
+	qs[2].QuestionGrade = &wrong // question 3 — a probe slot, model says grade 4
 
-	got, mismatches := NormalizeQuestionBands(qs, enum.ExamTypeAssessment, 1, nil)
+	got, mismatches := NormalizeQuestionBands(qs, enum.ExamTypeAssessment, 1)
 
-	if *got[2].Grade != 2 {
-		t.Errorf("question 3 grade = %d, want 2 (server stamp must win)", *got[2].Grade)
+	if *got[2].QuestionGrade != 2 {
+		t.Errorf("question 3 grade = %d, want 2 (server stamp must win)", *got[2].QuestionGrade)
 	}
 	if len(mismatches) != 1 {
 		t.Fatalf("got %d mismatches, want 1", len(mismatches))
@@ -124,7 +124,7 @@ func TestNormalizeQuestionBandsFallsBackToPosition(t *testing.T) {
 		{QuestionNumber: 0},
 		{QuestionNumber: 99},
 	}
-	got, _ := NormalizeQuestionBands(qs, enum.ExamTypeAssessment, 1, nil)
+	got, _ := NormalizeQuestionBands(qs, enum.ExamTypeAssessment, 1)
 
 	want := []int{1, 1, 2, 1} // position 3 is the probe slot
 	if !equal(gradesOf(got), want) {
@@ -133,7 +133,7 @@ func TestNormalizeQuestionBandsFallsBackToPosition(t *testing.T) {
 }
 
 func TestNormalizeQuestionBandsEmpty(t *testing.T) {
-	got, mismatches := NormalizeQuestionBands(nil, enum.ExamTypeAssessment, 1, nil)
+	got, mismatches := NormalizeQuestionBands(nil, enum.ExamTypeAssessment, 1)
 	if got != nil || mismatches != nil {
 		t.Errorf("expected (nil, nil), got (%v, %v)", got, mismatches)
 	}

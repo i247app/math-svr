@@ -670,8 +670,6 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Loại bài kiểm tra phải là ASSESSMENT, PRACTICE hoặc EXAM"
 	case EXAM_INVALID_GRADE:
 		return "Cấp lớp phải nằm trong khoảng 0 đến 5"
-	case EXAM_INVALID_LEVEL:
-		return "Cấp độ phải nằm trong khoảng 1 đến 10"
 	case EXAM_INVALID_NUM_QUESTIONS:
 		return "Số lượng câu hỏi không hợp lệ"
 	case EXAM_GENERATION_FAILED:

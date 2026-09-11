@@ -158,7 +158,7 @@ func ScoreQuestions(questions []question.Question, answers []question.StudentAns
 	outcomes := make([]Outcome, 0, len(answers))
 
 	for _, q := range questions {
-		topicKey := strings.TrimSpace(strings.ToLower(q.Topic))
+		topicKey := strings.TrimSpace(strings.ToLower(q.QuestionTopic))
 		b, ok := topics[topicKey]
 		if !ok {
 			b = &topicBucket{}
@@ -265,18 +265,18 @@ func indexStudentAnswers(answers []question.StudentAnswer) (map[int]string, erro
 // questionIsCorrect: label match first (the v1-compatible path), value
 // compare as fallback only when right_answer is absent.
 func questionIsCorrect(q question.Question, studentLabel string) bool {
-	rightLabel := strings.ToUpper(strings.TrimSpace(q.RightAnswer))
+	rightLabel := strings.ToUpper(strings.TrimSpace(q.RightAnswerLabel))
 	if rightLabel != "" {
 		return strings.ToUpper(studentLabel) == rightLabel
 	}
-	if strings.TrimSpace(q.CorrectAnswer) == "" {
+	if strings.TrimSpace(q.RightAnswerContent) == "" {
 		return false
 	}
 	// Value-compare path: locate the chosen choice's content, compare it
 	// to correct_answer via the canonical numeric/string compare.
 	for _, c := range q.Answers {
 		if strings.EqualFold(strings.TrimSpace(c.Label), studentLabel) {
-			return valuesEqual(c.Content, q.CorrectAnswer)
+			return valuesEqual(c.Content, q.RightAnswerContent)
 		}
 	}
 	return false

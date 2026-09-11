@@ -44,27 +44,27 @@ const (
 // only, generic review wording). All are omitempty so the payload of a
 // row that lacks them is byte-for-byte unchanged.
 //
-// Grade and Level describe the single question rather than the round:
-// grade is the content band it targets — an ASSESSMENT deliberately sets
-// two of its questions one band higher to probe upward — and level is how
-// hard it is inside that band. Quizzes and exercises never populate
-// either, so their payloads are unaffected.
-//
 // Grade is the band this single question targets. It is usually the band
 // the whole round was generated for, but an ASSESSMENT deliberately sets
 // two of its questions one band higher to probe upward, which is why the
-// value lives per question rather than on the round.
+// value lives per question rather than on the round. Quizzes and exercises
+// never populate it, so their payloads are unaffected.
+//
+// There is no per-question level: the exam schema reserves a nullable
+// question_level column, but no rule defines it yet, so the prompt does
+// not ask for it and nothing stores it. A stored blob that still carries a
+// "question_level" key (written before the axis was removed) decodes fine —
+// unknown keys are dropped.
 type Question struct {
-	QuestionNumber int            `json:"question_number"`
-	QuestionType   string         `json:"question_type,omitempty"`
-	QuestionName   string         `json:"question_name"`
-	Answers        []AnswerChoice `json:"answers"`
-	RightAnswer    string         `json:"right_answer,omitempty"`
-	CorrectAnswer  string         `json:"correct_answer,omitempty"`
-	Topic          string         `json:"topic,omitempty"`
-	Difficulty     int            `json:"difficulty,omitempty"`
-	Grade          *int           `json:"question_grade,omitempty"`
-	Level          *int           `json:"question_level,omitempty"`
+	QuestionNumber     int            `json:"question_number"`
+	QuestionType       string         `json:"question_type,omitempty"`
+	QuestionName       string         `json:"question_name"`
+	Answers            []AnswerChoice `json:"answers"`
+	RightAnswerLabel   string         `json:"right_answer_label,omitempty"`
+	RightAnswerContent string         `json:"right_answer_content,omitempty"`
+	QuestionTopic      string         `json:"question_topic,omitempty"`
+	QuestionGrade      *int           `json:"question_grade,omitempty"`
+	QuestionLevel      *int           `json:"question_level,omitempty"`
 }
 
 // StudentAnswer is the student's chosen label for a single question.

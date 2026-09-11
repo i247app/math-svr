@@ -10,10 +10,11 @@ import (
 // place a single sitting's result is kept — ma_user_exams holds lifetime
 // totals and has no time dimension at all.
 //
-// reqExamType / reqGrade / reqLevel are snapshots of where the child was
-// placed when they took it. Reading them off the AiExam row would work
-// today, but that row is shared cache; the snapshot keeps one child's
-// history readable on its own terms.
+// reqExamType / reqGrade are snapshots of where the child was placed when
+// they took it. Reading them off the AiExam row would work today, but that
+// row is shared cache; the snapshot keeps one child's history readable on
+// its own terms. reqLevel mirrors the nullable req_level column and is
+// always NULL — no level rule exists yet, so nothing sets it.
 //
 // resTotalQuestions counts the questions the child ANSWERED, not the
 // questions the exam contained. A skipped question lands in

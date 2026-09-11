@@ -16,22 +16,20 @@ import (
 // and a silent miss looks exactly like normal operation while costing a
 // generation every time.
 //
-// Shape: TYPE-G<grade>-L<level>-Q<questions>-S<semester>-P<program>
+// Shape: TYPE-G<grade>-Q<questions>-S<semester>-P<program>
 //
-//	ASSESSMENT-G1-L3-Q10-SHOC_KY_1-PCANH_DIEU
+//	ASSESSMENT-G1-Q10-SHOC_KY_1-PCANH_DIEU
 //
-// A missing level renders as LNA rather than being skipped, so the tag
-// keeps a fixed arity and can still be read back by a human — or split
-// by a future migration.
-func BuildCacheTag(examType enum.ExamType, grade int, level *int, numQues int, semester, program string) string {
-	levelPart := "LNA"
-	if level != nil {
-		levelPart = fmt.Sprintf("L%d", *level)
-	}
+// There is no level segment. An earlier shape carried L<level>/LNA between
+// grade and question count; it was removed with the level axis itself
+// (the teaching team has no rule for it, so no request can vary by it and
+// the segment could only ever have been the LNA constant). Tags written in
+// the old shape simply never match again, which is correct — those exams
+// were generated from a prompt that no longer exists.
+func BuildCacheTag(examType enum.ExamType, grade int, numQues int, semester, program string) string {
 	return strings.Join([]string{
 		normalizeTagPart(string(examType)),
 		fmt.Sprintf("G%d", grade),
-		levelPart,
 		fmt.Sprintf("Q%d", numQues),
 		"S" + normalizeTagPart(semester),
 		"P" + normalizeTagPart(program),

@@ -20,6 +20,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // SubmitExamCommand grades one sitting and folds it into the child's
@@ -209,15 +210,14 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 		d.SetUserExamId(userExamID)
 		d.SetAiExamId(attempt.AiExamId())
 		d.SetQuestionNumber(o.Question.QuestionNumber)
-		d.SetQuestionType(strPtr(o.Question.QuestionType))
-		d.SetQuestionName(strPtr(o.Question.QuestionName))
-		d.SetQuestionTopic(strPtr(o.Question.Topic))
-		d.SetQuestionGrade(o.Question.Grade)
-		d.SetQuestionLevel(o.Question.Level)
-		d.SetRightAnswerLabel(strPtr(o.Question.RightAnswer))
-		d.SetRightAnswerContent(strPtr(o.Question.CorrectAnswer))
+		d.SetQuestionType(utils.ToStringPtr(o.Question.QuestionType))
+		d.SetQuestionName(utils.ToStringPtr(o.Question.QuestionName))
+		d.SetQuestionTopic(utils.ToStringPtr(o.Question.QuestionTopic))
+		d.SetQuestionGrade(o.Question.QuestionGrade)
+		d.SetRightAnswerLabel(utils.ToStringPtr(o.Question.RightAnswerLabel))
+		d.SetRightAnswerContent(utils.ToStringPtr(o.Question.RightAnswerContent))
 		d.SetSelectedLabel(o.SelectedLabel)
-		d.SetSelectedContent(strPtr(o.SelectedContent))
+		d.SetSelectedContent(utils.ToStringPtr(o.SelectedContent))
 		d.SetIsCorrect(o.IsCorrect)
 		details = append(details, d)
 	}
@@ -230,7 +230,7 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 
 // applyStats folds the sitting into the lifetime row and re-derives the
 // child's placement from the totals INCLUDING it — deriving before the
-// fold would describe the child as they were one exam ago.
+// fold would describe the 	child as they were one exam ago.
 func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transaction.Repositories,
 	cmd SubmitExamCommand, attempt *exam.UserAiExam, stats *exam.UserExam,
 	userExamID int64, scored *scorer.DetailedResult) error {
@@ -263,7 +263,6 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 	row.SetReqExamType(attempt.ReqExamType())
 	row.SetResReview(&derived.Review)
 	row.SetResGrade(derived.Grade)
-	row.SetResLevel(derived.Level)
 	row.SetLastSubmittedDt(mtime.Now())
 
 	if err := repos.UserExam.Upsert(ctx, row, delta); err != nil {
@@ -285,13 +284,4 @@ func decodeExamQuestions(raw string) ([]question.Question, error) {
 		return nil, fmt.Errorf("exam: parse stored questions: %w", err)
 	}
 	return dto.ToSharedQuestions(wire), nil
-}
-
-// strPtr returns nil for an empty string so a blank optional field lands
-// in the column as NULL rather than as "".
-func strPtr(s string) *string {
-	if s == "" {
-		return nil
-	}
-	return &s
 }

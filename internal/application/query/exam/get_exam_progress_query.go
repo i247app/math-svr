@@ -108,7 +108,6 @@ func toSeriesAsc(desc []*exam.ProgressPoint) []dto.ExamPoint {
 			UserAiExamID:   p.UserAiExamId,
 			ExamType:       p.ExamType,
 			Grade:          p.Grade,
-			Level:          p.Level,
 			CompletedDt:    p.CompletedDt.String(),
 			Score:          progress.PctTo10Pt(float64(p.ScorePercentage)),
 			ScorePct:       p.ScorePercentage,

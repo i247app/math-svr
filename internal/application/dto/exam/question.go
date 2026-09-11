@@ -6,7 +6,7 @@ import "math-ai.com/math-ai/internal/application/dto/question"
 //
 // It exists because the exam vocabulary is its own: the field names here
 // match the columns they end up in (right_answer_label,
-// right_answer_content, question_topic, question_grade, question_level),
+// right_answer_content, question_topic, question_grade),
 // so a question can be read from the JSON, written to ma_user_exam_details
 // and rendered by the client without anybody renaming anything on the way.
 //
@@ -28,22 +28,20 @@ type ExamQuestion struct {
 	RightAnswerContent string                  `json:"right_answer_content,omitempty"`
 	QuestionTopic      string                  `json:"question_topic,omitempty"`
 	QuestionGrade      *int                    `json:"question_grade,omitempty"`
-	QuestionLevel      *int                    `json:"question_level,omitempty"`
 }
 
 // ToShared converts into the internal shape the scorer and normalisers
 // operate on.
 func (q ExamQuestion) ToShared() question.Question {
 	return question.Question{
-		QuestionNumber: q.QuestionNumber,
-		QuestionType:   q.QuestionType,
-		QuestionName:   q.QuestionName,
-		Answers:        q.Answers,
-		RightAnswer:    q.RightAnswerLabel,
-		CorrectAnswer:  q.RightAnswerContent,
-		Topic:          q.QuestionTopic,
-		Grade:          q.QuestionGrade,
-		Level:          q.QuestionLevel,
+		QuestionNumber:     q.QuestionNumber,
+		QuestionType:       q.QuestionType,
+		QuestionName:       q.QuestionName,
+		Answers:            q.Answers,
+		RightAnswerLabel:   q.RightAnswerLabel,
+		RightAnswerContent: q.RightAnswerContent,
+		QuestionTopic:      q.QuestionTopic,
+		QuestionGrade:      q.QuestionGrade,
 	}
 }
 
@@ -54,11 +52,10 @@ func ExamQuestionFrom(q question.Question) ExamQuestion {
 		QuestionType:       q.QuestionType,
 		QuestionName:       q.QuestionName,
 		Answers:            q.Answers,
-		RightAnswerLabel:   q.RightAnswer,
-		RightAnswerContent: q.CorrectAnswer,
-		QuestionTopic:      q.Topic,
-		QuestionGrade:      q.Grade,
-		QuestionLevel:      q.Level,
+		RightAnswerLabel:   q.RightAnswerLabel,
+		RightAnswerContent: q.RightAnswerContent,
+		QuestionTopic:      q.QuestionTopic,
+		QuestionGrade:      q.QuestionGrade,
 	}
 }
 

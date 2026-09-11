@@ -17,9 +17,8 @@ type GradeMismatch struct {
 	Applied        int
 }
 
-// NormalizeQuestionBands stamps question_grade AND question_level on every
-// question from the request, by position, and reports where the model
-// disagreed about the grade.
+// NormalizeQuestionBands stamps question_grade on every question from the
+// request, by position, and reports where the model disagreed.
 //
 // The server decides this, not the model, for the same reason the grade
 // profile is code-owned: question_grade is an input to placement — it is
@@ -31,7 +30,7 @@ type GradeMismatch struct {
 // It runs BEFORE the questions are persisted, so ma_ai_exams.ai_questions_json
 // is authoritative and ma_user_exam_details can copy it verbatim at submit
 // time without re-deriving anything.
-func NormalizeQuestionBands(questions []question.Question, examType enum.ExamType, grade int, level *int) ([]question.Question, []GradeMismatch) {
+func NormalizeQuestionBands(questions []question.Question, examType enum.ExamType, grade int) ([]question.Question, []GradeMismatch) {
 	if len(questions) == 0 {
 		return questions, nil
 	}
@@ -60,26 +59,16 @@ func NormalizeQuestionBands(questions []question.Question, examType enum.ExamTyp
 			applied = probeGrade
 		}
 
-		if q.Grade != nil && *q.Grade != applied {
+		if q.QuestionGrade != nil && *q.QuestionGrade != applied {
 			mismatches = append(mismatches, GradeMismatch{
 				QuestionNumber: number,
-				ModelGrade:     q.Grade,
+				ModelGrade:     q.QuestionGrade,
 				Applied:        applied,
 			})
 		}
 
 		stamped := applied
-		q.Grade = &stamped
-
-		// Level is uniform across the round — there is no per-question
-		// level rule the way Q3/Q6 is a per-question grade rule — but it is
-		// stamped per question anyway so ma_user_exam_details carries both
-		// bands on every row and a placement query never has to join back
-		// to the exam to learn how hard the question was.
-		if level != nil {
-			stampedLevel := *level
-			q.Level = &stampedLevel
-		}
+		q.QuestionGrade = &stamped
 	}
 	return questions, mismatches
 }

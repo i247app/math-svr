@@ -670,8 +670,6 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "exam_type must be one of ASSESSMENT, PRACTICE, EXAM"
 	case EXAM_INVALID_GRADE:
 		return "grade must be between 0 and 5"
-	case EXAM_INVALID_LEVEL:
-		return "level must be between 1 and 10"
 	case EXAM_INVALID_NUM_QUESTIONS:
 		return "num_questions is invalid"
 	case EXAM_GENERATION_FAILED:

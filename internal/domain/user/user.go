@@ -5,21 +5,21 @@ import (
 )
 
 type User struct {
-	id         int64
-	userId     int64
-	userName   string
+	id              int64
+	userId          int64
+	userName        string
 	phone           string
 	email           *string
 	isEmailVerified bool
 	avatarKey       *string
-	role       string
-	userStatus *string
-	status     string
-	note       *string
-	createId   *int64
-	createDt   mtime.MathTime
-	modifyId   *int64
-	modifyDt   mtime.MathTime
+	role            string
+	userStatus      *string
+	status          string
+	note            *string
+	createId        *int64
+	createDt        mtime.MathTime
+	modifyId        *int64
+	modifyDt        mtime.MathTime
 }
 
 func NewUser() *User {

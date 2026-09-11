@@ -13,7 +13,6 @@ var (
 	ErrExamTypeRequired        = errors.New("exam_type is required")
 	ErrExamTypeInvalid         = errors.New("exam_type must be one of ASSESSMENT, PRACTICE, EXAM")
 	ErrGradeOutOfRange         = errors.New("grade must be between 0 and 5")
-	ErrLevelOutOfRange         = errors.New("level must be between 1 and 10")
 	ErrAttemptIDRequired       = errors.New("user_ai_exam_id is required")
 	ErrAnswersRequired         = errors.New("answers is required")
 	ErrDuplicateAnswer         = errors.New("answers contain a duplicate question_number")

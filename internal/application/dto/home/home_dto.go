@@ -302,7 +302,6 @@ type ExamCard struct {
 	AiExamID        int64   `json:"ai_exam_id"`
 	ExamType        string  `json:"exam_type"`
 	Grade           int     `json:"grade"`
-	Level           *int    `json:"level,omitempty"`
 	Title           *string `json:"title,omitempty"`
 	ShortText       *string `json:"short_text,omitempty"`
 	Status          *string `json:"status,omitempty"`
@@ -325,7 +324,6 @@ func ExamToCard(a *examDomain.UserAiExam, aiExam *examDomain.AiExam) *ExamCard {
 		AiExamID:        a.AiExamId(),
 		ExamType:        a.ReqExamType(),
 		Grade:           a.ReqGrade(),
-		Level:           a.ReqLevel(),
 		Status:          a.UserAiExamStatus(),
 		TotalQuestions:  a.ResTotalQuestions(),
 		CorrectNumber:   a.ResCorrectNumber(),

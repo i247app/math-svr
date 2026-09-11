@@ -50,7 +50,6 @@ type ProgressPoint struct {
 	AiExamId        int64
 	ExamType        string
 	Grade           int
-	Level           *int
 	ScorePercentage int64
 	CorrectNumber   *int64
 	TotalQuestions  *int64

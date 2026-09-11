@@ -13,10 +13,14 @@ import (
 // exams. Three ten-question rounds with six answers each give 18, not 30,
 // and resCorrectNumber can therefore never exceed it.
 //
-// resGrade and resLevel are the child's measured ABILITY and are
-// deliberately not written back to the profile: ma_profiles.grade_id
-// records the class the child attends, which is a different fact. A child
-// in Grade 1 may well be answering Grade 3 material correctly.
+// resGrade is the child's measured ABILITY and is deliberately not written
+// back to the profile: ma_profiles.grade_id records the class the child
+// attends, which is a different fact. A child in Grade 1 may well be
+// answering Grade 3 material correctly.
+//
+// resLevel mirrors the nullable res_level column and is always NULL today:
+// the teaching team has no rule for how a level moves, so placement does
+// not derive one. The field stays so the entity keeps matching the table.
 type UserExam struct {
 	id          int64
 	userExamId  int64

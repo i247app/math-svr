@@ -41,10 +41,10 @@ func sanitizeExerciseText(text string) *string {
 func buildAnswerKey(questions []question.Question) []byte {
 	key := make(map[string]string, len(questions))
 	for _, q := range questions {
-		if q.RightAnswer == "" {
+		if q.RightAnswerLabel == "" {
 			continue
 		}
-		key[itoa(q.QuestionNumber)] = q.RightAnswer
+		key[itoa(q.QuestionNumber)] = q.RightAnswerLabel
 	}
 	if len(key) == 0 {
 		return []byte("{}")

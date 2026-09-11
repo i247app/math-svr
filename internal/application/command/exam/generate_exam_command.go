@@ -39,7 +39,6 @@ type GenerateExamCommand struct {
 	ProfileID int64
 	ExamType  enum.ExamType
 	Grade     int
-	Level     *int
 
 	ReuseAiExamID *int64
 	NewContent    *NewAiExamContent
@@ -84,7 +83,6 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		a.SetAiExamId(aiExam.AiExamId())
 		a.SetReqExamType(string(cmd.ExamType))
 		a.SetReqGrade(cmd.Grade)
-		a.SetReqLevel(cmd.Level)
 		a.SetStartedDt(mtime.Now())
 		inProgress := string(enum.UserAiExamStatusInProgress)
 		a.SetUserAiExamStatus(&inProgress)
@@ -131,7 +129,6 @@ func (h *GenerateExamCommandHandler) resolveAiExam(ctx context.Context, repos tr
 	e.SetAiExamId(aiExamID)
 	e.SetReqExamType(string(cmd.ExamType))
 	e.SetReqGrade(cmd.Grade)
-	e.SetReqLevel(cmd.Level)
 	e.SetReqNumQues(cmd.NewContent.NumQues)
 	e.SetReqSemester(cmd.NewContent.Semester)
 	e.SetReqProgram(cmd.NewContent.Program)

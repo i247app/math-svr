@@ -20,8 +20,10 @@ import (
 // probe sits one band above the child's requested grade. It is the signal
 // a promotion rule reads: "did they get the harder ones right?"
 //
-// questionLevel is the intensity inside that band. The two travel
-// together: a question is only meaningfully "hard" as a pair of both.
+// questionLevel mirrors the nullable question_level column and is always
+// NULL today: no rule defines a level, so neither the prompt nor the
+// submit path produces one. The field stays so the entity keeps matching
+// the table 1:1 and the column is ready the day a rule lands.
 type UserExamDetail struct {
 	id               int64
 	userExamDetailId int64

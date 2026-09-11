@@ -362,17 +362,19 @@ const (
 	// 13600 was already taken by PRESENCE_*, so the exam aggregate claims
 	// the next free 100-block rather than the 13600 the planning notes
 	// originally reserved.
-	EXAM_NOT_FOUND               StatusCode = 13700
-	EXAM_ATTEMPT_NOT_FOUND       StatusCode = 13701
-	EXAM_ATTEMPT_NOT_OWNED       StatusCode = 13702
-	EXAM_ALREADY_SUBMITTED       StatusCode = 13703
-	EXAM_MISSING_ATTEMPT_ID      StatusCode = 13704
-	EXAM_MISSING_ANSWERS         StatusCode = 13705
-	EXAM_INVALID_ANSWERS         StatusCode = 13706
-	EXAM_MISSING_EXAM_TYPE       StatusCode = 13707
-	EXAM_INVALID_EXAM_TYPE       StatusCode = 13708
-	EXAM_INVALID_GRADE           StatusCode = 13709
-	EXAM_INVALID_LEVEL           StatusCode = 13710
+	EXAM_NOT_FOUND          StatusCode = 13700
+	EXAM_ATTEMPT_NOT_FOUND  StatusCode = 13701
+	EXAM_ATTEMPT_NOT_OWNED  StatusCode = 13702
+	EXAM_ALREADY_SUBMITTED  StatusCode = 13703
+	EXAM_MISSING_ATTEMPT_ID StatusCode = 13704
+	EXAM_MISSING_ANSWERS    StatusCode = 13705
+	EXAM_INVALID_ANSWERS    StatusCode = 13706
+	EXAM_MISSING_EXAM_TYPE  StatusCode = 13707
+	EXAM_INVALID_EXAM_TYPE  StatusCode = 13708
+	EXAM_INVALID_GRADE      StatusCode = 13709
+	// 13710 was EXAM_INVALID_LEVEL. Retired with the level axis (no rule
+	// defines it yet); left unassigned so an old client log line keeps its
+	// meaning. Reuse the number only when level itself comes back.
 	EXAM_INVALID_NUM_QUESTIONS   StatusCode = 13711
 	EXAM_GENERATION_FAILED       StatusCode = 13712
 	EXAM_GRADING_FAILED          StatusCode = 13713

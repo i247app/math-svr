@@ -52,15 +52,6 @@ func ValidateGenerateExam(ctx context.Context, req *dto.GenerateExamReq) (Valida
 		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
 	}
 
-	// Level is optional too. Out of range is rejected rather than clamped,
-	// the same as grade: a client asking for level 40 has a bug, and
-	// silently serving it level 10 hides that. The band ceiling applied
-	// later is a different thing — that one is a real product rule, not a
-	// malformed request.
-	if req.Level != nil && (*req.Level < enum.ExamLevelMin || *req.Level > enum.ExamLevelMax) {
-		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrLevelOutOfRange)
-	}
-
 	if req.NumQuestions <= 0 {
 		req.NumQuestions = DefaultNumQuestions
 	} else if req.NumQuestions > MaxNumQuestions {

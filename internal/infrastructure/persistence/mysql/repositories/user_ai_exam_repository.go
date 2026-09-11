@@ -229,22 +229,20 @@ func (r *UserAiExamRepository) MarkSubmitted(ctx context.Context, userAiExamId i
 
 // progressPointColumnsExam is the narrow projection for the analytics
 // chart. Order == scanExamProgressPoint's Scan order.
-const progressPointColumnsExam = `u.user_ai_exam_id, u.ai_exam_id, u.req_exam_type, u.req_grade, u.req_level,
+const progressPointColumnsExam = `u.user_ai_exam_id, u.ai_exam_id, u.req_exam_type, u.req_grade,
 	u.res_score_percentage, u.res_correct_number, u.res_total_questions, u.submitted_dt`
 
 func scanExamProgressPoint(s database.RowScanner) (*exam.ProgressPoint, error) {
 	var (
 		p           exam.ProgressPoint
-		level       *int
 		correct     *int64
 		total       *int64
 		submittedDt *time.Time
 	)
-	if err := s.Scan(&p.UserAiExamId, &p.AiExamId, &p.ExamType, &p.Grade, &level,
+	if err := s.Scan(&p.UserAiExamId, &p.AiExamId, &p.ExamType, &p.Grade,
 		&p.ScorePercentage, &correct, &total, &submittedDt); err != nil {
 		return nil, err
 	}
-	p.Level = level
 	p.CorrectNumber = correct
 	p.TotalQuestions = total
 	p.CompletedDt = mtime.MathTimeFromPtr(submittedDt)

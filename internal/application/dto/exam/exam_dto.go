@@ -11,20 +11,21 @@ import (
 
 // GenerateExamReq asks for one exam.
 //
-// Grade and Level may both be pinned by the client; either one left out is
-// derived by the server — measured ability first, then the class the
-// profile attends (grade) or the bottom of the scale (level).
+// Grade may be pinned by the client; left out, the server derives it —
+// measured ability first, then the class the profile attends.
 //
-// A pinned value is a REQUEST, not a guarantee: a band can impose a lower
-// ceiling than the number asked for, and kindergarten does. The exam is
-// then generated, stored and cached at the clamped level, so what comes
-// back describes what was actually served.
+// Level is part of the contract but NOT yet part of the behaviour. The
+// teaching team has not defined what a level is, so the server does not
+// validate, resolve, prompt with or store it — req_level stays NULL no
+// matter what is sent. The field is kept so the mobile contract does not
+// have to change twice: once to drop it now and again to add it back when
+// the rule lands. Do not read req.Level anywhere until then.
 type GenerateExamReq struct {
 	UserID       *int64 `json:"-"`
 	ProfileID    int64  `json:"profile_id"`
 	ExamType     string `json:"exam_type"`
 	Grade        *int   `json:"grade,omitempty"`
-	Level        *int   `json:"level,omitempty"`
+	Level        *int   `json:"level,omitempty"` // accepted, ignored — see type doc
 	NumQuestions int    `json:"num_questions,omitempty"`
 	Semester     string `json:"semester,omitempty"`
 	Program      string `json:"program,omitempty"`
@@ -86,7 +87,10 @@ type ExamResponse struct {
 	ProfileID    int64  `json:"profile_id"`
 	ExamType     string `json:"exam_type"`
 	Grade        int    `json:"grade"`
-	Level        *int   `json:"level,omitempty"`
+	// Level mirrors req_level, which is NULL on every row today, so this is
+	// always omitted on the wire. Kept for the same reason as the request
+	// field: the contract is settled even though the value is not.
+	Level *int `json:"level,omitempty"`
 
 	Title     *string `json:"title,omitempty"`
 	ShortText *string `json:"short_text,omitempty"`
@@ -108,7 +112,6 @@ type ExamAnswerDetail struct {
 	QuestionName       *string `json:"question_name,omitempty"`
 	QuestionTopic      *string `json:"question_topic,omitempty"`
 	QuestionGrade      *int    `json:"question_grade,omitempty"`
-	QuestionLevel      *int    `json:"question_level,omitempty"`
 	RightAnswerLabel   *string `json:"right_answer_label,omitempty"`
 	RightAnswerContent *string `json:"right_answer_content,omitempty"`
 	SelectedLabel      string  `json:"selected_label"`
@@ -125,7 +128,6 @@ type ExamStats struct {
 	ScorePercentage *int    `json:"score_percentage,omitempty"`
 	Review          *string `json:"review,omitempty"`
 	Grade           *int    `json:"grade,omitempty"`
-	Level           *int    `json:"level,omitempty"`
 	LastSubmittedDt string  `json:"last_submitted_dt,omitempty"`
 }
 
@@ -228,7 +230,6 @@ func DetailsToResponse(details []*domain.UserExamDetail) []ExamAnswerDetail {
 			QuestionName:       d.QuestionName(),
 			QuestionTopic:      d.QuestionTopic(),
 			QuestionGrade:      d.QuestionGrade(),
-			QuestionLevel:      d.QuestionLevel(),
 			RightAnswerLabel:   d.RightAnswerLabel(),
 			RightAnswerContent: d.RightAnswerContent(),
 			SelectedLabel:      d.SelectedLabel(),
@@ -250,7 +251,6 @@ func StatsToResponse(rows []*domain.UserExam) []ExamStats {
 			ScorePercentage: r.ResScorePercentage(),
 			Review:          r.ResReview(),
 			Grade:           r.ResGrade(),
-			Level:           r.ResLevel(),
 		}
 		if !r.LastSubmittedDt().IsZero() {
 			s.LastSubmittedDt = r.LastSubmittedDt().String()
@@ -311,7 +311,6 @@ type ExamPoint struct {
 	UserAiExamID   int64   `json:"user_ai_exam_id"`
 	ExamType       string  `json:"exam_type"`
 	Grade          int     `json:"grade"`
-	Level          *int    `json:"level,omitempty"`
 	CompletedDt    string  `json:"completed_dt"`
 	Score          float64 `json:"score"`
 	ScorePct       int64   `json:"score_pct"`

@@ -233,7 +233,7 @@ func DomainToResponse(e *domain.Exercise, includeRightAnswers bool) *ExerciseRes
 	if questions := parseQuestions(e.Questions()); len(questions) > 0 {
 		if !includeRightAnswers {
 			for i := range questions {
-				questions[i].RightAnswer = ""
+				questions[i].RightAnswerLabel = ""
 			}
 		}
 		res.Questions = questions

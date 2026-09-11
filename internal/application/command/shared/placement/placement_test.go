@@ -74,31 +74,6 @@ func TestDeriveGradeIgnoresLifetime(t *testing.T) {
 	}
 }
 
-func TestDeriveLevel(t *testing.T) {
-	tests := []struct {
-		name string
-		in   Input
-		want int
-	}{
-		{"no history starts at the bottom", Input{}, levelStart},
-		{"weak lifetime accuracy", Input{LifetimeTotal: 20, LifetimeCorrect: 4}, levelStruggling},
-		{"at the steady floor", Input{LifetimeTotal: 20, LifetimeCorrect: 10}, levelSteady},
-		{"at the strong floor stays steady", Input{LifetimeTotal: 20, LifetimeCorrect: 16}, levelSteady},
-		{"above the strong floor", Input{LifetimeTotal: 20, LifetimeCorrect: 19}, levelStrong},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got := Derive(tc.in)
-			if got.Level == nil {
-				t.Fatal("Level is nil")
-			}
-			if *got.Level != tc.want {
-				t.Errorf("Level = %d, want %d", *got.Level, tc.want)
-			}
-		})
-	}
-}
-
 func TestBuildReview(t *testing.T) {
 	t.Run("no history says so plainly", func(t *testing.T) {
 		got := Derive(Input{}).Review

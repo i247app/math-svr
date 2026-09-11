@@ -166,8 +166,8 @@ func DomainToResponse(q *domain.Quiz, includeRightAnswers bool) *QuizResponse {
 	if questions := parseQuestions(q.Questions()); len(questions) > 0 {
 		if !includeRightAnswers {
 			for i := range questions {
-				questions[i].RightAnswer = ""
-				questions[i].CorrectAnswer = ""
+				questions[i].RightAnswerLabel = ""
+				questions[i].RightAnswerContent = ""
 			}
 		}
 		res.Questions = questions
