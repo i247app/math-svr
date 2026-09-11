@@ -649,6 +649,50 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case PRESENCE_UPDATE_FAILED:
 		return "Cập nhật trạng thái hoạt động thất bại"
 
+	// Exam
+	case EXAM_NOT_FOUND:
+		return "Không tìm thấy bài kiểm tra"
+	case EXAM_ATTEMPT_NOT_FOUND:
+		return "Không tìm thấy lượt làm bài"
+	case EXAM_ATTEMPT_NOT_OWNED:
+		return "Lượt làm bài này không thuộc về hồ sơ hiện tại"
+	case EXAM_ALREADY_SUBMITTED:
+		return "Bài kiểm tra này đã được nộp"
+	case EXAM_MISSING_ATTEMPT_ID:
+		return "Thiếu user_ai_exam_id"
+	case EXAM_MISSING_ANSWERS:
+		return "Thiếu câu trả lời"
+	case EXAM_INVALID_ANSWERS:
+		return "Dữ liệu câu trả lời không hợp lệ"
+	case EXAM_MISSING_EXAM_TYPE:
+		return "Thiếu loại bài kiểm tra"
+	case EXAM_INVALID_EXAM_TYPE:
+		return "Loại bài kiểm tra phải là ASSESSMENT, PRACTICE hoặc EXAM"
+	case EXAM_INVALID_GRADE:
+		return "Cấp lớp phải nằm trong khoảng 0 đến 5"
+	case EXAM_INVALID_LEVEL:
+		return "Cấp độ phải nằm trong khoảng 1 đến 10"
+	case EXAM_INVALID_NUM_QUESTIONS:
+		return "Số lượng câu hỏi không hợp lệ"
+	case EXAM_GENERATION_FAILED:
+		return "Tạo bài kiểm tra thất bại"
+	case EXAM_GRADING_FAILED:
+		return "Chấm bài kiểm tra thất bại"
+	case EXAM_NO_QUESTIONS:
+		return "Bài kiểm tra này không có câu hỏi để chấm"
+	case EXAM_PROFILE_NOT_FOUND:
+		return "Không tìm thấy hồ sơ"
+	case EXAM_PROFILE_NOT_OWNED:
+		return "Hồ sơ này không thuộc về người dùng hiện tại"
+	case EXAM_MISSING_PROFILE_ID:
+		return "Thiếu profile_id"
+	case EXAM_STATS_NOT_FOUND:
+		return "Chưa có thống kê bài kiểm tra cho hồ sơ này"
+	case EXAM_ANALYTICS_INVALID_RANGE:
+		return "Khoảng thời gian không hợp lệ"
+	case EXAM_ANALYTICS_INVALID_TZ:
+		return "Múi giờ không hợp lệ"
+
 	default:
 		return ""
 	}

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
+	"math-ai.com/math-ai/internal/application/dto/question"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -38,7 +38,7 @@ func sanitizeExerciseText(text string) *string {
 // generated questions and serialises it. Stored separately so a future
 // submission grader can compare against this column without having to
 // re-parse the full questions blob.
-func buildAnswerKey(questions []quizDto.QuizQuestion) []byte {
+func buildAnswerKey(questions []question.Question) []byte {
 	key := make(map[string]string, len(questions))
 	for _, q := range questions {
 		if q.RightAnswer == "" {

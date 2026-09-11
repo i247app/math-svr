@@ -122,7 +122,9 @@ func NewEnv(envpath string) (*Env, error) {
 			OpenAITemperature:  getFloatConfigWithDefault("BOT_OPENAI_TEMPERATURE", -1),
 			OpenAITopP:         getFloatConfigWithDefault("BOT_OPENAI_TOP_P", -1),
 			OpenAIMaxTokens:    getIntConfigOptional("BOT_OPENAI_MAX_TOKENS"),
-			OpenAIStore:        getBoolConfigWithDefault("BOT_OPENAI_STORE", false),
+
+			OpenAIReasoningEffort: getConfigOptionalString("BOT_OPENAI_REASONING_EFFORT"),
+			OpenAIStore:           getBoolConfigWithDefault("BOT_OPENAI_STORE", false),
 
 			GeminiAPIKey:      getConfigOptionalString("BOT_GEMINI_API_KEY"),
 			GeminiBaseURL:     getConfigOptionalString("BOT_GEMINI_BASE_URL"),

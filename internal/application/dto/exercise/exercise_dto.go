@@ -3,7 +3,7 @@ package exercise
 import (
 	"encoding/json"
 
-	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
+	"math-ai.com/math-ai/internal/application/dto/question"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
@@ -66,7 +66,7 @@ type ExerciseResponse struct {
 	ChapterName         string                    `json:"chapter_name"`
 	LessonName          string                    `json:"lesson_name"`
 	TotalQuestions      int                       `json:"total_questions"`
-	Questions           []quizDto.QuizQuestion    `json:"questions,omitempty"`
+	Questions           []question.Question       `json:"questions,omitempty"`
 	StartDate           *string                   `json:"start_date,omitempty"`
 	EndDate             *string                   `json:"end_date,omitempty"`
 	Note                *string                   `json:"note,omitempty"`
@@ -249,11 +249,11 @@ func DomainListToResponse(items []*domain.Exercise, includeRightAnswers bool) []
 	return out
 }
 
-func parseQuestions(raw *string) []quizDto.QuizQuestion {
+func parseQuestions(raw *string) []question.Question {
 	if raw == nil || *raw == "" {
 		return nil
 	}
-	var out []quizDto.QuizQuestion
+	var out []question.Question
 	if err := json.Unmarshal([]byte(*raw), &out); err != nil {
 		return nil
 	}

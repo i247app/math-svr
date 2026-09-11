@@ -44,6 +44,10 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 			ChatConversation:   repositories.NewChatConversationRepository(loggedTx),
 			ChatParticipant:    repositories.NewChatParticipantRepository(loggedTx),
 			ChatMessage:        repositories.NewChatMessageRepository(loggedTx),
+			AiExam:             repositories.NewAiExamRepository(loggedTx),
+			UserAiExam:         repositories.NewUserAiExamRepository(loggedTx),
+			UserExam:           repositories.NewUserExamRepository(loggedTx),
+			UserExamDetail:     repositories.NewUserExamDetailRepository(loggedTx),
 		}
 		return fn(txCtx, repos)
 	})

@@ -8,6 +8,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/home"
 	query "math-ai.com/math-ai/internal/application/query/home"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
+	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
@@ -36,11 +37,14 @@ func NewService(
 	submissionRepo exerciseDomain.ISubmissionRepository,
 	profileRepo profileDomain.IRepository,
 	quizRepo quizDomain.IRepository,
+	attemptRepo examDomain.IUserAiExamRepository,
+	aiExamRepo examDomain.IAiExamRepository,
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
 		getHomeLayoutQuery: query.NewGetHomeLayoutQueryHandler(
 			classroomRepo, memberRepo, exerciseRepo, submissionRepo, profileRepo, quizRepo,
+			attemptRepo, aiExamRepo,
 		),
 		profileRepo:     profileRepo,
 		storageProvider: storageProvider,

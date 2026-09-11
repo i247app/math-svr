@@ -103,17 +103,21 @@ type wireStreamOptions struct {
 // Note MaxCompletionTokens, not MaxTokens: `max_tokens` is deprecated
 // upstream and rejected outright by the reasoning models.
 type wireChatRequest struct {
-	Model               string              `json:"model"`
-	Messages            []wireMessage       `json:"messages"`
-	Stream              bool                `json:"stream,omitempty"`
-	StreamOptions       *wireStreamOptions  `json:"stream_options,omitempty"`
-	Temperature         *float64            `json:"temperature,omitempty"`
-	TopP                *float64            `json:"top_p,omitempty"`
-	MaxCompletionTokens *int                `json:"max_completion_tokens,omitempty"`
-	Stop                []string            `json:"stop,omitempty"`
-	ResponseFormat      *wireResponseFormat `json:"response_format,omitempty"`
-	Store               bool                `json:"store,omitempty"`
-	Metadata            map[string]string   `json:"metadata,omitempty"`
+	Model               string             `json:"model"`
+	Messages            []wireMessage      `json:"messages"`
+	Stream              bool               `json:"stream,omitempty"`
+	StreamOptions       *wireStreamOptions `json:"stream_options,omitempty"`
+	Temperature         *float64           `json:"temperature,omitempty"`
+	TopP                *float64           `json:"top_p,omitempty"`
+	MaxCompletionTokens *int               `json:"max_completion_tokens,omitempty"`
+	// ReasoningEffort is the FLAT chat-completions spelling. The Responses
+	// API nests the same control as {"reasoning":{"effort":"none"}}; this
+	// client speaks chat-completions, so it must not be sent that way.
+	ReasoningEffort string              `json:"reasoning_effort,omitempty"`
+	Stop            []string            `json:"stop,omitempty"`
+	ResponseFormat  *wireResponseFormat `json:"response_format,omitempty"`
+	Store           bool                `json:"store,omitempty"`
+	Metadata        map[string]string   `json:"metadata,omitempty"`
 }
 
 type wireUsage struct {

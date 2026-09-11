@@ -4,19 +4,19 @@ import (
 	"context"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
-	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
+	"math-ai.com/math-ai/internal/application/dto/question"
 	domainBot "math-ai.com/math-ai/internal/domain/bot"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	quizParser "math-ai.com/math-ai/internal/module/quiz"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // botClient is the classroomexercise module's typed surface over the
 // generic bot adapter. It owns prompt construction (delegated to
-// domain/bot via BuildExercisePrompt) and reuses the quiz module's
-// parseGeneration so the JSON-mode contract stays identical to quizzes.
+// domain/bot via BuildExercisePrompt) and parses the response through
+// application/dto/question, the package that owns the shared MCQ
+// JSON-mode contract.
 //
 // Temperature 0.2 matches QuizPromptKindGenerate — generation creativity
 // stays moderate so the model can vary phrasing across calls but won't
@@ -50,7 +50,7 @@ type generateExerciseOutput struct {
 	// cộng trong phạm vi 10"). The teacher supplies the exercise title
 	// separately, so only short_text is consumed from the model here.
 	ShortText string
-	Questions []quizDto.QuizQuestion
+	Questions []question.Question
 }
 
 func (c *botClient) GenerateExercise(ctx context.Context, in generateExerciseInput) (*generateExerciseOutput, error) {
@@ -92,23 +92,24 @@ func (c *botClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 
 	log.Infof("BOT RESPONSE: %s", res.Content)
 
-	// Reuse the quiz parser. The exercise schema shares the quiz's
-	// {short_text, questions} shape; we ignore the AI title because the
-	// teacher supplies the exercise title, but we keep the AI short_text
-	// as the auto-generated topic description.
-	_, shortText, questions, err := quizParser.ParseGeneration(res.Content)
+	// The exercise schema shares the {short_text, questions} shape; we
+	// ignore the AI title because the teacher supplies the exercise title,
+	// but we keep the AI short_text as the auto-generated topic description.
+	gen, err := question.ParseGeneration(res.Content)
 	if err != nil {
 		log.Warnf("classroom_exercise.bot.parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_GENERATION_FAILED, map[string]any{"reason": err.Error()}, err)
 	}
 
-	// Clamp render discriminators + log any icon-token drift, reusing the
-	// quiz normalizer so the visual contract is enforced identically for
-	// classroom exercises. Grading is label-based, so this never changes
-	// correctness.
-	questions = quizParser.NormalizeGeneratedQuestions(ctx, questions)
+	// Clamp render discriminators and report icon-token drift, so the
+	// visual contract is enforced identically for classroom exercises.
+	// Grading is label-based, so this never changes correctness.
+	questions, warnings := question.Normalize(gen.Questions)
+	for _, w := range warnings {
+		log.Warnf("classroom_exercise.normalize.%s value=%q q=%d", w.Kind, w.Value, w.QuestionNumber)
+	}
 
-	return &generateExerciseOutput{ShortText: shortText, Questions: questions}, nil
+	return &generateExerciseOutput{ShortText: gen.ShortText, Questions: questions}, nil
 }
 
 type gradeExerciseInput struct {
@@ -117,7 +118,7 @@ type gradeExerciseInput struct {
 	Answers   string
 }
 
-func (c *botClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*quizDto.QuizGradingResult, error) {
+func (c *botClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*question.GradingResult, error) {
 	log := logger.From(ctx)
 	if c.adapter == nil {
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil,
@@ -152,7 +153,7 @@ func (c *botClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*
 
 	log.Infof("BOT RESPONSE: %s", res.Content)
 
-	grading, err := quizParser.ParseGradedQuiz(res.Content)
+	grading, err := question.ParseGrading(res.Content)
 	if err != nil {
 		log.Warnf("classroom_exercise_submission.bot.parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED,

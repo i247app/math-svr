@@ -13,6 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
+	"math-ai.com/math-ai/internal/module/exam"
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/home"
@@ -158,6 +159,18 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.SemesterRepository,
 	)
 
+	log.Info("> Setup ExamSvc...")
+	examService := exam.NewService(
+		repos.AiExamRepository,
+		repos.UserAiExamRepository,
+		repos.UserExamRepository,
+		repos.UserExamDetailRepository,
+		uow,
+		res.BotProvider,
+		repos.ProfileRepository,
+		repos.GradeRepository,
+	)
+
 	log.Info("> Setup JobSvc...")
 	jobService := job.NewService(res.JobRuntime)
 
@@ -212,6 +225,8 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ExerciseSubmissionRepository,
 		repos.ProfileRepository,
 		repos.QuizRepository,
+		repos.UserAiExamRepository,
+		repos.AiExamRepository,
 		res.StorageProvider,
 	)
 
@@ -229,6 +244,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		DeviceSvc:       deviceService,
 		OtpSvc:          otpService,
 		QuizSvc:         quizService,
+		ExamSvc:         examService,
 		SchoolSvc:       schoolService,
 		JobSvc:          jobService,
 		SeqSvc:          seqService,

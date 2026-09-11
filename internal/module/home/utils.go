@@ -16,6 +16,14 @@ func quizCards(data *query.HomeLayoutData) []*dto.QuizCard {
 	return cards
 }
 
+func examCards(data *query.HomeLayoutData) []*dto.ExamCard {
+	cards := make([]*dto.ExamCard, 0, len(data.Exams))
+	for _, a := range data.Exams {
+		cards = append(cards, dto.ExamToCard(a, data.ExamAiExams[a.AiExamId()]))
+	}
+	return cards
+}
+
 func isSupportedRole(role string) bool {
 	switch enum.RoleType(role) {
 	case enum.RoleTypeTeacher, enum.RoleTypeParent, enum.RoleTypeStudent:

@@ -2,6 +2,7 @@ package home
 
 import (
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
+	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
@@ -42,6 +43,7 @@ type HomeLayout struct {
 	Tasks       []*TaskCard       `json:"tasks"`
 	Messages    []any             `json:"messages"`
 	Quizzes     []*QuizCard       `json:"quizzes"`
+	Exams       []*ExamCard       `json:"exams"`
 }
 
 // Task type discriminators for the unified tasks feed. Each maps 1:1 onto
@@ -287,4 +289,55 @@ func SubmissionToTaskSubmission(s *exerciseDomain.Submission) *TaskSubmission {
 		ts.GradedDt = s.GradedDt().String()
 	}
 	return ts
+}
+
+// ExamCard is the slim shape for one exam sitting on the dashboard. It
+// replaces QuizCard; both ship during the migration window so the mobile
+// client can switch fields on its own schedule.
+//
+// Result fields stay nil until the exam is submitted, which is exactly how
+// an unfinished one renders as 0 answered.
+type ExamCard struct {
+	UserAiExamID    int64   `json:"user_ai_exam_id"`
+	AiExamID        int64   `json:"ai_exam_id"`
+	ExamType        string  `json:"exam_type"`
+	Grade           int     `json:"grade"`
+	Level           *int    `json:"level,omitempty"`
+	Title           *string `json:"title,omitempty"`
+	ShortText       *string `json:"short_text,omitempty"`
+	Status          *string `json:"status,omitempty"`
+	TotalQuestions  *int    `json:"total_questions,omitempty"`
+	CorrectNumber   *int    `json:"correct_number,omitempty"`
+	ScorePercentage *int    `json:"score_percentage,omitempty"`
+	SubmittedDt     string  `json:"submitted_dt,omitempty"`
+	CreateDt        string  `json:"create_dt"`
+}
+
+// ExamToCard maps one sitting plus its question set into a card. aiExam
+// may be nil when the shared row was deleted out from under the history;
+// the card still renders, just without a title.
+func ExamToCard(a *examDomain.UserAiExam, aiExam *examDomain.AiExam) *ExamCard {
+	if a == nil {
+		return nil
+	}
+	card := &ExamCard{
+		UserAiExamID:    a.UserAiExamId(),
+		AiExamID:        a.AiExamId(),
+		ExamType:        a.ReqExamType(),
+		Grade:           a.ReqGrade(),
+		Level:           a.ReqLevel(),
+		Status:          a.UserAiExamStatus(),
+		TotalQuestions:  a.ResTotalQuestions(),
+		CorrectNumber:   a.ResCorrectNumber(),
+		ScorePercentage: a.ResScorePercentage(),
+		CreateDt:        a.CreateDt().String(),
+	}
+	if !a.SubmittedDt().IsZero() {
+		card.SubmittedDt = a.SubmittedDt().String()
+	}
+	if aiExam != nil {
+		card.Title = aiExam.AiTitle()
+		card.ShortText = aiExam.AiShortText()
+	}
+	return card
 }

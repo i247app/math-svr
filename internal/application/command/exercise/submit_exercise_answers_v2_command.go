@@ -8,7 +8,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/command/shared/scorer"
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
-	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
+	"math-ai.com/math-ai/internal/application/dto/question"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -37,7 +37,7 @@ type SubmitExerciseAnswersV2Command struct {
 	ClassroomID         int64
 	ProfileID           int64
 	QuestionsJSON       string
-	Answers             []quizDto.QuizStudentAnswer
+	Answers             []question.StudentAnswer
 	Note                *string
 	Language            enum.LanguageType
 }

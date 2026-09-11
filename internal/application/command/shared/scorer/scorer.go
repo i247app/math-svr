@@ -28,7 +28,7 @@ import (
 	"strconv"
 	"strings"
 
-	quizDto "math-ai.com/math-ai/internal/application/dto/quiz"
+	"math-ai.com/math-ai/internal/application/dto/question"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -46,13 +46,17 @@ const ReviewSourceMarker = "deterministic_v2"
 // same budget keeps the review compact and consistent across aggregates.
 const reviewMaxLen = 250
 
-// Result is the deterministic counterpart of quizDto.QuizGradingResult.
+// Result is the deterministic counterpart of question.GradingResult.
 // Both quiz and exercise commands map this into their respective
 // row-update / row-insert types (quiz.GradingUpdate for quiz,
 // SubmitExerciseAnswersV2Command's per-column fields for exercise).
 type Result struct {
-	TotalQuestions  int
-	CorrectNumber   int
+	TotalQuestions int
+	CorrectNumber  int
+	// SkippedNumber counts questions served but left blank. It is always
+	// (questions in the payload) - (answers supplied), regardless of which
+	// denominator was used for the score.
+	SkippedNumber   int
 	ScorePercentage int
 	Review          string
 	// AssessmentGrade stays nil today — only quiz writes this column, and
@@ -61,20 +65,77 @@ type Result struct {
 	AssessmentGrade *string
 }
 
+// Denominator selects what a percentage is a percentage OF. The two
+// aggregates genuinely disagree, so it is a parameter rather than a
+// constant:
+//
+//   - DenominatorAllQuestions — a skipped question counts as wrong. Used
+//     by quizzes and classroom exercises, where the child was expected to
+//     attempt the whole sheet.
+//   - DenominatorAnsweredOnly — a skipped question is simply absent from
+//     the fraction. Used by exams, whose lifetime statistics accumulate
+//     only questions the child actually touched.
+//
+// The second is easier to game (answer three easy ones, score 100%),
+// which is exactly why Result also carries SkippedNumber: whatever rule
+// reads the score can see how much of the sheet was left blank.
+type Denominator int
+
+const (
+	DenominatorAllQuestions Denominator = iota
+	DenominatorAnsweredOnly
+)
+
+// Outcome is one ANSWERED question and what the student did with it. It
+// carries the question itself so a caller can snapshot the stem, topic and
+// answer key into its own table without re-parsing the payload.
+type Outcome struct {
+	Question        question.Question
+	SelectedLabel   string
+	SelectedContent string
+	IsCorrect       bool
+}
+
+// DetailedResult is Result plus the per-question breakdown, in question
+// order. Skipped questions produce no Outcome at all.
+type DetailedResult struct {
+	Result
+	Outcomes []Outcome
+}
+
 // Score grades the student's answers against the questions payload
 // entirely in process. No bot call, no I/O. lang controls the language
 // the review string is built in.
 //
 // questionsJSON is the row's `questions` column verbatim. answers is
-// the parsed student payload from the v2 submit request.
+// the parsed student payload from the submit request.
 //
-// Returns a Result shaped to slot into either aggregate's grading-write
-// path.
-func Score(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang enum.LanguageType) (*Result, error) {
+// It keeps the original denominator (a skipped question counts as wrong)
+// so quiz and exercise submissions score exactly as they did before the
+// exam flow introduced the second rule.
+func Score(questionsJSON string, answers []question.StudentAnswer, lang enum.LanguageType) (*Result, error) {
+	detailed, err := ScoreDetailed(questionsJSON, answers, lang, DenominatorAllQuestions)
+	if err != nil {
+		return nil, err
+	}
+	return &detailed.Result, nil
+}
+
+// ScoreDetailed is the full engine: the same comparison logic, plus the
+// per-question breakdown and an explicit denominator.
+func ScoreDetailed(questionsJSON string, answers []question.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
 	questions, err := parseQuestionsForScoring(questionsJSON)
 	if err != nil {
 		return nil, err
 	}
+	return ScoreQuestions(questions, answers, lang, denom)
+}
+
+// ScoreQuestions is ScoreDetailed for a caller that has already decoded
+// its payload. The exam flow needs it: its stored JSON uses its own field
+// names, so it decodes with its own type and hands the questions over
+// rather than having this package parse a vocabulary it does not know.
+func ScoreQuestions(questions []question.Question, answers []question.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
 	if len(questions) == 0 {
 		return nil, fmt.Errorf("scorer: payload has no questions")
 	}
@@ -84,13 +145,17 @@ func Score(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang enum.
 		return nil, err
 	}
 
-	total := len(questions)
+	served := len(questions)
+	answered := 0
 	correct := 0
 
 	// Per-topic accuracy table. Questions with no topic tag (legacy
 	// generation) bucket under "" and the review builder degrades to a
-	// generic wording.
-	topics := make(map[string]*topicBucket, total)
+	// generic wording. A bucket counts a question only when that question
+	// counts toward the score, so the review never disagrees with the
+	// number it sits next to.
+	topics := make(map[string]*topicBucket, served)
+	outcomes := make([]Outcome, 0, len(answers))
 
 	for _, q := range questions {
 		topicKey := strings.TrimSpace(strings.ToLower(q.Topic))
@@ -99,18 +164,35 @@ func Score(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang enum.
 			b = &topicBucket{}
 			topics[topicKey] = b
 		}
-		b.total++
 
 		studentLabel, present := answerByNumber[q.QuestionNumber]
 		if !present {
-			// Skipped — counts as incorrect. Matches both the quiz and
-			// exercise bot-grade prompts: missing answer ⇒ wrong.
+			// Skipped. Under the all-questions rule that is a wrong answer;
+			// under answered-only it leaves the fraction entirely.
+			if denom == DenominatorAllQuestions {
+				b.total++
+			}
 			continue
 		}
-		if questionIsCorrect(q, studentLabel) {
+
+		answered++
+		b.total++
+		isCorrect := questionIsCorrect(q, studentLabel)
+		if isCorrect {
 			correct++
 			b.correct++
 		}
+		outcomes = append(outcomes, Outcome{
+			Question:        q,
+			SelectedLabel:   studentLabel,
+			SelectedContent: choiceContent(q, studentLabel),
+			IsCorrect:       isCorrect,
+		})
+	}
+
+	total := served
+	if denom == DenominatorAnsweredOnly {
+		total = answered
 	}
 
 	percentage := 0
@@ -125,25 +207,40 @@ func Score(questionsJSON string, answers []quizDto.QuizStudentAnswer, lang enum.
 		Language: lang,
 	})
 
-	return &Result{
-		TotalQuestions:  total,
-		CorrectNumber:   correct,
-		ScorePercentage: percentage,
-		Review:          review,
-		AssessmentGrade: nil,
+	return &DetailedResult{
+		Result: Result{
+			TotalQuestions:  total,
+			CorrectNumber:   correct,
+			SkippedNumber:   served - answered,
+			ScorePercentage: percentage,
+			Review:          review,
+			AssessmentGrade: nil,
+		},
+		Outcomes: outcomes,
 	}, nil
+}
+
+// choiceContent returns the displayed text of the option the student
+// picked, or "" when the label matches nothing in the payload.
+func choiceContent(q question.Question, label string) string {
+	for _, c := range q.Answers {
+		if strings.EqualFold(strings.TrimSpace(c.Label), strings.TrimSpace(label)) {
+			return c.Content
+		}
+	}
+	return ""
 }
 
 // parseQuestionsForScoring decodes the row's `questions` LONGTEXT into
 // the DTO shape. Returns an error on empty / malformed input so the
 // caller can surface the right status code (QUIZ_GRADING_FAILED /
 // CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED).
-func parseQuestionsForScoring(raw string) ([]quizDto.QuizQuestion, error) {
+func parseQuestionsForScoring(raw string) ([]question.Question, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return nil, fmt.Errorf("scorer: questions payload is empty")
 	}
-	var out []quizDto.QuizQuestion
+	var out []question.Question
 	if err := json.Unmarshal([]byte(raw), &out); err != nil {
 		return nil, fmt.Errorf("scorer: parse questions: %w", err)
 	}
@@ -154,7 +251,7 @@ func parseQuestionsForScoring(raw string) ([]quizDto.QuizQuestion, error) {
 // question_number. Duplicate numbers fail loudly — the per-module
 // validator catches it earlier, but the scorer guards too so out-of-band
 // callers can't smuggle them past.
-func indexStudentAnswers(answers []quizDto.QuizStudentAnswer) (map[int]string, error) {
+func indexStudentAnswers(answers []question.StudentAnswer) (map[int]string, error) {
 	out := make(map[int]string, len(answers))
 	for i, a := range answers {
 		if _, dup := out[a.QuestionNumber]; dup {
@@ -167,7 +264,7 @@ func indexStudentAnswers(answers []quizDto.QuizStudentAnswer) (map[int]string, e
 
 // questionIsCorrect: label match first (the v1-compatible path), value
 // compare as fallback only when right_answer is absent.
-func questionIsCorrect(q quizDto.QuizQuestion, studentLabel string) bool {
+func questionIsCorrect(q question.Question, studentLabel string) bool {
 	rightLabel := strings.ToUpper(strings.TrimSpace(q.RightAnswer))
 	if rightLabel != "" {
 		return strings.ToUpper(studentLabel) == rightLabel

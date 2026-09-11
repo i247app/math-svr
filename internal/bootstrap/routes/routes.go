@@ -13,6 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
+	"math-ai.com/math-ai/internal/module/exam"
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
@@ -204,6 +205,20 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /quizzes/submit", quizHandler.HandleSubmitQuiz, authMiddleware)
 		reg("POST /quizzes/soft-delete", quizHandler.HandleSoftDeleteQuiz, authMiddleware)
 		reg("POST /quizzes/analytics/progress", quizHandler.HandleGetQuizProgress, authMiddleware)
+	}
+
+	// exam routes — the replacement for /quizzes/*. Both families are
+	// registered for now: the mobile client cuts over on its own schedule
+	// and the quiz block is deleted once it has (see Phase 7 of
+	// docs/features/008-quiz-to-exam-refactor).
+	{
+		examHandler := exam.NewExamHandler(res, services.ExamSvc)
+		reg("POST /exams/generate", examHandler.HandleGenerateExam, authMiddleware)
+		reg("POST /exams/submit", examHandler.HandleSubmitExam, authMiddleware)
+		reg("POST /exams/detail", examHandler.HandleGetExam, authMiddleware)
+		reg("POST /exams/list", examHandler.HandleListExams, authMiddleware)
+		reg("POST /exams/stats", examHandler.HandleGetExamStats, authMiddleware)
+		reg("POST /exams/analytics/progress", examHandler.HandleGetExamProgress, authMiddleware)
 	}
 
 	// classroom routes

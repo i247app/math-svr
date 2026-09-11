@@ -6,6 +6,7 @@ import (
 	chatDomain "math-ai.com/math-ai/internal/domain/chat"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
+	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	loginLogDomain "math-ai.com/math-ai/internal/domain/loginlog"
@@ -25,6 +26,7 @@ import (
 	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
+	"math-ai.com/math-ai/internal/module/exam"
 	"math-ai.com/math-ai/internal/module/exercise"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/home"
@@ -55,6 +57,7 @@ type ServiceContainer struct {
 	DeviceSvc       *device.Service
 	OtpSvc          *otp.Service
 	QuizSvc         *quiz.Service
+	ExamSvc         *exam.Service
 	SchoolSvc       *school.Service
 	JobSvc          *job.Service
 	SeqSvc          *seq.Service
@@ -78,6 +81,10 @@ type RepositoryContainer struct {
 	DeviceRepository             deviceDomain.IRepository
 	OtpRepository                otpDomain.IRepository
 	QuizRepository               quizDomain.IRepository
+	AiExamRepository             examDomain.IAiExamRepository
+	UserAiExamRepository         examDomain.IUserAiExamRepository
+	UserExamRepository           examDomain.IUserExamRepository
+	UserExamDetailRepository     examDomain.IUserExamDetailRepository
 	SchoolRepository             schoolDomain.IRepository
 	SeqRepository                seqDomain.IRepository
 	ClassroomRepository          classroomDomain.IRepository

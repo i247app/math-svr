@@ -4,6 +4,7 @@ import (
 	"context"
 
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
+	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
@@ -42,6 +43,14 @@ type HomeLayoutData struct {
 	// Quizzes is the acting profile's standalone (out-of-classroom) quiz
 	// history, most recent first — populated for every role.
 	Quizzes []*quizDomain.Quiz
+
+	// Exams is the same history in the model that replaces quizzes: one
+	// entry per sitting, with the shared question sets they were drawn
+	// from keyed by ai_exam_id (a card needs the title, which lives there).
+	// Both lists are populated during the migration window; the quiz half
+	// goes away with the quiz module.
+	Exams       []*examDomain.UserAiExam
+	ExamAiExams map[int64]*examDomain.AiExam
 
 	Exercises   []*exerciseDomain.Exercise
 	Submissions []*exerciseDomain.Submission
@@ -92,6 +101,8 @@ type GetHomeLayoutQueryHandler struct {
 	submissionRepo exerciseDomain.ISubmissionRepository
 	profileRepo    profileDomain.IRepository
 	quizRepo       quizDomain.IRepository
+	attemptRepo    examDomain.IUserAiExamRepository
+	aiExamRepo     examDomain.IAiExamRepository
 }
 
 func NewGetHomeLayoutQueryHandler(
@@ -101,6 +112,8 @@ func NewGetHomeLayoutQueryHandler(
 	submissionRepo exerciseDomain.ISubmissionRepository,
 	profileRepo profileDomain.IRepository,
 	quizRepo quizDomain.IRepository,
+	attemptRepo examDomain.IUserAiExamRepository,
+	aiExamRepo examDomain.IAiExamRepository,
 ) *GetHomeLayoutQueryHandler {
 	return &GetHomeLayoutQueryHandler{
 		classroomRepo:  classroomRepo,
@@ -109,6 +122,8 @@ func NewGetHomeLayoutQueryHandler(
 		submissionRepo: submissionRepo,
 		profileRepo:    profileRepo,
 		quizRepo:       quizRepo,
+		attemptRepo:    attemptRepo,
+		aiExamRepo:     aiExamRepo,
 	}
 }
 
@@ -126,6 +141,9 @@ func (h *GetHomeLayoutQueryHandler) Handle(ctx context.Context, q GetHomeLayoutQ
 	// The acting profile's standalone quiz history is role-independent —
 	// load it once before the role-specific assembly. The builders mutate
 	// and return the same data pointer, so the quizzes ride through.
+	if err := h.loadProfileExams(ctx, p, data); err != nil {
+		return nil, err
+	}
 	if err := h.loadProfileQuizzes(ctx, p, data); err != nil {
 		return nil, err
 	}
@@ -156,6 +174,42 @@ func (h *GetHomeLayoutQueryHandler) loadProfileQuizzes(ctx context.Context, p *p
 		return err
 	}
 	data.Quizzes = quizzes
+	return nil
+}
+
+// loadProfileExams fetches the acting profile's most recent exam sittings
+// and hydrates the question sets behind them in one extra query, so a
+// twenty-card dashboard costs two reads rather than twenty-one.
+func (h *GetHomeLayoutQueryHandler) loadProfileExams(ctx context.Context, p *profileDomain.Profile, data *HomeLayoutData) error {
+	attempts, _, err := h.attemptRepo.ListAttempts(ctx, examDomain.ListAttemptsFilter{
+		ProfileID: p.ProfileId(),
+	}, 1, homeQuizLimit)
+	if err != nil {
+		return err
+	}
+	data.Exams = attempts
+	data.ExamAiExams = map[int64]*examDomain.AiExam{}
+	if len(attempts) == 0 {
+		return nil
+	}
+
+	seen := make(map[int64]struct{}, len(attempts))
+	ids := make([]int64, 0, len(attempts))
+	for _, a := range attempts {
+		if _, ok := seen[a.AiExamId()]; ok {
+			continue
+		}
+		seen[a.AiExamId()] = struct{}{}
+		ids = append(ids, a.AiExamId())
+	}
+
+	rows, err := h.aiExamRepo.ListByAiExamIds(ctx, ids)
+	if err != nil {
+		return err
+	}
+	for _, r := range rows {
+		data.ExamAiExams[r.AiExamId()] = r
+	}
 	return nil
 }
 

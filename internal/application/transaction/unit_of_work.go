@@ -7,6 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/device"
+	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/grade"
 	"math-ai.com/math-ai/internal/domain/loginlog"
@@ -52,6 +53,10 @@ type Repositories struct {
 	ChatConversation   chat.IRepository
 	ChatParticipant    chat.IParticipantRepository
 	ChatMessage        chat.IMessageRepository
+	AiExam             exam.IAiExamRepository
+	UserAiExam         exam.IUserAiExamRepository
+	UserExam           exam.IUserExamRepository
+	UserExamDetail     exam.IUserExamDetailRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

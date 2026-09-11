@@ -4,6 +4,9 @@
 *.swp
 .gocache
 
+# archify
+archify/
+
 # loadtest
 load-test/
 *jmeter.log

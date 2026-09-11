@@ -125,6 +125,35 @@ func IsConfigError(err error) bool {
 	return api.HTTPStatus == 404 || isQuotaCode(api.Code)
 }
 
+// unsupportedSamplingParam reports which sampling field a 400 rejected,
+// when the rejection is specifically "this model does not let you set
+// that value". OpenAI answers an explicit temperature on a reasoning
+// model with:
+//
+//	400 invalid_request_error / unsupported_value / param=temperature
+//	"Unsupported value: 'temperature' does not support 0.2 with this
+//	 model. Only the default (1) value is supported."
+//
+// Both the code and the param are checked, so a different 400 about the
+// same field — an out-of-range value, say — still surfaces to the caller
+// instead of being quietly normalised away by Client.postChat.
+func unsupportedSamplingParam(err error) (string, bool) {
+	var api *APIError
+	if !errors.As(err, &api) || api.HTTPStatus != 400 {
+		return "", false
+	}
+	switch api.Param {
+	case "temperature", "top_p":
+	default:
+		return "", false
+	}
+	switch api.Code {
+	case "unsupported_value", "unsupported_parameter":
+		return api.Param, true
+	}
+	return "", false
+}
+
 // IsRetryable reports whether an HTTP status should be retried
 // transparently. 408 is a request timeout; 500/502/503/504 are upstream
 // faults or an overloaded model. 429 is handled separately by

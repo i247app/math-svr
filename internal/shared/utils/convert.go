@@ -451,6 +451,58 @@ func OptionalString(v string) *string {
 }
 
 // ============================================================
+// Deref
+// ============================================================
+func DerefInt(p *int) int {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func DerefString(p *string) string {
+	if p == nil {
+		return ""
+	}
+	return *p
+}
+
+func DerefFloat32(p *float32) float32 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func DerefFloat64(p *float64) float64 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func DerefInt64(p *int64) int64 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func DerefInt32(p *int32) int32 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+func DerefUint(p *uint) uint {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
+// ============================================================
 // Interface/Any Conversions
 // ============================================================
 

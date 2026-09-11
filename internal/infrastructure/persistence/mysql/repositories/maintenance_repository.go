@@ -32,6 +32,10 @@ var clearDataTables = []string{
 	chatConversationTable,
 	chatParticipantTable,
 	chatMessageTable,
+	aiExamTable,
+	userAiExamTable,
+	userExamTable,
+	userExamDetailTable,
 }
 
 // clearDataSeqs lists the external-id counters reset back to 0 for the wiped
@@ -57,6 +61,10 @@ var clearDataSeqs = []string{
 	seq.NameChatConversation,
 	seq.NameChatParticipant,
 	seq.NameChatMessage,
+	seq.NameAiExam,
+	seq.NameUserAiExam,
+	seq.NameUserExam,
+	seq.NameUserExamDetail,
 }
 
 // MaintenanceRepository owns destructive, cross-aggregate maintenance SQL that

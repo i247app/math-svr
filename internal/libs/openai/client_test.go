@@ -613,3 +613,271 @@ func TestNewClientProbesWhenRequiredAtBoot(t *testing.T) {
 		t.Errorf("upstream calls = %d, want 1 probe", got)
 	}
 }
+
+// unsupportedTemperature is the exact envelope a reasoning model returns
+// when the request carries an explicit temperature.
+const unsupportedTemperature = `{"error":{
+  "message":"Unsupported value: 'temperature' does not support 0.2 with this model. Only the default (1) value is supported.",
+  "type":"invalid_request_error",
+  "param":"temperature",
+  "code":"unsupported_value"}}`
+
+func TestGenerateDropsSamplingWhenModelRejectsIt(t *testing.T) {
+	var bodies []map[string]any
+
+	client := newTestClientWith(t, func(w http.ResponseWriter, r *http.Request) {
+		var raw map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+			t.Errorf("decode request: %v", err)
+		}
+		bodies = append(bodies, raw)
+
+		if _, sent := raw["temperature"]; sent {
+			writeJSON(t, w, http.StatusBadRequest, unsupportedTemperature)
+			return
+		}
+		writeJSON(t, w, http.StatusOK, okCompletion)
+	}, func(c *Config) { c.Model = "gpt-5-mini" })
+
+	resp, err := client.Generate(context.Background(), ChatRequest{
+		Messages:    []Message{{Role: RoleUser, Content: "hi"}},
+		Temperature: 0.2,
+	})
+	if err != nil {
+		t.Fatalf("Generate() error = %v, want the sampling override to be dropped and retried", err)
+	}
+	if resp.Content == "" {
+		t.Error("Content is empty after the retry succeeded")
+	}
+
+	if len(bodies) != 2 {
+		t.Fatalf("upstream calls = %d, want 2 (rejected, then retried without sampling)", len(bodies))
+	}
+	if got, sent := bodies[0]["temperature"]; !sent || got != 0.2 {
+		t.Errorf("first attempt temperature = %v (sent=%v), want 0.2", got, sent)
+	}
+	if _, sent := bodies[1]["temperature"]; sent {
+		t.Error("retry still carried temperature")
+	}
+	if _, sent := bodies[1]["top_p"]; sent {
+		t.Error("retry still carried top_p; both sampling fields must go together")
+	}
+
+	// The refusal is memoised: a later call must build the correct body
+	// first time rather than paying the round trip again.
+	if _, err := client.Generate(context.Background(), ChatRequest{
+		Messages:    []Message{{Role: RoleUser, Content: "again"}},
+		Temperature: 0.2,
+	}); err != nil {
+		t.Fatalf("second Generate() error = %v", err)
+	}
+	if len(bodies) != 3 {
+		t.Errorf("upstream calls = %d, want 3 — the second call must not re-probe", len(bodies))
+	}
+}
+
+func TestGenerateStreamDropsSamplingWhenModelRejectsIt(t *testing.T) {
+	var calls int32
+
+	client := newTestClientWith(t, func(w http.ResponseWriter, r *http.Request) {
+		var raw map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+			t.Errorf("decode request: %v", err)
+		}
+		atomic.AddInt32(&calls, 1)
+		if _, sent := raw["temperature"]; sent {
+			writeJSON(t, w, http.StatusBadRequest, unsupportedTemperature)
+			return
+		}
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		if _, err := w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n")); err != nil {
+			t.Errorf("write stream: %v", err)
+		}
+	}, func(c *Config) { c.Model = "gpt-5-mini" })
+
+	var got string
+	resp, err := client.GenerateStream(context.Background(), ChatRequest{
+		Messages:    []Message{{Role: RoleUser, Content: "hi"}},
+		Temperature: 0.2,
+	}, func(chunk StreamChunk) error {
+		got += chunk.Delta
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("GenerateStream() error = %v", err)
+	}
+	if got != "ok" || resp.Content != "ok" {
+		t.Errorf("streamed content = %q / %q, want \"ok\"", got, resp.Content)
+	}
+	if n := atomic.LoadInt32(&calls); n != 2 {
+		t.Errorf("upstream calls = %d, want 2", n)
+	}
+}
+
+// A 400 that merely disagrees with the VALUE must still reach the caller.
+// Silently retrying it without sampling would turn an operator's bad
+// BOT_OPENAI_TEMPERATURE into a working call with different behaviour.
+func TestGenerateDoesNotSwallowOtherTemperatureErrors(t *testing.T) {
+	var calls int32
+
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		writeJSON(t, w, http.StatusBadRequest, `{"error":{
+  "message":"0.2 is less than the minimum of 1 - 'temperature'",
+  "type":"invalid_request_error",
+  "param":"temperature",
+  "code":"invalid_value"}}`)
+	})
+
+	if _, err := client.Generate(context.Background(), ChatRequest{
+		Messages:    []Message{{Role: RoleUser, Content: "hi"}},
+		Temperature: 0.2,
+	}); err == nil {
+		t.Fatal("Generate() error = nil, want the 400 surfaced")
+	}
+	if n := atomic.LoadInt32(&calls); n != 1 {
+		t.Errorf("upstream calls = %d, want 1 — an unrecognised 400 must not be retried", n)
+	}
+}
+
+// The boot probe must not cap completion tokens: a reasoning model spends
+// that budget on hidden reasoning and returns finish_reason=length, which
+// would fail boot on a perfectly good credential.
+func TestProbeDoesNotCapCompletionTokens(t *testing.T) {
+	var raw map[string]any
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+			t.Errorf("decode request: %v", err)
+		}
+		writeJSON(t, w, http.StatusOK, okCompletion)
+	}))
+	t.Cleanup(srv.Close)
+
+	if _, err := NewClient(context.Background(), Config{
+		APIKey:        "test-key",
+		BaseURL:       srv.URL,
+		Model:         "gpt-5-mini",
+		Temperature:   -1,
+		TopP:          -1,
+		Timeout:       5 * time.Second,
+		MaxRetries:    0,
+		RetryDelay:    time.Millisecond,
+		RequireAtBoot: true,
+	}); err != nil {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+
+	if _, capped := raw["max_completion_tokens"]; capped {
+		t.Error("probe sent max_completion_tokens; a reasoning model would return finish_reason=length and fail boot")
+	}
+}
+
+func TestGenerateSendsReasoningEffort(t *testing.T) {
+	var raw map[string]any
+
+	client := newTestClientWith(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+			t.Errorf("decode request: %v", err)
+		}
+		writeJSON(t, w, http.StatusOK, okCompletion)
+	}, func(c *Config) {
+		c.Model = "gpt-5.6-luna"
+		c.ReasoningEffort = ReasoningEffortNone
+	})
+
+	if _, err := client.Generate(context.Background(), ChatRequest{
+		Messages: []Message{{Role: RoleUser, Content: "hi"}},
+	}); err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+
+	if got := raw["reasoning_effort"]; got != "none" {
+		t.Errorf("reasoning_effort = %v, want \"none\"", got)
+	}
+	// Chat Completions takes the FLAT field. The nested Responses-API
+	// shape {"reasoning":{"effort":...}} would be ignored here, and the
+	// model would silently keep reasoning at full latency.
+	if _, nested := raw["reasoning"]; nested {
+		t.Error("sent the nested Responses-API `reasoning` object; chat-completions needs flat reasoning_effort")
+	}
+}
+
+func TestReasoningEffortIsOmittedWhenUnset(t *testing.T) {
+	var raw map[string]any
+
+	client := newTestClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+			t.Errorf("decode request: %v", err)
+		}
+		writeJSON(t, w, http.StatusOK, okCompletion)
+	})
+
+	if _, err := client.Generate(context.Background(), ChatRequest{
+		Messages: []Message{{Role: RoleUser, Content: "hi"}},
+	}); err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+	if _, sent := raw["reasoning_effort"]; sent {
+		t.Error("reasoning_effort was sent while unset; a non-reasoning model may 400 on it")
+	}
+}
+
+// reasoning_effort must survive the sampling-drop retry — otherwise a
+// gpt-5.6 model configured for none would quietly go back to full
+// reasoning latency on every call that carried a temperature.
+func TestReasoningEffortSurvivesSamplingRetry(t *testing.T) {
+	var bodies []map[string]any
+
+	client := newTestClientWith(t, func(w http.ResponseWriter, r *http.Request) {
+		var raw map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+			t.Errorf("decode request: %v", err)
+		}
+		bodies = append(bodies, raw)
+		if _, sent := raw["temperature"]; sent {
+			writeJSON(t, w, http.StatusBadRequest, unsupportedTemperature)
+			return
+		}
+		writeJSON(t, w, http.StatusOK, okCompletion)
+	}, func(c *Config) {
+		c.Model = "gpt-5.6-luna"
+		c.ReasoningEffort = ReasoningEffortNone
+	})
+
+	if _, err := client.Generate(context.Background(), ChatRequest{
+		Messages:    []Message{{Role: RoleUser, Content: "hi"}},
+		Temperature: 0.2,
+	}); err != nil {
+		t.Fatalf("Generate() error = %v", err)
+	}
+	if len(bodies) != 2 {
+		t.Fatalf("upstream calls = %d, want 2", len(bodies))
+	}
+	if got := bodies[1]["reasoning_effort"]; got != "none" {
+		t.Errorf("retry reasoning_effort = %v, want \"none\"", got)
+	}
+}
+
+func TestConfigRejectsUnknownReasoningEffort(t *testing.T) {
+	base := Config{APIKey: "k", Model: "gpt-5.6-luna", Temperature: -1, TopP: -1}
+
+	for _, effort := range []string{"", ReasoningEffortNone, ReasoningEffortMinimal,
+		ReasoningEffortLow, ReasoningEffortMedium, ReasoningEffortHigh,
+		ReasoningEffortXHigh, ReasoningEffortMax} {
+		cfg := base
+		cfg.ReasoningEffort = effort
+		if err := cfg.Validate(); err != nil {
+			t.Errorf("Validate(ReasoningEffort=%q) error = %v, want nil", effort, err)
+		}
+	}
+
+	for _, effort := range []string{"None", "off", "disabled", "0", "lowest"} {
+		cfg := base
+		cfg.ReasoningEffort = effort
+		if err := cfg.Validate(); !errors.Is(err, ErrInvalidConfig) {
+			t.Errorf("Validate(ReasoningEffort=%q) error = %v, want ErrInvalidConfig", effort, err)
+		}
+	}
+}

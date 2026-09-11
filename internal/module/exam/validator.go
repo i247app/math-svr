@@ -1,0 +1,225 @@
+package exam
+
+import (
+	"context"
+	"strings"
+	"time"
+
+	dto "math-ai.com/math-ai/internal/application/dto/exam"
+	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/enum"
+)
+
+// DefaultNumQuestions is what a generate request gets when it names no
+// count. MaxNumQuestions caps prompt size, token cost and latency; a
+// larger request is clamped rather than rejected, since the caller's
+// intent ("a longer exam") is still servable.
+//
+// The ASSESSMENT probe positions are fixed at questions 3 and 6, so an
+// exam shorter than six loses one or both probes. That is allowed — it
+// just measures less.
+const (
+	DefaultNumQuestions = 10
+	MaxNumQuestions     = 20
+)
+
+// ValidatedGenerate carries the normalised values the service needs, so
+// nothing downstream has to re-parse the request's strings.
+type ValidatedGenerate struct {
+	ExamType enum.ExamType
+}
+
+func ValidateGenerateExam(ctx context.Context, req *dto.GenerateExamReq) (ValidatedGenerate, error) {
+	if req.ProfileID <= 0 {
+		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+
+	raw := strings.ToUpper(strings.TrimSpace(req.ExamType))
+	if raw == "" {
+		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_MISSING_EXAM_TYPE, nil, ErrExamTypeRequired)
+	}
+	examType := enum.ExamType(raw)
+	if !examType.IsValid() {
+		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
+	}
+	req.ExamType = raw
+
+	// Grade is optional; when pinned it must name a band the product
+	// actually serves. Nothing may be placed at the probe ceiling.
+	if req.Grade != nil && (*req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax) {
+		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
+	}
+
+	// Level is optional too. Out of range is rejected rather than clamped,
+	// the same as grade: a client asking for level 40 has a bug, and
+	// silently serving it level 10 hides that. The band ceiling applied
+	// later is a different thing — that one is a real product rule, not a
+	// malformed request.
+	if req.Level != nil && (*req.Level < enum.ExamLevelMin || *req.Level > enum.ExamLevelMax) {
+		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrLevelOutOfRange)
+	}
+
+	if req.NumQuestions <= 0 {
+		req.NumQuestions = DefaultNumQuestions
+	} else if req.NumQuestions > MaxNumQuestions {
+		req.NumQuestions = MaxNumQuestions
+	}
+
+	return ValidatedGenerate{ExamType: examType}, nil
+}
+
+func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {
+	if req.ProfileID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+	if req.UserAiExamID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_ATTEMPT_ID, nil, ErrAttemptIDRequired)
+	}
+	if len(req.Answers) == 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_ANSWERS, nil, ErrAnswersRequired)
+	}
+
+	// Duplicates are caught here rather than in the scorer so the client
+	// gets a field-level error instead of a grading failure.
+	seen := make(map[int]struct{}, len(req.Answers))
+	for i, a := range req.Answers {
+		if a.QuestionNumber <= 0 {
+			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS,
+				map[string]any{"index": i}, ErrQuestionNumberInvalid)
+		}
+		if strings.TrimSpace(a.Label) == "" {
+			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS,
+				map[string]any{"index": i}, ErrAnswerLabelRequired)
+		}
+		if _, dup := seen[a.QuestionNumber]; dup {
+			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS,
+				map[string]any{"question_number": a.QuestionNumber}, ErrDuplicateAnswer)
+		}
+		seen[a.QuestionNumber] = struct{}{}
+	}
+	return nil
+}
+
+func ValidateGetExam(ctx context.Context, req *dto.GetExamReq) error {
+	if req.ProfileID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+	if req.UserAiExamID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_ATTEMPT_ID, nil, ErrAttemptIDRequired)
+	}
+	return nil
+}
+
+func ValidateListExams(ctx context.Context, req *dto.ListExamsReq) error {
+	if req.ProfileID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+	if req.ExamType != nil {
+		normalized := strings.ToUpper(strings.TrimSpace(*req.ExamType))
+		if normalized == "" {
+			req.ExamType = nil
+		} else {
+			if !enum.ExamType(normalized).IsValid() {
+				return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
+			}
+			req.ExamType = &normalized
+		}
+	}
+	if req.Status != nil {
+		normalized := strings.ToUpper(strings.TrimSpace(*req.Status))
+		if normalized == "" {
+			req.Status = nil
+		} else {
+			req.Status = &normalized
+		}
+	}
+	return nil
+}
+
+func ValidateGetExamStats(ctx context.Context, req *dto.GetExamStatsReq) error {
+	if req.ProfileID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+	if req.ExamType != nil {
+		normalized := strings.ToUpper(strings.TrimSpace(*req.ExamType))
+		if normalized == "" {
+			req.ExamType = nil
+		} else {
+			if !enum.ExamType(normalized).IsValid() {
+				return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
+			}
+			req.ExamType = &normalized
+		}
+	}
+	return nil
+}
+
+// Progress chart bounds. The window is capped at roughly two years
+// because the chart is a learning trend, not an archive: a wider range
+// costs a bigger scan and shows a line nobody reads.
+const (
+	ProgressLimitDefault = 10
+	ProgressLimitMin     = 1
+	ProgressLimitMax     = 100
+	progressMaxRange     = 2 * 365 * 24 * time.Hour
+)
+
+// ValidateExamProgress checks the analytics request and normalises Limit
+// (clamped in place), Tz (default applied) and ExamType (upper-cased).
+// Ownership needs a repository read and so stays in the service.
+func ValidateExamProgress(ctx context.Context, req *dto.ExamProgressReq) error {
+	if req.ProfileID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+
+	if req.ExamType != nil {
+		normalized := strings.ToUpper(strings.TrimSpace(*req.ExamType))
+		if normalized == "" {
+			req.ExamType = nil
+		} else {
+			if !enum.ExamType(normalized).IsValid() {
+				return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
+			}
+			req.ExamType = &normalized
+		}
+	}
+
+	// A numeric offset, never an IANA name: the value reaches CONVERT_TZ
+	// verbatim and production MySQL is not guaranteed to carry the
+	// timezone tables that would make "Asia/Ho_Chi_Minh" resolve.
+	if req.Tz == "" {
+		req.Tz = enum.DefaultProgressTz
+	} else if !enum.IsValidTzOffset(req.Tz) {
+		return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_TZ, nil, ErrInvalidTz)
+	}
+
+	if req.FromDt != "" || req.ToDt != "" {
+		if req.FromDt == "" || req.ToDt == "" {
+			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, ErrInvalidDateRange)
+		}
+		from, err := mtime.ParseFromString(req.FromDt)
+		if err != nil {
+			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, err)
+		}
+		to, err := mtime.ParseFromString(req.ToDt)
+		if err != nil {
+			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, err)
+		}
+		if !from.Time.Before(to.Time) || to.Time.Sub(from.Time) > progressMaxRange {
+			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, ErrInvalidDateRange)
+		}
+	}
+
+	if req.Limit == 0 {
+		req.Limit = ProgressLimitDefault
+	}
+	if req.Limit < ProgressLimitMin {
+		req.Limit = ProgressLimitMin
+	}
+	if req.Limit > ProgressLimitMax {
+		req.Limit = ProgressLimitMax
+	}
+	return nil
+}

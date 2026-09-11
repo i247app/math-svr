@@ -1,0 +1,172 @@
+package bot
+
+import (
+	"strings"
+	"testing"
+
+	"math-ai.com/math-ai/internal/shared/enum"
+)
+
+func TestAssessmentProbePositions(t *testing.T) {
+	tests := []struct {
+		name     string
+		examType enum.ExamType
+		numQues  int
+		want     []int
+	}{
+		{"assessment of ten probes at 3 and 6", enum.ExamTypeAssessment, 10, []int{3, 6}},
+		{"assessment shorter than the second slot", enum.ExamTypeAssessment, 5, []int{3}},
+		{"assessment too short to probe at all", enum.ExamTypeAssessment, 2, nil},
+		{"zero falls back to the default length", enum.ExamTypeAssessment, 0, []int{3, 6}},
+		{"practice never probes", enum.ExamTypePractice, 10, nil},
+		{"exam never probes", enum.ExamTypeExam, 10, nil},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := AssessmentProbePositions(tc.examType, tc.numQues)
+			if len(got) != len(tc.want) {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
+			for i := range got {
+				if got[i] != tc.want[i] {
+					t.Fatalf("got %v, want %v", got, tc.want)
+				}
+			}
+		})
+	}
+}
+
+// TestProbeGrade pins the ceiling. Without it an ASSESSMENT at Grade 5
+// would ask for Grade 7 material the moment someone bumps the product's
+// top band.
+func TestProbeGrade(t *testing.T) {
+	tests := []struct{ grade, want int }{
+		{0, 1}, {1, 2}, {4, 5}, {5, 6},
+	}
+	for _, tc := range tests {
+		if got := ProbeGrade(tc.grade); got != tc.want {
+			t.Errorf("ProbeGrade(%d) = %d, want %d", tc.grade, got, tc.want)
+		}
+	}
+}
+
+func TestBuildExamPromptRejectsBadInput(t *testing.T) {
+	tests := []struct {
+		name string
+		in   ExamPromptInput
+	}{
+		{"grade below range", ExamPromptInput{ExamType: enum.ExamTypePractice, Grade: -1}},
+		{"grade above range", ExamPromptInput{ExamType: enum.ExamTypePractice, Grade: 6}},
+		{"unknown exam type", ExamPromptInput{ExamType: enum.ExamType("HOMEWORK"), Grade: 1}},
+		{"empty exam type", ExamPromptInput{Grade: 1}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, _, err := BuildExamPrompt(tc.in); err == nil {
+				t.Error("expected an error, got nil")
+			}
+		})
+	}
+}
+
+func TestBuildExamPromptAssessment(t *testing.T) {
+	_, user, err := BuildExamPrompt(ExamPromptInput{
+		ExamType:     enum.ExamTypeAssessment,
+		Grade:        1,
+		Level:        3,
+		NumQuestions: 10,
+		Semester:     "Học kỳ 1",
+		Program:      "Cánh diều",
+	})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+
+	for _, want := range []string{
+		"GRADE PROFILE",
+		"LEVEL PROFILE",
+		"câu 3 và câu 6",
+		`"question_grade" = 2`,
+		`"question_grade" = 1`,
+		"Lớp 1 - Cấp độ 3",
+		"Học kỳ 1",
+		"Cánh diều",
+	} {
+		if !strings.Contains(user, want) {
+			t.Errorf("user prompt is missing %q", want)
+		}
+	}
+
+	// The two authoritative blocks must precede everything else, or the
+	// schema example teaches its own difficulty by imitation.
+	if strings.Index(user, "GRADE PROFILE") > strings.Index(user, "QUY TẮC CẤP LỚP") {
+		t.Error("GRADE PROFILE must come before the per-question grade rules")
+	}
+}
+
+// TestExamPromptUsesExamVocabulary guards the rename end to end. The
+// few-shot exemplar is the trap: it outweighs prose, so a single stale key
+// there teaches the model the quiz spelling and every generated question
+// then fails to map onto the exam's columns.
+func TestExamPromptUsesExamVocabulary(t *testing.T) {
+	system, user, err := BuildExamPrompt(ExamPromptInput{
+		ExamType: enum.ExamTypeAssessment, Grade: 1, Level: 3, NumQuestions: 10,
+	})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+	whole := system + "\n" + user
+
+	for _, stale := range []string{`"right_answer"`, `"correct_answer"`, `"topic"`, `"difficulty"`} {
+		if strings.Contains(whole, stale) {
+			t.Errorf("prompt still names the quiz-era key %s", stale)
+		}
+	}
+	for _, want := range []string{
+		`"right_answer_label"`, `"right_answer_content"`,
+		`"question_topic"`, `"question_grade"`, `"question_level"`,
+	} {
+		if !strings.Contains(whole, want) {
+			t.Errorf("prompt never names %s", want)
+		}
+	}
+}
+
+func TestBuildExamPromptPracticeHasNoProbe(t *testing.T) {
+	_, user, err := BuildExamPrompt(ExamPromptInput{
+		ExamType:     enum.ExamTypePractice,
+		Grade:        4,
+		Level:        5,
+		NumQuestions: 10,
+	})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+	if strings.Contains(user, "CÂU DÒ TRẦN") {
+		t.Error("a PRACTICE round must not carry the probe rule")
+	}
+	if !strings.Contains(user, `"question_grade" của mọi câu đều là 4`) {
+		t.Error("a PRACTICE round must pin every question to the requested grade")
+	}
+}
+
+// TestBuildExamPromptKindergartenClampsLevel is the case the clamp exists
+// for: kindergarten content cannot be pushed to level 9, so both the block
+// and the title must show the clamped value rather than what was asked.
+func TestBuildExamPromptKindergartenClampsLevel(t *testing.T) {
+	_, user, err := BuildExamPrompt(ExamPromptInput{
+		ExamType:     enum.ExamTypeAssessment,
+		Grade:        0,
+		Level:        9,
+		NumQuestions: 10,
+	})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+	if !strings.Contains(user, "Mẫu giáo - Cấp độ 4") {
+		t.Error("title should carry the clamped level for kindergarten")
+	}
+	if strings.Contains(user, "cường độ bậc 9") {
+		t.Error("level 9 must not survive the kindergarten ceiling")
+	}
+}

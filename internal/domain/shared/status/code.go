@@ -357,4 +357,30 @@ const (
 	// Presence (realtime online/offline) — 13600-13699
 	PRESENCE_NOT_FOUND     StatusCode = 13600
 	PRESENCE_UPDATE_FAILED StatusCode = 13601
+
+	// Exam — 13700-13799.
+	// 13600 was already taken by PRESENCE_*, so the exam aggregate claims
+	// the next free 100-block rather than the 13600 the planning notes
+	// originally reserved.
+	EXAM_NOT_FOUND               StatusCode = 13700
+	EXAM_ATTEMPT_NOT_FOUND       StatusCode = 13701
+	EXAM_ATTEMPT_NOT_OWNED       StatusCode = 13702
+	EXAM_ALREADY_SUBMITTED       StatusCode = 13703
+	EXAM_MISSING_ATTEMPT_ID      StatusCode = 13704
+	EXAM_MISSING_ANSWERS         StatusCode = 13705
+	EXAM_INVALID_ANSWERS         StatusCode = 13706
+	EXAM_MISSING_EXAM_TYPE       StatusCode = 13707
+	EXAM_INVALID_EXAM_TYPE       StatusCode = 13708
+	EXAM_INVALID_GRADE           StatusCode = 13709
+	EXAM_INVALID_LEVEL           StatusCode = 13710
+	EXAM_INVALID_NUM_QUESTIONS   StatusCode = 13711
+	EXAM_GENERATION_FAILED       StatusCode = 13712
+	EXAM_GRADING_FAILED          StatusCode = 13713
+	EXAM_NO_QUESTIONS            StatusCode = 13714
+	EXAM_PROFILE_NOT_FOUND       StatusCode = 13715
+	EXAM_PROFILE_NOT_OWNED       StatusCode = 13716
+	EXAM_MISSING_PROFILE_ID      StatusCode = 13717
+	EXAM_STATS_NOT_FOUND         StatusCode = 13718
+	EXAM_ANALYTICS_INVALID_RANGE StatusCode = 13719
+	EXAM_ANALYTICS_INVALID_TZ    StatusCode = 13720
 )

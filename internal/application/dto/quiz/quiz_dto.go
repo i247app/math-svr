@@ -3,79 +3,29 @@ package quiz
 import (
 	"encoding/json"
 
+	"math-ai.com/math-ai/internal/application/dto/question"
 	domain "math-ai.com/math-ai/internal/domain/quiz"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
-// QuizAnswerChoice is one option in a multiple-choice question. The
-// label is the alphabetical key ("A".."D") the student selects to
-// answer; content is the displayed text.
-type QuizAnswerChoice struct {
-	Label   string `json:"label"`
-	Content string `json:"content"`
-}
-
-// Question type discriminators. QuestionType tells the client how to
-// render a question and its answers; it never affects grading (which is
-// always label-based). Missing / unknown values normalize to
-// QuestionTypeArithmetic so legacy quizzes and any schema drift from the
-// model degrade to a plain text question.
-//
-//   - ARITHMETIC     — text-only stem (numbers + operators), text answers.
-//   - COUNT          — stem embeds emoji / [icon:NAME] tokens to count or add.
-//   - PICK_BY_ICON   — text stem; each answer's content embeds emoji / icons.
-//   - IDENTIFY_SHAPE — stem is a single [icon:NAME] token; text answers.
-const (
-	QuestionTypeArithmetic    = "ARITHMETIC"
-	QuestionTypeCount         = "COUNT"
-	QuestionTypePickByIcon    = "PICK_BY_ICON"
-	QuestionTypeIdentifyShape = "IDENTIFY_SHAPE"
+// The MCQ contract moved to internal/application/dto/question so the
+// exercise module (and, from the exam refactor on, the exam module) can
+// share it without importing this package. These aliases keep every
+// existing reference — and the wire shape — byte-for-byte unchanged.
+type (
+	QuizAnswerChoice  = question.AnswerChoice
+	QuizQuestion      = question.Question
+	QuizStudentAnswer = question.StudentAnswer
+	QuizGradingResult = question.GradingResult
 )
 
-// QuizQuestion is one MCQ item as produced by the bot. RightAnswer is
-// the label of the correct option and is only included in responses
-// once the quiz has been graded (otherwise it would leak the answer key).
-//
-// CorrectAnswer, Topic, and Difficulty are populated by quizzes generated
-// after the v2 prompt rollout. They power the deterministic /quizzes/submit/v2
-// scorer (value fallback, per-topic review aggregation, difficulty signal)
-// and are absent on legacy quizzes — the v2 scorer degrades gracefully
-// (single-MCQ label match only, generic review wording). All three are
-// `omitempty` so the response payload stays identical for legacy rows.
-//
-// QuestionType is the render discriminator (see the QuestionType* consts).
-// It is `omitempty`; an absent value means ARITHMETIC, so the wire shape
-// for legacy text quizzes is byte-for-byte unchanged. Icons live inline in
-// QuestionName / QuizAnswerChoice.Content: emoji are literal UTF-8, while
-// geometric shapes use the "[icon:NAME]" token whitelist.
-type QuizQuestion struct {
-	QuestionNumber int                `json:"question_number"`
-	QuestionType   string             `json:"question_type,omitempty"`
-	QuestionName   string             `json:"question_name"`
-	Answers        []QuizAnswerChoice `json:"answers"`
-	RightAnswer    string             `json:"right_answer,omitempty"`
-	CorrectAnswer  string             `json:"correct_answer,omitempty"`
-	Topic          string             `json:"topic,omitempty"`
-	Difficulty     int                `json:"difficulty,omitempty"`
-}
-
-// QuizStudentAnswer is the student's chosen label for a single question.
-type QuizStudentAnswer struct {
-	QuestionNumber int    `json:"question_number"`
-	Label          string `json:"label"`
-}
-
-// QuizGradingResult is the bot's grading output. AssessmentGrade is only
-// populated for ASSESSMENT (and reinforce-assessment); PRACTICE rounds
-// omit it.
-type QuizGradingResult struct {
-	TotalQuestions  int     `json:"total_questions"`
-	CorrectNumber   int     `json:"correct_number"`
-	ScorePercentage int     `json:"score_percentage"`
-	Review          string  `json:"review"`
-	AssessmentGrade *string `json:"assessment_grade,omitempty"`
-}
+const (
+	QuestionTypeArithmetic    = question.TypeArithmetic
+	QuestionTypeCount         = question.TypeCount
+	QuestionTypePickByIcon    = question.TypePickByIcon
+	QuestionTypeIdentifyShape = question.TypeIdentifyShape
+)
 
 // QuizResponse is the wire shape returned by every quiz endpoint.
 // Questions / Answers / Grading are nil-omitted so generated and

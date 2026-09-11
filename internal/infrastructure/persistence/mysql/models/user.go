@@ -5,19 +5,19 @@ import (
 )
 
 type UserModel struct {
-	Id         int64
-	UserId     int64
-	UserName   string
+	Id              int64
+	UserId          int64
+	UserName        string
 	Phone           string
 	Email           *string
 	IsEmailVerified bool
 	AvatarKey       *string
-	Role       string
-	UserStatus *string
-	Status     string
-	Note       *string
-	CreateId   *int64
-	CreateDt   time.Time
-	ModifyId   *int64
-	ModifyDt   time.Time
+	Role            string
+	UserStatus      *string
+	Status          string
+	Note            *string
+	CreateId        *int64
+	CreateDt        time.Time
+	ModifyId        *int64
+	ModifyDt        time.Time
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -29,6 +30,11 @@ import (
 type Client struct {
 	cfg  Config
 	http *http_client.Client
+
+	// noSampling records the model ids that rejected an explicit
+	// temperature / top_p. Learned at runtime, not declared — see
+	// blockSampling. Keyed by model id; the value is always struct{}.
+	noSampling sync.Map
 }
 
 // Model returns the configured default chat model id.
@@ -98,10 +104,15 @@ func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 // probe makes a one-token completion to verify credentials and
 // connectivity. Used only when RequireAtBoot=true.
 func (c *Client) probe(ctx context.Context) error {
+	// Deliberately no MaxTokens. A reasoning model spends its
+	// max_completion_tokens budget on hidden reasoning before it emits a
+	// single visible character, so a cap of 1 comes back truncated
+	// (finish_reason=length) and Generate — correctly — calls that a
+	// failure. The probe would then fail against a perfectly healthy
+	// credential. "ping" keeps the uncapped answer short anyway.
 	_, err := c.Generate(ctx, ChatRequest{
-		Model:     c.cfg.Model,
-		Messages:  []Message{{Role: RoleUser, Content: "ping"}},
-		MaxTokens: 1,
+		Model:    c.cfg.Model,
+		Messages: []Message{{Role: RoleUser, Content: "ping"}},
 	})
 	return err
 }
@@ -116,7 +127,7 @@ func (c *Client) Generate(ctx context.Context, req ChatRequest) (*ChatResponse, 
 	callCtx, cancel := context.WithTimeout(ctx, c.cfg.Timeout)
 	defer cancel()
 
-	body, err := c.post(callCtx, chatCompletionsPath, c.buildRequest(req, false))
+	body, err := c.postChat(callCtx, c.buildRequest(req, false))
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +191,7 @@ func (c *Client) GenerateStream(ctx context.Context, req ChatRequest, onChunk fu
 	callCtx, cancel := context.WithTimeout(ctx, c.cfg.Timeout)
 	defer cancel()
 
-	body, err := c.post(callCtx, chatCompletionsPath, c.buildRequest(req, true))
+	body, err := c.postChat(callCtx, c.buildRequest(req, true))
 	if err != nil {
 		return nil, err
 	}
@@ -315,12 +326,14 @@ func (c *Client) buildRequest(req ChatRequest, stream bool) wireChatRequest {
 		})
 	}
 
+	model := firstNonEmpty(req.Model, c.cfg.Model)
 	out := wireChatRequest{
-		Model:    firstNonEmpty(req.Model, c.cfg.Model),
-		Messages: msgs,
-		Stream:   stream,
-		Stop:     req.Stop,
-		Store:    c.cfg.Store,
+		Model:           model,
+		Messages:        msgs,
+		Stream:          stream,
+		Stop:            req.Stop,
+		Store:           c.cfg.Store,
+		ReasoningEffort: c.cfg.ReasoningEffort,
 	}
 	if stream {
 		out.StreamOptions = &wireStreamOptions{IncludeUsage: true}
@@ -331,20 +344,25 @@ func (c *Client) buildRequest(req ChatRequest, stream bool) wireChatRequest {
 		out.Metadata = c.cfg.Metadata
 	}
 
-	temp := c.cfg.Temperature
-	if req.Temperature >= 0 {
-		temp = req.Temperature
-	}
-	if temp >= 0 {
-		out.Temperature = &temp
-	}
+	// Sampling is omitted entirely for models known to reject it. The
+	// reasoning families accept only the default temperature/top_p and
+	// answer any override with HTTP 400 — see blockSampling.
+	if !c.samplingBlocked(model) {
+		temp := c.cfg.Temperature
+		if req.Temperature >= 0 {
+			temp = req.Temperature
+		}
+		if temp >= 0 {
+			out.Temperature = &temp
+		}
 
-	topP := c.cfg.TopP
-	if req.TopP >= 0 {
-		topP = req.TopP
-	}
-	if topP >= 0 {
-		out.TopP = &topP
+		topP := c.cfg.TopP
+		if req.TopP >= 0 {
+			topP = req.TopP
+		}
+		if topP >= 0 {
+			out.TopP = &topP
+		}
 	}
 
 	maxTokens := c.cfg.MaxTokens
@@ -373,6 +391,58 @@ func (c *Client) buildRequest(req ChatRequest, stream bool) wireChatRequest {
 // BILLING failures are not, because they cannot recover within the call. A
 // throttling 429 is retried only when it carries a Retry-After the client
 // is willing to wait out (see maxRetryAfter).
+// postChat sends a chat-completion body and, if the model turns out to
+// forbid an explicit temperature / top_p, drops both and sends once more.
+//
+// Why adapt instead of listing the models: the families that reject
+// sampling overrides (gpt-5*, the o-series, and every reasoning flagship
+// since) are a moving target, and a stale prefix list fails in the worse
+// of the two directions — it would strip temperature from a model that
+// honours it, silently changing generation behaviour with no error to
+// notice. Asking the API is authoritative and self-correcting. The cost
+// is one extra round trip per model per process, memoised by
+// blockSampling; every later call builds the correct body first time.
+func (c *Client) postChat(ctx context.Context, wireReq wireChatRequest) ([]byte, error) {
+	body, err := c.post(ctx, chatCompletionsPath, wireReq)
+	if err == nil {
+		return body, nil
+	}
+	// Nothing to drop means the 400 is about something else.
+	if wireReq.Temperature == nil && wireReq.TopP == nil {
+		return nil, err
+	}
+	param, ok := unsupportedSamplingParam(err)
+	if !ok {
+		return nil, err
+	}
+
+	c.blockSampling(ctx, wireReq.Model, param)
+	wireReq.Temperature, wireReq.TopP = nil, nil
+	return c.post(ctx, chatCompletionsPath, wireReq)
+}
+
+// samplingBlocked reports whether this model has already refused an
+// explicit temperature / top_p during this process.
+func (c *Client) samplingBlocked(model string) bool {
+	_, blocked := c.noSampling.Load(model)
+	return blocked
+}
+
+// blockSampling memoises the refusal and warns exactly once per model.
+//
+// The warning matters: the caller asked for a specific temperature —
+// quiz generation uses 0.2 and grading 0.1 precisely to keep output
+// stable — and from here on the model's own default applies instead.
+// That is a real behaviour change, so it must be visible in the logs
+// rather than absorbed in silence.
+func (c *Client) blockSampling(ctx context.Context, model, param string) {
+	if _, seen := c.noSampling.LoadOrStore(model, struct{}{}); seen {
+		return
+	}
+	logger.From(ctx).Warnf("openai.sampling_unsupported model=%s param=%s — dropping temperature/top_p for this model; its own default applies from now on",
+		model, param)
+}
+
 func (c *Client) post(ctx context.Context, path string, body any) ([]byte, error) {
 	var lastErr error
 	delay := c.cfg.RetryDelay

@@ -43,9 +43,43 @@ const (
 	// 5-6 years old). Children in this band are pre-literate, so the
 	// profile leans on counting icons rather than written prose.
 	GradeKindergarten GradeLevel = 0
-	// GradeElementaryLast is the highest band the product serves today.
+	// GradeElementaryLast is the highest band the product serves today —
+	// the highest a child can be PLACED at.
 	GradeElementaryLast GradeLevel = 5
+	// GradeProbeCeiling is one band above what the product serves. No child
+	// is ever placed here; it exists only so an ASSESSMENT at Grade 5 still
+	// has somewhere to reach when it probes upward (see the Q3/Q6 rule in
+	// exam_prompts.go). resolveGradeLevel deliberately refuses to return it,
+	// so no free-form label can land a child on this band.
+	GradeProbeCeiling GradeLevel = 6
 )
+
+// gradeBandName returns the display name of a band, or "" when the band is
+// not one we describe. Used by the exam prompt to name the probe band.
+func gradeBandName(lang QuizLanguage, level GradeLevel) string {
+	p, ok := gradeProfiles[level]
+	if !ok {
+		return ""
+	}
+	if lang == QuizLanguageEnglish {
+		return p.nameEN
+	}
+	return p.nameVN
+}
+
+// gradeBandRange returns the number-range sentence of a band, or "" when
+// the band is unknown. The exam prompt renders it so a probe question is
+// anchored to real content instead of the model's guess at "one grade up".
+func gradeBandRange(lang QuizLanguage, level GradeLevel) string {
+	p, ok := gradeProfiles[level]
+	if !ok {
+		return ""
+	}
+	if lang == QuizLanguageEnglish {
+		return p.rangeEN
+	}
+	return p.rangeVN
+}
 
 // gradeProfile is the authoritative, code-owned difficulty + visual
 // contract for a single band. It is the SINGLE SOURCE OF TRUTH the
@@ -157,6 +191,18 @@ var gradeProfiles = map[GradeLevel]gradeProfile{
 		iconLineVN: `TẮT — TUYỆT ĐỐI không dùng emoji hay token [icon:...]; dùng question_type "ARITHMETIC" cho mọi câu.`,
 		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "3/4 + 2/5 = ?", "answers": [{"label":"A","content":"23/20"},{"label":"B","content":"5/9"},{"label":"C","content":"6/20"},{"label":"D","content":"1"}], "right_answer": "A", "correct_answer": "23/20", "topic": "fractions_add_sub", "difficulty": 4}`,
 	},
+	6: {
+		nameEN:     "Grade 6",
+		nameVN:     "Lớp 6",
+		icon:       IconOff,
+		rangeEN:    "integers including negatives; powers and roots of small numbers; operations mixing fractions, decimals and percentages.",
+		rangeVN:    "số nguyên (kể cả số âm); luỹ thừa và căn của số nhỏ; phép tính hỗn hợp giữa phân số, số thập phân và phần trăm.",
+		skillsEN:   "order of operations on mixed forms, ratio and proportion, simple equations with one unknown, basic negative-number arithmetic.",
+		skillsVN:   "thứ tự thực hiện phép tính trên biểu thức hỗn hợp, tỉ lệ và tỉ số, phương trình đơn giản một ẩn, cộng trừ số âm cơ bản.",
+		iconLineEN: `OFF — do NOT use any emoji or [icon:...] tokens; use question_type "ARITHMETIC" for every question.`,
+		iconLineVN: `TẮT — TUYỆT ĐỐI không dùng emoji hay token [icon:...]; dùng question_type "ARITHMETIC" cho mọi câu.`,
+		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "(-5) + 12 = ?", "answers": [{"label":"A","content":"7"},{"label":"B","content":"-7"},{"label":"C","content":"17"},{"label":"D","content":"-17"}], "right_answer": "A", "correct_answer": "7", "topic": "negative_numbers", "difficulty": 4}`,
+	},
 }
 
 // defaultFloorEN / defaultFloorVN are the calibration sentence used by
@@ -204,6 +250,15 @@ var gradeNumberRe = regexp.MustCompile(`\d+`)
 // digit (an age, or "lớp lá 5-6 tuổi") that a digit-first matcher would
 // misread as an elementary grade — the most damaging failure available
 // here, since it would hand a five-year-old a Grade 5 quiz.
+// ResolveGradeNumber maps a free-form grade label onto its band number.
+// Exported for the exam module's cold start: the very first exam a child
+// takes has no measured grade yet, so it falls back to the class the
+// profile says they attend — which is stored as a label, not a number.
+func ResolveGradeNumber(label string) (int, bool) {
+	level, ok := resolveGradeLevel(label)
+	return int(level), ok
+}
+
 func resolveGradeLevel(label string) (GradeLevel, bool) {
 	normalized := strings.ToLower(strings.TrimSpace(label))
 	if normalized == "" {
@@ -236,6 +291,14 @@ func gradeProfileBlock(lang QuizLanguage, gradeLabel string) string {
 	if !ok {
 		return ""
 	}
+	return gradeProfileBlockByLevel(lang, level)
+}
+
+// gradeProfileBlockByLevel is the same block for a band we already hold as
+// a number. The exam flow takes this entrance: its grade arrives as an
+// int on the request, so routing it through a label and back would only
+// add a chance to mis-parse.
+func gradeProfileBlockByLevel(lang QuizLanguage, level GradeLevel) string {
 	p, ok := gradeProfiles[level]
 	if !ok {
 		return ""

@@ -649,6 +649,50 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case PRESENCE_UPDATE_FAILED:
 		return "Failed to update presence"
 
+	// Exam
+	case EXAM_NOT_FOUND:
+		return "Exam not found"
+	case EXAM_ATTEMPT_NOT_FOUND:
+		return "Exam attempt not found"
+	case EXAM_ATTEMPT_NOT_OWNED:
+		return "This exam attempt does not belong to the current profile"
+	case EXAM_ALREADY_SUBMITTED:
+		return "This exam has already been submitted"
+	case EXAM_MISSING_ATTEMPT_ID:
+		return "user_ai_exam_id is required"
+	case EXAM_MISSING_ANSWERS:
+		return "answers is required"
+	case EXAM_INVALID_ANSWERS:
+		return "answers payload is invalid"
+	case EXAM_MISSING_EXAM_TYPE:
+		return "exam_type is required"
+	case EXAM_INVALID_EXAM_TYPE:
+		return "exam_type must be one of ASSESSMENT, PRACTICE, EXAM"
+	case EXAM_INVALID_GRADE:
+		return "grade must be between 0 and 5"
+	case EXAM_INVALID_LEVEL:
+		return "level must be between 1 and 10"
+	case EXAM_INVALID_NUM_QUESTIONS:
+		return "num_questions is invalid"
+	case EXAM_GENERATION_FAILED:
+		return "Failed to generate the exam"
+	case EXAM_GRADING_FAILED:
+		return "Failed to grade the exam"
+	case EXAM_NO_QUESTIONS:
+		return "This exam has no questions to grade"
+	case EXAM_PROFILE_NOT_FOUND:
+		return "Profile not found"
+	case EXAM_PROFILE_NOT_OWNED:
+		return "This profile does not belong to the current user"
+	case EXAM_MISSING_PROFILE_ID:
+		return "profile_id is required"
+	case EXAM_STATS_NOT_FOUND:
+		return "No exam statistics found for this profile"
+	case EXAM_ANALYTICS_INVALID_RANGE:
+		return "Invalid date range"
+	case EXAM_ANALYTICS_INVALID_TZ:
+		return "Invalid timezone offset"
+
 	default:
 		return ""
 	}

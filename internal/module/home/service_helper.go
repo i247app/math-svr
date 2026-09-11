@@ -47,6 +47,7 @@ func (s *Service) buildLayout(ctx context.Context, caller *profileDomain.Profile
 		Tasks:       s.tasks(ctx, data),
 		Messages:    []any{},
 		Quizzes:     quizCards(data),
+		Exams:       examCards(data),
 	}
 }
 

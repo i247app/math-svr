@@ -154,20 +154,21 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 
 	if cfg.OpenAIAPIKey != "" {
 		client, err := openai.NewClient(ctx, openai.Config{
-			APIKey:        cfg.OpenAIAPIKey,
-			BaseURL:       cfg.OpenAIBaseURL,
-			Model:         cfg.OpenAIModel,
-			EmbedModel:    cfg.OpenAIEmbedModel,
-			Organization:  cfg.OpenAIOrganization,
-			Project:       cfg.OpenAIProject,
-			Store:         cfg.OpenAIStore,
-			Temperature:   cfg.OpenAITemperature,
-			TopP:          cfg.OpenAITopP,
-			MaxTokens:     cfg.OpenAIMaxTokens,
-			Timeout:       cfg.Timeout,
-			MaxRetries:    cfg.MaxRetries,
-			RetryDelay:    cfg.RetryDelay,
-			RequireAtBoot: cfg.RequireAtBoot,
+			APIKey:          cfg.OpenAIAPIKey,
+			BaseURL:         cfg.OpenAIBaseURL,
+			Model:           cfg.OpenAIModel,
+			EmbedModel:      cfg.OpenAIEmbedModel,
+			Organization:    cfg.OpenAIOrganization,
+			Project:         cfg.OpenAIProject,
+			Store:           cfg.OpenAIStore,
+			Temperature:     cfg.OpenAITemperature,
+			TopP:            cfg.OpenAITopP,
+			MaxTokens:       cfg.OpenAIMaxTokens,
+			ReasoningEffort: cfg.OpenAIReasoningEffort,
+			Timeout:         cfg.Timeout,
+			MaxRetries:      cfg.MaxRetries,
+			RetryDelay:      cfg.RetryDelay,
+			RequireAtBoot:   cfg.RequireAtBoot,
 		})
 		if err != nil {
 			if errors.Is(err, openai.ErrInvalidConfig) {

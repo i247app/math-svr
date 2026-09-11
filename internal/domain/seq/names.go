@@ -27,4 +27,8 @@ const (
 	NameChatConversation            = "chat_conversation"
 	NameChatParticipant             = "chat_participant"
 	NameChatMessage                 = "chat_message"
+	NameAiExam                      = "ai_exam"
+	NameUserAiExam                  = "user_ai_exam"
+	NameUserExam                    = "user_exam"
+	NameUserExamDetail              = "user_exam_detail"
 )

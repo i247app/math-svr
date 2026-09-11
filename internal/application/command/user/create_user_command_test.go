@@ -36,8 +36,12 @@ type fakeUserRepo struct {
 	created *user.User
 }
 
-func (f *fakeUserRepo) FindByEmail(ctx context.Context, email string) (*user.User, error) { return nil, nil }
-func (f *fakeUserRepo) FindByPhone(ctx context.Context, phone string) (*user.User, error) { return nil, nil }
+func (f *fakeUserRepo) FindByEmail(ctx context.Context, email string) (*user.User, error) {
+	return nil, nil
+}
+func (f *fakeUserRepo) FindByPhone(ctx context.Context, phone string) (*user.User, error) {
+	return nil, nil
+}
 func (f *fakeUserRepo) Create(ctx context.Context, u *user.User) (*user.User, error) {
 	f.created = u
 	return u, nil

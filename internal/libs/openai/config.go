@@ -150,6 +150,16 @@ type Config struct {
 	// Sent as `max_completion_tokens` — see buildRequest.
 	MaxTokens int
 
+	// ReasoningEffort sets how much hidden reasoning the model does
+	// before answering (env BOT_OPENAI_REASONING_EFFORT). Optional; empty
+	// sends nothing and the model default applies.
+	//
+	// Set it to ReasoningEffortNone on a reasoning model to get a
+	// non-reasoning response time. Leave it empty for models that have no
+	// reasoning pass — the field is inert there, but sending it invites a
+	// 400 from any endpoint that does not know it.
+	ReasoningEffort string
+
 	// Timeout bounds a single call. applyDefaults sets 60s when zero.
 	Timeout time.Duration
 
@@ -166,6 +176,28 @@ type Config struct {
 	// without LLM credentials still boot.
 	RequireAtBoot bool
 }
+
+// Reasoning-effort values accepted by Config.ReasoningEffort, sent as
+// `reasoning_effort` on the chat-completions request. Empty means "send
+// nothing" so the model's own default stands.
+//
+// Support is per-model, not universal: the GPT-5.6 family takes the whole
+// range, GPT-6 Astra rejects "none" with HTTP 400, and the non-reasoning
+// models ignore the field. Validate only rejects values OpenAI does not
+// define at all — whether a given model accepts a defined value is the
+// model's answer to give, not something this package can know.
+const (
+	// ReasoningEffortNone disables reasoning entirely. This is the
+	// latency-critical setting: the model answers without the hidden
+	// reasoning pass that otherwise runs before the first visible token.
+	ReasoningEffortNone    = "none"
+	ReasoningEffortMinimal = "minimal"
+	ReasoningEffortLow     = "low"
+	ReasoningEffortMedium  = "medium"
+	ReasoningEffortHigh    = "high"
+	ReasoningEffortXHigh   = "xhigh"
+	ReasoningEffortMax     = "max"
+)
 
 const (
 	DefaultTimeout    = 60 * time.Second
@@ -212,6 +244,18 @@ func (c Config) Validate() error {
 			return fmt.Errorf("%w: Metadata value for key %q exceeds %d bytes",
 				ErrInvalidConfig, k, maxMetadataValueBytes)
 		}
+	}
+	// A typo here would otherwise cost a 400 on every single call, so it
+	// is caught once at boot instead.
+	switch c.ReasoningEffort {
+	case "", ReasoningEffortNone, ReasoningEffortMinimal, ReasoningEffortLow,
+		ReasoningEffortMedium, ReasoningEffortHigh, ReasoningEffortXHigh,
+		ReasoningEffortMax:
+	default:
+		return fmt.Errorf("%w: ReasoningEffort must be one of %q, %q, %q, %q, %q, %q, %q (got %q)",
+			ErrInvalidConfig, ReasoningEffortNone, ReasoningEffortMinimal,
+			ReasoningEffortLow, ReasoningEffortMedium, ReasoningEffortHigh,
+			ReasoningEffortXHigh, ReasoningEffortMax, c.ReasoningEffort)
 	}
 	if c.Timeout < 0 {
 		return fmt.Errorf("%w: Timeout must be >= 0", ErrInvalidConfig)

@@ -228,6 +228,12 @@ type BotConfig struct {
 	OpenAITemperature  float64 // env BOT_OPENAI_TEMPERATURE; <0 means model default
 	OpenAITopP         float64 // env BOT_OPENAI_TOP_P;        <0 means model default
 	OpenAIMaxTokens    int     // env BOT_OPENAI_MAX_TOKENS;   0  means model default
+	// OpenAIReasoningEffort sets `reasoning_effort` on every OpenAI call
+	// (env BOT_OPENAI_REASONING_EFFORT). "" sends nothing. "none" turns
+	// the reasoning pass off — the setting that makes a reasoning model
+	// answer at non-reasoning latency. Rejected at boot if not one of
+	// none/minimal/low/medium/high/xhigh/max.
+	OpenAIReasoningEffort string
 	// OpenAIStore sends `store: true` so request and response appear at
 	// platform.openai.com/logs. Default false — enabling it retains prompt
 	// + response content on OpenAI for 30 days.
