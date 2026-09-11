@@ -163,3 +163,24 @@ func (h *ExamHandler) HandleGetExamProgress(w http.ResponseWriter, r *http.Reque
 	}
 	response.WriteJson(w, res, nil)
 }
+
+// POST /exams/journeys/mark
+func (h *ExamHandler) HandleMarkExamJourney(w http.ResponseWriter, r *http.Request) {
+	var req dto.MarkExamJourneyReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, ok := h.uid(w, r)
+	if !ok {
+		return
+	}
+	req.UserID = uid
+
+	res, err := h.examSvc.MarkExamJourney(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}

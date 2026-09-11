@@ -146,3 +146,77 @@ func TestValidateSubmitExam(t *testing.T) {
 		}
 	})
 }
+
+func TestValidateMarkExamJourney(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		req      *dto.MarkExamJourneyReq
+		wantCode status.StatusCode
+		wantSt   enum.UserExamStatusType
+	}{
+		{"missing profile", &dto.MarkExamJourneyReq{UserExamID: 1, Status: "COMPLETE"}, status.EXAM_MISSING_PROFILE_ID, ""},
+		{"missing journey id", &dto.MarkExamJourneyReq{ProfileID: 1, Status: "COMPLETE"}, status.EXAM_MISSING_JOURNEY_ID, ""},
+		{"empty status", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1}, status.EXAM_INVALID_JOURNEY_STATUS, ""},
+		{"ACTIVE is not an ending", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1, Status: "ACTIVE"}, status.EXAM_INVALID_JOURNEY_STATUS, ""},
+		{"DELETED is not an ending", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1, Status: "DELETED"}, status.EXAM_INVALID_JOURNEY_STATUS, ""},
+		{"unknown word", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1, Status: "DONE"}, status.EXAM_INVALID_JOURNEY_STATUS, ""},
+		{"complete, normalised", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1, Status: " complete "}, 0, enum.UserExamStatusComplete},
+		{"cancel, normalised", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1, Status: "cancel"}, 0, enum.UserExamStatusCancel},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, err := ValidateMarkExamJourney(ctx, tc.req)
+			if tc.wantCode != 0 {
+				if code := codeOf(t, err); code != tc.wantCode {
+					t.Errorf("code = %d, want %d", code, tc.wantCode)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got.Status != tc.wantSt {
+				t.Errorf("Status = %q, want %q", got.Status, tc.wantSt)
+			}
+			if tc.req.Status != string(tc.wantSt) {
+				t.Errorf("request status not normalised in place: %q", tc.req.Status)
+			}
+		})
+	}
+}
+
+func TestValidateGetExamStatsStatusFilter(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("blank status means no filter", func(t *testing.T) {
+		blank := "  "
+		req := &dto.GetExamStatsReq{ProfileID: 1, Status: &blank}
+		if err := ValidateGetExamStats(ctx, req); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if req.Status != nil {
+			t.Errorf("blank status should be dropped, got %q", *req.Status)
+		}
+	})
+
+	t.Run("known status is normalised", func(t *testing.T) {
+		raw := "active"
+		req := &dto.GetExamStatsReq{ProfileID: 1, Status: &raw}
+		if err := ValidateGetExamStats(ctx, req); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if req.Status == nil || *req.Status != "ACTIVE" {
+			t.Errorf("Status = %v, want ACTIVE", req.Status)
+		}
+	})
+
+	t.Run("unknown status is rejected", func(t *testing.T) {
+		raw := "OPEN"
+		req := &dto.GetExamStatsReq{ProfileID: 1, Status: &raw}
+		if code := codeOf(t, ValidateGetExamStats(ctx, req)); code != status.EXAM_INVALID_JOURNEY_STATUS {
+			t.Errorf("code = %d, want EXAM_INVALID_JOURNEY_STATUS", code)
+		}
+	})
+}

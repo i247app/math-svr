@@ -72,10 +72,11 @@ func (s *Service) loadOwnedProfile(ctx context.Context, userID *int64, profileID
 // resolvePlacement decides how hard the next exam should be.
 //
 // Grade, in order of preference: what the client pinned, then what the
-// child has been MEASURED at for this exam type, then the class their
-// profile says they attend, and finally kindergarten. The measurement
-// outranks the profile on purpose — the two are different facts, and a
-// child in Grade 1 may well be answering Grade 3 material.
+// child has been MEASURED at for this exam type (the open journey first,
+// then the most recently COMPLETED one), then the class their profile says
+// they attend, and finally kindergarten. The measurement outranks the
+// profile on purpose — the two are different facts, and a child in Grade 1
+// may well be answering Grade 3 material.
 //
 // Grade is the only axis. There is no level to resolve: the teaching team
 // has not defined one, so req_level is never set and stays NULL on every
@@ -83,20 +84,31 @@ func (s *Service) loadOwnedProfile(ctx context.Context, userID *int64, profileID
 // and the same number must then reach the cache tag, the stored row and
 // the prompt — resolve it once, in this function, not in each consumer.
 func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq, examType enum.ExamType, profile *profileDomain.Profile) (int, error) {
-	stats, err := s.statsRepo.FindByUserProfileType(ctx, profile.UserId(), profile.ProfileId(), string(examType))
+	if req.Grade != nil {
+		return *req.Grade, nil
+	}
+
+	// The open journey is the freshest measurement there is.
+	active, err := s.statsRepo.FindActiveByUserProfileType(ctx, profile.UserId(), profile.ProfileId(), string(examType))
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	return s.resolveGrade(ctx, req, stats, profile)
-}
-
-func (s *Service) resolveGrade(ctx context.Context, req *dto.GenerateExamReq, stats *examDomain.UserExam, profile *profileDomain.Profile) (int, error) {
-	switch {
-	case req.Grade != nil:
-		return *req.Grade, nil
-	case stats != nil && stats.ResGrade() != nil:
-		return *stats.ResGrade(), nil
+	if active != nil && active.ResGrade() != nil {
+		return *active.ResGrade(), nil
 	}
+
+	// No open journey: the child is starting one. A journey that was
+	// COMPLETED hands its measured grade forward — finishing a run does
+	// not make the child forget what they know. A CANCELLED one does not:
+	// it was abandoned, and the next run starts from the profile again.
+	completed, err := s.statsRepo.FindLatestCompletedByUserProfileType(ctx, profile.UserId(), profile.ProfileId(), string(examType))
+	if err != nil {
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if completed != nil && completed.ResGrade() != nil {
+		return *completed.ResGrade(), nil
+	}
+
 	return s.gradeFromProfile(ctx, profile)
 }
 

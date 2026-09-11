@@ -101,19 +101,44 @@ type IUserAiExamRepository interface {
 	ListProgressPoints(ctx context.Context, params ProgressPointsParams) ([]*ProgressPoint, error)
 }
 
-// IUserExamRepository owns the lifetime totals.
+// ListJourneysFilter narrows a child's journey history. Status nil means
+// every journey regardless of state; ExamType nil means every type.
+type ListJourneysFilter struct {
+	ExamType *string
+	Status   *string
+}
+
+// IUserExamRepository owns journeys.
 //
-// Upsert accumulates delta onto the (user, profile, type) row, creating it
-// when absent. The placement fields carried on e (review, grade, level)
-// overwrite; the counters in delta add. It must be called inside the same
-// transaction as the attempt update, or a crash between the two leaves the
-// totals disagreeing with the attempt history.
+// Opening and accumulating are two explicit operations, not one upsert.
+// Create is a plain INSERT: it succeeds only when no other row holds the
+// (user, profile, type) slot, and reports ErrJourneyConflict otherwise.
+// Accumulate is an UPDATE by id that carries ACTIVE in its WHERE clause,
+// so totals can never be folded into a journey that has ended. Either
+// call must run in the same transaction as the attempt update, or a
+// crash between the two leaves the totals disagreeing with the history.
+//
+// MarkStatus is the only way a journey ends. It too carries ACTIVE as the
+// expected state and reports ErrJourneyNotActive when no row matched, so
+// two marks racing on one journey cannot both "win".
 type IUserExamRepository interface {
-	FindByUserProfileType(ctx context.Context, userId, profileId int64, examType string) (*UserExam, error)
-	// ListByUserProfile returns every exam type's lifetime row for one
-	// child — at most three rows, and what a statistics screen shows.
-	ListByUserProfile(ctx context.Context, userId, profileId int64) ([]*UserExam, error)
-	Upsert(ctx context.Context, e *UserExam, delta StatsDelta) error
+	FindByUserExamId(ctx context.Context, userExamId int64) (*UserExam, error)
+	// FindActiveByUserProfileType returns the open journey, or (nil, nil)
+	// when the child has none of that type right now.
+	FindActiveByUserProfileType(ctx context.Context, userId, profileId int64, examType string) (*UserExam, error)
+	// FindLatestCompletedByUserProfileType returns the most recently
+	// COMPLETED journey of that type — what a new journey inherits its
+	// starting grade from. CANCELLED journeys are skipped on purpose.
+	FindLatestCompletedByUserProfileType(ctx context.Context, userId, profileId int64, examType string) (*UserExam, error)
+	// ListByUserProfile returns a child's journeys, newest first within
+	// each exam type.
+	ListByUserProfile(ctx context.Context, userId, profileId int64, filter ListJourneysFilter) ([]*UserExam, error)
+	// Create opens a journey with delta as its first totals.
+	Create(ctx context.Context, e *UserExam, delta StatsDelta) error
+	// Accumulate folds delta into the OPEN journey userExamId and
+	// overwrites its placement fields from e.
+	Accumulate(ctx context.Context, userExamId int64, e *UserExam, delta StatsDelta) error
+	MarkStatus(ctx context.Context, userExamId int64, newStatus string, endedDt mtime.MathTime) error
 }
 
 // IUserExamDetailRepository owns the per-question log.

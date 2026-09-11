@@ -18,6 +18,7 @@ type UserExamModel struct {
 	ResGrade           *int
 	ResLevel           *int
 	LastSubmittedDt    *time.Time
+	EndedDt            *time.Time
 	Note               *string
 	UserExamStatus     *string
 	Status             string

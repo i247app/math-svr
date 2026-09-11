@@ -8,9 +8,10 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
-// GetExamStatsQuery reads a child's lifetime records. ExamType narrows it
-// to one; leaving it nil returns every type the child has ever submitted,
-// which is at most three rows.
+// GetExamStatsQuery reads a child's journeys. ExamType narrows to one
+// type, Status to one lifecycle state (ACTIVE for "where am I now",
+// COMPLETE / CANCEL for history); both nil returns everything, newest
+// first inside each type.
 //
 // A child who has never submitted has no row at all, and that is not an
 // error: the caller renders an empty state rather than a failure.
@@ -18,6 +19,7 @@ type GetExamStatsQuery struct {
 	UserID    int64
 	ProfileID int64
 	ExamType  *string
+	Status    *string
 }
 
 type GetExamStatsQueryHandler struct {
@@ -29,18 +31,10 @@ func NewGetExamStatsQueryHandler(statsRepo exam.IUserExamRepository) *GetExamSta
 }
 
 func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQuery) ([]*exam.UserExam, error) {
-	if q.ExamType != nil && *q.ExamType != "" {
-		row, err := h.statsRepo.FindByUserProfileType(ctx, q.UserID, q.ProfileID, *q.ExamType)
-		if err != nil {
-			return nil, errs.NewError(ctx, status.FAIL, nil, err)
-		}
-		if row == nil {
-			return nil, nil
-		}
-		return []*exam.UserExam{row}, nil
-	}
-
-	rows, err := h.statsRepo.ListByUserProfile(ctx, q.UserID, q.ProfileID)
+	rows, err := h.statsRepo.ListByUserProfile(ctx, q.UserID, q.ProfileID, exam.ListJourneysFilter{
+		ExamType: q.ExamType,
+		Status:   q.Status,
+	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}

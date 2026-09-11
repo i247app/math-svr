@@ -133,6 +133,17 @@ func ValidateGetExamStats(ctx context.Context, req *dto.GetExamStatsReq) error {
 	if req.ProfileID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
 	}
+	if req.Status != nil {
+		normalized := strings.ToUpper(strings.TrimSpace(*req.Status))
+		if normalized == "" {
+			req.Status = nil
+		} else {
+			if !enum.UserExamStatusType(normalized).IsValid() {
+				return errs.NewError(ctx, status.EXAM_INVALID_JOURNEY_STATUS, nil, ErrJourneyStatusInvalid)
+			}
+			req.Status = &normalized
+		}
+	}
 	if req.ExamType != nil {
 		normalized := strings.ToUpper(strings.TrimSpace(*req.ExamType))
 		if normalized == "" {
@@ -213,4 +224,28 @@ func ValidateExamProgress(ctx context.Context, req *dto.ExamProgressReq) error {
 		req.Limit = ProgressLimitMax
 	}
 	return nil
+}
+
+// ValidatedMarkJourney carries the normalised status so the service does
+// not re-parse the request's string.
+type ValidatedMarkJourney struct {
+	Status enum.UserExamStatusType
+}
+
+// ValidateMarkExamJourney checks an end-of-journey request. Only COMPLETE
+// and CANCEL are accepted here: ACTIVE would be a reopen, which does not
+// exist, and DELETED is a soft-delete with its own path.
+func ValidateMarkExamJourney(ctx context.Context, req *dto.MarkExamJourneyReq) (ValidatedMarkJourney, error) {
+	if req.ProfileID <= 0 {
+		return ValidatedMarkJourney{}, errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+	if req.UserExamID <= 0 {
+		return ValidatedMarkJourney{}, errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrJourneyIDRequired)
+	}
+	st := enum.UserExamStatusType(strings.ToUpper(strings.TrimSpace(req.Status)))
+	if !st.IsEnding() {
+		return ValidatedMarkJourney{}, errs.NewError(ctx, status.EXAM_INVALID_JOURNEY_STATUS, nil, ErrJourneyStatusInvalid)
+	}
+	req.Status = string(st)
+	return ValidatedMarkJourney{Status: st}, nil
 }

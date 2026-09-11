@@ -108,29 +108,34 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 
-		stats, err := repos.UserExam.FindByUserProfileType(ctx, cmd.UserID, cmd.ProfileID, attempt.ReqExamType())
+		// The sitting folds into the OPEN journey of its type; when the
+		// child has none (never started, or the last one was ended) the
+		// upsert below opens a new one.
+		// The sitting folds into the OPEN journey of its type; when the
+		// child has none (never started, or the last one was ended) a new
+		// journey is opened. applyStats returns the id of whichever row
+		// actually took the totals — the detail rows are written against
+		// THAT, never against an id minted up front, so a lost race can
+		// not leave a log pointing at a journey that does not exist.
+		journeyID, err := h.applyStats(ctx, repos, cmd, attempt, scored)
+		if err != nil {
+			return err
+		}
+
+		updatedStats, err := repos.UserExam.FindByUserExamId(ctx, journeyID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-
-		userExamID, err := h.resolveUserExamID(ctx, repos, stats)
-		if err != nil {
-			return err
+		if updatedStats == nil {
+			return errs.NewError(ctx, status.FAIL, nil,
+				fmt.Errorf("exam: journey %d vanished inside the transaction", journeyID))
 		}
 
-		if err := h.writeDetails(ctx, repos, attempt, userExamID, scored.Outcomes); err != nil {
-			return err
-		}
-
-		if err := h.applyStats(ctx, repos, cmd, attempt, stats, userExamID, scored); err != nil {
+		if err := h.writeDetails(ctx, repos, attempt, updatedStats.UserExamId(), scored.Outcomes); err != nil {
 			return err
 		}
 
 		fresh, err := repos.UserAiExam.FindByUserAiExamId(ctx, attempt.UserAiExamId())
-		if err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
-		updatedStats, err := repos.UserExam.FindByUserProfileType(ctx, cmd.UserID, cmd.ProfileID, attempt.ReqExamType())
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -170,16 +175,6 @@ func (h *SubmitExamCommandHandler) loadOpenAttempt(ctx context.Context, repos tr
 			fmt.Errorf("exam: attempt %d is not in progress", cmd.UserAiExamID))
 	}
 	return attempt, nil
-}
-
-// resolveUserExamID returns the lifetime row's external id, minting one
-// when this is the child's first submission of that exam type. The id is
-// needed before the detail rows are written, since each one carries it.
-func (h *SubmitExamCommandHandler) resolveUserExamID(ctx context.Context, repos transaction.Repositories, stats *exam.UserExam) (int64, error) {
-	if stats != nil {
-		return stats.UserExamId(), nil
-	}
-	return seqgen.Next(ctx, repos.Seq, seq.NameUserExam)
 }
 
 // writeDetails logs one row per ANSWERED question, snapshotting what the
@@ -228,18 +223,81 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 	return nil
 }
 
-// applyStats folds the sitting into the lifetime row and re-derives the
-// child's placement from the totals INCLUDING it — deriving before the
-// fold would describe the 	child as they were one exam ago.
+// applyStats folds the sitting into the open journey, opening one when
+// there is none, and returns the id of the row that took the totals.
+//
+// The two paths are explicit. When no journey is open, Create INSERTs a
+// fresh row; if that collides — another submit opened the journey a
+// moment earlier — the open journey is re-read and the sitting is
+// accumulated into it instead. When one is open, Accumulate UPDATEs it
+// under an ACTIVE guard. Neither path can quietly land the totals in a
+// row that has ended: an INSERT that collides with one is an error, and
+// an UPDATE against one matches nothing.
+//
+// Placement is derived from the totals INCLUDING this sitting — deriving
+// before the fold would describe the child as they were one exam ago.
 func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transaction.Repositories,
-	cmd SubmitExamCommand, attempt *exam.UserAiExam, stats *exam.UserExam,
-	userExamID int64, scored *scorer.DetailedResult) error {
+	cmd SubmitExamCommand, attempt *exam.UserAiExam, scored *scorer.DetailedResult) (int64, error) {
 
 	delta := exam.StatsDelta{
 		TotalQuestions: scored.TotalQuestions,
 		CorrectNumber:  scored.CorrectNumber,
 		SkippedNumber:  scored.SkippedNumber,
 	}
+
+	journey, err := repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UserID, cmd.ProfileID, attempt.ReqExamType())
+	if err != nil {
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	if journey == nil {
+		userExamID, err := seqgen.Next(ctx, repos.Seq, seq.NameUserExam)
+		if err != nil {
+			return 0, err
+		}
+		row := h.journeyRow(cmd, attempt, nil, delta, scored, userExamID)
+		err = repos.UserExam.Create(ctx, row, delta)
+		if err == nil {
+			return userExamID, nil
+		}
+		if !errors.Is(err, exam.ErrJourneyConflict) {
+			return 0, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+
+		// Lost the race to open the journey. Whoever won is now the open
+		// row; read it back and accumulate exactly as if it had been
+		// there all along.
+		journey, err = repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UserID, cmd.ProfileID, attempt.ReqExamType())
+		if err != nil {
+			return 0, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if journey == nil {
+			// Collided, yet nothing is open: the row that took the slot is
+			// not ACTIVE. That is a schema or data problem (an ended
+			// journey still holding the unique slot, or a reused
+			// user_exam_id), and it must fail loudly here rather than be
+			// absorbed into the wrong row.
+			return 0, errs.NewError(ctx, status.FAIL, nil,
+				fmt.Errorf("exam: opening a journey for profile %d type %s collided with a row that is not active — check uk_active_journey and ma_seqs",
+					cmd.ProfileID, attempt.ReqExamType()))
+		}
+	}
+
+	row := h.journeyRow(cmd, attempt, journey, delta, scored, journey.UserExamId())
+	if err := repos.UserExam.Accumulate(ctx, journey.UserExamId(), row, delta); err != nil {
+		if errors.Is(err, exam.ErrJourneyNotActive) {
+			return 0, errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
+		}
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	return journey.UserExamId(), nil
+}
+
+// journeyRow builds the row the repository writes: identity plus the
+// placement derived from the totals after this sitting is folded in.
+// existing is nil when the sitting opens a new journey.
+func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *exam.UserAiExam,
+	existing *exam.UserExam, delta exam.StatsDelta, scored *scorer.DetailedResult, userExamID int64) *exam.UserExam {
 
 	in := placement.Input{
 		ExamGrade:           attempt.ReqGrade(),
@@ -248,11 +306,11 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 		LifetimeCorrect:     delta.CorrectNumber,
 		LifetimeSkipped:     delta.SkippedNumber,
 	}
-	if stats != nil {
-		in.CurrentGrade = stats.ResGrade()
-		in.LifetimeTotal += stats.ResTotalQuestions()
-		in.LifetimeCorrect += stats.ResCorrectNumber()
-		in.LifetimeSkipped += stats.ResSkippedNumber()
+	if existing != nil {
+		in.CurrentGrade = existing.ResGrade()
+		in.LifetimeTotal += existing.ResTotalQuestions()
+		in.LifetimeCorrect += existing.ResCorrectNumber()
+		in.LifetimeSkipped += existing.ResSkippedNumber()
 	}
 	derived := placement.Derive(in)
 
@@ -264,11 +322,7 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 	row.SetResReview(&derived.Review)
 	row.SetResGrade(derived.Grade)
 	row.SetLastSubmittedDt(mtime.Now())
-
-	if err := repos.UserExam.Upsert(ctx, row, delta); err != nil {
-		return errs.NewError(ctx, status.FAIL, nil, err)
-	}
-	return nil
+	return row
 }
 
 // decodeExamQuestions reads the stored round. An empty or malformed

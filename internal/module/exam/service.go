@@ -26,6 +26,7 @@ import (
 type Service struct {
 	generateCmd     *command.GenerateExamCommandHandler
 	submitCmd       *command.SubmitExamCommandHandler
+	markJourneyCmd  *command.MarkUserExamCommandHandler
 	getAttemptQuery *query.GetExamAttemptQueryHandler
 	listQuery       *query.ListExamAttemptsQueryHandler
 	statsQuery      *query.GetExamStatsQueryHandler
@@ -55,6 +56,7 @@ func NewService(
 	return &Service{
 		generateCmd:     command.NewGenerateExamCommandHandler(uow),
 		submitCmd:       command.NewSubmitExamCommandHandler(uow),
+		markJourneyCmd:  command.NewMarkUserExamCommandHandler(uow),
 		getAttemptQuery: query.NewGetExamAttemptQueryHandler(attemptRepo, aiExamRepo, detailRepo),
 		listQuery:       query.NewListExamAttemptsQueryHandler(attemptRepo, aiExamRepo),
 		statsQuery:      query.NewGetExamStatsQueryHandler(statsRepo),
@@ -247,11 +249,38 @@ func (s *Service) GetExamStats(ctx context.Context, req *dto.GetExamStatsReq) (*
 		UserID:    profile.UserId(),
 		ProfileID: profile.ProfileId(),
 		ExamType:  req.ExamType,
+		Status:    req.Status,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &dto.GetExamStatsRes{Stats: dto.StatsToResponse(rows)}, nil
+}
+
+// MarkExamJourney ends a journey as COMPLETE or CANCEL. From then on the
+// next submission of that exam type opens a fresh journey; the ended one
+// stays readable as history, with every attempt and detail row it
+// accumulated still pointing at it.
+func (s *Service) MarkExamJourney(ctx context.Context, req *dto.MarkExamJourneyReq) (*dto.MarkExamJourneyRes, error) {
+	validated, err := ValidateMarkExamJourney(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	profile, err := s.loadOwnedProfile(ctx, req.UserID, req.ProfileID)
+	if err != nil {
+		return nil, err
+	}
+
+	journey, err := s.markJourneyCmd.Handle(ctx, command.MarkUserExamCommand{
+		UserExamID: req.UserExamID,
+		UserID:     profile.UserId(),
+		ProfileID:  profile.ProfileId(),
+		Status:     validated.Status,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &dto.MarkExamJourneyRes{Stats: dto.StatsToSingleResponse(journey)}, nil
 }
 
 // GetExamProgress returns the learning-progress chart for one child.

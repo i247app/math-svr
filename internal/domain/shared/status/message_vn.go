@@ -690,6 +690,16 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Khoảng thời gian không hợp lệ"
 	case EXAM_ANALYTICS_INVALID_TZ:
 		return "Múi giờ không hợp lệ"
+	case EXAM_JOURNEY_NOT_FOUND:
+		return "Không tìm thấy hành trình kiểm tra"
+	case EXAM_JOURNEY_NOT_OWNED:
+		return "Hành trình kiểm tra này không thuộc về hồ sơ hiện tại"
+	case EXAM_JOURNEY_ALREADY_ENDED:
+		return "Hành trình kiểm tra này đã kết thúc"
+	case EXAM_MISSING_JOURNEY_ID:
+		return "Thiếu user_exam_id"
+	case EXAM_INVALID_JOURNEY_STATUS:
+		return "Trạng thái phải là COMPLETE hoặc CANCEL"
 
 	default:
 		return ""

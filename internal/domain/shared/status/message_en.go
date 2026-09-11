@@ -690,6 +690,16 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Invalid date range"
 	case EXAM_ANALYTICS_INVALID_TZ:
 		return "Invalid timezone offset"
+	case EXAM_JOURNEY_NOT_FOUND:
+		return "Exam journey not found"
+	case EXAM_JOURNEY_NOT_OWNED:
+		return "This exam journey does not belong to the current profile"
+	case EXAM_JOURNEY_ALREADY_ENDED:
+		return "This exam journey has already ended"
+	case EXAM_MISSING_JOURNEY_ID:
+		return "user_exam_id is required"
+	case EXAM_INVALID_JOURNEY_STATUS:
+		return "status must be COMPLETE or CANCEL"
 
 	default:
 		return ""

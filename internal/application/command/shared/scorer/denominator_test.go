@@ -10,16 +10,16 @@ import (
 // tenQuestions builds a payload where the right answer is always "A", so
 // a test can pick a wrong answer simply by choosing "B".
 const tenQuestions = `[
-{"question_number":1,"question_name":"1+1","answers":[{"label":"A","content":"2"},{"label":"B","content":"3"}],"right_answer":"A","topic":"add"},
-{"question_number":2,"question_name":"2+2","answers":[{"label":"A","content":"4"},{"label":"B","content":"5"}],"right_answer":"A","topic":"add"},
-{"question_number":3,"question_name":"3+3","answers":[{"label":"A","content":"6"},{"label":"B","content":"7"}],"right_answer":"A","topic":"add"},
-{"question_number":4,"question_name":"4+4","answers":[{"label":"A","content":"8"},{"label":"B","content":"9"}],"right_answer":"A","topic":"add"},
-{"question_number":5,"question_name":"5+5","answers":[{"label":"A","content":"10"},{"label":"B","content":"11"}],"right_answer":"A","topic":"add"},
-{"question_number":6,"question_name":"6+6","answers":[{"label":"A","content":"12"},{"label":"B","content":"13"}],"right_answer":"A","topic":"sub"},
-{"question_number":7,"question_name":"7+7","answers":[{"label":"A","content":"14"},{"label":"B","content":"15"}],"right_answer":"A","topic":"sub"},
-{"question_number":8,"question_name":"8+8","answers":[{"label":"A","content":"16"},{"label":"B","content":"17"}],"right_answer":"A","topic":"sub"},
-{"question_number":9,"question_name":"9+9","answers":[{"label":"A","content":"18"},{"label":"B","content":"19"}],"right_answer":"A","topic":"sub"},
-{"question_number":10,"question_name":"10+10","answers":[{"label":"A","content":"20"},{"label":"B","content":"21"}],"right_answer":"A","topic":"sub"}]`
+{"question_number":1,"question_name":"1+1","answers":[{"label":"A","content":"2"},{"label":"B","content":"3"}],"right_answer_label":"A","question_topic":"add"},
+{"question_number":2,"question_name":"2+2","answers":[{"label":"A","content":"4"},{"label":"B","content":"5"}],"right_answer_label":"A","question_topic":"add"},
+{"question_number":3,"question_name":"3+3","answers":[{"label":"A","content":"6"},{"label":"B","content":"7"}],"right_answer_label":"A","question_topic":"add"},
+{"question_number":4,"question_name":"4+4","answers":[{"label":"A","content":"8"},{"label":"B","content":"9"}],"right_answer_label":"A","question_topic":"add"},
+{"question_number":5,"question_name":"5+5","answers":[{"label":"A","content":"10"},{"label":"B","content":"11"}],"right_answer_label":"A","question_topic":"add"},
+{"question_number":6,"question_name":"6+6","answers":[{"label":"A","content":"12"},{"label":"B","content":"13"}],"right_answer_label":"A","question_topic":"sub"},
+{"question_number":7,"question_name":"7+7","answers":[{"label":"A","content":"14"},{"label":"B","content":"15"}],"right_answer_label":"A","question_topic":"sub"},
+{"question_number":8,"question_name":"8+8","answers":[{"label":"A","content":"16"},{"label":"B","content":"17"}],"right_answer_label":"A","question_topic":"sub"},
+{"question_number":9,"question_name":"9+9","answers":[{"label":"A","content":"18"},{"label":"B","content":"19"}],"right_answer_label":"A","question_topic":"sub"},
+{"question_number":10,"question_name":"10+10","answers":[{"label":"A","content":"20"},{"label":"B","content":"21"}],"right_answer_label":"A","question_topic":"sub"}]`
 
 func answerAll(n int, label string) []question.StudentAnswer {
 	out := make([]question.StudentAnswer, 0, n)

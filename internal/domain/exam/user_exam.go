@@ -4,10 +4,15 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
-// UserExam is the lifetime record for one (user, profile, exam type)
-// triple — exactly one row per triple, accumulated on every submit. A user
-// account holds several profiles (one per child), so the pair, not the
-// user alone, is the subject of the statistics.
+// UserExam is one JOURNEY: a stretch of one exam type that a (user,
+// profile) pair works through and then closes. Every submission of that
+// type folds into the open journey; once it is marked COMPLETE or CANCEL,
+// the next submission opens a new one. A user account holds several
+// profiles (one per child), so the pair, not the user alone, is the
+// subject of the statistics.
+//
+// At most one journey per triple is ACTIVE at a time — the database holds
+// that line (uk_active_journey), not this type.
 //
 // resTotalQuestions accumulates ANSWERED questions, never the size of the
 // exams. Three ten-question rounds with six answers each give 18, not 30,
@@ -38,6 +43,7 @@ type UserExam struct {
 	resLevel  *int
 
 	lastSubmittedDt mtime.MathTime
+	endedDt         mtime.MathTime
 
 	note           *string
 	userExamStatus *string
@@ -76,6 +82,8 @@ func (u *UserExam) ResLevel() *int                      { return u.resLevel }
 func (u *UserExam) SetResLevel(l *int)                  { u.resLevel = l }
 func (u *UserExam) LastSubmittedDt() mtime.MathTime     { return u.lastSubmittedDt }
 func (u *UserExam) SetLastSubmittedDt(t mtime.MathTime) { u.lastSubmittedDt = t }
+func (u *UserExam) EndedDt() mtime.MathTime             { return u.endedDt }
+func (u *UserExam) SetEndedDt(t mtime.MathTime)         { u.endedDt = t }
 func (u *UserExam) Note() *string                       { return u.note }
 func (u *UserExam) SetNote(s *string)                   { u.note = s }
 func (u *UserExam) UserExamStatus() *string             { return u.userExamStatus }

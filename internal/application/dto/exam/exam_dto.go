@@ -60,10 +60,28 @@ type ListExamsReq struct {
 	Size      int     `json:"size,omitempty"`
 }
 
+// GetExamStatsReq reads a child's journeys. Status narrows to one
+// lifecycle state — "ACTIVE" is the natural filter for a dashboard
+// showing where the child is now; omit it for the full history.
 type GetExamStatsReq struct {
 	UserID    *int64  `json:"-"`
 	ProfileID int64   `json:"profile_id"`
 	ExamType  *string `json:"exam_type,omitempty"`
+	Status    *string `json:"status,omitempty"`
+}
+
+// MarkExamJourneyReq ends one journey. Status is COMPLETE or CANCEL; the
+// difference is what the next journey of that type inherits (see
+// enum.UserExamStatusType).
+type MarkExamJourneyReq struct {
+	UserID     *int64 `json:"-"`
+	ProfileID  int64  `json:"profile_id"`
+	UserExamID int64  `json:"user_exam_id"`
+	Status     string `json:"status"`
+}
+
+type MarkExamJourneyRes struct {
+	Stats *ExamStats `json:"stats"`
 }
 
 // ExamResult is one sitting's score. Nil until the exam is submitted.
@@ -119,9 +137,13 @@ type ExamAnswerDetail struct {
 	IsCorrect          bool    `json:"is_correct"`
 }
 
-// ExamStats is one lifetime record — one row per (child, exam type).
+// ExamStats is one JOURNEY — a stretch of one exam type the child worked
+// through. UserExamID is what a client sends back to end it; Status says
+// whether it is the open one (ACTIVE) or history (COMPLETE / CANCEL).
 type ExamStats struct {
+	UserExamID      int64   `json:"user_exam_id"`
 	ExamType        string  `json:"exam_type"`
+	Status          string  `json:"status"`
 	TotalQuestions  int     `json:"total_questions"`
 	CorrectNumber   int     `json:"correct_number"`
 	SkippedNumber   int     `json:"skipped_number"`
@@ -129,6 +151,8 @@ type ExamStats struct {
 	Review          *string `json:"review,omitempty"`
 	Grade           *int    `json:"grade,omitempty"`
 	LastSubmittedDt string  `json:"last_submitted_dt,omitempty"`
+	EndedDt         string  `json:"ended_dt,omitempty"`
+	CreateDt        string  `json:"create_dt"`
 }
 
 type GenerateExamRes struct {
@@ -244,7 +268,9 @@ func StatsToResponse(rows []*domain.UserExam) []ExamStats {
 	out := make([]ExamStats, 0, len(rows))
 	for _, r := range rows {
 		s := ExamStats{
+			UserExamID:      r.UserExamId(),
 			ExamType:        r.ReqExamType(),
+			CreateDt:        r.CreateDt().String(),
 			TotalQuestions:  r.ResTotalQuestions(),
 			CorrectNumber:   r.ResCorrectNumber(),
 			SkippedNumber:   r.ResSkippedNumber(),
@@ -252,8 +278,14 @@ func StatsToResponse(rows []*domain.UserExam) []ExamStats {
 			Review:          r.ResReview(),
 			Grade:           r.ResGrade(),
 		}
+		if st := r.UserExamStatus(); st != nil {
+			s.Status = *st
+		}
 		if !r.LastSubmittedDt().IsZero() {
 			s.LastSubmittedDt = r.LastSubmittedDt().String()
+		}
+		if !r.EndedDt().IsZero() {
+			s.EndedDt = r.EndedDt().String()
 		}
 		out = append(out, s)
 	}

@@ -41,9 +41,10 @@ CREATE TABLE IF NOT EXISTS ma_user_exams (
   res_level            TINYINT UNSIGNED DEFAULT NULL,        -- 1..10; NULL until a rule exists
 
   last_submitted_dt    DATETIME(6)  DEFAULT NULL,
+  ended_dt             DATETIME(6)  DEFAULT NULL,
 
   note                 VARCHAR(500) DEFAULT NULL,
-  user_exam_status     VARCHAR(32)  DEFAULT 'ACTIVE',        -- ACTIVE, DELETED
+  user_exam_status     VARCHAR(32)  DEFAULT 'ACTIVE',        -- ACTIVE (open), COMPLETE, CANCEL (ended), DELETED
   status               VARCHAR(32)  DEFAULT 'ACTIVE',
   create_id            BIGINT UNSIGNED DEFAULT NULL,
   create_dt            DATETIME(6)  DEFAULT CURRENT_TIMESTAMP(6),
@@ -54,9 +55,26 @@ CREATE TABLE IF NOT EXISTS ma_user_exams (
   -- The business key, enforced by the database rather than by convention.
   -- It is also what makes the submit-time upsert
   -- (INSERT ... ON DUPLICATE KEY UPDATE) safe when two submits race.
-  UNIQUE KEY uk_user_profile_type (user_id, profile_id, req_exam_type),
+  -- active_key is 1 while the journey is open and NULL once it has ended.
+  -- MySQL's UNIQUE index treats NULLs as distinct, so uk_active_journey
+  -- admits any number of ended journeys per (user, profile, type) while
+  -- refusing a second open one. The database holds that line, not code.
+  active_key           TINYINT UNSIGNED
+    GENERATED ALWAYS AS (IF(user_exam_status = 'ACTIVE', 1, NULL)) STORED,
+
+  UNIQUE KEY uk_active_journey (user_id, profile_id, req_exam_type, active_key),
   KEY ix_profile_type (profile_id, req_exam_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ALTER TABLE ma_user_exams DROP INDEX uk_active_journey;
+
+ALTER TABLE ma_user_exams
+  ADD COLUMN active_key TINYINT UNSIGNED
+    GENERATED ALWAYS AS (IF(user_exam_status = 'ACTIVE', 1, NULL)) STORED
+    AFTER user_exam_status;
+
+ALTER TABLE ma_user_exams
+  ADD UNIQUE KEY uk_active_journey (user_id, profile_id, req_exam_type, active_key);
 
 INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
 ('user_exam', 0, 'UE', 8);   -- user_exam_id: UE00000001...

@@ -79,5 +79,9 @@ CREATE TABLE IF NOT EXISTS ma_user_exam_details (
   KEY ix_user_exam_grade (user_exam_id, question_grade, is_correct)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+ALTER TABLE ma_user_exam_details
+  ADD KEY ix_user_exam_level (user_exam_id, question_level, is_correct);
+
+
 INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
 ('user_exam_detail', 0, 'UED', 8);   -- user_exam_detail_id: UED00000001...

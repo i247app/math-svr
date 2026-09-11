@@ -63,14 +63,41 @@ const (
 
 func (s AiExamStatusType) String() string { return string(s) }
 
-// UserExamStatusType is the business lifecycle of a lifetime statistics
-// row. There is no ARCHIVED state: totals are either live or deleted.
+// UserExamStatusType is the lifecycle of one JOURNEY — a stretch of one
+// exam type that a child works through and then closes.
+//
+// ACTIVE is the open journey; every submission of that type folds into it.
+// COMPLETE and CANCEL both end it. The difference is what the next journey
+// inherits: a COMPLETE journey's measured grade carries forward as the
+// starting point, a CANCEL journey is treated as abandoned and the next
+// one starts from the profile again. Both are terminal — an ended journey
+// is never reopened, a new row is opened instead.
 type UserExamStatusType string
 
 const (
-	UserExamStatusActive  UserExamStatusType = "ACTIVE"
-	UserExamStatusDeleted UserExamStatusType = "DELETED"
+	UserExamStatusActive   UserExamStatusType = "ACTIVE"
+	UserExamStatusComplete UserExamStatusType = "COMPLETE"
+	UserExamStatusCancel   UserExamStatusType = "CANCEL"
+	UserExamStatusDeleted  UserExamStatusType = "DELETED"
 )
+
+// IsValid accepts every lifecycle value, including DELETED, for callers
+// that filter on status.
+func (s UserExamStatusType) IsValid() bool {
+	switch s {
+	case UserExamStatusActive, UserExamStatusComplete, UserExamStatusCancel, UserExamStatusDeleted:
+		return true
+	default:
+		return false
+	}
+}
+
+// IsEnding reports whether a status is one a client may MARK a journey
+// with. DELETED is deliberately excluded: it is a soft-delete, not a way
+// to finish a journey, and reaches the row through a different path.
+func (s UserExamStatusType) IsEnding() bool {
+	return s == UserExamStatusComplete || s == UserExamStatusCancel
+}
 
 func (s UserExamStatusType) String() string { return string(s) }
 

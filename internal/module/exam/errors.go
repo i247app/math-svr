@@ -18,6 +18,8 @@ var (
 	ErrDuplicateAnswer         = errors.New("answers contain a duplicate question_number")
 	ErrQuestionNumberInvalid   = errors.New("question_number must be positive")
 	ErrAnswerLabelRequired     = errors.New("answer label is required")
+	ErrJourneyIDRequired       = errors.New("user_exam_id is required")
+	ErrJourneyStatusInvalid    = errors.New("status must be COMPLETE or CANCEL")
 	ErrBotAdapterNotConfigured = errors.New("bot adapter is not configured")
 	ErrModelReturnedNothing    = errors.New("model returned no questions")
 	ErrInvalidTz               = errors.New("tz must be a numeric offset such as +07:00")
