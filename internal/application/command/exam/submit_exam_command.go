@@ -88,7 +88,15 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 		// Answered-only denominator: this model counts what the child
 		// touched, not what they were served. SkippedNumber keeps the rest
 		// visible so a placement rule can tell "3/3 correct" from "10/10".
-		scored, err := scorer.ScoreQuestions(questions, cmd.Answers, cmd.Language, scorer.DenominatorAnsweredOnly)
+		// The child answered under THEIR served numbering and labels; the
+		// stored set and its answer key are canonical. Translate before
+		// grading, or every shuffled sitting scores as random guessing.
+		canonicalAnswers, err := canonicalAnswersFor(attempt, cmd.Answers)
+		if err != nil {
+			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS, map[string]any{"reason": err.Error()}, err)
+		}
+
+		scored, err := scorer.ScoreQuestions(questions, canonicalAnswers, cmd.Language, scorer.DenominatorAnsweredOnly)
 		if err != nil {
 			return errs.NewError(ctx, status.EXAM_GRADING_FAILED, nil, err)
 		}
@@ -323,6 +331,17 @@ func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *ex
 	row.SetResGrade(derived.Grade)
 	row.SetLastSubmittedDt(mtime.Now())
 	return row
+}
+
+// canonicalAnswersFor undoes the sitting's shuffle on the submitted
+// answers. A sitting with no recorded ordering (NULL shuffle_map) was
+// served as stored, and its answers pass through unchanged.
+func canonicalAnswersFor(attempt *exam.UserAiExam, served []question.StudentAnswer) ([]question.StudentAnswer, error) {
+	shuffle, err := question.ParseShuffle(attempt.ShuffleMap())
+	if err != nil {
+		return nil, err
+	}
+	return shuffle.ToCanonical(served)
 }
 
 // decodeExamQuestions reads the stored round. An empty or malformed

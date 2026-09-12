@@ -2,6 +2,7 @@ package exam
 
 import (
 	"encoding/json"
+	"sort"
 
 	"math-ai.com/math-ai/internal/application/dto/question"
 	domain "math-ai.com/math-ai/internal/domain/exam"
@@ -134,18 +135,26 @@ type ExamResponse struct {
 // UserAiExamID says which sitting it came from — redundant on a single
 // sitting's review, load-bearing on a journey's, where the rows span
 // many.
+//
+// Answers is every option the question offered, in the order and under
+// the labels the child saw, so the screen can lay all of them out and
+// mark the right one and the chosen one among them. It is resolved at
+// read time from the question set the sitting was drawn from — the log
+// itself stores only the two labels that matter for grading — and is
+// omitted when that set can no longer be found.
 type ExamAnswerDetail struct {
-	UserAiExamID       int64   `json:"user_ai_exam_id"`
-	QuestionNumber     int     `json:"question_number"`
-	QuestionType       *string `json:"question_type,omitempty"`
-	QuestionName       *string `json:"question_name,omitempty"`
-	QuestionTopic      *string `json:"question_topic,omitempty"`
-	QuestionGrade      *int    `json:"question_grade,omitempty"`
-	RightAnswerLabel   *string `json:"right_answer_label,omitempty"`
-	RightAnswerContent *string `json:"right_answer_content,omitempty"`
-	SelectedLabel      string  `json:"selected_label"`
-	SelectedContent    *string `json:"selected_content,omitempty"`
-	IsCorrect          bool    `json:"is_correct"`
+	UserAiExamID       int64                   `json:"user_ai_exam_id"`
+	QuestionNumber     int                     `json:"question_number"`
+	QuestionType       *string                 `json:"question_type,omitempty"`
+	QuestionName       *string                 `json:"question_name,omitempty"`
+	Answers            []question.AnswerChoice `json:"answers,omitempty"`
+	QuestionTopic      *string                 `json:"question_topic,omitempty"`
+	QuestionGrade      *int                    `json:"question_grade,omitempty"`
+	RightAnswerLabel   *string                 `json:"right_answer_label,omitempty"`
+	RightAnswerContent *string                 `json:"right_answer_content,omitempty"`
+	SelectedLabel      string                  `json:"selected_label"`
+	SelectedContent    *string                 `json:"selected_content,omitempty"`
+	IsCorrect          bool                    `json:"is_correct"`
 }
 
 // ExamStats is one JOURNEY — a stretch of one exam type the child worked
@@ -233,7 +242,9 @@ func AttemptToResponse(a *domain.UserAiExam, e *domain.AiExam, includeAnswerKey 
 		res.Title = e.AiTitle()
 		res.ShortText = e.AiShortText()
 		res.NumQues = e.ReqNumQues()
-		res.Questions = parseQuestions(e.AiQuestionsJson(), includeAnswerKey)
+		// The sitting's own ordering, not the stored one: two children
+		// served the same cached set each see their own arrangement.
+		res.Questions = servedQuestions(e.AiQuestionsJson(), shuffleOf(a), includeAnswerKey)
 	}
 
 	if total := a.ResTotalQuestions(); total != nil {
@@ -264,24 +275,127 @@ func AttemptListToResponse(attempts []*domain.UserAiExam, aiExams map[int64]*dom
 	return out
 }
 
-func DetailsToResponse(details []*domain.UserExamDetail) []ExamAnswerDetail {
+// DetailsToResponse renders the per-question log the way the child SAW
+// it. The log is stored canonically (so analytics line up with the shared
+// question set), but a review screen has to say "câu 3" and "đáp án B"
+// in the numbering the child actually met, or nothing on it will match
+// their memory. shuffles maps each sitting to its ordering; a sitting
+// absent from the map — or mapped to nil — is rendered canonically.
+//
+// aiExams supplies the question sets the sittings were drawn from, keyed
+// by ai_exam_id, so every row can carry its full option list. Each set is
+// parsed once, however many rows point at it.
+func DetailsToResponse(details []*domain.UserExamDetail, shuffles map[int64]*question.Shuffle, aiExams map[int64]*domain.AiExam) []ExamAnswerDetail {
+	questions := newQuestionIndex(aiExams)
+
 	out := make([]ExamAnswerDetail, 0, len(details))
 	for _, d := range details {
+		sh := shuffles[d.UserAiExamId()]
+
+		var answers []question.AnswerChoice
+		if q, ok := questions.lookup(d.AiExamId(), d.QuestionNumber()); ok {
+			answers = sh.ServedAnswers(d.QuestionNumber(), q)
+		}
+
 		out = append(out, ExamAnswerDetail{
 			UserAiExamID:       d.UserAiExamId(),
-			QuestionNumber:     d.QuestionNumber(),
+			QuestionNumber:     sh.ServedNumber(d.QuestionNumber()),
 			QuestionType:       d.QuestionType(),
 			QuestionName:       d.QuestionName(),
+			Answers:            answers,
 			QuestionTopic:      d.QuestionTopic(),
 			QuestionGrade:      d.QuestionGrade(),
-			RightAnswerLabel:   d.RightAnswerLabel(),
+			RightAnswerLabel:   servedLabelPtr(sh, d.QuestionNumber(), d.RightAnswerLabel()),
 			RightAnswerContent: d.RightAnswerContent(),
-			SelectedLabel:      d.SelectedLabel(),
+			SelectedLabel:      sh.ServedLabel(d.QuestionNumber(), d.SelectedLabel()),
 			SelectedContent:    d.SelectedContent(),
 			IsCorrect:          d.IsCorrect(),
 		})
 	}
+
+	// Rows arrive in canonical order; the student saw them in served
+	// order. Re-sort per sitting so the review reads like the paper did.
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].UserAiExamID != out[j].UserAiExamID {
+			return out[i].UserAiExamID < out[j].UserAiExamID
+		}
+		return out[i].QuestionNumber < out[j].QuestionNumber
+	})
 	return out
+}
+
+// questionIndex parses each question set lazily and at most once, then
+// answers "which question is canonical number N of set S" in O(1). A
+// journey review touches every row of every sitting, so this is the
+// difference between parsing each set once and parsing it per row.
+type questionIndex struct {
+	sets   map[int64]*domain.AiExam
+	parsed map[int64]map[int]question.Question
+}
+
+func newQuestionIndex(sets map[int64]*domain.AiExam) *questionIndex {
+	return &questionIndex{sets: sets, parsed: make(map[int64]map[int]question.Question, len(sets))}
+}
+
+func (x *questionIndex) lookup(aiExamID int64, canonicalQN int) (question.Question, bool) {
+	byNumber, ok := x.parsed[aiExamID]
+	if !ok {
+		byNumber = x.parse(aiExamID)
+		x.parsed[aiExamID] = byNumber
+	}
+	q, ok := byNumber[canonicalQN]
+	return q, ok
+}
+
+// parse decodes one set. A missing or unreadable set yields an empty
+// index rather than an error: the review still renders, just without the
+// option list for those rows — which is the graceful outcome when a
+// shared question set has been retired from under a child's history.
+func (x *questionIndex) parse(aiExamID int64) map[int]question.Question {
+	set, ok := x.sets[aiExamID]
+	if !ok || set == nil {
+		return nil
+	}
+	var stored []ExamQuestion
+	if err := json.Unmarshal([]byte(set.AiQuestionsJson()), &stored); err != nil {
+		return nil
+	}
+	byNumber := make(map[int]question.Question, len(stored))
+	for _, q := range stored {
+		byNumber[q.QuestionNumber] = q.ToShared()
+	}
+	return byNumber
+}
+
+// ShufflesOf parses each attempt's stored ordering into the map
+// DetailsToResponse consumes. A malformed ordering is treated as none:
+// the review then renders that sitting canonically rather than failing
+// the whole screen over one row.
+func ShufflesOf(attempts ...*domain.UserAiExam) map[int64]*question.Shuffle {
+	out := make(map[int64]*question.Shuffle, len(attempts))
+	for _, a := range attempts {
+		if a == nil {
+			continue
+		}
+		out[a.UserAiExamId()] = shuffleOf(a)
+	}
+	return out
+}
+
+func shuffleOf(a *domain.UserAiExam) *question.Shuffle {
+	sh, err := question.ParseShuffle(a.ShuffleMap())
+	if err != nil {
+		return nil
+	}
+	return sh
+}
+
+func servedLabelPtr(sh *question.Shuffle, canonicalQN int, label *string) *string {
+	if label == nil {
+		return nil
+	}
+	served := sh.ServedLabel(canonicalQN, *label)
+	return &served
 }
 
 func StatsToResponse(rows []*domain.UserExam) []ExamStats {
@@ -323,14 +437,19 @@ func StatsToSingleResponse(row *domain.UserExam) *ExamStats {
 // parseQuestions decodes the stored payload and, when the key must stay
 // hidden, blanks it field by field rather than dropping the question —
 // the child still needs the stem and the options to answer.
-func parseQuestions(raw string, includeAnswerKey bool) []ExamQuestion {
+// servedQuestions decodes the stored (canonical) set, arranges it the way
+// this sitting was served, and — when the key must stay hidden — blanks
+// it field by field rather than dropping the question: the child still
+// needs the stem and the options to answer.
+func servedQuestions(raw string, sh *question.Shuffle, includeAnswerKey bool) []ExamQuestion {
 	if raw == "" {
 		return nil
 	}
-	var out []ExamQuestion
-	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+	var stored []ExamQuestion
+	if err := json.Unmarshal([]byte(raw), &stored); err != nil {
 		return nil
 	}
+	out := FromSharedQuestions(sh.Apply(ToSharedQuestions(stored)))
 	if !includeAnswerKey {
 		for i := range out {
 			out[i].RightAnswerLabel = ""

@@ -6,6 +6,7 @@ import (
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	command "math-ai.com/math-ai/internal/application/command/exam"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
+	"math-ai.com/math-ai/internal/application/dto/question"
 	query "math-ai.com/math-ai/internal/application/query/exam"
 	"math-ai.com/math-ai/internal/application/transaction"
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
@@ -103,10 +104,19 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	if err != nil {
 		return nil, err
 	}
+	// canonical is the question set as stored — the thing the child's own
+	// ordering is drawn against below. On a cache hit it is decoded from
+	// the shared row; on a miss it is what the model just produced.
+	var canonical []question.Question
+
 	if cached != nil {
 		log.Infof("exam.cache.hit tag=%s ai_exam_id=%d", tag, cached.AiExamId())
 		id := cached.AiExamId()
 		cmd.ReuseAiExamID = &id
+		canonical, err = decodeStoredQuestions(ctx, cached.AiQuestionsJson())
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		log.Infof("exam.cache.miss tag=%s", tag)
 		generated, err := s.bot.GenerateExam(ctx, generateExamInput{
@@ -124,6 +134,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 		if err != nil {
 			return nil, err
 		}
+		canonical = generated.Questions
 
 		cmd.NewContent = &command.NewAiExamContent{
 			NumQues:       req.NumQuestions,
@@ -135,6 +146,16 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 			QuestionsJSON: questionsJSON,
 		}
 	}
+
+	// Every sitting gets its own ordering — the freshly generated one too,
+	// so the child who paid for the generation is treated no differently
+	// from the next child served the same set from cache. This is what
+	// stops two children (or one child twice) meeting an identical paper.
+	shuffleJSON, err := drawShuffle(ctx, canonical)
+	if err != nil {
+		return nil, err
+	}
+	cmd.ShuffleJSON = shuffleJSON
 
 	created, err := s.generateCmd.Handle(ctx, cmd)
 	if err != nil {
