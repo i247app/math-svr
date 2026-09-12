@@ -140,3 +140,43 @@ func mustUnmarshal(t *testing.T, raw string, into *[]ExamQuestion) {
 		t.Fatalf("fixture: %v", err)
 	}
 }
+
+// TestDetailsReadInServedOrder: the repo hands rows back in canonical
+// order, but the review must read top-to-bottom the way the paper did —
+// and a journey keeps each sitting's block intact, oldest first.
+func TestDetailsReadInServedOrder(t *testing.T) {
+	var stored []ExamQuestion
+	mustUnmarshal(t, storedSet, &stored)
+	canonical := ToSharedQuestions(stored)
+	sets := map[int64]*domain.AiExam{7: aiExam(7, storedSet)}
+
+	for seed := uint64(1); seed <= 25; seed++ {
+		first := question.NewShuffle(canonical, rand.New(rand.NewPCG(seed, 1)))
+		second := question.NewShuffle(canonical, rand.New(rand.NewPCG(seed, 2)))
+		shuffles := map[int64]*question.Shuffle{100: first, 200: second}
+
+		// Canonical order per sitting, as ListByUserExamId returns it.
+		rows := []*domain.UserExamDetail{
+			detail(100, 7, 1, "A", true), detail(100, 7, 2, "A", true),
+			detail(200, 7, 1, "A", true), detail(200, 7, 2, "A", true),
+		}
+		for _, r := range rows {
+			r.SetQuestionName(strp(canonical[r.QuestionNumber()-1].QuestionName))
+		}
+		got := DetailsToResponse(rows, shuffles, sets)
+
+		wantSitting := []int64{100, 100, 200, 200}
+		wantNumber := []int{1, 2, 1, 2}
+		served := map[int64][]question.Question{100: first.Apply(canonical), 200: second.Apply(canonical)}
+		for i, d := range got {
+			if d.UserAiExamID != wantSitting[i] || d.QuestionNumber != wantNumber[i] {
+				t.Fatalf("seed %d: row %d is sitting %d q%d, want sitting %d q%d",
+					seed, i, d.UserAiExamID, d.QuestionNumber, wantSitting[i], wantNumber[i])
+			}
+			if want := served[d.UserAiExamID][d.QuestionNumber-1].QuestionName; d.QuestionName == nil || *d.QuestionName != want {
+				t.Fatalf("seed %d: row %d shows %q at position %d, the child saw %q",
+					seed, i, *d.QuestionName, d.QuestionNumber, want)
+			}
+		}
+	}
+}

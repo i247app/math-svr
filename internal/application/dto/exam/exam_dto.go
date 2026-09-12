@@ -2,6 +2,7 @@ package exam
 
 import (
 	"encoding/json"
+	"sort"
 
 	"math-ai.com/math-ai/internal/application/dto/question"
 	domain "math-ai.com/math-ai/internal/domain/exam"
@@ -311,6 +312,15 @@ func DetailsToResponse(details []*domain.UserExamDetail, shuffles map[int64]*que
 			IsCorrect:          d.IsCorrect(),
 		})
 	}
+
+	// Rows arrive in canonical order; the student saw them in served
+	// order. Re-sort per sitting so the review reads like the paper did.
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].UserAiExamID != out[j].UserAiExamID {
+			return out[i].UserAiExamID < out[j].UserAiExamID
+		}
+		return out[i].QuestionNumber < out[j].QuestionNumber
+	})
 	return out
 }
 
