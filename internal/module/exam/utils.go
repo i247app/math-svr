@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"strings"
 
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
@@ -40,4 +41,35 @@ func marshalQuestions(ctx context.Context, questions []question.Question) (strin
 			fmt.Errorf("exam: marshal questions: %w", err))
 	}
 	return string(raw), nil
+}
+
+// systemRand adapts the process-wide generator to question.Shuffler. The
+// top-level math/rand/v2 source is seeded by the runtime and safe for
+// concurrent use, which is all a shuffle needs; nothing here is security
+// sensitive.
+type systemRand struct{}
+
+func (systemRand) Shuffle(n int, swap func(i, j int)) { rand.Shuffle(n, swap) }
+
+// drawShuffle picks this sitting's ordering and returns it in stored form.
+func drawShuffle(ctx context.Context, canonical []question.Question) (*string, error) {
+	if len(canonical) == 0 {
+		return nil, nil
+	}
+	raw, err := question.NewShuffle(canonical, systemRand{}).JSON()
+	if err != nil {
+		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)
+	}
+	return &raw, nil
+}
+
+// decodeStoredQuestions reads a cached set back into the shared shape so
+// a shuffle can be drawn against it.
+func decodeStoredQuestions(ctx context.Context, raw string) ([]question.Question, error) {
+	var stored []dto.ExamQuestion
+	if err := json.Unmarshal([]byte(raw), &stored); err != nil {
+		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil,
+			fmt.Errorf("exam: decode cached questions: %w", err))
+	}
+	return dto.ToSharedQuestions(stored), nil
 }

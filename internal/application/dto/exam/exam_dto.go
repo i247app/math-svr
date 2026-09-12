@@ -233,7 +233,9 @@ func AttemptToResponse(a *domain.UserAiExam, e *domain.AiExam, includeAnswerKey 
 		res.Title = e.AiTitle()
 		res.ShortText = e.AiShortText()
 		res.NumQues = e.ReqNumQues()
-		res.Questions = parseQuestions(e.AiQuestionsJson(), includeAnswerKey)
+		// The sitting's own ordering, not the stored one: two children
+		// served the same cached set each see their own arrangement.
+		res.Questions = servedQuestions(e.AiQuestionsJson(), shuffleOf(a), includeAnswerKey)
 	}
 
 	if total := a.ResTotalQuestions(); total != nil {
@@ -264,24 +266,62 @@ func AttemptListToResponse(attempts []*domain.UserAiExam, aiExams map[int64]*dom
 	return out
 }
 
-func DetailsToResponse(details []*domain.UserExamDetail) []ExamAnswerDetail {
+// DetailsToResponse renders the per-question log the way the child SAW
+// it. The log is stored canonically (so analytics line up with the shared
+// question set), but a review screen has to say "câu 3" and "đáp án B"
+// in the numbering the child actually met, or nothing on it will match
+// their memory. shuffles maps each sitting to its ordering; a sitting
+// absent from the map — or mapped to nil — is rendered canonically.
+func DetailsToResponse(details []*domain.UserExamDetail, shuffles map[int64]*question.Shuffle) []ExamAnswerDetail {
 	out := make([]ExamAnswerDetail, 0, len(details))
 	for _, d := range details {
+		sh := shuffles[d.UserAiExamId()]
 		out = append(out, ExamAnswerDetail{
 			UserAiExamID:       d.UserAiExamId(),
-			QuestionNumber:     d.QuestionNumber(),
+			QuestionNumber:     sh.ServedNumber(d.QuestionNumber()),
 			QuestionType:       d.QuestionType(),
 			QuestionName:       d.QuestionName(),
 			QuestionTopic:      d.QuestionTopic(),
 			QuestionGrade:      d.QuestionGrade(),
-			RightAnswerLabel:   d.RightAnswerLabel(),
+			RightAnswerLabel:   servedLabelPtr(sh, d.QuestionNumber(), d.RightAnswerLabel()),
 			RightAnswerContent: d.RightAnswerContent(),
-			SelectedLabel:      d.SelectedLabel(),
+			SelectedLabel:      sh.ServedLabel(d.QuestionNumber(), d.SelectedLabel()),
 			SelectedContent:    d.SelectedContent(),
 			IsCorrect:          d.IsCorrect(),
 		})
 	}
 	return out
+}
+
+// ShufflesOf parses each attempt's stored ordering into the map
+// DetailsToResponse consumes. A malformed ordering is treated as none:
+// the review then renders that sitting canonically rather than failing
+// the whole screen over one row.
+func ShufflesOf(attempts ...*domain.UserAiExam) map[int64]*question.Shuffle {
+	out := make(map[int64]*question.Shuffle, len(attempts))
+	for _, a := range attempts {
+		if a == nil {
+			continue
+		}
+		out[a.UserAiExamId()] = shuffleOf(a)
+	}
+	return out
+}
+
+func shuffleOf(a *domain.UserAiExam) *question.Shuffle {
+	sh, err := question.ParseShuffle(a.ShuffleMap())
+	if err != nil {
+		return nil
+	}
+	return sh
+}
+
+func servedLabelPtr(sh *question.Shuffle, canonicalQN int, label *string) *string {
+	if label == nil {
+		return nil
+	}
+	served := sh.ServedLabel(canonicalQN, *label)
+	return &served
 }
 
 func StatsToResponse(rows []*domain.UserExam) []ExamStats {
@@ -323,14 +363,19 @@ func StatsToSingleResponse(row *domain.UserExam) *ExamStats {
 // parseQuestions decodes the stored payload and, when the key must stay
 // hidden, blanks it field by field rather than dropping the question —
 // the child still needs the stem and the options to answer.
-func parseQuestions(raw string, includeAnswerKey bool) []ExamQuestion {
+// servedQuestions decodes the stored (canonical) set, arranges it the way
+// this sitting was served, and — when the key must stay hidden — blanks
+// it field by field rather than dropping the question: the child still
+// needs the stem and the options to answer.
+func servedQuestions(raw string, sh *question.Shuffle, includeAnswerKey bool) []ExamQuestion {
 	if raw == "" {
 		return nil
 	}
-	var out []ExamQuestion
-	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+	var stored []ExamQuestion
+	if err := json.Unmarshal([]byte(raw), &stored); err != nil {
 		return nil
 	}
+	out := FromSharedQuestions(sh.Apply(ToSharedQuestions(stored)))
 	if !includeAnswerKey {
 		for i := range out {
 			out[i].RightAnswerLabel = ""

@@ -231,7 +231,9 @@ func TestValidateGetExamAcceptsExactlyOneID(t *testing.T) {
 	}{
 		{"missing profile", &dto.GetExamReq{UserAiExamID: 1}, status.EXAM_MISSING_PROFILE_ID},
 		{"neither id", &dto.GetExamReq{ProfileID: 1}, status.EXAM_MISSING_ATTEMPT_ID},
-		{"both ids", &dto.GetExamReq{ProfileID: 1, UserAiExamID: 1, UserExamID: 2}, status.EXAM_AMBIGUOUS_DETAIL_ID},
+		// Both ids is accepted; the service reads the journey (user_exam_id
+		// takes precedence). Rejecting it was considered and dropped.
+		{"both ids", &dto.GetExamReq{ProfileID: 1, UserAiExamID: 1, UserExamID: 2}, 0},
 		{"a sitting", &dto.GetExamReq{ProfileID: 1, UserAiExamID: 1}, 0},
 		{"a journey", &dto.GetExamReq{ProfileID: 1, UserExamID: 2}, 0},
 	}

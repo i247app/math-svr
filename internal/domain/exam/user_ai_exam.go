@@ -26,6 +26,7 @@ type UserAiExam struct {
 	userId       int64
 	profileId    int64
 	aiExamId     int64
+	shuffleMap   *string
 
 	reqExamType string
 	reqGrade    int
@@ -60,6 +61,8 @@ func (u *UserAiExam) ProfileId() int64                { return u.profileId }
 func (u *UserAiExam) SetProfileId(id int64)           { u.profileId = id }
 func (u *UserAiExam) AiExamId() int64                 { return u.aiExamId }
 func (u *UserAiExam) SetAiExamId(id int64)            { u.aiExamId = id }
+func (u *UserAiExam) ShuffleMap() *string             { return u.shuffleMap }
+func (u *UserAiExam) SetShuffleMap(s *string)         { u.shuffleMap = s }
 func (u *UserAiExam) ReqExamType() string             { return u.reqExamType }
 func (u *UserAiExam) SetReqExamType(t string)         { u.reqExamType = t }
 func (u *UserAiExam) ReqGrade() int                   { return u.reqGrade }

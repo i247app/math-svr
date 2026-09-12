@@ -39,6 +39,12 @@ type GenerateExamCommand struct {
 	ProfileID int64
 	ExamType  enum.ExamType
 	Grade     int
+	// ShuffleJSON is this sitting's private ordering of the question set
+	// (question.Shuffle in its stored form). It is drawn by the caller for
+	// EVERY sitting, cache hit or miss: a fresh generation is shuffled too,
+	// so the child who triggered it sees no different treatment from the
+	// next child who is served it from cache.
+	ShuffleJSON *string
 
 	ReuseAiExamID *int64
 	NewContent    *NewAiExamContent
@@ -81,6 +87,7 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		a.SetUserId(cmd.UserID)
 		a.SetProfileId(cmd.ProfileID)
 		a.SetAiExamId(aiExam.AiExamId())
+		a.SetShuffleMap(cmd.ShuffleJSON)
 		a.SetReqExamType(string(cmd.ExamType))
 		a.SetReqGrade(cmd.Grade)
 		a.SetStartedDt(mtime.Now())

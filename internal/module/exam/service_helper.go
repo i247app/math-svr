@@ -155,7 +155,7 @@ func (s *Service) getAttempt(ctx context.Context, userAiExamID int64, profile *p
 
 	return &dto.GetExamRes{
 		Exam:    dto.AttemptToResponse(detail.Attempt, detail.AiExam, submitted),
-		Details: dto.DetailsToResponse(detail.Details),
+		Details: dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempt)),
 	}, nil
 }
 
@@ -177,6 +177,6 @@ func (s *Service) getJourney(ctx context.Context, userExamID int64, profile *pro
 	return &dto.GetExamRes{
 		Stats:   dto.StatsToSingleResponse(detail.Journey),
 		Exams:   dto.AttemptListToResponse(detail.Attempts, detail.AiExams),
-		Details: dto.DetailsToResponse(detail.Details),
+		Details: dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...)),
 	}, nil
 }

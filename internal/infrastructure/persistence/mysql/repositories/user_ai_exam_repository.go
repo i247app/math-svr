@@ -19,7 +19,7 @@ import (
 const (
 	userAiExamTable = "ma_user_ai_exams"
 
-	userAiExamColumns = `u.id, u.user_ai_exam_id, u.user_id, u.profile_id, u.ai_exam_id,
+	userAiExamColumns = `u.id, u.user_ai_exam_id, u.user_id, u.profile_id, u.ai_exam_id, u.shuffle_map,
 		u.req_exam_type, u.req_grade, u.req_level,
 		u.res_total_questions, u.res_correct_number, u.res_skipped_number, u.res_score_percentage,
 		u.started_dt, u.submitted_dt,
@@ -43,7 +43,7 @@ func NewUserAiExamRepository(db database.Executor) exam.IUserAiExamRepository {
 
 func scanUserAiExam(s database.RowScanner) (*models.UserAiExamModel, error) {
 	var m models.UserAiExamModel
-	if err := s.Scan(&m.Id, &m.UserAiExamId, &m.UserId, &m.ProfileId, &m.AiExamId,
+	if err := s.Scan(&m.Id, &m.UserAiExamId, &m.UserId, &m.ProfileId, &m.AiExamId, &m.ShuffleMap,
 		&m.ReqExamType, &m.ReqGrade, &m.ReqLevel,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
 		&m.StartedDt, &m.SubmittedDt,
@@ -200,16 +200,16 @@ func (r *UserAiExamRepository) ListByUserAiExamIds(ctx context.Context, userAiEx
 func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (*exam.UserAiExam, error) {
 	query := `
 		INSERT INTO ` + userAiExamTable + `
-			(user_ai_exam_id, user_id, profile_id, ai_exam_id,
+			(user_ai_exam_id, user_id, profile_id, ai_exam_id, shuffle_map,
 			 req_exam_type, req_grade, req_level,
 			 started_dt, note, user_ai_exam_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	now := mtime.Now().Time
 	startedDt := mtime.MathTimePtrToTime(a.StartedDt().Ptr())
 
 	result, err := r.db.Exec(ctx, query,
-		a.UserAiExamId(), a.UserId(), a.ProfileId(), a.AiExamId(),
+		a.UserAiExamId(), a.UserId(), a.ProfileId(), a.AiExamId(), a.ShuffleMap(),
 		a.ReqExamType(), a.ReqGrade(), a.ReqLevel(),
 		startedDt, a.Note(), a.UserAiExamStatus(), a.CreateId(), now, now)
 	if err != nil {
@@ -349,6 +349,7 @@ func ModelToDomainUserAiExam(m *models.UserAiExamModel) *exam.UserAiExam {
 	a.SetUserId(m.UserId)
 	a.SetProfileId(m.ProfileId)
 	a.SetAiExamId(m.AiExamId)
+	a.SetShuffleMap(m.ShuffleMap)
 	a.SetReqExamType(m.ReqExamType)
 	a.SetReqGrade(m.ReqGrade)
 	a.SetReqLevel(m.ReqLevel)
