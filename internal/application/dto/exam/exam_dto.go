@@ -134,18 +134,26 @@ type ExamResponse struct {
 // UserAiExamID says which sitting it came from — redundant on a single
 // sitting's review, load-bearing on a journey's, where the rows span
 // many.
+//
+// Answers is every option the question offered, in the order and under
+// the labels the child saw, so the screen can lay all of them out and
+// mark the right one and the chosen one among them. It is resolved at
+// read time from the question set the sitting was drawn from — the log
+// itself stores only the two labels that matter for grading — and is
+// omitted when that set can no longer be found.
 type ExamAnswerDetail struct {
-	UserAiExamID       int64   `json:"user_ai_exam_id"`
-	QuestionNumber     int     `json:"question_number"`
-	QuestionType       *string `json:"question_type,omitempty"`
-	QuestionName       *string `json:"question_name,omitempty"`
-	QuestionTopic      *string `json:"question_topic,omitempty"`
-	QuestionGrade      *int    `json:"question_grade,omitempty"`
-	RightAnswerLabel   *string `json:"right_answer_label,omitempty"`
-	RightAnswerContent *string `json:"right_answer_content,omitempty"`
-	SelectedLabel      string  `json:"selected_label"`
-	SelectedContent    *string `json:"selected_content,omitempty"`
-	IsCorrect          bool    `json:"is_correct"`
+	UserAiExamID       int64                   `json:"user_ai_exam_id"`
+	QuestionNumber     int                     `json:"question_number"`
+	QuestionType       *string                 `json:"question_type,omitempty"`
+	QuestionName       *string                 `json:"question_name,omitempty"`
+	Answers            []question.AnswerChoice `json:"answers,omitempty"`
+	QuestionTopic      *string                 `json:"question_topic,omitempty"`
+	QuestionGrade      *int                    `json:"question_grade,omitempty"`
+	RightAnswerLabel   *string                 `json:"right_answer_label,omitempty"`
+	RightAnswerContent *string                 `json:"right_answer_content,omitempty"`
+	SelectedLabel      string                  `json:"selected_label"`
+	SelectedContent    *string                 `json:"selected_content,omitempty"`
+	IsCorrect          bool                    `json:"is_correct"`
 }
 
 // ExamStats is one JOURNEY — a stretch of one exam type the child worked
@@ -272,15 +280,28 @@ func AttemptListToResponse(attempts []*domain.UserAiExam, aiExams map[int64]*dom
 // in the numbering the child actually met, or nothing on it will match
 // their memory. shuffles maps each sitting to its ordering; a sitting
 // absent from the map — or mapped to nil — is rendered canonically.
-func DetailsToResponse(details []*domain.UserExamDetail, shuffles map[int64]*question.Shuffle) []ExamAnswerDetail {
+//
+// aiExams supplies the question sets the sittings were drawn from, keyed
+// by ai_exam_id, so every row can carry its full option list. Each set is
+// parsed once, however many rows point at it.
+func DetailsToResponse(details []*domain.UserExamDetail, shuffles map[int64]*question.Shuffle, aiExams map[int64]*domain.AiExam) []ExamAnswerDetail {
+	questions := newQuestionIndex(aiExams)
+
 	out := make([]ExamAnswerDetail, 0, len(details))
 	for _, d := range details {
 		sh := shuffles[d.UserAiExamId()]
+
+		var answers []question.AnswerChoice
+		if q, ok := questions.lookup(d.AiExamId(), d.QuestionNumber()); ok {
+			answers = sh.ServedAnswers(d.QuestionNumber(), q)
+		}
+
 		out = append(out, ExamAnswerDetail{
 			UserAiExamID:       d.UserAiExamId(),
 			QuestionNumber:     sh.ServedNumber(d.QuestionNumber()),
 			QuestionType:       d.QuestionType(),
 			QuestionName:       d.QuestionName(),
+			Answers:            answers,
 			QuestionTopic:      d.QuestionTopic(),
 			QuestionGrade:      d.QuestionGrade(),
 			RightAnswerLabel:   servedLabelPtr(sh, d.QuestionNumber(), d.RightAnswerLabel()),
@@ -291,6 +312,49 @@ func DetailsToResponse(details []*domain.UserExamDetail, shuffles map[int64]*que
 		})
 	}
 	return out
+}
+
+// questionIndex parses each question set lazily and at most once, then
+// answers "which question is canonical number N of set S" in O(1). A
+// journey review touches every row of every sitting, so this is the
+// difference between parsing each set once and parsing it per row.
+type questionIndex struct {
+	sets   map[int64]*domain.AiExam
+	parsed map[int64]map[int]question.Question
+}
+
+func newQuestionIndex(sets map[int64]*domain.AiExam) *questionIndex {
+	return &questionIndex{sets: sets, parsed: make(map[int64]map[int]question.Question, len(sets))}
+}
+
+func (x *questionIndex) lookup(aiExamID int64, canonicalQN int) (question.Question, bool) {
+	byNumber, ok := x.parsed[aiExamID]
+	if !ok {
+		byNumber = x.parse(aiExamID)
+		x.parsed[aiExamID] = byNumber
+	}
+	q, ok := byNumber[canonicalQN]
+	return q, ok
+}
+
+// parse decodes one set. A missing or unreadable set yields an empty
+// index rather than an error: the review still renders, just without the
+// option list for those rows — which is the graceful outcome when a
+// shared question set has been retired from under a child's history.
+func (x *questionIndex) parse(aiExamID int64) map[int]question.Question {
+	set, ok := x.sets[aiExamID]
+	if !ok || set == nil {
+		return nil
+	}
+	var stored []ExamQuestion
+	if err := json.Unmarshal([]byte(set.AiQuestionsJson()), &stored); err != nil {
+		return nil
+	}
+	byNumber := make(map[int]question.Question, len(stored))
+	for _, q := range stored {
+		byNumber[q.QuestionNumber] = q.ToShared()
+	}
+	return byNumber
 }
 
 // ShufflesOf parses each attempt's stored ordering into the map

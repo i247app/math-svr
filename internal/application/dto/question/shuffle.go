@@ -150,6 +150,15 @@ func (s *Shuffle) Apply(canonical []Question) []Question {
 	return served
 }
 
+// ServedAnswers is one question's options in the order — and under the
+// labels — this sitting showed them. The review screen uses it to lay out
+// every option beside the one the child picked; a nil receiver returns
+// the stored order.
+func (s *Shuffle) ServedAnswers(canonicalQN int, q Question) []AnswerChoice {
+	answers, _ := s.servedOptions(canonicalQN, q)
+	return answers
+}
+
 // servedOptions reorders one question's options and translates the
 // answer key into served labels.
 func (s *Shuffle) servedOptions(canonicalQN int, q Question) ([]AnswerChoice, string) {

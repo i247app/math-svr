@@ -154,8 +154,9 @@ func (s *Service) getAttempt(ctx context.Context, userAiExamID int64, profile *p
 		*detail.Attempt.UserAiExamStatus() == string(enum.UserAiExamStatusSubmitted)
 
 	return &dto.GetExamRes{
-		Exam:    dto.AttemptToResponse(detail.Attempt, detail.AiExam, submitted),
-		Details: dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempt)),
+		Exam: dto.AttemptToResponse(detail.Attempt, detail.AiExam, submitted),
+		Details: dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempt),
+			map[int64]*examDomain.AiExam{detail.AiExam.AiExamId(): detail.AiExam}),
 	}, nil
 }
 
@@ -177,6 +178,6 @@ func (s *Service) getJourney(ctx context.Context, userExamID int64, profile *pro
 	return &dto.GetExamRes{
 		Stats:   dto.StatsToSingleResponse(detail.Journey),
 		Exams:   dto.AttemptListToResponse(detail.Attempts, detail.AiExams),
-		Details: dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...)),
+		Details: dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...), detail.AiExams),
 	}, nil
 }
