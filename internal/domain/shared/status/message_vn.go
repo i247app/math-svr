@@ -700,6 +700,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Thiếu user_exam_id"
 	case EXAM_INVALID_JOURNEY_STATUS:
 		return "Trạng thái phải là COMPLETE hoặc CANCEL"
+	case EXAM_AMBIGUOUS_DETAIL_ID:
+		return "Chỉ gửi một trong user_ai_exam_id hoặc user_exam_id"
 
 	default:
 		return ""

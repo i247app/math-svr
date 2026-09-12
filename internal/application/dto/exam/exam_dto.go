@@ -43,10 +43,17 @@ type SubmitExamReq struct {
 	Answers      []question.StudentAnswer `json:"answers"`
 }
 
+// GetExamReq reads either ONE sitting or ONE journey — exactly one of the
+// two ids is set:
+//
+//   - user_ai_exam_id → that sitting: the exam as served, plus its answers.
+//   - user_exam_id    → that journey: its running totals, every sitting
+//     that fed them, and every question answered across them.
 type GetExamReq struct {
 	UserID       *int64 `json:"-"`
 	ProfileID    int64  `json:"profile_id"`
-	UserAiExamID int64  `json:"user_ai_exam_id"`
+	UserAiExamID int64  `json:"user_ai_exam_id,omitempty"`
+	UserExamID   int64  `json:"user_exam_id,omitempty"`
 }
 
 // ListExamsReq pages a child's history. Status narrows to unfinished
@@ -124,7 +131,11 @@ type ExamResponse struct {
 }
 
 // ExamAnswerDetail is one answered question on the review screen.
+// UserAiExamID says which sitting it came from — redundant on a single
+// sitting's review, load-bearing on a journey's, where the rows span
+// many.
 type ExamAnswerDetail struct {
+	UserAiExamID       int64   `json:"user_ai_exam_id"`
 	QuestionNumber     int     `json:"question_number"`
 	QuestionType       *string `json:"question_type,omitempty"`
 	QuestionName       *string `json:"question_name,omitempty"`
@@ -166,8 +177,16 @@ type SubmitExamRes struct {
 	Stats *ExamStats    `json:"stats,omitempty"`
 }
 
+// GetExamRes is shaped by which id was asked for.
+//
+//   - by user_ai_exam_id: Exam + Details (Stats and Exams stay empty).
+//   - by user_exam_id:    Stats + Exams + Details (Exam stays empty). Exams
+//     are cards — no questions blob — in chronological order; Details span
+//     every sitting and carry user_ai_exam_id so they can be grouped.
 type GetExamRes struct {
-	Exam    *ExamResponse      `json:"exam"`
+	Exam    *ExamResponse      `json:"exam,omitempty"`
+	Stats   *ExamStats         `json:"stats,omitempty"`
+	Exams   []*ExamResponse    `json:"exams,omitempty"`
 	Details []ExamAnswerDetail `json:"details,omitempty"`
 }
 
@@ -249,6 +268,7 @@ func DetailsToResponse(details []*domain.UserExamDetail) []ExamAnswerDetail {
 	out := make([]ExamAnswerDetail, 0, len(details))
 	for _, d := range details {
 		out = append(out, ExamAnswerDetail{
+			UserAiExamID:       d.UserAiExamId(),
 			QuestionNumber:     d.QuestionNumber(),
 			QuestionType:       d.QuestionType(),
 			QuestionName:       d.QuestionName(),

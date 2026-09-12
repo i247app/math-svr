@@ -700,6 +700,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "user_exam_id is required"
 	case EXAM_INVALID_JOURNEY_STATUS:
 		return "status must be COMPLETE or CANCEL"
+	case EXAM_AMBIGUOUS_DETAIL_ID:
+		return "Send either user_ai_exam_id or user_exam_id, not both"
 
 	default:
 		return ""

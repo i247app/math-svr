@@ -15,7 +15,6 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
-	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -28,6 +27,7 @@ type Service struct {
 	submitCmd       *command.SubmitExamCommandHandler
 	markJourneyCmd  *command.MarkUserExamCommandHandler
 	getAttemptQuery *query.GetExamAttemptQueryHandler
+	getJourneyQuery *query.GetExamJourneyQueryHandler
 	listQuery       *query.ListExamAttemptsQueryHandler
 	statsQuery      *query.GetExamStatsQueryHandler
 	progressQuery   *query.GetExamProgressQueryHandler
@@ -58,6 +58,7 @@ func NewService(
 		submitCmd:       command.NewSubmitExamCommandHandler(uow),
 		markJourneyCmd:  command.NewMarkUserExamCommandHandler(uow),
 		getAttemptQuery: query.NewGetExamAttemptQueryHandler(attemptRepo, aiExamRepo, detailRepo),
+		getJourneyQuery: query.NewGetExamJourneyQueryHandler(statsRepo, attemptRepo, aiExamRepo, detailRepo),
 		listQuery:       query.NewListExamAttemptsQueryHandler(attemptRepo, aiExamRepo),
 		statsQuery:      query.NewGetExamStatsQueryHandler(statsRepo),
 		progressQuery:   query.NewGetExamProgressQueryHandler(attemptRepo),
@@ -183,6 +184,8 @@ func (s *Service) SubmitExam(ctx context.Context, req *dto.SubmitExamReq) (*dto.
 	}, nil
 }
 
+// GetExam answers for one sitting or one journey, depending on which id
+// the request carries; the validator has already guaranteed exactly one.
 func (s *Service) GetExam(ctx context.Context, req *dto.GetExamReq) (*dto.GetExamRes, error) {
 	if err := ValidateGetExam(ctx, req); err != nil {
 		return nil, err
@@ -192,22 +195,10 @@ func (s *Service) GetExam(ctx context.Context, req *dto.GetExamReq) (*dto.GetExa
 		return nil, err
 	}
 
-	detail, err := s.getAttemptQuery.Handle(ctx, query.GetExamAttemptQuery{
-		UserAiExamID: req.UserAiExamID,
-		UserID:       profile.UserId(),
-		ProfileID:    profile.ProfileId(),
-	})
-	if err != nil {
-		return nil, err
+	if req.UserExamID > 0 {
+		return s.getJourney(ctx, req.UserExamID, profile)
 	}
-
-	submitted := detail.Attempt.UserAiExamStatus() != nil &&
-		*detail.Attempt.UserAiExamStatus() == string(enum.UserAiExamStatusSubmitted)
-
-	return &dto.GetExamRes{
-		Exam:    dto.AttemptToResponse(detail.Attempt, detail.AiExam, submitted),
-		Details: dto.DetailsToResponse(detail.Details),
-	}, nil
+	return s.getAttempt(ctx, req.UserAiExamID, profile)
 }
 
 func (s *Service) ListExams(ctx context.Context, req *dto.ListExamsReq) (*dto.ListExamsRes, error) {

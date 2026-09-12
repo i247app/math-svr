@@ -220,3 +220,33 @@ func TestValidateGetExamStatsStatusFilter(t *testing.T) {
 		}
 	})
 }
+
+func TestValidateGetExamAcceptsExactlyOneID(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		req      *dto.GetExamReq
+		wantCode status.StatusCode
+	}{
+		{"missing profile", &dto.GetExamReq{UserAiExamID: 1}, status.EXAM_MISSING_PROFILE_ID},
+		{"neither id", &dto.GetExamReq{ProfileID: 1}, status.EXAM_MISSING_ATTEMPT_ID},
+		{"both ids", &dto.GetExamReq{ProfileID: 1, UserAiExamID: 1, UserExamID: 2}, status.EXAM_AMBIGUOUS_DETAIL_ID},
+		{"a sitting", &dto.GetExamReq{ProfileID: 1, UserAiExamID: 1}, 0},
+		{"a journey", &dto.GetExamReq{ProfileID: 1, UserExamID: 2}, 0},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := ValidateGetExam(ctx, tc.req)
+			if tc.wantCode == 0 {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				return
+			}
+			if code := codeOf(t, err); code != tc.wantCode {
+				t.Errorf("code = %d, want %d", code, tc.wantCode)
+			}
+		})
+	}
+}

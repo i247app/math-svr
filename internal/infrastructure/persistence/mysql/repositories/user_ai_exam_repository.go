@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"math-ai.com/math-ai/internal/domain/exam"
@@ -156,6 +157,44 @@ func buildUserAiExamFilterClause(filter exam.ListAttemptsFilter) (string, []any)
 		args = append(args, *filter.Status)
 	}
 	return clause, args
+}
+
+// ListByUserAiExamIds hydrates a batch of attempts, oldest first. The IN
+// list is built from the id count so the query stays parameterised.
+func (r *UserAiExamRepository) ListByUserAiExamIds(ctx context.Context, userAiExamIds []int64) ([]*exam.UserAiExam, error) {
+	if len(userAiExamIds) == 0 {
+		return nil, nil
+	}
+
+	placeholders := make([]string, 0, len(userAiExamIds))
+	args := userAiExamActiveArgs()
+	for _, id := range userAiExamIds {
+		placeholders = append(placeholders, "?")
+		args = append(args, id)
+	}
+
+	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
+		userAiExamActiveWhere + ` AND u.user_ai_exam_id IN (` + strings.Join(placeholders, ", ") + `)` +
+		` ORDER BY u.user_ai_exam_id ASC`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("user ai exam repo list by ids: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*exam.UserAiExam
+	for rows.Next() {
+		m, err := scanUserAiExam(rows)
+		if err != nil {
+			return nil, fmt.Errorf("user ai exam repo scan row: %w", err)
+		}
+		out = append(out, ModelToDomainUserAiExam(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("user ai exam repo rows iteration: %w", err)
+	}
+	return out, nil
 }
 
 func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (*exam.UserAiExam, error) {

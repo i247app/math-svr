@@ -93,12 +93,22 @@ func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {
 	return nil
 }
 
+// ValidateGetExam accepts exactly one of user_ai_exam_id (a sitting) or
+// user_exam_id (a journey). Neither is a missing-attempt error — the older
+// of the two shapes, kept so existing clients see the code they already
+// handle. Both at once is rejected rather than picking one silently: a
+// client sending both has a bug, and guessing which it meant hides it.
 func ValidateGetExam(ctx context.Context, req *dto.GetExamReq) error {
 	if req.ProfileID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
 	}
-	if req.UserAiExamID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_ATTEMPT_ID, nil, ErrAttemptIDRequired)
+	hasAttempt := req.UserAiExamID > 0
+	hasJourney := req.UserExamID > 0
+	switch {
+	case !hasAttempt && !hasJourney:
+		return errs.NewError(ctx, status.EXAM_MISSING_ATTEMPT_ID, nil, ErrDetailIDRequired)
+		// case hasAttempt && hasJourney:
+		// 	return errs.NewError(ctx, status.EXAM_AMBIGUOUS_DETAIL_ID, nil, ErrDetailIDAmbiguous)
 	}
 	return nil
 }

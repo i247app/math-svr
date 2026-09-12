@@ -132,6 +132,14 @@ func (r *UserExamDetailRepository) ListByUserAiExamId(ctx context.Context, userA
 	return r.list(ctx, "d.user_ai_exam_id = ?", []any{userAiExamId}, "ORDER BY d.question_number ASC")
 }
 
+// ListByUserExamId returns a whole journey's log. Ordered by sitting id
+// first — ids are minted monotonically, so that IS chronological — then
+// by question number, so a client can walk it exam by exam.
+func (r *UserExamDetailRepository) ListByUserExamId(ctx context.Context, userExamId int64) ([]*exam.UserExamDetail, error) {
+	return r.list(ctx, "d.user_exam_id = ?", []any{userExamId},
+		"ORDER BY d.user_ai_exam_id ASC, d.question_number ASC")
+}
+
 // ListRecentByUserExamId returns the child's most recently answered
 // questions across every sitting, newest first. It is the input a
 // placement or weak-topic rule reads, which is why it is bounded: those

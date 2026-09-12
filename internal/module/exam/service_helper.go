@@ -4,6 +4,7 @@ import (
 	"context"
 
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
+	query "math-ai.com/math-ai/internal/application/query/exam"
 	domainBot "math-ai.com/math-ai/internal/domain/bot"
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
@@ -135,4 +136,47 @@ func (s *Service) gradeFromProfile(ctx context.Context, profile *profileDomain.P
 	logger.From(ctx).Warnf("exam.grade_label_unresolved label=%q profile=%d",
 		grades[0].Label(), profile.ProfileId())
 	return enum.ExamGradeMin, nil
+}
+
+// getAttempt is the single-sitting review: the exam as it was served,
+// plus what the child answered on it.
+func (s *Service) getAttempt(ctx context.Context, userAiExamID int64, profile *profileDomain.Profile) (*dto.GetExamRes, error) {
+	detail, err := s.getAttemptQuery.Handle(ctx, query.GetExamAttemptQuery{
+		UserAiExamID: userAiExamID,
+		UserID:       profile.UserId(),
+		ProfileID:    profile.ProfileId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	submitted := detail.Attempt.UserAiExamStatus() != nil &&
+		*detail.Attempt.UserAiExamStatus() == string(enum.UserAiExamStatusSubmitted)
+
+	return &dto.GetExamRes{
+		Exam:    dto.AttemptToResponse(detail.Attempt, detail.AiExam, submitted),
+		Details: dto.DetailsToResponse(detail.Details),
+	}, nil
+}
+
+// getJourney is the whole-journey review: running totals, every sitting
+// that fed them (as cards, no question blobs), and every answered
+// question across those sittings. Every sitting here is SUBMITTED by
+// construction — that is the moment a sitting joins a journey — so the
+// answer key is always safe to expose.
+func (s *Service) getJourney(ctx context.Context, userExamID int64, profile *profileDomain.Profile) (*dto.GetExamRes, error) {
+	detail, err := s.getJourneyQuery.Handle(ctx, query.GetExamJourneyQuery{
+		UserExamID: userExamID,
+		UserID:     profile.UserId(),
+		ProfileID:  profile.ProfileId(),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &dto.GetExamRes{
+		Stats:   dto.StatsToSingleResponse(detail.Journey),
+		Exams:   dto.AttemptListToResponse(detail.Attempts, detail.AiExams),
+		Details: dto.DetailsToResponse(detail.Details),
+	}, nil
 }

@@ -96,6 +96,10 @@ type IAiExamRepository interface {
 type IUserAiExamRepository interface {
 	FindByUserAiExamId(ctx context.Context, userAiExamId int64) (*UserAiExam, error)
 	ListAttempts(ctx context.Context, filter ListAttemptsFilter, page, limit int64) ([]*UserAiExam, *pagination.Pagination, error)
+	// ListByUserAiExamIds hydrates a set of attempts at once — the
+	// journey view needs every sitting that fed a journey, and fetching
+	// them one by one would turn a twenty-exam journey into twenty reads.
+	ListByUserAiExamIds(ctx context.Context, userAiExamIds []int64) ([]*UserAiExam, error)
 	Create(ctx context.Context, a *UserAiExam) (*UserAiExam, error)
 	MarkSubmitted(ctx context.Context, userAiExamId int64, result AttemptResult) error
 	ListProgressPoints(ctx context.Context, params ProgressPointsParams) ([]*ProgressPoint, error)
@@ -149,5 +153,8 @@ type IUserExamRepository interface {
 type IUserExamDetailRepository interface {
 	CreateBatch(ctx context.Context, details []*UserExamDetail) error
 	ListByUserAiExamId(ctx context.Context, userAiExamId int64) ([]*UserExamDetail, error)
+	// ListByUserExamId returns EVERY answered question of a journey, in
+	// sitting order then question order — the journey review screen.
+	ListByUserExamId(ctx context.Context, userExamId int64) ([]*UserExamDetail, error)
 	ListRecentByUserExamId(ctx context.Context, userExamId int64, limit int64) ([]*UserExamDetail, error)
 }

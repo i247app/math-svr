@@ -20,6 +20,8 @@ var (
 	ErrAnswerLabelRequired     = errors.New("answer label is required")
 	ErrJourneyIDRequired       = errors.New("user_exam_id is required")
 	ErrJourneyStatusInvalid    = errors.New("status must be COMPLETE or CANCEL")
+	ErrDetailIDRequired        = errors.New("one of user_ai_exam_id or user_exam_id is required")
+	ErrDetailIDAmbiguous       = errors.New("send either user_ai_exam_id or user_exam_id, not both")
 	ErrBotAdapterNotConfigured = errors.New("bot adapter is not configured")
 	ErrModelReturnedNothing    = errors.New("model returned no questions")
 	ErrInvalidTz               = errors.New("tz must be a numeric offset such as +07:00")
