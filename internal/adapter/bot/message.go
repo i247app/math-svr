@@ -77,6 +77,55 @@ type EmbedResult struct {
 	Usage    Usage           `json:"usage"`
 }
 
+// RespondRequest is one turn of a SERVER-SIDE conversation: the vendor
+// keeps the transcript and the caller sends only what is new, chained by
+// PreviousResponseID. This is a distinct capability from Chat — see
+// ResponderProvider — and deliberately not a field on ChatRequest, because
+// only some vendors can honour it and the five stateless providers must
+// stay unaware of it.
+//
+// Instructions (the system prompt) are NOT carried across the chain by
+// any known vendor; callers pass them on every turn. Store must be true
+// whenever PreviousResponseID is set — a response can only be chained on
+// if it was retained — and the provider rejects the combination before
+// any network call.
+type RespondRequest struct {
+	Provider BotProviderName
+
+	// Model overrides the provider's configured default model id.
+	Model string
+
+	Instructions string
+
+	// Input is the new content for this turn. Never empty.
+	Input []Message
+
+	// PreviousResponseID chains this turn onto the vendor's stored
+	// response. Empty starts a new chain.
+	PreviousResponseID string
+
+	// Store asks the vendor to retain this response so the next turn can
+	// chain on it. Retention is the vendor's policy (OpenAI: 30 days).
+	Store bool
+
+	Temperature float64 // <0 means "use provider default"
+	TopP        float64 // <0 means "use provider default"
+	MaxTokens   int     // 0 means "use provider default"
+
+	JSONMode bool
+}
+
+// RespondResult is the outcome of one server-side conversation turn.
+// ResponseID is the pointer for the next turn; persisting it is the
+// caller's job.
+type RespondResult struct {
+	Provider   BotProviderName `json:"provider"`
+	Model      string          `json:"model"`
+	ResponseID string          `json:"response_id"`
+	Content    string          `json:"content"`
+	Usage      Usage           `json:"usage"`
+}
+
 // Validate enforces the documented invariants on ChatRequest. Returns
 // plain errors; the Adapter.Chat path wraps them in a
 // MathError(BOT_INVALID_PROMPT) so callers can surface the cause without
@@ -100,6 +149,37 @@ func (r ChatRequest) Validate() error {
 		default:
 			return fmt.Errorf("bot: Messages[%d].Role %q is invalid", i, m.Role)
 		}
+	}
+	if r.MaxTokens < 0 {
+		return errors.New("bot: MaxTokens must be >= 0")
+	}
+	return nil
+}
+
+// Validate enforces the documented invariants on RespondRequest. Same
+// message rules as ChatRequest, plus the chaining precondition.
+func (r RespondRequest) Validate() error {
+	if len(r.Input) == 0 {
+		return errors.New("bot: Input is required")
+	}
+	if len(r.Input) > maxMessages {
+		return fmt.Errorf("bot: Input count %d exceeds limit %d", len(r.Input), maxMessages)
+	}
+	for i, m := range r.Input {
+		if strings.TrimSpace(m.Content) == "" {
+			return fmt.Errorf("bot: Input[%d].Content is empty", i)
+		}
+		if len(m.Content) > maxMessageBytes {
+			return fmt.Errorf("bot: Input[%d].Content exceeds %d bytes", i, maxMessageBytes)
+		}
+		switch m.Role {
+		case RoleSystem, RoleUser, RoleAssistant, RoleTool:
+		default:
+			return fmt.Errorf("bot: Input[%d].Role %q is invalid", i, m.Role)
+		}
+	}
+	if r.PreviousResponseID != "" && !r.Store {
+		return errors.New("bot: PreviousResponseID requires Store=true")
 	}
 	if r.MaxTokens < 0 {
 		return errors.New("bot: MaxTokens must be >= 0")

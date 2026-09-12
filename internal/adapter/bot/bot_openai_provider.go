@@ -104,6 +104,26 @@ func (p *OpenAIProvider) Embed(ctx context.Context, req EmbedRequest) (*EmbedRes
 	}, nil
 }
 
+// Respond invokes openai.Client.Respond — the Responses API with
+// previous_response_id. OpenAIProvider is the only provider that
+// satisfies ResponderProvider; see provider.go.
+func (p *OpenAIProvider) Respond(ctx context.Context, req RespondRequest) (*RespondResult, error) {
+	out, err := p.client.Respond(ctx, toOpenAIRespond(req))
+	if err != nil {
+		return nil, mapOpenAIError(ctx, err)
+	}
+	return &RespondResult{
+		Provider:   ProviderOpenAI,
+		Model:      out.Model,
+		ResponseID: out.ID,
+		Content:    out.Content,
+		Usage:      toBotUsage(out.Usage),
+	}, nil
+}
+
+// Compile-time proof that the optional capability is actually wired.
+var _ ResponderProvider = (*OpenAIProvider)(nil)
+
 func toBotUsage(u openai.Usage) Usage {
 	return Usage{
 		PromptTokens:     u.PromptTokens,
@@ -129,6 +149,28 @@ func toOpenAIChat(req ChatRequest) openai.ChatRequest {
 		MaxTokens:   req.MaxTokens,
 		Stop:        req.Stop,
 		JSONMode:    req.JSONMode,
+	}
+}
+
+func toOpenAIRespond(req RespondRequest) openai.RespondRequest {
+	input := make([]openai.Message, 0, len(req.Input))
+	for _, m := range req.Input {
+		input = append(input, openai.Message{
+			Role:    toOpenAIRole(m.Role),
+			Content: m.Content,
+			Name:    m.Name,
+		})
+	}
+	return openai.RespondRequest{
+		Model:              req.Model,
+		Instructions:       req.Instructions,
+		Input:              input,
+		PreviousResponseID: req.PreviousResponseID,
+		Store:              req.Store,
+		Temperature:        req.Temperature,
+		TopP:               req.TopP,
+		MaxTokens:          req.MaxTokens,
+		JSONMode:           req.JSONMode,
 	}
 }
 

@@ -75,3 +75,42 @@ func TestMapOpenAIErrorNil(t *testing.T) {
 		t.Errorf("mapOpenAIError(nil) = %v, want nil", got)
 	}
 }
+
+// TestMapOpenAIErrorResponsesSentinels covers the two errors only the
+// Responses path can produce. A dead chain pointer must stay BOT_OP_FAILED
+// (not config, not transient) yet remain recognisable through
+// IsChainPointerGone, which is the single predicate the exam module uses
+// to decide "rebuild the chain".
+func TestMapOpenAIErrorResponsesSentinels(t *testing.T) {
+	ctx := context.Background()
+
+	gone := fmt.Errorf("%w: %w", openai.ErrPreviousResponseGone, &openai.APIError{HTTPStatus: 404})
+	mErr := mapOpenAIError(ctx, gone)
+	if got := mErr.GetStatusCode(); got != status.BOT_OP_FAILED {
+		t.Errorf("gone pointer status = %d, want BOT_OP_FAILED", got)
+	}
+	if !IsChainPointerGone(mErr) {
+		t.Error("IsChainPointerGone(mapped) = false, want true")
+	}
+	if !IsChainPointerGone(gone) {
+		t.Error("IsChainPointerGone(raw sentinel) = false, want true")
+	}
+
+	refused := fmt.Errorf("x: %w", openai.ErrContentRefused)
+	if got := mapOpenAIError(ctx, refused).GetStatusCode(); got != status.BOT_CONTENT_BLOCKED {
+		t.Errorf("refusal status = %d, want BOT_CONTENT_BLOCKED", got)
+	}
+
+	// Negative space: an ordinary failure must not be mistaken for a dead
+	// pointer, or the module would rebuild a healthy chain on every 500.
+	for _, other := range []error{
+		mapOpenAIError(ctx, fmt.Errorf("x: %w", &openai.APIError{HTTPStatus: 500})),
+		mapOpenAIError(ctx, fmt.Errorf("x: %w", openai.ErrDecodeResponse)),
+		errors.New("boom"),
+		nil,
+	} {
+		if IsChainPointerGone(other) {
+			t.Errorf("IsChainPointerGone(%v) = true, want false", other)
+		}
+	}
+}

@@ -197,6 +197,76 @@ func (a *Adapter) EmbedVia(ctx context.Context, name BotProviderName, req EmbedR
 	return res, nil
 }
 
+// SupportsRespond reports whether the provider registered under name
+// (or the default when name is empty) can hold server-side conversation
+// state. Callers use it once, at wiring time, to choose between the
+// stateful and the stateless path — not per request.
+func (a *Adapter) SupportsRespond(name BotProviderName) bool {
+	if name == "" {
+		name = a.defaultName
+	}
+	provider, ok := a.providers[name]
+	if !ok {
+		return false
+	}
+	_, ok = provider.(ResponderProvider)
+	return ok
+}
+
+// Respond dispatches one chained turn through the default provider after
+// running RespondRequest.Validate.
+func (a *Adapter) Respond(ctx context.Context, req RespondRequest) (*RespondResult, error) {
+	if a.defaultName == "" {
+		return nil, errors.New("bot: no default provider configured")
+	}
+	return a.RespondVia(ctx, a.defaultName, req)
+}
+
+// RespondVia dispatches one chained turn through the provider registered
+// under name. A provider that does not implement ResponderProvider
+// answers BOT_UNSUPPORTED_OP without any network call.
+func (a *Adapter) RespondVia(ctx context.Context, name BotProviderName, req RespondRequest) (*RespondResult, error) {
+	log := logger.From(ctx)
+
+	if name == "" {
+		name = a.defaultName
+	}
+
+	if err := req.Validate(); err != nil {
+		return nil, errs.NewError(ctx, status.BOT_INVALID_PROMPT,
+			map[string]any{"reason": err.Error()}, err)
+	}
+
+	provider, ok := a.providers[name]
+	if !ok {
+		return nil, fmt.Errorf("bot: provider %q is not registered", name)
+	}
+	responder, ok := provider.(ResponderProvider)
+	if !ok {
+		err := fmt.Errorf("bot: provider %q does not support server-side conversation state", name)
+		return nil, errs.NewError(ctx, status.BOT_UNSUPPORTED_OP,
+			map[string]any{"provider": string(name), "op": "respond"}, err)
+	}
+
+	ctx, span := startLLMSpan(ctx, name, "respond")
+	defer span.End()
+	span.SetAttributes(attribute.Bool("ai.chained", req.PreviousResponseID != ""))
+
+	res, err := responder.Respond(ctx, req)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, logAndReturn(ctx, log, name, "respond", err)
+	}
+	setLLMResultAttrs(span, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
+	// The response id is an opaque vendor handle, safe to log; the
+	// content is not logged here for the same reason Chat does not.
+	log.Infof("bot.respond provider=%s model=%s response_id=%s chained=%v prompt_tokens=%d completion_tokens=%d total_tokens=%d",
+		name, res.Model, res.ResponseID, req.PreviousResponseID != "",
+		res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
+	return res, nil
+}
+
 // startLLMSpan opens a client span for one LLM operation as a child of the
 // span in ctx. Returns a no-op span when tracing is disabled.
 //

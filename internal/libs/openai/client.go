@@ -391,8 +391,18 @@ func (c *Client) buildRequest(req ChatRequest, stream bool) wireChatRequest {
 // BILLING failures are not, because they cannot recover within the call. A
 // throttling 429 is retried only when it carries a Retry-After the client
 // is willing to wait out (see maxRetryAfter).
-// postChat sends a chat-completion body and, if the model turns out to
-// forbid an explicit temperature / top_p, drops both and sends once more.
+// samplingCarrier is the slice of a wire request that the sampling
+// fallback needs: which model it targets and how to strip the sampling
+// overrides. Both chat-completions and responses bodies implement it, so
+// the drop-and-retry logic lives once.
+type samplingCarrier interface {
+	samplingModel() string
+	hasSampling() bool
+	clearSampling()
+}
+
+// postSampled sends a request body and, if the model turns out to forbid
+// an explicit temperature / top_p, drops both and sends once more.
 //
 // Why adapt instead of listing the models: the families that reject
 // sampling overrides (gpt-5*, the o-series, and every reasoning flagship
@@ -402,13 +412,13 @@ func (c *Client) buildRequest(req ChatRequest, stream bool) wireChatRequest {
 // notice. Asking the API is authoritative and self-correcting. The cost
 // is one extra round trip per model per process, memoised by
 // blockSampling; every later call builds the correct body first time.
-func (c *Client) postChat(ctx context.Context, wireReq wireChatRequest) ([]byte, error) {
-	body, err := c.post(ctx, chatCompletionsPath, wireReq)
+func (c *Client) postSampled(ctx context.Context, path string, body samplingCarrier) ([]byte, error) {
+	out, err := c.post(ctx, path, body)
 	if err == nil {
-		return body, nil
+		return out, nil
 	}
 	// Nothing to drop means the 400 is about something else.
-	if wireReq.Temperature == nil && wireReq.TopP == nil {
+	if !body.hasSampling() {
 		return nil, err
 	}
 	param, ok := unsupportedSamplingParam(err)
@@ -416,9 +426,14 @@ func (c *Client) postChat(ctx context.Context, wireReq wireChatRequest) ([]byte,
 		return nil, err
 	}
 
-	c.blockSampling(ctx, wireReq.Model, param)
-	wireReq.Temperature, wireReq.TopP = nil, nil
-	return c.post(ctx, chatCompletionsPath, wireReq)
+	c.blockSampling(ctx, body.samplingModel(), param)
+	body.clearSampling()
+	return c.post(ctx, path, body)
+}
+
+// postChat is the chat-completions entry into postSampled.
+func (c *Client) postChat(ctx context.Context, wireReq wireChatRequest) ([]byte, error) {
+	return c.postSampled(ctx, chatCompletionsPath, &wireReq)
 }
 
 // samplingBlocked reports whether this model has already refused an

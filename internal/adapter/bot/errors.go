@@ -218,6 +218,16 @@ func mapOpenAIError(ctx context.Context, err error) *errs.MathError {
 	}
 
 	switch {
+	// FIRST, before the config check: a dead chain pointer usually
+	// arrives as HTTP 404, which IsConfigError would otherwise claim as
+	// "unknown model". The key and model are fine; only the pointer is
+	// gone, and it will never come back. BOT_OP_FAILED with a stable
+	// vendor_reason is what the exam module branches on to rebuild the
+	// chain — see IsChainPointerGone.
+	case openai.IsPreviousResponseGone(err):
+		args["vendor_reason"] = VendorReasonPreviousResponseGone
+		return errs.NewError(ctx, status.BOT_OP_FAILED, args, err)
+
 	case errors.Is(err, openai.ErrInvalidConfig),
 		errors.Is(err, openai.ErrQuotaExhausted),
 		openai.IsConfigError(err):
@@ -232,11 +242,36 @@ func mapOpenAIError(ctx context.Context, err error) *errs.MathError {
 	case errors.Is(err, openai.ErrRateLimited), openai.IsRateLimited(err):
 		return errs.NewError(ctx, status.BOT_RATE_LIMITED, args, err)
 
+	case errors.Is(err, openai.ErrContentRefused):
+		// Deterministic for the same input — same reasoning as Gemini's
+		// safety block: a retry would be refused identically.
+		return errs.NewError(ctx, status.BOT_CONTENT_BLOCKED, args, err)
+
 	case errors.Is(err, openai.ErrDecodeResponse):
 		return errs.NewError(ctx, status.BOT_SERIALIZE_FAILED, args, err)
 	}
 
 	return errs.NewError(ctx, status.BOT_OP_FAILED, args, err)
+}
+
+// VendorReasonPreviousResponseGone is the args["vendor_reason"] value a
+// BOT_OP_FAILED carries when the chain pointer a RespondRequest sent is no
+// longer usable. Stable string: callers match on it, not on the message.
+const VendorReasonPreviousResponseGone = "previous_response_gone"
+
+// IsChainPointerGone reports whether err is the adapter's translation of
+// a dead previous_response_id. This is the ONE predicate the module layer
+// uses to decide "rebuild the chain" — it hides both the vendor package
+// and the MathError plumbing.
+func IsChainPointerGone(err error) bool {
+	if openai.IsPreviousResponseGone(err) {
+		return true
+	}
+	mErr, ok := errs.IsMathError(err)
+	if !ok || mErr.BaseError == nil {
+		return false
+	}
+	return openai.IsPreviousResponseGone(mErr.BaseError)
 }
 
 // mapGeminiError translates a libs/gemini error into a domain-layer

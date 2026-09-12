@@ -120,6 +120,11 @@ type wireChatRequest struct {
 	Metadata        map[string]string   `json:"metadata,omitempty"`
 }
 
+// samplingCarrier implementation — see Client.postSampled.
+func (r *wireChatRequest) samplingModel() string { return r.Model }
+func (r *wireChatRequest) hasSampling() bool     { return r.Temperature != nil || r.TopP != nil }
+func (r *wireChatRequest) clearSampling()        { r.Temperature, r.TopP = nil, nil }
+
 type wireUsage struct {
 	PromptTokens     int `json:"prompt_tokens"`
 	CompletionTokens int `json:"completion_tokens"`

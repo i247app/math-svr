@@ -35,6 +35,19 @@ var (
 	// but is the opposite situation: it will never succeed on retry and
 	// needs an operator to add credit. → BOT_CONFIG_INVALID.
 	ErrQuotaExhausted = errors.New("openai: quota / credit balance exhausted")
+
+	// ErrPreviousResponseGone signals that a Responses-API call chained on
+	// a previous_response_id the vendor no longer holds — stored responses
+	// expire after 30 days, and an id can also be wrong or belong to
+	// another project. Never retried here: only the caller can decide to
+	// rebuild the chain. → BOT_OP_FAILED with vendor_reason set, so the
+	// module layer can branch on it.
+	ErrPreviousResponseGone = errors.New("openai: previous response no longer available")
+
+	// ErrContentRefused signals a 200 whose output carried a refusal item
+	// instead of text. Deterministic for the same input, so it must not be
+	// retried. → BOT_CONTENT_BLOCKED.
+	ErrContentRefused = errors.New("openai: model refused to answer")
 )
 
 // APIError is the typed shape of an OpenAI error response.
@@ -152,6 +165,33 @@ func unsupportedSamplingParam(err error) (string, bool) {
 		return api.Param, true
 	}
 	return "", false
+}
+
+// IsPreviousResponseGone reports whether err means the chain pointer the
+// caller sent is no longer usable and a fresh chain must be started.
+func IsPreviousResponseGone(err error) bool {
+	return errors.Is(err, ErrPreviousResponseGone)
+}
+
+// previousResponseGoneShape recognises the vendor error for a dead chain
+// pointer. Two shapes are accepted: a 404 (the response object is gone),
+// and a 400 whose param names previous_response_id (rejected before
+// lookup). Both are only meaningful when the request actually carried a
+// pointer — a bare 404 on a model id is a config error, not this — so the
+// caller passes chained=true to opt in.
+//
+// EXACT VENDOR CODE UNCONFIRMED: this predicate was written from the
+// documented retention rule, not from an observed response. Step 4 of the
+// live checklist (docs/features/009) plants a bogus id and records the
+// real status/code here.
+func previousResponseGoneShape(api *APIError, chained bool) bool {
+	if api == nil || !chained {
+		return false
+	}
+	if api.Param == "previous_response_id" {
+		return true
+	}
+	return api.HTTPStatus == 404
 }
 
 // IsRetryable reports whether an HTTP status should be retried
