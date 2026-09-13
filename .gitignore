@@ -4,6 +4,9 @@
 *.swp
 .gocache
 
+# txt files
+*.txt
+
 # archify
 archify/
 

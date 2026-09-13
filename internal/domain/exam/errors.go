@@ -19,10 +19,21 @@ var ErrAttemptNotInProgress = errors.New("exam: attempt is not in progress")
 // both succeed.
 var ErrJourneyNotActive = errors.New("exam: journey is not active")
 
+// ErrJourneyNotEnded reports that a reopen hit a journey that was not
+// COMPLETE or CANCEL — still open, deleted, or gone. The repository's
+// UPDATE carries the expected states in its WHERE clause, so a reopen
+// racing a mark cannot land on a row that just changed under it.
+var ErrJourneyNotEnded = errors.New("exam: journey is not ended")
+
 // ErrJourneyConflict reports that opening a journey collided with a row
 // that already holds the (user, profile, type) slot — in practice, another
 // submit opened the journey a moment earlier. The caller re-reads the open
 // journey and folds into it instead.
+//
+// A reopen reports it too: flipping an ended journey back to ACTIVE
+// re-enters the (user, profile, type) slot, and if another journey holds
+// it the database refuses — which is the rule "one open journey at a
+// time" being enforced where a code check alone could be raced.
 //
 // It is a distinct error rather than a silent merge so that a collision
 // on ANY unique key surfaces here. An INSERT ... ON DUPLICATE KEY UPDATE

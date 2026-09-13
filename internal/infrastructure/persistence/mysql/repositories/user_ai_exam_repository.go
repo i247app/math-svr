@@ -19,7 +19,7 @@ import (
 const (
 	userAiExamTable = "ma_user_ai_exams"
 
-	userAiExamColumns = `u.id, u.user_ai_exam_id, u.user_id, u.profile_id, u.ai_exam_id, u.shuffle_map,
+	userAiExamColumns = `u.id, u.user_ai_exam_id, u.user_id, u.profile_id, u.ai_exam_id, u.user_exam_id, u.shuffle_map,
 		u.req_exam_type, u.req_grade, u.req_level,
 		u.res_total_questions, u.res_correct_number, u.res_skipped_number, u.res_score_percentage,
 		u.started_dt, u.submitted_dt,
@@ -43,7 +43,7 @@ func NewUserAiExamRepository(db database.Executor) exam.IUserAiExamRepository {
 
 func scanUserAiExam(s database.RowScanner) (*models.UserAiExamModel, error) {
 	var m models.UserAiExamModel
-	if err := s.Scan(&m.Id, &m.UserAiExamId, &m.UserId, &m.ProfileId, &m.AiExamId, &m.ShuffleMap,
+	if err := s.Scan(&m.Id, &m.UserAiExamId, &m.UserId, &m.ProfileId, &m.AiExamId, &m.UserExamId, &m.ShuffleMap,
 		&m.ReqExamType, &m.ReqGrade, &m.ReqLevel,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
 		&m.StartedDt, &m.SubmittedDt,
@@ -156,7 +156,30 @@ func buildUserAiExamFilterClause(filter exam.ListAttemptsFilter) (string, []any)
 		clause += ` AND u.user_ai_exam_status = ?`
 		args = append(args, *filter.Status)
 	}
+	if filter.UserExamID != nil && *filter.UserExamID != 0 {
+		clause += ` AND u.user_exam_id = ?`
+		args = append(args, *filter.UserExamID)
+	}
 	return clause, args
+}
+
+// FindLatestSubmittedByUserExamId walks ix_user_exam_submitted backwards:
+// the newest submitted_dt of the journey, id as the tie-break so two
+// sittings submitted in the same microsecond still order deterministically.
+func (r *UserAiExamRepository) FindLatestSubmittedByUserExamId(ctx context.Context, userExamId int64) (*exam.UserAiExam, error) {
+	args := append(userAiExamActiveArgs(), userExamId, string(enum.UserAiExamStatusSubmitted))
+	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
+		userAiExamActiveWhere + ` AND u.user_exam_id = ? AND u.user_ai_exam_status = ?` +
+		` ORDER BY u.submitted_dt DESC, u.id DESC LIMIT 1`
+
+	m, err := scanUserAiExam(r.db.QueryRow(ctx, query, args...))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("user ai exam repo find latest submitted: %w", err)
+	}
+	return ModelToDomainUserAiExam(m), nil
 }
 
 // ListByUserAiExamIds hydrates a batch of attempts, oldest first. The IN
@@ -200,16 +223,16 @@ func (r *UserAiExamRepository) ListByUserAiExamIds(ctx context.Context, userAiEx
 func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (*exam.UserAiExam, error) {
 	query := `
 		INSERT INTO ` + userAiExamTable + `
-			(user_ai_exam_id, user_id, profile_id, ai_exam_id, shuffle_map,
+			(user_ai_exam_id, user_id, profile_id, ai_exam_id, user_exam_id, shuffle_map,
 			 req_exam_type, req_grade, req_level,
 			 started_dt, note, user_ai_exam_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	now := mtime.Now().Time
 	startedDt := mtime.MathTimePtrToTime(a.StartedDt().Ptr())
 
 	result, err := r.db.Exec(ctx, query,
-		a.UserAiExamId(), a.UserId(), a.ProfileId(), a.AiExamId(), a.ShuffleMap(),
+		a.UserAiExamId(), a.UserId(), a.ProfileId(), a.AiExamId(), a.UserExamId(), a.ShuffleMap(),
 		a.ReqExamType(), a.ReqGrade(), a.ReqLevel(),
 		startedDt, a.Note(), a.UserAiExamStatus(), a.CreateId(), now, now)
 	if err != nil {
@@ -231,6 +254,9 @@ func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (
 // command is not enough — here the loser matches zero rows and gets
 // exam.ErrAttemptNotInProgress instead of silently double-counting the
 // answers into the lifetime totals.
+//
+// user_exam_id is COALESCEd: a nil result leaves what the hand-out wrote,
+// a value pins the sitting to the journey it actually folded into.
 func (r *UserAiExamRepository) MarkSubmitted(ctx context.Context, userAiExamId int64, res exam.AttemptResult) error {
 	query := `
 		UPDATE ` + userAiExamTable + `
@@ -239,6 +265,7 @@ func (r *UserAiExamRepository) MarkSubmitted(ctx context.Context, userAiExamId i
 			res_skipped_number   = ?,
 			res_score_percentage = ?,
 			submitted_dt         = ?,
+			user_exam_id         = COALESCE(?, user_exam_id),
 			user_ai_exam_status  = ?,
 			modify_dt            = ?
 		WHERE user_ai_exam_id = ? AND user_ai_exam_status = ?
@@ -250,7 +277,7 @@ func (r *UserAiExamRepository) MarkSubmitted(ctx context.Context, userAiExamId i
 
 	result, err := r.db.Exec(ctx, query,
 		res.TotalQuestions, res.CorrectNumber, res.SkippedNumber, res.ScorePercentage,
-		submittedDt, string(enum.UserAiExamStatusSubmitted), mtime.Now().Time,
+		submittedDt, res.UserExamId, string(enum.UserAiExamStatusSubmitted), mtime.Now().Time,
 		userAiExamId, string(enum.UserAiExamStatusInProgress))
 	if err != nil {
 		return fmt.Errorf("user ai exam repo mark submitted: %w", err)
@@ -299,6 +326,10 @@ func (r *UserAiExamRepository) ListProgressPoints(ctx context.Context, params ex
 	if params.ExamType != nil && *params.ExamType != "" {
 		where += ` AND u.req_exam_type = ?`
 		args = append(args, *params.ExamType)
+	}
+	if params.UserExamID != nil && *params.UserExamID != 0 {
+		where += ` AND u.user_exam_id = ?`
+		args = append(args, *params.UserExamID)
 	}
 	if params.From != nil && !params.From.IsZero() {
 		where += ` AND u.submitted_dt >= ?`
@@ -349,6 +380,7 @@ func ModelToDomainUserAiExam(m *models.UserAiExamModel) *exam.UserAiExam {
 	a.SetUserId(m.UserId)
 	a.SetProfileId(m.ProfileId)
 	a.SetAiExamId(m.AiExamId)
+	a.SetUserExamId(m.UserExamId)
 	a.SetShuffleMap(m.ShuffleMap)
 	a.SetReqExamType(m.ReqExamType)
 	a.SetReqGrade(m.ReqGrade)

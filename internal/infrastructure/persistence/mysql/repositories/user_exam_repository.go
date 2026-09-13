@@ -64,8 +64,11 @@ func (r *UserExamRepository) findOneBy(ctx context.Context, where string, args .
 	return ModelToDomainUserExam(m), nil
 }
 
-func (r *UserExamRepository) FindByUserExamId(ctx context.Context, userExamId int64) (*exam.UserExam, error) {
-	return r.findOneBy(ctx, "e.user_exam_id = ?", userExamId)
+// FindByUserExamIdAndType reads one row of a journey. user_exam_id alone
+// is not a key here — the ASSESSMENT row and the PRACTICE row of one
+// journey share it — so the type is part of every by-id read.
+func (r *UserExamRepository) FindByUserExamIdAndType(ctx context.Context, userExamId int64, examType string) (*exam.UserExam, error) {
+	return r.findOneBy(ctx, "e.user_exam_id = ? AND e.req_exam_type = ?", userExamId, examType)
 }
 
 // FindActiveByUserProfileType reads the open journey. uk_active_journey
@@ -135,14 +138,15 @@ func (r *UserExamRepository) ListByUserProfile(ctx context.Context, userId, prof
 	return out, nil
 }
 
-// MarkStatus ends a journey. The WHERE clause carries ACTIVE as the
-// expected state: two marks racing on the same row both read ACTIVE, and
-// this is what makes the loser update zero rows and get
-// exam.ErrJourneyNotActive rather than silently "ending" it twice with a
-// different status.
+// MarkStatus ends a journey — every open row of the id in one statement,
+// so the PRACTICE row can never outlive the ASSESSMENT row it hangs off.
+// The WHERE clause carries ACTIVE as the expected state: two marks racing
+// on the same journey both read ACTIVE, and this is what makes the loser
+// update zero rows and get exam.ErrJourneyNotActive rather than silently
+// "ending" it twice with a different status.
 //
 // Flipping user_exam_status also flips the generated active_key to NULL,
-// which is what frees the (user, profile, type) slot for the next journey.
+// which is what frees the (user, profile, type) slots for the next journey.
 func (r *UserExamRepository) MarkStatus(ctx context.Context, userExamId int64, newStatus string, endedDt mtime.MathTime) error {
 	query := `
 		UPDATE ` + userExamTable + `
@@ -173,15 +177,59 @@ func (r *UserExamRepository) MarkStatus(ctx context.Context, userExamId int64, n
 	return nil
 }
 
-// Create opens a journey. It is a plain INSERT on purpose: the previous
-// INSERT ... ON DUPLICATE KEY UPDATE quietly redirected the write into
-// whatever row collided on ANY unique key — and when the schema drifted
-// and the triple key came back without its active_key column, that row
-// was an already-ended journey. Now a collision is reported, not absorbed.
+// Reopen puts an ended journey back in play — every COMPLETE / CANCEL
+// row of the id, so the PRACTICE row returns with its journey — and
+// clears ended_dt so the row reads as open again.
 //
-// uk_active_journey is what makes "at most one open journey per triple"
-// hold under concurrency: two first-ever submits both try to INSERT, one
-// wins, the other gets ErrJourneyConflict and folds into the winner.
+// Two guards. The WHERE clause carries the ended states, so a reopen
+// racing a mark matches zero rows and gets ErrJourneyNotEnded rather than
+// re-opening something that just changed. And flipping user_exam_status
+// regenerates active_key, so if another journey of the type is open the
+// UPDATE trips uk_active_journey and comes back as ErrJourneyConflict —
+// the database, not the caller's earlier read, is what holds "one open
+// journey at a time".
+func (r *UserExamRepository) Reopen(ctx context.Context, userExamId int64) error {
+	query := `
+		UPDATE ` + userExamTable + `
+		SET user_exam_status = ?,
+			ended_dt         = NULL,
+			modify_dt        = ?
+		WHERE user_exam_id = ? AND user_exam_status IN (?, ?)
+	`
+	result, err := r.db.Exec(ctx, query,
+		string(enum.UserExamStatusActive), mtime.Now().Time,
+		userExamId, string(enum.UserExamStatusComplete), string(enum.UserExamStatusCancel))
+	if err != nil {
+		if isDuplicateEntry(err) {
+			return exam.ErrJourneyConflict
+		}
+		return fmt.Errorf("user exam repo reopen: %w", err)
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("user exam repo reopen rows affected: %w", err)
+	}
+	if affected == 0 {
+		return exam.ErrJourneyNotEnded
+	}
+	return nil
+}
+
+// Create opens a journey row. It is a plain INSERT on purpose: the
+// previous INSERT ... ON DUPLICATE KEY UPDATE quietly redirected the write
+// into whatever row collided on ANY unique key — and when the schema
+// drifted and the triple key came back without its active_key column,
+// that row was an already-ended journey. Now a collision is reported, not
+// absorbed.
+//
+// Two unique keys back this. uk_active_journey makes "at most one open
+// row per (user, profile, type)" hold under concurrency: two first-ever
+// submits both try to INSERT, one wins, the other gets ErrJourneyConflict
+// and folds into the winner. uk_journey_type makes (user_exam_id, type)
+// unique, which is what lets a PRACTICE row reuse its journey's id
+// without ever doubling up. The caller decides the id: a fresh one for an
+// ASSESSMENT row, the journey's own for a PRACTICE row.
 func (r *UserExamRepository) Create(ctx context.Context, e *exam.UserExam, delta exam.StatsDelta) error {
 	query := `
 		INSERT INTO ` + userExamTable + `
@@ -226,7 +274,7 @@ func (r *UserExamRepository) Create(ctx context.Context, e *exam.UserExam, delta
 // The WHERE clause carries ACTIVE. A journey that ended between the
 // caller's read and this write matches zero rows and gets
 // ErrJourneyNotActive, rather than having a sitting folded into history.
-func (r *UserExamRepository) Accumulate(ctx context.Context, userExamId int64, e *exam.UserExam, delta exam.StatsDelta) error {
+func (r *UserExamRepository) Accumulate(ctx context.Context, userExamId int64, examType string, e *exam.UserExam, delta exam.StatsDelta) error {
 	query := `
 		UPDATE ` + userExamTable + `
 		SET res_total_questions  = res_total_questions + ?,
@@ -239,14 +287,14 @@ func (r *UserExamRepository) Accumulate(ctx context.Context, userExamId int64, e
 			res_level            = ?,
 			last_submitted_dt    = ?,
 			modify_dt            = ?
-		WHERE user_exam_id = ? AND user_exam_status = ?
+		WHERE user_exam_id = ? AND req_exam_type = ? AND user_exam_status = ?
 	`
 	lastSubmitted := mtime.MathTimePtrToTime(e.LastSubmittedDt().Ptr())
 
 	result, err := r.db.Exec(ctx, query,
 		delta.TotalQuestions, delta.CorrectNumber, delta.SkippedNumber,
 		e.ResReview(), e.ResGrade(), e.ResLevel(), lastSubmitted, mtime.Now().Time,
-		userExamId, string(enum.UserExamStatusActive))
+		userExamId, examType, string(enum.UserExamStatusActive))
 	if err != nil {
 		return fmt.Errorf("user exam repo accumulate: %w", err)
 	}

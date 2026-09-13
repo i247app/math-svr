@@ -69,6 +69,18 @@ func Derive(in Input) Result {
 	}
 }
 
+// DerivePractice is the rule for a PRACTICE row. A practice round never
+// moves the measured grade — placement is what the ASSESSMENT sittings
+// are for, and a child drilling their weak topics must not be promoted
+// or demoted by how the drill went. The grade therefore stays nil, and
+// the review describes the practice history on its own.
+func DerivePractice(in Input) Result {
+	return Result{
+		Grade:  nil,
+		Review: buildReview(in, nil),
+	}
+}
+
 func deriveGrade(in Input) *int {
 	base := in.ExamGrade
 	if in.CurrentGrade != nil {
@@ -112,9 +124,9 @@ func buildReview(in Input, grade *int) string {
 	if in.LifetimeSkipped > 0 {
 		body += fmt.Sprintf(" Còn bỏ trống %d câu.", in.LifetimeSkipped)
 	}
-	if grade != nil {
-		body += fmt.Sprintf(" Đang ở mức %s.", gradeLabel(*grade))
-	}
+	// if grade != nil {
+	// 	body += fmt.Sprintf(" Đang ở mức %s.", gradeLabel(*grade))
+	// }
 
 	if runes := []rune(body); len(runes) > reviewMaxLen {
 		body = string(runes[:reviewMaxLen-1]) + "…"

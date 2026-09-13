@@ -21,11 +21,12 @@ type examProgressReader interface {
 // (empty means an open bound); ExamType nil means every type; Limit is
 // pre-clamped by the validator.
 type GetExamProgressQuery struct {
-	ProfileID int64
-	ExamType  *string
-	From      string
-	To        string
-	Limit     int64
+	ProfileID  int64
+	ExamType   *string
+	UserExamID *int64
+	From       string
+	To         string
+	Limit      int64
 }
 
 type GetExamProgressResult struct {
@@ -43,9 +44,10 @@ func NewGetExamProgressQueryHandler(reader examProgressReader) *GetExamProgressQ
 
 func (h *GetExamProgressQueryHandler) Handle(ctx context.Context, q GetExamProgressQuery) (*GetExamProgressResult, error) {
 	params := exam.ProgressPointsParams{
-		ProfileID: q.ProfileID,
-		ExamType:  q.ExamType,
-		Limit:     q.Limit,
+		ProfileID:  q.ProfileID,
+		ExamType:   q.ExamType,
+		UserExamID: q.UserExamID,
+		Limit:      q.Limit,
 	}
 	if q.From != "" {
 		from, err := mtime.ParseFromString(q.From)
@@ -79,6 +81,7 @@ func (h *GetExamProgressQueryHandler) Handle(ctx context.Context, q GetExamProgr
 		prior, err := h.reader.ListProgressPoints(ctx, exam.ProgressPointsParams{
 			ProfileID:       q.ProfileID,
 			ExamType:        q.ExamType,
+			UserExamID:      q.UserExamID,
 			CompletedBefore: &anchor,
 			Limit:           q.Limit,
 		})

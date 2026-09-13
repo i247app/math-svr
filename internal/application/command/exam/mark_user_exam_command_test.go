@@ -32,13 +32,57 @@ func (f fakeUoW) Do(ctx context.Context, fn func(ctx context.Context, repos tran
 // leans on: MarkStatus only succeeds against an ACTIVE row.
 type fakeUserExamRepo struct {
 	exam.IUserExamRepository
-	rows       map[int64]*exam.UserExam
-	markCalls  int
-	raceEnding bool // simulate another mark landing between the read and the write
+	rows        map[int64]*exam.UserExam
+	markCalls   int
+	reopenCalls int
+	raceEnding  bool // simulate another mark landing between the read and the write
+	raceReopen  bool // simulate another journey grabbing the open slot before the write
 }
 
-func (f *fakeUserExamRepo) FindByUserExamId(ctx context.Context, id int64) (*exam.UserExam, error) {
-	return f.rows[id], nil
+func (f *fakeUserExamRepo) FindByUserExamIdAndType(ctx context.Context, id int64, examType string) (*exam.UserExam, error) {
+	row, ok := f.rows[id]
+	if !ok || row.ReqExamType() != examType {
+		return nil, nil
+	}
+	return row, nil
+}
+
+func (f *fakeUserExamRepo) FindActiveByUserProfileType(ctx context.Context, userID, profileID int64, typ string) (*exam.UserExam, error) {
+	for _, row := range f.rows {
+		if row.UserId() == userID && row.ProfileId() == profileID && row.ReqExamType() == typ &&
+			row.UserExamStatus() != nil && *row.UserExamStatus() == string(enum.UserExamStatusActive) {
+			return row, nil
+		}
+	}
+	return nil, nil
+}
+
+// Reopen mirrors the real guard: only an ended row flips, and — as the
+// unique key would — it refuses when another journey of the type holds
+// the open slot.
+func (f *fakeUserExamRepo) Reopen(ctx context.Context, id int64) error {
+	f.reopenCalls++
+	row, ok := f.rows[id]
+	if !ok {
+		return exam.ErrJourneyNotEnded
+	}
+	if f.raceReopen {
+		return exam.ErrJourneyConflict
+	}
+	st := enum.UserExamStatusType(*row.UserExamStatus())
+	if !st.IsEnding() {
+		return exam.ErrJourneyNotEnded
+	}
+	for otherID, other := range f.rows {
+		if otherID != id && other.ReqExamType() == row.ReqExamType() &&
+			*other.UserExamStatus() == string(enum.UserExamStatusActive) {
+			return exam.ErrJourneyConflict
+		}
+	}
+	active := string(enum.UserExamStatusActive)
+	row.SetUserExamStatus(&active)
+	row.SetEndedDt(mtime.MathTime{})
+	return nil
 }
 
 func (f *fakeUserExamRepo) MarkStatus(ctx context.Context, id int64, newStatus string, endedDt mtime.MathTime) error {
@@ -65,7 +109,7 @@ func journey(id, userID, profileID int64, st enum.UserExamStatusType) *exam.User
 	j.SetUserExamId(id)
 	j.SetUserId(userID)
 	j.SetProfileId(profileID)
-	j.SetReqExamType(string(enum.ExamTypePractice))
+	j.SetReqExamType(string(enum.ExamTypeAssessment))
 	s := string(st)
 	j.SetUserExamStatus(&s)
 	return j
@@ -120,13 +164,13 @@ func TestMarkUserExamCommand(t *testing.T) {
 			wantEnded: enum.UserExamStatusCancel,
 		},
 		{
-			name: "refuses a status that is not an ending",
+			name: "reopening a journey that is already open",
 			seed: journey(journeyID, userID, profileID, enum.UserExamStatusActive),
 			cmd: command.MarkUserExamCommand{
 				UserExamID: journeyID, UserID: userID, ProfileID: profileID,
 				Status: enum.UserExamStatusActive,
 			},
-			wantCode: status.EXAM_INVALID_JOURNEY_STATUS,
+			wantCode: status.EXAM_JOURNEY_ALREADY_ACTIVE,
 		},
 		{
 			name: "refuses DELETED as an ending — that is a soft delete, not a finish",
@@ -220,6 +264,94 @@ func TestMarkUserExamCommand(t *testing.T) {
 			}
 			if repo.markCalls != tc.wantMarks {
 				t.Errorf("MarkStatus called %d times, want %d", repo.markCalls, tc.wantMarks)
+			}
+		})
+	}
+}
+
+// TestReopenUserExam: a child who changes their mind can pick an ended
+// journey back up — but only one journey of a type is ever open, and the
+// PRACTICE row comes back with it.
+func TestReopenUserExam(t *testing.T) {
+	const (
+		journeyID = int64(9001)
+		otherID   = int64(9002)
+		userID    = int64(1)
+		profileID = int64(11)
+	)
+	reopen := command.MarkUserExamCommand{
+		UserExamID: journeyID, UserID: userID, ProfileID: profileID,
+		Status: enum.UserExamStatusActive,
+	}
+
+	tests := []struct {
+		name        string
+		seed        []*exam.UserExam
+		race        bool
+		wantCode    status.StatusCode
+		wantReopens int
+	}{
+		{
+			name:        "a COMPLETE journey reopens",
+			seed:        []*exam.UserExam{journey(journeyID, userID, profileID, enum.UserExamStatusComplete)},
+			wantReopens: 1,
+		},
+		{
+			name:        "a CANCEL journey reopens",
+			seed:        []*exam.UserExam{journey(journeyID, userID, profileID, enum.UserExamStatusCancel)},
+			wantReopens: 1,
+		},
+		{
+			name: "refused while another journey of the type is open",
+			seed: []*exam.UserExam{
+				journey(journeyID, userID, profileID, enum.UserExamStatusComplete),
+				journey(otherID, userID, profileID, enum.UserExamStatusActive),
+			},
+			wantCode: status.EXAM_JOURNEY_ALREADY_ACTIVE,
+		},
+		{
+			// The read saw no open journey; another one opened before the
+			// write. The unique key is what refuses it.
+			name:        "loses a race for the open slot",
+			seed:        []*exam.UserExam{journey(journeyID, userID, profileID, enum.UserExamStatusComplete)},
+			race:        true,
+			wantCode:    status.EXAM_JOURNEY_ALREADY_ACTIVE,
+			wantReopens: 1,
+		},
+		{
+			name:     "another child's journey",
+			seed:     []*exam.UserExam{journey(journeyID, userID, profileID+1, enum.UserExamStatusComplete)},
+			wantCode: status.EXAM_JOURNEY_NOT_OWNED,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := &fakeUserExamRepo{rows: map[int64]*exam.UserExam{}, raceReopen: tc.race}
+			for _, j := range tc.seed {
+				repo.rows[j.UserExamId()] = j
+			}
+			handler := command.NewMarkUserExamCommandHandler(fakeUoW{repos: transaction.Repositories{UserExam: repo}})
+
+			got, err := handler.Handle(context.Background(), reopen)
+
+			if repo.reopenCalls != tc.wantReopens {
+				t.Errorf("Reopen called %d times, want %d", repo.reopenCalls, tc.wantReopens)
+			}
+			if tc.wantCode != 0 {
+				if code := codeOf(t, err); code != tc.wantCode {
+					t.Fatalf("code = %d, want %d", code, tc.wantCode)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got.UserExamStatus() == nil || *got.UserExamStatus() != string(enum.UserExamStatusActive) {
+				t.Fatalf("journey status = %v, want ACTIVE", got.UserExamStatus())
+			}
+			if !got.EndedDt().IsZero() {
+				t.Error("ended_dt must be cleared on reopen")
 			}
 		})
 	}

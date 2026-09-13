@@ -7,7 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-func TestAssessmentProbePositions(t *testing.T) {
+func TestProbePositions(t *testing.T) {
 	tests := []struct {
 		name     string
 		examType enum.ExamType
@@ -18,12 +18,12 @@ func TestAssessmentProbePositions(t *testing.T) {
 		{"assessment shorter than the second slot", enum.ExamTypeAssessment, 5, []int{3}},
 		{"assessment too short to probe at all", enum.ExamTypeAssessment, 2, nil},
 		{"zero falls back to the default length", enum.ExamTypeAssessment, 0, []int{3, 6}},
-		{"practice never probes", enum.ExamTypePractice, 10, nil},
-		{"exam never probes", enum.ExamTypeExam, 10, nil},
+		{"practice probes like an assessment", enum.ExamTypePractice, 10, []int{3, 6}},
+		{"grade review never probes", enum.ExamTypeGrade, 10, nil},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := AssessmentProbePositions(tc.examType, tc.numQues)
+			got := ProbePositions(tc.examType, tc.numQues)
 			if len(got) != len(tc.want) {
 				t.Fatalf("got %v, want %v", got, tc.want)
 			}
@@ -130,20 +130,87 @@ func TestExamPromptUsesExamVocabulary(t *testing.T) {
 	}
 }
 
-func TestBuildExamPromptPracticeHasNoProbe(t *testing.T) {
+// TestBuildExamPromptPracticeProbes: a PRACTICE round keeps the probe rule
+// — the drill stretches the child the same way the exam did — and the
+// practice block defers to it rather than contradicting it.
+func TestBuildExamPromptPracticeProbes(t *testing.T) {
 	_, user, err := BuildExamPrompt(ExamPromptInput{
 		ExamType:     enum.ExamTypePractice,
 		Grade:        4,
 		NumQuestions: 10,
+		Practice:     &PracticeBrief{Mode: enum.PracticeModeAdvance, StrongTopics: []string{"phép cộng"}},
 	})
 	if err != nil {
 		t.Fatalf("BuildExamPrompt: %v", err)
 	}
+	for _, want := range []string{"CÂU DÒ TRẦN (bắt buộc với bài PRACTICE)", "câu 3 và câu 6", `"question_grade" = 5`, "kể cả câu dò"} {
+		if !strings.Contains(user, want) {
+			t.Errorf("PRACTICE prompt lacks %q", want)
+		}
+	}
+	if strings.Contains(user, `"question_grade" của mọi câu đều là 4`) {
+		t.Error("a PRACTICE round must not flatten every question to the requested grade")
+	}
+}
+
+// TestBuildExamPromptGradeReviewIsFlat: GRADE review carries no probe.
+func TestBuildExamPromptGradeReviewIsFlat(t *testing.T) {
+	_, user, err := BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeGrade, Grade: 4, NumQuestions: 10})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
 	if strings.Contains(user, "CÂU DÒ TRẦN") {
-		t.Error("a PRACTICE round must not carry the probe rule")
+		t.Error("a GRADE review must not carry the probe rule")
 	}
 	if !strings.Contains(user, `"question_grade" của mọi câu đều là 4`) {
-		t.Error("a PRACTICE round must pin every question to the requested grade")
+		t.Error("a GRADE review must pin every question to the requested grade")
+	}
+}
+
+// TestBuildExamPromptPracticeNeedsBrief: a PRACTICE round is always aimed
+// at a previous sitting; without that brief the prompt would silently
+// degrade into an ordinary round, so it is refused instead.
+func TestBuildExamPromptPracticeNeedsBrief(t *testing.T) {
+	_, _, err := BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypePractice, Grade: 1, NumQuestions: 10})
+	if err == nil {
+		t.Fatal("expected an error for a PRACTICE prompt without a brief")
+	}
+}
+
+// TestBuildExamPromptPracticeModes pins what each mode tells the model:
+// RETRY_WEAK lists the wrong answers and their topics; ADVANCE names the
+// mastered topics and forbids moving up a grade.
+func TestBuildExamPromptPracticeModes(t *testing.T) {
+	retry := &PracticeBrief{
+		Mode: enum.PracticeModeRetryWeak,
+		Wrong: []PracticeItem{
+			{Stem: "7 - 4 = ?", Topic: "phép trừ", RightAnswer: "3", ChildAnswer: "4"},
+		},
+		WeakTopics:   []string{"phép trừ"},
+		StrongTopics: []string{"phép cộng"},
+	}
+	_, user, err := BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypePractice, Grade: 1, NumQuestions: 10, Practice: retry})
+	if err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	for _, want := range []string{"BÀI LUYỆN TẬP", "làm sai 1 câu", "phép trừ", "7 - 4 = ?", "đáp án đúng: 3", "học sinh chọn: 4", "KHÔNG lặp lại nguyên văn", "củng cố: phép cộng"} {
+		if !strings.Contains(user, want) {
+			t.Errorf("RETRY_WEAK prompt lacks %q", want)
+		}
+	}
+
+	advance := &PracticeBrief{Mode: enum.PracticeModeAdvance, StrongTopics: []string{"phép cộng", "đếm"}}
+	_, user, err = BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypePractice, Grade: 1, NumQuestions: 10, Practice: advance})
+	if err != nil {
+		t.Fatalf("advance: %v", err)
+	}
+	for _, want := range []string{"ĐÚNG toàn bộ", "phép cộng, đếm", "KHÔNG lên cấp lớp cao hơn", "khó hơn TRONG cấp lớp"} {
+		if !strings.Contains(user, want) {
+			t.Errorf("ADVANCE prompt lacks %q", want)
+		}
+	}
+	if strings.Contains(user, "Các câu đã làm sai") {
+		t.Error("ADVANCE prompt must not list wrong answers — there are none")
 	}
 }
 

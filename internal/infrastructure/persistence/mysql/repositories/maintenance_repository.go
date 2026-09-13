@@ -9,34 +9,62 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/database"
 )
 
-// clearDataTables lists the user-generated tables wiped by ClearData.
-// Reference / seed tables (programs, grades, semesters, schools) are
-// intentionally excluded so the curriculum data seeded outside the app
-// survives. Mirrors sql/clear_data.sql.
-var clearDataTables = []string{
-	userTable,
-	aliasTable,
-	deviceTable,
-	loginLogTable,
-	profileTable,
-	otpTable,
-	quizTable,
-	classroomTable,
-	classroomMemberTable,
-	// classroomInvitationTable,
-	classroomProgramTable,
-	exerciseTable,
-	exerciseSubmissionTable,
-	notificationTable,
-	bannerTable,
-	chatConversationTable,
-	chatParticipantTable,
-	chatMessageTable,
-	aiExamTable,
-	userAiExamTable,
-	userExamTable,
-	userExamDetailTable,
+// clearTarget pairs a wipeable table with the ma_seqs counter that mints its
+// external ids. It is the single source of truth for what the clear-data
+// endpoints may touch — both the full wipe and the table-scoped variant.
+type clearTarget struct {
+	table string
+	seq   string
 }
+
+// clearDataTargets lists the user-generated tables wiped by ClearData, each
+// paired with the sequence reset alongside it. Reference / seed tables
+// (programs, grades, semesters, schools) are intentionally excluded so the
+// curriculum data seeded outside the app survives. Mirrors sql/clear_data.sql.
+var clearDataTargets = []clearTarget{
+	{userTable, seq.NameUser},
+	{aliasTable, seq.NameAlias},
+	{deviceTable, seq.NameDevice},
+	{loginLogTable, seq.NameLoginLog},
+	{profileTable, seq.NameProfile},
+	{otpTable, seq.NameOtp},
+	{quizTable, seq.NameQuiz},
+	{classroomTable, seq.NameClassroom},
+	{classroomMemberTable, seq.NameClassroomMember},
+	// classroomInvitationTable is a legacy orphan — no live writes.
+	{classroomProgramTable, seq.NameClassroomProgram},
+	{exerciseTable, seq.NameClassroomExercise},
+	{exerciseSubmissionTable, seq.NameClassroomExerciseSubmission},
+	{notificationTable, seq.NameNotification},
+	{bannerTable, seq.NameBanner},
+	{chatConversationTable, seq.NameChatConversation},
+	{chatParticipantTable, seq.NameChatParticipant},
+	{chatMessageTable, seq.NameChatMessage},
+	{aiExamTable, seq.NameAiExam},
+	{userAiExamTable, seq.NameUserAiExam},
+	{userExamTable, seq.NameUserExam},
+	{userExamDetailTable, seq.NameUserExamDetail},
+}
+
+// clearDataTargetByTable indexes clearDataTargets for O(1) allow-list checks in
+// the table-scoped clear path.
+var clearDataTargetByTable = func() map[string]clearTarget {
+	m := make(map[string]clearTarget, len(clearDataTargets))
+	for _, t := range clearDataTargets {
+		m[t.table] = t
+	}
+	return m
+}()
+
+// clearDataTables is the ordered list of tables wiped by the full ClearData,
+// derived from clearDataTargets so the two can never drift.
+var clearDataTables = func() []string {
+	tables := make([]string, len(clearDataTargets))
+	for i, t := range clearDataTargets {
+		tables[i] = t.table
+	}
+	return tables
+}()
 
 // clearDataSeqs lists the external-id counters reset back to 0 for the wiped
 // aggregates only. Reference sequences (program/grade/semester/school)
@@ -109,4 +137,60 @@ func (r *MaintenanceRepository) ClearData(ctx context.Context) ([]string, []stri
 	}
 
 	return clearDataTables, clearDataSeqs, nil
+}
+
+// ClearableTables returns the allow-list of tables the table-scoped clear may
+// wipe, in canonical order. Callers validate a request against it before
+// invoking ClearDataTables.
+func (r *MaintenanceRepository) ClearableTables() []string {
+	return append([]string(nil), clearDataTables...)
+}
+
+// ClearDataTables TRUNCATEs only the requested tables and resets each one's
+// external-id counter. Every name must be in the clear-data allow-list
+// (clearDataTargetByTable); an unknown name is rejected before any write, so a
+// bad request wipes nothing. Duplicate names are collapsed.
+func (r *MaintenanceRepository) ClearDataTables(ctx context.Context, tables []string) ([]string, []string, error) {
+	targets := make([]clearTarget, 0, len(tables))
+	seen := make(map[string]bool, len(tables))
+	for _, name := range tables {
+		target, ok := clearDataTargetByTable[name]
+		if !ok {
+			return nil, nil, fmt.Errorf("maintenance repo clear-data: table %q is not clearable", name)
+		}
+		if seen[target.table] {
+			continue
+		}
+		seen[target.table] = true
+		targets = append(targets, target)
+	}
+
+	cleared := make([]string, 0, len(targets))
+	seqsReset := make([]string, 0, len(targets))
+	for _, target := range targets {
+		// Table name is an allow-listed constant, never raw user input.
+		if _, err := r.db.Exec(ctx, "TRUNCATE TABLE "+target.table); err != nil {
+			return nil, nil, fmt.Errorf("maintenance repo clear-data: truncate %s: %w", target.table, err)
+		}
+		cleared = append(cleared, target.table)
+		if target.seq != "" {
+			seqsReset = append(seqsReset, target.seq)
+		}
+	}
+
+	if len(seqsReset) > 0 {
+		placeholders := make([]string, len(seqsReset))
+		args := make([]any, len(seqsReset))
+		for i, name := range seqsReset {
+			placeholders[i] = "?"
+			args[i] = name
+		}
+		resetQuery := `UPDATE ` + seqTable + ` SET current_value = 0 WHERE seq_name IN (` +
+			strings.Join(placeholders, ", ") + `)`
+		if _, err := r.db.Exec(ctx, resetQuery, args...); err != nil {
+			return nil, nil, fmt.Errorf("maintenance repo clear-data: reset seqs: %w", err)
+		}
+	}
+
+	return cleared, seqsReset, nil
 }

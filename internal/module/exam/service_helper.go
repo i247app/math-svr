@@ -70,7 +70,8 @@ func (s *Service) loadOwnedProfile(ctx context.Context, userID *int64, profileID
 	return p, nil
 }
 
-// resolvePlacement decides how hard the next exam should be.
+// resolvePlacement decides how hard the next exam should be, and reports
+// the open journey (if any) so the sitting can be pinned to it at hand-out.
 //
 // Grade, in order of preference: what the client pinned, then what the
 // child has been MEASURED at for this exam type (the open journey first,
@@ -84,18 +85,25 @@ func (s *Service) loadOwnedProfile(ctx context.Context, userID *int64, profileID
 // row this produces. When a rule exists it slots in here, beside grade,
 // and the same number must then reach the cache tag, the stored row and
 // the prompt — resolve it once, in this function, not in each consumer.
-func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq, examType enum.ExamType, profile *profileDomain.Profile) (int, error) {
+func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq, examType enum.ExamType, profile *profileDomain.Profile) (grade int, openJourney *int64, err error) {
+	// The open journey is looked up regardless of a pinned grade: even a
+	// pinned sitting belongs to the journey that is open.
+	active, err := s.statsRepo.FindActiveByUserProfileType(ctx, profile.UserId(), profile.ProfileId(), string(examType))
+	if err != nil {
+		return 0, nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if active != nil {
+		id := active.UserExamId()
+		openJourney = &id
+	}
+
 	if req.Grade != nil {
-		return *req.Grade, nil
+		return *req.Grade, openJourney, nil
 	}
 
 	// The open journey is the freshest measurement there is.
-	active, err := s.statsRepo.FindActiveByUserProfileType(ctx, profile.UserId(), profile.ProfileId(), string(examType))
-	if err != nil {
-		return 0, errs.NewError(ctx, status.FAIL, nil, err)
-	}
 	if active != nil && active.ResGrade() != nil {
-		return *active.ResGrade(), nil
+		return *active.ResGrade(), openJourney, nil
 	}
 
 	// No open journey: the child is starting one. A journey that was
@@ -104,13 +112,14 @@ func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq
 	// it was abandoned, and the next run starts from the profile again.
 	completed, err := s.statsRepo.FindLatestCompletedByUserProfileType(ctx, profile.UserId(), profile.ProfileId(), string(examType))
 	if err != nil {
-		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+		return 0, nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if completed != nil && completed.ResGrade() != nil {
-		return *completed.ResGrade(), nil
+		return *completed.ResGrade(), openJourney, nil
 	}
 
-	return s.gradeFromProfile(ctx, profile)
+	grade, err = s.gradeFromProfile(ctx, profile)
+	return grade, openJourney, err
 }
 
 // gradeFromProfile reads the class the child attends. The profile stores
@@ -165,9 +174,10 @@ func (s *Service) getAttempt(ctx context.Context, userAiExamID int64, profile *p
 // question across those sittings. Every sitting here is SUBMITTED by
 // construction — that is the moment a sitting joins a journey — so the
 // answer key is always safe to expose.
-func (s *Service) getJourney(ctx context.Context, userExamID int64, profile *profileDomain.Profile) (*dto.GetExamRes, error) {
+func (s *Service) getJourney(ctx context.Context, userExamID int64, examType string, profile *profileDomain.Profile) (*dto.GetExamRes, error) {
 	detail, err := s.getJourneyQuery.Handle(ctx, query.GetExamJourneyQuery{
 		UserExamID: userExamID,
+		ExamType:   examType,
 		UserID:     profile.UserId(),
 		ProfileID:  profile.ProfileId(),
 	})

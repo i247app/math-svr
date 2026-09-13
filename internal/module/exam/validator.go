@@ -46,6 +46,12 @@ func ValidateGenerateExam(ctx context.Context, req *dto.GenerateExamReq) (Valida
 	}
 	req.ExamType = raw
 
+	// A PRACTICE round lives inside a journey and is aimed at that
+	// journey's latest sitting, so the journey must be named.
+	if examType == enum.ExamTypePractice && (req.UserExamID == nil || *req.UserExamID <= 0) {
+		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrPracticeJourneyRequired)
+	}
+
 	// Grade is optional; when pinned it must name a band the product
 	// actually serves. Nothing may be placed at the probe ceiling.
 	if req.Grade != nil && (*req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax) {
@@ -93,22 +99,62 @@ func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {
 	return nil
 }
 
-// ValidateGetExam accepts exactly one of user_ai_exam_id (a sitting) or
-// user_exam_id (a journey). Neither is a missing-attempt error — the older
-// of the two shapes, kept so existing clients see the code they already
-// handle. Both at once is rejected rather than picking one silently: a
-// client sending both has a bug, and guessing which it meant hides it.
+// ValidateGetExam accepts user_ai_exam_id (a sitting) or user_exam_id (a
+// journey); when both are sent the journey wins. Neither is a
+// missing-attempt error — the older of the two shapes, kept so existing
+// clients see the code they already handle.
+//
+// A journey read also settles req_exam_type: it names which row of the
+// journey to read, defaults to ASSESSMENT so clients that predate the
+// PRACTICE row keep getting what they always did, and is normalised in
+// place so the service can use it as-is.
 func ValidateGetExam(ctx context.Context, req *dto.GetExamReq) error {
 	if req.ProfileID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
 	}
 	hasAttempt := req.UserAiExamID > 0
 	hasJourney := req.UserExamID > 0
-	switch {
-	case !hasAttempt && !hasJourney:
+	if !hasAttempt && !hasJourney {
 		return errs.NewError(ctx, status.EXAM_MISSING_ATTEMPT_ID, nil, ErrDetailIDRequired)
-		// case hasAttempt && hasJourney:
-		// 	return errs.NewError(ctx, status.EXAM_AMBIGUOUS_DETAIL_ID, nil, ErrDetailIDAmbiguous)
+	}
+
+	if hasJourney {
+		examType, err := normalizeExamType(ctx, req.ExamType)
+		if err != nil {
+			return err
+		}
+		if examType == nil {
+			def := string(enum.ExamTypeAssessment)
+			examType = &def
+		}
+		req.ExamType = examType
+	}
+	return nil
+}
+
+// normalizeExamType upper-cases and validates an optional exam type. An
+// absent or blank value comes back nil so the caller can apply its own
+// default.
+func normalizeExamType(ctx context.Context, raw *string) (*string, error) {
+	if raw == nil {
+		return nil, nil
+	}
+	normalized := strings.ToUpper(strings.TrimSpace(*raw))
+	if normalized == "" {
+		return nil, nil
+	}
+	if !enum.ExamType(normalized).IsValid() {
+		return nil, errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
+	}
+	return &normalized, nil
+}
+
+// requireJourneyForPractice is the rule shared by the history reads: a
+// PRACTICE round only exists inside a journey, so listing "the practice
+// rounds" is only a question about one.
+func requireJourneyForPractice(ctx context.Context, examType *string, userExamID *int64) error {
+	if examType != nil && *examType == string(enum.ExamTypePractice) && (userExamID == nil || *userExamID <= 0) {
+		return errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrPracticeJourneyRequired)
 	}
 	return nil
 }
@@ -117,16 +163,13 @@ func ValidateListExams(ctx context.Context, req *dto.ListExamsReq) error {
 	if req.ProfileID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
 	}
-	if req.ExamType != nil {
-		normalized := strings.ToUpper(strings.TrimSpace(*req.ExamType))
-		if normalized == "" {
-			req.ExamType = nil
-		} else {
-			if !enum.ExamType(normalized).IsValid() {
-				return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
-			}
-			req.ExamType = &normalized
-		}
+	examType, err := normalizeExamType(ctx, req.ExamType)
+	if err != nil {
+		return err
+	}
+	req.ExamType = examType
+	if err := requireJourneyForPractice(ctx, req.ExamType, req.UserExamID); err != nil {
+		return err
 	}
 	if req.Status != nil {
 		normalized := strings.ToUpper(strings.TrimSpace(*req.Status))
@@ -154,17 +197,17 @@ func ValidateGetExamStats(ctx context.Context, req *dto.GetExamStatsReq) error {
 			req.Status = &normalized
 		}
 	}
-	if req.ExamType != nil {
-		normalized := strings.ToUpper(strings.TrimSpace(*req.ExamType))
-		if normalized == "" {
-			req.ExamType = nil
-		} else {
-			if !enum.ExamType(normalized).IsValid() {
-				return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
-			}
-			req.ExamType = &normalized
-		}
+	examType, err := normalizeExamType(ctx, req.ExamType)
+	if err != nil {
+		return err
 	}
+	// PRACTICE is not a journey: its totals are read inside the ASSESSMENT
+	// journey they belong to. Answering with bare practice rows would
+	// hand the client two entries per id.
+	if examType != nil && *examType == string(enum.ExamTypePractice) {
+		return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrStatsPracticeNotAJourney)
+	}
+	req.ExamType = examType
 	return nil
 }
 
@@ -186,16 +229,13 @@ func ValidateExamProgress(ctx context.Context, req *dto.ExamProgressReq) error {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
 	}
 
-	if req.ExamType != nil {
-		normalized := strings.ToUpper(strings.TrimSpace(*req.ExamType))
-		if normalized == "" {
-			req.ExamType = nil
-		} else {
-			if !enum.ExamType(normalized).IsValid() {
-				return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
-			}
-			req.ExamType = &normalized
-		}
+	examType, err := normalizeExamType(ctx, req.ExamType)
+	if err != nil {
+		return err
+	}
+	req.ExamType = examType
+	if err := requireJourneyForPractice(ctx, req.ExamType, req.UserExamID); err != nil {
+		return err
 	}
 
 	// A numeric offset, never an IANA name: the value reaches CONVERT_TZ
@@ -253,7 +293,7 @@ func ValidateMarkExamJourney(ctx context.Context, req *dto.MarkExamJourneyReq) (
 		return ValidatedMarkJourney{}, errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrJourneyIDRequired)
 	}
 	st := enum.UserExamStatusType(strings.ToUpper(strings.TrimSpace(req.Status)))
-	if !st.IsEnding() {
+	if !st.IsMarkable() {
 		return ValidatedMarkJourney{}, errs.NewError(ctx, status.EXAM_INVALID_JOURNEY_STATUS, nil, ErrJourneyStatusInvalid)
 	}
 	req.Status = string(st)

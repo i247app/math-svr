@@ -667,7 +667,7 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case EXAM_MISSING_EXAM_TYPE:
 		return "Thiếu loại bài kiểm tra"
 	case EXAM_INVALID_EXAM_TYPE:
-		return "Loại bài kiểm tra phải là ASSESSMENT, PRACTICE hoặc EXAM"
+		return "Loại bài kiểm tra không hợp lệ"
 	case EXAM_INVALID_GRADE:
 		return "Cấp lớp phải nằm trong khoảng 0 đến 5"
 	case EXAM_INVALID_NUM_QUESTIONS:
@@ -699,9 +699,13 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case EXAM_MISSING_JOURNEY_ID:
 		return "Thiếu user_exam_id"
 	case EXAM_INVALID_JOURNEY_STATUS:
-		return "Trạng thái phải là COMPLETE hoặc CANCEL"
+		return "Trạng thái phải là ACTIVE, COMPLETE hoặc CANCEL"
 	case EXAM_AMBIGUOUS_DETAIL_ID:
 		return "Chỉ gửi một trong user_ai_exam_id hoặc user_exam_id"
+	case EXAM_PRACTICE_NO_BASE:
+		return "Chưa có bài để luyện tập — hãy nộp một bài trong hành trình này trước"
+	case EXAM_JOURNEY_ALREADY_ACTIVE:
+		return "Đang có một hành trình mở — hãy kết thúc nó trước khi mở lại hành trình khác"
 
 	default:
 		return ""

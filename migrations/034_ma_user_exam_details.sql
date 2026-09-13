@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS ma_user_exam_details (
   user_ai_exam_id      BIGINT UNSIGNED NOT NULL,             -- the attempt (ma_user_ai_exams)
   user_exam_id         BIGINT UNSIGNED NOT NULL,             -- the cumulative row (ma_user_exams)
   ai_exam_id           BIGINT UNSIGNED NOT NULL,             -- the source exam (ma_ai_exams)
+  req_exam_type        VARCHAR(32) NOT NULL DEFAULT '',      -- ASSESSMENT, PRACTICE, EXAM
 
   -- ---- Question snapshot (copied from ai_questions_json at submit) -------
   question_number      SMALLINT UNSIGNED NOT NULL,           -- 1-based, matches the JSON

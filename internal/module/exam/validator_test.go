@@ -43,10 +43,31 @@ func TestValidateGenerateExam(t *testing.T) {
 	t.Run("rejects a grade outside the served bands", func(t *testing.T) {
 		for _, grade := range []int{-1, 6} {
 			g := grade
-			req := &dto.GenerateExamReq{ProfileID: 1, ExamType: "PRACTICE", Grade: &g}
+			req := &dto.GenerateExamReq{ProfileID: 1, ExamType: "ASSESSMENT", Grade: &g}
 			if got := codeOf(t, mustFail(t, ctx, req)); got != status.EXAM_INVALID_GRADE {
 				t.Errorf("grade %d: code = %d, want EXAM_INVALID_GRADE", grade, got)
 			}
+		}
+	})
+
+	t.Run("a PRACTICE round must name its journey", func(t *testing.T) {
+		zero := int64(0)
+		for _, id := range []*int64{nil, &zero} {
+			req := &dto.GenerateExamReq{ProfileID: 1, ExamType: "PRACTICE", UserExamID: id}
+			if got := codeOf(t, mustFail(t, ctx, req)); got != status.EXAM_MISSING_JOURNEY_ID {
+				t.Errorf("user_exam_id %v: code = %d, want EXAM_MISSING_JOURNEY_ID", id, got)
+			}
+		}
+		one := int64(1)
+		if _, err := ValidateGenerateExam(ctx, &dto.GenerateExamReq{ProfileID: 1, ExamType: "practice", UserExamID: &one}); err != nil {
+			t.Errorf("a PRACTICE round with a journey must pass, got %v", err)
+		}
+	})
+
+	t.Run("EXAM is no longer a type", func(t *testing.T) {
+		req := &dto.GenerateExamReq{ProfileID: 1, ExamType: "EXAM"}
+		if got := codeOf(t, mustFail(t, ctx, req)); got != status.EXAM_INVALID_EXAM_TYPE {
+			t.Errorf("code = %d, want EXAM_INVALID_EXAM_TYPE", got)
 		}
 	})
 
@@ -65,7 +86,7 @@ func TestValidateGenerateExam(t *testing.T) {
 	})
 
 	t.Run("fills in the default length", func(t *testing.T) {
-		req := &dto.GenerateExamReq{ProfileID: 1, ExamType: "PRACTICE"}
+		req := &dto.GenerateExamReq{ProfileID: 1, ExamType: "ASSESSMENT"}
 		if _, err := ValidateGenerateExam(ctx, req); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -159,7 +180,7 @@ func TestValidateMarkExamJourney(t *testing.T) {
 		{"missing profile", &dto.MarkExamJourneyReq{UserExamID: 1, Status: "COMPLETE"}, status.EXAM_MISSING_PROFILE_ID, ""},
 		{"missing journey id", &dto.MarkExamJourneyReq{ProfileID: 1, Status: "COMPLETE"}, status.EXAM_MISSING_JOURNEY_ID, ""},
 		{"empty status", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1}, status.EXAM_INVALID_JOURNEY_STATUS, ""},
-		{"ACTIVE is not an ending", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1, Status: "ACTIVE"}, status.EXAM_INVALID_JOURNEY_STATUS, ""},
+		{"active reopens, normalised", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1, Status: " active "}, 0, enum.UserExamStatusActive},
 		{"DELETED is not an ending", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1, Status: "DELETED"}, status.EXAM_INVALID_JOURNEY_STATUS, ""},
 		{"unknown word", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1, Status: "DONE"}, status.EXAM_INVALID_JOURNEY_STATUS, ""},
 		{"complete, normalised", &dto.MarkExamJourneyReq{ProfileID: 1, UserExamID: 1, Status: " complete "}, 0, enum.UserExamStatusComplete},
@@ -251,4 +272,91 @@ func TestValidateGetExamAcceptsExactlyOneID(t *testing.T) {
 			}
 		})
 	}
+}
+
+func strPtr(s string) *string { return &s }
+func i64Ptr(v int64) *int64   { return &v }
+
+// TestValidateGetExamJourneyRow: a journey read settles which row of the
+// journey it wants. Absent means ASSESSMENT — the row every client that
+// predates PRACTICE has always been reading.
+func TestValidateGetExamJourneyRow(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		in       *string
+		wantType string
+		wantCode status.StatusCode
+	}{
+		{"absent defaults to ASSESSMENT", nil, "ASSESSMENT", 0},
+		{"blank defaults to ASSESSMENT", strPtr("  "), "ASSESSMENT", 0},
+		{"practice, normalised", strPtr(" practice "), "PRACTICE", 0},
+		{"unknown row", strPtr("HOMEWORK"), "", status.EXAM_INVALID_EXAM_TYPE},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := &dto.GetExamReq{ProfileID: 1, UserExamID: 2, ExamType: tc.in}
+			err := ValidateGetExam(ctx, req)
+			if tc.wantCode != 0 {
+				if code := codeOf(t, err); code != tc.wantCode {
+					t.Errorf("code = %d, want %d", code, tc.wantCode)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if req.ExamType == nil || *req.ExamType != tc.wantType {
+				t.Errorf("ExamType = %v, want %q", req.ExamType, tc.wantType)
+			}
+		})
+	}
+
+	t.Run("a sitting read leaves req_exam_type alone", func(t *testing.T) {
+		req := &dto.GetExamReq{ProfileID: 1, UserAiExamID: 1, ExamType: strPtr("HOMEWORK")}
+		if err := ValidateGetExam(ctx, req); err != nil {
+			t.Fatalf("req_exam_type is meaningless for a sitting and must not be validated: %v", err)
+		}
+	})
+}
+
+// TestPracticeReadsNeedAJourney: history reads of PRACTICE rounds only
+// make sense inside one journey, and stats never lists PRACTICE as a
+// journey of its own.
+func TestPracticeReadsNeedAJourney(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("list PRACTICE without a journey", func(t *testing.T) {
+		req := &dto.ListExamsReq{ProfileID: 1, ExamType: strPtr("practice")}
+		if code := codeOf(t, ValidateListExams(ctx, req)); code != status.EXAM_MISSING_JOURNEY_ID {
+			t.Errorf("code = %d, want EXAM_MISSING_JOURNEY_ID", code)
+		}
+	})
+	t.Run("list PRACTICE of a journey", func(t *testing.T) {
+		req := &dto.ListExamsReq{ProfileID: 1, ExamType: strPtr("practice"), UserExamID: i64Ptr(9)}
+		if err := ValidateListExams(ctx, req); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if *req.ExamType != "PRACTICE" {
+			t.Errorf("exam_type = %q, want normalised PRACTICE", *req.ExamType)
+		}
+	})
+	t.Run("list ASSESSMENT needs no journey", func(t *testing.T) {
+		if err := ValidateListExams(ctx, &dto.ListExamsReq{ProfileID: 1, ExamType: strPtr("ASSESSMENT")}); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+	t.Run("progress PRACTICE without a journey", func(t *testing.T) {
+		req := &dto.ExamProgressReq{ProfileID: 1, ExamType: strPtr("PRACTICE")}
+		if code := codeOf(t, ValidateExamProgress(ctx, req)); code != status.EXAM_MISSING_JOURNEY_ID {
+			t.Errorf("code = %d, want EXAM_MISSING_JOURNEY_ID", code)
+		}
+	})
+	t.Run("stats refuses PRACTICE as a journey type", func(t *testing.T) {
+		req := &dto.GetExamStatsReq{ProfileID: 1, ExamType: strPtr("PRACTICE")}
+		if code := codeOf(t, ValidateGetExamStats(ctx, req)); code != status.EXAM_INVALID_EXAM_TYPE {
+			t.Errorf("code = %d, want EXAM_INVALID_EXAM_TYPE", code)
+		}
+	})
 }

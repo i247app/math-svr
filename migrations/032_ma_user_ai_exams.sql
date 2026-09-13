@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS ma_user_ai_exams (
   user_id              BIGINT UNSIGNED NOT NULL,             -- anonymous exams are no longer allowed
   profile_id           BIGINT UNSIGNED NOT NULL,
   ai_exam_id           BIGINT UNSIGNED NOT NULL,             -- the exam that was served
+  user_exam_id         BIGINT UNSIGNED DEFAULT NULL,         -- optional: if present, this attempt is part of that journey
   -- This sitting's private ordering of the shared question set: which
   -- canonical question sat at each served position, and how each one's
   -- options were arranged. The set in ma_ai_exams stays canonical; the

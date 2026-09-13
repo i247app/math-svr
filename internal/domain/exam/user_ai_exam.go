@@ -20,12 +20,21 @@ import (
 // questions the exam contained. A skipped question lands in
 // resSkippedNumber instead, so "answered 3 of 10 and got them all right"
 // is distinguishable from "answered all 10 correctly".
+//
+// userExamId is the journey this sitting belongs to. It is known at
+// hand-out time for a PRACTICE round (the client names the journey) and
+// for an ASSESSMENT drawn while a journey is open; the very first
+// ASSESSMENT of a journey is handed out before the journey row exists and
+// carries nil until submit, which always writes it. After submit every
+// sitting knows its journey, so "the latest sitting of journey X" is one
+// indexed read rather than a walk through the answer log.
 type UserAiExam struct {
 	id           int64
 	userAiExamId int64
 	userId       int64
 	profileId    int64
 	aiExamId     int64
+	userExamId   *int64
 	shuffleMap   *string
 
 	reqExamType string
@@ -61,6 +70,8 @@ func (u *UserAiExam) ProfileId() int64                { return u.profileId }
 func (u *UserAiExam) SetProfileId(id int64)           { u.profileId = id }
 func (u *UserAiExam) AiExamId() int64                 { return u.aiExamId }
 func (u *UserAiExam) SetAiExamId(id int64)            { u.aiExamId = id }
+func (u *UserAiExam) UserExamId() *int64              { return u.userExamId }
+func (u *UserAiExam) SetUserExamId(id *int64)         { u.userExamId = id }
 func (u *UserAiExam) ShuffleMap() *string             { return u.shuffleMap }
 func (u *UserAiExam) SetShuffleMap(s *string)         { u.shuffleMap = s }
 func (u *UserAiExam) ReqExamType() string             { return u.reqExamType }

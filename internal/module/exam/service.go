@@ -2,6 +2,7 @@ package exam
 
 import (
 	"context"
+	"fmt"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	command "math-ai.com/math-ai/internal/application/command/exam"
@@ -16,6 +17,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -34,7 +36,9 @@ type Service struct {
 	progressQuery   *query.GetExamProgressQueryHandler
 
 	aiExamRepo  examDomain.IAiExamRepository
+	attemptRepo examDomain.IUserAiExamRepository
 	statsRepo   examDomain.IUserExamRepository
+	detailRepo  examDomain.IUserExamDetailRepository
 	profileRepo profileDomain.IRepository
 	gradeRepo   gradeDomain.IRepository
 
@@ -64,16 +68,26 @@ func NewService(
 		statsQuery:      query.NewGetExamStatsQueryHandler(statsRepo),
 		progressQuery:   query.NewGetExamProgressQueryHandler(attemptRepo),
 		aiExamRepo:      aiExamRepo,
+		attemptRepo:     attemptRepo,
 		statsRepo:       statsRepo,
+		detailRepo:      detailRepo,
 		profileRepo:     profileRepo,
 		gradeRepo:       gradeRepo,
 		bot:             newBotClient(bot),
 	}
 }
 
-// GenerateExam places the child, looks for a reusable question set, and
-// only calls the model when there isn't one. The bot call sits OUTSIDE
-// any transaction — an LLM round trip must never hold one open.
+// GenerateExam hands one exam to one child. Two very different rounds
+// share the entry point:
+//
+//   - ASSESSMENT (and GRADE): place the child, look for a reusable
+//     question set, and only call the model when there isn't one.
+//   - PRACTICE: aim a fresh round at the child's latest sitting in the
+//     named journey. Always a model call — the round is built from one
+//     child's mistakes and can never be shared.
+//
+// Either way the bot call sits OUTSIDE any transaction — an LLM round trip
+// must never hold one open.
 func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*dto.GenerateExamRes, error) {
 	log := logger.From(ctx)
 
@@ -86,7 +100,11 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 		return nil, err
 	}
 
-	grade, err := s.resolvePlacement(ctx, req, validated.ExamType, profile)
+	if validated.ExamType == enum.ExamTypePractice {
+		return s.generatePractice(ctx, req, profile)
+	}
+
+	grade, openJourney, err := s.resolvePlacement(ctx, req, validated.ExamType, profile)
 	if err != nil {
 		return nil, err
 	}
@@ -94,10 +112,11 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	tag := BuildCacheTag(validated.ExamType, grade, req.NumQuestions, req.Semester, req.Program)
 
 	cmd := command.GenerateExamCommand{
-		UserID:    profile.UserId(),
-		ProfileID: profile.ProfileId(),
-		ExamType:  validated.ExamType,
-		Grade:     grade,
+		UserID:     profile.UserId(),
+		ProfileID:  profile.ProfileId(),
+		ExamType:   validated.ExamType,
+		Grade:      grade,
+		UserExamID: openJourney,
 	}
 
 	cached, err := s.findReusableExam(ctx, tag)
@@ -129,28 +148,127 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 		if err != nil {
 			return nil, err
 		}
-
-		questionsJSON, err := marshalQuestions(ctx, generated.Questions)
+		content, err := newContentFrom(ctx, req, generated, &tag)
 		if err != nil {
 			return nil, err
 		}
+		cmd.NewContent = content
 		canonical = generated.Questions
-
-		cmd.NewContent = &command.NewAiExamContent{
-			NumQues:       req.NumQuestions,
-			Semester:      utils.ToStringPtr(req.Semester),
-			Program:       utils.ToStringPtr(req.Program),
-			Extras:        &tag,
-			Title:         sanitizeExamText(generated.Title),
-			ShortText:     sanitizeExamText(generated.ShortText),
-			QuestionsJSON: questionsJSON,
-		}
 	}
 
-	// Every sitting gets its own ordering — the freshly generated one too,
-	// so the child who paid for the generation is treated no differently
-	// from the next child served the same set from cache. This is what
-	// stops two children (or one child twice) meeting an identical paper.
+	return s.handOut(ctx, cmd, canonical, profile)
+}
+
+// generatePractice draws a PRACTICE round inside a journey.
+//
+// The journey's ASSESSMENT row is the gate: it must exist, belong to this
+// child, and still be open — a practice round on an ended journey has
+// nowhere to fold its result. The round is then aimed at the journey's
+// latest SUBMITTED sitting, of any type: its grade is the round's grade,
+// and its answer log is what the model is told to respond to.
+//
+// Nothing here touches the cache. A practice set is built from one
+// child's mistakes; storing it under a cache tag would serve those
+// mistakes to the next child. The row is written with no req_extras so
+// it can never be picked up as a variant.
+func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq, profile *profileDomain.Profile) (*dto.GenerateExamRes, error) {
+	log := logger.From(ctx)
+	journeyID := *req.UserExamID
+
+	journey, err := s.statsRepo.FindByUserExamIdAndType(ctx, journeyID, string(enum.ExamTypeAssessment))
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if journey == nil {
+		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
+			fmt.Errorf("exam: journey %d not found", journeyID))
+	}
+	if journey.UserId() != profile.UserId() || journey.ProfileId() != profile.ProfileId() {
+		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
+			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
+	}
+	if st := journey.UserExamStatus(); st == nil || *st != string(enum.UserExamStatusActive) {
+		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil,
+			fmt.Errorf("exam: journey %d has ended; nothing more can be practised in it", journeyID))
+	}
+
+	base, err := s.attemptRepo.FindLatestSubmittedByUserExamId(ctx, journeyID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if base == nil {
+		return nil, errs.NewError(ctx, status.EXAM_PRACTICE_NO_BASE, nil,
+			fmt.Errorf("exam: journey %d has no submitted sitting to practise from", journeyID))
+	}
+	details, err := s.detailRepo.ListByUserAiExamId(ctx, base.UserAiExamId())
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	brief := command.BuildPracticeBrief(details)
+
+	// The round follows the sitting it is drawn from, not a pinned grade:
+	// a drill at a different grade than the miss would not be a drill.
+	grade := base.ReqGrade()
+	if req.Grade != nil && *req.Grade != grade {
+		log.Warnf("exam.practice.grade_ignored pinned=%d base=%d journey=%d", *req.Grade, grade, journeyID)
+	}
+
+	generated, err := s.bot.GenerateExam(ctx, generateExamInput{
+		ExamType:     enum.ExamTypePractice,
+		Grade:        grade,
+		NumQuestions: req.NumQuestions,
+		Semester:     req.Semester,
+		Program:      req.Program,
+		Practice:     &brief,
+	})
+	if err != nil {
+		return nil, err
+	}
+	content, err := newContentFrom(ctx, req, generated, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Infof("exam.practice.drawn journey=%d base=%d mode=%s wrong=%d weak=%v",
+		journeyID, base.UserAiExamId(), brief.Mode, len(brief.Wrong), brief.WeakTopics)
+
+	return s.handOut(ctx, command.GenerateExamCommand{
+		UserID:     profile.UserId(),
+		ProfileID:  profile.ProfileId(),
+		ExamType:   enum.ExamTypePractice,
+		Grade:      grade,
+		UserExamID: &journeyID,
+		NewContent: content,
+	}, generated.Questions, profile)
+}
+
+// newContentFrom packages a fresh generation for storage. extras is the
+// cache tag the set is filed under, or nil for a set that must never be
+// served to anyone else.
+func newContentFrom(ctx context.Context, req *dto.GenerateExamReq, generated *generateExamOutput, extras *string) (*command.NewAiExamContent, error) {
+	questionsJSON, err := marshalQuestions(ctx, generated.Questions)
+	if err != nil {
+		return nil, err
+	}
+	return &command.NewAiExamContent{
+		NumQues:       req.NumQuestions,
+		Semester:      utils.ToStringPtr(req.Semester),
+		Program:       utils.ToStringPtr(req.Program),
+		Extras:        extras,
+		Title:         sanitizeExamText(generated.Title),
+		ShortText:     sanitizeExamText(generated.ShortText),
+		QuestionsJSON: questionsJSON,
+	}, nil
+}
+
+// handOut is the tail every round shares: draw this sitting's ordering,
+// persist the attempt, and return the served view without the key.
+//
+// Every sitting gets its own ordering — the freshly generated one too, so
+// the child who paid for the generation is treated no differently from
+// the next child who is served the same set from cache. This is what
+// stops two children (or one child twice) meeting an identical paper.
+func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, canonical []question.Question, profile *profileDomain.Profile) (*dto.GenerateExamRes, error) {
 	shuffleJSON, err := drawShuffle(ctx, canonical)
 	if err != nil {
 		return nil, err
@@ -162,9 +280,9 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 		return nil, err
 	}
 
-	log.Infof("exam.generated attempt=%d ai_exam=%d profile=%d type=%s grade=%d",
+	logger.From(ctx).Infof("exam.generated attempt=%d ai_exam=%d profile=%d type=%s grade=%d",
 		created.Attempt.UserAiExamId(), created.AiExam.AiExamId(),
-		profile.ProfileId(), validated.ExamType, grade)
+		profile.ProfileId(), cmd.ExamType, cmd.Grade)
 
 	// A live exam never ships the answer key.
 	return &dto.GenerateExamRes{
@@ -217,7 +335,7 @@ func (s *Service) GetExam(ctx context.Context, req *dto.GetExamReq) (*dto.GetExa
 	}
 
 	if req.UserExamID > 0 {
-		return s.getJourney(ctx, req.UserExamID, profile)
+		return s.getJourney(ctx, req.UserExamID, *req.ExamType, profile)
 	}
 	return s.getAttempt(ctx, req.UserAiExamID, profile)
 }
@@ -232,11 +350,12 @@ func (s *Service) ListExams(ctx context.Context, req *dto.ListExamsReq) (*dto.Li
 	}
 
 	result, err := s.listQuery.Handle(ctx, query.ListExamAttemptsQuery{
-		ProfileID: profile.ProfileId(),
-		ExamType:  req.ExamType,
-		Status:    req.Status,
-		Page:      int64(req.Page),
-		Limit:     int64(req.Size),
+		ProfileID:  profile.ProfileId(),
+		ExamType:   req.ExamType,
+		UserExamID: req.UserExamID,
+		Status:     req.Status,
+		Page:       int64(req.Page),
+		Limit:      int64(req.Size),
 	})
 	if err != nil {
 		return nil, err
@@ -266,7 +385,7 @@ func (s *Service) GetExamStats(ctx context.Context, req *dto.GetExamStatsReq) (*
 	if err != nil {
 		return nil, err
 	}
-	return &dto.GetExamStatsRes{Stats: dto.StatsToResponse(rows)}, nil
+	return &dto.GetExamStatsRes{Stats: dto.JourneyStatsToResponse(rows)}, nil
 }
 
 // MarkExamJourney ends a journey as COMPLETE or CANCEL. From then on the
@@ -306,11 +425,12 @@ func (s *Service) GetExamProgress(ctx context.Context, req *dto.ExamProgressReq)
 	}
 
 	result, err := s.progressQuery.Handle(ctx, query.GetExamProgressQuery{
-		ProfileID: profile.ProfileId(),
-		ExamType:  req.ExamType,
-		From:      req.FromDt,
-		To:        req.ToDt,
-		Limit:     int64(req.Limit),
+		ProfileID:  profile.ProfileId(),
+		ExamType:   req.ExamType,
+		UserExamID: req.UserExamID,
+		From:       req.FromDt,
+		To:         req.ToDt,
+		Limit:      int64(req.Limit),
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // Vietnamese exam-generation templates. Vietnamese only, and not by
@@ -96,6 +98,46 @@ func buildSystemExamVN(n int) string {
 	return fmt.Sprintf(systemExamVNTmpl, n, n, n) + examVocabulary(visualQuestionRulesVN)
 }
 
+// examPracticeBlockVN tells the model what the child just did and how
+// the round must respond to it. The two modes are spelled out as
+// separate rules rather than left to the model's judgement: "harder"
+// without a bound drifts into the next grade, and the grade is the one
+// thing a practice round must not move.
+func examPracticeBlockVN(b *PracticeBrief, n int) string {
+	var sb strings.Builder
+	sb.WriteString("BÀI LUYỆN TẬP (dựa trên bài học sinh vừa làm):\n")
+
+	switch b.Mode {
+	case enum.PracticeModeRetryWeak:
+		fmt.Fprintf(&sb, "- Học sinh vừa làm sai %d câu, thuộc các chủ đề (xếp theo số câu sai giảm dần): %s.\n",
+			len(b.Wrong), joinOr(b.WeakTopics, "(không rõ chủ đề)"))
+		sb.WriteString("- Các câu đã làm sai:\n")
+		for _, w := range b.Wrong {
+			fmt.Fprintf(&sb, "  • %s — đáp án đúng: %s; học sinh chọn: %s\n",
+				strings.TrimSpace(w.Stem), w.RightAnswer, w.ChildAnswer)
+		}
+		fmt.Fprintf(&sb, "- YÊU CẦU: giữ nguyên QUY TẮC CẤP LỚP ở trên (kể cả câu dò); cả %d câu tập trung vào các chủ đề đã sai (ưu tiên chủ đề sai nhiều hơn).\n", n)
+		sb.WriteString("- Cùng kỹ năng với câu đã sai nhưng KHÔNG lặp lại nguyên văn: đổi số, đổi ngữ cảnh.\n")
+		if len(b.StrongTopics) > 0 {
+			fmt.Fprintf(&sb, "- Có thể xen 1-2 câu ở chủ đề học sinh đã làm đúng để củng cố: %s.", joinOr(b.StrongTopics, ""))
+		}
+	default: // ADVANCE
+		fmt.Fprintf(&sb, "- Học sinh vừa làm ĐÚNG toàn bộ, ở các chủ đề: %s.\n", joinOr(b.StrongTopics, "(không rõ chủ đề)"))
+		fmt.Fprintf(&sb, "- YÊU CẦU: giữ nguyên QUY TẮC CẤP LỚP ở trên (kể cả câu dò); ngoài câu dò, cả %d câu KHÔNG lên cấp lớp cao hơn.\n", n)
+		sb.WriteString("- Nhưng phải khó hơn TRONG cấp lớp đó: số lớn hơn trong phạm vi cho phép, nhiều bước tính hơn, có bài toán có lời;\n")
+		sb.WriteString("  và/hoặc chuyển sang các chủ đề khác trong chương trình mà học sinh chưa được kiểm tra.")
+	}
+	return strings.TrimRight(sb.String(), "\n")
+}
+
+// joinOr renders a topic list, or the fallback when there is none.
+func joinOr(items []string, fallback string) string {
+	if len(items) == 0 {
+		return fallback
+	}
+	return strings.Join(items, ", ")
+}
+
 // buildUserExamVN assembles the per-request brief. Order matters: the
 // authoritative grade profile comes first so it outranks the schema example
 // the system prompt ended on, then the grade rule for individual questions,
@@ -109,6 +151,10 @@ func buildUserExamVN(in ExamPromptInput, n int) string {
 
 	out += fmt.Sprintf("Hãy tạo bài kiểm tra loại %s gồm %d câu.\n\n", in.ExamType, n)
 	out += "QUY TẮC CẤP LỚP CHO TỪNG CÂU:\n" + examProbeBlockVN(in, n) + "\n"
+
+	if in.ExamType == enum.ExamTypePractice && in.Practice != nil {
+		out += "\n" + examPracticeBlockVN(in.Practice, n) + "\n"
+	}
 
 	if ctx := examContextVN(in); ctx != "" {
 		out += "\nThông tin chương trình (chỉ để chọn chủ đề, KHÔNG dùng để tăng hay giảm độ khó):\n" + ctx + "\n"

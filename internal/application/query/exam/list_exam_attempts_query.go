@@ -13,11 +13,12 @@ import (
 // the unfinished ones, which is how the "you left this open" surface is
 // built — the same list, filtered, rather than a second endpoint.
 type ListExamAttemptsQuery struct {
-	ProfileID int64
-	ExamType  *string
-	Status    *string
-	Page      int64
-	Limit     int64
+	ProfileID  int64
+	ExamType   *string
+	UserExamID *int64
+	Status     *string
+	Page       int64
+	Limit      int64
 }
 
 // ListExamAttemptsResult pairs the attempts with the question sets they
@@ -43,9 +44,10 @@ func NewListExamAttemptsQueryHandler(
 
 func (h *ListExamAttemptsQueryHandler) Handle(ctx context.Context, q ListExamAttemptsQuery) (*ListExamAttemptsResult, error) {
 	attempts, pg, err := h.attemptRepo.ListAttempts(ctx, exam.ListAttemptsFilter{
-		ProfileID: q.ProfileID,
-		ExamType:  q.ExamType,
-		Status:    q.Status,
+		ProfileID:  q.ProfileID,
+		ExamType:   q.ExamType,
+		UserExamID: q.UserExamID,
+		Status:     q.Status,
 	}, q.Page, q.Limit)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)

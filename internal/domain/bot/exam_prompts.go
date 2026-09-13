@@ -36,6 +36,33 @@ type ExamPromptInput struct {
 	NumQuestions int
 	Semester     string
 	Program      string
+	// Practice aims a PRACTICE round at what the child just did. Required
+	// when ExamType is PRACTICE, ignored otherwise.
+	Practice *PracticeBrief
+}
+
+// PracticeBrief is what the model is told about the sitting a PRACTICE
+// round follows. It is built by the application layer from the child's
+// answer log; the prompt renders it and nothing else reads it.
+//
+// Wrong is every question the child got wrong, as shown. WeakTopics are
+// the topics those came from, most-wrong first, so the prompt can weight
+// them. StrongTopics are the topics the child got entirely right — in
+// ADVANCE mode the round moves past them.
+type PracticeBrief struct {
+	Mode         enum.PracticeMode
+	Wrong        []PracticeItem
+	WeakTopics   []string
+	StrongTopics []string
+}
+
+// PracticeItem is one wrong answer: the stem as served, its topic, what
+// was right, and what the child picked.
+type PracticeItem struct {
+	Stem        string
+	Topic       string
+	RightAnswer string
+	ChildAnswer string
 }
 
 // examDefaultNumQuestions matches the module validator's default. It is
@@ -43,31 +70,31 @@ type ExamPromptInput struct {
 // the module layer.
 const examDefaultNumQuestions = 10
 
-// assessmentProbeSlots are the 1-based positions of the harder questions
-// inside an ASSESSMENT: the child answers mostly at their own grade, and
-// these two reach one band higher to find out whether they are ready to
-// move up.
+// probeSlots are the 1-based positions of the harder questions inside a
+// round that probes (see enum.ExamType.HasProbes): the child answers
+// mostly at their own grade, and these two reach one band higher to find
+// out whether they are ready to move up.
 //
 // The positions are fixed because the exam is fixed at ten questions
 // today. A variable-length exam needs a real strategy (a proportion, or
 // spread by position) rather than a longer literal — decide that when
 // variable length actually ships.
-var assessmentProbeSlots = []int{3, 6}
+var probeSlots = []int{3, 6}
 
-// AssessmentProbePositions returns the probe positions that fit inside an
-// exam of numQuestions, or nil when the type does not probe. It is
-// exported because the module layer normalises question_grade against
-// exactly these positions after generation: the prompt asks, the server
-// enforces, and both must read the same list.
-func AssessmentProbePositions(examType enum.ExamType, numQuestions int) []int {
-	if examType != enum.ExamTypeAssessment {
+// ProbePositions returns the probe positions that fit inside an exam of
+// numQuestions, or nil when the type does not probe. It is exported
+// because the module layer normalises question_grade against exactly
+// these positions after generation: the prompt asks, the server enforces,
+// and both must read the same list.
+func ProbePositions(examType enum.ExamType, numQuestions int) []int {
+	if !examType.HasProbes() {
 		return nil
 	}
 	if numQuestions <= 0 {
 		numQuestions = examDefaultNumQuestions
 	}
 	var out []int
-	for _, slot := range assessmentProbeSlots {
+	for _, slot := range probeSlots {
 		if slot <= numQuestions {
 			out = append(out, slot)
 		}
@@ -95,6 +122,9 @@ func BuildExamPrompt(in ExamPromptInput) (system string, user string, err error)
 	}
 	if !in.ExamType.IsValid() {
 		return "", "", fmt.Errorf("bot: unsupported exam type %q", string(in.ExamType))
+	}
+	if in.ExamType == enum.ExamTypePractice && in.Practice == nil {
+		return "", "", fmt.Errorf("bot: a PRACTICE prompt needs a practice brief")
 	}
 	n := in.NumQuestions
 	if n <= 0 {
@@ -127,13 +157,13 @@ func examContextVN(in ExamPromptInput) string {
 	return strings.TrimRight(b.String(), "\n")
 }
 
-// examProbeBlockVN spells out the ASSESSMENT probe rule, naming the exact
-// positions and the exact band they must reach. The server re-stamps
+// examProbeBlockVN spells out the probe rule, naming the exact positions
+// and the exact band they must reach. The server re-stamps
 // question_grade afterwards regardless, so this block is about getting the
 // CONTENT right — a probe question that is merely labelled harder, without
 // being harder, measures nothing.
 func examProbeBlockVN(in ExamPromptInput, n int) string {
-	positions := AssessmentProbePositions(in.ExamType, n)
+	positions := ProbePositions(in.ExamType, n)
 	if len(positions) == 0 {
 		return fmt.Sprintf("- Mọi câu đều ở đúng cấp lớp trên, và \"question_grade\" của mọi câu đều là %d.", in.Grade)
 	}
@@ -146,9 +176,9 @@ func examProbeBlockVN(in ExamPromptInput, n int) string {
 
 	probeName := gradeBandName(QuizLanguageVietnamese, GradeLevel(probe))
 	probeRange := gradeBandRange(QuizLanguageVietnamese, GradeLevel(probe))
-	line := fmt.Sprintf(`- CÂU DÒ TRẦN (bắt buộc với bài ASSESSMENT): %s phải khó hơn ĐÚNG MỘT BẬC, tức ở mức %s — %s
+	line := fmt.Sprintf(`- CÂU DÒ TRẦN (bắt buộc với bài %s): %s phải khó hơn ĐÚNG MỘT BẬC, tức ở mức %s — %s
 - Hai câu đó có "question_grade" = %d; TẤT CẢ các câu còn lại có "question_grade" = %d.
 - Không đánh dấu, không chú thích, không nói cho học sinh biết câu nào là câu khó hơn.`,
-		strings.Join(labels, " và "), probeName, probeRange, probe, in.Grade)
+		in.ExamType, strings.Join(labels, " và "), probeName, probeRange, probe, in.Grade)
 	return line
 }

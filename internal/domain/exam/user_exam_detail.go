@@ -8,8 +8,11 @@ import (
 // question has no row at all, which is why "how many did they answer" is a
 // row count here and never a NULL check.
 //
-// Rows accumulate under userExamId for the life of the profile; grouping
-// by userAiExamId splits them back into individual sittings.
+// Rows accumulate under userExamId for the life of the journey; grouping
+// by userAiExamId splits them back into individual sittings. reqExamType
+// is copied from the sitting so the journey's ASSESSMENT rows and its
+// PRACTICE rows — which share userExamId — can be told apart without a
+// join: every per-journey read filters on the pair.
 //
 // The question fields are a snapshot taken at submit time out of the
 // AiExam's questions JSON. That freezes what the child was actually shown
@@ -30,6 +33,7 @@ type UserExamDetail struct {
 	userAiExamId     int64
 	userExamId       int64
 	aiExamId         int64
+	reqExamType      string
 
 	questionNumber     int
 	questionType       *string
@@ -64,6 +68,8 @@ func (d *UserExamDetail) SetUserAiExamId(id int64)        { d.userAiExamId = id 
 func (d *UserExamDetail) UserExamId() int64               { return d.userExamId }
 func (d *UserExamDetail) SetUserExamId(id int64)          { d.userExamId = id }
 func (d *UserExamDetail) AiExamId() int64                 { return d.aiExamId }
+func (d *UserExamDetail) ReqExamType() string             { return d.reqExamType }
+func (d *UserExamDetail) SetReqExamType(t string)         { d.reqExamType = t }
 func (d *UserExamDetail) SetAiExamId(id int64)            { d.aiExamId = id }
 func (d *UserExamDetail) QuestionNumber() int             { return d.questionNumber }
 func (d *UserExamDetail) SetQuestionNumber(n int)         { d.questionNumber = n }

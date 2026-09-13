@@ -2,30 +2,64 @@ package enum
 
 // ExamType names what a round of AI-generated questions is FOR. It is the
 // only discriminator the exam model keeps — the old GENERAL /
-// REINFORCEMENT axis was dropped along with the reinforcement flow.
+// REINFORCEMENT axis was dropped along with the reinforcement flow, and
+// the EXAM checkpoint round was dropped when PRACTICE moved inside the
+// ASSESSMENT journey.
 type ExamType string
 
 const (
 	// ExamTypeAssessment measures where the child actually is. Its
 	// generated set carries probe questions one grade above the requested
 	// one (see the Q3/Q6 rule), so a child who is ready to move up shows it.
+	// An ASSESSMENT journey is the unit of lifecycle: it opens, accumulates
+	// sittings, and is ended by the parent.
 	ExamTypeAssessment ExamType = "ASSESSMENT"
-	// ExamTypePractice is the everyday round at the child's current band.
+	// ExamTypePractice is a round drawn INSIDE an open ASSESSMENT journey
+	// from the child's latest submitted sitting there — re-drilling what
+	// went wrong, or pushing further when nothing did. It is not a journey
+	// of its own: it shares the journey's user_exam_id, never moves the
+	// measured grade, and ends when the journey ends. It carries the same
+	// probe questions an ASSESSMENT does (see HasProbes).
 	ExamTypePractice ExamType = "PRACTICE"
-	// ExamTypeExam is the higher-stakes checkpoint round.
-	ExamTypeExam ExamType = "EXAM"
+	// ExamTypeGrade 1-5 is for review specific grade 1-5
+	ExamTypeGrade ExamType = "GRADE"
 )
 
 func (t ExamType) String() string { return string(t) }
 
+// HasProbes reports whether a round of this type carries the harder
+// probe questions (Q3/Q6 at grade + 1). ASSESSMENT needs them to measure;
+// PRACTICE keeps them so a drill still stretches the child the same way
+// the exam did. GRADE review is flat.
+func (t ExamType) HasProbes() bool {
+	return t == ExamTypeAssessment || t == ExamTypePractice
+}
+
 func (t ExamType) IsValid() bool {
 	switch t {
-	case ExamTypeAssessment, ExamTypePractice, ExamTypeExam:
+	case ExamTypeAssessment, ExamTypePractice, ExamTypeGrade:
 		return true
 	default:
 		return false
 	}
 }
+
+// PracticeMode is how a PRACTICE round is aimed, decided by the server
+// from the child's latest submitted sitting in the journey:
+//
+//   - RETRY_WEAK when that sitting had wrong answers — the round stays at
+//     the same grade and drills the topics that went wrong.
+//   - ADVANCE when it had none — still the same grade (placement is the
+//     ASSESSMENT's job), but harder within it and/or on topics the child
+//     has not been tested on yet.
+type PracticeMode string
+
+const (
+	PracticeModeRetryWeak PracticeMode = "RETRY_WEAK"
+	PracticeModeAdvance   PracticeMode = "ADVANCE"
+)
+
+func (m PracticeMode) String() string { return string(m) }
 
 // UserAiExamStatusType is the lifecycle of ONE attempt at an exam.
 //
@@ -63,10 +97,18 @@ const (
 
 func (s AiExamStatusType) String() string { return string(s) }
 
-// UserExamStatusType is the lifecycle of one JOURNEY — a stretch of one
-// exam type that a child works through and then closes.
+// UserExamStatusType is the lifecycle of one JOURNEY — a stretch of
+// ASSESSMENT sittings (and the PRACTICE rounds drawn inside it) that a
+// child works through and then closes.
 //
-// ACTIVE is the open journey; every submission of that type folds into it.
+// ACTIVE is the open journey; every submission folds into it — ASSESSMENT
+// sittings into its ASSESSMENT row, PRACTICE sittings into the PRACTICE
+// row that shares its id. Ending the journey ends both rows.
+//
+// An ended journey CAN be reopened — marked ACTIVE again — as long as no
+// other journey of its type is open: a child may change their mind and
+// pick a run back up. Reopening restores both rows and clears ended_dt,
+// and from then on the journey behaves as if it had never ended.
 // COMPLETE and CANCEL both end it. The difference is what the next journey
 // inherits: a COMPLETE journey's measured grade carries forward as the
 // starting point, a CANCEL journey is treated as abandoned and the next
@@ -92,11 +134,17 @@ func (s UserExamStatusType) IsValid() bool {
 	}
 }
 
-// IsEnding reports whether a status is one a client may MARK a journey
-// with. DELETED is deliberately excluded: it is a soft-delete, not a way
-// to finish a journey, and reaches the row through a different path.
+// IsEnding reports whether a status finishes a journey.
 func (s UserExamStatusType) IsEnding() bool {
 	return s == UserExamStatusComplete || s == UserExamStatusCancel
+}
+
+// IsMarkable reports whether a status is one a client may MARK a journey
+// with: an ending, or ACTIVE to reopen an ended journey. DELETED is
+// deliberately excluded: it is a soft-delete, not a lifecycle move, and
+// reaches the row through a different path.
+func (s UserExamStatusType) IsMarkable() bool {
+	return s.IsEnding() || s == UserExamStatusActive
 }
 
 func (s UserExamStatusType) String() string { return string(s) }

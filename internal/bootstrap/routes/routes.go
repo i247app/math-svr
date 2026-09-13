@@ -52,6 +52,9 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /misc/logs-time-format", miscHandler.LogsTimeFormat)
 		// Destructive: wipes all user-generated data. Auth-gated (secure session).
 		reg("POST /misc/clear-data", miscHandler.ClearData, authMiddleware)
+		// Destructive: wipes only the tables named in the request body
+		// (validated against the clear-data allow-list). Auth-gated.
+		reg("POST /misc/clear-data-tables", miscHandler.ClearDataTables, authMiddleware)
 	}
 
 	// health routes

@@ -12,8 +12,11 @@ import (
 // both ids, the same as for a single attempt.
 type GetExamJourneyQuery struct {
 	UserExamID int64
-	UserID     int64
-	ProfileID  int64
+	// ExamType picks the row of the journey — ASSESSMENT or PRACTICE —
+	// since both share UserExamID. Normalised by the caller.
+	ExamType  string
+	UserID    int64
+	ProfileID int64
 }
 
 // ExamJourneyDetail is the journey review screen in one read: the
@@ -55,7 +58,7 @@ func NewGetExamJourneyQueryHandler(
 }
 
 func (h *GetExamJourneyQueryHandler) Handle(ctx context.Context, q GetExamJourneyQuery) (*ExamJourneyDetail, error) {
-	journey, err := h.journeyRepo.FindByUserExamId(ctx, q.UserExamID)
+	journey, err := h.journeyRepo.FindByUserExamIdAndType(ctx, q.UserExamID, q.ExamType)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -66,7 +69,7 @@ func (h *GetExamJourneyQueryHandler) Handle(ctx context.Context, q GetExamJourne
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil, nil)
 	}
 
-	details, err := h.detailRepo.ListByUserExamId(ctx, journey.UserExamId())
+	details, err := h.detailRepo.ListByUserExamId(ctx, journey.UserExamId(), journey.ReqExamType())
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}

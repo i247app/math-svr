@@ -43,3 +43,19 @@ func (h *Handler) ClearData(w http.ResponseWriter, r *http.Request) {
 
 	response.WriteJson(w, res, nil)
 }
+
+func (h *Handler) ClearDataTables(w http.ResponseWriter, r *http.Request) {
+	var req dto.ClearDataTablesReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.svc.ClearDataTables(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	response.WriteJson(w, res, nil)
+}

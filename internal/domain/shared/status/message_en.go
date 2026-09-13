@@ -699,9 +699,13 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case EXAM_MISSING_JOURNEY_ID:
 		return "user_exam_id is required"
 	case EXAM_INVALID_JOURNEY_STATUS:
-		return "status must be COMPLETE or CANCEL"
+		return "status must be ACTIVE, COMPLETE or CANCEL"
 	case EXAM_AMBIGUOUS_DETAIL_ID:
 		return "Send either user_ai_exam_id or user_exam_id, not both"
+	case EXAM_PRACTICE_NO_BASE:
+		return "Nothing to practise yet — submit an exam in this journey first"
+	case EXAM_JOURNEY_ALREADY_ACTIVE:
+		return "A journey of this type is already open — end it before reopening another"
 
 	default:
 		return ""

@@ -101,45 +101,49 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			return errs.NewError(ctx, status.EXAM_GRADING_FAILED, nil, err)
 		}
 
+		// The sitting folds into its journey first, so that the id of the
+		// row that actually took the totals is known before anything is
+		// written against it. An ASSESSMENT sitting opens a journey when
+		// the child has none; a PRACTICE sitting folds into the PRACTICE
+		// row of the journey it was drawn for, opening that row under the
+		// journey's own id the first time. applyStats returns whichever
+		// id won — never one minted up front — so a lost race cannot leave
+		// a log pointing at a journey that does not exist.
+		journeyID, err := h.applyStats(ctx, repos, cmd, attempt, scored)
+		if err != nil {
+			return err
+		}
+
+		// The attempt's single state transition, pinned to its journey.
+		// The state guard lives in the UPDATE's WHERE clause: a second
+		// submit racing this one folds its totals above, then matches
+		// zero rows here and rolls the whole transaction back — which is
+		// how the loser finds out, and why the fold above is never
+		// double-counted.
 		if err := repos.UserAiExam.MarkSubmitted(ctx, attempt.UserAiExamId(), exam.AttemptResult{
 			TotalQuestions:  scored.TotalQuestions,
 			CorrectNumber:   scored.CorrectNumber,
 			SkippedNumber:   scored.SkippedNumber,
 			ScorePercentage: scored.ScorePercentage,
 			SubmittedDt:     mtime.Now(),
+			UserExamId:      &journeyID,
 		}); err != nil {
-			// The state guard lives in the UPDATE's WHERE clause, so this is
-			// how a second submit racing the first one finds out it lost.
 			if errors.Is(err, exam.ErrAttemptNotInProgress) {
 				return errs.NewError(ctx, status.EXAM_ALREADY_SUBMITTED, nil, err)
 			}
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 
-		// The sitting folds into the OPEN journey of its type; when the
-		// child has none (never started, or the last one was ended) the
-		// upsert below opens a new one.
-		// The sitting folds into the OPEN journey of its type; when the
-		// child has none (never started, or the last one was ended) a new
-		// journey is opened. applyStats returns the id of whichever row
-		// actually took the totals — the detail rows are written against
-		// THAT, never against an id minted up front, so a lost race can
-		// not leave a log pointing at a journey that does not exist.
-		journeyID, err := h.applyStats(ctx, repos, cmd, attempt, scored)
-		if err != nil {
-			return err
-		}
-
-		updatedStats, err := repos.UserExam.FindByUserExamId(ctx, journeyID)
+		updatedStats, err := repos.UserExam.FindByUserExamIdAndType(ctx, journeyID, attempt.ReqExamType())
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if updatedStats == nil {
 			return errs.NewError(ctx, status.FAIL, nil,
-				fmt.Errorf("exam: journey %d vanished inside the transaction", journeyID))
+				fmt.Errorf("exam: journey %d (%s) vanished inside the transaction", journeyID, attempt.ReqExamType()))
 		}
 
-		if err := h.writeDetails(ctx, repos, attempt, updatedStats.UserExamId(), scored.Outcomes); err != nil {
+		if err := h.writeDetails(ctx, repos, attempt, journeyID, scored.Outcomes); err != nil {
 			return err
 		}
 
@@ -212,6 +216,7 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 		d.SetUserAiExamId(attempt.UserAiExamId())
 		d.SetUserExamId(userExamID)
 		d.SetAiExamId(attempt.AiExamId())
+		d.SetReqExamType(attempt.ReqExamType())
 		d.SetQuestionNumber(o.Question.QuestionNumber)
 		d.SetQuestionType(utils.ToStringPtr(o.Question.QuestionType))
 		d.SetQuestionName(utils.ToStringPtr(o.Question.QuestionName))
@@ -231,16 +236,21 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 	return nil
 }
 
-// applyStats folds the sitting into the open journey, opening one when
-// there is none, and returns the id of the row that took the totals.
+// applyStats folds the sitting into its journey and returns the id of the
+// row that took the totals. Two kinds of sitting, two folds:
 //
-// The two paths are explicit. When no journey is open, Create INSERTs a
-// fresh row; if that collides — another submit opened the journey a
-// moment earlier — the open journey is re-read and the sitting is
-// accumulated into it instead. When one is open, Accumulate UPDATEs it
-// under an ACTIVE guard. Neither path can quietly land the totals in a
-// row that has ended: an INSERT that collides with one is an error, and
-// an UPDATE against one matches nothing.
+//   - A PRACTICE sitting belongs to the journey it was drawn for and folds
+//     into that journey's PRACTICE row — see applyPracticeStats.
+//   - Every other sitting folds into the open journey of its type,
+//     opening one when the child has none.
+//
+// In both, the two paths are explicit. When no row is open, Create INSERTs
+// a fresh one; if that collides — another submit opened it a moment
+// earlier — the open row is re-read and the sitting is accumulated into
+// it instead. When one is open, Accumulate UPDATEs it under an ACTIVE
+// guard. Neither path can quietly land the totals in a row that has
+// ended: an INSERT that collides with one is an error, and an UPDATE
+// against one matches nothing.
 //
 // Placement is derived from the totals INCLUDING this sitting — deriving
 // before the fold would describe the child as they were one exam ago.
@@ -251,6 +261,10 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 		TotalQuestions: scored.TotalQuestions,
 		CorrectNumber:  scored.CorrectNumber,
 		SkippedNumber:  scored.SkippedNumber,
+	}
+
+	if attempt.ReqExamType() == string(enum.ExamTypePractice) {
+		return h.applyPracticeStats(ctx, repos, cmd, attempt, delta)
 	}
 
 	journey, err := repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UserID, cmd.ProfileID, attempt.ReqExamType())
@@ -292,13 +306,117 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 	}
 
 	row := h.journeyRow(cmd, attempt, journey, delta, scored, journey.UserExamId())
-	if err := repos.UserExam.Accumulate(ctx, journey.UserExamId(), row, delta); err != nil {
+	if err := repos.UserExam.Accumulate(ctx, journey.UserExamId(), attempt.ReqExamType(), row, delta); err != nil {
 		if errors.Is(err, exam.ErrJourneyNotActive) {
 			return 0, errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
 		}
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	return journey.UserExamId(), nil
+}
+
+// applyPracticeStats folds a PRACTICE sitting into the PRACTICE row of
+// the journey it was drawn for.
+//
+// The journey is the one recorded on the attempt at hand-out, not
+// whatever is open now. That distinction is the whole point: a practice
+// round drawn for journey 1, submitted after the parent ended journey 1
+// and opened journey 2, must be refused — not quietly folded into a
+// journey it was never part of. So the ASSESSMENT row is read first and
+// must still be ACTIVE; only then is the PRACTICE row touched.
+//
+// The PRACTICE row reuses the journey's id (uk_journey_type makes the
+// pair unique), so no sequence is drawn. A race to open it resolves the
+// same way as for a journey: the loser's INSERT collides, it re-reads,
+// and accumulates into the winner's row.
+func (h *SubmitExamCommandHandler) applyPracticeStats(ctx context.Context, repos transaction.Repositories,
+	cmd SubmitExamCommand, attempt *exam.UserAiExam, delta exam.StatsDelta) (int64, error) {
+
+	if attempt.UserExamId() == nil {
+		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
+			fmt.Errorf("exam: practice attempt %d was drawn without a journey", attempt.UserAiExamId()))
+	}
+	journeyID := *attempt.UserExamId()
+
+	owner, err := repos.UserExam.FindByUserExamIdAndType(ctx, journeyID, string(enum.ExamTypeAssessment))
+	if err != nil {
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if owner == nil {
+		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
+			fmt.Errorf("exam: journey %d not found for practice attempt %d", journeyID, attempt.UserAiExamId()))
+	}
+	if owner.UserId() != cmd.UserID || owner.ProfileId() != cmd.ProfileID {
+		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
+			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
+	}
+	if st := owner.UserExamStatus(); st == nil || *st != string(enum.UserExamStatusActive) {
+		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil,
+			fmt.Errorf("exam: journey %d has ended; practice attempt %d cannot fold into it", journeyID, attempt.UserAiExamId()))
+	}
+
+	practiceType := string(enum.ExamTypePractice)
+	existing, err := repos.UserExam.FindByUserExamIdAndType(ctx, journeyID, practiceType)
+	if err != nil {
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	if existing == nil {
+		row := h.practiceRow(cmd, nil, delta, journeyID)
+		err = repos.UserExam.Create(ctx, row, delta)
+		if err == nil {
+			return journeyID, nil
+		}
+		if !errors.Is(err, exam.ErrJourneyConflict) {
+			return 0, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+
+		existing, err = repos.UserExam.FindByUserExamIdAndType(ctx, journeyID, practiceType)
+		if err != nil {
+			return 0, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if existing == nil {
+			return 0, errs.NewError(ctx, status.FAIL, nil,
+				fmt.Errorf("exam: opening the practice row of journey %d collided with a row that cannot be read back — check uk_journey_type", journeyID))
+		}
+	}
+
+	row := h.practiceRow(cmd, existing, delta, journeyID)
+	if err := repos.UserExam.Accumulate(ctx, journeyID, practiceType, row, delta); err != nil {
+		if errors.Is(err, exam.ErrJourneyNotActive) {
+			return 0, errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
+		}
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	return journeyID, nil
+}
+
+// practiceRow builds the PRACTICE row the repository writes. It shares
+// the journey's id and carries no grade: practice never places the child.
+func (h *SubmitExamCommandHandler) practiceRow(cmd SubmitExamCommand, existing *exam.UserExam,
+	delta exam.StatsDelta, journeyID int64) *exam.UserExam {
+
+	in := placement.Input{
+		LifetimeTotal:   delta.TotalQuestions,
+		LifetimeCorrect: delta.CorrectNumber,
+		LifetimeSkipped: delta.SkippedNumber,
+	}
+	if existing != nil {
+		in.LifetimeTotal += existing.ResTotalQuestions()
+		in.LifetimeCorrect += existing.ResCorrectNumber()
+		in.LifetimeSkipped += existing.ResSkippedNumber()
+	}
+	derived := placement.DerivePractice(in)
+
+	row := exam.NewUserExam()
+	row.SetUserExamId(journeyID)
+	row.SetUserId(cmd.UserID)
+	row.SetProfileId(cmd.ProfileID)
+	row.SetReqExamType(string(enum.ExamTypePractice))
+	row.SetResReview(&derived.Review)
+	row.SetResGrade(nil)
+	row.SetLastSubmittedDt(mtime.Now())
+	return row
 }
 
 // journeyRow builds the row the repository writes: identity plus the

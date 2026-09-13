@@ -15,6 +15,11 @@ import (
 // Grade may be pinned by the client; left out, the server derives it —
 // measured ability first, then the class the profile attends.
 //
+// UserExamID names the journey a PRACTICE round is drawn inside, and is
+// required for that type: the round is aimed at the journey's latest
+// submitted sitting, so there is nothing to aim at without one. For a
+// PRACTICE round Grade is ignored — it follows that sitting's grade.
+//
 // Level is part of the contract but NOT yet part of the behaviour. The
 // teaching team has not defined what a level is, so the server does not
 // validate, resolve, prompt with or store it — req_level stays NULL no
@@ -25,6 +30,7 @@ type GenerateExamReq struct {
 	UserID       *int64 `json:"-"`
 	ProfileID    int64  `json:"profile_id"`
 	ExamType     string `json:"exam_type"`
+	UserExamID   *int64 `json:"user_exam_id,omitempty"`
 	Grade        *int   `json:"grade,omitempty"`
 	Level        *int   `json:"level,omitempty"` // accepted, ignored — see type doc
 	NumQuestions int    `json:"num_questions,omitempty"`
@@ -44,33 +50,44 @@ type SubmitExamReq struct {
 	Answers      []question.StudentAnswer `json:"answers"`
 }
 
-// GetExamReq reads either ONE sitting or ONE journey — exactly one of the
-// two ids is set:
+// GetExamReq reads either ONE sitting or ONE row of a journey:
 //
 //   - user_ai_exam_id → that sitting: the exam as served, plus its answers.
 //   - user_exam_id    → that journey: its running totals, every sitting
 //     that fed them, and every question answered across them.
+//     ReqExamType picks which row of the journey — ASSESSMENT (the
+//     default, so older clients keep working) or PRACTICE — since the
+//     two share the id. It is ignored when a sitting is asked for.
 type GetExamReq struct {
-	UserID       *int64 `json:"-"`
-	ProfileID    int64  `json:"profile_id"`
-	UserAiExamID int64  `json:"user_ai_exam_id,omitempty"`
-	UserExamID   int64  `json:"user_exam_id,omitempty"`
+	UserID       *int64  `json:"-"`
+	ProfileID    int64   `json:"profile_id"`
+	UserAiExamID int64   `json:"user_ai_exam_id,omitempty"`
+	UserExamID   int64   `json:"user_exam_id,omitempty"`
+	ExamType     *string `json:"exam_type,omitempty"`
 }
 
 // ListExamsReq pages a child's history. Status narrows to unfinished
 // attempts ("IN_PROGRESS"), which is how the resume surface is built.
+// UserExamID narrows to one journey, and is required when ExamType is
+// PRACTICE: practice rounds only exist inside a journey, so "the practice
+// rounds" is only a question about one.
 type ListExamsReq struct {
-	UserID    *int64  `json:"-"`
-	ProfileID int64   `json:"profile_id"`
-	ExamType  *string `json:"exam_type,omitempty"`
-	Status    *string `json:"status,omitempty"`
-	Page      int     `json:"page,omitempty"`
-	Size      int     `json:"size,omitempty"`
+	UserID     *int64  `json:"-"`
+	ProfileID  int64   `json:"profile_id"`
+	ExamType   *string `json:"exam_type,omitempty"`
+	UserExamID *int64  `json:"user_exam_id,omitempty"`
+	Status     *string `json:"status,omitempty"`
+	Page       int     `json:"page,omitempty"`
+	Size       int     `json:"size,omitempty"`
 }
 
 // GetExamStatsReq reads a child's journeys. Status narrows to one
 // lifecycle state — "ACTIVE" is the natural filter for a dashboard
 // showing where the child is now; omit it for the full history.
+//
+// ExamType names a JOURNEY type. PRACTICE is not one — its totals ride
+// along on the ASSESSMENT journey they belong to (ExamStats.Practice) —
+// so asking for it is rejected rather than answered with orphan rows.
 type GetExamStatsReq struct {
 	UserID    *int64  `json:"-"`
 	ProfileID int64   `json:"profile_id"`
@@ -173,6 +190,10 @@ type ExamStats struct {
 	LastSubmittedDt string  `json:"last_submitted_dt,omitempty"`
 	EndedDt         string  `json:"ended_dt,omitempty"`
 	CreateDt        string  `json:"create_dt"`
+	// Practice is the journey's PRACTICE row, present once the child has
+	// submitted a practice round in it. Only an ASSESSMENT journey carries
+	// one; it shares user_exam_id and never has a grade.
+	Practice *ExamStats `json:"practice,omitempty"`
 }
 
 type GenerateExamRes struct {
@@ -434,6 +455,22 @@ func StatsToSingleResponse(row *domain.UserExam) *ExamStats {
 	return &all[0]
 }
 
+// JourneyStatsToResponse renders journeys with their practice rows
+// tucked inside, so the client sees one entry per journey rather than
+// two rows that happen to share an id.
+func JourneyStatsToResponse(journeys []domain.JourneyStats) []ExamStats {
+	out := make([]ExamStats, 0, len(journeys))
+	for _, j := range journeys {
+		s := StatsToSingleResponse(j.Journey)
+		if s == nil {
+			continue
+		}
+		s.Practice = StatsToSingleResponse(j.Practice)
+		out = append(out, *s)
+	}
+	return out
+}
+
 // parseQuestions decodes the stored payload and, when the key must stay
 // hidden, blanks it field by field rather than dropping the question —
 // the child still needs the stem and the options to answer.
@@ -465,13 +502,14 @@ func servedQuestions(raw string, sh *question.Shuffle, includeAnswerKey bool) []
 // enum.IsValidTzOffset). ExamType optionally narrows to one type; Limit
 // caps the number of chart points.
 type ExamProgressReq struct {
-	UserID    *int64  `json:"-"`
-	ProfileID int64   `json:"profile_id"`
-	ExamType  *string `json:"exam_type"`
-	FromDt    string  `json:"from_dt"`
-	ToDt      string  `json:"to_dt"`
-	Tz        string  `json:"tz"`
-	Limit     int     `json:"limit"`
+	UserID     *int64  `json:"-"`
+	ProfileID  int64   `json:"profile_id"`
+	ExamType   *string `json:"exam_type"`
+	UserExamID *int64  `json:"user_exam_id,omitempty"` // required with PRACTICE
+	FromDt     string  `json:"from_dt"`
+	ToDt       string  `json:"to_dt"`
+	Tz         string  `json:"tz"`
+	Limit      int     `json:"limit"`
 }
 
 // ExamPoint is one chart point — a single submitted attempt. Sequence is

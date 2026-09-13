@@ -10,6 +10,7 @@ type UserAiExamModel struct {
 	UserId             int64
 	ProfileId          int64
 	AiExamId           int64
+	UserExamId         *int64
 	ShuffleMap         *string
 	ReqExamType        string
 	ReqGrade           int

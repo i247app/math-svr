@@ -15,7 +15,7 @@ import (
 const (
 	userExamDetailTable = "ma_user_exam_details"
 
-	userExamDetailColumns = `d.id, d.user_exam_detail_id, d.user_ai_exam_id, d.user_exam_id, d.ai_exam_id,
+	userExamDetailColumns = `d.id, d.user_exam_detail_id, d.user_ai_exam_id, d.user_exam_id, d.ai_exam_id, d.req_exam_type,
 		d.question_number, d.question_type, d.question_name, d.question_topic, d.question_grade, d.question_level,
 		d.right_answer_label, d.right_answer_content,
 		d.selected_label, d.selected_content, d.is_correct,
@@ -27,13 +27,13 @@ const (
 	// userExamDetailInsertColumns and its placeholder tuple are kept next
 	// to each other: CreateBatch repeats the tuple once per row, so the
 	// two must be edited together or the batch insert misaligns.
-	userExamDetailInsertColumns = `(user_exam_detail_id, user_ai_exam_id, user_exam_id, ai_exam_id,
+	userExamDetailInsertColumns = `(user_exam_detail_id, user_ai_exam_id, user_exam_id, ai_exam_id, req_exam_type,
 			question_number, question_type, question_name, question_topic, question_grade, question_level,
 			right_answer_label, right_answer_content,
 			selected_label, selected_content, is_correct,
 			note, detail_status, create_id, create_dt, modify_dt)`
 
-	userExamDetailValueTuple = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	userExamDetailValueTuple = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func userExamDetailActiveArgs() []any {
@@ -50,7 +50,7 @@ func NewUserExamDetailRepository(db database.Executor) exam.IUserExamDetailRepos
 
 func scanUserExamDetail(s database.RowScanner) (*models.UserExamDetailModel, error) {
 	var m models.UserExamDetailModel
-	if err := s.Scan(&m.Id, &m.UserExamDetailId, &m.UserAiExamId, &m.UserExamId, &m.AiExamId,
+	if err := s.Scan(&m.Id, &m.UserExamDetailId, &m.UserAiExamId, &m.UserExamId, &m.AiExamId, &m.ReqExamType,
 		&m.QuestionNumber, &m.QuestionType, &m.QuestionName, &m.QuestionTopic, &m.QuestionGrade, &m.QuestionLevel,
 		&m.RightAnswerLabel, &m.RightAnswerContent,
 		&m.SelectedLabel, &m.SelectedContent, &m.IsCorrect,
@@ -75,7 +75,7 @@ func (r *UserExamDetailRepository) CreateBatch(ctx context.Context, details []*e
 
 	now := mtime.Now().Time
 	placeholders := make([]string, 0, len(details))
-	args := make([]any, 0, len(details)*20)
+	args := make([]any, 0, len(details)*21)
 
 	for _, d := range details {
 		detailStatus := d.DetailStatus()
@@ -85,7 +85,7 @@ func (r *UserExamDetailRepository) CreateBatch(ctx context.Context, details []*e
 		}
 		placeholders = append(placeholders, userExamDetailValueTuple)
 		args = append(args,
-			d.UserExamDetailId(), d.UserAiExamId(), d.UserExamId(), d.AiExamId(),
+			d.UserExamDetailId(), d.UserAiExamId(), d.UserExamId(), d.AiExamId(), d.ReqExamType(),
 			d.QuestionNumber(), d.QuestionType(), d.QuestionName(), d.QuestionTopic(), d.QuestionGrade(), d.QuestionLevel(),
 			d.RightAnswerLabel(), d.RightAnswerContent(),
 			d.SelectedLabel(), d.SelectedContent(), d.IsCorrect(),
@@ -132,11 +132,12 @@ func (r *UserExamDetailRepository) ListByUserAiExamId(ctx context.Context, userA
 	return r.list(ctx, "d.user_ai_exam_id = ?", []any{userAiExamId}, "ORDER BY d.question_number ASC")
 }
 
-// ListByUserExamId returns a whole journey's log. Ordered by sitting id
+// ListByUserExamId returns one row of a journey's log — its ASSESSMENT
+// sittings or its PRACTICE sittings, never both. Ordered by sitting id
 // first — ids are minted monotonically, so that IS chronological — then
 // by question number, so a client can walk it exam by exam.
-func (r *UserExamDetailRepository) ListByUserExamId(ctx context.Context, userExamId int64) ([]*exam.UserExamDetail, error) {
-	return r.list(ctx, "d.user_exam_id = ?", []any{userExamId},
+func (r *UserExamDetailRepository) ListByUserExamId(ctx context.Context, userExamId int64, examType string) ([]*exam.UserExamDetail, error) {
+	return r.list(ctx, "d.user_exam_id = ? AND d.req_exam_type = ?", []any{userExamId, examType},
 		"ORDER BY d.user_ai_exam_id ASC, d.question_number ASC")
 }
 
@@ -144,11 +145,11 @@ func (r *UserExamDetailRepository) ListByUserExamId(ctx context.Context, userExa
 // questions across every sitting, newest first. It is the input a
 // placement or weak-topic rule reads, which is why it is bounded: those
 // rules look at a recent window, never the whole lifetime.
-func (r *UserExamDetailRepository) ListRecentByUserExamId(ctx context.Context, userExamId int64, limit int64) ([]*exam.UserExamDetail, error) {
+func (r *UserExamDetailRepository) ListRecentByUserExamId(ctx context.Context, userExamId int64, examType string, limit int64) ([]*exam.UserExamDetail, error) {
 	if limit <= 0 {
 		limit = 50
 	}
-	return r.list(ctx, "d.user_exam_id = ?", []any{userExamId, limit},
+	return r.list(ctx, "d.user_exam_id = ? AND d.req_exam_type = ?", []any{userExamId, examType, limit},
 		"ORDER BY d.id DESC LIMIT ?")
 }
 
@@ -159,6 +160,7 @@ func ModelToDomainUserExamDetail(m *models.UserExamDetailModel) *exam.UserExamDe
 	d.SetUserAiExamId(m.UserAiExamId)
 	d.SetUserExamId(m.UserExamId)
 	d.SetAiExamId(m.AiExamId)
+	d.SetReqExamType(m.ReqExamType)
 	d.SetQuestionNumber(m.QuestionNumber)
 	d.SetQuestionType(m.QuestionType)
 	d.SetQuestionName(m.QuestionName)

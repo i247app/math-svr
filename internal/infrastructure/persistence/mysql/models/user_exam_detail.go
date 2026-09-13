@@ -10,6 +10,7 @@ type UserExamDetailModel struct {
 	UserAiExamId       int64
 	UserExamId         int64
 	AiExamId           int64
+	ReqExamType        string
 	QuestionNumber     int
 	QuestionType       *string
 	QuestionName       *string

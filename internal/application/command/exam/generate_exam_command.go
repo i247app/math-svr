@@ -45,6 +45,11 @@ type GenerateExamCommand struct {
 	// so the child who triggered it sees no different treatment from the
 	// next child who is served it from cache.
 	ShuffleJSON *string
+	// UserExamID is the journey the sitting is drawn for, when the caller
+	// already knows it: always for a PRACTICE round, and for an ASSESSMENT
+	// while a journey is open. nil for the first sitting of a journey —
+	// the row does not exist yet — and submit fills it in.
+	UserExamID *int64
 
 	ReuseAiExamID *int64
 	NewContent    *NewAiExamContent
@@ -87,6 +92,7 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		a.SetUserId(cmd.UserID)
 		a.SetProfileId(cmd.ProfileID)
 		a.SetAiExamId(aiExam.AiExamId())
+		a.SetUserExamId(cmd.UserExamID)
 		a.SetShuffleMap(cmd.ShuffleJSON)
 		a.SetReqExamType(string(cmd.ExamType))
 		a.SetReqGrade(cmd.Grade)

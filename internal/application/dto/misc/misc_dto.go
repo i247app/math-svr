@@ -13,8 +13,15 @@ type LogTimeFormatRes struct {
 	Format20FSP         string `json:"format_20_fsp"`
 }
 
-// ClearDataRes reports what was wiped by POST /misc/clear-data.
+// ClearDataRes reports what was wiped by POST /misc/clear-data and
+// POST /misc/clear-data-tables.
 type ClearDataRes struct {
 	TablesCleared []string `json:"tables_cleared"`
 	SeqsReset     []string `json:"seqs_reset"`
+}
+
+// ClearDataTablesReq selects which tables POST /misc/clear-data-tables wipes.
+// Each name must be one of the clear-data allow-listed tables (e.g. "ma_users").
+type ClearDataTablesReq struct {
+	Tables []string `json:"tables"`
 }

@@ -36,7 +36,7 @@ func NormalizeQuestionBands(questions []question.Question, examType enum.ExamTyp
 	}
 
 	probeAt := make(map[int]struct{})
-	for _, pos := range domainBot.AssessmentProbePositions(examType, len(questions)) {
+	for _, pos := range domainBot.ProbePositions(examType, len(questions)) {
 		probeAt[pos] = struct{}{}
 	}
 	probeGrade := domainBot.ProbeGrade(grade)

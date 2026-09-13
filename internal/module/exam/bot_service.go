@@ -39,6 +39,8 @@ type generateExamInput struct {
 	NumQuestions int
 	Semester     string
 	Program      string
+	// Practice aims a PRACTICE round; nil for every other type.
+	Practice *domainBot.PracticeBrief
 }
 
 type generateExamOutput struct {
@@ -59,6 +61,7 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		NumQuestions: in.NumQuestions,
 		Semester:     in.Semester,
 		Program:      in.Program,
+		Practice:     in.Practice,
 	}
 
 	system, user, err := domainBot.BuildExamPrompt(promptIn)

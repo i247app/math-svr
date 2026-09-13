@@ -79,8 +79,8 @@ func TestCacheTagDistinguishesRequests(t *testing.T) {
 // as a marker rather than vanishing, so the tag keeps a fixed arity and
 // stays readable by a human.
 func TestCacheTagMissingParts(t *testing.T) {
-	got := BuildCacheTag(enum.ExamTypeExam, 0, 10, "", "")
-	want := "EXAM-G0-Q10-SNA-PNA"
+	got := BuildCacheTag(enum.ExamTypeGrade, 0, 10, "", "")
+	want := "GRADE-G0-Q10-SNA-PNA"
 	if got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
