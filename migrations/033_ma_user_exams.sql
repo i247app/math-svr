@@ -66,15 +66,5 @@ CREATE TABLE IF NOT EXISTS ma_user_exams (
   KEY ix_profile_type (profile_id, req_exam_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-ALTER TABLE ma_user_exams DROP INDEX uk_active_journey;
-
-ALTER TABLE ma_user_exams
-  ADD COLUMN active_key TINYINT UNSIGNED
-    GENERATED ALWAYS AS (IF(user_exam_status = 'ACTIVE', 1, NULL)) STORED
-    AFTER user_exam_status;
-
-ALTER TABLE ma_user_exams
-  ADD UNIQUE KEY uk_active_journey (user_id, profile_id, req_exam_type, active_key);
-
 INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
 ('user_exam', 0, 'UE', 8);   -- user_exam_id: UE00000001...

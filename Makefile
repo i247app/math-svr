@@ -3,7 +3,7 @@
 # as already satisfied and `make deploy` becomes a silent no-op.
 .PHONY: help tidy build build-ec2-arm build-ec2-amd run linecount \
 	login watch-logs deploy deploy-quick deploy-rollback deploy-amd \
-	connect-mysql clear-data-local clear-data-ec2 \
+	connect-mysql migrate migrate-status migrate-baseline clear-data-local clear-data-ec2 \
 	obs-up obs-down obs-logs obs-reset
 
 help: ## Show this help
@@ -50,6 +50,15 @@ deploy-amd:
 
 connect-mysql: ## connect to remote mysql
 	@./deploy/scripts/connect-mysql.sh
+
+migrate: ## apply pending migrations/*.sql to LOCAL db (uses .env DB_*)
+	@./deploy/scripts/migrate.sh
+
+migrate-status: ## list applied / pending migrations on LOCAL db, change nothing
+	@./deploy/scripts/migrate.sh --status
+
+migrate-baseline: ## mark all migrations as applied WITHOUT running them (one-off, existing LOCAL db)
+	@./deploy/scripts/migrate.sh --baseline
 
 clear-data-local: ## wipe LOCAL user data, keep reference data (uses .env DB_*)
 	@./deploy/scripts/clear-data.sh local

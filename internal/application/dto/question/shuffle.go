@@ -223,7 +223,6 @@ func (s *Shuffle) ToCanonical(served []StudentAnswer) ([]StudentAnswer, error) {
 // ServedNumber is the position a canonical question was shown at, or 0
 // when it was not shown. Identity on a nil receiver.
 func (s *Shuffle) ServedNumber(canonicalQN int) int {
-	println("ServedNumber:", canonicalQN)
 	if s == nil {
 		return canonicalQN
 	}
