@@ -77,7 +77,7 @@ func NewFromEnv(envPath string) (*App, error) {
 	}
 
 	// // Run migrations
-	// if err := database.Migrate(context.Background(), sqlDB, "migrations"); err != nil {
+	// if err := database.Migrate(context.Background(), sqlDB, "migrations/up"); err != nil {
 	// 	sqlDB.Close()
 	// 	_ = logProvider.Close()
 	// 	return nil, fmt.Errorf("failed to run migrations: %w", err)

@@ -83,6 +83,3 @@ CREATE TABLE IF NOT EXISTS ma_user_exam_details (
 ALTER TABLE ma_user_exam_details
   ADD KEY ix_user_exam_level (user_exam_id, question_level, is_correct);
 
-
-INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
-('user_exam_detail', 0, 'UED', 8);   -- user_exam_detail_id: UED00000001...

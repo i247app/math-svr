@@ -46,6 +46,3 @@ CREATE TABLE IF NOT EXISTS ma_chat_attachments (
   KEY ix_conversation_type (conversation_id, attachment_type, attachment_status),
   KEY ix_orphan (attachment_status, create_dt)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
-('chat_attachment', 0, 'CAT', 8);   -- attachment_id: CAT00000001...

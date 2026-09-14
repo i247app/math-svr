@@ -3,7 +3,8 @@
 # as already satisfied and `make deploy` becomes a silent no-op.
 .PHONY: help tidy build build-ec2-arm build-ec2-amd run linecount \
 	login watch-logs deploy deploy-quick deploy-rollback deploy-amd \
-	connect-mysql migrate migrate-status migrate-baseline clear-data-local clear-data-ec2 \
+	connect-mysql migrate migrate-status migrate-baseline migrate-down seed db-reset \
+	clear-data-local clear-data-ec2 \
 	obs-up obs-down obs-logs obs-reset
 
 help: ## Show this help
@@ -51,14 +52,22 @@ deploy-amd:
 connect-mysql: ## connect to remote mysql
 	@./deploy/scripts/connect-mysql.sh
 
-migrate: ## apply pending migrations/*.sql to LOCAL db (uses .env DB_*)
-	@./deploy/scripts/migrate.sh
+migrate: ## apply pending migrations/up/*.sql to LOCAL db (uses .env DB_*)
+	@./deploy/scripts/migrate.sh up
 
 migrate-status: ## list applied / pending migrations on LOCAL db, change nothing
-	@./deploy/scripts/migrate.sh --status
+	@./deploy/scripts/migrate.sh status
+
+migrate-down: ## DESTRUCTIVE: run migrations/down/ for every applied version — drops all tables
+	@./deploy/scripts/migrate.sh down
 
 migrate-baseline: ## mark all migrations as applied WITHOUT running them (one-off, existing LOCAL db)
-	@./deploy/scripts/migrate.sh --baseline
+	@./deploy/scripts/migrate.sh baseline
+
+seed: ## run migrations/seed/*.sql (ma_seqs, programs, grades, semesters) — idempotent
+	@./deploy/scripts/migrate.sh seed
+
+db-reset: migrate-down migrate seed ## DESTRUCTIVE: down → up → seed, a clean LOCAL database
 
 clear-data-local: ## wipe LOCAL user data, keep reference data (uses .env DB_*)
 	@./deploy/scripts/clear-data.sh local

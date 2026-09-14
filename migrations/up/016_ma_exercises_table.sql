@@ -31,5 +31,3 @@ CREATE TABLE IF NOT EXISTS ma_exercises (
 
 -- ALTER TABLE ma_exercises ADD KEY ix_classroom_visibility_creator (classroom_id, visibility, creator_profile_id);
 
--- ALTER TABLE ma_exercises
---   ADD COLUMN short_text VARCHAR(255) DEFAULT NULL AFTER title;

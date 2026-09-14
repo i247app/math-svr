@@ -85,6 +85,3 @@ CREATE TABLE IF NOT EXISTS ma_user_ai_exams (
   -- Cache accounting: how many attempts a given generated exam served.
   KEY ix_ai_exam (ai_exam_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
-('user_ai_exam', 0, 'UAE', 8);   -- user_ai_exam_id: UAE00000001...

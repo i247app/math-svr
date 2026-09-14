@@ -119,34 +119,43 @@ if the file is missing or unparsable, and that error aborts startup.
 | `SERIALIZED_SESSION_FILE` | when set, sessions are dumped here on shutdown and reloaded on start |
 | `OBS_*`, `LOG_*` | observability — see `.env.example` and `docker/README.md` |
 
-### 2. Apply database migrations
+### 2. Set up the database
 
-**Migrations are not applied on boot.** The `database.Migrate(ctx, sqlDB, "migrations")`
+**Migrations are not applied on boot.** The `database.Migrate(ctx, sqlDB, "migrations/up")`
 call in `internal/bootstrap/app.go` is commented out, so run them from the repo root:
 
 ```bash
-make migrate
+make migrate && make seed
 ```
 
-`deploy/scripts/migrate.sh` reads `DB_*` from `.env`, creates `schema_migrations` if
-missing, and applies every `migrations/*.sql` not yet recorded there, in lexicographic
-order — the same table, version format, and ordering the Go runner uses, so the two are
-interchangeable. Re-running is a no-op. Other targets:
+`migrations/` is split in three:
+
+| Folder | Contents | Tracked? |
+|---|---|---|
+| `up/NNN_*.sql` | forward schema changes (one table per file) | yes — `schema_migrations(version)`, `version` = filename without `.sql` |
+| `down/NNN_*.sql` | the mirror of each `up` file: `DROP TABLE IF EXISTS` (+ removes the `ma_seqs` row the up file seeded) | runs newest-first, deletes the version row |
+| `seed/NNN_*.sql` | reference data — `ma_seqs`, `ma_programs`, `ma_grades`, `ma_semesters` — all `INSERT IGNORE` | no — idempotent, re-run any time |
+
+`deploy/scripts/migrate.sh <up|status|seed|down|baseline>` does the work, reading `DB_*`
+from `.env`. `up` uses the same table, version format and byte ordering as the Go runner,
+so the two are interchangeable; re-running is a no-op.
 
 | Command | Effect |
 |---|---|
-| `make migrate-status` | list applied / pending versions, change nothing |
-| `make migrate-baseline` | record every file as applied **without** running it — one-off for a database that was set up by hand before this script existed (prompts for confirmation) |
+| `make migrate` | apply pending `up/` files |
+| `make migrate-status` | list applied / pending (and orphan versions with no `up/` file), change nothing |
+| `make seed` | run every `seed/` file |
+| `make migrate-down` | **destructive** — run `down/` for every applied version, newest first; asks for `yes` (`MIGRATE_YES=1` to skip). Versions with no `down/` file (orphans) are forgotten, their tables listed for manual drop |
+| `make db-reset` | **destructive** — `migrate-down` → `migrate` → `seed`: a clean local database |
+| `make migrate-baseline` | record every `up/` file as applied **without** running it — one-off for a database set up by hand before this script existed |
 
-`ma_seqs` is seeded by `035_seed_ma_seqs.sql` (`INSERT IGNORE`, one row per name in
-`internal/domain/seq/names.go`), so a fresh database can mint external ids right away.
+New migration: `./deploy/scripts/create_migration.sh ma_foo_table` scaffolds
+`up/NNN_ma_foo_table.sql` + `down/NNN_ma_foo_table.sql` with the next free number.
 
-> Migrations are forward-only; there are no down-migrations. MySQL DDL auto-commits, so a
-> file that fails halfway may leave earlier statements applied while its version stays
-> unrecorded — fix and re-run.
-> `deploy/scripts/create_migration.sh` exists but writes into `migrations/up/` and
-> `migrations/down/`, which does not match the flat `migrations/*.sql` layout the
-> runner reads. **[CẦN XÁC NHẬN]** whether that script is still intended for use.
+> Migrations are forward-only in the sense that `up` never re-executes a recorded version;
+> `down` exists to tear a **local** database down, not to roll back production. MySQL DDL
+> auto-commits, so an `up` file that fails halfway may leave earlier statements applied
+> while its version stays unrecorded — fix and re-run.
 
 ### 3. Run
 

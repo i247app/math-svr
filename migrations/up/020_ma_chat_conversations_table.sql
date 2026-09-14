@@ -53,7 +53,3 @@ CREATE TABLE IF NOT EXISTS ma_chat_conversations (
   KEY ix_recent (conversation_status, last_message_dt)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- Sequence row for conversation_id. INSERT IGNORE keeps this file safe to
--- re-run; without this row Seq.Next returns SEQ_NOT_FOUND at runtime.
-INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
-('chat_conversation', 0, 'CC', 8);   -- conversation_id: CC00000001...

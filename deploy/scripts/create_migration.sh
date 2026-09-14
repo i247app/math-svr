@@ -1,30 +1,46 @@
 #!/usr/bin/env bash
+# deploy/scripts/create_migration.sh — scaffold an up/down migration pair.
+#
+# Usage:
+#   ./deploy/scripts/create_migration.sh ma_foo_table
+#   → migrations/up/NNN_ma_foo_table.sql   (next free 3-digit number)
+#   → migrations/down/NNN_ma_foo_table.sql
+#
+# Reference data does not belong here — add an INSERT IGNORE file under
+# migrations/seed/ instead (see deploy/scripts/migrate.sh).
+set -euo pipefail
 
-# Check if migration name is provided
-if [ -z "$1" ]; then
-    echo "❌ Error: Migration name is required."
-    echo "Usage: $0 <migration_name>"
-    exit 1
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+UP_DIR="$PROJECT_DIR/migrations/up"
+DOWN_DIR="$PROJECT_DIR/migrations/down"
 
-# Generate a timestamp for the migration version
-VERSION=$(date +%Y%m%d%H%M%S)
-NAME=$1
-UP_DIR="migrations/up"
-DOWN_DIR="migrations/down"
+NAME="${1:-}"
+[[ -n "$NAME" ]] || { echo "usage: $0 <migration_name>   e.g. $0 ma_foo_table" >&2; exit 1; }
+[[ "$NAME" =~ ^[a-z0-9_]+$ ]] || { echo "error: name must be lowercase [a-z0-9_]" >&2; exit 1; }
 
-# Create directories if they don't exist
-mkdir -p $UP_DIR
-mkdir -p $DOWN_DIR
+mkdir -p "$UP_DIR" "$DOWN_DIR"
 
-# Define file paths for up and down migrations
-UP_FILE="${UP_DIR}/${VERSION}_${NAME}.sql"
-DOWN_FILE="${DOWN_DIR}/${VERSION}_${NAME}.sql"
+# Next number = highest existing NNN prefix in up/ + 1 (000 when the dir is empty).
+last=$(find "$UP_DIR" -maxdepth 1 -name '[0-9][0-9][0-9]_*.sql' -exec basename {} \; \
+        | LC_ALL=C sort | tail -1 | cut -c1-3)
+next=$(printf '%03d' $(( 10#${last:-"-1"} + 1 )))
 
-# Create empty migration files
-touch $UP_FILE
-touch $DOWN_FILE
+UP_FILE="$UP_DIR/${next}_${NAME}.sql"
+DOWN_FILE="$DOWN_DIR/${next}_${NAME}.sql"
+[[ ! -e "$UP_FILE" && ! -e "$DOWN_FILE" ]] || { echo "error: ${next}_${NAME}.sql already exists" >&2; exit 1; }
 
-echo "✨ Created migration files:"
-echo "   -> ${UP_FILE}"
-echo "   -> ${DOWN_FILE}"
+cat >"$UP_FILE" <<SQL
+-- migration up
+-- Forward-only: the runner never re-executes a recorded version, so make every
+-- statement safe on a fresh database (CREATE TABLE IF NOT EXISTS, INSERT IGNORE).
+SQL
+
+cat >"$DOWN_FILE" <<SQL
+-- migration down — reverses up/${next}_${NAME}.sql
+-- DROP TABLE IF EXISTS ${NAME};
+SQL
+
+echo "created:"
+echo "  $UP_FILE"
+echo "  $DOWN_FILE"

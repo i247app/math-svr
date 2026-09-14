@@ -57,6 +57,3 @@ CREATE TABLE IF NOT EXISTS ma_chat_messages (
   KEY ix_sender (sender_profile_id, sent_dt),
   KEY ix_reply (reply_to_message_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
-('chat_message', 0, 'CMG', 8);   -- message_id: CMG00000001...

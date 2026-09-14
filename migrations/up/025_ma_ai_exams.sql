@@ -72,5 +72,3 @@ CREATE TABLE IF NOT EXISTS ma_ai_exams (
   KEY ix_cache_lookup (req_extras, ai_exam_status, status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
-('ai_exam', 0, 'AE', 8);   -- ai_exam_id: AE00000001...

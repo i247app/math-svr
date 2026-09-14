@@ -58,5 +58,3 @@ CREATE TABLE IF NOT EXISTS ma_chat_participants (
   KEY ix_conversation_active (conversation_id, participant_status, deleted_dt)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
-('chat_participant', 0, 'CPT', 8);   -- participant_id: CPT00000001...
