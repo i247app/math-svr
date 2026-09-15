@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"math-ai.com/math-ai/internal/application/dto/question"
+	"math-ai.com/math-ai/internal/domain/bot"
 	domain "math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/shared/pagination"
 	"math-ai.com/math-ai/internal/shared/utils"
@@ -224,6 +225,53 @@ type GetExamRes struct {
 	Stats   *ExamStats         `json:"stats,omitempty"`
 	Exams   []*ExamResponse    `json:"exams,omitempty"`
 	Details []ExamAnswerDetail `json:"details,omitempty"`
+	// PracticePreview says what a PRACTICE round on this journey would
+	// drill, were one requested now. Journey view only; absent until the
+	// journey has a submitted sitting.
+	PracticePreview *PracticePreview `json:"practice_preview,omitempty"`
+}
+
+// PracticePreview is the practice brief as the review screen shows it:
+// the mode decides the copy ("needs more work on…" vs "all correct —
+// push harder"), the topics fill it in, and the base id says which
+// sitting it was read from. It is derived by the same function the
+// hand-out uses, so requesting the round delivers exactly this.
+type PracticePreview struct {
+	Mode             string       `json:"mode"`
+	BaseUserAiExamID int64        `json:"base_user_ai_exam_id"`
+	WeakTopics       []TopicScore `json:"weak_topics"`
+	StrongTopics     []string     `json:"strong_topics"`
+}
+
+// TopicScore is one weak topic with the numbers behind the verdict,
+// most-wrong first.
+type TopicScore struct {
+	Topic    string `json:"topic"`
+	Wrong    int    `json:"wrong"`
+	Answered int    `json:"answered"`
+}
+
+// PracticePreviewFrom renders a brief for the wire. Lists are never nil
+// so the client can iterate without a null check.
+func PracticePreviewFrom(base *domain.UserAiExam, brief *bot.PracticeBrief) *PracticePreview {
+	if base == nil || brief == nil {
+		return nil
+	}
+	weak := make([]TopicScore, 0, len(brief.WeakTopics))
+	for _, topic := range brief.WeakTopics {
+		t := brief.Tally[topic]
+		weak = append(weak, TopicScore{Topic: topic, Wrong: t.Wrong, Answered: t.Answered})
+	}
+	strong := brief.StrongTopics
+	if strong == nil {
+		strong = []string{}
+	}
+	return &PracticePreview{
+		Mode:             string(brief.Mode),
+		BaseUserAiExamID: base.UserAiExamId(),
+		WeakTopics:       weak,
+		StrongTopics:     strong,
+	}
 }
 
 type ListExamsRes struct {

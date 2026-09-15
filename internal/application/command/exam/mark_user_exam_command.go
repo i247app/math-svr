@@ -93,7 +93,7 @@ func (h *MarkUserExamCommandHandler) Handle(ctx context.Context, cmd MarkUserExa
 // on BOTH ids: a profile id alone is guessable, and the session only
 // proves the user.
 func (h *MarkUserExamCommandHandler) loadOwnedJourney(ctx context.Context, repos transaction.Repositories, cmd MarkUserExamCommand) (*exam.UserExam, error) {
-	journey, err := repos.UserExam.FindByUserExamIdAndType(ctx, cmd.UserExamID, string(enum.ExamTypeAssessment))
+	journey, err := repos.UserExam.FindByUserExamId(ctx, cmd.UserExamID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}

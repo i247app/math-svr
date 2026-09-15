@@ -1,4 +1,10 @@
-package command
+// Package practice turns a sitting's answer log into the brief a PRACTICE
+// round is aimed with. It sits with the other shared command helpers
+// because two readers need the same derivation: the hand-out that draws
+// the round, and the journey view that previews what that round will
+// drill — the preview must be computed by the very function the hand-out
+// uses, or the screen promises one thing and the paper delivers another.
+package practice
 
 import (
 	"sort"
@@ -10,7 +16,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
-// BuildPracticeBrief turns the answer log of one sitting into the brief a
+// BuildBrief turns the answer log of one sitting into the brief a
 // PRACTICE prompt is aimed with.
 //
 // The mode is a fixed rule, not a judgement call: one wrong answer is
@@ -27,14 +33,21 @@ import (
 // alphabetically so the same log always yields the same brief. A topic
 // counts as strong only when every answer in it was right; a topic with
 // one wrong out of five is weak, because the drill is about the miss.
-func BuildPracticeBrief(details []*exam.UserExamDetail) bot.PracticeBrief {
+func BuildBrief(details []*exam.UserExamDetail) bot.PracticeBrief {
 	wrongByTopic := map[string]int{}
 	seenTopic := map[string]bool{}
+	tally := map[string]bot.TopicTally{}
 	var wrong []bot.PracticeItem
 
 	for _, d := range details {
 		topic := topicOf(d)
 		seenTopic[topic] = true
+		t := tally[topic]
+		t.Answered++
+		if !d.IsCorrect() {
+			t.Wrong++
+		}
+		tally[topic] = t
 		if d.IsCorrect() {
 			continue
 		}
@@ -70,11 +83,13 @@ func BuildPracticeBrief(details []*exam.UserExamDetail) bot.PracticeBrief {
 	if len(wrong) > 0 {
 		mode = enum.PracticeModeRetryWeak
 	}
+	delete(tally, "")
 	return bot.PracticeBrief{
 		Mode:         mode,
 		Wrong:        wrong,
 		WeakTopics:   weak,
 		StrongTopics: strong,
+		Tally:        tally,
 	}
 }
 

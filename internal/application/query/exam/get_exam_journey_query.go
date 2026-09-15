@@ -3,6 +3,8 @@ package query
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/application/command/shared/practice"
+	"math-ai.com/math-ai/internal/domain/bot"
 	"math-ai.com/math-ai/internal/domain/exam"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -34,6 +36,15 @@ type ExamJourneyDetail struct {
 	Attempts []*exam.UserAiExam
 	AiExams  map[int64]*exam.AiExam
 	Details  []*exam.UserExamDetail
+
+	// PracticeBase is the sitting a PRACTICE round would be drawn from
+	// right now — the journey's latest submitted one, of any type — and
+	// PracticeBrief what that round would be aimed at. Both nil when the
+	// journey has nothing submitted yet. They are computed by the same
+	// function the hand-out uses, so what the screen previews is what the
+	// paper will drill.
+	PracticeBase  *exam.UserAiExam
+	PracticeBrief *bot.PracticeBrief
 }
 
 type GetExamJourneyQueryHandler struct {
@@ -79,6 +90,9 @@ func (h *GetExamJourneyQueryHandler) Handle(ctx context.Context, q GetExamJourne
 		Details: details,
 		AiExams: map[int64]*exam.AiExam{},
 	}
+	if err := h.previewPractice(ctx, out); err != nil {
+		return nil, err
+	}
 	if len(details) == 0 {
 		return out, nil
 	}
@@ -99,6 +113,28 @@ func (h *GetExamJourneyQueryHandler) Handle(ctx context.Context, q GetExamJourne
 		out.AiExams[e.AiExamId()] = e
 	}
 	return out, nil
+}
+
+// previewPractice reads the sitting a practice round would be based on
+// and derives its brief. The base is looked up on its own rather than
+// picked out of the journey's log: the latest submitted sitting may be a
+// PRACTICE one, and those live under the journey's other row.
+func (h *GetExamJourneyQueryHandler) previewPractice(ctx context.Context, out *ExamJourneyDetail) error {
+	base, err := h.attemptRepo.FindLatestSubmittedByUserExamId(ctx, out.Journey.UserExamId())
+	if err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if base == nil {
+		return nil
+	}
+	answers, err := h.detailRepo.ListByUserAiExamId(ctx, base.UserAiExamId())
+	if err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	brief := practice.BuildBrief(answers)
+	out.PracticeBase = base
+	out.PracticeBrief = &brief
+	return nil
 }
 
 // distinctInOrder collects one id per distinct value, keeping first-seen

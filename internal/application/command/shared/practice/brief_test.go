@@ -1,10 +1,11 @@
-package command_test
+package practice_test
 
 import (
 	"reflect"
 	"testing"
 
-	command "math-ai.com/math-ai/internal/application/command/exam"
+	"math-ai.com/math-ai/internal/application/command/shared/practice"
+	"math-ai.com/math-ai/internal/domain/bot"
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -19,7 +20,7 @@ func answered(topic, stem, right, picked string, correct bool) *exam.UserExamDet
 	return d
 }
 
-func TestBuildPracticeBrief(t *testing.T) {
+func TestBuildBrief(t *testing.T) {
 	tests := []struct {
 		name       string
 		log        []*exam.UserExamDetail
@@ -76,7 +77,7 @@ func TestBuildPracticeBrief(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := command.BuildPracticeBrief(tc.log)
+			got := practice.BuildBrief(tc.log)
 			if got.Mode != tc.wantMode {
 				t.Fatalf("mode = %s, want %s", got.Mode, tc.wantMode)
 			}
@@ -93,16 +94,33 @@ func TestBuildPracticeBrief(t *testing.T) {
 	}
 }
 
-// TestBuildPracticeBriefCarriesTheMiss: what the model is shown for a
+// TestBuildBriefCarriesTheMiss: what the model is shown for a
 // wrong answer is the stem, the key and the pick — as content, not labels,
 // since labels were shuffled per sitting and mean nothing on their own.
-func TestBuildPracticeBriefCarriesTheMiss(t *testing.T) {
-	got := command.BuildPracticeBrief([]*exam.UserExamDetail{
+func TestBuildBriefCarriesTheMiss(t *testing.T) {
+	got := practice.BuildBrief([]*exam.UserExamDetail{
 		answered("phép trừ", "5 - 2 = ?", "3", "4", false),
 	})
 	want := []string{"5 - 2 = ?", "phép trừ", "3", "4"}
 	w := got.Wrong[0]
 	if have := []string{w.Stem, w.Topic, w.RightAnswer, w.ChildAnswer}; !reflect.DeepEqual(have, want) {
 		t.Fatalf("item = %v, want %v", have, want)
+	}
+}
+
+// TestBuildBriefTallies: the per-topic counts behind the ranking are
+// exposed, so a preview can say "3 of 5 wrong" rather than only "weak".
+func TestBuildBriefTallies(t *testing.T) {
+	got := practice.BuildBrief([]*exam.UserExamDetail{
+		answered("đếm", "🍎", "1", "1", true),
+		answered("đếm", "🍎🍎", "2", "1", false),
+		answered("đếm", "🍎🍎🍎", "3", "2", false),
+		answered("", "1 + 1 = ?", "2", "3", false), // blank topic is not tallied
+	})
+	if got.Tally["đếm"] != (bot.TopicTally{Wrong: 2, Answered: 3}) {
+		t.Fatalf("đếm tally = %+v, want 2 wrong of 3", got.Tally["đếm"])
+	}
+	if _, ok := got.Tally[""]; ok {
+		t.Fatal("a blank topic must not be tallied")
 	}
 }

@@ -6,6 +6,7 @@ import (
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	command "math-ai.com/math-ai/internal/application/command/exam"
+	"math-ai.com/math-ai/internal/application/command/shared/practice"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	"math-ai.com/math-ai/internal/application/dto/question"
 	query "math-ai.com/math-ai/internal/application/query/exam"
@@ -218,7 +219,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	brief := command.BuildPracticeBrief(details)
+	brief := practice.BuildBrief(details)
 
 	// The round follows the sitting it is drawn from, not a pinned grade:
 	// a drill at a different grade than the miss would not be a drill.

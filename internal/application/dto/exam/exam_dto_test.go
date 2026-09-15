@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"math-ai.com/math-ai/internal/application/dto/question"
+	"math-ai.com/math-ai/internal/domain/bot"
 	domain "math-ai.com/math-ai/internal/domain/exam"
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // storedSet is a two-question set in the exam vocabulary, as it sits in
@@ -178,5 +180,38 @@ func TestDetailsReadInServedOrder(t *testing.T) {
 					seed, i, *d.QuestionName, d.QuestionNumber, want)
 			}
 		}
+	}
+}
+
+// TestPracticePreviewFrom: the preview mirrors the brief — weak topics in
+// the brief's order with their tallies, never-nil lists, and nothing at
+// all when there is no base sitting to read.
+func TestPracticePreviewFrom(t *testing.T) {
+	base := domain.NewUserAiExam()
+	base.SetUserAiExamId(13)
+	brief := &bot.PracticeBrief{
+		Mode:         enum.PracticeModeRetryWeak,
+		WeakTopics:   []string{"đếm", "phép trừ"},
+		StrongTopics: nil,
+		Tally: map[string]bot.TopicTally{
+			"đếm":      {Wrong: 3, Answered: 5},
+			"phép trừ": {Wrong: 1, Answered: 3},
+		},
+	}
+
+	got := PracticePreviewFrom(base, brief)
+	if got.Mode != "RETRY_WEAK" || got.BaseUserAiExamID != 13 {
+		t.Fatalf("preview head = (%s, %d), want (RETRY_WEAK, 13)", got.Mode, got.BaseUserAiExamID)
+	}
+	want := []TopicScore{{"đếm", 3, 5}, {"phép trừ", 1, 3}}
+	if len(got.WeakTopics) != 2 || got.WeakTopics[0] != want[0] || got.WeakTopics[1] != want[1] {
+		t.Fatalf("weak topics = %+v, want %+v", got.WeakTopics, want)
+	}
+	if got.StrongTopics == nil {
+		t.Fatal("strong topics must be an empty list, not null")
+	}
+
+	if PracticePreviewFrom(nil, brief) != nil || PracticePreviewFrom(base, nil) != nil {
+		t.Fatal("no base or no brief → no preview")
 	}
 }

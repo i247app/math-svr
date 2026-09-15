@@ -58,6 +58,16 @@ type PracticeBrief struct {
 	Wrong        []PracticeItem
 	WeakTopics   []string
 	StrongTopics []string
+	// Tally is the per-topic count behind the two lists — how many
+	// answers the topic had and how many went wrong. The prompt does not
+	// read it; the journey view does, to preview the drill.
+	Tally map[string]TopicTally
+}
+
+// TopicTally is one topic's score inside a sitting.
+type TopicTally struct {
+	Wrong    int
+	Answered int
 }
 
 // PracticeItem is one wrong answer: the stem as served, its topic, what

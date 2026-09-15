@@ -188,8 +188,9 @@ func (s *Service) getJourney(ctx context.Context, userExamID int64, examType str
 	}
 
 	return &dto.GetExamRes{
-		Stats:   dto.StatsToSingleResponse(detail.Journey),
-		Exams:   dto.AttemptListToResponse(detail.Attempts, detail.AiExams),
-		Details: dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...), detail.AiExams),
+		Stats:           dto.StatsToSingleResponse(detail.Journey),
+		Exams:           dto.AttemptListToResponse(detail.Attempts, detail.AiExams),
+		Details:         dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...), detail.AiExams),
+		PracticePreview: dto.PracticePreviewFrom(detail.PracticeBase, detail.PracticeBrief),
 	}, nil
 }

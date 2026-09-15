@@ -168,6 +168,8 @@ type ListJourneysFilter struct {
 // ErrJourneyNotEnded when nothing was ended and ErrJourneyConflict when
 // another journey already holds the open slot.
 type IUserExamRepository interface {
+	// FindByUserExamId reads one row of a journey.
+	FindByUserExamId(ctx context.Context, userExamId int64) (*UserExam, error)
 	// FindByUserExamIdAndType reads one row of a journey. (nil, nil) when
 	// the journey has no row of that type yet — a journey with no PRACTICE
 	// round submitted is the ordinary case, not an error.

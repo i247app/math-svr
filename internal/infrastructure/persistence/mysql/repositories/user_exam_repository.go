@@ -65,6 +65,11 @@ func (r *UserExamRepository) findOneBy(ctx context.Context, where string, args .
 	return ModelToDomainUserExam(m), nil
 }
 
+// FindByUserExamId reads one row of a journey.
+func (r *UserExamRepository) FindByUserExamId(ctx context.Context, userExamId int64) (*exam.UserExam, error) {
+	return r.findOneBy(ctx, "e.user_exam_id = ?", userExamId)
+}
+
 // FindByUserExamIdAndType reads one row of a journey. user_exam_id alone
 // is not a key here — the ASSESSMENT row and the PRACTICE row of one
 // journey share it — so the type is part of every by-id read.
