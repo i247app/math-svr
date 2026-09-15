@@ -24,7 +24,6 @@ import (
 	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
-	"math-ai.com/math-ai/internal/module/quiz"
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/server"
@@ -192,28 +191,13 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 	// ai routes — LLM connection warm-up (public + globally throttled) so the
 	// frontend can prime the AI connection early and the first real
-	// quiz/exercise generation is fast.
+	// exam/exercise generation is fast.
 	{
 		botHandler := bot.NewHandler(services.BotSvc)
 		reg("POST /ai/shake", botHandler.HandleShake)
 	}
 
-	// quiz routes
-	{
-		quizHandler := quiz.NewQuizHandler(res, services.QuizSvc)
-		reg("POST /quizzes/detail", quizHandler.HandleGetQuiz, authMiddleware)
-		reg("POST /quizzes/list", quizHandler.HandleListQuizzes, authMiddleware)
-		reg("POST /quizzes/generate", quizHandler.HandleGenerateQuiz, authMiddleware)
-		reg("POST /quizzes/submit/cost-ai", quizHandler.HandleSubmitQuizCost, authMiddleware)
-		reg("POST /quizzes/submit", quizHandler.HandleSubmitQuiz, authMiddleware)
-		reg("POST /quizzes/soft-delete", quizHandler.HandleSoftDeleteQuiz, authMiddleware)
-		reg("POST /quizzes/analytics/progress", quizHandler.HandleGetQuizProgress, authMiddleware)
-	}
-
-	// exam routes — the replacement for /quizzes/*. Both families are
-	// registered for now: the mobile client cuts over on its own schedule
-	// and the quiz block is deleted once it has (see Phase 7 of
-	// docs/features/008-quiz-to-exam-refactor).
+	// exam routes
 	{
 		examHandler := exam.NewExamHandler(res, services.ExamSvc)
 		reg("POST /exams/generate", examHandler.HandleGenerateExam, authMiddleware)

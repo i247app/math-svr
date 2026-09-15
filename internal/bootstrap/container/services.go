@@ -24,7 +24,6 @@ import (
 	"math-ai.com/math-ai/internal/module/presence"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
-	"math-ai.com/math-ai/internal/module/quiz"
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/seq"
@@ -148,17 +147,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup AuthSvc...")
 	authService := auth.NewService(userService, otpService, uow, res.Env.TrustDeviceTTLDays)
 
-	log.Info("> Setup QuizSvc...")
-	quizService := quiz.NewService(
-		repos.QuizRepository,
-		uow,
-		res.BotProvider,
-		repos.ProfileRepository,
-		repos.ProgramRepository,
-		repos.GradeRepository,
-		repos.SemesterRepository,
-	)
-
 	log.Info("> Setup ExamSvc...")
 	examService := exam.NewService(
 		repos.AiExamRepository,
@@ -224,7 +212,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ExerciseRepository,
 		repos.ExerciseSubmissionRepository,
 		repos.ProfileRepository,
-		repos.QuizRepository,
 		repos.UserAiExamRepository,
 		repos.AiExamRepository,
 		res.StorageProvider,
@@ -243,7 +230,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		ProfileSvc:      profileService,
 		DeviceSvc:       deviceService,
 		OtpSvc:          otpService,
-		QuizSvc:         quizService,
 		ExamSvc:         examService,
 		SchoolSvc:       schoolService,
 		JobSvc:          jobService,

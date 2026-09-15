@@ -5,7 +5,6 @@ import (
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
 )
 
 // HomeLayoutReq is the single input to POST /home/layout. profile_id picks
@@ -32,8 +31,7 @@ type HomeLayoutRes struct {
 //   - tasks: every exercise feed (assigned / pending / expired /
 //     recent_completion) merged into one discriminated list.
 //   - messages: reserved for a future feature; always an empty array today.
-//   - quizzes: the acting profile's standalone (out-of-classroom) quiz
-//     history, most recent first.
+//   - exams: the acting profile's exam history, most recent first.
 //
 // Every slice is emitted as [] (never null) so the wire shape is stable.
 type HomeLayout struct {
@@ -42,7 +40,6 @@ type HomeLayout struct {
 	Rooms       []*ClassroomCard  `json:"rooms"`
 	Tasks       []*TaskCard       `json:"tasks"`
 	Messages    []any             `json:"messages"`
-	Quizzes     []*QuizCard       `json:"quizzes"`
 	Exams       []*ExamCard       `json:"exams"`
 }
 
@@ -131,25 +128,6 @@ type ClassroomRef struct {
 	Name        string `json:"name"`
 }
 
-// QuizCard is the slim shape for a standalone (out-of-classroom) quiz in
-// the profile's history. The questions/answers blobs are intentionally
-// excluded — like the exercise cards, the home screen only needs enough to
-// render a tile (and the score when graded) and deep-link into
-// GET /quizzes/{id} for the full detail. TotalQuestions / CorrectNumber /
-// ScorePercentage are nil until the quiz has been graded.
-type QuizCard struct {
-	QuizID          int64   `json:"quiz_id"`
-	Purpose         string  `json:"purpose"`
-	TypeOfQuiz      *string `json:"type_of_quiz,omitempty"`
-	Title           *string `json:"title,omitempty"`
-	ShortText       *string `json:"short_text,omitempty"`
-	QuizStatus      *string `json:"quiz_status,omitempty"`
-	TotalQuestions  *int    `json:"total_questions,omitempty"`
-	CorrectNumber   *int    `json:"correct_number,omitempty"`
-	ScorePercentage *int    `json:"score_percentage,omitempty"`
-	CreateDt        string  `json:"create_dt"`
-}
-
 // ExerciseCard is the slim exercise shape for the teacher "assigned" and
 // student "pending" lists. The AI-generated questions/answers blobs are
 // intentionally excluded — the home screen only needs enough to render a
@@ -219,25 +197,6 @@ func ClassroomToRef(c *classroomDomain.Classroom) *ClassroomRef {
 	return &ClassroomRef{ClassroomID: c.ClassroomId(), Name: c.Name()}
 }
 
-// QuizToCard maps a standalone quiz domain entity to its slim card.
-func QuizToCard(q *quizDomain.Quiz) *QuizCard {
-	if q == nil {
-		return nil
-	}
-	return &QuizCard{
-		QuizID:          q.QuizId(),
-		Purpose:         q.Purpose(),
-		TypeOfQuiz:      q.TypeOfQuiz(),
-		Title:           q.Title(),
-		ShortText:       q.ShortText(),
-		QuizStatus:      q.QuizStatus(),
-		TotalQuestions:  q.TotalQuestions(),
-		CorrectNumber:   q.CorrectNumber(),
-		ScorePercentage: q.ScorePercentage(),
-		CreateDt:        q.CreateDt().String(),
-	}
-}
-
 // ExerciseToCard maps an exercise domain entity to a slim card. The
 // classroom ref is attached by the service from its batched classroom map.
 func ExerciseToCard(e *exerciseDomain.Exercise) *ExerciseCard {
@@ -291,9 +250,7 @@ func SubmissionToTaskSubmission(s *exerciseDomain.Submission) *TaskSubmission {
 	return ts
 }
 
-// ExamCard is the slim shape for one exam sitting on the dashboard. It
-// replaces QuizCard; both ship during the migration window so the mobile
-// client can switch fields on its own schedule.
+// ExamCard is the slim shape for one exam sitting on the dashboard.
 //
 // Result fields stay nil until the exam is submitted, which is exactly how
 // an unfinished one renders as 0 answered.

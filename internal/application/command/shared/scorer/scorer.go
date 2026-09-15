@@ -233,7 +233,7 @@ func choiceContent(q question.Question, label string) string {
 
 // parseQuestionsForScoring decodes the row's `questions` LONGTEXT into
 // the DTO shape. Returns an error on empty / malformed input so the
-// caller can surface the right status code (QUIZ_GRADING_FAILED /
+// caller can surface the right status code (EXAM_GRADING_FAILED /
 // CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED).
 func parseQuestionsForScoring(raw string) ([]question.Question, error) {
 	raw = strings.TrimSpace(raw)

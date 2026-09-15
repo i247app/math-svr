@@ -16,7 +16,6 @@ import (
 	"math-ai.com/math-ai/internal/domain/presence"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/program"
-	"math-ai.com/math-ai/internal/domain/quiz"
 	"math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/semester"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -36,7 +35,6 @@ type Repositories struct {
 	LoginLog           loginlog.IRepository
 	Device             device.IRepository
 	Otp                otp.IRepository
-	Quiz               quiz.IRepository
 	Grade              grade.IRepository
 	Semester           semester.IRepository
 	Program            program.IRepository

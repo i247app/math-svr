@@ -28,7 +28,6 @@ var clearDataTargets = []clearTarget{
 	{loginLogTable, seq.NameLoginLog},
 	{profileTable, seq.NameProfile},
 	{otpTable, seq.NameOtp},
-	{quizTable, seq.NameQuiz},
 	{classroomTable, seq.NameClassroom},
 	{classroomMemberTable, seq.NameClassroomMember},
 	// classroomInvitationTable is a legacy orphan — no live writes.
@@ -77,7 +76,6 @@ var clearDataSeqs = []string{
 	seq.NameLoginLog,
 	seq.NameProfile,
 	seq.NameOtp,
-	seq.NameQuiz,
 	seq.NameClassroom,
 	seq.NameClassroomMember,
 	seq.NameClassroomInviation,

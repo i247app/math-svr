@@ -11,7 +11,6 @@ import (
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
@@ -36,14 +35,13 @@ func NewService(
 	exerciseRepo exerciseDomain.IRepository,
 	submissionRepo exerciseDomain.ISubmissionRepository,
 	profileRepo profileDomain.IRepository,
-	quizRepo quizDomain.IRepository,
 	attemptRepo examDomain.IUserAiExamRepository,
 	aiExamRepo examDomain.IAiExamRepository,
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
 		getHomeLayoutQuery: query.NewGetHomeLayoutQueryHandler(
-			classroomRepo, memberRepo, exerciseRepo, submissionRepo, profileRepo, quizRepo,
+			classroomRepo, memberRepo, exerciseRepo, submissionRepo, profileRepo,
 			attemptRepo, aiExamRepo,
 		),
 		profileRepo:     profileRepo,

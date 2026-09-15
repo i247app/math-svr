@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS ma_ai_exams (
   ai_title          VARCHAR(255) DEFAULT NULL,
   ai_short_text     VARCHAR(255) DEFAULT NULL,
   -- JSON array. Each element carries question_number, question_type,
-  -- question_name, answers[{label,content}], right_answer, correct_answer,
+  -- question_name, answers[{label,content}], right_answer_label, right_answer_content,
   -- question_topic and question_grade. question_grade is NORMALISED
   -- server-side before this row is written (ASSESSMENT: Q3/Q6 =
   -- req_grade + 1, every other question = req_grade; PRACTICE/EXAM: all =

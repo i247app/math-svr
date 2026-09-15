@@ -2,7 +2,7 @@
 --
 -- Wipe USER-GENERATED data, KEEP REFERENCE/SEED data.
 --
---   Wiped   : users, aliases, devices, login logs, profiles, otps, quizzes,
+--   Wiped   : users, aliases, devices, login logs, profiles, otps,
 --             classrooms (+ members, invitations, programs), exercises, contact-us.
 --   Kept    : programs, grades, semesters and schools — the curriculum /
 --             reference data seeded outside the app.
@@ -23,7 +23,6 @@ TRUNCATE TABLE ma_devices;
 TRUNCATE TABLE ma_login_logs;
 TRUNCATE TABLE ma_profiles;
 TRUNCATE TABLE ma_otps;
-TRUNCATE TABLE ma_quizzes;
 TRUNCATE TABLE ma_classrooms;
 TRUNCATE TABLE ma_classroom_members;
 TRUNCATE TABLE ma_classroom_invitations;
@@ -52,7 +51,6 @@ WHERE seq_name IN (
   'login_log',
   'profile',
   'otp',
-  'quiz',
   'classroom',
   'classroom_member',
   'classroom_invitation',

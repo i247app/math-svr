@@ -33,7 +33,7 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 }
 
 // buildLayout maps the domain assembly into the flat wire DTO. sub_profiles
-// / rooms / quizzes are role-agnostic (the query layer only populates the
+// / rooms / exams are role-agnostic (the query layer only populates the
 // relevant data per role, so non-applicable slices come back empty); tasks
 // merges every exercise feed into one discriminated list.
 func (s *Service) buildLayout(ctx context.Context, caller *profileDomain.Profile, data *query.HomeLayoutData) *dto.HomeLayout {
@@ -46,7 +46,6 @@ func (s *Service) buildLayout(ctx context.Context, caller *profileDomain.Profile
 		Rooms:       s.classroomCards(ctx, data),
 		Tasks:       s.tasks(ctx, data),
 		Messages:    []any{},
-		Quizzes:     quizCards(data),
 		Exams:       examCards(data),
 	}
 }

@@ -290,48 +290,6 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Nội dung đã bị nhà cung cấp AI chặn"
 
 	// Quiz
-	case QUIZ_NOT_FOUND:
-		return "Không tìm thấy bài kiểm tra"
-	case QUIZ_MISSING_PROFILE_ID:
-		return "Mã hồ sơ là bắt buộc"
-	case QUIZ_MISSING_TYPE:
-		return "Vui lòng chọn loại bài kiểm tra"
-	case QUIZ_INVALID_TYPE:
-		return "Loại bài kiểm tra không hợp lệ"
-	case QUIZ_INVALID_LANGUAGE:
-		return "Ngôn ngữ bài kiểm tra không hợp lệ"
-	case QUIZ_MISSING_ANSWERS:
-		return "Vui lòng cung cấp câu trả lời"
-	case QUIZ_INVALID_ANSWERS:
-		return "Câu trả lời không hợp lệ"
-	case QUIZ_ALREADY_SUBMITTED:
-		return "Bài kiểm tra này đã được nộp"
-	case QUIZ_NOT_OWNED:
-		return "Bài kiểm tra không thuộc về hồ sơ này"
-	case QUIZ_PREVIOUS_NOT_FOUND:
-		return "Không tìm thấy bài kiểm tra trước đó"
-	case QUIZ_PREVIOUS_NOT_GRADED:
-		return "Bài kiểm tra trước đó chưa được chấm điểm"
-	case QUIZ_GENERATION_FAILED:
-		return "Tạo câu hỏi bài kiểm tra thất bại"
-	case QUIZ_GRADING_FAILED:
-		return "Chấm điểm bài kiểm tra thất bại"
-	case QUIZ_PROFILE_NOT_CONFIGURED:
-		return "Hồ sơ cần có chương trình học, lớp và học kỳ trước khi tạo bài kiểm tra"
-	case QUIZ_INVALID_TYPE_OF_QUIZ:
-		return "Hình thức bài học không hợp lệ"
-	case QUIZ_ANSWER_SCHEMA_INVALID:
-		return "Định dạng câu trả lời không hợp lệ"
-	case QUIZ_ANALYTICS_MISSING_PROFILE:
-		return "Hồ sơ học sinh là bắt buộc."
-	case QUIZ_ANALYTICS_PROFILE_NOT_OWNED:
-		return "Hồ sơ này không thuộc về bạn."
-	case QUIZ_ANALYTICS_INVALID_DATE_RANGE:
-		return "Khoảng thời gian không hợp lệ."
-	case QUIZ_ANALYTICS_INVALID_TZ:
-		return "Múi giờ không hợp lệ."
-	case QUIZ_ANALYTICS_INVALID_PURPOSE:
-		return "Loại quiz không hợp lệ."
 
 	// Job
 	case JOB_NOT_FOUND:

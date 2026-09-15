@@ -7,7 +7,6 @@ import (
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -21,9 +20,9 @@ const (
 	homeExerciseFetchLimit = 200
 	homeExerciseRenderCap  = 50
 	homeCompletionLimit    = 20
-	// homeQuizLimit caps the acting profile's standalone quiz history on
-	// the home payload — most recent first, deep-link for older entries.
-	homeQuizLimit = 20
+	// homeExamLimit caps the acting profile's exam history on the home
+	// payload — most recent first, deep-link for older entries.
+	homeExamLimit = 20
 )
 
 // HomeLayoutData is the domain-level assembly the module maps into the
@@ -40,15 +39,10 @@ type HomeLayoutData struct {
 	RoleByClassroom          map[int64]string
 	MemberProfileByClassroom map[int64]int64
 
-	// Quizzes is the acting profile's standalone (out-of-classroom) quiz
-	// history, most recent first — populated for every role.
-	Quizzes []*quizDomain.Quiz
-
-	// Exams is the same history in the model that replaces quizzes: one
-	// entry per sitting, with the shared question sets they were drawn
-	// from keyed by ai_exam_id (a card needs the title, which lives there).
-	// Both lists are populated during the migration window; the quiz half
-	// goes away with the quiz module.
+	// Exams is the acting profile's exam history, most recent first —
+	// populated for every role — with the shared question sets the
+	// sittings were drawn from keyed by ai_exam_id (a card needs the
+	// title, which lives there).
 	Exams       []*examDomain.UserAiExam
 	ExamAiExams map[int64]*examDomain.AiExam
 
@@ -100,7 +94,6 @@ type GetHomeLayoutQueryHandler struct {
 	exerciseRepo   exerciseDomain.IRepository
 	submissionRepo exerciseDomain.ISubmissionRepository
 	profileRepo    profileDomain.IRepository
-	quizRepo       quizDomain.IRepository
 	attemptRepo    examDomain.IUserAiExamRepository
 	aiExamRepo     examDomain.IAiExamRepository
 }
@@ -111,7 +104,6 @@ func NewGetHomeLayoutQueryHandler(
 	exerciseRepo exerciseDomain.IRepository,
 	submissionRepo exerciseDomain.ISubmissionRepository,
 	profileRepo profileDomain.IRepository,
-	quizRepo quizDomain.IRepository,
 	attemptRepo examDomain.IUserAiExamRepository,
 	aiExamRepo examDomain.IAiExamRepository,
 ) *GetHomeLayoutQueryHandler {
@@ -121,7 +113,6 @@ func NewGetHomeLayoutQueryHandler(
 		exerciseRepo:   exerciseRepo,
 		submissionRepo: submissionRepo,
 		profileRepo:    profileRepo,
-		quizRepo:       quizRepo,
 		attemptRepo:    attemptRepo,
 		aiExamRepo:     aiExamRepo,
 	}
@@ -138,13 +129,10 @@ func (h *GetHomeLayoutQueryHandler) Handle(ctx context.Context, q GetHomeLayoutQ
 		ProfileByID:              map[int64]*profileDomain.Profile{},
 	}
 
-	// The acting profile's standalone quiz history is role-independent —
-	// load it once before the role-specific assembly. The builders mutate
-	// and return the same data pointer, so the quizzes ride through.
+	// The acting profile's exam history is role-independent — load it
+	// once before the role-specific assembly. The builders mutate and
+	// return the same data pointer, so the exams ride through.
 	if err := h.loadProfileExams(ctx, p, data); err != nil {
-		return nil, err
-	}
-	if err := h.loadProfileQuizzes(ctx, p, data); err != nil {
 		return nil, err
 	}
 
@@ -162,28 +150,13 @@ func (h *GetHomeLayoutQueryHandler) Handle(ctx context.Context, q GetHomeLayoutQ
 	}
 }
 
-// loadProfileQuizzes fetches the acting profile's most-recent standalone
-// quizzes (out-of-classroom history), mirroring the /quizzes/list filter
-// scoped to a single profile_id.
-func (h *GetHomeLayoutQueryHandler) loadProfileQuizzes(ctx context.Context, p *profileDomain.Profile, data *HomeLayoutData) error {
-	profileID := p.ProfileId()
-	quizzes, _, err := h.quizRepo.ListQuizzes(ctx, quizDomain.ListQuizzesFilter{
-		ProfileID: &profileID,
-	}, 1, homeQuizLimit)
-	if err != nil {
-		return err
-	}
-	data.Quizzes = quizzes
-	return nil
-}
-
 // loadProfileExams fetches the acting profile's most recent exam sittings
 // and hydrates the question sets behind them in one extra query, so a
 // twenty-card dashboard costs two reads rather than twenty-one.
 func (h *GetHomeLayoutQueryHandler) loadProfileExams(ctx context.Context, p *profileDomain.Profile, data *HomeLayoutData) error {
 	attempts, _, err := h.attemptRepo.ListAttempts(ctx, examDomain.ListAttemptsFilter{
 		ProfileID: p.ProfileId(),
-	}, 1, homeQuizLimit)
+	}, 1, homeExamLimit)
 	if err != nil {
 		return err
 	}

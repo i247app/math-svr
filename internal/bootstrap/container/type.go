@@ -15,7 +15,6 @@ import (
 	presenceDomain "math-ai.com/math-ai/internal/domain/presence"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
-	quizDomain "math-ai.com/math-ai/internal/domain/quiz"
 	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	seqDomain "math-ai.com/math-ai/internal/domain/seq"
@@ -37,7 +36,6 @@ import (
 	"math-ai.com/math-ai/internal/module/presence"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
-	"math-ai.com/math-ai/internal/module/quiz"
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/seq"
@@ -56,7 +54,6 @@ type ServiceContainer struct {
 	ProfileSvc      *profile.Service
 	DeviceSvc       *device.Service
 	OtpSvc          *otp.Service
-	QuizSvc         *quiz.Service
 	ExamSvc         *exam.Service
 	SchoolSvc       *school.Service
 	JobSvc          *job.Service
@@ -80,7 +77,6 @@ type RepositoryContainer struct {
 	LoginLogRepository           loginLogDomain.IRepository
 	DeviceRepository             deviceDomain.IRepository
 	OtpRepository                otpDomain.IRepository
-	QuizRepository               quizDomain.IRepository
 	AiExamRepository             examDomain.IAiExamRepository
 	UserAiExamRepository         examDomain.IUserAiExamRepository
 	UserExamRepository           examDomain.IUserExamRepository
