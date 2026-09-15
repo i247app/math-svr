@@ -708,6 +708,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "A journey of this type is already open — end it before reopening another"
 	case EXAM_JOURNEY_NOT_COMPLETE:
 		return "Practice opens once the journey is complete"
+	case EXAM_INVALID_LEVEL:
+		return "level must be between 1 and 10"
 
 	default:
 		return ""

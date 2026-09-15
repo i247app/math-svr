@@ -19,7 +19,7 @@ const (
 
 	userExamColumns = `e.id, e.user_exam_id, e.user_id, e.profile_id, e.req_exam_type,
 		e.res_total_questions, e.res_correct_number, e.res_skipped_number, e.res_score_percentage,
-		e.res_review, e.res_grade, e.res_level, e.last_submitted_dt, e.ended_dt,
+		e.res_review, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
 		e.note, e.user_exam_status, e.status,
 		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
 
@@ -42,7 +42,7 @@ func scanUserExam(s database.RowScanner) (*models.UserExamModel, error) {
 	var m models.UserExamModel
 	if err := s.Scan(&m.Id, &m.UserExamId, &m.UserId, &m.ProfileId, &m.ReqExamType,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
-		&m.ResReview, &m.ResGrade, &m.ResLevel, &m.LastSubmittedDt, &m.EndedDt,
+		&m.ResReview, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
 		&m.Note, &m.UserExamStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -117,7 +117,7 @@ func (r *UserExamRepository) ListByUserProfile(ctx context.Context, userId, prof
 	}
 
 	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE ` + where +
-		` ORDER BY e.req_exam_type ASC, e.create_dt DESC, e.id DESC`
+		` ORDER BY e.create_dt DESC, e.id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -217,6 +217,37 @@ func (r *UserExamRepository) Reopen(ctx context.Context, userExamId int64) error
 	return nil
 }
 
+// SetCurrent records where the child is working, as the client stated it
+// on a hand-out. Each value is COALESCEd: a nil leaves the column as it
+// is, so a request that names only the grade does not blank the level.
+// Only the open row of the journey's own type is touched — a PRACTICE
+// row has no placement of its own.
+func (r *UserExamRepository) SetCurrent(ctx context.Context, userExamId int64, examType string, grade, level *int) error {
+	if grade == nil && level == nil {
+		return nil
+	}
+	query := `
+		UPDATE ` + userExamTable + `
+		SET current_grade = COALESCE(?, current_grade),
+			current_level = COALESCE(?, current_level),
+			modify_dt     = ?
+		WHERE user_exam_id = ? AND req_exam_type = ? AND user_exam_status = ?
+	`
+	result, err := r.db.Exec(ctx, query, grade, level, mtime.Now().Time,
+		userExamId, examType, string(enum.UserExamStatusActive))
+	if err != nil {
+		return fmt.Errorf("user exam repo set current: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("user exam repo set current rows affected: %w", err)
+	}
+	if affected == 0 {
+		return exam.ErrJourneyNotActive
+	}
+	return nil
+}
+
 // Create opens a journey row. It is a plain INSERT on purpose: the
 // previous INSERT ... ON DUPLICATE KEY UPDATE quietly redirected the write
 // into whatever row collided on ANY unique key — and when the schema
@@ -236,7 +267,7 @@ func (r *UserExamRepository) Create(ctx context.Context, e *exam.UserExam, delta
 		INSERT INTO ` + userExamTable + `
 			(user_exam_id, user_id, profile_id, req_exam_type,
 			 res_total_questions, res_correct_number, res_skipped_number, res_score_percentage,
-			 res_review, res_grade, res_level, last_submitted_dt,
+			 res_review, current_grade, current_level, last_submitted_dt,
 			 user_exam_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
@@ -260,7 +291,7 @@ func (r *UserExamRepository) Create(ctx context.Context, e *exam.UserExam, delta
 	if _, err := r.db.Exec(ctx, query,
 		e.UserExamId(), e.UserId(), e.ProfileId(), e.ReqExamType(),
 		delta.TotalQuestions, delta.CorrectNumber, delta.SkippedNumber, percentage,
-		e.ResReview(), e.ResGrade(), e.ResLevel(), lastSubmitted,
+		e.ResReview(), e.CurrentGrade(), e.CurrentLevel(), lastSubmitted,
 		rowStatus, e.CreateId(), now, now); err != nil {
 		if isDuplicateEntry(err) {
 			return exam.ErrJourneyConflict
@@ -270,8 +301,10 @@ func (r *UserExamRepository) Create(ctx context.Context, e *exam.UserExam, delta
 	return nil
 }
 
-// Accumulate folds a sitting into an open journey. Counters ADD;
-// placement fields OVERWRITE.
+// Accumulate folds a sitting into a journey row. Counters ADD; the
+// review OVERWRITES. current_grade / current_level are NOT touched: they
+// are what the client stated at hand-out (see SetCurrent), not something
+// a result moves.
 //
 // The percentage is the subtle assignment: it must come from the NEW
 // totals, so it is computed from the two columns updated just above it.
@@ -292,8 +325,6 @@ func (r *UserExamRepository) Accumulate(ctx context.Context, userExamId int64, e
 			res_score_percentage = IF(res_total_questions > 0,
 				ROUND(res_correct_number * 100 / res_total_questions), NULL),
 			res_review           = ?,
-			res_grade            = ?,
-			res_level            = ?,
 			last_submitted_dt    = ?,
 			modify_dt            = ?
 		WHERE user_exam_id = ? AND req_exam_type = ? AND user_exam_status = ?
@@ -302,7 +333,7 @@ func (r *UserExamRepository) Accumulate(ctx context.Context, userExamId int64, e
 
 	result, err := r.db.Exec(ctx, query,
 		delta.TotalQuestions, delta.CorrectNumber, delta.SkippedNumber,
-		e.ResReview(), e.ResGrade(), e.ResLevel(), lastSubmitted, mtime.Now().Time,
+		e.ResReview(), lastSubmitted, mtime.Now().Time,
 		userExamId, examType, expectedStatus)
 	if err != nil {
 		return fmt.Errorf("user exam repo accumulate: %w", err)
@@ -339,8 +370,8 @@ func ModelToDomainUserExam(m *models.UserExamModel) *exam.UserExam {
 	e.SetResSkippedNumber(m.ResSkippedNumber)
 	e.SetResScorePercentage(m.ResScorePercentage)
 	e.SetResReview(m.ResReview)
-	e.SetResGrade(m.ResGrade)
-	e.SetResLevel(m.ResLevel)
+	e.SetCurrentGrade(m.CurrentGrade)
+	e.SetCurrentLevel(m.CurrentLevel)
 	e.SetLastSubmittedDt(mtime.MathTimeFromPtr(m.LastSubmittedDt))
 	e.SetEndedDt(mtime.MathTimeFromPtr(m.EndedDt))
 	e.SetNote(m.Note)

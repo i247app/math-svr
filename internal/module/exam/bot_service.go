@@ -39,6 +39,8 @@ type generateExamInput struct {
 	NumQuestions int
 	Semester     string
 	Program      string
+	// Level is the clamped intensity for a GRADE review; nil otherwise.
+	Level *int
 	// Practice aims a PRACTICE round; nil for every other type.
 	Practice *domainBot.PracticeBrief
 }
@@ -61,6 +63,7 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		NumQuestions: in.NumQuestions,
 		Semester:     in.Semester,
 		Program:      in.Program,
+		Level:        in.Level,
 		Practice:     in.Practice,
 	}
 
@@ -117,6 +120,7 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		log.Warnf("exam.question_grade.mismatch q=%d model=%v applied=%d",
 			m.QuestionNumber, utils.DerefInt(m.ModelGrade), m.Applied)
 	}
+	questions = StampQuestionLevel(questions, in.Level)
 
 	return &generateExamOutput{
 		Title:     gen.Title,

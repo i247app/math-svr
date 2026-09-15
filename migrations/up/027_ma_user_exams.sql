@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS ma_user_exams (
   user_id              BIGINT UNSIGNED NOT NULL,
   profile_id           BIGINT UNSIGNED NOT NULL,
   req_exam_type        VARCHAR(32) NOT NULL,                 -- ASSESSMENT, PRACTICE, EXAM
+  current_grade        TINYINT UNSIGNED DEFAULT NULL,        -- 0..5 measured ability
+  current_level        TINYINT UNSIGNED DEFAULT NULL,        -- 1..10; NULL until a rule exists
 
   -- ---- Cumulative statistics ---------------------------------------------
   res_total_questions  INT UNSIGNED NOT NULL DEFAULT 0,      -- answered questions, all attempts
@@ -37,8 +39,6 @@ CREATE TABLE IF NOT EXISTS ma_user_exams (
 
   -- ---- Server-derived placement + feedback -------------------------------
   res_review           TEXT         DEFAULT NULL,            -- cumulative VN feedback, rewritten each submit
-  res_grade            TINYINT UNSIGNED DEFAULT NULL,        -- 0..5 measured ability
-  res_level            TINYINT UNSIGNED DEFAULT NULL,        -- 1..10; NULL until a rule exists
 
   last_submitted_dt    DATETIME(6)  DEFAULT NULL,
   ended_dt             DATETIME(6)  DEFAULT NULL,

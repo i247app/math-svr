@@ -251,9 +251,9 @@ var gradeNumberRe = regexp.MustCompile(`\d+`)
 // misread as an elementary grade — the most damaging failure available
 // here, since it would hand a five-year-old a Grade 5 quiz.
 // ResolveGradeNumber maps a free-form grade label onto its band number.
-// Exported for the exam module's cold start: the very first exam a child
-// takes has no measured grade yet, so it falls back to the class the
-// profile says they attend — which is stored as a label, not a number.
+// Exported for the exam module's cold start: a child whose journey has no
+// stated grade yet falls back to the class the profile says they attend
+// — which is stored as a label, not a number.
 func ResolveGradeNumber(label string) (int, bool) {
 	level, ok := resolveGradeLevel(label)
 	return int(level), ok

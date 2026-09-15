@@ -12,27 +12,24 @@ import (
 
 // GenerateExamReq asks for one exam.
 //
-// Grade may be pinned by the client; left out, the server derives it —
-// measured ability first, then the class the profile attends.
+// Grade and Level are the client's statement of where the child is
+// working. They are recorded on the journey (current_grade /
+// current_level) and Level on the sitting (req_level); the server does
+// not derive either from results. Grade left out falls back to the
+// journey's current grade, then the class the profile attends. Level is
+// 1..10 and is recorded only — no server rule reads it yet.
 //
-// UserExamID names the journey a PRACTICE round is drawn inside, and is
+// UserExamID names the journey a PRACTICE round is drawn on, and is
 // required for that type: the round is aimed at the journey's latest
 // submitted sitting, so there is nothing to aim at without one. For a
 // PRACTICE round Grade is ignored — it follows that sitting's grade.
-//
-// Level is part of the contract but NOT yet part of the behaviour. The
-// teaching team has not defined what a level is, so the server does not
-// validate, resolve, prompt with or store it — req_level stays NULL no
-// matter what is sent. The field is kept so the mobile contract does not
-// have to change twice: once to drop it now and again to add it back when
-// the rule lands. Do not read req.Level anywhere until then.
 type GenerateExamReq struct {
 	UserID       *int64 `json:"-"`
 	ProfileID    int64  `json:"profile_id"`
 	ExamType     string `json:"exam_type"`
 	UserExamID   *int64 `json:"user_exam_id,omitempty"`
 	Grade        *int   `json:"grade,omitempty"`
-	Level        *int   `json:"level,omitempty"` // accepted, ignored — see type doc
+	Level        *int   `json:"level,omitempty"`
 	NumQuestions int    `json:"num_questions,omitempty"`
 	Semester     string `json:"semester,omitempty"`
 	Program      string `json:"program,omitempty"`
@@ -130,9 +127,8 @@ type ExamResponse struct {
 	ProfileID    int64  `json:"profile_id"`
 	ExamType     string `json:"exam_type"`
 	Grade        int    `json:"grade"`
-	// Level mirrors req_level, which is NULL on every row today, so this is
-	// always omitted on the wire. Kept for the same reason as the request
-	// field: the contract is settled even though the value is not.
+	// Level mirrors req_level: the level the client stated when this
+	// sitting was handed out, or absent when none was.
 	Level *int `json:"level,omitempty"`
 
 	Title     *string `json:"title,omitempty"`
@@ -186,10 +182,14 @@ type ExamStats struct {
 	SkippedNumber   int     `json:"skipped_number"`
 	ScorePercentage *int    `json:"score_percentage,omitempty"`
 	Review          *string `json:"review,omitempty"`
-	Grade           *int    `json:"grade,omitempty"`
-	LastSubmittedDt string  `json:"last_submitted_dt,omitempty"`
-	EndedDt         string  `json:"ended_dt,omitempty"`
-	CreateDt        string  `json:"create_dt"`
+	// Grade and Level are where the child is working, as the client last
+	// stated on a hand-out (current_grade / current_level). The server
+	// records them; it does not derive them from results.
+	Grade           *int   `json:"grade,omitempty"`
+	Level           *int   `json:"level,omitempty"`
+	LastSubmittedDt string `json:"last_submitted_dt,omitempty"`
+	EndedDt         string `json:"ended_dt,omitempty"`
+	CreateDt        string `json:"create_dt"`
 	// Practice is the journey's PRACTICE row, present once the child has
 	// submitted a practice round in it. Only an ASSESSMENT journey carries
 	// one; it shares user_exam_id and never has a grade.
@@ -437,7 +437,8 @@ func StatsToResponse(rows []*domain.UserExam) []ExamStats {
 			SkippedNumber:   r.ResSkippedNumber(),
 			ScorePercentage: r.ResScorePercentage(),
 			Review:          r.ResReview(),
-			Grade:           r.ResGrade(),
+			Grade:           r.CurrentGrade(),
+			Level:           r.CurrentLevel(),
 		}
 		if st := r.UserExamStatus(); st != nil {
 			s.Status = *st

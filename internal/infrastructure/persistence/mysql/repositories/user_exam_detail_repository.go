@@ -80,7 +80,7 @@ func (r *UserExamDetailRepository) CreateBatch(ctx context.Context, details []*e
 	for _, d := range details {
 		detailStatus := d.DetailStatus()
 		if detailStatus == nil {
-			s := string(enum.UserExamDetailStatusSubmitted)
+			s := string(enum.UserExamDetailStatusActive)
 			detailStatus = &s
 		}
 		placeholders = append(placeholders, userExamDetailValueTuple)

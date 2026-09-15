@@ -397,4 +397,8 @@ const (
 	// Retired the same day it was added: a child may be handed a new exam
 	// while one is open. Do not reuse the number.
 	EXAM_JOURNEY_NOT_COMPLETE StatusCode = 13730
+	// EXAM_INVALID_LEVEL lives at 13731, not at the retired 13710: the
+	// axis came back as a client-stated value, not the derived one 13710
+	// once described.
+	EXAM_INVALID_LEVEL StatusCode = 13731
 )

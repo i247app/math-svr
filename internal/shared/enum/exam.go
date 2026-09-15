@@ -18,7 +18,7 @@ const (
 	// been COMPLETED, from the child's latest submitted sitting in it —
 	// re-drilling what went wrong, or pushing further when nothing did.
 	// It is not a journey of its own: it shares the journey's
-	// user_exam_id and never moves the measured grade. A journey that is
+	// user_exam_id and never moves the journey's grade. A journey that is
 	// still open, or was cancelled, cannot be practised in; reopening a
 	// completed one closes practice again until it is completed anew. It
 	// carries the same probe questions an ASSESSMENT does (see HasProbes).
@@ -116,11 +116,10 @@ func (s AiExamStatusType) String() string { return string(s) }
 // lifecycle. It exists only once the journey is COMPLETE and carries that
 // status for as long as it lives; ending and reopening touch the owning
 // row alone.
-// COMPLETE and CANCEL both end it. The difference is what the next journey
-// inherits: a COMPLETE journey's measured grade carries forward as the
-// starting point, a CANCEL journey is treated as abandoned and the next
-// one starts from the profile again. Both are terminal — an ended journey
-// is never reopened, a new row is opened instead.
+// COMPLETE and CANCEL both end it: COMPLETE is a run the child finished
+// (and the only state a PRACTICE round may be drawn on), CANCEL a run
+// they abandoned. Neither hands anything to the next journey — a new one
+// starts where the client, or the profile, says.
 type UserExamStatusType string
 
 const (
@@ -162,8 +161,8 @@ func (s UserExamStatusType) String() string { return string(s) }
 type UserExamDetailStatusType string
 
 const (
-	UserExamDetailStatusSubmitted UserExamDetailStatusType = "SUBMITTED"
-	UserExamDetailStatusDeleted   UserExamDetailStatusType = "DELETED"
+	UserExamDetailStatusActive  UserExamDetailStatusType = "ACTIVE"
+	UserExamDetailStatusDeleted UserExamDetailStatusType = "DELETED"
 )
 
 func (s UserExamDetailStatusType) String() string { return string(s) }
@@ -173,10 +172,10 @@ func (s UserExamDetailStatusType) String() string { return string(s) }
 // Grade is the CONTENT band and maps 1:1 onto the bot's grade profiles:
 // 0 is kindergarten (mẫu giáo), 5 is the last elementary year.
 //
-// There is no level axis in code. The req_level / res_level /
-// question_level columns exist and stay NULL: the teaching team has not
-// defined what a level is or how it moves, so nothing accepts, derives or
-// prompts for one. Reintroduce the bounds here when that rule lands.
+// Level is a 1..10 scale the CLIENT states on a hand-out and the server
+// records (ma_user_exams.current_level, ma_user_ai_exams.req_level). No
+// server rule reads it yet — the prompt does not see it and nothing
+// derives it — so it is a recorded fact, not a behaviour.
 //
 // ExamQuestionGradeMax is one above ExamGradeMax on purpose: an
 // ASSESSMENT at grade 5 still has to probe upward, so its probe questions
@@ -185,4 +184,7 @@ const (
 	ExamGradeMin         = 0
 	ExamGradeMax         = 5
 	ExamQuestionGradeMax = ExamGradeMax + 1
+
+	ExamLevelMin = 1
+	ExamLevelMax = 10
 )

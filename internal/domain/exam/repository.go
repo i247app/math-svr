@@ -185,8 +185,13 @@ type IUserExamRepository interface {
 	// Create opens a journey with delta as its first totals.
 	Create(ctx context.Context, e *UserExam, delta StatsDelta) error
 	// Accumulate folds delta into the row (userExamId, examType) while it
-	// is in expectedStatus, and overwrites its placement fields from e.
+	// is in expectedStatus, and overwrites its review from e. It never
+	// touches current_grade / current_level.
 	Accumulate(ctx context.Context, userExamId int64, examType, expectedStatus string, e *UserExam, delta StatsDelta) error
+	// SetCurrent records the grade / level the client stated at hand-out
+	// on the OPEN row (userExamId, examType); a nil value leaves that
+	// column untouched. ErrJourneyNotActive when the row is not open.
+	SetCurrent(ctx context.Context, userExamId int64, examType string, grade, level *int) error
 	MarkStatus(ctx context.Context, userExamId int64, newStatus string, endedDt mtime.MathTime) error
 	Reopen(ctx context.Context, userExamId int64) error
 }

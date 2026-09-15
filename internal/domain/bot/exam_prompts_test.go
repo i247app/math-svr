@@ -239,3 +239,38 @@ func TestBuildExamPromptHasNoLevelAxis(t *testing.T) {
 		t.Error("kindergarten title should be the bare band name")
 	}
 }
+
+// TestBuildExamPromptLevelIsForGradeReviewOnly: a stated level renders
+// the LEVEL PROFILE block under a GRADE review — and only there. An
+// ASSESSMENT measures at the band and must not be told an intensity.
+func TestBuildExamPromptLevelIsForGradeReviewOnly(t *testing.T) {
+	seven := 7
+	_, user, err := BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeGrade, Grade: 3, NumQuestions: 10, Level: &seven})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+	for _, want := range []string{"LEVEL PROFILE — cường độ bậc 7 trên 10", "GRADE PROFILE ở trên quyết định NỘI DUNG"} {
+		if !strings.Contains(user, want) {
+			t.Errorf("GRADE prompt with level lacks %q", want)
+		}
+	}
+	if i, j := strings.Index(user, "LEVEL PROFILE"), strings.Index(user, "Hãy tạo bài kiểm tra"); i > j {
+		t.Error("the level block must come before the request line, right under the grade profile")
+	}
+
+	_, user, err = BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeAssessment, Grade: 3, NumQuestions: 10, Level: &seven})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+	if strings.Contains(user, "LEVEL PROFILE") {
+		t.Error("an ASSESSMENT must not carry a level block")
+	}
+
+	_, user, err = BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeGrade, Grade: 3, NumQuestions: 10})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+	if strings.Contains(user, "LEVEL PROFILE") {
+		t.Error("a GRADE review with no stated level must not carry a level block")
+	}
+}

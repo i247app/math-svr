@@ -78,8 +78,15 @@ func TestGenerateOpensJourneyAtHandOut(t *testing.T) {
 		t.Fatalf("%d journeys opened, want 1", len(h.journeys.creates))
 	}
 	opened := h.journeys.creates[0]
-	if opened.ReqExamType() != string(enum.ExamTypeAssessment) || opened.ResTotalQuestions() != 0 || opened.ResGrade() != nil {
-		t.Fatalf("journey opened as (%s, %d answered, grade %v); want an empty ASSESSMENT row", opened.ReqExamType(), opened.ResTotalQuestions(), opened.ResGrade())
+	if opened.ReqExamType() != string(enum.ExamTypeAssessment) || opened.ResTotalQuestions() != 0 {
+		t.Fatalf("journey opened as (%s, %d answered); want an empty ASSESSMENT row", opened.ReqExamType(), opened.ResTotalQuestions())
+	}
+	// The new journey starts where this paper is written.
+	if g := opened.CurrentGrade(); g == nil || *g != 1 {
+		t.Fatalf("current grade = %v, want the paper's grade 1", g)
+	}
+	if opened.CurrentLevel() != nil {
+		t.Fatal("no level was stated, so none may be recorded")
 	}
 	if got := res.Attempt.UserExamId(); got == nil || *got != opened.UserExamId() {
 		t.Fatalf("attempt pinned to journey %v, want %d", got, opened.UserExamId())
@@ -133,5 +140,48 @@ func TestGeneratePracticeNeverOpens(t *testing.T) {
 	}
 	if len(h.journeys.creates) != 0 || len(h.attempts.created) != 0 {
 		t.Fatal("nothing may be written")
+	}
+}
+
+// TestGenerateRecordsStatedPlacement: what the client states on a hand-out
+// is written onto the open journey — and only what was stated: a request
+// naming the grade alone leaves the level as it was.
+func TestGenerateRecordsStatedPlacement(t *testing.T) {
+	open := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusActive)
+	g2, l7 := 2, 7
+	open.SetCurrentGrade(&g2)
+	open.SetCurrentLevel(&l7)
+	h := newGenHarness(open)
+
+	cmd := generate(enum.ExamTypeAssessment, nil)
+	g3 := 3
+	cmd.Grade, cmd.StatedGrade = g3, &g3
+
+	res, err := h.handler.Handle(context.Background(), cmd)
+	if err != nil {
+		t.Fatalf("generate: %v", err)
+	}
+	if g := open.CurrentGrade(); g == nil || *g != 3 {
+		t.Fatalf("journey grade = %v, want the stated 3", g)
+	}
+	if l := open.CurrentLevel(); l == nil || *l != 7 {
+		t.Fatalf("journey level = %v, want 7 untouched — it was not stated", l)
+	}
+	if res.Attempt.ReqLevel() != nil {
+		t.Fatal("no level was stated, so the sitting records none")
+	}
+
+	// Stating a level records it on both the journey and the sitting.
+	l9 := 9
+	cmd.Level, cmd.StatedLevel = &l9, &l9
+	res, err = h.handler.Handle(context.Background(), cmd)
+	if err != nil {
+		t.Fatalf("generate: %v", err)
+	}
+	if l := open.CurrentLevel(); l == nil || *l != 9 {
+		t.Fatalf("journey level = %v, want the stated 9", l)
+	}
+	if l := res.Attempt.ReqLevel(); l == nil || *l != 9 {
+		t.Fatalf("sitting level = %v, want the stated 9", l)
 	}
 }

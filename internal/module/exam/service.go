@@ -108,15 +108,27 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	if err != nil {
 		return nil, err
 	}
+	level := resolveLevel(ctx, validated.ExamType, grade, req.Level)
 
-	tag := BuildCacheTag(validated.ExamType, grade, req.NumQuestions, req.Semester, req.Program)
+	// promptLevel is the intensity the paper is written at. Only a GRADE
+	// review reads it; for anything else the level is recorded and no
+	// more, so it must not fork the cache pool either.
+	var promptLevel *int
+	if validated.ExamType == enum.ExamTypeGrade {
+		promptLevel = level
+	}
+
+	tag := BuildCacheTag(validated.ExamType, grade, promptLevel, req.NumQuestions, req.Semester, req.Program)
 
 	cmd := command.GenerateExamCommand{
-		UserID:     profile.UserId(),
-		ProfileID:  profile.ProfileId(),
-		ExamType:   validated.ExamType,
-		Grade:      grade,
-		UserExamID: openJourney,
+		UserID:      profile.UserId(),
+		ProfileID:   profile.ProfileId(),
+		ExamType:    validated.ExamType,
+		Grade:       grade,
+		Level:       level,
+		StatedGrade: req.Grade,
+		StatedLevel: level,
+		UserExamID:  openJourney,
 	}
 
 	cached, err := s.findReusableExam(ctx, tag)
@@ -144,11 +156,12 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 			NumQuestions: req.NumQuestions,
 			Semester:     req.Semester,
 			Program:      req.Program,
+			Level:        promptLevel,
 		})
 		if err != nil {
 			return nil, err
 		}
-		content, err := newContentFrom(ctx, req, generated, &tag)
+		content, err := newContentFrom(ctx, req, generated, &tag, promptLevel)
 		if err != nil {
 			return nil, err
 		}
@@ -225,7 +238,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 	if err != nil {
 		return nil, err
 	}
-	content, err := newContentFrom(ctx, req, generated, nil)
+	content, err := newContentFrom(ctx, req, generated, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -238,6 +251,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		ProfileID:  profile.ProfileId(),
 		ExamType:   enum.ExamTypePractice,
 		Grade:      grade,
+		Level:      req.Level,
 		UserExamID: &journeyID,
 		NewContent: content,
 	}, generated.Questions, profile)

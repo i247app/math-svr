@@ -256,8 +256,10 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 // moved between the read here and the write matches nothing rather than
 // absorbing a sitting into the wrong place.
 //
-// Placement is derived from the totals INCLUDING this sitting — deriving
+// The review is derived from the totals INCLUDING this sitting — deriving
 // before the fold would describe the child as they were one exam ago.
+// current_grade / current_level are never touched here: they are what the
+// client stated at hand-out, not a result.
 func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transaction.Repositories,
 	cmd SubmitExamCommand, attempt *exam.UserAiExam, scored *scorer.DetailedResult) (int64, error) {
 
@@ -296,7 +298,7 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 			return 0, errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil,
 				fmt.Errorf("exam: journey %d has ended; attempt %d cannot fold into it", journeyID, attempt.UserAiExamId()))
 		}
-		row := h.journeyRow(cmd, attempt, owner, delta, scored, journeyID)
+		row := h.journeyRow(cmd, attempt, owner, delta, journeyID)
 		return journeyID, h.accumulate(ctx, repos, journeyID, attempt.ReqExamType(), string(enum.UserExamStatusActive), row, delta)
 	}
 
@@ -351,8 +353,8 @@ func (h *SubmitExamCommandHandler) accumulate(ctx context.Context, repos transac
 }
 
 // practiceRow builds the PRACTICE row the repository writes. It shares
-// the journey's id, is born COMPLETE like the journey it belongs to, and
-// carries no grade: practice never places the child.
+// the journey's id and is born COMPLETE like the journey it belongs to.
+// It carries no grade or level of its own — those live on the journey.
 func (h *SubmitExamCommandHandler) practiceRow(cmd SubmitExamCommand, existing *exam.UserExam,
 	delta exam.StatsDelta, journeyID int64) *exam.UserExam {
 
@@ -376,27 +378,23 @@ func (h *SubmitExamCommandHandler) practiceRow(cmd SubmitExamCommand, existing *
 	complete := string(enum.UserExamStatusComplete)
 	row.SetUserExamStatus(&complete)
 	row.SetResReview(&derived.Review)
-	row.SetResGrade(nil)
 	row.SetLastSubmittedDt(mtime.Now())
 	return row
 }
 
 // journeyRow builds the row the repository writes: identity plus the
-// placement derived from the totals after this sitting is folded in.
-// existing is the journey's row as it stands — empty, with no grade, for
-// a journey that was opened at hand-out and never submitted to.
+// review derived from the totals after this sitting is folded in.
+// existing is the journey's row as it stands. current_grade /
+// current_level are deliberately absent — a submit never moves them.
 func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *exam.UserAiExam,
-	existing *exam.UserExam, delta exam.StatsDelta, scored *scorer.DetailedResult, userExamID int64) *exam.UserExam {
+	existing *exam.UserExam, delta exam.StatsDelta, userExamID int64) *exam.UserExam {
 
 	in := placement.Input{
-		ExamGrade:           attempt.ReqGrade(),
-		LastScorePercentage: scored.ScorePercentage,
-		LifetimeTotal:       delta.TotalQuestions,
-		LifetimeCorrect:     delta.CorrectNumber,
-		LifetimeSkipped:     delta.SkippedNumber,
+		LifetimeTotal:   delta.TotalQuestions,
+		LifetimeCorrect: delta.CorrectNumber,
+		LifetimeSkipped: delta.SkippedNumber,
 	}
 	if existing != nil {
-		in.CurrentGrade = existing.ResGrade()
 		in.LifetimeTotal += existing.ResTotalQuestions()
 		in.LifetimeCorrect += existing.ResCorrectNumber()
 		in.LifetimeSkipped += existing.ResSkippedNumber()
@@ -409,7 +407,6 @@ func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *ex
 	row.SetProfileId(cmd.ProfileID)
 	row.SetReqExamType(attempt.ReqExamType())
 	row.SetResReview(&derived.Review)
-	row.SetResGrade(derived.Grade)
 	row.SetLastSubmittedDt(mtime.Now())
 	return row
 }

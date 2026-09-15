@@ -70,23 +70,20 @@ func (s *Service) loadOwnedProfile(ctx context.Context, userID *int64, profileID
 	return p, nil
 }
 
-// resolvePlacement decides how hard the next exam should be, and reports
-// the open journey (if any) so the sitting can be pinned to it at hand-out.
+// resolvePlacement decides which band the next paper is written at, and
+// reports the open journey (if any) so the sitting can be pinned to it.
 //
-// Grade, in order of preference: what the client pinned, then what the
-// child has been MEASURED at for this exam type (the open journey first,
-// then the most recently COMPLETED one), then the class their profile says
-// they attend, and finally kindergarten. The measurement outranks the
-// profile on purpose — the two are different facts, and a child in Grade 1
-// may well be answering Grade 3 material.
+// Grade, in order of preference: what the client stated on this request,
+// then the journey's current grade (what the client stated last time),
+// then the class the profile says the child attends, and finally
+// kindergarten. Nothing here is measured by the server any more — the
+// journey's grade is the client's statement, recorded at hand-out — so
+// there is no longer a "carry the last measurement forward" step between
+// journeys: a new journey starts where the client, or the profile, says.
 //
-// Grade is the only axis. There is no level to resolve: the teaching team
-// has not defined one, so req_level is never set and stays NULL on every
-// row this produces. When a rule exists it slots in here, beside grade,
-// and the same number must then reach the cache tag, the stored row and
-// the prompt — resolve it once, in this function, not in each consumer.
+// Level is not resolved. It is recorded when stated and read by no rule.
 func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq, examType enum.ExamType, profile *profileDomain.Profile) (grade int, openJourney *int64, err error) {
-	// The open journey is looked up regardless of a pinned grade: even a
+	// The open journey is looked up regardless of a stated grade: even a
 	// pinned sitting belongs to the journey that is open.
 	active, err := s.statsRepo.FindActiveByUserProfileType(ctx, profile.UserId(), profile.ProfileId(), string(examType))
 	if err != nil {
@@ -100,26 +97,31 @@ func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq
 	if req.Grade != nil {
 		return *req.Grade, openJourney, nil
 	}
-
-	// The open journey is the freshest measurement there is.
-	if active != nil && active.ResGrade() != nil {
-		return *active.ResGrade(), openJourney, nil
-	}
-
-	// No open journey: the child is starting one. A journey that was
-	// COMPLETED hands its measured grade forward — finishing a run does
-	// not make the child forget what they know. A CANCELLED one does not:
-	// it was abandoned, and the next run starts from the profile again.
-	completed, err := s.statsRepo.FindLatestCompletedByUserProfileType(ctx, profile.UserId(), profile.ProfileId(), string(examType))
-	if err != nil {
-		return 0, nil, errs.NewError(ctx, status.FAIL, nil, err)
-	}
-	if completed != nil && completed.ResGrade() != nil {
-		return *completed.ResGrade(), openJourney, nil
+	if active != nil && active.CurrentGrade() != nil {
+		return *active.CurrentGrade(), openJourney, nil
 	}
 
 	grade, err = s.gradeFromProfile(ctx, profile)
 	return grade, openJourney, err
+}
+
+// resolveLevel is the one place a stated level is clamped, so the number
+// that reaches the cache tag, the stored rows, the journey and the
+// prompt is the same number. A GRADE review is the only round that
+// writes at a level, and kindergarten cannot be pushed past 4 (the child
+// cannot read yet); asking for more degrades to the ceiling, with a log
+// line, rather than being refused — the request was reasonable, the
+// band just has nowhere higher to go. Other types keep the stated value
+// as a record only.
+func resolveLevel(ctx context.Context, examType enum.ExamType, grade int, stated *int) *int {
+	if stated == nil || examType != enum.ExamTypeGrade {
+		return stated
+	}
+	clamped := domainBot.ClampLevelToGrade(grade, *stated)
+	if clamped != *stated {
+		logger.From(ctx).Warnf("exam.level.clamped grade=%d stated=%d applied=%d", grade, *stated, clamped)
+	}
+	return &clamped
 }
 
 // gradeFromProfile reads the class the child attends. The profile stores

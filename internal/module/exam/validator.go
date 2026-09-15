@@ -57,6 +57,11 @@ func ValidateGenerateExam(ctx context.Context, req *dto.GenerateExamReq) (Valida
 	if req.Grade != nil && (*req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax) {
 		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
 	}
+	// Level is optional and recorded as stated, so the only check is the
+	// scale itself.
+	if req.Level != nil && (*req.Level < enum.ExamLevelMin || *req.Level > enum.ExamLevelMax) {
+		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrLevelOutOfRange)
+	}
 
 	if req.NumQuestions <= 0 {
 		req.NumQuestions = DefaultNumQuestions

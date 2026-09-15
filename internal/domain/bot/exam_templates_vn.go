@@ -148,6 +148,14 @@ func buildUserExamVN(in ExamPromptInput, n int) string {
 	if block := gradeProfileBlockByLevel(QuizLanguageVietnamese, GradeLevel(in.Grade)); block != "" {
 		out += examVocabulary(block) + "\n\n"
 	}
+	// The intensity block sits right under the grade profile it refines,
+	// and before the schema example, for the same reason the grade block
+	// does: the example teaches difficulty by imitation otherwise.
+	if in.ExamType == enum.ExamTypeGrade && in.Level != nil {
+		if block := levelProfileBlock(*in.Level); block != "" {
+			out += block + "\n\n"
+		}
+	}
 
 	out += fmt.Sprintf("Hãy tạo bài kiểm tra loại %s gồm %d câu.\n\n", in.ExamType, n)
 	out += "QUY TẮC CẤP LỚP CHO TỪNG CÂU:\n" + examProbeBlockVN(in, n) + "\n"

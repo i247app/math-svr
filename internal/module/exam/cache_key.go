@@ -26,10 +26,15 @@ import (
 // the segment could only ever have been the LNA constant). Tags written in
 // the old shape simply never match again, which is correct — those exams
 // were generated from a prompt that no longer exists.
-func BuildCacheTag(examType enum.ExamType, grade int, numQues int, semester, program string) string {
+func BuildCacheTag(examType enum.ExamType, grade int, level *int, numQues int, semester, program string) string {
+	levelPart := "LNA"
+	if level != nil {
+		levelPart = fmt.Sprintf("L%d", *level)
+	}
 	return strings.Join([]string{
 		normalizeTagPart(string(examType)),
 		fmt.Sprintf("G%d", grade),
+		levelPart,
 		fmt.Sprintf("Q%d", numQues),
 		"S" + normalizeTagPart(semester),
 		"P" + normalizeTagPart(program),

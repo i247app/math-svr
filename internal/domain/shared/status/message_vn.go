@@ -708,6 +708,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Đang có một hành trình mở — hãy kết thúc nó trước khi mở lại hành trình khác"
 	case EXAM_JOURNEY_NOT_COMPLETE:
 		return "Chỉ luyện tập được khi hành trình đã hoàn thành"
+	case EXAM_INVALID_LEVEL:
+		return "Cấp độ phải từ 1 đến 10"
 
 	default:
 		return ""

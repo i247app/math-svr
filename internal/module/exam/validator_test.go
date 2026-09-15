@@ -50,6 +50,22 @@ func TestValidateGenerateExam(t *testing.T) {
 		}
 	})
 
+	t.Run("level must sit on the 1..10 scale", func(t *testing.T) {
+		for _, level := range []int{0, 11} {
+			l := level
+			req := &dto.GenerateExamReq{ProfileID: 1, ExamType: "ASSESSMENT", Level: &l}
+			if got := codeOf(t, mustFail(t, ctx, req)); got != status.EXAM_INVALID_LEVEL {
+				t.Errorf("level %d: code = %d, want EXAM_INVALID_LEVEL", level, got)
+			}
+		}
+		for _, level := range []int{1, 10} {
+			l := level
+			if _, err := ValidateGenerateExam(ctx, &dto.GenerateExamReq{ProfileID: 1, ExamType: "ASSESSMENT", Level: &l}); err != nil {
+				t.Errorf("level %d must pass, got %v", level, err)
+			}
+		}
+	})
+
 	t.Run("a PRACTICE round must name its journey", func(t *testing.T) {
 		zero := int64(0)
 		for _, id := range []*int64{nil, &zero} {
@@ -359,4 +375,25 @@ func TestPracticeReadsNeedAJourney(t *testing.T) {
 			t.Errorf("code = %d, want EXAM_INVALID_EXAM_TYPE", code)
 		}
 	})
+}
+
+// TestResolveLevel: the level is clamped once, here, for a GRADE review
+// only — kindergarten tops out at 4 — and passed through untouched as a
+// record for every other type.
+func TestResolveLevel(t *testing.T) {
+	ctx := context.Background()
+	nine := 9
+
+	if got := resolveLevel(ctx, enum.ExamTypeGrade, 0, &nine); got == nil || *got != 4 {
+		t.Errorf("GRADE at kindergarten with level 9 → %v, want clamped 4", got)
+	}
+	if got := resolveLevel(ctx, enum.ExamTypeGrade, 3, &nine); got == nil || *got != 9 {
+		t.Errorf("GRADE at grade 3 with level 9 → %v, want 9", got)
+	}
+	if got := resolveLevel(ctx, enum.ExamTypeAssessment, 0, &nine); got == nil || *got != 9 {
+		t.Errorf("ASSESSMENT records the stated level as is, got %v", got)
+	}
+	if got := resolveLevel(ctx, enum.ExamTypeGrade, 0, nil); got != nil {
+		t.Errorf("no level stated → none, got %v", got)
+	}
 }

@@ -18,14 +18,12 @@ import (
 // exams. Three ten-question rounds with six answers each give 18, not 30,
 // and resCorrectNumber can therefore never exceed it.
 //
-// resGrade is the child's measured ABILITY and is deliberately not written
-// back to the profile: ma_profiles.grade_id records the class the child
-// attends, which is a different fact. A child in Grade 1 may well be
-// answering Grade 3 material correctly.
-//
-// resLevel mirrors the nullable res_level column and is always NULL today:
-// the teaching team has no rule for how a level moves, so placement does
-// not derive one. The field stays so the entity keeps matching the table.
+// currentGrade and currentLevel are where the child is WORKING right
+// now, as the client states it on each hand-out (grade / level on
+// /exams/generate). The server records them; it no longer derives them
+// from results — the teaching side owns that judgement. They are not
+// written back to the profile: ma_profiles.grade_id records the class
+// the child attends, which is a different fact.
 type UserExam struct {
 	id          int64
 	userExamId  int64
@@ -38,9 +36,9 @@ type UserExam struct {
 	resSkippedNumber   int
 	resScorePercentage *int
 
-	resReview *string
-	resGrade  *int
-	resLevel  *int
+	resReview    *string
+	currentGrade *int
+	currentLevel *int
 
 	lastSubmittedDt mtime.MathTime
 	endedDt         mtime.MathTime
@@ -76,10 +74,10 @@ func (u *UserExam) ResScorePercentage() *int            { return u.resScorePerce
 func (u *UserExam) SetResScorePercentage(n *int)        { u.resScorePercentage = n }
 func (u *UserExam) ResReview() *string                  { return u.resReview }
 func (u *UserExam) SetResReview(s *string)              { u.resReview = s }
-func (u *UserExam) ResGrade() *int                      { return u.resGrade }
-func (u *UserExam) SetResGrade(g *int)                  { u.resGrade = g }
-func (u *UserExam) ResLevel() *int                      { return u.resLevel }
-func (u *UserExam) SetResLevel(l *int)                  { u.resLevel = l }
+func (u *UserExam) CurrentGrade() *int                  { return u.currentGrade }
+func (u *UserExam) SetCurrentGrade(g *int)              { u.currentGrade = g }
+func (u *UserExam) CurrentLevel() *int                  { return u.currentLevel }
+func (u *UserExam) SetCurrentLevel(l *int)              { u.currentLevel = l }
 func (u *UserExam) LastSubmittedDt() mtime.MathTime     { return u.lastSubmittedDt }
 func (u *UserExam) SetLastSubmittedDt(t mtime.MathTime) { u.lastSubmittedDt = t }
 func (u *UserExam) EndedDt() mtime.MathTime             { return u.endedDt }

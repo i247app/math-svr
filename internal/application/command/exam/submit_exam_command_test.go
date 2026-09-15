@@ -123,6 +123,20 @@ func (r *memJourneyRepo) Create(ctx context.Context, e *exam.UserExam, delta exa
 	return nil
 }
 
+func (r *memJourneyRepo) SetCurrent(ctx context.Context, id int64, typ string, grade, level *int) error {
+	row, ok := r.rows[journeyKey{id, typ}]
+	if !ok || !isActive(row) {
+		return exam.ErrJourneyNotActive
+	}
+	if grade != nil {
+		row.SetCurrentGrade(grade)
+	}
+	if level != nil {
+		row.SetCurrentLevel(level)
+	}
+	return nil
+}
+
 func (r *memJourneyRepo) Accumulate(ctx context.Context, id int64, typ, expectedStatus string, e *exam.UserExam, delta exam.StatsDelta) error {
 	k := journeyKey{id, typ}
 	row, ok := r.rows[k]
@@ -133,7 +147,6 @@ func (r *memJourneyRepo) Accumulate(ctx context.Context, id int64, typ, expected
 	row.SetResCorrectNumber(row.ResCorrectNumber() + delta.CorrectNumber)
 	row.SetResSkippedNumber(row.ResSkippedNumber() + delta.SkippedNumber)
 	row.SetResReview(e.ResReview())
-	row.SetResGrade(e.ResGrade())
 	r.accumulates = append(r.accumulates, k)
 	return nil
 }
@@ -241,10 +254,13 @@ func ptr(v int64) *int64 { return &v }
 // ---- tests -----------------------------------------------------------------
 
 // TestSubmitAssessmentFoldsIntoItsJourney: an ASSESSMENT sitting folds
-// into the journey it was handed out in — opened empty at hand-out — and
-// that first fold is what gives the journey its grade.
+// into the journey it was handed out in — opened at hand-out with the
+// client's stated grade — and the fold adds totals and a review without
+// touching that grade.
 func TestSubmitAssessmentFoldsIntoItsJourney(t *testing.T) {
 	empty := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusActive)
+	stated := 4
+	empty.SetCurrentGrade(&stated)
 	h := newHarness(openAttempt(enum.ExamTypeAssessment, ptr(subJourney)), empty)
 
 	res, err := h.handler.Handle(context.Background(), submitAll("A"))
@@ -261,8 +277,8 @@ func TestSubmitAssessmentFoldsIntoItsJourney(t *testing.T) {
 	if res.Stats.UserExamId() != subJourney || res.Stats.ReqExamType() != string(enum.ExamTypeAssessment) {
 		t.Fatalf("stats row = (%d, %s), want (%d, ASSESSMENT)", res.Stats.UserExamId(), res.Stats.ReqExamType(), subJourney)
 	}
-	if res.Stats.ResGrade() == nil {
-		t.Fatal("the first fold must give the journey a measured grade")
+	if g := res.Stats.CurrentGrade(); g == nil || *g != 4 {
+		t.Fatalf("current grade = %v after the fold, want the stated 4 untouched — a submit never moves it", g)
 	}
 	if res.Stats.ResTotalQuestions() != 2 || res.Stats.ResCorrectNumber() != 2 {
 		t.Fatalf("totals = %d/%d, want 2/2", res.Stats.ResCorrectNumber(), res.Stats.ResTotalQuestions())
@@ -330,8 +346,8 @@ func TestSubmitPracticeOpensRowUnderJourneyId(t *testing.T) {
 	if res.Stats.UserExamId() != subJourney || res.Stats.ReqExamType() != string(enum.ExamTypePractice) {
 		t.Fatalf("stats row = (%d, %s), want (%d, PRACTICE)", res.Stats.UserExamId(), res.Stats.ReqExamType(), subJourney)
 	}
-	if res.Stats.ResGrade() != nil {
-		t.Fatalf("PRACTICE row must never carry a grade, got %d", *res.Stats.ResGrade())
+	if res.Stats.CurrentGrade() != nil {
+		t.Fatalf("PRACTICE row must never carry a grade, got %d", *res.Stats.CurrentGrade())
 	}
 	if st := res.Stats.UserExamStatus(); st == nil || *st != string(enum.UserExamStatusComplete) {
 		t.Fatalf("PRACTICE row status = %v, want COMPLETE like its journey", st)
@@ -371,7 +387,7 @@ func TestSubmitPracticeAccumulates(t *testing.T) {
 	if res.Stats.ResTotalQuestions() != 6 || res.Stats.ResCorrectNumber() != 3 {
 		t.Fatalf("PRACTICE totals = %d/%d, want 3/6", res.Stats.ResCorrectNumber(), res.Stats.ResTotalQuestions())
 	}
-	if res.Stats.ResGrade() != nil {
+	if res.Stats.CurrentGrade() != nil {
 		t.Fatal("PRACTICE row must stay ungraded after accumulating")
 	}
 }

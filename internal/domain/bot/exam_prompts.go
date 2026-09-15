@@ -20,7 +20,7 @@ import (
 // otherwise teaches its own difficulty by imitation.
 //
 // There is deliberately no LEVEL axis. The schema reserves nullable
-// req_level / res_level / question_level columns, but the teaching team
+// req_level / current_level / question_level columns, but the teaching team
 // has not defined what a level IS or how it should move, and a difficulty
 // scale the product cannot explain must not be handed to the model as if
 // it could. The columns stay NULL until that rule exists; add the axis
@@ -36,6 +36,10 @@ type ExamPromptInput struct {
 	NumQuestions int
 	Semester     string
 	Program      string
+	// Level is the client-stated intensity, 1..10, already clamped to the
+	// grade's ceiling by the caller. Rendered for a GRADE review only;
+	// nil, or any other type, means no LEVEL PROFILE block.
+	Level *int
 	// Practice aims a PRACTICE round at what the child just did. Required
 	// when ExamType is PRACTICE, ignored otherwise.
 	Practice *PracticeBrief

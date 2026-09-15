@@ -20,6 +20,7 @@ import (
 // OUTSIDE this transaction — an LLM round trip must never hold a tx open.
 type NewAiExamContent struct {
 	NumQues       int
+	Level         *int
 	Semester      *string
 	Program       *string
 	Extras        *string
@@ -39,7 +40,18 @@ type GenerateExamCommand struct {
 	UserID    int64
 	ProfileID int64
 	ExamType  enum.ExamType
-	Grade     int
+	// Grade is the band the paper is written at, resolved by the caller.
+	Grade int
+	// Level is the client-stated level (1..10) recorded on the sitting;
+	// nil when none was sent.
+	Level *int
+	// StatedGrade / StatedLevel are what the client put in the request,
+	// nil when absent. They are recorded on the journey as its current
+	// grade / level: a new journey takes Grade (which already fell back to
+	// the profile) and StatedLevel; an existing one only moves on what
+	// was actually stated.
+	StatedGrade *int
+	StatedLevel *int
 	// ShuffleJSON is this sitting's private ordering of the question set
 	// (question.Shuffle in its stored form). It is drawn by the caller for
 	// EVERY sitting, cache hit or miss: a fresh generation is shuffled too,
@@ -88,6 +100,9 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		if err != nil {
 			return err
 		}
+		if err := h.recordCurrent(ctx, repos, cmd, journeyID); err != nil {
+			return err
+		}
 
 		attemptID, err := seqgen.Next(ctx, repos.Seq, seq.NameUserAiExam)
 		if err != nil {
@@ -103,6 +118,7 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		a.SetShuffleMap(cmd.ShuffleJSON)
 		a.SetReqExamType(string(cmd.ExamType))
 		a.SetReqGrade(cmd.Grade)
+		a.SetReqLevel(cmd.Level)
 		a.SetStartedDt(mtime.Now())
 		inProgress := string(enum.UserAiExamStatusInProgress)
 		a.SetUserAiExamStatus(&inProgress)
@@ -165,6 +181,11 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 	row.SetUserId(cmd.UserID)
 	row.SetProfileId(cmd.ProfileID)
 	row.SetReqExamType(examType)
+	// A brand-new journey starts where this paper is written — the
+	// stated grade, or the profile's when none was stated.
+	grade := cmd.Grade
+	row.SetCurrentGrade(&grade)
+	row.SetCurrentLevel(cmd.StatedLevel)
 
 	err = repos.UserExam.Create(ctx, row, exam.StatsDelta{})
 	if err == nil {
@@ -184,6 +205,25 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 				cmd.ProfileID, examType))
 	}
 	return open.UserExamId(), nil
+}
+
+// recordCurrent writes the client's stated grade / level onto the open
+// journey. A PRACTICE round names a finished journey and states nothing
+// about it; for any other round, only the values actually sent move —
+// a request naming just the grade leaves the level as it was. A journey
+// that was just opened already carries them, and the COALESCE below is a
+// no-op there.
+func (h *GenerateExamCommandHandler) recordCurrent(ctx context.Context, repos transaction.Repositories, cmd GenerateExamCommand, journeyID int64) error {
+	if cmd.ExamType == enum.ExamTypePractice {
+		return nil
+	}
+	if err := repos.UserExam.SetCurrent(ctx, journeyID, string(cmd.ExamType), cmd.StatedGrade, cmd.StatedLevel); err != nil {
+		if errors.Is(err, exam.ErrJourneyNotActive) {
+			return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
+		}
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	return nil
 }
 
 // resolveAiExam either loads the cached question set or stores the freshly
@@ -213,6 +253,7 @@ func (h *GenerateExamCommandHandler) resolveAiExam(ctx context.Context, repos tr
 	e.SetAiExamId(aiExamID)
 	e.SetReqExamType(string(cmd.ExamType))
 	e.SetReqGrade(cmd.Grade)
+	e.SetReqLevel(cmd.NewContent.Level)
 	e.SetReqNumQues(cmd.NewContent.NumQues)
 	e.SetReqSemester(cmd.NewContent.Semester)
 	e.SetReqProgram(cmd.NewContent.Program)

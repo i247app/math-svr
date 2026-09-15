@@ -138,3 +138,24 @@ func TestNormalizeQuestionBandsEmpty(t *testing.T) {
 		t.Errorf("expected (nil, nil), got (%v, %v)", got, mismatches)
 	}
 }
+
+// TestStampQuestionLevel: the round's level lands on every question, and
+// a round without one leaves the column empty rather than trusting
+// whatever the model wrote.
+func TestStampQuestionLevel(t *testing.T) {
+	qs := questions(3)
+	stray := 9
+	qs[1].QuestionLevel = &stray
+
+	five := 5
+	for _, q := range StampQuestionLevel(qs, &five) {
+		if q.QuestionLevel == nil || *q.QuestionLevel != 5 {
+			t.Fatalf("q%d level = %v, want 5", q.QuestionNumber, q.QuestionLevel)
+		}
+	}
+	for _, q := range StampQuestionLevel(qs, nil) {
+		if q.QuestionLevel != nil {
+			t.Fatalf("q%d level = %d, want none", q.QuestionNumber, *q.QuestionLevel)
+		}
+	}
+}

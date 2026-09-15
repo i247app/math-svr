@@ -72,3 +72,20 @@ func NormalizeQuestionBands(questions []question.Question, examType enum.ExamTyp
 	}
 	return questions, mismatches
 }
+
+// StampQuestionLevel writes the round's level onto every question — the
+// same intensity was asked of all of them — or clears it when the round
+// had none. Server-stamped for the same reason question_grade is: the
+// column feeds analytics, and a value the model invented would be a
+// difficulty nobody asked for.
+func StampQuestionLevel(questions []question.Question, level *int) []question.Question {
+	for i := range questions {
+		if level == nil {
+			questions[i].QuestionLevel = nil
+			continue
+		}
+		stamped := *level
+		questions[i].QuestionLevel = &stamped
+	}
+	return questions
+}

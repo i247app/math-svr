@@ -15,8 +15,8 @@ type UserExamModel struct {
 	ResSkippedNumber   int
 	ResScorePercentage *int
 	ResReview          *string
-	ResGrade           *int
-	ResLevel           *int
+	CurrentGrade       *int
+	CurrentLevel       *int
 	LastSubmittedDt    *time.Time
 	EndedDt            *time.Time
 	Note               *string
