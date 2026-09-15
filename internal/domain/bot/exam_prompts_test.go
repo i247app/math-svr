@@ -19,7 +19,7 @@ func TestProbePositions(t *testing.T) {
 		{"assessment too short to probe at all", enum.ExamTypeAssessment, 2, nil},
 		{"zero falls back to the default length", enum.ExamTypeAssessment, 0, []int{3, 6}},
 		{"practice probes like an assessment", enum.ExamTypePractice, 10, []int{3, 6}},
-		{"grade review never probes", enum.ExamTypeGrade, 10, nil},
+		{"grade review probes too", enum.ExamTypeGrade, 10, []int{3, 6}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -153,17 +153,23 @@ func TestBuildExamPromptPracticeProbes(t *testing.T) {
 	}
 }
 
-// TestBuildExamPromptGradeReviewIsFlat: GRADE review carries no probe.
-func TestBuildExamPromptGradeReviewIsFlat(t *testing.T) {
-	_, user, err := BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeGrade, Grade: 4, NumQuestions: 10})
+// TestBuildExamPromptGradeReviewProbes: a GRADE review carries the probe
+// rule like every other round, and with a level the two blocks coexist —
+// the level shapes intensity inside the band, the probe reaches one band
+// up at Q3/Q6.
+func TestBuildExamPromptGradeReviewProbes(t *testing.T) {
+	six := 6
+	_, user, err := BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeGrade, Grade: 4, NumQuestions: 10, Level: &six})
 	if err != nil {
 		t.Fatalf("BuildExamPrompt: %v", err)
 	}
-	if strings.Contains(user, "CÂU DÒ TRẦN") {
-		t.Error("a GRADE review must not carry the probe rule")
+	for _, want := range []string{"CÂU DÒ TRẦN (bắt buộc với bài GRADE)", `"question_grade" = 5`, "LEVEL PROFILE — cường độ bậc 6"} {
+		if !strings.Contains(user, want) {
+			t.Errorf("GRADE prompt lacks %q", want)
+		}
 	}
-	if !strings.Contains(user, `"question_grade" của mọi câu đều là 4`) {
-		t.Error("a GRADE review must pin every question to the requested grade")
+	if strings.Contains(user, `"question_grade" của mọi câu đều là 4`) {
+		t.Error("a GRADE review must not flatten every question to the requested grade")
 	}
 }
 

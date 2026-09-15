@@ -30,11 +30,12 @@ const (
 func (t ExamType) String() string { return string(t) }
 
 // HasProbes reports whether a round of this type carries the harder
-// probe questions (Q3/Q6 at grade + 1). ASSESSMENT needs them to measure;
-// PRACTICE keeps them so a drill still stretches the child the same way
-// the exam did. GRADE review is flat.
+// probe questions (Q3/Q6 at grade + 1). Every type does today: ASSESSMENT
+// needs them to measure, and PRACTICE and GRADE keep them so any round
+// stretches the child the same way. The method stays so the rule has one
+// home if a flat type ever comes back.
 func (t ExamType) HasProbes() bool {
-	return t == ExamTypeAssessment || t == ExamTypePractice
+	return t.IsValid()
 }
 
 func (t ExamType) IsValid() bool {

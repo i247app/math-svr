@@ -76,11 +76,11 @@ func TestNormalizeQuestionBands(t *testing.T) {
 			want:     []int{3, 3, 4, 3, 3, 4, 3, 3, 3, 3},
 		},
 		{
-			name:     "grade review does not probe either",
+			name:     "grade review probes like the rest, even from kindergarten",
 			examType: enum.ExamTypeGrade,
 			grade:    0,
 			count:    3,
-			want:     []int{0, 0, 0},
+			want:     []int{0, 0, 1},
 		},
 	}
 	for _, tc := range tests {
