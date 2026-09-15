@@ -163,6 +163,34 @@ func buildUserAiExamFilterClause(filter exam.ListAttemptsFilter) (string, []any)
 	return clause, args
 }
 
+// ListInProgressByProfile reads ix_profile_status_started: one child, one
+// status, in the order the sittings were handed out.
+func (r *UserAiExamRepository) ListInProgressByProfile(ctx context.Context, profileId int64) ([]*exam.UserAiExam, error) {
+	args := append(userAiExamActiveArgs(), profileId, string(enum.UserAiExamStatusInProgress))
+	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
+		userAiExamActiveWhere + ` AND u.profile_id = ? AND u.user_ai_exam_status = ?` +
+		` ORDER BY u.started_dt ASC, u.id ASC`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("user ai exam repo list in progress: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*exam.UserAiExam
+	for rows.Next() {
+		m, err := scanUserAiExam(rows)
+		if err != nil {
+			return nil, fmt.Errorf("user ai exam repo scan row: %w", err)
+		}
+		out = append(out, ModelToDomainUserAiExam(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("user ai exam repo rows iteration: %w", err)
+	}
+	return out, nil
+}
+
 // FindLatestSubmittedByUserExamId walks ix_user_exam_submitted backwards:
 // the newest submitted_dt of the journey, id as the tie-break so two
 // sittings submitted in the same microsecond still order deterministically.

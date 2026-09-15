@@ -65,7 +65,7 @@ func NewService(
 		getAttemptQuery: query.NewGetExamAttemptQueryHandler(attemptRepo, aiExamRepo, detailRepo),
 		getJourneyQuery: query.NewGetExamJourneyQueryHandler(statsRepo, attemptRepo, aiExamRepo, detailRepo),
 		listQuery:       query.NewListExamAttemptsQueryHandler(attemptRepo, aiExamRepo),
-		statsQuery:      query.NewGetExamStatsQueryHandler(statsRepo),
+		statsQuery:      query.NewGetExamStatsQueryHandler(statsRepo, attemptRepo, aiExamRepo),
 		progressQuery:   query.NewGetExamProgressQueryHandler(attemptRepo),
 		aiExamRepo:      aiExamRepo,
 		attemptRepo:     attemptRepo,
@@ -159,11 +159,12 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	return s.handOut(ctx, cmd, canonical, profile)
 }
 
-// generatePractice draws a PRACTICE round inside a journey.
+// generatePractice draws a PRACTICE round on a finished journey.
 //
 // The journey's ASSESSMENT row is the gate: it must exist, belong to this
-// child, and still be open — a practice round on an ended journey has
-// nowhere to fold its result. The round is then aimed at the journey's
+// child, and be COMPLETE — practice is what comes after a run has been
+// finished and measured; an open journey is still being measured, and a
+// cancelled one was abandoned. The round is then aimed at the journey's
 // latest SUBMITTED sitting, of any type: its grade is the round's grade,
 // and its answer log is what the model is told to respond to.
 //
@@ -187,9 +188,9 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
 	}
-	if st := journey.UserExamStatus(); st == nil || *st != string(enum.UserExamStatusActive) {
-		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil,
-			fmt.Errorf("exam: journey %d has ended; nothing more can be practised in it", journeyID))
+	if st := journey.UserExamStatus(); st == nil || *st != string(enum.UserExamStatusComplete) {
+		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_COMPLETE, nil,
+			fmt.Errorf("exam: journey %d is %s; practice needs it COMPLETE", journeyID, utils.DerefString(st)))
 	}
 
 	base, err := s.attemptRepo.FindLatestSubmittedByUserExamId(ctx, journeyID)
@@ -240,25 +241,6 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		UserExamID: &journeyID,
 		NewContent: content,
 	}, generated.Questions, profile)
-}
-
-// newContentFrom packages a fresh generation for storage. extras is the
-// cache tag the set is filed under, or nil for a set that must never be
-// served to anyone else.
-func newContentFrom(ctx context.Context, req *dto.GenerateExamReq, generated *generateExamOutput, extras *string) (*command.NewAiExamContent, error) {
-	questionsJSON, err := marshalQuestions(ctx, generated.Questions)
-	if err != nil {
-		return nil, err
-	}
-	return &command.NewAiExamContent{
-		NumQues:       req.NumQuestions,
-		Semester:      utils.ToStringPtr(req.Semester),
-		Program:       utils.ToStringPtr(req.Program),
-		Extras:        extras,
-		Title:         sanitizeExamText(generated.Title),
-		ShortText:     sanitizeExamText(generated.ShortText),
-		QuestionsJSON: questionsJSON,
-	}, nil
 }
 
 // handOut is the tail every round shares: draw this sitting's ordering,
@@ -385,7 +367,7 @@ func (s *Service) GetExamStats(ctx context.Context, req *dto.GetExamStatsReq) (*
 	if err != nil {
 		return nil, err
 	}
-	return &dto.GetExamStatsRes{Stats: dto.JourneyStatsToResponse(rows)}, nil
+	return &dto.GetExamStatsRes{Stats: dto.JourneyStatsToResponse(rows.Journeys, rows.AiExams)}, nil
 }
 
 // MarkExamJourney ends a journey as COMPLETE or CANCEL. From then on the

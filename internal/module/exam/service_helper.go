@@ -25,7 +25,7 @@ import (
 //
 // Three is a starting point, not a measurement. Raise it if children
 // report repeats; lower it if the generation bill says so.
-const MinCacheVariants = 10
+const MinCacheVariants = 100
 
 // findReusableExam returns a stored question set only once the tag's pool
 // is deep enough to pick from. A miss is an ordinary outcome, not an

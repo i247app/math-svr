@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
@@ -47,8 +48,9 @@ type GenerateExamCommand struct {
 	ShuffleJSON *string
 	// UserExamID is the journey the sitting is drawn for, when the caller
 	// already knows it: always for a PRACTICE round, and for an ASSESSMENT
-	// while a journey is open. nil for the first sitting of a journey —
-	// the row does not exist yet — and submit fills it in.
+	// while a journey is open. nil when the caller found none — the
+	// command then OPENS the journey here, in the same transaction as the
+	// attempt, so a sitting never exists without a journey to show it in.
 	UserExamID *int64
 
 	ReuseAiExamID *int64
@@ -82,6 +84,11 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 			return err
 		}
 
+		journeyID, err := h.resolveJourney(ctx, repos, cmd)
+		if err != nil {
+			return err
+		}
+
 		attemptID, err := seqgen.Next(ctx, repos.Seq, seq.NameUserAiExam)
 		if err != nil {
 			return err
@@ -92,7 +99,7 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		a.SetUserId(cmd.UserID)
 		a.SetProfileId(cmd.ProfileID)
 		a.SetAiExamId(aiExam.AiExamId())
-		a.SetUserExamId(cmd.UserExamID)
+		a.SetUserExamId(&journeyID)
 		a.SetShuffleMap(cmd.ShuffleJSON)
 		a.SetReqExamType(string(cmd.ExamType))
 		a.SetReqGrade(cmd.Grade)
@@ -113,6 +120,70 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		return nil, err
 	}
 	return &result, nil
+}
+
+// resolveJourney returns the journey this sitting belongs to, opening one
+// when the child has none.
+//
+// A journey used to be opened at the first SUBMIT, which left a child who
+// generated an exam and walked away with a sitting that showed up nowhere:
+// the journey list reads ma_user_exams, and there was no row. Opening it
+// at hand-out — in the same transaction as the attempt — is what makes
+// "come back and finish" possible. The row starts empty (no totals, no
+// grade, no review) and fills on the first submit.
+//
+// A PRACTICE round names its journey up front and must never open one.
+// Anything else takes the caller's id when it has one, and otherwise
+// looks for the open journey of its type, opening it if there is none.
+// The open is a plain INSERT under uk_active_journey, so two hand-outs
+// racing to open the same child's journey resolve the way submits do:
+// the loser collides, re-reads, and joins the winner's row.
+func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos transaction.Repositories, cmd GenerateExamCommand) (int64, error) {
+	if cmd.UserExamID != nil {
+		return *cmd.UserExamID, nil
+	}
+	if cmd.ExamType == enum.ExamTypePractice {
+		return 0, errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil,
+			fmt.Errorf("exam: a PRACTICE round must name its journey"))
+	}
+
+	examType := string(cmd.ExamType)
+	open, err := repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UserID, cmd.ProfileID, examType)
+	if err != nil {
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if open != nil {
+		return open.UserExamId(), nil
+	}
+
+	journeyID, err := seqgen.Next(ctx, repos.Seq, seq.NameUserExam)
+	if err != nil {
+		return 0, err
+	}
+	row := exam.NewUserExam()
+	row.SetUserExamId(journeyID)
+	row.SetUserId(cmd.UserID)
+	row.SetProfileId(cmd.ProfileID)
+	row.SetReqExamType(examType)
+
+	err = repos.UserExam.Create(ctx, row, exam.StatsDelta{})
+	if err == nil {
+		return journeyID, nil
+	}
+	if !errors.Is(err, exam.ErrJourneyConflict) {
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	open, err = repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UserID, cmd.ProfileID, examType)
+	if err != nil {
+		return 0, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if open == nil {
+		return 0, errs.NewError(ctx, status.FAIL, nil,
+			fmt.Errorf("exam: opening a journey for profile %d type %s collided with a row that is not active — check uk_active_journey and ma_seqs",
+				cmd.ProfileID, examType))
+	}
+	return open.UserExamId(), nil
 }
 
 // resolveAiExam either loads the cached question set or stores the freshly

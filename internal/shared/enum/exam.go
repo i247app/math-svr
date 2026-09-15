@@ -14,12 +14,14 @@ const (
 	// An ASSESSMENT journey is the unit of lifecycle: it opens, accumulates
 	// sittings, and is ended by the parent.
 	ExamTypeAssessment ExamType = "ASSESSMENT"
-	// ExamTypePractice is a round drawn INSIDE an open ASSESSMENT journey
-	// from the child's latest submitted sitting there — re-drilling what
-	// went wrong, or pushing further when nothing did. It is not a journey
-	// of its own: it shares the journey's user_exam_id, never moves the
-	// measured grade, and ends when the journey ends. It carries the same
-	// probe questions an ASSESSMENT does (see HasProbes).
+	// ExamTypePractice is a round drawn AFTER an ASSESSMENT journey has
+	// been COMPLETED, from the child's latest submitted sitting in it —
+	// re-drilling what went wrong, or pushing further when nothing did.
+	// It is not a journey of its own: it shares the journey's
+	// user_exam_id and never moves the measured grade. A journey that is
+	// still open, or was cancelled, cannot be practised in; reopening a
+	// completed one closes practice again until it is completed anew. It
+	// carries the same probe questions an ASSESSMENT does (see HasProbes).
 	ExamTypePractice ExamType = "PRACTICE"
 	// ExamTypeGrade 1-5 is for review specific grade 1-5
 	ExamTypeGrade ExamType = "GRADE"
@@ -107,8 +109,13 @@ func (s AiExamStatusType) String() string { return string(s) }
 //
 // An ended journey CAN be reopened — marked ACTIVE again — as long as no
 // other journey of its type is open: a child may change their mind and
-// pick a run back up. Reopening restores both rows and clears ended_dt,
-// and from then on the journey behaves as if it had never ended.
+// pick a run back up. Reopening clears ended_dt, and from then on the
+// journey behaves as if it had never ended.
+//
+// The PRACTICE row that shares a journey's id is not part of this
+// lifecycle. It exists only once the journey is COMPLETE and carries that
+// status for as long as it lives; ending and reopening touch the owning
+// row alone.
 // COMPLETE and CANCEL both end it. The difference is what the next journey
 // inherits: a COMPLETE journey's measured grade carries forward as the
 // starting point, a CANCEL journey is treated as abandoned and the next

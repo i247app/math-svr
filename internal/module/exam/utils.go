@@ -7,10 +7,12 @@ import (
 	"math/rand/v2"
 	"strings"
 
+	command "math-ai.com/math-ai/internal/application/command/exam"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	"math-ai.com/math-ai/internal/application/dto/question"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // maxExamTextLen mirrors the VARCHAR(255) limit on ma_ai_exams.ai_title
@@ -41,6 +43,25 @@ func marshalQuestions(ctx context.Context, questions []question.Question) (strin
 			fmt.Errorf("exam: marshal questions: %w", err))
 	}
 	return string(raw), nil
+}
+
+// newContentFrom packages a fresh generation for storage. extras is the
+// cache tag the set is filed under, or nil for a set that must never be
+// served to anyone else.
+func newContentFrom(ctx context.Context, req *dto.GenerateExamReq, generated *generateExamOutput, extras *string) (*command.NewAiExamContent, error) {
+	questionsJSON, err := marshalQuestions(ctx, generated.Questions)
+	if err != nil {
+		return nil, err
+	}
+	return &command.NewAiExamContent{
+		NumQues:       req.NumQuestions,
+		Semester:      utils.ToStringPtr(req.Semester),
+		Program:       utils.ToStringPtr(req.Program),
+		Extras:        extras,
+		Title:         sanitizeExamText(generated.Title),
+		ShortText:     sanitizeExamText(generated.ShortText),
+		QuestionsJSON: questionsJSON,
+	}, nil
 }
 
 // systemRand adapts the process-wide generator to question.Shuffler. The

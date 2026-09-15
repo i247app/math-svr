@@ -19,7 +19,13 @@ import (
 // dashboard sees one entry per journey — not two rows sharing an id.
 // The validator refuses ExamType = PRACTICE for that reason.
 //
-// A child who has never submitted has no row at all, and that is not an
+// Each journey also carries its unfinished sittings. A journey is opened
+// the moment an exam is handed out, so a child who generated one and
+// walked away has a journey row here, with the sitting under it, and can
+// be offered to finish it — that is the whole reason the row is opened
+// so early.
+//
+// A child who has never generated has no row at all, and that is not an
 // error: the caller renders an empty state rather than a failure.
 type GetExamStatsQuery struct {
 	UserID    int64
@@ -28,15 +34,29 @@ type GetExamStatsQuery struct {
 	Status    *string
 }
 
+// ExamStatsResult is the journeys plus the question sets the unfinished
+// sittings were drawn from, keyed by ai_exam_id, so the caller can render
+// each paper without a read per sitting.
+type ExamStatsResult struct {
+	Journeys []exam.JourneyStats
+	AiExams  map[int64]*exam.AiExam
+}
+
 type GetExamStatsQueryHandler struct {
-	statsRepo exam.IUserExamRepository
+	statsRepo   exam.IUserExamRepository
+	attemptRepo exam.IUserAiExamRepository
+	aiExamRepo  exam.IAiExamRepository
 }
 
-func NewGetExamStatsQueryHandler(statsRepo exam.IUserExamRepository) *GetExamStatsQueryHandler {
-	return &GetExamStatsQueryHandler{statsRepo: statsRepo}
+func NewGetExamStatsQueryHandler(
+	statsRepo exam.IUserExamRepository,
+	attemptRepo exam.IUserAiExamRepository,
+	aiExamRepo exam.IAiExamRepository,
+) *GetExamStatsQueryHandler {
+	return &GetExamStatsQueryHandler{statsRepo: statsRepo, attemptRepo: attemptRepo, aiExamRepo: aiExamRepo}
 }
 
-func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQuery) ([]exam.JourneyStats, error) {
+func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQuery) (*ExamStatsResult, error) {
 	// An ASSESSMENT read must also pull the PRACTICE rows to nest them, so
 	// it fetches every type and partitions below. Any other named type
 	// has no practice and is fetched alone.
@@ -53,7 +73,25 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	return nestPractice(rows, wantType), nil
+	journeys := nestPractice(rows, wantType)
+	if len(journeys) == 0 {
+		return &ExamStatsResult{Journeys: journeys, AiExams: map[int64]*exam.AiExam{}}, nil
+	}
+
+	// One read for every unfinished sitting of the child, then attach by
+	// journey. A sitting whose journey is not in this page (a filtered-out
+	// type or status) is simply not shown.
+	open, err := h.attemptRepo.ListInProgressByProfile(ctx, q.ProfileID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	attached := attachInProgress(journeys, open)
+
+	aiExams, err := hydrateAiExams(ctx, h.aiExamRepo, attached)
+	if err != nil {
+		return nil, err
+	}
+	return &ExamStatsResult{Journeys: journeys, AiExams: aiExams}, nil
 }
 
 // nestPractice folds PRACTICE rows into the ASSESSMENT journey of the
@@ -83,4 +121,28 @@ func nestPractice(rows []*exam.UserExam, wantType string) []exam.JourneyStats {
 		out = append(out, js)
 	}
 	return out
+}
+
+// attachInProgress hangs each unfinished sitting under its journey, in
+// place, and returns the ones that found a home — the set whose question
+// sets need hydrating. open is oldest first and that order is kept.
+func attachInProgress(journeys []exam.JourneyStats, open []*exam.UserAiExam) []*exam.UserAiExam {
+	byID := make(map[int64]int, len(journeys))
+	for i, j := range journeys {
+		byID[j.Journey.UserExamId()] = i
+	}
+
+	var attached []*exam.UserAiExam
+	for _, a := range open {
+		if a.UserExamId() == nil {
+			continue
+		}
+		i, ok := byID[*a.UserExamId()]
+		if !ok {
+			continue
+		}
+		journeys[i].InProgress = append(journeys[i].InProgress, a)
+		attached = append(attached, a)
+	}
+	return attached
 }

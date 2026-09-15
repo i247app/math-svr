@@ -53,7 +53,7 @@ func (h *ListExamAttemptsQueryHandler) Handle(ctx context.Context, q ListExamAtt
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	byID, err := h.hydrateAiExams(ctx, attempts)
+	byID, err := hydrateAiExams(ctx, h.aiExamRepo, attempts)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (h *ListExamAttemptsQueryHandler) Handle(ctx context.Context, q ListExamAtt
 // hydrateAiExams fetches the distinct question sets behind a page of
 // attempts in one query. Distinct matters: a cached exam served to the
 // same child twice would otherwise be fetched twice.
-func (h *ListExamAttemptsQueryHandler) hydrateAiExams(ctx context.Context, attempts []*exam.UserAiExam) (map[int64]*exam.AiExam, error) {
+func hydrateAiExams(ctx context.Context, aiExamRepo exam.IAiExamRepository, attempts []*exam.UserAiExam) (map[int64]*exam.AiExam, error) {
 	if len(attempts) == 0 {
 		return map[int64]*exam.AiExam{}, nil
 	}
@@ -79,7 +79,7 @@ func (h *ListExamAttemptsQueryHandler) hydrateAiExams(ctx context.Context, attem
 		ids = append(ids, a.AiExamId())
 	}
 
-	rows, err := h.aiExamRepo.ListByAiExamIds(ctx, ids)
+	rows, err := aiExamRepo.ListByAiExamIds(ctx, ids)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}

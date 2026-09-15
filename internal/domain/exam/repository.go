@@ -64,12 +64,16 @@ type ProgressPoint struct {
 }
 
 // JourneyStats is one journey as a dashboard reads it: the row that owns
-// the lifecycle, plus the PRACTICE row that shares its id once the child
-// has practised in it. Practice is nil until then, and always nil for a
-// journey type that has no practice.
+// the lifecycle, the PRACTICE row that shares its id once the child has
+// practised in it (nil until then, and always nil for a journey type
+// that has no practice), and every sitting of the journey still
+// IN_PROGRESS — of either type, oldest first — so the child can be
+// offered to finish, or pick between, what they walked away from. A
+// child may be handed a new exam while one is open, so this is a list.
 type JourneyStats struct {
-	Journey  *UserExam
-	Practice *UserExam
+	Journey    *UserExam
+	Practice   *UserExam
+	InProgress []*UserAiExam
 }
 
 // ProgressPointsParams drives ListProgressPoints. From/To bound the
@@ -118,6 +122,10 @@ type IUserAiExamRepository interface {
 	// journey view needs every sitting that fed a journey, and fetching
 	// them one by one would turn a twenty-exam journey into twenty reads.
 	ListByUserAiExamIds(ctx context.Context, userAiExamIds []int64) ([]*UserAiExam, error)
+	// ListInProgressByProfile returns every sitting of a child that is
+	// still IN_PROGRESS, oldest first. It backs the journey list, which
+	// attaches each one to its journey by user_exam_id.
+	ListInProgressByProfile(ctx context.Context, profileId int64) ([]*UserAiExam, error)
 	// FindLatestSubmittedByUserExamId returns the most recently submitted
 	// sitting of a journey, whatever its type — the base a PRACTICE round
 	// is drawn from. (nil, nil) when nothing has been submitted yet.
@@ -147,17 +155,18 @@ type ListJourneysFilter struct {
 // Create is a plain INSERT: it succeeds only when no other row holds the
 // (user, profile, type) slot — or the (id, type) pair — and reports
 // ErrJourneyConflict otherwise. Accumulate is an UPDATE by (id, type) that
-// carries ACTIVE in its WHERE clause, so totals can never be folded into
-// a journey that has ended. Either call must run in the same transaction
-// as the attempt update, or a crash between the two leaves the totals
-// disagreeing with the history.
+// carries the status the caller expects in its WHERE clause — ACTIVE for
+// a journey's own row, COMPLETE for a PRACTICE row — so totals can never
+// be folded into a row whose state moved under the caller. Either call
+// must run in the same transaction as the attempt update, or a crash
+// between the two leaves the totals disagreeing with the history.
 //
-// MarkStatus is the only way a journey ends. It ends EVERY row of the id
-// in one statement — a PRACTICE row has no life of its own — and reports
-// ErrJourneyNotActive when nothing was open, so two marks racing on one
-// journey cannot both "win". Reopen is its inverse: every ended row of
-// the id back to ACTIVE, ErrJourneyNotEnded when there was none, and
-// ErrJourneyConflict when another journey already holds the open slot.
+// MarkStatus is the only way a journey ends, and Reopen its inverse; both
+// address the row that owns the lifecycle and leave a PRACTICE row alone
+// — that row is born COMPLETE, when its journey is, and stays so.
+// MarkStatus reports ErrJourneyNotActive when nothing was open, Reopen
+// ErrJourneyNotEnded when nothing was ended and ErrJourneyConflict when
+// another journey already holds the open slot.
 type IUserExamRepository interface {
 	// FindByUserExamIdAndType reads one row of a journey. (nil, nil) when
 	// the journey has no row of that type yet — a journey with no PRACTICE
@@ -175,9 +184,9 @@ type IUserExamRepository interface {
 	ListByUserProfile(ctx context.Context, userId, profileId int64, filter ListJourneysFilter) ([]*UserExam, error)
 	// Create opens a journey with delta as its first totals.
 	Create(ctx context.Context, e *UserExam, delta StatsDelta) error
-	// Accumulate folds delta into the OPEN row (userExamId, examType) and
-	// overwrites its placement fields from e.
-	Accumulate(ctx context.Context, userExamId int64, examType string, e *UserExam, delta StatsDelta) error
+	// Accumulate folds delta into the row (userExamId, examType) while it
+	// is in expectedStatus, and overwrites its placement fields from e.
+	Accumulate(ctx context.Context, userExamId int64, examType, expectedStatus string, e *UserExam, delta StatsDelta) error
 	MarkStatus(ctx context.Context, userExamId int64, newStatus string, endedDt mtime.MathTime) error
 	Reopen(ctx context.Context, userExamId int64) error
 }

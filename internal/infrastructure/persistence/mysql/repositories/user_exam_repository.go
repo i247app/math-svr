@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
@@ -138,12 +139,11 @@ func (r *UserExamRepository) ListByUserProfile(ctx context.Context, userId, prof
 	return out, nil
 }
 
-// MarkStatus ends a journey — every open row of the id in one statement,
-// so the PRACTICE row can never outlive the ASSESSMENT row it hangs off.
-// The WHERE clause carries ACTIVE as the expected state: two marks racing
-// on the same journey both read ACTIVE, and this is what makes the loser
-// update zero rows and get exam.ErrJourneyNotActive rather than silently
-// "ending" it twice with a different status.
+// MarkStatus ends a journey. The WHERE clause carries ACTIVE as the
+// expected state: two marks racing on the same journey both read ACTIVE,
+// and this is what makes the loser update zero rows and get
+// exam.ErrJourneyNotActive rather than silently "ending" it twice with a
+// different status. A PRACTICE row is never ACTIVE and so is never hit.
 //
 // Flipping user_exam_status also flips the generated active_key to NULL,
 // which is what frees the (user, profile, type) slots for the next journey.
@@ -177,9 +177,10 @@ func (r *UserExamRepository) MarkStatus(ctx context.Context, userExamId int64, n
 	return nil
 }
 
-// Reopen puts an ended journey back in play — every COMPLETE / CANCEL
-// row of the id, so the PRACTICE row returns with its journey — and
-// clears ended_dt so the row reads as open again.
+// Reopen puts an ended journey back in play and clears ended_dt so the
+// row reads as open again. The PRACTICE row is left as it is: it is born
+// COMPLETE and must not be dragged to ACTIVE, where it would contend for
+// the (user, profile, PRACTICE) slot and read as a journey of its own.
 //
 // Two guards. The WHERE clause carries the ended states, so a reopen
 // racing a mark matches zero rows and gets ErrJourneyNotEnded rather than
@@ -194,11 +195,11 @@ func (r *UserExamRepository) Reopen(ctx context.Context, userExamId int64) error
 		SET user_exam_status = ?,
 			ended_dt         = NULL,
 			modify_dt        = ?
-		WHERE user_exam_id = ? AND user_exam_status IN (?, ?)
+		WHERE user_exam_id = ? AND req_exam_type <> ? AND user_exam_status IN (?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		string(enum.UserExamStatusActive), mtime.Now().Time,
-		userExamId, string(enum.UserExamStatusComplete), string(enum.UserExamStatusCancel))
+		userExamId, string(enum.ExamTypePractice), string(enum.UserExamStatusComplete), string(enum.UserExamStatusCancel))
 	if err != nil {
 		if isDuplicateEntry(err) {
 			return exam.ErrJourneyConflict
@@ -247,13 +248,20 @@ func (r *UserExamRepository) Create(ctx context.Context, e *exam.UserExam, delta
 	}
 
 	now := mtime.Now().Time
-	lastSubmitted := mtime.MathTimePtrToTime(e.LastSubmittedDt().Ptr())
+	lastSubmitted := nullableTime(e.LastSubmittedDt())
+
+	// A journey's own row opens ACTIVE; a PRACTICE row is born in its
+	// journey's state — COMPLETE — and the caller says which by setting it.
+	rowStatus := string(enum.UserExamStatusActive)
+	if s := e.UserExamStatus(); s != nil && *s != "" {
+		rowStatus = *s
+	}
 
 	if _, err := r.db.Exec(ctx, query,
 		e.UserExamId(), e.UserId(), e.ProfileId(), e.ReqExamType(),
 		delta.TotalQuestions, delta.CorrectNumber, delta.SkippedNumber, percentage,
 		e.ResReview(), e.ResGrade(), e.ResLevel(), lastSubmitted,
-		string(enum.UserExamStatusActive), e.CreateId(), now, now); err != nil {
+		rowStatus, e.CreateId(), now, now); err != nil {
 		if isDuplicateEntry(err) {
 			return exam.ErrJourneyConflict
 		}
@@ -271,10 +279,11 @@ func (r *UserExamRepository) Create(ctx context.Context, e *exam.UserExam, delta
 // four read what lines one and two wrote — reorder them and the
 // percentage silently lags one submission.
 //
-// The WHERE clause carries ACTIVE. A journey that ended between the
-// caller's read and this write matches zero rows and gets
-// ErrJourneyNotActive, rather than having a sitting folded into history.
-func (r *UserExamRepository) Accumulate(ctx context.Context, userExamId int64, examType string, e *exam.UserExam, delta exam.StatsDelta) error {
+// The WHERE clause carries the status the caller expects. A row whose
+// state moved between the caller's read and this write matches zero rows
+// and gets ErrJourneyNotActive, rather than having a sitting folded into
+// the wrong place.
+func (r *UserExamRepository) Accumulate(ctx context.Context, userExamId int64, examType, expectedStatus string, e *exam.UserExam, delta exam.StatsDelta) error {
 	query := `
 		UPDATE ` + userExamTable + `
 		SET res_total_questions  = res_total_questions + ?,
@@ -289,12 +298,12 @@ func (r *UserExamRepository) Accumulate(ctx context.Context, userExamId int64, e
 			modify_dt            = ?
 		WHERE user_exam_id = ? AND req_exam_type = ? AND user_exam_status = ?
 	`
-	lastSubmitted := mtime.MathTimePtrToTime(e.LastSubmittedDt().Ptr())
+	lastSubmitted := nullableTime(e.LastSubmittedDt())
 
 	result, err := r.db.Exec(ctx, query,
 		delta.TotalQuestions, delta.CorrectNumber, delta.SkippedNumber,
 		e.ResReview(), e.ResGrade(), e.ResLevel(), lastSubmitted, mtime.Now().Time,
-		userExamId, examType, string(enum.UserExamStatusActive))
+		userExamId, examType, expectedStatus)
 	if err != nil {
 		return fmt.Errorf("user exam repo accumulate: %w", err)
 	}
@@ -306,6 +315,16 @@ func (r *UserExamRepository) Accumulate(ctx context.Context, userExamId int64, e
 		return exam.ErrJourneyNotActive
 	}
 	return nil
+}
+
+// nullableTime maps the zero MathTime to SQL NULL. A journey opened at
+// hand-out has never been submitted to, and its last_submitted_dt must
+// read as "never", not as year one.
+func nullableTime(mt mtime.MathTime) *time.Time {
+	if mt.IsZero() {
+		return nil
+	}
+	return &mt.Time
 }
 
 func ModelToDomainUserExam(m *models.UserExamModel) *exam.UserExam {

@@ -100,6 +100,9 @@ func (r *memJourneyRepo) Create(ctx context.Context, e *exam.UserExam, delta exa
 	if r.conflictOnce {
 		r.conflictOnce = false
 		winner := journeyRow(e.UserExamId(), e.ReqExamType(), enum.UserExamStatusActive)
+		if s := e.UserExamStatus(); s != nil {
+			winner.SetUserExamStatus(s)
+		}
 		winner.SetResTotalQuestions(5)
 		winner.SetResCorrectNumber(5)
 		r.rows[k] = winner
@@ -111,17 +114,19 @@ func (r *memJourneyRepo) Create(ctx context.Context, e *exam.UserExam, delta exa
 	e.SetResTotalQuestions(delta.TotalQuestions)
 	e.SetResCorrectNumber(delta.CorrectNumber)
 	e.SetResSkippedNumber(delta.SkippedNumber)
-	active := string(enum.UserExamStatusActive)
-	e.SetUserExamStatus(&active)
+	if e.UserExamStatus() == nil {
+		active := string(enum.UserExamStatusActive)
+		e.SetUserExamStatus(&active)
+	}
 	r.rows[k] = e
 	r.creates = append(r.creates, e)
 	return nil
 }
 
-func (r *memJourneyRepo) Accumulate(ctx context.Context, id int64, typ string, e *exam.UserExam, delta exam.StatsDelta) error {
+func (r *memJourneyRepo) Accumulate(ctx context.Context, id int64, typ, expectedStatus string, e *exam.UserExam, delta exam.StatsDelta) error {
 	k := journeyKey{id, typ}
 	row, ok := r.rows[k]
-	if !ok || !isActive(row) {
+	if !ok || row.UserExamStatus() == nil || *row.UserExamStatus() != expectedStatus {
 		return exam.ErrJourneyNotActive
 	}
 	row.SetResTotalQuestions(row.ResTotalQuestions() + delta.TotalQuestions)
@@ -235,42 +240,81 @@ func ptr(v int64) *int64 { return &v }
 
 // ---- tests -----------------------------------------------------------------
 
-// TestSubmitAssessmentOpensJourney: the first ASSESSMENT sitting mints a
-// journey id, opens the row, pins the attempt to it, and logs every
-// answer under the ASSESSMENT type.
-func TestSubmitAssessmentOpensJourney(t *testing.T) {
-	h := newHarness(openAttempt(enum.ExamTypeAssessment, nil))
+// TestSubmitAssessmentFoldsIntoItsJourney: an ASSESSMENT sitting folds
+// into the journey it was handed out in — opened empty at hand-out — and
+// that first fold is what gives the journey its grade.
+func TestSubmitAssessmentFoldsIntoItsJourney(t *testing.T) {
+	empty := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusActive)
+	h := newHarness(openAttempt(enum.ExamTypeAssessment, ptr(subJourney)), empty)
 
 	res, err := h.handler.Handle(context.Background(), submitAll("A"))
 	if err != nil {
 		t.Fatalf("submit: %v", err)
 	}
 
-	if h.seq.calls == 0 {
-		t.Fatal("an ASSESSMENT journey must mint its id from ma_seqs")
+	if h.seq.calls != 2 { // one per detail row; the journey already exists
+		t.Fatalf("seq drawn %d times; submit must never mint a journey id", h.seq.calls)
 	}
-	if res.Stats.UserExamId() != subNextSeq || res.Stats.ReqExamType() != string(enum.ExamTypeAssessment) {
-		t.Fatalf("stats row = (%d, %s), want (%d, ASSESSMENT)", res.Stats.UserExamId(), res.Stats.ReqExamType(), subNextSeq)
+	if len(h.journeys.creates) != 0 {
+		t.Fatal("submit must never open a journey — hand-out does")
+	}
+	if res.Stats.UserExamId() != subJourney || res.Stats.ReqExamType() != string(enum.ExamTypeAssessment) {
+		t.Fatalf("stats row = (%d, %s), want (%d, ASSESSMENT)", res.Stats.UserExamId(), res.Stats.ReqExamType(), subJourney)
 	}
 	if res.Stats.ResGrade() == nil {
-		t.Fatal("an ASSESSMENT row must carry a measured grade")
+		t.Fatal("the first fold must give the journey a measured grade")
 	}
-	if got := h.attempts.submitted[0].UserExamId; got == nil || *got != subNextSeq {
-		t.Fatalf("attempt pinned to journey %v, want %d", got, subNextSeq)
+	if res.Stats.ResTotalQuestions() != 2 || res.Stats.ResCorrectNumber() != 2 {
+		t.Fatalf("totals = %d/%d, want 2/2", res.Stats.ResCorrectNumber(), res.Stats.ResTotalQuestions())
+	}
+	if got := h.attempts.submitted[0].UserExamId; got == nil || *got != subJourney {
+		t.Fatalf("attempt pinned to journey %v, want %d", got, subJourney)
 	}
 	for _, d := range h.details.written {
-		if d.UserExamId() != subNextSeq || d.ReqExamType() != string(enum.ExamTypeAssessment) {
+		if d.UserExamId() != subJourney || d.ReqExamType() != string(enum.ExamTypeAssessment) {
 			t.Fatalf("detail row logged under (%d, %s)", d.UserExamId(), d.ReqExamType())
 		}
 	}
 }
 
+// TestSubmitAssessmentRefusals: a sitting never folds into "whatever is
+// open now". Its journey must be the one it was handed out in, and that
+// journey must still be open — a late submit after the parent ended it
+// is refused, not quietly folded into the next journey.
+func TestSubmitAssessmentRefusals(t *testing.T) {
+	ended := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusComplete)
+	next := journeyRow(subJourney+1, string(enum.ExamTypeAssessment), enum.UserExamStatusActive)
+
+	tests := []struct {
+		name    string
+		attempt *exam.UserAiExam
+		seed    []*exam.UserExam
+		want    status.StatusCode
+	}{
+		{"journey ended, another one open", openAttempt(enum.ExamTypeAssessment, ptr(subJourney)), []*exam.UserExam{ended, next}, status.EXAM_JOURNEY_ALREADY_ENDED},
+		{"journey missing", openAttempt(enum.ExamTypeAssessment, ptr(subJourney)), nil, status.EXAM_JOURNEY_NOT_FOUND},
+		{"attempt handed out without a journey", openAttempt(enum.ExamTypeAssessment, nil), []*exam.UserExam{next}, status.EXAM_JOURNEY_NOT_FOUND},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			h := newHarness(tc.attempt, tc.seed...)
+			_, err := h.handler.Handle(context.Background(), submitAll("A"))
+			if got := codeOf(t, err); got != tc.want {
+				t.Fatalf("code = %d, want %d", got, tc.want)
+			}
+			if len(h.details.written) != 0 || len(h.attempts.submitted) != 0 || len(h.journeys.accumulates) != 0 {
+				t.Fatal("a refused submit must write nothing")
+			}
+		})
+	}
+}
+
 // TestSubmitPracticeOpensRowUnderJourneyId: the first PRACTICE sitting of
-// a journey opens the PRACTICE row under the journey's OWN id — no
-// sequence drawn — with no grade, and leaves the ASSESSMENT row's totals
-// untouched.
+// a COMPLETED journey opens the PRACTICE row under the journey's OWN id —
+// no sequence drawn — born COMPLETE like its journey, with no grade, and
+// leaves the ASSESSMENT row's totals untouched.
 func TestSubmitPracticeOpensRowUnderJourneyId(t *testing.T) {
-	owner := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusActive)
+	owner := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusComplete)
 	owner.SetResTotalQuestions(10)
 	owner.SetResCorrectNumber(7)
 	h := newHarness(openAttempt(enum.ExamTypePractice, ptr(subJourney)), owner)
@@ -288,6 +332,9 @@ func TestSubmitPracticeOpensRowUnderJourneyId(t *testing.T) {
 	}
 	if res.Stats.ResGrade() != nil {
 		t.Fatalf("PRACTICE row must never carry a grade, got %d", *res.Stats.ResGrade())
+	}
+	if st := res.Stats.UserExamStatus(); st == nil || *st != string(enum.UserExamStatusComplete) {
+		t.Fatalf("PRACTICE row status = %v, want COMPLETE like its journey", st)
 	}
 	if res.Stats.ResTotalQuestions() != 2 || res.Stats.ResCorrectNumber() != 0 {
 		t.Fatalf("PRACTICE totals = %d/%d, want 0/2", res.Stats.ResCorrectNumber(), res.Stats.ResTotalQuestions())
@@ -308,8 +355,8 @@ func TestSubmitPracticeOpensRowUnderJourneyId(t *testing.T) {
 // TestSubmitPracticeAccumulates: a second PRACTICE sitting folds into the
 // existing PRACTICE row.
 func TestSubmitPracticeAccumulates(t *testing.T) {
-	owner := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusActive)
-	practice := journeyRow(subJourney, string(enum.ExamTypePractice), enum.UserExamStatusActive)
+	owner := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusComplete)
+	practice := journeyRow(subJourney, string(enum.ExamTypePractice), enum.UserExamStatusComplete)
 	practice.SetResTotalQuestions(4)
 	practice.SetResCorrectNumber(1)
 	h := newHarness(openAttempt(enum.ExamTypePractice, ptr(subJourney)), owner, practice)
@@ -333,7 +380,7 @@ func TestSubmitPracticeAccumulates(t *testing.T) {
 // to open the row; the loser's INSERT collides, it re-reads, and folds
 // into the winner's row instead of failing.
 func TestSubmitPracticeSurvivesOpenRace(t *testing.T) {
-	owner := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusActive)
+	owner := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusComplete)
 	h := newHarness(openAttempt(enum.ExamTypePractice, ptr(subJourney)), owner)
 	h.journeys.conflictOnce = true
 
@@ -351,10 +398,13 @@ func TestSubmitPracticeSurvivesOpenRace(t *testing.T) {
 }
 
 // TestSubmitPracticeRefusals: the cases a PRACTICE sitting must be turned
-// away from, each without touching the log.
+// away from, each without touching the log. Practice lives on a
+// COMPLETED journey only — one still open (or reopened after the round
+// was handed out) and one cancelled are both refused.
 func TestSubmitPracticeRefusals(t *testing.T) {
-	ended := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusComplete)
-	other := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusActive)
+	open := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusActive)
+	cancelled := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusCancel)
+	other := journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusComplete)
 	other.SetProfileId(subProfile + 1)
 
 	tests := []struct {
@@ -363,7 +413,8 @@ func TestSubmitPracticeRefusals(t *testing.T) {
 		seed    []*exam.UserExam
 		want    status.StatusCode
 	}{
-		{"journey ended after hand-out", openAttempt(enum.ExamTypePractice, ptr(subJourney)), []*exam.UserExam{ended}, status.EXAM_JOURNEY_ALREADY_ENDED},
+		{"journey still open (or reopened after hand-out)", openAttempt(enum.ExamTypePractice, ptr(subJourney)), []*exam.UserExam{open}, status.EXAM_JOURNEY_NOT_COMPLETE},
+		{"journey cancelled", openAttempt(enum.ExamTypePractice, ptr(subJourney)), []*exam.UserExam{cancelled}, status.EXAM_JOURNEY_NOT_COMPLETE},
 		{"journey missing", openAttempt(enum.ExamTypePractice, ptr(subJourney)), nil, status.EXAM_JOURNEY_NOT_FOUND},
 		{"journey of another profile", openAttempt(enum.ExamTypePractice, ptr(subJourney)), []*exam.UserExam{other}, status.EXAM_JOURNEY_NOT_OWNED},
 		{"attempt drawn without a journey", openAttempt(enum.ExamTypePractice, nil), nil, status.EXAM_JOURNEY_NOT_FOUND},
@@ -386,7 +437,8 @@ func TestSubmitPracticeRefusals(t *testing.T) {
 // state guard fires for the loser of a double submit — the whole thing
 // rolls back, so the response is ALREADY_SUBMITTED and nothing is logged.
 func TestSubmitLosesAttemptRace(t *testing.T) {
-	h := newHarness(openAttempt(enum.ExamTypeAssessment, nil))
+	h := newHarness(openAttempt(enum.ExamTypeAssessment, ptr(subJourney)),
+		journeyRow(subJourney, string(enum.ExamTypeAssessment), enum.UserExamStatusActive))
 	h.attempts.loseSubmit = true
 
 	_, err := h.handler.Handle(context.Background(), submitAll("A"))

@@ -706,6 +706,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Chưa có bài để luyện tập — hãy nộp một bài trong hành trình này trước"
 	case EXAM_JOURNEY_ALREADY_ACTIVE:
 		return "Đang có một hành trình mở — hãy kết thúc nó trước khi mở lại hành trình khác"
+	case EXAM_JOURNEY_NOT_COMPLETE:
+		return "Chỉ luyện tập được khi hành trình đã hoàn thành"
 
 	default:
 		return ""

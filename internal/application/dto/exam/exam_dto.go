@@ -194,6 +194,12 @@ type ExamStats struct {
 	// submitted a practice round in it. Only an ASSESSMENT journey carries
 	// one; it shares user_exam_id and never has a grade.
 	Practice *ExamStats `json:"practice,omitempty"`
+	// InProgressExams are the journey's sittings — ASSESSMENT or PRACTICE,
+	// see each one's exam_type — that were handed out and never submitted,
+	// oldest first; absent when there are none. Each carries its questions
+	// as served, so the app can put the child back in front of the paper
+	// without another read.
+	InProgressExams []*ExamResponse `json:"in_progress_exams,omitempty"`
 }
 
 type GenerateExamRes struct {
@@ -455,10 +461,14 @@ func StatsToSingleResponse(row *domain.UserExam) *ExamStats {
 	return &all[0]
 }
 
-// JourneyStatsToResponse renders journeys with their practice rows
-// tucked inside, so the client sees one entry per journey rather than
-// two rows that happen to share an id.
-func JourneyStatsToResponse(journeys []domain.JourneyStats) []ExamStats {
+// JourneyStatsToResponse renders journeys with their practice row and
+// unfinished sittings tucked inside, so the client sees one entry per
+// journey rather than two rows that happen to share an id.
+//
+// An unfinished sitting ships with its answer key, the same as the
+// hand-out response does — the two must agree, or a child resuming an
+// exam would see a different paper than the one they started.
+func JourneyStatsToResponse(journeys []domain.JourneyStats, aiExams map[int64]*domain.AiExam) []ExamStats {
 	out := make([]ExamStats, 0, len(journeys))
 	for _, j := range journeys {
 		s := StatsToSingleResponse(j.Journey)
@@ -466,6 +476,9 @@ func JourneyStatsToResponse(journeys []domain.JourneyStats) []ExamStats {
 			continue
 		}
 		s.Practice = StatsToSingleResponse(j.Practice)
+		for _, a := range j.InProgress {
+			s.InProgressExams = append(s.InProgressExams, AttemptToResponse(a, aiExams[a.AiExamId()], true))
+		}
 		out = append(out, *s)
 	}
 	return out

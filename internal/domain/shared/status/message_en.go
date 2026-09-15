@@ -706,6 +706,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Nothing to practise yet — submit an exam in this journey first"
 	case EXAM_JOURNEY_ALREADY_ACTIVE:
 		return "A journey of this type is already open — end it before reopening another"
+	case EXAM_JOURNEY_NOT_COMPLETE:
+		return "Practice opens once the journey is complete"
 
 	default:
 		return ""
