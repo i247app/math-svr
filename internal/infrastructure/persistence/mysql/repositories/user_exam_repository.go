@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"math"
 	"time"
 
 	"math-ai.com/math-ai/internal/domain/exam"
@@ -279,7 +280,9 @@ func (r *UserExamRepository) Create(ctx context.Context, e *exam.UserExam, delta
 
 	var percentage *int
 	if delta.TotalQuestions > 0 {
-		p := int(float64(delta.CorrectNumber)/float64(delta.TotalQuestions)*100 + 0.5)
+		// Same rounding as the ROUND() in Accumulate, so the first fold and
+		// every later one agree on the percentage.
+		p := int(math.Round(float64(delta.CorrectNumber) / float64(delta.TotalQuestions) * 100))
 		percentage = &p
 	}
 
