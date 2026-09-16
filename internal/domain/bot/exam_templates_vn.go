@@ -125,8 +125,7 @@ func examVocabulary(block string) string {
 }
 
 func buildSystemExamVN(in ExamPromptInput, n int) string {
-	return fmt.Sprintf(systemExamVNHead, n, n, examProbeRuleVN(in, n)) +
-		fmt.Sprintf(systemExamVNTail, n)
+	return fmt.Sprintf(systemExamVNHead, n, n, examProbeRuleVN(in, n)) + fmt.Sprintf(systemExamVNTail, n)
 }
 
 // examPracticeBlockVN tells the model what the child just did and how
@@ -214,10 +213,10 @@ func buildUserExamVN(in ExamPromptInput, n int) string {
 	return strings.TrimRight(out.String(), "\n")
 }
 
-func buildUserExamVN_V2(in ExamPromptInput, n int) string {
+func buildUserExamVN_V2(in ExamPromptInput, _ int) string {
 	var out strings.Builder
 
-	fmt.Fprintf(&out, "current_grade: %d (%s)\n", in.Grade, ExamTitle(in.Grade))
+	fmt.Fprintf(&out, "\ncurrent_grade: %d (%s)\n", in.Grade, ExamTitle(in.Grade))
 
 	return strings.TrimRight(out.String(), "\n")
 }
