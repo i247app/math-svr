@@ -70,7 +70,7 @@ func TestBuildExamPromptRejectsBadInput(t *testing.T) {
 }
 
 func TestBuildExamPromptAssessment(t *testing.T) {
-	_, user, err := BuildExamPrompt(ExamPromptInput{
+	system, user, err := BuildExamPrompt(ExamPromptInput{
 		ExamType:     enum.ExamTypeAssessment,
 		Grade:        1,
 		NumQuestions: 10,
@@ -81,12 +81,26 @@ func TestBuildExamPromptAssessment(t *testing.T) {
 		t.Fatalf("BuildExamPrompt: %v", err)
 	}
 
+	// The probe rule is a fixed part of the system prompt, phrased against
+	// current_grade; the user message binds that name to a number.
+	for _, want := range []string{
+		"Tạo CHÍNH XÁC 10 câu",
+		"Q3 và Q6 là DÒ TRẦN",
+		`Q3, Q6: question_grade = current_grade + 1`,
+		`Các câu còn lại: question_grade = current_grade`,
+		`"short_text": "Phép cộng và phép trừ trong phạm vi 20"`,
+		`"questions":[`,
+		"Nếu current_grade = 5, Q3/Q6 trong phạm vi lớp 6",
+		"Không tiết lộ Q3/Q6",
+		"đúng 10 câu, 4 đáp án/câu",
+	} {
+		if !strings.Contains(system, want) {
+			t.Errorf("system prompt is missing %q", want)
+		}
+	}
 	for _, want := range []string{
 		"GRADE PROFILE",
-		"câu 3 và câu 6",
-		`"question_grade" = 2`,
-		`"question_grade" = 1`,
-		`"title" phải đúng bằng: Lớp 1`,
+		"current_grade: 1 (Lớp 1)",
 		"Học kỳ 1",
 		"Cánh diều",
 	} {
@@ -94,11 +108,37 @@ func TestBuildExamPromptAssessment(t *testing.T) {
 			t.Errorf("user prompt is missing %q", want)
 		}
 	}
+	// The title slot is in the schema but no rule pins its value: the
+	// server stamps ExamTitle over whatever the model wrote.
+	if strings.Contains(user, "title") {
+		t.Error("the user message must not carry a title rule; the server stamps the title")
+	}
 
 	// The authoritative block must precede everything else, or the schema
 	// example teaches its own difficulty by imitation.
-	if strings.Index(user, "GRADE PROFILE") > strings.Index(user, "QUY TẮC CẤP LỚP") {
-		t.Error("GRADE PROFILE must come before the per-question grade rules")
+	if strings.Index(user, "GRADE PROFILE") > strings.Index(user, "current_grade:") {
+		t.Error("GRADE PROFILE must open the user message")
+	}
+}
+
+// TestBuildExamPromptProbeRuleFollowsLength: the probe rule names only the
+// positions that exist in a shorter round, and drops to a flat rule when
+// none do — the same list NormalizeQuestionBands enforces afterwards.
+func TestBuildExamPromptProbeRuleFollowsLength(t *testing.T) {
+	system, _, err := BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeAssessment, Grade: 1, NumQuestions: 5})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+	if !strings.Contains(system, "Q3 là DÒ TRẦN") || strings.Contains(system, "Q6") {
+		t.Error("a 5-question round probes at Q3 only")
+	}
+
+	system, _, err = BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeAssessment, Grade: 1, NumQuestions: 2})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+	if !strings.Contains(system, `Mọi câu: question_grade = current_grade`) || strings.Contains(system, "DÒ TRẦN") {
+		t.Error("a round too short to probe must state the flat rule")
 	}
 }
 
@@ -134,7 +174,7 @@ func TestExamPromptUsesExamVocabulary(t *testing.T) {
 // — the drill stretches the child the same way the exam did — and the
 // practice block defers to it rather than contradicting it.
 func TestBuildExamPromptPracticeProbes(t *testing.T) {
-	_, user, err := BuildExamPrompt(ExamPromptInput{
+	system, user, err := BuildExamPrompt(ExamPromptInput{
 		ExamType:     enum.ExamTypePractice,
 		Grade:        4,
 		NumQuestions: 10,
@@ -143,12 +183,15 @@ func TestBuildExamPromptPracticeProbes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildExamPrompt: %v", err)
 	}
-	for _, want := range []string{"CÂU DÒ TRẦN (bắt buộc với bài PRACTICE)", "câu 3 và câu 6", `"question_grade" = 5`, "kể cả câu dò"} {
+	if !strings.Contains(system, "Q3 và Q6 là DÒ TRẦN") {
+		t.Error("a PRACTICE round must keep the probe rule")
+	}
+	for _, want := range []string{"current_grade: 4 (Lớp 4)", "kể cả câu dò trần"} {
 		if !strings.Contains(user, want) {
 			t.Errorf("PRACTICE prompt lacks %q", want)
 		}
 	}
-	if strings.Contains(user, `"question_grade" của mọi câu đều là 4`) {
+	if strings.Contains(system, `Mọi câu: question_grade = current_grade`) {
 		t.Error("a PRACTICE round must not flatten every question to the requested grade")
 	}
 }
@@ -159,16 +202,19 @@ func TestBuildExamPromptPracticeProbes(t *testing.T) {
 // up at Q3/Q6.
 func TestBuildExamPromptGradeReviewProbes(t *testing.T) {
 	six := 6
-	_, user, err := BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeGrade, Grade: 4, NumQuestions: 10, Level: &six})
+	system, user, err := BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeGrade, Grade: 4, NumQuestions: 10, Level: &six})
 	if err != nil {
 		t.Fatalf("BuildExamPrompt: %v", err)
 	}
-	for _, want := range []string{"CÂU DÒ TRẦN (bắt buộc với bài GRADE)", `"question_grade" = 5`, "LEVEL PROFILE — cường độ bậc 6"} {
+	if !strings.Contains(system, "Q3 và Q6 là DÒ TRẦN") {
+		t.Error("a GRADE review must keep the probe rule")
+	}
+	for _, want := range []string{"current_grade: 4 (Lớp 4)", "LEVEL PROFILE — cường độ bậc 6"} {
 		if !strings.Contains(user, want) {
 			t.Errorf("GRADE prompt lacks %q", want)
 		}
 	}
-	if strings.Contains(user, `"question_grade" của mọi câu đều là 4`) {
+	if strings.Contains(system, `Mọi câu: question_grade = current_grade`) {
 		t.Error("a GRADE review must not flatten every question to the requested grade")
 	}
 }
@@ -241,8 +287,26 @@ func TestBuildExamPromptHasNoLevelAxis(t *testing.T) {
 			t.Errorf("prompt still carries the level axis: %q", stale)
 		}
 	}
-	if !strings.Contains(user, `"title" phải đúng bằng: Mẫu giáo`) {
-		t.Error("kindergarten title should be the bare band name")
+	if !strings.Contains(user, "current_grade: 0 (Mẫu giáo)") {
+		t.Error("kindergarten binds current_grade to 0 under its band name")
+	}
+}
+
+// TestExamTitle: the stored title is the band name and nothing else — the
+// server stamps it now that the model is no longer asked for one.
+func TestExamTitle(t *testing.T) {
+	tests := []struct {
+		grade int
+		want  string
+	}{
+		{0, "Mẫu giáo"},
+		{1, "Lớp 1"},
+		{5, "Lớp 5"},
+	}
+	for _, tc := range tests {
+		if got := ExamTitle(tc.grade); got != tc.want {
+			t.Errorf("ExamTitle(%d) = %q, want %q", tc.grade, got, tc.want)
+		}
 	}
 }
 
@@ -260,8 +324,8 @@ func TestBuildExamPromptLevelIsForGradeReviewOnly(t *testing.T) {
 			t.Errorf("GRADE prompt with level lacks %q", want)
 		}
 	}
-	if i, j := strings.Index(user, "LEVEL PROFILE"), strings.Index(user, "Hãy tạo bài kiểm tra"); i > j {
-		t.Error("the level block must come before the request line, right under the grade profile")
+	if i, j := strings.Index(user, "current_grade:"), strings.Index(user, "LEVEL PROFILE"); i > j {
+		t.Error("the level block must follow the grade it refines")
 	}
 
 	_, user, err = BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeAssessment, Grade: 3, NumQuestions: 10, Level: &seven})

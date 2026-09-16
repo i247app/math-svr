@@ -2,7 +2,6 @@ package bot
 
 import (
 	"fmt"
-	"strings"
 
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -14,17 +13,14 @@ import (
 // child's work. That is why this file has no Grade/Reinforce counterpart
 // to the quiz prompts it replaces.
 //
-// GRADE is the one axis that steers the output today: it decides the
-// content (number range, operations, icon policy). Its block is rendered at
-// the TOP of the user message so it outranks the schema example, which
-// otherwise teaches its own difficulty by imitation.
+// GRADE is the axis that decides the content (number range, operations,
+// icon policy). Its block opens the user message so it outranks the schema
+// example in the system prompt, which otherwise teaches its own difficulty
+// by imitation. LEVEL refines intensity inside that grade and is rendered
+// for a GRADE review only — see level_profile.go.
 //
-// There is deliberately no LEVEL axis. The schema reserves nullable
-// req_level / current_level / question_level columns, but the teaching team
-// has not defined what a level IS or how it should move, and a difficulty
-// scale the product cannot explain must not be handed to the model as if
-// it could. The columns stay NULL until that rule exists; add the axis
-// back here when it does, not before.
+// The system prompt is the terse rule sheet in exam_templates_vn.go; the
+// user message carries only what varies per request.
 
 // ExamPromptInput is everything the generation prompt consumes. It mirrors
 // the req_* columns on ma_ai_exams, so what shaped a prompt can always be
@@ -144,55 +140,18 @@ func BuildExamPrompt(in ExamPromptInput) (system string, user string, err error)
 	if n <= 0 {
 		n = examDefaultNumQuestions
 	}
-	return buildSystemExamVN(n), buildUserExamVN(in, n), nil
+	return buildSystemExamVN(in, n), buildUserExamVN_V2(in, n), nil
 }
 
-// examBandTitle is the exact string the model must put in "title". It is
-// fully determined by the grade, so handing the model the finished string
-// removes the only reason it had to invent a difficulty label of its own.
-func examBandTitle(grade int) string {
+// ExamTitle is the stored ai_title for a round at this grade: the band
+// name, and nothing else. The schema shows the model a title slot, but the
+// server overwrites it with this — the title was always a pure function of
+// the grade, and stamping it is cheaper and steadier than a prompt rule
+// telling the model not to decorate it.
+func ExamTitle(grade int) string {
 	band := gradeBandName(QuizLanguageVietnamese, GradeLevel(grade))
 	if band == "" {
 		band = fmt.Sprintf("Lớp %d", grade)
 	}
 	return band
-}
-
-// examContextVN renders only the curriculum lines that carry a value, so a
-// request with no semester or program still produces a coherent brief.
-func examContextVN(in ExamPromptInput) string {
-	var b strings.Builder
-	if v := strings.TrimSpace(in.Semester); v != "" {
-		fmt.Fprintf(&b, "- Học kỳ: %s\n", v)
-	}
-	if v := strings.TrimSpace(in.Program); v != "" {
-		fmt.Fprintf(&b, "- Chương trình học: %s\n", v)
-	}
-	return strings.TrimRight(b.String(), "\n")
-}
-
-// examProbeBlockVN spells out the probe rule, naming the exact positions
-// and the exact band they must reach. The server re-stamps
-// question_grade afterwards regardless, so this block is about getting the
-// CONTENT right — a probe question that is merely labelled harder, without
-// being harder, measures nothing.
-func examProbeBlockVN(in ExamPromptInput, n int) string {
-	positions := ProbePositions(in.ExamType, n)
-	if len(positions) == 0 {
-		return fmt.Sprintf("- Mọi câu đều ở đúng cấp lớp trên, và \"question_grade\" của mọi câu đều là %d.", in.Grade)
-	}
-
-	probe := ProbeGrade(in.Grade)
-	labels := make([]string, 0, len(positions))
-	for _, p := range positions {
-		labels = append(labels, fmt.Sprintf("câu %d", p))
-	}
-
-	probeName := gradeBandName(QuizLanguageVietnamese, GradeLevel(probe))
-	probeRange := gradeBandRange(QuizLanguageVietnamese, GradeLevel(probe))
-	line := fmt.Sprintf(`- CÂU DÒ TRẦN (bắt buộc với bài %s): %s phải khó hơn ĐÚNG MỘT BẬC, tức ở mức %s — %s
-- Hai câu đó có "question_grade" = %d; TẤT CẢ các câu còn lại có "question_grade" = %d.
-- Không đánh dấu, không chú thích, không nói cho học sinh biết câu nào là câu khó hơn.`,
-		in.ExamType, strings.Join(labels, " và "), probeName, probeRange, probe, in.Grade)
-	return line
 }

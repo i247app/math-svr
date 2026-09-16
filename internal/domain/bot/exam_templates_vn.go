@@ -14,34 +14,38 @@ import (
 //
 // JSON keys stay English — the parser, the DB columns and the mobile
 // client all share one shape regardless of the prose language.
+//
+// The system prompt is deliberately terse. It is sent on every generation
+// call, so each line here is paid for in tokens on every round; the rules
+// that survived are the ones the server cannot enforce after the fact.
+// Everything the server DOES enforce — question_grade, question_level,
+// the title — is stamped in code afterwards regardless of what the model
+// wrote.
 
-// systemExamVNTmpl carries three %d slots, all the same question count.
-const systemExamVNTmpl = `Bạn là trợ lý tạo bài kiểm tra toán cho trẻ mẫu giáo và học sinh tiểu học Việt Nam (Mẫu giáo, Lớp 1-5).
+// systemExamVNHead opens the system prompt. Slots, in order: question
+// count, last question number, the probe rule (examProbeRuleVN).
+const systemExamVNHead = `Bạn là AI tạo bài kiểm tra Toán cho trẻ Mẫu giáo và Lớp 1–5 Việt Nam.
+Tạo CHÍNH XÁC %d câu trắc nghiệm theo GRADE PROFILE.
 
-Hãy tạo CHÍNH XÁC %d câu hỏi trắc nghiệm theo GRADE PROFILE mà người dùng cung cấp.
+### RULES
 
-QUY TẮC NỘI DUNG:
-- Mỗi câu có ĐÚNG 4 phương án A, B, C, D.
-- Chỉ có một phương án đúng.
-- Với câu ARITHMETIC, "question_name" chỉ chứa số và toán tử (+, -, *, /, ^, dấu ngoặc, "?") — không lời văn, không LaTeX, không chữ tiếng Việt. Các loại câu khác tuân theo VISUAL QUESTION RULES ở cuối prompt.
-- Dùng phân số ASCII như "1/2", không dùng "½".
-- Không lặp lại câu hỏi.
+- Mỗi câu có đúng 4 đáp án A, B, C, D, chỉ 1 đáp án đúng.
+- Không lặp câu hỏi/phép tính.
+- Độ khó tăng dần từ Q1 → Q%d.
+- Mỗi câu có question_type, chọn type phù hợp và đa dạng theo GRADE PROFILE.
+%s
+- Chỉ được sử dụng các emoji sau: 🍎 🍊 🍐 🍌 🍉 🍇 🍓 🍒 🍑 🍍 🥝 🥕 🌽 🍅 🥦 🥒 🍭 🍬 🍪 🍩 🎂 🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🐤 🦆 🦉 🐟 🐠 🐡 🦋 🐝 🐞 🐢 🚗 🚕 🚌 🚎 🚲 🛵 🚂 ✈️ 🚁 🚢 ⭐️ 🎈 ⚽️ 🧸 📚 ✏️ 🖍️ 🎁 🔴 🟡 🟢 🔵 🟠 🟣 🟥 🟨 🟩 🟦 🟧 🟪
+- Không dùng emoji để trang trí hoặc đặt ngẫu nhiên trong câu hỏi.
+- Với câu hỏi số thuần túy như ARITHMETIC, SEQUENCE hoặc câu chỉ yêu cầu đọc/so sánh số, không dùng emoji.
+- Nếu sử dụng emoji, mỗi câu chỉ dùng 1 loại emoji, có thể lặp lại emoji đó trong cùng câu.
+- Phân số dùng ASCII (1/2, 3/4), không dùng Unicode/LaTeX.
+- Câu tính toán trực tiếp: question_name chỉ chứa số, toán tử + - * / ^, dấu ngoặc và ?, không chữ, emoji hoặc LaTeX.
+- Nội dung phải phù hợp độ tuổi và không vượt GRADE PROFILE.
+- right_answer_label và right_answer_content phải khớp chính xác.
 
-QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
-- "right_answer_label" là nhãn (A/B/C/D) của phương án đúng.
-- "right_answer_content" là GIÁ TRỊ chữ trong "content" của phương án đúng — phải khớp ký tự với "content" tương ứng (vd. "8", "1/2").
-- "question_topic" là một mã kỹ năng ngắn bằng tiếng Việt viết thường, ví dụ: cộng trong phạm vi 100, trừ có nhớ, nhân số có một chữ số, chia số có một chữ số, phân số cơ bản, so sánh phân số, số thập phân cơ bản, giá trị theo vị trí, bài toán có lời, phép toán hỗn hợp, hình học cơ bản, đo lường, thời gian và tiền tệ, đếm. Nếu thực sự không phù hợp, tạo mã mới ngắn gọn (≤32 ký tự).
-- "question_grade" là cấp lớp mà RIÊNG câu đó nhắm tới, dạng số nguyên (0 = mẫu giáo, 1-5 = lớp 1 đến lớp 5, 6 = trên lớp 5). Xem quy tắc cấp lớp trong phần người dùng cung cấp.
+### OUTPUT
 
-QUY TẮC TITLE & SHORT_TEXT:
-- "title" PHẢI đúng bằng chuỗi mà phần người dùng chỉ định, không thêm bớt ký tự nào. KHÔNG tự thêm cấp độ hay mức độ khó, KHÔNG đặt chủ đề toán vào "title".
-- "short_text" là tiêu đề ngắn gọn, cụ thể, mô tả ĐÚNG chủ đề toán của bộ câu hỏi (ví dụ: "Phép cộng và phép trừ trong phạm vi 100", "Phân số cơ bản và so sánh").
-- "short_text" tối đa 80 ký tự, viết bằng tiếng Việt, KHÔNG kèm cấp lớp, KHÔNG kèm loại bài, KHÔNG dùng cụm chung chung như "Bài kiểm tra Toán", "Bài luyện tập" hay "Quiz".
-
-QUY TẮC ĐẦU RA:
-- CHỈ trả về JSON object theo cấu trúc bên dưới. Không lời dẫn, không khung markdown, không bình luận thêm.
-- "questions" phải có đúng %d phần tử, "question_number" từ 1..%d theo thứ tự.
-
+Chỉ trả về JSON hợp lệ, không Markdown, không giải thích, không text ngoài JSON.
 CẤU TRÚC:
 {
   "title": "Lớp 1",
@@ -49,22 +53,52 @@ CẤU TRÚC:
   "questions":[
     {
       "question_number": 1,
-      "question_type": "ARITHMETIC",
-      "question_name": "5 + 3 = ?",
+      "question_type": "COUNT",
+      "question_name": "🍎 🍎 🍎 + 🍎 🍎 = ?",
       "answers": [
-        {"label": "A", "content": "8"},
-        {"label": "B", "content": "9"},
-        {"label": "C", "content": "10"},
-        {"label": "D", "content": "7"}
+        {"label": "A", "content": "5"},
+        {"label": "B", "content": "4"},
+        {"label": "C", "content": "6"},
+        {"label": "D", "content": "3"}
       ],
       "right_answer_label": "A",
-      "right_answer_content": "8",
+      "right_answer_content": "5",
       "question_topic": "phép cộng trong phạm vi 20",
       "question_grade": 1
     }
   ]
 }
 `
+
+// systemExamVNTail closes the system prompt. One slot: question count.
+const systemExamVNTail = `
+Tự kiểm tra trước khi trả kết quả: đúng %d câu, 4 đáp án/câu, 1 đáp án đúng, đúng question_grade, không trùng, đúng độ khó và đúng GRADE PROFILE.`
+
+// examProbeRuleVN renders the probe rule in terms of current_grade, which
+// the user message then binds to a number. The positions come from
+// ProbePositions so the prompt and the server-side re-stamp always name
+// the same questions: the prompt asks, the server enforces.
+func examProbeRuleVN(in ExamPromptInput, n int) string {
+	positions := ProbePositions(in.ExamType, n)
+	if len(positions) == 0 {
+		return `- Mọi câu: question_grade = current_grade.`
+	}
+
+	labels := make([]string, 0, len(positions))
+	for _, p := range positions {
+		labels = append(labels, fmt.Sprintf("Q%d", p))
+	}
+	and := strings.Join(labels, " và ")
+	list := strings.Join(labels, ", ")
+	slash := strings.Join(labels, "/")
+
+	return fmt.Sprintf(`- %s là DÒ TRẦN, khó hơn current_grade đúng 1 grade:
+  - %s: question_grade = current_grade + 1
+  - Các câu còn lại: question_grade = current_grade
+  - Nếu current_grade = %d, %s trong phạm vi lớp %d.
+- Không tiết lộ %s là câu dò trần.`,
+		and, list, enum.ExamGradeMax, slash, GradeProbeCeiling, slash)
+}
 
 // examVocabulary rewrites the shared grade-profile block into the exam's
 // field names.
@@ -76,8 +110,7 @@ CẤU TRÚC:
 // band, which is seven more strings to keep in step with the first seven.
 //
 // difficulty is dropped rather than renamed: the exam schema has no
-// per-question difficulty field at all (see the package note on the absent
-// LEVEL axis in exam_prompts.go), and an exemplar carrying one would teach
+// per-question difficulty field, and an exemplar carrying one would teach
 // the model to emit a key nothing reads.
 var examVocabularyRenames = strings.NewReplacer(
 	`"right_answer"`, `"right_answer_label"`,
@@ -91,11 +124,9 @@ func examVocabulary(block string) string {
 	return exemplarDifficultyRe.ReplaceAllString(examVocabularyRenames.Replace(block), "")
 }
 
-func buildSystemExamVN(n int) string {
-	// The visual rules are shared with the quiz prompts and still name
-	// "topic"; the exam vocabulary is applied to them for the same reason
-	// it is applied to the exemplar.
-	return fmt.Sprintf(systemExamVNTmpl, n, n, n) + examVocabulary(visualQuestionRulesVN)
+func buildSystemExamVN(in ExamPromptInput, n int) string {
+	return fmt.Sprintf(systemExamVNHead, n, n, examProbeRuleVN(in, n)) +
+		fmt.Sprintf(systemExamVNTail, n)
 }
 
 // examPracticeBlockVN tells the model what the child just did and how
@@ -116,14 +147,14 @@ func examPracticeBlockVN(b *PracticeBrief, n int) string {
 			fmt.Fprintf(&sb, "  • %s — đáp án đúng: %s; học sinh chọn: %s\n",
 				strings.TrimSpace(w.Stem), w.RightAnswer, w.ChildAnswer)
 		}
-		fmt.Fprintf(&sb, "- YÊU CẦU: giữ nguyên QUY TẮC CẤP LỚP ở trên (kể cả câu dò); cả %d câu tập trung vào các chủ đề đã sai (ưu tiên chủ đề sai nhiều hơn).\n", n)
+		fmt.Fprintf(&sb, "- YÊU CẦU: giữ nguyên RULES về question_grade (kể cả câu dò trần); cả %d câu tập trung vào các chủ đề đã sai (ưu tiên chủ đề sai nhiều hơn).\n", n)
 		sb.WriteString("- Cùng kỹ năng với câu đã sai nhưng KHÔNG lặp lại nguyên văn: đổi số, đổi ngữ cảnh.\n")
 		if len(b.StrongTopics) > 0 {
 			fmt.Fprintf(&sb, "- Có thể xen 1-2 câu ở chủ đề học sinh đã làm đúng để củng cố: %s.", joinOr(b.StrongTopics, ""))
 		}
 	default: // ADVANCE
 		fmt.Fprintf(&sb, "- Học sinh vừa làm ĐÚNG toàn bộ, ở các chủ đề: %s.\n", joinOr(b.StrongTopics, "(không rõ chủ đề)"))
-		fmt.Fprintf(&sb, "- YÊU CẦU: giữ nguyên QUY TẮC CẤP LỚP ở trên (kể cả câu dò); ngoài câu dò, cả %d câu KHÔNG lên cấp lớp cao hơn.\n", n)
+		fmt.Fprintf(&sb, "- YÊU CẦU: giữ nguyên RULES về question_grade (kể cả câu dò trần); ngoài câu dò, cả %d câu KHÔNG lên cấp lớp cao hơn.\n", n)
 		sb.WriteString("- Nhưng phải khó hơn TRONG cấp lớp đó: số lớn hơn trong phạm vi cho phép, nhiều bước tính hơn, có bài toán có lời;\n")
 		sb.WriteString("  và/hoặc chuyển sang các chủ đề khác trong chương trình mà học sinh chưa được kiểm tra.")
 	}
@@ -138,36 +169,55 @@ func joinOr(items []string, fallback string) string {
 	return strings.Join(items, ", ")
 }
 
-// buildUserExamVN assembles the per-request brief. Order matters: the
-// authoritative grade profile comes first so it outranks the schema example
-// the system prompt ended on, then the grade rule for individual questions,
-// then the softer curriculum context.
+// examContextVN renders only the curriculum lines that carry a value, so a
+// request with no semester or program still produces a coherent brief.
+func examContextVN(in ExamPromptInput) string {
+	var b strings.Builder
+	if v := strings.TrimSpace(in.Semester); v != "" {
+		fmt.Fprintf(&b, "- Học kỳ: %s\n", v)
+	}
+	if v := strings.TrimSpace(in.Program); v != "" {
+		fmt.Fprintf(&b, "- Chương trình học: %s\n", v)
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+// buildUserExamVN assembles the per-request brief. The GRADE PROFILE
+// comes first because it is the authority every rule defers to; then
+// current_grade, which binds the probe rule in the system prompt to a
+// number; then the optional refinements (intensity, practice brief) and
+// the curriculum context.
 func buildUserExamVN(in ExamPromptInput, n int) string {
-	out := ""
+	var out strings.Builder
 
 	if block := gradeProfileBlockByLevel(QuizLanguageVietnamese, GradeLevel(in.Grade)); block != "" {
-		out += examVocabulary(block) + "\n\n"
+		out.WriteString(examVocabulary(block) + "\n\n")
 	}
-	// The intensity block sits right under the grade profile it refines,
-	// and before the schema example, for the same reason the grade block
-	// does: the example teaches difficulty by imitation otherwise.
+	fmt.Fprintf(&out, "current_grade: %d (%s)\n", in.Grade, ExamTitle(in.Grade))
+
+	// The intensity block refines the grade profile it follows and must
+	// not be read as licence to leave the grade.
 	if in.ExamType == enum.ExamTypeGrade && in.Level != nil {
 		if block := levelProfileBlock(*in.Level); block != "" {
-			out += block + "\n\n"
+			out.WriteString("\n" + block + "\n")
 		}
 	}
 
-	out += fmt.Sprintf("Hãy tạo bài kiểm tra loại %s gồm %d câu.\n\n", in.ExamType, n)
-	out += "QUY TẮC CẤP LỚP CHO TỪNG CÂU:\n" + examProbeBlockVN(in, n) + "\n"
-
 	if in.ExamType == enum.ExamTypePractice && in.Practice != nil {
-		out += "\n" + examPracticeBlockVN(in.Practice, n) + "\n"
+		out.WriteString("\n" + examPracticeBlockVN(in.Practice, n) + "\n")
 	}
 
 	if ctx := examContextVN(in); ctx != "" {
-		out += "\nThông tin chương trình (chỉ để chọn chủ đề, KHÔNG dùng để tăng hay giảm độ khó):\n" + ctx + "\n"
+		out.WriteString("\nThông tin chương trình (chỉ để chọn chủ đề, KHÔNG dùng để tăng hay giảm độ khó):\n" + ctx + "\n")
 	}
 
-	out += fmt.Sprintf("\n\"title\" phải đúng bằng: %s", examBandTitle(in.Grade))
-	return out
+	return strings.TrimRight(out.String(), "\n")
+}
+
+func buildUserExamVN_V2(in ExamPromptInput, n int) string {
+	var out strings.Builder
+
+	fmt.Fprintf(&out, "current_grade: %d (%s)\n", in.Grade, ExamTitle(in.Grade))
+
+	return strings.TrimRight(out.String(), "\n")
 }

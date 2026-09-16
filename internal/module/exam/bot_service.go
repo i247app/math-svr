@@ -122,8 +122,11 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	}
 	questions = StampQuestionLevel(questions, in.Level)
 
+	// The title is a pure function of the grade, so the server stamps it
+	// rather than trusting whatever the model put in the schema slot; the
+	// short_text is the model's own summary of the round and is kept.
 	return &generateExamOutput{
-		Title:     gen.Title,
+		Title:     domainBot.ExamTitle(in.Grade),
 		ShortText: gen.ShortText,
 		Questions: questions,
 	}, nil

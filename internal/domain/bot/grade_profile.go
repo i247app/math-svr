@@ -298,11 +298,12 @@ func gradeProfileBlock(lang QuizLanguage, gradeLabel string) string {
 // a number. The exam flow takes this entrance: its grade arrives as an
 // int on the request, so routing it through a label and back would only
 // add a chance to mis-parse.
-func gradeProfileBlockByLevel(lang QuizLanguage, level GradeLevel) string {
-	p, ok := gradeProfiles[level]
+func gradeProfileBlockByLevel(lang QuizLanguage, gradeLevel GradeLevel) string {
+	p, ok := gradeProfiles[gradeLevel]
 	if !ok {
 		return ""
 	}
+
 	if lang == QuizLanguageEnglish {
 		floor := p.floorEN
 		if floor == "" {
@@ -317,6 +318,7 @@ func gradeProfileBlockByLevel(lang QuizLanguage, level GradeLevel) string {
 - Example question at the CORRECT difficulty for %s:
 %s`, p.nameEN, p.rangeEN, p.skillsEN, p.iconLineEN, floor, p.nameEN, p.exemplar)
 	}
+
 	floor := p.floorVN
 	if floor == "" {
 		floor = defaultFloorVN
