@@ -197,7 +197,7 @@ func buildUserExamVN(in ExamPromptInput, n int) string {
 	// The intensity block refines the grade profile it follows and must
 	// not be read as licence to leave the grade.
 	if in.ExamType == enum.ExamTypeGrade && in.Level != nil {
-		if block := levelProfileBlock(*in.Level); block != "" {
+		if block := levelProfileBlock(QuizLanguageVietnamese, *in.Level); block != "" {
 			out.WriteString("\n" + block + "\n")
 		}
 	}
@@ -209,14 +209,6 @@ func buildUserExamVN(in ExamPromptInput, n int) string {
 	if ctx := examContextVN(in); ctx != "" {
 		out.WriteString("\nThông tin chương trình (chỉ để chọn chủ đề, KHÔNG dùng để tăng hay giảm độ khó):\n" + ctx + "\n")
 	}
-
-	return strings.TrimRight(out.String(), "\n")
-}
-
-func buildUserExamVN_V2(in ExamPromptInput, _ int) string {
-	var out strings.Builder
-
-	fmt.Fprintf(&out, "\ncurrent_grade: %d (%s)\n", in.Grade, ExamTitle(in.Grade))
 
 	return strings.TrimRight(out.String(), "\n")
 }

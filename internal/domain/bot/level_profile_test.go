@@ -17,10 +17,10 @@ func TestLevelProfilesComplete(t *testing.T) {
 			continue
 		}
 		fields := map[string]string{
-			"steps":      p.steps,
-			"rangeSpot":  p.rangeSpot,
-			"form":       p.form,
-			"distractor": p.distractor,
+			"stepsVN": p.stepsVN, "stepsEN": p.stepsEN,
+			"rangeSpotVN": p.rangeSpotVN, "rangeSpotEN": p.rangeSpotEN,
+			"formVN": p.formVN, "formEN": p.formEN,
+			"distractorVN": p.distractorVN, "distractorEN": p.distractorEN,
 		}
 		for name, value := range fields {
 			if strings.TrimSpace(value) == "" {
@@ -59,30 +59,40 @@ func TestClampLevel(t *testing.T) {
 
 func TestLevelProfileBlock(t *testing.T) {
 	t.Run("unknown level yields no block", func(t *testing.T) {
-		if got := levelProfileBlock(0); got != "" {
-			t.Errorf("expected empty block for level 0, got %q", got)
-		}
-		if got := levelProfileBlock(11); got != "" {
-			t.Errorf("expected empty block for level 11, got %q", got)
+		for _, lang := range []QuizLanguage{QuizLanguageVietnamese, QuizLanguageEnglish} {
+			if got := levelProfileBlock(lang, 0); got != "" {
+				t.Errorf("%s: expected empty block for level 0, got %q", lang, got)
+			}
+			if got := levelProfileBlock(lang, 11); got != "" {
+				t.Errorf("%s: expected empty block for level 11, got %q", lang, got)
+			}
 		}
 	})
 
 	t.Run("block carries the band's own wording", func(t *testing.T) {
-		block := levelProfileBlock(9)
-		if !strings.Contains(block, levelProfiles[9].steps) {
-			t.Error("block does not contain the level's steps wording")
+		block := levelProfileBlock(QuizLanguageVietnamese, 9)
+		if !strings.Contains(block, levelProfiles[9].stepsVN) {
+			t.Error("VN block does not contain the level's steps wording")
 		}
-		if !strings.Contains(block, levelProfiles[9].distractor) {
-			t.Error("block does not contain the level's distractor wording")
+		if !strings.Contains(block, levelProfiles[9].distractorVN) {
+			t.Error("VN block does not contain the level's distractor wording")
+		}
+		block = levelProfileBlock(QuizLanguageEnglish, 9)
+		if !strings.Contains(block, levelProfiles[9].stepsEN) {
+			t.Error("EN block does not contain the level's steps wording")
+		}
+		if strings.Contains(block, levelProfiles[9].stepsVN) {
+			t.Error("EN block leaks the Vietnamese wording")
 		}
 	})
 
 	t.Run("block subordinates itself to the grade", func(t *testing.T) {
 		// The whole point of the ranking sentence: without it the model
 		// reaches into the next grade to satisfy a high level.
-		block := levelProfileBlock(10)
-		if !strings.Contains(block, "GRADE PROFILE") {
-			t.Error("block never defers to GRADE PROFILE")
+		for _, lang := range []QuizLanguage{QuizLanguageVietnamese, QuizLanguageEnglish} {
+			if block := levelProfileBlock(lang, 10); !strings.Contains(block, "GRADE PROFILE") {
+				t.Errorf("%s block never defers to GRADE PROFILE", lang)
+			}
 		}
 	})
 }

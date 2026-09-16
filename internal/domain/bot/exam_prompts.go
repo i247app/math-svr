@@ -19,13 +19,23 @@ import (
 // by imitation. LEVEL refines intensity inside that grade and is rendered
 // for a GRADE review only — see level_profile.go.
 //
-// The system prompt is the terse rule sheet in exam_templates_vn.go; the
-// user message carries only what varies per request.
+// The system prompt is a terse rule sheet, written once per prompt
+// language (exam_templates_vn.go, exam_templates_en.go); the user message
+// carries only what varies per request. The LANGUAGE OF THE PROMPT is a
+// cost decision — English instructions tokenise shorter than Vietnamese
+// ones — and is separate from the language of the round: the questions,
+// topics and short_text the model writes are Vietnamese in both, because
+// the product serves Vietnamese children and ma_ai_exams cannot record a
+// row as being anything else.
 
 // ExamPromptInput is everything the generation prompt consumes. It mirrors
 // the req_* columns on ma_ai_exams, so what shaped a prompt can always be
 // read back off the stored row.
 type ExamPromptInput struct {
+	// Language is the language the INSTRUCTIONS are written in. Empty
+	// means Vietnamese. It does not change the language of the generated
+	// round, which is always Vietnamese — see the package note.
+	Language QuizLanguage
 	ExamType enum.ExamType
 	// Grade is the content band, 0..5 (0 = mẫu giáo).
 	Grade        int
@@ -136,11 +146,20 @@ func BuildExamPrompt(in ExamPromptInput) (system string, user string, err error)
 	if in.ExamType == enum.ExamTypePractice && in.Practice == nil {
 		return "", "", fmt.Errorf("bot: a PRACTICE prompt needs a practice brief")
 	}
+	lang := QuizLanguageVietnamese
+	if in.Language != "" {
+		if lang, err = normalizeLanguage(in.Language); err != nil {
+			return "", "", err
+		}
+	}
 	n := in.NumQuestions
 	if n <= 0 {
 		n = examDefaultNumQuestions
 	}
-	return buildSystemExamVN(in, n), buildUserExamVN_V2(in, n), nil
+	if lang == QuizLanguageEnglish {
+		return buildSystemExamEN(in, n), buildUserExamEN(in, n), nil
+	}
+	return buildSystemExamVN(in, n), buildUserExamVN(in, n), nil
 }
 
 // ExamTitle is the stored ai_title for a round at this grade: the band
@@ -151,7 +170,7 @@ func BuildExamPrompt(in ExamPromptInput) (system string, user string, err error)
 func ExamTitle(grade int) string {
 	band := gradeBandName(QuizLanguageVietnamese, GradeLevel(grade))
 	if band == "" {
-		band = fmt.Sprintf("Lớp %d", grade)
+		band = fmt.Sprintf("Grade %d", grade)
 	}
 	return band
 }
