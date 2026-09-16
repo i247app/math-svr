@@ -25,20 +25,19 @@ import (
 // written back to the profile: ma_profiles.grade_id records the class
 // the child attends, which is a different fact.
 type UserExam struct {
-	id          int64
-	userExamId  int64
-	userId      int64
-	profileId   int64
-	reqExamType string
+	id           int64
+	userExamId   int64
+	userId       int64
+	profileId    int64
+	reqExamType  string
+	currentGrade *int
+	currentLevel *int
 
 	resTotalQuestions  int
 	resCorrectNumber   int
 	resSkippedNumber   int
 	resScorePercentage *int
-
-	resReview    *string
-	currentGrade *int
-	currentLevel *int
+	resReview          *string
 
 	lastSubmittedDt mtime.MathTime
 	endedDt         mtime.MathTime

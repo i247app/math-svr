@@ -146,12 +146,17 @@ func (s UserExamStatusType) IsEnding() bool {
 	return s == UserExamStatusComplete || s == UserExamStatusCancel
 }
 
+// IsActive reports whether a status finishes a journey.
+func (s UserExamStatusType) IsActive() bool {
+	return s == UserExamStatusActive
+}
+
 // IsMarkable reports whether a status is one a client may MARK a journey
 // with: an ending, or ACTIVE to reopen an ended journey. DELETED is
 // deliberately excluded: it is a soft-delete, not a lifecycle move, and
 // reaches the row through a different path.
 func (s UserExamStatusType) IsMarkable() bool {
-	return s.IsEnding() || s == UserExamStatusActive
+	return s.IsEnding() || s.IsActive()
 }
 
 func (s UserExamStatusType) String() string { return string(s) }
