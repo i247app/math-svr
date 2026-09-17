@@ -87,10 +87,10 @@ type ListExamsReq struct {
 // along on the ASSESSMENT journey they belong to (ExamStats.Practice) —
 // so asking for it is rejected rather than answered with orphan rows.
 type GetExamStatsReq struct {
-	UserID    *int64  `json:"-"`
-	ProfileID int64   `json:"profile_id"`
-	ExamType  *string `json:"exam_type,omitempty"`
-	Status    *string `json:"status,omitempty"`
+	UserID            *int64  `json:"-"`
+	ProfileID         int64   `json:"profile_id"`
+	ExamType          *string `json:"exam_type,omitempty"`
+	JourneyExamStatus *string `json:"status,omitempty"`
 }
 
 // MarkExamJourneyReq ends one journey. Status is COMPLETE or CANCEL; the

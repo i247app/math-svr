@@ -73,19 +73,25 @@ func (r *AiExamRepository) FindByAiExamId(ctx context.Context, aiExamId int64) (
 // caller falls through to a real generation, which is an ordinary outcome
 // and not an error.
 //
-// ORDER BY RAND() picks among every variant stored under the tag instead
-// of always returning the oldest. That is deliberate: several rows share a
-// tag precisely so a child is not handed the identical exam every time.
-// The cost is acceptable because the candidate set for one tag is tiny
-// (single digits) and the index on req_extras narrows to it before the
-// sort. Revisit if a tag ever accumulates thousands of variants.
-func (r *AiExamRepository) FindReusableByExtras(ctx context.Context, extras string) (*exam.AiExam, error) {
+// The NOT EXISTS drops every set the profile already holds an attempt on,
+// whatever that attempt's status: an exam handed out and abandoned was
+// still seen. When the child has sat every variant under the tag the read
+// misses, the caller generates, and the new set joins the pool — so the
+// pool grows exactly as fast as its heaviest user needs it to.
+//
+// ORDER BY RAND() picks among the remaining variants instead of always
+// returning the oldest. The cost is acceptable because the index on
+// req_extras narrows to one tag's rows before the sort. Revisit if a tag
+// ever accumulates thousands of variants.
+func (r *AiExamRepository) FindReusableByExtras(ctx context.Context, extras string, excludeProfileId int64) (*exam.AiExam, error) {
 	if extras == "" {
 		return nil, nil
 	}
-	args := append(aiExamActiveArgs(), extras)
+	args := append(aiExamActiveArgs(), extras, excludeProfileId)
 	query := `SELECT ` + aiExamColumns + ` FROM ` + aiExamTable + ` a WHERE ` +
-		aiExamActiveWhere + ` AND a.req_extras = ? ORDER BY RAND() LIMIT 1`
+		aiExamActiveWhere + ` AND a.req_extras = ?` +
+		` AND NOT EXISTS (SELECT 1 FROM ` + userAiExamTable + ` u WHERE u.ai_exam_id = a.ai_exam_id AND u.profile_id = ?)` +
+		` ORDER BY RAND() LIMIT 1`
 
 	m, err := scanAiExam(r.db.QueryRow(ctx, query, args...))
 	if err != nil {

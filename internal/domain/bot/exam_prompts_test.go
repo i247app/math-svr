@@ -345,10 +345,10 @@ func TestBuildExamPromptLevelIsForGradeReviewOnly(t *testing.T) {
 	}
 }
 
-// TestBuildExamPromptEnglish: the English template is the same rule sheet
-// in a cheaper tokenisation. It must keep every server-facing name, bind
-// current_grade the same way, and — the one rule the Vietnamese template
-// does not need — tell the model that the round itself is Vietnamese.
+// TestBuildExamPromptEnglish: the English template is a different rule
+// sheet, not a translation — it carries the emoji whitelist and the
+// accuracy rules — but it must keep every server-facing name, bind
+// current_grade the same way, and tell the model the round is Vietnamese.
 func TestBuildExamPromptEnglish(t *testing.T) {
 	six := 6
 	system, user, err := BuildExamPrompt(ExamPromptInput{
@@ -356,8 +356,6 @@ func TestBuildExamPromptEnglish(t *testing.T) {
 		ExamType:     enum.ExamTypeGrade,
 		Grade:        2,
 		NumQuestions: 10,
-		Semester:     "Học kỳ 1",
-		Program:      "Cánh diều",
 		Level:        &six,
 	})
 	if err != nil {
@@ -366,51 +364,36 @@ func TestBuildExamPromptEnglish(t *testing.T) {
 
 	for _, want := range []string{
 		"Create EXACTLY 10 multiple-choice questions",
-		"Q3 and Q6 are CEILING PROBES",
+		"across the 10 questions",
+		"from Question 1 → Question 10",
+		"Question 3 and Question 6 are ability ceiling-probe questions",
 		"Q3, Q6: question_grade = current_grade + 1",
-		"If current_grade = 5, Q3/Q6 stay within grade 6",
-		"is written in Vietnamese",
+		"If current_grade = 5, Q3/Q6 must still remain within Grade 6 scope",
+		"EMOJI RULES",
+		"MATHEMATICAL ACCURACY RULES",
+		"must be written in Vietnamese",
 		`"short_text": "Phép cộng và phép trừ trong phạm vi 20"`,
-		"Self-check before answering: exactly 10 questions",
 	} {
 		if !strings.Contains(system, want) {
 			t.Errorf("EN system prompt is missing %q", want)
 		}
 	}
-	for _, want := range []string{
-		"GRADE PROFILE — AUTHORITATIVE",
-		"current_grade: 2 (Lớp 2)",
-		"LEVEL PROFILE — intensity 6 of 10",
-		"Semester: Học kỳ 1",
-		"Curriculum: Cánh diều",
-	} {
-		if !strings.Contains(user, want) {
-			t.Errorf("EN user prompt is missing %q", want)
-		}
+	if want := "CURRENT GRADE\n\ncurrent_grade: 2 (Lớp 2)"; user != want {
+		t.Errorf("EN user message = %q, want %q", user, want)
 	}
-	for _, stale := range []string{"DÒ TRẦN", "BẮT BUỘC", "cường độ", "Học kỳ:"} {
+	for _, stale := range []string{"DÒ TRẦN", "BẮT BUỘC", "cường độ", "Tự kiểm tra"} {
 		if strings.Contains(system+user, stale) {
 			t.Errorf("EN prompt leaks Vietnamese instruction text %q", stale)
 		}
 	}
 
-	// A PRACTICE brief renders in English but quotes the child's answers
-	// as served.
-	_, user, err = BuildExamPrompt(ExamPromptInput{
-		Language: QuizLanguageEnglish, ExamType: enum.ExamTypePractice, Grade: 1, NumQuestions: 10,
-		Practice: &PracticeBrief{
-			Mode:       enum.PracticeModeRetryWeak,
-			Wrong:      []PracticeItem{{Stem: "7 - 4 = ?", Topic: "phép trừ", RightAnswer: "3", ChildAnswer: "4"}},
-			WeakTopics: []string{"phép trừ"},
-		},
-	})
+	// A short round names only the probes that exist.
+	system, _, err = BuildExamPrompt(ExamPromptInput{Language: QuizLanguageEnglish, ExamType: enum.ExamTypeAssessment, Grade: 1, NumQuestions: 5})
 	if err != nil {
 		t.Fatalf("BuildExamPrompt: %v", err)
 	}
-	for _, want := range []string{"PRACTICE ROUND", "got 1 questions wrong", "7 - 4 = ?", "correct: 3; child chose: 4", "NEVER a verbatim repeat"} {
-		if !strings.Contains(user, want) {
-			t.Errorf("EN RETRY_WEAK prompt lacks %q", want)
-		}
+	if !strings.Contains(system, "Question 3 are ability ceiling-probe") || strings.Contains(system, "Q6") {
+		t.Error("a 5-question EN round probes at Q3 only")
 	}
 
 	// Empty language keeps the Vietnamese template; garbage is refused.

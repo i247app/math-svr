@@ -191,15 +191,15 @@ func ValidateGetExamStats(ctx context.Context, req *dto.GetExamStatsReq) error {
 	if req.ProfileID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
 	}
-	if req.Status != nil {
-		normalized := strings.ToUpper(strings.TrimSpace(*req.Status))
+	if req.JourneyExamStatus != nil {
+		normalized := strings.ToUpper(strings.TrimSpace(*req.JourneyExamStatus))
 		if normalized == "" {
-			req.Status = nil
+			req.JourneyExamStatus = nil
 		} else {
 			if !enum.UserExamStatusType(normalized).IsValid() {
 				return errs.NewError(ctx, status.EXAM_INVALID_JOURNEY_STATUS, nil, ErrJourneyStatusInvalid)
 			}
-			req.Status = &normalized
+			req.JourneyExamStatus = &normalized
 		}
 	}
 	examType, err := normalizeExamType(ctx, req.ExamType)

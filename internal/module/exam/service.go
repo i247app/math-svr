@@ -132,7 +132,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 		UserExamID:  openJourney,
 	}
 
-	cached, err := s.findReusableExam(ctx, tag)
+	cached, err := s.findReusableExam(ctx, tag, profile.ProfileId())
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +377,7 @@ func (s *Service) GetExamStats(ctx context.Context, req *dto.GetExamStatsReq) (*
 		UserID:    profile.UserId(),
 		ProfileID: profile.ProfileId(),
 		ExamType:  req.ExamType,
-		Status:    req.Status,
+		Status:    req.JourneyExamStatus,
 	})
 	if err != nil {
 		return nil, err
