@@ -54,8 +54,8 @@ func buildReview(in Input) string {
 	}
 
 	accuracy := in.LifetimeCorrect * 100 / in.LifetimeTotal
-	body := fmt.Sprintf("Đã trả lời %d câu, đúng %d câu (%d%%).",
-		in.LifetimeTotal, in.LifetimeCorrect, accuracy)
+	body := fmt.Sprintf("Đã trả lời (%d/%d) câu đúng (%d%%).",
+		in.LifetimeCorrect, in.LifetimeTotal, accuracy)
 
 	if in.LifetimeSkipped > 0 {
 		body += fmt.Sprintf(" Còn bỏ trống %d câu.", in.LifetimeSkipped)
