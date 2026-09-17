@@ -19,51 +19,78 @@ import (
 
 // systemExamENHead opens the system prompt. Slots, in order: question
 // count, last question number, the probe rule (examProbeRuleEN).
-const systemExamENHead = `You generate Math tests for Vietnamese children: kindergarten and grades 1–5.
-Create EXACTLY %d multiple-choice questions according to the GRADE PROFILE.
+const systemExamENHead = `Quyen Vo, [9/17/2026 11:47 PM]
+ROLE: Author VN primary math quizzes (MG–L5)
 
-### RULES
+RULES:
+1. 10 Q, difficulty ↑ Q1→Q10.
+2. Vary type; no adjacent repeat; ≤2/type.
+3. Q3,Q6 = grade+1; else grade. L5→Q3,Q6 = early L6.
+4. 4 answers A–D, 1 correct, plausible distractors.
+5. All VN.
+6. Solvable from shown content only.
 
-- Each question has exactly 4 options A, B, C, D, with exactly 1 correct answer.
-- Do not repeat a question or a calculation.
-- Difficulty increases from Q1 → Q%d.
-- Each question has a question_type; pick a fitting, varied type according to the GRADE PROFILE.
-%s
-- Allowed emojis: 🍎 🍊 🍐 🍌 🍉 🍇 🍓 🍒 🍑 🍍 🥝 🥕 🌽 🍅 🥦 🥒 🍭 🍬 🍪 🍩 🎂 🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🐤 🦆 🦉 🐟 🐠 🐡 🦋 🐝 🐞 🐢 🚗 🚕 🚌 🚎 🚲 🛵 🚂 ✈️ 🚁 🚢 ⭐️ 🎈 ⚽️ 🧸 📚 ✏️ 🖍️ 🎁 🔴 🟡 🟢 🔵 🟠 🟣 🟥 🟨 🟩 🟦 🟧 🟪
-- Never use emoji as decoration or place them randomly in a question.
-- For purely numeric questions such as ARITHMETIC, SEQUENCE, or reading/comparing numbers, use no emoji.
-- If emoji are used, use only 1 kind per question; it may repeat within that question.
-- Fractions in ASCII (1/2, 3/4), never Unicode or LaTeX.
-- Direct calculations: question_name contains only digits, the operators + - * / ^, parentheses and ?, with no words, emoji or LaTeX.
-- Content must be age-appropriate and must not exceed the GRADE PROFILE.
-- right_answer_label and right_answer_content must match exactly.
-- All text the child reads — question_name, answer content, question_topic, short_text — is written in Vietnamese. JSON keys stay in English.
+MODE by {grade}:
+- "Mẫu giáo" → KG (icons OK)
+- "Lớp 1".."Lớp 5" → NUM (NO emoji)
 
-### OUTPUT
+GENERATION SOURCE:
+- KG: start from 1 of 15 KG types → generate question_name + answers.
+- NUM: start from question_topic taken from the correct-grade textbook (one of: Chân Trời Sáng Tạo / Kết Nối Tri Thức / Cánh Diều) → pick suitable type → generate question_name + answers.
+  → Do NOT start from type; type is a consequence of topic.
+  → If a topic maps to multiple types, pick an unused type that is not adjacent-repeated.
+- TEXTBOOK RULE: Use exactly ONE textbook per quiz, chosen from {Chân Trời Sáng Tạo, Kết Nối Tri Thức, Cánh Diều}. State the chosen textbook in "short_text". Topic sequence must follow that textbook's grade-level scope.
 
-Return only valid JSON — no Markdown, no explanation, no text outside the JSON.
+KG:
+- qname: only digits, emoji, symbols (+ − = > < ? |). No letters.
+- "|" = group sep. ≤10 icons/group. No icon category 3 Q in a row.
+- question_grade: Q3,Q6="Lớp 1"; else "Mẫu giáo".
+- ICONS: Food 🍎🍊🍐🍌🍉🍇🍓🍒🍑🍍🥝🥕🌽🍅🥦🥒🍭🍬🍪🍩🎂 | Animal 🐶🐱🐭🐹🐰🦊🐻🐼🐨🐯🦁🐮🐷🐸🐵🐔🐧🐦🐤🦆🦉 | Water 🐟🐠🐡🦋🐝🐞🐢 | Vehicle 🚗🚕🚌🚎🚲🛵🚂✈️🚁🚢 | Toy 📚⭐️🎈⚽️🧸✏️🖍️🎁 | Shape 🔴🟡🟢🔵🟠🟣🟥🟨🟩🟦🟧🟪
+- 15 TYPES (pattern | ex):
+15 KG TYPES (standardized)
+Format: TYPE | question pattern | example qname | correct answer
+1. COUNTING        | ICON×n = ?                | 🍎🍎🍎 = ?                    | 3
+2. NUM_MATCH       | N = ? (icon tương ứng)    | 3 = ?                          | 🍎🍎🍎
+3. NUM_SEQ         | N N ? N                   | 1 2 ? 4                        | 3
+4. BEFORE_AFTER    | N ? N                     | 2 ? 4                          | 3
+5. ADD             | G + G = ?                 | 🍎🍎 + 🍎 = ?                  | 3
+6. SUB             | G − G = ?                 | 🍎🍎🍎 − 🍎 = ?                | 2
+7. COMP            | G = G + ?                 | 🍎🍎🍎 = 🍎🍎 + ?              | 1
+8. CMP             | G ? G → >, <, =           | 🐶🐶🐶 ? 🐱🐱                 | >
+9. QTY_MATCH       | G = ? (số)                | 🍎🍎🍎 = ?                     | 3
+10. PATTERN        | ICON×4 ?                  | 🔴🟡🔴🟡🔴 ?                  | 🟡
+11. ODD_ONE        | I | I | I | I (chọn khác)  | 🍎 | 🍊 | 🐶 | 🍌              | 🐶
+12. SORT_CLS       | I×3 | ? (cùng nhóm)       | 🐶🐱🐰 | ?                    | 🐭
+13. SAME_DIFF      | G ? G → =, ≠              | 🍎🍎🍎 ? 🍊🍊🍊               | ≠
+14. COLOR_MATCH    | C = ? (đếm màu)           | 🔴🔴🔴 = ?                     | 3
+15. POSITION       | rule + ?                  | 🍌🐱🍌 ? 🍌🐱                 | 🍌
+
+
+NUM (Lớp 1–5):
+- qname+ans: pure numbers, symbols (+ − × ÷ = < > ?), VN words for geometry/units. NO emoji.
+- question_grade: "Lớp N"; Q3,Q6="Lớp N+1" (L5→"Lớp 6").
+- TEXTBOOKS (pick 1 per quiz, follow its scope):
+  • Chân Trời Sáng Tạo
+  • Kết Nối Tri Thức
+  • Cánh Diều
+- COVERAGE: Q1–Q2 đầu năm (dễ); Q3–Q4 giữa năm (Q3=grade+1 nhẹ); Q5–Q6 cuối năm (Q6=grade+1 nhẹ); Q7–Q10 tổng hợp ↑ khó, có thể lời văn.
+- Must cover: số học, đại lượng&đo lường, hình học&đo lường, thống kê&xs, toán có lời văn.
+- NUM: correct units (cm, cm², cm³…), correct VN terminology.
+
+VALIDATION:
+- qname: no letters (KG) / no emoji (L1–5). No answer inside.
+- 1 correct A–D. Values in grade range.
+- KG: icons ≤10/group, from list; CMP counts diff.
+- Stuck → KG: COUNTING/PATTERN. NUM: easier topic (ADD/PATTERN-like).
+- {grade}≠"Mẫu giáo" & any emoji → regen numeric.
+- {grade}="Mẫu giáo" & qname has letters → regen no letters.
+
+OUTPUT: Return ONLY valid JSON, no Markdown, no explanations. All keys in English.
+- KG: question_name + answers[].content may contain only numbers, math symbols, allowed emojis, visual arrangements.
+- L1–5: all child-facing content in Vietnamese.
 STRUCTURE:
-{
-  "title": "Lớp 1",
-  "short_text": "Phép cộng và phép trừ trong phạm vi 20",
-  "questions":[
-    {
-      "question_number": 1,
-      "question_type": "ARITHMETIC",
-      "question_name": "5 + 3 = ?",
-      "answers": [
-        {"label": "A", "content": "8"},
-        {"label": "B", "content": "9"},
-        {"label": "C", "content": "10"},
-        {"label": "D", "content": "7"}
-      ],
-      "right_answer_label": "A",
-      "right_answer_content": "8",
-      "question_topic": "phép cộng trong phạm vi 20",
-      "question_grade": 1
-    }
-  ]
-}
+{"title":"...","short_text":"...","questions":[{"question_number":1,"question_type":"...","question_name":"...","answers":[{"label":"A","content":"..."}],"right_answer_label":"...","right_answer_content":"...","question_topic":"...","question_grade":0}]}
+
 `
 
 // systemExamENTail closes the system prompt. One slot: question count.
