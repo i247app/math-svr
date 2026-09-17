@@ -377,7 +377,7 @@ func (s *Service) GetExamStats(ctx context.Context, req *dto.GetExamStatsReq) (*
 		UserID:    profile.UserId(),
 		ProfileID: profile.ProfileId(),
 		ExamType:  req.ExamType,
-		Status:    req.Status,
+		Status:    req.JourneyExamStatus,
 	})
 	if err != nil {
 		return nil, err

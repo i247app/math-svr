@@ -229,29 +229,29 @@ func TestValidateGetExamStatsStatusFilter(t *testing.T) {
 
 	t.Run("blank status means no filter", func(t *testing.T) {
 		blank := "  "
-		req := &dto.GetExamStatsReq{ProfileID: 1, Status: &blank}
+		req := &dto.GetExamStatsReq{ProfileID: 1, JourneyExamStatus: &blank}
 		if err := ValidateGetExamStats(ctx, req); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if req.Status != nil {
-			t.Errorf("blank status should be dropped, got %q", *req.Status)
+		if req.JourneyExamStatus != nil {
+			t.Errorf("blank status should be dropped, got %q", *req.JourneyExamStatus)
 		}
 	})
 
 	t.Run("known status is normalised", func(t *testing.T) {
 		raw := "active"
-		req := &dto.GetExamStatsReq{ProfileID: 1, Status: &raw}
+		req := &dto.GetExamStatsReq{ProfileID: 1, JourneyExamStatus: &raw}
 		if err := ValidateGetExamStats(ctx, req); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if req.Status == nil || *req.Status != "ACTIVE" {
-			t.Errorf("Status = %v, want ACTIVE", req.Status)
+		if req.JourneyExamStatus == nil || *req.JourneyExamStatus != "ACTIVE" {
+			t.Errorf("Status = %v, want ACTIVE", req.JourneyExamStatus)
 		}
 	})
 
 	t.Run("unknown status is rejected", func(t *testing.T) {
 		raw := "OPEN"
-		req := &dto.GetExamStatsReq{ProfileID: 1, Status: &raw}
+		req := &dto.GetExamStatsReq{ProfileID: 1, JourneyExamStatus: &raw}
 		if code := codeOf(t, ValidateGetExamStats(ctx, req)); code != status.EXAM_INVALID_JOURNEY_STATUS {
 			t.Errorf("code = %d, want EXAM_INVALID_JOURNEY_STATUS", code)
 		}
