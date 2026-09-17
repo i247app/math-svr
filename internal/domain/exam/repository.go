@@ -94,10 +94,13 @@ type ProgressPointsParams struct {
 //
 // FindReusableByExtras is the cache read. It returns (nil, nil) on a miss
 // so the caller can fall through to a real generation without treating a
-// miss as an error.
+// miss as an error. A set the given profile has already sat — any
+// ma_user_ai_exams row of theirs pointing at it, submitted or not — is
+// never a candidate: a child must not meet a paper twice, and the child
+// who triggered a generation holds an attempt on it from that moment.
 type IAiExamRepository interface {
 	FindByAiExamId(ctx context.Context, aiExamId int64) (*AiExam, error)
-	FindReusableByExtras(ctx context.Context, extras string) (*AiExam, error)
+	FindReusableByExtras(ctx context.Context, extras string, excludeProfileId int64) (*AiExam, error)
 	// CountByExtras reports how many question sets already sit under one
 	// cache tag. The caller uses it to decide whether the pool is deep
 	// enough to serve from — see the variant threshold in module/exam.

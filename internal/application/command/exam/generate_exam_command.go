@@ -13,6 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // NewAiExamContent is a freshly generated question set on its way to
@@ -263,6 +264,7 @@ func (h *GenerateExamCommandHandler) resolveAiExam(ctx context.Context, repos tr
 	e.SetAiQuestionsJson(cmd.NewContent.QuestionsJSON)
 	active := string(enum.AiExamStatusActive)
 	e.SetAiExamStatus(&active)
+	e.SetCreateId(utils.ToInt64Ptr(cmd.UserID))
 
 	saved, err := repos.AiExam.Create(ctx, e)
 	if err != nil {

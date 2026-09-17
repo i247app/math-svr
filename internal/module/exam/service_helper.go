@@ -28,9 +28,10 @@ import (
 const MinCacheVariants = 100
 
 // findReusableExam returns a stored question set only once the tag's pool
-// is deep enough to pick from. A miss is an ordinary outcome, not an
-// error — the caller generates instead.
-func (s *Service) findReusableExam(ctx context.Context, tag string) (*examDomain.AiExam, error) {
+// is deep enough to pick from, and never one this child has sat before.
+// A miss is an ordinary outcome, not an error — the caller generates
+// instead, and that generation deepens the pool for everyone.
+func (s *Service) findReusableExam(ctx context.Context, tag string, profileID int64) (*examDomain.AiExam, error) {
 	log := logger.From(ctx)
 
 	variants, err := s.aiExamRepo.CountByExtras(ctx, tag)
@@ -42,9 +43,12 @@ func (s *Service) findReusableExam(ctx context.Context, tag string) (*examDomain
 		return nil, nil
 	}
 
-	cached, err := s.aiExamRepo.FindReusableByExtras(ctx, tag)
+	cached, err := s.aiExamRepo.FindReusableByExtras(ctx, tag, profileID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if cached == nil {
+		log.Infof("exam.cache.exhausted tag=%s profile=%d variants=%d", tag, profileID, variants)
 	}
 	return cached, nil
 }
