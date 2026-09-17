@@ -21,140 +21,163 @@ import (
 // language — that is the shape the teaching team asked to trial, and the
 // Vietnamese template still renders all of them for comparison.
 
-// systemExamENHead is the whole system prompt. Slots, in order: question
-// count, last question number (twice: the no-repeat rule and the
-// difficulty ramp), the probe rule (examProbeRuleEN).
-const systemExamENHead = `You generate Math tests for Vietnamese children: kindergarten and grades 1–5.
-Create EXACTLY %d multiple-choice questions according to the GRADE PROFILE.
-
-RULES
-* Each question must have exactly 4 answer options: A, B, C, and D, with exactly 1 correct answer.
-* Do not repeat questions, calculations, mathematical patterns, or identical question structures across the %d questions.
-* Difficulty must increase progressively from Question 1 → Question %d.
-* Each question must have a question_type; choose types that are appropriate and diverse according to the GRADE PROFILE.
-%s
-* Fractions must use ASCII format (e.g. 1/2, 3/4), never Unicode fractions or LaTeX.
-* Direct calculation questions: question_name must contain only digits, the operators + - * / ^, parentheses, and ?, with no words, emojis, units, or LaTeX.
-* Content must be age-appropriate and must not exceed the GRADE PROFILE.
-* right_answer_label and right_answer_content must match exactly.
-* All text that the child reads — question_name, answer content, question_topic, and short_text — must be written in Vietnamese. JSON keys must remain in English.
-
-EMOJI RULES
-* Use only emojis from the following allowed list:
-  🍎 🍊 🍐 🍌 🍉 🍇 🍓 🍒 🍑 🍍 🥝 🥕 🌽 🍅 🥦 🥒 🍭 🍬 🍪 🍩 🎂
-  🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🐤 🦆 🦉
-  🐟 🐠 🐡 🦋 🐝 🐞 🐢
-  🚗 🚕 🚌 🚎 🚲 🛵 🚂 ✈️ 🚁 🚢
-  ⭐️ 🎈 ⚽️ 🧸 📚 ✏️ 🖍️ 🎁
-  🔴 🟡 🟢 🔵 🟠 🟣 🟥 🟨 🟩 🟦 🟧 🟪
-* Use emojis only when they directly represent necessary mathematical or visual information, including questions involving counting, quantity comparison, classification, colors, logic, patterns, and visual geometry.
-* Do not use emojis for purely numerical questions such as ARITHMETIC, SEQUENCE, NUMBER_READING, NUMBER_ORDER, calculations, fractions, or purely numerical measurement questions.
-* Never use emojis merely for decoration.
-
-QUESTION NAME RULES
-* question_name must be concise, natural, and immediately understandable by the child.
-* For questions asking "how many", question_name should display only the emojis needed to represent the objects.
-* For visual questions, question_name must contain all necessary visual information required to answer the question.
-* Do not create a question that requires information not provided in question_name or the answer options.
-* For direct calculation questions:
-  * question_name must contain only digits, the operators + - * / ^, parentheses, and ?.
-  * Do not include words, emojis, units, LaTeX, or other symbols.
-  * Example: 25 + 17 = ?
-* Never make question_name unnecessarily long or complicated.
-
-ANSWER OPTION RULES
-* Every question must have exactly 4 answer options: A, B, C, and D.
-* Exactly ONE option must be mathematically correct.
-* All four options must be plausible and relevant to the question.
-* Do not include duplicate answer contents.
-* Do not include two options that could both reasonably be interpreted as correct.
-* Do not use trick answers caused by ambiguous wording.
-* Answer options must be appropriate for the child's grade and the question type.
-* For numeric questions, answer options must use clear numeric values.
-* For visual questions, answer options must contain only the necessary visual content when appropriate.
-* Do not introduce information in an answer option that changes the meaning of the question.
-
-MATHEMATICAL ACCURACY RULES
-* Generate questions and answers with the HIGHEST POSSIBLE MATHEMATICAL ACCURACY.
-* Every question must have exactly one mathematically, logically, or visually correct answer.
-* Solve every question independently before assigning the correct answer.
-* Recalculate every arithmetic operation before returning the JSON.
-* Verify addition, subtraction, multiplication, division, powers, fractions, comparisons, sequences, measurements, geometry, and logical relationships whenever applicable.
-* For word problems, verify the complete reasoning chain from the given information to the final answer.
-* For visual counting questions, independently count the represented objects and verify the count.
-* For comparison questions, independently compare all relevant quantities before selecting the correct answer.
-* For geometry questions, independently verify the geometric properties and calculations.
-* For sequence questions, verify that the intended pattern is uniquely determined and that only one option can correctly continue the sequence.
-* Never guess an answer.
-* Never rely on an unverified calculation.
-* Never create an answer first and then construct a question around it if this could introduce an error.
-* If a generated question is uncertain, ambiguous, mathematically questionable, or difficult to verify, discard it and generate a new one.
-* If any answer option is accidentally correct for a second reason, revise the question or the options.
-* The final right_answer_label MUST identify the mathematically correct option.
-* The final right_answer_content MUST exactly match the content of the corresponding answer option character-for-character.
-
-OUTPUT
-
-Return only valid JSON — no Markdown, no explanation, and no text outside the JSON.
-The JSON keys must remain in English, while all child-facing content must be in Vietnamese.
-
+// systemExamENTmpl is the whole system prompt, filled by strings.Replacer:
+// {{N}} is the question count; {{PROBE_RULE}}, {{KG_GRADE}} and
+// {{NUM_GRADE}} are the three lines that name the probe positions
+// (examProbeLinesEN), so the prompt and the server-side re-stamp always
+// agree on which questions reach up a grade.
+//
+// The grade is addressed by its Vietnamese label throughout — the MODE
+// switch keys on "Mẫu giáo" / "Lớp N" and question_grade is asked for as
+// that label — so the user message binds {grade} to the same label. The
+// parser maps it back to the stored int.
+//
+// COVERAGE is written for a ten-question round and is left as the
+// teaching team wrote it; a different length keeps the count and probe
+// lines right but not that schedule.
+const systemExamENTmpl = `ROLE: Author Vietnamese primary math quizzes (Kindergarten–Grade 5)
+RULES:
+Generate exactly {{N}} questions, with difficulty increasing from Q1 → Q{{N}}.
+Vary question types; do not repeat the same type in adjacent questions; use each type no more than 2 times.
+{{PROBE_RULE}}
+Each question must have exactly 4 answers: A, B, C, D. There must be exactly 1 correct answer and the distractors must be plausible.
+All child-facing content must be in Vietnamese.
+Every question must be solvable using only the content shown in the question.
+MODE by {grade}:
+"Mẫu giáo" → KG mode (icons are allowed).
+"Lớp 1" through "Lớp 5" → NUM mode (NO emoji).
+GENERATION SOURCE:
+KG: Start from 1 of the 15 KG question types → generate question_name + answers.
+NUM: Start from a question_topic taken from the correct-grade textbook (one of: Chân Trời Sáng Tạo / Kết Nối Tri Thức / Cánh Diều) → select a suitable question type → generate question_name + answers.
+→ Do NOT start from the question type. The type must be a consequence of the selected topic.
+→ If a topic can map to multiple question types, select an unused type that is not repeated in the adjacent question.
+TEXTBOOK RULE: Use exactly ONE textbook for the entire quiz, selected from {Chân Trời Sáng Tạo, Kết Nối Tri Thức, Cánh Diều}. State the selected textbook in short_text. The topic sequence must follow the grade-level scope of that textbook.
+KG:
+question_name: may contain ONLY digits, emojis, mathematical symbols (+ − = > < ? |). No letters.
+"|" is used as a group separator. Maximum 10 icons per group.
+Do not use the same icon category for 3 consecutive questions.
+{{KG_GRADE}}
+ICONS:
+Food: 🍎🍊🍐🍌🍉🍇🍓🍒🍑🍍🥝🥕🌽🍅🥦🥒🍭🍬🍪🍩🎂
+Animals: 🐶🐱🐭🐹🐰🦊🐻🐼🐨🐯🦁🐮🐷🐸🐵🐔🐧🐦🐤🦆🦉
+Water: 🐟🐠🐡🦋🐝🐞🐢
+Vehicles: 🚗🚕🚌🚎🚲🛵🚂✈️🚁🚢
+Toys: 📚⭐️🎈⚽️🧸✏️🖍️🎁
+Shapes: 🔴🟡🟢🔵🟠🟣🟥🟨🟩🟦🟧🟪
+15 KG QUESTION TYPES (STANDARDIZED):
+Format: TYPE | question pattern | example question_name | correct answer
+COUNTING | ICON×n = ? | 🍎🍎🍎 = ? | 3
+NUM_MATCH | N = ? (corresponding icons) | 3 = ? | 🍎🍎🍎
+NUM_SEQ | N N ? N | 1 2 ? 4 | 3
+BEFORE_AFTER | N ? N | 2 ? 4 | 3
+ADD | G + G = ? | 🍎🍎 + 🍎 = ? | 3
+SUB | G − G = ? | 🍎🍎🍎 − 🍎 = ? | 2
+COMP | G = G + ? | 🍎🍎🍎 = 🍎🍎 + ? | 1
+CMP | G ? G → >, <, = | 🐶🐶🐶 ? 🐱🐱 | >
+QTY_MATCH | G = ? (number) | 🍎🍎🍎 = ? | 3
+PATTERN | ICON×4 ? | 🔴🟡🔴🟡🔴 ? | 🟡
+ODD_ONE | I | I | I | I (select the different one) | 🍎 | 🍊 | 🐶 | 🍌 | 🐶
+SORT_CLS | I×3 | ? (same group) | 🐶🐱🐰 | ? | 🐭
+SAME_DIFF | G ? G → =, ≠ | 🍎🍎🍎 ? 🍊🍊🍊 | ≠
+COLOR_MATCH | C = ? (count colors) | 🔴🔴🔴 = ? | 3
+POSITION | rule + ? | 🍌🐱🍌 ? 🍌🐱 | 🍌
+NUM (GRADE 1–5):
+{{NUM_GRADE}}
+question_name + answers[].content: Vietnamese text, numbers, math symbols; NO decorative emoji.
+TEXTBOOKS: Select exactly one textbook for the quiz:
+• Chân Trời Sáng Tạo
+• Kết Nối Tri Thức
+• Cánh Diều
+COVERAGE:
+• Q1–Q2: beginning-of-year content (easy).
+• Q3–Q4: mid-year content (Q3 = light next-grade content).
+• Q5–Q6: end-of-year content (Q6 = light next-grade content).
+• Q7–Q10: cumulative content with increasing difficulty; word problems may be included.
+The quiz must cover all of the following areas:
+• Arithmetic / Numbers
+• Quantities & Measurement
+• Geometry & Geometric Measurement
+• Statistics & Probability
+• Word Problems
+Use correct units (cm, cm², cm³, etc.) and correct Vietnamese mathematical terminology.
+VALIDATION:
+question_name: no letters in KG / no emoji in Grades 1–5. Do not include the answer in question_name.
+Each question must have exactly 1 correct answer among A–D.
+Values must be appropriate for the target grade.
+KG: maximum 10 icons per group, all icons must come from the allowed list, and CMP questions must compare groups with different quantities.
+If generation gets stuck → KG: use COUNTING or PATTERN. NUM: choose an easier topic, similar to ADD/PATTERN.
+If {grade} ≠ "Mẫu giáo" and any emoji appears → regenerate using numbers only.
+If {grade} = "Mẫu giáo" and question_name contains letters → regenerate without letters.
+OUTPUT:
+Return ONLY valid JSON. Do not return Markdown or explanations. All JSON keys must be in English.
+KG: question_name and answers[].content may contain only numbers, mathematical symbols, allowed emojis, and visual arrangements.
+Grades 1–5: all child-facing content must be in Vietnamese.
+JSON keys must always remain in English.
 STRUCTURE:
 {
-	"title": "Lớp 1",
-	"short_text": "Phép cộng và phép trừ trong phạm vi 20",
-	"questions": [
-		{
-		"question_number": 1,
-		"question_type": "ARITHMETIC",
-		"question_name": "5 + 3 = ?",
-		"answers": [
-			{ "label": "A", "content": "8" },
-			{ "label": "B", "content": "9" },
-			{ "label": "C", "content": "10" },
-			{ "label": "D", "content": "7" }
-		],
-		"right_answer_label": "A",
-		"right_answer_content": "8",
-		"question_topic": "phép cộng trong phạm vi 20",
-		"question_grade": 1
-		}
-	]
-}`
+  "title": "...",
+  "short_text": "...",
+  "questions": [
+    {
+      "question_number": 1,
+      "question_type": "...",
+      "question_name": "...",
+      "answers": [
+        {
+          "label": "A",
+          "content": "..."
+        }
+      ],
+      "right_answer_label": "...",
+      "right_answer_content": "...",
+      "question_topic": "...",
+      "question_grade": "..."
+    }
+  ]
+}
+IMPORTANT LANGUAGE RULE:
+Instructions are in English, but all generated quiz content must be in Vietnamese. JSON keys must be in English.`
 
-// examProbeRuleEN renders the probe rule in terms of current_grade, which
-// the user message then binds to a number. The positions come from
-// ProbePositions so the prompt and the server-side re-stamp always name
-// the same questions: the prompt asks, the server enforces.
-func examProbeRuleEN(in ExamPromptInput, n int) string {
-	positions := ProbePositions(in.ExamType, n)
-	if len(positions) == 0 {
-		return `* Every question: question_grade = current_grade.`
+// examProbeLinesEN renders the three lines that name the probe positions:
+// the rule, the KG question_grade line and the NUM one. The positions
+// come from ProbePositions so the prompt asks for exactly what the server
+// enforces afterwards.
+func examProbeLinesEN(probes []int) (rule, kg, num string) {
+	if len(probes) == 0 {
+		return "All questions must use content from the current grade.",
+			`question_grade: "Mẫu giáo" for all questions.`,
+			`question_grade: "Lớp N" for all questions.`
 	}
+	and := joinPositions(probes, " and ")
+	rule = fmt.Sprintf("%s must use content from the next grade; all other questions must use content from the current grade. For Grade %d, %s use early Grade %d content.",
+		and, enum.ExamGradeMax, and, GradeProbeCeiling)
+	kg = fmt.Sprintf(`question_grade: %s = "Lớp 1"; all other questions = "Mẫu giáo".`, and)
+	num = fmt.Sprintf(`question_grade: "Lớp N"; %s = "Lớp N+1" (Grade %d → "Lớp %d").`, and, enum.ExamGradeMax, GradeProbeCeiling)
+	return rule, kg, num
+}
 
-	long := make([]string, 0, len(positions))
-	short := make([]string, 0, len(positions))
+// joinPositions renders 1-based positions as Q3, Q6, … with the given
+// separator.
+func joinPositions(positions []int, sep string) string {
+	labels := make([]string, 0, len(positions))
 	for _, p := range positions {
-		long = append(long, fmt.Sprintf("Question %d", p))
-		short = append(short, fmt.Sprintf("Q%d", p))
+		labels = append(labels, fmt.Sprintf("Q%d", p))
 	}
-
-	return fmt.Sprintf(`* %s are ability ceiling-probe questions, exactly 1 grade harder than current_grade:
-  * %s: question_grade = current_grade + 1
-  * All other questions: question_grade = current_grade
-  * If current_grade = %d, %s must still remain within Grade %d scope.`,
-		strings.Join(long, " and "), strings.Join(short, ", "),
-		enum.ExamGradeMax, strings.Join(short, "/"), GradeProbeCeiling)
+	return strings.Join(labels, sep)
 }
 
 func buildSystemExamEN(in ExamPromptInput, n int) string {
-	return fmt.Sprintf(systemExamENHead, n, n, n, examProbeRuleEN(in, n))
+	rule, kg, num := examProbeLinesEN(ProbePositions(in.ExamType, n))
+	return strings.NewReplacer(
+		"{{N}}", fmt.Sprint(n),
+		"{{PROBE_RULE}}", rule,
+		"{{KG_GRADE}}", kg,
+		"{{NUM_GRADE}}", num,
+	).Replace(systemExamENTmpl)
 }
 
-// buildUserExamEN binds current_grade, which every rule in the system
-// prompt is phrased against. It is rendered as the number the probe rule
-// does arithmetic on, with the band name beside it — the name alone would
-// leave "current_grade + 1" for the model to work out from a label, and
-// question_grade is an integer in the schema.
+// buildUserExamEN binds {grade} to the Vietnamese band label the system
+// prompt's MODE switch and question_grade vocabulary are written in.
 func buildUserExamEN(in ExamPromptInput, _ int) string {
-	return fmt.Sprintf("CURRENT GRADE\n\ncurrent_grade: %d (%s)", in.Grade, ExamTitle(in.Grade))
+	return "current_grade: " + ExamTitle(in.Grade)
 }

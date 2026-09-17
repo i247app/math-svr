@@ -34,6 +34,10 @@ run_prepare() {
       echo 'WARNING:   mkdir -p $DEST_DIR/deploy && mv $DEST_DIR/pre-deploy $DEST_DIR/post-deploy $DEST_DIR/deploy/'
     fi
     shopt -s nullglob
+    # Hooks are sometimes edited by hand on the host; a Windows editor leaves
+    # CRLF behind and bash then dies with "$'\r': command not found". Strip
+    # the CR before running so a stray edit cannot take the whole deploy down.
+    sed -i 's/\r$//' $DEST_DIR/deploy/pre-deploy/*.sh
     for i in $DEST_DIR/deploy/pre-deploy/*.sh; do
       echo \"Running \$i...\"
       bash \"\$i\"

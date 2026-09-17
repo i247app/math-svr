@@ -23,6 +23,25 @@ location, so `./deploy/scripts/deploy.sh t1` works from anywhere; the rest read
 `.env.ec2-credentials` and `migrations/` relative to the current directory and
 therefore expect the repo root as the working directory.
 
+## Prerequisites
+
+The pipeline is plain bash and shells out to `ssh`, `rsync`, `awk` and `go`.
+On macOS / Linux that is the stock toolchain.
+
+**Windows: run everything from WSL**, not Git Bash or PowerShell. Git Bash
+does not ship `rsync`, and a native Windows checkout risks CRLF line endings
+reaching the host — every file under `deploy/`, `docker/` and `migrations/`
+is rsynced verbatim to a Linux box where bash, systemd, nginx, logrotate and
+docker compose all reject CRLF. The repo's `.gitattributes` pins text files
+to LF on checkout as a safety net, but WSL sidesteps the problem entirely.
+
+If you already had a Windows clone before `.gitattributes` landed, refresh
+the working tree once so the LF rule applies:
+
+```bash
+git rm --cached -r . && git reset --hard
+```
+
 ## Deployment pipeline
 
 | Script | `make` target | Purpose |

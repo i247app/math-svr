@@ -346,45 +346,47 @@ func TestBuildExamPromptLevelIsForGradeReviewOnly(t *testing.T) {
 }
 
 // TestBuildExamPromptEnglish: the English template is a different rule
-// sheet, not a translation — it carries the emoji whitelist and the
-// accuracy rules — but it must keep every server-facing name, bind
-// current_grade the same way, and tell the model the round is Vietnamese.
+// sheet, not a translation. It must name the probe positions the server
+// enforces in every line that mentions them, and bind {grade} to the
+// Vietnamese label the MODE switch keys on.
 func TestBuildExamPromptEnglish(t *testing.T) {
-	six := 6
 	system, user, err := BuildExamPrompt(ExamPromptInput{
 		Language:     QuizLanguageEnglish,
-		ExamType:     enum.ExamTypeGrade,
-		Grade:        2,
+		ExamType:     enum.ExamTypeAssessment,
+		Grade:        0,
 		NumQuestions: 10,
-		Level:        &six,
 	})
 	if err != nil {
 		t.Fatalf("BuildExamPrompt: %v", err)
 	}
 
 	for _, want := range []string{
-		"Create EXACTLY 10 multiple-choice questions",
-		"across the 10 questions",
-		"from Question 1 → Question 10",
-		"Question 3 and Question 6 are ability ceiling-probe questions",
-		"Q3, Q6: question_grade = current_grade + 1",
-		"If current_grade = 5, Q3/Q6 must still remain within Grade 6 scope",
-		"EMOJI RULES",
-		"MATHEMATICAL ACCURACY RULES",
-		"must be written in Vietnamese",
-		`"short_text": "Phép cộng và phép trừ trong phạm vi 20"`,
+		"Generate exactly 10 questions, with difficulty increasing from Q1 → Q10.",
+		"Q3 and Q6 must use content from the next grade; all other questions must use content from the current grade. For Grade 5, Q3 and Q6 use early Grade 6 content.",
+		`question_grade: Q3 and Q6 = "Lớp 1"; all other questions = "Mẫu giáo".`,
+		`question_grade: "Lớp N"; Q3 and Q6 = "Lớp N+1" (Grade 5 → "Lớp 6").`,
+		"MODE by {grade}:",
+		"15 KG QUESTION TYPES (STANDARDIZED):",
+		"IMPORTANT LANGUAGE RULE:",
+		`"question_grade": "..."`,
 	} {
 		if !strings.Contains(system, want) {
 			t.Errorf("EN system prompt is missing %q", want)
 		}
 	}
-	if want := "CURRENT GRADE\n\ncurrent_grade: 2 (Lớp 2)"; user != want {
+	if strings.Contains(system, "{{") {
+		t.Error("EN system prompt has an unfilled placeholder")
+	}
+	if want := "current_grade: Mẫu giáo"; user != want {
 		t.Errorf("EN user message = %q, want %q", user, want)
 	}
-	for _, stale := range []string{"DÒ TRẦN", "BẮT BUỘC", "cường độ", "Tự kiểm tra"} {
-		if strings.Contains(system+user, stale) {
-			t.Errorf("EN prompt leaks Vietnamese instruction text %q", stale)
-		}
+
+	_, user, err = BuildExamPrompt(ExamPromptInput{Language: QuizLanguageEnglish, ExamType: enum.ExamTypeAssessment, Grade: 3})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+	if want := "current_grade: Lớp 3"; user != want {
+		t.Errorf("EN user message = %q, want %q", user, want)
 	}
 
 	// A short round names only the probes that exist.
@@ -392,8 +394,11 @@ func TestBuildExamPromptEnglish(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildExamPrompt: %v", err)
 	}
-	if !strings.Contains(system, "Question 3 are ability ceiling-probe") || strings.Contains(system, "Q6") {
+	if !strings.Contains(system, "Q3 must use content from the next grade") || !strings.Contains(system, `question_grade: Q3 = "Lớp 1"`) {
 		t.Error("a 5-question EN round probes at Q3 only")
+	}
+	if strings.Contains(system, "Q3 and Q6") {
+		t.Error("a 5-question EN round must not name Q6 as a probe")
 	}
 
 	// Empty language keeps the Vietnamese template; garbage is refused.

@@ -14,6 +14,14 @@ var validTypes = map[string]struct{}{
 	TypeIdentifyShape: {},
 }
 
+// typeAliases folds spellings the exam prompt's own schema example uses
+// onto the render set. COUNTING is the one the few-shot example teaches;
+// without this it would fall to ARITHMETIC and lose the count rendering
+// for exactly the questions that need it most.
+var typeAliases = map[string]string{
+	"COUNTING": TypeCount,
+}
+
 // geometryIconWhitelist is the closed set of shape tokens the client ships
 // SVG assets for. The prompt tells the model to stay inside this set;
 // Normalize only REPORTS drift — it never drops a question, because a
@@ -69,6 +77,9 @@ func Normalize(questions []Question) ([]Question, []Warning) {
 	for i := range questions {
 		q := &questions[i]
 		qt := strings.ToUpper(strings.TrimSpace(q.QuestionType))
+		if canonical, ok := typeAliases[qt]; ok {
+			qt = canonical
+		}
 		if _, ok := validTypes[qt]; !ok {
 			if qt != "" {
 				warnings = append(warnings, Warning{
