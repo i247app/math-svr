@@ -1,7 +1,4 @@
-# The deploy pipeline rsyncs deploy/, docker/ and migrations/ verbatim onto a
-# Linux host, where bash, systemd, nginx, logrotate and docker compose all
-# choke on CRLF. Pin every text file to LF on checkout so a Windows clone
-# (core.autocrlf=true) cannot ship CRLF to the server.
+# The deploy pipeline rsyncs deploy/, docker/ and migrations/
 * text=auto eol=lf
 
 # Binary payloads must never be normalized.
