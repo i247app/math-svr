@@ -145,6 +145,65 @@ func (r *UserExamRepository) ListByUserProfile(ctx context.Context, userId, prof
 	return out, nil
 }
 
+// ListProgressPoints returns scored journeys for one child, newest
+// submission first, capped at params.Limit. The caller reverses into
+// chronological order. With no exam type the PRACTICE rows are skipped:
+// they share their journey's id and would put every journey on the
+// chart twice.
+func (r *UserExamRepository) ListProgressPoints(ctx context.Context, params exam.JourneyProgressParams) ([]*exam.UserExam, error) {
+	where := userExamActiveWhere +
+		` AND e.user_id = ? AND e.profile_id = ? AND e.res_score_percentage IS NOT NULL AND e.last_submitted_dt IS NOT NULL`
+	args := append(userExamActiveArgs(), params.UserID, params.ProfileID)
+
+	if params.ExamType != nil && *params.ExamType != "" {
+		where += ` AND e.req_exam_type = ?`
+		args = append(args, *params.ExamType)
+	} else {
+		where += ` AND e.req_exam_type <> ?`
+		args = append(args, string(enum.ExamTypePractice))
+	}
+	if params.From != nil && !params.From.IsZero() {
+		where += ` AND e.last_submitted_dt >= ?`
+		args = append(args, params.From.Time)
+	}
+	if params.To != nil && !params.To.IsZero() {
+		where += ` AND e.last_submitted_dt <= ?`
+		args = append(args, params.To.Time)
+	}
+	if params.SubmittedBefore != nil && !params.SubmittedBefore.IsZero() {
+		where += ` AND e.last_submitted_dt < ?`
+		args = append(args, params.SubmittedBefore.Time)
+	}
+
+	limit := params.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	args = append(args, limit)
+
+	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE ` + where +
+		` ORDER BY e.last_submitted_dt DESC, e.user_exam_id DESC LIMIT ?`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("user exam repo list progress points: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*exam.UserExam
+	for rows.Next() {
+		m, err := scanUserExam(rows)
+		if err != nil {
+			return nil, fmt.Errorf("user exam repo scan progress point: %w", err)
+		}
+		out = append(out, ModelToDomainUserExam(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("user exam repo progress points iteration: %w", err)
+	}
+	return out, nil
+}
+
 // MarkStatus ends a journey. The WHERE clause carries ACTIVE as the
 // expected state: two marks racing on the same journey both read ACTIVE,
 // and this is what makes the loser update zero rows and get

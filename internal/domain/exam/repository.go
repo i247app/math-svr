@@ -150,6 +150,22 @@ type ListJourneysFilter struct {
 	Status   *string
 }
 
+// JourneyProgressParams drives IUserExamRepository.ListProgressPoints,
+// the journey-level counterpart of ProgressPointsParams. A journey's
+// point in time is its last_submitted_dt — the moment its cumulative
+// score last moved — so From/To and SubmittedBefore all bound that
+// column. ExamType nil means every journey type except PRACTICE, whose
+// rows are not journeys of their own. Limit is pre-clamped by the caller.
+type JourneyProgressParams struct {
+	UserID          int64
+	ProfileID       int64
+	ExamType        *string
+	From            *mtime.MathTime
+	To              *mtime.MathTime
+	SubmittedBefore *mtime.MathTime
+	Limit           int64
+}
+
 // IUserExamRepository owns journeys.
 //
 // A journey is one user_exam_id and holds up to TWO rows in this table:
@@ -192,6 +208,11 @@ type IUserExamRepository interface {
 	// ListByUserProfile returns a child's journeys, newest first within
 	// each exam type.
 	ListByUserProfile(ctx context.Context, userId, profileId int64, filter ListJourneysFilter) ([]*UserExam, error)
+	// ListProgressPoints returns a child's scored journeys, newest
+	// submission first, capped at params.Limit — the journey-level series
+	// behind the progress chart. A journey nothing was ever submitted in
+	// has no score and is left out.
+	ListProgressPoints(ctx context.Context, params JourneyProgressParams) ([]*UserExam, error)
 	// Create opens a journey with delta as its first totals.
 	Create(ctx context.Context, e *UserExam, delta StatsDelta) error
 	// Accumulate folds delta into the row (userExamId, examType) while it

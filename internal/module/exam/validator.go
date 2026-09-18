@@ -226,9 +226,10 @@ const (
 	progressMaxRange     = 2 * 365 * 24 * time.Hour
 )
 
-// ValidateExamProgress checks the analytics request and normalises Limit
-// (clamped in place), Tz (default applied) and ExamType (upper-cased).
-// Ownership needs a repository read and so stays in the service.
+// ValidateExamProgress checks the sittings chart request and normalises
+// Limit (clamped in place), Tz (default applied) and ExamType
+// (upper-cased). Ownership needs a repository read and so stays in the
+// service.
 func ValidateExamProgress(ctx context.Context, req *dto.ExamProgressReq) error {
 	if req.ProfileID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
@@ -242,25 +243,50 @@ func ValidateExamProgress(ctx context.Context, req *dto.ExamProgressReq) error {
 	if err := requireJourneyForPractice(ctx, req.ExamType, req.UserExamID); err != nil {
 		return err
 	}
+	return validateProgressWindow(ctx, &req.ProgressWindow)
+}
 
+// ValidateJourneyProgress checks the journeys chart request the same way.
+// PRACTICE is refused for the reason stats refuses it: a PRACTICE row is
+// not a journey, it is a part of one.
+func ValidateJourneyProgress(ctx context.Context, req *dto.JourneyProgressReq) error {
+	if req.ProfileID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+
+	examType, err := normalizeExamType(ctx, req.ExamType)
+	if err != nil {
+		return err
+	}
+	if examType != nil && *examType == string(enum.ExamTypePractice) {
+		return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrStatsPracticeNotAJourney)
+	}
+	req.ExamType = examType
+	return validateProgressWindow(ctx, &req.ProgressWindow)
+}
+
+// validateProgressWindow normalises the part both charts share: Tz gets
+// its default, the date range must be complete and bounded, Limit is
+// clamped in place.
+func validateProgressWindow(ctx context.Context, w *dto.ProgressWindow) error {
 	// A numeric offset, never an IANA name: the value reaches CONVERT_TZ
 	// verbatim and production MySQL is not guaranteed to carry the
 	// timezone tables that would make "Asia/Ho_Chi_Minh" resolve.
-	if req.Tz == "" {
-		req.Tz = enum.DefaultProgressTz
-	} else if !enum.IsValidTzOffset(req.Tz) {
+	if w.Tz == "" {
+		w.Tz = enum.DefaultProgressTz
+	} else if !enum.IsValidTzOffset(w.Tz) {
 		return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_TZ, nil, ErrInvalidTz)
 	}
 
-	if req.FromDt != "" || req.ToDt != "" {
-		if req.FromDt == "" || req.ToDt == "" {
+	if w.FromDt != "" || w.ToDt != "" {
+		if w.FromDt == "" || w.ToDt == "" {
 			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, ErrInvalidDateRange)
 		}
-		from, err := mtime.ParseFromString(req.FromDt)
+		from, err := mtime.ParseFromString(w.FromDt)
 		if err != nil {
 			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, err)
 		}
-		to, err := mtime.ParseFromString(req.ToDt)
+		to, err := mtime.ParseFromString(w.ToDt)
 		if err != nil {
 			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, err)
 		}
@@ -269,14 +295,14 @@ func ValidateExamProgress(ctx context.Context, req *dto.ExamProgressReq) error {
 		}
 	}
 
-	if req.Limit == 0 {
-		req.Limit = ProgressLimitDefault
+	if w.Limit == 0 {
+		w.Limit = ProgressLimitDefault
 	}
-	if req.Limit < ProgressLimitMin {
-		req.Limit = ProgressLimitMin
+	if w.Limit < ProgressLimitMin {
+		w.Limit = ProgressLimitMin
 	}
-	if req.Limit > ProgressLimitMax {
-		req.Limit = ProgressLimitMax
+	if w.Limit > ProgressLimitMax {
+		w.Limit = ProgressLimitMax
 	}
 	return nil
 }

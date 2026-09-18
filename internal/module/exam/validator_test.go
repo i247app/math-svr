@@ -375,6 +375,55 @@ func TestPracticeReadsNeedAJourney(t *testing.T) {
 			t.Errorf("code = %d, want EXAM_INVALID_EXAM_TYPE", code)
 		}
 	})
+	t.Run("journey progress refuses PRACTICE as a journey type", func(t *testing.T) {
+		req := &dto.JourneyProgressReq{ProfileID: 1, ExamType: strPtr("practice")}
+		if code := codeOf(t, ValidateJourneyProgress(ctx, req)); code != status.EXAM_INVALID_EXAM_TYPE {
+			t.Errorf("code = %d, want EXAM_INVALID_EXAM_TYPE", code)
+		}
+	})
+}
+
+// TestValidateJourneyProgressWindow: the journeys chart is bounded the
+// same way as the sittings chart — tz defaults to Vietnam, an IANA name
+// is refused, a half-open range is refused, limit is clamped.
+func TestValidateJourneyProgressWindow(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("defaults", func(t *testing.T) {
+		req := &dto.JourneyProgressReq{ProfileID: 1, ExamType: strPtr(" grade ")}
+		if err := ValidateJourneyProgress(ctx, req); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if req.Tz != enum.DefaultProgressTz || req.Limit != ProgressLimitDefault || *req.ExamType != "GRADE" {
+			t.Errorf("normalised = tz %q limit %d type %q", req.Tz, req.Limit, *req.ExamType)
+		}
+	})
+	t.Run("missing profile", func(t *testing.T) {
+		if code := codeOf(t, ValidateJourneyProgress(ctx, &dto.JourneyProgressReq{})); code != status.EXAM_MISSING_PROFILE_ID {
+			t.Errorf("code = %d, want EXAM_MISSING_PROFILE_ID", code)
+		}
+	})
+	t.Run("IANA tz refused", func(t *testing.T) {
+		req := &dto.JourneyProgressReq{ProfileID: 1, ProgressWindow: dto.ProgressWindow{Tz: "Asia/Ho_Chi_Minh"}}
+		if code := codeOf(t, ValidateJourneyProgress(ctx, req)); code != status.EXAM_ANALYTICS_INVALID_TZ {
+			t.Errorf("code = %d, want EXAM_ANALYTICS_INVALID_TZ", code)
+		}
+	})
+	t.Run("half-open range refused", func(t *testing.T) {
+		req := &dto.JourneyProgressReq{ProfileID: 1, ProgressWindow: dto.ProgressWindow{FromDt: "2026-01-01 00:00:00"}}
+		if code := codeOf(t, ValidateJourneyProgress(ctx, req)); code != status.EXAM_ANALYTICS_INVALID_RANGE {
+			t.Errorf("code = %d, want EXAM_ANALYTICS_INVALID_RANGE", code)
+		}
+	})
+	t.Run("limit clamped", func(t *testing.T) {
+		req := &dto.JourneyProgressReq{ProfileID: 1, ProgressWindow: dto.ProgressWindow{Limit: 10_000}}
+		if err := ValidateJourneyProgress(ctx, req); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if req.Limit != ProgressLimitMax {
+			t.Errorf("limit = %d, want %d", req.Limit, ProgressLimitMax)
+		}
+	})
 }
 
 // TestResolveLevel: the level is clamped once, here, for a GRADE review

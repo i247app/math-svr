@@ -206,6 +206,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /exams/list", examHandler.HandleListExams, authMiddleware)
 		reg("POST /exams/stats", examHandler.HandleGetExamStats, authMiddleware)
 		reg("POST /exams/analytics/progress", examHandler.HandleGetExamProgress, authMiddleware)
+		reg("POST /exams/journey/progress", examHandler.HandleGetJourneyProgress, authMiddleware)
 		reg("POST /exams/update-user-exam-status", examHandler.HandleMarkExamJourney, authMiddleware)
 	}
 

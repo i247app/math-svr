@@ -1,6 +1,8 @@
 package query
 
 import (
+	"math"
+
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	"math-ai.com/math-ai/internal/application/query/progress"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -41,7 +43,10 @@ func summarizeScores(points []scorePoint, priorAvg10 *float64) (dto.ExamScoreSum
 		}
 	}
 
+	// get 2 number after comma
 	avgPct := float64(sumPct) / float64(count)
+	avgPct = math.Round(avgPct*100) / 100
+
 	avg10 := progress.PctTo10Pt(avgPct)
 	slope := progress.LinearSlope(scores10)
 

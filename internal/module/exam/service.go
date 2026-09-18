@@ -35,6 +35,7 @@ type Service struct {
 	listQuery       *query.ListExamAttemptsQueryHandler
 	statsQuery      *query.GetExamStatsQueryHandler
 	progressQuery   *query.GetExamProgressQueryHandler
+	journeyProgress *query.GetJourneyProgressQueryHandler
 
 	aiExamRepo  examDomain.IAiExamRepository
 	attemptRepo examDomain.IUserAiExamRepository
@@ -68,6 +69,7 @@ func NewService(
 		listQuery:       query.NewListExamAttemptsQueryHandler(attemptRepo, aiExamRepo),
 		statsQuery:      query.NewGetExamStatsQueryHandler(statsRepo, attemptRepo, aiExamRepo),
 		progressQuery:   query.NewGetExamProgressQueryHandler(attemptRepo),
+		journeyProgress: query.NewGetJourneyProgressQueryHandler(statsRepo),
 		aiExamRepo:      aiExamRepo,
 		attemptRepo:     attemptRepo,
 		statsRepo:       statsRepo,
@@ -447,6 +449,42 @@ func (s *Service) GetExamProgress(ctx context.Context, req *dto.ExamProgressReq)
 	}
 
 	return &dto.ExamProgressRes{
+		ProfileID: req.ProfileID,
+		FromDt:    req.FromDt,
+		ToDt:      req.ToDt,
+		Tz:        req.Tz,
+		ExamType:  req.ExamType,
+		Limit:     req.Limit,
+		Series:    result.Series,
+		Summary:   result.Summary,
+	}, nil
+}
+
+// GetJourneyProgress returns the learning-progress chart over a child's
+// journeys — one point per ma_user_exams row with a score — bounded by
+// the same window as GetExamProgress.
+func (s *Service) GetJourneyProgress(ctx context.Context, req *dto.JourneyProgressReq) (*dto.JourneyProgressRes, error) {
+	if err := ValidateJourneyProgress(ctx, req); err != nil {
+		return nil, err
+	}
+	profile, err := s.loadOwnedProfile(ctx, req.UserID, req.ProfileID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := s.journeyProgress.Handle(ctx, query.GetJourneyProgressQuery{
+		UserID:    profile.UserId(),
+		ProfileID: profile.ProfileId(),
+		ExamType:  req.ExamType,
+		From:      req.FromDt,
+		To:        req.ToDt,
+		Limit:     int64(req.Limit),
+	})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	return &dto.JourneyProgressRes{
 		ProfileID: req.ProfileID,
 		FromDt:    req.FromDt,
 		ToDt:      req.ToDt,

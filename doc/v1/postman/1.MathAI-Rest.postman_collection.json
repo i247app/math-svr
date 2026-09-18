@@ -6415,6 +6415,34 @@
           "response": []
         },
         {
+          "name": "Journey Progress",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"metadata\": {{metadata}},\n    \"profile_id\": {{profile_id}},\n    \"exam_type\": \"ASSESSMENT\",\n    \"from_dt\": \"2026-09-08 15:04:05.000000\",\n    \"to_dt\": \"2026-09-20 15:04:05.000000\",\n    \"tz\": \"+07:00\",\n    \"limit\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/exams/journey/progress",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "exams",
+                "journey",
+                "progress"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Change User Exam Status",
           "request": {
             "method": "POST",

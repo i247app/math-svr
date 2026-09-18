@@ -564,15 +564,34 @@ func servedQuestions(raw string, sh *question.Shuffle, includeAnswerKey bool) []
 // datetime strings; Tz is a numeric offset (IANA names are rejected — see
 // enum.IsValidTzOffset). ExamType optionally narrows to one type; Limit
 // caps the number of chart points.
+// ProgressWindow is the slice of history a progress chart reads: an
+// optional [from_dt, to_dt] range, the client's UTC offset, and how many
+// points at most. Both progress requests embed it so the two charts are
+// bounded the same way.
+type ProgressWindow struct {
+	FromDt string `json:"from_dt"`
+	ToDt   string `json:"to_dt"`
+	Tz     string `json:"tz"`
+	Limit  int    `json:"limit"`
+}
+
 type ExamProgressReq struct {
 	UserID     *int64  `json:"-"`
 	ProfileID  int64   `json:"profile_id"`
 	ExamType   *string `json:"exam_type"`
 	UserExamID *int64  `json:"user_exam_id,omitempty"` // required with PRACTICE
-	FromDt     string  `json:"from_dt"`
-	ToDt       string  `json:"to_dt"`
-	Tz         string  `json:"tz"`
-	Limit      int     `json:"limit"`
+	ProgressWindow
+}
+
+// JourneyProgressReq asks for the chart over journeys (ma_user_exams
+// rows) rather than sittings. ExamType nil means every journey type;
+// PRACTICE is refused, as it is for stats — its rows live inside their
+// ASSESSMENT journey.
+type JourneyProgressReq struct {
+	UserID    *int64  `json:"-"`
+	ProfileID int64   `json:"profile_id"`
+	ExamType  *string `json:"exam_type"`
+	ProgressWindow
 }
 
 // ExamPoint is one chart point — a single submitted attempt. Sequence is
@@ -630,4 +649,32 @@ type ExamProgressRes struct {
 	Limit     int                 `json:"limit"`
 	Series    []ExamPoint         `json:"series"`
 	Summary   ExamProgressSummary `json:"summary"`
+}
+
+// JourneyPoint is one chart point over journeys — one ma_user_exams row
+// with its cumulative score. Sequence is the 1..N positional label;
+// LastSubmittedDt is the point's moment in time, when that score last
+// moved. Score is on the 10-point scale; ScorePct the raw 0-100 value.
+type JourneyPoint struct {
+	Sequence        int64   `json:"sequence"`
+	UserExamID      int64   `json:"user_exam_id"`
+	ExamType        string  `json:"exam_type"`
+	Status          string  `json:"status"`
+	Grade           *int    `json:"grade"`
+	LastSubmittedDt string  `json:"last_submitted_dt"`
+	Score           float64 `json:"score"`
+	ScorePct        int64   `json:"score_pct"`
+	CorrectNumber   int     `json:"correct_number"`
+	TotalQuestions  int     `json:"total_questions"`
+}
+
+type JourneyProgressRes struct {
+	ProfileID int64            `json:"profile_id"`
+	FromDt    string           `json:"from_dt"`
+	ToDt      string           `json:"to_dt"`
+	Tz        string           `json:"tz"`
+	ExamType  *string          `json:"exam_type"`
+	Limit     int              `json:"limit"`
+	Series    []JourneyPoint   `json:"series"`
+	Summary   ExamStatsSummary `json:"summary"`
 }

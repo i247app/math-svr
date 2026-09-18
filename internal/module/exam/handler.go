@@ -164,6 +164,27 @@ func (h *ExamHandler) HandleGetExamProgress(w http.ResponseWriter, r *http.Reque
 	response.WriteJson(w, res, nil)
 }
 
+// POST /exams/journey/progress
+func (h *ExamHandler) HandleGetJourneyProgress(w http.ResponseWriter, r *http.Request) {
+	var req dto.JourneyProgressReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, ok := h.uid(w, r)
+	if !ok {
+		return
+	}
+	req.UserID = uid
+
+	res, err := h.examSvc.GetJourneyProgress(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // POST /exams/journeys/mark
 func (h *ExamHandler) HandleMarkExamJourney(w http.ResponseWriter, r *http.Request) {
 	var req dto.MarkExamJourneyReq
