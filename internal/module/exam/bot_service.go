@@ -49,6 +49,8 @@ type generateExamInput struct {
 	Level *int
 	// Practice aims a PRACTICE round; nil for every other type.
 	Practice *domainBot.PracticeBrief
+	// Avoid is the stems of the child's recent sittings at this grade.
+	Avoid []string
 }
 
 type generateExamOutput struct {
@@ -72,6 +74,7 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		Program:      in.Program,
 		Level:        in.Level,
 		Practice:     in.Practice,
+		Avoid:        in.Avoid,
 	}
 
 	system, user, err := domainBot.BuildExamPrompt(promptIn)

@@ -3,6 +3,7 @@ package query
 import (
 	"context"
 
+	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	"math-ai.com/math-ai/internal/domain/exam"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -36,10 +37,12 @@ type GetExamStatsQuery struct {
 
 // ExamStatsResult is the journeys plus the question sets the unfinished
 // sittings were drawn from, keyed by ai_exam_id, so the caller can render
-// each paper without a read per sitting.
+// each paper without a read per sitting — and the banner over those
+// journeys' cumulative scores.
 type ExamStatsResult struct {
 	Journeys []exam.JourneyStats
 	AiExams  map[int64]*exam.AiExam
+	Summary  dto.ExamStatsSummary
 }
 
 type GetExamStatsQueryHandler struct {
@@ -74,8 +77,9 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	journeys := nestPractice(rows, wantType)
+	summary := summarizeJourneys(journeys)
 	if len(journeys) == 0 {
-		return &ExamStatsResult{Journeys: journeys, AiExams: map[int64]*exam.AiExam{}}, nil
+		return &ExamStatsResult{Journeys: journeys, AiExams: map[int64]*exam.AiExam{}, Summary: summary}, nil
 	}
 
 	// One read for every unfinished sitting of the child, then attach by
@@ -91,7 +95,25 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 	if err != nil {
 		return nil, err
 	}
-	return &ExamStatsResult{Journeys: journeys, AiExams: aiExams}, nil
+	return &ExamStatsResult{Journeys: journeys, AiExams: aiExams, Summary: summary}, nil
+}
+
+// summarizeJourneys renders the banner over the journeys being returned:
+// the same aggregates the progress chart shows over sittings, here over
+// each journey's cumulative score. Journeys arrive newest first and the
+// trend wants chronological order, so they are walked in reverse. A
+// journey with no score yet is skipped, not counted as zero; nested
+// PRACTICE rows are not journeys and are not counted either.
+func summarizeJourneys(journeys []exam.JourneyStats) dto.ExamStatsSummary {
+	points := make([]scorePoint, 0, len(journeys))
+	for i := len(journeys) - 1; i >= 0; i-- {
+		j := journeys[i].Journey
+		if pct := j.ResScorePercentage(); pct != nil {
+			points = append(points, scorePoint{ID: j.UserExamId(), ScorePct: int64(*pct)})
+		}
+	}
+	core, hiID := summarizeScores(points, nil)
+	return dto.ExamStatsSummary{ExamScoreSummary: core, HighestUserExamID: hiID}
 }
 
 // nestPractice folds PRACTICE rows into the ASSESSMENT journey of the

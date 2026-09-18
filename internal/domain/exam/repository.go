@@ -133,6 +133,11 @@ type IUserAiExamRepository interface {
 	// sitting of a journey, whatever its type — the base a PRACTICE round
 	// is drawn from. (nil, nil) when nothing has been submitted yet.
 	FindLatestSubmittedByUserExamId(ctx context.Context, userExamId int64) (*UserAiExam, error)
+	// ListRecentByProfileGrade returns a child's latest sittings at one
+	// grade, newest first, whether submitted or still open — a paper
+	// handed out was seen. It feeds the "do not repeat these" list the
+	// next generation at that grade is prompted with.
+	ListRecentByProfileGrade(ctx context.Context, profileId int64, grade int, limit int) ([]*UserAiExam, error)
 	Create(ctx context.Context, a *UserAiExam) (*UserAiExam, error)
 	MarkSubmitted(ctx context.Context, userAiExamId int64, result AttemptResult) error
 	ListProgressPoints(ctx context.Context, params ProgressPointsParams) ([]*ProgressPoint, error)

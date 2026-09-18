@@ -151,6 +151,10 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 		}
 	} else {
 		log.Infof("exam.cache.miss tag=%s", tag)
+		avoid, err := s.recentStems(ctx, profile.ProfileId(), grade)
+		if err != nil {
+			return nil, err
+		}
 		generated, err := s.bot.GenerateExam(ctx, generateExamInput{
 			ExamType:     validated.ExamType,
 			Grade:        grade,
@@ -158,6 +162,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 			Semester:     req.Semester,
 			Program:      req.Program,
 			Level:        promptLevel,
+			Avoid:        avoid,
 		})
 		if err != nil {
 			return nil, err
@@ -228,6 +233,10 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		log.Warnf("exam.practice.grade_ignored pinned=%d base=%d journey=%d", *req.Grade, grade, journeyID)
 	}
 
+	avoid, err := s.recentStems(ctx, profile.ProfileId(), grade)
+	if err != nil {
+		return nil, err
+	}
 	generated, err := s.bot.GenerateExam(ctx, generateExamInput{
 		ExamType:     enum.ExamTypePractice,
 		Grade:        grade,
@@ -235,6 +244,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		Semester:     req.Semester,
 		Program:      req.Program,
 		Practice:     &brief,
+		Avoid:        avoid,
 	})
 	if err != nil {
 		return nil, err
@@ -382,7 +392,10 @@ func (s *Service) GetExamStats(ctx context.Context, req *dto.GetExamStatsReq) (*
 	if err != nil {
 		return nil, err
 	}
-	return &dto.GetExamStatsRes{Stats: dto.JourneyStatsToResponse(rows.Journeys, rows.AiExams)}, nil
+	return &dto.GetExamStatsRes{
+		Stats:   dto.JourneyStatsToResponse(rows.Journeys, rows.AiExams),
+		Summary: rows.Summary,
+	}, nil
 }
 
 // MarkExamJourney ends a journey as COMPLETE or CANCEL. From then on the

@@ -7,7 +7,6 @@ import (
 	"math-ai.com/math-ai/internal/application/query/progress"
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
-	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // examProgressReader is the narrow slice of the attempt repository this
@@ -132,51 +131,12 @@ func avg10OfPoints(points []*exam.ProgressPoint) (float64, bool) {
 	return progress.PctTo10Pt(float64(sum) / float64(len(points))), true
 }
 
-// buildSummary aggregates count, averages, highest/lowest, delta and trend.
+// buildSummary renders the banner over the chart's series.
 func buildSummary(series []dto.ExamPoint, priorAvg10 *float64) dto.ExamProgressSummary {
-	count := int64(len(series))
-	summary := dto.ExamProgressSummary{Count: count}
-	if count == 0 {
-		summary.Trend = string(enum.ProgressCommentNoData)
-		return summary
-	}
-
-	var sumPct int64
-	scores10 := make([]float64, 0, len(series))
-	hi := series[0]
-	lo := series[0]
+	points := make([]scorePoint, 0, len(series))
 	for _, p := range series {
-		sumPct += p.ScorePct
-		scores10 = append(scores10, p.Score)
-		if p.ScorePct >= hi.ScorePct { // ties resolve to the latest, series is ASC
-			hi = p
-		}
-		if p.ScorePct < lo.ScorePct {
-			lo = p
-		}
+		points = append(points, scorePoint{ID: p.UserAiExamID, ScorePct: p.ScorePct})
 	}
-
-	avgPct := float64(sumPct) / float64(count)
-	avg10 := progress.PctTo10Pt(avgPct)
-	slope := progress.LinearSlope(scores10)
-
-	summary.AverageScore = &avg10
-	summary.AverageScorePct = &avgPct
-	summary.Trend = string(progress.Classify(int(count), avg10, slope))
-
-	hiScore := hi.Score
-	hiPct := hi.ScorePct
-	hiID := hi.UserAiExamID
-	summary.HighestScore = &hiScore
-	summary.HighestScorePct = &hiPct
-	summary.HighestExamID = &hiID
-
-	loScore := lo.Score
-	summary.LowestScore = &loScore
-
-	if priorAvg10 != nil {
-		delta := avg10 - *priorAvg10
-		summary.AverageDelta = &delta
-	}
-	return summary
+	core, hiID := summarizeScores(points, priorAvg10)
+	return dto.ExamProgressSummary{ExamScoreSummary: core, HighestExamID: hiID}
 }

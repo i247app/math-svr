@@ -217,3 +217,57 @@ func ids(as []*exam.UserAiExam) []int64 {
 	}
 	return out
 }
+
+// TestStatsSummarisesJourneys: the banner over the journey list counts
+// only journeys that have a score, walks them oldest first so the trend
+// reads forward in time, names the best one by its journey id, and skips
+// the nested PRACTICE row — it is not a journey of its own.
+func TestStatsSummarisesJourneys(t *testing.T) {
+	scored := func(id int64, typ enum.ExamType, pct int) *exam.UserExam {
+		r := row(id, typ)
+		r.SetResScorePercentage(&pct)
+		return r
+	}
+	// Newest first, as the repository returns them.
+	repo := &fakeJourneyRepo{rows: []*exam.UserExam{
+		row(40, enum.ExamTypeAssessment),        // opened, nothing submitted: no score
+		scored(30, enum.ExamTypeAssessment, 90), // best
+		scored(30, enum.ExamTypePractice, 10),   // nested practice, must not count
+		scored(20, enum.ExamTypeGrade, 60),
+		scored(10, enum.ExamTypeAssessment, 90), // ties with 30; the later one wins
+	}}
+
+	res, err := newStatsHandler(repo).Handle(context.Background(), query.GetExamStatsQuery{UserID: 1, ProfileID: 2})
+	if err != nil {
+		t.Fatalf("Handle: %v", err)
+	}
+	s := res.Summary
+	if s.Count != 3 {
+		t.Fatalf("count = %d, want 3 (scored journeys only)", s.Count)
+	}
+	if s.AverageScorePct == nil || *s.AverageScorePct != 80 {
+		t.Errorf("average_score_pct = %v, want 80", s.AverageScorePct)
+	}
+	if s.HighestScorePct == nil || *s.HighestScorePct != 90 || s.HighestUserExamID == nil || *s.HighestUserExamID != 30 {
+		t.Errorf("highest = %v / journey %v, want 90 / 30", s.HighestScorePct, s.HighestUserExamID)
+	}
+	if s.LowestScore == nil || *s.LowestScore != 6 {
+		t.Errorf("lowest_score = %v, want 6", s.LowestScore)
+	}
+	if s.AverageDelta != nil {
+		t.Error("the journey banner has no prior window; average_delta must be null")
+	}
+	if s.Trend == "" || s.Trend == string(enum.ProgressCommentNoData) {
+		t.Errorf("trend = %q, want a classification", s.Trend)
+	}
+
+	// No scored journey at all: the empty banner, not zeros.
+	res, err = newStatsHandler(&fakeJourneyRepo{rows: []*exam.UserExam{row(40, enum.ExamTypeAssessment)}}).
+		Handle(context.Background(), query.GetExamStatsQuery{UserID: 1, ProfileID: 2})
+	if err != nil {
+		t.Fatalf("Handle: %v", err)
+	}
+	if res.Summary.Count != 0 || res.Summary.AverageScore != nil || res.Summary.Trend != string(enum.ProgressCommentNoData) {
+		t.Errorf("empty banner = %+v", res.Summary)
+	}
+}

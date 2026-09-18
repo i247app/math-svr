@@ -410,3 +410,43 @@ func TestBuildExamPromptEnglish(t *testing.T) {
 		t.Error("an unsupported prompt language must be refused")
 	}
 }
+
+// TestBuildExamPromptAvoidList: the stems of the child's recent papers are
+// listed in the user message in both languages, blanks dropped, and
+// nothing is rendered when there are none — the block must not leave an
+// empty heading behind.
+func TestBuildExamPromptAvoidList(t *testing.T) {
+	avoid := []string{"5 + 3 = ?", "  ", "🍎🍎🍎 = ?"}
+
+	_, user, err := BuildExamPrompt(ExamPromptInput{Language: QuizLanguageEnglish, ExamType: enum.ExamTypeAssessment, Grade: 1, Avoid: avoid})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+	want := "current_grade: Lớp 1\n\nAVOID REPEATS\nThe child has already seen these questions; do not reuse or lightly reword them (change the numbers, objects, or structure):\n- 5 + 3 = ?\n- 🍎🍎🍎 = ?"
+	if user != want {
+		t.Errorf("EN user message =\n%s\nwant\n%s", user, want)
+	}
+
+	_, user, err = BuildExamPrompt(ExamPromptInput{ExamType: enum.ExamTypeAssessment, Grade: 1, Avoid: avoid})
+	if err != nil {
+		t.Fatalf("BuildExamPrompt: %v", err)
+	}
+	for _, s := range []string{"TRÁNH LẶP LẠI", "- 5 + 3 = ?", "- 🍎🍎🍎 = ?"} {
+		if !strings.Contains(user, s) {
+			t.Errorf("VN user message lacks %q", s)
+		}
+	}
+	if !strings.HasSuffix(user, "- 🍎🍎🍎 = ?") {
+		t.Error("the avoid list must close the VN user message")
+	}
+
+	for _, lang := range []QuizLanguage{"", QuizLanguageEnglish} {
+		_, user, err = BuildExamPrompt(ExamPromptInput{Language: lang, ExamType: enum.ExamTypeAssessment, Grade: 1, Avoid: []string{" "}})
+		if err != nil {
+			t.Fatalf("BuildExamPrompt: %v", err)
+		}
+		if strings.Contains(user, "AVOID") || strings.Contains(user, "TRÁNH") {
+			t.Errorf("%q: a list of blanks must render no avoid block", lang)
+		}
+	}
+}

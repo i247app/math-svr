@@ -210,6 +210,39 @@ func (r *UserAiExamRepository) FindLatestSubmittedByUserExamId(ctx context.Conte
 	return ModelToDomainUserAiExam(m), nil
 }
 
+// ListRecentByProfileGrade reads a child's newest sittings at one grade.
+// It walks ix_profile_status_started's profile prefix and filters on
+// req_grade; the candidate set per child is small enough that a
+// dedicated index is not worth its write cost.
+func (r *UserAiExamRepository) ListRecentByProfileGrade(ctx context.Context, profileId int64, grade int, limit int) ([]*exam.UserAiExam, error) {
+	if limit <= 0 {
+		return nil, nil
+	}
+	args := append(userAiExamActiveArgs(), profileId, grade, limit)
+	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
+		userAiExamActiveWhere + ` AND u.profile_id = ? AND u.req_grade = ?` +
+		` ORDER BY u.started_dt DESC, u.id DESC LIMIT ?`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("user ai exam repo list recent by grade: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*exam.UserAiExam
+	for rows.Next() {
+		m, err := scanUserAiExam(rows)
+		if err != nil {
+			return nil, fmt.Errorf("user ai exam repo scan row: %w", err)
+		}
+		out = append(out, ModelToDomainUserAiExam(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("user ai exam repo rows iteration: %w", err)
+	}
+	return out, nil
+}
+
 // ListByUserAiExamIds hydrates a batch of attempts, oldest first. The IN
 // list is built from the id count so the query stays parameterised.
 func (r *UserAiExamRepository) ListByUserAiExamIds(ctx context.Context, userAiExamIds []int64) ([]*exam.UserAiExam, error) {

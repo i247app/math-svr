@@ -2,6 +2,7 @@ package exam
 
 import (
 	"context"
+	"strings"
 
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	query "math-ai.com/math-ai/internal/application/query/exam"
@@ -26,6 +27,65 @@ import (
 // Three is a starting point, not a measurement. Raise it if children
 // report repeats; lower it if the generation bill says so.
 const MinCacheVariants = 100
+
+// RecentExamsForAvoid is how many of the child's latest sittings at the
+// requested grade have their stems listed in the prompt as "do not
+// repeat". One is the case that hurts — the child asks again straight
+// after finishing and meets the same sums. Raise it if repeats across
+// older papers turn out to bother children too; every paper costs about
+// ten short lines of prompt.
+const RecentExamsForAvoid = 1
+
+// recentStems collects the question stems of the child's latest sittings
+// at grade, newest paper first, deduplicated. It reads the stored
+// (canonical) question set, so the order within a paper is the stored
+// one — the model only needs the stems, not the order they were served.
+func (s *Service) recentStems(ctx context.Context, profileID int64, grade int) ([]string, error) {
+	attempts, err := s.attemptRepo.ListRecentByProfileGrade(ctx, profileID, grade, RecentExamsForAvoid)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if len(attempts) == 0 {
+		return nil, nil
+	}
+	ids := make([]int64, 0, len(attempts))
+	for _, a := range attempts {
+		ids = append(ids, a.AiExamId())
+	}
+	sets, err := s.aiExamRepo.ListByAiExamIds(ctx, ids)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	byID := make(map[int64]*examDomain.AiExam, len(sets))
+	for _, e := range sets {
+		byID[e.AiExamId()] = e
+	}
+
+	seen := make(map[string]struct{})
+	var stems []string
+	for _, a := range attempts {
+		e := byID[a.AiExamId()]
+		if e == nil {
+			continue
+		}
+		questions, err := decodeStoredQuestions(ctx, e.AiQuestionsJson())
+		if err != nil {
+			return nil, err
+		}
+		for _, q := range questions {
+			stem := strings.TrimSpace(q.QuestionName)
+			if stem == "" {
+				continue
+			}
+			if _, dup := seen[stem]; dup {
+				continue
+			}
+			seen[stem] = struct{}{}
+			stems = append(stems, stem)
+		}
+	}
+	return stems, nil
+}
 
 // findReusableExam returns a stored question set only once the tag's pool
 // is deep enough to pick from, and never one this child has sat before.

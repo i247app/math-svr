@@ -49,6 +49,10 @@ type ExamPromptInput struct {
 	// Practice aims a PRACTICE round at what the child just did. Required
 	// when ExamType is PRACTICE, ignored otherwise.
 	Practice *PracticeBrief
+	// Avoid is the stems of questions this child has recently seen at
+	// this grade. The model is told not to reuse or lightly reword them;
+	// empty renders nothing.
+	Avoid []string
 }
 
 // PracticeBrief is what the model is told about the sitting a PRACTICE

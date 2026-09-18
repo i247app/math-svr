@@ -177,7 +177,13 @@ func buildSystemExamEN(in ExamPromptInput, n int) string {
 }
 
 // buildUserExamEN binds {grade} to the Vietnamese band label the system
-// prompt's MODE switch and question_grade vocabulary are written in.
+// prompt's MODE switch and question_grade vocabulary are written in, then
+// lists the stems the child has recently met so the round does not
+// repeat them.
 func buildUserExamEN(in ExamPromptInput, _ int) string {
-	return "current_grade: " + ExamTitle(in.Grade)
+	out := "current_grade: " + ExamTitle(in.Grade)
+	if avoid := examAvoidBlock(QuizLanguageEnglish, in.Avoid); avoid != "" {
+		out += "\n\n" + avoid
+	}
+	return out
 }

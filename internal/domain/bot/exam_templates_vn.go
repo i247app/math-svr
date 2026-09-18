@@ -160,6 +160,27 @@ func examPracticeBlockVN(b *PracticeBrief, n int) string {
 	return strings.TrimRight(sb.String(), "\n")
 }
 
+// examAvoidBlock lists the stems the child has already met, one per
+// line, under a heading in the prompt's language. Blank stems are
+// skipped; an empty list renders nothing so the caller can append it
+// unconditionally.
+func examAvoidBlock(lang QuizLanguage, stems []string) string {
+	var sb strings.Builder
+	for _, stem := range stems {
+		if stem = strings.TrimSpace(stem); stem != "" {
+			sb.WriteString("- " + stem + "\n")
+		}
+	}
+	if sb.Len() == 0 {
+		return ""
+	}
+	head := "TRÁNH LẶP LẠI\nHọc sinh đã gặp các câu sau; KHÔNG dùng lại hay chỉ đổi nhẹ (đổi số, đổi vật, đổi cấu trúc):\n"
+	if lang == QuizLanguageEnglish {
+		head = "AVOID REPEATS\nThe child has already seen these questions; do not reuse or lightly reword them (change the numbers, objects, or structure):\n"
+	}
+	return head + strings.TrimRight(sb.String(), "\n")
+}
+
 // joinOr renders a topic list, or the fallback when there is none.
 func joinOr(items []string, fallback string) string {
 	if len(items) == 0 {
@@ -208,6 +229,9 @@ func buildUserExamVN(in ExamPromptInput, n int) string {
 
 	if ctx := examContextVN(in); ctx != "" {
 		out.WriteString("\nThông tin chương trình (chỉ để chọn chủ đề, KHÔNG dùng để tăng hay giảm độ khó):\n" + ctx + "\n")
+	}
+	if avoid := examAvoidBlock(QuizLanguageVietnamese, in.Avoid); avoid != "" {
+		out.WriteString("\n" + avoid + "\n")
 	}
 
 	return strings.TrimRight(out.String(), "\n")
