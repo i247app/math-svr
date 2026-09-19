@@ -361,12 +361,14 @@ func TestBuildExamPromptEnglish(t *testing.T) {
 	}
 
 	for _, want := range []string{
-		"Generate exactly 10 questions, with difficulty increasing from Q1 → Q10.",
-		"Q3 and Q6 must use content from the next grade; all other questions must use content from the current grade. For Grade 5, Q3 and Q6 use early Grade 6 content.",
-		`question_grade: Q3 and Q6 = "Lớp 1"; all other questions = "Mẫu giáo".`,
-		`question_grade: "Lớp N"; Q3 and Q6 = "Lớp N+1" (Grade 5 → "Lớp 6").`,
-		"MODE by {grade}:",
-		"15 KG QUESTION TYPES (STANDARDIZED):",
+		"Generate EXACTLY 10 multiple-choice questions for {grade}.",
+		"* Difficulty increases Q1→Q10.",
+		"* Q3, Q6 = next-grade content. Grade 5 → early Grade 6.",
+		"* Q1,2,4,5,7,8,9,10 = Mẫu giáo; Q3,6 = Lớp 1.",
+		"* Q1,2,4,5,7,8,9,10 = current grade; Q3,6 = next grade.",
+		`CASE KG — if {grade} = "Mẫu giáo":`,
+		"11 KG QUESTION TYPES:",
+		"11.ORDER_NUM |",
 		"IMPORTANT LANGUAGE RULE:",
 		`"question_grade": "..."`,
 	} {
@@ -394,10 +396,10 @@ func TestBuildExamPromptEnglish(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BuildExamPrompt: %v", err)
 	}
-	if !strings.Contains(system, "Q3 must use content from the next grade") || !strings.Contains(system, `question_grade: Q3 = "Lớp 1"`) {
+	if !strings.Contains(system, "* Q3 = next-grade content.") || !strings.Contains(system, "* Q1,2,4,5 = Mẫu giáo; Q3 = Lớp 1.") {
 		t.Error("a 5-question EN round probes at Q3 only")
 	}
-	if strings.Contains(system, "Q3 and Q6") {
+	if strings.Contains(system, "Q3, Q6") || strings.Contains(system, "Q3,6") {
 		t.Error("a 5-question EN round must not name Q6 as a probe")
 	}
 

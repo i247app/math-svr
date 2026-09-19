@@ -280,8 +280,7 @@ type ListExamsRes struct {
 }
 
 type GetExamStatsRes struct {
-	Stats   []ExamStats      `json:"stats"`
-	Summary ExamStatsSummary `json:"summary"`
+	Stats []ExamStats `json:"stats"`
 }
 
 // AttemptToResponse flattens an attempt and its question set.
@@ -609,9 +608,9 @@ type ExamPoint struct {
 	TotalQuestions *int64  `json:"total_questions"`
 }
 
-// ExamScoreSummary is the banner both score lists share — the progress
-// chart over sittings and the journey list over journeys — so the two
-// screens read the same numbers the same way. Nullable score fields
+// ExamScoreSummary is the banner both progress charts share — over
+// sittings and over journeys — so the two screens read the same numbers
+// the same way. Nullable score fields
 // serialise as null when there is no data; AverageDelta compares against
 // the prior same-size window and is null when there is no such window.
 type ExamScoreSummary struct {
@@ -632,9 +631,8 @@ type ExamProgressSummary struct {
 	HighestExamID *int64 `json:"highest_user_ai_exam_id"`
 }
 
-// ExamStatsSummary is the banner over journeys (ma_user_exams rows); the
-// highest one is named by its journey id. A journey that has no score yet
-// — opened at hand-out, nothing submitted — is not counted.
+// ExamStatsSummary is the banner over journeys (ma_user_exams rows) for
+// the journey progress chart; the highest one is named by its journey id.
 type ExamStatsSummary struct {
 	ExamScoreSummary
 	HighestUserExamID *int64 `json:"highest_user_exam_id"`

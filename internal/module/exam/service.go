@@ -394,10 +394,7 @@ func (s *Service) GetExamStats(ctx context.Context, req *dto.GetExamStatsReq) (*
 	if err != nil {
 		return nil, err
 	}
-	return &dto.GetExamStatsRes{
-		Stats:   dto.JourneyStatsToResponse(rows.Journeys, rows.AiExams),
-		Summary: rows.Summary,
-	}, nil
+	return &dto.GetExamStatsRes{Stats: dto.JourneyStatsToResponse(rows.Journeys, rows.AiExams)}, nil
 }
 
 // MarkExamJourney ends a journey as COMPLETE or CANCEL. From then on the
