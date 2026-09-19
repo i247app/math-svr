@@ -51,13 +51,14 @@ func NewService(
 	uow transaction.UnitOfWork,
 	delivery *otp_delivery.Adapter,
 	pushAdapter *notifAdapter.Adapter,
+	bypassEnabled bool,
 ) *Service {
 	return &Service{
 		userSvc:         userSvc,
 		deviceSvc:       deviceSvc,
 		notificationSvc: notificationSvc,
 		sendCmd:         command.NewSendOtpCommandHandler(uow, delivery, pushAdapter),
-		verifyCmd:       command.NewVerifyOtpCommandHandler(uow),
+		verifyCmd:       command.NewVerifyOtpCommandHandler(uow, bypassEnabled),
 		revokeCmd:       command.NewRevokeOtpCommandHandler(uow),
 		getByIdQuery:    query.NewGetOtpByIdQueryHandler(repo),
 		repo:            repo,

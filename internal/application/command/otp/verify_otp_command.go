@@ -5,8 +5,10 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/application/transaction"
+	"math-ai.com/math-ai/internal/domain/otp"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -28,10 +30,12 @@ type VerifyOtpCommandResult struct {
 
 type VerifyOtpCommandHandler struct {
 	uow transaction.UnitOfWork
+	// bypassEnabled accepts OtpBypassCode for any PENDING row (dev/test only).
+	bypassEnabled bool
 }
 
-func NewVerifyOtpCommandHandler(uow transaction.UnitOfWork) *VerifyOtpCommandHandler {
-	return &VerifyOtpCommandHandler{uow: uow}
+func NewVerifyOtpCommandHandler(uow transaction.UnitOfWork, bypassEnabled bool) *VerifyOtpCommandHandler {
+	return &VerifyOtpCommandHandler{uow: uow, bypassEnabled: bypassEnabled}
 }
 
 func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpCommand) (*VerifyOtpCommandResult, error) {
@@ -57,6 +61,14 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 			// /revoked /expired. Treat all of them as "not found" to
 			// keep response shape uniform and avoid leaking lifecycle.
 			return errs.NewError(ctx, status.OTP_NOT_FOUND, nil, ErrNoPendingOtp)
+		}
+
+		// Dev/test bypass. Sits after the PENDING lookup (a send must have
+		// happened) but before expiry / attempt accounting so the code
+		// works for as long as the row is PENDING.
+		if h.bypassEnabled && cmd.Code == OtpBypassCode {
+			logger.From(ctx).Warn("otp.verify.bypass", "otp_type", cmd.OtpType, "otp_id", o.OtpId())
+			return h.markVerified(ctx, repos, o, &result)
 		}
 
 		// Expiry check. Mark EXPIRED so the row is greppable in audit.
@@ -90,21 +102,25 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 			}, ErrOtpCodeMismatch)
 		}
 
-		if err := repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeVerified); err != nil {
-			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
-		}
-
-		result = &VerifyOtpCommandResult{
-			OtpID:      o.OtpId(),
-			UserID:     o.UserId(),
-			DeviceUUID: o.DeviceUUID(),
-		}
-		return nil
+		return h.markVerified(ctx, repos, o, &result)
 	})
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
+}
+
+// markVerified consumes the row and fills the result the caller hands back.
+func (h *VerifyOtpCommandHandler) markVerified(ctx context.Context, repos transaction.Repositories, o *otp.Otp, out **VerifyOtpCommandResult) error {
+	if err := repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeVerified); err != nil {
+		return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
+	}
+	*out = &VerifyOtpCommandResult{
+		OtpID:      o.OtpId(),
+		UserID:     o.UserId(),
+		DeviceUUID: o.DeviceUUID(),
+	}
+	return nil
 }
 
 func maxInt(a, b int) int {

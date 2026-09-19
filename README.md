@@ -115,6 +115,7 @@ if the file is missing or unparsable, and that error aborts startup.
 | `STORAGE_PROVIDER` | `s3` or empty (empty is treated as S3) + `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `STORAGE_REGION`, `STORAGE_BUCKET` |
 | `SOCKET_ENABLED` | `false` → `/ws/connect` is not registered at all |
 | `ENABLE_OTP` | default `false`; passed into the auth handler |
+| `OTP_BYPASS_ENABLED` | default `false`; **dev/test only** — `0000` verifies any PENDING OTP (a prior send is still required) |
 | `GEX_SESSION_DRIVER` | `xwt` → XWT session provider; anything else → JWT |
 | `SERIALIZED_SESSION_FILE` | when set, sessions are dumped here on shutdown and reloaded on start |
 | `OBS_*`, `LOG_*` | observability — see `.env.example` and `docker/README.md` |

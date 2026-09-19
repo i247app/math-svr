@@ -19,7 +19,10 @@ type Env struct {
 	HttpsCertFile         *string
 	HttpsKeyFile          *string
 	EnableOTP             bool
-	TrustDeviceTTLDays    int
+	// OtpBypassEnabled lets command.OtpBypassCode verify any PENDING OTP.
+	// Dev/test only — env OTP_BYPASS_ENABLED; default false. Never enable in prod.
+	OtpBypassEnabled   bool
+	TrustDeviceTTLDays int
 
 	DBConfig            DBConfig
 	EmailConfig         EmailConfig
