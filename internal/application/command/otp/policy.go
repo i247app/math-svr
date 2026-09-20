@@ -35,7 +35,7 @@ var (
 // OtpBypassCode verifies any PENDING OTP when the handler was built with
 // bypass enabled (env OTP_BYPASS_ENABLED). Dev/test convenience only — it
 // never creates a row, so a verify without a prior send still fails.
-const OtpBypassCode = "0000"
+// const OtpBypassCode = "0000"
 
 // TtlFor returns the validity window for a given OTP type. Short-lived for
 // auth-adjacent flows, slightly longer for inbox-delivered ones.

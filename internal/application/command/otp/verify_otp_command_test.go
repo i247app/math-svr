@@ -60,28 +60,28 @@ func TestVerifyOtpCommand_Bypass(t *testing.T) {
 			name:       "bypass off: 0000 is just a wrong code",
 			bypass:     false,
 			pending:    pendingOtp(realCode, time.Minute),
-			code:       command.OtpBypassCode,
+			code:       "0000",
 			wantStatus: status.OTP_INVALID_CODE,
 		},
 		{
 			name:      "bypass on: 0000 verifies a pending row",
 			bypass:    true,
 			pending:   pendingOtp(realCode, time.Minute),
-			code:      command.OtpBypassCode,
+			code:      "0000",
 			wantFinal: enum.OtpStatusTypeVerified,
 		},
 		{
 			name:      "bypass on: 0000 ignores expiry while the row is still pending",
 			bypass:    true,
 			pending:   pendingOtp(realCode, -time.Minute),
-			code:      command.OtpBypassCode,
+			code:      "0000",
 			wantFinal: enum.OtpStatusTypeVerified,
 		},
 		{
 			name:       "bypass on: no prior send is still not found",
 			bypass:     true,
 			pending:    nil,
-			code:       command.OtpBypassCode,
+			code:       "0000",
 			wantStatus: status.OTP_NOT_FOUND,
 		},
 		{
@@ -103,7 +103,7 @@ func TestVerifyOtpCommand_Bypass(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			repo := &verifyOtpRepo{pending: tc.pending}
-			h := command.NewVerifyOtpCommandHandler(fakeUoW{repos: transaction.Repositories{Otp: repo}}, tc.bypass)
+			h := command.NewVerifyOtpCommandHandler(fakeUoW{repos: transaction.Repositories{Otp: repo}}, tc.bypass, "0000")
 
 			res, err := h.Handle(context.Background(), command.VerifyOtpCommand{
 				OtpType:    enum.OtpTypeLogin2FA,

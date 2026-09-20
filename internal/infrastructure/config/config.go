@@ -33,6 +33,7 @@ func NewEnv(envpath string) (*Env, error) {
 		HttpsKeyFile:          getConfigOptional("HTTPS_KEY_FILE"),
 		EnableOTP:             getBoolConfigWithDefault("ENABLE_OTP", false),
 		OtpBypassEnabled:      getBoolConfigWithDefault("OTP_BYPASS_ENABLED", false),
+		OtpBypassCode:         getConfigOptionalString("OTP_BYPASS_CODE"),
 		TrustDeviceTTLDays:    getIntConfigOptionalWithDefault("TRUST_DEVICE_TTL", 30),
 
 		DBConfig: DBConfig{
