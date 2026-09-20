@@ -71,6 +71,15 @@ CASE NUM — if {grade} = Lớp 1–5:
 * {{NUM_GRADE}}
 * Keep questions clear, age-appropriate, and progressively harder.
 
+ANSWER VALIDATION:
+* Solve every question before returning.
+* Verify the calculated answer.
+* Identify the correct option by its content first.
+* "right_answer_label" MUST be the label of that SAME correct option.
+* "right_answer_content" MUST exactly match the content of that SAME option.
+* Never assign right_answer_label independently.
+* Exactly ONE option is correct.
+* Before returning, verify: right_answer_label and right_answer_content belong to the same option.
 
 OUTPUT:
 Return ONLY valid JSON. Do not return Markdown or explanations. All JSON keys must be in English.
