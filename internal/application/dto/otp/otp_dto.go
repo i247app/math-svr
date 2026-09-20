@@ -13,7 +13,7 @@ import (
 type SendOtpReq struct {
 	OtpType    string `json:"otp_type"`
 	Identifier string `json:"identifier"`
-	UserID     *int64 `json:"user_id,omitempty"`
+	UserID     *int64 `json:"uid,omitempty"`
 	// DeviceUUID *string    `json:"device_uuid,omitempty"`
 	// DeviceName *string    `json:"device_name,omitempty"`
 	// Channel    string     `json:"channel,omitempty"` // "", "SMS", "EMAIL"

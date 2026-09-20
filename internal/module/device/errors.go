@@ -6,5 +6,5 @@ import "errors"
 var (
 	ErrDeviceNotFound   = errors.New("device not found")
 	ErrDeviceIDRequired = errors.New("device_id is required")
-	ErrUserIDRequired   = errors.New("user_id is required")
+	ErrUserIDRequired   = errors.New("uid is required")
 )

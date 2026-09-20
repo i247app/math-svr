@@ -13,7 +13,7 @@ import (
 
 type UpdateUserCommand struct {
 	ID        int64   `json:"-"`
-	UserID    int64   `json:"user_id"`
+	UserID    int64   `json:"uid"`
 	UserName  *string `json:"user_name,omitempty"`
 	Email     *string `json:"email,omitempty"`
 	Phone     *string `json:"phone,omitempty"`

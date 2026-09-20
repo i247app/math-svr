@@ -19,7 +19,7 @@ import (
 const (
 	userAiExamTable = "ma_user_ai_exams"
 
-	userAiExamColumns = `u.id, u.user_ai_exam_id, u.user_id, u.profile_id, u.ai_exam_id, u.user_exam_id, u.shuffle_map,
+	userAiExamColumns = `u.id, u.user_ai_exam_id, u.uid, u.profile_id, u.ai_exam_id, u.user_exam_id, u.shuffle_map,
 		u.req_exam_type, u.req_grade, u.req_level,
 		u.res_total_questions, u.res_correct_number, u.res_skipped_number, u.res_score_percentage,
 		u.started_dt, u.submitted_dt,
@@ -284,7 +284,7 @@ func (r *UserAiExamRepository) ListByUserAiExamIds(ctx context.Context, userAiEx
 func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (*exam.UserAiExam, error) {
 	query := `
 		INSERT INTO ` + userAiExamTable + `
-			(user_ai_exam_id, user_id, profile_id, ai_exam_id, user_exam_id, shuffle_map,
+			(user_ai_exam_id, uid, profile_id, ai_exam_id, user_exam_id, shuffle_map,
 			 req_exam_type, req_grade, req_level,
 			 started_dt, note, user_ai_exam_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

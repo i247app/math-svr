@@ -15,7 +15,7 @@ import (
 const (
 	aliasTable = "ma_aliases"
 
-	aliasColumns = `id, alias_id, user_id, aka, alias_status, note, create_id, create_dt, modify_id, modify_dt`
+	aliasColumns = `id, alias_id, uid, aka, alias_status, note, create_id, create_dt, modify_id, modify_dt`
 
 	aliasActiveWhere = `status IN (?) AND deleted_dt IS NULL`
 )
@@ -51,7 +51,7 @@ func (r *AliasRepository) findOneBy(ctx context.Context, where string, args ...a
 
 func (r *AliasRepository) Create(ctx context.Context, alias *user.Alias) (*user.Alias, error) {
 	query := `
-		INSERT INTO ` + aliasTable + ` (alias_id, user_id, aka, alias_status, note, create_dt, modify_dt)
+		INSERT INTO ` + aliasTable + ` (alias_id, uid, aka, alias_status, note, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
@@ -76,7 +76,7 @@ func (r *AliasRepository) FindByAka(ctx context.Context, aka string) (*user.Alia
 }
 
 func (r *AliasRepository) FindByUserId(ctx context.Context, userId int64) ([]*user.Alias, error) {
-	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable + ` WHERE user_id = ?`
+	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable + ` WHERE uid = ?`
 	rows, err := r.db.Query(ctx, query, userId)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (r *AliasRepository) UpdateByAliasId(ctx context.Context, alias *user.Alias
 }
 
 func (r *AliasRepository) DeleteByUserId(ctx context.Context, userId int64) error {
-	if _, err := r.db.Exec(ctx, `DELETE FROM `+aliasTable+` WHERE user_id = ?`, userId); err != nil {
+	if _, err := r.db.Exec(ctx, `DELETE FROM `+aliasTable+` WHERE uid = ?`, userId); err != nil {
 		return fmt.Errorf("alias repo delete by uid: %w", err)
 	}
 	return nil
@@ -123,7 +123,7 @@ func (r *AliasRepository) MarkStatusByUserId(ctx context.Context, userId int64, 
 		UPDATE ` + aliasTable + `
 		SET alias_status = ?,
 			modify_dt = ?
-		WHERE user_id = ?
+		WHERE uid = ?
 	`
 
 	if _, err := r.db.Exec(ctx, query, status, mtime.Now().Time, userId); err != nil {
@@ -138,7 +138,7 @@ func (r *AliasRepository) SoftDeleteByUserId(ctx context.Context, userId int64) 
 		SET alias_status = ?,
 			status = ?,
 			deleted_dt = ?
-		WHERE user_id = ?
+		WHERE uid = ?
 	`
 
 	if _, err := r.db.Exec(ctx, query, enum.UserAliasStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, userId); err != nil {

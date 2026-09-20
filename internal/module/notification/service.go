@@ -101,11 +101,11 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 	if s.push.enabled() {
 		token, terr := s.determineToken(ctx, req.UserID, deviceId)
 		if terr != nil {
-			log.Warnf("notification.token_lookup_failed user_id=%d err=%v", req.UserID, terr)
+			log.Warnf("notification.token_lookup_failed uid=%d err=%v", req.UserID, terr)
 		} else if token != nil {
 			sendRes, serr := s.push.send(ctx, []string{*token}, notiDomain)
 			if serr != nil {
-				log.Warnf("notification.push_failed user_id=%d err=%v", req.UserID, serr)
+				log.Warnf("notification.push_failed uid=%d err=%v", req.UserID, serr)
 			} else {
 				if len(sendRes.InvalidTokens) > 0 {
 					if cerr := s.clearTokensCmd.Handle(ctx, command.ClearDeadTokensCommand{
@@ -161,13 +161,13 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 	// if s.push.enabled() {
 	// 	tokens, terr := s.recipientTokens(ctx, req.UserID)
 	// 	if terr != nil {
-	// 		log.Warnf("notification.token_lookup_failed user_id=%d err=%v", req.UserID, terr)
+	// 		log.Warnf("notification.token_lookup_failed uid=%d err=%v", req.UserID, terr)
 	// 	} else if len(tokens) > 0 {
 	// 		sendRes, serr := s.push.send(ctx, tokens, created)
 	// 		if serr != nil {
 	// 			// Inbox row is already persisted; surface delivery failure in
 	// 			// logs only so the caller still sees a created notification.
-	// 			log.Warnf("notification.push_failed notification_id=%d user_id=%d err=%v",
+	// 			log.Warnf("notification.push_failed notification_id=%d uid=%d err=%v",
 	// 				created.NotificationId(), req.UserID, serr)
 	// 		} else {
 	// 			res.PushSuccess = sendRes.SuccessCount
@@ -193,7 +193,7 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 		log := logger.From(ctx)
 		topic := appsocket.NotificationsTopic(req.UserID)
 		if perr := s.socket.Publish(ctx, topic, notificationCreatedEvent, res.Notification); perr != nil {
-			log.Warnf("notification.socket_publish_failed notification_id=%d user_id=%d err=%v",
+			log.Warnf("notification.socket_publish_failed notification_id=%d uid=%d err=%v",
 				created.NotificationId(), req.UserID, perr)
 		}
 	}

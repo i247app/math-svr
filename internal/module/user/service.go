@@ -373,7 +373,7 @@ func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, cont
 	}
 
 	// Verify the user exists BEFORE uploading so we don't leave orphan
-	// S3 objects when the caller passes a bogus user_id.
+	// S3 objects when the caller passes a bogus uid.
 	existing, err := s.getUserByUserIdQuery.Handle(ctx, query.GetUserByUserIdQuery{UserId: userID})
 	if err != nil {
 		return nil, err
@@ -423,12 +423,12 @@ func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, cont
 		// Key is persisted; failing here just means we can't return a
 		// preview URL now. Log and return the key without it — the
 		// client can re-fetch via /users/me to get a fresh presigned URL.
-		logger.From(ctx).Warnf("user.avatar presign failed user_id=%d err=%v", userID, err)
+		logger.From(ctx).Warnf("user.avatar presign failed uid=%d err=%v", userID, err)
 		signed = ""
 	}
 
 	logger.From(ctx).Info("user.avatar_uploaded",
-		"user_id", userID,
+		"uid", userID,
 		"avatar_key", uploaded.Key,
 	)
 

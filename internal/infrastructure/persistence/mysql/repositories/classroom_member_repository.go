@@ -263,7 +263,7 @@ func (r *ClassroomMemberRepository) ListActiveByProfileIds(ctx context.Context, 
 // what expresses "shares a classroom"; DISTINCT collapses people the user
 // shares more than one classroom with.
 func (r *ClassroomMemberRepository) ListPeerUserIdsByUserId(ctx context.Context, userId int64) ([]int64, error) {
-	query := `SELECT DISTINCT peer_p.user_id
+	query := `SELECT DISTINCT peer_p.uid
 		FROM ` + profileTable + ` me
 		INNER JOIN ` + classroomMemberTable + ` my_m
 		    ON my_m.profile_id = me.profile_id
@@ -278,7 +278,7 @@ func (r *ClassroomMemberRepository) ListPeerUserIdsByUserId(ctx context.Context,
 		    ON peer_p.profile_id = peer_m.profile_id
 		   AND peer_p.status = ? AND peer_p.deleted_dt IS NULL
 		WHERE me.status = ? AND me.deleted_dt IS NULL
-		  AND me.user_id = ? AND peer_p.user_id != ?`
+		  AND me.uid = ? AND peer_p.uid != ?`
 
 	rows, err := r.db.Query(ctx, query,
 		enum.StatusActive, enum.ClassroomMemberStatusTypeActive,

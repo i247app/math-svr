@@ -5,7 +5,7 @@ import (
 )
 
 // Notification models ma_notifications — one persisted in-app notification
-// for a single recipient (user_id). It is both an inbox/feed record (title,
+// for a single recipient (uid). It is both an inbox/feed record (title,
 // shortText, isRead, category) and the source payload for a push delivery via
 // FCM.
 //
@@ -15,7 +15,7 @@ import (
 type Notification struct {
 	id                 int64
 	notificationId     int64 // external id (minted via Seq.Next)
-	userId             int64 // recipient user_id
+	userId             int64 // recipient uid
 	title              string
 	shortText          string
 	category           *string // INFO, WARNING, ERROR

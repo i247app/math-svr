@@ -23,7 +23,7 @@ func serveSessionToken(r *http.Request) (authHeader, body string) {
 }
 
 func TestSessionToken_JSONBody(t *testing.T) {
-	raw := `{"metadata":{"authorization":"Bearer tok-abc","device_uuid":"d1"},"user_id":42}`
+	raw := `{"metadata":{"authorization":"Bearer tok-abc","device_uuid":"d1"},"uid":42}`
 	r := httptest.NewRequest(http.MethodPost, "/users/detail", strings.NewReader(raw))
 	r.Header.Set("Content-Type", "application/json")
 
@@ -65,7 +65,7 @@ func TestSessionToken_Multipart(t *testing.T) {
 // supplied via the Authorization header must NOT survive when the body has no
 // metadata.authorization.
 func TestSessionToken_HeaderIsDropped(t *testing.T) {
-	raw := `{"metadata":{"device_uuid":"d1"},"user_id":42}`
+	raw := `{"metadata":{"device_uuid":"d1"},"uid":42}`
 	r := httptest.NewRequest(http.MethodPost, "/users/detail", strings.NewReader(raw))
 	r.Header.Set("Content-Type", "application/json")
 	r.Header.Set("Authorization", "Bearer header-token")

@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	ctxKeyUserID      contextKey = "math-ai.user_id"
+	ctxKeyUserID      contextKey = "math-ai.uid"
 	ctxKeyTokenSuffix contextKey = "math-ai.token_suffix"
 )
 

@@ -36,9 +36,9 @@ func (h *SoftDeleteUserCommandHandler) Handle(ctx context.Context, cmd SoftDelet
 		return nil
 	})
 	if err != nil {
-		log.Printf("[admin.soft_delete_user] user_id=%d action=soft_delete outcome=error err=%v", cmd.UserID, err)
+		log.Printf("[admin.soft_delete_user] uid=%d action=soft_delete outcome=error err=%v", cmd.UserID, err)
 		return err
 	}
-	log.Printf("[admin.soft_delete_user] user_id=%d action=soft_delete outcome=success", cmd.UserID)
+	log.Printf("[admin.soft_delete_user] uid=%d action=soft_delete outcome=success", cmd.UserID)
 	return nil
 }

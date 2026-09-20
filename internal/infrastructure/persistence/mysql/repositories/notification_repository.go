@@ -17,7 +17,7 @@ import (
 const (
 	notificationTable = "ma_notifications"
 
-	notificationColumns = `n.id, n.notification_id, n.user_id, n.title, n.short_text,
+	notificationColumns = `n.id, n.notification_id, n.uid, n.title, n.short_text,
 		n.category, n.is_read, n.action_type, n.action_data, n.priority, n.note,
 		n.notification_status, n.status,
 		n.create_id, n.create_dt, n.modify_id, n.modify_dt`
@@ -91,7 +91,7 @@ func (r *NotificationRepository) ListByUserId(ctx context.Context, params *notif
 		return nil, nil, fmt.Errorf("notification repo list: params is required")
 	}
 
-	filter := ` AND n.user_id = ?`
+	filter := ` AND n.uid = ?`
 	filterArgs := []any{params.UserID}
 	if params.OnlyUnread {
 		filter += ` AND n.is_read = ?`
@@ -138,7 +138,7 @@ func (r *NotificationRepository) ListByUserId(ctx context.Context, params *notif
 func (r *NotificationRepository) CountUnreadByUserId(ctx context.Context, userId int64) (int64, error) {
 	args := append(notificationActiveArgs(), userId, false)
 	query := `SELECT COUNT(*) FROM ` + notificationTable + ` n WHERE ` +
-		notificationActiveWhere + ` AND n.user_id = ? AND n.is_read = ?`
+		notificationActiveWhere + ` AND n.uid = ? AND n.is_read = ?`
 
 	var total int64
 	if err := r.db.QueryRow(ctx, query, args...).Scan(&total); err != nil {
@@ -150,7 +150,7 @@ func (r *NotificationRepository) CountUnreadByUserId(ctx context.Context, userId
 func (r *NotificationRepository) Create(ctx context.Context, n *notification.Notification) (*notification.Notification, error) {
 	query := `
 		INSERT INTO ` + notificationTable + `
-			(notification_id, user_id, title, short_text, category, is_read, action_type,
+			(notification_id, uid, title, short_text, category, is_read, action_type,
 			 action_data, priority, note, notification_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`

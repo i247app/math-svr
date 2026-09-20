@@ -1,4 +1,4 @@
-CREATE TABLE ma_exercise_submissions (
+CREATE TABLE IF NOT EXISTS ma_exercise_submissions (
   id                              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   classroom_exercise_submission_id BIGINT UNSIGNED NOT NULL,
   classroom_exercise_id           BIGINT UNSIGNED NOT NULL,

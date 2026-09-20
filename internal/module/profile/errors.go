@@ -23,5 +23,5 @@ var (
 	ErrSemesterIDRequired                        = errors.New("semester_id is required")
 	ErrStorageAdapterNotConfigured               = errors.New("storage adapter is not configured")
 	ErrUploadReturnedEmptyKey                    = errors.New("upload returned an empty key")
-	ErrUserIDRequired                            = errors.New("user_id is required")
+	ErrUserIDRequired                            = errors.New("uid is required")
 )

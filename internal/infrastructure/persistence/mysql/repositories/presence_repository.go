@@ -17,7 +17,7 @@ import (
 const (
 	presenceTable = "ma_user_presence"
 
-	presenceColumns = `p.id, p.user_id, p.presence_state, p.connection_count,
+	presenceColumns = `p.id, p.uid, p.presence_state, p.connection_count,
 		p.last_online_dt, p.last_seen_dt, p.last_device_uuid, p.last_platform,
 		p.note, p.status, p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
@@ -53,7 +53,7 @@ func scanPresence(s database.RowScanner) (*models.PresenceModel, error) {
 func (r *PresenceRepository) FindByUserId(ctx context.Context, userId int64) (*presence.Presence, error) {
 	args := append(presenceActiveArgs(), userId)
 	query := `SELECT ` + presenceColumns + ` FROM ` + presenceTable + ` p WHERE ` +
-		presenceActiveWhere + ` AND p.user_id = ?`
+		presenceActiveWhere + ` AND p.uid = ?`
 
 	m, err := scanPresence(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -78,7 +78,7 @@ func (r *PresenceRepository) ListByUserIds(ctx context.Context, userIds []int64)
 	}
 
 	query := `SELECT ` + presenceColumns + ` FROM ` + presenceTable + ` p WHERE ` +
-		presenceActiveWhere + ` AND p.user_id IN (` + placeholders + `)`
+		presenceActiveWhere + ` AND p.uid IN (` + placeholders + `)`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -100,7 +100,7 @@ func (r *PresenceRepository) ListByUserIds(ctx context.Context, userIds []int64)
 }
 
 // IncrementConnection is an upsert because the row only comes into existence on
-// the user's first ever connection. The UNIQUE key on user_id is what makes
+// the user's first ever connection. The UNIQUE key on uid is what makes
 // ON DUPLICATE KEY fire; two devices connecting at the same instant therefore
 // serialise on the row lock instead of both inserting.
 //
@@ -108,7 +108,7 @@ func (r *PresenceRepository) ListByUserIds(ctx context.Context, userIds []int64)
 // which MySQL 8.0.20 deprecated.
 func (r *PresenceRepository) IncrementConnection(ctx context.Context, userId int64, deviceUuid, platform *string, now mtime.MathTime) (*presence.Presence, error) {
 	query := `INSERT INTO ` + presenceTable + `
-		  (user_id, presence_state, connection_count, last_online_dt, last_seen_dt,
+		  (uid, presence_state, connection_count, last_online_dt, last_seen_dt,
 		   last_device_uuid, last_platform, status)
 		VALUES (?, ?, 1, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
@@ -143,7 +143,7 @@ func (r *PresenceRepository) DecrementConnection(ctx context.Context, userId int
 		  presence_state   = CASE WHEN connection_count <= 1 THEN ? ELSE presence_state END,
 		  connection_count = GREATEST(0, connection_count - 1),
 		  last_seen_dt     = ?
-		WHERE user_id = ?`
+		WHERE uid = ?`
 
 	if _, err := r.db.Exec(ctx, query, string(enum.PresenceStateOffline), now.Time, userId); err != nil {
 		return nil, fmt.Errorf("presence repo decrement connection: %w", err)

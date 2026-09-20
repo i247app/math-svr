@@ -1,10 +1,10 @@
 // Package presence models a user account's realtime availability — the
 // online/offline dot shown next to a classroom member.
 //
-// Keyed by user_id rather than profile_id because a WebSocket belongs to an
+// Keyed by uid rather than profile_id because a WebSocket belongs to an
 // account, not to one of the profiles that account holds. Read paths that
 // start from a profile (a classroom member list) map profile → user through
-// ma_profiles.user_id before looking presence up.
+// ma_profiles.uid before looking presence up.
 package presence
 
 import "math-ai.com/math-ai/internal/domain/shared/mtime"

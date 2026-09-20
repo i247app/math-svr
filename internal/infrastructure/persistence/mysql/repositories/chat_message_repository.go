@@ -17,7 +17,7 @@ const (
 	chatMessageTable = "ma_chat_messages"
 
 	chatMessageColumns = `m.id, m.message_id, m.conversation_id, m.seq_no,
-		m.sender_profile_id, m.sender_user_id, m.message_type, m.content,
+		m.sender_profile_id, m.sender_uid, m.message_type, m.content,
 		m.attachment_count, m.reply_to_message_id, m.system_event, m.system_payload,
 		m.metadata, m.client_msg_id, m.sent_dt, m.edited_dt, m.revoked_dt,
 		m.note, m.message_status, m.status, m.create_id, m.create_dt,
@@ -194,7 +194,7 @@ func (r *ChatMessageRepository) ListByConversationId(ctx context.Context, params
 
 func (r *ChatMessageRepository) Create(ctx context.Context, m *chat.Message) (*chat.Message, error) {
 	query := `INSERT INTO ` + chatMessageTable + `
-		  (message_id, conversation_id, seq_no, sender_profile_id, sender_user_id,
+		  (message_id, conversation_id, seq_no, sender_profile_id, sender_uid,
 		   message_type, content, attachment_count, reply_to_message_id,
 		   system_event, system_payload, metadata, client_msg_id, sent_dt,
 		   note, message_status, status, create_id, create_dt)

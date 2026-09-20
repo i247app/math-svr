@@ -18,7 +18,7 @@ import (
 const (
 	profileTable = "ma_profiles"
 
-	profileColumns = `p.id, p.profile_id, p.profile_code, p.user_id, p.name, p.phone, p.email, p.role, p.avatar_key, p.dob,
+	profileColumns = `p.id, p.profile_id, p.profile_code, p.uid, p.name, p.phone, p.email, p.role, p.avatar_key, p.dob,
 		p.school_id, p.program_id, p.grade_id, p.semester_id, p.is_default,
 		p.id_type, p.teacher_id, p.student_id,
 		p.note, p.profile_status, p.status,
@@ -86,7 +86,7 @@ func (r *ProfileRepository) FindByProfileId(ctx context.Context, profileId int64
 }
 
 func (r *ProfileRepository) FindDefaultProfileByUserId(ctx context.Context, userId int64) (*profile.Profile, error) {
-	return r.findOneBy(ctx, "p.user_id = ? AND p.is_default = true", userId)
+	return r.findOneBy(ctx, "p.uid = ? AND p.is_default = true", userId)
 }
 
 func (r *ProfileRepository) FindByProfileCode(ctx context.Context, profileCode string) (*profile.Profile, error) {
@@ -96,7 +96,7 @@ func (r *ProfileRepository) FindByProfileCode(ctx context.Context, profileCode s
 func (r *ProfileRepository) ListByUserId(ctx context.Context, userId int64) ([]*profile.Profile, error) {
 	args := append(profileActiveArgs(), userId)
 	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE ` +
-		profileActiveWhere + ` AND p.user_id = ? ORDER BY p.id DESC`
+		profileActiveWhere + ` AND p.uid = ? ORDER BY p.id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -223,7 +223,7 @@ func buildProfileListFilter(params *profile.ListProfilesParams) (string, []any) 
 		args   []any
 	)
 	if params.UserId != nil && *params.UserId != 0 {
-		clause.WriteString(` AND p.user_id = ?`)
+		clause.WriteString(` AND p.uid = ?`)
 		args = append(args, *params.UserId)
 	}
 	if params.Role != nil && *params.Role != "" {
@@ -276,7 +276,7 @@ func buildProfileListFilter(params *profile.ListProfilesParams) (string, []any) 
 // after the DB cascade — soft-deleted profiles still own S3 objects that need
 // to go.
 func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId int64) ([]string, error) {
-	query := `SELECT avatar_key FROM ` + profileTable + ` WHERE user_id = ? AND avatar_key IS NOT NULL`
+	query := `SELECT avatar_key FROM ` + profileTable + ` WHERE uid = ? AND avatar_key IS NOT NULL`
 
 	rows, err := r.db.Query(ctx, query, userId)
 	if err != nil {
@@ -303,7 +303,7 @@ func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId i
 func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*profile.Profile, error) {
 	query := `
 		INSERT INTO ` + profileTable + `
-			(profile_id, profile_code, user_id, name, phone, email, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default,
+			(profile_id, profile_code, uid, name, phone, email, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default,
 			 id_type, teacher_id, student_id, note, profile_status, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
@@ -418,7 +418,7 @@ func (r *ProfileRepository) MarkDefaultByProfileId(ctx context.Context, userId i
 		UPDATE ` + profileTable + `
 		SET is_default = CASE WHEN profile_id = ? THEN TRUE ELSE FALSE END,
 			modify_dt    = ?
-		WHERE user_id = ?
+		WHERE uid = ?
 	`
 	if _, err := r.db.Exec(ctx, query, profileId, mtime.Now().Time, userId); err != nil {
 		return fmt.Errorf("profile repo mark is default: %w", err)
@@ -457,7 +457,7 @@ func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId int64
 		SET profile_status = ?,
 			status = ?,
 			deleted_dt = ?
-		WHERE user_id = ?
+		WHERE uid = ?
 	`
 	if _, err := r.db.Exec(ctx, query, enum.ProfileStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, userId); err != nil {
 		return fmt.Errorf("profile repo soft delete by user id: %w", err)
@@ -468,7 +468,7 @@ func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId int64
 func (r *ProfileRepository) ForceDeleteByUserId(ctx context.Context, userId int64) error {
 	query := `
 		DELETE FROM ` + profileTable + `
-		WHERE user_id = ?
+		WHERE uid = ?
 	`
 	if _, err := r.db.Exec(ctx, query, userId); err != nil {
 		return fmt.Errorf("profile repo force delete by user id: %w", err)

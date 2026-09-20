@@ -22,7 +22,7 @@ type renderedTemplate struct {
 // VN.
 //
 // Templates intentionally only include the code, expiry, and a short purpose
-// line. They never reference the user_id or any PII beyond what the client
+// line. They never reference the uid or any PII beyond what the client
 // already submitted, so a leaked SMS log doesn't widen the breach.
 func renderTemplate(otpType enum.OtpType, lang enum.LanguageType, code string, expiresAt time.Time) renderedTemplate {
 	minutes := int(time.Until(expiresAt).Round(time.Minute).Minutes())

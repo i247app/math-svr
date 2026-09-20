@@ -16,7 +16,7 @@ import (
 const (
 	loginLogTable = "ma_login_logs"
 
-	loginLogColumns = `l.id, l.login_log_id, l.user_id, l.ip_address, l.device_uuid,
+	loginLogColumns = `l.id, l.login_log_id, l.uid, l.ip_address, l.device_uuid,
 		l.token, l.note, l.login_log_status, l.status,
 		l.create_id, l.create_dt, l.modify_id, l.modify_dt`
 
@@ -88,14 +88,14 @@ func (r *LoginLogRepository) FindActiveByToken(ctx context.Context, token string
 
 func (r *LoginLogRepository) FindActiveByUserDevice(ctx context.Context, userId int64, deviceUUID string) (*loginlog.LoginLog, error) {
 	return r.findOneBy(ctx,
-		"l.user_id = ? AND l.device_uuid = ? AND l.login_log_status = ?",
+		"l.uid = ? AND l.device_uuid = ? AND l.login_log_status = ?",
 		userId, deviceUUID, enum.LoginLogStatusTypeActive)
 }
 
 func (r *LoginLogRepository) ListByUserId(ctx context.Context, userId int64) ([]*loginlog.LoginLog, error) {
 	args := append(loginLogActiveArgs(), userId)
 	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE ` +
-		loginLogActiveWhere + ` AND l.user_id = ? ORDER BY l.id DESC`
+		loginLogActiveWhere + ` AND l.uid = ? ORDER BY l.id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -120,7 +120,7 @@ func (r *LoginLogRepository) ListByUserId(ctx context.Context, userId int64) ([]
 func (r *LoginLogRepository) Create(ctx context.Context, l *loginlog.LoginLog) (*loginlog.LoginLog, error) {
 	query := `
 		INSERT INTO ` + loginLogTable + `
-			(login_log_id, user_id, ip_address, device_uuid, token, note, login_log_status, create_dt, modify_dt)
+			(login_log_id, uid, ip_address, device_uuid, token, note, login_log_status, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
@@ -159,7 +159,7 @@ func (r *LoginLogRepository) MarkStatusByUserDevice(ctx context.Context, userId 
 		UPDATE ` + loginLogTable + `
 		SET login_log_status = ?,
 			modify_dt        = ?
-		WHERE user_id = ?
+		WHERE uid = ?
 		  AND device_uuid = ?
 		  AND login_log_status = ?
 	`

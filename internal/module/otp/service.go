@@ -143,7 +143,7 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 			Category:  &category,
 		})
 		if nerr != nil {
-			log.Warnf("otp.login_security_notice_failed user_id=%d err=%v", *userId, nerr)
+			log.Warnf("otp.login_security_notice_failed uid=%d err=%v", *userId, nerr)
 		}
 	}
 

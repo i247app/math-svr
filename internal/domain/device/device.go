@@ -9,9 +9,9 @@ import (
 // Device is a (user, device_uuid) registration. The is_verified flag is the
 // trust gate that auth/login consults to decide whether 2FA is required.
 //
-// The schema allows user_id to be NULL (pre-binding registrations), so it is
+// The schema allows uid to be NULL (pre-binding registrations), so it is
 // modeled as a *string. In practice the device row is created during login,
-// at which point user_id is always known — but the domain stays faithful to
+// at which point uid is always known — but the domain stays faithful to
 // the column nullability.
 type Device struct {
 	id              int64

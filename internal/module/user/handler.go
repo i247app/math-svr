@@ -152,7 +152,7 @@ func (h *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 			response.WriteJson(w, nil, fmt.Errorf("invalid form data"))
 			return
 		}
-		req.UserID = utils.StringToInt64(r.FormValue("user_id"), 0)
+		req.UserID = utils.StringToInt64(r.FormValue("uid"), 0)
 		req.Name = utils.ToStringPtr(r.FormValue("name"))
 		req.Phone = utils.ToStringPtr(r.FormValue("phone"))
 		req.Email = utils.ToStringPtr(r.FormValue("email"))
@@ -180,11 +180,11 @@ func (h *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 
 // POST /users/upload-avatar — multipart form with fields:
 //
-//	user_id  string (uuid)
+//	uid  string (uuid)
 //	file     file
 //
 // Mirrors /profiles/upload-avatar so the mobile client can use one
-// uploader for both endpoints. user_id is required (no implicit
+// uploader for both endpoints. uid is required (no implicit
 // "current session" — the parent might be uploading on behalf of a
 // distinct account in admin flows).
 func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request) {
@@ -197,7 +197,7 @@ func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userIDStr := r.FormValue("user_id")
+	userIDStr := r.FormValue("uid")
 	if userIDStr == "" {
 		response.WriteJson(w, nil,
 			errs.NewError(ctx, status.USER_NOT_FOUND, nil,

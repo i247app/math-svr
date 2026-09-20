@@ -89,7 +89,7 @@ func (s *Service) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceReq) (*
 	if err != nil {
 		return nil, err
 	}
-	logger.From(ctx).Info("device.updated", "device_id", req.DeviceID, "user_id", req.UserID)
+	logger.From(ctx).Info("device.updated", "device_id", req.DeviceID, "uid", req.UserID)
 	return &dto.UpdateDeviceRes{Device: dto.DomainToResponse(updated)}, nil
 }
 
@@ -103,7 +103,7 @@ func (s *Service) RevokeDevice(ctx context.Context, req *dto.RevokeDeviceReq) (*
 	}); err != nil {
 		return nil, err
 	}
-	logger.From(ctx).Info("device.revoked", "device_id", req.DevicUUID, "user_id", req.UserID)
+	logger.From(ctx).Info("device.revoked", "device_id", req.DevicUUID, "uid", req.UserID)
 	return &dto.RevokeDeviceRes{}, nil
 }
 
@@ -117,7 +117,7 @@ func (s *Service) SoftDeleteDevice(ctx context.Context, req *dto.DeleteDeviceReq
 	}); err != nil {
 		return nil, err
 	}
-	logger.From(ctx).Info("device.soft_deleted", "device_id", req.DeviceID, "user_id", req.UserID)
+	logger.From(ctx).Info("device.soft_deleted", "device_id", req.DeviceID, "uid", req.UserID)
 	return &dto.DeleteDeviceRes{}, nil
 }
 
@@ -145,6 +145,6 @@ func (s *Service) VerifyDevice(ctx context.Context, req *dto.VerifyDeviceReq) (*
 		return nil, err
 	}
 
-	logger.From(ctx).Info("device.verified", "device_id", req.DeviceUUID, "user_id", req.UserID)
+	logger.From(ctx).Info("device.verified", "device_id", req.DeviceUUID, "uid", req.UserID)
 	return &dto.VerifyDeviceRes{Device: dto.DomainToResponse(d)}, nil
 }

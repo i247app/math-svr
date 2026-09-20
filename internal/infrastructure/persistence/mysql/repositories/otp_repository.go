@@ -17,7 +17,7 @@ import (
 const (
 	otpTable = "ma_otps"
 
-	otpColumns = `o.id, o.otp_id, o.otp_type, o.user_id, o.identifier,
+	otpColumns = `o.id, o.otp_id, o.otp_type, o.uid, o.identifier,
 		o.device_uuid, o.device_name, o.otp_code, o.otp_create_dt, o.otp_expire_dt, o.otp_verified_dt,
 		o.attempt_count, o.note, o.otp_status, o.status,
 		o.create_id, o.create_dt, o.modify_id, o.modify_dt`
@@ -136,7 +136,7 @@ func (r *OtpRepository) CountSentSince(ctx context.Context, otpType enum.OtpType
 func (r *OtpRepository) Create(ctx context.Context, o *otp.Otp) (*otp.Otp, error) {
 	query := `
 		INSERT INTO ` + otpTable + `
-			(otp_id, otp_type, user_id, identifier, device_uuid, device_name,
+			(otp_id, otp_type, uid, identifier, device_uuid, device_name,
 			 otp_code, otp_create_dt, otp_expire_dt, attempt_count, note, otp_status, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`

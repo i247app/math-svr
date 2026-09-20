@@ -9,7 +9,7 @@ import (
 
 // TestBuildDeviceListFilter locks down the backward-compatible contract for
 // POST /devices/list: omitting IsVerified must reproduce the exact clause/args
-// this method emitted before the filter existed (just "AND d.user_id = ?"),
+// this method emitted before the filter existed (just "AND d.uid = ?"),
 // and supplying it must add exactly one more bound predicate.
 func TestBuildDeviceListFilter(t *testing.T) {
 	trueVal := true
@@ -30,19 +30,19 @@ func TestBuildDeviceListFilter(t *testing.T) {
 		{
 			name:       "user id only, no verified filter — current behavior",
 			params:     &device.ListDevicesParams{UserID: 42},
-			wantClause: " AND d.user_id = ?",
+			wantClause: " AND d.uid = ?",
 			wantArgs:   []any{int64(42)},
 		},
 		{
 			name:       "is_verified = true",
 			params:     &device.ListDevicesParams{UserID: 42, IsVerified: &trueVal},
-			wantClause: " AND d.user_id = ? AND d.is_verified = ?",
+			wantClause: " AND d.uid = ? AND d.is_verified = ?",
 			wantArgs:   []any{int64(42), true},
 		},
 		{
 			name:       "is_verified = false",
 			params:     &device.ListDevicesParams{UserID: 42, IsVerified: &falseVal},
-			wantClause: " AND d.user_id = ? AND d.is_verified = ?",
+			wantClause: " AND d.uid = ? AND d.is_verified = ?",
 			wantArgs:   []any{int64(42), false},
 		},
 	}

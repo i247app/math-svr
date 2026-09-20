@@ -59,7 +59,7 @@ type ClassroomResponse struct {
 
 // CreateClassroomReq carries the caller's acting profile_id — see
 // CLAUDE.md §0 Q1 resolution: every classroom mutation takes profile_id
-// in the body, validated against the session's user_id at the service
+// in the body, validated against the session's uid at the service
 // edge. ProfileID here is the *owner-to-be*.
 type CreateClassroomReq struct {
 	ProfileID   int64   `json:"profile_id"`

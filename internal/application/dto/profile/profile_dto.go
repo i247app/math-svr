@@ -19,7 +19,7 @@ type ProfileResponse struct {
 	ID            int64                         `json:"id"`
 	ProfileID     int64                         `json:"profile_id"`
 	ProfileCode   string                        `json:"profile_code"`
-	UserID        int64                         `json:"user_id"`
+	UserID        int64                         `json:"uid"`
 	Name          string                        `json:"name"`
 	Phone         *string                       `json:"phone"`
 	Email         *string                       `json:"email"`
@@ -45,7 +45,7 @@ type ProfileResponse struct {
 }
 
 type CreateProfileReq struct {
-	UserID     int64   `json:"user_id"`
+	UserID     int64   `json:"uid"`
 	Name       string  `json:"name"`
 	Phone      *string `json:"phone,omitempty"`
 	Email      *string `json:"email,omitempty"`
@@ -116,12 +116,12 @@ type GetProfileByIdRes struct {
 }
 
 // ListProfilesReq powers /profiles/list. All filter fields are optional —
-// callers can scope by user_id (the original behaviour) or by any
+// callers can scope by uid (the original behaviour) or by any
 // combination of role, profile_status, school/program/grade/semester ids,
 // is_default flag, and a free-text search against name. Pagination is
 // standard (page / size, defaults applied by pagination.NewPagination).
 type ListProfilesReq struct {
-	UserID        *int64            `json:"user_id,omitempty"`
+	UserID        *int64            `json:"uid,omitempty"`
 	Role          *string           `json:"role,omitempty"`
 	ProfileStatus *string           `json:"profile_status,omitempty"`
 	SchoolID      *int64            `json:"school_id,omitempty"`

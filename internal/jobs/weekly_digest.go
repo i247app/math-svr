@@ -48,7 +48,7 @@ func (j *WeeklyDigestCronJob) Run(ctx context.Context) error {
 	}
 
 	// TODO(tier2): swap this for a UserRepository.ListUsers query that
-	// streams (or paginates) user_id + email. Until that exists, the
+	// streams (or paginates) uid + email. Until that exists, the
 	// fan-out is a no-op so we don't spam an empty task queue.
 	userIDs := []string{}
 
@@ -79,7 +79,7 @@ func (j *WeeklyDigestCronJob) Run(ctx context.Context) error {
 // fan-out and the task. UserID is the external uuid; the task resolves
 // it to a profile + email at run time.
 type WeeklyDigestPayload struct {
-	UserID string `json:"user_id"`
+	UserID string `json:"uid"`
 }
 
 // WeeklyDigestTask renders and sends one user's weekly digest email.
@@ -109,8 +109,8 @@ func (t *WeeklyDigestTask) Handle(ctx context.Context, payload []byte) error {
 		return err
 	}
 	if msg.UserID == "" {
-		log.Errorf("weekly_digest.empty_user_id")
-		return errors.New("weekly_digest: empty user_id")
+		log.Errorf("weekly_digest.empty_uid")
+		return errors.New("weekly_digest: empty uid")
 	}
 	if t.email == nil {
 		log.Warnf("weekly_digest.skip uid=%s reason=email_adapter_disabled", msg.UserID)

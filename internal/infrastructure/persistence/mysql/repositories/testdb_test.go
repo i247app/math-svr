@@ -115,7 +115,7 @@ func cleanupPresenceRows(t *testing.T, db database.SqlHandler, userIDs ...int64)
 	t.Cleanup(func() {
 		ctx := context.Background()
 		for _, id := range userIDs {
-			if _, err := db.Exec(ctx, "DELETE FROM ma_user_presence WHERE user_id = ?", id); err != nil {
+			if _, err := db.Exec(ctx, "DELETE FROM ma_user_presence WHERE uid = ?", id); err != nil {
 				t.Logf("cleanup presence for user %d: %v", id, err)
 			}
 		}

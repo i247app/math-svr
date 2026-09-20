@@ -17,7 +17,7 @@ import (
 const (
 	deviceTable = "ma_devices"
 
-	deviceColumns = `d.id, d.device_id, d.user_id, d.device_uuid, d.device_name, d.platform,
+	deviceColumns = `d.id, d.device_id, d.uid, d.device_uuid, d.device_name, d.platform,
 		d.device_push_token, d.is_verified, d.trust_dt, d.note, d.device_status, d.status,
 		d.create_id, d.create_dt, d.modify_id, d.modify_dt`
 
@@ -84,7 +84,7 @@ func (r *DeviceRepository) FindByDeviceId(ctx context.Context, deviceId int64) (
 // device_uuid is the client-supplied stable identifier (installation id, IDFV,
 // etc.); device_id is our own UUID for the row.
 func (r *DeviceRepository) FindByUserDevice(ctx context.Context, userId int64, deviceUUID string) (*device.Device, error) {
-	return r.findOneBy(ctx, "d.user_id = ? AND d.device_uuid = ?", userId, deviceUUID)
+	return r.findOneBy(ctx, "d.uid = ? AND d.device_uuid = ?", userId, deviceUUID)
 }
 
 func (r *DeviceRepository) ListByUserId(ctx context.Context, params *device.ListDevicesParams) ([]*device.Device, error) {
@@ -127,7 +127,7 @@ func buildDeviceListFilter(params *device.ListDevicesParams) (string, []any) {
 		clause strings.Builder
 		args   []any
 	)
-	clause.WriteString(` AND d.user_id = ?`)
+	clause.WriteString(` AND d.uid = ?`)
 	args = append(args, params.UserID)
 	if params.IsVerified != nil {
 		clause.WriteString(` AND d.is_verified = ?`)
@@ -139,7 +139,7 @@ func buildDeviceListFilter(params *device.ListDevicesParams) (string, []any) {
 func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) (*device.Device, error) {
 	query := `
 		INSERT INTO ` + deviceTable + `
-			(device_id, user_id, device_uuid, device_name, platform, device_push_token,
+			(device_id, uid, device_uuid, device_name, platform, device_push_token,
 			 is_verified, trust_dt, note, device_status, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
@@ -194,7 +194,7 @@ func (r *DeviceRepository) MarkVerifiedByUserDevice(ctx context.Context, userId 
 		SET is_verified = ?,
 			trust_dt    = CASE WHEN ? THEN ? ELSE NULL END,
 			modify_dt   = ?
-		WHERE user_id = ? AND device_uuid = ?
+		WHERE uid = ? AND device_uuid = ?
 	`
 	now := mtime.Now().Time
 	if _, err := r.db.Exec(ctx, query, isVerified, isVerified, now, now, userId, deviceUUID); err != nil {

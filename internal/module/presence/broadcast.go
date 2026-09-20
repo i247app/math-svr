@@ -21,7 +21,7 @@ type Publisher interface {
 // rather than a profile id because presence is an account-level fact; the
 // client already knows which profiles map to which user from the member list.
 type PresenceChangedPayload struct {
-	UserID     int64  `json:"user_id"`
+	UserID     int64  `json:"uid"`
 	IsOnline   bool   `json:"is_online"`
 	State      string `json:"state"`
 	LastSeenDt string `json:"last_seen_dt,omitempty"`

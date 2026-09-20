@@ -18,7 +18,7 @@ const (
 	chatParticipantTable = "ma_chat_participants"
 
 	chatParticipantColumns = `p.id, p.participant_id, p.conversation_id, p.profile_id,
-		p.user_id, p.participant_role, p.last_read_seq_no, p.last_read_message_id,
+		p.uid, p.participant_role, p.last_read_seq_no, p.last_read_message_id,
 		p.last_read_dt, p.last_delivered_seq_no, p.unread_count, p.is_muted,
 		p.muted_until_dt, p.is_pinned, p.cleared_before_seq_no, p.joined_dt, p.left_dt,
 		p.invited_by_profile_id, p.note, p.participant_status, p.status,
@@ -181,7 +181,7 @@ func (r *ChatParticipantRepository) ListByProfileAndConversationIds(ctx context.
 
 func (r *ChatParticipantRepository) Create(ctx context.Context, p *chat.Participant) (*chat.Participant, error) {
 	query := `INSERT INTO ` + chatParticipantTable + `
-		  (participant_id, conversation_id, profile_id, user_id, participant_role,
+		  (participant_id, conversation_id, profile_id, uid, participant_role,
 		   last_read_seq_no, last_delivered_seq_no, unread_count, is_muted, is_pinned,
 		   cleared_before_seq_no, joined_dt, invited_by_profile_id, note,
 		   participant_status, status, create_id, create_dt)

@@ -19,7 +19,7 @@ type PingNotificationRes struct {
 // pushes it to that user's devices. Used by the admin/test endpoint and as the
 // wire shape other modules can map onto when calling the service in-process.
 type SendNotificationReq struct {
-	UserID     int64           `json:"user_id"`
+	UserID     int64           `json:"uid"`
 	Title      string          `json:"title"`
 	ShortText  string          `json:"short_text"`
 	Category   *string         `json:"category"`
@@ -85,7 +85,7 @@ type DeleteNotificationReq struct {
 // NotificationResponse is the wire shape for one notification row.
 type NotificationResponse struct {
 	NotificationID int64           `json:"notification_id"`
-	UserID         int64           `json:"user_id"`
+	UserID         int64           `json:"uid"`
 	Title          string          `json:"title"`
 	ShortText      string          `json:"short_text"`
 	Category       *string         `json:"category,omitempty"`

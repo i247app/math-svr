@@ -978,7 +978,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n    \n    \"user_id\": {{user_id}}\n}",
+              "raw": "{\n    \"metadata\": {{metadata}},\n    \n    \"uid\": {{uid}}\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1105,7 +1105,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\nconst response = pm.response.json();\nif (response.user) {\n    pm.environment.set(\"user_id\", response.user.user_id);\n}"
+                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\nconst response = pm.response.json();\nif (response.user) {\n    pm.environment.set(\"uid\", response.user.uid);\n}"
                 ]
               }
             }
@@ -1225,8 +1225,8 @@
               "mode": "formdata",
               "formdata": [
                 {
-                  "key": "user_id",
-                  "value": "{{user_id}}",
+                  "key": "uid",
+                  "value": "{{uid}}",
                   "type": "text",
                   "uuid": "082ed269-fa18-4495-88e9-9ecb347b4806"
                 },
@@ -1306,7 +1306,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n\n    \"user_id\": \"{{user_id}}\"\n}",
+              "raw": "{\n    \"metadata\": {{metadata}},\n\n    \"uid\": \"{{uid}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1349,7 +1349,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n\n    \"user_id\": {{user_id}}\n}",
+              "raw": "{\n    \"metadata\": {{metadata}},\n\n    \"uid\": {{uid}}\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1541,7 +1541,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n    \"user_id\": {{user_id}}\n}",
+              "raw": "{\n    \"metadata\": {{metadata}},\n    \"uid\": {{uid}}\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1602,8 +1602,8 @@
                   "uuid": "b6f2d817-c5bc-47fc-b96a-83c3350b04cf"
                 },
                 {
-                  "key": "user_id",
-                  "value": "{{user_id}}",
+                  "key": "uid",
+                  "value": "{{uid}}",
                   "type": "text",
                   "uuid": "2f73c73d-ed67-4132-b7c5-c19810380cc2"
                 },
@@ -2140,7 +2140,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n    // \"user_id\": {{user_id}},\n    // \"purpose\": \"ASSESSMENT\",\n    \"profile_id\": {{profile_id}}\n    // \"page\": 1,\n    // \"size\": 20\n}",
+              "raw": "{\n    \"metadata\": {{metadata}},\n    // \"uid\": {{uid}},\n    // \"purpose\": \"ASSESSMENT\",\n    \"profile_id\": {{profile_id}}\n    // \"page\": 1,\n    // \"size\": 20\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2446,7 +2446,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n    \"user_id\": {{user_id}},\n    \"is_verified\": true\n}",
+              "raw": "{\n    \"metadata\": {{metadata}},\n    \"uid\": {{uid}},\n    \"is_verified\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2582,7 +2582,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "// {\n//     \"metadata\": {{metadata}},\n//     \"otp_type\": \"LOGIN_2FA\",\n//     \"identifier\": \"+84702465814\",\n//     \"user_id\": {{user_id}},\n//     \"target_device_id\": 1\n\n//     // \"otp_type\": \"REGISTER\",\n//     // \"identifier\": \"anhquoctpdev@gmail.com\"\n// }\n\n{\n    \"metadata\": {{metadata}},\n\n    \"otp_type\": \"REGISTER\",\n    \"identifier\": \"anhquoctpdev@gmail.com\"\n}",
+              "raw": "// {\n//     \"metadata\": {{metadata}},\n//     \"otp_type\": \"LOGIN_2FA\",\n//     \"identifier\": \"+84702465814\",\n//     \"uid\": {{uid}},\n//     \"target_device_id\": 1\n\n//     // \"otp_type\": \"REGISTER\",\n//     // \"identifier\": \"anhquoctpdev@gmail.com\"\n// }\n\n{\n    \"metadata\": {{metadata}},\n\n    \"otp_type\": \"REGISTER\",\n    \"identifier\": \"anhquoctpdev@gmail.com\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6050,7 +6050,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n    \"user_id\": {{user_id}},\n    \"title\": \"Title 1\",\n    \"short_text\": \"I love you anh quoc qua nhieu\",\n    \"category\": \"INFO\",\n    \"action_type\": \"QUIZ\",\n    \"action_data\": \"what your name\",\n    \"priority\": \"HIGH\"\n}",
+              "raw": "{\n    \"metadata\": {{metadata}},\n    \"uid\": {{uid}},\n    \"title\": \"Title 1\",\n    \"short_text\": \"I love you anh quoc qua nhieu\",\n    \"category\": \"INFO\",\n    \"action_type\": \"QUIZ\",\n    \"action_data\": \"what your name\",\n    \"priority\": \"HIGH\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

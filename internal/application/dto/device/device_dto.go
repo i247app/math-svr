@@ -9,7 +9,7 @@ import (
 // originally sent; we never echo back the push token (treated like a secret).
 type DeviceResponse struct {
 	DeviceID   int64   `json:"device_id"`
-	UserID     *int64  `json:"user_id,omitempty"`
+	UserID     *int64  `json:"uid,omitempty"`
 	DeviceUUID string  `json:"device_uuid"`
 	DeviceName string  `json:"device_name"`
 	Platform   string  `json:"platform"`
@@ -56,7 +56,7 @@ type GetDeviceByIdRes struct {
 }
 
 type ListDevicesReq struct {
-	UserID int64 `json:"user_id"`
+	UserID int64 `json:"uid"`
 	// IsVerified is optional. Omitted (or null) → no filter, current
 	// behavior preserved. true/false → only devices whose is_verified
 	// matches exactly.
@@ -68,7 +68,7 @@ type ListDevicesRes struct {
 }
 
 type UpdateDeviceReq struct {
-	UserID          int64   `json:"user_id"`
+	UserID          int64   `json:"uid"`
 	DeviceID        int64   `json:"device_id"`
 	DeviceName      string  `json:"device_name,omitempty"`
 	DevicePushToken *string `json:"device_push_token,omitempty"`
@@ -80,14 +80,14 @@ type UpdateDeviceRes struct {
 }
 
 type RevokeDeviceReq struct {
-	UserID    int64  `json:"user_id"`
+	UserID    int64  `json:"uid"`
 	DevicUUID string `json:"device_uuid"`
 }
 
 type RevokeDeviceRes struct{}
 
 type DeleteDeviceReq struct {
-	UserID   int64 `json:"user_id"`
+	UserID   int64 `json:"uid"`
 	DeviceID int64 `json:"device_id"`
 }
 
@@ -98,7 +98,7 @@ type DeleteDeviceRes struct{}
 // command directly through the Service. Kept here as the canonical shape so
 // the contract is discoverable.
 type VerifyDeviceReq struct {
-	UserID          int64   `json:"user_id"`
+	UserID          int64   `json:"uid"`
 	DeviceUUID      string  `json:"device_uuid"`
 	DeviceName      string  `json:"device_name,omitempty"`
 	Platform        string  `json:"platform,omitempty"`

@@ -20,11 +20,11 @@ import (
 const (
 	userTable = "ma_users"
 
-	userColumns = `u.id, u.user_id, u.name, u.phone, u.email, u.is_email_verified, u.avatar_key, u.role, u.user_status, u.status,
+	userColumns = `u.id, u.uid, u.name, u.phone, u.email, u.is_email_verified, u.avatar_key, u.role, u.user_status, u.status,
 	u.note, u.create_id, u.create_dt, u.modify_id, u.modify_dt`
 
 	userFromJoin = userTable + ` u
-	JOIN ma_aliases a ON u.user_id = a.user_id`
+	JOIN ma_aliases a ON u.uid = a.uid`
 
 	userActiveWhere = `
 	u.status IN (?) AND u.deleted_dt IS NULL
@@ -101,7 +101,7 @@ func (r *UserRepository) FindById(ctx context.Context, id int64) (*user.User, er
 }
 
 func (r *UserRepository) FindByUserId(ctx context.Context, userId int64) (*user.User, error) {
-	return r.findOneBy(ctx, "u.user_id = ?", userId)
+	return r.findOneBy(ctx, "u.uid = ?", userId)
 }
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*user.User, error) {
@@ -122,7 +122,7 @@ func (r *UserRepository) FindByLoginName(ctx context.Context, loginName string) 
 
 func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, error) {
 	query := `
-		INSERT INTO ` + userTable + ` (user_id, name, phone, email, is_email_verified, avatar_key, role, user_status, note, create_dt, modify_dt)
+		INSERT INTO ` + userTable + ` (uid, name, phone, email, is_email_verified, avatar_key, role, user_status, note, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
@@ -185,7 +185,7 @@ func (r *UserRepository) DeleteById(ctx context.Context, id int64) error {
 }
 
 func (r *UserRepository) DeleteByUserId(ctx context.Context, userId int64) error {
-	if _, err := r.db.Exec(ctx, `DELETE FROM `+userTable+` WHERE user_id = ?`, userId); err != nil {
+	if _, err := r.db.Exec(ctx, `DELETE FROM `+userTable+` WHERE uid = ?`, userId); err != nil {
 		return fmt.Errorf("user repo delete by user id: %w", err)
 	}
 	return nil
@@ -231,7 +231,7 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 // flow doesn't need to materialise the rest of the User aggregate just
 // to write one column.
 func (r *UserRepository) UpdateAvatarKey(ctx context.Context, userId int64, avatarKey string) error {
-	query := `UPDATE ` + userTable + ` SET avatar_key = ? WHERE user_id = ?`
+	query := `UPDATE ` + userTable + ` SET avatar_key = ? WHERE uid = ?`
 	if _, err := r.db.Exec(ctx, query, avatarKey, userId); err != nil {
 		return fmt.Errorf("user repo update avatar key: %w", err)
 	}
@@ -243,7 +243,7 @@ func (r *UserRepository) MarkStatusByUserId(ctx context.Context, userId int64, s
 		UPDATE ` + userTable + `
 		SET user_status = ?,
 			modify_dt = ?
-		WHERE user_id = ?
+		WHERE uid = ?
 	`
 
 	if _, err := r.db.Exec(ctx, query, status, mtime.Now().Time, userId); err != nil {
@@ -258,7 +258,7 @@ func (r *UserRepository) SoftDeleteByUserId(ctx context.Context, userId int64) e
 		SET user_status = ?,
 			status = ?,
 			deleted_dt = ?
-		WHERE user_id = ?
+		WHERE uid = ?
 	`
 
 	if _, err := r.db.Exec(ctx, query, enum.UserStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, userId); err != nil {
