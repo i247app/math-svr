@@ -38,9 +38,8 @@ GENERAL:
 * No same type in adjacent questions; each type max 2 times.
 * {{PROBE_RULE}}
 * Exactly 4 answers A–D; exactly 1 correct answer; plausible distractors.
-* Every question must be solvable from its content alone.
-* All child-facing content is Vietnamese.
-* JSON keys are English.
+* Each question must include all data needed to solve it; never leave the question incomplete.
+* All child-facing content must be in Vietnamese; never use English words.
 
 CASE KG — if {grade} = "Mẫu giáo":
 * {{KG_GRADE}}
