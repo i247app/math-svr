@@ -72,14 +72,10 @@ CASE NUM — if {grade} = Lớp 1–5:
 * Keep questions clear, age-appropriate, and progressively harder.
 
 ANSWER VALIDATION:
-* Solve every question before returning.
-* Verify the calculated answer.
-* Identify the correct option by its content first.
-* "right_answer_label" MUST be the label of that SAME correct option.
-* "right_answer_content" MUST exactly match the content of that SAME option.
-* Never assign right_answer_label independently.
-* Exactly ONE option is correct.
-* Before returning, verify: right_answer_label and right_answer_content belong to the same option.
+* MUST solve each question accurately and verify the result before returning.
+* MUST return the exact correct answer based on the verified calculation; never guess or choose the closest answer.
+* The correct answer MUST appear exactly once among options A–D; if it does not, modify the options before returning.
+* right_answer_label and right_answer_content MUST refer to the same correct option and exactly match that option.
 
 OUTPUT:
 Return ONLY valid JSON. Do not return Markdown or explanations. All JSON keys must be in English.
