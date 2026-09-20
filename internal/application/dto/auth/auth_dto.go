@@ -26,6 +26,9 @@ type LoginWithOTPRes struct {
 	User       *user.UserResponse `json:"user"`
 }
 
-type LogoutReq struct{}
+type LogoutReq struct {
+	UserID     *int64 `json:"-"`
+	DeviceUUID string `json:"-"`
+}
 
 type LogoutRes struct{}

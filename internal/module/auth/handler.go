@@ -6,6 +6,10 @@ import (
 
 	dto "math-ai.com/math-ai/internal/application/dto/auth"
 	"math-ai.com/math-ai/internal/application/resource"
+	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -19,6 +23,21 @@ func NewAuthHandler(appResource *resource.Resource, service *Service) *AuthHandl
 		appResource: appResource,
 		service:     service,
 	}
+}
+
+// uid pulls the authenticated user id out of the request's session.
+func (h *AuthHandler) uid(w http.ResponseWriter, r *http.Request) (*int64, bool) {
+	ss, err := h.appResource.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return nil, false
+	}
+	id, ok := ss.UID()
+	if !ok {
+		response.WriteJson(w, nil, errs.NewError(r.Context(), status.UNAUTHORIZED, nil, session.ErrUidNotFoundFromSession))
+		return nil, false
+	}
+	return &id, true
 }
 
 // POST /auth/login
@@ -116,6 +135,13 @@ func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
+
+	req.DeviceUUID = metadata.GetDeviceID(r.Context())
+	uid, ok := h.uid(w, r)
+	if !ok {
+		return
+	}
+	req.UserID = uid
 
 	res, err := h.service.Logout(r.Context(), session, &req)
 	if err != nil {

@@ -92,6 +92,29 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 			if err != nil {
 				return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
 			}
+
+			ll, err := repos.LoginLog.FindActiveByUserDevice(ctx, u.UserId(), cmd.DeviceUUID)
+			if err != nil {
+				return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+			}
+
+			if ll != nil {
+				result.LoginLogID = ll.LoginLogId()
+				if err := repos.LoginLog.MarkStatusByUserDevice(ctx, u.UserId(), cmd.DeviceUUID, enum.LoginLogStatusTypeActive); err != nil {
+					return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+				}
+			} else {
+				loginLogId, err := seqgen.Next(ctx, repos.Seq, seq.NameLoginLog)
+				if err != nil {
+					return err
+				}
+				ll := BuildLoginLog(u.UserId(), cmd)
+				ll.SetLoginLogId(loginLogId)
+				_, err = repos.LoginLog.Create(ctx, ll)
+				if err != nil {
+					return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+				}
+			}
 		}
 
 		// if !d.IsVerified() {

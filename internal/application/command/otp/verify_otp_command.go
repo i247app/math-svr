@@ -2,11 +2,11 @@ package command
 
 import (
 	"context"
-	"time"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/otp"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -72,7 +72,7 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 		}
 
 		// Expiry check. Mark EXPIRED so the row is greppable in audit.
-		if o.OtpExpireDt().IsValid() && time.Now().UTC().After(o.OtpExpireDt().Time) {
+		if o.OtpExpireDt().IsValid() && mtime.Now().After(o.OtpExpireDt().Time) {
 			_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeExpired)
 			return errs.NewError(ctx, status.OTP_EXPIRED, nil, ErrOtpExpired)
 		}

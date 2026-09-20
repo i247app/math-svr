@@ -213,11 +213,12 @@ func (s *Service) Logout(ctx context.Context, sess *session.AppSession, req *dto
 		return nil, err
 	}
 
-	// if err := s.logoutCmd.Handle(ctx, command.LogoutCommand{
-	// 	DeviceUUID: metadata.GetDeviceID(ctx),
-	// }); err != nil {
-	// 	return nil, err
-	// }
+	if err := s.logoutCmd.Handle(ctx, command.LogoutCommand{
+		UserID:     *req.UserID,
+		DeviceUUID: req.DeviceUUID,
+	}); err != nil {
+		return nil, err
+	}
 
 	sess.MarkNotSecure()
 

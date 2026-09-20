@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/application/resource"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -25,14 +26,14 @@ func NewExamHandler(appResource *resource.Resource, examSvc *Service) *ExamHandl
 
 // uid pulls the authenticated user id out of the request's session.
 func (h *ExamHandler) uid(w http.ResponseWriter, r *http.Request) (*int64, bool) {
-	session, err := h.appResource.GetRequestSession(r)
+	ss, err := h.appResource.GetRequestSession(r)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return nil, false
 	}
-	id, ok := session.UID()
+	id, ok := ss.UID()
 	if !ok {
-		response.WriteJson(w, nil, errs.NewError(r.Context(), status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession))
+		response.WriteJson(w, nil, errs.NewError(r.Context(), status.UNAUTHORIZED, nil, session.ErrUidNotFoundFromSession))
 		return nil, false
 	}
 	return &id, true

@@ -9,4 +9,5 @@ var (
 	ErrSessionNotValid      = errors.New("session is not valid")
 	ErrUserNotFound         = errors.New("user not found")
 	ErrUIDNotFoundInSession = errors.New("uid not found in session")
+	ErrDeviceUUIDRequired   = errors.New("device uuid is required")
 )
