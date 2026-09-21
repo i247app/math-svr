@@ -2,6 +2,8 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"math-ai.com/math-ai/internal/domain/user"
@@ -17,11 +19,16 @@ const (
 
 	aliasColumns = `id, alias_id, uid, aka, alias_status, note, create_id, create_dt, modify_id, modify_dt`
 
-	aliasActiveWhere = `status IN (?) AND deleted_dt IS NULL`
+	// Mirrors the user repo's active filter: system-INACTIVE, soft-deleted,
+	// and alias_status = DELETED rows are invisible to every read. Login
+	// resolution (alias.FindByAka -> user.FindByUserId) relies on this so a
+	// soft-deleted account cannot log back in through its alias.
+	aliasActiveWhere = `status IN (?) AND deleted_dt IS NULL
+	AND (alias_status IS NULL OR alias_status != ?)`
 )
 
 func aliasActiveArgs() []any {
-	return []any{enum.StatusActive}
+	return []any{enum.StatusActive, enum.UserAliasStatusTypeDeleted}
 }
 
 type AliasRepository struct {
@@ -40,11 +47,20 @@ func scanAlias(s database.RowScanner) (*models.AliasModel, error) {
 	return &m, nil
 }
 
+// findOneBy runs a single-row lookup. `where` is a package-controlled SQL
+// fragment (never user input). aliasActiveWhere is prepended automatically;
+// a missing row is reported as (nil, nil), never sql.ErrNoRows.
 func (r *AliasRepository) findOneBy(ctx context.Context, where string, args ...any) (*user.Alias, error) {
-	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable + ` WHERE ` + where
-	m, err := scanAlias(r.db.QueryRow(ctx, query, args...))
+	fullArgs := append(aliasActiveArgs(), args...)
+	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable +
+		` WHERE ` + aliasActiveWhere + ` AND (` + where + `)`
+
+	m, err := scanAlias(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("alias repo find (%s): %w", where, err)
 	}
 	return ModelToDomainAlias(m), nil
 }
@@ -58,10 +74,13 @@ func (r *AliasRepository) Create(ctx context.Context, alias *user.Alias) (*user.
 	result, err := r.db.Exec(ctx, query, alias.AliasId(), alias.UserId(),
 		alias.Aka(), alias.AliasStatus(), alias.Note(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("alias repo create: %w", err)
 	}
 
-	id, _ := result.LastInsertId()
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, fmt.Errorf("alias repo last insert id: %w", err)
+	}
 	alias.SetId(id)
 
 	return alias, nil
@@ -76,10 +95,12 @@ func (r *AliasRepository) FindByAka(ctx context.Context, aka string) (*user.Alia
 }
 
 func (r *AliasRepository) FindByUserId(ctx context.Context, userId int64) ([]*user.Alias, error) {
-	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable + ` WHERE uid = ?`
-	rows, err := r.db.Query(ctx, query, userId)
+	args := append(aliasActiveArgs(), userId)
+	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable +
+		` WHERE ` + aliasActiveWhere + ` AND uid = ?`
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("alias repo find by uid: %w", err)
 	}
 	defer rows.Close()
 
@@ -87,9 +108,12 @@ func (r *AliasRepository) FindByUserId(ctx context.Context, userId int64) ([]*us
 	for rows.Next() {
 		m, err := scanAlias(rows)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("alias repo scan row: %w", err)
 		}
 		aliases = append(aliases, ModelToDomainAlias(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("alias repo rows iteration: %w", err)
 	}
 	return aliases, nil
 }

@@ -23,24 +23,16 @@ const (
 	userColumns = `u.id, u.uid, u.name, u.phone, u.email, u.is_email_verified, u.avatar_key, u.role, u.user_status, u.status,
 	u.note, u.create_id, u.create_dt, u.modify_id, u.modify_dt`
 
-	userFromJoin = userTable + ` u
-	JOIN ma_aliases a ON u.uid = a.uid`
+	userFrom = userTable + ` u`
 
-	userActiveWhere = `
-	u.status IN (?) AND u.deleted_dt IS NULL
-	AND a.status IN (?) AND a.deleted_dt IS NULL`
-
-	userBareActiveWhere = `u.status IN (?) AND u.deleted_dt IS NULL`
+	// User reads never JOIN ma_aliases. The alias table is a separate
+	// aggregate (login-key registry) owned by AliasRepository; resolving a
+	// login name to a user is composed in the application layer
+	// (alias.FindByAka -> user.FindByUserId), not here.
+	userActiveWhere = `u.status IN (?) AND u.deleted_dt IS NULL`
 )
 
 func userActiveArgs() []any {
-	return []any{
-		enum.StatusActive,
-		enum.StatusActive,
-	}
-}
-
-func userBareActiveArgs() []any {
 	return []any{enum.StatusActive}
 }
 
@@ -62,13 +54,12 @@ func scanUser(s database.RowScanner) (*models.UserModel, error) {
 }
 
 // findOneBy runs a single-row lookup. `where` is a package-controlled SQL
-// fragment (never user input); args supply the placeholder values. The query
-// uses SELECT DISTINCT because userFromJoin can multiply rows via aliases.
+// fragment (never user input); args supply the placeholder values.
 // userActiveWhere is automatically prepended so every read excludes
-// system-INACTIVE rows and any row with a *_status of DELETED.
+// system-INACTIVE and soft-deleted rows.
 func (r *UserRepository) findOneBy(ctx context.Context, where string, args ...any) (*user.User, error) {
 	fullArgs := append(userActiveArgs(), args...)
-	query := `SELECT DISTINCT ` + userColumns + ` FROM ` + userFromJoin +
+	query := `SELECT ` + userColumns + ` FROM ` + userFrom +
 		` WHERE ` + userActiveWhere + ` AND (` + where + `)`
 
 	m, err := scanUser(r.db.QueryRow(ctx, query, fullArgs...))
@@ -77,21 +68,6 @@ func (r *UserRepository) findOneBy(ctx context.Context, where string, args ...an
 			return nil, nil
 		}
 		return nil, fmt.Errorf("user repo find (%s): %w", where, err)
-	}
-	return ModelToDomain(m), nil
-}
-
-func (r *UserRepository) findBareById(ctx context.Context, id int64) (*user.User, error) {
-	args := append(userBareActiveArgs(), id)
-	query := `SELECT ` + userColumns + ` FROM ` + userTable + ` u WHERE ` +
-		userBareActiveWhere + ` AND u.id = ?`
-
-	m, err := scanUser(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("user repo find bare by id: %w", err)
 	}
 	return ModelToDomain(m), nil
 }
@@ -116,10 +92,6 @@ func (r *UserRepository) FindByUserName(ctx context.Context, userName string) (*
 	return r.findOneBy(ctx, "u.name = ?", userName)
 }
 
-func (r *UserRepository) FindByLoginName(ctx context.Context, loginName string) (*user.User, error) {
-	return r.findOneBy(ctx, "a.aka = ?", loginName)
-}
-
 func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, error) {
 	query := `
 		INSERT INTO ` + userTable + ` (uid, name, phone, email, is_email_verified, avatar_key, role, user_status, note, create_dt, modify_dt)
@@ -136,15 +108,12 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, 
 		return nil, fmt.Errorf("user repo last insert id: %w", err)
 	}
 
-	// Hydrate via the bare `users` table — the alias/login rows don't exist
-	// yet at this point in the CreateUser transaction, so the JOIN'd
-	// FindById would return nil.
-	return r.findBareById(ctx, id)
+	return r.FindById(ctx, id)
 }
 
 func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersParams) ([]*user.User, *pagination.Pagination, error) {
 	var total int64
-	countQuery := `SELECT COUNT(DISTINCT u.id) FROM ` + userFromJoin +
+	countQuery := `SELECT COUNT(*) FROM ` + userFrom +
 		` WHERE ` + userActiveWhere
 	if err := r.db.QueryRow(ctx, countQuery, userActiveArgs()...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("user repo count: %w", err)
@@ -153,7 +122,7 @@ func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersPa
 	pg := pagination.NewPagination(params.Page, params.Limit, total)
 
 	listArgs := append(userActiveArgs(), pg.Size, pg.Skip)
-	query := `SELECT DISTINCT ` + userColumns + ` FROM ` + userFromJoin +
+	query := `SELECT ` + userColumns + ` FROM ` + userFrom +
 		` WHERE ` + userActiveWhere +
 		` ORDER BY u.id DESC LIMIT ? OFFSET ?`
 	rows, err := r.db.Query(ctx, query, listArgs...)

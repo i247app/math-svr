@@ -64,11 +64,22 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 	var result *LoginCommandResult
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		u, err := repos.User.FindByLoginName(ctx, cmd.LoginName)
+		// Login name (phone or email) is resolved through the alias registry
+		// first, then the user row — the user repo never JOINs ma_aliases.
+		// Either lookup missing means "no such account": return nil with no
+		// error so the caller keeps the enumeration-safe response.
+		alias, err := repos.Alias.FindByAka(ctx, cmd.LoginName)
 		if err != nil {
 			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 		}
+		if alias == nil {
+			return nil
+		}
 
+		u, err := repos.User.FindByUserId(ctx, alias.UserId())
+		if err != nil {
+			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+		}
 		if u == nil {
 			return nil
 		}
@@ -116,33 +127,6 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 				}
 			}
 		}
-
-		// if !d.IsVerified() {
-		// 	result = &LoginCommandResult{
-		// 		UserID:            u.UserId(),
-		// 		DeviceID:          d.DeviceId(),
-		// 		TwoFactorRequired: d.IsVerified(),
-		// 	}
-		// 	return nil
-		// }
-
-		// if err := repos.LoginLog.MarkStatusByUserDevice(
-		// 	ctx, u.UserId(), cmd.DeviceUUID, enum.LoginLogStatusTypeRevoked,
-		// ); err != nil {
-		// 	return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
-		// }
-
-		// ll := BuildLoginLog(u.UserId(), cmd)
-		// created, err := repos.LoginLog.Create(ctx, ll)
-		// if err != nil {
-		// 	return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
-		// }
-
-		// result = &LoginCommandResult{
-		// 	UserID:     u.UserId(),
-		// 	DeviceID:   d.DeviceId(),
-		// 	LoginLogID: created.LoginLogId(),
-		// }
 
 		return nil
 	})
