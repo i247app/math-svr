@@ -30,15 +30,42 @@ UP_FILE="$UP_DIR/${next}_${NAME}.sql"
 DOWN_FILE="$DOWN_DIR/${next}_${NAME}.sql"
 [[ ! -e "$UP_FILE" && ! -e "$DOWN_FILE" ]] || { echo "error: ${next}_${NAME}.sql already exists" >&2; exit 1; }
 
+# Entity name for the <entity>_status column: strip the ma_ prefix and a
+# trailing _table, e.g. ma_foo_table → foo_status.
+entity="${NAME#ma_}"; entity="${entity%_table}"
+
 cat >"$UP_FILE" <<SQL
 -- migration up
 -- Forward-only: the runner never re-executes a recorded version, so make every
 -- statement safe on a fresh database (CREATE TABLE IF NOT EXISTS, INSERT IGNORE).
+--
+-- The audit-column block below is the project-wide standard (see
+-- .claude/rules/database.md §3 and up/030_audit_columns_standard.sql). Keep
+-- its order and definitions; add domain columns above it.
+
+CREATE TABLE IF NOT EXISTS ${NAME%_table} (
+  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  ${entity}_id    BIGINT UNSIGNED NOT NULL UNIQUE,
+  -- ...domain columns...
+  ${entity}_status VARCHAR(32)  DEFAULT NULL,
+  rpt_flg         VARCHAR(16)  DEFAULT NULL,
+  kwords          VARCHAR(255) DEFAULT NULL,
+  note            VARCHAR(500) DEFAULT NULL,
+  status          VARCHAR(32)  DEFAULT 'ACTIVE',
+  create_id       BIGINT UNSIGNED DEFAULT NULL,
+  create_dt       DATETIME(6)  DEFAULT CURRENT_TIMESTAMP(6),
+  modify_id       BIGINT UNSIGNED DEFAULT NULL,
+  modify_dt       DATETIME(6)  DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  deleted_dt      DATETIME(6)  DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Remember the ma_seqs row for '${entity}' → migrations/seed/001_ma_seqs.sql (INSERT IGNORE),
+-- and a seq.Name<Entity> constant in internal/domain/seq/names.go.
 SQL
 
 cat >"$DOWN_FILE" <<SQL
 -- migration down — reverses up/${next}_${NAME}.sql
--- DROP TABLE IF EXISTS ${NAME};
+DROP TABLE IF EXISTS ${NAME%_table};
 SQL
 
 echo "created:"
