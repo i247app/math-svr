@@ -1,5 +1,5 @@
 // Package progress holds score/trend math shared by the learning-progress
-// query handlers (classroom exercises + standalone quizzes). Pure
+// query handlers (classroom exercises + exams). Pure
 // functions, no I/O — the single source of truth for the 10-point
 // rounding rule, the least-squares slope, and the trend classification.
 package progress

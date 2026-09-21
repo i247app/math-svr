@@ -96,8 +96,8 @@ type ListByClassroomIdsParams struct {
 	Limit       int64
 }
 
-// IRepository owns all classroom_exercise persistence. The shape mirrors
-// quiz.IRepository: a single Create that takes the fully-built domain
+// IRepository owns all classroom_exercise persistence. The shape is the
+// repo-wide one: a single Create that takes the fully-built domain
 // object (id already minted), a patch-style Update, and a SoftDelete.
 type IRepository interface {
 	FindByClassroomExerciseId(ctx context.Context, id int64) (*Exercise, error)

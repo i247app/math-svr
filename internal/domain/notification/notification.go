@@ -10,7 +10,7 @@ import (
 // FCM.
 //
 // actionType / actionData drive client-side deep-linking; actionData holds an
-// opaque JSON blob (mirrors how quiz questions/answers are stored — parsed at
+// opaque JSON blob (mirrors how exercise questions/answers are stored — parsed at
 // the application layer, never relationally modelled here).
 type Notification struct {
 	id                 int64

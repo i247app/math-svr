@@ -4,7 +4,7 @@
 //
 //   - CronJob — a recurring unit of work driven by a wall-clock Schedule
 //     (every-N / daily / weekly). No payload, no per-fire arguments. Used
-//     for things like nightly quiz cleanup or every-15-minute session
+//     for things like nightly data cleanup or every-15-minute session
 //     reaping.
 //
 //   - Task    — a one-shot unit of work with an opaque payload and a

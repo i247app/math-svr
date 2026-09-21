@@ -11,7 +11,7 @@ import (
 //
 // answers and review are opaque JSON blobs (LONGTEXT in the schema).
 // answers follows the {question_number, label} shape from
-// quizDto.QuizStudentAnswer; review is whatever the grading prompt
+// question.StudentAnswer; review is whatever the grading prompt
 // returned and is parsed on the way out.
 //
 // The lifecycle column is submissionStatus (SUBMITTED → GRADED →

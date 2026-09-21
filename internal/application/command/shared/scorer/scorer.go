@@ -1,14 +1,14 @@
 // Package scorer is the deterministic, bot-free grader for MCQ-style
-// quizzes and classroom exercises. Both aggregates ship the same
+// classroom exercises and exams. Both aggregates ship the same
 // `{question_number, question_name, answers:[{label, content}],
 // right_answer, correct_answer?, topic?, difficulty?}` schema, so a
-// single scoring engine serves both submit/v2 endpoints:
+// single scoring engine serves both submit paths:
 //
-//   - /quizzes/submit/v2          → quiz module
-//   - /classroom-exercise/submissions/submit/v2 → exercise module
+//   - /classroom-exercise/submissions/submit → exercise module
+//   - /exams/*                               → exam module
 //
-// The package lives under application/command/shared so the two command
-// packages can both depend on it without depending on each other (which
+// The package lives under application/command/shared so the command
+// packages can all depend on it without depending on each other (which
 // would be a layer-smell cross-aggregate dep at the application layer).
 //
 // What it does NOT do:
@@ -40,16 +40,15 @@ import (
 // shapes whether v1 (bot) or v2 (server) produced it.
 const ReviewSourceMarker = "deterministic_v2"
 
-// reviewMaxLen mirrors the tightest column review may land in —
-// today ma_quizzes.review's VARCHAR(255). ma_exercise_submissions
-// uses LONGTEXT so it has plenty of headroom; clamping both paths to the
-// same budget keeps the review compact and consistent across aggregates.
+// reviewMaxLen keeps the review compact and consistent across aggregates.
+// It was sized for the VARCHAR(255) review column of the (since removed)
+// quiz table; ma_exercise_submissions uses LONGTEXT, so the clamp is now a
+// presentation budget rather than a storage limit.
 const reviewMaxLen = 250
 
 // Result is the deterministic counterpart of question.GradingResult.
-// Both quiz and exercise commands map this into their respective
-// row-update / row-insert types (quiz.GradingUpdate for quiz,
-// SubmitExerciseAnswersV2Command's per-column fields for exercise).
+// The exercise and exam commands map this into their respective
+// row-update / row-insert types.
 type Result struct {
 	TotalQuestions int
 	CorrectNumber  int
@@ -59,9 +58,9 @@ type Result struct {
 	SkippedNumber   int
 	ScorePercentage int
 	Review          string
-	// AssessmentGrade stays nil today — only quiz writes this column, and
-	// deriving a coarse grade signal from difficulty is reserved for a
-	// follow-up once topic+difficulty tags appear in real traffic.
+	// AssessmentGrade stays nil today — deriving a coarse grade signal
+	// from difficulty is reserved for a follow-up once topic+difficulty
+	// tags appear in real traffic.
 	AssessmentGrade *string
 }
 
@@ -111,8 +110,8 @@ type DetailedResult struct {
 // the parsed student payload from the submit request.
 //
 // It keeps the original denominator (a skipped question counts as wrong)
-// so quiz and exercise submissions score exactly as they did before the
-// exam flow introduced the second rule.
+// so exercise submissions score exactly as they did before the exam flow
+// introduced the second rule.
 func Score(questionsJSON string, answers []question.StudentAnswer, lang enum.LanguageType) (*Result, error) {
 	detailed, err := ScoreDetailed(questionsJSON, answers, lang, DenominatorAllQuestions)
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 )
 
 // pushService is the typed seam over the notification adapter — it keeps the
-// FCM wiring out of the orchestration service (mirrors quiz/bot_service.go).
+// FCM wiring out of the orchestration service (mirrors exercise/bot_service.go).
 // The adapter pointer is nil when NOTIFICATION_PROVIDER is ""/"disabled";
 // enabled() lets callers skip delivery cleanly.
 type pushService struct {

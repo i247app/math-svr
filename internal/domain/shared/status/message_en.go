@@ -289,8 +289,6 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case BOT_CONTENT_BLOCKED:
 		return "The AI provider blocked this content"
 
-	// Quiz
-
 	// Job
 	case JOB_NOT_FOUND:
 		return "Job not found"

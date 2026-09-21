@@ -289,8 +289,6 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case BOT_CONTENT_BLOCKED:
 		return "Nội dung đã bị nhà cung cấp AI chặn"
 
-	// Quiz
-
 	// Job
 	case JOB_NOT_FOUND:
 		return "Không tìm thấy job"
