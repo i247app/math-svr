@@ -2,7 +2,6 @@ package device
 
 import (
 	"context"
-	"fmt"
 
 	command "math-ai.com/math-ai/internal/application/command/device"
 	dto "math-ai.com/math-ai/internal/application/dto/device"
@@ -93,7 +92,7 @@ func (s *Service) ListDevicesByUserId(ctx context.Context, req *dto.ListDevicesR
 	}
 
 	if s.isDemoUser(user) {
-		currentDeviceName := fmt.Sprintf("%s (Demo device)", metadata.GetDeviceName(ctx))
+		currentDeviceName := "Demo User Device"
 
 		demoNames := append([]string{currentDeviceName}, s.demoNames...)
 		demoDevices := make([]*domain.Device, len(demoNames))

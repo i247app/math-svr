@@ -38,7 +38,7 @@ func MaskPhone(p string) string {
 	// for safety since the country code length isn't trivially derivable
 	// from the prefix alone), and the last 4 digits.
 	keepHead := 2 // "+" + first digit
-	keepTail := 4
+	keepTail := 3
 	if len(p) <= keepHead+keepTail {
 		return p
 	}
@@ -63,14 +63,14 @@ func MaskEmail(email string) string {
 
 	// Mask the local part
 	if len(localPart) > 2 {
-		localPart = localPart[:2] + "***"
+		localPart = localPart[:3] + "***"
 	}
 
 	// Mask the domain part (keep the last dot and the TLD)
-	lastDotIndex := strings.LastIndex(domainPart, ".")
-	if lastDotIndex != -1 && len(domainPart)-lastDotIndex > 1 {
-		domainPart = domainPart[:lastDotIndex+1] + "***"
-	}
+	// lastDotIndex := strings.LastIndex(domainPart, ".")
+	// if lastDotIndex != -1 && len(domainPart)-lastDotIndex > 1 {
+	// 	domainPart = domainPart[:lastDotIndex+1] + "***"
+	// }
 
 	return localPart + "@" + domainPart
 }
