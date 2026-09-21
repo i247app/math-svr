@@ -101,8 +101,8 @@ func GetAuthorization(ctx context.Context) string {
 }
 
 // GetDeviceID is a convenience function to get the client device ID from context
-func GetDeviceID(ctx context.Context) string {
-	return FromContext(ctx).DeviceID
+func GetDeviceUUID(ctx context.Context) string {
+	return FromContext(ctx).DeviceUUID
 }
 
 // GetDeviceName is a convenience function to get the client device name from context

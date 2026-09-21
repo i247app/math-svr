@@ -53,12 +53,13 @@ func NewService(
 	pushAdapter *notifAdapter.Adapter,
 	bypassEnabled bool,
 	bypassCode string,
+	demoNames []string,
 ) *Service {
 	return &Service{
 		userSvc:         userSvc,
 		deviceSvc:       deviceSvc,
 		notificationSvc: notificationSvc,
-		sendCmd:         command.NewSendOtpCommandHandler(uow, delivery, pushAdapter),
+		sendCmd:         command.NewSendOtpCommandHandler(uow, delivery, pushAdapter, demoNames),
 		verifyCmd:       command.NewVerifyOtpCommandHandler(uow, bypassEnabled, bypassCode),
 		revokeCmd:       command.NewRevokeOtpCommandHandler(uow),
 		getByIdQuery:    query.NewGetOtpByIdQueryHandler(repo),
@@ -108,7 +109,7 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	default:
 	}
 
-	deviceUUID := metadata.GetDeviceID(ctx)
+	deviceUUID := metadata.GetDeviceUUID(ctx)
 	deviceName := metadata.GetDeviceName(ctx)
 
 	result, err := s.sendCmd.Handle(ctx, command.SendOtpCommand{
@@ -189,7 +190,7 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 		// Update session
 		switch req.OtpType {
 		case string(enum.OtpTypeLogin2FA):
-			deviceUUID := metadata.GetDeviceID(ctx)
+			deviceUUID := metadata.GetDeviceUUID(ctx)
 			log.Info("Mark device as trusted")
 			_, err := s.deviceSvc.VerifyDevice(ctx, &deviceDTO.VerifyDeviceReq{
 				UserID:          *result.UserID,

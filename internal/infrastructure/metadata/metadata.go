@@ -52,7 +52,7 @@ type RequestMetadata struct {
 	Platform        string `json:"platform,omitempty"`          // "ios" | "android" | "web"
 	ModelName       string `json:"model_name,omitempty"`        // manufacturer / make, e.g. "google", "Apple"
 	OSVersion       string `json:"system_version,omitempty"`    // OS version, e.g. "35", "iOS 16.0"
-	DeviceID        string `json:"device_uuid,omitempty"`       // unique device identifier
+	DeviceUUID      string `json:"device_uuid,omitempty"`       // unique device identifier
 	DeviceName      string `json:"device_name,omitempty"`       // e.g. "Pixel 8"
 	DevicePushToken string `json:"device_push_token,omitempty"` // FCM / APNS push token
 

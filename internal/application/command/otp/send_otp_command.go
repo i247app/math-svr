@@ -71,18 +71,20 @@ type SendOtpCommandHandler struct {
 	delivery           *otp_delivery.Adapter
 	pushAdapter        *notifAdapter.Adapter
 	clearDeadTokensCmd *notifCommand.ClearDeadTokensCommandHandler
+	demoNames          []string
 }
 
 // NewSendOtpCommandHandler wires both delivery paths: delivery (SMS/email,
 // identifier-routed) and pushAdapter (Firebase, device-token-routed — nil
 // when NOTIFICATION_PROVIDER is disabled, same nil-guard convention as the
 // rest of the notification adapter's consumers).
-func NewSendOtpCommandHandler(uow transaction.UnitOfWork, delivery *otp_delivery.Adapter, pushAdapter *notifAdapter.Adapter) *SendOtpCommandHandler {
+func NewSendOtpCommandHandler(uow transaction.UnitOfWork, delivery *otp_delivery.Adapter, pushAdapter *notifAdapter.Adapter, demoNames []string) *SendOtpCommandHandler {
 	return &SendOtpCommandHandler{
 		uow:                uow,
 		delivery:           delivery,
 		pushAdapter:        pushAdapter,
 		clearDeadTokensCmd: notifCommand.NewClearDeadTokensCommandHandler(uow),
+		demoNames:          demoNames,
 	}
 }
 
@@ -93,6 +95,13 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	}
 	if cmd.Identifier == "" {
 		return nil, errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
+	}
+
+	// Detect Demo names
+	for _, demoName := range h.demoNames {
+		if cmd.Identifier == demoName {
+			cmd.TargetDeviceID = nil
+		}
 	}
 
 	// target_device_id picks a different addressing scheme (device push

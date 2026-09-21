@@ -71,11 +71,33 @@ CASE NUM — if {grade} = Lớp 1–5:
 * {{NUM_GRADE}}
 * Keep questions clear, age-appropriate, and progressively harder.
 
-ANSWER VALIDATION:
-* MUST solve each question accurately and verify the result before returning.
-* MUST return the exact correct answer based on the verified calculation; never guess or choose the closest answer.
-* The correct answer MUST appear exactly once among options A–D; if it does not, modify the options before returning.
-* right_answer_label and right_answer_content MUST refer to the same correct option and exactly match that option.
+### ANSWER VALIDATION — STRICT:
+
+For every question:
+1. SOLVE & VERIFY FIRST
+* Solve the question and recalculate to confirm the exact correct answer.
+* NEVER GUESS.
+
+2. GENERATE 4 OPTIONS A, B, C, D
+* All 4 options MUST be different.
+* The correct answer MUST appear EXACTLY ONCE.
+* The other 3 options MUST be WRONG.
+* NEVER duplicate or use the correct answer as a distractor.
+
+3. VALIDATE
+* A.content ≠ B.content ≠ C.content ≠ D.content
+* The correct answer appears exactly once.
+* All 3 distractors are incorrect.
+
+4. ASSIGN THE LABEL LAST
+* right_answer_content = the exact content of the correct option.
+* right_answer_label = the A/B/C/D label of the option containing "right_answer_content".
+* NEVER generate "right_answer_label" independently.
+* The label MUST be derived from the actual A–D options.
+
+FINAL CHECK:
+* Solve → Verify → Generate A–D → Validate → Identify the correct option → Assign its label.
+* If the answer or label does not match, FIX IT before returning the result.
 
 OUTPUT:
 Return ONLY valid JSON. Do not return Markdown or explanations. All JSON keys must be in English.

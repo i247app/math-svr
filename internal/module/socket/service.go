@@ -76,7 +76,7 @@ func (s *Service) markOnline(ctx context.Context, userID int64) {
 	if s.presence == nil {
 		return
 	}
-	deviceUUID := utils.OptionalString(metadata.GetDeviceID(ctx))
+	deviceUUID := utils.OptionalString(metadata.GetDeviceUUID(ctx))
 	platform := utils.OptionalString(metadata.GetPlatform(ctx))
 
 	if _, err := s.presence.MarkOnline(ctx, userID, deviceUUID, platform); err != nil {

@@ -2,6 +2,7 @@ package device
 
 import (
 	"context"
+	"fmt"
 
 	command "math-ai.com/math-ai/internal/application/command/device"
 	dto "math-ai.com/math-ai/internal/application/dto/device"
@@ -9,8 +10,12 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/device"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // Service is the device module's outward surface. Two callers exist:
@@ -32,9 +37,16 @@ type Service struct {
 	revokeDeviceCmd            *command.RevokeDeviceCommandHandler
 	softDeleteDeviceCmd        *command.SoftDeleteDeviceCommandHandler
 	repo                       domain.IRepository
+	userRepo                   userDomain.IRepository
+	demoNames                  []string
 }
 
-func NewService(repo domain.IRepository, uow transaction.UnitOfWork) *Service {
+func NewService(
+	repo domain.IRepository,
+	uow transaction.UnitOfWork,
+	userRepo userDomain.IRepository,
+	demoNames []string,
+) *Service {
 	return &Service{
 		getDeviceByIdQuery:         query.NewGetDeviceByIdQueryHandler(repo),
 		getDeviceByUserDeviceQuery: query.NewGetDeviceByUserDeviceQueryHandler(repo),
@@ -44,6 +56,8 @@ func NewService(repo domain.IRepository, uow transaction.UnitOfWork) *Service {
 		revokeDeviceCmd:            command.NewRevokeDeviceCommandHandler(uow),
 		softDeleteDeviceCmd:        command.NewSoftDeleteDeviceCommandHandler(uow),
 		repo:                       repo,
+		userRepo:                   userRepo,
+		demoNames:                  demoNames,
 	}
 }
 
@@ -72,6 +86,36 @@ func (s *Service) ListDevicesByUserId(ctx context.Context, req *dto.ListDevicesR
 	if err != nil {
 		return nil, err
 	}
+
+	user, err := s.userRepo.FindById(ctx, req.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.isDemoUser(user) {
+		currentDeviceName := fmt.Sprintf("%s (Demo device)", metadata.GetDeviceName(ctx))
+
+		demoNames := append([]string{currentDeviceName}, s.demoNames...)
+		demoDevices := make([]*domain.Device, len(demoNames))
+
+		for i, name := range demoNames {
+			device := &domain.Device{}
+			device.SetDeviceId(int64(utils.RandomIntWithLength(4)))
+			device.SetDeviceUUID(metadata.GetDeviceUUID(ctx))
+			device.SetDeviceName(utils.MaskIndentifier(name))
+			device.SetPlatform(metadata.GetPlatform(ctx))
+			device.SetIsVerified(true)
+			device.SetCreateDt(mtime.Now())
+			device.SetModifyDt(mtime.Now())
+			device.SetStatus("ACTIVE")
+
+			demoDevices[i] = device
+		}
+
+		demoDevices = append(demoDevices, devices...)
+		return &dto.ListDevicesRes{Devices: dto.DomainListToResponse(demoDevices)}, nil
+	}
+
 	return &dto.ListDevicesRes{Devices: dto.DomainListToResponse(devices)}, nil
 }
 

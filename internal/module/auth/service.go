@@ -61,7 +61,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 
 	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
 		LoginName:       loginName,
-		DeviceUUID:      metadata.GetDeviceID(ctx),
+		DeviceUUID:      metadata.GetDeviceUUID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
 		Platform:        metadata.GetPlatform(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),
@@ -73,7 +73,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 	if result == nil {
 		return &dto.LoginRes{
 			User: nil,
-		}, errs.NewError(ctx, status.NO_DATA, nil, ErrUserNotFound)
+		}, errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, ErrUserNotFound)
 	}
 
 	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: result.UserID})
@@ -166,7 +166,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 
 	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
 		LoginName:       loginName,
-		DeviceUUID:      metadata.GetDeviceID(ctx),
+		DeviceUUID:      metadata.GetDeviceUUID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
 		Platform:        metadata.GetPlatform(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),

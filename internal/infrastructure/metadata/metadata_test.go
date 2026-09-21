@@ -54,7 +54,7 @@ func TestRequestMetadata_UnmarshalClientPayload(t *testing.T) {
 	}
 
 	checks := map[string]struct{ got, want string }{
-		"device_uuid":       {m.DeviceID, "android-device-id"},
+		"device_uuid":       {m.DeviceUUID, "android-device-id"},
 		"device_name":       {m.DeviceName, "Pixel 8"},
 		"device_push_token": {m.DevicePushToken, "fcm-push-token"},
 		"model_name":        {m.ModelName, "google"},

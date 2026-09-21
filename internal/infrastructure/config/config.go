@@ -35,6 +35,7 @@ func NewEnv(envpath string) (*Env, error) {
 		OtpBypassEnabled:      getBoolConfigWithDefault("OTP_BYPASS_ENABLED", false),
 		OtpBypassCode:         getConfigOptionalString("OTP_BYPASS_CODE"),
 		TrustDeviceTTLDays:    getIntConfigOptionalWithDefault("TRUST_DEVICE_TTL", 30),
+		DemoNames:             getCSVConfig("DEMO_NAMES"),
 
 		DBConfig: DBConfig{
 			DBHost: getConfig("DB_HOST"),
@@ -182,6 +183,7 @@ func NewEnv(envpath string) (*Env, error) {
 			TraceSampleRatio: getFloatConfigWithDefault("OBS_TRACE_SAMPLE_RATIO", 1.0),
 		},
 	}
+
 	return &result, nil
 }
 

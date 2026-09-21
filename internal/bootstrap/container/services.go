@@ -87,7 +87,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	miscService := misc.NewService(maintenanceRepo)
 
 	log.Info("> Setup DeviceSvc...")
-	deviceService := device.NewService(repos.DeviceRepository, uow)
+	deviceService := device.NewService(repos.DeviceRepository, uow, repos.UserRepository, res.Env.DemoNames)
 
 	log.Info("> Setup UserSvc...")
 	userService := user.NewService(deviceService, repos.UserRepository, uow, res.StorageProvider)
@@ -142,7 +142,8 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	)
 
 	log.Info("> Setup OtpSvc...")
-	otpService := otp.NewService(userService, deviceService, notificationService, repos.OtpRepository, uow, res.OtpDelivery, res.NotificationProvider, res.Env.OtpBypassEnabled, res.Env.OtpBypassCode)
+	otpService := otp.NewService(userService, deviceService, notificationService, repos.OtpRepository, uow,
+		res.OtpDelivery, res.NotificationProvider, res.Env.OtpBypassEnabled, res.Env.OtpBypassCode, res.Env.DemoNames)
 
 	log.Info("> Setup AuthSvc...")
 	authService := auth.NewService(userService, otpService, uow, res.Env.TrustDeviceTTLDays)

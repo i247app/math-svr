@@ -115,7 +115,7 @@ func TestSendOtpCommandHandler_TargetDevicePush(t *testing.T) {
 		}})
 
 		uow := fakeUoW{repos: transaction.Repositories{Otp: otpRepo, Device: deviceRepo, Seq: &fakeSeqRepo{}}}
-		handler := command.NewSendOtpCommandHandler(uow, nil, adapter)
+		handler := command.NewSendOtpCommandHandler(uow, nil, adapter, nil)
 
 		_, err := handler.Handle(context.Background(), baseCmd(1))
 		assertStatus(t, err, status.DEVICE_NOT_FOUND)
@@ -134,7 +134,7 @@ func TestSendOtpCommandHandler_TargetDevicePush(t *testing.T) {
 		}})
 
 		uow := fakeUoW{repos: transaction.Repositories{Otp: otpRepo, Device: deviceRepo, Seq: &fakeSeqRepo{}}}
-		handler := command.NewSendOtpCommandHandler(uow, nil, adapter)
+		handler := command.NewSendOtpCommandHandler(uow, nil, adapter, nil)
 
 		_, err := handler.Handle(context.Background(), baseCmd(1))
 		assertStatus(t, err, status.DEVICE_NOT_OWNED)
@@ -151,7 +151,7 @@ func TestSendOtpCommandHandler_TargetDevicePush(t *testing.T) {
 		adapter := notifAdapter.NewAdapter()
 
 		uow := fakeUoW{repos: transaction.Repositories{Otp: otpRepo, Device: deviceRepo, Seq: &fakeSeqRepo{}}}
-		handler := command.NewSendOtpCommandHandler(uow, nil, adapter)
+		handler := command.NewSendOtpCommandHandler(uow, nil, adapter, nil)
 
 		_, err := handler.Handle(context.Background(), baseCmd(1))
 		assertStatus(t, err, status.DEVICE_NOT_TRUSTED)
@@ -163,7 +163,7 @@ func TestSendOtpCommandHandler_TargetDevicePush(t *testing.T) {
 		adapter := notifAdapter.NewAdapter()
 
 		uow := fakeUoW{repos: transaction.Repositories{Otp: otpRepo, Device: deviceRepo, Seq: &fakeSeqRepo{}}}
-		handler := command.NewSendOtpCommandHandler(uow, nil, adapter)
+		handler := command.NewSendOtpCommandHandler(uow, nil, adapter, nil)
 
 		_, err := handler.Handle(context.Background(), baseCmd(1))
 		assertStatus(t, err, status.NOTIFICATION_NO_DEVICE_TOKEN)
@@ -174,7 +174,7 @@ func TestSendOtpCommandHandler_TargetDevicePush(t *testing.T) {
 		deviceRepo := &fakeDeviceRepo{target: trustedDevice(requestingUserID, tokenPtr("tok"))}
 
 		uow := fakeUoW{repos: transaction.Repositories{Otp: otpRepo, Device: deviceRepo, Seq: &fakeSeqRepo{}}}
-		handler := command.NewSendOtpCommandHandler(uow, nil, nil)
+		handler := command.NewSendOtpCommandHandler(uow, nil, nil, nil)
 
 		_, err := handler.Handle(context.Background(), baseCmd(1))
 		assertStatus(t, err, status.OTP_NO_DELIVERY_CHANNEL)
@@ -192,7 +192,7 @@ func TestSendOtpCommandHandler_TargetDevicePush(t *testing.T) {
 		}})
 
 		uow := fakeUoW{repos: transaction.Repositories{Otp: otpRepo, Device: deviceRepo, Seq: &fakeSeqRepo{}}}
-		handler := command.NewSendOtpCommandHandler(uow, nil, adapter)
+		handler := command.NewSendOtpCommandHandler(uow, nil, adapter, nil)
 
 		_, err := handler.Handle(context.Background(), baseCmd(1))
 		assertStatus(t, err, status.OTP_DELIVERY_FAILED)
@@ -210,7 +210,7 @@ func TestSendOtpCommandHandler_TargetDevicePush(t *testing.T) {
 		}})
 
 		uow := fakeUoW{repos: transaction.Repositories{Otp: otpRepo, Device: deviceRepo, Seq: &fakeSeqRepo{}}}
-		handler := command.NewSendOtpCommandHandler(uow, nil, adapter)
+		handler := command.NewSendOtpCommandHandler(uow, nil, adapter, nil)
 
 		_, err := handler.Handle(context.Background(), baseCmd(1))
 		assertStatus(t, err, status.OTP_DELIVERY_FAILED)
@@ -231,7 +231,7 @@ func TestSendOtpCommandHandler_TargetDevicePush(t *testing.T) {
 		}})
 
 		uow := fakeUoW{repos: transaction.Repositories{Otp: otpRepo, Device: deviceRepo, Seq: &fakeSeqRepo{}}}
-		handler := command.NewSendOtpCommandHandler(uow, nil, adapter)
+		handler := command.NewSendOtpCommandHandler(uow, nil, adapter, nil)
 
 		result, err := handler.Handle(context.Background(), baseCmd(1))
 		if err != nil {

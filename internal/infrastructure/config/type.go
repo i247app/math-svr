@@ -24,6 +24,7 @@ type Env struct {
 	OtpBypassEnabled   bool
 	OtpBypassCode      string
 	TrustDeviceTTLDays int
+	DemoNames          []string
 
 	DBConfig            DBConfig
 	EmailConfig         EmailConfig

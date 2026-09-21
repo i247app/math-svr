@@ -136,7 +136,7 @@ func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req.DeviceUUID = metadata.GetDeviceID(r.Context())
+	req.DeviceUUID = metadata.GetDeviceUUID(r.Context())
 	uid, ok := h.uid(w, r)
 	if !ok {
 		return

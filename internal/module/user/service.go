@@ -183,7 +183,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		Email:      email,
 		UserName:   req.Name,
 		AvatarKey:  avatarKey,
-		DeviceUUID: metadata.GetDeviceID(ctx),
+		DeviceUUID: metadata.GetDeviceUUID(ctx),
 	})
 	if err != nil {
 		// Only delete objects we just uploaded — a client-supplied
@@ -201,7 +201,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	log.Info("Mark device as trusted")
 	_, err = s.deviceSvc.VerifyDevice(ctx, &deviceDTO.VerifyDeviceReq{
 		UserID:          created.User.UserId(),
-		DeviceUUID:      metadata.GetDeviceID(ctx),
+		DeviceUUID:      metadata.GetDeviceUUID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
 		Platform:        metadata.GetPlatform(ctx),
 		DevicePushToken: utils.ToStringPtr(metadata.GetDevicePushToken(ctx)),

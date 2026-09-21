@@ -73,7 +73,7 @@ func NewService(
 func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.PingNotificationRes, error) {
 	log := logger.From(ctx)
 
-	deviceId := metadata.GetDeviceID(ctx)
+	deviceId := metadata.GetDeviceUUID(ctx)
 
 	if err := ValidatePing(ctx, req); err != nil {
 		return nil, err
