@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/chat"
@@ -24,12 +25,11 @@ const (
 		p.invited_by_profile_id, p.note, p.participant_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
-	chatParticipantActiveWhere = `p.status = ? AND p.deleted_dt IS NULL
-		AND (p.participant_status IS NULL OR p.participant_status != ?)`
+	chatParticipantActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
 )
 
 func chatParticipantActiveArgs() []any {
-	return []any{enum.StatusActive, enum.ChatParticipantStatusDeleted}
+	return []any{enum.StatusActive}
 }
 
 type ChatParticipantRepository struct {
@@ -92,9 +92,9 @@ func ModelToDomainChatParticipant(m *models.ChatParticipantModel) *chat.Particip
 }
 
 func (r *ChatParticipantRepository) findOneBy(ctx context.Context, where string, args ...any) (*chat.Participant, error) {
-	fullArgs := append(chatParticipantActiveArgs(), args...)
-	query := `SELECT ` + chatParticipantColumns + ` FROM ` + chatParticipantTable + ` p WHERE ` +
-		chatParticipantActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, chatParticipantActiveArgs())
+	query := `SELECT ` + chatParticipantColumns + ` FROM ` + chatParticipantTable + ` p WHERE (` +
+		where + `) AND ` + chatParticipantActiveWhere
 
 	m, err := scanChatParticipant(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -115,15 +115,16 @@ func (r *ChatParticipantRepository) ListByConversationId(ctx context.Context, pa
 		return nil, fmt.Errorf("chat participant repo list: params is required")
 	}
 
-	args := append(chatParticipantActiveArgs(), params.ConversationId)
+	args := []any{params.ConversationId}
 	where := `p.conversation_id = ?`
 	if params.Status != nil {
 		where += ` AND p.participant_status = ?`
 		args = append(args, *params.Status)
 	}
+	args = append(args, chatParticipantActiveArgs()...)
 
-	query := `SELECT ` + chatParticipantColumns + ` FROM ` + chatParticipantTable + ` p WHERE ` +
-		chatParticipantActiveWhere + ` AND (` + where + `) ORDER BY p.id ASC`
+	query := `SELECT ` + chatParticipantColumns + ` FROM ` + chatParticipantTable + ` p WHERE (` +
+		where + `) AND ` + chatParticipantActiveWhere + ` ORDER BY p.id ASC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -152,13 +153,14 @@ func (r *ChatParticipantRepository) ListByProfileAndConversationIds(ctx context.
 	}
 
 	placeholders := strings.Repeat("?,", len(conversationIds)-1) + "?"
-	args := append(chatParticipantActiveArgs(), profileId)
+	args := []any{profileId}
 	for _, id := range conversationIds {
 		args = append(args, id)
 	}
+	args = append(args, chatParticipantActiveArgs()...)
 
 	query := `SELECT ` + chatParticipantColumns + ` FROM ` + chatParticipantTable + ` p WHERE ` +
-		chatParticipantActiveWhere + ` AND p.profile_id = ? AND p.conversation_id IN (` + placeholders + `)`
+		`(p.profile_id = ? AND p.conversation_id IN (` + placeholders + `)) AND ` + chatParticipantActiveWhere
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -219,11 +221,11 @@ func (r *ChatParticipantRepository) IncUnreadExcept(ctx context.Context, convers
 	query := `UPDATE ` + chatParticipantTable + ` SET
 		  unread_count          = unread_count + 1,
 		  last_delivered_seq_no = GREATEST(last_delivered_seq_no, ?)
-		WHERE conversation_id = ? AND profile_id != ?
-		  AND status = ? AND deleted_dt IS NULL AND participant_status = ?`
+		WHERE (conversation_id = ? AND profile_id != ? AND participant_status = ?)
+		  AND status IN (?) AND deleted_dt IS NULL`
 
 	if _, err := r.db.Exec(ctx, query, seqNo, conversationId, exceptProfileId,
-		enum.StatusActive, enum.ChatParticipantStatusActive); err != nil {
+		enum.ChatParticipantStatusActive, enum.StatusActive); err != nil {
 		return fmt.Errorf("chat participant repo inc unread: %w", err)
 	}
 	return nil
@@ -252,9 +254,9 @@ func (r *ChatParticipantRepository) SumUnreadByProfileId(ctx context.Context, pr
 	// COALESCE because SUM over zero rows is NULL, and a user with no threads
 	// must read as 0 rather than fail the scan.
 	query := `SELECT COALESCE(SUM(p.unread_count), 0) FROM ` + chatParticipantTable + ` p
-		WHERE ` + chatParticipantActiveWhere + ` AND p.profile_id = ? AND p.participant_status = ?`
+		WHERE (p.profile_id = ? AND p.participant_status = ?) AND ` + chatParticipantActiveWhere
 
-	args := append(chatParticipantActiveArgs(), profileId, enum.ChatParticipantStatusActive)
+	args := slices.Concat([]any{profileId, enum.ChatParticipantStatusActive}, chatParticipantActiveArgs())
 
 	var total int64
 	if err := r.db.QueryRow(ctx, query, args...).Scan(&total); err != nil {

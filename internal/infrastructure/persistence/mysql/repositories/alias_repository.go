@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/database"
@@ -19,16 +20,13 @@ const (
 
 	aliasColumns = `id, alias_id, uid, aka, alias_status, note, create_id, create_dt, modify_id, modify_dt`
 
-	// Mirrors the user repo's active filter: system-INACTIVE, soft-deleted,
-	// and alias_status = DELETED rows are invisible to every read. Login
-	// resolution (alias.FindByAka -> user.FindByUserId) relies on this so a
-	// soft-deleted account cannot log back in through its alias.
-	aliasActiveWhere = `status IN (?) AND deleted_dt IS NULL
-	AND (alias_status IS NULL OR alias_status != ?)`
+	// Login resolution (alias.FindByAka -> user.FindByUserId) relies on this
+	// filter so a soft-deleted account cannot log back in through its alias.
+	aliasActiveWhere = `status IN (?) AND deleted_dt IS NULL`
 )
 
 func aliasActiveArgs() []any {
-	return []any{enum.StatusActive, enum.UserAliasStatusTypeDeleted}
+	return []any{enum.StatusActive}
 }
 
 type AliasRepository struct {
@@ -48,12 +46,12 @@ func scanAlias(s database.RowScanner) (*models.AliasModel, error) {
 }
 
 // findOneBy runs a single-row lookup. `where` is a package-controlled SQL
-// fragment (never user input). aliasActiveWhere is prepended automatically;
+// fragment (never user input). aliasActiveWhere is appended last;
 // a missing row is reported as (nil, nil), never sql.ErrNoRows.
 func (r *AliasRepository) findOneBy(ctx context.Context, where string, args ...any) (*user.Alias, error) {
-	fullArgs := append(aliasActiveArgs(), args...)
+	fullArgs := slices.Concat(args, aliasActiveArgs())
 	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable +
-		` WHERE ` + aliasActiveWhere + ` AND (` + where + `)`
+		` WHERE (` + where + `) AND ` + aliasActiveWhere
 
 	m, err := scanAlias(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -95,9 +93,9 @@ func (r *AliasRepository) FindByAka(ctx context.Context, aka string) (*user.Alia
 }
 
 func (r *AliasRepository) FindByUserId(ctx context.Context, userId int64) ([]*user.Alias, error) {
-	args := append(aliasActiveArgs(), userId)
+	args := slices.Concat([]any{userId}, aliasActiveArgs())
 	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable +
-		` WHERE ` + aliasActiveWhere + ` AND uid = ?`
+		` WHERE (uid = ?) AND ` + aliasActiveWhere
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("alias repo find by uid: %w", err)

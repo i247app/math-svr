@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 
 	"math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
@@ -26,8 +27,7 @@ const (
 	// REVOKED rows deliberately survive this filter: the client renders them
 	// in place as "tin nhắn đã được thu hồi", and hiding them would reopen the
 	// gap in seq_no that the thread view relies on being contiguous.
-	chatMessageActiveWhere = `m.status = ? AND m.deleted_dt IS NULL
-		AND (m.message_status IS NULL OR m.message_status != ?)`
+	chatMessageActiveWhere = `m.status IN (?) AND m.deleted_dt IS NULL`
 
 	// defaultMessagePageSize caps a thread page when the caller passes none.
 	defaultMessagePageSize int64 = 30
@@ -35,7 +35,7 @@ const (
 )
 
 func chatMessageActiveArgs() []any {
-	return []any{enum.StatusActive, enum.ChatMessageStatusDeleted}
+	return []any{enum.StatusActive}
 }
 
 type ChatMessageRepository struct {
@@ -93,9 +93,9 @@ func ModelToDomainChatMessage(m *models.ChatMessageModel) *chat.Message {
 }
 
 func (r *ChatMessageRepository) findOneBy(ctx context.Context, where string, args ...any) (*chat.Message, error) {
-	fullArgs := append(chatMessageActiveArgs(), args...)
-	query := `SELECT ` + chatMessageColumns + ` FROM ` + chatMessageTable + ` m WHERE ` +
-		chatMessageActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, chatMessageActiveArgs())
+	query := `SELECT ` + chatMessageColumns + ` FROM ` + chatMessageTable + ` m WHERE (` +
+		where + `) AND ` + chatMessageActiveWhere
 
 	m, err := scanChatMessage(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -141,7 +141,7 @@ func (r *ChatMessageRepository) ListByConversationId(ctx context.Context, params
 
 	// cleared_before_seq_no is the caller's own "clear history" watermark, so
 	// one side clearing their copy hides nothing from the other participants.
-	args := append(chatMessageActiveArgs(), params.ConversationId, params.ClearedBeforeSeqNo)
+	args := []any{params.ConversationId, params.ClearedBeforeSeqNo}
 	where := `m.conversation_id = ? AND m.seq_no > ?`
 	order := ` ORDER BY m.seq_no ASC`
 	needsReverse := false
@@ -162,8 +162,9 @@ func (r *ChatMessageRepository) ListByConversationId(ctx context.Context, params
 		needsReverse = true
 	}
 
-	query := `SELECT ` + chatMessageColumns + ` FROM ` + chatMessageTable + ` m WHERE ` +
-		chatMessageActiveWhere + ` AND (` + where + `)` + order + ` LIMIT ?`
+	query := `SELECT ` + chatMessageColumns + ` FROM ` + chatMessageTable + ` m WHERE (` +
+		where + `) AND ` + chatMessageActiveWhere + order + ` LIMIT ?`
+	args = append(args, chatMessageActiveArgs()...)
 	args = append(args, limit)
 
 	rows, err := r.db.Query(ctx, query, args...)

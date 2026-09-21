@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/chat"
@@ -25,12 +26,11 @@ const (
 		c.last_message_dt, c.note, c.conversation_status, c.status,
 		c.create_id, c.create_dt, c.modify_id, c.modify_dt`
 
-	chatConversationActiveWhere = `c.status = ? AND c.deleted_dt IS NULL
-		AND (c.conversation_status IS NULL OR c.conversation_status != ?)`
+	chatConversationActiveWhere = `c.status IN (?) AND c.deleted_dt IS NULL`
 )
 
 func chatConversationActiveArgs() []any {
-	return []any{enum.StatusActive, enum.ChatConversationStatusDeleted}
+	return []any{enum.StatusActive}
 }
 
 type ChatConversationRepository struct {
@@ -86,9 +86,9 @@ func ModelToDomainChatConversation(m *models.ChatConversationModel) *chat.Conver
 }
 
 func (r *ChatConversationRepository) findOneBy(ctx context.Context, where string, args ...any) (*chat.Conversation, error) {
-	fullArgs := append(chatConversationActiveArgs(), args...)
-	query := `SELECT ` + chatConversationColumns + ` FROM ` + chatConversationTable + ` c WHERE ` +
-		chatConversationActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, chatConversationActiveArgs())
+	query := `SELECT ` + chatConversationColumns + ` FROM ` + chatConversationTable + ` c WHERE (` +
+		where + `) AND ` + chatConversationActiveWhere
 
 	m, err := scanChatConversation(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -115,13 +115,14 @@ func (r *ChatConversationRepository) ListByDmKeys(ctx context.Context, dmKeys []
 	}
 
 	placeholders := strings.Repeat("?,", len(dmKeys)-1) + "?"
-	args := chatConversationActiveArgs()
+	args := make([]any, 0, len(dmKeys)+1)
 	for _, k := range dmKeys {
 		args = append(args, k)
 	}
+	args = append(args, chatConversationActiveArgs()...)
 
-	query := `SELECT ` + chatConversationColumns + ` FROM ` + chatConversationTable + ` c WHERE ` +
-		chatConversationActiveWhere + ` AND c.dm_key IN (` + placeholders + `)`
+	query := `SELECT ` + chatConversationColumns + ` FROM ` + chatConversationTable + ` c WHERE (c.dm_key IN (` +
+		placeholders + `)) AND ` + chatConversationActiveWhere
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -155,11 +156,10 @@ func (r *ChatConversationRepository) ListByProfileId(ctx context.Context, params
 		INNER JOIN ma_chat_participants p
 		    ON p.conversation_id = c.conversation_id
 		   AND p.profile_id = ?
-		   AND p.status = ?
-		   AND p.deleted_dt IS NULL
-		   AND p.participant_status = ?`
+		   AND p.participant_status = ?
+		   AND p.status IN (?) AND p.deleted_dt IS NULL`
 
-	joinArgs := []any{params.ProfileId, enum.StatusActive, enum.ChatParticipantStatusActive}
+	joinArgs := []any{params.ProfileId, enum.ChatParticipantStatusActive, enum.StatusActive}
 
 	where := ""
 	filterArgs := []any{}
@@ -172,13 +172,11 @@ func (r *ChatConversationRepository) ListByProfileId(ctx context.Context, params
 	}
 
 	buildArgs := func() []any {
-		args := append([]any{}, joinArgs...)
-		args = append(args, chatConversationActiveArgs()...)
-		return append(args, filterArgs...)
+		return slices.Concat(joinArgs, filterArgs, chatConversationActiveArgs())
 	}
 
 	var total int64
-	countQuery := `SELECT COUNT(*) FROM ` + from + ` WHERE ` + chatConversationActiveWhere + where
+	countQuery := `SELECT COUNT(*) FROM ` + from + whereActive(where, chatConversationActiveWhere)
 	if err := r.db.QueryRow(ctx, countQuery, buildArgs()...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("chat conversation repo count: %w", err)
 	}
@@ -186,8 +184,8 @@ func (r *ChatConversationRepository) ListByProfileId(ctx context.Context, params
 	// Pinned threads first, then most recent activity. Threads with no message
 	// yet (last_message_dt NULL) fall back to create_dt so a freshly opened
 	// conversation does not sink to the bottom of the inbox.
-	query := `SELECT ` + chatConversationColumns + ` FROM ` + from + ` WHERE ` +
-		chatConversationActiveWhere + where +
+	query := `SELECT ` + chatConversationColumns + ` FROM ` + from +
+		whereActive(where, chatConversationActiveWhere) +
 		` ORDER BY p.is_pinned DESC, COALESCE(c.last_message_dt, c.create_dt) DESC, c.id DESC`
 
 	listArgs := buildArgs()

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/grade"
@@ -23,12 +24,11 @@ const (
 		g.grade_status, g.status,
 		g.create_id, g.create_dt, g.modify_id, g.modify_dt`
 
-	gradeActiveWhere = `g.status = ? AND g.deleted_dt IS NULL
-		AND (g.grade_status IS NULL OR g.grade_status != ?)`
+	gradeActiveWhere = `g.status IN (?) AND g.deleted_dt IS NULL`
 )
 
 func gradeActiveArgs() []any {
-	return []any{enum.StatusActive, enum.StatusInactive}
+	return []any{enum.StatusActive}
 }
 
 type GradeRepository struct {
@@ -50,12 +50,12 @@ func scanGrade(s database.RowScanner) (*models.GradeModel, error) {
 }
 
 // findOneBy is the single-row read helper. `where` is a package-controlled
-// SQL fragment; args supply placeholders. gradeActiveWhere is prepended
-// so every read excludes soft-deleted and inactive rows.
+// SQL fragment; args supply placeholders. gradeActiveWhere is appended
+// last so every read excludes soft-deleted and inactive rows.
 func (r *GradeRepository) findOneBy(ctx context.Context, where string, args ...any) (*grade.Grade, error) {
-	fullArgs := append(gradeActiveArgs(), args...)
+	fullArgs := slices.Concat(args, gradeActiveArgs())
 	query := `SELECT ` + gradeColumns + ` FROM ` + gradeTable + ` g` +
-		` WHERE ` + gradeActiveWhere + ` AND (` + where + `)`
+		` WHERE (` + where + `) AND ` + gradeActiveWhere
 
 	m, err := scanGrade(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -74,17 +74,17 @@ func (r *GradeRepository) FindByGradeId(ctx context.Context, gradeId int64) (*gr
 func (r *GradeRepository) ListGrades(ctx context.Context, params *grade.ListGradesParams) ([]*grade.Grade, *pagination.Pagination, error) {
 	filterWhere, filterArgs := buildGradeListFilterClause(params)
 
-	countArgs := append(gradeActiveArgs(), filterArgs...)
+	countArgs := slices.Concat(filterArgs, gradeActiveArgs())
 	countQuery := `SELECT COUNT(*) FROM ` + gradeTable + ` g` +
-		` WHERE ` + gradeActiveWhere + filterWhere
+		whereActive(filterWhere, gradeActiveWhere)
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("grade repo count: %w", err)
 	}
 
-	listArgs := append(gradeActiveArgs(), filterArgs...)
+	listArgs := slices.Concat(filterArgs, gradeActiveArgs())
 	query := `SELECT ` + gradeColumns + ` FROM ` + gradeTable + ` g` +
-		` WHERE ` + gradeActiveWhere + filterWhere +
+		whereActive(filterWhere, gradeActiveWhere) +
 		` ORDER BY g.display_order ASC, g.id ASC`
 
 	var pg *pagination.Pagination
@@ -141,15 +141,16 @@ func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []int64) ([]*
 	}
 
 	placeholders := make([]string, len(ids))
-	args := gradeActiveArgs()
+	args := make([]any, 0, len(ids)+1)
 	for i, id := range ids {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
 
+	args = append(args, gradeActiveArgs()...)
+
 	query := `SELECT ` + gradeColumns + ` FROM ` + gradeTable + ` g` +
-		` WHERE ` + gradeActiveWhere +
-		` AND g.grade_id IN (` + strings.Join(placeholders, ",") + `)`
+		` WHERE (g.grade_id IN (` + strings.Join(placeholders, ",") + `)) AND ` + gradeActiveWhere
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {

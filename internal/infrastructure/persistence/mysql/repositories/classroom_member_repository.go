@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/classroom"
@@ -24,15 +25,13 @@ const (
 		m.member_status, m.status,
 		m.create_id, m.create_dt, m.modify_id, m.modify_dt`
 
-	// classroomMemberActiveWhere excludes only system-inactive and the
-	// DELETED business state. PENDING/ACTIVE/REJECTED/LEFT/REMOVED are
-	// all visible — callers narrow further via params.Status.
-	classroomMemberActiveWhere = `m.status = ? AND m.deleted_dt IS NULL
-		AND (m.member_status IS NULL OR m.member_status != ?)`
+	// PENDING/ACTIVE/REJECTED/LEFT/REMOVED rows are all visible through the
+	// active filter — callers narrow further via params.Status.
+	classroomMemberActiveWhere = `m.status IN (?) AND m.deleted_dt IS NULL`
 )
 
 func classroomMemberActiveArgs() []any {
-	return []any{enum.StatusActive, enum.ClassroomMemberStatusTypeDeleted}
+	return []any{enum.StatusActive}
 }
 
 type ClassroomMemberRepository struct {
@@ -56,9 +55,9 @@ func scanClassroomMember(s database.RowScanner) (*models.ClassroomMemberModel, e
 }
 
 func (r *ClassroomMemberRepository) findOneBy(ctx context.Context, where string, args ...any) (*classroom.Member, error) {
-	fullArgs := append(classroomMemberActiveArgs(), args...)
-	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m WHERE ` +
-		classroomMemberActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, classroomMemberActiveArgs())
+	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m WHERE (` +
+		where + `) AND ` + classroomMemberActiveWhere
 
 	m, err := scanClassroomMember(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -71,9 +70,9 @@ func (r *ClassroomMemberRepository) findOneBy(ctx context.Context, where string,
 }
 
 func (r *ClassroomMemberRepository) findBareById(ctx context.Context, id int64) (*classroom.Member, error) {
-	args := append(classroomMemberActiveArgs(), id)
-	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m WHERE ` +
-		classroomMemberActiveWhere + ` AND m.id = ?`
+	args := slices.Concat([]any{id}, classroomMemberActiveArgs())
+	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m WHERE (m.id = ?) AND ` +
+		classroomMemberActiveWhere
 
 	m, err := scanClassroomMember(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -100,18 +99,18 @@ func (r *ClassroomMemberRepository) FindByClassroomAndProfileAndInvitedBy(ctx co
 func (r *ClassroomMemberRepository) ListMembers(ctx context.Context, params *classroom.ListMembersParams) ([]*classroom.Member, *pagination.Pagination, error) {
 	filterWhere, filterArgs := buildClassroomMemberFilter(params)
 
-	countArgs := append(classroomMemberActiveArgs(), filterArgs...)
-	countQuery := `SELECT COUNT(*) FROM ` + classroomMemberTable + ` m WHERE ` +
-		classroomMemberActiveWhere + filterWhere
+	countArgs := slices.Concat(filterArgs, classroomMemberActiveArgs())
+	countQuery := `SELECT COUNT(*) FROM ` + classroomMemberTable + ` m` +
+		whereActive(filterWhere, classroomMemberActiveWhere)
 
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("classroom_member repo count: %w", err)
 	}
 
-	listArgs := append(classroomMemberActiveArgs(), filterArgs...)
-	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m WHERE ` +
-		classroomMemberActiveWhere + filterWhere +
+	listArgs := slices.Concat(filterArgs, classroomMemberActiveArgs())
+	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m` +
+		whereActive(filterWhere, classroomMemberActiveWhere) +
 		` ORDER BY m.joined_dt DESC, m.id DESC`
 
 	var pg *pagination.Pagination
@@ -186,15 +185,16 @@ func (r *ClassroomMemberRepository) ListByProfileAndClassroomIds(ctx context.Con
 		return nil, nil
 	}
 	placeholders := make([]string, len(classroomIds))
-	args := classroomMemberActiveArgs()
+	args := make([]any, 0, len(classroomIds)+2)
 	args = append(args, profileId)
 	for i, id := range classroomIds {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
+	args = append(args, classroomMemberActiveArgs()...)
 	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m WHERE ` +
-		classroomMemberActiveWhere +
-		` AND m.profile_id = ? AND m.classroom_id IN (` + strings.Join(placeholders, ", ") + `)`
+		`(m.profile_id = ? AND m.classroom_id IN (` + strings.Join(placeholders, ", ") + `)) AND ` +
+		classroomMemberActiveWhere
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -226,16 +226,16 @@ func (r *ClassroomMemberRepository) ListActiveByProfileIds(ctx context.Context, 
 		return nil, nil
 	}
 	placeholders := make([]string, len(profileIds))
-	args := classroomMemberActiveArgs()
+	args := make([]any, 0, len(profileIds)+2)
 	for i, id := range profileIds {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
 	args = append(args, enum.ClassroomMemberStatusTypeActive)
+	args = append(args, classroomMemberActiveArgs()...)
 	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m WHERE ` +
-		classroomMemberActiveWhere +
-		` AND m.profile_id IN (` + strings.Join(placeholders, ", ") + `)` +
-		` AND m.member_status = ?` +
+		`(m.profile_id IN (` + strings.Join(placeholders, ", ") + `)` +
+		` AND m.member_status = ?) AND ` + classroomMemberActiveWhere +
 		` ORDER BY m.joined_dt DESC, m.id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
@@ -266,26 +266,26 @@ func (r *ClassroomMemberRepository) ListPeerUserIdsByUserId(ctx context.Context,
 	query := `SELECT DISTINCT peer_p.uid
 		FROM ` + profileTable + ` me
 		INNER JOIN ` + classroomMemberTable + ` my_m
-		    ON my_m.profile_id = me.profile_id
-		   AND my_m.status = ? AND my_m.deleted_dt IS NULL AND my_m.member_status = ?
+		    ON my_m.profile_id = me.profile_id AND my_m.member_status = ?
+		   AND my_m.status IN (?) AND my_m.deleted_dt IS NULL
 		INNER JOIN ma_classrooms c
 		    ON c.classroom_id = my_m.classroom_id
-		   AND c.status = ? AND c.deleted_dt IS NULL AND c.classroom_status != ?
+		   AND c.status IN (?) AND c.deleted_dt IS NULL
 		INNER JOIN ` + classroomMemberTable + ` peer_m
-		    ON peer_m.classroom_id = my_m.classroom_id
-		   AND peer_m.status = ? AND peer_m.deleted_dt IS NULL AND peer_m.member_status = ?
+		    ON peer_m.classroom_id = my_m.classroom_id AND peer_m.member_status = ?
+		   AND peer_m.status IN (?) AND peer_m.deleted_dt IS NULL
 		INNER JOIN ` + profileTable + ` peer_p
 		    ON peer_p.profile_id = peer_m.profile_id
-		   AND peer_p.status = ? AND peer_p.deleted_dt IS NULL
-		WHERE me.status = ? AND me.deleted_dt IS NULL
-		  AND me.uid = ? AND peer_p.uid != ?`
+		   AND peer_p.status IN (?) AND peer_p.deleted_dt IS NULL
+		WHERE (me.uid = ? AND peer_p.uid != ?)
+		  AND me.status IN (?) AND me.deleted_dt IS NULL`
 
 	rows, err := r.db.Query(ctx, query,
-		enum.StatusActive, enum.ClassroomMemberStatusTypeActive,
-		enum.StatusActive, enum.ClassroomStatusTypeDeleted,
-		enum.StatusActive, enum.ClassroomMemberStatusTypeActive,
+		enum.ClassroomMemberStatusTypeActive, enum.StatusActive,
 		enum.StatusActive,
-		enum.StatusActive, userId, userId,
+		enum.ClassroomMemberStatusTypeActive, enum.StatusActive,
+		enum.StatusActive,
+		userId, userId, enum.StatusActive,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("classroom_member repo list peer user ids: %w", err)
@@ -308,9 +308,9 @@ func (r *ClassroomMemberRepository) ListPeerUserIdsByUserId(ctx context.Context,
 
 func (r *ClassroomMemberRepository) CountActiveByClassroomId(ctx context.Context, classroomId int64) (int64, error) {
 	query := `SELECT COUNT(*) FROM ` + classroomMemberTable + ` m WHERE ` +
-		classroomMemberActiveWhere + ` AND m.classroom_id = ? AND m.member_status = ?`
-	args := append(classroomMemberActiveArgs(),
-		classroomId, enum.ClassroomMemberStatusTypeActive)
+		`(m.classroom_id = ? AND m.member_status = ?) AND ` + classroomMemberActiveWhere
+	args := slices.Concat([]any{classroomId, enum.ClassroomMemberStatusTypeActive},
+		classroomMemberActiveArgs())
 
 	var n int64
 	if err := r.db.QueryRow(ctx, query, args...).Scan(&n); err != nil {
@@ -353,15 +353,11 @@ func (r *ClassroomMemberRepository) ListMembersByExerciseSubmission(
 
 	subOn := `s.classroom_exercise_id = ?
 		AND s.profile_id = m.profile_id
-		AND s.status = ?
-		AND (s.submission_status IS NULL OR s.submission_status != ?)
-		AND s.deleted_dt IS NULL`
+		AND s.status IN (?) AND s.deleted_dt IS NULL`
 
 	// Member is always ACTIVE — both endpoints are roster-scoped to
 	// currently participating students.
 	memberWhere := `m.classroom_id = ?
-		AND m.status = ?
-		AND m.deleted_dt IS NULL
 		AND m.member_role IN (?, ?)
 		AND m.member_status = ?`
 
@@ -369,10 +365,8 @@ func (r *ClassroomMemberRepository) ListMembersByExerciseSubmission(
 		// JOIN args
 		params.ClassroomExerciseId,
 		enum.StatusActive,
-		enum.ClassroomExerciseSubmissionStatusDeleted,
 		// Member where args
 		params.ClassroomId,
-		enum.StatusActive,
 		enum.ClassroomMemberRoleTypeTeacher,
 		enum.ClassroomMemberRoleTypeStudent,
 		enum.ClassroomMemberStatusTypeActive,
@@ -393,10 +387,12 @@ func (r *ClassroomMemberRepository) ListMembersByExerciseSubmission(
 	// on profile_id.
 	whereClause := ""
 	if params.Submitted {
-		whereClause = memberWhere + searchClause
+		whereClause = `(` + memberWhere + searchClause + `)`
 	} else {
-		whereClause = memberWhere + ` AND s.id IS NULL` + searchClause
+		whereClause = `(` + memberWhere + ` AND s.id IS NULL` + searchClause + `)`
 	}
+	whereClause += ` AND ` + classroomMemberActiveWhere
+	args = append(args, classroomMemberActiveArgs()...)
 
 	from := classroomMemberTable + ` m
 		LEFT JOIN ma_profiles p ON p.profile_id = m.profile_id
@@ -463,11 +459,13 @@ func (r *ClassroomMemberRepository) CountPendingRequestsByClassroomIds(ctx conte
 	placeholders := strings.Repeat("?,", len(classroomIds))
 	placeholders = placeholders[:len(placeholders)-1]
 	query := `SELECT m.classroom_id, COUNT(*) FROM ` + classroomMemberTable + ` m WHERE ` +
-		classroomMemberActiveWhere + ` AND m.member_status = ? AND m.classroom_id IN (` + placeholders + `) GROUP BY m.classroom_id`
-	args := append(classroomMemberActiveArgs(), enum.ClassroomMemberStatusTypePendingRequest)
+		`(m.member_status = ? AND m.classroom_id IN (` + placeholders + `)) AND ` +
+		classroomMemberActiveWhere + ` GROUP BY m.classroom_id`
+	args := []any{enum.ClassroomMemberStatusTypePendingRequest}
 	for _, id := range classroomIds {
 		args = append(args, id)
 	}
+	args = append(args, classroomMemberActiveArgs()...)
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"math-ai.com/math-ai/internal/domain/otp"
@@ -49,9 +50,9 @@ func scanOtp(s database.RowScanner) (*models.OtpModel, error) {
 }
 
 func (r *OtpRepository) findOneBy(ctx context.Context, where string, args ...any) (*otp.Otp, error) {
-	fullArgs := append(otpActiveArgs(), args...)
-	query := `SELECT ` + otpColumns + ` FROM ` + otpTable + ` o WHERE ` +
-		otpActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, otpActiveArgs())
+	query := `SELECT ` + otpColumns + ` FROM ` + otpTable + ` o WHERE (` +
+		where + `) AND ` + otpActiveWhere
 
 	m, err := scanOtp(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -64,9 +65,9 @@ func (r *OtpRepository) findOneBy(ctx context.Context, where string, args ...any
 }
 
 func (r *OtpRepository) findBareById(ctx context.Context, id int64) (*otp.Otp, error) {
-	args := append(otpActiveArgs(), id)
-	query := `SELECT ` + otpColumns + ` FROM ` + otpTable + ` o WHERE ` +
-		otpActiveWhere + ` AND o.id = ?`
+	args := slices.Concat([]any{id}, otpActiveArgs())
+	query := `SELECT ` + otpColumns + ` FROM ` + otpTable + ` o WHERE (o.id = ?) AND ` +
+		otpActiveWhere
 
 	m, err := scanOtp(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -86,9 +87,9 @@ func (r *OtpRepository) FindByOtpId(ctx context.Context, otpId int64) (*otp.Otp,
 // (type, identifier). Order by id DESC since the same row was just inserted
 // in the same transaction in most call paths.
 func (r *OtpRepository) FindLatestPending(ctx context.Context, otpType enum.OtpType, identifier string) (*otp.Otp, error) {
-	args := append(otpActiveArgs(), otpType, identifier, enum.OtpStatusTypePending)
+	args := slices.Concat([]any{otpType, identifier, enum.OtpStatusTypePending}, otpActiveArgs())
 	query := `SELECT ` + otpColumns + ` FROM ` + otpTable + ` o WHERE ` +
-		otpActiveWhere + ` AND o.otp_type = ? AND o.identifier = ? AND o.otp_status = ?
+		`(o.otp_type = ? AND o.identifier = ? AND o.otp_status = ?) AND ` + otpActiveWhere + `
 		ORDER BY o.id DESC LIMIT 1`
 
 	m, err := scanOtp(r.db.QueryRow(ctx, query, args...))
@@ -106,9 +107,9 @@ func (r *OtpRepository) FindLatestPending(ctx context.Context, otpType enum.OtpT
 // later re-send/re-verify for the same identifier always wins over an older
 // verification.
 func (r *OtpRepository) FindLatestVerified(ctx context.Context, otpType enum.OtpType, identifier string) (*otp.Otp, error) {
-	args := append(otpActiveArgs(), otpType, identifier, enum.OtpStatusTypeVerified)
+	args := slices.Concat([]any{otpType, identifier, enum.OtpStatusTypeVerified}, otpActiveArgs())
 	query := `SELECT ` + otpColumns + ` FROM ` + otpTable + ` o WHERE ` +
-		otpActiveWhere + ` AND o.otp_type = ? AND o.identifier = ? AND o.otp_status = ?
+		`(o.otp_type = ? AND o.identifier = ? AND o.otp_status = ?) AND ` + otpActiveWhere + `
 		ORDER BY o.id DESC LIMIT 1`
 
 	m, err := scanOtp(r.db.QueryRow(ctx, query, args...))
@@ -122,9 +123,9 @@ func (r *OtpRepository) FindLatestVerified(ctx context.Context, otpType enum.Otp
 }
 
 func (r *OtpRepository) CountSentSince(ctx context.Context, otpType enum.OtpType, identifier string, since time.Time) (int, error) {
-	args := append(otpActiveArgs(), otpType, identifier, since)
+	args := slices.Concat([]any{otpType, identifier, since}, otpActiveArgs())
 	query := `SELECT COUNT(*) FROM ` + otpTable + ` o WHERE ` +
-		otpActiveWhere + ` AND o.otp_type = ? AND o.identifier = ? AND o.create_dt >= ?`
+		`(o.otp_type = ? AND o.identifier = ? AND o.create_dt >= ?) AND ` + otpActiveWhere
 
 	var count int
 	if err := r.db.QueryRow(ctx, query, args...).Scan(&count); err != nil {

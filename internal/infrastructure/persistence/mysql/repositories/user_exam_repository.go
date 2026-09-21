@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"time"
 
 	"math-ai.com/math-ai/internal/domain/exam"
@@ -24,11 +25,11 @@ const (
 		e.note, e.user_exam_status, e.status,
 		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
 
-	userExamActiveWhere = `e.status = ? AND (e.user_exam_status IS NULL OR e.user_exam_status != ?) AND e.deleted_dt IS NULL`
+	userExamActiveWhere = `e.status IN (?) AND e.deleted_dt IS NULL`
 )
 
 func userExamActiveArgs() []any {
-	return []any{enum.StatusActive, string(enum.UserExamStatusDeleted)}
+	return []any{enum.StatusActive}
 }
 
 type UserExamRepository struct {
@@ -52,9 +53,9 @@ func scanUserExam(s database.RowScanner) (*models.UserExamModel, error) {
 }
 
 func (r *UserExamRepository) findOneBy(ctx context.Context, where string, args ...any) (*exam.UserExam, error) {
-	fullArgs := append(userExamActiveArgs(), args...)
-	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE ` +
-		userExamActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, userExamActiveArgs())
+	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE (` +
+		where + `) AND ` + userExamActiveWhere
 
 	m, err := scanUserExam(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -90,10 +91,10 @@ func (r *UserExamRepository) FindActiveByUserProfileType(ctx context.Context, us
 // inherits from. Ordered by ended_dt, not create_dt: the row that closed
 // most recently is the freshest measurement, whichever opened first.
 func (r *UserExamRepository) FindLatestCompletedByUserProfileType(ctx context.Context, userId, profileId int64, examType string) (*exam.UserExam, error) {
-	args := append(userExamActiveArgs(), userId, profileId, examType, string(enum.UserExamStatusComplete))
+	args := slices.Concat([]any{userId, profileId, examType, string(enum.UserExamStatusComplete)}, userExamActiveArgs())
 	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE ` +
-		userExamActiveWhere +
-		` AND e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.user_exam_status = ?` +
+		`(e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.user_exam_status = ?)` +
+		` AND ` + userExamActiveWhere +
 		` ORDER BY e.ended_dt DESC, e.id DESC LIMIT 1`
 
 	m, err := scanUserExam(r.db.QueryRow(ctx, query, args...))
@@ -110,8 +111,8 @@ func (r *UserExamRepository) FindLatestCompletedByUserProfileType(ctx context.Co
 // exam type, so the open journey (if any) is always the first row of its
 // group and the ended ones follow as history.
 func (r *UserExamRepository) ListByUserProfile(ctx context.Context, userId, profileId int64, filter exam.ListJourneysFilter) ([]*exam.UserExam, error) {
-	where := userExamActiveWhere + ` AND e.uid = ? AND e.profile_id = ?`
-	args := append(userExamActiveArgs(), userId, profileId)
+	where := `e.uid = ? AND e.profile_id = ?`
+	args := []any{userId, profileId}
 
 	if filter.ExamType != nil && *filter.ExamType != "" {
 		where += ` AND e.req_exam_type = ?`
@@ -122,8 +123,9 @@ func (r *UserExamRepository) ListByUserProfile(ctx context.Context, userId, prof
 		args = append(args, *filter.Status)
 	}
 
-	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE ` + where +
-		` ORDER BY e.create_dt DESC, e.id DESC`
+	args = append(args, userExamActiveArgs()...)
+	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE (` + where + `) AND ` +
+		userExamActiveWhere + ` ORDER BY e.create_dt DESC, e.id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -151,9 +153,8 @@ func (r *UserExamRepository) ListByUserProfile(ctx context.Context, userId, prof
 // they share their journey's id and would put every journey on the
 // chart twice.
 func (r *UserExamRepository) ListProgressPoints(ctx context.Context, params exam.JourneyProgressParams) ([]*exam.UserExam, error) {
-	where := userExamActiveWhere +
-		` AND e.uid = ? AND e.profile_id = ? AND e.res_score_percentage IS NOT NULL AND e.last_submitted_dt IS NOT NULL`
-	args := append(userExamActiveArgs(), params.UserID, params.ProfileID)
+	where := `e.uid = ? AND e.profile_id = ? AND e.res_score_percentage IS NOT NULL AND e.last_submitted_dt IS NOT NULL`
+	args := []any{params.UserID, params.ProfileID}
 
 	if params.ExamType != nil && *params.ExamType != "" {
 		where += ` AND e.req_exam_type = ?`
@@ -179,10 +180,11 @@ func (r *UserExamRepository) ListProgressPoints(ctx context.Context, params exam
 	if limit <= 0 {
 		limit = 10
 	}
+	args = append(args, userExamActiveArgs()...)
 	args = append(args, limit)
 
-	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE ` + where +
-		` ORDER BY e.last_submitted_dt DESC, e.user_exam_id DESC LIMIT ?`
+	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE (` + where + `) AND ` +
+		userExamActiveWhere + ` ORDER BY e.last_submitted_dt DESC, e.user_exam_id DESC LIMIT ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {

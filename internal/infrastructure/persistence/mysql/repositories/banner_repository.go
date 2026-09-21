@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/banner"
@@ -27,12 +28,11 @@ const (
 	// status used by the soft-delete path. INACTIVE banner_status rows
 	// still pass here — callers filter them out via BannerStatus when they
 	// only want display-ready banners.
-	bannerActiveWhere = `b.status = ? AND b.deleted_dt IS NULL
-		AND (b.banner_status IS NULL OR b.banner_status != ?)`
+	bannerActiveWhere = `b.status IN (?) AND b.deleted_dt IS NULL`
 )
 
 func bannerActiveArgs() []any {
-	return []any{enum.StatusActive, enum.BannerStatusTypeDeleted}
+	return []any{enum.StatusActive}
 }
 
 type BannerRepository struct {
@@ -55,12 +55,12 @@ func scanBanner(s database.RowScanner) (*models.BannerModel, error) {
 }
 
 // findOneBy is the single-row read helper. `where` is a package-controlled
-// SQL fragment; args supply placeholders. bannerActiveWhere is prepended so
-// every read excludes soft-deleted and inactive rows.
+// SQL fragment; args supply placeholders. bannerActiveWhere is appended last
+// so every read excludes soft-deleted and inactive rows.
 func (r *BannerRepository) findOneBy(ctx context.Context, where string, args ...any) (*banner.Banner, error) {
-	fullArgs := append(bannerActiveArgs(), args...)
-	query := `SELECT ` + bannerColumns + ` FROM ` + bannerTable + ` b WHERE ` +
-		bannerActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, bannerActiveArgs())
+	query := `SELECT ` + bannerColumns + ` FROM ` + bannerTable + ` b WHERE (` +
+		where + `) AND ` + bannerActiveWhere
 
 	m, err := scanBanner(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -73,9 +73,9 @@ func (r *BannerRepository) findOneBy(ctx context.Context, where string, args ...
 }
 
 func (r *BannerRepository) findBareById(ctx context.Context, id int64) (*banner.Banner, error) {
-	args := append(bannerActiveArgs(), id)
-	query := `SELECT ` + bannerColumns + ` FROM ` + bannerTable + ` b WHERE ` +
-		bannerActiveWhere + ` AND b.id = ?`
+	args := slices.Concat([]any{id}, bannerActiveArgs())
+	query := `SELECT ` + bannerColumns + ` FROM ` + bannerTable + ` b WHERE (b.id = ?) AND ` +
+		bannerActiveWhere
 
 	m, err := scanBanner(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -94,19 +94,19 @@ func (r *BannerRepository) FindByBannerId(ctx context.Context, bannerId int64) (
 func (r *BannerRepository) ListBanners(ctx context.Context, params *banner.ListBannersParams) ([]*banner.Banner, *pagination.Pagination, error) {
 	filterWhere, filterArgs := buildBannerListFilterClause(params)
 
-	countArgs := append(bannerActiveArgs(), filterArgs...)
-	countQuery := `SELECT COUNT(*) FROM ` + bannerTable + ` b WHERE ` +
-		bannerActiveWhere + filterWhere
+	countArgs := slices.Concat(filterArgs, bannerActiveArgs())
+	countQuery := `SELECT COUNT(*) FROM ` + bannerTable + ` b` +
+		whereActive(filterWhere, bannerActiveWhere)
 
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("banner repo count: %w", err)
 	}
 
-	listArgs := append(bannerActiveArgs(), filterArgs...)
+	listArgs := slices.Concat(filterArgs, bannerActiveArgs())
 	// Newest banners first — banners are time-sensitive display content.
-	query := `SELECT ` + bannerColumns + ` FROM ` + bannerTable + ` b WHERE ` +
-		bannerActiveWhere + filterWhere +
+	query := `SELECT ` + bannerColumns + ` FROM ` + bannerTable + ` b` +
+		whereActive(filterWhere, bannerActiveWhere) +
 		` ORDER BY b.create_dt DESC, b.id DESC`
 
 	var pg *pagination.Pagination

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 
 	"math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
@@ -25,12 +26,11 @@ const (
 	// Reads exclude both system-inactive rows and the DELETED business
 	// status used by the soft-delete path. ARCHIVED rows remain visible
 	// (recoverable) — callers filter them out at the query level if needed.
-	notificationActiveWhere = `n.status = ? AND n.deleted_dt IS NULL
-		AND (n.notification_status IS NULL OR n.notification_status != ?)`
+	notificationActiveWhere = `n.status IN (?) AND n.deleted_dt IS NULL`
 )
 
 func notificationActiveArgs() []any {
-	return []any{enum.StatusActive, enum.NotificationStatusTypeDeleted}
+	return []any{enum.StatusActive}
 }
 
 type NotificationRepository struct {
@@ -53,9 +53,9 @@ func scanNotification(s database.RowScanner) (*models.NotificationModel, error) 
 }
 
 func (r *NotificationRepository) findOneBy(ctx context.Context, where string, args ...any) (*notification.Notification, error) {
-	fullArgs := append(notificationActiveArgs(), args...)
-	query := `SELECT ` + notificationColumns + ` FROM ` + notificationTable + ` n WHERE ` +
-		notificationActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, notificationActiveArgs())
+	query := `SELECT ` + notificationColumns + ` FROM ` + notificationTable + ` n WHERE (` +
+		where + `) AND ` + notificationActiveWhere
 
 	m, err := scanNotification(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -68,9 +68,9 @@ func (r *NotificationRepository) findOneBy(ctx context.Context, where string, ar
 }
 
 func (r *NotificationRepository) findBareById(ctx context.Context, id int64) (*notification.Notification, error) {
-	args := append(notificationActiveArgs(), id)
-	query := `SELECT ` + notificationColumns + ` FROM ` + notificationTable + ` n WHERE ` +
-		notificationActiveWhere + ` AND n.id = ?`
+	args := slices.Concat([]any{id}, notificationActiveArgs())
+	query := `SELECT ` + notificationColumns + ` FROM ` + notificationTable + ` n WHERE (n.id = ?) AND ` +
+		notificationActiveWhere
 
 	m, err := scanNotification(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -98,9 +98,9 @@ func (r *NotificationRepository) ListByUserId(ctx context.Context, params *notif
 		filterArgs = append(filterArgs, false)
 	}
 
-	countArgs := append(notificationActiveArgs(), filterArgs...)
-	countQuery := `SELECT COUNT(*) FROM ` + notificationTable + ` n WHERE ` +
-		notificationActiveWhere + filter
+	countArgs := slices.Concat(filterArgs, notificationActiveArgs())
+	countQuery := `SELECT COUNT(*) FROM ` + notificationTable + ` n` +
+		whereActive(filter, notificationActiveWhere)
 
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
@@ -109,10 +109,9 @@ func (r *NotificationRepository) ListByUserId(ctx context.Context, params *notif
 
 	pg := pagination.NewPagination(params.Page, params.Limit, total)
 
-	listArgs := append(notificationActiveArgs(), filterArgs...)
-	listArgs = append(listArgs, pg.Size, pg.Skip)
-	query := `SELECT ` + notificationColumns + ` FROM ` + notificationTable + ` n WHERE ` +
-		notificationActiveWhere + filter +
+	listArgs := slices.Concat(filterArgs, notificationActiveArgs(), []any{pg.Size, pg.Skip})
+	query := `SELECT ` + notificationColumns + ` FROM ` + notificationTable + ` n` +
+		whereActive(filter, notificationActiveWhere) +
 		` ORDER BY n.id DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.db.Query(ctx, query, listArgs...)
@@ -136,9 +135,9 @@ func (r *NotificationRepository) ListByUserId(ctx context.Context, params *notif
 }
 
 func (r *NotificationRepository) CountUnreadByUserId(ctx context.Context, userId int64) (int64, error) {
-	args := append(notificationActiveArgs(), userId, false)
-	query := `SELECT COUNT(*) FROM ` + notificationTable + ` n WHERE ` +
-		notificationActiveWhere + ` AND n.uid = ? AND n.is_read = ?`
+	args := slices.Concat([]any{userId, false}, notificationActiveArgs())
+	query := `SELECT COUNT(*) FROM ` + notificationTable + ` n WHERE (n.uid = ? AND n.is_read = ?) AND ` +
+		notificationActiveWhere
 
 	var total int64
 	if err := r.db.QueryRow(ctx, query, args...).Scan(&total); err != nil {

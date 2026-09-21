@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/school"
@@ -23,14 +24,11 @@ const (
 		s.school_status, s.status,
 		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
 
-	// Reads exclude both system-inactive rows and the DELETED business
-	// status used by the soft-delete path.
-	schoolActiveWhere = `s.status = ? AND s.deleted_dt IS NULL
-		AND (s.school_status IS NULL OR s.school_status != ?)`
+	schoolActiveWhere = `s.status IN (?) AND s.deleted_dt IS NULL`
 )
 
 func schoolActiveArgs() []any {
-	return []any{enum.StatusActive, enum.SchoolStatusTypeDeleted}
+	return []any{enum.StatusActive}
 }
 
 type SchoolRepository struct {
@@ -53,12 +51,12 @@ func scanSchool(s database.RowScanner) (*models.SchoolModel, error) {
 }
 
 // findOneBy is the single-row read helper. `where` is a package-controlled
-// SQL fragment; args supply placeholders. schoolActiveWhere is prepended so
-// every read excludes soft-deleted and inactive rows.
+// SQL fragment; args supply placeholders. schoolActiveWhere is appended last
+// so every read excludes soft-deleted and inactive rows.
 func (r *SchoolRepository) findOneBy(ctx context.Context, where string, args ...any) (*school.School, error) {
-	fullArgs := append(schoolActiveArgs(), args...)
-	query := `SELECT ` + schoolColumns + ` FROM ` + schoolTable + ` s WHERE ` +
-		schoolActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, schoolActiveArgs())
+	query := `SELECT ` + schoolColumns + ` FROM ` + schoolTable + ` s WHERE (` +
+		where + `) AND ` + schoolActiveWhere
 
 	m, err := scanSchool(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -71,9 +69,9 @@ func (r *SchoolRepository) findOneBy(ctx context.Context, where string, args ...
 }
 
 func (r *SchoolRepository) findBareById(ctx context.Context, id int64) (*school.School, error) {
-	args := append(schoolActiveArgs(), id)
-	query := `SELECT ` + schoolColumns + ` FROM ` + schoolTable + ` s WHERE ` +
-		schoolActiveWhere + ` AND s.id = ?`
+	args := slices.Concat([]any{id}, schoolActiveArgs())
+	query := `SELECT ` + schoolColumns + ` FROM ` + schoolTable + ` s WHERE (s.id = ?) AND ` +
+		schoolActiveWhere
 
 	m, err := scanSchool(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -92,18 +90,18 @@ func (r *SchoolRepository) FindBySchoolId(ctx context.Context, schoolId int64) (
 func (r *SchoolRepository) ListSchools(ctx context.Context, params *school.ListSchoolsParams) ([]*school.School, *pagination.Pagination, error) {
 	filterWhere, filterArgs := buildSchoolListFilterClause(params)
 
-	countArgs := append(schoolActiveArgs(), filterArgs...)
-	countQuery := `SELECT COUNT(*) FROM ` + schoolTable + ` s WHERE ` +
-		schoolActiveWhere + filterWhere
+	countArgs := slices.Concat(filterArgs, schoolActiveArgs())
+	countQuery := `SELECT COUNT(*) FROM ` + schoolTable + ` s` +
+		whereActive(filterWhere, schoolActiveWhere)
 
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("school repo count: %w", err)
 	}
 
-	listArgs := append(schoolActiveArgs(), filterArgs...)
-	query := `SELECT ` + schoolColumns + ` FROM ` + schoolTable + ` s WHERE ` +
-		schoolActiveWhere + filterWhere +
+	listArgs := slices.Concat(filterArgs, schoolActiveArgs())
+	query := `SELECT ` + schoolColumns + ` FROM ` + schoolTable + ` s` +
+		whereActive(filterWhere, schoolActiveWhere) +
 		` ORDER BY s.name ASC, s.id ASC`
 
 	var pg *pagination.Pagination
@@ -190,15 +188,16 @@ func (r *SchoolRepository) ListSchoolsByIds(ctx context.Context, ids []int64) ([
 	}
 
 	placeholders := make([]string, len(ids))
-	args := schoolActiveArgs()
+	args := make([]any, 0, len(ids)+1)
 	for i, id := range ids {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
 
-	query := `SELECT ` + schoolColumns + ` FROM ` + schoolTable + ` s WHERE ` +
-		schoolActiveWhere +
-		` AND s.school_id IN (` + strings.Join(placeholders, ",") + `)`
+	args = append(args, schoolActiveArgs()...)
+
+	query := `SELECT ` + schoolColumns + ` FROM ` + schoolTable + ` s WHERE (s.school_id IN (` +
+		strings.Join(placeholders, ",") + `)) AND ` + schoolActiveWhere
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {

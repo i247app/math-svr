@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/device"
@@ -47,9 +48,9 @@ func scanDevice(s database.RowScanner) (*models.DeviceModel, error) {
 }
 
 func (r *DeviceRepository) findOneBy(ctx context.Context, where string, args ...any) (*device.Device, error) {
-	fullArgs := append(deviceActiveArgs(), args...)
-	query := `SELECT ` + deviceColumns + ` FROM ` + deviceTable + ` d WHERE ` +
-		deviceActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, deviceActiveArgs())
+	query := `SELECT ` + deviceColumns + ` FROM ` + deviceTable + ` d WHERE (` +
+		where + `) AND ` + deviceActiveWhere
 
 	m, err := scanDevice(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -62,9 +63,9 @@ func (r *DeviceRepository) findOneBy(ctx context.Context, where string, args ...
 }
 
 func (r *DeviceRepository) findBareById(ctx context.Context, id int64) (*device.Device, error) {
-	args := append(deviceActiveArgs(), id)
-	query := `SELECT ` + deviceColumns + ` FROM ` + deviceTable + ` d WHERE ` +
-		deviceActiveWhere + ` AND d.id = ?`
+	args := slices.Concat([]any{id}, deviceActiveArgs())
+	query := `SELECT ` + deviceColumns + ` FROM ` + deviceTable + ` d WHERE (d.id = ?) AND ` +
+		deviceActiveWhere
 
 	m, err := scanDevice(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -90,9 +91,9 @@ func (r *DeviceRepository) FindByUserDevice(ctx context.Context, userId int64, d
 func (r *DeviceRepository) ListByUserId(ctx context.Context, params *device.ListDevicesParams) ([]*device.Device, error) {
 	filterWhere, filterArgs := buildDeviceListFilter(params)
 
-	args := append(deviceActiveArgs(), filterArgs...)
-	query := `SELECT ` + deviceColumns + ` FROM ` + deviceTable + ` d WHERE ` +
-		deviceActiveWhere + filterWhere + ` ORDER BY d.id DESC`
+	args := slices.Concat(filterArgs, deviceActiveArgs())
+	query := `SELECT ` + deviceColumns + ` FROM ` + deviceTable + ` d` +
+		whereActive(filterWhere, deviceActiveWhere) + ` ORDER BY d.id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {

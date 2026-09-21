@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -26,11 +27,11 @@ const (
 		u.note, u.user_ai_exam_status, u.status,
 		u.create_id, u.create_dt, u.modify_id, u.modify_dt`
 
-	userAiExamActiveWhere = `u.status = ? AND (u.user_ai_exam_status IS NULL OR u.user_ai_exam_status != ?) AND u.deleted_dt IS NULL`
+	userAiExamActiveWhere = `u.status IN (?) AND u.deleted_dt IS NULL`
 )
 
 func userAiExamActiveArgs() []any {
-	return []any{enum.StatusActive, string(enum.UserAiExamStatusDeleted)}
+	return []any{enum.StatusActive}
 }
 
 type UserAiExamRepository struct {
@@ -55,9 +56,9 @@ func scanUserAiExam(s database.RowScanner) (*models.UserAiExamModel, error) {
 }
 
 func (r *UserAiExamRepository) findOneBy(ctx context.Context, where string, args ...any) (*exam.UserAiExam, error) {
-	fullArgs := append(userAiExamActiveArgs(), args...)
-	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
-		userAiExamActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, userAiExamActiveArgs())
+	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE (` +
+		where + `) AND ` + userAiExamActiveWhere
 
 	m, err := scanUserAiExam(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -74,9 +75,9 @@ func (r *UserAiExamRepository) FindByUserAiExamId(ctx context.Context, userAiExa
 }
 
 func (r *UserAiExamRepository) findBareById(ctx context.Context, id int64) (*exam.UserAiExam, error) {
-	args := append(userAiExamActiveArgs(), id)
-	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
-		userAiExamActiveWhere + ` AND u.id = ?`
+	args := slices.Concat([]any{id}, userAiExamActiveArgs())
+	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE (u.id = ?) AND ` +
+		userAiExamActiveWhere
 
 	m, err := scanUserAiExam(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -103,19 +104,18 @@ func (r *UserAiExamRepository) ListAttempts(ctx context.Context, filter exam.Lis
 
 	filterWhere, filterArgs := buildUserAiExamFilterClause(filter)
 
-	countArgs := append(userAiExamActiveArgs(), filterArgs...)
-	countQuery := `SELECT COUNT(*) FROM ` + userAiExamTable + ` u WHERE ` +
-		userAiExamActiveWhere + filterWhere
+	countArgs := slices.Concat(filterArgs, userAiExamActiveArgs())
+	countQuery := `SELECT COUNT(*) FROM ` + userAiExamTable + ` u` +
+		whereActive(filterWhere, userAiExamActiveWhere)
 
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("user ai exam repo count: %w", err)
 	}
 
-	args := append(userAiExamActiveArgs(), filterArgs...)
-	args = append(args, limit, offset)
-	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
-		userAiExamActiveWhere + filterWhere + ` ORDER BY u.id DESC LIMIT ? OFFSET ?`
+	args := slices.Concat(filterArgs, userAiExamActiveArgs(), []any{limit, offset})
+	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u` +
+		whereActive(filterWhere, userAiExamActiveWhere) + ` ORDER BY u.id DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -166,9 +166,9 @@ func buildUserAiExamFilterClause(filter exam.ListAttemptsFilter) (string, []any)
 // ListInProgressByProfile reads ix_profile_status_started: one child, one
 // status, in the order the sittings were handed out.
 func (r *UserAiExamRepository) ListInProgressByProfile(ctx context.Context, profileId int64) ([]*exam.UserAiExam, error) {
-	args := append(userAiExamActiveArgs(), profileId, string(enum.UserAiExamStatusInProgress))
+	args := slices.Concat([]any{profileId, string(enum.UserAiExamStatusInProgress)}, userAiExamActiveArgs())
 	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
-		userAiExamActiveWhere + ` AND u.profile_id = ? AND u.user_ai_exam_status = ?` +
+		`(u.profile_id = ? AND u.user_ai_exam_status = ?) AND ` + userAiExamActiveWhere +
 		` ORDER BY u.started_dt ASC, u.id ASC`
 
 	rows, err := r.db.Query(ctx, query, args...)
@@ -195,9 +195,9 @@ func (r *UserAiExamRepository) ListInProgressByProfile(ctx context.Context, prof
 // the newest submitted_dt of the journey, id as the tie-break so two
 // sittings submitted in the same microsecond still order deterministically.
 func (r *UserAiExamRepository) FindLatestSubmittedByUserExamId(ctx context.Context, userExamId int64) (*exam.UserAiExam, error) {
-	args := append(userAiExamActiveArgs(), userExamId, string(enum.UserAiExamStatusSubmitted))
+	args := slices.Concat([]any{userExamId, string(enum.UserAiExamStatusSubmitted)}, userAiExamActiveArgs())
 	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
-		userAiExamActiveWhere + ` AND u.user_exam_id = ? AND u.user_ai_exam_status = ?` +
+		`(u.user_exam_id = ? AND u.user_ai_exam_status = ?) AND ` + userAiExamActiveWhere +
 		` ORDER BY u.submitted_dt DESC, u.id DESC LIMIT 1`
 
 	m, err := scanUserAiExam(r.db.QueryRow(ctx, query, args...))
@@ -218,9 +218,9 @@ func (r *UserAiExamRepository) ListRecentByProfileGrade(ctx context.Context, pro
 	if limit <= 0 {
 		return nil, nil
 	}
-	args := append(userAiExamActiveArgs(), profileId, grade, limit)
+	args := slices.Concat([]any{profileId, grade}, userAiExamActiveArgs(), []any{limit})
 	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
-		userAiExamActiveWhere + ` AND u.profile_id = ? AND u.req_grade = ?` +
+		`(u.profile_id = ? AND u.req_grade = ?) AND ` + userAiExamActiveWhere +
 		` ORDER BY u.started_dt DESC, u.id DESC LIMIT ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
@@ -251,14 +251,15 @@ func (r *UserAiExamRepository) ListByUserAiExamIds(ctx context.Context, userAiEx
 	}
 
 	placeholders := make([]string, 0, len(userAiExamIds))
-	args := userAiExamActiveArgs()
+	args := make([]any, 0, len(userAiExamIds)+1)
 	for _, id := range userAiExamIds {
 		placeholders = append(placeholders, "?")
 		args = append(args, id)
 	}
+	args = append(args, userAiExamActiveArgs()...)
 
-	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
-		userAiExamActiveWhere + ` AND u.user_ai_exam_id IN (` + strings.Join(placeholders, ", ") + `)` +
+	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE (u.user_ai_exam_id IN (` +
+		strings.Join(placeholders, ", ") + `)) AND ` + userAiExamActiveWhere +
 		` ORDER BY u.user_ai_exam_id ASC`
 
 	rows, err := r.db.Query(ctx, query, args...)
@@ -380,9 +381,8 @@ func scanExamProgressPoint(s database.RowScanner) (*exam.ProgressPoint, error) {
 // newest first, capped at params.Limit. The caller reverses into
 // chronological order.
 func (r *UserAiExamRepository) ListProgressPoints(ctx context.Context, params exam.ProgressPointsParams) ([]*exam.ProgressPoint, error) {
-	where := userAiExamActiveWhere +
-		` AND u.user_ai_exam_status = ? AND u.profile_id = ? AND u.res_score_percentage IS NOT NULL`
-	args := append(userAiExamActiveArgs(), string(enum.UserAiExamStatusSubmitted), params.ProfileID)
+	where := `u.user_ai_exam_status = ? AND u.profile_id = ? AND u.res_score_percentage IS NOT NULL`
+	args := []any{string(enum.UserAiExamStatusSubmitted), params.ProfileID}
 
 	if params.ExamType != nil && *params.ExamType != "" {
 		where += ` AND u.req_exam_type = ?`
@@ -409,10 +409,11 @@ func (r *UserAiExamRepository) ListProgressPoints(ctx context.Context, params ex
 	if limit <= 0 {
 		limit = 10
 	}
+	args = append(args, userAiExamActiveArgs()...)
 	args = append(args, limit)
 
-	query := `SELECT ` + progressPointColumnsExam + ` FROM ` + userAiExamTable + ` u WHERE ` +
-		where + ` ORDER BY u.submitted_dt DESC, u.user_ai_exam_id DESC LIMIT ?`
+	query := `SELECT ` + progressPointColumnsExam + ` FROM ` + userAiExamTable + ` u WHERE (` +
+		where + `) AND ` + userAiExamActiveWhere + ` ORDER BY u.submitted_dt DESC, u.user_ai_exam_id DESC LIMIT ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {

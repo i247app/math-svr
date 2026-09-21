@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/exam"
@@ -23,11 +24,11 @@ const (
 		a.note, a.ai_exam_status, a.status,
 		a.create_id, a.create_dt, a.modify_id, a.modify_dt`
 
-	aiExamActiveWhere = `a.status = ? AND (a.ai_exam_status IS NULL OR a.ai_exam_status != ?) AND a.deleted_dt IS NULL`
+	aiExamActiveWhere = `a.status IN (?) AND a.deleted_dt IS NULL`
 )
 
 func aiExamActiveArgs() []any {
-	return []any{enum.StatusActive, string(enum.AiExamStatusDeleted)}
+	return []any{enum.StatusActive}
 }
 
 type AiExamRepository struct {
@@ -51,9 +52,9 @@ func scanAiExam(s database.RowScanner) (*models.AiExamModel, error) {
 }
 
 func (r *AiExamRepository) findOneBy(ctx context.Context, where string, args ...any) (*exam.AiExam, error) {
-	fullArgs := append(aiExamActiveArgs(), args...)
-	query := `SELECT ` + aiExamColumns + ` FROM ` + aiExamTable + ` a WHERE ` +
-		aiExamActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, aiExamActiveArgs())
+	query := `SELECT ` + aiExamColumns + ` FROM ` + aiExamTable + ` a WHERE (` +
+		where + `) AND ` + aiExamActiveWhere
 
 	m, err := scanAiExam(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -87,10 +88,11 @@ func (r *AiExamRepository) FindReusableByExtras(ctx context.Context, extras stri
 	if extras == "" {
 		return nil, nil
 	}
-	args := append(aiExamActiveArgs(), extras, excludeProfileId)
+	args := slices.Concat([]any{extras, excludeProfileId}, aiExamActiveArgs())
 	query := `SELECT ` + aiExamColumns + ` FROM ` + aiExamTable + ` a WHERE ` +
-		aiExamActiveWhere + ` AND a.req_extras = ?` +
-		` AND NOT EXISTS (SELECT 1 FROM ` + userAiExamTable + ` u WHERE u.ai_exam_id = a.ai_exam_id AND u.profile_id = ?)` +
+		`(a.req_extras = ?` +
+		` AND NOT EXISTS (SELECT 1 FROM ` + userAiExamTable + ` u WHERE u.ai_exam_id = a.ai_exam_id AND u.profile_id = ?))` +
+		` AND ` + aiExamActiveWhere +
 		` ORDER BY RAND() LIMIT 1`
 
 	m, err := scanAiExam(r.db.QueryRow(ctx, query, args...))
@@ -111,9 +113,9 @@ func (r *AiExamRepository) CountByExtras(ctx context.Context, extras string) (in
 	if extras == "" {
 		return 0, nil
 	}
-	args := append(aiExamActiveArgs(), extras)
-	query := `SELECT COUNT(*) FROM ` + aiExamTable + ` a WHERE ` +
-		aiExamActiveWhere + ` AND a.req_extras = ?`
+	args := slices.Concat([]any{extras}, aiExamActiveArgs())
+	query := `SELECT COUNT(*) FROM ` + aiExamTable + ` a WHERE (a.req_extras = ?) AND ` +
+		aiExamActiveWhere
 
 	var total int64
 	if err := r.db.QueryRow(ctx, query, args...).Scan(&total); err != nil {
@@ -131,14 +133,15 @@ func (r *AiExamRepository) ListByAiExamIds(ctx context.Context, aiExamIds []int6
 	}
 
 	placeholders := make([]string, 0, len(aiExamIds))
-	args := aiExamActiveArgs()
+	args := make([]any, 0, len(aiExamIds)+1)
 	for _, id := range aiExamIds {
 		placeholders = append(placeholders, "?")
 		args = append(args, id)
 	}
+	args = append(args, aiExamActiveArgs()...)
 
-	query := `SELECT ` + aiExamColumns + ` FROM ` + aiExamTable + ` a WHERE ` +
-		aiExamActiveWhere + ` AND a.ai_exam_id IN (` + strings.Join(placeholders, ", ") + `)`
+	query := `SELECT ` + aiExamColumns + ` FROM ` + aiExamTable + ` a WHERE (a.ai_exam_id IN (` +
+		strings.Join(placeholders, ", ") + `)) AND ` + aiExamActiveWhere
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -161,9 +164,9 @@ func (r *AiExamRepository) ListByAiExamIds(ctx context.Context, aiExamIds []int6
 }
 
 func (r *AiExamRepository) findBareById(ctx context.Context, id int64) (*exam.AiExam, error) {
-	args := append(aiExamActiveArgs(), id)
-	query := `SELECT ` + aiExamColumns + ` FROM ` + aiExamTable + ` a WHERE ` +
-		aiExamActiveWhere + ` AND a.id = ?`
+	args := slices.Concat([]any{id}, aiExamActiveArgs())
+	query := `SELECT ` + aiExamColumns + ` FROM ` + aiExamTable + ` a WHERE (a.id = ?) AND ` +
+		aiExamActiveWhere
 
 	m, err := scanAiExam(r.db.QueryRow(ctx, query, args...))
 	if err != nil {

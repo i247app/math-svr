@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/user"
@@ -55,12 +56,12 @@ func scanUser(s database.RowScanner) (*models.UserModel, error) {
 
 // findOneBy runs a single-row lookup. `where` is a package-controlled SQL
 // fragment (never user input); args supply the placeholder values.
-// userActiveWhere is automatically prepended so every read excludes
-// system-INACTIVE and soft-deleted rows.
+// userActiveWhere is appended last so every read excludes system-INACTIVE
+// and soft-deleted rows.
 func (r *UserRepository) findOneBy(ctx context.Context, where string, args ...any) (*user.User, error) {
-	fullArgs := append(userActiveArgs(), args...)
+	fullArgs := slices.Concat(args, userActiveArgs())
 	query := `SELECT ` + userColumns + ` FROM ` + userFrom +
-		` WHERE ` + userActiveWhere + ` AND (` + where + `)`
+		` WHERE (` + where + `) AND ` + userActiveWhere
 
 	m, err := scanUser(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -121,7 +122,7 @@ func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersPa
 
 	pg := pagination.NewPagination(params.Page, params.Limit, total)
 
-	listArgs := append(userActiveArgs(), pg.Size, pg.Skip)
+	listArgs := slices.Concat(userActiveArgs(), []any{pg.Size, pg.Skip})
 	query := `SELECT ` + userColumns + ` FROM ` + userFrom +
 		` WHERE ` + userActiveWhere +
 		` ORDER BY u.id DESC LIMIT ? OFFSET ?`

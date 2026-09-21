@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/profile"
@@ -52,9 +53,9 @@ func scanProfile(s database.RowScanner) (*models.ProfileModel, error) {
 }
 
 func (r *ProfileRepository) findOneBy(ctx context.Context, where string, args ...any) (*profile.Profile, error) {
-	fullArgs := append(profileActiveArgs(), args...)
-	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE ` +
-		profileActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, profileActiveArgs())
+	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE (` +
+		where + `) AND ` + profileActiveWhere
 
 	m, err := scanProfile(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -67,9 +68,9 @@ func (r *ProfileRepository) findOneBy(ctx context.Context, where string, args ..
 }
 
 func (r *ProfileRepository) findBareById(ctx context.Context, id int64) (*profile.Profile, error) {
-	args := append(profileActiveArgs(), id)
-	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE ` +
-		profileActiveWhere + ` AND p.id = ?`
+	args := slices.Concat([]any{id}, profileActiveArgs())
+	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE (p.id = ?) AND ` +
+		profileActiveWhere
 
 	m, err := scanProfile(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -94,9 +95,9 @@ func (r *ProfileRepository) FindByProfileCode(ctx context.Context, profileCode s
 }
 
 func (r *ProfileRepository) ListByUserId(ctx context.Context, userId int64) ([]*profile.Profile, error) {
-	args := append(profileActiveArgs(), userId)
-	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE ` +
-		profileActiveWhere + ` AND p.uid = ? ORDER BY p.id DESC`
+	args := slices.Concat([]any{userId}, profileActiveArgs())
+	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE (p.uid = ?) AND ` +
+		profileActiveWhere + ` ORDER BY p.id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -124,17 +125,15 @@ func (r *ProfileRepository) ListByProfileIds(ctx context.Context, profileIds []i
 	}
 	// Build IN clause with placeholders: ? , ? , ?
 	placeholders := make([]string, len(profileIds))
-	// args := make([]any, len(profileIds))
-	args := profileActiveArgs()
-	// args = append(args, enum.StatusActive)
-
+	args := make([]any, 0, len(profileIds)+1)
 	for i, id := range profileIds {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
+	args = append(args, profileActiveArgs()...)
 
-	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE ` +
-		profileActiveWhere + ` AND p.profile_id IN (` + strings.Join(placeholders, ", ") + `) ORDER BY p.id DESC`
+	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE (p.profile_id IN (` +
+		strings.Join(placeholders, ", ") + `)) AND ` + profileActiveWhere + ` ORDER BY p.id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -165,18 +164,18 @@ func (r *ProfileRepository) ListByProfileIds(ctx context.Context, profileIds []i
 func (r *ProfileRepository) ListProfiles(ctx context.Context, params *profile.ListProfilesParams) ([]*profile.Profile, *pagination.Pagination, error) {
 	filterWhere, filterArgs := buildProfileListFilter(params)
 
-	countArgs := append(profileActiveArgs(), filterArgs...)
-	countQuery := `SELECT COUNT(DISTINCT p.id) FROM ` + profileTable + ` p WHERE ` +
-		profileActiveWhere + filterWhere
+	countArgs := slices.Concat(filterArgs, profileActiveArgs())
+	countQuery := `SELECT COUNT(DISTINCT p.id) FROM ` + profileTable + ` p` +
+		whereActive(filterWhere, profileActiveWhere)
 
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("profile repo count: %w", err)
 	}
 
-	listArgs := append(profileActiveArgs(), filterArgs...)
-	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE ` +
-		profileActiveWhere + filterWhere +
+	listArgs := slices.Concat(filterArgs, profileActiveArgs())
+	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p` +
+		whereActive(filterWhere, profileActiveWhere) +
 		` ORDER BY p.id DESC`
 
 	var pg *pagination.Pagination

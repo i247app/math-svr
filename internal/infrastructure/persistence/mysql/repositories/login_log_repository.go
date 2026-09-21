@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
@@ -46,9 +47,9 @@ func scanLoginLog(s database.RowScanner) (*models.LoginLogModel, error) {
 }
 
 func (r *LoginLogRepository) findOneBy(ctx context.Context, where string, args ...any) (*loginlog.LoginLog, error) {
-	fullArgs := append(loginLogActiveArgs(), args...)
-	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE ` +
-		loginLogActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, loginLogActiveArgs())
+	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE (` +
+		where + `) AND ` + loginLogActiveWhere
 
 	m, err := scanLoginLog(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -61,9 +62,9 @@ func (r *LoginLogRepository) findOneBy(ctx context.Context, where string, args .
 }
 
 func (r *LoginLogRepository) findBareById(ctx context.Context, id int64) (*loginlog.LoginLog, error) {
-	args := append(loginLogActiveArgs(), id)
-	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE ` +
-		loginLogActiveWhere + ` AND l.id = ?`
+	args := slices.Concat([]any{id}, loginLogActiveArgs())
+	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE (l.id = ?) AND ` +
+		loginLogActiveWhere
 
 	m, err := scanLoginLog(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -93,9 +94,9 @@ func (r *LoginLogRepository) FindActiveByUserDevice(ctx context.Context, userId 
 }
 
 func (r *LoginLogRepository) ListByUserId(ctx context.Context, userId int64) ([]*loginlog.LoginLog, error) {
-	args := append(loginLogActiveArgs(), userId)
-	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE ` +
-		loginLogActiveWhere + ` AND l.uid = ? ORDER BY l.id DESC`
+	args := slices.Concat([]any{userId}, loginLogActiveArgs())
+	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE (l.uid = ?) AND ` +
+		loginLogActiveWhere + ` ORDER BY l.id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {

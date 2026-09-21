@@ -3,6 +3,7 @@ package repositories
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/exam"
@@ -22,7 +23,7 @@ const (
 		d.note, d.detail_status, d.status,
 		d.create_id, d.create_dt, d.modify_id, d.modify_dt`
 
-	userExamDetailActiveWhere = `d.status = ? AND (d.detail_status IS NULL OR d.detail_status != ?) AND d.deleted_dt IS NULL`
+	userExamDetailActiveWhere = `d.status IN (?) AND d.deleted_dt IS NULL`
 
 	// userExamDetailInsertColumns and its placeholder tuple are kept next
 	// to each other: CreateBatch repeats the tuple once per row, so the
@@ -37,7 +38,7 @@ const (
 )
 
 func userExamDetailActiveArgs() []any {
-	return []any{enum.StatusActive, string(enum.UserExamDetailStatusDeleted)}
+	return []any{enum.StatusActive}
 }
 
 type UserExamDetailRepository struct {
@@ -102,9 +103,9 @@ func (r *UserExamDetailRepository) CreateBatch(ctx context.Context, details []*e
 }
 
 func (r *UserExamDetailRepository) list(ctx context.Context, where string, args []any, orderLimit string) ([]*exam.UserExamDetail, error) {
-	fullArgs := append(userExamDetailActiveArgs(), args...)
-	query := `SELECT ` + userExamDetailColumns + ` FROM ` + userExamDetailTable + ` d WHERE ` +
-		userExamDetailActiveWhere + ` AND (` + where + `) ` + orderLimit
+	fullArgs := slices.Concat(args, userExamDetailActiveArgs())
+	query := `SELECT ` + userExamDetailColumns + ` FROM ` + userExamDetailTable + ` d WHERE (` +
+		where + `) AND ` + userExamDetailActiveWhere + ` ` + orderLimit
 
 	rows, err := r.db.Query(ctx, query, fullArgs...)
 	if err != nil {

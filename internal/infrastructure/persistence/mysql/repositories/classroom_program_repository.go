@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/classroom"
@@ -24,7 +25,7 @@ const (
 	// other repo: filter out system-inactive and soft-deleted rows.
 	// Because pairs are hard-deleted in practice, deleted_dt should
 	// always be NULL — the filter is here for shape consistency.
-	classroomProgramActiveWhere = `cp.status = ? AND cp.deleted_dt IS NULL`
+	classroomProgramActiveWhere = `cp.status IN (?) AND cp.deleted_dt IS NULL`
 )
 
 func classroomProgramActiveArgs() []any {
@@ -49,9 +50,9 @@ func scanClassroomProgram(s database.RowScanner) (*models.ClassroomProgramModel,
 }
 
 func (r *ClassroomProgramRepository) ListProgramIdsByClassroomId(ctx context.Context, classroomId int64) ([]int64, error) {
-	args := append(classroomProgramActiveArgs(), classroomId)
-	query := `SELECT cp.program_id FROM ` + classroomProgramTable + ` cp WHERE ` +
-		classroomProgramActiveWhere + ` AND cp.classroom_id = ? ORDER BY cp.id ASC`
+	args := slices.Concat([]any{classroomId}, classroomProgramActiveArgs())
+	query := `SELECT cp.program_id FROM ` + classroomProgramTable + ` cp WHERE (cp.classroom_id = ?) AND ` +
+		classroomProgramActiveWhere + ` ORDER BY cp.id ASC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -78,15 +79,16 @@ func (r *ClassroomProgramRepository) ListProgramIdsByClassroomIds(ctx context.Co
 		return map[int64][]int64{}, nil
 	}
 	placeholders := make([]string, len(classroomIds))
-	args := classroomProgramActiveArgs()
+	args := make([]any, 0, len(classroomIds)+1)
 	for i, id := range classroomIds {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
 
-	query := `SELECT cp.classroom_id, cp.program_id FROM ` + classroomProgramTable + ` cp WHERE ` +
-		classroomProgramActiveWhere +
-		` AND cp.classroom_id IN (` + strings.Join(placeholders, ",") + `)` +
+	args = append(args, classroomProgramActiveArgs()...)
+
+	query := `SELECT cp.classroom_id, cp.program_id FROM ` + classroomProgramTable + ` cp WHERE (cp.classroom_id IN (` +
+		strings.Join(placeholders, ",") + `)) AND ` + classroomProgramActiveWhere +
 		` ORDER BY cp.id ASC`
 
 	rows, err := r.db.Query(ctx, query, args...)
@@ -111,9 +113,9 @@ func (r *ClassroomProgramRepository) ListProgramIdsByClassroomIds(ctx context.Co
 }
 
 func (r *ClassroomProgramRepository) findBareById(ctx context.Context, id int64) (*classroom.ClassroomProgram, error) {
-	args := append(classroomProgramActiveArgs(), id)
-	query := `SELECT ` + classroomProgramColumns + ` FROM ` + classroomProgramTable + ` cp WHERE ` +
-		classroomProgramActiveWhere + ` AND cp.id = ?`
+	args := slices.Concat([]any{id}, classroomProgramActiveArgs())
+	query := `SELECT ` + classroomProgramColumns + ` FROM ` + classroomProgramTable + ` cp WHERE (cp.id = ?) AND ` +
+		classroomProgramActiveWhere
 
 	m, err := scanClassroomProgram(r.db.QueryRow(ctx, query, args...))
 	if err != nil {

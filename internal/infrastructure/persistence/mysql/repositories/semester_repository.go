@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/semester"
@@ -27,12 +28,11 @@ const (
 		s.semester_status, s.status,
 		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
 
-	semesterActiveWhere = `s.status = ? AND s.deleted_dt IS NULL
-		AND (s.semester_status IS NULL OR s.semester_status != ?)`
+	semesterActiveWhere = `s.status IN (?) AND s.deleted_dt IS NULL`
 )
 
 func semesterActiveArgs() []any {
-	return []any{enum.StatusActive, enum.StatusInactive}
+	return []any{enum.StatusActive}
 }
 
 type SemesterRepository struct {
@@ -54,12 +54,12 @@ func scanSemester(s database.RowScanner) (*models.SemesterModel, error) {
 }
 
 // findOneBy is the single-row read helper. `where` is a package-controlled
-// SQL fragment; args supply placeholders. semesterActiveWhere is prepended
-// so every read excludes soft-deleted and inactive rows.
+// SQL fragment; args supply placeholders. semesterActiveWhere is appended
+// last so every read excludes soft-deleted and inactive rows.
 func (r *SemesterRepository) findOneBy(ctx context.Context, where string, args ...any) (*semester.Semester, error) {
-	fullArgs := append(semesterActiveArgs(), args...)
+	fullArgs := slices.Concat(args, semesterActiveArgs())
 	query := `SELECT ` + semesterColumns + ` FROM ` + semesterTable + ` s` +
-		` WHERE ` + semesterActiveWhere + ` AND (` + where + `)`
+		` WHERE (` + where + `) AND ` + semesterActiveWhere
 
 	m, err := scanSemester(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -125,15 +125,16 @@ func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []int64
 	}
 
 	placeholders := make([]string, len(ids))
-	args := semesterActiveArgs()
+	args := make([]any, 0, len(ids)+1)
 	for i, id := range ids {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
 
+	args = append(args, semesterActiveArgs()...)
+
 	query := `SELECT ` + semesterColumns + ` FROM ` + semesterTable + ` s` +
-		` WHERE ` + semesterActiveWhere +
-		` AND s.semester_id IN (` + strings.Join(placeholders, ",") + `)`
+		` WHERE (s.semester_id IN (` + strings.Join(placeholders, ",") + `)) AND ` + semesterActiveWhere
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {

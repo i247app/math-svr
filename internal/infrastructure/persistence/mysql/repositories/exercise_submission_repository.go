@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	domain "math-ai.com/math-ai/internal/domain/exercise"
@@ -26,14 +27,11 @@ const (
 		s.note, s.submission_status, s.status,
 		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
 
-	// Active-where mirrors the classroom-exercise convention: hide rows
-	// the system has flagged INACTIVE plus the business-DELETED tombstone.
-	exerciseSubmissionActiveWhere = `s.status = ? AND s.deleted_dt IS NULL
-		AND (s.submission_status IS NULL OR s.submission_status != ?)`
+	exerciseSubmissionActiveWhere = `s.status IN (?) AND s.deleted_dt IS NULL`
 )
 
 func exerciseSubmissionActiveArgs() []any {
-	return []any{enum.StatusActive, enum.ClassroomExerciseSubmissionStatusDeleted}
+	return []any{enum.StatusActive}
 }
 
 type ExerciseSubmissionRepository struct {
@@ -59,9 +57,9 @@ func scanExerciseSubmission(s database.RowScanner) (*models.ExerciseSubmissionMo
 }
 
 func (r *ExerciseSubmissionRepository) findOneBy(ctx context.Context, where string, args ...any) (*domain.Submission, error) {
-	fullArgs := append(exerciseSubmissionActiveArgs(), args...)
-	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE ` +
-		exerciseSubmissionActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, exerciseSubmissionActiveArgs())
+	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE (` +
+		where + `) AND ` + exerciseSubmissionActiveWhere
 
 	m, err := scanExerciseSubmission(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -74,9 +72,9 @@ func (r *ExerciseSubmissionRepository) findOneBy(ctx context.Context, where stri
 }
 
 func (r *ExerciseSubmissionRepository) findBareById(ctx context.Context, id int64) (*domain.Submission, error) {
-	args := append(exerciseSubmissionActiveArgs(), id)
-	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE ` +
-		exerciseSubmissionActiveWhere + ` AND s.id = ?`
+	args := slices.Concat([]any{id}, exerciseSubmissionActiveArgs())
+	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE (s.id = ?) AND ` +
+		exerciseSubmissionActiveWhere
 
 	m, err := scanExerciseSubmission(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -107,12 +105,13 @@ func (r *ExerciseSubmissionRepository) ListByExerciseAndProfileIds(ctx context.C
 	placeholders := strings.Repeat("?,", len(profileIds))
 	placeholders = placeholders[:len(placeholders)-1]
 	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE ` +
-		exerciseSubmissionActiveWhere +
-		` AND s.classroom_exercise_id = ? AND s.profile_id IN (` + placeholders + `)`
-	args := append(exerciseSubmissionActiveArgs(), classroomExerciseId)
+		`(s.classroom_exercise_id = ? AND s.profile_id IN (` + placeholders + `)) AND ` +
+		exerciseSubmissionActiveWhere
+	args := []any{classroomExerciseId}
 	for _, id := range profileIds {
 		args = append(args, id)
 	}
+	args = append(args, exerciseSubmissionActiveArgs()...)
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -146,12 +145,13 @@ func (r *ExerciseSubmissionRepository) ListSubmittedExerciseIdsByProfile(ctx con
 	placeholders := strings.Repeat("?,", len(exerciseIds))
 	placeholders = placeholders[:len(placeholders)-1]
 	query := `SELECT s.classroom_exercise_id FROM ` + exerciseSubmissionTable + ` s WHERE ` +
-		exerciseSubmissionActiveWhere +
-		` AND s.profile_id = ? AND s.classroom_exercise_id IN (` + placeholders + `)`
-	args := append(exerciseSubmissionActiveArgs(), profileId)
+		`(s.profile_id = ? AND s.classroom_exercise_id IN (` + placeholders + `)) AND ` +
+		exerciseSubmissionActiveWhere
+	args := []any{profileId}
 	for _, id := range exerciseIds {
 		args = append(args, id)
 	}
+	args = append(args, exerciseSubmissionActiveArgs()...)
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -186,13 +186,13 @@ func (r *ExerciseSubmissionRepository) ListRecentByProfileIds(ctx context.Contex
 	placeholders := strings.Repeat("?,", len(profileIds))
 	placeholders = placeholders[:len(placeholders)-1]
 	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE ` +
-		exerciseSubmissionActiveWhere +
-		` AND s.profile_id IN (` + placeholders + `)` +
+		`(s.profile_id IN (` + placeholders + `)) AND ` + exerciseSubmissionActiveWhere +
 		` ORDER BY s.submitted_dt DESC, s.id DESC LIMIT ?`
-	args := exerciseSubmissionActiveArgs()
+	args := make([]any, 0, len(profileIds)+2)
 	for _, id := range profileIds {
 		args = append(args, id)
 	}
+	args = append(args, exerciseSubmissionActiveArgs()...)
 	args = append(args, limit)
 
 	rows, err := r.db.Query(ctx, query, args...)
@@ -226,13 +226,13 @@ func (r *ExerciseSubmissionRepository) ListProfileSubmissionsInRange(ctx context
 		return nil, nil
 	}
 	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE ` +
-		exerciseSubmissionActiveWhere +
-		` AND s.classroom_id = ? AND s.profile_id = ?` +
+		`(s.classroom_id = ? AND s.profile_id = ?` +
 		` AND s.submitted_dt IS NOT NULL AND s.submitted_dt BETWEEN ? AND ?` +
-		` AND s.score_percentage IS NOT NULL` +
+		` AND s.score_percentage IS NOT NULL) AND ` + exerciseSubmissionActiveWhere +
 		` ORDER BY s.submitted_dt ASC, s.id ASC`
-	args := append(exerciseSubmissionActiveArgs(),
-		params.ClassroomID, params.ProfileID, params.From, params.To)
+	args := slices.Concat(
+		[]any{params.ClassroomID, params.ProfileID, params.From, params.To},
+		exerciseSubmissionActiveArgs())
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -265,9 +265,9 @@ func (r *ExerciseSubmissionRepository) ListSubmissions(ctx context.Context, para
 	filterClause, filterArgs := buildClassroomExerciseSubmissionFilter(params)
 	orderBy := buildClassroomExerciseSubmissionOrderBy(params)
 
-	countArgs := append(exerciseSubmissionActiveArgs(), filterArgs...)
-	countQuery := `SELECT COUNT(*) FROM ` + exerciseSubmissionTable + ` s WHERE ` +
-		exerciseSubmissionActiveWhere + filterClause
+	countArgs := slices.Concat(filterArgs, exerciseSubmissionActiveArgs())
+	countQuery := `SELECT COUNT(*) FROM ` + exerciseSubmissionTable + ` s` +
+		whereActive(filterClause, exerciseSubmissionActiveWhere)
 
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
@@ -276,10 +276,9 @@ func (r *ExerciseSubmissionRepository) ListSubmissions(ctx context.Context, para
 
 	pg := pagination.NewPagination(params.Page, params.Limit, total)
 
-	listArgs := append(exerciseSubmissionActiveArgs(), filterArgs...)
-	listArgs = append(listArgs, pg.Size, pg.Skip)
-	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE ` +
-		exerciseSubmissionActiveWhere + filterClause +
+	listArgs := slices.Concat(filterArgs, exerciseSubmissionActiveArgs(), []any{pg.Size, pg.Skip})
+	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s` +
+		whereActive(filterClause, exerciseSubmissionActiveWhere) +
 		` ORDER BY ` + orderBy + ` LIMIT ? OFFSET ?`
 
 	rows, err := r.db.Query(ctx, query, listArgs...)

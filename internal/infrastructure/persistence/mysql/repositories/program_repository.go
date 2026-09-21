@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/program"
@@ -23,12 +24,11 @@ const (
 		p.program_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
-	programActiveWhere = `p.status = ? AND p.deleted_dt IS NULL
-		AND (p.program_status IS NULL OR p.program_status != ?)`
+	programActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
 )
 
 func programActiveArgs() []any {
-	return []any{enum.StatusActive, enum.StatusInactive}
+	return []any{enum.StatusActive}
 }
 
 type ProgramRepository struct {
@@ -50,12 +50,12 @@ func scanProgram(s database.RowScanner) (*models.ProgramModel, error) {
 }
 
 // findOneBy is the single-row read helper. `where` is a package-controlled
-// SQL fragment; args supply placeholders. programActiveWhere is prepended
-// so every read excludes soft-deleted and inactive rows.
+// SQL fragment; args supply placeholders. programActiveWhere is appended
+// last so every read excludes soft-deleted and inactive rows.
 func (r *ProgramRepository) findOneBy(ctx context.Context, where string, args ...any) (*program.Program, error) {
-	fullArgs := append(programActiveArgs(), args...)
+	fullArgs := slices.Concat(args, programActiveArgs())
 	query := `SELECT ` + programColumns + ` FROM ` + programTable + ` p` +
-		` WHERE ` + programActiveWhere + ` AND (` + where + `)`
+		` WHERE (` + where + `) AND ` + programActiveWhere
 
 	m, err := scanProgram(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -124,15 +124,16 @@ func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []int64) 
 	}
 
 	placeholders := make([]string, len(ids))
-	args := programActiveArgs()
+	args := make([]any, 0, len(ids)+1)
 	for i, id := range ids {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
 
+	args = append(args, programActiveArgs()...)
+
 	query := `SELECT ` + programColumns + ` FROM ` + programTable + ` p` +
-		` WHERE ` + programActiveWhere +
-		` AND p.program_id IN (` + strings.Join(placeholders, ",") + `)`
+		` WHERE (p.program_id IN (` + strings.Join(placeholders, ",") + `)) AND ` + programActiveWhere
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {

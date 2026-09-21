@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	domain "math-ai.com/math-ai/internal/domain/exercise"
@@ -25,15 +26,14 @@ const (
 		e.note, e.exercise_status, e.status,
 		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
 
-	// exerciseActiveWhere excludes system-inactive and
-	// business-DELETED rows but keeps ARCHIVED visible — archived
-	// exercises are still surfaced to the UI as read-only history.
-	exerciseActiveWhere = `e.status = ? AND e.deleted_dt IS NULL
-		AND (e.exercise_status IS NULL OR e.exercise_status != ?)`
+	// exerciseActiveWhere keeps ARCHIVED rows visible — archived exercises
+	// are still surfaced to the UI as read-only history. Callers filter
+	// exercise_status themselves when they need only ACTIVE ones.
+	exerciseActiveWhere = `e.status IN (?) AND e.deleted_dt IS NULL`
 )
 
 func exerciseActiveArgs() []any {
-	return []any{enum.StatusActive, enum.ClassroomExerciseStatusTypeDeleted}
+	return []any{enum.StatusActive}
 }
 
 type ExerciseRepository struct {
@@ -58,9 +58,9 @@ func scanClassroomExercise(s database.RowScanner) (*models.ExerciseModel, error)
 }
 
 func (r *ExerciseRepository) findOneBy(ctx context.Context, where string, args ...any) (*domain.Exercise, error) {
-	fullArgs := append(exerciseActiveArgs(), args...)
-	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e WHERE ` +
-		exerciseActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, exerciseActiveArgs())
+	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e WHERE (` +
+		where + `) AND ` + exerciseActiveWhere
 
 	m, err := scanClassroomExercise(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -73,9 +73,9 @@ func (r *ExerciseRepository) findOneBy(ctx context.Context, where string, args .
 }
 
 func (r *ExerciseRepository) findBareById(ctx context.Context, id int64) (*domain.Exercise, error) {
-	args := append(exerciseActiveArgs(), id)
-	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e WHERE ` +
-		exerciseActiveWhere + ` AND e.id = ?`
+	args := slices.Concat([]any{id}, exerciseActiveArgs())
+	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e WHERE (e.id = ?) AND ` +
+		exerciseActiveWhere
 
 	m, err := scanClassroomExercise(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -99,14 +99,14 @@ func (r *ExerciseRepository) ListByClassroomExerciseIds(ctx context.Context, ids
 		return nil, nil
 	}
 	placeholders := make([]string, len(ids))
-	args := exerciseActiveArgs()
+	args := make([]any, 0, len(ids)+1)
 	for i, id := range ids {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
-	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e WHERE ` +
-		exerciseActiveWhere +
-		` AND e.classroom_exercise_id IN (` + strings.Join(placeholders, ", ") + `)`
+	args = append(args, exerciseActiveArgs()...)
+	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e WHERE (e.classroom_exercise_id IN (` +
+		strings.Join(placeholders, ", ") + `)) AND ` + exerciseActiveWhere
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -144,7 +144,7 @@ func (r *ExerciseRepository) ListByClassroomIds(ctx context.Context, params doma
 	}
 
 	placeholders := make([]string, len(params.ClassroomIDs))
-	args := exerciseActiveArgs()
+	var args []any
 	for i, id := range params.ClassroomIDs {
 		placeholders[i] = "?"
 		args = append(args, id)
@@ -178,9 +178,10 @@ func (r *ExerciseRepository) ListByClassroomIds(ctx context.Context, params doma
 		args = append(args, params.ExpiredAsOf.Time)
 	}
 
+	args = append(args, exerciseActiveArgs()...)
 	args = append(args, limit)
-	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e WHERE ` +
-		exerciseActiveWhere + clause.String() +
+	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e` +
+		whereActive(clause.String(), exerciseActiveWhere) +
 		` ORDER BY e.create_dt DESC, e.id DESC LIMIT ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
@@ -214,9 +215,9 @@ func (r *ExerciseRepository) ListExercises(ctx context.Context, params domain.Li
 	filterClause, filterArgs := buildClassroomExerciseFilter(params)
 	orderBy := buildClassroomExerciseOrderBy(params)
 
-	countArgs := append(exerciseActiveArgs(), filterArgs...)
-	countQuery := `SELECT COUNT(*) FROM ` + exerciseTable + ` e WHERE ` +
-		exerciseActiveWhere + filterClause
+	countArgs := slices.Concat(filterArgs, exerciseActiveArgs())
+	countQuery := `SELECT COUNT(*) FROM ` + exerciseTable + ` e` +
+		whereActive(filterClause, exerciseActiveWhere)
 
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
@@ -225,10 +226,9 @@ func (r *ExerciseRepository) ListExercises(ctx context.Context, params domain.Li
 
 	pg := pagination.NewPagination(params.Page, params.Limit, total)
 
-	listArgs := append(exerciseActiveArgs(), filterArgs...)
-	listArgs = append(listArgs, pg.Size, pg.Skip)
-	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e WHERE ` +
-		exerciseActiveWhere + filterClause +
+	listArgs := slices.Concat(filterArgs, exerciseActiveArgs(), []any{pg.Size, pg.Skip})
+	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e` +
+		whereActive(filterClause, exerciseActiveWhere) +
 		` ORDER BY ` + orderBy + ` LIMIT ? OFFSET ?`
 
 	rows, err := r.db.Query(ctx, query, listArgs...)

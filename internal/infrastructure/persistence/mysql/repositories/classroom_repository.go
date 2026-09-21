@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/classroom"
@@ -26,15 +27,14 @@ const (
 		c.classroom_status, c.status,
 		c.create_id, c.create_dt, c.modify_id, c.modify_dt`
 
-	// classroomActiveWhere excludes system-inactive and business-DELETED
-	// rows but keeps ARCHIVED rows visible — archived classrooms are
-	// read-only history that the UI still wants to render.
-	classroomActiveWhere = `c.status = ? AND c.deleted_dt IS NULL
-		AND (c.classroom_status IS NULL OR c.classroom_status != ?)`
+	// classroomActiveWhere keeps ARCHIVED rows visible — archived classrooms
+	// are read-only history that the UI still wants to render. Callers that
+	// need to exclude them filter classroom_status themselves.
+	classroomActiveWhere = `c.status IN (?) AND c.deleted_dt IS NULL`
 )
 
 func classroomActiveArgs() []any {
-	return []any{enum.StatusActive, enum.ClassroomStatusTypeDeleted}
+	return []any{enum.StatusActive}
 }
 
 type ClassroomRepository struct {
@@ -60,9 +60,9 @@ func scanClassroom(s database.RowScanner) (*models.ClassroomModel, error) {
 }
 
 func (r *ClassroomRepository) findOneBy(ctx context.Context, where string, args ...any) (*classroom.Classroom, error) {
-	fullArgs := append(classroomActiveArgs(), args...)
-	query := `SELECT ` + classroomColumns + ` FROM ` + classroomTable + ` c WHERE ` +
-		classroomActiveWhere + ` AND (` + where + `)`
+	fullArgs := slices.Concat(args, classroomActiveArgs())
+	query := `SELECT ` + classroomColumns + ` FROM ` + classroomTable + ` c WHERE (` +
+		where + `) AND ` + classroomActiveWhere
 
 	m, err := scanClassroom(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
@@ -75,9 +75,9 @@ func (r *ClassroomRepository) findOneBy(ctx context.Context, where string, args 
 }
 
 func (r *ClassroomRepository) findBareById(ctx context.Context, id int64) (*classroom.Classroom, error) {
-	args := append(classroomActiveArgs(), id)
-	query := `SELECT ` + classroomColumns + ` FROM ` + classroomTable + ` c WHERE ` +
-		classroomActiveWhere + ` AND c.id = ?`
+	args := slices.Concat([]any{id}, classroomActiveArgs())
+	query := `SELECT ` + classroomColumns + ` FROM ` + classroomTable + ` c WHERE (c.id = ?) AND ` +
+		classroomActiveWhere
 
 	m, err := scanClassroom(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -102,18 +102,18 @@ func (r *ClassroomRepository) ListClassrooms(ctx context.Context, params *classr
 
 	baseFrom := classroomTable + ` c` + joinClause
 
-	countArgs := append(classroomActiveArgs(), filterArgs...)
-	countQuery := `SELECT COUNT(DISTINCT c.id) FROM ` + baseFrom + ` WHERE ` +
-		classroomActiveWhere + filterWhere
+	countArgs := slices.Concat(filterArgs, classroomActiveArgs())
+	countQuery := `SELECT COUNT(DISTINCT c.id) FROM ` + baseFrom +
+		whereActive(filterWhere, classroomActiveWhere)
 
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("classroom repo count: %w", err)
 	}
 
-	listArgs := append(classroomActiveArgs(), filterArgs...)
-	query := `SELECT DISTINCT ` + classroomColumns + ` FROM ` + baseFrom + ` WHERE ` +
-		classroomActiveWhere + filterWhere +
+	listArgs := slices.Concat(filterArgs, classroomActiveArgs())
+	query := `SELECT DISTINCT ` + classroomColumns + ` FROM ` + baseFrom +
+		whereActive(filterWhere, classroomActiveWhere) +
 		` ORDER BY c.modify_dt DESC, c.id DESC`
 
 	var pg *pagination.Pagination
@@ -192,13 +192,13 @@ func buildClassroomListFilter(params *classroom.ListClassroomsParams) (string, [
 	)
 	if params.ProfileId != nil && *params.ProfileId != 0 {
 		join += ` JOIN ma_classroom_members mem ON mem.classroom_id = c.classroom_id`
-		clause += ` AND mem.profile_id = ? AND mem.status = ?
-			AND mem.deleted_dt IS NULL
-			AND (mem.member_status IS NULL OR mem.member_status = ?)`
+		clause += ` AND mem.profile_id = ?
+			AND (mem.member_status IS NULL OR mem.member_status = ?)
+			AND mem.status IN (?) AND mem.deleted_dt IS NULL`
 		args = append(args,
 			*params.ProfileId,
-			enum.StatusActive,
 			enum.ClassroomMemberStatusTypeActive,
+			enum.StatusActive,
 		)
 	}
 	if params.OwnerProfileId != nil && *params.OwnerProfileId != 0 {
@@ -222,13 +222,13 @@ func buildClassroomListFilter(params *classroom.ListClassroomsParams) (string, [
 		clause += ` AND EXISTS (
 			SELECT 1 FROM ma_classroom_programs cp
 			WHERE cp.classroom_id = c.classroom_id
-				AND cp.status = ? AND cp.deleted_dt IS NULL
 				AND cp.program_id IN (` + strings.Join(placeholders, ",") + `)
+				AND cp.status IN (?) AND cp.deleted_dt IS NULL
 		)`
-		args = append(args, enum.StatusActive)
 		for _, id := range programIDs {
 			args = append(args, id)
 		}
+		args = append(args, enum.StatusActive)
 	}
 	if params.GradeId != nil && *params.GradeId != 0 {
 		clause += ` AND c.grade_id = ?`
@@ -260,15 +260,15 @@ func (r *ClassroomRepository) ListClassroomsByIds(ctx context.Context, ids []int
 		return nil, nil
 	}
 	placeholders := make([]string, len(ids))
-	args := classroomActiveArgs()
+	args := make([]any, 0, len(ids)+1)
 	for i, id := range ids {
 		placeholders[i] = "?"
 		args = append(args, id)
 	}
+	args = append(args, classroomActiveArgs()...)
 
-	query := `SELECT ` + classroomColumns + ` FROM ` + classroomTable + ` c WHERE ` +
-		classroomActiveWhere +
-		` AND c.classroom_id IN (` + strings.Join(placeholders, ",") + `)`
+	query := `SELECT ` + classroomColumns + ` FROM ` + classroomTable + ` c WHERE (c.classroom_id IN (` +
+		strings.Join(placeholders, ",") + `)) AND ` + classroomActiveWhere
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {

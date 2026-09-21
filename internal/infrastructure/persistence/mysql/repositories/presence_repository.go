@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/presence"
@@ -24,7 +25,7 @@ const (
 	// Presence has no business-status column — a user is never "soft-deleted"
 	// from presence, the row simply goes OFFLINE. Only the system status and
 	// the soft-delete stamp are filtered.
-	presenceActiveWhere = `p.status = ? AND p.deleted_dt IS NULL`
+	presenceActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
 )
 
 func presenceActiveArgs() []any {
@@ -51,9 +52,9 @@ func scanPresence(s database.RowScanner) (*models.PresenceModel, error) {
 }
 
 func (r *PresenceRepository) FindByUserId(ctx context.Context, userId int64) (*presence.Presence, error) {
-	args := append(presenceActiveArgs(), userId)
-	query := `SELECT ` + presenceColumns + ` FROM ` + presenceTable + ` p WHERE ` +
-		presenceActiveWhere + ` AND p.uid = ?`
+	args := slices.Concat([]any{userId}, presenceActiveArgs())
+	query := `SELECT ` + presenceColumns + ` FROM ` + presenceTable + ` p WHERE (p.uid = ?) AND ` +
+		presenceActiveWhere
 
 	m, err := scanPresence(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -72,13 +73,14 @@ func (r *PresenceRepository) ListByUserIds(ctx context.Context, userIds []int64)
 	}
 
 	placeholders := strings.Repeat("?,", len(userIds)-1) + "?"
-	args := presenceActiveArgs()
+	args := make([]any, 0, len(userIds)+1)
 	for _, id := range userIds {
 		args = append(args, id)
 	}
+	args = append(args, presenceActiveArgs()...)
 
-	query := `SELECT ` + presenceColumns + ` FROM ` + presenceTable + ` p WHERE ` +
-		presenceActiveWhere + ` AND p.uid IN (` + placeholders + `)`
+	query := `SELECT ` + presenceColumns + ` FROM ` + presenceTable + ` p WHERE (p.uid IN (` +
+		placeholders + `)) AND ` + presenceActiveWhere
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
