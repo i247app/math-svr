@@ -54,6 +54,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Role is invalid, Supported roles: {roles}"
 	case USER_EMAIL_NOT_VERIFIED:
 		return "Email is not verified. Please verify your email via OTP before signing up with it"
+	case USER_MISSING_DEVICE_UUID:
+		return "Device information is missing"
 
 	// Auth
 	case AUTH_MISSING_LOGIN_NAME:
@@ -666,6 +668,12 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Practice opens once the journey is complete"
 	case EXAM_INVALID_LEVEL:
 		return "level must be between 1 and 10"
+	case EXAM_GUEST_PROFILE_NOT_OWNED:
+		return "Please sign in to open this profile's exams"
+	case EXAM_GUEST_TYPE_NOT_ALLOWED:
+		return "Sign up to unlock practice and grade reviews"
+	case EXAM_GUEST_DAILY_LIMIT:
+		return "You have used all of today's free exams. Sign up to keep going"
 
 	default:
 		return ""

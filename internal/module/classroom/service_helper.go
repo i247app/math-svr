@@ -10,6 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // hydrateInvitationClassrooms batches one ma_classrooms lookup for the
@@ -123,7 +124,7 @@ func (s *Service) hydrateOwnersAndRelationships(
 			summary := &dto.ClassroomOwnerSummary{
 				ProfileID: p.ProfileId(),
 				Name:      p.Name(),
-				Role:      p.Role(),
+				Role:      utils.DerefString(p.Role()),
 				AvatarKey: p.AvatarKey(),
 			}
 			s.signOwnerAvatarURL(ctx, summary)
@@ -308,7 +309,7 @@ func (s *Service) hydrateMemberProfiles(
 		summary := &dto.MemberProfileSummary{
 			ProfileID: p.ProfileId(),
 			Name:      p.Name(),
-			Role:      p.Role(),
+			Role:      utils.DerefString(p.Role()),
 			AvatarKey: p.AvatarKey(),
 		}
 		s.signMemberAvatarURL(ctx, summary)

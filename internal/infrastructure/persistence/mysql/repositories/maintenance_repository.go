@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"math-ai.com/math-ai/internal/domain/seq"
 	"math-ai.com/math-ai/internal/infrastructure/database"
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // clearTarget pairs a wipeable table with the ma_seqs counter that mints its
@@ -103,6 +105,57 @@ type MaintenanceRepository struct {
 
 func NewMaintenanceRepository(db database.Executor) *MaintenanceRepository {
 	return &MaintenanceRepository{db: db}
+}
+
+// ListStaleGuestUserIds returns guests whose last sign of life is older
+// than `before`, newest-idle first, capped at `limit`.
+//
+// "Last sign of life" is the newest exam they were handed, falling back
+// to when the account was opened — a guest who never got past the first
+// generate has no sitting to date them by. Both are needed: the account's
+// own timestamps never move, because nothing updates a guest row after
+// it is created, so create_dt alone would retire an actively-used guest.
+//
+// The read spans ma_users and ma_user_ai_exams, which is why it lives
+// here rather than in either aggregate's repository: this is a
+// maintenance sweep, the same shape as ClearData.
+func (r *MaintenanceRepository) ListStaleGuestUserIds(ctx context.Context, before time.Time, limit int) ([]int64, error) {
+	if limit <= 0 {
+		return nil, nil
+	}
+	query := `
+		SELECT u.uid
+		FROM ` + userTable + ` u
+		LEFT JOIN ` + profileTable + ` p
+			ON p.uid = u.uid AND p.deleted_dt IS NULL
+		LEFT JOIN ` + userAiExamTable + ` a
+			ON a.profile_id = p.profile_id AND a.deleted_dt IS NULL
+		WHERE u.identity_code = ?
+		  AND u.status IN (?) AND u.deleted_dt IS NULL
+		GROUP BY u.uid, u.create_dt
+		HAVING COALESCE(MAX(a.started_dt), u.create_dt) < ?
+		ORDER BY COALESCE(MAX(a.started_dt), u.create_dt) ASC
+		LIMIT ?
+	`
+
+	rows, err := r.db.Query(ctx, query, enum.IdentityCodeGuest, enum.StatusActive, before, limit)
+	if err != nil {
+		return nil, fmt.Errorf("maintenance repo list stale guests: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("maintenance repo scan stale guest: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("maintenance repo stale guests iteration: %w", err)
+	}
+	return ids, nil
 }
 
 // ClearData TRUNCATEs every user-generated table and resets the matching

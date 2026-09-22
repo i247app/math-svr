@@ -40,6 +40,7 @@ type Service struct {
 	createUserCmd        *command.CreateUserCommandHandler
 	updateUserCmd        *command.UpdateUserCommandHandler
 	setAvatarKeyCmd      *command.SetAvatarKeyCommandHandler
+	adoptGuestCmd        *command.AdoptGuestCommandHandler
 	softDeleteUserCmd    *command.SoftDeleteUserCommandHandler
 	forceDeleteUserCmd   *command.ForceDeleteUserCommandHandler
 	storageProvider      *storage.Adapter
@@ -58,6 +59,7 @@ func NewService(
 		getUserByEmailQuery:  query.NewGetUserByEmailQueryHandler(repo),
 		listUsersQuery:       query.NewListUsersQueryHandler(repo),
 		createUserCmd:        command.NewCreateUserCommandHandler(uow),
+		adoptGuestCmd:        command.NewAdoptGuestCommandHandler(uow),
 		updateUserCmd:        command.NewUpdateUserCommandHandler(uow),
 		setAvatarKeyCmd:      command.NewSetAvatarKeyCommandHandler(uow),
 		softDeleteUserCmd:    command.NewSoftDeleteUserCommandHandler(uow),
@@ -177,13 +179,24 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	}
 	log.Infof("Phone for string: %s", phoneForString)
 
+	// Someone registering FROM a guest session is the same person who has
+	// been sitting exams as a guest, so their rows are upgraded in place
+	// rather than duplicated. The uid comes from the session — never from
+	// the body — so a client cannot nominate somebody else's account to
+	// take over.
+	guestUserID, err := s.guestUserIDFromSession(ctx, sess)
+	if err != nil {
+		return nil, err
+	}
+
 	created, err := s.createUserCmd.Handle(ctx, command.CreateUserCommand{
-		Role:       enum.RoleType(req.Role),
-		Phone:      phoneForString,
-		Email:      email,
-		UserName:   req.Name,
-		AvatarKey:  avatarKey,
-		DeviceUUID: metadata.GetDeviceUUID(ctx),
+		Role:        enum.RoleType(req.Role),
+		Phone:       phoneForString,
+		Email:       email,
+		UserName:    req.Name,
+		AvatarKey:   avatarKey,
+		DeviceUUID:  metadata.GetDeviceUUID(ctx),
+		GuestUserID: guestUserID,
 	})
 	if err != nil {
 		// Only delete objects we just uploaded — a client-supplied
@@ -218,7 +231,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		Source:    "login",
 		IsSecure:  true,
 		UID:       userRes.UserID,
-		LoginName: userRes.Phone,
+		LoginName: utils.DerefString(userRes.Phone),
 	}
 
 	if userRes.Email != nil {
@@ -321,13 +334,14 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 	}
 
 	user, err := s.updateUserCmd.Handle(ctx, command.UpdateUserCommand{
-		ID:        req.ID,
-		UserID:    req.UserID,
-		UserName:  req.Name,
-		Email:     req.Email,
-		Phone:     req.Phone,
-		Role:      req.Role,
-		AvatarKey: avatarKey,
+		ID:         req.ID,
+		UserID:     req.UserID,
+		UserName:   req.Name,
+		Email:      req.Email,
+		Phone:      req.Phone,
+		Role:       req.Role,
+		AvatarKey:  avatarKey,
+		DeviceUUID: metadata.GetDeviceUUID(ctx),
 	})
 	if err != nil {
 		return nil, err
@@ -437,4 +451,54 @@ func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, cont
 		AvatarKey: uploaded.Key,
 		AvatarUrl: signed,
 	}, nil
+}
+
+// guestUserIDFromSession reports the uid to upgrade, or nil when this is
+// an ordinary registration. Anything unreadable — no session, no uid, a
+// uid that no longer resolves, a user who is not a guest — means "not an
+// upgrade" rather than an error: registering must keep working even when
+// the session is stale.
+func (s *Service) guestUserIDFromSession(ctx context.Context, sess *session.AppSession) (*int64, error) {
+	if sess == nil || !sess.IsValid() {
+		return nil, nil
+	}
+	uid, ok := sess.UID()
+	if !ok || uid == 0 {
+		return nil, nil
+	}
+
+	existing, err := s.getUserByUserIdQuery.Handle(ctx, query.GetUserByUserIdQuery{UserId: uid})
+	if err != nil || existing == nil {
+		return nil, nil
+	}
+	if !enum.IdentityCodeType(utils.DerefString(existing.IdentityCode())).IsGuest() {
+		return nil, nil
+	}
+	return &uid, nil
+}
+
+// AdoptGuestInto moves a guest's children onto an account that has just
+// been proven by a login, and retires the guest.
+//
+// Call it AFTER the login succeeds, with the uid the session carried
+// BEFORE it — that pair is the whole input, and both halves are the
+// server's own record. It is best-effort: the sign-in itself has already
+// happened and must not fail because the move did. Nothing is lost when
+// it does — the guest account still holds its child and its exams, and
+// the move can be repeated on the next sign-in from that device.
+func (s *Service) AdoptGuestInto(ctx context.Context, previousUserID, ownerUserID int64) {
+	if previousUserID == 0 || previousUserID == ownerUserID {
+		return
+	}
+	res, err := s.adoptGuestCmd.Handle(ctx, command.AdoptGuestCommand{
+		GuestUserID: previousUserID,
+		OwnerUserID: ownerUserID,
+	})
+	if err != nil {
+		logger.From(ctx).Warnf("user.guest.adopt_failed guest_uid=%d uid=%d err=%v", previousUserID, ownerUserID, err)
+		return
+	}
+	if res.Adopted {
+		logger.From(ctx).Info("user.guest.adopt_ok", "uid", ownerUserID, "profiles", len(res.ProfileIDs))
+	}
 }

@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/domain/user"
+	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -19,6 +20,12 @@ type UpdateUserCommand struct {
 	Phone     *string `json:"phone,omitempty"`
 	Role      *string `json:"role,omitempty"`
 	AvatarKey *string `json:"avatar_key,omitempty"`
+
+	// DeviceUUID is the requesting device (metadata.device_uuid). It is
+	// only read when the email changes, to decide whether a REGISTER OTP
+	// verified from THIS device still vouches for the new address — the
+	// same rule /users/create applies. See emailOtpMatches.
+	DeviceUUID string `json:"-"`
 }
 
 func (c UpdateUserCommand) Validate() error {
@@ -56,8 +63,8 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 		// role lives on the user row only (no alias mirror). The
 		// module-layer validator has already normalised + whitelisted the
 		// value, so a non-empty pointer here is a valid RoleType.
-		if cmd.Role != nil && *cmd.Role != "" && u.Role() != *cmd.Role {
-			u.SetRole(*cmd.Role)
+		if cmd.Role != nil && *cmd.Role != "" && utils.DerefString(u.Role()) != *cmd.Role {
+			u.SetRole(cmd.Role)
 		}
 
 		if u.AvatarKey() != nil && cmd.AvatarKey != nil && *u.AvatarKey() != *cmd.AvatarKey {
@@ -76,12 +83,24 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 					alias.SetAka(*cmd.Email)
 					alias.SetModifyDt(mtime.Now())
 					u.SetEmail(cmd.Email)
+
+					// The address changed, so whatever was true of the old
+					// one says nothing about this one. Re-derive from a
+					// REGISTER OTP verified for THIS address, from this
+					// device, inside the trust window — and set false when
+					// there is none, because leaving the old true here is
+					// how a row ends up claiming an address nobody proved.
+					verified, err := repos.Otp.FindLatestVerified(ctx, enum.OtpTypeRegister, *cmd.Email)
+					if err != nil {
+						return errs.NewError(ctx, status.FAIL, nil, err)
+					}
+					u.SetIsEmailVerified(emailOtpMatches(verified, cmd.DeviceUUID))
 				}
 			case utils.ValidatePhone(alias.Aka()):
 				if cmd.Phone != nil && alias.Aka() != *cmd.Phone {
 					alias.SetAka(*cmd.Phone)
 					alias.SetModifyDt(mtime.Now())
-					u.SetPhone(*cmd.Phone)
+					u.SetPhone(cmd.Phone)
 				}
 			}
 

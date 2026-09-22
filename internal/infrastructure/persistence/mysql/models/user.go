@@ -8,11 +8,12 @@ type UserModel struct {
 	Id              int64
 	UserId          int64
 	UserName        string
-	Phone           string
+	Phone           *string
 	Email           *string
 	IsEmailVerified bool
 	AvatarKey       *string
-	Role            string
+	Role            *string
+	IdentityCode    *string
 	UserStatus      *string
 	Status          string
 	RptFlg          *string

@@ -13,6 +13,7 @@ import (
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // presignTTL bounds avatar / cover URL validity. Mirrors the classroom
@@ -60,7 +61,7 @@ func (s *Service) GetHomeLayout(ctx context.Context, req *dto.HomeLayoutReq, ses
 	if err != nil {
 		return nil, err
 	}
-	if !isSupportedRole(caller.Role()) {
+	if !isSupportedRole(utils.DerefString(caller.Role())) {
 		return nil, errs.NewError(ctx, status.HOME_UNSUPPORTED_ROLE, nil, ErrUnsupportedRole)
 	}
 

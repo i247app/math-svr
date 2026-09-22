@@ -76,6 +76,13 @@ GOAT_POSTMAN.md
 WARP.md
 .aider*
 
+# go test files
+# Tests are kept out of the repository by choice. Note this only applies
+# to files git is not already tracking — the ones committed before this
+# rule keep being tracked until they are explicitly untracked.
+*_test.go
+testdata/
+
 # go workspace files
 go.work
 go.work.sum

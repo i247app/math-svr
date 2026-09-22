@@ -9,6 +9,8 @@ import (
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/enum"
+
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // homeExerciseLimit / homeCompletionLimit cap the size of the per-role
@@ -121,7 +123,7 @@ func NewGetHomeLayoutQueryHandler(
 func (h *GetHomeLayoutQueryHandler) Handle(ctx context.Context, q GetHomeLayoutQuery) (*HomeLayoutData, error) {
 	p := q.Profile
 	data := &HomeLayoutData{
-		Role:                     p.Role(),
+		Role:                     utils.DerefString(p.Role()),
 		RoleByClassroom:          map[int64]string{},
 		MemberProfileByClassroom: map[int64]int64{},
 		ExerciseByID:             map[int64]*exerciseDomain.Exercise{},
@@ -136,7 +138,7 @@ func (h *GetHomeLayoutQueryHandler) Handle(ctx context.Context, q GetHomeLayoutQ
 		return nil, err
 	}
 
-	switch enum.RoleType(p.Role()) {
+	switch enum.RoleType(utils.DerefString(p.Role())) {
 	case enum.RoleTypeTeacher:
 		return h.buildTeacher(ctx, p, data)
 	case enum.RoleTypeParent:
@@ -342,7 +344,7 @@ func (h *GetHomeLayoutQueryHandler) buildParent(ctx context.Context, p *profileD
 		if c.ProfileId() == p.ProfileId() {
 			continue
 		}
-		if c.Role() != string(enum.RoleTypeStudent) {
+		if utils.DerefString(c.Role()) != string(enum.RoleTypeStudent) {
 			continue
 		}
 		data.Children = append(data.Children, c)

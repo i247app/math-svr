@@ -16,14 +16,17 @@ import (
 // client renders them without a follow-up call. The raw *_id fields live on
 // each embedded object — keeping them on the parent too would be redundant.
 type ProfileResponse struct {
-	ID            int64                         `json:"id"`
-	ProfileID     int64                         `json:"profile_id"`
-	ProfileCode   string                        `json:"profile_code"`
-	UserID        int64                         `json:"uid"`
-	Name          string                        `json:"name"`
-	Phone         *string                       `json:"phone"`
-	Email         *string                       `json:"email"`
-	Role          string                        `json:"role"`
+	ID          int64   `json:"id"`
+	ProfileID   int64   `json:"profile_id"`
+	ProfileCode string  `json:"profile_code"`
+	UserID      int64   `json:"uid"`
+	Name        string  `json:"name"`
+	Phone       *string `json:"phone"`
+	Email       *string `json:"email"`
+	// Role and IdentityCode are both null on a guest profile — a child
+	// working through the product before anyone registered.
+	Role          *string                       `json:"role"`
+	IdentityCode  *string                       `json:"identity_code"`
 	AvatarKey     *string                       `json:"avatar_key,omitempty"`
 	AvatarUrl     *string                       `json:"avatar_url"` // pre-signed url from avatar_key
 	Dob           string                        `json:"dob,omitempty"`
@@ -212,6 +215,7 @@ func DomainToResponse(p *domain.Profile) *ProfileResponse {
 		Phone:         p.Phone(),
 		Email:         p.Email(),
 		Role:          p.Role(),
+		IdentityCode:  p.IdentityCode(),
 		AvatarKey:     p.AvatarKey(),
 		Dob:           p.Dob().String(),
 		SchoolID:      p.SchoolId(),

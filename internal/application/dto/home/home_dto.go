@@ -5,6 +5,8 @@ import (
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
+
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // HomeLayoutReq is the single input to POST /home/layout. profile_id picks
@@ -160,7 +162,7 @@ func ProfileToSummary(p *profileDomain.Profile) *ProfileSummary {
 		ProfileID:   p.ProfileId(),
 		ProfileCode: p.ProfileCode(),
 		Name:        p.Name(),
-		Role:        p.Role(),
+		Role:        utils.DerefString(p.Role()),
 		AvatarKey:   p.AvatarKey(),
 	}
 }

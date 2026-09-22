@@ -33,6 +33,10 @@ const (
 	USER_AVATAR_INVALID_REFERENCE StatusCode = 4015
 	USER_INVALID_ROLE             StatusCode = 4016
 	USER_EMAIL_NOT_VERIFIED       StatusCode = 4017
+	// USER_MISSING_DEVICE_UUID is the guest path's only hard requirement:
+	// a guest is recognised by their device, so without one there is
+	// nothing to open — or reopen — an account against.
+	USER_MISSING_DEVICE_UUID StatusCode = 4018
 
 	AUTH_MISSING_LOGIN_NAME        StatusCode = 4201
 	AUTH_MISSING_DEVICE_UUID       StatusCode = 4202
@@ -383,4 +387,19 @@ const (
 	// axis came back as a client-stated value, not the derived one 13710
 	// once described.
 	EXAM_INVALID_LEVEL StatusCode = 13731
+	// EXAM_GUEST_PROFILE_NOT_OWNED: an unauthenticated caller named a
+	// profile_id. A guest may only ever be handed their own, freshly
+	// opened profile; naming someone else's is how a stranger would read
+	// another child's exams.
+	EXAM_GUEST_PROFILE_NOT_OWNED StatusCode = 13732
+	// EXAM_GUEST_TYPE_NOT_ALLOWED: a guest asked for a round that is not
+	// ASSESSMENT. The guest surface is a trial of the product, not the
+	// product — practice and grade reviews belong to a registered child
+	// whose progress is being tracked.
+	EXAM_GUEST_TYPE_NOT_ALLOWED StatusCode = 13733
+	// EXAM_GUEST_DAILY_LIMIT: this guest has had as many rounds today as
+	// a trial is worth. Every one of them is a paid model call made for
+	// someone who has not registered, so the ceiling is the product's,
+	// not a per-user setting.
+	EXAM_GUEST_DAILY_LIMIT StatusCode = 13734
 )

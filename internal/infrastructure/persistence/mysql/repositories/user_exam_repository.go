@@ -152,6 +152,17 @@ func (r *UserExamRepository) ListByUserProfile(ctx context.Context, userId, prof
 // chronological order. With no exam type the PRACTICE rows are skipped:
 // they share their journey's id and would put every journey on the
 // chart twice.
+// ReassignOwnerByProfile re-points every journey of one child at another
+// account. Addressed by profile_id because the child is what moves; the
+// rows themselves are unchanged apart from who owns them.
+func (r *UserExamRepository) ReassignOwnerByProfile(ctx context.Context, profileId int64, newUserId int64) error {
+	query := `UPDATE ` + userExamTable + ` SET uid = ?, modify_dt = ? WHERE profile_id = ?`
+	if _, err := r.db.Exec(ctx, query, newUserId, mtime.Now().Time, profileId); err != nil {
+		return fmt.Errorf("user exam repo reassign owner: %w", err)
+	}
+	return nil
+}
+
 func (r *UserExamRepository) ListProgressPoints(ctx context.Context, params exam.JourneyProgressParams) ([]*exam.UserExam, error) {
 	where := `e.uid = ? AND e.profile_id = ? AND e.res_score_percentage IS NOT NULL AND e.last_submitted_dt IS NOT NULL`
 	args := []any{params.UserID, params.ProfileID}

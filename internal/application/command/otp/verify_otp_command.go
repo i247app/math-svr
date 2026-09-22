@@ -33,10 +33,11 @@ type VerifyOtpCommandHandler struct {
 	// bypassEnabled accepts OtpBypassCode for any PENDING row (dev/test only).
 	bypassEnabled bool
 	bypassCode    string
+	demoNames     []string
 }
 
-func NewVerifyOtpCommandHandler(uow transaction.UnitOfWork, bypassEnabled bool, bypassCode string) *VerifyOtpCommandHandler {
-	return &VerifyOtpCommandHandler{uow: uow, bypassEnabled: bypassEnabled, bypassCode: bypassCode}
+func NewVerifyOtpCommandHandler(uow transaction.UnitOfWork, bypassEnabled bool, bypassCode string, demoNames []string) *VerifyOtpCommandHandler {
+	return &VerifyOtpCommandHandler{uow: uow, bypassEnabled: bypassEnabled, bypassCode: bypassCode, demoNames: demoNames}
 }
 
 func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpCommand) (*VerifyOtpCommandResult, error) {
@@ -67,9 +68,11 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 		// Dev/test bypass. Sits after the PENDING lookup (a send must have
 		// happened) but before expiry / attempt accounting so the code
 		// works for as long as the row is PENDING.
-		if h.bypassEnabled && cmd.Code == h.bypassCode {
-			logger.From(ctx).Warn("otp.verify.bypass", "otp_type", cmd.OtpType, "otp_id", o.OtpId())
-			return h.markVerified(ctx, repos, o, &result)
+		for _, demoName := range h.demoNames {
+			if cmd.Identifier == demoName && cmd.Code == h.bypassCode {
+				logger.From(ctx).Warn("otp.verify.bypass", "otp_type", cmd.OtpType, "otp_id", o.OtpId())
+				return h.markVerified(ctx, repos, o, &result)
+			}
 		}
 
 		// Expiry check. Mark EXPIRED so the row is greppable in audit.

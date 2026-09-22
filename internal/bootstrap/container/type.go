@@ -2,6 +2,7 @@ package container
 
 import (
 	// "math-ai.com/math-ai/internal/application/socket"
+	userCommand "math-ai.com/math-ai/internal/application/command/user"
 	bannerDomain "math-ai.com/math-ai/internal/domain/banner"
 	chatDomain "math-ai.com/math-ai/internal/domain/chat"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
@@ -66,6 +67,12 @@ type ServiceContainer struct {
 	BannerSvc       *banner.Service
 	PresenceSvc     *presence.Service
 	ChatSvc         *chat.Service
+
+	// CleanupGuestsCmd is not a service — it is the one application
+	// command the job runtime needs directly (jobs consume
+	// application/command, not module services). Built here because it
+	// needs both the UoW and the maintenance repository.
+	CleanupGuestsCmd *userCommand.CleanupGuestsCommandHandler
 }
 
 type RepositoryContainer struct {

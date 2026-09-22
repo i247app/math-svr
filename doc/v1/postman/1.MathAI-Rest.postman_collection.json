@@ -6269,6 +6269,45 @@
           "response": []
         },
         {
+          "name": "Generate (Guest)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\nconst response = pm.response.json();\nif (response.exam.user_ai_exam_id) {\n    pm.environment.set(\"user_ai_exam_id\", response.exam.user_ai_exam_id);\n}\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"metadata\": {\n        \"device_uuid\": \"{{guest_device_uuid}}\",\n        \"platform\": \"ios\",\n        \"language\": \"vi-VN\"\n    },\n    \"child_name\": \"Bé\",\n    \"exam_type\": \"ASSESSMENT\",\n    \"grade\": 0,\n    \"num_questions\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/exams/generate",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "exams",
+                "generate"
+              ]
+            },
+            "description": "Guest flow. Send metadata WITHOUT `authorization` and WITHOUT `profile_id`: the server opens a guest account for this device_uuid and generates against it. Read the session token from the X-Auth-Token response header and put it in metadata.authorization on every following /exams/* call — profile_id stays optional for a guest. The same device_uuid always returns the same guest."
+          },
+          "response": []
+        },
+        {
           "name": "Submit",
           "request": {
             "method": "POST",

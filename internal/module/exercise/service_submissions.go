@@ -18,6 +18,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // avatarUrlTTL bounds how long a generated avatar URL is valid. Mirrors
@@ -505,7 +506,7 @@ func (s *Service) hydrateAudienceProfiles(ctx context.Context, profileIDs []int6
 			ProfileID:   p.ProfileId(),
 			ProfileCode: p.ProfileCode(),
 			Name:        p.Name(),
-			Role:        p.Role(),
+			Role:        utils.DerefString(p.Role()),
 			AvatarKey:   p.AvatarKey(),
 			StudentID:   p.StudentId(),
 			TeacherID:   p.TeacherId(),
@@ -740,7 +741,7 @@ func (s *Service) hydrateSubmissions(
 			summary := &dto.SubmissionProfileSummary{
 				ProfileID: p.ProfileId(),
 				Name:      p.Name(),
-				Role:      p.Role(),
+				Role:      utils.DerefString(p.Role()),
 				AvatarKey: p.AvatarKey(),
 			}
 			s.signSubmissionAvatarURL(ctx, summary)

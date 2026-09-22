@@ -30,6 +30,12 @@ type IAliasRepository interface {
 	FindByAka(ctx context.Context, alias string) (*Alias, error)
 	FindByUserId(ctx context.Context, userId int64) ([]*Alias, error)
 	UpdateByAliasId(ctx context.Context, alias *Alias) error
+	// SoftDeleteByAliasId retires ONE login key while leaving the user's
+	// other keys alone — used when a guest registers and their stand-in
+	// device alias must stop resolving. It stamps deleted_dt and flips
+	// status, which is what the active filter actually reads; setting
+	// alias_status alone would leave the row findable.
+	SoftDeleteByAliasId(ctx context.Context, aliasId int64) error
 	DeleteByUserId(ctx context.Context, userId int64) error
 	MarkStatusByUserId(ctx context.Context, userId int64, status enum.UserAliasStatusType) error
 	SoftDeleteByUserId(ctx context.Context, userId int64) error

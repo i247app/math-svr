@@ -129,6 +129,14 @@ type IUserAiExamRepository interface {
 	// still IN_PROGRESS, oldest first. It backs the journey list, which
 	// attaches each one to its journey by user_exam_id.
 	ListInProgressByProfile(ctx context.Context, profileId int64) ([]*UserAiExam, error)
+	// CountHandedOutSince counts the sittings a child was handed since a
+	// moment — submitted or not, because an abandoned exam still cost a
+	// model call. It backs the guest daily ceiling.
+	CountHandedOutSince(ctx context.Context, profileId int64, since mtime.MathTime) (int64, error)
+	// ReassignOwnerByProfile re-points every sitting of one child at
+	// another account. The child does not change — only who owns them —
+	// so the rows are addressed by profile_id.
+	ReassignOwnerByProfile(ctx context.Context, profileId int64, newUserId int64) error
 	// FindLatestSubmittedByUserExamId returns the most recently submitted
 	// sitting of a journey, whatever its type — the base a PRACTICE round
 	// is drawn from. (nil, nil) when nothing has been submitted yet.
@@ -213,6 +221,11 @@ type IUserExamRepository interface {
 	// behind the progress chart. A journey nothing was ever submitted in
 	// has no score and is left out.
 	ListProgressPoints(ctx context.Context, params JourneyProgressParams) ([]*UserExam, error)
+	// ReassignOwnerByProfile re-points every journey of one child at
+	// another account. uk_active_journey keys on (uid, profile_id, type),
+	// and the profile moves with its journeys, so an open journey stays
+	// open and cannot collide with one the receiving account already has.
+	ReassignOwnerByProfile(ctx context.Context, profileId int64, newUserId int64) error
 	// Create opens a journey with delta as its first totals.
 	Create(ctx context.Context, e *UserExam, delta StatsDelta) error
 	// Accumulate folds delta into the row (userExamId, examType) while it

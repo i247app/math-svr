@@ -16,7 +16,8 @@ type Profile struct {
 	name          string
 	phone         *string
 	email         *string
-	role          string
+	role          *string
+	identityCode  *string
 	avatarKey     *string
 	dob           mtime.MathTime
 	schoolId      *int64
@@ -101,12 +102,25 @@ func (p *Profile) SetEmail(email *string) {
 	p.email = email
 }
 
-func (p *Profile) Role() string {
+// Role mirrors ma_users.role for this child. Nullable since migration
+// 031: a guest profile has no declared role.
+func (p *Profile) Role() *string {
 	return p.role
 }
 
-func (p *Profile) SetRole(role string) {
+func (p *Profile) SetRole(role *string) {
 	p.role = role
+}
+
+// IdentityCode is GUEST / USER / VERIFIED — see enum.IdentityCodeType.
+// VERIFIED is paired with profileStatus OFFICIAL; both are produced by
+// DeriveIdentity, never set independently.
+func (p *Profile) IdentityCode() *string {
+	return p.identityCode
+}
+
+func (p *Profile) SetIdentityCode(identityCode *string) {
+	p.identityCode = identityCode
 }
 
 func (p *Profile) AvatarKey() *string {

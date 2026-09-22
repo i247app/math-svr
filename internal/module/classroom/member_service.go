@@ -9,6 +9,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // JoinClassroomByCode lets any authenticated profile join a classroom
@@ -33,7 +34,7 @@ func (s *Service) JoinClassroomByCode(ctx context.Context, req *dto.JoinByCodeRe
 		ActorID:       &actor,
 		InviteBy:      caller.ProfileId(),
 		ProfileID:     caller.ProfileId(),
-		ProfileRole:   caller.Role(),
+		ProfileRole:   utils.DerefString(caller.Role()),
 		ClassroomCode: req.ClassroomCode,
 	})
 	if err != nil {
@@ -126,7 +127,7 @@ func (s *Service) UpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRol
 			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 				ErrTargetProfileNotFound)
 		}
-		if targetProfile.Role() != string(enum.RoleTypeTeacher) {
+		if utils.DerefString(targetProfile.Role()) != string(enum.RoleTypeTeacher) {
 			return nil, errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
 				ErrTeacherCoTeacherOnly)
 		}

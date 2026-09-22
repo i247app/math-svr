@@ -165,6 +165,33 @@ func buildUserAiExamFilterClause(filter exam.ListAttemptsFilter) (string, []any)
 
 // ListInProgressByProfile reads ix_profile_status_started: one child, one
 // status, in the order the sittings were handed out.
+// CountHandedOutSince counts what this child was handed since `since`.
+// started_dt is the hand-out moment, so an exam opened and walked away
+// from counts the same as one that was finished — the model call was
+// made either way, which is what the ceiling is protecting.
+// ReassignOwnerByProfile re-points every sitting of one child at another
+// account. Addressed by profile_id because the child is what moves; the
+// rows themselves are unchanged apart from who owns them.
+func (r *UserAiExamRepository) ReassignOwnerByProfile(ctx context.Context, profileId int64, newUserId int64) error {
+	query := `UPDATE ` + userAiExamTable + ` SET uid = ?, modify_dt = ? WHERE profile_id = ?`
+	if _, err := r.db.Exec(ctx, query, newUserId, mtime.Now().Time, profileId); err != nil {
+		return fmt.Errorf("user ai exam repo reassign owner: %w", err)
+	}
+	return nil
+}
+
+func (r *UserAiExamRepository) CountHandedOutSince(ctx context.Context, profileId int64, since mtime.MathTime) (int64, error) {
+	args := slices.Concat([]any{profileId, since.Time}, userAiExamActiveArgs())
+	query := `SELECT COUNT(*) FROM ` + userAiExamTable + ` u WHERE ` +
+		`(u.profile_id = ? AND u.started_dt >= ?) AND ` + userAiExamActiveWhere
+
+	var total int64
+	if err := r.db.QueryRow(ctx, query, args...).Scan(&total); err != nil {
+		return 0, fmt.Errorf("user ai exam repo count handed out: %w", err)
+	}
+	return total, nil
+}
+
 func (r *UserAiExamRepository) ListInProgressByProfile(ctx context.Context, profileId int64) ([]*exam.UserAiExam, error) {
 	args := slices.Concat([]any{profileId, string(enum.UserAiExamStatusInProgress)}, userAiExamActiveArgs())
 	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +

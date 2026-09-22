@@ -12,7 +12,8 @@ type ProfileModel struct {
 	Name          string
 	Phone         *string
 	Email         *string
-	Role          string
+	Role          *string
+	IdentityCode  *string
 	AvatarKey     *string
 	Dob           *time.Time
 	SchoolId      *int64

@@ -196,8 +196,8 @@ github.com/gorilla/websocket v1.5.3/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/ad
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 h1:HWRh5R2+9EifMyIHV7ZV+MIZqgz+PMpZ14Jynv3O2Zs=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0/go.mod h1:JfhWUomR1baixubs02l85lZYYOm7LV6om4ceouMv45c=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
-github.com/i247app/gex v0.0.30 h1:aSqItEQk2JP/SrWIKkFzLLVWMqH3yhyw+Yl4TSb7054=
-github.com/i247app/gex v0.0.30/go.mod h1:llk+V53qBtS3BV1enl6r5lsI8o1dIqf69/i0S39xA7E=
+github.com/i247app/gex v0.0.31 h1:gCn1t5/lwYps//tfejv8OP3fz4C1UZP5pnEb5R9H4GU=
+github.com/i247app/gex v0.0.31/go.mod h1:1+7KdS7ImFWq6DYMx/2LKuQvK4KTIxMF4Tc9hcY0DoA=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=

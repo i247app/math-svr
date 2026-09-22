@@ -54,6 +54,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Vai trò không hợp lệ, các vai trò được hỗ trợ: {roles}"
 	case USER_EMAIL_NOT_VERIFIED:
 		return "Email chưa được xác thực. Vui lòng xác thực email bằng OTP trước khi đăng ký với email này"
+	case USER_MISSING_DEVICE_UUID:
+		return "Thiếu thông tin thiết bị"
 
 	// Auth
 	case AUTH_MISSING_LOGIN_NAME:
@@ -666,6 +668,12 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Chỉ luyện tập được khi hành trình đã hoàn thành"
 	case EXAM_INVALID_LEVEL:
 		return "Cấp độ phải từ 1 đến 10"
+	case EXAM_GUEST_PROFILE_NOT_OWNED:
+		return "Vui lòng đăng nhập để xem bài của hồ sơ này"
+	case EXAM_GUEST_TYPE_NOT_ALLOWED:
+		return "Hãy đăng ký để mở bài luyện tập và bài kiểm tra theo lớp"
+	case EXAM_GUEST_DAILY_LIMIT:
+		return "Bé đã dùng hết số bài miễn phí hôm nay. Hãy đăng ký để tiếp tục"
 
 	default:
 		return ""

@@ -219,11 +219,12 @@ func (a *App) resetPresence(services *container.ServiceContainer) {
 //
 // Order matters: jobs.RegisterAll must finish before runtime.Start —
 // Start reads the registry to seed its per-job state.
-func (a *App) setupJobs(_ *gex.Server, _ *container.ServiceContainer) {
+func (a *App) setupJobs(_ *gex.Server, services *container.ServiceContainer) {
 	jobs.RegisterAll(a.Resource.JobRegistry, jobs.Deps{
 		Runtime:        a.Resource.JobRuntime,
 		SessionManager: a.Resource.SessionManager,
 		EmailProvider:  a.Resource.EmailProvider,
+		CleanupGuests:  services.CleanupGuestsCmd,
 	})
 	a.Resource.JobRuntime.Start(context.Background())
 }

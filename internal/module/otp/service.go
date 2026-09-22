@@ -60,7 +60,7 @@ func NewService(
 		deviceSvc:       deviceSvc,
 		notificationSvc: notificationSvc,
 		sendCmd:         command.NewSendOtpCommandHandler(uow, delivery, pushAdapter, demoNames),
-		verifyCmd:       command.NewVerifyOtpCommandHandler(uow, bypassEnabled, bypassCode),
+		verifyCmd:       command.NewVerifyOtpCommandHandler(uow, bypassEnabled, bypassCode, demoNames),
 		revokeCmd:       command.NewRevokeOtpCommandHandler(uow),
 		getByIdQuery:    query.NewGetOtpByIdQueryHandler(repo),
 		repo:            repo,
@@ -164,6 +164,14 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 		return nil, err
 	}
 
+	// Whoever this session belonged to before the code was verified — a
+	// guest, if the visitor tried the product before signing in. Captured
+	// before sess.Init below overwrites it.
+	var previousUID int64
+	if sess != nil {
+		previousUID, _ = sess.UID()
+	}
+
 	result, err := s.verifyCmd.Handle(ctx, command.VerifyOtpCommand{
 		OtpType:    enum.OtpType(req.OtpType),
 		Identifier: req.Identifier,
@@ -216,6 +224,10 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 			}
 
 			sess.Init(sessionData)
+
+			// The OTP just proved this account is theirs. Anything they
+			// did as a guest before signing in follows them now.
+			s.userSvc.AdoptGuestInto(ctx, previousUID, userRes.User.UserID)
 		}
 		user = userRes.User
 	}

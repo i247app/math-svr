@@ -9,6 +9,7 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // SendInvitation creates one PENDING ma_classroom_members row per
@@ -46,7 +47,7 @@ func (s *Service) SendInvitation(ctx context.Context, req *dto.SendInvitationReq
 
 		targets = append(targets, command.SendInvitationTarget{
 			ProfileID: t,
-			Role:      profileExists.Role(),
+			Role:      utils.DerefString(profileExists.Role()),
 		})
 	}
 

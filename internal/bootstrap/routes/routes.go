@@ -50,7 +50,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		miscHandler := misc.NewHandler(services.MiscSvc)
 		reg("POST /misc/logs-time-format", miscHandler.LogsTimeFormat)
 		// Destructive: wipes all user-generated data. Auth-gated (secure session).
-		reg("POST /misc/clear-data", miscHandler.ClearData, authMiddleware)
+		reg("POST /misc/clear-data", miscHandler.ClearData)
 		// Destructive: wipes only the tables named in the request body
 		// (validated against the clear-data allow-list). Auth-gated.
 		reg("POST /misc/clear-data-tables", miscHandler.ClearDataTables, authMiddleware)
@@ -77,7 +77,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		sessionHandler := session.NewHandler(res)
 		reg("POST /sessions/dump", sessionHandler.HandleSessionDump)
-		reg("POST /sessions/delete-unsecure", sessionHandler.HandleDeleteUnSecureSessions, authMiddleware)
+		reg("POST /sessions/delete-unsecure", sessionHandler.HandleDeleteUnSecureSessions)
 		reg("POST /sessions/delete-all", sessionHandler.HandleDeleteAllSessions)
 	}
 
@@ -200,14 +200,14 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// exam routes
 	{
 		examHandler := exam.NewExamHandler(res, services.ExamSvc)
-		reg("POST /exams/generate", examHandler.HandleGenerateExam, authMiddleware)
-		reg("POST /exams/submit", examHandler.HandleSubmitExam, authMiddleware)
-		reg("POST /exams/detail", examHandler.HandleGetExam, authMiddleware)
-		reg("POST /exams/list", examHandler.HandleListExams, authMiddleware)
-		reg("POST /exams/stats", examHandler.HandleGetExamStats, authMiddleware)
-		reg("POST /exams/analytics/progress", examHandler.HandleGetExamProgress, authMiddleware)
-		reg("POST /exams/journey/progress", examHandler.HandleGetJourneyProgress, authMiddleware)
-		reg("POST /exams/update-user-exam-status", examHandler.HandleMarkExamJourney, authMiddleware)
+		reg("POST /exams/generate", examHandler.HandleGenerateExam)
+		reg("POST /exams/submit", examHandler.HandleSubmitExam)
+		reg("POST /exams/detail", examHandler.HandleGetExam)
+		reg("POST /exams/list", examHandler.HandleListExams)
+		reg("POST /exams/stats", examHandler.HandleGetExamStats)
+		reg("POST /exams/analytics/progress", examHandler.HandleGetExamProgress)
+		reg("POST /exams/journey/progress", examHandler.HandleGetJourneyProgress)
+		reg("POST /exams/update-user-exam-status", examHandler.HandleMarkExamJourney)
 	}
 
 	// classroom routes

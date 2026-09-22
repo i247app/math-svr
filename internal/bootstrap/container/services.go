@@ -3,6 +3,7 @@ package container
 import (
 	"context"
 
+	userCommand "math-ai.com/math-ai/internal/application/command/user"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql"
@@ -86,6 +87,8 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	maintenanceRepo := repositories.NewMaintenanceRepository(res.DB)
 	miscService := misc.NewService(maintenanceRepo)
 
+	cleanupGuestsCmd := userCommand.NewCleanupGuestsCommandHandler(uow, maintenanceRepo)
+
 	log.Info("> Setup DeviceSvc...")
 	deviceService := device.NewService(repos.DeviceRepository, uow, repos.UserRepository, res.Env.DemoNames)
 
@@ -158,6 +161,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		res.BotProvider,
 		repos.ProfileRepository,
 		repos.GradeRepository,
+		repos.UserRepository,
 	)
 
 	log.Info("> Setup JobSvc...")
@@ -219,27 +223,28 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	)
 
 	return &ServiceContainer{
-		SocketSvc:       socketService,
-		PresenceSvc:     presenceService,
-		ChatSvc:         chatService,
-		MiscSvc:         miscService,
-		UserSvc:         userService,
-		AuthSvc:         authService,
-		ProgramSvc:      programService,
-		GradeSvc:        gradeService,
-		SemesterSvc:     semesterService,
-		ProfileSvc:      profileService,
-		DeviceSvc:       deviceService,
-		OtpSvc:          otpService,
-		ExamSvc:         examService,
-		SchoolSvc:       schoolService,
-		JobSvc:          jobService,
-		SeqSvc:          seqService,
-		ClassroomSvc:    classroomService,
-		ExerciseSvc:     exerciseService,
-		HomeSvc:         homeService,
-		BotSvc:          botService,
-		NotificationSvc: notificationService,
-		BannerSvc:       bannerService,
+		CleanupGuestsCmd: cleanupGuestsCmd,
+		SocketSvc:        socketService,
+		PresenceSvc:      presenceService,
+		ChatSvc:          chatService,
+		MiscSvc:          miscService,
+		UserSvc:          userService,
+		AuthSvc:          authService,
+		ProgramSvc:       programService,
+		GradeSvc:         gradeService,
+		SemesterSvc:      semesterService,
+		ProfileSvc:       profileService,
+		DeviceSvc:        deviceService,
+		OtpSvc:           otpService,
+		ExamSvc:          examService,
+		SchoolSvc:        schoolService,
+		JobSvc:           jobService,
+		SeqSvc:           seqService,
+		ClassroomSvc:     classroomService,
+		ExerciseSvc:      exerciseService,
+		HomeSvc:          homeService,
+		BotSvc:           botService,
+		NotificationSvc:  notificationService,
+		BannerSvc:        bannerService,
 	}, nil
 }

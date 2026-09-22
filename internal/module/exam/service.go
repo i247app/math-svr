@@ -16,6 +16,7 @@ import (
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -44,7 +45,8 @@ type Service struct {
 	profileRepo profileDomain.IRepository
 	gradeRepo   gradeDomain.IRepository
 
-	bot *botClient
+	bot   *botClient
+	guest *guestService
 }
 
 // NewService wires the module. bot may be nil — a deploy without LLM
@@ -59,6 +61,7 @@ func NewService(
 	bot *botAdapter.Adapter,
 	profileRepo profileDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
+	userRepo userDomain.IRepository,
 ) *Service {
 	return &Service{
 		generateCmd:     command.NewGenerateExamCommandHandler(uow),
@@ -77,6 +80,7 @@ func NewService(
 		profileRepo:     profileRepo,
 		gradeRepo:       gradeRepo,
 		bot:             newBotClient(bot),
+		guest:           newGuestService(uow, userRepo, profileRepo),
 	}
 }
 
@@ -100,6 +104,9 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	}
 	profile, err := s.loadOwnedProfile(ctx, req.UserID, req.ProfileID)
 	if err != nil {
+		return nil, err
+	}
+	if err := s.guardGuest(ctx, profile, validated.ExamType); err != nil {
 		return nil, err
 	}
 

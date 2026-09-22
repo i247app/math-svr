@@ -3,6 +3,7 @@ package exam
 import (
 	"context"
 	"strings"
+	"time"
 
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	query "math-ai.com/math-ai/internal/application/query/exam"
@@ -10,9 +11,11 @@ import (
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // MinCacheVariants is how many distinct question sets must exist under a
@@ -257,4 +260,47 @@ func (s *Service) getJourney(ctx context.Context, userExamID int64, examType str
 		Details:         dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...), detail.AiExams),
 		PracticePreview: dto.PracticePreviewFrom(detail.PracticeBase, detail.PracticeBrief),
 	}, nil
+}
+
+// Guest ceilings. Everything a guest is handed is a paid model call made
+// for someone who has not registered, so the trial is bounded in two
+// directions: what they may ask for, and how much of it per day.
+const (
+	// GuestDailyExamLimit is how many rounds one guest child may be
+	// handed in a rolling 24 hours. Raise it here; nothing else reads a
+	// number.
+	GuestDailyExamLimit = 3
+	// guestExamWindow is what "per day" means. A rolling window rather
+	// than midnight-to-midnight, so a guest cannot take the day's quota
+	// twice by starting just before midnight — and so the rule needs no
+	// timezone to be fair.
+	guestExamWindow = 24 * time.Hour
+)
+
+// guardGuest applies both ceilings. It reads the profile's own
+// identity_code, already loaded for the ownership check, so a registered
+// child costs nothing here.
+func (s *Service) guardGuest(ctx context.Context, p *profileDomain.Profile, examType enum.ExamType) error {
+	if !enum.IdentityCodeType(utils.DerefString(p.IdentityCode())).IsGuest() {
+		return nil
+	}
+
+	// A guest is trying the product, not using it. PRACTICE is built from
+	// a child's own mistakes across a journey and GRADE is a review at a
+	// level — both belong to a child whose progress is being followed.
+	if examType != enum.ExamTypeAssessment {
+		return errs.NewError(ctx, status.EXAM_GUEST_TYPE_NOT_ALLOWED, nil, ErrGuestAssessmentOnly)
+	}
+
+	since := mtime.MathTime{Time: time.Now().UTC().Add(-guestExamWindow)}
+	handed, err := s.attemptRepo.CountHandedOutSince(ctx, p.ProfileId(), since)
+	if err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if handed >= GuestDailyExamLimit {
+		logger.From(ctx).Info("exam.guest.limit_reached", "profile_id", p.ProfileId(), "handed", handed)
+		return errs.NewError(ctx, status.EXAM_GUEST_DAILY_LIMIT,
+			map[string]any{"limit": GuestDailyExamLimit}, ErrGuestDailyLimit)
+	}
+	return nil
 }

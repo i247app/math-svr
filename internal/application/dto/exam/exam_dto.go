@@ -25,8 +25,14 @@ import (
 // submitted sitting, so there is nothing to aim at without one. For a
 // PRACTICE round Grade is ignored — it follows that sitting's grade.
 type GenerateExamReq struct {
-	UserID       *int64 `json:"-"`
-	ProfileID    int64  `json:"profile_id"`
+	UserID *int64 `json:"-"`
+	// ProfileID names the child. It may be omitted ONLY by a caller with
+	// no session: that is the guest path, where the server opens an
+	// account and fills this in. Anyone else must state it.
+	ProfileID int64 `json:"profile_id"`
+	// ChildName is read only on the guest path, to name the profile being
+	// opened. Ignored once a profile exists — renaming is /profiles/update.
+	ChildName    string `json:"child_name,omitempty"`
 	ExamType     string `json:"exam_type"`
 	UserExamID   *int64 `json:"user_exam_id,omitempty"`
 	Grade        *int   `json:"grade,omitempty"`

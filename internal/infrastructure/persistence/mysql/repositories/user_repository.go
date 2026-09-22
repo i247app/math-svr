@@ -21,7 +21,7 @@ import (
 const (
 	userTable = "ma_users"
 
-	userColumns = `u.id, u.uid, u.name, u.phone, u.email, u.is_email_verified, u.avatar_key, u.role, u.user_status, u.status,
+	userColumns = `u.id, u.uid, u.name, u.phone, u.email, u.is_email_verified, u.avatar_key, u.role, u.identity_code, u.user_status, u.status,
 	u.rpt_flg, u.kwords, u.note, u.create_id, u.create_dt, u.modify_id, u.modify_dt`
 
 	userFrom = userTable + ` u`
@@ -47,7 +47,7 @@ func NewUserRepository(db database.Executor) user.IRepository {
 
 func scanUser(s database.RowScanner) (*models.UserModel, error) {
 	var m models.UserModel
-	if err := s.Scan(&m.Id, &m.UserId, &m.UserName, &m.Phone, &m.Email, &m.IsEmailVerified, &m.AvatarKey, &m.Role, &m.UserStatus, &m.Status,
+	if err := s.Scan(&m.Id, &m.UserId, &m.UserName, &m.Phone, &m.Email, &m.IsEmailVerified, &m.AvatarKey, &m.Role, &m.IdentityCode, &m.UserStatus, &m.Status,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -95,11 +95,11 @@ func (r *UserRepository) FindByUserName(ctx context.Context, userName string) (*
 
 func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, error) {
 	query := `
-		INSERT INTO ` + userTable + ` (uid, name, phone, email, is_email_verified, avatar_key, role, user_status, rpt_flg, kwords, note, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO ` + userTable + ` (uid, name, phone, email, is_email_verified, avatar_key, role, identity_code, user_status, rpt_flg, kwords, note, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.IsEmailVerified(), u.AvatarKey(), u.Role(), u.UserStatus(), u.RptFlg(), u.Kwords(), u.Note(), mtime.Now().Time, mtime.Now().Time)
+	result, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.IsEmailVerified(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.UserStatus(), u.RptFlg(), u.Kwords(), u.Note(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("user repo create: %w", err)
 	}
@@ -161,6 +161,12 @@ func (r *UserRepository) DeleteByUserId(ctx context.Context, userId int64) error
 	return nil
 }
 
+// Update patches a user row. Most columns use COALESCE so a nil from the
+// domain means "leave it alone", but is_email_verified is written
+// DIRECTLY: false is a real value there, not an absence, and COALESCE
+// would make it impossible to ever un-verify an address. Callers must
+// therefore load the row, change what they mean to change, and pass the
+// whole aggregate — which both of them do.
 func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 	// name is NOT NULL in ma_users, so an empty string from the
 	// domain means "do not change" — pass NULL into COALESCE so the
@@ -171,14 +177,6 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 		userName = u.UserName()
 	}
 
-	// role is NOT NULL in ma_users — an empty string from the domain means
-	// "do not change", so pass NULL into COALESCE to preserve the existing
-	// value. Mirrors the user_name handling above and ma_profiles.role.
-	var roleArg any
-	if u.Role() != "" {
-		roleArg = u.Role()
-	}
-
 	query := `
 		UPDATE ` + userTable + `
 		SET
@@ -187,12 +185,14 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 			phone = COALESCE(?, phone),
 			avatar_key = COALESCE(?, avatar_key),
 			role = COALESCE(?, role),
+			identity_code = COALESCE(?, identity_code),
+			is_email_verified = ?,
 			rpt_flg = COALESCE(?, rpt_flg),
 			kwords = COALESCE(?, kwords)
 		WHERE id = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.AvatarKey(), roleArg, u.RptFlg(), u.Kwords(), u.Id()); err != nil {
+	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.IsEmailVerified(), u.RptFlg(), u.Kwords(), u.Id()); err != nil {
 		return fmt.Errorf("user repo update: %w", err)
 	}
 	return nil
@@ -270,6 +270,7 @@ func ModelToDomain(m *models.UserModel) *user.User {
 	u.SetPhone(m.Phone)
 	u.SetAvatarKey(m.AvatarKey)
 	u.SetRole(m.Role)
+	u.SetIdentityCode(m.IdentityCode)
 	u.SetUserStatus(m.UserStatus)
 	u.SetStatus(m.Status)
 	u.SetRptFlg(m.RptFlg)

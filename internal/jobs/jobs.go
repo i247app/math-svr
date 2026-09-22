@@ -15,6 +15,7 @@ package jobs
 
 import (
 	"math-ai.com/math-ai/internal/adapter/email"
+	userCommand "math-ai.com/math-ai/internal/application/command/user"
 	"math-ai.com/math-ai/internal/infrastructure/job"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 )
@@ -38,6 +39,11 @@ type Deps struct {
 	// EmailProvider may be nil when the email adapter is disabled in
 	// .env. Jobs that depend on it must nil-guard and degrade.
 	EmailProvider *email.Adapter
+
+	// CleanupGuests retires guest accounts nobody came back for. Built in
+	// the container (it needs the UoW and the maintenance repository);
+	// the job nil-guards it.
+	CleanupGuests *userCommand.CleanupGuestsCommandHandler
 }
 
 // RegisterAll wires every concrete job into reg. Called once at boot,
@@ -46,6 +52,7 @@ type Deps struct {
 // a useful "menu" of what runs in production.
 func RegisterAll(reg *job.Registry, deps Deps) {
 	// Cron jobs (recurring, no payload).
+	reg.RegisterCron(NewGuestCleanupJob(deps.CleanupGuests))
 	// reg.RegisterCron(NewTestJob1())
 	// reg.RegisterCron(NewTestJob2())
 	// reg.RegisterCron(NewTestJob3())

@@ -7,9 +7,13 @@ import "errors"
 // the rule it describes, instead of inline at every call site.
 var (
 	ErrUidNotFoundFromSession   = errors.New("uid not found from session")
+	ErrSessionNotSecure         = errors.New("session is not secure; finish signing in first")
 	ErrProfileIDRequired        = errors.New("profile_id is required")
 	ErrProfileNotFound          = errors.New("profile not found")
 	ErrProfileNotOwned          = errors.New("profile does not belong to this user")
+	ErrGuestProfileNotOwned     = errors.New("a profile_id may only be stated by an authenticated caller")
+	ErrGuestAssessmentOnly      = errors.New("a guest may only be handed an ASSESSMENT round")
+	ErrGuestDailyLimit          = errors.New("this guest has reached the daily exam ceiling")
 	ErrExamTypeRequired         = errors.New("exam_type is required")
 	ErrExamTypeInvalid          = errors.New("exam_type must be one of ASSESSMENT, PRACTICE, GRADE")
 	ErrPracticeJourneyRequired  = errors.New("user_exam_id is required for a PRACTICE exam")

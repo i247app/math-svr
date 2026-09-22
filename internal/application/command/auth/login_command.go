@@ -13,6 +13,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type LoginCommand struct {
@@ -81,6 +82,17 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 		}
 		if u == nil {
+			return nil
+		}
+
+		// A guest is registered in ma_aliases under their device_uuid, so
+		// that string is a resolvable login name — and anyone who learns
+		// it could otherwise start a login against someone else's guest
+		// account. A guest has no login of their own until they register
+		// (which converts the row to USER), so treat them as no account
+		// at all here, with the same enumeration-safe nil the two lookups
+		// above return.
+		if enum.IdentityCodeType(utils.DerefString(u.IdentityCode())).IsGuest() {
 			return nil
 		}
 

@@ -59,6 +59,11 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		loginName = normalizePhone
 	}
 
+	// Whoever this session belonged to before the login — a guest, if the
+	// visitor tried the product first. Captured before sess.Init below
+	// overwrites it.
+	previousUID, _ := sess.UID()
+
 	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
 		LoginName:       loginName,
 		DeviceUUID:      metadata.GetDeviceUUID(ctx),
@@ -100,6 +105,12 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		}
 
 		sess.Init(sessionData)
+
+		// The sign-in just proved this account is theirs, which is the
+		// only thing that licenses writing to it. If they had been
+		// working as a guest, their child and every exam that child sat
+		// move across now.
+		s.userSvc.AdoptGuestInto(ctx, previousUID, userRes.User.UserID)
 	}
 
 	return &dto.LoginRes{
@@ -136,7 +147,7 @@ func (s *Service) LoginResume(ctx context.Context, sess *session.AppSession) (*d
 		Source:    "login",
 		IsSecure:  true,
 		UID:       userRes.User.UserID,
-		LoginName: userRes.User.Phone,
+		LoginName: utils.DerefString(userRes.User.Phone),
 	}
 
 	if userRes.User.Email != nil {

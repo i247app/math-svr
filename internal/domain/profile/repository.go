@@ -53,6 +53,12 @@ type IRepository interface {
 	SetSchoolId(ctx context.Context, profileId int64, schoolId *int64) error
 	MarkStatusByProfileId(ctx context.Context, profileId int64, profileStatus string) error
 	MarkDefaultByProfileId(ctx context.Context, userId int64, profileId int64) error
+	// ReassignOwner moves one profile to a different account and clears
+	// is_default on the way — the receiving account already has a default
+	// child, and two would break the "one default per user" assumption
+	// every dashboard read makes. Used when a guest turns out to be
+	// someone who already has an account.
+	ReassignOwner(ctx context.Context, profileId int64, newUserId int64) error
 	SoftDelete(ctx context.Context, profileId int64) error
 	ForceDelete(ctx context.Context, profileId int64) error
 	SoftDeleteByUserId(ctx context.Context, userId int64) error

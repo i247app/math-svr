@@ -8,6 +8,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // resolveActingProfile loads the profile named by profileID and confirms
@@ -33,7 +34,7 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 // requireTeacherRole gates classroom ownership to TEACHER profiles only
 // (§0 Q2). PARENT/STUDENT cannot create or own a classroom.
 func (s *Service) requireTeacherRole(ctx context.Context, p *profileDomain.Profile) error {
-	if p.Role() != string(enum.RoleTypeTeacher) {
+	if utils.DerefString(p.Role()) != string(enum.RoleTypeTeacher) {
 		return errs.NewError(ctx, status.CLASSROOM_INVALID_OWNER_ROLE, nil, ErrTeacherOwnershipOnly)
 	}
 	return nil

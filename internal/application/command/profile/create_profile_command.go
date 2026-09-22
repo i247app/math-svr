@@ -88,7 +88,7 @@ func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
 	p.SetName(cmd.Name)
 	p.SetPhone(cmd.Phone)
 	p.SetEmail(cmd.Email)
-	p.SetRole(cmd.Role)
+	p.SetRole(&cmd.Role)
 	p.SetSchoolId(cmd.SchoolID)
 	p.SetProgramId(cmd.ProgramID)
 	p.SetGradeId(cmd.GradeID)
@@ -102,15 +102,19 @@ func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
 		p.SetDob(*cmd.Dob)
 	}
 
-	// Derive profile_status from the role + identity fields the caller
-	// provided. The DB column defaults to INCOMPLETE, but we set it
-	// explicitly so the entity returned to the caller carries it too.
-	derived := DeriveProfileStatus(cmd.Role,
+	// Derive profile_status + identity_code together from the role and
+	// identity fields the caller provided. The DB column defaults to
+	// INCOMPLETE, but we set both explicitly so the entity returned to
+	// the caller carries them too.
+	profileStatus, identity := DeriveIdentity(cmd.Role,
 		derefOrEmpty(cmd.IDType),
 		derefOrEmpty(cmd.TeacherID),
 		derefOrEmpty(cmd.StudentID),
-	).String()
+	)
+	derived := profileStatus.String()
+	identityCode := identity.String()
 	p.SetProfileStatus(&derived)
+	p.SetIdentityCode(&identityCode)
 
 	return p
 }

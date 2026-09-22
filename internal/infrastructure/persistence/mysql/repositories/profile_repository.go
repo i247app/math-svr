@@ -19,7 +19,7 @@ import (
 const (
 	profileTable = "ma_profiles"
 
-	profileColumns = `p.id, p.profile_id, p.profile_code, p.uid, p.name, p.phone, p.email, p.role, p.avatar_key, p.dob,
+	profileColumns = `p.id, p.profile_id, p.profile_code, p.uid, p.name, p.phone, p.email, p.role, p.identity_code, p.avatar_key, p.dob,
 		p.school_id, p.program_id, p.grade_id, p.semester_id, p.is_default,
 		p.id_type, p.teacher_id, p.student_id,
 		p.rpt_flg, p.kwords, p.note, p.profile_status, p.status,
@@ -42,7 +42,7 @@ func NewProfileRepository(db database.Executor) profile.IRepository {
 
 func scanProfile(s database.RowScanner) (*models.ProfileModel, error) {
 	var m models.ProfileModel
-	if err := s.Scan(&m.Id, &m.ProfileId, &m.ProfileCode, &m.UserId, &m.Name, &m.Phone, &m.Email, &m.Role, &m.AvatarKey, &m.Dob,
+	if err := s.Scan(&m.Id, &m.ProfileId, &m.ProfileCode, &m.UserId, &m.Name, &m.Phone, &m.Email, &m.Role, &m.IdentityCode, &m.AvatarKey, &m.Dob,
 		&m.SchoolId, &m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault,
 		&m.IdType, &m.TeacherId, &m.StudentId,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.ProfileStatus, &m.Status,
@@ -302,13 +302,13 @@ func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId i
 func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*profile.Profile, error) {
 	query := `
 		INSERT INTO ` + profileTable + `
-			(profile_id, profile_code, uid, name, phone, email, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default,
+			(profile_id, profile_code, uid, name, phone, email, role, identity_code, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default,
 			 id_type, teacher_id, student_id, rpt_flg, kwords, note, profile_status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
-		p.ProfileId(), p.ProfileCode(), p.UserId(), p.Name(), p.Phone(), p.Email(), p.Role(), p.AvatarKey(), p.Dob(),
+		p.ProfileId(), p.ProfileCode(), p.UserId(), p.Name(), p.Phone(), p.Email(), p.Role(), p.IdentityCode(), p.AvatarKey(), p.Dob(),
 		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(),
 		p.IdType(), p.TeacherId(), p.StudentId(), p.RptFlg(), p.Kwords(), p.Note(), p.ProfileStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
@@ -329,6 +329,7 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 			phone          = COALESCE(?, phone),
 			email          = COALESCE(?, email),
 			role           = COALESCE(?, role),
+			identity_code  = COALESCE(?, identity_code),
 			is_default     = COALESCE(?, is_default),
 			dob            = COALESCE(?, dob),
 			school_id      = COALESCE(?, school_id),
@@ -356,18 +357,13 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 		nameArg = p.Name()
 	}
 
-	var roleArg any
-	if p.Role() != "" {
-		roleArg = p.Role()
-	}
-
 	var isDefaultArg any
 	if p.IsDefault() {
 		isDefaultArg = p.IsDefault()
 	}
 
 	if _, err := r.db.Exec(ctx, query,
-		nameArg, p.Phone(), p.Email(), roleArg, isDefaultArg, dobArg, p.SchoolId(), p.ProgramId(), p.GradeId(),
+		nameArg, p.Phone(), p.Email(), p.Role(), p.IdentityCode(), isDefaultArg, dobArg, p.SchoolId(), p.ProgramId(), p.GradeId(),
 		p.SemesterId(), p.IdType(), p.TeacherId(), p.StudentId(), p.ProfileStatus(),
 		p.RptFlg(), p.Kwords(), p.Note(), p.AvatarKey(), p.ProfileId()); err != nil {
 		return fmt.Errorf("profile repo update: %w", err)
@@ -452,6 +448,35 @@ func (r *ProfileRepository) ForceDelete(ctx context.Context, profileId int64) er
 	return nil
 }
 
+// ReassignOwner re-points a profile at another account. All three columns
+// move in one statement because they are one fact — "this child now
+// belongs to a registered account":
+//
+//   - uid: the new owner;
+//   - is_default: cleared, since the receiving account already has a
+//     default child and two would break the one-default assumption every
+//     dashboard read makes;
+//   - identity_code: USER, because the child is no longer a guest's. Left
+//     at GUEST the profile would keep hitting the guest ceilings under an
+//     account that has registered.
+//
+// One statement rather than three calls: every intermediate state here is
+// one a concurrent read could observe.
+func (r *ProfileRepository) ReassignOwner(ctx context.Context, profileId int64, newUserId int64) error {
+	query := `
+		UPDATE ` + profileTable + `
+		SET uid           = ?,
+			is_default    = FALSE,
+			identity_code = ?,
+			modify_dt     = ?
+		WHERE profile_id = ?
+	`
+	if _, err := r.db.Exec(ctx, query, newUserId, enum.IdentityCodeUser, mtime.Now().Time, profileId); err != nil {
+		return fmt.Errorf("profile repo reassign owner: %w", err)
+	}
+	return nil
+}
+
 func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId int64) error {
 	query := `
 		UPDATE ` + profileTable + `
@@ -487,6 +512,7 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p.SetPhone(m.Phone)
 	p.SetEmail(m.Email)
 	p.SetRole(m.Role)
+	p.SetIdentityCode(m.IdentityCode)
 	p.SetAvatarKey(m.AvatarKey)
 	if m.Dob != nil {
 		p.SetDob(mtime.MathTime{Time: *m.Dob})

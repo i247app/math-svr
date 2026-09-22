@@ -59,8 +59,11 @@ func (h *UpdateProfileCommandHandler) Handle(ctx context.Context, cmd UpdateProf
 		// present in the patch keep their existing value. We compute it
 		// here (vs. in BuildUpdateProfile) because we need the existing
 		// row to merge the patch over.
-		derived := deriveUpdatedProfileStatus(existing, cmd).String()
+		profileStatus, identity := deriveUpdatedIdentity(existing, cmd)
+		derived := profileStatus.String()
+		identityCode := identity.String()
 		patch.SetProfileStatus(&derived)
+		patch.SetIdentityCode(&identityCode)
 
 		if err := repos.Profile.Update(ctx, patch); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
@@ -99,7 +102,7 @@ func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 		patch.SetEmail(cmd.Email)
 	}
 	if cmd.Role != nil {
-		patch.SetRole(*cmd.Role)
+		patch.SetRole(cmd.Role)
 	}
 	if cmd.IsDefault != nil {
 		patch.SetIsDefault(*cmd.IsDefault)
@@ -137,13 +140,14 @@ func BuildUpdateProfile(cmd UpdateProfileCommand) *profile.Profile {
 	return patch
 }
 
-// deriveUpdatedProfileStatus folds the patch over the existing row, then
-// applies DeriveProfileStatus. A nil pointer in the patch means "keep
-// the existing column"; a non-nil pointer (even pointing to "") becomes
-// the new value, which can downgrade an OFFICIAL profile to INCOMPLETE
-// (e.g. role flipped from STUDENT to TEACHER without a teacher_id yet).
-func deriveUpdatedProfileStatus(existing *profile.Profile, cmd UpdateProfileCommand) enum.ProfileStatusType {
-	role := existing.Role()
+// deriveUpdatedIdentity folds the patch over the existing row, then
+// applies DeriveIdentity. A nil pointer in the patch means "keep the
+// existing column"; a non-nil pointer (even pointing to "") becomes the
+// new value, which can downgrade an OFFICIAL/VERIFIED profile to
+// INCOMPLETE/USER (e.g. role flipped from STUDENT to TEACHER without a
+// teacher_id yet).
+func deriveUpdatedIdentity(existing *profile.Profile, cmd UpdateProfileCommand) (enum.ProfileStatusType, enum.IdentityCodeType) {
+	role := derefOrEmpty(existing.Role())
 	if cmd.Role != nil && *cmd.Role != "" {
 		role = *cmd.Role
 	}
@@ -163,5 +167,5 @@ func deriveUpdatedProfileStatus(existing *profile.Profile, cmd UpdateProfileComm
 		studentId = *cmd.StudentID
 	}
 
-	return DeriveProfileStatus(role, idType, teacherId, studentId)
+	return DeriveIdentity(role, idType, teacherId, studentId)
 }

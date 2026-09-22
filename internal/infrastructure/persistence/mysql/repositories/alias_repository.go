@@ -171,6 +171,24 @@ func (r *AliasRepository) SoftDeleteByUserId(ctx context.Context, userId int64) 
 	return nil
 }
 
+// SoftDeleteByAliasId retires a single login key. Both status and
+// deleted_dt are written because the active filter keys on those two, not
+// on alias_status.
+func (r *AliasRepository) SoftDeleteByAliasId(ctx context.Context, aliasId int64) error {
+	query := `
+		UPDATE ` + aliasTable + `
+		SET alias_status = ?,
+			status = ?,
+			deleted_dt = ?
+		WHERE alias_id = ?
+	`
+
+	if _, err := r.db.Exec(ctx, query, enum.UserAliasStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, aliasId); err != nil {
+		return fmt.Errorf("alias repo soft delete by alias id: %w", err)
+	}
+	return nil
+}
+
 func ModelToDomainAlias(m *models.AliasModel) *user.Alias {
 	a := user.NewAlias()
 	a.SetId(m.Id)

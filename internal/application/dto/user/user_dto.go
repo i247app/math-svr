@@ -14,8 +14,12 @@ type UserResponse struct {
 	Name            string  `json:"name"`
 	Email           *string `json:"email,omitempty"`
 	IsEmailVerified bool    `json:"is_email_verified"`
-	Phone           string  `json:"phone,omitempty"`
-	Role            string  `json:"role"`
+	Phone           *string `json:"phone,omitempty"`
+	// Role and IdentityCode are both null for a guest — someone who has
+	// reached the product without registering. A registered user always
+	// carries a role, so their payload is unchanged.
+	Role         *string `json:"role"`
+	IdentityCode *string `json:"identity_code"`
 	// AvatarKey is the raw S3 object key persisted on the user row.
 	// AvatarUrl is a short-lived presigned URL the module layer fills
 	// in on the way out (see populateImageUrl in module/user). Clients
@@ -138,9 +142,12 @@ func DomainToResponse(u *user.User) *UserResponse {
 		return nil
 	}
 
-	normalizedPhone, _ := utils.NormalizePhone(u.Phone())
-	if normalizedPhone == "" {
-		normalizedPhone = u.Phone()
+	phone := u.Phone()
+	if phone != nil {
+		normalized, _ := utils.NormalizePhone(*phone)
+		if normalized != "" {
+			phone = &normalized
+		}
 	}
 
 	return &UserResponse{
@@ -149,8 +156,9 @@ func DomainToResponse(u *user.User) *UserResponse {
 		Name:            u.UserName(),
 		Email:           u.Email(),
 		IsEmailVerified: u.IsEmailVerified(),
-		Phone:           normalizedPhone,
+		Phone:           phone,
 		Role:            u.Role(),
+		IdentityCode:    u.IdentityCode(),
 		AvatarKey:       u.AvatarKey(),
 		CreateDt:        u.CreateDt().String(),
 		ModifyDt:        u.ModifyDt().String(),
