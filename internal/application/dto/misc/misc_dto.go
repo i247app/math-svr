@@ -13,11 +13,20 @@ type LogTimeFormatRes struct {
 	Format20FSP         string `json:"format_20_fsp"`
 }
 
+// ClearDataReq is the (optional) body of POST /misc/clear-data. When
+// whitelist_id is empty the endpoint wipes everything (the original behaviour);
+// when it carries uids, those users and all their data are preserved.
+type ClearDataReq struct {
+	WhitelistId []int64 `json:"whitelist_id"`
+}
+
 // ClearDataRes reports what was wiped by POST /misc/clear-data and
 // POST /misc/clear-data-tables.
 type ClearDataRes struct {
 	TablesCleared []string `json:"tables_cleared"`
 	SeqsReset     []string `json:"seqs_reset"`
+	// KeptUids echoes the whitelisted users preserved (whitelist path only).
+	KeptUids []int64 `json:"kept_uids,omitempty"`
 }
 
 // ClearDataTablesReq selects which tables POST /misc/clear-data-tables wipes.

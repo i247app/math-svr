@@ -18,6 +18,9 @@ import (
 // module never touches raw SQL.
 type ClearDataRepository interface {
 	ClearData(ctx context.Context) (tablesCleared []string, seqsReset []string, err error)
+	// ClearDataKeepingUsers wipes everything except rows owned by the
+	// whitelisted users (by uid). Sequences are not reset in this mode.
+	ClearDataKeepingUsers(ctx context.Context, keepUids []int64) (tablesProcessed []string, err error)
 	ClearDataTables(ctx context.Context, tables []string) (tablesCleared []string, seqsReset []string, err error)
 	// ClearableTables is the allow-list of table names the table-scoped clear
 	// may wipe; the service validates a request against it.
@@ -52,11 +55,35 @@ func (s *Service) LogsTimeFormat(ctx context.Context, req *dto.LogTimeFormatReq)
 	return res, nil
 }
 
-// ClearData wipes every user-generated table and resets the matching id
-// counters, keeping only the seeded reference/curriculum data. This is the API
-// equivalent of `make clear-data-local` / `make clear-data-ec2`.
-func (s *Service) ClearData(ctx context.Context) (*dto.ClearDataRes, error) {
+// ClearData wipes every user-generated table, keeping only the seeded
+// reference/curriculum data. This is the API equivalent of
+// `make clear-data-local` / `make clear-data-ec2`.
+//
+// When req.WhitelistId carries uids, those users and everything they own are
+// preserved (deletes instead of truncates; sequences are left untouched to
+// avoid colliding with the surviving ids). An empty/omitted whitelist keeps the
+// original full-wipe behaviour and resets the sequences.
+func (s *Service) ClearData(ctx context.Context, req *dto.ClearDataReq) (*dto.ClearDataRes, error) {
 	log := logger.From(ctx)
+
+	if req != nil && len(req.WhitelistId) > 0 {
+		keep := dedupeInt64(req.WhitelistId)
+		log.Warn("misc.clear_data.start", "keep_uids", len(keep))
+
+		tables, err := s.maintenanceRepo.ClearDataKeepingUsers(ctx, keep)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.INTERNAL_SERVER_ERROR, nil, err)
+		}
+
+		log.Warn("misc.clear_data.done", "tables_processed", len(tables), "kept_uids", len(keep))
+
+		return &dto.ClearDataRes{
+			TablesCleared: tables,
+			SeqsReset:     []string{},
+			KeptUids:      keep,
+		}, nil
+	}
+
 	log.Warn("misc.clear_data.start")
 
 	tables, seqs, err := s.maintenanceRepo.ClearData(ctx)
@@ -70,6 +97,20 @@ func (s *Service) ClearData(ctx context.Context) (*dto.ClearDataRes, error) {
 		TablesCleared: tables,
 		SeqsReset:     seqs,
 	}, nil
+}
+
+// dedupeInt64 returns xs with duplicates removed, preserving first-seen order.
+func dedupeInt64(xs []int64) []int64 {
+	seen := make(map[int64]struct{}, len(xs))
+	out := make([]int64, 0, len(xs))
+	for _, x := range xs {
+		if _, ok := seen[x]; ok {
+			continue
+		}
+		seen[x] = struct{}{}
+		out = append(out, x)
+	}
+	return out
 }
 
 // ClearDataTables wipes only the tables named in the request, rejecting any

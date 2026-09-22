@@ -95,6 +95,75 @@ var clearDataSeqs = []string{
 	seq.NameUserExamDetail,
 }
 
+// keepCol names the column a table-scoped keep filters on when preserving
+// whitelisted users in ClearDataKeepingUsers.
+type keepCol struct {
+	table string
+	col   string
+}
+
+// The three classifications below decide, for the whitelist path, HOW each
+// wiped table relates to a user. Together with userExamDetailTable (kept by
+// parent user_exam_id) and aiExamTable (kept by referenced ai_exam_id) they
+// must cover every entry in clearDataTargets — enforced by init() so adding a
+// table to clearDataTargets forces a matching classification here.
+
+// clearKeepByUid — a row belongs to the user in its uid / sender_uid column;
+// rows whose uid is whitelisted survive.
+var clearKeepByUid = []keepCol{
+	{userTable, "uid"},
+	{aliasTable, "uid"},
+	{deviceTable, "uid"},
+	{loginLogTable, "uid"},
+	{otpTable, "uid"},
+	{notificationTable, "uid"},
+	{profileTable, "uid"},
+	{userAiExamTable, "uid"},
+	{userExamTable, "uid"},
+	{chatParticipantTable, "uid"},
+	{chatMessageTable, "sender_uid"},
+}
+
+// clearKeepByProfile — a row is owned via profile_id; kept when that profile
+// belongs to a whitelisted user.
+var clearKeepByProfile = []keepCol{
+	{classroomMemberTable, "profile_id"},
+	{exerciseSubmissionTable, "profile_id"},
+}
+
+// clearFullWipe — no per-user ownership column; always emptied even in the
+// whitelist path (shared/collaborative parents and the ai-exam cache is
+// handled separately by reference).
+var clearFullWipe = []string{
+	classroomTable,
+	classroomProgramTable,
+	exerciseTable,
+	chatConversationTable,
+	bannerTable,
+}
+
+func init() {
+	covered := map[string]bool{
+		// Handled specially in ClearDataKeepingUsers (parent-id linkage).
+		userExamDetailTable: true,
+		aiExamTable:         true,
+	}
+	for _, t := range clearKeepByUid {
+		covered[t.table] = true
+	}
+	for _, t := range clearKeepByProfile {
+		covered[t.table] = true
+	}
+	for _, t := range clearFullWipe {
+		covered[t] = true
+	}
+	for _, t := range clearDataTargets {
+		if !covered[t.table] {
+			panic("maintenance: clear-data keep-users classification missing table " + t.table)
+		}
+	}
+}
+
 // MaintenanceRepository owns destructive, cross-aggregate maintenance SQL that
 // does not belong to any single aggregate repository (e.g. wiping all
 // user-generated data). Keeping the raw SQL here honours the rule that no SQL
@@ -244,4 +313,138 @@ func (r *MaintenanceRepository) ClearDataTables(ctx context.Context, tables []st
 	}
 
 	return cleared, seqsReset, nil
+}
+
+// ClearDataKeepingUsers wipes every user-generated table EXCEPT the rows owned
+// by the whitelisted users (identified by ma_users.uid). A whitelisted user
+// keeps their account (users/aliases/devices/otps/login_logs), profiles, and
+// everything hanging off them (exams, journeys, answer details, submissions,
+// classroom memberships, chat participation and messages, notifications).
+//
+// Deletes use DELETE, not TRUNCATE, and sequences are deliberately NOT reset:
+// surviving rows keep ids above 0, so a reset could mint a colliding id.
+//
+// Caveat: the shared parents in clearFullWipe (classrooms, chat conversations,
+// exercises, banners) are emptied whole, so a kept user's classroom-membership
+// / chat-participation rows may reference a now-deleted parent. There are no
+// FKs, so this is inert data rather than an error.
+//
+// Ownership id-sets are read up front (before any delete), so the
+// complement-deletes below are order-independent.
+func (r *MaintenanceRepository) ClearDataKeepingUsers(ctx context.Context, keepUids []int64) ([]string, error) {
+	if len(keepUids) == 0 {
+		return nil, fmt.Errorf("maintenance repo clear-data keep: keepUids is required")
+	}
+
+	uidPh, uidArgs := int64InClause(keepUids)
+
+	keepProfileIds, err := r.selectInt64s(ctx,
+		`SELECT profile_id FROM `+profileTable+` WHERE uid IN (`+uidPh+`)`, uidArgs...)
+	if err != nil {
+		return nil, err
+	}
+	keepUserExamIds, err := r.selectInt64s(ctx,
+		`SELECT user_exam_id FROM `+userExamTable+` WHERE uid IN (`+uidPh+`)`, uidArgs...)
+	if err != nil {
+		return nil, err
+	}
+	keepAiExamIds, err := r.selectInt64s(ctx,
+		`SELECT DISTINCT ai_exam_id FROM `+userAiExamTable+` WHERE uid IN (`+uidPh+`)`, uidArgs...)
+	if err != nil {
+		return nil, err
+	}
+
+	processed := make([]string, 0, len(clearDataTargets))
+
+	// Keep-by-uid: delete every row whose uid is not whitelisted.
+	for _, t := range clearKeepByUid {
+		// Table + column are internal constants, never user input; the ids are
+		// bound as parameters.
+		q := `DELETE FROM ` + t.table + ` WHERE ` + t.col + ` NOT IN (` + uidPh + `)`
+		if _, err := r.db.Exec(ctx, q, uidArgs...); err != nil {
+			return nil, fmt.Errorf("maintenance repo clear-data keep: delete %s: %w", t.table, err)
+		}
+		processed = append(processed, t.table)
+	}
+
+	// Keep-by-profile: keep rows whose profile belongs to a whitelisted user.
+	for _, t := range clearKeepByProfile {
+		if err := r.deleteExcept(ctx, t.table, t.col, keepProfileIds); err != nil {
+			return nil, err
+		}
+		processed = append(processed, t.table)
+	}
+
+	// Answer details hang off the kept journey rows.
+	if err := r.deleteExcept(ctx, userExamDetailTable, "user_exam_id", keepUserExamIds); err != nil {
+		return nil, err
+	}
+	processed = append(processed, userExamDetailTable)
+
+	// ai-exam cache: keep only the exams a kept attempt actually references, so
+	// the kept users' exam content survives; drop the rest of the cache.
+	if err := r.deleteExcept(ctx, aiExamTable, "ai_exam_id", keepAiExamIds); err != nil {
+		return nil, err
+	}
+	processed = append(processed, aiExamTable)
+
+	// Shared parents with no per-user owner: emptied whole.
+	for _, table := range clearFullWipe {
+		if _, err := r.db.Exec(ctx, "DELETE FROM "+table); err != nil {
+			return nil, fmt.Errorf("maintenance repo clear-data keep: wipe %s: %w", table, err)
+		}
+		processed = append(processed, table)
+	}
+
+	return processed, nil
+}
+
+// deleteExcept deletes every row of table whose col is not in keepIds. An empty
+// keepIds means nothing is owned, so the table is emptied whole.
+func (r *MaintenanceRepository) deleteExcept(ctx context.Context, table, col string, keepIds []int64) error {
+	if len(keepIds) == 0 {
+		if _, err := r.db.Exec(ctx, "DELETE FROM "+table); err != nil {
+			return fmt.Errorf("maintenance repo clear-data keep: wipe %s: %w", table, err)
+		}
+		return nil
+	}
+	ph, args := int64InClause(keepIds)
+	q := `DELETE FROM ` + table + ` WHERE ` + col + ` NOT IN (` + ph + `)`
+	if _, err := r.db.Exec(ctx, q, args...); err != nil {
+		return fmt.Errorf("maintenance repo clear-data keep: delete %s: %w", table, err)
+	}
+	return nil
+}
+
+// selectInt64s runs a single-column int64 query and collects the values.
+func (r *MaintenanceRepository) selectInt64s(ctx context.Context, query string, args ...any) ([]int64, error) {
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("maintenance repo clear-data keep: select ids: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("maintenance repo clear-data keep: scan id: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("maintenance repo clear-data keep: iterate ids: %w", err)
+	}
+	return ids, nil
+}
+
+// int64InClause renders "?, ?, …" and the matching []any for an IN clause.
+func int64InClause(ids []int64) (string, []any) {
+	ph := make([]string, len(ids))
+	args := make([]any, len(ids))
+	for i, id := range ids {
+		ph[i] = "?"
+		args[i] = id
+	}
+	return strings.Join(ph, ", "), args
 }

@@ -2,6 +2,8 @@ package misc
 
 import (
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 
 	dto "math-ai.com/math-ai/internal/application/dto/misc"
@@ -35,7 +37,15 @@ func (h *Handler) LogsTimeFormat(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ClearData(w http.ResponseWriter, r *http.Request) {
-	res, err := h.svc.ClearData(r.Context())
+	// The body is optional: an empty body means a full wipe (the original
+	// behaviour), a body with whitelist_id preserves those users.
+	var req dto.ClearDataReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.svc.ClearData(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
