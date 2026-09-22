@@ -21,6 +21,8 @@ type UserAiExamModel struct {
 	ResScorePercentage *int
 	StartedDt          *time.Time
 	SubmittedDt        *time.Time
+	RptFlg             *string
+	Kwords             *string
 	Note               *string
 	UserAiExamStatus   *string
 	Status             string

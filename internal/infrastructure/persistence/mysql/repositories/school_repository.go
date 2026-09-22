@@ -20,7 +20,7 @@ const (
 	schoolTable = "ma_schools"
 
 	schoolColumns = `s.id, s.school_id, s.name, s.description, s.image_key,
-		s.district, s.province, s.note,
+		s.district, s.province, s.rpt_flg, s.kwords, s.note,
 		s.school_status, s.status,
 		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
 
@@ -42,7 +42,7 @@ func NewSchoolRepository(db database.Executor) school.IRepository {
 func scanSchool(s database.RowScanner) (*models.SchoolModel, error) {
 	var m models.SchoolModel
 	if err := s.Scan(&m.Id, &m.SchoolId, &m.Name, &m.Description, &m.ImageKey,
-		&m.District, &m.Province, &m.Note,
+		&m.District, &m.Province, &m.RptFlg, &m.Kwords, &m.Note,
 		&m.SchoolStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -222,12 +222,12 @@ func (r *SchoolRepository) ListSchoolsByIds(ctx context.Context, ids []int64) ([
 func (r *SchoolRepository) Create(ctx context.Context, s *school.School) (*school.School, error) {
 	query := `
 		INSERT INTO ` + schoolTable + `
-			(school_id, name, description, image_key, district, province, note, school_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(school_id, name, description, image_key, district, province, rpt_flg, kwords, note, school_status, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		s.SchoolId(), s.Name(), s.Description(), s.ImageKey(),
-		s.District(), s.Province(), s.Note(), s.SchoolStatus(), s.CreateId(), mtime.Now().Time, mtime.Now().Time)
+		s.District(), s.Province(), s.RptFlg(), s.Kwords(), s.Note(), s.SchoolStatus(), s.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("school repo create: %w", err)
 	}
@@ -255,6 +255,8 @@ func (r *SchoolRepository) Update(ctx context.Context, s *school.School) error {
 			image_key   = COALESCE(?, image_key),
 			district    = COALESCE(?, district),
 			province    = COALESCE(?, province),
+			rpt_flg     = COALESCE(?, rpt_flg),
+			kwords      = COALESCE(?, kwords),
 			note        = COALESCE(?, note),
 			modify_id   = COALESCE(?, modify_id),
 			modify_dt   = ?
@@ -262,7 +264,7 @@ func (r *SchoolRepository) Update(ctx context.Context, s *school.School) error {
 	`
 	if _, err := r.db.Exec(ctx, query,
 		nameArg, s.Description(), s.ImageKey(),
-		s.District(), s.Province(), s.Note(), s.ModifyId(),
+		s.District(), s.Province(), s.RptFlg(), s.Kwords(), s.Note(), s.ModifyId(),
 		mtime.Now().Time, s.SchoolId()); err != nil {
 		return fmt.Errorf("school repo update: %w", err)
 	}
@@ -306,6 +308,8 @@ func ModelToDomainSchool(m *models.SchoolModel) *school.School {
 	s.SetImageKey(m.ImageKey)
 	s.SetDistrict(m.District)
 	s.SetProvince(m.Province)
+	s.SetRptFlg(m.RptFlg)
+	s.SetKwords(m.Kwords)
 	s.SetNote(m.Note)
 	s.SetSchoolStatus(m.SchoolStatus)
 	s.SetStatus(m.Status)

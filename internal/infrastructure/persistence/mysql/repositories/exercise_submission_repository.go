@@ -24,7 +24,7 @@ const (
 		s.answers, s.review,
 		s.total_questions, s.correct_number, s.score_percentage,
 		s.submitted_dt, s.graded_dt,
-		s.note, s.submission_status, s.status,
+		s.rpt_flg, s.kwords, s.note, s.submission_status, s.status,
 		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
 
 	exerciseSubmissionActiveWhere = `s.status IN (?) AND s.deleted_dt IS NULL`
@@ -49,7 +49,7 @@ func scanExerciseSubmission(s database.RowScanner) (*models.ExerciseSubmissionMo
 		&m.Answers, &m.Review,
 		&m.TotalQuestions, &m.CorrectNumber, &m.ScorePercentage,
 		&m.SubmittedDt, &m.GradedDt,
-		&m.Note, &m.SubmissionStatus, &m.Status,
+		&m.RptFlg, &m.Kwords, &m.Note, &m.SubmissionStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -361,15 +361,15 @@ func (r *ExerciseSubmissionRepository) Create(ctx context.Context, sub *domain.S
 			 answers, review,
 			 total_questions, correct_number, score_percentage,
 			 submitted_dt, graded_dt,
-			 note, submission_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 rpt_flg, kwords, note, submission_status, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		sub.ClassroomExerciseSubmissionId(), sub.ClassroomExerciseId(), sub.ClassroomId(), sub.ProfileId(),
 		sub.Answers(), sub.Review(),
 		sub.TotalQuestions(), sub.CorrectNumber(), sub.ScorePercentage(),
 		submittedArg, gradedArg,
-		sub.Note(), sub.SubmissionStatus(), sub.CreateId(),
+		sub.RptFlg(), sub.Kwords(), sub.Note(), sub.SubmissionStatus(), sub.CreateId(),
 		mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("classroom exercise submission repo create: %w", err)
@@ -449,6 +449,8 @@ func modelToDomainClassroomExerciseSubmission(m *models.ExerciseSubmissionModel)
 	if m.GradedDt != nil {
 		s.SetGradedDt(mtime.MathTime{Time: *m.GradedDt})
 	}
+	s.SetRptFlg(m.RptFlg)
+	s.SetKwords(m.Kwords)
 	s.SetNote(m.Note)
 	s.SetSubmissionStatus(m.SubmissionStatus)
 	s.SetStatus(m.Status)

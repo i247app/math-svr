@@ -11,6 +11,8 @@ type Semester struct {
 	description    string
 	imageKey       *string
 	displayOrder   int8
+	rptFlg         *string
+	kwords         *string
 	note           *string
 	semesterStatus *string
 	status         string
@@ -78,6 +80,24 @@ func (s *Semester) Note() *string {
 
 func (s *Semester) SetNote(note *string) {
 	s.note = note
+}
+
+// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
+func (s *Semester) RptFlg() *string {
+	return s.rptFlg
+}
+
+func (s *Semester) SetRptFlg(rptFlg *string) {
+	s.rptFlg = rptFlg
+}
+
+// Kwords holds search keywords (kwords) for a future text-search index.
+func (s *Semester) Kwords() *string {
+	return s.kwords
+}
+
+func (s *Semester) SetKwords(kwords *string) {
+	s.kwords = kwords
 }
 
 func (s *Semester) SemesterStatus() *string {

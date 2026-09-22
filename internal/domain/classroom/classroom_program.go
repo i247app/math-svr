@@ -19,6 +19,8 @@ type ClassroomProgram struct {
 	classroomProgramId int64
 	classroomId        int64
 	programId          int64
+	rptFlg             *string
+	kwords             *string
 	note               *string
 	status             string
 	createId           *int64
@@ -41,6 +43,10 @@ func (cp *ClassroomProgram) ProgramId() int64              { return cp.programId
 func (cp *ClassroomProgram) SetProgramId(v int64)          { cp.programId = v }
 func (cp *ClassroomProgram) Note() *string                 { return cp.note }
 func (cp *ClassroomProgram) SetNote(v *string)             { cp.note = v }
+func (cp *ClassroomProgram) RptFlg() *string               { return cp.rptFlg }
+func (cp *ClassroomProgram) SetRptFlg(v *string)           { cp.rptFlg = v }
+func (cp *ClassroomProgram) Kwords() *string               { return cp.kwords }
+func (cp *ClassroomProgram) SetKwords(v *string)           { cp.kwords = v }
 func (cp *ClassroomProgram) Status() string                { return cp.status }
 func (cp *ClassroomProgram) SetStatus(v string)            { cp.status = v }
 func (cp *ClassroomProgram) CreateId() *int64              { return cp.createId }

@@ -22,6 +22,8 @@ type UserExamDetailModel struct {
 	SelectedLabel      string
 	SelectedContent    *string
 	IsCorrect          bool
+	RptFlg             *string
+	Kwords             *string
 	Note               *string
 	DetailStatus       *string
 	Status             string

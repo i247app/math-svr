@@ -11,6 +11,8 @@ type SemesterModel struct {
 	Description    string
 	ImageKey       *string
 	DisplayOrder   int8
+	RptFlg         *string
+	Kwords         *string
 	Note           *string
 	SemesterStatus *string
 	Status         string

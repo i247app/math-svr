@@ -19,6 +19,8 @@ type UserExamModel struct {
 	CurrentLevel       *int
 	LastSubmittedDt    *time.Time
 	EndedDt            *time.Time
+	RptFlg             *string
+	Kwords             *string
 	Note               *string
 	UserExamStatus     *string
 	Status             string

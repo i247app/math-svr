@@ -24,6 +24,8 @@ type Otp struct {
 	otpExpireDt   mtime.MathTime
 	otpVerifiedDt mtime.MathTime
 	attemptCount  int
+	rptFlg        *string
+	kwords        *string
 	note          *string
 	otpStatus     *string
 	status        string
@@ -61,6 +63,10 @@ func (o *Otp) AttemptCount() int                 { return o.attemptCount }
 func (o *Otp) SetAttemptCount(v int)             { o.attemptCount = v }
 func (o *Otp) Note() *string                     { return o.note }
 func (o *Otp) SetNote(v *string)                 { o.note = v }
+func (o *Otp) RptFlg() *string                   { return o.rptFlg }
+func (o *Otp) SetRptFlg(v *string)               { o.rptFlg = v }
+func (o *Otp) Kwords() *string                   { return o.kwords }
+func (o *Otp) SetKwords(v *string)               { o.kwords = v }
 func (o *Otp) OtpStatus() *string                { return o.otpStatus }
 func (o *Otp) SetOtpStatus(v *string)            { o.otpStatus = v }
 func (o *Otp) Status() string                    { return o.status }

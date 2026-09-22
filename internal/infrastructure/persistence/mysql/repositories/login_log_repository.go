@@ -18,7 +18,7 @@ const (
 	loginLogTable = "ma_login_logs"
 
 	loginLogColumns = `l.id, l.login_log_id, l.uid, l.ip_address, l.device_uuid,
-		l.token, l.note, l.login_log_status, l.status,
+		l.token, l.rpt_flg, l.kwords, l.note, l.login_log_status, l.status,
 		l.create_id, l.create_dt, l.modify_id, l.modify_dt`
 
 	loginLogActiveWhere = `l.status IN (?) AND l.deleted_dt IS NULL`
@@ -39,7 +39,7 @@ func NewLoginLogRepository(db database.Executor) loginlog.IRepository {
 func scanLoginLog(s database.RowScanner) (*models.LoginLogModel, error) {
 	var m models.LoginLogModel
 	if err := s.Scan(&m.Id, &m.LoginLogId, &m.UserId, &m.IpAddress, &m.DeviceUUID,
-		&m.Token, &m.Note, &m.LoginLogStatus, &m.Status,
+		&m.Token, &m.RptFlg, &m.Kwords, &m.Note, &m.LoginLogStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -121,13 +121,13 @@ func (r *LoginLogRepository) ListByUserId(ctx context.Context, userId int64) ([]
 func (r *LoginLogRepository) Create(ctx context.Context, l *loginlog.LoginLog) (*loginlog.LoginLog, error) {
 	query := `
 		INSERT INTO ` + loginLogTable + `
-			(login_log_id, uid, ip_address, device_uuid, token, note, login_log_status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(login_log_id, uid, ip_address, device_uuid, token, rpt_flg, kwords, note, login_log_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
 		l.LoginLogId(), l.UserId(), l.IpAddress(), l.DeviceUUID(),
-		l.Token(), l.Note(), l.LoginLogStatus(), mtime.Now().Time, mtime.Now().Time)
+		l.Token(), l.RptFlg(), l.Kwords(), l.Note(), l.LoginLogStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("login_log repo create: %w", err)
 	}
@@ -193,6 +193,8 @@ func ModelToDomainLoginLog(m *models.LoginLogModel) *loginlog.LoginLog {
 	l.SetIpAddress(m.IpAddress)
 	l.SetDeviceUUID(m.DeviceUUID)
 	l.SetToken(m.Token)
+	l.SetRptFlg(m.RptFlg)
+	l.SetKwords(m.Kwords)
 	l.SetNote(m.Note)
 	l.SetLoginLogStatus(m.LoginLogStatus)
 	l.SetStatus(m.Status)

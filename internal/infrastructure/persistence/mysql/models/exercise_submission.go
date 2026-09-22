@@ -17,6 +17,8 @@ type ExerciseSubmissionModel struct {
 	ScorePercentage               *int64
 	SubmittedDt                   *time.Time
 	GradedDt                      *time.Time
+	RptFlg                        *string
+	Kwords                        *string
 	Note                          *string
 	SubmissionStatus              *string
 	Status                        string

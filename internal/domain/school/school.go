@@ -16,6 +16,8 @@ type School struct {
 	imageKey     *string
 	district     *string
 	province     *string
+	rptFlg       *string
+	kwords       *string
 	note         *string
 	schoolStatus *string
 	status       string
@@ -45,6 +47,10 @@ func (s *School) Province() *string         { return s.province }
 func (s *School) SetProvince(p *string)     { s.province = p }
 func (s *School) Note() *string             { return s.note }
 func (s *School) SetNote(n *string)         { s.note = n }
+func (s *School) RptFlg() *string           { return s.rptFlg }
+func (s *School) SetRptFlg(v *string)       { s.rptFlg = v }
+func (s *School) Kwords() *string           { return s.kwords }
+func (s *School) SetKwords(v *string)       { s.kwords = v }
 func (s *School) SchoolStatus() *string     { return s.schoolStatus }
 func (s *School) SetSchoolStatus(v *string) { s.schoolStatus = v }
 func (s *School) Status() string            { return s.status }

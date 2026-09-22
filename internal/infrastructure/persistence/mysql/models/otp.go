@@ -17,6 +17,8 @@ type OtpModel struct {
 	OtpExpireDt   *time.Time
 	OtpVerifiedDt *time.Time
 	AttemptCount  int
+	RptFlg        *string
+	Kwords        *string
 	Note          *string
 	OtpStatus     *string
 	Status        string

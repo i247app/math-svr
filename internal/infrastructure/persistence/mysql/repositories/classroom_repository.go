@@ -23,7 +23,7 @@ const (
 		c.school_id, c.grade_id,
 		c.classroom_code, c.classroom_code_expires_dt,
 		c.max_members, c.member_count, c.student_count, c.teacher_count,
-		c.cover_key, c.note,
+		c.cover_key, c.rpt_flg, c.kwords, c.note,
 		c.classroom_status, c.status,
 		c.create_id, c.create_dt, c.modify_id, c.modify_dt`
 
@@ -51,7 +51,7 @@ func scanClassroom(s database.RowScanner) (*models.ClassroomModel, error) {
 		&m.SchoolId, &m.GradeId,
 		&m.ClassroomCode, &m.ClassroomCodeExpiresDt,
 		&m.MaxMembers, &m.MemberCount, &m.StudentCount, &m.TeacherCount,
-		&m.CoverKey, &m.Note,
+		&m.CoverKey, &m.RptFlg, &m.Kwords, &m.Note,
 		&m.ClassroomStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -302,16 +302,16 @@ func (r *ClassroomRepository) Create(ctx context.Context, c *classroom.Classroom
 			 school_id, grade_id,
 			 classroom_code, classroom_code_expires_dt,
 			 max_members, member_count, student_count, teacher_count,
-			 cover_key, note,
+			 cover_key, rpt_flg, kwords, note,
 			 classroom_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		c.ClassroomId(), c.OwnerProfileId(), c.Name(), c.Description(),
 		c.SchoolId(), c.GradeId(),
 		c.ClassroomCode(), expiresArg,
 		c.MaxMembers(), c.MemberCount(), c.StudentCount(), c.TeacherCount(),
-		c.CoverKey(), c.Note(),
+		c.CoverKey(), c.RptFlg(), c.Kwords(), c.Note(),
 		c.ClassroomStatus(), c.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("classroom repo create: %w", err)
@@ -340,6 +340,8 @@ func (r *ClassroomRepository) Update(ctx context.Context, c *classroom.Classroom
 			grade_id    = COALESCE(?, grade_id),
 			max_members = COALESCE(?, max_members),
 			cover_key   = COALESCE(?, cover_key),
+			rpt_flg     = COALESCE(?, rpt_flg),
+			kwords      = COALESCE(?, kwords),
 			note        = COALESCE(?, note),
 			modify_id   = COALESCE(?, modify_id),
 			modify_dt   = ?
@@ -347,7 +349,7 @@ func (r *ClassroomRepository) Update(ctx context.Context, c *classroom.Classroom
 	`
 	if _, err := r.db.Exec(ctx, query,
 		nameArg, c.Description(), c.SchoolId(), c.GradeId(),
-		c.MaxMembers(), c.CoverKey(), c.Note(), c.ModifyId(),
+		c.MaxMembers(), c.CoverKey(), c.RptFlg(), c.Kwords(), c.Note(), c.ModifyId(),
 		mtime.Now().Time, c.ClassroomId()); err != nil {
 		return fmt.Errorf("classroom repo update: %w", err)
 	}
@@ -476,6 +478,8 @@ func ModelToDomainClassroom(m *models.ClassroomModel) *classroom.Classroom {
 	c.SetStudentCount(m.StudentCount)
 	c.SetTeacherCount(m.TeacherCount)
 	c.SetCoverKey(m.CoverKey)
+	c.SetRptFlg(m.RptFlg)
+	c.SetKwords(m.Kwords)
 	c.SetNote(m.Note)
 	c.SetClassroomStatus(m.ClassroomStatus)
 	c.SetStatus(m.Status)

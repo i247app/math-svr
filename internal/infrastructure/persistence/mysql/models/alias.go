@@ -10,6 +10,8 @@ type AliasModel struct {
 	UserId      int64
 	Aka         string
 	AliasStatus *string
+	RptFlg      *string
+	Kwords      *string
 	Note        *string
 	CreateId    *int64
 	CreateDt    time.Time

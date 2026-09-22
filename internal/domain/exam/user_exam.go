@@ -42,6 +42,10 @@ type UserExam struct {
 	lastSubmittedDt mtime.MathTime
 	endedDt         mtime.MathTime
 
+	rptFlg *string
+
+	kwords *string
+
 	note           *string
 	userExamStatus *string
 	status         string
@@ -83,6 +87,10 @@ func (u *UserExam) EndedDt() mtime.MathTime             { return u.endedDt }
 func (u *UserExam) SetEndedDt(t mtime.MathTime)         { u.endedDt = t }
 func (u *UserExam) Note() *string                       { return u.note }
 func (u *UserExam) SetNote(s *string)                   { u.note = s }
+func (u *UserExam) RptFlg() *string                     { return u.rptFlg }
+func (u *UserExam) SetRptFlg(v *string)                 { u.rptFlg = v }
+func (u *UserExam) Kwords() *string                     { return u.kwords }
+func (u *UserExam) SetKwords(v *string)                 { u.kwords = v }
 func (u *UserExam) UserExamStatus() *string             { return u.userExamStatus }
 func (u *UserExam) SetUserExamStatus(s *string)         { u.userExamStatus = s }
 func (u *UserExam) Status() string                      { return u.status }

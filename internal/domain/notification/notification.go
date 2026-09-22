@@ -23,6 +23,8 @@ type Notification struct {
 	actionType         *string
 	actionData         *string // opaque JSON
 	priority           *string // LOW, NORMAL, HIGH
+	rptFlg             *string
+	kwords             *string
 	note               *string
 	notificationStatus *string // ACTIVE, ARCHIVED, DELETED
 	status             string
@@ -56,6 +58,10 @@ func (n *Notification) Priority() *string               { return n.priority }
 func (n *Notification) SetPriority(p *string)           { n.priority = p }
 func (n *Notification) Note() *string                   { return n.note }
 func (n *Notification) SetNote(note *string)            { n.note = note }
+func (n *Notification) RptFlg() *string                 { return n.rptFlg }
+func (n *Notification) SetRptFlg(v *string)             { n.rptFlg = v }
+func (n *Notification) Kwords() *string                 { return n.kwords }
+func (n *Notification) SetKwords(v *string)             { n.kwords = v }
 func (n *Notification) NotificationStatus() *string     { return n.notificationStatus }
 func (n *Notification) SetNotificationStatus(s *string) { n.notificationStatus = s }
 func (n *Notification) Status() string                  { return n.status }

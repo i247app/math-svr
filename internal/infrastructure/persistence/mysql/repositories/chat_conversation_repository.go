@@ -23,7 +23,7 @@ const (
 		c.dm_key, c.title, c.avatar_key, c.owner_profile_id, c.participant_count,
 		c.last_seq_no, c.message_count, c.last_message_id, c.last_message_seq_no,
 		c.last_message_type, c.last_message_preview, c.last_message_sender_profile_id,
-		c.last_message_dt, c.note, c.conversation_status, c.status,
+		c.last_message_dt, c.rpt_flg, c.kwords, c.note, c.conversation_status, c.status,
 		c.create_id, c.create_dt, c.modify_id, c.modify_dt`
 
 	chatConversationActiveWhere = `c.status IN (?) AND c.deleted_dt IS NULL`
@@ -47,7 +47,7 @@ func scanChatConversation(s database.RowScanner) (*models.ChatConversationModel,
 		&m.DmKey, &m.Title, &m.AvatarKey, &m.OwnerProfileId, &m.ParticipantCount,
 		&m.LastSeqNo, &m.MessageCount, &m.LastMessageId, &m.LastMessageSeqNo,
 		&m.LastMessageType, &m.LastMessagePreview, &m.LastMessageSenderProfileId,
-		&m.LastMessageDt, &m.Note, &m.ConversationStatus, &m.Status,
+		&m.LastMessageDt, &m.RptFlg, &m.Kwords, &m.Note, &m.ConversationStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -75,6 +75,8 @@ func ModelToDomainChatConversation(m *models.ChatConversationModel) *chat.Conver
 	if m.LastMessageDt != nil {
 		c.SetLastMessageDt(mtime.MathTime{Time: *m.LastMessageDt})
 	}
+	c.SetRptFlg(m.RptFlg)
+	c.SetKwords(m.Kwords)
 	c.SetNote(m.Note)
 	c.SetConversationStatus(m.ConversationStatus)
 	c.SetStatus(m.Status)
@@ -219,14 +221,14 @@ func (r *ChatConversationRepository) ListByProfileId(ctx context.Context, params
 func (r *ChatConversationRepository) Create(ctx context.Context, c *chat.Conversation) (*chat.Conversation, error) {
 	query := `INSERT INTO ` + chatConversationTable + `
 		  (conversation_id, conversation_type, classroom_id, dm_key, title, avatar_key,
-		   owner_profile_id, participant_count, last_seq_no, message_count, note,
+		   owner_profile_id, participant_count, last_seq_no, message_count, rpt_flg, kwords, note,
 		   conversation_status, status, create_id, create_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)`
 
 	res, err := r.db.Exec(ctx, query,
 		c.ConversationId(), c.ConversationType(), c.ClassroomId(), c.DmKey(),
 		c.Title(), c.AvatarKey(), c.OwnerProfileId(), c.ParticipantCount(),
-		c.Note(), c.ConversationStatus(), c.Status(), c.CreateId(), mtime.Now().Time,
+		c.RptFlg(), c.Kwords(), c.Note(), c.ConversationStatus(), c.Status(), c.CreateId(), mtime.Now().Time,
 	)
 	if err != nil {
 		// Translated to a domain sentinel so the command layer can recognise

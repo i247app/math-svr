@@ -48,6 +48,10 @@ type UserExamDetail struct {
 	selectedContent *string
 	isCorrect       bool
 
+	rptFlg *string
+
+	kwords *string
+
 	note         *string
 	detailStatus *string
 	status       string
@@ -95,6 +99,10 @@ func (d *UserExamDetail) IsCorrect() bool                 { return d.isCorrect }
 func (d *UserExamDetail) SetIsCorrect(b bool)             { d.isCorrect = b }
 func (d *UserExamDetail) Note() *string                   { return d.note }
 func (d *UserExamDetail) SetNote(s *string)               { d.note = s }
+func (d *UserExamDetail) RptFlg() *string                 { return d.rptFlg }
+func (d *UserExamDetail) SetRptFlg(v *string)             { d.rptFlg = v }
+func (d *UserExamDetail) Kwords() *string                 { return d.kwords }
+func (d *UserExamDetail) SetKwords(v *string)             { d.kwords = v }
 func (d *UserExamDetail) DetailStatus() *string           { return d.detailStatus }
 func (d *UserExamDetail) SetDetailStatus(s *string)       { d.detailStatus = s }
 func (d *UserExamDetail) Status() string                  { return d.status }

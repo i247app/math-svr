@@ -11,6 +11,8 @@ type GradeModel struct {
 	Description  string
 	ImageKey     *string
 	DisplayOrder int8
+	RptFlg       *string
+	Kwords       *string
 	Note         *string
 	GradeStatus  *string
 	Status       string

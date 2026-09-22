@@ -11,6 +11,8 @@ type PresenceModel struct {
 	LastSeenDt      *time.Time
 	LastDeviceUuid  *string
 	LastPlatform    *string
+	RptFlg          *string
+	Kwords          *string
 	Note            *string
 	Status          string
 	CreateId        *int64

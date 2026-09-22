@@ -14,6 +14,8 @@ type ClassroomMemberModel struct {
 	RemovedByProfileId *int64
 	RemovedDt          *time.Time
 	LastSeenDt         *time.Time
+	RptFlg             *string
+	Kwords             *string
 	Note               *string
 	InviteBy           *int64
 	InviteDt           *time.Time

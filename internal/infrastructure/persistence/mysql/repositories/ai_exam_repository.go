@@ -21,7 +21,7 @@ const (
 	aiExamColumns = `a.id, a.ai_exam_id, a.req_exam_type, a.req_grade, a.req_level, a.req_num_ques,
 		a.req_semester, a.req_program, a.req_extras,
 		a.ai_title, a.ai_short_text, a.ai_questions_json,
-		a.note, a.ai_exam_status, a.status,
+		a.rpt_flg, a.kwords, a.note, a.ai_exam_status, a.status,
 		a.create_id, a.create_dt, a.modify_id, a.modify_dt`
 
 	aiExamActiveWhere = `a.status IN (?) AND a.deleted_dt IS NULL`
@@ -44,7 +44,7 @@ func scanAiExam(s database.RowScanner) (*models.AiExamModel, error) {
 	if err := s.Scan(&m.Id, &m.AiExamId, &m.ReqExamType, &m.ReqGrade, &m.ReqLevel, &m.ReqNumQues,
 		&m.ReqSemester, &m.ReqProgram, &m.ReqExtras,
 		&m.AiTitle, &m.AiShortText, &m.AiQuestionsJson,
-		&m.Note, &m.AiExamStatus, &m.Status,
+		&m.RptFlg, &m.Kwords, &m.Note, &m.AiExamStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -184,15 +184,15 @@ func (r *AiExamRepository) Create(ctx context.Context, e *exam.AiExam) (*exam.Ai
 			(ai_exam_id, req_exam_type, req_grade, req_level, req_num_ques,
 			 req_semester, req_program, req_extras,
 			 ai_title, ai_short_text, ai_questions_json,
-			 note, ai_exam_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 rpt_flg, kwords, note, ai_exam_status, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	now := mtime.Now().Time
 	result, err := r.db.Exec(ctx, query,
 		e.AiExamId(), e.ReqExamType(), e.ReqGrade(), e.ReqLevel(), e.ReqNumQues(),
 		e.ReqSemester(), e.ReqProgram(), e.ReqExtras(),
 		e.AiTitle(), e.AiShortText(), e.AiQuestionsJson(),
-		e.Note(), e.AiExamStatus(), e.CreateId(), now, now)
+		e.RptFlg(), e.Kwords(), e.Note(), e.AiExamStatus(), e.CreateId(), now, now)
 	if err != nil {
 		return nil, fmt.Errorf("ai exam repo create: %w", err)
 	}
@@ -218,6 +218,8 @@ func ModelToDomainAiExam(m *models.AiExamModel) *exam.AiExam {
 	e.SetAiTitle(m.AiTitle)
 	e.SetAiShortText(m.AiShortText)
 	e.SetAiQuestionsJson(m.AiQuestionsJson)
+	e.SetRptFlg(m.RptFlg)
+	e.SetKwords(m.Kwords)
 	e.SetNote(m.Note)
 	e.SetAiExamStatus(m.AiExamStatus)
 	e.SetStatus(m.Status)

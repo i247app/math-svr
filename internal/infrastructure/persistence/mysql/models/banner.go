@@ -11,6 +11,8 @@ type BannerModel struct {
 	MediaURLKey   string
 	ButtonText    *string
 	ButtonLinkURL *string
+	RptFlg        *string
+	Kwords        *string
 	Note          *string
 	BannerStatus  *string
 	Status        string

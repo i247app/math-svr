@@ -11,6 +11,8 @@ type LoginLog struct {
 	ipAddress      string
 	deviceUUID     string
 	token          string
+	rptFlg         *string
+	kwords         *string
 	note           *string
 	loginLogStatus *string
 	status         string
@@ -78,6 +80,24 @@ func (l *LoginLog) Note() *string {
 
 func (l *LoginLog) SetNote(note *string) {
 	l.note = note
+}
+
+// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
+func (l *LoginLog) RptFlg() *string {
+	return l.rptFlg
+}
+
+func (l *LoginLog) SetRptFlg(rptFlg *string) {
+	l.rptFlg = rptFlg
+}
+
+// Kwords holds search keywords (kwords) for a future text-search index.
+func (l *LoginLog) Kwords() *string {
+	return l.kwords
+}
+
+func (l *LoginLog) SetKwords(kwords *string) {
+	l.kwords = kwords
 }
 
 func (l *LoginLog) LoginLogStatus() *string {

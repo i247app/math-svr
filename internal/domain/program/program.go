@@ -11,6 +11,8 @@ type Program struct {
 	description   string
 	imageKey      *string
 	displayOrder  int8
+	rptFlg        *string
+	kwords        *string
 	note          *string
 	programStatus *string
 	status        string
@@ -78,6 +80,24 @@ func (p *Program) Note() *string {
 
 func (p *Program) SetNote(note *string) {
 	p.note = note
+}
+
+// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
+func (p *Program) RptFlg() *string {
+	return p.rptFlg
+}
+
+func (p *Program) SetRptFlg(rptFlg *string) {
+	p.rptFlg = rptFlg
+}
+
+// Kwords holds search keywords (kwords) for a future text-search index.
+func (p *Program) Kwords() *string {
+	return p.kwords
+}
+
+func (p *Program) SetKwords(kwords *string) {
+	p.kwords = kwords
 }
 
 func (p *Program) ProgramStatus() *string {

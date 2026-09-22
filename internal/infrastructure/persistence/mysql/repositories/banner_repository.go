@@ -20,7 +20,7 @@ const (
 	bannerTable = "ma_banners"
 
 	bannerColumns = `b.id, b.banner_id, b.title, b.short_text, b.media_type,
-		b.media_url_key, b.button_text, b.button_link_url, b.note,
+		b.media_url_key, b.button_text, b.button_link_url, b.rpt_flg, b.kwords, b.note,
 		b.banner_status, b.status,
 		b.create_id, b.create_dt, b.modify_id, b.modify_dt`
 
@@ -46,7 +46,7 @@ func NewBannerRepository(db database.Executor) banner.IRepository {
 func scanBanner(s database.RowScanner) (*models.BannerModel, error) {
 	var m models.BannerModel
 	if err := s.Scan(&m.Id, &m.BannerId, &m.Title, &m.ShortText, &m.MediaType,
-		&m.MediaURLKey, &m.ButtonText, &m.ButtonLinkURL, &m.Note,
+		&m.MediaURLKey, &m.ButtonText, &m.ButtonLinkURL, &m.RptFlg, &m.Kwords, &m.Note,
 		&m.BannerStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -187,13 +187,13 @@ func (r *BannerRepository) Create(ctx context.Context, b *banner.Banner) (*banne
 	query := `
 		INSERT INTO ` + bannerTable + `
 			(banner_id, title, short_text, media_type, media_url_key,
-			 button_text, button_link_url, note, banner_status,
+			 button_text, button_link_url, rpt_flg, kwords, note, banner_status,
 			 create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		b.BannerId(), b.Title(), b.ShortText(), b.MediaType(), b.MediaURLKey(),
-		b.ButtonText(), b.ButtonLinkURL(), b.Note(), b.BannerStatus(),
+		b.ButtonText(), b.ButtonLinkURL(), b.RptFlg(), b.Kwords(), b.Note(), b.BannerStatus(),
 		b.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("banner repo create: %w", err)
@@ -227,6 +227,8 @@ func (r *BannerRepository) Update(ctx context.Context, b *banner.Banner) error {
 			media_url_key   = COALESCE(?, media_url_key),
 			button_text     = COALESCE(?, button_text),
 			button_link_url = COALESCE(?, button_link_url),
+			rpt_flg         = COALESCE(?, rpt_flg),
+			kwords          = COALESCE(?, kwords),
 			note            = COALESCE(?, note),
 			banner_status   = COALESCE(?, banner_status),
 			modify_id       = COALESCE(?, modify_id),
@@ -235,7 +237,7 @@ func (r *BannerRepository) Update(ctx context.Context, b *banner.Banner) error {
 	`
 	if _, err := r.db.Exec(ctx, query,
 		b.Title(), b.ShortText(), mediaTypeArg, mediaURLKeyArg,
-		b.ButtonText(), b.ButtonLinkURL(), b.Note(), b.BannerStatus(),
+		b.ButtonText(), b.ButtonLinkURL(), b.RptFlg(), b.Kwords(), b.Note(), b.BannerStatus(),
 		b.ModifyId(), mtime.Now().Time, b.BannerId()); err != nil {
 		return fmt.Errorf("banner repo update: %w", err)
 	}
@@ -280,6 +282,8 @@ func ModelToDomainBanner(m *models.BannerModel) *banner.Banner {
 	b.SetMediaURLKey(m.MediaURLKey)
 	b.SetButtonText(m.ButtonText)
 	b.SetButtonLinkURL(m.ButtonLinkURL)
+	b.SetRptFlg(m.RptFlg)
+	b.SetKwords(m.Kwords)
 	b.SetNote(m.Note)
 	b.SetBannerStatus(m.BannerStatus)
 	b.SetStatus(m.Status)

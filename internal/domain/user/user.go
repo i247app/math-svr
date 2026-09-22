@@ -15,6 +15,8 @@ type User struct {
 	role            string
 	userStatus      *string
 	status          string
+	rptFlg          *string
+	kwords          *string
 	note            *string
 	createId        *int64
 	createDt        mtime.MathTime
@@ -115,6 +117,24 @@ func (u *User) Note() *string {
 
 func (u *User) SetNote(note *string) {
 	u.note = note
+}
+
+// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
+func (u *User) RptFlg() *string {
+	return u.rptFlg
+}
+
+func (u *User) SetRptFlg(rptFlg *string) {
+	u.rptFlg = rptFlg
+}
+
+// Kwords holds search keywords (kwords) for a future text-search index.
+func (u *User) Kwords() *string {
+	return u.kwords
+}
+
+func (u *User) SetKwords(kwords *string) {
+	u.kwords = kwords
 }
 
 func (u *User) CreateId() *int64 {

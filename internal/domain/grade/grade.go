@@ -11,6 +11,8 @@ type Grade struct {
 	description  string
 	imageKey     *string
 	displayOrder int8
+	rptFlg       *string
+	kwords       *string
 	note         *string
 	gradeStatus  *string
 	status       string
@@ -78,6 +80,24 @@ func (g *Grade) Note() *string {
 
 func (g *Grade) SetNote(note *string) {
 	g.note = note
+}
+
+// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
+func (g *Grade) RptFlg() *string {
+	return g.rptFlg
+}
+
+func (g *Grade) SetRptFlg(rptFlg *string) {
+	g.rptFlg = rptFlg
+}
+
+// Kwords holds search keywords (kwords) for a future text-search index.
+func (g *Grade) Kwords() *string {
+	return g.kwords
+}
+
+func (g *Grade) SetKwords(kwords *string) {
+	g.kwords = kwords
 }
 
 func (g *Grade) GradeStatus() *string {

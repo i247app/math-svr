@@ -19,7 +19,7 @@ const (
 	deviceTable = "ma_devices"
 
 	deviceColumns = `d.id, d.device_id, d.uid, d.device_uuid, d.device_name, d.platform,
-		d.device_push_token, d.is_verified, d.trust_dt, d.note, d.device_status, d.status,
+		d.device_push_token, d.is_verified, d.trust_dt, d.rpt_flg, d.kwords, d.note, d.device_status, d.status,
 		d.create_id, d.create_dt, d.modify_id, d.modify_dt`
 
 	deviceActiveWhere = `d.status IN (?) AND d.deleted_dt IS NULL`
@@ -40,7 +40,7 @@ func NewDeviceRepository(db database.Executor) device.IRepository {
 func scanDevice(s database.RowScanner) (*models.DeviceModel, error) {
 	var m models.DeviceModel
 	if err := s.Scan(&m.Id, &m.DeviceId, &m.UserId, &m.DeviceUUID, &m.DeviceName, &m.Platform,
-		&m.DevicePushToken, &m.IsVerified, &m.TrustDt, &m.Note, &m.DeviceStatus, &m.Status,
+		&m.DevicePushToken, &m.IsVerified, &m.TrustDt, &m.RptFlg, &m.Kwords, &m.Note, &m.DeviceStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -141,13 +141,13 @@ func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) (*devic
 	query := `
 		INSERT INTO ` + deviceTable + `
 			(device_id, uid, device_uuid, device_name, platform, device_push_token,
-			 is_verified, trust_dt, note, device_status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 is_verified, trust_dt, rpt_flg, kwords, note, device_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
 		d.DeviceId(), d.UserId(), d.DeviceUUID(), d.DeviceName(), d.Platform(), d.DevicePushToken(),
-		d.IsVerified(), d.TrustDt(), d.Note(), d.DeviceStatus(),
+		d.IsVerified(), d.TrustDt(), d.RptFlg(), d.Kwords(), d.Note(), d.DeviceStatus(),
 		mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("device repo create: %w", err)
@@ -168,6 +168,8 @@ func (r *DeviceRepository) Update(ctx context.Context, d *device.Device) error {
 		UPDATE ` + deviceTable + `
 		SET device_name       = COALESCE(?, device_name),
 			device_push_token = COALESCE(?, device_push_token),
+			rpt_flg           = COALESCE(?, rpt_flg),
+			kwords            = COALESCE(?, kwords),
 			note              = COALESCE(?, note)
 		WHERE device_id = ?
 	`
@@ -178,7 +180,7 @@ func (r *DeviceRepository) Update(ctx context.Context, d *device.Device) error {
 	}
 
 	if _, err := r.db.Exec(ctx, query,
-		nameArg, d.DevicePushToken(), d.Note(), d.DeviceId()); err != nil {
+		nameArg, d.DevicePushToken(), d.RptFlg(), d.Kwords(), d.Note(), d.DeviceId()); err != nil {
 		return fmt.Errorf("device repo update: %w", err)
 	}
 	return nil
@@ -273,6 +275,8 @@ func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
 	if m.TrustDt != nil {
 		d.SetTrustDt(mtime.MathTime{Time: *m.TrustDt})
 	}
+	d.SetRptFlg(m.RptFlg)
+	d.SetKwords(m.Kwords)
 	d.SetNote(m.Note)
 	d.SetDeviceStatus(m.DeviceStatus)
 	d.SetStatus(m.Status)

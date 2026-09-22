@@ -20,7 +20,7 @@ const (
 
 	otpColumns = `o.id, o.otp_id, o.otp_type, o.uid, o.identifier,
 		o.device_uuid, o.device_name, o.otp_code, o.otp_create_dt, o.otp_expire_dt, o.otp_verified_dt,
-		o.attempt_count, o.note, o.otp_status, o.status,
+		o.attempt_count, o.rpt_flg, o.kwords, o.note, o.otp_status, o.status,
 		o.create_id, o.create_dt, o.modify_id, o.modify_dt`
 
 	otpActiveWhere = `o.status IN (?) AND o.deleted_dt IS NULL`
@@ -42,7 +42,7 @@ func scanOtp(s database.RowScanner) (*models.OtpModel, error) {
 	var m models.OtpModel
 	if err := s.Scan(&m.Id, &m.OtpId, &m.OtpType, &m.UserId, &m.Identifier,
 		&m.DeviceUUID, &m.DeviceName, &m.OtpCode, &m.OtpCreateDt, &m.OtpExpireDt, &m.OtpVerifiedDt,
-		&m.AttemptCount, &m.Note, &m.OtpStatus, &m.Status,
+		&m.AttemptCount, &m.RptFlg, &m.Kwords, &m.Note, &m.OtpStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -138,8 +138,8 @@ func (r *OtpRepository) Create(ctx context.Context, o *otp.Otp) (*otp.Otp, error
 	query := `
 		INSERT INTO ` + otpTable + `
 			(otp_id, otp_type, uid, identifier, device_uuid, device_name,
-			 otp_code, otp_create_dt, otp_expire_dt, attempt_count, note, otp_status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 otp_code, otp_create_dt, otp_expire_dt, attempt_count, rpt_flg, kwords, note, otp_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	var createDtArg, expireDtArg any
@@ -152,7 +152,7 @@ func (r *OtpRepository) Create(ctx context.Context, o *otp.Otp) (*otp.Otp, error
 
 	result, err := r.db.Exec(ctx, query,
 		o.OtpId(), o.OtpType(), o.UserId(), o.Identifier(), o.DeviceUUID(), o.DeviceName(),
-		o.OtpCode(), createDtArg, expireDtArg, o.AttemptCount(), o.Note(), o.OtpStatus(), mtime.Now().Time, mtime.Now().Time)
+		o.OtpCode(), createDtArg, expireDtArg, o.AttemptCount(), o.RptFlg(), o.Kwords(), o.Note(), o.OtpStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("otp repo create: %w", err)
 	}
@@ -248,6 +248,8 @@ func ModelToDomainOtp(m *models.OtpModel) *otp.Otp {
 		o.SetOtpVerifiedDt(mtime.MathTime{Time: *m.OtpVerifiedDt})
 	}
 	o.SetAttemptCount(m.AttemptCount)
+	o.SetRptFlg(m.RptFlg)
+	o.SetKwords(m.Kwords)
 	o.SetNote(m.Note)
 	o.SetOtpStatus(m.OtpStatus)
 	o.SetStatus(m.Status)

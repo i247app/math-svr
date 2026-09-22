@@ -23,7 +23,7 @@ const (
 		e.creator_profile_id, e.visibility, e.purpose, e.program_id,
 		e.title, e.short_text, e.description, e.chapter_name, e.lesson_name, e.total_questions,
 		e.questions, e.answers, e.start_date, e.end_date,
-		e.note, e.exercise_status, e.status,
+		e.rpt_flg, e.kwords, e.note, e.exercise_status, e.status,
 		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
 
 	// exerciseActiveWhere keeps ARCHIVED rows visible — archived exercises
@@ -50,7 +50,7 @@ func scanClassroomExercise(s database.RowScanner) (*models.ExerciseModel, error)
 		&m.CreatorProfileId, &m.Visibility, &m.Purpose, &m.ProgramId,
 		&m.Title, &m.ShortText, &m.Description, &m.ChapterName, &m.LessonName, &m.TotalQuestions,
 		&m.Questions, &m.Answers, &m.StartDate, &m.EndDate,
-		&m.Note, &m.ExerciseStatus, &m.Status,
+		&m.RptFlg, &m.Kwords, &m.Note, &m.ExerciseStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -380,15 +380,15 @@ func (r *ExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*d
 			 program_id,
 			 title, short_text, description, chapter_name, lesson_name, total_questions,
 			 questions, answers, start_date, end_date,
-			 note, exercise_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 rpt_flg, kwords, note, exercise_status, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		e.ClassroomExerciseId(), e.ClassroomId(), e.CreatorProfileId(), visibility, purpose,
 		e.ProgramId(),
 		e.Title(), e.ShortText(), e.Description(), e.ChapterName(), e.LessonName(), e.TotalQuestions(),
 		e.Questions(), e.Answers(), startArg, endArg,
-		e.Note(), e.ExerciseStatus(), e.CreateId(), mtime.Now().Time, mtime.Now().Time)
+		e.RptFlg(), e.Kwords(), e.Note(), e.ExerciseStatus(), e.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("classroom exercise repo create: %w", err)
 	}
@@ -430,6 +430,8 @@ func (r *ExerciseRepository) Update(ctx context.Context, classroomExerciseId int
 			lesson_name     = COALESCE(?, lesson_name),
 			start_date      = COALESCE(?, start_date),
 			end_date        = COALESCE(?, end_date),
+			rpt_flg         = COALESCE(?, rpt_flg),
+			kwords          = COALESCE(?, kwords),
 			note            = COALESCE(?, note),
 			exercise_status = COALESCE(?, exercise_status),
 			visibility      = COALESCE(?, visibility),
@@ -441,7 +443,7 @@ func (r *ExerciseRepository) Update(ctx context.Context, classroomExerciseId int
 	if _, err := r.db.Exec(ctx, query,
 		patch.Title, patch.Description, patch.ChapterName, patch.LessonName,
 		startArg, endArg,
-		patch.Note, patch.ExerciseStatus, patch.Visibility, patch.Purpose, patch.ModifyID,
+		patch.RptFlg, patch.Kwords, patch.Note, patch.ExerciseStatus, patch.Visibility, patch.Purpose, patch.ModifyID,
 		mtime.Now().Time, classroomExerciseId); err != nil {
 		return fmt.Errorf("classroom exercise repo update: %w", err)
 	}
@@ -492,6 +494,8 @@ func modelToDomainClassroomExercise(m *models.ExerciseModel) *domain.Exercise {
 	if m.EndDate != nil {
 		e.SetEndDate(mtime.MathTime{Time: *m.EndDate})
 	}
+	e.SetRptFlg(m.RptFlg)
+	e.SetKwords(m.Kwords)
 	e.SetNote(m.Note)
 	e.SetExerciseStatus(m.ExerciseStatus)
 	e.SetStatus(m.Status)

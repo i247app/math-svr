@@ -27,6 +27,8 @@ type Member struct {
 	removedByProfileId *int64
 	removedDt          mtime.MathTime
 	lastSeenDt         mtime.MathTime
+	rptFlg             *string
+	kwords             *string
 	note               *string
 	inviteBy           *int64
 	inviteDt           mtime.MathTime
@@ -66,6 +68,10 @@ func (m *Member) LastSeenDt() mtime.MathTime     { return m.lastSeenDt }
 func (m *Member) SetLastSeenDt(t mtime.MathTime) { m.lastSeenDt = t }
 func (m *Member) Note() *string                  { return m.note }
 func (m *Member) SetNote(n *string)              { m.note = n }
+func (m *Member) RptFlg() *string                { return m.rptFlg }
+func (m *Member) SetRptFlg(v *string)            { m.rptFlg = v }
+func (m *Member) Kwords() *string                { return m.kwords }
+func (m *Member) SetKwords(v *string)            { m.kwords = v }
 func (m *Member) InviteBy() *int64               { return m.inviteBy }
 func (m *Member) SetInviteBy(v *int64)           { m.inviteBy = v }
 func (m *Member) InviteDt() mtime.MathTime       { return m.inviteDt }

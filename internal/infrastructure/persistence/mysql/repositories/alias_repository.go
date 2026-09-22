@@ -18,7 +18,7 @@ import (
 const (
 	aliasTable = "ma_aliases"
 
-	aliasColumns = `id, alias_id, uid, aka, alias_status, note, create_id, create_dt, modify_id, modify_dt`
+	aliasColumns = `id, alias_id, uid, aka, alias_status, rpt_flg, kwords, note, create_id, create_dt, modify_id, modify_dt`
 
 	// Login resolution (alias.FindByAka -> user.FindByUserId) relies on this
 	// filter so a soft-deleted account cannot log back in through its alias.
@@ -39,7 +39,7 @@ func NewAliasRepository(db database.Executor) user.IAliasRepository {
 
 func scanAlias(s database.RowScanner) (*models.AliasModel, error) {
 	var m models.AliasModel
-	if err := s.Scan(&m.Id, &m.AliasId, &m.UserId, &m.Aka, &m.AliasStatus, &m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(&m.Id, &m.AliasId, &m.UserId, &m.Aka, &m.AliasStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -65,12 +65,12 @@ func (r *AliasRepository) findOneBy(ctx context.Context, where string, args ...a
 
 func (r *AliasRepository) Create(ctx context.Context, alias *user.Alias) (*user.Alias, error) {
 	query := `
-		INSERT INTO ` + aliasTable + ` (alias_id, uid, aka, alias_status, note, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO ` + aliasTable + ` (alias_id, uid, aka, alias_status, rpt_flg, kwords, note, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query, alias.AliasId(), alias.UserId(),
-		alias.Aka(), alias.AliasStatus(), alias.Note(), mtime.Now().Time, mtime.Now().Time)
+		alias.Aka(), alias.AliasStatus(), alias.RptFlg(), alias.Kwords(), alias.Note(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("alias repo create: %w", err)
 	}
@@ -121,13 +121,15 @@ func (r *AliasRepository) UpdateByAliasId(ctx context.Context, alias *user.Alias
 		UPDATE ` + aliasTable + `
 		SET aka = COALESCE(?, aka),
 			alias_status = COALESCE(?, alias_status),
+			rpt_flg= COALESCE(?, rpt_flg),
+			kwords= COALESCE(?, kwords),
 			note = COALESCE(?, note),
 			modify_id = COALESCE(?, modify_id),
 			modify_dt = COALESCE(?, modify_dt)
 		WHERE alias_id = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, alias.Aka(), alias.AliasStatus(), alias.Note(), alias.ModifyId(), alias.ModifyDt(), alias.AliasId()); err != nil {
+	if _, err := r.db.Exec(ctx, query, alias.Aka(), alias.AliasStatus(), alias.RptFlg(), alias.Kwords(), alias.Note(), alias.ModifyId(), alias.ModifyDt(), alias.AliasId()); err != nil {
 		return fmt.Errorf("alias repo update by alias id: %w", err)
 	}
 	return nil
@@ -176,6 +178,8 @@ func ModelToDomainAlias(m *models.AliasModel) *user.Alias {
 	a.SetUserId(m.UserId)
 	a.SetAka(m.Aka)
 	a.SetAliasStatus(m.AliasStatus)
+	a.SetRptFlg(m.RptFlg)
+	a.SetKwords(m.Kwords)
 	a.SetNote(m.Note)
 	a.SetCreateId(m.CreateId)
 	a.SetCreateDt(mtime.MathTime{Time: m.CreateDt})

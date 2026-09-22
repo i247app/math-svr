@@ -10,6 +10,8 @@ type Alias struct {
 	userId      int64
 	aka         string
 	aliasStatus *string
+	rptFlg      *string
+	kwords      *string
 	note        *string
 	status      string
 	createId    *int64
@@ -68,6 +70,24 @@ func (a *Alias) Note() *string {
 
 func (a *Alias) SetNote(note *string) {
 	a.note = note
+}
+
+// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
+func (a *Alias) RptFlg() *string {
+	return a.rptFlg
+}
+
+func (a *Alias) SetRptFlg(rptFlg *string) {
+	a.rptFlg = rptFlg
+}
+
+// Kwords holds search keywords (kwords) for a future text-search index.
+func (a *Alias) Kwords() *string {
+	return a.kwords
+}
+
+func (a *Alias) SetKwords(kwords *string) {
+	a.kwords = kwords
 }
 
 func (a *Alias) Status() string {

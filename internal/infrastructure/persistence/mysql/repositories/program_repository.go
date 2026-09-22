@@ -20,7 +20,7 @@ const (
 	programTable = "ma_programs"
 
 	programColumns = `p.id, p.program_id, p.label, p.description,
-		p.image_key, p.display_order, p.note,
+		p.image_key, p.display_order, p.rpt_flg, p.kwords, p.note,
 		p.program_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
@@ -42,7 +42,7 @@ func NewProgramRepository(db database.Executor) program.IRepository {
 func scanProgram(s database.RowScanner) (*models.ProgramModel, error) {
 	var m models.ProgramModel
 	if err := s.Scan(&m.Id, &m.ProgramId, &m.Label, &m.Description, &m.ImageKey,
-		&m.DisplayOrder, &m.Note, &m.ProgramStatus, &m.Status,
+		&m.DisplayOrder, &m.RptFlg, &m.Kwords, &m.Note, &m.ProgramStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -158,12 +158,12 @@ func (r *ProgramRepository) ListProgramsByIds(ctx context.Context, ids []int64) 
 func (r *ProgramRepository) Create(ctx context.Context, p *program.Program) (*program.Program, error) {
 	query := `
 		INSERT INTO ` + programTable + `
-			(program_id, label, description, image_key, display_order, note, program_status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(program_id, label, description, image_key, display_order, rpt_flg, kwords, note, program_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		p.ProgramId(), p.Label(), p.Description(), p.ImageKey(),
-		p.DisplayOrder(), p.Note(), p.ProgramStatus(), mtime.Now().Time, mtime.Now().Time)
+		p.DisplayOrder(), p.RptFlg(), p.Kwords(), p.Note(), p.ProgramStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("program repo create: %w", err)
 	}
@@ -200,13 +200,15 @@ func (r *ProgramRepository) Update(ctx context.Context, p *program.Program) erro
 			description   = COALESCE(?, description),
 			image_key     = COALESCE(?, image_key),
 			display_order = ?,
+			rpt_flg       = COALESCE(?, rpt_flg),
+			kwords        = COALESCE(?, kwords),
 			note          = COALESCE(?, note),
 			modify_dt     = ?
 		WHERE program_id = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
 		label, description, imageKey,
-		p.DisplayOrder(), p.Note(), mtime.Now().Time, p.ProgramId()); err != nil {
+		p.DisplayOrder(), p.RptFlg(), p.Kwords(), p.Note(), mtime.Now().Time, p.ProgramId()); err != nil {
 		return fmt.Errorf("program repo update: %w", err)
 	}
 	return nil
@@ -248,6 +250,8 @@ func ModelToDomainProgram(m *models.ProgramModel) *program.Program {
 	p.SetDescription(m.Description)
 	p.SetImageKey(m.ImageKey)
 	p.SetDisplayOrder(m.DisplayOrder)
+	p.SetRptFlg(m.RptFlg)
+	p.SetKwords(m.Kwords)
 	p.SetNote(m.Note)
 	p.SetProgramStatus(m.ProgramStatus)
 	p.SetStatus(m.Status)

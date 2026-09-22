@@ -20,7 +20,7 @@ const (
 		d.question_number, d.question_type, d.question_name, d.question_topic, d.question_grade, d.question_level,
 		d.right_answer_label, d.right_answer_content,
 		d.selected_label, d.selected_content, d.is_correct,
-		d.note, d.detail_status, d.status,
+		d.rpt_flg, d.kwords, d.note, d.detail_status, d.status,
 		d.create_id, d.create_dt, d.modify_id, d.modify_dt`
 
 	userExamDetailActiveWhere = `d.status IN (?) AND d.deleted_dt IS NULL`
@@ -32,9 +32,9 @@ const (
 			question_number, question_type, question_name, question_topic, question_grade, question_level,
 			right_answer_label, right_answer_content,
 			selected_label, selected_content, is_correct,
-			note, detail_status, create_id, create_dt, modify_dt)`
+			rpt_flg, kwords, note, detail_status, create_id, create_dt, modify_dt)`
 
-	userExamDetailValueTuple = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	userExamDetailValueTuple = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func userExamDetailActiveArgs() []any {
@@ -55,7 +55,7 @@ func scanUserExamDetail(s database.RowScanner) (*models.UserExamDetailModel, err
 		&m.QuestionNumber, &m.QuestionType, &m.QuestionName, &m.QuestionTopic, &m.QuestionGrade, &m.QuestionLevel,
 		&m.RightAnswerLabel, &m.RightAnswerContent,
 		&m.SelectedLabel, &m.SelectedContent, &m.IsCorrect,
-		&m.Note, &m.DetailStatus, &m.Status,
+		&m.RptFlg, &m.Kwords, &m.Note, &m.DetailStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func (r *UserExamDetailRepository) CreateBatch(ctx context.Context, details []*e
 			d.QuestionNumber(), d.QuestionType(), d.QuestionName(), d.QuestionTopic(), d.QuestionGrade(), d.QuestionLevel(),
 			d.RightAnswerLabel(), d.RightAnswerContent(),
 			d.SelectedLabel(), d.SelectedContent(), d.IsCorrect(),
-			d.Note(), detailStatus, d.CreateId(), now, now)
+			d.RptFlg(), d.Kwords(), d.Note(), detailStatus, d.CreateId(), now, now)
 	}
 
 	query := `INSERT INTO ` + userExamDetailTable + ` ` + userExamDetailInsertColumns +
@@ -173,6 +173,8 @@ func ModelToDomainUserExamDetail(m *models.UserExamDetailModel) *exam.UserExamDe
 	d.SetSelectedLabel(m.SelectedLabel)
 	d.SetSelectedContent(m.SelectedContent)
 	d.SetIsCorrect(m.IsCorrect)
+	d.SetRptFlg(m.RptFlg)
+	d.SetKwords(m.Kwords)
 	d.SetNote(m.Note)
 	d.SetDetailStatus(m.DetailStatus)
 	d.SetStatus(m.Status)

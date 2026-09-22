@@ -23,6 +23,8 @@ type ProfileModel struct {
 	IdType        *string
 	TeacherId     *string
 	StudentId     *string
+	RptFlg        *string
+	Kwords        *string
 	Note          *string
 	ProfileStatus *string
 	Status        string

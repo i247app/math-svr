@@ -10,6 +10,8 @@ type SchoolModel struct {
 	ImageKey     *string
 	District     *string
 	Province     *string
+	RptFlg       *string
+	Kwords       *string
 	Note         *string
 	SchoolStatus *string
 	Status       string

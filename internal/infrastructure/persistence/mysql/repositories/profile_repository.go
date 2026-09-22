@@ -22,7 +22,7 @@ const (
 	profileColumns = `p.id, p.profile_id, p.profile_code, p.uid, p.name, p.phone, p.email, p.role, p.avatar_key, p.dob,
 		p.school_id, p.program_id, p.grade_id, p.semester_id, p.is_default,
 		p.id_type, p.teacher_id, p.student_id,
-		p.note, p.profile_status, p.status,
+		p.rpt_flg, p.kwords, p.note, p.profile_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
 	profileActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
@@ -45,7 +45,7 @@ func scanProfile(s database.RowScanner) (*models.ProfileModel, error) {
 	if err := s.Scan(&m.Id, &m.ProfileId, &m.ProfileCode, &m.UserId, &m.Name, &m.Phone, &m.Email, &m.Role, &m.AvatarKey, &m.Dob,
 		&m.SchoolId, &m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault,
 		&m.IdType, &m.TeacherId, &m.StudentId,
-		&m.Note, &m.ProfileStatus, &m.Status,
+		&m.RptFlg, &m.Kwords, &m.Note, &m.ProfileStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -303,14 +303,14 @@ func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*pr
 	query := `
 		INSERT INTO ` + profileTable + `
 			(profile_id, profile_code, uid, name, phone, email, role, avatar_key, dob, school_id, program_id, grade_id, semester_id, is_default,
-			 id_type, teacher_id, student_id, note, profile_status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 id_type, teacher_id, student_id, rpt_flg, kwords, note, profile_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(ctx, query,
 		p.ProfileId(), p.ProfileCode(), p.UserId(), p.Name(), p.Phone(), p.Email(), p.Role(), p.AvatarKey(), p.Dob(),
 		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(),
-		p.IdType(), p.TeacherId(), p.StudentId(), p.Note(), p.ProfileStatus(), mtime.Now().Time, mtime.Now().Time)
+		p.IdType(), p.TeacherId(), p.StudentId(), p.RptFlg(), p.Kwords(), p.Note(), p.ProfileStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("profile repo create: %w", err)
 	}
@@ -339,6 +339,8 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 			teacher_id     = COALESCE(?, teacher_id),
 			student_id     = COALESCE(?, student_id),
 			profile_status = COALESCE(?, profile_status),
+			rpt_flg        = COALESCE(?, rpt_flg),
+			kwords         = COALESCE(?, kwords),
 			note           = COALESCE(?, note),
 			avatar_key     = COALESCE(?, avatar_key)
 		WHERE profile_id = ?
@@ -367,7 +369,7 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 	if _, err := r.db.Exec(ctx, query,
 		nameArg, p.Phone(), p.Email(), roleArg, isDefaultArg, dobArg, p.SchoolId(), p.ProgramId(), p.GradeId(),
 		p.SemesterId(), p.IdType(), p.TeacherId(), p.StudentId(), p.ProfileStatus(),
-		p.Note(), p.AvatarKey(), p.ProfileId()); err != nil {
+		p.RptFlg(), p.Kwords(), p.Note(), p.AvatarKey(), p.ProfileId()); err != nil {
 		return fmt.Errorf("profile repo update: %w", err)
 	}
 	return nil
@@ -497,6 +499,8 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p.SetIdType(m.IdType)
 	p.SetTeacherId(m.TeacherId)
 	p.SetStudentId(m.StudentId)
+	p.SetRptFlg(m.RptFlg)
+	p.SetKwords(m.Kwords)
 	p.SetNote(m.Note)
 	p.SetProfileStatus(m.ProfileStatus)
 	p.SetStatus(m.Status)

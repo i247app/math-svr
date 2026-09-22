@@ -20,6 +20,8 @@ type ChatConversationModel struct {
 	LastMessagePreview         *string
 	LastMessageSenderProfileId *int64
 	LastMessageDt              *time.Time
+	RptFlg                     *string
+	Kwords                     *string
 	Note                       *string
 	ConversationStatus         *string
 	Status                     string
@@ -48,6 +50,8 @@ type ChatParticipantModel struct {
 	JoinedDt           *time.Time
 	LeftDt             *time.Time
 	InvitedByProfileId *int64
+	RptFlg             *string
+	Kwords             *string
 	Note               *string
 	ParticipantStatus  *string
 	Status             string
@@ -75,6 +79,8 @@ type ChatMessageModel struct {
 	SentDt           time.Time
 	EditedDt         *time.Time
 	RevokedDt        *time.Time
+	RptFlg           *string
+	Kwords           *string
 	Note             *string
 	MessageStatus    *string
 	Status           string

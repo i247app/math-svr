@@ -22,7 +22,7 @@ const (
 		p.uid, p.participant_role, p.last_read_seq_no, p.last_read_message_id,
 		p.last_read_dt, p.last_delivered_seq_no, p.unread_count, p.is_muted,
 		p.muted_until_dt, p.is_pinned, p.cleared_before_seq_no, p.joined_dt, p.left_dt,
-		p.invited_by_profile_id, p.note, p.participant_status, p.status,
+		p.invited_by_profile_id, p.rpt_flg, p.kwords, p.note, p.participant_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
 	chatParticipantActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
@@ -46,7 +46,7 @@ func scanChatParticipant(s database.RowScanner) (*models.ChatParticipantModel, e
 		&m.UserId, &m.ParticipantRole, &m.LastReadSeqNo, &m.LastReadMessageId,
 		&m.LastReadDt, &m.LastDeliveredSeqNo, &m.UnreadCount, &m.IsMuted,
 		&m.MutedUntilDt, &m.IsPinned, &m.ClearedBeforeSeqNo, &m.JoinedDt, &m.LeftDt,
-		&m.InvitedByProfileId, &m.Note, &m.ParticipantStatus, &m.Status,
+		&m.InvitedByProfileId, &m.RptFlg, &m.Kwords, &m.Note, &m.ParticipantStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -81,6 +81,8 @@ func ModelToDomainChatParticipant(m *models.ChatParticipantModel) *chat.Particip
 		p.SetLeftDt(mtime.MathTime{Time: *m.LeftDt})
 	}
 	p.SetInvitedByProfileId(m.InvitedByProfileId)
+	p.SetRptFlg(m.RptFlg)
+	p.SetKwords(m.Kwords)
 	p.SetNote(m.Note)
 	p.SetParticipantStatus(m.ParticipantStatus)
 	p.SetStatus(m.Status)
@@ -185,9 +187,9 @@ func (r *ChatParticipantRepository) Create(ctx context.Context, p *chat.Particip
 	query := `INSERT INTO ` + chatParticipantTable + `
 		  (participant_id, conversation_id, profile_id, uid, participant_role,
 		   last_read_seq_no, last_delivered_seq_no, unread_count, is_muted, is_pinned,
-		   cleared_before_seq_no, joined_dt, invited_by_profile_id, note,
+		   cleared_before_seq_no, joined_dt, invited_by_profile_id, rpt_flg, kwords, note,
 		   participant_status, status, create_id, create_dt)
-		VALUES (?, ?, ?, ?, ?, 0, 0, 0, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)`
+		VALUES (?, ?, ?, ?, ?, 0, 0, 0, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	now := mtime.Now().Time
 	joinedDt := p.JoinedDt()
@@ -197,7 +199,7 @@ func (r *ChatParticipantRepository) Create(ctx context.Context, p *chat.Particip
 
 	res, err := r.db.Exec(ctx, query,
 		p.ParticipantId(), p.ConversationId(), p.ProfileId(), p.UserId(), p.ParticipantRole(),
-		p.IsMuted(), p.IsPinned(), joinedDt.Time, p.InvitedByProfileId(), p.Note(),
+		p.IsMuted(), p.IsPinned(), joinedDt.Time, p.InvitedByProfileId(), p.RptFlg(), p.Kwords(), p.Note(),
 		p.ParticipantStatus(), p.Status(), p.CreateId(), now,
 	)
 	if err != nil {

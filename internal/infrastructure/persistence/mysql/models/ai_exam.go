@@ -17,6 +17,8 @@ type AiExamModel struct {
 	AiTitle         *string
 	AiShortText     *string
 	AiQuestionsJson string
+	RptFlg          *string
+	Kwords          *string
 	Note            *string
 	AiExamStatus    *string
 	Status          string

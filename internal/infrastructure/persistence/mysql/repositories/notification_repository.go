@@ -19,7 +19,7 @@ const (
 	notificationTable = "ma_notifications"
 
 	notificationColumns = `n.id, n.notification_id, n.uid, n.title, n.short_text,
-		n.category, n.is_read, n.action_type, n.action_data, n.priority, n.note,
+		n.category, n.is_read, n.action_type, n.action_data, n.priority, n.rpt_flg, n.kwords, n.note,
 		n.notification_status, n.status,
 		n.create_id, n.create_dt, n.modify_id, n.modify_dt`
 
@@ -44,7 +44,7 @@ func NewNotificationRepository(db database.Executor) notification.IRepository {
 func scanNotification(s database.RowScanner) (*models.NotificationModel, error) {
 	var m models.NotificationModel
 	if err := s.Scan(&m.Id, &m.NotificationId, &m.UserId, &m.Title, &m.ShortText,
-		&m.Category, &m.IsRead, &m.ActionType, &m.ActionData, &m.Priority, &m.Note,
+		&m.Category, &m.IsRead, &m.ActionType, &m.ActionData, &m.Priority, &m.RptFlg, &m.Kwords, &m.Note,
 		&m.NotificationStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -150,13 +150,13 @@ func (r *NotificationRepository) Create(ctx context.Context, n *notification.Not
 	query := `
 		INSERT INTO ` + notificationTable + `
 			(notification_id, uid, title, short_text, category, is_read, action_type,
-			 action_data, priority, note, notification_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 action_data, priority, rpt_flg, kwords, note, notification_status, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	now := mtime.Now().Time
 	result, err := r.db.Exec(ctx, query,
 		n.NotificationId(), n.UserId(), n.Title(), n.ShortText(), n.Category(),
-		n.IsRead(), n.ActionType(), n.ActionData(), n.Priority(), n.Note(),
+		n.IsRead(), n.ActionType(), n.ActionData(), n.Priority(), n.RptFlg(), n.Kwords(), n.Note(),
 		n.NotificationStatus(), n.CreateId(), now, now)
 	if err != nil {
 		return nil, fmt.Errorf("notification repo create: %w", err)
@@ -223,6 +223,8 @@ func ModelToDomainNotification(m *models.NotificationModel) *notification.Notifi
 	n.SetActionType(m.ActionType)
 	n.SetActionData(m.ActionData)
 	n.SetPriority(m.Priority)
+	n.SetRptFlg(m.RptFlg)
+	n.SetKwords(m.Kwords)
 	n.SetNote(m.Note)
 	n.SetNotificationStatus(m.NotificationStatus)
 	n.SetStatus(m.Status)

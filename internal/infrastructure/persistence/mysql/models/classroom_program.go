@@ -7,6 +7,8 @@ type ClassroomProgramModel struct {
 	ClassroomProgramId int64
 	ClassroomId        int64
 	ProgramId          int64
+	RptFlg             *string
+	Kwords             *string
 	Note               *string
 	Status             string
 	CreateId           *int64

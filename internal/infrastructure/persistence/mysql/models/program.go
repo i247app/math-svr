@@ -11,6 +11,8 @@ type ProgramModel struct {
 	Description   string
 	ImageKey      *string
 	DisplayOrder  int8
+	RptFlg        *string
+	Kwords        *string
 	Note          *string
 	ProgramStatus *string
 	Status        string

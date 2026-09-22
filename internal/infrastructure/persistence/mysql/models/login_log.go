@@ -11,6 +11,8 @@ type LoginLogModel struct {
 	IpAddress      string
 	DeviceUUID     string
 	Token          string
+	RptFlg         *string
+	Kwords         *string
 	Note           *string
 	LoginLogStatus *string
 	Status         string

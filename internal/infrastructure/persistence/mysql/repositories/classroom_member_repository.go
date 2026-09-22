@@ -21,7 +21,7 @@ const (
 
 	classroomMemberColumns = `m.id, m.member_id, m.classroom_id, m.profile_id, m.member_role,
 		m.invitation_id, m.joined_dt, m.left_dt, m.removed_by_profile_id, m.removed_dt,
-		m.last_seen_dt, m.note, m.invite_by, m.invite_dt,
+		m.last_seen_dt, m.rpt_flg, m.kwords, m.note, m.invite_by, m.invite_dt,
 		m.member_status, m.status,
 		m.create_id, m.create_dt, m.modify_id, m.modify_dt`
 
@@ -46,7 +46,7 @@ func scanClassroomMember(s database.RowScanner) (*models.ClassroomMemberModel, e
 	var m models.ClassroomMemberModel
 	if err := s.Scan(&m.Id, &m.MemberId, &m.ClassroomId, &m.ProfileId, &m.MemberRole,
 		&m.InvitationId, &m.JoinedDt, &m.LeftDt, &m.RemovedByProfileId, &m.RemovedDt,
-		&m.LastSeenDt, &m.Note, &m.InviteBy, &m.InviteDt,
+		&m.LastSeenDt, &m.RptFlg, &m.Kwords, &m.Note, &m.InviteBy, &m.InviteDt,
 		&m.MemberStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -509,13 +509,13 @@ func (r *ClassroomMemberRepository) Create(ctx context.Context, m *classroom.Mem
 		INSERT INTO ` + classroomMemberTable + `
 			(member_id, classroom_id, profile_id, member_role,
 			 invitation_id, joined_dt, left_dt, removed_by_profile_id, removed_dt,
-			 last_seen_dt, note, invite_by, invite_dt, member_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 last_seen_dt, rpt_flg, kwords, note, invite_by, invite_dt, member_status, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		m.MemberId(), m.ClassroomId(), m.ProfileId(), m.MemberRole(),
 		m.InvitationId(), joinedArg, leftArg, m.RemovedByProfileId(), removedArg,
-		lastSeenArg, m.Note(), m.InviteBy(), inviteDtArg, m.MemberStatus(), m.CreateId(),
+		lastSeenArg, m.RptFlg(), m.Kwords(), m.Note(), m.InviteBy(), inviteDtArg, m.MemberStatus(), m.CreateId(),
 		mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("classroom_member repo create: %w", err)
@@ -560,6 +560,8 @@ func (r *ClassroomMemberRepository) Update(ctx context.Context, m *classroom.Mem
 			removed_by_profile_id = COALESCE(?, removed_by_profile_id),
 			removed_dt            = COALESCE(?, removed_dt),
 			last_seen_dt          = COALESCE(?, last_seen_dt),
+			rpt_flg               = COALESCE(?, rpt_flg),
+			kwords                = COALESCE(?, kwords),
 			note                  = COALESCE(?, note),
 			invite_by             = COALESCE(?, invite_by),
 			invite_dt             = COALESCE(?, invite_dt),
@@ -571,7 +573,7 @@ func (r *ClassroomMemberRepository) Update(ctx context.Context, m *classroom.Mem
 	if _, err := r.db.Exec(ctx, query,
 		roleArg, m.InvitationId(), joinedArg, leftArg,
 		m.RemovedByProfileId(), removedArg, lastSeenArg,
-		m.Note(), m.InviteBy(), inviteDtArg, m.MemberStatus(), m.ModifyId(),
+		m.RptFlg(), m.Kwords(), m.Note(), m.InviteBy(), inviteDtArg, m.MemberStatus(), m.ModifyId(),
 		mtime.Now().Time, m.MemberId()); err != nil {
 		return fmt.Errorf("classroom_member repo update: %w", err)
 	}
@@ -827,6 +829,8 @@ func ModelToDomainClassroomMember(m *models.ClassroomMemberModel) *classroom.Mem
 	if m.LastSeenDt != nil {
 		d.SetLastSeenDt(mtime.MathTime{Time: *m.LastSeenDt})
 	}
+	d.SetRptFlg(m.RptFlg)
+	d.SetKwords(m.Kwords)
 	d.SetNote(m.Note)
 	d.SetInviteBy(m.InviteBy)
 	if m.InviteDt != nil {

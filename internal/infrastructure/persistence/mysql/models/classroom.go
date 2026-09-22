@@ -17,6 +17,8 @@ type ClassroomModel struct {
 	StudentCount           int64
 	TeacherCount           int64
 	CoverKey               *string
+	RptFlg                 *string
+	Kwords                 *string
 	Note                   *string
 	ClassroomStatus        *string
 	Status                 string

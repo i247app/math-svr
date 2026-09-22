@@ -60,6 +60,8 @@ type UpdatePatch struct {
 	LessonName     *string
 	StartDate      *mtime.MathTime
 	EndDate        *mtime.MathTime
+	RptFlg         *string
+	Kwords         *string
 	Note           *string
 	ExerciseStatus *string
 	Visibility     *string

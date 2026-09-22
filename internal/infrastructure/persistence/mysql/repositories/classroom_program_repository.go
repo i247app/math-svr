@@ -19,7 +19,7 @@ const (
 	classroomProgramTable = "ma_classroom_programs"
 
 	classroomProgramColumns = `cp.id, cp.classroom_program_id, cp.classroom_id, cp.program_id,
-		cp.note, cp.status, cp.create_id, cp.create_dt, cp.modify_id, cp.modify_dt`
+		cp.rpt_flg, cp.kwords, cp.note, cp.status, cp.create_id, cp.create_dt, cp.modify_id, cp.modify_dt`
 
 	// classroomProgramActiveWhere mirrors the convention used by every
 	// other repo: filter out system-inactive and soft-deleted rows.
@@ -43,7 +43,7 @@ func NewClassroomProgramRepository(db database.Executor) classroom.IClassroomPro
 func scanClassroomProgram(s database.RowScanner) (*models.ClassroomProgramModel, error) {
 	var m models.ClassroomProgramModel
 	if err := s.Scan(&m.Id, &m.ClassroomProgramId, &m.ClassroomId, &m.ProgramId,
-		&m.Note, &m.Status, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+		&m.RptFlg, &m.Kwords, &m.Note, &m.Status, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -130,12 +130,12 @@ func (r *ClassroomProgramRepository) findBareById(ctx context.Context, id int64)
 func (r *ClassroomProgramRepository) Create(ctx context.Context, cp *classroom.ClassroomProgram) (*classroom.ClassroomProgram, error) {
 	query := `
 		INSERT INTO ` + classroomProgramTable + `
-			(classroom_program_id, classroom_id, program_id, note, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+			(classroom_program_id, classroom_id, program_id, rpt_flg, kwords, note, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		cp.ClassroomProgramId(), cp.ClassroomId(), cp.ProgramId(),
-		cp.Note(), cp.CreateId(), mtime.Now().Time, mtime.Now().Time)
+		cp.RptFlg(), cp.Kwords(), cp.Note(), cp.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("classroom_program repo create: %w", err)
 	}
@@ -169,6 +169,8 @@ func ModelToDomainClassroomProgram(m *models.ClassroomProgramModel) *classroom.C
 	cp.SetClassroomProgramId(m.ClassroomProgramId)
 	cp.SetClassroomId(m.ClassroomId)
 	cp.SetProgramId(m.ProgramId)
+	cp.SetRptFlg(m.RptFlg)
+	cp.SetKwords(m.Kwords)
 	cp.SetNote(m.Note)
 	cp.SetStatus(m.Status)
 	cp.SetCreateId(m.CreateId)

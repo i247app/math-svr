@@ -34,6 +34,10 @@ type AiExam struct {
 	aiShortText     *string
 	aiQuestionsJson string
 
+	rptFlg *string
+
+	kwords *string
+
 	note         *string
 	aiExamStatus *string
 	status       string
@@ -71,6 +75,10 @@ func (a *AiExam) AiQuestionsJson() string      { return a.aiQuestionsJson }
 func (a *AiExam) SetAiQuestionsJson(s string)  { a.aiQuestionsJson = s }
 func (a *AiExam) Note() *string                { return a.note }
 func (a *AiExam) SetNote(s *string)            { a.note = s }
+func (a *AiExam) RptFlg() *string              { return a.rptFlg }
+func (a *AiExam) SetRptFlg(v *string)          { a.rptFlg = v }
+func (a *AiExam) Kwords() *string              { return a.kwords }
+func (a *AiExam) SetKwords(v *string)          { a.kwords = v }
 func (a *AiExam) AiExamStatus() *string        { return a.aiExamStatus }
 func (a *AiExam) SetAiExamStatus(s *string)    { a.aiExamStatus = s }
 func (a *AiExam) Status() string               { return a.status }

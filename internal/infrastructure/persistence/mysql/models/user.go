@@ -15,6 +15,8 @@ type UserModel struct {
 	Role            string
 	UserStatus      *string
 	Status          string
+	RptFlg          *string
+	Kwords          *string
 	Note            *string
 	CreateId        *int64
 	CreateDt        time.Time

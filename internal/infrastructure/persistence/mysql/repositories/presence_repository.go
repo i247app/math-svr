@@ -20,7 +20,7 @@ const (
 
 	presenceColumns = `p.id, p.uid, p.presence_state, p.connection_count,
 		p.last_online_dt, p.last_seen_dt, p.last_device_uuid, p.last_platform,
-		p.note, p.status, p.create_id, p.create_dt, p.modify_id, p.modify_dt`
+		p.rpt_flg, p.kwords, p.note, p.status, p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
 	// Presence has no business-status column — a user is never "soft-deleted"
 	// from presence, the row simply goes OFFLINE. Only the system status and
@@ -44,7 +44,7 @@ func scanPresence(s database.RowScanner) (*models.PresenceModel, error) {
 	var m models.PresenceModel
 	if err := s.Scan(&m.Id, &m.UserId, &m.PresenceState, &m.ConnectionCount,
 		&m.LastOnlineDt, &m.LastSeenDt, &m.LastDeviceUuid, &m.LastPlatform,
-		&m.Note, &m.Status, &m.CreateId, &m.CreateDt, &m.ModifyId,
+		&m.RptFlg, &m.Kwords, &m.Note, &m.Status, &m.CreateId, &m.CreateDt, &m.ModifyId,
 		&m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -183,6 +183,8 @@ func ModelToDomainPresence(m *models.PresenceModel) *presence.Presence {
 	}
 	p.SetLastDeviceUuid(m.LastDeviceUuid)
 	p.SetLastPlatform(m.LastPlatform)
+	p.SetRptFlg(m.RptFlg)
+	p.SetKwords(m.Kwords)
 	p.SetNote(m.Note)
 	p.SetStatus(m.Status)
 	p.SetCreateId(m.CreateId)

@@ -22,6 +22,8 @@ type ExerciseModel struct {
 	Answers             *string
 	StartDate           *time.Time
 	EndDate             *time.Time
+	RptFlg              *string
+	Kwords              *string
 	Note                *string
 	ExerciseStatus      *string
 	Status              string

@@ -27,6 +27,8 @@ type Profile struct {
 	idType        *string
 	teacherId     *string
 	studentId     *string
+	rptFlg        *string
+	kwords        *string
 	note          *string
 	profileStatus *string
 	status        string
@@ -214,6 +216,24 @@ func (p *Profile) Note() *string {
 
 func (p *Profile) SetNote(note *string) {
 	p.note = note
+}
+
+// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
+func (p *Profile) RptFlg() *string {
+	return p.rptFlg
+}
+
+func (p *Profile) SetRptFlg(rptFlg *string) {
+	p.rptFlg = rptFlg
+}
+
+// Kwords holds search keywords (kwords) for a future text-search index.
+func (p *Profile) Kwords() *string {
+	return p.kwords
+}
+
+func (p *Profile) SetKwords(kwords *string) {
+	p.kwords = kwords
 }
 
 func (p *Profile) ProfileStatus() *string {

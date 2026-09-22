@@ -24,7 +24,7 @@ const (
 
 	semesterColumns = `s.id, s.semester_id, s.name,
 		COALESCE(s.description, '') AS description,
-		s.image_key, s.display_order, s.note,
+		s.image_key, s.display_order, s.rpt_flg, s.kwords, s.note,
 		s.semester_status, s.status,
 		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
 
@@ -46,7 +46,7 @@ func NewSemesterRepository(db database.Executor) semester.IRepository {
 func scanSemester(s database.RowScanner) (*models.SemesterModel, error) {
 	var m models.SemesterModel
 	if err := s.Scan(&m.Id, &m.SemesterId, &m.Name, &m.Description, &m.ImageKey,
-		&m.DisplayOrder, &m.Note, &m.SemesterStatus, &m.Status,
+		&m.DisplayOrder, &m.RptFlg, &m.Kwords, &m.Note, &m.SemesterStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -159,8 +159,8 @@ func (r *SemesterRepository) ListSemestersByIds(ctx context.Context, ids []int64
 func (r *SemesterRepository) Create(ctx context.Context, s *semester.Semester) (*semester.Semester, error) {
 	query := `
 		INSERT INTO ` + semesterTable + `
-			(semester_id, name, description, image_key, display_order, note, semester_status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(semester_id, name, description, image_key, display_order, rpt_flg, kwords, note, semester_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	// description column is nullable TEXT; persist as NULL when empty
 	// so reads coalesce cleanly.
@@ -171,7 +171,7 @@ func (r *SemesterRepository) Create(ctx context.Context, s *semester.Semester) (
 
 	result, err := r.db.Exec(ctx, query,
 		s.SemesterId(), s.Name(), description, s.ImageKey(),
-		s.DisplayOrder(), s.Note(), s.SemesterStatus(), mtime.Now().Time, mtime.Now().Time)
+		s.DisplayOrder(), s.RptFlg(), s.Kwords(), s.Note(), s.SemesterStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("semester repo create: %w", err)
 	}
@@ -208,13 +208,15 @@ func (r *SemesterRepository) Update(ctx context.Context, s *semester.Semester) e
 			description   = COALESCE(?, description),
 			image_key     = COALESCE(?, image_key),
 			display_order = ?,
+			rpt_flg       = COALESCE(?, rpt_flg),
+			kwords        = COALESCE(?, kwords),
 			note          = COALESCE(?, note),
 			modify_dt     = ?
 		WHERE semester_id = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
 		name, description, imageKey,
-		s.DisplayOrder(), s.Note(), mtime.Now().Time, s.SemesterId()); err != nil {
+		s.DisplayOrder(), s.RptFlg(), s.Kwords(), s.Note(), mtime.Now().Time, s.SemesterId()); err != nil {
 		return fmt.Errorf("semester repo update: %w", err)
 	}
 	return nil
@@ -256,6 +258,8 @@ func ModelToDomainSemester(m *models.SemesterModel) *semester.Semester {
 	s.SetDescription(m.Description)
 	s.SetImageKey(m.ImageKey)
 	s.SetDisplayOrder(m.DisplayOrder)
+	s.SetRptFlg(m.RptFlg)
+	s.SetKwords(m.Kwords)
 	s.SetNote(m.Note)
 	s.SetSemesterStatus(m.SemesterStatus)
 	s.SetStatus(m.Status)

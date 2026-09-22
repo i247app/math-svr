@@ -23,6 +23,8 @@ type Presence struct {
 	lastSeenDt      mtime.MathTime
 	lastDeviceUuid  *string
 	lastPlatform    *string
+	rptFlg          *string
+	kwords          *string
 	note            *string
 	status          string
 	createId        *int64
@@ -55,6 +57,10 @@ func (p *Presence) LastPlatform() *string       { return p.lastPlatform }
 func (p *Presence) SetLastPlatform(v *string)   { p.lastPlatform = v }
 func (p *Presence) Note() *string               { return p.note }
 func (p *Presence) SetNote(n *string)           { p.note = n }
+func (p *Presence) RptFlg() *string             { return p.rptFlg }
+func (p *Presence) SetRptFlg(v *string)         { p.rptFlg = v }
+func (p *Presence) Kwords() *string             { return p.kwords }
+func (p *Presence) SetKwords(v *string)         { p.kwords = v }
 func (p *Presence) Status() string              { return p.status }
 func (p *Presence) SetStatus(v string)          { p.status = v }
 func (p *Presence) CreateId() *int64            { return p.createId }

@@ -20,7 +20,7 @@ const (
 	gradeTable = "ma_grades"
 
 	gradeColumns = `g.id, g.grade_id, g.label, g.description,
-		g.image_key, g.display_order, g.note,
+		g.image_key, g.display_order, g.rpt_flg, g.kwords, g.note,
 		g.grade_status, g.status,
 		g.create_id, g.create_dt, g.modify_id, g.modify_dt`
 
@@ -42,7 +42,7 @@ func NewGradeRepository(db database.Executor) grade.IRepository {
 func scanGrade(s database.RowScanner) (*models.GradeModel, error) {
 	var m models.GradeModel
 	if err := s.Scan(&m.Id, &m.GradeId, &m.Label, &m.Description, &m.ImageKey,
-		&m.DisplayOrder, &m.Note, &m.GradeStatus, &m.Status,
+		&m.DisplayOrder, &m.RptFlg, &m.Kwords, &m.Note, &m.GradeStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -175,12 +175,12 @@ func (r *GradeRepository) ListGradesByIds(ctx context.Context, ids []int64) ([]*
 func (r *GradeRepository) Create(ctx context.Context, g *grade.Grade) (*grade.Grade, error) {
 	query := `
 		INSERT INTO ` + gradeTable + `
-			(grade_id, label, description, image_key, display_order, note, grade_status, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			(grade_id, label, description, image_key, display_order, rpt_flg, kwords, note, grade_status, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
 		g.GradeId(), g.Label(), g.Description(), g.ImageKey(),
-		g.DisplayOrder(), g.Note(), g.GradeStatus(), mtime.Now().Time, mtime.Now().Time)
+		g.DisplayOrder(), g.RptFlg(), g.Kwords(), g.Note(), g.GradeStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("grade repo create: %w", err)
 	}
@@ -217,13 +217,15 @@ func (r *GradeRepository) Update(ctx context.Context, g *grade.Grade) error {
 			description   = COALESCE(?, description),
 			image_key     = COALESCE(?, image_key),
 			display_order = ?,
+			rpt_flg       = COALESCE(?, rpt_flg),
+			kwords        = COALESCE(?, kwords),
 			note          = COALESCE(?, note),
 			modify_dt     = ?
 		WHERE grade_id = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
 		label, description, imageKey,
-		g.DisplayOrder(), g.Note(), mtime.Now().Time, g.GradeId()); err != nil {
+		g.DisplayOrder(), g.RptFlg(), g.Kwords(), g.Note(), mtime.Now().Time, g.GradeId()); err != nil {
 		return fmt.Errorf("grade repo update: %w", err)
 	}
 	return nil
@@ -265,6 +267,8 @@ func ModelToDomainGrade(m *models.GradeModel) *grade.Grade {
 	g.SetDescription(m.Description)
 	g.SetImageKey(m.ImageKey)
 	g.SetDisplayOrder(m.DisplayOrder)
+	g.SetRptFlg(m.RptFlg)
+	g.SetKwords(m.Kwords)
 	g.SetNote(m.Note)
 	g.SetGradeStatus(m.GradeStatus)
 	g.SetStatus(m.Status)

@@ -49,6 +49,10 @@ type UserAiExam struct {
 	startedDt   mtime.MathTime
 	submittedDt mtime.MathTime
 
+	rptFlg *string
+
+	kwords *string
+
 	note             *string
 	userAiExamStatus *string
 	status           string
@@ -94,6 +98,10 @@ func (u *UserAiExam) SubmittedDt() mtime.MathTime     { return u.submittedDt }
 func (u *UserAiExam) SetSubmittedDt(t mtime.MathTime) { u.submittedDt = t }
 func (u *UserAiExam) Note() *string                   { return u.note }
 func (u *UserAiExam) SetNote(s *string)               { u.note = s }
+func (u *UserAiExam) RptFlg() *string                 { return u.rptFlg }
+func (u *UserAiExam) SetRptFlg(v *string)             { u.rptFlg = v }
+func (u *UserAiExam) Kwords() *string                 { return u.kwords }
+func (u *UserAiExam) SetKwords(v *string)             { u.kwords = v }
 func (u *UserAiExam) UserAiExamStatus() *string       { return u.userAiExamStatus }
 func (u *UserAiExam) SetUserAiExamStatus(s *string)   { u.userAiExamStatus = s }
 func (u *UserAiExam) Status() string                  { return u.status }

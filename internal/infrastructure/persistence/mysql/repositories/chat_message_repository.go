@@ -21,7 +21,7 @@ const (
 		m.sender_profile_id, m.sender_uid, m.message_type, m.content,
 		m.attachment_count, m.reply_to_message_id, m.system_event, m.system_payload,
 		m.metadata, m.client_msg_id, m.sent_dt, m.edited_dt, m.revoked_dt,
-		m.note, m.message_status, m.status, m.create_id, m.create_dt,
+		m.rpt_flg, m.kwords, m.note, m.message_status, m.status, m.create_id, m.create_dt,
 		m.modify_id, m.modify_dt`
 
 	// REVOKED rows deliberately survive this filter: the client renders them
@@ -52,7 +52,7 @@ func scanChatMessage(s database.RowScanner) (*models.ChatMessageModel, error) {
 		&m.SenderProfileId, &m.SenderUserId, &m.MessageType, &m.Content,
 		&m.AttachmentCount, &m.ReplyToMessageId, &m.SystemEvent, &m.SystemPayload,
 		&m.Metadata, &m.ClientMsgId, &m.SentDt, &m.EditedDt, &m.RevokedDt,
-		&m.Note, &m.MessageStatus, &m.Status, &m.CreateId, &m.CreateDt,
+		&m.RptFlg, &m.Kwords, &m.Note, &m.MessageStatus, &m.Status, &m.CreateId, &m.CreateDt,
 		&m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -82,6 +82,8 @@ func ModelToDomainChatMessage(m *models.ChatMessageModel) *chat.Message {
 	if m.RevokedDt != nil {
 		msg.SetRevokedDt(mtime.MathTime{Time: *m.RevokedDt})
 	}
+	msg.SetRptFlg(m.RptFlg)
+	msg.SetKwords(m.Kwords)
 	msg.SetNote(m.Note)
 	msg.SetMessageStatus(m.MessageStatus)
 	msg.SetStatus(m.Status)
@@ -198,14 +200,14 @@ func (r *ChatMessageRepository) Create(ctx context.Context, m *chat.Message) (*c
 		  (message_id, conversation_id, seq_no, sender_profile_id, sender_uid,
 		   message_type, content, attachment_count, reply_to_message_id,
 		   system_event, system_payload, metadata, client_msg_id, sent_dt,
-		   note, message_status, status, create_id, create_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		   rpt_flg, kwords, note, message_status, status, create_id, create_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	res, err := r.db.Exec(ctx, query,
 		m.MessageId(), m.ConversationId(), m.SeqNo(), m.SenderProfileId(), m.SenderUserId(),
 		m.MessageType(), m.Content(), m.AttachmentCount(), m.ReplyToMessageId(),
 		m.SystemEvent(), m.SystemPayload(), m.Metadata(), m.ClientMsgId(), m.SentDt().Time,
-		m.Note(), m.MessageStatus(), m.Status(), m.CreateId(), mtime.Now().Time,
+		m.RptFlg(), m.Kwords(), m.Note(), m.MessageStatus(), m.Status(), m.CreateId(), mtime.Now().Time,
 	)
 	if err != nil {
 		// Translated to a domain sentinel so the command layer can recognise a

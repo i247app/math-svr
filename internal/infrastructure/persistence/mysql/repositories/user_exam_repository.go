@@ -22,7 +22,7 @@ const (
 	userExamColumns = `e.id, e.user_exam_id, e.uid, e.profile_id, e.req_exam_type,
 		e.res_total_questions, e.res_correct_number, e.res_skipped_number, e.res_score_percentage,
 		e.res_review, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
-		e.note, e.user_exam_status, e.status,
+		e.rpt_flg, e.kwords, e.note, e.user_exam_status, e.status,
 		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
 
 	userExamActiveWhere = `e.status IN (?) AND e.deleted_dt IS NULL`
@@ -45,7 +45,7 @@ func scanUserExam(s database.RowScanner) (*models.UserExamModel, error) {
 	if err := s.Scan(&m.Id, &m.UserExamId, &m.UserId, &m.ProfileId, &m.ReqExamType,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
 		&m.ResReview, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
-		&m.Note, &m.UserExamStatus, &m.Status,
+		&m.RptFlg, &m.Kwords, &m.Note, &m.UserExamStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -443,6 +443,8 @@ func ModelToDomainUserExam(m *models.UserExamModel) *exam.UserExam {
 	e.SetCurrentLevel(m.CurrentLevel)
 	e.SetLastSubmittedDt(mtime.MathTimeFromPtr(m.LastSubmittedDt))
 	e.SetEndedDt(mtime.MathTimeFromPtr(m.EndedDt))
+	e.SetRptFlg(m.RptFlg)
+	e.SetKwords(m.Kwords)
 	e.SetNote(m.Note)
 	e.SetUserExamStatus(m.UserExamStatus)
 	e.SetStatus(m.Status)

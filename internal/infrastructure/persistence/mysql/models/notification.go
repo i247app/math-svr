@@ -15,6 +15,8 @@ type NotificationModel struct {
 	ActionType         *string
 	ActionData         *string
 	Priority           *string
+	RptFlg             *string
+	Kwords             *string
 	Note               *string
 	NotificationStatus *string
 	Status             string

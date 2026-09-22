@@ -37,6 +37,8 @@ type Exercise struct {
 	answers             *string
 	startDate           mtime.MathTime
 	endDate             mtime.MathTime
+	rptFlg              *string
+	kwords              *string
 	note                *string
 	exerciseStatus      *string
 	status              string
@@ -84,6 +86,10 @@ func (e *Exercise) EndDate() mtime.MathTime         { return e.endDate }
 func (e *Exercise) SetEndDate(t mtime.MathTime)     { e.endDate = t }
 func (e *Exercise) Note() *string                   { return e.note }
 func (e *Exercise) SetNote(s *string)               { e.note = s }
+func (e *Exercise) RptFlg() *string                 { return e.rptFlg }
+func (e *Exercise) SetRptFlg(v *string)             { e.rptFlg = v }
+func (e *Exercise) Kwords() *string                 { return e.kwords }
+func (e *Exercise) SetKwords(v *string)             { e.kwords = v }
 func (e *Exercise) ExerciseStatus() *string         { return e.exerciseStatus }
 func (e *Exercise) SetExerciseStatus(s *string)     { e.exerciseStatus = s }
 func (e *Exercise) Status() string                  { return e.status }

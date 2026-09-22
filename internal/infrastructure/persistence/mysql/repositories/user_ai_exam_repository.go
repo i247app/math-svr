@@ -24,7 +24,7 @@ const (
 		u.req_exam_type, u.req_grade, u.req_level,
 		u.res_total_questions, u.res_correct_number, u.res_skipped_number, u.res_score_percentage,
 		u.started_dt, u.submitted_dt,
-		u.note, u.user_ai_exam_status, u.status,
+		u.rpt_flg, u.kwords, u.note, u.user_ai_exam_status, u.status,
 		u.create_id, u.create_dt, u.modify_id, u.modify_dt`
 
 	userAiExamActiveWhere = `u.status IN (?) AND u.deleted_dt IS NULL`
@@ -48,7 +48,7 @@ func scanUserAiExam(s database.RowScanner) (*models.UserAiExamModel, error) {
 		&m.ReqExamType, &m.ReqGrade, &m.ReqLevel,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
 		&m.StartedDt, &m.SubmittedDt,
-		&m.Note, &m.UserAiExamStatus, &m.Status,
+		&m.RptFlg, &m.Kwords, &m.Note, &m.UserAiExamStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -287,8 +287,8 @@ func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (
 		INSERT INTO ` + userAiExamTable + `
 			(user_ai_exam_id, uid, profile_id, ai_exam_id, user_exam_id, shuffle_map,
 			 req_exam_type, req_grade, req_level,
-			 started_dt, note, user_ai_exam_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 started_dt, rpt_flg, kwords, note, user_ai_exam_status, create_id, create_dt, modify_dt)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	now := mtime.Now().Time
 	startedDt := mtime.MathTimePtrToTime(a.StartedDt().Ptr())
@@ -296,7 +296,7 @@ func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (
 	result, err := r.db.Exec(ctx, query,
 		a.UserAiExamId(), a.UserId(), a.ProfileId(), a.AiExamId(), a.UserExamId(), a.ShuffleMap(),
 		a.ReqExamType(), a.ReqGrade(), a.ReqLevel(),
-		startedDt, a.Note(), a.UserAiExamStatus(), a.CreateId(), now, now)
+		startedDt, a.RptFlg(), a.Kwords(), a.Note(), a.UserAiExamStatus(), a.CreateId(), now, now)
 	if err != nil {
 		return nil, fmt.Errorf("user ai exam repo create: %w", err)
 	}
@@ -453,6 +453,8 @@ func ModelToDomainUserAiExam(m *models.UserAiExamModel) *exam.UserAiExam {
 	a.SetResScorePercentage(m.ResScorePercentage)
 	a.SetStartedDt(mtime.MathTimeFromPtr(m.StartedDt))
 	a.SetSubmittedDt(mtime.MathTimeFromPtr(m.SubmittedDt))
+	a.SetRptFlg(m.RptFlg)
+	a.SetKwords(m.Kwords)
 	a.SetNote(m.Note)
 	a.SetUserAiExamStatus(m.UserAiExamStatus)
 	a.SetStatus(m.Status)

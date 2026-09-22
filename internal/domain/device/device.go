@@ -23,6 +23,8 @@ type Device struct {
 	devicePushToken *string
 	isVerified      bool
 	trustDt         mtime.MathTime
+	rptFlg          *string
+	kwords          *string
 	note            *string
 	deviceStatus    *string
 	status          string
@@ -36,57 +38,22 @@ func NewDevice() *Device {
 	return &Device{}
 }
 
-func (d *Device) Id() int64 {
-	return d.id
-}
-
-func (d *Device) SetId(id int64) {
-	d.id = id
-}
-
-func (d *Device) DeviceId() int64 {
-	return d.deviceId
-}
-
-func (d *Device) SetDeviceId(deviceId int64) {
-	d.deviceId = deviceId
-}
-
-func (d *Device) UserId() *int64 {
-	return d.userId
-}
-
-func (d *Device) SetUserId(userId *int64) {
-	d.userId = userId
-}
-
-func (d *Device) DeviceUUID() string {
-	return d.deviceUUID
-}
-
-func (d *Device) SetDeviceUUID(deviceUUID string) {
-	d.deviceUUID = deviceUUID
-}
-
-func (d *Device) DeviceName() string {
-	return d.deviceName
-}
-
-func (d *Device) SetDeviceName(deviceName string) {
-	d.deviceName = deviceName
-}
+func (d *Device) Id() int64                       { return d.id }
+func (d *Device) SetId(id int64)                  { d.id = id }
+func (d *Device) DeviceId() int64                 { return d.deviceId }
+func (d *Device) SetDeviceId(deviceId int64)      { d.deviceId = deviceId }
+func (d *Device) UserId() *int64                  { return d.userId }
+func (d *Device) SetUserId(userId *int64)         { d.userId = userId }
+func (d *Device) DeviceUUID() string              { return d.deviceUUID }
+func (d *Device) SetDeviceUUID(deviceUUID string) { d.deviceUUID = deviceUUID }
+func (d *Device) DeviceName() string              { return d.deviceName }
+func (d *Device) SetDeviceName(deviceName string) { d.deviceName = deviceName }
 
 // Platform is the client platform (enum.PlatformType, e.g. "IOS") this
 // device row was registered from. Set once at creation — see BuildDevice
 // (login) and MarkDeviceVerifiedCommandHandler (2FA/registration auto-create).
-func (d *Device) Platform() string {
-	return d.platform
-}
-
-func (d *Device) SetPlatform(platform string) {
-	d.platform = platform
-}
-
+func (d *Device) Platform() string            { return d.platform }
+func (d *Device) SetPlatform(platform string) { d.platform = platform }
 func (d *Device) DevicePushToken() *string {
 	return d.devicePushToken
 }
@@ -132,6 +99,24 @@ func (d *Device) Note() *string {
 
 func (d *Device) SetNote(note *string) {
 	d.note = note
+}
+
+// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
+func (d *Device) RptFlg() *string {
+	return d.rptFlg
+}
+
+func (d *Device) SetRptFlg(rptFlg *string) {
+	d.rptFlg = rptFlg
+}
+
+// Kwords holds search keywords (kwords) for a future text-search index.
+func (d *Device) Kwords() *string {
+	return d.kwords
+}
+
+func (d *Device) SetKwords(kwords *string) {
+	d.kwords = kwords
 }
 
 func (d *Device) DeviceStatus() *string {

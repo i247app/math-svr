@@ -31,6 +31,8 @@ type Submission struct {
 	scorePercentage               *int64
 	submittedDt                   mtime.MathTime
 	gradedDt                      mtime.MathTime
+	rptFlg                        *string
+	kwords                        *string
 	note                          *string
 	submissionStatus              *string
 	status                        string
@@ -68,6 +70,10 @@ func (s *Submission) GradedDt() mtime.MathTime                  { return s.grade
 func (s *Submission) SetGradedDt(t mtime.MathTime)              { s.gradedDt = t }
 func (s *Submission) Note() *string                             { return s.note }
 func (s *Submission) SetNote(v *string)                         { s.note = v }
+func (s *Submission) RptFlg() *string                           { return s.rptFlg }
+func (s *Submission) SetRptFlg(v *string)                       { s.rptFlg = v }
+func (s *Submission) Kwords() *string                           { return s.kwords }
+func (s *Submission) SetKwords(v *string)                       { s.kwords = v }
 func (s *Submission) SubmissionStatus() *string                 { return s.submissionStatus }
 func (s *Submission) SetSubmissionStatus(v *string)             { s.submissionStatus = v }
 func (s *Submission) Status() string                            { return s.status }
