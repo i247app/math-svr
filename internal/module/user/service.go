@@ -283,11 +283,16 @@ func (s *Service) CreateGuest(ctx context.Context, sess *session.AppSession, req
 		return nil, err
 	}
 
+	loginName := created.User.UserName()
+	if loginName == "" {
+		loginName = deviceUUID
+	}
+
 	sess.Init(session.InitData{
 		Source:    "guest",
 		IsSecure:  false,
 		UID:       created.User.UserId(),
-		LoginName: deviceUUID,
+		LoginName: loginName,
 	})
 
 	log := logger.From(ctx)
