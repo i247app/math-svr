@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS ma_user_exams (
   ended_dt             DATETIME(6)  DEFAULT NULL,
 
   note                 VARCHAR(500) DEFAULT NULL,
-  user_exam_status     VARCHAR(32)  DEFAULT 'ACTIVE',        -- ACTIVE (open), COMPLETE, CANCEL (ended), DELETED
+  user_exam_status     VARCHAR(32)  DEFAULT 'ACTIVE',        -- ACTIVE (open), COMPLETE, CANCEL (ended)
   status               VARCHAR(32)  DEFAULT 'ACTIVE',
   create_id            BIGINT UNSIGNED DEFAULT NULL,
   create_dt            DATETIME(6)  DEFAULT CURRENT_TIMESTAMP(6),
