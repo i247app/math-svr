@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 type LogoutCommand struct {
@@ -36,10 +35,10 @@ func (h *LogoutCommandHandler) Handle(ctx context.Context, cmd LogoutCommand) er
 		// 	return errs.NewError(ctx, status.AUTH_LOGOUT_FAILED, nil, err)
 		// }
 
-		err := repos.LoginLog.MarkStatusByUserDevice(ctx, cmd.UserID, cmd.DeviceUUID, enum.LoginLogStatusTypeRevoked)
-		if err != nil {
-			return err
-		}
+		// err := repos.LoginLog.MarkStatusByUserDevice(ctx, cmd.UserID, cmd.DeviceUUID, enum.LoginLogStatusTypeRevoked)
+		// if err != nil {
+		// 	return err
+		// }
 		return nil
 	})
 }

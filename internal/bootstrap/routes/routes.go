@@ -84,10 +84,11 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// user routes
 	{
 		userHandler := user.NewUserHandler(res, services.UserSvc)
-		reg("POST /users/detail", userHandler.HandleGetUserById, authMiddleware)
-		reg("POST /users/me", userHandler.HandleGetUserMe, authMiddleware)
+		reg("POST /users/me", userHandler.HandleGetUserById)
+		// reg("POST /users/me", userHandler.HandleGetUserMe, authMiddleware)
 		reg("POST /users/list", userHandler.HandleListUsers, authMiddleware)
 		reg("POST /users/create", userHandler.HandleCreateUser)
+		reg("POST /users/create/guest", userHandler.HandleCreateGuest)
 		reg("POST /users/update", userHandler.HandleUpdateUser, authMiddleware)
 		reg("POST /users/upload-avatar", userHandler.HandleUploadAvatar, authMiddleware)
 
@@ -136,7 +137,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		profileHandler := profile.NewProfileHandler(services.ProfileSvc)
 		reg("POST /profiles/detail", profileHandler.HandleGetProfileById, authMiddleware)
-		reg("POST /profiles/list", profileHandler.HandleListProfiles, authMiddleware)
+		reg("POST /profiles/list", profileHandler.HandleListProfiles)
 		reg("POST /profiles/create", profileHandler.HandleCreateProfile, authMiddleware)
 		reg("POST /profiles/update", profileHandler.HandleUpdateProfile, authMiddleware)
 		reg("POST /profiles/soft-delete", profileHandler.HandleSoftDeleteProfile, authMiddleware)

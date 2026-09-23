@@ -1181,6 +1181,46 @@
           "response": []
         },
         {
+          "name": "Create Guest",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\nconst response = pm.response.json();\nif (response.user) {\n    pm.environment.set(\"guest_uid\", response.user.uid);\n}\nconst token = pm.response.headers.get(\"X-Auth-Token\");\nif (token) {\n    pm.environment.set(\"guest_access_token\", token);\n}\n"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"metadata\": {\n        \"device_uuid\": \"{{guest_device_uuid}}\",\n        \"platform\": \"ios\",\n        \"language\": \"vi-VN\"\n    }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{url}}/users/create/guest",
+              "host": [
+                "{{url}}"
+              ],
+              "path": [
+                "users",
+                "create",
+                "guest"
+              ]
+            },
+            "description": "Opens (or recognises) the guest account for this device_uuid and returns the user row. Public: send metadata WITHOUT `authorization`. The body needs nothing else; `child_name` is optional and is only used when the account is actually opened. Read the session token from the X-Auth-Token response header and put it in metadata.authorization on every following call. The guest's child is read separately (see the Profile folder). Calling it twice with the same device_uuid returns the same guest with `existing: true`. A session that is already secure is refused (mstatus 4009) — sign out first."
+          },
+          "response": []
+        },
+        {
           "name": "Update User",
           "event": [
             {

@@ -17,7 +17,7 @@ import (
 // DefaultGuestChildName is what a guest profile is called until someone
 // says otherwise. The screens show a child's name, and "" would read as
 // a bug; this reads as a placeholder.
-const DefaultGuestChildName = "Bé"
+const DefaultGuestChildName = "Guest-"
 
 // guestAccountNamePrefix builds the ACCOUNT name — ma_users.name, which
 // is the parent's display name and carries a UNIQUE index. A guest has no
@@ -25,7 +25,7 @@ const DefaultGuestChildName = "Bé"
 // placeholder (or on the same child's name), so the account is named
 // after its own uid, which is unique by construction. The child's name
 // goes where it belongs: ma_profiles.name.
-const guestAccountNamePrefix = "Khách "
+const guestAccountNamePrefix = "Guest-"
 
 // CreateGuestCommand opens an account for someone who has not registered:
 // a real ma_users row plus their first child profile, both marked GUEST,

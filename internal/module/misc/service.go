@@ -19,8 +19,9 @@ import (
 type ClearDataRepository interface {
 	ClearData(ctx context.Context) (tablesCleared []string, seqsReset []string, err error)
 	// ClearDataKeepingUsers wipes everything except rows owned by the
-	// whitelisted users (by uid). Sequences are not reset in this mode.
-	ClearDataKeepingUsers(ctx context.Context, keepUids []int64) (tablesProcessed []string, err error)
+	// whitelisted users (by uid), then realigns each wiped table's sequence to
+	// the highest surviving external id (0 when the table is now empty).
+	ClearDataKeepingUsers(ctx context.Context, keepUids []int64) (tablesProcessed []string, seqsReset []string, err error)
 	ClearDataTables(ctx context.Context, tables []string) (tablesCleared []string, seqsReset []string, err error)
 	// ClearableTables is the allow-list of table names the table-scoped clear
 	// may wipe; the service validates a request against it.
@@ -70,16 +71,16 @@ func (s *Service) ClearData(ctx context.Context, req *dto.ClearDataReq) (*dto.Cl
 		keep := dedupeInt64(req.WhitelistId)
 		log.Warn("misc.clear_data.start", "keep_uids", len(keep))
 
-		tables, err := s.maintenanceRepo.ClearDataKeepingUsers(ctx, keep)
+		tables, seqs, err := s.maintenanceRepo.ClearDataKeepingUsers(ctx, keep)
 		if err != nil {
 			return nil, errs.NewError(ctx, status.INTERNAL_SERVER_ERROR, nil, err)
 		}
 
-		log.Warn("misc.clear_data.done", "tables_processed", len(tables), "kept_uids", len(keep))
+		log.Warn("misc.clear_data.done", "tables_processed", len(tables), "seqs_reset", len(seqs), "kept_uids", len(keep))
 
 		return &dto.ClearDataRes{
 			TablesCleared: tables,
-			SeqsReset:     []string{},
+			SeqsReset:     seqs,
 			KeptUids:      keep,
 		}, nil
 	}

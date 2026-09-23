@@ -10,6 +10,8 @@ var (
 	ErrEmailRequired                             = errors.New("email is required")
 	ErrNameRequired                              = errors.New("name is required")
 	ErrPhoneRequired                             = errors.New("phone is required")
+	ErrSessionNotFound                           = errors.New("session not found")
+	ErrGuestSessionAlreadySecure                 = errors.New("this session already belongs to a registered account")
 	ErrRoleInvalid                               = errors.New("role is invalid")
 	ErrProvideEitherAvatarFileOrAvatarReference  = errors.New("provide either avatar file or avatar reference")
 	ErrStorageAdapterNotConfigured               = errors.New("storage adapter is not configured")

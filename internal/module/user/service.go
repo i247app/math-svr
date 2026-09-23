@@ -38,6 +38,7 @@ type Service struct {
 	getUserByEmailQuery  *query.GetUserByEmailQueryHandler
 	listUsersQuery       *query.ListUsersQueryHandler
 	createUserCmd        *command.CreateUserCommandHandler
+	createGuestCmd       *command.CreateGuestCommandHandler
 	updateUserCmd        *command.UpdateUserCommandHandler
 	setAvatarKeyCmd      *command.SetAvatarKeyCommandHandler
 	adoptGuestCmd        *command.AdoptGuestCommandHandler
@@ -59,6 +60,7 @@ func NewService(
 		getUserByEmailQuery:  query.NewGetUserByEmailQueryHandler(repo),
 		listUsersQuery:       query.NewListUsersQueryHandler(repo),
 		createUserCmd:        command.NewCreateUserCommandHandler(uow),
+		createGuestCmd:       command.NewCreateGuestCommandHandler(uow),
 		adoptGuestCmd:        command.NewAdoptGuestCommandHandler(uow),
 		updateUserCmd:        command.NewUpdateUserCommandHandler(uow),
 		setAvatarKeyCmd:      command.NewSetAvatarKeyCommandHandler(uow),
@@ -242,6 +244,62 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 
 	return &dto.CreateUserRes{
 		User: userRes,
+	}, nil
+}
+
+// CreateGuest opens — or recognises — the guest account this device
+// belongs to, and puts it in the session.
+//
+// It is the same account /exams/generate opens on first sight; this
+// route only lets the client ask for it up front instead of as a side
+// effect of generating an exam. Both go through CreateGuestCommand, so
+// the identity rule is the same one: metadata.device_uuid is who the
+// guest is, which makes the call IDEMPOTENT — a device coming back gets
+// the guest it already had, with the exams they already sat, rather
+// than a second account. The body supplies nothing that decides this.
+//
+// The session is deliberately NOT marked secure. Secure is the key to
+// every auth-gated route in the product; someone who has not registered
+// gets only /exams/*, which gates itself on the uid. Registering is what
+// makes the session secure — see CreateUser above.
+func (s *Service) CreateGuest(ctx context.Context, sess *session.AppSession, req *dto.CreateGuestReq) (*dto.CreateGuestRes, error) {
+	if sess == nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, ErrSessionNotFound)
+	}
+	// Someone already signed in must not be handed a guest: the Init
+	// below would replace their secure session with an unsecure one and
+	// sign them out. They have an account already — this route has
+	// nothing to give them.
+	if sess.IsValid() && sess.IsSecure() {
+		return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, ErrGuestSessionAlreadySecure)
+	}
+
+	deviceUUID := metadata.GetDeviceUUID(ctx)
+	created, err := s.createGuestCmd.Handle(ctx, command.CreateGuestCommand{
+		DeviceUUID: deviceUUID,
+		ChildName:  req.ChildName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sess.Init(session.InitData{
+		Source:    "guest",
+		IsSecure:  false,
+		UID:       created.User.UserId(),
+		LoginName: deviceUUID,
+	})
+
+	log := logger.From(ctx)
+	if created.Existing {
+		log.Info("user.guest.recognised", "uid", created.User.UserId(), "profile_id", created.Profile.ProfileId())
+	} else {
+		log.Info("user.guest.opened", "uid", created.User.UserId(), "profile_id", created.Profile.ProfileId())
+	}
+
+	return &dto.CreateGuestRes{
+		User:     dto.DomainToResponse(created.User),
+		Existing: created.Existing,
 	}, nil
 }
 

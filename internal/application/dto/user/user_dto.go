@@ -75,6 +75,29 @@ type CreateUserRes struct {
 	User *UserResponse `json:"user"`
 }
 
+// CreateGuestReq carries nothing the client has to fill in. A guest is
+// identified by metadata.device_uuid, which every request already
+// carries, so the body may be empty — see Service.CreateGuest.
+type CreateGuestReq struct {
+	// ChildName names the profile opened alongside the account. Optional:
+	// blank means the placeholder name, and it is only read when the
+	// account is actually opened — a device coming back keeps the name it
+	// already has.
+	ChildName string `json:"child_name,omitempty"`
+}
+
+// CreateGuestRes hands back the guest account only. The child opened
+// alongside it is read through /profiles/list like any other profile —
+// the guest's session already authorises that call. The session token
+// travels in the X-Auth-Token response header, exactly as it does for
+// /auth/login.
+type CreateGuestRes struct {
+	User *UserResponse `json:"user"`
+	// Existing reports that this device was already known, so nothing new
+	// was opened.
+	Existing bool `json:"existing"`
+}
+
 type UpdateUserReq struct {
 	ID     int64   `json:"id"`
 	UserID int64   `json:"uid"`

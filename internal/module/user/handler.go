@@ -79,12 +79,56 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
+// POST /users/create/guest
+//
+// Public on purpose: it is the one route a visitor with no account can
+// call to GET one. The body may be empty — the guest is identified by
+// metadata.device_uuid, which every request already carries — and the
+// session it returns is unsecure, so it opens nothing but /exams/*.
+//
+// A missing or malformed body is not an error here: there is nothing in
+// it the server needs, so an undecodable body is treated as an empty one
+// rather than refused.
+func (h *UserHandler) HandleCreateGuest(w http.ResponseWriter, r *http.Request) {
+	var req user.CreateGuestReq
+	_ = json.NewDecoder(r.Body).Decode(&req)
+
+	sess, err := h.appResource.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.userSvc.CreateGuest(r.Context(), sess, &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	response.WriteJson(w, res, nil)
+}
+
 // POST /users/detail
 func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) {
 	var req user.GetUserByUserIdReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
+	}
+
+	if req.UserID == 0 {
+		session, err := h.appResource.GetRequestSession(r)
+		if err != nil {
+			response.WriteJson(w, nil, err)
+			return
+		}
+
+		uid, ok := session.UID()
+		if !ok {
+			response.WriteJson(w, nil, fmt.Errorf("invalid session"))
+			return
+		}
+		req.UserID = uid
 	}
 
 	res, err := h.userSvc.GetUserById(r.Context(), &req)

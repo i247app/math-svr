@@ -12,11 +12,14 @@ import (
 )
 
 // clearTarget pairs a wipeable table with the ma_seqs counter that mints its
-// external ids. It is the single source of truth for what the clear-data
-// endpoints may touch — both the full wipe and the table-scoped variant.
+// external ids, plus that external-id column. It is the single source of truth
+// for what the clear-data endpoints may touch — both the full wipe and the
+// table-scoped variant — and, in the keep-users path, lets each surviving
+// table's sequence be reset to MAX(external id) instead of 0.
 type clearTarget struct {
-	table string
-	seq   string
+	table    string
+	seq      string
+	extIDCol string // the seq-minted external id column (e.g. "uid", "profile_id")
 }
 
 // clearDataTargets lists the user-generated tables wiped by ClearData, each
@@ -24,27 +27,27 @@ type clearTarget struct {
 // (programs, grades, semesters, schools) are intentionally excluded so the
 // curriculum data seeded outside the app survives. Mirrors sql/clear_data.sql.
 var clearDataTargets = []clearTarget{
-	{userTable, seq.NameUser},
-	{aliasTable, seq.NameAlias},
-	{deviceTable, seq.NameDevice},
-	{loginLogTable, seq.NameLoginLog},
-	{profileTable, seq.NameProfile},
-	{otpTable, seq.NameOtp},
-	{classroomTable, seq.NameClassroom},
-	{classroomMemberTable, seq.NameClassroomMember},
+	{userTable, seq.NameUser, "uid"},
+	{aliasTable, seq.NameAlias, "alias_id"},
+	{deviceTable, seq.NameDevice, "device_id"},
+	{loginLogTable, seq.NameLoginLog, "login_log_id"},
+	{profileTable, seq.NameProfile, "profile_id"},
+	{otpTable, seq.NameOtp, "otp_id"},
+	{classroomTable, seq.NameClassroom, "classroom_id"},
+	{classroomMemberTable, seq.NameClassroomMember, "member_id"},
 	// classroomInvitationTable is a legacy orphan — no live writes.
-	{classroomProgramTable, seq.NameClassroomProgram},
-	{exerciseTable, seq.NameClassroomExercise},
-	{exerciseSubmissionTable, seq.NameClassroomExerciseSubmission},
-	{notificationTable, seq.NameNotification},
-	{bannerTable, seq.NameBanner},
-	{chatConversationTable, seq.NameChatConversation},
-	{chatParticipantTable, seq.NameChatParticipant},
-	{chatMessageTable, seq.NameChatMessage},
-	{aiExamTable, seq.NameAiExam},
-	{userAiExamTable, seq.NameUserAiExam},
-	{userExamTable, seq.NameUserExam},
-	{userExamDetailTable, seq.NameUserExamDetail},
+	{classroomProgramTable, seq.NameClassroomProgram, "classroom_program_id"},
+	{exerciseTable, seq.NameClassroomExercise, "classroom_exercise_id"},
+	{exerciseSubmissionTable, seq.NameClassroomExerciseSubmission, "classroom_exercise_submission_id"},
+	{notificationTable, seq.NameNotification, "notification_id"},
+	{bannerTable, seq.NameBanner, "banner_id"},
+	{chatConversationTable, seq.NameChatConversation, "conversation_id"},
+	{chatParticipantTable, seq.NameChatParticipant, "participant_id"},
+	{chatMessageTable, seq.NameChatMessage, "message_id"},
+	{aiExamTable, seq.NameAiExam, "ai_exam_id"},
+	{userAiExamTable, seq.NameUserAiExam, "user_ai_exam_id"},
+	{userExamTable, seq.NameUserExam, "user_exam_id"},
+	{userExamDetailTable, seq.NameUserExamDetail, "user_exam_detail_id"},
 }
 
 // clearDataTargetByTable indexes clearDataTargets for O(1) allow-list checks in
@@ -321,8 +324,10 @@ func (r *MaintenanceRepository) ClearDataTables(ctx context.Context, tables []st
 // everything hanging off them (exams, journeys, answer details, submissions,
 // classroom memberships, chat participation and messages, notifications).
 //
-// Deletes use DELETE, not TRUNCATE, and sequences are deliberately NOT reset:
-// surviving rows keep ids above 0, so a reset could mint a colliding id.
+// Deletes use DELETE, not TRUNCATE. Afterwards each wiped table's ma_seqs
+// counter is reset to MAX(external id) of the rows that survived (0 when the
+// table was emptied), so the counters shrink without ever re-minting an id that
+// a kept row still holds — the next Seq.Next yields MAX+increment.
 //
 // Caveat: the shared parents in clearFullWipe (classrooms, chat conversations,
 // exercises, banners) are emptied whole, so a kept user's classroom-membership
@@ -331,9 +336,9 @@ func (r *MaintenanceRepository) ClearDataTables(ctx context.Context, tables []st
 //
 // Ownership id-sets are read up front (before any delete), so the
 // complement-deletes below are order-independent.
-func (r *MaintenanceRepository) ClearDataKeepingUsers(ctx context.Context, keepUids []int64) ([]string, error) {
+func (r *MaintenanceRepository) ClearDataKeepingUsers(ctx context.Context, keepUids []int64) ([]string, []string, error) {
 	if len(keepUids) == 0 {
-		return nil, fmt.Errorf("maintenance repo clear-data keep: keepUids is required")
+		return nil, nil, fmt.Errorf("maintenance repo clear-data keep: keepUids is required")
 	}
 
 	uidPh, uidArgs := int64InClause(keepUids)
@@ -341,17 +346,17 @@ func (r *MaintenanceRepository) ClearDataKeepingUsers(ctx context.Context, keepU
 	keepProfileIds, err := r.selectInt64s(ctx,
 		`SELECT profile_id FROM `+profileTable+` WHERE uid IN (`+uidPh+`)`, uidArgs...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	keepUserExamIds, err := r.selectInt64s(ctx,
 		`SELECT user_exam_id FROM `+userExamTable+` WHERE uid IN (`+uidPh+`)`, uidArgs...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	keepAiExamIds, err := r.selectInt64s(ctx,
 		`SELECT DISTINCT ai_exam_id FROM `+userAiExamTable+` WHERE uid IN (`+uidPh+`)`, uidArgs...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	processed := make([]string, 0, len(clearDataTargets))
@@ -362,7 +367,7 @@ func (r *MaintenanceRepository) ClearDataKeepingUsers(ctx context.Context, keepU
 		// bound as parameters.
 		q := `DELETE FROM ` + t.table + ` WHERE ` + t.col + ` NOT IN (` + uidPh + `)`
 		if _, err := r.db.Exec(ctx, q, uidArgs...); err != nil {
-			return nil, fmt.Errorf("maintenance repo clear-data keep: delete %s: %w", t.table, err)
+			return nil, nil, fmt.Errorf("maintenance repo clear-data keep: delete %s: %w", t.table, err)
 		}
 		processed = append(processed, t.table)
 	}
@@ -370,33 +375,49 @@ func (r *MaintenanceRepository) ClearDataKeepingUsers(ctx context.Context, keepU
 	// Keep-by-profile: keep rows whose profile belongs to a whitelisted user.
 	for _, t := range clearKeepByProfile {
 		if err := r.deleteExcept(ctx, t.table, t.col, keepProfileIds); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		processed = append(processed, t.table)
 	}
 
 	// Answer details hang off the kept journey rows.
 	if err := r.deleteExcept(ctx, userExamDetailTable, "user_exam_id", keepUserExamIds); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	processed = append(processed, userExamDetailTable)
 
 	// ai-exam cache: keep only the exams a kept attempt actually references, so
 	// the kept users' exam content survives; drop the rest of the cache.
 	if err := r.deleteExcept(ctx, aiExamTable, "ai_exam_id", keepAiExamIds); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	processed = append(processed, aiExamTable)
 
 	// Shared parents with no per-user owner: emptied whole.
 	for _, table := range clearFullWipe {
 		if _, err := r.db.Exec(ctx, "DELETE FROM "+table); err != nil {
-			return nil, fmt.Errorf("maintenance repo clear-data keep: wipe %s: %w", table, err)
+			return nil, nil, fmt.Errorf("maintenance repo clear-data keep: wipe %s: %w", table, err)
 		}
 		processed = append(processed, table)
 	}
 
-	return processed, nil
+	// Re-align each wiped table's ma_seqs counter to the highest external id
+	// that survived (0 when the table is now empty). Runs after every delete so
+	// MAX reflects the final surviving rows; the cross-table subquery reads the
+	// data table while updating ma_seqs, which MySQL allows.
+	seqsReset := make([]string, 0, len(clearDataTargets))
+	for _, t := range clearDataTargets {
+		// table / column / seq name are internal constants, never user input.
+		q := `UPDATE ` + seqTable + ` SET current_value = ` +
+			`(SELECT COALESCE(MAX(` + t.extIDCol + `), 0) FROM ` + t.table + `) ` +
+			`WHERE seq_name = ?`
+		if _, err := r.db.Exec(ctx, q, t.seq); err != nil {
+			return nil, nil, fmt.Errorf("maintenance repo clear-data keep: reset seq %s: %w", t.seq, err)
+		}
+		seqsReset = append(seqsReset, t.seq)
+	}
+
+	return processed, seqsReset, nil
 }
 
 // deleteExcept deletes every row of table whose col is not in keepIds. An empty
