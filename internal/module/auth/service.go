@@ -120,7 +120,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 	}, nil
 }
 
-func (s *Service) LoginResume(ctx context.Context, sess *session.AppSession) (*dto.LoginRes, error) {
+func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (*dto.LoginRes, error) {
 	log := logger.From(ctx)
 
 	if !sess.IsValid() {

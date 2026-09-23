@@ -99,8 +99,8 @@ func (h *AuthHandler) HandleLoginOTP(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
-// POST /auth/login-resume
-func (h *AuthHandler) HandleLoginResume(w http.ResponseWriter, r *http.Request) {
+// POST /auth/resume-session
+func (h *AuthHandler) HandleResumeSession(w http.ResponseWriter, r *http.Request) {
 	// Get session
 	session, err := h.appResource.GetRequestSession(r)
 	if err != nil {
@@ -108,7 +108,7 @@ func (h *AuthHandler) HandleLoginResume(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res, err := h.service.LoginResume(r.Context(), session)
+	res, err := h.service.ResumeSession(r.Context(), session)
 	if err != nil {
 		if res != nil {
 			response.WriteJson(w, res, err)
