@@ -30,6 +30,7 @@ import (
 	"math-ai.com/math-ai/internal/module/session"
 	"math-ai.com/math-ai/internal/module/socket"
 	"math-ai.com/math-ai/internal/module/user"
+	"math-ai.com/math-ai/internal/module/pow"
 )
 
 func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *container.ServiceContainer) {
@@ -60,6 +61,13 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		healthHandler := health.NewHealthHandler()
 		reg("POST /ping", healthHandler.HandlePing)
+	}
+
+	// POW challenge routes — public, no auth required. The frontend uses these to
+	{
+		powHandler := pow.NewPowHandler(res, services.PowSvc)
+		reg("POST /pow/challenge", powHandler.GetChallenge)
+		reg("POST /pow/verify", powHandler.VerifyChallenge)
 	}
 
 	// NOTE: /metrics is intentionally NOT registered here. It is served on a

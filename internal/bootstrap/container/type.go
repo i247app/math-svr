@@ -42,6 +42,7 @@ import (
 	"math-ai.com/math-ai/internal/module/seq"
 	"math-ai.com/math-ai/internal/module/socket"
 	"math-ai.com/math-ai/internal/module/user"
+	"math-ai.com/math-ai/internal/module/pow"
 )
 
 type ServiceContainer struct {
@@ -67,6 +68,7 @@ type ServiceContainer struct {
 	BannerSvc       *banner.Service
 	PresenceSvc     *presence.Service
 	ChatSvc         *chat.Service
+	PowSvc          *pow.Service
 
 	// CleanupGuestsCmd is not a service — it is the one application
 	// command the job runtime needs directly (jobs consume
