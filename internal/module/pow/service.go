@@ -6,14 +6,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"math/big"
-	"time"
 	"strconv"
+	"time"
 
 	"math-ai.com/math-ai/internal/infrastructure/session"
 )
 
 type Service struct {
-
 }
 
 func NewService() *Service {
@@ -35,7 +34,6 @@ func generateRandomString(length int) (string, error) {
 	return string(result), nil
 }
 
-
 func (s *Service) VerifyChallenge(ctx context.Context, sess *session.AppSession, nonce int, message string, difficulty int) bool {
 	// Implement the logic to verify the nonce with the message and difficulty
 	// This is a placeholder implementation. Replace it with your actual verification logic.
@@ -50,16 +48,16 @@ func (s *Service) VerifyChallenge(ctx context.Context, sess *session.AppSession,
 	targetPrefix := string(target)
 	if hex.EncodeToString(hash[:])[:difficulty] == targetPrefix {
 		challengeData := session.Pow{
-			Seed:    message,
+			Seed:       message,
 			Difficulty: difficulty,
 			Nonce:      nonce,
 			CreatedAt:  time.Now(),
 		}
 
 		sessionData := session.InitData{
-			Source:     "pow",
-			IsSecure:   true,
-			Challenge:  challengeData,
+			Source:    "pow",
+			IsSecure:  true,
+			Challenge: challengeData,
 		}
 
 		sess.Init(sessionData)
@@ -69,7 +67,7 @@ func (s *Service) VerifyChallenge(ctx context.Context, sess *session.AppSession,
 	return false
 }
 
-func (s *Service) GenerateChallenge(ctx context.Context,  sess *session.AppSession) (string, int) {
+func (s *Service) GenerateChallenge(ctx context.Context, sess *session.AppSession) (string, int) {
 	challenge, err := generateRandomString(5)
 	if err != nil {
 		return "", 0
@@ -78,15 +76,15 @@ func (s *Service) GenerateChallenge(ctx context.Context,  sess *session.AppSessi
 	difficulty := 4
 
 	challengeData := session.Pow{
-		Seed:    challenge,
+		Seed:       challenge,
 		Difficulty: difficulty,
 		CreatedAt:  time.Now(),
 	}
 
 	sessionData := session.InitData{
-		Source:     "pow",
-		IsSecure:   true,
-		Challenge:  challengeData,
+		Source:    "pow",
+		IsSecure:  false,
+		Challenge: challengeData,
 	}
 
 	sess.Init(sessionData)

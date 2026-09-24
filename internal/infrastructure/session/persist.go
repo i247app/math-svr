@@ -122,6 +122,10 @@ func (m *SessionManager) SaveTo(file string) error {
 		_ = d.Close()
 	}
 
-	logger.From(context.Background()).Infof("session.persisted count=%d", len(data))
+	pending := 0
+	if m.persister != nil { // nil when persistence is off (shutdown-only writes)
+		pending = len(m.persister.dirty)
+	}
+	logger.From(context.Background()).Infof("session.persisted count=%d, length_dirty=%d", len(data), pending)
 	return nil
 }
