@@ -193,3 +193,13 @@ func DomainListToResponse(users []*user.User) []*UserResponse {
 	}
 	return result
 }
+
+// LoginNameOf is the identifier a session records as the login name: the
+// phone when the account has one, else the email. A registered account
+// always has at least one of the two.
+func LoginNameOf(u *UserResponse) string {
+	if u.Phone != nil && *u.Phone != "" {
+		return *u.Phone
+	}
+	return utils.DerefString(u.Email)
+}

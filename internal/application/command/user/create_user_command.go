@@ -285,7 +285,7 @@ func BuildUser(cmd CreateUserCommand) *user.User {
 	// u.SetUserId(utils.GenerateUUID().String())
 	u.SetUserName(cmd.UserName)
 	u.SetEmail(cmd.Email)
-	u.SetPhone(&cmd.Phone)
+	u.SetPhone(utils.ToStringPtr(cmd.Phone))
 	u.SetRole(&roleStr)
 	// Reaching /users/create means someone registered, so the row is a
 	// USER from birth. VERIFIED comes later, paired with the profile's
@@ -307,7 +307,7 @@ func BuildProfile(ctx context.Context, cmd CreateUserCommand) *profile.Profile {
 
 	p := profile.NewProfile()
 	p.SetName(cmd.UserName)
-	p.SetPhone(&cmd.Phone)
+	p.SetPhone(utils.ToStringPtr(cmd.Phone))
 	p.SetEmail(cmd.Email)
 	p.SetRole(&roleStr)
 	p.SetIdentityCode(&identity)

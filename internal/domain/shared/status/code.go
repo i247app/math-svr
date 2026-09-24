@@ -37,6 +37,9 @@ const (
 	// a guest is recognised by their device, so without one there is
 	// nothing to open — or reopen — an account against.
 	USER_MISSING_DEVICE_UUID StatusCode = 4018
+	// USER_MISSING_IDENTIFIER: /users/create needs at least one login key —
+	// a phone or an email. Either alone is enough.
+	USER_MISSING_IDENTIFIER StatusCode = 4019
 
 	AUTH_MISSING_LOGIN_NAME        StatusCode = 4201
 	AUTH_MISSING_DEVICE_UUID       StatusCode = 4202

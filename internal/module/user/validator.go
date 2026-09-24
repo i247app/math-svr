@@ -12,8 +12,10 @@ import (
 )
 
 func ValidateCreateUser(ctx context.Context, req *dto.CreateUserReq) error {
-	if strings.TrimSpace(req.Phone) == "" {
-		return errs.NewError(ctx, status.USER_MISSING_PHONE, nil, ErrPhoneRequired)
+	// Phone and email are both login keys; either one alone is enough to
+	// register, but an account with neither could never sign in.
+	if strings.TrimSpace(req.Phone) == "" && strings.TrimSpace(req.Email) == "" {
+		return errs.NewError(ctx, status.USER_MISSING_IDENTIFIER, nil, ErrPhoneOrEmailRequired)
 	}
 	if strings.TrimSpace(req.Name) == "" {
 		return errs.NewError(ctx, status.USER_MISSING_NAME, nil, ErrNameRequired)

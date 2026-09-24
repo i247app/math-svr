@@ -147,7 +147,7 @@ func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (
 		Source:    "login",
 		IsSecure:  true,
 		UID:       userRes.User.UserID,
-		LoginName: utils.DerefString(userRes.User.Phone),
+		LoginName: dtoUser.LoginNameOf(userRes.User),
 	}
 
 	if userRes.User.Email != nil {

@@ -24,6 +24,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Vui lòng nhập email"
 	case USER_MISSING_PHONE:
 		return "Vui lòng nhập số điện thoại"
+	case USER_MISSING_IDENTIFIER:
+		return "Vui lòng nhập số điện thoại hoặc email"
 	case USER_MISSING_PASSWORD:
 		return "Vui lòng nhập mật khẩu"
 	case USER_INVALID_EMAIL:

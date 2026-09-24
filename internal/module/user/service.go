@@ -175,11 +175,16 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		email = &e
 	}
 
-	phoneForString, err := utils.NormalizePhone(req.Phone)
-	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to normalize phone: %w", err))
+	// Phone is optional when an email is supplied (the validator requires
+	// at least one of the two); only a supplied phone is normalised.
+	var phoneForString string
+	if strings.TrimSpace(req.Phone) != "" {
+		normalized, err := utils.NormalizePhone(req.Phone)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to normalize phone: %w", err))
+		}
+		phoneForString = normalized
 	}
-	log.Infof("Phone for string: %s", phoneForString)
 
 	// Someone registering FROM a guest session is the same person who has
 	// been sitting exams as a guest, so their rows are upgraded in place
@@ -233,7 +238,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		Source:    "login",
 		IsSecure:  true,
 		UID:       userRes.UserID,
-		LoginName: utils.DerefString(userRes.Phone),
+		LoginName: dto.LoginNameOf(userRes),
 	}
 
 	if userRes.Email != nil {

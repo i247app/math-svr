@@ -24,6 +24,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Please enter your email"
 	case USER_MISSING_PHONE:
 		return "Please enter your phone"
+	case USER_MISSING_IDENTIFIER:
+		return "Please enter your phone or email"
 	case USER_MISSING_PASSWORD:
 		return "Please enter your password"
 	case USER_INVALID_EMAIL:

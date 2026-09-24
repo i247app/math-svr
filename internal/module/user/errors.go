@@ -2,7 +2,6 @@ package user
 
 import "errors"
 
-// Module-scoped sentinel errors. See conventions.md §Errors.
 var (
 	ErrAvatarFileRequired                        = errors.New("avatar file is required")
 	ErrAvatarReferenceMustBeNonEmptyWhenProvided = errors.New("avatar reference must be non-empty when provided")
@@ -10,6 +9,7 @@ var (
 	ErrEmailRequired                             = errors.New("email is required")
 	ErrNameRequired                              = errors.New("name is required")
 	ErrPhoneRequired                             = errors.New("phone is required")
+	ErrPhoneOrEmailRequired                      = errors.New("phone or email is required")
 	ErrSessionNotFound                           = errors.New("session not found")
 	ErrGuestSessionAlreadySecure                 = errors.New("this session already belongs to a registered account")
 	ErrRoleInvalid                               = errors.New("role is invalid")
