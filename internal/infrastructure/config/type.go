@@ -14,11 +14,16 @@ type Env struct {
 	LogFileFormat    string // env LOG_FILE_FORMAT;    default "json"
 
 	SerializedSessionFile string
-	GexSessionDriver      string
-	SharedKeyBytes        []byte
-	HttpsCertFile         *string
-	HttpsKeyFile          *string
-	EnableOTP             bool
+	// SessionPersistOnChange also writes SerializedSessionFile whenever a
+	// session's auth state changes (login, logout, …), not only on graceful
+	// shutdown — env SESSION_PERSIST_ON_CHANGE, default false. Needs
+	// SerializedSessionFile.
+	SessionPersistOnChange bool
+	GexSessionDriver       string
+	SharedKeyBytes         []byte
+	HttpsCertFile          *string
+	HttpsKeyFile           *string
+	EnableOTP              bool
 	// OtpBypassEnabled lets command.OtpBypassCode verify any PENDING OTP.
 	// Dev/test only — env OTP_BYPASS_ENABLED; default false. Never enable in prod.
 	OtpBypassEnabled   bool

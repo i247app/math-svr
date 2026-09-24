@@ -20,23 +20,24 @@ func NewEnv(envpath string) (*Env, error) {
 	}
 
 	result := Env{
-		ServerHost:            getConfig("SERVER_HOST"),
-		ServerPort:            getConfig("SERVER_PORT"),
-		LogFile:               getConfigOptionalString("LOG_FILE"),
-		LogFormat:             getConfigOptionalString("LOG_FORMAT"), // "" = use per-destination formats below
-		LogConsoleFormat:      getConfigOptionalStringWithDefault("LOG_CONSOLE_FORMAT", "text"),
-		LogFileFormat:         getConfigOptionalStringWithDefault("LOG_FILE_FORMAT", "json"),
-		SerializedSessionFile: getConfigOptionalString("SERIALIZED_SESSION_FILE"),
-		GexSessionDriver:      getConfigOptionalString("GEX_SESSION_DRIVER"),
-		SharedKeyBytes:        getFileBytesConfig("GEX_SHARED_KEY"),
-		HttpsCertFile:         getConfigOptional("HTTPS_CERT_FILE"),
-		HttpsKeyFile:          getConfigOptional("HTTPS_KEY_FILE"),
-		EnableOTP:             getBoolConfigWithDefault("ENABLE_OTP", false),
-		OtpBypassEnabled:      getBoolConfigWithDefault("OTP_BYPASS_ENABLED", false),
-		OtpBypassCode:         getConfigOptionalString("OTP_BYPASS_CODE"),
-		TrustDeviceTTLDays:    getIntConfigOptionalWithDefault("TRUST_DEVICE_TTL", 30),
-		DemoNames:             getCSVConfig("DEMO_NAMES"),
-		ExamShuffleEnabled:    getBoolConfigWithDefault("EXAM_SHUFFLE_ENABLED", true),
+		ServerHost:             getConfig("SERVER_HOST"),
+		ServerPort:             getConfig("SERVER_PORT"),
+		LogFile:                getConfigOptionalString("LOG_FILE"),
+		LogFormat:              getConfigOptionalString("LOG_FORMAT"), // "" = use per-destination formats below
+		LogConsoleFormat:       getConfigOptionalStringWithDefault("LOG_CONSOLE_FORMAT", "text"),
+		LogFileFormat:          getConfigOptionalStringWithDefault("LOG_FILE_FORMAT", "json"),
+		SerializedSessionFile:  getConfigOptionalString("SERIALIZED_SESSION_FILE"),
+		SessionPersistOnChange: getBoolConfigWithDefault("SESSION_PERSIST_ON_CHANGE", false),
+		GexSessionDriver:       getConfigOptionalString("GEX_SESSION_DRIVER"),
+		SharedKeyBytes:         getFileBytesConfig("GEX_SHARED_KEY"),
+		HttpsCertFile:          getConfigOptional("HTTPS_CERT_FILE"),
+		HttpsKeyFile:           getConfigOptional("HTTPS_KEY_FILE"),
+		EnableOTP:              getBoolConfigWithDefault("ENABLE_OTP", false),
+		OtpBypassEnabled:       getBoolConfigWithDefault("OTP_BYPASS_ENABLED", false),
+		OtpBypassCode:          getConfigOptionalString("OTP_BYPASS_CODE"),
+		TrustDeviceTTLDays:     getIntConfigOptionalWithDefault("TRUST_DEVICE_TTL", 30),
+		DemoNames:              getCSVConfig("DEMO_NAMES"),
+		ExamShuffleEnabled:     getBoolConfigWithDefault("EXAM_SHUFFLE_ENABLED", true),
 
 		DBConfig: DBConfig{
 			DBHost: getConfig("DB_HOST"),

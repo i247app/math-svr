@@ -3,8 +3,6 @@ package session
 import (
 	"time"
 
-	"maps"
-
 	"github.com/i247app/gex/session"
 )
 
@@ -29,10 +27,9 @@ func (s *AppSession) Get(key string) (any, bool) {
 	return s.GexSession.Get(key)
 }
 
+// ToMap returns a copy of the session data taken under the session lock.
 func (s *AppSession) ToMap() map[string]any {
-	result := make(map[string]any)
-	maps.Copy(result, s.GexSession.Data)
-	return result
+	return s.GexSession.Snapshot()
 }
 
 func (s *AppSession) UID() (int64, bool) {

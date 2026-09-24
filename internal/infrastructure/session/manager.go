@@ -55,6 +55,10 @@ func GetRequestSession(r *http.Request) *AppSession {
 
 type SessionManager struct {
 	SessionContainer session.Container
+
+	// persister is nil unless write-through persistence is enabled
+	// (EnablePersistence); every method that uses it is nil-safe.
+	persister *persister
 }
 
 func NewSessionManager() *SessionManager {
@@ -81,10 +85,12 @@ func (m *SessionManager) Session(sessionKey string) (*AppSession, bool) {
 	return monexSess, true
 }
 
+// Sessions returns a point-in-time copy of the container, taken under its
+// lock, so callers may iterate it while requests keep running.
 func (m *SessionManager) Sessions() *map[string]*AppSession {
-	sessions := m.SessionContainer.Sessions()
-	result := make(map[string]*AppSession)
-	for k, v := range *sessions {
+	sessions := m.SessionContainer.Snapshot()
+	result := make(map[string]*AppSession, len(sessions))
+	for k, v := range sessions {
 		monexSess, ok := v.(*AppSession)
 		if !ok {
 			continue
@@ -111,6 +117,7 @@ func (m *SessionManager) InitSession(sessionKey string) (*AppSession, bool) {
 
 func (m *SessionManager) DeleteSession(sessionKey string) {
 	m.SessionContainer.DeleteSession(sessionKey)
+	m.MarkDirty()
 }
 
 func (m *SessionManager) DeleteAll() {
@@ -184,6 +191,7 @@ func (m *SessionManager) DeleteUserSessions(uid int64) {
 			sess.MarkNotSecure()
 		}
 	}
+	m.MarkDirty()
 }
 
 // ShortKey shortens a session key for logging. Keys are signed session

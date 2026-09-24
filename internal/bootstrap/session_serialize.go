@@ -9,27 +9,6 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
-func (a *App) SerializeSessions(filename string) error {
-	sessDump := session.Dump(a.Resource.SessionManager)
-	sessionsData := make(map[string]any)
-	for k, v := range *sessDump {
-		log.Printf("Serializing session: %s", session.ShortKey(k))
-		sessionsData[k] = v
-	}
-
-	data, err := utils.SerializeMap(&sessionsData)
-	if err != nil {
-		return fmt.Errorf("failed to serialize session manager: %w", err)
-	}
-
-	err = os.WriteFile(filename, data, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to write to session manager file: %w", err)
-	}
-
-	return nil
-}
-
 func (a *App) ReloadSessions(filename string) error {
 	fileData, err := os.ReadFile(filename)
 	if err != nil {

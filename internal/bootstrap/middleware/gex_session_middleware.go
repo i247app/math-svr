@@ -13,9 +13,15 @@ import (
 // GexSessionMiddleware is a unified middleware that handles session management using a SessionProvider.
 // It retrieves the session from the provider, handles auto-refresh notifications,
 // and wraps the response writer to capture the response body.
+//
+// When a handler changes the session's auth state (is_secure / uid — login,
+// OTP verify, register, logout, …) it asks sessionManager to persist the
+// sessions, so the change survives a crash that skips OnShutdown. That is a
+// no-op unless persistence is enabled.
 func GexSessionMiddleware(
 	sessionProvider sessionprovider.SessionProvider,
 	sessionContextKey session.SessionRequestContextKey,
+	sessionManager *session.SessionManager,
 ) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +99,11 @@ func GexSessionMiddleware(
 			// Add session to request context
 			r = r.WithContext(context.WithValue(r.Context(), sessionContextKey, sess))
 
+			before := authStateOf(sess)
 			next.ServeHTTP(wr, r)
+			if authStateOf(sess) != before {
+				sessionManager.MarkDirty()
+			}
 
 			// Notify the client that the session was auto-refreshed
 			if didAutoRefresh {
@@ -110,4 +120,17 @@ func GexSessionMiddleware(
 			w.Write(wr.body.Bytes())
 		})
 	}
+}
+
+// authState is the part of a session whose loss on a crash matters: whether it
+// is signed in, and as whom.
+type authState struct {
+	isSecure any
+	uid      any
+}
+
+func authStateOf(sess interface{ Get(string) (any, bool) }) authState {
+	isSecure, _ := sess.Get("is_secure")
+	uid, _ := sess.Get("uid")
+	return authState{isSecure: isSecure, uid: uid}
 }

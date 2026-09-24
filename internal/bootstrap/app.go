@@ -182,7 +182,7 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, res *resource.Resource, _ *con
 		// GexSessionMiddleware resolves the session. Any client-supplied
 		// Authorization header is dropped — the header is never trusted.
 		middleware.SessionTokenMiddleware,
-		middleware.GexSessionMiddleware(res.SessionProvider, session.SessionContextKey),
+		middleware.GexSessionMiddleware(res.SessionProvider, session.SessionContextKey, res.SessionManager),
 		middleware.LoggerMiddleware(a.Logger, res),
 		middleware.LogRequestMiddleware,
 		middleware.MetadataMiddleware(),
@@ -305,12 +305,22 @@ func (a *App) Close() error {
 }
 
 func (a *App) reloadSessions() {
+	sessionFile := a.Resource.Env.SerializedSessionFile
+	if sessionFile == "" {
+		return
+	}
+
 	// Reload old sessions
-	if a.Resource.Env.SerializedSessionFile != "" {
-		log.Println("Reloading old sessions...")
-		if err := a.ReloadSessions(a.Resource.Env.SerializedSessionFile); err != nil {
-			log.Printf("Failed to reload old sessions: %v\n", err)
-		}
+	log.Println("Reloading old sessions...")
+	if err := a.ReloadSessions(sessionFile); err != nil {
+		log.Printf("Failed to reload old sessions: %v\n", err)
+	}
+
+	// Write-through persistence starts only after the reload, so the first
+	// write can never replace the file with an empty snapshot.
+	if a.Resource.Env.SessionPersistOnChange {
+		log.Println("Session persistence on auth change enabled")
+		a.Resource.SessionManager.EnablePersistence(sessionFile)
 	}
 }
 
@@ -344,8 +354,12 @@ func (a *App) setupShutdownHooks(gexSvr *gex.Server, services *container.Service
 			return
 		}
 
+		// Stop the write-through writer first so the final snapshot below is
+		// the last write to the file.
+		a.Resource.SessionManager.StopPersistence()
+
 		log.Println("Serializing sessions...")
-		err := a.SerializeSessions(sessionFile)
+		err := a.Resource.SessionManager.SaveTo(sessionFile)
 		if err != nil {
 			log.Printf("Failed to serialize sessions: %v\n", err)
 		} else {
