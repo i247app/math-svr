@@ -3,6 +3,7 @@ package pow
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	dto "math-ai.com/math-ai/internal/application/dto/pow"
 	"math-ai.com/math-ai/internal/application/resource"
@@ -68,6 +69,12 @@ func (p *PowHandler) VerifyChallenge(w http.ResponseWriter, r *http.Request) {
 	challenge, ok := challengeSession.(session.Pow)
 	if !ok {
 		response.WriteJson(w, nil, fmt.Errorf("Invalid challenge data in session"))
+		return
+	}
+
+	//check created at, if challenge is older than 24 hours, return error
+	if time.Since(challenge.CreatedAt) > 24*time.Hour {
+		response.WriteJson(w, nil, fmt.Errorf("Challenge has expired"))
 		return
 	}
 
