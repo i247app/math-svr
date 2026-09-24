@@ -74,8 +74,15 @@ type systemRand struct{}
 func (systemRand) Shuffle(n int, swap func(i, j int)) { rand.Shuffle(n, swap) }
 
 // drawShuffle picks this sitting's ordering and returns it in stored form.
-func drawShuffle(ctx context.Context, canonical []question.Question) (*string, error) {
-	if len(canonical) == 0 {
+//
+// nil means "no ordering of its own", which is the identity: the sitting
+// is served in stored order. That is both the empty-set case and what
+// EXAM_SHUFFLE_ENABLED=false produces, so switching the feature off needs
+// no special case anywhere downstream — ParseShuffle already treats a
+// missing ordering as stored order, and sittings handed out while it was
+// on keep the ordering they stored.
+func (s *Service) drawShuffle(ctx context.Context, canonical []question.Question) (*string, error) {
+	if !s.shuffleEnabled || len(canonical) == 0 {
 		return nil, nil
 	}
 	raw, err := question.NewShuffle(canonical, systemRand{}).JSON()

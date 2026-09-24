@@ -47,6 +47,11 @@ type Service struct {
 
 	bot   *botClient
 	guest *guestService
+
+	// shuffleEnabled mirrors EXAM_SHUFFLE_ENABLED. It gates only the
+	// DRAWING of a new ordering; reading one back is never gated, or the
+	// switch would re-order papers that were already handed out.
+	shuffleEnabled bool
 }
 
 // NewService wires the module. bot may be nil — a deploy without LLM
@@ -62,6 +67,7 @@ func NewService(
 	profileRepo profileDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
 	userRepo userDomain.IRepository,
+	shuffleEnabled bool,
 ) *Service {
 	return &Service{
 		generateCmd:     command.NewGenerateExamCommandHandler(uow),
@@ -81,6 +87,7 @@ func NewService(
 		gradeRepo:       gradeRepo,
 		bot:             newBotClient(bot),
 		guest:           newGuestService(uow, userRepo, profileRepo),
+		shuffleEnabled:  shuffleEnabled,
 	}
 }
 
@@ -283,9 +290,10 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 // Every sitting gets its own ordering — the freshly generated one too, so
 // the child who paid for the generation is treated no differently from
 // the next child who is served the same set from cache. This is what
-// stops two children (or one child twice) meeting an identical paper.
+// stops two children (or one child twice) meeting an identical paper,
+// and it is what EXAM_SHUFFLE_ENABLED turns off.
 func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, canonical []question.Question, profile *profileDomain.Profile) (*dto.GenerateExamRes, error) {
-	shuffleJSON, err := drawShuffle(ctx, canonical)
+	shuffleJSON, err := s.drawShuffle(ctx, canonical)
 	if err != nil {
 		return nil, err
 	}

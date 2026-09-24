@@ -162,6 +162,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ProfileRepository,
 		repos.GradeRepository,
 		repos.UserRepository,
+		res.Env.ExamShuffleEnabled,
 	)
 
 	log.Info("> Setup JobSvc...")

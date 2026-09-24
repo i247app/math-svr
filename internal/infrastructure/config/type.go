@@ -25,6 +25,13 @@ type Env struct {
 	OtpBypassCode      string
 	TrustDeviceTTLDays int
 	DemoNames          []string
+	// ExamShuffleEnabled decides whether each sitting of an exam gets its
+	// own question/answer ordering — env EXAM_SHUFFLE_ENABLED, default
+	// true (the behaviour before the switch existed). Turning it off only
+	// affects exams handed out from then on: a sitting stores the ordering
+	// it was served with, so attempts already in flight keep rendering and
+	// grading exactly as they were handed out.
+	ExamShuffleEnabled bool
 
 	DBConfig            DBConfig
 	EmailConfig         EmailConfig
