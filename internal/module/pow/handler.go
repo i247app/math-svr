@@ -1,14 +1,14 @@
 package pow
 
 import (
-	"net/http"
 	"fmt"
+	"net/http"
 
-	"math-ai.com/math-ai/internal/application/resource"
 	dto "math-ai.com/math-ai/internal/application/dto/pow"
+	"math-ai.com/math-ai/internal/application/resource"
+	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/response"
-	// "math-ai.com/math-ai/internal/infrastructure/session"
-
+	"encoding/json"
 )
 
 type PowHandler struct {
@@ -26,32 +26,24 @@ func NewPowHandler(appResource *resource.Resource, service *Service) *PowHandler
 // POST /getChallenge
 func (p *PowHandler) GetChallenge(w http.ResponseWriter, r *http.Request) {
 	var res dto.ChallengeResponse
-	message, difficulty := p.service.GenerateChallenge(r.Context())
+	
+	sess, err := p.appResource.GetRequestSession(r)
+	message, difficulty := p.service.GenerateChallenge(r.Context(), sess)
+	
 	res.Message = message
 	res.Difficulty = difficulty
-	// sess, err := p.appResource.GetRequestSession(r)
-	// if err != nil {
-	// 	response.WriteJson(w, nil, err)
-	// 	return
-	// }
-
-	// sessionData := session.InitData{
-	// 	Source:     "pow",
-	// 	IsSecure:   true,
-	// 	Message:    message,
-	// 	Difficulty: difficulty,
-
-	// }
-
-	// sess.Init(sessionData)
-
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	
 	response.WriteJson(w, res, nil)
 }
 
 
 func (p *PowHandler) VerifyChallenge(w http.ResponseWriter, r *http.Request) {
 	var res dto.VerifyChallengeResponse
-
+	var req dto.VerifyChallengeRequest
 	// Get session
 	ctx := r.Context()
 	sess, err := p.appResource.GetRequestSession(r)
@@ -60,31 +52,30 @@ func (p *PowHandler) VerifyChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nonce := r.FormValue("nonce")
-	messageAny, ok := sess.Get("message")
-	if !ok {
-		response.WriteJson(w, nil, fmt.Errorf("Message not found in session"))
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		response.WriteJson(w, nil, fmt.Errorf("Invalid request body"))
 		return
 	}
-	message, ok := messageAny.(string)
+	nonce := req.Nonce
+
+	challengeSession, ok := sess.Get("challenge")
 	if !ok {
-		response.WriteJson(w, nil, fmt.Errorf("Message is not a string"))
+		response.WriteJson(w, nil, fmt.Errorf("Challenge not found in session"))
 		return
 	}
 
-	difficultyAny, ok := sess.Get("difficulty")
+	challenge, ok := challengeSession.(session.Pow)
 	if !ok {
-		response.WriteJson(w, nil, fmt.Errorf("Difficulty not found in session"))
+		response.WriteJson(w, nil, fmt.Errorf("Invalid challenge data in session"))
 		return
 	}
-	difficulty, ok := difficultyAny.(int)
-	if !ok {
-		response.WriteJson(w, nil, fmt.Errorf("Difficulty is not an integer"))
-		return
-	}
+
+	seed := challenge.Seed
+	difficulty := challenge.Difficulty
 
 	//solve challenge
-	isValid := p.service.VerifyChallenge(ctx, nonce, message, difficulty)
+	isValid := p.service.VerifyChallenge(ctx,sess, nonce, seed, difficulty)
 	if !isValid {
 		response.WriteJson(w, nil, fmt.Errorf("Invalid Proof"))
 		return

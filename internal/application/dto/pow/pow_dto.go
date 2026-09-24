@@ -9,6 +9,9 @@ type ChallengeResponse struct {
 	Difficulty int    `json:"difficulty"`
 }
 
+type VerifyChallengeRequest struct {
+	Nonce int `json:"nonce"`
+}
 type VerifyChallengeResponse struct {
 	IsValid bool `json:"is_valid"`
 }

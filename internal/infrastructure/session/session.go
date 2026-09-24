@@ -55,12 +55,19 @@ func (s *AppSession) MarkForDeletion() {
 	s.Put("marked_for_deletion", true)
 }
 
+type Pow struct {
+	Seed    string
+	Difficulty int
+	Nonce      int
+	CreatedAt  time.Time
+}
 type InitData struct {
 	Source    string
 	IsSecure  bool
 	UID       int64
 	Email     string
 	LoginName string
+	Challenge	Pow
 	ExpireAt  *time.Time
 }
 
@@ -71,7 +78,8 @@ func (s *AppSession) Init(data InitData) *AppSession {
 	} else {
 		expireAt = *data.ExpireAt
 	}
-
+    // Add message, difficulty, nonce 
+	s.Put("challenge", data.Challenge)
 	s.Put("source", data.Source)
 	s.Put("is_secure", data.IsSecure)
 	s.Put("uid", data.UID)
