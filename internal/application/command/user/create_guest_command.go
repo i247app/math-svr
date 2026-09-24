@@ -122,7 +122,7 @@ func (h *CreateGuestCommandHandler) Handle(ctx context.Context, cmd CreateGuestC
 		p.SetProfileId(userID)
 		p.SetProfileCode(profileCode)
 		p.SetUserId(created.UserId())
-		p.SetName(guestChildName(cmd.ChildName))
+		p.SetName(guestChildName(cmd.ChildName, userID))
 		p.SetIdentityCode(&identity)
 		p.SetIsDefault(true)
 		p.SetStatus(enum.StatusActive.String())
@@ -148,9 +148,9 @@ func (h *CreateGuestCommandHandler) Handle(ctx context.Context, cmd CreateGuestC
 	return result, nil
 }
 
-func guestChildName(name string) string {
+func guestChildName(name string, uid int64) string {
 	if name == "" {
-		return DefaultGuestChildName
+		return DefaultGuestChildName + strconv.FormatInt(uid, 10)
 	}
 	return name
 }
