@@ -13,7 +13,7 @@ func (a *App) SerializeSessions(filename string) error {
 	sessDump := session.Dump(a.Resource.SessionManager)
 	sessionsData := make(map[string]any)
 	for k, v := range *sessDump {
-		log.Printf("Serializing session: %s", truncateSessionKey(k))
+		log.Printf("Serializing session: %s", session.ShortKey(k))
 		sessionsData[k] = v
 	}
 
@@ -50,7 +50,16 @@ func (a *App) ReloadSessions(filename string) error {
 			continue
 		}
 
-		log.Printf("Reloading session: %s", truncateSessionKey(sessionKey))
+		// Sessions are keyed by their signed token (gex JwtSessionProvider).
+		// Files written before that change keyed them by the claim's
+		// session_key; re-key those by their token so their holders stay
+		// signed in across the upgrade.
+		if token, ok := structuredData["token"].(string); ok && token != "" && token != sessionKey {
+			sessionKey = token
+			structuredData["key"] = token
+		}
+
+		log.Printf("Reloading session: %s", session.ShortKey(sessionKey))
 		sess, ok := a.Resource.SessionManager.InitSession(sessionKey)
 		if ok {
 			for k, v := range structuredData {
@@ -63,12 +72,4 @@ func (a *App) ReloadSessions(filename string) error {
 	}
 
 	return nil
-}
-
-func truncateSessionKey(key string) string {
-	// If longer than 19 characters, shorten the key to the first and last 8 characters
-	if len(key) > 19 {
-		return key[:8] + "..." + key[len(key)-8:]
-	}
-	return key
 }

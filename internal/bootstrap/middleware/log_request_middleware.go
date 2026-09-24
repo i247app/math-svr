@@ -90,7 +90,7 @@ const (
 	// logBodyCap is the upper bound on how much body content reaches the
 	// final log line. maskBodyForLog truncates to this size. Keep it
 	// small — log lines past a few KB are unwieldy in tail / grep.
-	logBodyCap = 4 * 1024
+	logBodyCap = 10 * 1024
 
 	// responseCaptureCap is the upper bound on bytes the response
 	// recorder buffers for later inspection. It's larger than logBodyCap

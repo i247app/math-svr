@@ -131,7 +131,7 @@ func (m *SessionManager) MarkExpiredSessions() {
 		}
 
 		if sess.IsExpired() {
-			log.Printf("MarkExpiredSessions: marked session %s for deletion", key.(string))
+			log.Printf("MarkExpiredSessions: marked session %s for deletion", ShortKey(key.(string)))
 			sess.MarkForDeletion()
 		}
 	}
@@ -147,9 +147,9 @@ func (m *SessionManager) DeleteExpiredSessions() {
 		if sess.IsExpired() {
 			data, err := json.Marshal(sess.ToMap())
 			if err != nil {
-				log.Printf("DeleteExpiredSessions: failed to marshal session %s: %v", key, err)
+				log.Printf("DeleteExpiredSessions: failed to marshal session %s: %v", ShortKey(key.(string)), err)
 			} else {
-				log.Printf("DeleteExpiredSessions: deleting session %s | %s", key, data)
+				log.Printf("DeleteExpiredSessions: deleting session %s | %s", ShortKey(key.(string)), data)
 			}
 			m.DeleteSession(key.(string))
 		}
@@ -166,9 +166,9 @@ func (m *SessionManager) DeleteUnSecureSessions() {
 		if !sess.IsSecure() {
 			data, err := json.Marshal(sess.ToMap())
 			if err != nil {
-				log.Printf("DeleteUnSecureSessions: failed to marshal session %s: %v", key, err)
+				log.Printf("DeleteUnSecureSessions: failed to marshal session %s: %v", ShortKey(key.(string)), err)
 			} else {
-				log.Printf("DeleteUnSecureSessions: deleting session %s | %s", key, data)
+				log.Printf("DeleteUnSecureSessions: deleting session %s | %s", ShortKey(key.(string)), data)
 			}
 			m.DeleteSession(key.(string))
 		}
@@ -184,4 +184,13 @@ func (m *SessionManager) DeleteUserSessions(uid int64) {
 			sess.MarkNotSecure()
 		}
 	}
+}
+
+// ShortKey shortens a session key for logging. Keys are signed session
+// tokens, i.e. live credentials, so a full key must never reach a log line.
+func ShortKey(key string) string {
+	if len(key) > 19 {
+		return key[:8] + "..." + key[len(key)-8:]
+	}
+	return key
 }

@@ -6,7 +6,7 @@ import (
 
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/infrastructure/session"
+	sess "math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -16,7 +16,7 @@ var (
 	ErrSessionIsNotSecureLoginRequired = errors.New("session is not secure, login required")
 )
 
-func AuthRequiredMiddleware(sessionManager *session.SessionManager) func(http.Handler) http.Handler {
+func AuthRequiredMiddleware(sessionManager *sess.SessionManager) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
@@ -24,12 +24,14 @@ func AuthRequiredMiddleware(sessionManager *session.SessionManager) func(http.Ha
 			log := logger.From(ctx)
 
 			// Check if session exists
-			session := session.GetRequestSession(r)
+			session := sess.GetRequestSession(r)
 			if session == nil {
 				response.WriteJson(w, nil, errs.NewUnauthorizedError(ctx, ErrSessionNotFound))
 				return
 			}
-			sessionKey, _ := session.Get("key") // retrieve the session key to log during errors
+			rawKey, _ := session.Get("key") // retrieve the session key to log during errors
+			keyStr, _ := rawKey.(string)
+			sessionKey := sess.ShortKey(keyStr)
 
 			log.Infof("sessionKey: %s", sessionKey)
 

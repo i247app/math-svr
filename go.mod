@@ -16,7 +16,7 @@ require (
 	github.com/eino-contrib/jsonschema v1.0.3
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/google/uuid v1.6.0
-	github.com/i247app/gex v0.0.31
+	github.com/i247app/gex v0.0.32
 	github.com/joho/godotenv v1.5.1
 	github.com/meguminnnnnnnnn/go-openai v0.1.5
 	github.com/prometheus/client_golang v1.23.2
