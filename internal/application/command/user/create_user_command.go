@@ -209,11 +209,12 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 
-			// The device alias was the guest's only handle. Now that a
-			// phone alias exists it is not just redundant but harmful: a
-			// device_uuid is not a secret, and leaving it resolvable would
-			// let anyone who learns it start a login against a real
-			// account (and spray OTPs at the owner's phone).
+			// Guests opened today have no alias at all, so this is a
+			// no-op for them. It stays for the rows opened BEFORE that
+			// decision, whose device_uuid was registered as a login name:
+			// a device_uuid is not a secret, and leaving one resolvable
+			// against a now-real account would let anyone who learns it
+			// start a login (and spray OTPs at the owner's phone).
 			if err := revokeDeviceAlias(ctx, repos, u.UserId(), cmd.DeviceUUID); err != nil {
 				return err
 			}
@@ -342,9 +343,11 @@ func loadUpgradableGuest(ctx context.Context, repos transaction.Repositories, gu
 	return u, nil
 }
 
-// revokeDeviceAlias soft-deletes the ma_aliases row that was standing in
-// for a login name while the account was a guest. Absent or already gone
-// is not an error — the upgrade path must be safe to reach twice.
+// revokeDeviceAlias soft-deletes the ma_aliases row that used to stand
+// in for a login name while the account was a guest. Guests no longer
+// get one, so this finds nothing for accounts opened after that change;
+// it is kept for the ones opened before it. Absent or already gone is
+// not an error — the upgrade path must be safe to reach twice.
 func revokeDeviceAlias(ctx context.Context, repos transaction.Repositories, userID int64, deviceUUID string) error {
 	if deviceUUID == "" {
 		return nil

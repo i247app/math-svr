@@ -38,15 +38,13 @@ func newGuestService(uow transaction.UnitOfWork, userRepo userDomain.IRepository
 type GuestIdentity struct {
 	UserID    int64
 	ProfileID int64
-	// Existing distinguishes a device coming back from a device seen for
-	// the first time. The caller only logs it — the exam path is the same
-	// either way, which is the point.
-	Existing bool
 }
 
-// EnsureGuest returns the guest account this device belongs to, opening
-// one on first sight. Idempotent by device_uuid, so a visitor who closes
-// the app and comes back keeps the exams they already sat.
+// EnsureGuest opens a guest account for a request that arrived without a
+// session. It is NOT idempotent — nothing identifies a returning visitor
+// — so it must only be called when the caller has no session at all;
+// calling it for someone who already has one strands the account they
+// were using.
 func (g *guestService) EnsureGuest(ctx context.Context, deviceUUID, childName string) (*GuestIdentity, error) {
 	res, err := g.createGuest.Handle(ctx, userCommand.CreateGuestCommand{
 		DeviceUUID: deviceUUID,
@@ -59,13 +57,8 @@ func (g *guestService) EnsureGuest(ctx context.Context, deviceUUID, childName st
 	identity := &GuestIdentity{
 		UserID:    res.User.UserId(),
 		ProfileID: res.Profile.ProfileId(),
-		Existing:  res.Existing,
 	}
-	if res.Existing {
-		logger.From(ctx).Info("exam.guest.recognised", "uid", identity.UserID, "profile_id", identity.ProfileID)
-	} else {
-		logger.From(ctx).Info("exam.guest.opened", "uid", identity.UserID, "profile_id", identity.ProfileID)
-	}
+	logger.From(ctx).Info("exam.guest.opened", "uid", identity.UserID, "profile_id", identity.ProfileID)
 	return identity, nil
 }
 

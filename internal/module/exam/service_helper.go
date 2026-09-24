@@ -269,7 +269,7 @@ const (
 	// GuestDailyExamLimit is how many rounds one guest child may be
 	// handed in a rolling 24 hours. Raise it here; nothing else reads a
 	// number.
-	GuestDailyExamLimit = 3
+	GuestDailyExamLimit = 30
 	// guestExamWindow is what "per day" means. A rolling window rather
 	// than midnight-to-midnight, so a guest cannot take the day's quota
 	// twice by starting just before midnight — and so the rule needs no

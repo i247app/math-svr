@@ -75,9 +75,10 @@ type CreateUserRes struct {
 	User *UserResponse `json:"user"`
 }
 
-// CreateGuestReq carries nothing the client has to fill in. A guest is
-// identified by metadata.device_uuid, which every request already
-// carries, so the body may be empty — see Service.CreateGuest.
+// CreateGuestReq carries nothing the client has to fill in: the body may
+// be empty. Note that every call opens a NEW guest — see
+// Service.CreateGuest — so the client should call it once and keep the
+// token, not on every launch.
 type CreateGuestReq struct {
 	// ChildName names the profile opened alongside the account. Optional:
 	// blank means the placeholder name, and it is only read when the
@@ -93,9 +94,6 @@ type CreateGuestReq struct {
 // /auth/login.
 type CreateGuestRes struct {
 	User *UserResponse `json:"user"`
-	// Existing reports that this device was already known, so nothing new
-	// was opened.
-	Existing bool `json:"existing"`
 }
 
 type UpdateUserReq struct {

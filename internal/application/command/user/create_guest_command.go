@@ -34,13 +34,23 @@ const guestAccountNamePrefix = "Guest-"
 // which is the whole point of doing it this way rather than inventing an
 // anonymous code path.
 //
-// DeviceUUID is the identity. It is registered in ma_aliases exactly as a
-// phone or email would be, which makes this command IDEMPOTENT: the same
-// device asking twice gets the same guest back, with whatever exams they
-// already sat still attached. Without it there is nothing to recognise
-// them by, so it is required.
+// This command is NOT idempotent: every call opens a new guest. The
+// session token it returns is the only handle on that account, so a
+// caller that asks twice gets two accounts, and a client that loses the
+// token loses the exams sat under it. That is deliberate — a guest is
+// recognised by nothing the server stores.
+//
+// DeviceUUID is therefore a label, not an identity: it is required so
+// every guest row can be traced back to a device in the logs, and it
+// becomes the session's login name, but nothing is looked up by it and
+// no row is keyed on it.
 //
 // Deliberately NOT created here:
+//   - an ma_aliases row. Aliases are LOGIN KEYS — a phone or an email
+//     whose owner can prove it. A guest has no login at all, so they have
+//     nothing to key; and a handle that is not a secret (a device uuid, a
+//     generated account name) must never be resolvable as one, or anyone
+//     who guesses it could start a login against that account.
 //   - a device row. ma_devices exists for OTP trust, and a guest never
 //     logs in; registration creates it at /auth/login. A device row owned
 //     by a user with no phone would be a row no flow reads.
@@ -49,6 +59,7 @@ const guestAccountNamePrefix = "Guest-"
 //     absent grade_id already falls back to kindergarten. Curriculum is
 //     picked properly at /profiles/update after registration.
 type CreateGuestCommand struct {
+	GuestName  string
 	DeviceUUID string
 	// ChildName is optional; DefaultGuestChildName is used when blank.
 	ChildName string
@@ -60,9 +71,6 @@ type CreateGuestCommand struct {
 type CreateGuestCommandResult struct {
 	User    *user.User
 	Profile *profile.Profile
-	// Existing reports that the device was already known, so the caller
-	// can tell "opened an account" from "recognised one" in its logs.
-	Existing bool
 }
 
 type CreateGuestCommandHandler struct {
@@ -81,63 +89,23 @@ func (h *CreateGuestCommandHandler) Handle(ctx context.Context, cmd CreateGuestC
 	result := &CreateGuestCommandResult{}
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
-		// Known device: hand back the guest it already belongs to. The
-		// lookup is the same two-hop the login flow uses (alias, then
-		// user), so a guest is found exactly the way a registered user is.
-		existingAlias, err := repos.Alias.FindByAka(ctx, cmd.DeviceUUID)
-		if err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
-		if existingAlias != nil {
-			u, err := repos.User.FindByUserId(ctx, existingAlias.UserId())
-			if err != nil {
-				return errs.NewError(ctx, status.FAIL, nil, err)
-			}
-			if u != nil {
-				p, err := repos.Profile.FindDefaultProfileByUserId(ctx, u.UserId())
-				if err != nil {
-					return errs.NewError(ctx, status.FAIL, nil, err)
-				}
-				if p != nil {
-					result.User, result.Profile, result.Existing = u, p, true
-					return nil
-				}
-			}
-			// An alias pointing at a user or profile that is gone is a
-			// broken row, not a reason to refuse the request: fall through
-			// and open a fresh guest. The stale alias keeps pointing at
-			// nothing and is cleaned up with its user.
-		}
-
 		userID, err := seqgen.Next(ctx, repos.Seq, seq.NameUser)
 		if err != nil {
 			return err
 		}
+		userName := guestAccountNamePrefix + strconv.FormatInt(userID, 10)
 
 		identity := enum.IdentityCodeGuest.String()
 
 		u := user.NewUser()
 		u.SetUserId(userID)
-		u.SetUserName(guestAccountNamePrefix + strconv.FormatInt(userID, 10))
+		u.SetUserName(userName)
 		u.SetIdentityCode(&identity)
 		u.SetStatus(enum.StatusActive.String())
 		// role and phone stay nil: a guest has declared neither.
 
 		created, err := repos.User.Create(ctx, u)
 		if err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
-
-		aliasID, err := seqgen.Next(ctx, repos.Seq, seq.NameAlias)
-		if err != nil {
-			return err
-		}
-		alias := user.NewAlias()
-		alias.SetAliasId(aliasID)
-		alias.SetUserId(created.UserId())
-		alias.SetAka(cmd.DeviceUUID)
-		alias.SetStatus(enum.StatusActive.String())
-		if _, err := repos.Alias.Create(ctx, alias); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 
