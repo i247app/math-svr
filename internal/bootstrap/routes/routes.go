@@ -97,6 +97,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /users/list", userHandler.HandleListUsers, authMiddleware)
 		reg("POST /users/create", userHandler.HandleCreateUser)
 		reg("POST /users/create/guest", userHandler.HandleCreateGuest)
+		reg("POST /users/check-identifier", userHandler.HandleCheckIdentifier)
 		reg("POST /users/update", userHandler.HandleUpdateUser, authMiddleware)
 		reg("POST /users/upload-avatar", userHandler.HandleUploadAvatar, authMiddleware)
 

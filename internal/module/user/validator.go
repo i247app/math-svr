@@ -46,6 +46,14 @@ func ValidateCreateUser(ctx context.Context, req *dto.CreateUserReq) error {
 	return nil
 }
 
+func ValidateCheckIdentifier(ctx context.Context, req *dto.CheckIdentifierReq) error {
+	req.Identifier = strings.TrimSpace(req.Identifier)
+	if req.Identifier == "" {
+		return errs.NewError(ctx, status.USER_MISSING_IDENTIFIER, nil, ErrPhoneOrEmailRequired)
+	}
+	return nil
+}
+
 func ValidateUpdateUser(ctx context.Context, req *dto.UpdateUserReq) error {
 	if req.Email != nil && strings.TrimSpace(*req.Email) == "" {
 		return errs.NewError(ctx, status.USER_MISSING_EMAIL, nil, ErrEmailRequired)

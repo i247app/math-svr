@@ -140,6 +140,23 @@ func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) 
 	response.WriteJson(w, res, nil)
 }
 
+// POST /users/check-identifier
+func (h *UserHandler) HandleCheckIdentifier(w http.ResponseWriter, r *http.Request) {
+	var req user.CheckIdentifierReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.userSvc.CheckIdentifier(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	response.WriteJson(w, res, nil)
+}
+
 // Get /users/me
 func (h *UserHandler) HandleGetUserMe(w http.ResponseWriter, r *http.Request) {
 	session, err := h.appResource.GetRequestSession(r)

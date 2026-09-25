@@ -46,6 +46,16 @@ type GetUserByEmailRes struct {
 	User *UserResponse `json:"user"`
 }
 
+// CheckIdentifierReq carries a login key: an email when it contains "@",
+// otherwise a phone number (normalised server-side).
+type CheckIdentifierReq struct {
+	Identifier string `json:"identifier"`
+}
+
+type CheckIdentifierRes struct {
+	User *UserResponse `json:"user"`
+}
+
 type CreateUserReq struct {
 	// UserName is the parent's display name — persisted to
 	// ma_users.user_name (NOT NULL). Distinct from Name, which is the

@@ -126,6 +126,32 @@ func (s *Service) GetUserByEmail(ctx context.Context, req *dto.GetUserByEmailReq
 	return &dto.GetUserByEmailRes{User: userRes}, nil
 }
 
+func (s *Service) CheckIdentifier(ctx context.Context, req *dto.CheckIdentifierReq) (*dto.CheckIdentifierRes, error) {
+	if err := ValidateCheckIdentifier(ctx, req); err != nil {
+		return nil, err
+	}
+
+	var (
+		u   *domain.User
+		err error
+	)
+	if strings.Contains(req.Identifier, "@") {
+		u, err = s.getUserByEmailQuery.Handle(ctx, query.GetUserByEmailQuery{Email: req.Identifier})
+	} else if phone, normErr := utils.NormalizePhone(req.Identifier); normErr == nil {
+		u, err = s.getUserByPhoneQuery.Handle(ctx, query.GetUserByPhoneQuery{Phone: phone})
+	}
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if u == nil {
+		return nil, errs.NewError(ctx, status.NO_DATA, nil, ErrUserNotFound)
+	}
+
+	userRes := dto.DomainToResponse(u)
+	s.populateImageUrl(ctx, userRes)
+	return &dto.CheckIdentifierRes{User: userRes}, nil
+}
+
 func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req *dto.CreateUserReq) (*dto.CreateUserRes, error) {
 	log := logger.From(ctx)
 
