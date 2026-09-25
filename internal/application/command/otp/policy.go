@@ -18,8 +18,11 @@ var (
 	// OtpCodeLength is the number of decimal digits in a delivered code.
 	OtpCodeLength = 4
 
-	// OtpResendCooldown is the minimum wait before the same (type, identifier)
-	// may request another OTP. Trips OTP_TOO_FREQUENT.
+	// OtpResendCooldown is no longer enforced: a send that lands while a
+	// PENDING OTP is still valid reuses that row and delivers nothing
+	// (send_otp_command.go step 1), which covers the same abuse without
+	// failing the client. Kept for the OTP_TOO_FREQUENT path if a
+	// time-based cooldown is ever reinstated on top of the reuse rule.
 	OtpResendCooldown = 60 * time.Second
 
 	// OtpSendWindow + OtpMaxSendsPerWindow form the per-window send cap.

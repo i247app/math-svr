@@ -33,15 +33,19 @@ var (
 // SendOtpCommand issues a fresh OTP for (type, identifier) and dispatches it
 // via the OTP delivery adapter. Inside one UoW it:
 //
-//  1. Enforces the resend cooldown (OTP_TOO_FREQUENT).
+//  1. Reuses a still-valid PENDING OTP instead of issuing a new one.
 //  2. Enforces the per-window send cap (OTP_RATE_LIMITED).
 //  3. Revokes any prior PENDING OTPs for (type, identifier).
 //  4. Generates a 6-digit code, hashes it, inserts the row.
 //
 // Step 5 happens AFTER commit: the delivery adapter is invoked. If delivery
 // fails, the row stays in place (audit trail) and the caller sees
-// OTP_DELIVERY_FAILED — the client can retry, which will trip the cooldown
-// rather than create a duplicate row.
+// OTP_DELIVERY_FAILED — the client can retry, which reuses the same row
+// rather than creating a duplicate one.
+//
+// A reused OTP is NOT re-dispatched (Result.Reused reports this). Leaving
+// and re-entering the OTP screen calls this endpoint again; the user already
+// holds the code, so resending it would only spam their inbox.
 type SendOtpCommand struct {
 	OtpType    enum.OtpType
 	Identifier string
@@ -64,6 +68,11 @@ type SendOtpCommandResult struct {
 	Channel   otp_delivery.ChannelName
 	OTPCode   string
 	OTPType   string
+	// Reused is true when an existing, still-valid PENDING OTP was handed
+	// back instead of a new one being issued — nothing was delivered, so
+	// callers must not raise their own "we just sent you a code" side
+	// effects either.
+	Reused bool
 }
 
 type SendOtpCommandHandler struct {
@@ -136,6 +145,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	expiresAt := now.Add(TtlFor(cmd.OtpType))
 
 	var createdOtpID int64
+	var reused bool
 	var targetPushToken string
 	err = h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		// 0. Target-device validation (trusted-device push 2FA). Runs before
@@ -162,27 +172,21 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 			targetPushToken = *targetDevice.DevicePushToken()
 		}
 
-		// 1. Cooldown.
-		// Compare against OtpCreateDt (app-set, always UTC) not CreateDt
-		// (MySQL DEFAULT CURRENT_TIMESTAMP(6) — emits the server's local
-		// wall-clock, which the driver mis-tags as UTC, yielding a
-		// negative age and a permanently-skipped cooldown).
+		// 1. Reuse a still-valid PENDING OTP.
+		// Expiry is read from OtpExpireDt (app-set, always UTC) — never
+		// from CreateDt, which MySQL fills with DEFAULT CURRENT_TIMESTAMP(6)
+		// in the server's local wall-clock and the driver then mis-tags as
+		// UTC.
 		latest, err := repos.Otp.FindLatestPending(ctx, cmd.OtpType, cmd.Identifier)
 		if err != nil {
 			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
 		}
-		if latest != nil {
-			age := now.Sub(latest.OtpCreateDt().Time)
-			if age >= 0 && age < OtpResendCooldown {
-				// return errs.NewError(ctx, status.OTP_TOO_FREQUENT, map[string]any{
-				// 	"retry_after_seconds": int((OtpResendCooldown - age).Seconds()),
-				// }, errors.New("resend cooldown not elapsed"))
-				createdOtpID = latest.OtpId()
-				plainCode = latest.OtpCode()
-				expiresAt = latest.OtpExpireDt().Time
-
-				return nil
-			}
+		if latest != nil && latest.OtpExpireDt().IsValid() && now.Before(latest.OtpExpireDt().Time) {
+			createdOtpID = latest.OtpId()
+			plainCode = latest.OtpCode()
+			expiresAt = latest.OtpExpireDt().Time
+			reused = true
+			return nil
 		}
 
 		// 2. Window cap
@@ -245,7 +249,10 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	// pre-existing gap outside this change's scope — see send_otp_command.go
 	// history; those channels still only surface the code via OTPCode below.
 	responseCode := plainCode
-	if cmd.TargetDeviceID != nil {
+	if reused {
+		log.Infof("otp send command reuse pending otp id=%d, delivery skipped", createdOtpID)
+	}
+	if !reused && cmd.TargetDeviceID != nil {
 		sendRes, perr := h.pushAdapter.Send(ctx, notifAdapter.PushMessage{
 			Tokens: []string{targetPushToken},
 			Title:  "Xác nhận đăng nhập",
@@ -274,7 +281,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		// responseCode = ""
 	}
 
-	if h.delivery != nil && channel == otp_delivery.ChannelEmail {
+	if !reused && h.delivery != nil && channel == otp_delivery.ChannelEmail {
 		err := h.delivery.Send(ctx, otp_delivery.Message{
 			OtpType:    cmd.OtpType,
 			Identifier: cmd.Identifier,
@@ -292,6 +299,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		Channel:   channel,
 		OTPCode:   responseCode,
 		OTPType:   cmd.OtpType.String(),
+		Reused:    reused,
 	}, nil
 }
 

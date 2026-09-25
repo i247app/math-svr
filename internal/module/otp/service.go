@@ -132,7 +132,11 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	// code (see send_otp_command.go), it's a security notice only. Best
 	// effort: a notice failure must not fail the OTP send the user is
 	// actively waiting on.
-	if req.TargetDeviceID != nil && userId != nil && s.notificationSvc != nil {
+	//
+	// Skipped when the command handed back a still-valid PENDING OTP: no
+	// code was delivered, so announcing one would re-notify the owner every
+	// time the client re-opens the OTP screen.
+	if !result.Reused && req.TargetDeviceID != nil && userId != nil && s.notificationSvc != nil {
 		requestingDevice := metadata.GetDeviceName(ctx)
 		if requestingDevice == "" {
 			requestingDevice = "một thiết bị"
