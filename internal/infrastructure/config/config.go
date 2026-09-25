@@ -28,6 +28,8 @@ func NewEnv(envpath string) (*Env, error) {
 		LogFileFormat:          getConfigOptionalStringWithDefault("LOG_FILE_FORMAT", "json"),
 		SerializedSessionFile:  getConfigOptionalString("SERIALIZED_SESSION_FILE"),
 		SessionPersistOnChange: getBoolConfigWithDefault("SESSION_PERSIST_ON_CHANGE", false),
+		PowEnabled:             getBoolConfigWithDefault("POW_ENABLED", false),
+		PowDifficulty:          getIntConfigOptionalWithDefault("POW_DIFFICULTY", 4),
 		GexSessionDriver:       getConfigOptionalString("GEX_SESSION_DRIVER"),
 		SharedKeyBytes:         getFileBytesConfig("GEX_SHARED_KEY"),
 		HttpsCertFile:          getConfigOptional("HTTPS_CERT_FILE"),

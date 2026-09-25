@@ -34,6 +34,7 @@ import (
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
+	"math-ai.com/math-ai/internal/module/pow"
 	"math-ai.com/math-ai/internal/module/presence"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -42,7 +43,6 @@ import (
 	"math-ai.com/math-ai/internal/module/seq"
 	"math-ai.com/math-ai/internal/module/socket"
 	"math-ai.com/math-ai/internal/module/user"
-	"math-ai.com/math-ai/internal/module/pow"
 )
 
 type ServiceContainer struct {

@@ -22,6 +22,7 @@ import (
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
+	"math-ai.com/math-ai/internal/module/pow"
 	"math-ai.com/math-ai/internal/module/presence"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -88,6 +89,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	miscService := misc.NewService(maintenanceRepo)
 
 	cleanupGuestsCmd := userCommand.NewCleanupGuestsCommandHandler(uow, maintenanceRepo)
+
+	log.Info("> Setup PowSvc...")
+	powService := pow.NewService(res.Env.PowEnabled, res.Env.PowDifficulty)
 
 	log.Info("> Setup DeviceSvc...")
 	deviceService := device.NewService(repos.DeviceRepository, uow, repos.UserRepository, res.Env.DemoNames)
@@ -238,6 +242,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		DeviceSvc:        deviceService,
 		OtpSvc:           otpService,
 		ExamSvc:          examService,
+		PowSvc:           powService,
 		SchoolSvc:        schoolService,
 		JobSvc:           jobService,
 		SeqSvc:           seqService,

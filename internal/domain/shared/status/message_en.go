@@ -677,6 +677,19 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case EXAM_GUEST_DAILY_LIMIT:
 		return "You have used all of today's free exams. Sign up to keep going"
 
+	case POW_CHALLENGE_FAILED:
+		return "Could not create a verification challenge. Please try again"
+	case POW_CHALLENGE_NOT_FOUND:
+		return "No verification challenge in progress. Please request a new one"
+	case POW_CHALLENGE_EXPIRED:
+		return "The verification challenge has expired. Please request a new one"
+	case POW_INVALID_PROOF:
+		return "Verification failed. Please request a new challenge"
+	case POW_REQUIRED:
+		return "Please complete verification before continuing"
+	case POW_INVALID_REQUEST:
+		return "Invalid verification request"
+
 	default:
 		return ""
 	}

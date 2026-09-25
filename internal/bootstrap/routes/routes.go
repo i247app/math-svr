@@ -22,6 +22,7 @@ import (
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
+	"math-ai.com/math-ai/internal/module/pow"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/school"
@@ -30,7 +31,6 @@ import (
 	"math-ai.com/math-ai/internal/module/session"
 	"math-ai.com/math-ai/internal/module/socket"
 	"math-ai.com/math-ai/internal/module/user"
-	"math-ai.com/math-ai/internal/module/pow"
 )
 
 func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *container.ServiceContainer) {
@@ -208,7 +208,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 	// exam routes
 	{
-		examHandler := exam.NewExamHandler(res, services.ExamSvc)
+		examHandler := exam.NewExamHandler(res, services.ExamSvc, services.PowSvc)
 		reg("POST /exams/generate", examHandler.HandleGenerateExam)
 		reg("POST /exams/submit", examHandler.HandleSubmitExam)
 		reg("POST /exams/detail", examHandler.HandleGetExam)

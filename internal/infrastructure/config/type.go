@@ -19,11 +19,19 @@ type Env struct {
 	// shutdown — env SESSION_PERSIST_ON_CHANGE, default false. Needs
 	// SerializedSessionFile.
 	SessionPersistOnChange bool
-	GexSessionDriver       string
-	SharedKeyBytes         []byte
-	HttpsCertFile          *string
-	HttpsKeyFile           *string
-	EnableOTP              bool
+	// PowEnabled makes POST /exams/generate require a solved proof-of-work
+	// challenge (/pow/challenge → /pow/verify) — env POW_ENABLED, default
+	// false so clients can ship support before it is enforced.
+	PowEnabled bool
+	// PowDifficulty is the number of leading hex zeros a proof's SHA-256
+	// must have; each +1 makes the client's work 16x harder — env
+	// POW_DIFFICULTY, default 5.
+	PowDifficulty    int
+	GexSessionDriver string
+	SharedKeyBytes   []byte
+	HttpsCertFile    *string
+	HttpsKeyFile     *string
+	EnableOTP        bool
 	// OtpBypassEnabled lets command.OtpBypassCode verify any PENDING OTP.
 	// Dev/test only — env OTP_BYPASS_ENABLED; default false. Never enable in prod.
 	OtpBypassEnabled   bool

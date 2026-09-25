@@ -117,6 +117,8 @@ if the file is missing or unparsable, and that error aborts startup.
 | `ENABLE_OTP` | default `false`; passed into the auth handler |
 | `OTP_BYPASS_ENABLED` | default `false`; **dev/test only** — `0000` verifies any PENDING OTP (a prior send is still required) |
 | `GEX_SESSION_DRIVER` | `xwt` → XWT session provider; anything else → JWT |
+| `POW_ENABLED` | default `false`; `true` makes `POST /exams/generate` require a solved proof-of-work challenge (`POST /pow/challenge` → `POST /pow/verify`, same session) |
+| `POW_DIFFICULTY` | default `5`; leading hex zeros the proof's SHA-256 must have (each +1 = 16× more client work) |
 | `SERIALIZED_SESSION_FILE` | when set, sessions belonging to a user (signed in or guest) are dumped here on shutdown and reloaded on start |
 | `SESSION_PERSIST_ON_CHANGE` | default `false`; `true` also rewrites `SERIALIZED_SESSION_FILE` (in the background, atomically) whenever a session's auth state changes — login, logout, revoke — so a crash that skips shutdown loses no sign-ins. Needs `SERIALIZED_SESSION_FILE` |
 | `OBS_*`, `LOG_*` | observability — see `.env.example` and `docker/README.md` |

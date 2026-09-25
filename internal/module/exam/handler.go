@@ -11,6 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	"math-ai.com/math-ai/internal/module/pow"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -20,10 +21,11 @@ import (
 type ExamHandler struct {
 	appResource *resource.Resource
 	examSvc     *Service
+	powSvc      *pow.Service
 }
 
-func NewExamHandler(appResource *resource.Resource, examSvc *Service) *ExamHandler {
-	return &ExamHandler{appResource: appResource, examSvc: examSvc}
+func NewExamHandler(appResource *resource.Resource, examSvc *Service, powSvc *pow.Service) *ExamHandler {
+	return &ExamHandler{appResource: appResource, examSvc: examSvc, powSvc: powSvc}
 }
 
 // uid pulls the caller's user id out of the request's session, applying
@@ -127,6 +129,15 @@ func (h *ExamHandler) HandleGenerateExam(w http.ResponseWriter, r *http.Request)
 	ctx := r.Context()
 	sess, err := h.appResource.GetRequestSession(r)
 	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	// Every generation may be a paid model call, and this route is open to
+	// callers with no account (a guest is opened below). Spend a solved
+	// proof of work first — before a guest is created — so a bot pays CPU
+	// for each exam it asks for. No-op unless POW_ENABLED.
+	if err := h.powSvc.ConsumePass(ctx, sess); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}

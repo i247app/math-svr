@@ -405,4 +405,12 @@ const (
 	// someone who has not registered, so the ceiling is the product's,
 	// not a per-user setting.
 	EXAM_GUEST_DAILY_LIMIT StatusCode = 13734
+
+	// Proof of work — 13800-13899. Gates /exams/generate against bots.
+	POW_CHALLENGE_FAILED    StatusCode = 13800 // could not mint a challenge
+	POW_CHALLENGE_NOT_FOUND StatusCode = 13801 // verify without a pending challenge (never issued, or already used)
+	POW_CHALLENGE_EXPIRED   StatusCode = 13802
+	POW_INVALID_PROOF       StatusCode = 13803
+	POW_REQUIRED            StatusCode = 13804 // a gated route was called without a fresh, unused proof
+	POW_INVALID_REQUEST     StatusCode = 13805
 )

@@ -1,17 +1,18 @@
 package pow
 
 type ChallengeReq struct {
-
 }
 
-type ChallengeResponse struct {
-	Message string `json:"message"`
+type ChallengeRes struct {
+	// Message is the challenge seed: find a nonce such that
+	// SHA-256(message + decimal nonce), in hex, starts with Difficulty zeros.
+	Message    string `json:"message"`
 	Difficulty int    `json:"difficulty"`
 }
 
-type VerifyChallengeRequest struct {
-	Nonce int `json:"nonce"`
+type VerifyChallengeReq struct {
+	Nonce int64 `json:"nonce"`
 }
-type VerifyChallengeResponse struct {
+type VerifyChallengeRes struct {
 	IsValid bool `json:"is_valid"`
 }

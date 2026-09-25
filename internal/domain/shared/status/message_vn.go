@@ -677,6 +677,19 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case EXAM_GUEST_DAILY_LIMIT:
 		return "Bé đã dùng hết số bài miễn phí hôm nay. Hãy đăng ký để tiếp tục"
 
+	case POW_CHALLENGE_FAILED:
+		return "Không tạo được thử thách xác minh. Vui lòng thử lại"
+	case POW_CHALLENGE_NOT_FOUND:
+		return "Không có thử thách xác minh nào. Vui lòng yêu cầu thử thách mới"
+	case POW_CHALLENGE_EXPIRED:
+		return "Thử thách xác minh đã hết hạn. Vui lòng yêu cầu thử thách mới"
+	case POW_INVALID_PROOF:
+		return "Xác minh không thành công. Vui lòng yêu cầu thử thách mới"
+	case POW_REQUIRED:
+		return "Vui lòng hoàn tất xác minh trước khi tiếp tục"
+	case POW_INVALID_REQUEST:
+		return "Yêu cầu xác minh không hợp lệ"
+
 	default:
 		return ""
 	}
