@@ -1,4 +1,4 @@
--- Manual / production run of migrations/up/035_drop_internal_id.sql
+-- Manual / production run of the former migrations/up/035_drop_internal_id.sql (squashed away 2026-09-26)
 --
 -- Same 29 ALTERs, WITHOUT the PREPARE/EXECUTE guard. The guard exists only so
 -- the tracked migration is re-runnable; it is session-scoped, so a GUI client

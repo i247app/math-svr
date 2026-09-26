@@ -64,5 +64,9 @@ CREATE TABLE IF NOT EXISTS ma_user_exams (
     GENERATED ALWAYS AS (IF(user_exam_status = 'ACTIVE', 1, NULL)) STORED,
 
   UNIQUE KEY uk_active_journey (uid, profile_id, req_exam_type, active_key),
-  KEY ix_profile_type (profile_id, req_exam_type)
+  KEY ix_profile_type (profile_id, req_exam_type),
+  -- Serves FindLatestCompletedByUserProfileType: filter on the triple + status,
+  -- order by ended_dt. Present on the live database but declared in no
+  -- migration until now, so a freshly built schema was losing it.
+  KEY ix_profile_type_status (profile_id, req_exam_type, user_exam_status, ended_dt)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

@@ -15,7 +15,7 @@ SELECT '030 audit columns (rpt_flg/kwords on every table)' AS step,
              WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'ma\_%' AND COLUMN_NAME='rpt_flg')
           = (SELECT COUNT(*) FROM information_schema.TABLES
                WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'ma\_%'),
-          'APPLIED','MISSING -> run migrations/up/030_audit_columns_standard.sql') AS state
+          'APPLIED','MISSING -> see sql/prod/README.md') AS state
 
 UNION ALL SELECT '031 guest identity (identity_code)',
        (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
@@ -23,7 +23,7 @@ UNION ALL SELECT '031 guest identity (identity_code)',
        '2',
        IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
              AND TABLE_NAME IN ('ma_users','ma_profiles') AND COLUMN_NAME='identity_code')=2,
-          'APPLIED','MISSING -> run migrations/up/031_guest_identity.sql')
+          'APPLIED','MISSING -> see sql/prod/README.md')
 
 UNION ALL SELECT '032 phone nullable',
        (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
@@ -31,13 +31,13 @@ UNION ALL SELECT '032 phone nullable',
        '2',
        IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
              AND TABLE_NAME IN ('ma_users','ma_profiles') AND COLUMN_NAME='phone' AND IS_NULLABLE='YES')=2,
-          'APPLIED','MISSING -> run migrations/up/032_optinal_phone.sql')
+          'APPLIED','MISSING -> see sql/prod/README.md')
 
 UNION ALL SELECT '033 ma_logins table',
        (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='ma_logins'),
        '1',
        IF((SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='ma_logins')=1,
-          'APPLIED','MISSING -> run migrations/up/033_ma_logins_table.sql')
+          'APPLIED','MISSING -> run migrations/up/029_ma_logins_table.sql')
 
 -- 034 only means something while 035 has not run: 035 replaces these two
 -- indexes with the PRIMARY KEY, so their absence afterwards is correct.

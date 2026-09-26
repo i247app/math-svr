@@ -1,4 +1,4 @@
--- STEP 4 — manual/production form of migrations/up/034_unique_external_ids.sql
+-- STEP 4 — manual/production form of the former migrations/up/034_unique_external_ids.sql (squashed away 2026-09-26)
 -- (the tracked file wraps these in PREPARE/EXECUTE, which a GUI client cannot
 --  run: the handler is session-scoped -> ERROR 1243 at DEALLOCATE).
 --
