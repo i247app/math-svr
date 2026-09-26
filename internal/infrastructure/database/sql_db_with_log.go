@@ -91,6 +91,12 @@ func (d *DatabaseWithLogs) BeginTx(ctx context.Context, opts *sql.TxOptions) (*s
 	return tx, nil
 }
 
+// Stats returns a snapshot of the connection pool (open / in-use / idle
+// connections, cumulative wait count + duration, closes by limit).
+func (d *DatabaseWithLogs) Stats() sql.DBStats {
+	return d.db.Stats()
+}
+
 func (d *DatabaseWithLogs) PingContext(ctx context.Context) error {
 	return d.db.PingContext(ctx)
 }

@@ -86,7 +86,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 
 	log.Info("> Setup MiscSvc...")
 	maintenanceRepo := repositories.NewMaintenanceRepository(res.DB)
-	miscService := misc.NewService(maintenanceRepo)
+	miscService := misc.NewService(maintenanceRepo, res.DB)
 
 	cleanupGuestsCmd := userCommand.NewCleanupGuestsCommandHandler(uow, maintenanceRepo)
 

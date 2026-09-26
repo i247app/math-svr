@@ -1,5 +1,7 @@
 package misc
 
+import "time"
+
 type LogTimeFormatReq struct {
 	Time string `json:"time"`
 }
@@ -27,6 +29,27 @@ type ClearDataRes struct {
 	SeqsReset     []string `json:"seqs_reset"`
 	// KeptUids echoes the whitelisted users preserved (whitelist path only).
 	KeptUids []int64 `json:"kept_uids,omitempty"`
+}
+
+// DBPoolStatsRes is a point-in-time snapshot of the MySQL connection pool
+// (sql.DB.Stats). Gauges (open/in_use/idle) are current values; the wait and
+// *_closed fields are cumulative since process start — diff two snapshots
+// taken captured_at apart to get a rate.
+type DBPoolStatsRes struct {
+	CapturedAt time.Time `json:"captured_at"`
+
+	MaxOpenConnections int `json:"max_open_connections"` // 0 = unlimited
+	OpenConnections    int `json:"open_connections"`     // in_use + idle
+	InUse              int `json:"in_use"`
+	Idle               int `json:"idle"`
+
+	WaitCount          int64   `json:"wait_count"`           // cumulative waits for a free connection
+	WaitDurationMs     float64 `json:"wait_duration_ms"`     // cumulative time spent waiting
+	AvgWaitDurationMs  float64 `json:"avg_wait_duration_ms"` // wait_duration_ms / wait_count
+	MaxIdleClosed      int64   `json:"max_idle_closed"`      // closed by SetMaxIdleConns
+	MaxIdleTimeClosed  int64   `json:"max_idle_time_closed"` // closed by SetConnMaxIdleTime
+	MaxLifetimeClosed  int64   `json:"max_lifetime_closed"`  // closed by SetConnMaxLifetime
+	UtilizationPercent float64 `json:"utilization_percent"`  // in_use / max_open * 100 (0 when unlimited)
 }
 
 // ClearDataTablesReq selects which tables POST /misc/clear-data-tables wipes.

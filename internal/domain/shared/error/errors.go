@@ -80,3 +80,7 @@ func NewInvalidParamError(ctx context.Context, baseError error) *MathError {
 func NewUnauthorizedError(ctx context.Context, baseError error) *MathError {
 	return NewError(ctx, status.UNAUTHORIZED, nil, baseError)
 }
+
+func NewNotFoundError(ctx context.Context, baseError error) *MathError {
+	return NewError(ctx, status.NOT_FOUND, nil, baseError)
+}

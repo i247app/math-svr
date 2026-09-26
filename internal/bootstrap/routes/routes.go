@@ -55,6 +55,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		// Destructive: wipes only the tables named in the request body
 		// (validated against the clear-data allow-list). Auth-gated.
 		reg("POST /misc/clear-data-tables", miscHandler.ClearDataTables, authMiddleware)
+		// Diagnostic: live connection-pool snapshot (sql.DB.Stats). Auth-gated.
+		reg("POST /misc/db-pool-stats", miscHandler.DBPoolStats, authMiddleware)
 	}
 
 	// health routes

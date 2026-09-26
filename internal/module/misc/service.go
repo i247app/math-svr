@@ -2,9 +2,11 @@ package misc
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	dto "math-ai.com/math-ai/internal/application/dto/misc"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -28,14 +30,49 @@ type ClearDataRepository interface {
 	ClearableTables() []string
 }
 
-type Service struct {
-	maintenanceRepo ClearDataRepository
+// DBStatsProvider exposes the connection-pool snapshot of the process-wide
+// database handle (implemented by database.DatabaseWithLogs).
+type DBStatsProvider interface {
+	Stats() sql.DBStats
 }
 
-func NewService(maintenanceRepo ClearDataRepository) *Service {
+type Service struct {
+	maintenanceRepo ClearDataRepository
+	dbStats         DBStatsProvider
+}
+
+func NewService(maintenanceRepo ClearDataRepository, dbStats DBStatsProvider) *Service {
 	return &Service{
 		maintenanceRepo: maintenanceRepo,
+		dbStats:         dbStats,
 	}
+}
+
+// DBPoolStats reports the current connection-pool state. Gauges are live;
+// wait / closed counters are cumulative since process start.
+func (s *Service) DBPoolStats(ctx context.Context) (*dto.DBPoolStatsRes, error) {
+	st := s.dbStats.Stats()
+	waitMs := float64(st.WaitDuration) / float64(time.Millisecond)
+
+	res := &dto.DBPoolStatsRes{
+		CapturedAt:         time.Now().UTC(),
+		MaxOpenConnections: st.MaxOpenConnections,
+		OpenConnections:    st.OpenConnections,
+		InUse:              st.InUse,
+		Idle:               st.Idle,
+		WaitCount:          st.WaitCount,
+		WaitDurationMs:     waitMs,
+		MaxIdleClosed:      st.MaxIdleClosed,
+		MaxIdleTimeClosed:  st.MaxIdleTimeClosed,
+		MaxLifetimeClosed:  st.MaxLifetimeClosed,
+	}
+	if st.WaitCount > 0 {
+		res.AvgWaitDurationMs = waitMs / float64(st.WaitCount)
+	}
+	if st.MaxOpenConnections > 0 {
+		res.UtilizationPercent = float64(st.InUse) / float64(st.MaxOpenConnections) * 100
+	}
+	return res, nil
 }
 
 func (s *Service) LogsTimeFormat(ctx context.Context, req *dto.LogTimeFormatReq) (*dto.LogTimeFormatRes, error) {

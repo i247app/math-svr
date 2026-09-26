@@ -54,6 +54,18 @@ func (h *Handler) ClearData(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
+// DBPoolStats returns a live snapshot of the MySQL connection pool. The body
+// carries only metadata, so it is not decoded.
+func (h *Handler) DBPoolStats(w http.ResponseWriter, r *http.Request) {
+	res, err := h.svc.DBPoolStats(r.Context())
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	response.WriteJson(w, res, nil)
+}
+
 func (h *Handler) ClearDataTables(w http.ResponseWriter, r *http.Request) {
 	var req dto.ClearDataTablesReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

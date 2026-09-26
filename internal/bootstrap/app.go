@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"log/slog"
@@ -16,6 +17,7 @@ import (
 	"math-ai.com/math-ai/internal/bootstrap/container"
 	"math-ai.com/math-ai/internal/bootstrap/middleware"
 	"math-ai.com/math-ai/internal/bootstrap/routes"
+	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -131,7 +133,7 @@ func (a *App) Init() error {
 
 	// Setup gex.Server
 	defaultRouteHandler := func(w http.ResponseWriter, r *http.Request) {
-		response.WriteJson(w, nil, fmt.Errorf("route not found: %v", r.URL.Path))
+		response.WriteJson(w, nil, errs.NewNotFoundError(r.Context(), errors.New("route not found")))
 	}
 
 	a.Server = gex.NewServer(

@@ -11,7 +11,7 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case FORBIDDEN:
 		return "Bị từ chối"
 	case NOT_FOUND:
-		return "Không tìm thấy"
+		return "Không tìm thấy tài nguyên"
 	case NO_DATA:
 		return "Không tìm thấy dữ liệu"
 	case CONFLICT:
