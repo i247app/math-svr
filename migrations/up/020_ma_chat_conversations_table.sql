@@ -18,8 +18,7 @@
 -- one extra query per row.
 
 CREATE TABLE IF NOT EXISTS ma_chat_conversations (
-  id                              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  conversation_id                 BIGINT UNSIGNED NOT NULL UNIQUE,  -- external id (minted via ma_seqs)
+  conversation_id                 BIGINT UNSIGNED NOT NULL PRIMARY KEY,  -- external id (minted via ma_seqs)
   conversation_type               VARCHAR(32) NOT NULL DEFAULT 'DIRECT', -- DIRECT, GROUP, CLASSROOM
   classroom_id                    BIGINT UNSIGNED DEFAULT NULL,     -- scope; NULL for a global 1-1 thread
   -- Deterministic key for DIRECT threads: 'p:{minProfileId}:{maxProfileId}'.
@@ -41,7 +40,9 @@ CREATE TABLE IF NOT EXISTS ma_chat_conversations (
   last_message_sender_profile_id  BIGINT UNSIGNED DEFAULT NULL,
   last_message_dt                 DATETIME(6) DEFAULT NULL,
   note                            VARCHAR(500) DEFAULT NULL,
-  conversation_status             VARCHAR(32) DEFAULT 'ACTIVE',     -- ACTIVE, ARCHIVED, DELETED
+  conversation_status             VARCHAR(32) DEFAULT NULL,     -- ACTIVE, ARCHIVED, DELETED
+  rpt_flg                         VARCHAR(16)  DEFAULT NULL,
+  kwords                          VARCHAR(255) DEFAULT NULL,
   status                          VARCHAR(32) DEFAULT 'ACTIVE',
   create_id                       BIGINT UNSIGNED DEFAULT NULL,
   create_dt                       DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),

@@ -17,8 +17,7 @@
 -- with last_read_seq_no >= 57).
 
 CREATE TABLE IF NOT EXISTS ma_chat_participants (
-  id                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  participant_id           BIGINT UNSIGNED NOT NULL UNIQUE,   -- external id (minted via ma_seqs)
+  participant_id           BIGINT UNSIGNED NOT NULL PRIMARY KEY,   -- external id (minted via ma_seqs)
   conversation_id          BIGINT UNSIGNED NOT NULL,
   profile_id               BIGINT UNSIGNED NOT NULL,          -- acting identity / display
   uid                      BIGINT UNSIGNED NOT NULL,          -- delivery target (socket + push)
@@ -45,7 +44,9 @@ CREATE TABLE IF NOT EXISTS ma_chat_participants (
   left_dt                  DATETIME(6) DEFAULT NULL,
   invited_by_profile_id    BIGINT UNSIGNED DEFAULT NULL,
   note                     VARCHAR(500) DEFAULT NULL,
-  participant_status       VARCHAR(32) DEFAULT 'ACTIVE',       -- ACTIVE, LEFT, REMOVED, DELETED
+  participant_status       VARCHAR(32) DEFAULT NULL,       -- ACTIVE, LEFT, REMOVED, DELETED
+  rpt_flg                  VARCHAR(16)  DEFAULT NULL,
+  kwords                   VARCHAR(255) DEFAULT NULL,
   status                   VARCHAR(32) DEFAULT 'ACTIVE',
   create_id                BIGINT UNSIGNED DEFAULT NULL,
   create_dt                DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
@@ -54,7 +55,7 @@ CREATE TABLE IF NOT EXISTS ma_chat_participants (
   deleted_dt               DATETIME(6) DEFAULT NULL,
   UNIQUE KEY uk_conversation_profile (conversation_id, profile_id),
   KEY ix_profile_active (profile_id, participant_status, deleted_dt),
-  KEY ix_user_active (user_id, participant_status),
+  KEY ix_user_active (uid, participant_status),
   KEY ix_conversation_active (conversation_id, participant_status, deleted_dt)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

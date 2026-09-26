@@ -21,12 +21,11 @@
 -- lives in ma_chat_attachments from day one — see migration 026.
 
 CREATE TABLE IF NOT EXISTS ma_chat_messages (
-  id                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  message_id               BIGINT UNSIGNED NOT NULL UNIQUE,   -- external id (minted via ma_seqs)
+  message_id               BIGINT UNSIGNED NOT NULL PRIMARY KEY,   -- external id (minted via ma_seqs)
   conversation_id          BIGINT UNSIGNED NOT NULL,
   seq_no                   BIGINT UNSIGNED NOT NULL,          -- monotonic WITHIN the conversation
   sender_profile_id        BIGINT UNSIGNED DEFAULT NULL,      -- NULL for SYSTEM messages
-  sender_user_id           BIGINT UNSIGNED DEFAULT NULL,
+  sender_uid               BIGINT UNSIGNED DEFAULT NULL,
   message_type             VARCHAR(32) NOT NULL DEFAULT 'TEXT', -- TEXT, IMAGE, VIDEO, AUDIO, FILE, SYSTEM
   content                  TEXT DEFAULT NULL,                 -- body, or caption for a media message
   attachment_count         TINYINT UNSIGNED NOT NULL DEFAULT 0,
@@ -42,7 +41,9 @@ CREATE TABLE IF NOT EXISTS ma_chat_messages (
   edited_dt                DATETIME(6) DEFAULT NULL,
   revoked_dt               DATETIME(6) DEFAULT NULL,          -- "thu hồi" / unsend
   note                     VARCHAR(500) DEFAULT NULL,
-  message_status           VARCHAR(32) DEFAULT 'SENT',        -- SENT, EDITED, REVOKED, DELETED
+  message_status           VARCHAR(32) DEFAULT NULL,        -- SENT, EDITED, REVOKED, DELETED
+  rpt_flg                  VARCHAR(16)  DEFAULT NULL,
+  kwords                   VARCHAR(255) DEFAULT NULL,
   status                   VARCHAR(32) DEFAULT 'ACTIVE',
   create_id                BIGINT UNSIGNED DEFAULT NULL,
   create_dt                DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),

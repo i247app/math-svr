@@ -22,7 +22,8 @@ run_deliver() {
     dist/mathsvr \
     keys/ \
     deploy/ \
-    docker/
+    docker/ \
+    sql/
 
   # docker/ carries the observability stack as code (compose files + Prometheus
   # / Loki / Tempo / Alloy / Grafana configs). It lands at /apps/math/docker/,

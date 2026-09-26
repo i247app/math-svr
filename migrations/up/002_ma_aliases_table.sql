@@ -1,11 +1,12 @@
 -- migration up
 CREATE TABLE IF NOT EXISTS ma_aliases (
-  id            BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  alias_id      BIGINT UNSIGNED NOT NULL UNIQUE,
+  alias_id      BIGINT UNSIGNED NOT NULL PRIMARY KEY,
   uid           BIGINT UNSIGNED NOT NULL,
   aka           VARCHAR(128) NOT NULL,
   note          VARCHAR(500) DEFAULT NULL,
-  alias_status  VARCHAR(32) DEFAULT 'ACTIVE',
+  alias_status  VARCHAR(32) DEFAULT NULL,
+  rpt_flg       VARCHAR(16)  DEFAULT NULL,
+  kwords        VARCHAR(255) DEFAULT NULL,
   status        VARCHAR(32) DEFAULT 'ACTIVE',
   create_id     BIGINT UNSIGNED DEFAULT NULL,
   create_dt     DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),

@@ -1,7 +1,6 @@
 -- migration up
 CREATE TABLE IF NOT EXISTS ma_exercises (
-    id                      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    classroom_exercise_id   BIGINT UNSIGNED NOT NULL UNIQUE,
+    classroom_exercise_id   BIGINT UNSIGNED NOT NULL PRIMARY KEY,
     classroom_id            BIGINT UNSIGNED NOT NULL,
     creator_profile_id      BIGINT UNSIGNED DEFAULT NULL,
     visibility              VARCHAR(32) NOT NULL DEFAULT 'PRIVATE',
@@ -18,7 +17,9 @@ CREATE TABLE IF NOT EXISTS ma_exercises (
     start_date              DATETIME(6) DEFAULT NULL,
     end_date                DATETIME(6) DEFAULT NULL,
     note                    VARCHAR(500) DEFAULT NULL,
-    exercise_status         VARCHAR(32) DEFAULT 'ACTIVE', -- ACTIVE, ARCHIVED, DELETED
+    exercise_status         VARCHAR(32) DEFAULT NULL, -- ACTIVE, ARCHIVED, DELETED
+    rpt_flg                 VARCHAR(16)  DEFAULT NULL,
+    kwords                  VARCHAR(255) DEFAULT NULL,
     status                  VARCHAR(32) DEFAULT 'ACTIVE',
     create_id               BIGINT UNSIGNED DEFAULT NULL,
     create_dt               DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),

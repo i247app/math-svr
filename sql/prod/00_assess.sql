@@ -39,13 +39,18 @@ UNION ALL SELECT '033 ma_logins table',
        IF((SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='ma_logins')=1,
           'APPLIED','MISSING -> run migrations/up/033_ma_logins_table.sql')
 
+-- 034 only means something while 035 has not run: 035 replaces these two
+-- indexes with the PRIMARY KEY, so their absence afterwards is correct.
 UNION ALL SELECT '034 unique external ids',
        (SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
           AND INDEX_NAME IN ('uk_profile_id','uk_user_exam_id')),
-       '2',
-       IF((SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
-             AND INDEX_NAME IN ('uk_profile_id','uk_user_exam_id'))=2,
-          'APPLIED','MISSING -> run sql/prod/034_unique_external_ids.sql')
+       '2 (or 0 once 035 has run)',
+       IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()
+             AND TABLE_NAME='ma_profiles' AND COLUMN_NAME='id')=0,
+          'N/A - absorbed into the PRIMARY KEY by 035',
+          IF((SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE()
+                AND INDEX_NAME IN ('uk_profile_id','uk_user_exam_id'))=2,
+             'APPLIED','MISSING -> run sql/prod/034_unique_external_ids.sql'))
 
 UNION ALL SELECT '035 internal id dropped',
        (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE()

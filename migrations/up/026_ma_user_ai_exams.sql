@@ -33,8 +33,7 @@
 -- again later, and that is a second attempt, not a conflict.
 
 CREATE TABLE IF NOT EXISTS ma_user_ai_exams (
-  id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  user_ai_exam_id      BIGINT UNSIGNED NOT NULL UNIQUE,      -- external id (minted via ma_seqs)
+  user_ai_exam_id      BIGINT UNSIGNED NOT NULL PRIMARY KEY,      -- external id (minted via ma_seqs)
   uid                  BIGINT UNSIGNED NOT NULL,             -- anonymous exams are no longer allowed
   profile_id           BIGINT UNSIGNED NOT NULL,
   ai_exam_id           BIGINT UNSIGNED NOT NULL,             -- the exam that was served
@@ -68,7 +67,9 @@ CREATE TABLE IF NOT EXISTS ma_user_ai_exams (
   submitted_dt         DATETIME(6)  DEFAULT NULL,
 
   note                 VARCHAR(500) DEFAULT NULL,
-  user_ai_exam_status  VARCHAR(32)  DEFAULT 'IN_PROGRESS',   -- IN_PROGRESS, SUBMITTED, DELETED
+  user_ai_exam_status  VARCHAR(32)  DEFAULT NULL,   -- IN_PROGRESS, SUBMITTED, DELETED
+  rpt_flg              VARCHAR(16)  DEFAULT NULL,
+  kwords               VARCHAR(255) DEFAULT NULL,
   status               VARCHAR(32)  DEFAULT 'ACTIVE',
   create_id            BIGINT UNSIGNED DEFAULT NULL,
   create_dt            DATETIME(6)  DEFAULT CURRENT_TIMESTAMP(6),
@@ -81,7 +82,7 @@ CREATE TABLE IF NOT EXISTS ma_user_ai_exams (
   -- Learning-progress chart: one profile, one exam type, over a date window.
   KEY ix_profile_type_submitted (profile_id, req_exam_type, submitted_dt),
   -- Parent-scoped reads when only user_id is known.
-  KEY ix_user_started (user_id, started_dt),
+  KEY ix_user_started (uid, started_dt),
   -- Cache accounting: how many attempts a given generated exam served.
   KEY ix_ai_exam (ai_exam_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

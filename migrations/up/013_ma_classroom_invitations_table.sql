@@ -1,7 +1,6 @@
 -- migration up
 CREATE TABLE IF NOT EXISTS ma_classroom_invitations (
-  id                        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  invitation_id             BIGINT UNSIGNED NOT NULL UNIQUE,
+  invitation_id             BIGINT UNSIGNED NOT NULL PRIMARY KEY,
   classroom_id              BIGINT UNSIGNED NOT NULL,
   inviter_profile_id        BIGINT UNSIGNED NOT NULL,
   invited_profile_id        BIGINT UNSIGNED DEFAULT NULL,
@@ -16,7 +15,9 @@ CREATE TABLE IF NOT EXISTS ma_classroom_invitations (
   response_profile_id       BIGINT UNSIGNED DEFAULT NULL,
   cancelled_by_profile_id   BIGINT UNSIGNED DEFAULT NULL,
   note                      VARCHAR(500) DEFAULT NULL,
-  invitation_status         VARCHAR(32) DEFAULT 'PENDING', -- PENDING, ACCEPTED, REJECTED, EXPIRED, CANCELLED, REVOKED
+  invitation_status         VARCHAR(32) DEFAULT NULL, -- PENDING, ACCEPTED, REJECTED, EXPIRED, CANCELLED, REVOKED
+  rpt_flg                   VARCHAR(16)  DEFAULT NULL,
+  kwords                    VARCHAR(255) DEFAULT NULL,
   status                    VARCHAR(32) DEFAULT 'ACTIVE',
   create_id                 BIGINT UNSIGNED DEFAULT NULL,
   create_dt                 DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),

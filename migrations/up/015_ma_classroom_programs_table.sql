@@ -8,10 +8,12 @@
 -- keeping it soft would force a partial unique index (not supported on
 -- MySQL 8) to allow re-adding the same program later.
 CREATE TABLE IF NOT EXISTS ma_classroom_programs (
-  id                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  classroom_program_id     BIGINT UNSIGNED NOT NULL UNIQUE,
+  classroom_program_id     BIGINT UNSIGNED NOT NULL PRIMARY KEY,
   classroom_id             BIGINT UNSIGNED NOT NULL,
   program_id               BIGINT UNSIGNED NOT NULL,
+  classroom_program_status VARCHAR(32)  DEFAULT NULL,
+  rpt_flg                  VARCHAR(16)  DEFAULT NULL,
+  kwords                   VARCHAR(255) DEFAULT NULL,
   note                     VARCHAR(500) DEFAULT NULL,
   status                   VARCHAR(32) DEFAULT 'ACTIVE',
   create_id                BIGINT UNSIGNED DEFAULT NULL,

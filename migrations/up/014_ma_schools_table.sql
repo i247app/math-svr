@@ -1,12 +1,13 @@
 -- migration up
 CREATE TABLE IF NOT EXISTS ma_schools (
-  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  school_id       BIGINT UNSIGNED NOT NULL UNIQUE,
+  school_id       BIGINT UNSIGNED NOT NULL PRIMARY KEY,
   name            VARCHAR(100) NOT NULL,
   description     TEXT,
   image_key       VARCHAR(128) DEFAULT NULL,
   note            VARCHAR(500) DEFAULT NULL,
-  school_status   VARCHAR(32) DEFAULT 'ACTIVE',
+  school_status   VARCHAR(32) DEFAULT NULL,
+  rpt_flg         VARCHAR(16)  DEFAULT NULL,
+  kwords          VARCHAR(255) DEFAULT NULL,
   district        VARCHAR(100) DEFAULT NULL,
   province        VARCHAR(100) DEFAULT NULL,
   status          VARCHAR(32) DEFAULT 'ACTIVE',

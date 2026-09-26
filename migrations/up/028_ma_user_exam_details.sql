@@ -38,8 +38,7 @@
 -- Rows are written once at submit and never updated.
 
 CREATE TABLE IF NOT EXISTS ma_user_exam_details (
-  id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  user_exam_detail_id  BIGINT UNSIGNED NOT NULL UNIQUE,      -- external id (minted via ma_seqs)
+  user_exam_detail_id  BIGINT UNSIGNED NOT NULL PRIMARY KEY,      -- external id (minted via ma_seqs)
   user_ai_exam_id      BIGINT UNSIGNED NOT NULL,             -- the attempt (ma_user_ai_exams)
   user_exam_id         BIGINT UNSIGNED NOT NULL,             -- the cumulative row (ma_user_exams)
   ai_exam_id           BIGINT UNSIGNED NOT NULL,             -- the source exam (ma_ai_exams)
@@ -61,7 +60,9 @@ CREATE TABLE IF NOT EXISTS ma_user_exam_details (
   is_correct           TINYINT(1)   NOT NULL DEFAULT 0,
 
   note                 VARCHAR(500) DEFAULT NULL,
-  detail_status        VARCHAR(32)  DEFAULT 'SUBMITTED',     -- SUBMITTED, DELETED
+  detail_status        VARCHAR(32)  DEFAULT NULL,     -- SUBMITTED, DELETED
+  rpt_flg              VARCHAR(16)  DEFAULT NULL,
+  kwords               VARCHAR(255) DEFAULT NULL,
   status               VARCHAR(32)  DEFAULT 'ACTIVE',
   create_id            BIGINT UNSIGNED DEFAULT NULL,
   create_dt            DATETIME(6)  DEFAULT CURRENT_TIMESTAMP(6),

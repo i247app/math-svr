@@ -1,13 +1,14 @@
 -- migration up
 CREATE TABLE IF NOT EXISTS ma_grades (
-  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  grade_id        BIGINT UNSIGNED NOT NULL UNIQUE,
+  grade_id        BIGINT UNSIGNED NOT NULL PRIMARY KEY,
   label           VARCHAR(128) NOT NULL,
   description     VARCHAR(128) NOT NULL,
   image_key       VARCHAR(128) DEFAULT NULL,
   display_order   TINYINT NOT NULL,
   note            VARCHAR(500) DEFAULT NULL,
-  grade_status    VARCHAR(32) DEFAULT 'ACTIVE',
+  grade_status    VARCHAR(32) DEFAULT NULL,
+  rpt_flg         VARCHAR(16)  DEFAULT NULL,
+  kwords          VARCHAR(255) DEFAULT NULL,
   status          VARCHAR(32) DEFAULT 'ACTIVE',
   create_id       BIGINT UNSIGNED DEFAULT NULL,
   create_dt       DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),

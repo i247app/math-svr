@@ -7,8 +7,7 @@
 -- its order and definitions; add domain columns above it.
 
 CREATE TABLE IF NOT EXISTS ma_logins (
-  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  login_id        BIGINT UNSIGNED NOT NULL UNIQUE,
+  login_id        BIGINT UNSIGNED NOT NULL PRIMARY KEY,
   uid             BIGINT UNSIGNED NOT NULL,
   upass           VARCHAR(128) DEFAULT NULL,
   logins_status   VARCHAR(32)  DEFAULT NULL,

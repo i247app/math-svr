@@ -1,7 +1,6 @@
 -- migration up
 CREATE TABLE IF NOT EXISTS ma_classrooms (
-  id                      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  classroom_id            BIGINT UNSIGNED NOT NULL UNIQUE,
+  classroom_id            BIGINT UNSIGNED NOT NULL PRIMARY KEY,
   owner_profile_id        BIGINT UNSIGNED NOT NULL,
   name                    VARCHAR(128) NOT NULL,
   description             VARCHAR(500) DEFAULT NULL,
@@ -15,7 +14,9 @@ CREATE TABLE IF NOT EXISTS ma_classrooms (
   teacher_count           INT UNSIGNED NOT NULL DEFAULT 0,
   cover_key               VARCHAR(256) DEFAULT NULL,
   note                    VARCHAR(500) DEFAULT NULL,
-  classroom_status        VARCHAR(32) DEFAULT 'ACTIVE', -- ACTIVE, ARCHIVED, DELETED
+  classroom_status        VARCHAR(32) DEFAULT NULL, -- ACTIVE, ARCHIVED, DELETED
+  rpt_flg                 VARCHAR(16)  DEFAULT NULL,
+  kwords                  VARCHAR(255) DEFAULT NULL,
   status                  VARCHAR(32) DEFAULT 'ACTIVE',
   create_id               BIGINT UNSIGNED DEFAULT NULL,
   create_dt               DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),

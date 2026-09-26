@@ -23,8 +23,7 @@
 -- — they are reporting figures until the team lands the real formula.
 
 CREATE TABLE IF NOT EXISTS ma_user_exams (
-  id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  user_exam_id         BIGINT UNSIGNED NOT NULL UNIQUE,      -- external id (minted via ma_seqs)
+  user_exam_id         BIGINT UNSIGNED NOT NULL PRIMARY KEY,      -- external id (minted via ma_seqs)
   uid                  BIGINT UNSIGNED NOT NULL,
   profile_id           BIGINT UNSIGNED NOT NULL,
   req_exam_type        VARCHAR(32) NOT NULL,                 -- ASSESSMENT, PRACTICE, EXAM
@@ -44,7 +43,9 @@ CREATE TABLE IF NOT EXISTS ma_user_exams (
   ended_dt             DATETIME(6)  DEFAULT NULL,
 
   note                 VARCHAR(500) DEFAULT NULL,
-  user_exam_status     VARCHAR(32)  DEFAULT 'ACTIVE',        -- ACTIVE (open), COMPLETE, CANCEL (ended)
+  user_exam_status     VARCHAR(32)  DEFAULT NULL,        -- ACTIVE (open), COMPLETE, CANCEL (ended)
+  rpt_flg              VARCHAR(16)  DEFAULT NULL,
+  kwords               VARCHAR(255) DEFAULT NULL,
   status               VARCHAR(32)  DEFAULT 'ACTIVE',
   create_id            BIGINT UNSIGNED DEFAULT NULL,
   create_dt            DATETIME(6)  DEFAULT CURRENT_TIMESTAMP(6),
@@ -62,6 +63,6 @@ CREATE TABLE IF NOT EXISTS ma_user_exams (
   active_key           TINYINT UNSIGNED
     GENERATED ALWAYS AS (IF(user_exam_status = 'ACTIVE', 1, NULL)) STORED,
 
-  UNIQUE KEY uk_active_journey (user_id, profile_id, req_exam_type, active_key),
+  UNIQUE KEY uk_active_journey (uid, profile_id, req_exam_type, active_key),
   KEY ix_profile_type (profile_id, req_exam_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;

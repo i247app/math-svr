@@ -16,8 +16,7 @@
 -- S3 objects (see internal/jobs/).
 
 CREATE TABLE IF NOT EXISTS ma_chat_attachments (
-  id                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  attachment_id            BIGINT UNSIGNED NOT NULL UNIQUE,   -- external id (minted via ma_seqs)
+  attachment_id            BIGINT UNSIGNED NOT NULL PRIMARY KEY,   -- external id (minted via ma_seqs)
   message_id               BIGINT UNSIGNED DEFAULT NULL,      -- NULL until the message is sent
   conversation_id          BIGINT UNSIGNED NOT NULL,
   uploader_profile_id      BIGINT UNSIGNED NOT NULL,
@@ -35,7 +34,9 @@ CREATE TABLE IF NOT EXISTS ma_chat_attachments (
   duration_ms              INT UNSIGNED DEFAULT NULL,         -- video / audio
   checksum_sha256          CHAR(64) DEFAULT NULL,             -- de-duplicate repeat uploads
   note                     VARCHAR(500) DEFAULT NULL,
-  attachment_status        VARCHAR(32) DEFAULT 'PENDING',     -- PENDING, READY, FAILED, DELETED
+  attachment_status        VARCHAR(32) DEFAULT NULL,     -- PENDING, READY, FAILED, DELETED
+  rpt_flg                  VARCHAR(16)  DEFAULT NULL,
+  kwords                   VARCHAR(255) DEFAULT NULL,
   status                   VARCHAR(32) DEFAULT 'ACTIVE',
   create_id                BIGINT UNSIGNED DEFAULT NULL,
   create_dt                DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),

@@ -24,14 +24,16 @@
 -- this schema.
 
 CREATE TABLE IF NOT EXISTS ma_user_presence (
-  id                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  uid                      BIGINT UNSIGNED NOT NULL UNIQUE,   -- one row per user; upserted
+  uid                      BIGINT UNSIGNED NOT NULL PRIMARY KEY,   -- one row per user; upserted
   presence_state           VARCHAR(32) NOT NULL DEFAULT 'OFFLINE', -- ONLINE, AWAY, OFFLINE
   connection_count         INT UNSIGNED NOT NULL DEFAULT 0,   -- live sockets across devices
   last_online_dt           DATETIME(6) DEFAULT NULL,          -- most recent transition to ONLINE
   last_seen_dt             DATETIME(6) DEFAULT NULL,          -- powers "hoạt động 5 phút trước"
   last_device_uuid         VARCHAR(128) DEFAULT NULL,
   last_platform            VARCHAR(32) DEFAULT NULL,
+  presence_status          VARCHAR(32)  DEFAULT NULL,
+  rpt_flg                  VARCHAR(16)  DEFAULT NULL,
+  kwords                   VARCHAR(255) DEFAULT NULL,
   note                     VARCHAR(500) DEFAULT NULL,
   status                   VARCHAR(32) DEFAULT 'ACTIVE',
   create_id                BIGINT UNSIGNED DEFAULT NULL,

@@ -1,7 +1,6 @@
 -- migration up
 CREATE TABLE IF NOT EXISTS ma_classroom_members (
-  id                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  member_id                BIGINT UNSIGNED NOT NULL UNIQUE,
+  member_id                BIGINT UNSIGNED NOT NULL PRIMARY KEY,
   classroom_id             BIGINT UNSIGNED NOT NULL,
   profile_id               BIGINT UNSIGNED NOT NULL,
   member_role              VARCHAR(32) NOT NULL DEFAULT 'STUDENT', -- OWNER, CO_TEACHER, STUDENT
@@ -14,7 +13,9 @@ CREATE TABLE IF NOT EXISTS ma_classroom_members (
   note                     VARCHAR(500) DEFAULT NULL,
   invite_by                BIGINT UNSIGNED DEFAULT NULL,
   invite_dt                DATETIME(6) DEFAULT NULL,
-  member_status            VARCHAR(32) DEFAULT 'ACTIVE', -- INVITED, ACTIVE, LEFT, REMOVED, DELETED
+  member_status            VARCHAR(32) DEFAULT NULL, -- INVITED, ACTIVE, LEFT, REMOVED, DELETED
+  rpt_flg                  VARCHAR(16)  DEFAULT NULL,
+  kwords                   VARCHAR(255) DEFAULT NULL,
   status                   VARCHAR(32) DEFAULT 'ACTIVE',
   create_id                BIGINT UNSIGNED DEFAULT NULL,
   create_dt                DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),

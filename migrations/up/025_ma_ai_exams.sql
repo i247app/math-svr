@@ -31,8 +31,7 @@
 -- the only discriminator left is req_exam_type.
 
 CREATE TABLE IF NOT EXISTS ma_ai_exams (
-  id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  ai_exam_id        BIGINT UNSIGNED NOT NULL UNIQUE,       -- external id (minted via ma_seqs)
+  ai_exam_id        BIGINT UNSIGNED NOT NULL PRIMARY KEY,       -- external id (minted via ma_seqs)
 
   -- ---- What the client asked for (also the cache key material) ----------
   req_exam_type     VARCHAR(32)  NOT NULL DEFAULT 'PRACTICE', -- ASSESSMENT, PRACTICE, EXAM
@@ -59,7 +58,9 @@ CREATE TABLE IF NOT EXISTS ma_ai_exams (
   ai_questions_json LONGTEXT     NOT NULL,
 
   note              VARCHAR(500) DEFAULT NULL,
-  ai_exam_status    VARCHAR(32)  DEFAULT 'ACTIVE',            -- ACTIVE, DELETED
+  ai_exam_status    VARCHAR(32)  DEFAULT NULL,            -- ACTIVE, DELETED
+  rpt_flg           VARCHAR(16)  DEFAULT NULL,
+  kwords            VARCHAR(255) DEFAULT NULL,
   status            VARCHAR(32)  DEFAULT 'ACTIVE',
   create_id         BIGINT UNSIGNED DEFAULT NULL,
   create_dt         DATETIME(6)  DEFAULT CURRENT_TIMESTAMP(6),
