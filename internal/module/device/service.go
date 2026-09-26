@@ -86,7 +86,7 @@ func (s *Service) ListDevicesByUserId(ctx context.Context, req *dto.ListDevicesR
 		return nil, err
 	}
 
-	user, err := s.userRepo.FindById(ctx, req.UserID)
+	user, err := s.userRepo.FindByUserId(ctx, req.UserID)
 	if err != nil {
 		return nil, err
 	}

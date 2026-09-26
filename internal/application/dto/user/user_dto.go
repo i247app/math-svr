@@ -9,7 +9,7 @@ import (
 )
 
 type UserResponse struct {
-	ID              int64   `json:"id"`
+	// ID              int64   `json:"id"`
 	UserID          int64   `json:"uid"`
 	Name            string  `json:"name"`
 	Email           *string `json:"email,omitempty"`
@@ -182,7 +182,7 @@ func DomainToResponse(u *user.User) *UserResponse {
 	}
 
 	return &UserResponse{
-		ID:              u.Id(),
+		// ID:              u.Id(),
 		UserID:          u.UserId(),
 		Name:            u.UserName(),
 		Email:           u.Email(),

@@ -73,9 +73,9 @@ func (r *UserRepository) findOneBy(ctx context.Context, where string, args ...an
 	return ModelToDomain(m), nil
 }
 
-func (r *UserRepository) FindById(ctx context.Context, id int64) (*user.User, error) {
-	return r.findOneBy(ctx, "u.id = ?", id)
-}
+// func (r *UserRepository) FindById(ctx context.Context, id int64) (*user.User, error) {
+// 	return r.findOneBy(ctx, "u.id = ?", id)
+// }
 
 func (r *UserRepository) FindByUserId(ctx context.Context, userId int64) (*user.User, error) {
 	return r.findOneBy(ctx, "u.uid = ?", userId)
@@ -99,17 +99,12 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, 
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.IsEmailVerified(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.UserStatus(), u.RptFlg(), u.Kwords(), u.Note(), mtime.Now().Time, mtime.Now().Time)
+	_, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.IsEmailVerified(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.UserStatus(), u.RptFlg(), u.Kwords(), u.Note(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("user repo create: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("user repo last insert id: %w", err)
-	}
-
-	return r.FindById(ctx, id)
+	return r.FindByUserId(ctx, u.UserId())
 }
 
 func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersParams) ([]*user.User, *pagination.Pagination, error) {

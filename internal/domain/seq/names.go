@@ -7,6 +7,7 @@ package seq
 const (
 	NameUser                        = "user"
 	NameAlias                       = "alias"
+	NameLogin                       = "login"
 	NameDevice                      = "device"
 	NameLoginLog                    = "login_log"
 	NameProfile                     = "profile"

@@ -9,7 +9,7 @@ import (
 )
 
 type IRepository interface {
-	FindById(ctx context.Context, id int64) (*User, error)
+	// FindById(ctx context.Context, id int64) (*User, error)
 	FindByUserId(ctx context.Context, userId int64) (*User, error)
 	FindByEmail(ctx context.Context, email string) (*User, error)
 	FindByPhone(ctx context.Context, phone string) (*User, error)
