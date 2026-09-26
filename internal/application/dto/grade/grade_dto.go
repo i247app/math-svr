@@ -1,6 +1,8 @@
 package grade
 
 import (
+	"io"
+
 	domain "math-ai.com/math-ai/internal/domain/grade"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
@@ -38,6 +40,10 @@ type UpdateGradeReq struct {
 	ImageKey     *string `json:"image_key,omitempty"`
 	DisplayOrder *int8   `json:"display_order,omitempty"`
 	Note         *string `json:"note,omitempty"`
+
+	ImageFile        io.Reader `json:"-"` // multipart file reader
+	ImageFilename    string    `json:"-"` // original filename
+	ImageContentType string    `json:"-"` // MIME type
 }
 
 type UpdateGradeRes struct {

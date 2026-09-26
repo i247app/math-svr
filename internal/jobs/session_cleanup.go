@@ -33,7 +33,7 @@ func NewSessionCleanupJob(sweeper ExpiredSessionSweeper, sm *session.SessionMana
 const sessionCleanupName = "system.session_cleanup"
 
 func (j *SessionCleanupJob) Name() string           { return sessionCleanupName }
-func (j *SessionCleanupJob) Schedule() job.Schedule { return job.EveryDuration(1 * time.Minute) }
+func (j *SessionCleanupJob) Schedule() job.Schedule { return job.EveryDuration(60 * time.Minute) }
 func (j *SessionCleanupJob) Timeout() time.Duration { return 30 * time.Second }
 
 func (j *SessionCleanupJob) Run(ctx context.Context) error {

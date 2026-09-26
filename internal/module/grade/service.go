@@ -72,11 +72,20 @@ func (s *Service) UpdateGrade(ctx context.Context, req *dto.UpdateGradeReq) (*dt
 		return nil, err
 	}
 
+	var imageKey *string
+	if req.ImageFile != nil {
+		key, err := s.uploadImageIfPresent(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		imageKey = key
+	}
+
 	updated, err := s.updateGradeCmd.Handle(ctx, command.UpdateGradeCommand{
 		GradeID:      req.GradeID,
 		Label:        req.Label,
 		Description:  req.Description,
-		ImageKey:     req.ImageKey,
+		ImageKey:     imageKey,
 		DisplayOrder: req.DisplayOrder,
 		Note:         req.Note,
 	})
