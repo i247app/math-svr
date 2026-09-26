@@ -1,9 +1,9 @@
 -- migration up
 CREATE TABLE IF NOT EXISTS ma_users (
   id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  user_id           BIGINT UNSIGNED NOT NULL,
+  uid               BIGINT UNSIGNED NOT NULL,
   name              VARCHAR(128) DEFAULT NULL,
-  phone             VARCHAR(128) NOT NULL,
+  phone             VARCHAR(128) DEFAULT NULL,
   email             VARCHAR(128) DEFAULT NULL,
   is_email_verified TINYINT(1) DEFAULT '0',
   avatar_key        VARCHAR(256) DEFAULT NULL,

@@ -25,7 +25,7 @@
 CREATE TABLE IF NOT EXISTS ma_user_exams (
   id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   user_exam_id         BIGINT UNSIGNED NOT NULL UNIQUE,      -- external id (minted via ma_seqs)
-  user_id              BIGINT UNSIGNED NOT NULL,
+  uid                  BIGINT UNSIGNED NOT NULL,
   profile_id           BIGINT UNSIGNED NOT NULL,
   req_exam_type        VARCHAR(32) NOT NULL,                 -- ASSESSMENT, PRACTICE, EXAM
   current_grade        TINYINT UNSIGNED DEFAULT NULL,        -- 0..5 measured ability

@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS ma_otps (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   otp_id          BIGINT UNSIGNED NOT NULL UNIQUE,
   otp_type        VARCHAR(32) NOT NULL,                          -- LOGIN2FA, REGISTER, FORGOT_PASSWORD, CHANGE_PASSWORD, VERIFY_EMAIL, VERIFY_PHONE
-  user_id         BIGINT UNSIGNED DEFAULT NULL,
+  uid             BIGINT UNSIGNED DEFAULT NULL,
   identifier      VARCHAR(255) NOT NULL,                         -- phone (E.164) or email
   device_uuid     VARCHAR(255) DEFAULT NULL,
   device_name     VARCHAR(255) DEFAULT NULL,

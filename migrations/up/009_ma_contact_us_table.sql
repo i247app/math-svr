@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS ma_contact_us (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   contact_id      BIGINT UNSIGNED NOT NULL UNIQUE,
-  user_id         BIGINT UNSIGNED DEFAULT NULL,
+  uid             BIGINT UNSIGNED DEFAULT NULL,
   contact_name    VARCHAR(255) NOT NULL,
   contact_email   VARCHAR(255) DEFAULT NULL,
   contact_phone   VARCHAR(255) DEFAULT NULL,

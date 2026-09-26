@@ -13,6 +13,7 @@
 INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
 ('user',                          0, 'US',  8),
 ('alias',                         0, 'AL',  8),
+('login',                         0, 'LG',  8),
 ('device',                        0, 'DV',  8),
 ('login_log',                     0, 'LL',  8),
 ('profile',                       0, 'PR',  8),

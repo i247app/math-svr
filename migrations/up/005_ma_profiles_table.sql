@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS ma_profiles (
   id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   profile_id      BIGINT UNSIGNED NOT NULL,
   profile_code    VARCHAR(128) NOT NULL UNIQUE,
-  user_id         BIGINT UNSIGNED NOT NULL,
+  uid             BIGINT UNSIGNED NOT NULL,
   name            varchar(128) NOT NULL,
   phone           varchar(128) DEFAULT NULL,
   email           varchar(128) DEFAULT NULL,

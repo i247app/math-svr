@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS ma_devices (
   id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   device_id         BIGINT UNSIGNED NOT NULL UNIQUE,
-  user_id           BIGINT UNSIGNED DEFAULT NULL,
+  uid               BIGINT UNSIGNED DEFAULT NULL,
   device_uuid       VARCHAR(255) NOT NULL,
   device_name       VARCHAR(255) NOT NULL,
   platform          VARCHAR(20) DEFAULT 'UNKNOWN',

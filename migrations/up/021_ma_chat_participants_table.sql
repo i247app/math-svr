@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS ma_chat_participants (
   participant_id           BIGINT UNSIGNED NOT NULL UNIQUE,   -- external id (minted via ma_seqs)
   conversation_id          BIGINT UNSIGNED NOT NULL,
   profile_id               BIGINT UNSIGNED NOT NULL,          -- acting identity / display
-  user_id                  BIGINT UNSIGNED NOT NULL,          -- delivery target (socket + push)
+  uid                      BIGINT UNSIGNED NOT NULL,          -- delivery target (socket + push)
   participant_role         VARCHAR(32) NOT NULL DEFAULT 'MEMBER', -- OWNER, ADMIN, MEMBER
   -- Read / delivery watermarks.
   last_read_seq_no         BIGINT UNSIGNED NOT NULL DEFAULT 0,

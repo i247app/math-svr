@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS ma_login_logs (
   id                BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   login_log_id      BIGINT UNSIGNED NOT NULL UNIQUE,
-  user_id           BIGINT UNSIGNED NOT NULL,
+  uid               BIGINT UNSIGNED NOT NULL,
   ip_address        varchar(255) NOT NULL,
   device_uuid       varchar(255) NOT NULL,
   token             varchar(512) NOT NULL,

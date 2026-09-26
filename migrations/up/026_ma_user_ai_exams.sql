@@ -35,7 +35,7 @@
 CREATE TABLE IF NOT EXISTS ma_user_ai_exams (
   id                   BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   user_ai_exam_id      BIGINT UNSIGNED NOT NULL UNIQUE,      -- external id (minted via ma_seqs)
-  user_id              BIGINT UNSIGNED NOT NULL,             -- anonymous exams are no longer allowed
+  uid                  BIGINT UNSIGNED NOT NULL,             -- anonymous exams are no longer allowed
   profile_id           BIGINT UNSIGNED NOT NULL,
   ai_exam_id           BIGINT UNSIGNED NOT NULL,             -- the exam that was served
   user_exam_id         BIGINT UNSIGNED DEFAULT NULL,         -- optional: if present, this attempt is part of that journey

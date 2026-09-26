@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS ma_notifications (
   id                    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   notification_id       BIGINT UNSIGNED NOT NULL UNIQUE,  -- external id (minted via ma_seqs)
-  user_id               BIGINT UNSIGNED NOT NULL,          -- recipient user_id
+  uid                   BIGINT UNSIGNED NOT NULL,          -- recipient user_id
   title                 VARCHAR(255) NOT NULL,
   short_text            VARCHAR(255) NOT NULL,
   category              VARCHAR(32) DEFAULT NULL,    -- INFO, WARNING, ERROR

@@ -55,6 +55,9 @@ connect-mysql: ## connect to remote mysql
 migrate: ## apply pending migrations/up/*.sql to LOCAL db (uses .env DB_*)
 	@./deploy/scripts/migrate.sh up
 
+migrate-create: ## create new migration
+	@./deploy/scripts/create_migration.sh $(NAME)
+
 migrate-status: ## list applied / pending migrations on LOCAL db, change nothing
 	@./deploy/scripts/migrate.sh status
 

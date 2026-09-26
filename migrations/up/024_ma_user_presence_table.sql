@@ -25,7 +25,7 @@
 
 CREATE TABLE IF NOT EXISTS ma_user_presence (
   id                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  user_id                  BIGINT UNSIGNED NOT NULL UNIQUE,   -- one row per user; upserted
+  uid                      BIGINT UNSIGNED NOT NULL UNIQUE,   -- one row per user; upserted
   presence_state           VARCHAR(32) NOT NULL DEFAULT 'OFFLINE', -- ONLINE, AWAY, OFFLINE
   connection_count         INT UNSIGNED NOT NULL DEFAULT 0,   -- live sockets across devices
   last_online_dt           DATETIME(6) DEFAULT NULL,          -- most recent transition to ONLINE
