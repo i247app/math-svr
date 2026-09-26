@@ -144,25 +144,6 @@ func (m *SessionManager) MarkExpiredSessions() {
 	}
 }
 
-func (m *SessionManager) DeleteExpiredSessions() {
-	for _, sess := range *m.Sessions() {
-		key, ok := sess.Get("key")
-		if !ok {
-			continue
-		}
-
-		if sess.IsExpired() {
-			data, err := json.Marshal(sess.ToMap())
-			if err != nil {
-				log.Printf("DeleteExpiredSessions: failed to marshal session %s: %v", ShortKey(key.(string)), err)
-			} else {
-				log.Printf("DeleteExpiredSessions: deleting session %s | %s", ShortKey(key.(string)), data)
-			}
-			m.DeleteSession(key.(string))
-		}
-	}
-}
-
 func (m *SessionManager) DeleteUnSecureSessions() {
 	for _, sess := range *m.Sessions() {
 		key, ok := sess.Get("key")

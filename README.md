@@ -62,7 +62,7 @@ API conventions worth knowing before calling the server:
 
 ### Prerequisites
 
-- **Go** — `go.mod` declares `go 1.25.0`.
+- **Go** — `go.mod` declares `go 1.27.0` with `toolchain go1.27.1`; any installed Go ≥ 1.21 downloads that toolchain automatically (`GOTOOLCHAIN=auto`). `github.com/i247app/gex` is private: run `go env -w GOPRIVATE='github.com/i247app/*'` once, with git access to the repo.
 - **MySQL 8** — collation `utf8mb4_0900_ai_ci`. The driver pins **TLS 1.2**
   (`internal/infrastructure/database/`), so the server must be reachable over TLS 1.2.
 - **A HMAC key file** — any file whose bytes sign session JWTs; `hmac.key` is present

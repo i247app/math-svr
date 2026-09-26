@@ -36,6 +36,10 @@ type Deps struct {
 	// are core infrastructure.
 	SessionManager *session.SessionManager
 
+	// SessionSweeper frees sessions whose JWT has expired. Nil under the
+	// XWT session driver; session_cleanup then skips.
+	SessionSweeper ExpiredSessionSweeper
+
 	// EmailProvider may be nil when the email adapter is disabled in
 	// .env. Jobs that depend on it must nil-guard and degrade.
 	EmailProvider *email.Adapter
@@ -53,6 +57,7 @@ type Deps struct {
 func RegisterAll(reg *job.Registry, deps Deps) {
 	// Cron jobs (recurring, no payload).
 	reg.RegisterCron(NewGuestCleanupJob(deps.CleanupGuests))
+	reg.RegisterCron(NewSessionCleanupJob(deps.SessionSweeper, deps.SessionManager))
 	// reg.RegisterCron(NewTestJob1())
 	// reg.RegisterCron(NewTestJob2())
 	// reg.RegisterCron(NewTestJob3())

@@ -222,9 +222,13 @@ func (a *App) resetPresence(services *container.ServiceContainer) {
 // Order matters: jobs.RegisterAll must finish before runtime.Start —
 // Start reads the registry to seed its per-job state.
 func (a *App) setupJobs(_ *gex.Server, services *container.ServiceContainer) {
+	// Only the JWT provider can tell an expired session from a live one.
+	sweeper, _ := a.Resource.SessionProvider.(jobs.ExpiredSessionSweeper)
+
 	jobs.RegisterAll(a.Resource.JobRegistry, jobs.Deps{
 		Runtime:        a.Resource.JobRuntime,
 		SessionManager: a.Resource.SessionManager,
+		SessionSweeper: sweeper,
 		EmailProvider:  a.Resource.EmailProvider,
 		CleanupGuests:  services.CleanupGuestsCmd,
 	})

@@ -112,7 +112,10 @@ func IsRetryable(httpStatus int) bool {
 // %w so errors.Is/As keep working. Returns nil when err carries no
 // recognisable vendor shape.
 func liftVendorError(backend Backend, err error) error {
-	var gErr *genai.APIError
+	// genai returns APIError by VALUE (its Error method has a value
+	// receiver), so match the value; a pointer can only match if someone
+	// wrapped &APIError by hand.
+	var gErr genai.APIError
 	if errors.As(err, &gErr) {
 		return fmt.Errorf("%w", &APIError{
 			Backend:    backend,
