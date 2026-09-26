@@ -18,7 +18,7 @@ require (
 	github.com/eino-contrib/jsonschema v1.0.3
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/google/uuid v1.6.0
-	github.com/i247app/gex v0.0.36
+	github.com/i247app/gex v0.1.0
 	github.com/joho/godotenv v1.5.1
 	github.com/meguminnnnnnnnn/go-openai v0.1.5
 	github.com/prometheus/client_golang v1.23.2
@@ -89,8 +89,8 @@ require (
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
+	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/generative-ai-go v0.15.1 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect

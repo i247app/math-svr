@@ -6,10 +6,6 @@ import (
 	"github.com/i247app/gex/session"
 )
 
-const (
-	DefaultSessionTTL = time.Second * 10 // 10 seconds
-)
-
 type AppSession struct {
 	GexSession *session.InMemorySession
 }
@@ -61,19 +57,20 @@ type InitData struct {
 	ExpireAt  *time.Time
 }
 
+// Init stamps the signed-in identity onto the session. It leaves expires_at
+// alone unless data.ExpireAt is set: the gex session provider already set it
+// to the token's own expiry, and past expires_at gex treats the session as
+// dead and issues a new one. (This used to write now+10s, which only worked
+// while gex silently re-extended expired sessions.)
 func (s *AppSession) Init(data InitData) *AppSession {
-	var expireAt time.Time
-	if data.ExpireAt == nil {
-		expireAt = time.Now().Add(DefaultSessionTTL)
-	} else {
-		expireAt = *data.ExpireAt
-	}
 	s.Put("source", data.Source)
 	s.Put("is_secure", data.IsSecure)
 	s.Put("uid", data.UID)
 	s.Put("email", data.Email)
 	s.Put("login_name", data.LoginName)
-	s.Put("expires_at", expireAt)
+	if data.ExpireAt != nil {
+		s.Put("expires_at", *data.ExpireAt)
+	}
 	return s
 }
 

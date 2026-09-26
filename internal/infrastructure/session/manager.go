@@ -101,9 +101,11 @@ func (m *SessionManager) Sessions() *map[string]*AppSession {
 	return &result
 }
 
+// InitSession stores a new, empty session under sessionKey. It returns false,
+// and stores nothing, when a session already exists under that key.
 func (m *SessionManager) InitSession(sessionKey string) (*AppSession, bool) {
-	sess, ok := m.SessionContainer.InitSession(sessionKey, NewSession())
-	if !ok {
+	sess, loaded := m.SessionContainer.LoadOrStore(sessionKey, NewSession())
+	if loaded {
 		return nil, false
 	}
 

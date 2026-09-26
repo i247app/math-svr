@@ -36,8 +36,8 @@ type Deps struct {
 	// are core infrastructure.
 	SessionManager *session.SessionManager
 
-	// SessionSweeper frees sessions whose JWT has expired. Nil under the
-	// XWT session driver; session_cleanup then skips.
+	// SessionSweeper frees sessions that can no longer be reached. Nil when
+	// the session provider cannot sweep; session_cleanup then skips.
 	SessionSweeper ExpiredSessionSweeper
 
 	// EmailProvider may be nil when the email adapter is disabled in

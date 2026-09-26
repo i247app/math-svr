@@ -10,9 +10,9 @@ import (
 )
 
 // ExpiredSessionSweeper deletes sessions no request can reach any more and
-// reports how many it removed. gex's JwtSessionProvider implements it; the XWT
-// provider does not (an XWT token carries no trustworthy expiry), so under
-// that driver the sweeper is nil and the job does nothing.
+// reports how many it removed. gex's JwtSessionProvider implements it (from
+// gex v0.1.0 the XWT constructor returns one too); a provider that does not
+// leaves the sweeper nil and the job does nothing.
 type ExpiredSessionSweeper interface {
 	SweepExpired() int
 }
@@ -33,7 +33,7 @@ func NewSessionCleanupJob(sweeper ExpiredSessionSweeper, sm *session.SessionMana
 const sessionCleanupName = "system.session_cleanup"
 
 func (j *SessionCleanupJob) Name() string           { return sessionCleanupName }
-func (j *SessionCleanupJob) Schedule() job.Schedule { return job.EveryDuration(15 * time.Minute) }
+func (j *SessionCleanupJob) Schedule() job.Schedule { return job.EveryDuration(1 * time.Minute) }
 func (j *SessionCleanupJob) Timeout() time.Duration { return 30 * time.Second }
 
 func (j *SessionCleanupJob) Run(ctx context.Context) error {

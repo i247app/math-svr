@@ -11,8 +11,8 @@ import (
 )
 
 // GexSessionMiddleware is a unified middleware that handles session management using a SessionProvider.
-// It retrieves the session from the provider, handles auto-refresh notifications,
-// and wraps the response writer to capture the response body.
+// It retrieves the session from the provider, returns the session's token in
+// X-Auth-Token, and wraps the response writer to capture the response body.
 //
 // When a handler changes the session's auth state (is_secure / uid — login,
 // OTP verify, register, logout, …) it asks sessionManager to persist the
@@ -77,7 +77,6 @@ func GexSessionMiddleware(
 			///////////////////////
 
 			sess := sessionResult.Session
-			didAutoRefresh := sessionResult.DidAutoRefresh
 			authToken := sessionResult.AuthToken
 
 			// Wrap the response writer to capture the response body
@@ -86,12 +85,15 @@ func GexSessionMiddleware(
 				body:           bytes.NewBuffer(nil),
 			}
 
-			// Set auth token in request header for downstream handlers
-			if r.Header.Get("Authorization") == "" {
-				r.Header.Add("Authorization", "Bearer "+authToken)
+			// Downstream handlers see the token that reaches THIS session. It
+			// differs from the one the client sent whenever gex issued a new
+			// session (no/invalid/expired token, or the session was lost).
+			if authToken != "" {
+				r.Header.Set("Authorization", "Bearer "+authToken)
 			}
 
-			// Set X-Auth-Token response header
+			// X-Auth-Token is the token the client must use from now on; it
+			// replaces the old one whenever gex issued a new session.
 			if authToken != "" {
 				wr.Header().Set("X-Auth-Token", authToken)
 			}
@@ -103,11 +105,6 @@ func GexSessionMiddleware(
 			next.ServeHTTP(wr, r)
 			if authStateOf(sess) != before {
 				sessionManager.MarkDirty()
-			}
-
-			// Notify the client that the session was auto-refreshed
-			if didAutoRefresh {
-				w.Header().Add("GEX-Session-Auto-Refreshed", "true")
 			}
 
 			///////////////////////
