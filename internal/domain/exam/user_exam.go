@@ -25,7 +25,6 @@ import (
 // written back to the profile: ma_profiles.grade_id records the class
 // the child attends, which is a different fact.
 type UserExam struct {
-	id           int64
 	userExamId   int64
 	userId       int64
 	profileId    int64
@@ -57,8 +56,6 @@ type UserExam struct {
 
 func NewUserExam() *UserExam { return &UserExam{} }
 
-func (u *UserExam) Id() int64                           { return u.id }
-func (u *UserExam) SetId(id int64)                      { u.id = id }
 func (u *UserExam) UserExamId() int64                   { return u.userExamId }
 func (u *UserExam) SetUserExamId(id int64)              { u.userExamId = id }
 func (u *UserExam) UserId() int64                       { return u.userId }

@@ -13,7 +13,6 @@ import (
 // display and MediaURLKey only when they need to re-sign later.
 // ButtonLinkURL is an absolute link and is returned verbatim.
 type BannerResponse struct {
-	ID            int64   `json:"id"`
 	BannerID      int64   `json:"banner_id"`
 	Title         *string `json:"title,omitempty"`
 	ShortText     *string `json:"short_text,omitempty"`
@@ -113,7 +112,6 @@ func DomainToResponse(b *domain.Banner) *BannerResponse {
 		return nil
 	}
 	return &BannerResponse{
-		ID:            b.Id(),
 		BannerID:      b.BannerId(),
 		Title:         b.Title(),
 		ShortText:     b.ShortText(),

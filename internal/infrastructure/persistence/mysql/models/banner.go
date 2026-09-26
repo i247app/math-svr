@@ -3,7 +3,6 @@ package models
 import "time"
 
 type BannerModel struct {
-	Id            int64
 	BannerId      int64
 	Title         *string
 	ShortText     *string

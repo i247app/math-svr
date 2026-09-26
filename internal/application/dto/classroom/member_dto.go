@@ -26,7 +26,6 @@ type MemberProfileSummary struct {
 // one extra round trip regardless of size; nil when the profile lookup
 // is skipped or the profile row no longer exists.
 type MemberResponse struct {
-	ID                 int64                 `json:"id"`
 	MemberID           int64                 `json:"member_id"`
 	ClassroomID        int64                 `json:"classroom_id"`
 	ProfileID          int64                 `json:"profile_id"`
@@ -124,7 +123,6 @@ func MemberDomainToResponse(m *domain.Member) *MemberResponse {
 		return nil
 	}
 	resp := &MemberResponse{
-		ID:                 m.Id(),
 		MemberID:           m.MemberId(),
 		ClassroomID:        m.ClassroomId(),
 		ProfileID:          m.ProfileId(),

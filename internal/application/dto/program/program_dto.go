@@ -6,7 +6,6 @@ import (
 )
 
 type ProgramResponse struct {
-	ID           int64   `json:"id"`
 	ProgramID    int64   `json:"program_id"`
 	Label        string  `json:"label"`
 	Description  string  `json:"description"`
@@ -74,7 +73,6 @@ func DomainToResponse(p *domain.Program) *ProgramResponse {
 		return nil
 	}
 	return &ProgramResponse{
-		ID:           p.Id(),
 		ProgramID:    p.ProgramId(),
 		Label:        p.Label(),
 		Description:  p.Description(),

@@ -19,7 +19,7 @@ import (
 const (
 	schoolTable = "ma_schools"
 
-	schoolColumns = `s.id, s.school_id, s.name, s.description, s.image_key,
+	schoolColumns = `s.school_id, s.name, s.description, s.image_key,
 		s.district, s.province, s.rpt_flg, s.kwords, s.note,
 		s.school_status, s.status,
 		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
@@ -41,7 +41,7 @@ func NewSchoolRepository(db database.Executor) school.IRepository {
 
 func scanSchool(s database.RowScanner) (*models.SchoolModel, error) {
 	var m models.SchoolModel
-	if err := s.Scan(&m.Id, &m.SchoolId, &m.Name, &m.Description, &m.ImageKey,
+	if err := s.Scan(&m.SchoolId, &m.Name, &m.Description, &m.ImageKey,
 		&m.District, &m.Province, &m.RptFlg, &m.Kwords, &m.Note,
 		&m.SchoolStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -68,21 +68,6 @@ func (r *SchoolRepository) findOneBy(ctx context.Context, where string, args ...
 	return ModelToDomainSchool(m), nil
 }
 
-func (r *SchoolRepository) findBareById(ctx context.Context, id int64) (*school.School, error) {
-	args := slices.Concat([]any{id}, schoolActiveArgs())
-	query := `SELECT ` + schoolColumns + ` FROM ` + schoolTable + ` s WHERE (s.id = ?) AND ` +
-		schoolActiveWhere
-
-	m, err := scanSchool(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("school repo find bare by id: %w", err)
-	}
-	return ModelToDomainSchool(m), nil
-}
-
 func (r *SchoolRepository) FindBySchoolId(ctx context.Context, schoolId int64) (*school.School, error) {
 	return r.findOneBy(ctx, "s.school_id = ?", schoolId)
 }
@@ -102,7 +87,7 @@ func (r *SchoolRepository) ListSchools(ctx context.Context, params *school.ListS
 	listArgs := slices.Concat(filterArgs, schoolActiveArgs())
 	query := `SELECT ` + schoolColumns + ` FROM ` + schoolTable + ` s` +
 		whereActive(filterWhere, schoolActiveWhere) +
-		` ORDER BY s.name ASC, s.id ASC`
+		` ORDER BY s.name ASC, s.school_id ASC`
 
 	var pg *pagination.Pagination
 	if params == nil || !params.TakeAll {
@@ -225,17 +210,13 @@ func (r *SchoolRepository) Create(ctx context.Context, s *school.School) (*schoo
 			(school_id, name, description, image_key, district, province, rpt_flg, kwords, note, school_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		s.SchoolId(), s.Name(), s.Description(), s.ImageKey(),
 		s.District(), s.Province(), s.RptFlg(), s.Kwords(), s.Note(), s.SchoolStatus(), s.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("school repo create: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("school repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindBySchoolId(ctx, s.SchoolId())
 }
 
 // Update applies a partial update using COALESCE(?, col) for nullable
@@ -301,7 +282,6 @@ func (r *SchoolRepository) ForceDeleteBySchoolId(ctx context.Context, schoolId i
 
 func ModelToDomainSchool(m *models.SchoolModel) *school.School {
 	s := school.NewSchool()
-	s.SetId(m.Id)
 	s.SetSchoolId(m.SchoolId)
 	s.SetName(m.Name)
 	s.SetDescription(m.Description)

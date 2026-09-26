@@ -51,7 +51,6 @@ type ExerciseProgramSummary struct {
 }
 
 type ExerciseResponse struct {
-	ID                  int64                     `json:"id"`
 	ClassroomExerciseID int64                     `json:"classroom_exercise_id"`
 	ClassroomID         int64                     `json:"classroom_id"`
 	Classroom           *ExerciseClassroomSummary `json:"classroom,omitempty"`
@@ -202,7 +201,6 @@ func DomainToResponse(e *domain.Exercise, includeRightAnswers bool) *ExerciseRes
 	}
 
 	res := &ExerciseResponse{
-		ID:                  e.Id(),
 		ClassroomExerciseID: e.ClassroomExerciseId(),
 		ClassroomID:         e.ClassroomId(),
 		CreatorProfileID:    e.CreatorProfileId(),

@@ -22,7 +22,7 @@ import (
 const (
 	semesterTable = "ma_semesters"
 
-	semesterColumns = `s.id, s.semester_id, s.name,
+	semesterColumns = `s.semester_id, s.name,
 		COALESCE(s.description, '') AS description,
 		s.image_key, s.display_order, s.rpt_flg, s.kwords, s.note,
 		s.semester_status, s.status,
@@ -45,7 +45,7 @@ func NewSemesterRepository(db database.Executor) semester.IRepository {
 
 func scanSemester(s database.RowScanner) (*models.SemesterModel, error) {
 	var m models.SemesterModel
-	if err := s.Scan(&m.Id, &m.SemesterId, &m.Name, &m.Description, &m.ImageKey,
+	if err := s.Scan(&m.SemesterId, &m.Name, &m.Description, &m.ImageKey,
 		&m.DisplayOrder, &m.RptFlg, &m.Kwords, &m.Note, &m.SemesterStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func (r *SemesterRepository) ListSemesters(ctx context.Context, params *semester
 	listArgs := semesterActiveArgs()
 	query := `SELECT ` + semesterColumns + ` FROM ` + semesterTable + ` s` +
 		` WHERE ` + semesterActiveWhere +
-		` ORDER BY s.display_order ASC, s.id ASC`
+		` ORDER BY s.display_order ASC, s.semester_id ASC`
 
 	var pg *pagination.Pagination
 	if !params.TakeAll {
@@ -169,22 +169,13 @@ func (r *SemesterRepository) Create(ctx context.Context, s *semester.Semester) (
 		description = s.Description()
 	}
 
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		s.SemesterId(), s.Name(), description, s.ImageKey(),
 		s.DisplayOrder(), s.RptFlg(), s.Kwords(), s.Note(), s.SemesterStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("semester repo create: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("semester repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
-}
-
-// findBareById hydrates a semester right after INSERT using its surrogate id.
-func (r *SemesterRepository) findBareById(ctx context.Context, id int64) (*semester.Semester, error) {
-	return r.findOneBy(ctx, "s.id = ?", id)
+	return r.FindBySemesterId(ctx, s.SemesterId())
 }
 
 // Update applies a partial update using COALESCE(?, col) for every
@@ -252,7 +243,6 @@ func (r *SemesterRepository) ForceDeleteBySemesterId(ctx context.Context, semest
 
 func ModelToDomainSemester(m *models.SemesterModel) *semester.Semester {
 	s := semester.NewSemester()
-	s.SetId(m.Id)
 	s.SetSemesterId(m.SemesterId)
 	s.SetName(m.Name)
 	s.SetDescription(m.Description)

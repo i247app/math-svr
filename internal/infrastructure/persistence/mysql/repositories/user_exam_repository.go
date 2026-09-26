@@ -19,7 +19,7 @@ import (
 const (
 	userExamTable = "ma_user_exams"
 
-	userExamColumns = `e.id, e.user_exam_id, e.uid, e.profile_id, e.req_exam_type,
+	userExamColumns = `e.user_exam_id, e.uid, e.profile_id, e.req_exam_type,
 		e.res_total_questions, e.res_correct_number, e.res_skipped_number, e.res_score_percentage,
 		e.res_review, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
 		e.rpt_flg, e.kwords, e.note, e.user_exam_status, e.status,
@@ -42,7 +42,7 @@ func NewUserExamRepository(db database.Executor) exam.IUserExamRepository {
 
 func scanUserExam(s database.RowScanner) (*models.UserExamModel, error) {
 	var m models.UserExamModel
-	if err := s.Scan(&m.Id, &m.UserExamId, &m.UserId, &m.ProfileId, &m.ReqExamType,
+	if err := s.Scan(&m.UserExamId, &m.UserId, &m.ProfileId, &m.ReqExamType,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
 		&m.ResReview, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.UserExamStatus, &m.Status,
@@ -95,7 +95,7 @@ func (r *UserExamRepository) FindLatestCompletedByUserProfileType(ctx context.Co
 	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE ` +
 		`(e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.user_exam_status = ?)` +
 		` AND ` + userExamActiveWhere +
-		` ORDER BY e.ended_dt DESC, e.id DESC LIMIT 1`
+		` ORDER BY e.ended_dt DESC, e.user_exam_id DESC LIMIT 1`
 
 	m, err := scanUserExam(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -125,7 +125,7 @@ func (r *UserExamRepository) ListByUserProfile(ctx context.Context, userId, prof
 
 	args = append(args, userExamActiveArgs()...)
 	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE (` + where + `) AND ` +
-		userExamActiveWhere + ` ORDER BY e.create_dt DESC, e.id DESC`
+		userExamActiveWhere + ` ORDER BY e.create_dt DESC, e.user_exam_id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -440,7 +440,6 @@ func nullableTime(mt mtime.MathTime) *time.Time {
 
 func ModelToDomainUserExam(m *models.UserExamModel) *exam.UserExam {
 	e := exam.NewUserExam()
-	e.SetId(m.Id)
 	e.SetUserExamId(m.UserExamId)
 	e.SetUserId(m.UserId)
 	e.SetProfileId(m.ProfileId)

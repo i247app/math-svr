@@ -19,7 +19,7 @@ import (
 const (
 	exerciseTable = "ma_exercises"
 
-	exerciseColumns = `e.id, e.classroom_exercise_id, e.classroom_id,
+	exerciseColumns = `e.classroom_exercise_id, e.classroom_id,
 		e.creator_profile_id, e.visibility, e.purpose, e.program_id,
 		e.title, e.short_text, e.description, e.chapter_name, e.lesson_name, e.total_questions,
 		e.questions, e.answers, e.start_date, e.end_date,
@@ -46,7 +46,7 @@ func NewExerciseRepository(db database.Executor) domain.IRepository {
 
 func scanClassroomExercise(s database.RowScanner) (*models.ExerciseModel, error) {
 	var m models.ExerciseModel
-	if err := s.Scan(&m.Id, &m.ClassroomExerciseId, &m.ClassroomId,
+	if err := s.Scan(&m.ClassroomExerciseId, &m.ClassroomId,
 		&m.CreatorProfileId, &m.Visibility, &m.Purpose, &m.ProgramId,
 		&m.Title, &m.ShortText, &m.Description, &m.ChapterName, &m.LessonName, &m.TotalQuestions,
 		&m.Questions, &m.Answers, &m.StartDate, &m.EndDate,
@@ -68,21 +68,6 @@ func (r *ExerciseRepository) findOneBy(ctx context.Context, where string, args .
 			return nil, nil
 		}
 		return nil, fmt.Errorf("classroom exercise repo find (%s): %w", where, err)
-	}
-	return modelToDomainClassroomExercise(m), nil
-}
-
-func (r *ExerciseRepository) findBareById(ctx context.Context, id int64) (*domain.Exercise, error) {
-	args := slices.Concat([]any{id}, exerciseActiveArgs())
-	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e WHERE (e.id = ?) AND ` +
-		exerciseActiveWhere
-
-	m, err := scanClassroomExercise(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("classroom exercise repo find bare by id: %w", err)
 	}
 	return modelToDomainClassroomExercise(m), nil
 }
@@ -182,7 +167,7 @@ func (r *ExerciseRepository) ListByClassroomIds(ctx context.Context, params doma
 	args = append(args, limit)
 	query := `SELECT ` + exerciseColumns + ` FROM ` + exerciseTable + ` e` +
 		whereActive(clause.String(), exerciseActiveWhere) +
-		` ORDER BY e.create_dt DESC, e.id DESC LIMIT ?`
+		` ORDER BY e.create_dt DESC, e.classroom_exercise_id DESC LIMIT ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -335,9 +320,9 @@ func buildClassroomExerciseOrderBy(params domain.ListExercisesParams) string {
 	if params.SortOrder != nil && *params.SortOrder == "asc" {
 		direction = "ASC"
 	}
-	// Stable secondary sort on e.id so equal primary keys paginate
+	// Stable secondary sort on e.classroom_exercise_id so equal primary keys paginate
 	// deterministically.
-	return column + " " + direction + ", e.id " + direction
+	return column + " " + direction + ", e.classroom_exercise_id " + direction
 }
 
 // escapeLikePattern escapes the two LIKE wildcards plus the backslash
@@ -383,7 +368,7 @@ func (r *ExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*d
 			 rpt_flg, kwords, note, exercise_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		e.ClassroomExerciseId(), e.ClassroomId(), e.CreatorProfileId(), visibility, purpose,
 		e.ProgramId(),
 		e.Title(), e.ShortText(), e.Description(), e.ChapterName(), e.LessonName(), e.TotalQuestions(),
@@ -392,11 +377,7 @@ func (r *ExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*d
 	if err != nil {
 		return nil, fmt.Errorf("classroom exercise repo create: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("classroom exercise repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindByClassroomExerciseId(ctx, e.ClassroomExerciseId())
 }
 
 // Update is the COALESCE patch used by the metadata-edit path. The
@@ -471,7 +452,6 @@ func (r *ExerciseRepository) SoftDelete(ctx context.Context, classroomExerciseId
 
 func modelToDomainClassroomExercise(m *models.ExerciseModel) *domain.Exercise {
 	e := domain.NewExercise()
-	e.SetId(m.Id)
 	e.SetClassroomExerciseId(m.ClassroomExerciseId)
 	e.SetClassroomId(m.ClassroomId)
 	if m.CreatorProfileId != nil {

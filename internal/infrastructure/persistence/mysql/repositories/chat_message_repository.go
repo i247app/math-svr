@@ -17,7 +17,7 @@ import (
 const (
 	chatMessageTable = "ma_chat_messages"
 
-	chatMessageColumns = `m.id, m.message_id, m.conversation_id, m.seq_no,
+	chatMessageColumns = `m.message_id, m.conversation_id, m.seq_no,
 		m.sender_profile_id, m.sender_uid, m.message_type, m.content,
 		m.attachment_count, m.reply_to_message_id, m.system_event, m.system_payload,
 		m.metadata, m.client_msg_id, m.sent_dt, m.edited_dt, m.revoked_dt,
@@ -48,7 +48,7 @@ func NewChatMessageRepository(db database.Executor) chat.IMessageRepository {
 
 func scanChatMessage(s database.RowScanner) (*models.ChatMessageModel, error) {
 	var m models.ChatMessageModel
-	if err := s.Scan(&m.Id, &m.MessageId, &m.ConversationId, &m.SeqNo,
+	if err := s.Scan(&m.MessageId, &m.ConversationId, &m.SeqNo,
 		&m.SenderProfileId, &m.SenderUserId, &m.MessageType, &m.Content,
 		&m.AttachmentCount, &m.ReplyToMessageId, &m.SystemEvent, &m.SystemPayload,
 		&m.Metadata, &m.ClientMsgId, &m.SentDt, &m.EditedDt, &m.RevokedDt,
@@ -61,7 +61,6 @@ func scanChatMessage(s database.RowScanner) (*models.ChatMessageModel, error) {
 
 func ModelToDomainChatMessage(m *models.ChatMessageModel) *chat.Message {
 	msg := chat.NewMessage()
-	msg.SetId(m.Id)
 	msg.SetMessageId(m.MessageId)
 	msg.SetConversationId(m.ConversationId)
 	msg.SetSeqNo(m.SeqNo)
@@ -203,7 +202,7 @@ func (r *ChatMessageRepository) Create(ctx context.Context, m *chat.Message) (*c
 		   rpt_flg, kwords, note, message_status, status, create_id, create_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	res, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		m.MessageId(), m.ConversationId(), m.SeqNo(), m.SenderProfileId(), m.SenderUserId(),
 		m.MessageType(), m.Content(), m.AttachmentCount(), m.ReplyToMessageId(),
 		m.SystemEvent(), m.SystemPayload(), m.Metadata(), m.ClientMsgId(), m.SentDt().Time,
@@ -218,11 +217,6 @@ func (r *ChatMessageRepository) Create(ctx context.Context, m *chat.Message) (*c
 		return nil, fmt.Errorf("chat message repo create: %w", err)
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("chat message repo create last id: %w", err)
-	}
-	m.SetId(id)
 	return r.FindByMessageId(ctx, m.MessageId())
 }
 

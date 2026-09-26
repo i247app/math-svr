@@ -423,7 +423,6 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 	}
 
 	user, err := s.updateUserCmd.Handle(ctx, command.UpdateUserCommand{
-		ID:         req.ID,
 		UserID:     req.UserID,
 		UserName:   req.Name,
 		Email:      req.Email,

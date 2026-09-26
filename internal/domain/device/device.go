@@ -14,7 +14,6 @@ import (
 // at which point uid is always known — but the domain stays faithful to
 // the column nullability.
 type Device struct {
-	id              int64
 	deviceId        int64
 	userId          *int64
 	deviceUUID      string
@@ -38,8 +37,6 @@ func NewDevice() *Device {
 	return &Device{}
 }
 
-func (d *Device) Id() int64                       { return d.id }
-func (d *Device) SetId(id int64)                  { d.id = id }
 func (d *Device) DeviceId() int64                 { return d.deviceId }
 func (d *Device) SetDeviceId(deviceId int64)      { d.deviceId = deviceId }
 func (d *Device) UserId() *int64                  { return d.userId }

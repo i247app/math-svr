@@ -19,7 +19,7 @@ import (
 const (
 	exerciseSubmissionTable = "ma_exercise_submissions"
 
-	exerciseSubmissionColumns = `s.id, s.classroom_exercise_submission_id,
+	exerciseSubmissionColumns = `s.classroom_exercise_submission_id,
 		s.classroom_exercise_id, s.classroom_id, s.profile_id,
 		s.answers, s.review,
 		s.total_questions, s.correct_number, s.score_percentage,
@@ -44,7 +44,7 @@ func NewExerciseSubmissionRepository(db database.Executor) domain.ISubmissionRep
 
 func scanExerciseSubmission(s database.RowScanner) (*models.ExerciseSubmissionModel, error) {
 	var m models.ExerciseSubmissionModel
-	if err := s.Scan(&m.Id, &m.ClassroomExerciseSubmissionId,
+	if err := s.Scan(&m.ClassroomExerciseSubmissionId,
 		&m.ClassroomExerciseId, &m.ClassroomId, &m.ProfileId,
 		&m.Answers, &m.Review,
 		&m.TotalQuestions, &m.CorrectNumber, &m.ScorePercentage,
@@ -67,21 +67,6 @@ func (r *ExerciseSubmissionRepository) findOneBy(ctx context.Context, where stri
 			return nil, nil
 		}
 		return nil, fmt.Errorf("classroom exercise submission repo find (%s): %w", where, err)
-	}
-	return modelToDomainClassroomExerciseSubmission(m), nil
-}
-
-func (r *ExerciseSubmissionRepository) findBareById(ctx context.Context, id int64) (*domain.Submission, error) {
-	args := slices.Concat([]any{id}, exerciseSubmissionActiveArgs())
-	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE (s.id = ?) AND ` +
-		exerciseSubmissionActiveWhere
-
-	m, err := scanExerciseSubmission(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("classroom exercise submission repo find bare by id: %w", err)
 	}
 	return modelToDomainClassroomExerciseSubmission(m), nil
 }
@@ -187,7 +172,7 @@ func (r *ExerciseSubmissionRepository) ListRecentByProfileIds(ctx context.Contex
 	placeholders = placeholders[:len(placeholders)-1]
 	query := `SELECT ` + exerciseSubmissionColumns + ` FROM ` + exerciseSubmissionTable + ` s WHERE ` +
 		`(s.profile_id IN (` + placeholders + `)) AND ` + exerciseSubmissionActiveWhere +
-		` ORDER BY s.submitted_dt DESC, s.id DESC LIMIT ?`
+		` ORDER BY s.submitted_dt DESC, s.classroom_exercise_submission_id DESC LIMIT ?`
 	args := make([]any, 0, len(profileIds)+2)
 	for _, id := range profileIds {
 		args = append(args, id)
@@ -229,7 +214,7 @@ func (r *ExerciseSubmissionRepository) ListProfileSubmissionsInRange(ctx context
 		`(s.classroom_id = ? AND s.profile_id = ?` +
 		` AND s.submitted_dt IS NOT NULL AND s.submitted_dt BETWEEN ? AND ?` +
 		` AND s.score_percentage IS NOT NULL) AND ` + exerciseSubmissionActiveWhere +
-		` ORDER BY s.submitted_dt ASC, s.id ASC`
+		` ORDER BY s.submitted_dt ASC, s.classroom_exercise_submission_id ASC`
 	args := slices.Concat(
 		[]any{params.ClassroomID, params.ProfileID, params.From, params.To},
 		exerciseSubmissionActiveArgs())
@@ -343,7 +328,7 @@ func buildClassroomExerciseSubmissionOrderBy(params domain.ListSubmissionsParams
 	if params.SortOrder != nil && *params.SortOrder == "asc" {
 		direction = "ASC"
 	}
-	return column + " " + direction + ", s.id " + direction
+	return column + " " + direction + ", s.classroom_exercise_submission_id " + direction
 }
 
 func (r *ExerciseSubmissionRepository) Create(ctx context.Context, sub *domain.Submission) (*domain.Submission, error) {
@@ -364,7 +349,7 @@ func (r *ExerciseSubmissionRepository) Create(ctx context.Context, sub *domain.S
 			 rpt_flg, kwords, note, submission_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		sub.ClassroomExerciseSubmissionId(), sub.ClassroomExerciseId(), sub.ClassroomId(), sub.ProfileId(),
 		sub.Answers(), sub.Review(),
 		sub.TotalQuestions(), sub.CorrectNumber(), sub.ScorePercentage(),
@@ -374,11 +359,7 @@ func (r *ExerciseSubmissionRepository) Create(ctx context.Context, sub *domain.S
 	if err != nil {
 		return nil, fmt.Errorf("classroom exercise submission repo create: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("classroom exercise submission repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindBySubmissionId(ctx, sub.ClassroomExerciseSubmissionId())
 }
 
 // UpdateGrading applies the bot's grading result via COALESCE so a
@@ -433,7 +414,6 @@ func (r *ExerciseSubmissionRepository) SoftDelete(ctx context.Context, submissio
 
 func modelToDomainClassroomExerciseSubmission(m *models.ExerciseSubmissionModel) *domain.Submission {
 	s := domain.NewSubmission()
-	s.SetId(m.Id)
 	s.SetClassroomExerciseSubmissionId(m.ClassroomExerciseSubmissionId)
 	s.SetClassroomExerciseId(m.ClassroomExerciseId)
 	s.SetClassroomId(m.ClassroomId)

@@ -5,7 +5,6 @@ import (
 )
 
 type UserModel struct {
-	Id              int64
 	UserId          int64
 	UserName        string
 	Phone           *string

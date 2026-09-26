@@ -17,7 +17,7 @@ import (
 const (
 	loginLogTable = "ma_login_logs"
 
-	loginLogColumns = `l.id, l.login_log_id, l.uid, l.ip_address, l.device_uuid,
+	loginLogColumns = `l.login_log_id, l.uid, l.ip_address, l.device_uuid,
 		l.token, l.rpt_flg, l.kwords, l.note, l.login_log_status, l.status,
 		l.create_id, l.create_dt, l.modify_id, l.modify_dt`
 
@@ -38,7 +38,7 @@ func NewLoginLogRepository(db database.Executor) loginlog.IRepository {
 
 func scanLoginLog(s database.RowScanner) (*models.LoginLogModel, error) {
 	var m models.LoginLogModel
-	if err := s.Scan(&m.Id, &m.LoginLogId, &m.UserId, &m.IpAddress, &m.DeviceUUID,
+	if err := s.Scan(&m.LoginLogId, &m.UserId, &m.IpAddress, &m.DeviceUUID,
 		&m.Token, &m.RptFlg, &m.Kwords, &m.Note, &m.LoginLogStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -57,21 +57,6 @@ func (r *LoginLogRepository) findOneBy(ctx context.Context, where string, args .
 			return nil, nil
 		}
 		return nil, fmt.Errorf("login_log repo find (%s): %w", where, err)
-	}
-	return ModelToDomainLoginLog(m), nil
-}
-
-func (r *LoginLogRepository) findBareById(ctx context.Context, id int64) (*loginlog.LoginLog, error) {
-	args := slices.Concat([]any{id}, loginLogActiveArgs())
-	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE (l.id = ?) AND ` +
-		loginLogActiveWhere
-
-	m, err := scanLoginLog(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("login_log repo find bare by id: %w", err)
 	}
 	return ModelToDomainLoginLog(m), nil
 }
@@ -96,7 +81,7 @@ func (r *LoginLogRepository) FindActiveByUserDevice(ctx context.Context, userId 
 func (r *LoginLogRepository) ListByUserId(ctx context.Context, userId int64) ([]*loginlog.LoginLog, error) {
 	args := slices.Concat([]any{userId}, loginLogActiveArgs())
 	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE (l.uid = ?) AND ` +
-		loginLogActiveWhere + ` ORDER BY l.id DESC`
+		loginLogActiveWhere + ` ORDER BY l.login_log_id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -125,18 +110,14 @@ func (r *LoginLogRepository) Create(ctx context.Context, l *loginlog.LoginLog) (
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		l.LoginLogId(), l.UserId(), l.IpAddress(), l.DeviceUUID(),
 		l.Token(), l.RptFlg(), l.Kwords(), l.Note(), l.LoginLogStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("login_log repo create: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("login_log repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindByLoginLogId(ctx, l.LoginLogId())
 }
 
 func (r *LoginLogRepository) MarkStatusByLoginLogId(ctx context.Context, loginLogId int64, st enum.LoginLogStatusType) error {
@@ -187,7 +168,6 @@ func (r *LoginLogRepository) SoftDeleteByLoginLogId(ctx context.Context, loginLo
 
 func ModelToDomainLoginLog(m *models.LoginLogModel) *loginlog.LoginLog {
 	l := loginlog.NewLoginLog()
-	l.SetId(m.Id)
 	l.SetLoginLogId(m.LoginLogId)
 	l.SetUserId(m.UserId)
 	l.SetIpAddress(m.IpAddress)

@@ -5,7 +5,6 @@ import (
 )
 
 type LoginLogModel struct {
-	Id             int64
 	LoginLogId     int64
 	UserId         int64
 	IpAddress      string

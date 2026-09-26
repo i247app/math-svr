@@ -18,7 +18,7 @@ import (
 const (
 	otpTable = "ma_otps"
 
-	otpColumns = `o.id, o.otp_id, o.otp_type, o.uid, o.identifier,
+	otpColumns = `o.otp_id, o.otp_type, o.uid, o.identifier,
 		o.device_uuid, o.device_name, o.otp_code, o.otp_create_dt, o.otp_expire_dt, o.otp_verified_dt,
 		o.attempt_count, o.rpt_flg, o.kwords, o.note, o.otp_status, o.status,
 		o.create_id, o.create_dt, o.modify_id, o.modify_dt`
@@ -40,7 +40,7 @@ func NewOtpRepository(db database.Executor) otp.IRepository {
 
 func scanOtp(s database.RowScanner) (*models.OtpModel, error) {
 	var m models.OtpModel
-	if err := s.Scan(&m.Id, &m.OtpId, &m.OtpType, &m.UserId, &m.Identifier,
+	if err := s.Scan(&m.OtpId, &m.OtpType, &m.UserId, &m.Identifier,
 		&m.DeviceUUID, &m.DeviceName, &m.OtpCode, &m.OtpCreateDt, &m.OtpExpireDt, &m.OtpVerifiedDt,
 		&m.AttemptCount, &m.RptFlg, &m.Kwords, &m.Note, &m.OtpStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -64,21 +64,6 @@ func (r *OtpRepository) findOneBy(ctx context.Context, where string, args ...any
 	return ModelToDomainOtp(m), nil
 }
 
-func (r *OtpRepository) findBareById(ctx context.Context, id int64) (*otp.Otp, error) {
-	args := slices.Concat([]any{id}, otpActiveArgs())
-	query := `SELECT ` + otpColumns + ` FROM ` + otpTable + ` o WHERE (o.id = ?) AND ` +
-		otpActiveWhere
-
-	m, err := scanOtp(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("otp repo find bare by id: %w", err)
-	}
-	return ModelToDomainOtp(m), nil
-}
-
 func (r *OtpRepository) FindByOtpId(ctx context.Context, otpId int64) (*otp.Otp, error) {
 	return r.findOneBy(ctx, "o.otp_id = ?", otpId)
 }
@@ -90,7 +75,7 @@ func (r *OtpRepository) FindLatestPending(ctx context.Context, otpType enum.OtpT
 	args := slices.Concat([]any{otpType, identifier, enum.OtpStatusTypePending}, otpActiveArgs())
 	query := `SELECT ` + otpColumns + ` FROM ` + otpTable + ` o WHERE ` +
 		`(o.otp_type = ? AND o.identifier = ? AND o.otp_status = ?) AND ` + otpActiveWhere + `
-		ORDER BY o.id DESC LIMIT 1`
+		ORDER BY o.otp_id DESC LIMIT 1`
 
 	m, err := scanOtp(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -110,7 +95,7 @@ func (r *OtpRepository) FindLatestVerified(ctx context.Context, otpType enum.Otp
 	args := slices.Concat([]any{otpType, identifier, enum.OtpStatusTypeVerified}, otpActiveArgs())
 	query := `SELECT ` + otpColumns + ` FROM ` + otpTable + ` o WHERE ` +
 		`(o.otp_type = ? AND o.identifier = ? AND o.otp_status = ?) AND ` + otpActiveWhere + `
-		ORDER BY o.id DESC LIMIT 1`
+		ORDER BY o.otp_id DESC LIMIT 1`
 
 	m, err := scanOtp(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -150,18 +135,14 @@ func (r *OtpRepository) Create(ctx context.Context, o *otp.Otp) (*otp.Otp, error
 		expireDtArg = o.OtpExpireDt()
 	}
 
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		o.OtpId(), o.OtpType(), o.UserId(), o.Identifier(), o.DeviceUUID(), o.DeviceName(),
 		o.OtpCode(), createDtArg, expireDtArg, o.AttemptCount(), o.RptFlg(), o.Kwords(), o.Note(), o.OtpStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("otp repo create: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("otp repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindByOtpId(ctx, o.OtpId())
 }
 
 // MarkStatusByOtpId flips otp_status. When the transition is to VERIFIED, it
@@ -230,7 +211,6 @@ func (r *OtpRepository) IncrementAttemptCount(ctx context.Context, otpId int64) 
 
 func ModelToDomainOtp(m *models.OtpModel) *otp.Otp {
 	o := otp.NewOtp()
-	o.SetId(m.Id)
 	o.SetOtpId(m.OtpId)
 	o.SetOtpType(m.OtpType)
 	o.SetUserId(m.UserId)

@@ -9,7 +9,6 @@ import (
 // the column nullability. image_key is the S3 key; the presigned URL is
 // produced at the module/service edge, not stored on the entity.
 type School struct {
-	id           int64
 	schoolId     int64
 	name         string
 	description  *string
@@ -31,8 +30,6 @@ func NewSchool() *School {
 	return &School{}
 }
 
-func (s *School) Id() int64                 { return s.id }
-func (s *School) SetId(id int64)            { s.id = id }
 func (s *School) SchoolId() int64           { return s.schoolId }
 func (s *School) SetSchoolId(id int64)      { s.schoolId = id }
 func (s *School) Name() string              { return s.name }

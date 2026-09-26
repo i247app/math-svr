@@ -12,7 +12,6 @@ import "math-ai.com/math-ai/internal/domain/shared/mtime"
 // screen renders in one query instead of one query per row. They are written
 // by UpdateLastMessage in the same transaction as the message insert.
 type Conversation struct {
-	id                         int64
 	conversationId             int64
 	conversationType           string
 	classroomId                *int64
@@ -42,8 +41,6 @@ type Conversation struct {
 
 func NewConversation() *Conversation { return &Conversation{} }
 
-func (c *Conversation) Id() int64                               { return c.id }
-func (c *Conversation) SetId(id int64)                          { c.id = id }
 func (c *Conversation) ConversationId() int64                   { return c.conversationId }
 func (c *Conversation) SetConversationId(id int64)              { c.conversationId = id }
 func (c *Conversation) ConversationType() string                { return c.conversationType }

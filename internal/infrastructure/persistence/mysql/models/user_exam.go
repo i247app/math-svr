@@ -5,7 +5,6 @@ import (
 )
 
 type UserExamModel struct {
-	Id                 int64
 	UserExamId         int64
 	UserId             int64
 	ProfileId          int64

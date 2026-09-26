@@ -19,7 +19,7 @@ import (
 const (
 	classroomMemberTable = "ma_classroom_members"
 
-	classroomMemberColumns = `m.id, m.member_id, m.classroom_id, m.profile_id, m.member_role,
+	classroomMemberColumns = `m.member_id, m.classroom_id, m.profile_id, m.member_role,
 		m.invitation_id, m.joined_dt, m.left_dt, m.removed_by_profile_id, m.removed_dt,
 		m.last_seen_dt, m.rpt_flg, m.kwords, m.note, m.invite_by, m.invite_dt,
 		m.member_status, m.status,
@@ -44,7 +44,7 @@ func NewClassroomMemberRepository(db database.Executor) classroom.IMemberReposit
 
 func scanClassroomMember(s database.RowScanner) (*models.ClassroomMemberModel, error) {
 	var m models.ClassroomMemberModel
-	if err := s.Scan(&m.Id, &m.MemberId, &m.ClassroomId, &m.ProfileId, &m.MemberRole,
+	if err := s.Scan(&m.MemberId, &m.ClassroomId, &m.ProfileId, &m.MemberRole,
 		&m.InvitationId, &m.JoinedDt, &m.LeftDt, &m.RemovedByProfileId, &m.RemovedDt,
 		&m.LastSeenDt, &m.RptFlg, &m.Kwords, &m.Note, &m.InviteBy, &m.InviteDt,
 		&m.MemberStatus, &m.Status,
@@ -65,21 +65,6 @@ func (r *ClassroomMemberRepository) findOneBy(ctx context.Context, where string,
 			return nil, nil
 		}
 		return nil, fmt.Errorf("classroom_member repo find (%s): %w", where, err)
-	}
-	return ModelToDomainClassroomMember(m), nil
-}
-
-func (r *ClassroomMemberRepository) findBareById(ctx context.Context, id int64) (*classroom.Member, error) {
-	args := slices.Concat([]any{id}, classroomMemberActiveArgs())
-	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m WHERE (m.id = ?) AND ` +
-		classroomMemberActiveWhere
-
-	m, err := scanClassroomMember(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("classroom_member repo find bare by id: %w", err)
 	}
 	return ModelToDomainClassroomMember(m), nil
 }
@@ -111,7 +96,7 @@ func (r *ClassroomMemberRepository) ListMembers(ctx context.Context, params *cla
 	listArgs := slices.Concat(filterArgs, classroomMemberActiveArgs())
 	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m` +
 		whereActive(filterWhere, classroomMemberActiveWhere) +
-		` ORDER BY m.joined_dt DESC, m.id DESC`
+		` ORDER BY m.joined_dt DESC, m.member_id DESC`
 
 	var pg *pagination.Pagination
 	if params == nil || !params.TakeAll {
@@ -236,7 +221,7 @@ func (r *ClassroomMemberRepository) ListActiveByProfileIds(ctx context.Context, 
 	query := `SELECT ` + classroomMemberColumns + ` FROM ` + classroomMemberTable + ` m WHERE ` +
 		`(m.profile_id IN (` + strings.Join(placeholders, ", ") + `)` +
 		` AND m.member_status = ?) AND ` + classroomMemberActiveWhere +
-		` ORDER BY m.joined_dt DESC, m.id DESC`
+		` ORDER BY m.joined_dt DESC, m.member_id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -325,7 +310,7 @@ func (r *ClassroomMemberRepository) CountActiveByClassroomId(ctx context.Context
 //
 //	Submitted=true   → INNER JOIN  (only members with a non-DELETED
 //	                                 submission for the exercise)
-//	Submitted=false  → LEFT JOIN s ON … WHERE s.id IS NULL  (members
+//	Submitted=false  → LEFT JOIN s ON … WHERE s.<submission_id> IS NULL  (members
 //	                                 with no submission row)
 //
 // Search joins ma_profiles for a case-insensitive LIKE on
@@ -389,7 +374,7 @@ func (r *ClassroomMemberRepository) ListMembersByExerciseSubmission(
 	if params.Submitted {
 		whereClause = `(` + memberWhere + searchClause + `)`
 	} else {
-		whereClause = `(` + memberWhere + ` AND s.id IS NULL` + searchClause + `)`
+		whereClause = `(` + memberWhere + ` AND s.classroom_exercise_submission_id IS NULL` + searchClause + `)`
 	}
 	whereClause += ` AND ` + classroomMemberActiveWhere
 	args = append(args, classroomMemberActiveArgs()...)
@@ -446,7 +431,7 @@ func buildClassroomMemberByExerciseOrderBy(params *classroom.ListMembersByExerci
 	if params.SortOrder != nil && *params.SortOrder == "asc" {
 		direction = "ASC"
 	}
-	return column + " " + direction + ", m.id " + direction
+	return column + " " + direction + ", m.member_id " + direction
 }
 
 // CountPendingRequestsByClassroomIds groups the PENDING_REQUEST rows
@@ -512,7 +497,7 @@ func (r *ClassroomMemberRepository) Create(ctx context.Context, m *classroom.Mem
 			 last_seen_dt, rpt_flg, kwords, note, invite_by, invite_dt, member_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		m.MemberId(), m.ClassroomId(), m.ProfileId(), m.MemberRole(),
 		m.InvitationId(), joinedArg, leftArg, m.RemovedByProfileId(), removedArg,
 		lastSeenArg, m.RptFlg(), m.Kwords(), m.Note(), m.InviteBy(), inviteDtArg, m.MemberStatus(), m.CreateId(),
@@ -520,11 +505,7 @@ func (r *ClassroomMemberRepository) Create(ctx context.Context, m *classroom.Mem
 	if err != nil {
 		return nil, fmt.Errorf("classroom_member repo create: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("classroom_member repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindByMemberId(ctx, m.MemberId())
 }
 
 // Update applies a partial patch — Role / Status / Note / timestamp
@@ -810,7 +791,6 @@ func (r *ClassroomMemberRepository) ForceDeleteByClassroomId(ctx context.Context
 
 func ModelToDomainClassroomMember(m *models.ClassroomMemberModel) *classroom.Member {
 	d := classroom.NewMember()
-	d.SetId(m.Id)
 	d.SetMemberId(m.MemberId)
 	d.SetClassroomId(m.ClassroomId)
 	d.SetProfileId(m.ProfileId)

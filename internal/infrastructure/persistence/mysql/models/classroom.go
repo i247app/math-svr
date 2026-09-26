@@ -3,7 +3,6 @@ package models
 import "time"
 
 type ClassroomModel struct {
-	Id                     int64
 	ClassroomId            int64
 	OwnerProfileId         int64
 	Name                   string

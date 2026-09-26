@@ -6,7 +6,6 @@ import (
 )
 
 type SemesterResponse struct {
-	ID           int64   `json:"id"`
 	SemesterID   int64   `json:"semester_id"`
 	Name         string  `json:"name"`
 	Description  string  `json:"description"`
@@ -74,7 +73,6 @@ func DomainToResponse(s *domain.Semester) *SemesterResponse {
 		return nil
 	}
 	return &SemesterResponse{
-		ID:           s.Id(),
 		SemesterID:   s.SemesterId(),
 		Name:         s.Name(),
 		Description:  s.Description(),

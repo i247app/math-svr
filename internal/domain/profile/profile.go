@@ -9,7 +9,6 @@ import (
 // as a new row). MathTime carries the dob — zero value scans/marshals as
 // NULL/null without needing a pointer.
 type Profile struct {
-	id            int64
 	profileId     int64
 	profileCode   string
 	userId        int64
@@ -41,14 +40,6 @@ type Profile struct {
 
 func NewProfile() *Profile {
 	return &Profile{}
-}
-
-func (p *Profile) Id() int64 {
-	return p.id
-}
-
-func (p *Profile) SetId(id int64) {
-	p.id = id
 }
 
 func (p *Profile) ProfileId() int64 {

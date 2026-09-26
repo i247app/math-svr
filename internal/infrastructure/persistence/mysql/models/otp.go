@@ -5,7 +5,6 @@ import (
 )
 
 type OtpModel struct {
-	Id            int64
 	OtpId         int64
 	OtpType       string
 	UserId        *int64

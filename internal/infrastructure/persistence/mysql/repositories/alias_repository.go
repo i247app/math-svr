@@ -18,7 +18,7 @@ import (
 const (
 	aliasTable = "ma_aliases"
 
-	aliasColumns = `id, alias_id, uid, aka, alias_status, rpt_flg, kwords, note, create_id, create_dt, modify_id, modify_dt`
+	aliasColumns = `alias_id, uid, aka, alias_status, rpt_flg, kwords, note, create_id, create_dt, modify_id, modify_dt`
 
 	// Login resolution (alias.FindByAka -> user.FindByUserId) relies on this
 	// filter so a soft-deleted account cannot log back in through its alias.
@@ -39,7 +39,7 @@ func NewAliasRepository(db database.Executor) user.IAliasRepository {
 
 func scanAlias(s database.RowScanner) (*models.AliasModel, error) {
 	var m models.AliasModel
-	if err := s.Scan(&m.Id, &m.AliasId, &m.UserId, &m.Aka, &m.AliasStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(&m.AliasId, &m.UserId, &m.Aka, &m.AliasStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -69,17 +69,11 @@ func (r *AliasRepository) Create(ctx context.Context, alias *user.Alias) (*user.
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.Exec(ctx, query, alias.AliasId(), alias.UserId(),
+	_, err := r.db.Exec(ctx, query, alias.AliasId(), alias.UserId(),
 		alias.Aka(), alias.AliasStatus(), alias.RptFlg(), alias.Kwords(), alias.Note(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("alias repo create: %w", err)
 	}
-
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("alias repo last insert id: %w", err)
-	}
-	alias.SetId(id)
 
 	return alias, nil
 }
@@ -191,7 +185,6 @@ func (r *AliasRepository) SoftDeleteByAliasId(ctx context.Context, aliasId int64
 
 func ModelToDomainAlias(m *models.AliasModel) *user.Alias {
 	a := user.NewAlias()
-	a.SetId(m.Id)
 	a.SetAliasId(m.AliasId)
 	a.SetUserId(m.UserId)
 	a.SetAka(m.Aka)

@@ -44,8 +44,7 @@ cat >"$UP_FILE" <<SQL
 -- its order and definitions; add domain columns above it.
 
 CREATE TABLE IF NOT EXISTS ${NAME%_table} (
-  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  ${entity}_id    BIGINT UNSIGNED NOT NULL UNIQUE,
+  ${entity}_id    BIGINT UNSIGNED NOT NULL PRIMARY KEY,
   -- ...domain columns...
   ${entity}_status VARCHAR(32)  DEFAULT NULL,
   rpt_flg         VARCHAR(16)  DEFAULT NULL,

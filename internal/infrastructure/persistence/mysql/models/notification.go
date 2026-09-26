@@ -5,7 +5,6 @@ import "time"
 // NotificationModel mirrors ma_notifications. Pure data; the repository maps
 // it to the domain Notification via ModelToDomainNotification.
 type NotificationModel struct {
-	Id                 int64
 	NotificationId     int64
 	UserId             int64
 	Title              string

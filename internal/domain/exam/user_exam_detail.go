@@ -28,7 +28,6 @@ import (
 // submit path produces one. The field stays so the entity keeps matching
 // the table 1:1 and the column is ready the day a rule lands.
 type UserExamDetail struct {
-	id               int64
 	userExamDetailId int64
 	userAiExamId     int64
 	userExamId       int64
@@ -63,8 +62,6 @@ type UserExamDetail struct {
 
 func NewUserExamDetail() *UserExamDetail { return &UserExamDetail{} }
 
-func (d *UserExamDetail) Id() int64                       { return d.id }
-func (d *UserExamDetail) SetId(id int64)                  { d.id = id }
 func (d *UserExamDetail) UserExamDetailId() int64         { return d.userExamDetailId }
 func (d *UserExamDetail) SetUserExamDetailId(id int64)    { d.userExamDetailId = id }
 func (d *UserExamDetail) UserAiExamId() int64             { return d.userAiExamId }

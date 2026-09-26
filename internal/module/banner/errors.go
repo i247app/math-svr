@@ -4,10 +4,10 @@ import "errors"
 
 // Module-scoped sentinel errors. See conventions.md §Errors.
 var (
-	ErrBannerIDRequired      = errors.New("banner_id is required")
-	ErrBannerNotFound        = errors.New("banner not found")
-	ErrButtonLinkTooLong     = errors.New("button_link_url too long")
-	ErrButtonTextTooLong     = errors.New("button_text too long")
+	ErrBannerIDRequired    = errors.New("banner_id is required")
+	ErrBannerNotFound      = errors.New("banner not found")
+	ErrButtonLinkTooLong   = errors.New("button_link_url too long")
+	ErrButtonTextTooLong   = errors.New("button_text too long")
 	ErrInvalidMediaType    = errors.New("invalid media_type")
 	ErrInvalidBannerStatus = errors.New("invalid banner_status")
 	ErrMediaURLKeyTooLong  = errors.New("media_url_key too long")

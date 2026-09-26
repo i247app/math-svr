@@ -5,7 +5,6 @@ import (
 )
 
 type LoginLog struct {
-	id             int64
 	loginLogId     int64
 	userId         int64
 	ipAddress      string
@@ -24,14 +23,6 @@ type LoginLog struct {
 
 func NewLoginLog() *LoginLog {
 	return &LoginLog{}
-}
-
-func (l *LoginLog) Id() int64 {
-	return l.id
-}
-
-func (l *LoginLog) SetId(id int64) {
-	l.id = id
 }
 
 func (l *LoginLog) LoginLogId() int64 {

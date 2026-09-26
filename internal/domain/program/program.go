@@ -5,7 +5,6 @@ import (
 )
 
 type Program struct {
-	id            int64
 	programId     int64
 	label         string
 	description   string
@@ -24,14 +23,6 @@ type Program struct {
 
 func NewProgram() *Program {
 	return &Program{}
-}
-
-func (p *Program) Id() int64 {
-	return p.id
-}
-
-func (p *Program) SetId(id int64) {
-	p.id = id
 }
 
 func (p *Program) ProgramId() int64 {

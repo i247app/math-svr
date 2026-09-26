@@ -11,7 +11,6 @@ import (
 // an absolute client-supplied URL and is passed through as-is (not
 // presigned).
 type Banner struct {
-	id            int64
 	bannerId      int64
 	title         *string
 	shortText     *string
@@ -34,8 +33,6 @@ func NewBanner() *Banner {
 	return &Banner{}
 }
 
-func (b *Banner) Id() int64                    { return b.id }
-func (b *Banner) SetId(id int64)               { b.id = id }
 func (b *Banner) BannerId() int64              { return b.bannerId }
 func (b *Banner) SetBannerId(id int64)         { b.bannerId = id }
 func (b *Banner) Title() *string               { return b.title }

@@ -19,7 +19,7 @@ import (
 const (
 	bannerTable = "ma_banners"
 
-	bannerColumns = `b.id, b.banner_id, b.title, b.short_text, b.media_type,
+	bannerColumns = `b.banner_id, b.title, b.short_text, b.media_type,
 		b.media_url_key, b.button_text, b.button_link_url, b.rpt_flg, b.kwords, b.note,
 		b.banner_status, b.status,
 		b.create_id, b.create_dt, b.modify_id, b.modify_dt`
@@ -45,7 +45,7 @@ func NewBannerRepository(db database.Executor) banner.IRepository {
 
 func scanBanner(s database.RowScanner) (*models.BannerModel, error) {
 	var m models.BannerModel
-	if err := s.Scan(&m.Id, &m.BannerId, &m.Title, &m.ShortText, &m.MediaType,
+	if err := s.Scan(&m.BannerId, &m.Title, &m.ShortText, &m.MediaType,
 		&m.MediaURLKey, &m.ButtonText, &m.ButtonLinkURL, &m.RptFlg, &m.Kwords, &m.Note,
 		&m.BannerStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -72,21 +72,6 @@ func (r *BannerRepository) findOneBy(ctx context.Context, where string, args ...
 	return ModelToDomainBanner(m), nil
 }
 
-func (r *BannerRepository) findBareById(ctx context.Context, id int64) (*banner.Banner, error) {
-	args := slices.Concat([]any{id}, bannerActiveArgs())
-	query := `SELECT ` + bannerColumns + ` FROM ` + bannerTable + ` b WHERE (b.id = ?) AND ` +
-		bannerActiveWhere
-
-	m, err := scanBanner(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("banner repo find bare by id: %w", err)
-	}
-	return ModelToDomainBanner(m), nil
-}
-
 func (r *BannerRepository) FindByBannerId(ctx context.Context, bannerId int64) (*banner.Banner, error) {
 	return r.findOneBy(ctx, "b.banner_id = ?", bannerId)
 }
@@ -107,7 +92,7 @@ func (r *BannerRepository) ListBanners(ctx context.Context, params *banner.ListB
 	// Newest banners first — banners are time-sensitive display content.
 	query := `SELECT ` + bannerColumns + ` FROM ` + bannerTable + ` b` +
 		whereActive(filterWhere, bannerActiveWhere) +
-		` ORDER BY b.create_dt DESC, b.id DESC`
+		` ORDER BY b.create_dt DESC, b.banner_id DESC`
 
 	var pg *pagination.Pagination
 	if params == nil || !params.TakeAll {
@@ -191,18 +176,14 @@ func (r *BannerRepository) Create(ctx context.Context, b *banner.Banner) (*banne
 			 create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		b.BannerId(), b.Title(), b.ShortText(), b.MediaType(), b.MediaURLKey(),
 		b.ButtonText(), b.ButtonLinkURL(), b.RptFlg(), b.Kwords(), b.Note(), b.BannerStatus(),
 		b.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("banner repo create: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("banner repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindByBannerId(ctx, b.BannerId())
 }
 
 // Update applies a partial update. Nullable columns use COALESCE(?, col)
@@ -274,7 +255,6 @@ func (r *BannerRepository) ForceDeleteByBannerId(ctx context.Context, bannerId i
 
 func ModelToDomainBanner(m *models.BannerModel) *banner.Banner {
 	b := banner.NewBanner()
-	b.SetId(m.Id)
 	b.SetBannerId(m.BannerId)
 	b.SetTitle(m.Title)
 	b.SetShortText(m.ShortText)

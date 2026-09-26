@@ -19,7 +19,7 @@ import (
 const (
 	classroomTable = "ma_classrooms"
 
-	classroomColumns = `c.id, c.classroom_id, c.owner_profile_id, c.name, c.description,
+	classroomColumns = `c.classroom_id, c.owner_profile_id, c.name, c.description,
 		c.school_id, c.grade_id,
 		c.classroom_code, c.classroom_code_expires_dt,
 		c.max_members, c.member_count, c.student_count, c.teacher_count,
@@ -47,7 +47,7 @@ func NewClassroomRepository(db database.Executor) classroom.IRepository {
 
 func scanClassroom(s database.RowScanner) (*models.ClassroomModel, error) {
 	var m models.ClassroomModel
-	if err := s.Scan(&m.Id, &m.ClassroomId, &m.OwnerProfileId, &m.Name, &m.Description,
+	if err := s.Scan(&m.ClassroomId, &m.OwnerProfileId, &m.Name, &m.Description,
 		&m.SchoolId, &m.GradeId,
 		&m.ClassroomCode, &m.ClassroomCodeExpiresDt,
 		&m.MaxMembers, &m.MemberCount, &m.StudentCount, &m.TeacherCount,
@@ -74,21 +74,6 @@ func (r *ClassroomRepository) findOneBy(ctx context.Context, where string, args 
 	return ModelToDomainClassroom(m), nil
 }
 
-func (r *ClassroomRepository) findBareById(ctx context.Context, id int64) (*classroom.Classroom, error) {
-	args := slices.Concat([]any{id}, classroomActiveArgs())
-	query := `SELECT ` + classroomColumns + ` FROM ` + classroomTable + ` c WHERE (c.id = ?) AND ` +
-		classroomActiveWhere
-
-	m, err := scanClassroom(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("classroom repo find bare by id: %w", err)
-	}
-	return ModelToDomainClassroom(m), nil
-}
-
 func (r *ClassroomRepository) FindByClassroomId(ctx context.Context, classroomId int64) (*classroom.Classroom, error) {
 	return r.findOneBy(ctx, "c.classroom_id = ?", classroomId)
 }
@@ -103,7 +88,7 @@ func (r *ClassroomRepository) ListClassrooms(ctx context.Context, params *classr
 	baseFrom := classroomTable + ` c` + joinClause
 
 	countArgs := slices.Concat(filterArgs, classroomActiveArgs())
-	countQuery := `SELECT COUNT(DISTINCT c.id) FROM ` + baseFrom +
+	countQuery := `SELECT COUNT(DISTINCT c.classroom_id) FROM ` + baseFrom +
 		whereActive(filterWhere, classroomActiveWhere)
 
 	var total int64
@@ -114,7 +99,7 @@ func (r *ClassroomRepository) ListClassrooms(ctx context.Context, params *classr
 	listArgs := slices.Concat(filterArgs, classroomActiveArgs())
 	query := `SELECT DISTINCT ` + classroomColumns + ` FROM ` + baseFrom +
 		whereActive(filterWhere, classroomActiveWhere) +
-		` ORDER BY c.modify_dt DESC, c.id DESC`
+		` ORDER BY c.modify_dt DESC, c.classroom_id DESC`
 
 	var pg *pagination.Pagination
 	if params == nil || !params.TakeAll {
@@ -306,7 +291,7 @@ func (r *ClassroomRepository) Create(ctx context.Context, c *classroom.Classroom
 			 classroom_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		c.ClassroomId(), c.OwnerProfileId(), c.Name(), c.Description(),
 		c.SchoolId(), c.GradeId(),
 		c.ClassroomCode(), expiresArg,
@@ -316,11 +301,7 @@ func (r *ClassroomRepository) Create(ctx context.Context, c *classroom.Classroom
 	if err != nil {
 		return nil, fmt.Errorf("classroom repo create: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("classroom repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindByClassroomId(ctx, c.ClassroomId())
 }
 
 // Update applies a partial patch. Non-nullable scalar fields use a
@@ -462,7 +443,6 @@ func (r *ClassroomRepository) ForceDeleteByClassroomId(ctx context.Context, clas
 
 func ModelToDomainClassroom(m *models.ClassroomModel) *classroom.Classroom {
 	c := classroom.NewClassroom()
-	c.SetId(m.Id)
 	c.SetClassroomId(m.ClassroomId)
 	c.SetOwnerProfileId(m.OwnerProfileId)
 	c.SetName(m.Name)

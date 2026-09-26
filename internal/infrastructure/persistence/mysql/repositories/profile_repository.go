@@ -19,7 +19,7 @@ import (
 const (
 	profileTable = "ma_profiles"
 
-	profileColumns = `p.id, p.profile_id, p.profile_code, p.uid, p.name, p.phone, p.email, p.role, p.identity_code, p.avatar_key, p.dob,
+	profileColumns = `p.profile_id, p.profile_code, p.uid, p.name, p.phone, p.email, p.role, p.identity_code, p.avatar_key, p.dob,
 		p.school_id, p.program_id, p.grade_id, p.semester_id, p.is_default,
 		p.id_type, p.teacher_id, p.student_id,
 		p.rpt_flg, p.kwords, p.note, p.profile_status, p.status,
@@ -42,7 +42,7 @@ func NewProfileRepository(db database.Executor) profile.IRepository {
 
 func scanProfile(s database.RowScanner) (*models.ProfileModel, error) {
 	var m models.ProfileModel
-	if err := s.Scan(&m.Id, &m.ProfileId, &m.ProfileCode, &m.UserId, &m.Name, &m.Phone, &m.Email, &m.Role, &m.IdentityCode, &m.AvatarKey, &m.Dob,
+	if err := s.Scan(&m.ProfileId, &m.ProfileCode, &m.UserId, &m.Name, &m.Phone, &m.Email, &m.Role, &m.IdentityCode, &m.AvatarKey, &m.Dob,
 		&m.SchoolId, &m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault,
 		&m.IdType, &m.TeacherId, &m.StudentId,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.ProfileStatus, &m.Status,
@@ -67,21 +67,6 @@ func (r *ProfileRepository) findOneBy(ctx context.Context, where string, args ..
 	return ModelToDomainProfile(m), nil
 }
 
-func (r *ProfileRepository) findBareById(ctx context.Context, id int64) (*profile.Profile, error) {
-	args := slices.Concat([]any{id}, profileActiveArgs())
-	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE (p.id = ?) AND ` +
-		profileActiveWhere
-
-	m, err := scanProfile(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("profile repo find bare by id: %w", err)
-	}
-	return ModelToDomainProfile(m), nil
-}
-
 func (r *ProfileRepository) FindByProfileId(ctx context.Context, profileId int64) (*profile.Profile, error) {
 	return r.findOneBy(ctx, "p.profile_id = ?", profileId)
 }
@@ -97,7 +82,7 @@ func (r *ProfileRepository) FindByProfileCode(ctx context.Context, profileCode s
 func (r *ProfileRepository) ListByUserId(ctx context.Context, userId int64) ([]*profile.Profile, error) {
 	args := slices.Concat([]any{userId}, profileActiveArgs())
 	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE (p.uid = ?) AND ` +
-		profileActiveWhere + ` ORDER BY p.id DESC`
+		profileActiveWhere + ` ORDER BY p.profile_id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -133,7 +118,7 @@ func (r *ProfileRepository) ListByProfileIds(ctx context.Context, profileIds []i
 	args = append(args, profileActiveArgs()...)
 
 	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE (p.profile_id IN (` +
-		strings.Join(placeholders, ", ") + `)) AND ` + profileActiveWhere + ` ORDER BY p.id DESC`
+		strings.Join(placeholders, ", ") + `)) AND ` + profileActiveWhere + ` ORDER BY p.profile_id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -159,13 +144,13 @@ func (r *ProfileRepository) ListByProfileIds(ctx context.Context, profileIds []i
 // provided filters. The filter shape mirrors classroom/user list — every
 // predicate is optional and contributes to the WHERE clause only when set.
 // Search runs against name with LIKE %?%. Pagination is computed against
-// COUNT(DISTINCT p.id) so the totals stay correct when future filters
+// COUNT(DISTINCT p.profile_id) so the totals stay correct when future filters
 // introduce joins. TakeAll bypasses LIMIT/OFFSET for admin exports.
 func (r *ProfileRepository) ListProfiles(ctx context.Context, params *profile.ListProfilesParams) ([]*profile.Profile, *pagination.Pagination, error) {
 	filterWhere, filterArgs := buildProfileListFilter(params)
 
 	countArgs := slices.Concat(filterArgs, profileActiveArgs())
-	countQuery := `SELECT COUNT(DISTINCT p.id) FROM ` + profileTable + ` p` +
+	countQuery := `SELECT COUNT(DISTINCT p.profile_id) FROM ` + profileTable + ` p` +
 		whereActive(filterWhere, profileActiveWhere)
 
 	var total int64
@@ -176,7 +161,7 @@ func (r *ProfileRepository) ListProfiles(ctx context.Context, params *profile.Li
 	listArgs := slices.Concat(filterArgs, profileActiveArgs())
 	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p` +
 		whereActive(filterWhere, profileActiveWhere) +
-		` ORDER BY p.id DESC`
+		` ORDER BY p.profile_id DESC`
 
 	var pg *pagination.Pagination
 	if params == nil || !params.TakeAll {
@@ -307,7 +292,7 @@ func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*pr
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		p.ProfileId(), p.ProfileCode(), p.UserId(), p.Name(), p.Phone(), p.Email(), p.Role(), p.IdentityCode(), p.AvatarKey(), p.Dob(),
 		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(),
 		p.IdType(), p.TeacherId(), p.StudentId(), p.RptFlg(), p.Kwords(), p.Note(), p.ProfileStatus(), mtime.Now().Time, mtime.Now().Time)
@@ -315,11 +300,7 @@ func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*pr
 		return nil, fmt.Errorf("profile repo create: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("profile repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindByProfileId(ctx, p.ProfileId())
 }
 
 func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) error {
@@ -504,7 +485,6 @@ func (r *ProfileRepository) ForceDeleteByUserId(ctx context.Context, userId int6
 
 func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p := profile.NewProfile()
-	p.SetId(m.Id)
 	p.SetProfileId(m.ProfileId)
 	p.SetProfileCode(m.ProfileCode)
 	p.SetUserId(m.UserId)

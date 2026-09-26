@@ -18,7 +18,7 @@ import (
 const (
 	aiExamTable = "ma_ai_exams"
 
-	aiExamColumns = `a.id, a.ai_exam_id, a.req_exam_type, a.req_grade, a.req_level, a.req_num_ques,
+	aiExamColumns = `a.ai_exam_id, a.req_exam_type, a.req_grade, a.req_level, a.req_num_ques,
 		a.req_semester, a.req_program, a.req_extras,
 		a.ai_title, a.ai_short_text, a.ai_questions_json,
 		a.rpt_flg, a.kwords, a.note, a.ai_exam_status, a.status,
@@ -41,7 +41,7 @@ func NewAiExamRepository(db database.Executor) exam.IAiExamRepository {
 
 func scanAiExam(s database.RowScanner) (*models.AiExamModel, error) {
 	var m models.AiExamModel
-	if err := s.Scan(&m.Id, &m.AiExamId, &m.ReqExamType, &m.ReqGrade, &m.ReqLevel, &m.ReqNumQues,
+	if err := s.Scan(&m.AiExamId, &m.ReqExamType, &m.ReqGrade, &m.ReqLevel, &m.ReqNumQues,
 		&m.ReqSemester, &m.ReqProgram, &m.ReqExtras,
 		&m.AiTitle, &m.AiShortText, &m.AiQuestionsJson,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.AiExamStatus, &m.Status,
@@ -163,21 +163,6 @@ func (r *AiExamRepository) ListByAiExamIds(ctx context.Context, aiExamIds []int6
 	return out, nil
 }
 
-func (r *AiExamRepository) findBareById(ctx context.Context, id int64) (*exam.AiExam, error) {
-	args := slices.Concat([]any{id}, aiExamActiveArgs())
-	query := `SELECT ` + aiExamColumns + ` FROM ` + aiExamTable + ` a WHERE (a.id = ?) AND ` +
-		aiExamActiveWhere
-
-	m, err := scanAiExam(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("ai exam repo find bare by id: %w", err)
-	}
-	return ModelToDomainAiExam(m), nil
-}
-
 func (r *AiExamRepository) Create(ctx context.Context, e *exam.AiExam) (*exam.AiExam, error) {
 	query := `
 		INSERT INTO ` + aiExamTable + `
@@ -188,7 +173,7 @@ func (r *AiExamRepository) Create(ctx context.Context, e *exam.AiExam) (*exam.Ai
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	now := mtime.Now().Time
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		e.AiExamId(), e.ReqExamType(), e.ReqGrade(), e.ReqLevel(), e.ReqNumQues(),
 		e.ReqSemester(), e.ReqProgram(), e.ReqExtras(),
 		e.AiTitle(), e.AiShortText(), e.AiQuestionsJson(),
@@ -197,16 +182,11 @@ func (r *AiExamRepository) Create(ctx context.Context, e *exam.AiExam) (*exam.Ai
 		return nil, fmt.Errorf("ai exam repo create: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("ai exam repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindByAiExamId(ctx, e.AiExamId())
 }
 
 func ModelToDomainAiExam(m *models.AiExamModel) *exam.AiExam {
 	e := exam.NewAiExam()
-	e.SetId(m.Id)
 	e.SetAiExamId(m.AiExamId)
 	e.SetReqExamType(m.ReqExamType)
 	e.SetReqGrade(m.ReqGrade)

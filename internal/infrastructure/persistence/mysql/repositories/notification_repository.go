@@ -18,7 +18,7 @@ import (
 const (
 	notificationTable = "ma_notifications"
 
-	notificationColumns = `n.id, n.notification_id, n.uid, n.title, n.short_text,
+	notificationColumns = `n.notification_id, n.uid, n.title, n.short_text,
 		n.category, n.is_read, n.action_type, n.action_data, n.priority, n.rpt_flg, n.kwords, n.note,
 		n.notification_status, n.status,
 		n.create_id, n.create_dt, n.modify_id, n.modify_dt`
@@ -43,7 +43,7 @@ func NewNotificationRepository(db database.Executor) notification.IRepository {
 
 func scanNotification(s database.RowScanner) (*models.NotificationModel, error) {
 	var m models.NotificationModel
-	if err := s.Scan(&m.Id, &m.NotificationId, &m.UserId, &m.Title, &m.ShortText,
+	if err := s.Scan(&m.NotificationId, &m.UserId, &m.Title, &m.ShortText,
 		&m.Category, &m.IsRead, &m.ActionType, &m.ActionData, &m.Priority, &m.RptFlg, &m.Kwords, &m.Note,
 		&m.NotificationStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -63,21 +63,6 @@ func (r *NotificationRepository) findOneBy(ctx context.Context, where string, ar
 			return nil, nil
 		}
 		return nil, fmt.Errorf("notification repo find (%s): %w", where, err)
-	}
-	return ModelToDomainNotification(m), nil
-}
-
-func (r *NotificationRepository) findBareById(ctx context.Context, id int64) (*notification.Notification, error) {
-	args := slices.Concat([]any{id}, notificationActiveArgs())
-	query := `SELECT ` + notificationColumns + ` FROM ` + notificationTable + ` n WHERE (n.id = ?) AND ` +
-		notificationActiveWhere
-
-	m, err := scanNotification(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("notification repo find bare by id: %w", err)
 	}
 	return ModelToDomainNotification(m), nil
 }
@@ -112,7 +97,7 @@ func (r *NotificationRepository) ListByUserId(ctx context.Context, params *notif
 	listArgs := slices.Concat(filterArgs, notificationActiveArgs(), []any{pg.Size, pg.Skip})
 	query := `SELECT ` + notificationColumns + ` FROM ` + notificationTable + ` n` +
 		whereActive(filter, notificationActiveWhere) +
-		` ORDER BY n.id DESC LIMIT ? OFFSET ?`
+		` ORDER BY n.notification_id DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.db.Query(ctx, query, listArgs...)
 	if err != nil {
@@ -154,18 +139,14 @@ func (r *NotificationRepository) Create(ctx context.Context, n *notification.Not
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	now := mtime.Now().Time
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		n.NotificationId(), n.UserId(), n.Title(), n.ShortText(), n.Category(),
 		n.IsRead(), n.ActionType(), n.ActionData(), n.Priority(), n.RptFlg(), n.Kwords(), n.Note(),
 		n.NotificationStatus(), n.CreateId(), now, now)
 	if err != nil {
 		return nil, fmt.Errorf("notification repo create: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("notification repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindByNotificationId(ctx, n.NotificationId())
 }
 
 func (r *NotificationRepository) MarkReadByNotificationId(ctx context.Context, notificationId int64) error {
@@ -213,7 +194,6 @@ func (r *NotificationRepository) SoftDeleteByNotificationId(ctx context.Context,
 
 func ModelToDomainNotification(m *models.NotificationModel) *notification.Notification {
 	n := notification.NewNotification()
-	n.SetId(m.Id)
 	n.SetNotificationId(m.NotificationId)
 	n.SetUserId(m.UserId)
 	n.SetTitle(m.Title)

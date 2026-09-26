@@ -18,7 +18,7 @@ import (
 const (
 	classroomProgramTable = "ma_classroom_programs"
 
-	classroomProgramColumns = `cp.id, cp.classroom_program_id, cp.classroom_id, cp.program_id,
+	classroomProgramColumns = `cp.classroom_program_id, cp.classroom_id, cp.program_id,
 		cp.rpt_flg, cp.kwords, cp.note, cp.status, cp.create_id, cp.create_dt, cp.modify_id, cp.modify_dt`
 
 	// classroomProgramActiveWhere mirrors the convention used by every
@@ -42,7 +42,7 @@ func NewClassroomProgramRepository(db database.Executor) classroom.IClassroomPro
 
 func scanClassroomProgram(s database.RowScanner) (*models.ClassroomProgramModel, error) {
 	var m models.ClassroomProgramModel
-	if err := s.Scan(&m.Id, &m.ClassroomProgramId, &m.ClassroomId, &m.ProgramId,
+	if err := s.Scan(&m.ClassroomProgramId, &m.ClassroomId, &m.ProgramId,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.Status, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func scanClassroomProgram(s database.RowScanner) (*models.ClassroomProgramModel,
 func (r *ClassroomProgramRepository) ListProgramIdsByClassroomId(ctx context.Context, classroomId int64) ([]int64, error) {
 	args := slices.Concat([]any{classroomId}, classroomProgramActiveArgs())
 	query := `SELECT cp.program_id FROM ` + classroomProgramTable + ` cp WHERE (cp.classroom_id = ?) AND ` +
-		classroomProgramActiveWhere + ` ORDER BY cp.id ASC`
+		classroomProgramActiveWhere + ` ORDER BY cp.classroom_program_id ASC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -89,7 +89,7 @@ func (r *ClassroomProgramRepository) ListProgramIdsByClassroomIds(ctx context.Co
 
 	query := `SELECT cp.classroom_id, cp.program_id FROM ` + classroomProgramTable + ` cp WHERE (cp.classroom_id IN (` +
 		strings.Join(placeholders, ",") + `)) AND ` + classroomProgramActiveWhere +
-		` ORDER BY cp.id ASC`
+		` ORDER BY cp.classroom_program_id ASC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -112,17 +112,20 @@ func (r *ClassroomProgramRepository) ListProgramIdsByClassroomIds(ctx context.Co
 	return out, nil
 }
 
-func (r *ClassroomProgramRepository) findBareById(ctx context.Context, id int64) (*classroom.ClassroomProgram, error) {
-	args := slices.Concat([]any{id}, classroomProgramActiveArgs())
-	query := `SELECT ` + classroomProgramColumns + ` FROM ` + classroomProgramTable + ` cp WHERE (cp.id = ?) AND ` +
-		classroomProgramActiveWhere
+// findByClassroomProgramId hydrates a junction row right after INSERT, by the
+// external id the caller already minted. There is no public FindBy* on this
+// narrow junction interface, so it stays private.
+func (r *ClassroomProgramRepository) findByClassroomProgramId(ctx context.Context, classroomProgramId int64) (*classroom.ClassroomProgram, error) {
+	args := slices.Concat([]any{classroomProgramId}, classroomProgramActiveArgs())
+	query := `SELECT ` + classroomProgramColumns + ` FROM ` + classroomProgramTable +
+		` cp WHERE (cp.classroom_program_id = ?) AND ` + classroomProgramActiveWhere
 
 	m, err := scanClassroomProgram(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
-		return nil, fmt.Errorf("classroom_program repo find bare by id: %w", err)
+		return nil, fmt.Errorf("classroom_program repo find by classroom_program_id: %w", err)
 	}
 	return ModelToDomainClassroomProgram(m), nil
 }
@@ -133,17 +136,13 @@ func (r *ClassroomProgramRepository) Create(ctx context.Context, cp *classroom.C
 			(classroom_program_id, classroom_id, program_id, rpt_flg, kwords, note, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		cp.ClassroomProgramId(), cp.ClassroomId(), cp.ProgramId(),
 		cp.RptFlg(), cp.Kwords(), cp.Note(), cp.CreateId(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("classroom_program repo create: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("classroom_program repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.findByClassroomProgramId(ctx, cp.ClassroomProgramId())
 }
 
 func (r *ClassroomProgramRepository) DeleteByPair(ctx context.Context, classroomId, programId int64) error {
@@ -165,7 +164,6 @@ func (r *ClassroomProgramRepository) DeleteByClassroomId(ctx context.Context, cl
 
 func ModelToDomainClassroomProgram(m *models.ClassroomProgramModel) *classroom.ClassroomProgram {
 	cp := classroom.NewClassroomProgram()
-	cp.SetId(m.Id)
 	cp.SetClassroomProgramId(m.ClassroomProgramId)
 	cp.SetClassroomId(m.ClassroomId)
 	cp.SetProgramId(m.ProgramId)

@@ -5,7 +5,6 @@ import (
 )
 
 type User struct {
-	id              int64
 	userId          int64
 	userName        string
 	phone           *string
@@ -27,14 +26,6 @@ type User struct {
 
 func NewUser() *User {
 	return &User{}
-}
-
-func (u *User) Id() int64 {
-	return u.id
-}
-
-func (u *User) SetId(id int64) {
-	u.id = id
 }
 
 func (u *User) UserId() int64 {

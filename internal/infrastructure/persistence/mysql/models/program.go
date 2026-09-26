@@ -5,7 +5,6 @@ import (
 )
 
 type ProgramModel struct {
-	Id            int64
 	ProgramId     int64
 	Label         string
 	Description   string

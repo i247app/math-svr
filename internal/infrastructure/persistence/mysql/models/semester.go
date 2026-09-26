@@ -5,7 +5,6 @@ import (
 )
 
 type SemesterModel struct {
-	Id             int64
 	SemesterId     int64
 	Name           string
 	Description    string

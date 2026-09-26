@@ -5,7 +5,6 @@ import (
 )
 
 type Grade struct {
-	id           int64
 	gradeId      int64
 	label        string
 	description  string
@@ -24,14 +23,6 @@ type Grade struct {
 
 func NewGrade() *Grade {
 	return &Grade{}
-}
-
-func (g *Grade) Id() int64 {
-	return g.id
-}
-
-func (g *Grade) SetId(id int64) {
-	g.id = id
 }
 
 func (g *Grade) GradeId() int64 {

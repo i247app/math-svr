@@ -6,7 +6,6 @@ import (
 )
 
 type GradeResponse struct {
-	ID           int64   `json:"id"`
 	GradeID      int64   `json:"grade_id"`
 	Label        string  `json:"label"`
 	Description  string  `json:"description"`
@@ -75,7 +74,6 @@ func DomainToResponse(g *domain.Grade) *GradeResponse {
 		return nil
 	}
 	return &GradeResponse{
-		ID:           g.Id(),
 		GradeID:      g.GradeId(),
 		Label:        g.Label(),
 		Description:  g.Description(),

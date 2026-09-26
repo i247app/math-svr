@@ -5,7 +5,6 @@ import (
 )
 
 type GradeModel struct {
-	Id           int64
 	GradeId      int64
 	Label        string
 	Description  string

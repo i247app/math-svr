@@ -18,7 +18,7 @@ import (
 const (
 	chatParticipantTable = "ma_chat_participants"
 
-	chatParticipantColumns = `p.id, p.participant_id, p.conversation_id, p.profile_id,
+	chatParticipantColumns = `p.participant_id, p.conversation_id, p.profile_id,
 		p.uid, p.participant_role, p.last_read_seq_no, p.last_read_message_id,
 		p.last_read_dt, p.last_delivered_seq_no, p.unread_count, p.is_muted,
 		p.muted_until_dt, p.is_pinned, p.cleared_before_seq_no, p.joined_dt, p.left_dt,
@@ -42,7 +42,7 @@ func NewChatParticipantRepository(db database.Executor) chat.IParticipantReposit
 
 func scanChatParticipant(s database.RowScanner) (*models.ChatParticipantModel, error) {
 	var m models.ChatParticipantModel
-	if err := s.Scan(&m.Id, &m.ParticipantId, &m.ConversationId, &m.ProfileId,
+	if err := s.Scan(&m.ParticipantId, &m.ConversationId, &m.ProfileId,
 		&m.UserId, &m.ParticipantRole, &m.LastReadSeqNo, &m.LastReadMessageId,
 		&m.LastReadDt, &m.LastDeliveredSeqNo, &m.UnreadCount, &m.IsMuted,
 		&m.MutedUntilDt, &m.IsPinned, &m.ClearedBeforeSeqNo, &m.JoinedDt, &m.LeftDt,
@@ -55,7 +55,6 @@ func scanChatParticipant(s database.RowScanner) (*models.ChatParticipantModel, e
 
 func ModelToDomainChatParticipant(m *models.ChatParticipantModel) *chat.Participant {
 	p := chat.NewParticipant()
-	p.SetId(m.Id)
 	p.SetParticipantId(m.ParticipantId)
 	p.SetConversationId(m.ConversationId)
 	p.SetProfileId(m.ProfileId)
@@ -126,7 +125,7 @@ func (r *ChatParticipantRepository) ListByConversationId(ctx context.Context, pa
 	args = append(args, chatParticipantActiveArgs()...)
 
 	query := `SELECT ` + chatParticipantColumns + ` FROM ` + chatParticipantTable + ` p WHERE (` +
-		where + `) AND ` + chatParticipantActiveWhere + ` ORDER BY p.id ASC`
+		where + `) AND ` + chatParticipantActiveWhere + ` ORDER BY p.participant_id ASC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -197,7 +196,7 @@ func (r *ChatParticipantRepository) Create(ctx context.Context, p *chat.Particip
 		joinedDt = mtime.Now()
 	}
 
-	res, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		p.ParticipantId(), p.ConversationId(), p.ProfileId(), p.UserId(), p.ParticipantRole(),
 		p.IsMuted(), p.IsPinned(), joinedDt.Time, p.InvitedByProfileId(), p.RptFlg(), p.Kwords(), p.Note(),
 		p.ParticipantStatus(), p.Status(), p.CreateId(), now,
@@ -206,11 +205,6 @@ func (r *ChatParticipantRepository) Create(ctx context.Context, p *chat.Particip
 		return nil, fmt.Errorf("chat participant repo create: %w", err)
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("chat participant repo create last id: %w", err)
-	}
-	p.SetId(id)
 	return r.findOneBy(ctx, "p.participant_id = ?", p.ParticipantId())
 }
 

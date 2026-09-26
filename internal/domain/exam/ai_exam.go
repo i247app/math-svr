@@ -19,7 +19,6 @@ import (
 // server has normalised question_grade. Parsing happens on read, in the
 // application layer.
 type AiExam struct {
-	id       int64
 	aiExamId int64
 
 	reqExamType string
@@ -49,8 +48,6 @@ type AiExam struct {
 
 func NewAiExam() *AiExam { return &AiExam{} }
 
-func (a *AiExam) Id() int64                    { return a.id }
-func (a *AiExam) SetId(id int64)               { a.id = id }
 func (a *AiExam) AiExamId() int64              { return a.aiExamId }
 func (a *AiExam) SetAiExamId(id int64)         { a.aiExamId = id }
 func (a *AiExam) ReqExamType() string          { return a.reqExamType }

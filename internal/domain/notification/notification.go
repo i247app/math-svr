@@ -13,7 +13,6 @@ import (
 // opaque JSON blob (mirrors how exercise questions/answers are stored — parsed at
 // the application layer, never relationally modelled here).
 type Notification struct {
-	id                 int64
 	notificationId     int64 // external id (minted via Seq.Next)
 	userId             int64 // recipient uid
 	title              string
@@ -36,8 +35,6 @@ type Notification struct {
 
 func NewNotification() *Notification { return &Notification{} }
 
-func (n *Notification) Id() int64                       { return n.id }
-func (n *Notification) SetId(id int64)                  { n.id = id }
 func (n *Notification) NotificationId() int64           { return n.notificationId }
 func (n *Notification) SetNotificationId(id int64)      { n.notificationId = id }
 func (n *Notification) UserId() int64                   { return n.userId }

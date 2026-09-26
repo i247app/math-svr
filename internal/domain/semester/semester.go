@@ -5,7 +5,6 @@ import (
 )
 
 type Semester struct {
-	id             int64
 	semesterId     int64
 	name           string
 	description    string
@@ -24,14 +23,6 @@ type Semester struct {
 
 func NewSemester() *Semester {
 	return &Semester{}
-}
-
-func (s *Semester) Id() int64 {
-	return s.id
-}
-
-func (s *Semester) SetId(id int64) {
-	s.id = id
 }
 
 func (s *Semester) SemesterId() int64 {

@@ -15,7 +15,6 @@ import (
 // columns are present for shape consistency with the rest of the schema
 // but the repository only emits ACTIVE rows.
 type ClassroomProgram struct {
-	id                 int64
 	classroomProgramId int64
 	classroomId        int64
 	programId          int64
@@ -33,8 +32,6 @@ func NewClassroomProgram() *ClassroomProgram {
 	return &ClassroomProgram{}
 }
 
-func (cp *ClassroomProgram) Id() int64                     { return cp.id }
-func (cp *ClassroomProgram) SetId(v int64)                 { cp.id = v }
 func (cp *ClassroomProgram) ClassroomProgramId() int64     { return cp.classroomProgramId }
 func (cp *ClassroomProgram) SetClassroomProgramId(v int64) { cp.classroomProgramId = v }
 func (cp *ClassroomProgram) ClassroomId() int64            { return cp.classroomId }

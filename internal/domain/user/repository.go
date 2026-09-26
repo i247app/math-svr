@@ -18,7 +18,6 @@ type IRepository interface {
 	Create(ctx context.Context, user *User) (*User, error)
 	Update(ctx context.Context, user *User) error
 	UpdateAvatarKey(ctx context.Context, userId int64, avatarKey string) error
-	DeleteById(ctx context.Context, id int64) error
 	DeleteByUserId(ctx context.Context, userId int64) error
 	MarkStatusByUserId(ctx context.Context, userId int64, status enum.UserStatusType) error
 	SoftDeleteByUserId(ctx context.Context, userId int64) error

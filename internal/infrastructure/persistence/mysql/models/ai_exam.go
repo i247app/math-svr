@@ -5,7 +5,6 @@ import (
 )
 
 type AiExamModel struct {
-	Id              int64
 	AiExamId        int64
 	ReqExamType     string
 	ReqGrade        int

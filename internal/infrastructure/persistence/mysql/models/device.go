@@ -5,7 +5,6 @@ import (
 )
 
 type DeviceModel struct {
-	Id              int64
 	DeviceId        int64
 	UserId          *int64
 	DeviceUUID      string

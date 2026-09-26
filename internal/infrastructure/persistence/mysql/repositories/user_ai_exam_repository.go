@@ -20,7 +20,7 @@ import (
 const (
 	userAiExamTable = "ma_user_ai_exams"
 
-	userAiExamColumns = `u.id, u.user_ai_exam_id, u.uid, u.profile_id, u.ai_exam_id, u.user_exam_id, u.shuffle_map,
+	userAiExamColumns = `u.user_ai_exam_id, u.uid, u.profile_id, u.ai_exam_id, u.user_exam_id, u.shuffle_map,
 		u.req_exam_type, u.req_grade, u.req_level,
 		u.res_total_questions, u.res_correct_number, u.res_skipped_number, u.res_score_percentage,
 		u.started_dt, u.submitted_dt,
@@ -44,7 +44,7 @@ func NewUserAiExamRepository(db database.Executor) exam.IUserAiExamRepository {
 
 func scanUserAiExam(s database.RowScanner) (*models.UserAiExamModel, error) {
 	var m models.UserAiExamModel
-	if err := s.Scan(&m.Id, &m.UserAiExamId, &m.UserId, &m.ProfileId, &m.AiExamId, &m.UserExamId, &m.ShuffleMap,
+	if err := s.Scan(&m.UserAiExamId, &m.UserId, &m.ProfileId, &m.AiExamId, &m.UserExamId, &m.ShuffleMap,
 		&m.ReqExamType, &m.ReqGrade, &m.ReqLevel,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
 		&m.StartedDt, &m.SubmittedDt,
@@ -74,21 +74,6 @@ func (r *UserAiExamRepository) FindByUserAiExamId(ctx context.Context, userAiExa
 	return r.findOneBy(ctx, "u.user_ai_exam_id = ?", userAiExamId)
 }
 
-func (r *UserAiExamRepository) findBareById(ctx context.Context, id int64) (*exam.UserAiExam, error) {
-	args := slices.Concat([]any{id}, userAiExamActiveArgs())
-	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE (u.id = ?) AND ` +
-		userAiExamActiveWhere
-
-	m, err := scanUserAiExam(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("user ai exam repo find bare by id: %w", err)
-	}
-	return ModelToDomainUserAiExam(m), nil
-}
-
 // ListAttempts returns one child's attempt history, newest first. Rows in
 // every state are returned, including IN_PROGRESS ones: an unfinished exam
 // is exactly what the "you left this open" surface needs, and the caller
@@ -115,7 +100,7 @@ func (r *UserAiExamRepository) ListAttempts(ctx context.Context, filter exam.Lis
 
 	args := slices.Concat(filterArgs, userAiExamActiveArgs(), []any{limit, offset})
 	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u` +
-		whereActive(filterWhere, userAiExamActiveWhere) + ` ORDER BY u.id DESC LIMIT ? OFFSET ?`
+		whereActive(filterWhere, userAiExamActiveWhere) + ` ORDER BY u.user_ai_exam_id DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -196,7 +181,7 @@ func (r *UserAiExamRepository) ListInProgressByProfile(ctx context.Context, prof
 	args := slices.Concat([]any{profileId, string(enum.UserAiExamStatusInProgress)}, userAiExamActiveArgs())
 	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
 		`(u.profile_id = ? AND u.user_ai_exam_status = ?) AND ` + userAiExamActiveWhere +
-		` ORDER BY u.started_dt ASC, u.id ASC`
+		` ORDER BY u.started_dt ASC, u.user_ai_exam_id ASC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -225,7 +210,7 @@ func (r *UserAiExamRepository) FindLatestSubmittedByUserExamId(ctx context.Conte
 	args := slices.Concat([]any{userExamId, string(enum.UserAiExamStatusSubmitted)}, userAiExamActiveArgs())
 	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
 		`(u.user_exam_id = ? AND u.user_ai_exam_status = ?) AND ` + userAiExamActiveWhere +
-		` ORDER BY u.submitted_dt DESC, u.id DESC LIMIT 1`
+		` ORDER BY u.submitted_dt DESC, u.user_ai_exam_id DESC LIMIT 1`
 
 	m, err := scanUserAiExam(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
@@ -248,7 +233,7 @@ func (r *UserAiExamRepository) ListRecentByProfileGrade(ctx context.Context, pro
 	args := slices.Concat([]any{profileId, grade}, userAiExamActiveArgs(), []any{limit})
 	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
 		`(u.profile_id = ? AND u.req_grade = ?) AND ` + userAiExamActiveWhere +
-		` ORDER BY u.started_dt DESC, u.id DESC LIMIT ?`
+		` ORDER BY u.started_dt DESC, u.user_ai_exam_id DESC LIMIT ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -320,7 +305,7 @@ func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (
 	now := mtime.Now().Time
 	startedDt := mtime.MathTimePtrToTime(a.StartedDt().Ptr())
 
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		a.UserAiExamId(), a.UserId(), a.ProfileId(), a.AiExamId(), a.UserExamId(), a.ShuffleMap(),
 		a.ReqExamType(), a.ReqGrade(), a.ReqLevel(),
 		startedDt, a.RptFlg(), a.Kwords(), a.Note(), a.UserAiExamStatus(), a.CreateId(), now, now)
@@ -328,11 +313,7 @@ func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (
 		return nil, fmt.Errorf("user ai exam repo create: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("user ai exam repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindByUserAiExamId(ctx, a.UserAiExamId())
 }
 
 // MarkSubmitted performs the attempt's single state transition and writes
@@ -464,7 +445,6 @@ func (r *UserAiExamRepository) ListProgressPoints(ctx context.Context, params ex
 
 func ModelToDomainUserAiExam(m *models.UserAiExamModel) *exam.UserAiExam {
 	a := exam.NewUserAiExam()
-	a.SetId(m.Id)
 	a.SetUserAiExamId(m.UserAiExamId)
 	a.SetUserId(m.UserId)
 	a.SetProfileId(m.ProfileId)

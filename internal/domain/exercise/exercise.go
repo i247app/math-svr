@@ -20,7 +20,6 @@ import (
 // independently of `status`, mirroring the dual-status convention on
 // ma_classrooms.
 type Exercise struct {
-	id                  int64
 	classroomExerciseId int64
 	classroomId         int64
 	creatorProfileId    int64
@@ -50,8 +49,6 @@ type Exercise struct {
 
 func NewExercise() *Exercise { return &Exercise{} }
 
-func (e *Exercise) Id() int64                       { return e.id }
-func (e *Exercise) SetId(id int64)                  { e.id = id }
 func (e *Exercise) ClassroomExerciseId() int64      { return e.classroomExerciseId }
 func (e *Exercise) SetClassroomExerciseId(id int64) { e.classroomExerciseId = id }
 func (e *Exercise) ClassroomId() int64              { return e.classroomId }

@@ -10,7 +10,6 @@ import (
 // classroom_code path is opt-in: nil/empty + a null expiry means
 // joining is closed (only targeted invitations work).
 type Classroom struct {
-	id                     int64
 	classroomId            int64
 	ownerProfileId         int64
 	name                   string
@@ -46,8 +45,6 @@ func NewClassroom() *Classroom {
 	return &Classroom{}
 }
 
-func (c *Classroom) Id() int64                                  { return c.id }
-func (c *Classroom) SetId(id int64)                             { c.id = id }
 func (c *Classroom) ClassroomId() int64                         { return c.classroomId }
 func (c *Classroom) SetClassroomId(id int64)                    { c.classroomId = id }
 func (c *Classroom) OwnerProfileId() int64                      { return c.ownerProfileId }

@@ -19,7 +19,7 @@ import (
 const (
 	chatConversationTable = "ma_chat_conversations"
 
-	chatConversationColumns = `c.id, c.conversation_id, c.conversation_type, c.classroom_id,
+	chatConversationColumns = `c.conversation_id, c.conversation_type, c.classroom_id,
 		c.dm_key, c.title, c.avatar_key, c.owner_profile_id, c.participant_count,
 		c.last_seq_no, c.message_count, c.last_message_id, c.last_message_seq_no,
 		c.last_message_type, c.last_message_preview, c.last_message_sender_profile_id,
@@ -43,7 +43,7 @@ func NewChatConversationRepository(db database.Executor) chat.IRepository {
 
 func scanChatConversation(s database.RowScanner) (*models.ChatConversationModel, error) {
 	var m models.ChatConversationModel
-	if err := s.Scan(&m.Id, &m.ConversationId, &m.ConversationType, &m.ClassroomId,
+	if err := s.Scan(&m.ConversationId, &m.ConversationType, &m.ClassroomId,
 		&m.DmKey, &m.Title, &m.AvatarKey, &m.OwnerProfileId, &m.ParticipantCount,
 		&m.LastSeqNo, &m.MessageCount, &m.LastMessageId, &m.LastMessageSeqNo,
 		&m.LastMessageType, &m.LastMessagePreview, &m.LastMessageSenderProfileId,
@@ -56,7 +56,6 @@ func scanChatConversation(s database.RowScanner) (*models.ChatConversationModel,
 
 func ModelToDomainChatConversation(m *models.ChatConversationModel) *chat.Conversation {
 	c := chat.NewConversation()
-	c.SetId(m.Id)
 	c.SetConversationId(m.ConversationId)
 	c.SetConversationType(m.ConversationType)
 	c.SetClassroomId(m.ClassroomId)
@@ -188,7 +187,7 @@ func (r *ChatConversationRepository) ListByProfileId(ctx context.Context, params
 	// conversation does not sink to the bottom of the inbox.
 	query := `SELECT ` + chatConversationColumns + ` FROM ` + from +
 		whereActive(where, chatConversationActiveWhere) +
-		` ORDER BY p.is_pinned DESC, COALESCE(c.last_message_dt, c.create_dt) DESC, c.id DESC`
+		` ORDER BY p.is_pinned DESC, COALESCE(c.last_message_dt, c.create_dt) DESC, c.conversation_id DESC`
 
 	listArgs := buildArgs()
 	var pg *pagination.Pagination
@@ -225,7 +224,7 @@ func (r *ChatConversationRepository) Create(ctx context.Context, c *chat.Convers
 		   conversation_status, status, create_id, create_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)`
 
-	res, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		c.ConversationId(), c.ConversationType(), c.ClassroomId(), c.DmKey(),
 		c.Title(), c.AvatarKey(), c.OwnerProfileId(), c.ParticipantCount(),
 		c.RptFlg(), c.Kwords(), c.Note(), c.ConversationStatus(), c.Status(), c.CreateId(), mtime.Now().Time,
@@ -240,11 +239,6 @@ func (r *ChatConversationRepository) Create(ctx context.Context, c *chat.Convers
 		return nil, fmt.Errorf("chat conversation repo create: %w", err)
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("chat conversation repo create last id: %w", err)
-	}
-	c.SetId(id)
 	return r.FindByConversationId(ctx, c.ConversationId())
 }
 

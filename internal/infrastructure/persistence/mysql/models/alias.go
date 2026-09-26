@@ -5,7 +5,6 @@ import (
 )
 
 type AliasModel struct {
-	Id          int64
 	AliasId     int64
 	UserId      int64
 	Aka         string

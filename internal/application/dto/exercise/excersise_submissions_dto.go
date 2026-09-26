@@ -56,7 +56,6 @@ type SubmissionProfileSummary struct {
 // referenced row is missing (deleted exercise / profile under the
 // submission) so the rest of the response still renders.
 type SubmissionResponse struct {
-	ID                            int64                      `json:"id"`
 	ClassroomExerciseSubmissionID int64                      `json:"classroom_exercise_submission_id"`
 	ClassroomExerciseID           int64                      `json:"classroom_exercise_id"`
 	ClassroomExercise             *SubmissionExerciseSummary `json:"classroom_exercise,omitempty"`
@@ -225,7 +224,6 @@ func DomainSubmissionToResponse(s *domain.Submission) *SubmissionResponse {
 		return nil
 	}
 	res := &SubmissionResponse{
-		ID:                            s.Id(),
 		ClassroomExerciseSubmissionID: s.ClassroomExerciseSubmissionId(),
 		ClassroomExerciseID:           s.ClassroomExerciseId(),
 		ClassroomID:                   s.ClassroomId(),

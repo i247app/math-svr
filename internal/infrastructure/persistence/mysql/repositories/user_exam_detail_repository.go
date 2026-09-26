@@ -16,7 +16,7 @@ import (
 const (
 	userExamDetailTable = "ma_user_exam_details"
 
-	userExamDetailColumns = `d.id, d.user_exam_detail_id, d.user_ai_exam_id, d.user_exam_id, d.ai_exam_id, d.req_exam_type,
+	userExamDetailColumns = `d.user_exam_detail_id, d.user_ai_exam_id, d.user_exam_id, d.ai_exam_id, d.req_exam_type,
 		d.question_number, d.question_type, d.question_name, d.question_topic, d.question_grade, d.question_level,
 		d.right_answer_label, d.right_answer_content,
 		d.selected_label, d.selected_content, d.is_correct,
@@ -51,7 +51,7 @@ func NewUserExamDetailRepository(db database.Executor) exam.IUserExamDetailRepos
 
 func scanUserExamDetail(s database.RowScanner) (*models.UserExamDetailModel, error) {
 	var m models.UserExamDetailModel
-	if err := s.Scan(&m.Id, &m.UserExamDetailId, &m.UserAiExamId, &m.UserExamId, &m.AiExamId, &m.ReqExamType,
+	if err := s.Scan(&m.UserExamDetailId, &m.UserAiExamId, &m.UserExamId, &m.AiExamId, &m.ReqExamType,
 		&m.QuestionNumber, &m.QuestionType, &m.QuestionName, &m.QuestionTopic, &m.QuestionGrade, &m.QuestionLevel,
 		&m.RightAnswerLabel, &m.RightAnswerContent,
 		&m.SelectedLabel, &m.SelectedContent, &m.IsCorrect,
@@ -151,12 +151,11 @@ func (r *UserExamDetailRepository) ListRecentByUserExamId(ctx context.Context, u
 		limit = 50
 	}
 	return r.list(ctx, "d.user_exam_id = ? AND d.req_exam_type = ?", []any{userExamId, examType, limit},
-		"ORDER BY d.id DESC LIMIT ?")
+		"ORDER BY d.user_exam_detail_id DESC LIMIT ?")
 }
 
 func ModelToDomainUserExamDetail(m *models.UserExamDetailModel) *exam.UserExamDetail {
 	d := exam.NewUserExamDetail()
-	d.SetId(m.Id)
 	d.SetUserExamDetailId(m.UserExamDetailId)
 	d.SetUserAiExamId(m.UserAiExamId)
 	d.SetUserExamId(m.UserExamId)

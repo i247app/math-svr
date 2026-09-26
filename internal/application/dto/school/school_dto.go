@@ -10,7 +10,6 @@ import (
 // edge; clients should prefer ImageUrl for display and ImageKey only
 // when they need to re-sign later.
 type SchoolResponse struct {
-	ID           int64   `json:"id"`
 	SchoolID     int64   `json:"school_id"`
 	Name         string  `json:"name"`
 	Description  *string `json:"description,omitempty"`
@@ -88,7 +87,6 @@ func DomainToResponse(s *domain.School) *SchoolResponse {
 		return nil
 	}
 	return &SchoolResponse{
-		ID:           s.Id(),
 		SchoolID:     s.SchoolId(),
 		Name:         s.Name(),
 		Description:  s.Description(),

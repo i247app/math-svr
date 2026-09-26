@@ -12,7 +12,6 @@ import (
 // identifier (phone or email) is always present and is the lookup key on
 // verify.
 type Otp struct {
-	id            int64
 	otpId         int64
 	otpType       string
 	userId        *int64
@@ -37,8 +36,6 @@ type Otp struct {
 
 func NewOtp() *Otp { return &Otp{} }
 
-func (o *Otp) Id() int64                         { return o.id }
-func (o *Otp) SetId(id int64)                    { o.id = id }
 func (o *Otp) OtpId() int64                      { return o.otpId }
 func (o *Otp) SetOtpId(v int64)                  { o.otpId = v }
 func (o *Otp) OtpType() string                   { return o.otpType }

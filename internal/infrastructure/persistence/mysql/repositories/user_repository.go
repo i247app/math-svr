@@ -21,7 +21,7 @@ import (
 const (
 	userTable = "ma_users"
 
-	userColumns = `u.id, u.uid, u.name, u.phone, u.email, u.is_email_verified, u.avatar_key, u.role, u.identity_code, u.user_status, u.status,
+	userColumns = `u.uid, u.name, u.phone, u.email, u.is_email_verified, u.avatar_key, u.role, u.identity_code, u.user_status, u.status,
 	u.rpt_flg, u.kwords, u.note, u.create_id, u.create_dt, u.modify_id, u.modify_dt`
 
 	userFrom = userTable + ` u`
@@ -47,7 +47,7 @@ func NewUserRepository(db database.Executor) user.IRepository {
 
 func scanUser(s database.RowScanner) (*models.UserModel, error) {
 	var m models.UserModel
-	if err := s.Scan(&m.Id, &m.UserId, &m.UserName, &m.Phone, &m.Email, &m.IsEmailVerified, &m.AvatarKey, &m.Role, &m.IdentityCode, &m.UserStatus, &m.Status,
+	if err := s.Scan(&m.UserId, &m.UserName, &m.Phone, &m.Email, &m.IsEmailVerified, &m.AvatarKey, &m.Role, &m.IdentityCode, &m.UserStatus, &m.Status,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (r *UserRepository) findOneBy(ctx context.Context, where string, args ...an
 }
 
 // func (r *UserRepository) FindById(ctx context.Context, id int64) (*user.User, error) {
-// 	return r.findOneBy(ctx, "u.id = ?", id)
+// 	return r.findOneBy(ctx, "u.uid = ?", id)
 // }
 
 func (r *UserRepository) FindByUserId(ctx context.Context, userId int64) (*user.User, error) {
@@ -120,7 +120,7 @@ func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersPa
 	listArgs := slices.Concat(userActiveArgs(), []any{pg.Size, pg.Skip})
 	query := `SELECT ` + userColumns + ` FROM ` + userFrom +
 		` WHERE ` + userActiveWhere +
-		` ORDER BY u.id DESC LIMIT ? OFFSET ?`
+		` ORDER BY u.uid DESC LIMIT ? OFFSET ?`
 	rows, err := r.db.Query(ctx, query, listArgs...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("user repo list: %w", err)
@@ -140,13 +140,6 @@ func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersPa
 	}
 
 	return users, pg, nil
-}
-
-func (r *UserRepository) DeleteById(ctx context.Context, id int64) error {
-	if _, err := r.db.Exec(ctx, `DELETE FROM `+userTable+` WHERE id = ?`, id); err != nil {
-		return fmt.Errorf("user repo delete by id: %w", err)
-	}
-	return nil
 }
 
 func (r *UserRepository) DeleteByUserId(ctx context.Context, userId int64) error {
@@ -184,10 +177,10 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 			is_email_verified = ?,
 			rpt_flg = COALESCE(?, rpt_flg),
 			kwords = COALESCE(?, kwords)
-		WHERE id = ?
+		WHERE uid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.IsEmailVerified(), u.RptFlg(), u.Kwords(), u.Id()); err != nil {
+	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.IsEmailVerified(), u.RptFlg(), u.Kwords(), u.UserId()); err != nil {
 		return fmt.Errorf("user repo update: %w", err)
 	}
 	return nil
@@ -236,7 +229,6 @@ func (r *UserRepository) SoftDeleteByUserId(ctx context.Context, userId int64) e
 
 func DomainToModel(u *user.User) *models.UserModel {
 	return &models.UserModel{
-		Id:         u.Id(),
 		UserId:     u.UserId(),
 		UserName:   u.UserName(),
 		Email:      u.Email(),
@@ -257,7 +249,6 @@ func DomainToModel(u *user.User) *models.UserModel {
 
 func ModelToDomain(m *models.UserModel) *user.User {
 	u := user.NewUser()
-	u.SetId(m.Id)
 	u.SetUserId(m.UserId)
 	u.SetUserName(m.UserName)
 	u.SetEmail(m.Email)

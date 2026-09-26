@@ -16,7 +16,6 @@ import (
 // client renders them without a follow-up call. The raw *_id fields live on
 // each embedded object — keeping them on the parent too would be redundant.
 type ProfileResponse struct {
-	ID          int64   `json:"id"`
 	ProfileID   int64   `json:"profile_id"`
 	ProfileCode string  `json:"profile_code"`
 	UserID      int64   `json:"uid"`
@@ -207,7 +206,6 @@ func DomainToResponse(p *domain.Profile) *ProfileResponse {
 	}
 
 	return &ProfileResponse{
-		ID:            p.Id(),
 		ProfileID:     p.ProfileId(),
 		ProfileCode:   p.ProfileCode(),
 		UserID:        p.UserId(),

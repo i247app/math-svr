@@ -31,7 +31,6 @@ type ClassroomOwnerSummary struct {
 // classroom — see enum.ClassroomRelationshipType. MyRole is the caller's
 // member_role when Relationship is MEMBER; nil for every other state.
 type ClassroomResponse struct {
-	ID                     int64                  `json:"id"`
 	ClassroomID            int64                  `json:"classroom_id"`
 	OwnerProfileID         int64                  `json:"owner_profile_id"`
 	Owner                  *ClassroomOwnerSummary `json:"owner,omitempty"`
@@ -234,7 +233,6 @@ func DomainToResponse(c *domain.Classroom) *ClassroomResponse {
 		programIDs = []int64{}
 	}
 	resp := &ClassroomResponse{
-		ID:              c.Id(),
 		ClassroomID:     c.ClassroomId(),
 		OwnerProfileID:  c.OwnerProfileId(),
 		Name:            c.Name(),

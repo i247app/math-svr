@@ -19,7 +19,6 @@ import (
 // column shared by every aggregate. The repo's active-where filter
 // excludes DELETED rows.
 type Submission struct {
-	id                            int64
 	classroomExerciseSubmissionId int64
 	classroomExerciseId           int64
 	classroomId                   int64
@@ -44,8 +43,6 @@ type Submission struct {
 
 func NewSubmission() *Submission { return &Submission{} }
 
-func (s *Submission) Id() int64                                 { return s.id }
-func (s *Submission) SetId(id int64)                            { s.id = id }
 func (s *Submission) ClassroomExerciseSubmissionId() int64      { return s.classroomExerciseSubmissionId }
 func (s *Submission) SetClassroomExerciseSubmissionId(id int64) { s.classroomExerciseSubmissionId = id }
 func (s *Submission) ClassroomExerciseId() int64                { return s.classroomExerciseId }

@@ -3,7 +3,6 @@ package models
 import "time"
 
 type PresenceModel struct {
-	Id              int64
 	UserId          int64
 	PresenceState   string
 	ConnectionCount int64

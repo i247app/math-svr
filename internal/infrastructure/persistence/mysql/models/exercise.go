@@ -5,7 +5,6 @@ import (
 )
 
 type ExerciseModel struct {
-	Id                  int64
 	ClassroomExerciseId int64
 	ClassroomId         int64
 	CreatorProfileId    *int64

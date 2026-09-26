@@ -16,7 +16,6 @@ import "math-ai.com/math-ai/internal/domain/shared/mtime"
 // 57" from a single column, where receipts would cost one row per member per
 // message.
 type Participant struct {
-	id                 int64
 	participantId      int64
 	conversationId     int64
 	profileId          int64
@@ -47,8 +46,6 @@ type Participant struct {
 
 func NewParticipant() *Participant { return &Participant{} }
 
-func (p *Participant) Id() int64                        { return p.id }
-func (p *Participant) SetId(id int64)                   { p.id = id }
 func (p *Participant) ParticipantId() int64             { return p.participantId }
 func (p *Participant) SetParticipantId(id int64)        { p.participantId = id }
 func (p *Participant) ConversationId() int64            { return p.conversationId }

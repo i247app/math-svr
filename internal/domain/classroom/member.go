@@ -16,7 +16,6 @@ import (
 // ma_classroom_invitations and is no longer written — it remains on
 // the entity only so historical rows hydrate without scan errors.
 type Member struct {
-	id                 int64
 	memberId           int64
 	classroomId        int64
 	profileId          int64
@@ -44,8 +43,6 @@ func NewMember() *Member {
 	return &Member{}
 }
 
-func (m *Member) Id() int64                      { return m.id }
-func (m *Member) SetId(id int64)                 { m.id = id }
 func (m *Member) MemberId() int64                { return m.memberId }
 func (m *Member) SetMemberId(id int64)           { m.memberId = id }
 func (m *Member) ClassroomId() int64             { return m.classroomId }

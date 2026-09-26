@@ -29,7 +29,6 @@ import (
 // sitting knows its journey, so "the latest sitting of journey X" is one
 // indexed read rather than a walk through the answer log.
 type UserAiExam struct {
-	id           int64
 	userAiExamId int64
 	userId       int64
 	profileId    int64
@@ -64,8 +63,6 @@ type UserAiExam struct {
 
 func NewUserAiExam() *UserAiExam { return &UserAiExam{} }
 
-func (u *UserAiExam) Id() int64                       { return u.id }
-func (u *UserAiExam) SetId(id int64)                  { u.id = id }
 func (u *UserAiExam) UserAiExamId() int64             { return u.userAiExamId }
 func (u *UserAiExam) SetUserAiExamId(id int64)        { u.userAiExamId = id }
 func (u *UserAiExam) UserId() int64                   { return u.userId }

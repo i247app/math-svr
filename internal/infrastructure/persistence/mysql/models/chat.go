@@ -3,7 +3,6 @@ package models
 import "time"
 
 type ChatConversationModel struct {
-	Id                         int64
 	ConversationId             int64
 	ConversationType           string
 	ClassroomId                *int64
@@ -32,7 +31,6 @@ type ChatConversationModel struct {
 }
 
 type ChatParticipantModel struct {
-	Id                 int64
 	ParticipantId      int64
 	ConversationId     int64
 	ProfileId          int64
@@ -62,7 +60,6 @@ type ChatParticipantModel struct {
 }
 
 type ChatMessageModel struct {
-	Id               int64
 	MessageId        int64
 	ConversationId   int64
 	SeqNo            int64

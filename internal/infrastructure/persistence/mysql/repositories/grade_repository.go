@@ -19,7 +19,7 @@ import (
 const (
 	gradeTable = "ma_grades"
 
-	gradeColumns = `g.id, g.grade_id, g.label, g.description,
+	gradeColumns = `g.grade_id, g.label, g.description,
 		g.image_key, g.display_order, g.rpt_flg, g.kwords, g.note,
 		g.grade_status, g.status,
 		g.create_id, g.create_dt, g.modify_id, g.modify_dt`
@@ -41,7 +41,7 @@ func NewGradeRepository(db database.Executor) grade.IRepository {
 
 func scanGrade(s database.RowScanner) (*models.GradeModel, error) {
 	var m models.GradeModel
-	if err := s.Scan(&m.Id, &m.GradeId, &m.Label, &m.Description, &m.ImageKey,
+	if err := s.Scan(&m.GradeId, &m.Label, &m.Description, &m.ImageKey,
 		&m.DisplayOrder, &m.RptFlg, &m.Kwords, &m.Note, &m.GradeStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func (r *GradeRepository) ListGrades(ctx context.Context, params *grade.ListGrad
 	listArgs := slices.Concat(filterArgs, gradeActiveArgs())
 	query := `SELECT ` + gradeColumns + ` FROM ` + gradeTable + ` g` +
 		whereActive(filterWhere, gradeActiveWhere) +
-		` ORDER BY g.display_order ASC, g.id ASC`
+		` ORDER BY g.display_order ASC, g.grade_id ASC`
 
 	var pg *pagination.Pagination
 	if !params.TakeAll {
@@ -178,22 +178,13 @@ func (r *GradeRepository) Create(ctx context.Context, g *grade.Grade) (*grade.Gr
 			(grade_id, label, description, image_key, display_order, rpt_flg, kwords, note, grade_status, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		g.GradeId(), g.Label(), g.Description(), g.ImageKey(),
 		g.DisplayOrder(), g.RptFlg(), g.Kwords(), g.Note(), g.GradeStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("grade repo create: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("grade repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
-}
-
-// findBareById hydrates a grade right after INSERT using its surrogate id.
-func (r *GradeRepository) findBareById(ctx context.Context, id int64) (*grade.Grade, error) {
-	return r.findOneBy(ctx, "g.id = ?", id)
+	return r.FindByGradeId(ctx, g.GradeId())
 }
 
 // Update applies a partial update using COALESCE(?, col) for every
@@ -261,7 +252,6 @@ func (r *GradeRepository) ForceDeleteByGradeId(ctx context.Context, gradeId int6
 
 func ModelToDomainGrade(m *models.GradeModel) *grade.Grade {
 	g := grade.NewGrade()
-	g.SetId(m.Id)
 	g.SetGradeId(m.GradeId)
 	g.SetLabel(m.Label)
 	g.SetDescription(m.Description)

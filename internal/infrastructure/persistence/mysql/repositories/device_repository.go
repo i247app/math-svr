@@ -18,7 +18,7 @@ import (
 const (
 	deviceTable = "ma_devices"
 
-	deviceColumns = `d.id, d.device_id, d.uid, d.device_uuid, d.device_name, d.platform,
+	deviceColumns = `d.device_id, d.uid, d.device_uuid, d.device_name, d.platform,
 		d.device_push_token, d.is_verified, d.trust_dt, d.rpt_flg, d.kwords, d.note, d.device_status, d.status,
 		d.create_id, d.create_dt, d.modify_id, d.modify_dt`
 
@@ -39,7 +39,7 @@ func NewDeviceRepository(db database.Executor) device.IRepository {
 
 func scanDevice(s database.RowScanner) (*models.DeviceModel, error) {
 	var m models.DeviceModel
-	if err := s.Scan(&m.Id, &m.DeviceId, &m.UserId, &m.DeviceUUID, &m.DeviceName, &m.Platform,
+	if err := s.Scan(&m.DeviceId, &m.UserId, &m.DeviceUUID, &m.DeviceName, &m.Platform,
 		&m.DevicePushToken, &m.IsVerified, &m.TrustDt, &m.RptFlg, &m.Kwords, &m.Note, &m.DeviceStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -62,21 +62,6 @@ func (r *DeviceRepository) findOneBy(ctx context.Context, where string, args ...
 	return ModelToDomainDevice(m), nil
 }
 
-func (r *DeviceRepository) findBareById(ctx context.Context, id int64) (*device.Device, error) {
-	args := slices.Concat([]any{id}, deviceActiveArgs())
-	query := `SELECT ` + deviceColumns + ` FROM ` + deviceTable + ` d WHERE (d.id = ?) AND ` +
-		deviceActiveWhere
-
-	m, err := scanDevice(r.db.QueryRow(ctx, query, args...))
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("device repo find bare by id: %w", err)
-	}
-	return ModelToDomainDevice(m), nil
-}
-
 func (r *DeviceRepository) FindByDeviceId(ctx context.Context, deviceId int64) (*device.Device, error) {
 	return r.findOneBy(ctx, "d.device_id = ?", deviceId)
 }
@@ -93,7 +78,7 @@ func (r *DeviceRepository) ListByUserId(ctx context.Context, params *device.List
 
 	args := slices.Concat(filterArgs, deviceActiveArgs())
 	query := `SELECT ` + deviceColumns + ` FROM ` + deviceTable + ` d` +
-		whereActive(filterWhere, deviceActiveWhere) + ` ORDER BY d.id DESC`
+		whereActive(filterWhere, deviceActiveWhere) + ` ORDER BY d.device_id DESC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -145,7 +130,7 @@ func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) (*devic
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		d.DeviceId(), d.UserId(), d.DeviceUUID(), d.DeviceName(), d.Platform(), d.DevicePushToken(),
 		d.IsVerified(), d.TrustDt(), d.RptFlg(), d.Kwords(), d.Note(), d.DeviceStatus(),
 		mtime.Now().Time, mtime.Now().Time)
@@ -153,11 +138,7 @@ func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) (*devic
 		return nil, fmt.Errorf("device repo create: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("device repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
+	return r.FindByDeviceId(ctx, d.DeviceId())
 }
 
 // Update mutates the row in place. COALESCE keeps nil fields untouched so
@@ -264,7 +245,6 @@ func (r *DeviceRepository) ClearPushTokens(ctx context.Context, tokens []string)
 
 func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
 	d := device.NewDevice()
-	d.SetId(m.Id)
 	d.SetDeviceId(m.DeviceId)
 	d.SetUserId(m.UserId)
 	d.SetDeviceUUID(m.DeviceUUID)

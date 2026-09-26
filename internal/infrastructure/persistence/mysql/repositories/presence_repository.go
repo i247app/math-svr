@@ -18,7 +18,7 @@ import (
 const (
 	presenceTable = "ma_user_presence"
 
-	presenceColumns = `p.id, p.uid, p.presence_state, p.connection_count,
+	presenceColumns = `p.uid, p.presence_state, p.connection_count,
 		p.last_online_dt, p.last_seen_dt, p.last_device_uuid, p.last_platform,
 		p.rpt_flg, p.kwords, p.note, p.status, p.create_id, p.create_dt, p.modify_id, p.modify_dt`
 
@@ -42,7 +42,7 @@ func NewPresenceRepository(db database.Executor) presence.IRepository {
 
 func scanPresence(s database.RowScanner) (*models.PresenceModel, error) {
 	var m models.PresenceModel
-	if err := s.Scan(&m.Id, &m.UserId, &m.PresenceState, &m.ConnectionCount,
+	if err := s.Scan(&m.UserId, &m.PresenceState, &m.ConnectionCount,
 		&m.LastOnlineDt, &m.LastSeenDt, &m.LastDeviceUuid, &m.LastPlatform,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.Status, &m.CreateId, &m.CreateDt, &m.ModifyId,
 		&m.ModifyDt); err != nil {
@@ -171,7 +171,6 @@ func (r *PresenceRepository) ResetAll(ctx context.Context) error {
 
 func ModelToDomainPresence(m *models.PresenceModel) *presence.Presence {
 	p := presence.NewPresence()
-	p.SetId(m.Id)
 	p.SetUserId(m.UserId)
 	p.SetPresenceState(m.PresenceState)
 	p.SetConnectionCount(m.ConnectionCount)

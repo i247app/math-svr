@@ -16,7 +16,6 @@ import "math-ai.com/math-ai/internal/domain/shared/mtime"
 // so that a message can carry several of them without changing this shape once
 // the table already holds data.
 type Message struct {
-	id               int64
 	messageId        int64
 	conversationId   int64
 	seqNo            int64
@@ -46,8 +45,6 @@ type Message struct {
 
 func NewMessage() *Message { return &Message{} }
 
-func (m *Message) Id() int64                     { return m.id }
-func (m *Message) SetId(id int64)                { m.id = id }
 func (m *Message) MessageId() int64              { return m.messageId }
 func (m *Message) SetMessageId(id int64)         { m.messageId = id }
 func (m *Message) ConversationId() int64         { return m.conversationId }

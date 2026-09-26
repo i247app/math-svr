@@ -19,7 +19,7 @@ import (
 const (
 	programTable = "ma_programs"
 
-	programColumns = `p.id, p.program_id, p.label, p.description,
+	programColumns = `p.program_id, p.label, p.description,
 		p.image_key, p.display_order, p.rpt_flg, p.kwords, p.note,
 		p.program_status, p.status,
 		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
@@ -41,7 +41,7 @@ func NewProgramRepository(db database.Executor) program.IRepository {
 
 func scanProgram(s database.RowScanner) (*models.ProgramModel, error) {
 	var m models.ProgramModel
-	if err := s.Scan(&m.Id, &m.ProgramId, &m.Label, &m.Description, &m.ImageKey,
+	if err := s.Scan(&m.ProgramId, &m.Label, &m.Description, &m.ImageKey,
 		&m.DisplayOrder, &m.RptFlg, &m.Kwords, &m.Note, &m.ProgramStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (r *ProgramRepository) ListPrograms(ctx context.Context, params *program.Li
 	listArgs := programActiveArgs()
 	query := `SELECT ` + programColumns + ` FROM ` + programTable + ` p` +
 		` WHERE ` + programActiveWhere +
-		` ORDER BY p.display_order ASC, p.id ASC`
+		` ORDER BY p.display_order ASC, p.program_id ASC`
 
 	var pg *pagination.Pagination
 	if !params.TakeAll {
@@ -161,22 +161,13 @@ func (r *ProgramRepository) Create(ctx context.Context, p *program.Program) (*pr
 			(program_id, label, description, image_key, display_order, rpt_flg, kwords, note, program_status, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	result, err := r.db.Exec(ctx, query,
+	_, err := r.db.Exec(ctx, query,
 		p.ProgramId(), p.Label(), p.Description(), p.ImageKey(),
 		p.DisplayOrder(), p.RptFlg(), p.Kwords(), p.Note(), p.ProgramStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("program repo create: %w", err)
 	}
-	id, err := result.LastInsertId()
-	if err != nil {
-		return nil, fmt.Errorf("program repo last insert id: %w", err)
-	}
-	return r.findBareById(ctx, id)
-}
-
-// findBareById hydrates a program right after INSERT using its surrogate id.
-func (r *ProgramRepository) findBareById(ctx context.Context, id int64) (*program.Program, error) {
-	return r.findOneBy(ctx, "p.id = ?", id)
+	return r.FindByProgramId(ctx, p.ProgramId())
 }
 
 // Update applies a partial update using COALESCE(?, col) for every
@@ -244,7 +235,6 @@ func (r *ProgramRepository) ForceDeleteByProgramId(ctx context.Context, programI
 
 func ModelToDomainProgram(m *models.ProgramModel) *program.Program {
 	p := program.NewProgram()
-	p.SetId(m.Id)
 	p.SetProgramId(m.ProgramId)
 	p.SetLabel(m.Label)
 	p.SetDescription(m.Description)

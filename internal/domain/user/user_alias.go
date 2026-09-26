@@ -5,7 +5,6 @@ import (
 )
 
 type Alias struct {
-	id          int64
 	aliasId     int64
 	userId      int64
 	aka         string
@@ -22,14 +21,6 @@ type Alias struct {
 
 func NewAlias() *Alias {
 	return &Alias{}
-}
-
-func (a *Alias) Id() int64 {
-	return a.id
-}
-
-func (a *Alias) SetId(id int64) {
-	a.id = id
 }
 
 func (a *Alias) AliasId() int64 {

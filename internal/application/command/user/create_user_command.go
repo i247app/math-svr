@@ -154,7 +154,6 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 
 		u := userDomain
 		if guest != nil {
-			userDomain.SetId(guest.Id())
 			if err := repos.User.Update(ctx, userDomain); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
