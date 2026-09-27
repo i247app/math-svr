@@ -136,12 +136,12 @@ var skipLoggingPaths = map[string]struct{}{
 // sensitiveHeaders are masked before being logged. Lookup keys are
 // canonical (http.CanonicalHeaderKey).
 var sensitiveHeaders = map[string]struct{}{
-	// "Authorization": {},
-	// "Cookie":        {},
-	// "Set-Cookie":    {},
-	// "X-Admin-Token": {},
-	// "X-Api-Key":     {},
-	// "X-Auth-Token":  {},
+	"Authorization": {},
+	"Cookie":        {},
+	"Set-Cookie":    {},
+	"X-Admin-Token": {},
+	"X-Api-Key":     {},
+	"X-Auth-Token":  {},
 }
 
 // sensitiveBodyKeys are JSON object keys whose values get redacted
@@ -150,26 +150,26 @@ var sensitiveBodyKeys = map[string]struct{}{
 	"password":         {},
 	"current_password": {},
 	"new_password":     {},
-	// "authorization":    {},
-	"token":         {},
-	"access_token":  {},
-	"refresh_token": {},
-	"id_token":      {},
-	"jwt":           {},
-	"secret":        {},
-	"client_secret": {},
-	"api_key":       {},
-	"apikey":        {},
-	"otp":           {},
-	"code":          {},
-	"mfa":           {},
-	"totp":          {},
-	"ssn":           {},
-	"credit_card":   {},
-	"card_number":   {},
-	"cvv":           {},
-	"private_key":   {},
-	"signature":     {},
+	"authorization":    {}, // metadata.authorization carries the session token
+	"token":            {},
+	"access_token":     {},
+	"refresh_token":    {},
+	"id_token":         {},
+	"jwt":              {},
+	"secret":           {},
+	"client_secret":    {},
+	"api_key":          {},
+	"apikey":           {},
+	"otp":              {},
+	"code":             {},
+	"mfa":              {},
+	"totp":             {},
+	"ssn":              {},
+	"credit_card":      {},
+	"card_number":      {},
+	"cvv":              {},
+	"private_key":      {},
+	"signature":        {},
 }
 
 func shouldSkipLogging(path string) bool {
@@ -407,11 +407,34 @@ func readMultipartFieldValue(part *multipart.Part, name string) (string, string)
 	if err != nil {
 		return string(raw), "[read-error: " + err.Error() + "]"
 	}
+	note := ""
 	if len(raw) > multipartFieldValueCap {
 		_, _ = io.Copy(io.Discard, part)
-		return string(raw[:multipartFieldValueCap]), bodyTruncatedNote
+		raw, note = raw[:multipartFieldValueCap], bodyTruncatedNote
 	}
-	return string(raw), ""
+	return redactJSONFieldValue(raw), note
+}
+
+// redactJSONFieldValue applies sensitiveBodyKeys inside a text field whose
+// value is itself JSON — e.g. the multipart `metadata` field, which carries
+// the session token in `authorization`. A value that looks like JSON but does
+// not parse (truncated, malformed) is redacted whole: there is no way to tell
+// that it holds no secret.
+func redactJSONFieldValue(raw []byte) string {
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 || (trimmed[0] != '{' && trimmed[0] != '[') {
+		return string(raw)
+	}
+	var v any
+	if err := json.Unmarshal(trimmed, &v); err != nil {
+		return bodyRedactedValue
+	}
+	redactJSONValue(v)
+	out, err := json.Marshal(v)
+	if err != nil {
+		return bodyRedactedValue
+	}
+	return string(out)
 }
 
 type multipartTextLogPart struct {
@@ -441,6 +464,8 @@ func maskHeaders(h http.Header) http.Header {
 		switch canon {
 		case "Authorization":
 			out[canon] = maskBearerValues(vs)
+		case "X-Auth-Token":
+			out[canon] = maskTokenValues(vs)
 		default:
 			out[canon] = []string{bodyRedactedValue}
 		}
@@ -465,6 +490,20 @@ func maskBearerValues(vs []string) []string {
 			continue
 		}
 		out[i] = prefix + strings.Repeat("*", 6) + tok[len(tok)-6:]
+	}
+	return out
+}
+
+// maskTokenValues is maskBearerValues for a bare token (X-Auth-Token):
+// only its last 6 characters are kept.
+func maskTokenValues(vs []string) []string {
+	out := make([]string, len(vs))
+	for i, tok := range vs {
+		if len(tok) <= 6 {
+			out[i] = bodyRedactedValue
+			continue
+		}
+		out[i] = strings.Repeat("*", 6) + tok[len(tok)-6:]
 	}
 	return out
 }

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"strings"
 
@@ -12,131 +14,112 @@ import (
 )
 
 const (
-	MaxMetadataSize = 10 << 20 // 10 MB for multipart form parsing
+	// maxMetadataBody bounds how much of a request body is buffered to find
+	// its metadata. JSON requests are small; avatar uploads (multipart) can
+	// be several MB. A larger body is passed through unread: it gets empty
+	// metadata, so an auth-gated route rejects it for lack of a token.
+	maxMetadataBody = 16 << 20 // 16 MiB
+
+	// metadataFieldName is the JSON key, or the multipart form field, that
+	// carries the metadata object.
+	metadataFieldName = "metadata"
+
+	// maxMetadataField bounds the multipart metadata field.
+	maxMetadataField = 64 << 10 // 64 KiB
 )
 
-// MetadataMiddleware extracts __metadata from request and injects it into context
-// Supports both application/json and multipart/form-data content types
+// MetadataMiddleware parses the request's `metadata` object — the top-level
+// JSON key, or the multipart form field of that name — into the context,
+// where metadata.FromContext and the metadata.Get* helpers read it.
+//
+// It runs before GexSessionMiddleware, which takes the session token from
+// metadata.authorization. The body is read once and restored byte for byte:
+// downstream middleware and handlers see exactly what the client sent.
 func MetadataMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log := logger.From(r.Context())
-			contentType := r.Header.Get("Content-Type")
-
-			var requestMetadata *metadata.RequestMetadata
-
-			// Determine content type and extract metadata accordingly
-			if strings.HasPrefix(contentType, "application/json") {
-				// Handle JSON requests
-				requestMetadata = extractMetadataFromJSON(r, log)
-			} else if strings.HasPrefix(contentType, "multipart/form-data") {
-				// Handle multipart/form-data requests (file uploads)
-				requestMetadata = extractMetadataFromMultipart(r, log)
-			} else {
-				// For other content types, create empty metadata
-				requestMetadata = metadata.NewRequestMetadata()
-			}
-
-			// Log metadata extraction (for debugging)
-			if requestMetadata.TraceID != "" {
-				log.Info("Extracted metadata - TraceID: %s, Platform: %s, Locale: %s",
-					requestMetadata.TraceID,
-					requestMetadata.Platform,
-					requestMetadata.UserContext.Locale)
-			}
-
-			// Inject metadata into context
-			ctx := metadata.WithMetadata(r.Context(), requestMetadata)
-
-			// Create new request with updated context
-			r = r.WithContext(ctx)
-
-			// Continue to next handler
-			next.ServeHTTP(w, r)
+			md := readRequestMetadata(r)
+			next.ServeHTTP(w, r.WithContext(metadata.WithMetadata(r.Context(), md)))
 		})
 	}
 }
 
-// extractMetadataFromJSON extracts __metadata from JSON request body
-func extractMetadataFromJSON(r *http.Request, log *logger.AppLogger) *metadata.RequestMetadata {
-	// Read the entire request body
-	bodyBytes, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Error("Failed to read request body: %v", err)
+// readRequestMetadata returns the request's metadata, or empty metadata when
+// the body has none or cannot be read.
+func readRequestMetadata(r *http.Request) *metadata.RequestMetadata {
+	md := metadata.NewRequestMetadata()
+
+	raw, ok := bufferBody(r)
+	if !ok {
+		return md
+	}
+
+	var field []byte
+	mediaType, params, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	switch {
+	case mediaType == "application/json" || strings.HasSuffix(mediaType, "+json"):
+		// Decode only the metadata key. The body is never re-encoded, so
+		// large int64 ids and key order survive untouched.
+		var body struct {
+			Metadata json.RawMessage `json:"metadata"`
+		}
+		if json.Unmarshal(raw, &body) == nil {
+			field = body.Metadata
+		}
+	case mediaType == "multipart/form-data":
+		field = multipartTextField(raw, params["boundary"], metadataFieldName)
+	}
+	if len(field) == 0 || string(field) == "null" {
+		return md
+	}
+
+	if err := json.Unmarshal(field, md); err != nil {
+		logger.From(r.Context()).Warnf("metadata.parse_failed err=%v", err)
 		return metadata.NewRequestMetadata()
 	}
-	defer r.Body.Close()
-
-	// Try to parse as JSON to extract __metadata
-	var rawBody map[string]interface{}
-	if err := json.Unmarshal(bodyBytes, &rawBody); err != nil {
-		// If not valid JSON, just restore the body and return empty metadata
-		r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-		return metadata.NewRequestMetadata()
-	}
-
-	// Extract __metadata if present
-	var requestMetadata *metadata.RequestMetadata
-	if metadataRaw, exists := rawBody["metadata"]; exists {
-		// Parse __metadata into struct
-		metadataBytes, err := json.Marshal(metadataRaw)
-		if err == nil {
-			requestMetadata = metadata.NewRequestMetadata()
-			if err := json.Unmarshal(metadataBytes, requestMetadata); err != nil {
-				log.Error("Failed to parse metadata: %v", err)
-				requestMetadata = metadata.NewRequestMetadata()
-			}
-		}
-
-		// Remove __metadata from the body so DTOs can be parsed normally
-		// delete(rawBody, "__metadata")
-
-		// Re-serialize the body without __metadata
-		cleanBodyBytes, err := json.Marshal(rawBody)
-		if err != nil {
-			log.Error("Failed to re-serialize request body: %v", err)
-			r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-			return requestMetadata
-		}
-		bodyBytes = cleanBodyBytes
-	} else {
-		// No __metadata found, create empty metadata
-		requestMetadata = metadata.NewRequestMetadata()
-	}
-
-	// Restore the body (cleaned of __metadata)
-	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
-
-	return requestMetadata
+	return md
 }
 
-// extractMetadataFromMultipart extracts __metadata from multipart/form-data request
-// The client should send metadata as a form field named "__metadata" with JSON string value
-func extractMetadataFromMultipart(r *http.Request, log *logger.AppLogger) *metadata.RequestMetadata {
-	// Parse multipart form (with size limit)
-	err := r.ParseMultipartForm(MaxMetadataSize)
-	if err != nil {
-		log.Error("Failed to parse multipart form: %v", err)
-		return metadata.NewRequestMetadata()
+// bufferBody reads the whole body (up to maxMetadataBody) and puts an
+// identical copy back on r. It reports false — with the body left readable —
+// when there is no body, it is too large, or it cannot be read.
+func bufferBody(r *http.Request) ([]byte, bool) {
+	if r.Body == nil || r.Body == http.NoBody || r.ContentLength > maxMetadataBody {
+		return nil, false
 	}
 
-	// Look for __metadata form field
-	metadataJSON := r.FormValue("metadata")
-	if metadataJSON == "" {
-		// No metadata provided, return empty
-		return metadata.NewRequestMetadata()
+	raw, err := io.ReadAll(io.LimitReader(r.Body, maxMetadataBody+1))
+	if int64(len(raw)) > maxMetadataBody {
+		// Unknown length and over the cap: hand back what was read followed
+		// by the unread rest, so downstream still sees the full body.
+		r.Body = struct {
+			io.Reader
+			io.Closer
+		}{io.MultiReader(bytes.NewReader(raw), r.Body), r.Body}
+		return nil, false
 	}
+	_ = r.Body.Close()
+	r.Body = io.NopCloser(bytes.NewReader(raw))
+	return raw, err == nil
+}
 
-	// Parse the JSON string into RequestMetadata
-	requestMetadata := metadata.NewRequestMetadata()
-	if err := json.Unmarshal([]byte(metadataJSON), requestMetadata); err != nil {
-		log.Error("Failed to parse metadata from multipart form: %v", err)
-		return metadata.NewRequestMetadata()
+// multipartTextField returns the value of the non-file form field name,
+// without copying file parts into memory.
+func multipartTextField(raw []byte, boundary, name string) []byte {
+	if boundary == "" {
+		return nil
 	}
-
-	// Note: We don't remove the __metadata field from the form
-	// because controllers will parse the form themselves and won't be affected by it
-	// (they only read specific fields they need)
-
-	return requestMetadata
+	mr := multipart.NewReader(bytes.NewReader(raw), boundary)
+	for {
+		part, err := mr.NextPart()
+		if err != nil {
+			return nil
+		}
+		if part.FileName() == "" && part.FormName() == name {
+			val, _ := io.ReadAll(io.LimitReader(part, maxMetadataField))
+			_ = part.Close()
+			return val
+		}
+		_ = part.Close()
+	}
 }

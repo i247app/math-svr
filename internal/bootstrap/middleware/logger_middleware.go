@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"net/http"
-	"strings"
 
 	"math-ai.com/math-ai/internal/application/resource"
 	sctx "math-ai.com/math-ai/internal/shared/context"
@@ -10,11 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
-const (
-	authHeader   = "Authorization"
-	bearerPrefix = "Bearer "
-	tokenTailLen = 6
-)
+const tokenTailLen = 6
 
 // LoggerMiddleware constructs a per-request AppLogger via the Provider and
 // binds it to the request context. Handlers and services pull it back out
@@ -38,10 +33,8 @@ func LoggerMiddleware(p *logger.Provider, res *resource.Resource) func(http.Hand
 			// requests. Must be set before p.New so the logger binds it.
 			ctx = sctx.WithRequestID(ctx, sctx.NextRequestID())
 
-			// Set token suffix for logger
-			if tail := bearerTail(r); tail != "" {
-				ctx = sctx.WithTokenSuffix(ctx, tail)
-			}
+			// The token suffix for the line prefix is already in ctx:
+			// GexSessionMiddleware put it there with the session.
 
 			// Set user ID for logger
 			if uid, err := res.GetRequestUID(r); err == nil {
@@ -56,17 +49,12 @@ func LoggerMiddleware(p *logger.Provider, res *resource.Resource) func(http.Hand
 	}
 }
 
-// bearerTail extracts the last tokenTailLen characters of the bearer
-// token from the Authorization header. Returns "" when the header is
-// missing, malformed, or shorter than tokenTailLen.
-func bearerTail(r *http.Request) string {
-	raw := r.Header.Get(authHeader)
-	if !strings.HasPrefix(raw, bearerPrefix) {
+// tokenTail returns the last tokenTailLen characters of a session token —
+// enough to correlate a session across log lines, too little to reuse it.
+// Returns "" for a token shorter than that.
+func tokenTail(token string) string {
+	if len(token) < tokenTailLen {
 		return ""
 	}
-	tok := strings.TrimPrefix(raw, bearerPrefix)
-	if len(tok) < tokenTailLen {
-		return ""
-	}
-	return tok[len(tok)-tokenTailLen:]
+	return token[len(token)-tokenTailLen:]
 }

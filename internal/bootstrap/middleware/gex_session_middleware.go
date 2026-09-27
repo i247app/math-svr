@@ -4,15 +4,23 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"strings"
 
 	"github.com/i247app/gex/sessionprovider"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	sctx "math-ai.com/math-ai/internal/shared/context"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
-// GexSessionMiddleware is a unified middleware that handles session management using a SessionProvider.
-// It retrieves the session from the provider, returns the session's token in
-// X-Auth-Token, and wraps the response writer to capture the response body.
+// GexSessionMiddleware resolves the request's session, binds it to the
+// context, returns the session's token in X-Auth-Token, and wraps the
+// response writer to capture the response body.
+//
+// The token comes from the request body's metadata.authorization (parsed by
+// MetadataMiddleware, which must run first) and nowhere else: a client's
+// Authorization header is never read for a REST request. WebSocket handshakes
+// have no body, so they alone use the Authorization header.
 //
 // When a handler changes the session's auth state (is_secure / uid — login,
 // OTP verify, register, logout, …) it asks sessionManager to persist the
@@ -46,22 +54,17 @@ func GexSessionMiddleware(
 					next.ServeHTTP(w, r)
 					return
 				}
-				// Mirror the normal path's downstream Authorization injection so
-				// handlers/logging see a consistent header.
-				if r.Header.Get("Authorization") == "" && sessionResult.AuthToken != "" {
-					r.Header.Set("Authorization", "Bearer "+sessionResult.AuthToken)
-				}
-				ctx := context.WithValue(r.Context(), sessionContextKey, sessionResult.Session)
+				ctx := bindSession(r.Context(), sessionContextKey, sessionResult)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
 
-			// Get session with metadata from the provider
-			sessionResult, err := sessionProvider.GetSessionFromRequest(r)
+			token := bodyToken(metadata.GetAuthorization(r.Context()))
+			sessionResult, err := sessionProvider.GetSessionFromToken(token)
 			if err != nil {
 				response.WriteJson(w, map[string]string{
 					"error":  "gex panic: " + err.Error(),
-					"tag":    "sessionProvider.GetSessionFromRequest error",
+					"tag":    "sessionProvider.GetSessionFromToken error",
 					"origin": "session_middleware",
 				}, err)
 				return
@@ -85,21 +88,13 @@ func GexSessionMiddleware(
 				body:           bytes.NewBuffer(nil),
 			}
 
-			// Downstream handlers see the token that reaches THIS session. It
-			// differs from the one the client sent whenever gex issued a new
-			// session (no/invalid/expired token, or the session was lost).
-			if authToken != "" {
-				r.Header.Set("Authorization", "Bearer "+authToken)
-			}
-
 			// X-Auth-Token is the token the client must use from now on; it
 			// replaces the old one whenever gex issued a new session.
 			if authToken != "" {
 				wr.Header().Set("X-Auth-Token", authToken)
 			}
 
-			// Add session to request context
-			r = r.WithContext(context.WithValue(r.Context(), sessionContextKey, sess))
+			r = r.WithContext(bindSession(r.Context(), sessionContextKey, sessionResult))
 
 			before := authStateOf(sess)
 			next.ServeHTTP(wr, r)
@@ -130,4 +125,24 @@ func authStateOf(sess interface{ Get(string) (any, bool) }) authState {
 	isSecure, _ := sess.Get("is_secure")
 	uid, _ := sess.Get("uid")
 	return authState{isSecure: isSecure, uid: uid}
+}
+
+// bindSession puts the session in the context, plus the tail of its token for
+// the logger's line prefix (the full token is never put in the context).
+func bindSession(ctx context.Context, key session.SessionRequestContextKey, res *sessionprovider.SessionResult) context.Context {
+	ctx = context.WithValue(ctx, key, res.Session)
+	if tail := tokenTail(res.AuthToken); tail != "" {
+		ctx = sctx.WithTokenSuffix(ctx, tail)
+	}
+	return ctx
+}
+
+// bodyToken turns metadata.authorization ("Bearer <jwt>", or a bare <jwt>)
+// into the raw token gex expects.
+func bodyToken(authorization string) string {
+	authorization = strings.TrimSpace(authorization)
+	if token, ok := strings.CutPrefix(authorization, "Bearer "); ok {
+		return strings.TrimSpace(token)
+	}
+	return authorization
 }

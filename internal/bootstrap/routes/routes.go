@@ -86,9 +86,11 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// session routes
 	{
 		sessionHandler := session.NewHandler(res)
-		reg("POST /sessions/dump", sessionHandler.HandleSessionDump)
+		// dump returns every session's token and delete-all signs everyone out:
+		// never public.
+		reg("POST /sessions/dump", sessionHandler.HandleSessionDump, authMiddleware)
 		reg("POST /sessions/delete-unsecure", sessionHandler.HandleDeleteUnSecureSessions)
-		reg("POST /sessions/delete-all", sessionHandler.HandleDeleteAllSessions)
+		reg("POST /sessions/delete-all", sessionHandler.HandleDeleteAllSessions, authMiddleware)
 	}
 
 	// user routes

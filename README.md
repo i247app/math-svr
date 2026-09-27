@@ -53,10 +53,10 @@ API conventions worth knowing before calling the server:
 - **Responses always return HTTP 200.** The semantic outcome lives in the JSON body
   as `mstatus` / `mmessage` (`internal/shared/response/response.go`).
 - **The session token is read only from the request body**, at
-  `metadata.authorization`. `SessionTokenMiddleware` drops any client-supplied
-  `Authorization` header before lifting the body value into it. The WebSocket
-  handshake is the exception — it authenticates via a real `Authorization: Bearer`
-  header.
+  `metadata.authorization`, and handed straight to gex
+  (`GetSessionFromToken`). A client's `Authorization` header is never read for
+  REST requests. The WebSocket handshake is the exception — it has no body and
+  authenticates via a real `Authorization: Bearer` header.
 
 ## Setup
 
@@ -246,11 +246,10 @@ outermost first:
 ```
 MetricsMiddleware        → RED metrics over the full request lifetime (no-op when metrics disabled)
 TracingMiddleware        → opens the request span before the logger, so log lines carry trace_id
-SessionTokenMiddleware   → drops any client Authorization header, lifts metadata.authorization from the body
-GexSessionMiddleware     → deserializes the JWT/XWT token into a session on the context
+MetadataMiddleware       → parses the body's `metadata` object into the context once (body left intact)
+GexSessionMiddleware     → resolves the session from metadata.authorization (WebSocket: Authorization header)
 LoggerMiddleware         → per-request logger, reached everywhere via logger.From(ctx)
-LogRequestMiddleware     → snapshots request/response bodies with secret redaction
-MetadataMiddleware       → binds IP, user agent, device metadata, trace id into the context
+LogRequestMiddleware     → snapshots request/response bodies with secret and token redaction
 RecoveryMiddleware       → converts panics into a JSON envelope
 GzipMiddleware           → gzip when the client asks for it
 ```
@@ -265,8 +264,9 @@ template rather than the concrete path. Per-route auth is
 Routes intentionally registered **without** auth today: `POST /ping`,
 `/misc/logs-time-format`, `/users/create`, `/auth/login`, `/auth/login-resume`,
 `/auth/otp`, `/otps/send`, `/otps/verify`, `/programs/list`, `/grades/list`,
-`/semesters/list`, `/ai/shake`, all of `/devices/*`, `/sessions/dump`, and
-`/sessions/delete-all`.
+`/semesters/list`, `/ai/shake`, all of `/devices/*`, and
+`/sessions/delete-unsecure`. `/sessions/dump` and `/sessions/delete-all` need a
+secure session.
 
 ### Persistence and the Unit of Work
 

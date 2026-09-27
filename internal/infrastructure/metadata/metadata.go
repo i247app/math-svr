@@ -66,10 +66,9 @@ type RequestMetadata struct {
 	// the logging middleware. Treat this as advisory, not authoritative.
 	IPAddress string `json:"ip_address,omitempty"`
 
-	// Authorization carries the session token ("Bearer <jwt>") the client
-	// reports in metadata. Informational only — session resolution uses the
-	// real Authorization header / cookie via GexSessionMiddleware, not this
-	// field. Should be redacted in request logs.
+	// Authorization carries the session token ("Bearer <jwt>") — the ONLY
+	// place a REST request's token is read from: GexSessionMiddleware passes
+	// it to gex. Redacted in request logs (log_request_middleware.go).
 	Authorization string `json:"authorization,omitempty"`
 
 	// User context
