@@ -150,8 +150,8 @@ func (s *Service) CheckIdentifier(ctx context.Context, req *dto.CheckIdentifierR
 	s.populateImageUrl(ctx, userRes)
 
 	res := dto.CheckIdentifierRes{
-		User:            userRes,
-		EmailOTPEnabled: userRes == nil,
+		User:           userRes,
+		EmailOTPEnable: userRes == nil,
 	}
 
 	return &res, nil
