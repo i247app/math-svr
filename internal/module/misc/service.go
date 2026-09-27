@@ -36,26 +36,45 @@ type DBStatsProvider interface {
 	Stats() sql.DBStats
 }
 
+// DBSettingsReader reports the commit mode and isolation level the app's
+// connections run with (implemented by the MySQL maintenance repository).
+type DBSettingsReader interface {
+	TxSettings(ctx context.Context) (autocommit bool, isolation string, err error)
+}
+
 type Service struct {
 	maintenanceRepo ClearDataRepository
 	dbStats         DBStatsProvider
+	dbSettings      DBSettingsReader
 }
 
-func NewService(maintenanceRepo ClearDataRepository, dbStats DBStatsProvider) *Service {
+func NewService(maintenanceRepo ClearDataRepository, dbStats DBStatsProvider, dbSettings DBSettingsReader) *Service {
 	return &Service{
 		maintenanceRepo: maintenanceRepo,
 		dbStats:         dbStats,
+		dbSettings:      dbSettings,
 	}
 }
 
-// DBPoolStats reports the current connection-pool state. Gauges are live;
-// wait / closed counters are cumulative since process start.
+// DBPoolStats reports the current connection-pool state plus the commit mode
+// and isolation level. Gauges are live; wait / closed counters are cumulative
+// since process start.
 func (s *Service) DBPoolStats(ctx context.Context) (*dto.DBPoolStatsRes, error) {
+	// Snapshot the pool before querying the settings: that query borrows a
+	// connection itself and would otherwise skew in_use / idle.
 	st := s.dbStats.Stats()
+
+	autocommit, isolation, err := s.dbSettings.TxSettings(ctx)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.INTERNAL_SERVER_ERROR, nil, err)
+	}
+
 	waitMs := float64(st.WaitDuration) / float64(time.Millisecond)
 
 	res := &dto.DBPoolStatsRes{
 		CapturedAt:         time.Now().UTC(),
+		Autocommit:         autocommit,
+		IsolationLevel:     isolation,
 		MaxOpenConnections: st.MaxOpenConnections,
 		OpenConnections:    st.OpenConnections,
 		InUse:              st.InUse,

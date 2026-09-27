@@ -38,6 +38,11 @@ type ClearDataRes struct {
 type DBPoolStatsRes struct {
 	CapturedAt time.Time `json:"captured_at"`
 
+	// Session settings of the app's connections (the DSN overrides neither, so
+	// they equal the server's global defaults).
+	Autocommit     bool   `json:"autocommit"`      // true = each statement outside a transaction commits on its own
+	IsolationLevel string `json:"isolation_level"` // MySQL value, e.g. "REPEATABLE-READ"
+
 	MaxOpenConnections int `json:"max_open_connections"` // 0 = unlimited
 	OpenConnections    int `json:"open_connections"`     // in_use + idle
 	InUse              int `json:"in_use"`

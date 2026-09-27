@@ -230,6 +230,19 @@ func (r *MaintenanceRepository) ListStaleGuestUserIds(ctx context.Context, befor
 	return ids, nil
 }
 
+// TxSettings reports the commit mode and transaction isolation level the app's
+// connections run with. It reads the SESSION values because those are what a
+// pooled connection actually uses; the DSN sets neither, so each connection
+// inherits the server's global defaults.
+func (r *MaintenanceRepository) TxSettings(ctx context.Context) (autocommit bool, isolation string, err error) {
+	var ac int64
+	row := r.db.QueryRow(ctx, `SELECT @@SESSION.autocommit, @@SESSION.transaction_isolation`)
+	if err := row.Scan(&ac, &isolation); err != nil {
+		return false, "", fmt.Errorf("maintenance repo tx settings: %w", err)
+	}
+	return ac == 1, isolation, nil
+}
+
 // ClearData TRUNCATEs every user-generated table and resets the matching
 // external-id counters in ma_seqs. It returns the tables cleared and the
 // sequences reset so callers can report exactly what was wiped.
