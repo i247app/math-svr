@@ -11,7 +11,7 @@ type GradeResponse struct {
 	GradeID      int64   `json:"grade_id"`
 	Label        string  `json:"label"`
 	Description  string  `json:"description"`
-	ImageKey     *string `json:"image_key,omitempty"`
+	ImageKey     *string `json:"-"`
 	ImageUrl     *string `json:"image_url"` // pre-signed url from image_key
 	DisplayOrder int8    `json:"display_order"`
 	Note         *string `json:"note,omitempty"`
