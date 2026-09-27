@@ -35,8 +35,10 @@ func (a *App) ReloadSessions(filename string) error {
 		// signed in across the upgrade.
 		if token, ok := structuredData["token"].(string); ok && token != "" && token != sessionKey {
 			sessionKey = token
-			structuredData["key"] = token
 		}
+		// gex before v0.2.0 also stored the key as "key", always equal to
+		// "token". Drop it so it is not written back on the next save.
+		delete(structuredData, "key")
 
 		log.Printf("Reloading session: %s", session.ShortKey(sessionKey))
 		sess, ok := a.Resource.SessionManager.InitSession(sessionKey)

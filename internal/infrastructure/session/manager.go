@@ -122,45 +122,34 @@ func (m *SessionManager) DeleteSession(sessionKey string) {
 	m.MarkDirty()
 }
 
+// The loops below take each session's key from the snapshot map rather than
+// from the session itself: a session does not need to know its own key.
+
 func (m *SessionManager) DeleteAll() {
-	for _, sess := range *m.Sessions() {
-		key, ok := sess.Get("key")
-		if !ok {
-			continue
-		}
-		m.DeleteSession(key.(string))
+	for key := range *m.Sessions() {
+		m.DeleteSession(key)
 	}
 }
 
 func (m *SessionManager) MarkExpiredSessions() {
-	for _, sess := range *m.Sessions() {
-		key, ok := sess.Get("key")
-		if !ok {
-			continue
-		}
-
+	for key, sess := range *m.Sessions() {
 		if sess.IsExpired() {
-			log.Printf("MarkExpiredSessions: marked session %s for deletion", ShortKey(key.(string)))
+			log.Printf("MarkExpiredSessions: marked session %s for deletion", ShortKey(key))
 			sess.MarkForDeletion()
 		}
 	}
 }
 
 func (m *SessionManager) DeleteUnSecureSessions() {
-	for _, sess := range *m.Sessions() {
-		key, ok := sess.Get("key")
-		if !ok {
-			continue
-		}
-
+	for key, sess := range *m.Sessions() {
 		if !sess.IsSecure() {
 			data, err := json.Marshal(sess.ToMap())
 			if err != nil {
-				log.Printf("DeleteUnSecureSessions: failed to marshal session %s: %v", ShortKey(key.(string)), err)
+				log.Printf("DeleteUnSecureSessions: failed to marshal session %s: %v", ShortKey(key), err)
 			} else {
-				log.Printf("DeleteUnSecureSessions: deleting session %s | %s", ShortKey(key.(string)), data)
+				log.Printf("DeleteUnSecureSessions: deleting session %s | %s", ShortKey(key), data)
 			}
-			m.DeleteSession(key.(string))
+			m.DeleteSession(key)
 		}
 	}
 }

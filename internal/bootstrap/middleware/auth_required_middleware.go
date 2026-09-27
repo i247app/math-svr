@@ -29,7 +29,7 @@ func AuthRequiredMiddleware(sessionManager *sess.SessionManager) func(http.Handl
 				response.WriteJson(w, nil, errs.NewUnauthorizedError(ctx, ErrSessionNotFound))
 				return
 			}
-			rawKey, _ := session.Get("key") // retrieve the session key to log during errors
+			rawKey, _ := session.Get("token") // the token is the session key; logged (shortened) on errors
 			keyStr, _ := rawKey.(string)
 			sessionKey := sess.ShortKey(keyStr)
 
