@@ -134,13 +134,17 @@ func (s *Service) CheckIdentifier(ctx context.Context, req *dto.CheckIdentifierR
 	}
 
 	var (
-		u   *domain.User
-		err error
+		u       *domain.User
+		err     error
+		isEmail bool
+		isPhone bool
 	)
 	if strings.Contains(req.Identifier, "@") {
 		u, err = s.getUserByEmailQuery.Handle(ctx, query.GetUserByEmailQuery{Email: req.Identifier})
+		isEmail = true
 	} else if phone, normErr := utils.NormalizePhone(req.Identifier); normErr == nil {
 		u, err = s.getUserByPhoneQuery.Handle(ctx, query.GetUserByPhoneQuery{Phone: phone})
+		isPhone = true
 	}
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -151,7 +155,8 @@ func (s *Service) CheckIdentifier(ctx context.Context, req *dto.CheckIdentifierR
 
 	res := dto.CheckIdentifierRes{
 		User:           userRes,
-		EmailOTPEnable: userRes == nil,
+		EmailOTPEnable: isEmail && userRes == nil,
+		PhoneOTPEnable: isPhone && userRes == nil,
 	}
 
 	return &res, nil
