@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/shared/colors"
 )
 
 // WithTransaction executes fn inside a database transaction. It commits on
@@ -39,6 +40,6 @@ func WithTransaction(ctx context.Context, db SqlHandler, fn func(ctx context.Con
 		return fmt.Errorf("database: commit tx: %w", err)
 	}
 
-	logger.From(ctx).Info("[TX] Committed")
+	logInputSQL(ctx, colors.FGMagenta, "[TX] Committed")
 	return nil
 }

@@ -551,6 +551,12 @@ func redactJSONValue(v any) {
 	case map[string]any:
 		for k, val := range x {
 			if _, ok := sensitiveBodyKeys[strings.ToLower(k)]; ok {
+				if strings.ToLower(k) == "authorization" {
+					if valStr, ok := val.(string); ok {
+						x[k] = maskTokenValues([]string{valStr})[0]
+					}
+					continue
+				}
 				x[k] = bodyRedactedValue
 				continue
 			}
