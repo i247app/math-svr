@@ -273,41 +273,46 @@ func (a *App) Start() error {
 	return a.Server.Start()
 }
 
-func (a *App) Close() error {
-	if a.MetricsServer != nil {
-		log.Println("[APP] Shutting down metrics server...")
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := a.MetricsServer.Shutdown(ctx); err != nil {
-			log.Printf("[APP] metrics server shutdown error: %v", err)
+// Close releases the process-wide resources, in dependency order: the
+// metrics listener, then the tracer (flushed before the DB and logger go so
+// late spans still export), then the DB pool, and the log file LAST so every
+// step above can still log. It runs at the end of the shutdown hook, after
+// everything that uses these resources has stopped, and main also calls it
+// when Start fails before any hook ran. Safe to call more than once.
+func (a *App) Close() {
+	a.closeOnce.Do(func() {
+		if a.MetricsServer != nil {
+			log.Println("[APP] Shutting down metrics server...")
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			if err := a.MetricsServer.Shutdown(ctx); err != nil {
+				log.Printf("[APP] metrics server shutdown error: %v", err)
+			}
+			cancel()
 		}
-	}
 
-	// Flush pending spans before tearing down the DB/logger so late spans
-	// still export. No-op when tracing is disabled.
-	if a.TracerShutdown != nil {
-		log.Println("[APP] Flushing traces...")
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := a.TracerShutdown(ctx); err != nil {
-			log.Printf("[APP] tracer shutdown error: %v", err)
+		if a.TracerShutdown != nil {
+			log.Println("[APP] Flushing traces...")
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			if err := a.TracerShutdown(ctx); err != nil {
+				log.Printf("[APP] tracer shutdown error: %v", err)
+			}
+			cancel()
 		}
-	}
 
-	if a.Resource.DB != nil {
-		log.Println("[APP] Closing database connection...")
-		if err := a.Resource.DB.Close(); err != nil {
-			log.Printf("[APP] database close error: %v", err)
+		if a.Resource.DB != nil {
+			log.Println("[APP] Closing database connection...")
+			if err := a.Resource.DB.Close(); err != nil {
+				log.Printf("[APP] database close error: %v", err)
+			}
 		}
-	}
 
-	if a.Logger != nil {
-		log.Println("[APP] Closing log file...")
-		if err := a.Logger.Close(); err != nil {
-			log.Printf("[APP] logger close error: %v", err)
+		if a.Logger != nil {
+			log.Println("[APP] Closing log file...")
+			if err := a.Logger.Close(); err != nil {
+				log.Printf("[APP] logger close error: %v", err)
+			}
 		}
-	}
-	return nil
+	})
 }
 
 func (a *App) reloadSessions() {
@@ -330,9 +335,14 @@ func (a *App) reloadSessions() {
 	}
 }
 
+// setupShutdownHooks registers the teardown gex runs once the HTTP server has
+// stopped serving. Order: first everything that USES the shared resources
+// (sockets, presence timers, jobs), then the session snapshot, and only then
+// the resources themselves (Close) — so no job or timer ever meets a closed
+// DB pool or log file.
 func (a *App) setupShutdownHooks(gexSvr *gex.Server, services *container.ServiceContainer) {
 	gexSvr.OnShutdown(func() {
-		// Close every WebSocket first (StatusGoingAway) so clients get a clean
+		// Close every WebSocket (StatusGoingAway) so clients get a clean
 		// close frame and can reconnect, instead of hanging on a dropped socket.
 		if a.Resource.SocketHub != nil {
 			log.Println("Closing WebSocket connections...")
@@ -340,36 +350,33 @@ func (a *App) setupShutdownHooks(gexSvr *gex.Server, services *container.Service
 		}
 
 		// Cancel pending presence broadcasts. They are timer callbacks that
-		// read the database, so letting them fire during teardown would hit a
-		// closing pool for a status dot nobody is left to receive.
+		// read the database, so they must stop before the pool closes.
 		if services != nil && services.PresenceSvc != nil {
 			services.PresenceSvc.Shutdown()
 		}
 
-		// Drain the job runtime first: stops new schedules from
-		// firing, cancels in-flight execution contexts, waits up to
-		// JobRuntime.Config().DrainTimeout for graceful exit. Done
-		// before session serialisation so any job that touches
-		// sessions has finished before we snapshot them.
+		// Drain the job runtime: stops new schedules from firing, cancels
+		// in-flight execution contexts, waits up to
+		// JobRuntime.Config().DrainTimeout. Jobs use the DB and may touch
+		// sessions, so this precedes both the snapshot and Close.
 		if a.Resource.JobRuntime != nil {
 			a.Resource.JobRuntime.Stop(context.Background())
 		}
 
-		sessionFile := a.Resource.Env.SerializedSessionFile
-		if sessionFile == "" {
-			return
+		if sessionFile := a.Resource.Env.SerializedSessionFile; sessionFile != "" {
+			// Stop the write-through writer first so the final snapshot below
+			// is the last write to the file.
+			a.Resource.SessionManager.StopPersistence()
+
+			log.Println("Serializing sessions...")
+			if err := a.Resource.SessionManager.SaveTo(sessionFile); err != nil {
+				log.Printf("Failed to serialize sessions: %v\n", err)
+			} else {
+				log.Println("Sessions serialized!")
+			}
 		}
 
-		// Stop the write-through writer first so the final snapshot below is
-		// the last write to the file.
-		a.Resource.SessionManager.StopPersistence()
-
-		log.Println("Serializing sessions...")
-		err := a.Resource.SessionManager.SaveTo(sessionFile)
-		if err != nil {
-			log.Printf("Failed to serialize sessions: %v\n", err)
-		} else {
-			log.Println("Sessions serialized!")
-		}
+		// Resources last: metrics listener, tracer flush, DB, log file.
+		a.Close()
 	})
 }

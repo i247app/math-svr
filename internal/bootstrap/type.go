@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"net/http"
+	"sync"
 
 	"math-ai.com/math-ai/internal/bootstrap/container"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -24,6 +25,10 @@ type App struct {
 	// TracerShutdown flushes and stops the OpenTelemetry TracerProvider.
 	// Always non-nil (a no-op when tracing is disabled); called from Close.
 	TracerShutdown func(context.Context) error
+
+	// closeOnce makes Close safe to call from both the shutdown hook and
+	// main's startup-failure path.
+	closeOnce sync.Once
 }
 
 func NewApp(resource *resource.Resource) *App {

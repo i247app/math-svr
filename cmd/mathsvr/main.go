@@ -33,6 +33,9 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to initialize app: %w", err)
 	}
+	// The shutdown hook already calls Close after a normal shutdown; this
+	// covers Start failing before any hook ran (e.g. the port is taken), so
+	// the log file is still flushed. Close runs only once.
 	defer app.Close()
 
 	// Start app
