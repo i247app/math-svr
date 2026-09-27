@@ -151,7 +151,7 @@ func (h *UserHandler) HandleCheckIdentifier(w http.ResponseWriter, r *http.Reque
 
 	res, err := h.userSvc.CheckIdentifier(r.Context(), &req)
 	if err != nil {
-		response.WriteJson(w, nil, err)
+		response.WriteJson(w, res, err)
 		return
 	}
 

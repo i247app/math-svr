@@ -145,13 +145,16 @@ func (s *Service) CheckIdentifier(ctx context.Context, req *dto.CheckIdentifierR
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	if u == nil {
-		return nil, errs.NewError(ctx, status.NO_DATA, nil, ErrUserNotFound)
-	}
 
 	userRes := dto.DomainToResponse(u)
 	s.populateImageUrl(ctx, userRes)
-	return &dto.CheckIdentifierRes{User: userRes}, nil
+
+	res := dto.CheckIdentifierRes{
+		User:            userRes,
+		EmailOTPEnabled: userRes == nil,
+	}
+
+	return &res, nil
 }
 
 func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req *dto.CreateUserReq) (*dto.CreateUserRes, error) {

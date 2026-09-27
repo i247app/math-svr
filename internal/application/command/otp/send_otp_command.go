@@ -66,8 +66,14 @@ type SendOtpCommandResult struct {
 	OtpID     int64
 	ExpiresAt mtime.MathTime
 	Channel   otp_delivery.ChannelName
-	OTPCode   string
-	OTPType   string
+	// OTPCode is the code the caller may echo back to the requesting
+	// client. Empty when it was pushed to a trusted device instead.
+	OTPCode string
+	// PushedCode is the code delivered to the trusted device, for
+	// owner-only channels (the account's in-app inbox). Never return it to
+	// the requesting client.
+	PushedCode string
+	OTPType    string
 	// Reused is true when an existing, still-valid PENDING OTP was handed
 	// back instead of a new one being issued — nothing was delivered, so
 	// callers must not raise their own "we just sent you a code" side
@@ -249,6 +255,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	// pre-existing gap outside this change's scope — see send_otp_command.go
 	// history; those channels still only surface the code via OTPCode below.
 	responseCode := plainCode
+	pushedCode := ""
 	if reused {
 		log.Infof("otp send command reuse pending otp id=%d, delivery skipped", createdOtpID)
 	}
@@ -278,7 +285,8 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		// Delivered for real via a channel the requesting (untrusted) device
 		// cannot read — echoing the code back in the response would defeat
 		// the entire point of trusted-device 2FA, so it is withheld here.
-		// responseCode = ""
+		responseCode = ""
+		pushedCode = plainCode
 	}
 
 	if !reused && h.delivery != nil && channel == otp_delivery.ChannelEmail {
@@ -294,12 +302,13 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	}
 
 	return &SendOtpCommandResult{
-		OtpID:     createdOtpID,
-		ExpiresAt: mtime.MathTime{Time: expiresAt},
-		Channel:   channel,
-		OTPCode:   responseCode,
-		OTPType:   cmd.OtpType.String(),
-		Reused:    reused,
+		OtpID:      createdOtpID,
+		ExpiresAt:  mtime.MathTime{Time: expiresAt},
+		Channel:    channel,
+		OTPCode:    responseCode,
+		PushedCode: pushedCode,
+		OTPType:    cmd.OtpType.String(),
+		Reused:     reused,
 	}, nil
 }
 

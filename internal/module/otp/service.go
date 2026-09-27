@@ -125,11 +125,10 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 		return nil, err
 	}
 
-	log.Infof("otp sent %s:", result.OTPCode)
-
 	// Trusted-device push 2FA: alert the account owner that a login was
-	// requested, independent of the OTP itself — this row never carries the
-	// code (see send_otp_command.go), it's a security notice only. Best
+	// requested. The row lands in the owner's inbox, so it may carry the
+	// pushed code (result.PushedCode) — never result.OTPCode, which is what
+	// the requesting device sees and is empty on this path. Best
 	// effort: a notice failure must not fail the OTP send the user is
 	// actively waiting on.
 	//
@@ -145,7 +144,7 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 		_, nerr := s.notificationSvc.SendNotification(ctx, &notifDto.SendNotificationReq{
 			UserID:    *userId,
 			Title:     "Cảnh báo đăng nhập",
-			ShortText: fmt.Sprintf("Có yêu cầu đăng nhập mới từ %s.Mã OTP của bạn là %s. Nếu không phải bạn, vui lòng đổi không được để lộ mã otp.", requestingDevice, result.OTPCode),
+			ShortText: fmt.Sprintf("Có yêu cầu đăng nhập mới từ %s.Mã OTP của bạn là %s. Nếu không phải bạn, vui lòng đổi không được để lộ mã otp.", requestingDevice, result.PushedCode),
 			Category:  &category,
 		})
 		if nerr != nil {
