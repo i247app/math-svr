@@ -11,4 +11,7 @@ var (
 	ErrDeviceUUIDRequired      = errors.New("device_uuid is required")
 	ErrIPAddressRequired       = errors.New("ip_address is required")
 	ErrDevicePushTokenRequired = errors.New("device_push_token is required")
+	// ErrInvalidCredentials deliberately does not say whether the password
+	// was wrong or the account has none — the debug field reaches clients.
+	ErrInvalidCredentials = errors.New("invalid login name or password")
 )

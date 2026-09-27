@@ -10,6 +10,7 @@ import (
 	dtoOtp "math-ai.com/math-ai/internal/application/dto/otp"
 	dtoUser "math-ai.com/math-ai/internal/application/dto/user"
 	"math-ai.com/math-ai/internal/application/transaction"
+	"math-ai.com/math-ai/internal/domain/login"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -34,11 +35,12 @@ func NewService(
 	userSvc *user.Service,
 	otpSvc *otp.Service,
 	uow transaction.UnitOfWork,
+	hasher login.PasswordHasher,
 	trustDeviceTTLDays int) *Service {
 	return &Service{
 		userSvc:   userSvc,
 		otpSvc:    otpSvc,
-		loginCmd:  command.NewLoginCommandHandler(uow, trustDeviceTTLDays),
+		loginCmd:  command.NewLoginCommandHandler(uow, hasher, trustDeviceTTLDays),
 		logoutCmd: command.NewLogoutCommandHandler(uow),
 	}
 }
@@ -71,6 +73,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		Platform:        metadata.GetPlatform(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),
 		DevicePushToken: metadata.GetDevicePushToken(ctx),
+		Password:        req.Password,
 	})
 	if err != nil {
 		return nil, err
@@ -182,6 +185,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 		Platform:        metadata.GetPlatform(ctx),
 		IPAddress:       metadata.GetIPAddress(ctx),
 		DevicePushToken: metadata.GetDevicePushToken(ctx),
+		Password:        req.Password,
 	})
 	if err != nil {
 		return nil, err

@@ -31,7 +31,7 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case USER_INVALID_EMAIL:
 		return "Email không hợp lệ"
 	case USER_INVALID_PASSWORD:
-		return "Mật khẩu không hợp lệ"
+		return "Mật khẩu phải có từ 8 đến 72 ký tự"
 	case USER_EMAIL_ALREADY_EXISTS:
 		return "Email đã tồn tại"
 	case USER_PHONE_ALREADY_EXISTS:
@@ -74,6 +74,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Đăng nhập thất bại"
 	case AUTH_LOGOUT_FAILED:
 		return "Đăng xuất thất bại"
+	case AUTH_INVALID_CREDENTIALS:
+		return "Tên đăng nhập hoặc mật khẩu không đúng"
 
 	// Profile
 	case PROFILE_NOT_FOUND:

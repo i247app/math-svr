@@ -8,10 +8,12 @@ import (
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
+	"math-ai.com/math-ai/internal/domain/login"
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -23,6 +25,13 @@ type LoginCommand struct {
 	Platform        string
 	IPAddress       string
 	DevicePushToken string
+
+	// Password is optional. Empty keeps the OTP-only login exactly as it
+	// was. When set it must match the account's ma_logins credential —
+	// an account with no password set fails too — and only then does the
+	// usual device-trust flow run, so an untrusted device still has to
+	// pass OTP afterwards.
+	Password string
 }
 
 // LoginCommandResult communicates one of two outcomes:
@@ -43,11 +52,12 @@ type LoginCommandResult struct {
 
 type LoginCommandHandler struct {
 	uow                transaction.UnitOfWork
+	hasher             login.PasswordHasher
 	trustDeviceTTLDays int
 }
 
-func NewLoginCommandHandler(uow transaction.UnitOfWork, trustDeviceTTLDays int) *LoginCommandHandler {
-	return &LoginCommandHandler{uow: uow, trustDeviceTTLDays: trustDeviceTTLDays}
+func NewLoginCommandHandler(uow transaction.UnitOfWork, hasher login.PasswordHasher, trustDeviceTTLDays int) *LoginCommandHandler {
+	return &LoginCommandHandler{uow: uow, hasher: hasher, trustDeviceTTLDays: trustDeviceTTLDays}
 }
 
 // Handle resolves the user by phone, ensures a device registration exists for
@@ -62,38 +72,18 @@ func NewLoginCommandHandler(uow transaction.UnitOfWork, trustDeviceTTLDays int) 
 // The entire sequence runs inside one UoW so partial failures can't leak
 // state (e.g. an orphan device row paired with no session).
 func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*LoginCommandResult, error) {
+	if cmd.Password != "" {
+		if err := h.verifyPassword(ctx, cmd); err != nil {
+			return nil, err
+		}
+	}
+
 	var result *LoginCommandResult
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		// Login name (phone or email) is resolved through the alias registry
-		// first, then the user row — the user repo never JOINs ma_aliases.
-		// Either lookup missing means "no such account": return nil with no
-		// error so the caller keeps the enumeration-safe response.
-		alias, err := repos.Alias.FindByAka(ctx, cmd.LoginName)
-		if err != nil {
-			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
-		}
-		if alias == nil {
-			return nil
-		}
-
-		u, err := repos.User.FindByUserId(ctx, alias.UserId())
-		if err != nil {
-			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
-		}
-		if u == nil {
-			return nil
-		}
-
-		// A guest is registered in ma_aliases under their device_uuid, so
-		// that string is a resolvable login name — and anyone who learns
-		// it could otherwise start a login against someone else's guest
-		// account. A guest has no login of their own until they register
-		// (which converts the row to USER), so treat them as no account
-		// at all here, with the same enumeration-safe nil the two lookups
-		// above return.
-		if enum.IdentityCodeType(utils.DerefString(u.IdentityCode())).IsGuest() {
-			return nil
+		u, err := resolveUser(ctx, repos, cmd.LoginName)
+		if err != nil || u == nil {
+			return err
 		}
 
 		result = &LoginCommandResult{
@@ -146,6 +136,79 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		return nil, err
 	}
 	return result, nil
+}
+
+// verifyPassword checks cmd.Password against the account's stored hash.
+// It reads in its own short transaction and compares after it has
+// committed: bcrypt is deliberately slow, and comparing inside the main
+// transaction would hold a pooled connection for every guess.
+//
+// An unknown login name passes through untouched — the main flow then
+// returns its usual "no account" nil, so a password does not change what
+// the endpoint reveals about which names exist.
+func (h *LoginCommandHandler) verifyPassword(ctx context.Context, cmd LoginCommand) error {
+	var (
+		found bool
+		hash  string
+	)
+
+	handler := func(ctx context.Context, repos transaction.Repositories) error {
+		u, err := resolveUser(ctx, repos, cmd.LoginName)
+		if err != nil || u == nil {
+			return err
+		}
+		found = true
+		cred, err := repos.Login.FindByUserId(ctx, u.UserId())
+		if err != nil {
+			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+		}
+		if cred != nil && cred.Upass() != nil {
+			hash = *cred.Upass()
+		}
+		return nil
+	}
+
+	err := h.uow.Do(ctx, handler)
+	if err != nil || !found {
+		return err
+	}
+
+	// No password on file is the same answer as a wrong one: the caller
+	// asked to be checked against a credential this account does not have.
+	if hash == "" || h.hasher.Compare(cmd.Password, hash) != nil {
+		return errs.NewError(ctx, status.AUTH_INVALID_CREDENTIALS, nil, ErrInvalidCredentials)
+	}
+	return nil
+}
+
+// resolveUser maps a login name to the account it signs in to. The name
+// (phone or email) is resolved through the alias registry first, then the
+// user row — the user repo never JOINs ma_aliases. Either lookup missing
+// means "no such account": (nil, nil), so the caller keeps the
+// enumeration-safe response.
+//
+// A guest is registered in ma_aliases under their device_uuid, so that
+// string is a resolvable login name — and anyone who learns it could
+// otherwise start a login against someone else's guest account. A guest
+// has no login of their own until they register (which converts the row
+// to USER), so they resolve to no account at all, with the same nil.
+func resolveUser(ctx context.Context, repos transaction.Repositories, loginName string) (*user.User, error) {
+	alias, err := repos.Alias.FindByAka(ctx, loginName)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+	}
+	if alias == nil {
+		return nil, nil
+	}
+
+	u, err := repos.User.FindByUserId(ctx, alias.UserId())
+	if err != nil {
+		return nil, errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+	}
+	if u == nil || enum.IdentityCodeType(utils.DerefString(u.IdentityCode())).IsGuest() {
+		return nil, nil
+	}
+	return u, nil
 }
 
 // ensureDevice returns the (user, device_uuid) registration, creating a fresh

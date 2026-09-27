@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
+	"math-ai.com/math-ai/internal/domain/login"
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -52,6 +53,11 @@ type CreateUserCommand struct {
 	// nil is the ordinary path: a visitor who never generated an exam
 	// registers as a fresh user.
 	GuestUserID *int64
+
+	// Password is optional. When set (already length-checked by the
+	// module validator) its hash is stored in ma_logins; when empty no
+	// credential row is written and the account signs in by OTP alone.
+	Password string
 }
 
 func (c CreateUserCommand) Validate() error {
@@ -65,15 +71,28 @@ type CreateUserCommandResult struct {
 }
 
 type CreateUserCommandHandler struct {
-	uow transaction.UnitOfWork
+	uow    transaction.UnitOfWork
+	hasher login.PasswordHasher
 }
 
-func NewCreateUserCommandHandler(uow transaction.UnitOfWork) *CreateUserCommandHandler {
-	return &CreateUserCommandHandler{uow: uow}
+func NewCreateUserCommandHandler(uow transaction.UnitOfWork, hasher login.PasswordHasher) *CreateUserCommandHandler {
+	return &CreateUserCommandHandler{uow: uow, hasher: hasher}
 }
 
 func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCommand) (*CreateUserCommandResult, error) {
 	result := &CreateUserCommandResult{}
+
+	// Hash before the transaction opens: bcrypt is deliberately slow, and
+	// doing it inside uow.Do would hold a pooled connection for the whole
+	// computation.
+	var passwordHash *string
+	if cmd.Password != "" {
+		hash, err := h.hasher.Hash(cmd.Password)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		passwordHash = &hash
+	}
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
 		if cmd.Email != nil && *cmd.Email != "" {
@@ -189,6 +208,12 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 
+		if passwordHash != nil {
+			if err := createLogin(ctx, repos, u.UserId(), *passwordHash); err != nil {
+				return err
+			}
+		}
+
 		if guest != nil {
 			// The guest's default profile is the child who has been sitting
 			// exams all along — it is updated, never replaced, so the
@@ -245,6 +270,28 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		return nil, err
 	}
 	return result, nil
+}
+
+// createLogin stores the account's password hash in ma_logins. A guest
+// being upgraded never has a row yet — guests have no way to sign in —
+// so this is always an insert.
+func createLogin(ctx context.Context, repos transaction.Repositories, userID int64, passwordHash string) error {
+	loginID, err := seqgen.Next(ctx, repos.Seq, seq.NameLogin)
+	if err != nil {
+		return err
+	}
+	active := enum.StatusActive.String()
+	l := login.NewLogin()
+	l.SetLoginId(loginID)
+	l.SetUserId(userID)
+	l.SetUpass(&passwordHash)
+	l.SetLoginsStatus(&active)
+	l.SetStatus(active)
+	l.SetCreateId(&userID)
+	if _, err := repos.Login.Create(ctx, l); err != nil {
+		return errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	return nil
 }
 
 // emailOtpMatches reports whether a verified REGISTER OTP for the target

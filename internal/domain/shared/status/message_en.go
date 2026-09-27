@@ -31,7 +31,7 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case USER_INVALID_EMAIL:
 		return "User invalid email"
 	case USER_INVALID_PASSWORD:
-		return "User invalid password"
+		return "Password must be between 8 and 72 characters"
 	case USER_EMAIL_ALREADY_EXISTS:
 		return "Email already exists"
 	case USER_PHONE_ALREADY_EXISTS:
@@ -74,6 +74,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Login failed"
 	case AUTH_LOGOUT_FAILED:
 		return "Logout failed"
+	case AUTH_INVALID_CREDENTIALS:
+		return "Incorrect login name or password"
 
 	// Profile
 	case PROFILE_NOT_FOUND:

@@ -8,6 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/repositories"
+	"math-ai.com/math-ai/internal/infrastructure/security"
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/banner"
 	"math-ai.com/math-ai/internal/module/bot"
@@ -97,7 +98,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	deviceService := device.NewService(repos.DeviceRepository, uow, repos.UserRepository, res.Env.DemoNames)
 
 	log.Info("> Setup UserSvc...")
-	userService := user.NewService(deviceService, repos.UserRepository, uow, res.StorageProvider)
+	userService := user.NewService(deviceService, repos.UserRepository, uow, res.StorageProvider, security.DefaultHasher)
 
 	log.Info("> Setup ProgramSvc...")
 	programService := program.NewService(
@@ -153,7 +154,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		res.OtpDelivery, res.NotificationProvider, res.Env.OtpBypassEnabled, res.Env.OtpBypassCode, res.Env.DemoNames)
 
 	log.Info("> Setup AuthSvc...")
-	authService := auth.NewService(userService, otpService, uow, res.Env.TrustDeviceTTLDays)
+	authService := auth.NewService(userService, otpService, uow, security.DefaultHasher, res.Env.TrustDeviceTTLDays)
 
 	log.Info("> Setup ExamSvc...")
 	examService := exam.NewService(

@@ -7,6 +7,9 @@ import (
 type LoginReq struct {
 	OTPEnabled bool   `json:"otp_enabled"`
 	LoginName  string `json:"login_name"`
+	// Password is optional. When sent it must match the account's
+	// password; an untrusted device still goes through OTP afterwards.
+	Password string `json:"password,omitempty"`
 }
 
 // LoginRes carries one of two shapes depending on device trust:

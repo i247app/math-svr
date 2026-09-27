@@ -10,6 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/grade"
+	"math-ai.com/math-ai/internal/domain/login"
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/domain/otp"
@@ -32,6 +33,7 @@ type Repositories struct {
 	User               user.IRepository
 	Alias              user.IAliasRepository
 	Profile            profile.IRepository
+	Login              login.IRepository
 	LoginLog           loginlog.IRepository
 	Device             device.IRepository
 	Otp                otp.IRepository

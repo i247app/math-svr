@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 
+	"math-ai.com/math-ai/internal/domain/login"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -42,6 +43,13 @@ func ValidateCreateUser(ctx context.Context, req *dto.CreateUserReq) error {
 	// service layer (normalizeAvatarKey).
 	if strings.TrimSpace(req.Avatar) != "" && req.AvatarFile != nil {
 		return errs.NewError(ctx, status.USER_AVATAR_CONFLICT, nil, ErrProvideEitherAvatarFileOrAvatarReference)
+	}
+	// Password is optional; only a supplied one is checked. It is not
+	// trimmed — spaces are legitimate password characters.
+	if req.Password != "" {
+		if err := login.ValidatePassword(req.Password); err != nil {
+			return errs.NewError(ctx, status.USER_INVALID_PASSWORD, nil, err)
+		}
 	}
 	return nil
 }

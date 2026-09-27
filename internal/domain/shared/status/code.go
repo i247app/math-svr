@@ -48,6 +48,9 @@ const (
 	AUTH_INVALID_TOKEN             StatusCode = 4205
 	AUTH_LOGIN_FAILED              StatusCode = 4206
 	AUTH_LOGOUT_FAILED             StatusCode = 4207
+	// AUTH_INVALID_CREDENTIALS: /auth/login carried a password that does
+	// not match the account's, or the account has no password set.
+	AUTH_INVALID_CREDENTIALS StatusCode = 4208
 
 	PROFILE_NOT_FOUND                StatusCode = 4101
 	PROFILE_MISSING_NAME             StatusCode = 4102

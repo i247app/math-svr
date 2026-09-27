@@ -12,6 +12,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/user"
 	query "math-ai.com/math-ai/internal/application/query/user"
 	"math-ai.com/math-ai/internal/application/transaction"
+	"math-ai.com/math-ai/internal/domain/login"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	domain "math-ai.com/math-ai/internal/domain/user"
@@ -52,6 +53,7 @@ func NewService(
 	repo domain.IRepository,
 	uow transaction.UnitOfWork,
 	storageProvider *storage.Adapter,
+	hasher login.PasswordHasher,
 ) *Service {
 	return &Service{
 		deviceSvc:            deviceSvc,
@@ -59,7 +61,7 @@ func NewService(
 		getUserByPhoneQuery:  query.NewGetUserByPhoneQueryHandler(repo),
 		getUserByEmailQuery:  query.NewGetUserByEmailQueryHandler(repo),
 		listUsersQuery:       query.NewListUsersQueryHandler(repo),
-		createUserCmd:        command.NewCreateUserCommandHandler(uow),
+		createUserCmd:        command.NewCreateUserCommandHandler(uow, hasher),
 		createGuestCmd:       command.NewCreateGuestCommandHandler(uow),
 		adoptGuestCmd:        command.NewAdoptGuestCommandHandler(uow),
 		updateUserCmd:        command.NewUpdateUserCommandHandler(uow),
@@ -230,6 +232,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		AvatarKey:   avatarKey,
 		DeviceUUID:  metadata.GetDeviceUUID(ctx),
 		GuestUserID: guestUserID,
+		Password:    req.Password,
 	})
 	if err != nil {
 		// Only delete objects we just uploaded — a client-supplied

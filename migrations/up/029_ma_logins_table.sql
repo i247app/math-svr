@@ -8,7 +8,7 @@
 
 CREATE TABLE IF NOT EXISTS ma_logins (
   login_id        BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  uid             BIGINT UNSIGNED NOT NULL,
+  uid             BIGINT UNSIGNED NOT NULL UNIQUE,
   upass           VARCHAR(128) DEFAULT NULL,
   logins_status   VARCHAR(32)  DEFAULT NULL,
   rpt_flg         VARCHAR(16)  DEFAULT NULL,

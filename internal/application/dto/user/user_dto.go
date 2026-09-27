@@ -65,6 +65,11 @@ type CreateUserReq struct {
 	Email string `json:"email,omitempty"`
 	Role  string `json:"role"`
 
+	// Password is optional. When supplied it is hashed and stored as the
+	// account's password credential (ma_logins); the plaintext is never
+	// persisted or echoed back.
+	Password string `json:"password,omitempty"`
+
 	// Avatar is a client-supplied reference to an object already in our
 	// storage. It can be either a bare S3 key (e.g.
 	// "user-avatars/20260101-uuid.png") or a full URL pointing at the

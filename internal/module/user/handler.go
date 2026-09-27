@@ -48,6 +48,7 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		req.Phone = r.FormValue("phone")
 		req.Email = r.FormValue("email")
 		req.Role = r.FormValue("role")
+		req.Password = r.FormValue("password")
 		// The multipart text part "avatar" carries a string reference
 		// (URL or S3 key). The file part "avatar" carries an upload.
 		// FormValue and FormFile read from disjoint maps so the same
