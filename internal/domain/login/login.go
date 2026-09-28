@@ -6,11 +6,11 @@ import (
 
 // Login is an account's password credential (ma_logins). It is optional:
 // an account registered without a password has no row at all, and signs in
-// through OTP alone. upass holds the hash, never the password itself.
+// through OTP alone. upw holds the hash, never the password itself.
 type Login struct {
 	loginId      int64
 	uid          int64
-	upass        *string
+	upw          *string
 	loginsStatus *string
 	rptFlg       *string
 	kwords       *string
@@ -34,10 +34,10 @@ func (l *Login) Uid() int64 { return l.uid }
 
 func (l *Login) SetUid(uid int64) { l.uid = uid }
 
-// Upass is the password hash. Nil means the row carries no password.
-func (l *Login) Upass() *string { return l.upass }
+// Upw is the password hash. Nil means the row carries no password.
+func (l *Login) Upw() *string { return l.upw }
 
-func (l *Login) SetUpass(upass *string) { l.upass = upass }
+func (l *Login) SetUpw(upw *string) { l.upw = upw }
 
 func (l *Login) LoginsStatus() *string { return l.loginsStatus }
 

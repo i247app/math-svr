@@ -284,7 +284,7 @@ func createLogin(ctx context.Context, repos transaction.Repositories, uid int64,
 	l := login.NewLogin()
 	l.SetLoginId(loginID)
 	l.SetUid(uid)
-	l.SetUpass(&passwordHash)
+	l.SetUpw(&passwordHash)
 	l.SetLoginsStatus(&active)
 	l.SetStatus(active)
 	l.SetCreateId(&uid)

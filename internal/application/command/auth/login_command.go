@@ -162,8 +162,8 @@ func (h *LoginCommandHandler) verifyPassword(ctx context.Context, cmd LoginComma
 		if err != nil {
 			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 		}
-		if cred != nil && cred.Upass() != nil {
-			hash = *cred.Upass()
+		if cred != nil && cred.Upw() != nil {
+			hash = *cred.Upw()
 		}
 		return nil
 	}

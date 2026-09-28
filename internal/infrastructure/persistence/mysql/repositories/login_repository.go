@@ -17,7 +17,7 @@ import (
 const (
 	loginTable = "ma_logins"
 
-	loginColumns = `lg.login_id, lg.uid, lg.upass, lg.logins_status, lg.rpt_flg,
+	loginColumns = `lg.login_id, lg.uid, lg.upw, lg.logins_status, lg.rpt_flg,
 		lg.kwords, lg.note, lg.status, lg.create_id, lg.create_dt,
 		lg.modify_id, lg.modify_dt`
 
@@ -38,7 +38,7 @@ func NewLoginRepository(db database.Executor) login.IRepository {
 
 func scanLogin(s database.RowScanner) (*models.LoginModel, error) {
 	var m models.LoginModel
-	if err := s.Scan(&m.LoginId, &m.Uid, &m.Upass, &m.LoginsStatus, &m.RptFlg,
+	if err := s.Scan(&m.LoginId, &m.Uid, &m.Upw, &m.LoginsStatus, &m.RptFlg,
 		&m.Kwords, &m.Note, &m.Status, &m.CreateId, &m.CreateDt,
 		&m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -72,13 +72,13 @@ func (r *LoginRepository) FindByUid(ctx context.Context, uid int64) (*login.Logi
 func (r *LoginRepository) Create(ctx context.Context, l *login.Login) (*login.Login, error) {
 	query := `
 		INSERT INTO ` + loginTable + `
-			(login_id, uid, upass, logins_status, rpt_flg, kwords, note, status, create_id, create_dt, modify_dt)
+			(login_id, uid, upw, logins_status, rpt_flg, kwords, note, status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	now := mtime.Now().Time
 	_, err := r.db.Exec(ctx, query,
-		l.LoginId(), l.Uid(), l.Upass(), l.LoginsStatus(), l.RptFlg(), l.Kwords(),
+		l.LoginId(), l.Uid(), l.Upw(), l.LoginsStatus(), l.RptFlg(), l.Kwords(),
 		l.Note(), l.Status(), l.CreateId(), now, now)
 	if err != nil {
 		return nil, fmt.Errorf("login repo create: %w", err)
@@ -91,7 +91,7 @@ func ModelToDomainLogin(m *models.LoginModel) *login.Login {
 	l := login.NewLogin()
 	l.SetLoginId(m.LoginId)
 	l.SetUid(m.Uid)
-	l.SetUpass(m.Upass)
+	l.SetUpw(m.Upw)
 	l.SetLoginsStatus(m.LoginsStatus)
 	l.SetRptFlg(m.RptFlg)
 	l.SetKwords(m.Kwords)
