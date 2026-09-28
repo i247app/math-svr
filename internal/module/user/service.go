@@ -133,14 +133,19 @@ func (s *Service) CheckIdentifierAvailable(ctx context.Context, req *dto.CheckId
 		return nil, err
 	}
 
+	emailOtpEnable := req.EmailOTPEnable
+	phoneOtpEnable := req.PhoneOTPEnable
+
 	var (
 		u   *domain.User
 		err error
 	)
 	if strings.Contains(req.Identifier, "@") {
 		u, err = s.getUserByEmailQuery.Handle(ctx, query.GetUserByEmailQuery{Email: req.Identifier})
+		phoneOtpEnable = false
 	} else if phone, normErr := utils.NormalizePhone(req.Identifier); normErr == nil {
 		u, err = s.getUserByPhoneQuery.Handle(ctx, query.GetUserByPhoneQuery{Phone: phone})
+		emailOtpEnable = false
 	}
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -150,7 +155,10 @@ func (s *Service) CheckIdentifierAvailable(ctx context.Context, req *dto.CheckId
 		return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, ErrAccountAlreadyExists)
 	}
 
-	res := dto.CheckIdentifierRes{}
+	res := dto.CheckIdentifierRes{
+		EmailOTPEnable: emailOtpEnable,
+		PhoneOTPEnable: phoneOtpEnable,
+	}
 
 	return &res, nil
 }

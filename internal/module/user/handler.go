@@ -151,15 +151,15 @@ func (h *UserHandler) HandleIdentifierAvailable(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	if h.appResource != nil {
+		req.EmailOTPEnable = h.appResource.Env.EmailOTPEnable
+		req.PhoneOTPEnable = h.appResource.Env.PhoneOTPEnable
+	}
+
 	res, err := h.service.CheckIdentifierAvailable(ctx, &req)
 	if err != nil {
 		response.WriteJson(w, res, err)
 		return
-	}
-
-	if h.appResource != nil {
-		res.EmailOTPEnable = h.appResource.Env.EmailOTPEnable
-		res.PhoneOTPEnable = h.appResource.Env.PhoneOTPEnable
 	}
 
 	response.WriteJson(w, res, nil)

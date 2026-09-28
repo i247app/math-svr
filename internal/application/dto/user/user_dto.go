@@ -48,7 +48,9 @@ type GetUserByEmailRes struct {
 // CheckIdentifierReq carries a login key: an email when it contains "@",
 // otherwise a phone number (normalised server-side).
 type CheckIdentifierReq struct {
-	Identifier string `json:"identifier"`
+	Identifier     string `json:"identifier"`
+	EmailOTPEnable bool   `json:"-"`
+	PhoneOTPEnable bool   `json:"-"`
 }
 
 type CheckIdentifierRes struct {
