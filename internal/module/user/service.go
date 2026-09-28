@@ -128,35 +128,26 @@ func (s *Service) GetUserByEmail(ctx context.Context, req *dto.GetUserByEmailReq
 	return &dto.GetUserByEmailRes{User: userRes}, nil
 }
 
-func (s *Service) CheckIdentifier(ctx context.Context, req *dto.CheckIdentifierReq) (*dto.CheckIdentifierRes, error) {
+func (s *Service) CheckIdentifierAvailable(ctx context.Context, req *dto.CheckIdentifierReq) (*dto.CheckIdentifierRes, error) {
 	if err := ValidateCheckIdentifier(ctx, req); err != nil {
 		return nil, err
 	}
 
 	var (
-		u       *domain.User
-		err     error
-		isEmail bool
-		isPhone bool
+		u   *domain.User
+		err error
 	)
 	if strings.Contains(req.Identifier, "@") {
 		u, err = s.getUserByEmailQuery.Handle(ctx, query.GetUserByEmailQuery{Email: req.Identifier})
-		isEmail = true
 	} else if phone, normErr := utils.NormalizePhone(req.Identifier); normErr == nil {
 		u, err = s.getUserByPhoneQuery.Handle(ctx, query.GetUserByPhoneQuery{Phone: phone})
-		isPhone = true
 	}
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	userRes := dto.DomainToResponse(u)
-	s.populateImageUrl(ctx, userRes)
-
 	res := dto.CheckIdentifierRes{
-		User:           userRes,
-		EmailOTPEnable: isEmail && userRes == nil,
-		PhoneOTPEnable: isPhone && userRes == nil,
+		IsAvailable: u == nil,
 	}
 
 	return &res, nil

@@ -42,7 +42,7 @@ func (h *Handler) HandleShutdown(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Warnf("server.shutdown.requested uid=%d remote=%s", uid, r.RemoteAddr)
 
-	response.WriteJsonNoContent(w)
+	response.WriteJsonNoContent(w, nil)
 
 	time.AfterFunc(shutdownDelay, func() {
 		if err := selfShutdown(); err != nil {

@@ -141,21 +141,33 @@ func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) 
 	response.WriteJson(w, res, nil)
 }
 
-// POST /users/check-identifier
-func (h *UserHandler) HandleCheckIdentifier(w http.ResponseWriter, r *http.Request) {
+// POST /users/identifier-available
+func (h *UserHandler) HandleIdentifierAvailable(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
 	var req user.CheckIdentifierReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
 
-	res, err := h.service.CheckIdentifier(r.Context(), &req)
+	res, err := h.service.CheckIdentifierAvailable(ctx, &req)
 	if err != nil {
 		response.WriteJson(w, res, err)
 		return
 	}
 
-	response.WriteJson(w, res, nil)
+	if h.appResource != nil {
+		res.EmailOTPEnable = h.appResource.Env.EmailOTPEnable
+		res.PhoneOTPEnable = h.appResource.Env.PhoneOTPEnable
+	}
+
+	if res.IsAvailable {
+		response.WriteJson(w, res, nil)
+		return
+	}
+
+	response.WriteJsonNoContent(w, res)
 }
 
 // Get /users/me

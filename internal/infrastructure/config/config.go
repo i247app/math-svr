@@ -35,6 +35,8 @@ func NewEnv(envpath string) (*Env, error) {
 		HttpsCertFile:          getConfigOptional("HTTPS_CERT_FILE"),
 		HttpsKeyFile:           getConfigOptional("HTTPS_KEY_FILE"),
 		EnableOTP:              getBoolConfigWithDefault("ENABLE_OTP", false),
+		EmailOTPEnable:         getBoolConfigWithDefault("EMAIL_OTP_ENABLE", false),
+		PhoneOTPEnable:         getBoolConfigWithDefault("PHONE_OTP_ENABLE", false),
 		OtpBypassEnabled:       getBoolConfigWithDefault("OTP_BYPASS_ENABLED", false),
 		OtpBypassCode:          getConfigOptionalString("OTP_BYPASS_CODE"),
 		TrustDeviceTTLDays:     getIntConfigOptionalWithDefault("TRUST_DEVICE_TTL", 30),

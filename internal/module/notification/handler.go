@@ -131,7 +131,7 @@ func (h *Handler) HandleMarkRead(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	response.WriteJsonNoContent(w)
+	response.WriteJsonNoContent(w, nil)
 }
 
 // POST /notifications/mark-all-read — mark every unread notification read.
@@ -144,7 +144,7 @@ func (h *Handler) HandleMarkAllRead(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	response.WriteJsonNoContent(w)
+	response.WriteJsonNoContent(w, nil)
 }
 
 // POST /notifications/soft-delete — soft-delete an owned notification.
@@ -164,5 +164,5 @@ func (h *Handler) HandleSoftDelete(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	response.WriteJsonNoContent(w)
+	response.WriteJsonNoContent(w, nil)
 }

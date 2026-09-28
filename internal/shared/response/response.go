@@ -31,6 +31,19 @@ const (
 // (plus "debug" for a MathError) and keeps any data beside them. Envelope
 // keys always win over data fields of the same name.
 func WriteJson(w http.ResponseWriter, data any, err error) {
+	writeEnvelope(w, data, err, status.SUCCESS)
+}
+
+// WriteJsonNoContent writes the "deleted / nothing to return" outcome —
+// {"status":"Success","mstatus":204}, still with HTTP 200. data is optional
+// (nil for a bare envelope) and is merged exactly as WriteJson merges it.
+func WriteJsonNoContent(w http.ResponseWriter, data any) {
+	writeEnvelope(w, data, nil, status.NO_CONTENT)
+}
+
+// writeEnvelope is the one path both writers share: data first, then the
+// error half or the success half (with successCode) on top of it.
+func writeEnvelope(w http.ResponseWriter, data any, err error, successCode status.StatusCode) {
 	payload, encErr := flatten(data)
 	if err == nil {
 		err = encErr
@@ -39,16 +52,8 @@ func WriteJson(w http.ResponseWriter, data any, err error) {
 	if err != nil {
 		setError(payload, err)
 	} else {
-		setSuccess(payload, status.SUCCESS)
+		setSuccess(payload, successCode)
 	}
-	write(w, payload)
-}
-
-// WriteJsonNoContent writes {"status":"Success","mstatus":204} — the
-// "deleted / nothing to return" outcome, still with HTTP 200.
-func WriteJsonNoContent(w http.ResponseWriter) {
-	payload := make(map[string]any, 2)
-	setSuccess(payload, status.NO_CONTENT)
 	write(w, payload)
 }
 
