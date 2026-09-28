@@ -48,13 +48,3 @@ func LoggerMiddleware(p *logger.Provider, res *resource.Resource) func(http.Hand
 		})
 	}
 }
-
-// tokenTail returns the last tokenTailLen characters of a session token —
-// enough to correlate a session across log lines, too little to reuse it.
-// Returns "" for a token shorter than that.
-func tokenTail(token string) string {
-	if len(token) < tokenTailLen {
-		return ""
-	}
-	return token[len(token)-tokenTailLen:]
-}
