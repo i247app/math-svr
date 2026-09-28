@@ -9,7 +9,7 @@ import (
 // through OTP alone. upass holds the hash, never the password itself.
 type Login struct {
 	loginId      int64
-	userId       int64
+	uid          int64
 	upass        *string
 	loginsStatus *string
 	rptFlg       *string
@@ -30,9 +30,9 @@ func (l *Login) LoginId() int64 { return l.loginId }
 
 func (l *Login) SetLoginId(loginId int64) { l.loginId = loginId }
 
-func (l *Login) UserId() int64 { return l.userId }
+func (l *Login) Uid() int64 { return l.uid }
 
-func (l *Login) SetUserId(userId int64) { l.userId = userId }
+func (l *Login) SetUid(uid int64) { l.uid = uid }
 
 // Upass is the password hash. Nil means the row carries no password.
 func (l *Login) Upass() *string { return l.upass }

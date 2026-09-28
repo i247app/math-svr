@@ -44,7 +44,7 @@ type CreateUserCommand struct {
 	// to decide is_email_verified — see emailOtpMatches.
 	DeviceUUID string
 
-	// GuestUserID upgrades an existing guest instead of creating someone
+	// GuestUID upgrades an existing guest instead of creating someone
 	// new. The caller sets it from the session when that session belongs
 	// to a GUEST — see module/user.CreateUser. The guest's rows are
 	// UPDATED in place, so every exam they already sat stays attached to
@@ -52,7 +52,7 @@ type CreateUserCommand struct {
 	//
 	// nil is the ordinary path: a visitor who never generated an exam
 	// registers as a fresh user.
-	GuestUserID *int64
+	GuestUID *int64
 
 	// Password is optional. When set (already length-checked by the
 	// module validator) its hash is stored in ma_logins; when empty no
@@ -129,20 +129,20 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		// visitor needs one minted. This is the whole trick of the
 		// upgrade: nothing moves, so nothing can be lost in the moving.
 		var (
-			userID int64
-			guest  *user.User
-			err    error
+			uid   int64
+			guest *user.User
+			err   error
 		)
-		if cmd.GuestUserID != nil {
-			guest, err = loadUpgradableGuest(ctx, repos, *cmd.GuestUserID)
+		if cmd.GuestUID != nil {
+			guest, err = loadUpgradableGuest(ctx, repos, *cmd.GuestUID)
 			if err != nil {
 				return err
 			}
 		}
 		if guest != nil {
-			userID = guest.UserId()
+			uid = guest.Uid()
 		} else {
-			userID, err = seqgen.Next(ctx, repos.Seq, seq.NameUser)
+			uid, err = seqgen.Next(ctx, repos.Seq, seq.NameUser)
 			if err != nil {
 				return err
 			}
@@ -166,7 +166,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		}
 
 		userDomain := BuildUser(cmd)
-		userDomain.SetUserId(userID)
+		userDomain.SetUid(uid)
 		// Reaching here with hasEmail=true means the check above passed, so
 		// the email is provably verified.
 		userDomain.SetIsEmailVerified(hasEmail)
@@ -176,7 +176,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			if err := repos.User.Update(ctx, userDomain); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
-			refreshed, err := repos.User.FindByUserId(ctx, userID)
+			refreshed, err := repos.User.FindByUid(ctx, uid)
 			if err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
@@ -194,12 +194,12 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		for _, aka := range aliases {
 			if aka != nil && *aka != "" {
 				alias := user.NewAlias()
-				aliasID, err := seqgen.Next(ctx, repos.Seq, seq.NameAlias)
+				aid, err := seqgen.Next(ctx, repos.Seq, seq.NameAlias)
 				if err != nil {
 					return err
 				}
-				alias.SetAliasId(aliasID)
-				alias.SetUserId(u.UserId())
+				alias.SetAid(aid)
+				alias.SetUid(u.Uid())
 				alias.SetStatus(enum.StatusActive.String())
 				alias.SetAka(*aka)
 				if _, err := repos.Alias.Create(ctx, alias); err != nil {
@@ -209,7 +209,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		}
 
 		if passwordHash != nil {
-			if err := createLogin(ctx, repos, u.UserId(), *passwordHash); err != nil {
+			if err := createLogin(ctx, repos, u.Uid(), *passwordHash); err != nil {
 				return err
 			}
 		}
@@ -218,7 +218,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			// The guest's default profile is the child who has been sitting
 			// exams all along — it is updated, never replaced, so the
 			// journeys pointing at its profile_id keep pointing somewhere.
-			existing, err := repos.Profile.FindDefaultProfileByUserId(ctx, u.UserId())
+			existing, err := repos.Profile.FindDefaultProfileByUid(ctx, u.Uid())
 			if err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
@@ -228,7 +228,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 
 			patch := BuildProfile(ctx, cmd)
 			patch.SetProfileId(existing.ProfileId())
-			patch.SetUserId(u.UserId())
+			patch.SetUid(u.Uid())
 			if err := repos.Profile.Update(ctx, patch); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
@@ -239,7 +239,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			// a device_uuid is not a secret, and leaving one resolvable
 			// against a now-real account would let anyone who learns it
 			// start a login (and spray OTPs at the owner's phone).
-			if err := revokeDeviceAlias(ctx, repos, u.UserId(), cmd.DeviceUUID); err != nil {
+			if err := revokeDeviceAlias(ctx, repos, u.Uid(), cmd.DeviceUUID); err != nil {
 				return err
 			}
 
@@ -253,8 +253,8 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		}
 
 		profileDomain := BuildProfile(ctx, cmd)
-		profileDomain.SetUserId(u.UserId())
-		profileDomain.SetProfileId(userID)
+		profileDomain.SetUid(u.Uid())
+		profileDomain.SetProfileId(uid)
 		profileDomain.SetIsDefault(true)
 		profileDomain.SetProfileCode(profileCode)
 
@@ -275,7 +275,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 // createLogin stores the account's password hash in ma_logins. A guest
 // being upgraded never has a row yet — guests have no way to sign in —
 // so this is always an insert.
-func createLogin(ctx context.Context, repos transaction.Repositories, userID int64, passwordHash string) error {
+func createLogin(ctx context.Context, repos transaction.Repositories, uid int64, passwordHash string) error {
 	loginID, err := seqgen.Next(ctx, repos.Seq, seq.NameLogin)
 	if err != nil {
 		return err
@@ -283,11 +283,11 @@ func createLogin(ctx context.Context, repos transaction.Repositories, userID int
 	active := enum.StatusActive.String()
 	l := login.NewLogin()
 	l.SetLoginId(loginID)
-	l.SetUserId(userID)
+	l.SetUid(uid)
 	l.SetUpass(&passwordHash)
 	l.SetLoginsStatus(&active)
 	l.SetStatus(active)
-	l.SetCreateId(&userID)
+	l.SetCreateId(&uid)
 	if _, err := repos.Login.Create(ctx, l); err != nil {
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -328,7 +328,7 @@ func BuildUser(cmd CreateUserCommand) *user.User {
 	identity := enum.IdentityCodeUser.String()
 
 	u := user.NewUser()
-	// u.SetUserId(utils.GenerateUUID().String())
+	// u.SetUid(utils.GenerateUUID().String())
 	u.SetUserName(cmd.UserName)
 	u.SetEmail(cmd.Email)
 	u.SetPhone(utils.ToStringPtr(cmd.Phone))
@@ -375,8 +375,8 @@ func BuildProfile(ctx context.Context, cmd CreateUserCommand) *profile.Profile {
 // session, not the request body, so this is a consistency check rather
 // than an authorisation one — but it is what stops a stale session from
 // silently overwriting a real account's phone and role.
-func loadUpgradableGuest(ctx context.Context, repos transaction.Repositories, guestUserID int64) (*user.User, error) {
-	u, err := repos.User.FindByUserId(ctx, guestUserID)
+func loadUpgradableGuest(ctx context.Context, repos transaction.Repositories, guestUID int64) (*user.User, error) {
+	u, err := repos.User.FindByUid(ctx, guestUID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -394,7 +394,7 @@ func loadUpgradableGuest(ctx context.Context, repos transaction.Repositories, gu
 // get one, so this finds nothing for accounts opened after that change;
 // it is kept for the ones opened before it. Absent or already gone is
 // not an error — the upgrade path must be safe to reach twice.
-func revokeDeviceAlias(ctx context.Context, repos transaction.Repositories, userID int64, deviceUUID string) error {
+func revokeDeviceAlias(ctx context.Context, repos transaction.Repositories, uid int64, deviceUUID string) error {
 	if deviceUUID == "" {
 		return nil
 	}
@@ -402,10 +402,10 @@ func revokeDeviceAlias(ctx context.Context, repos transaction.Repositories, user
 	if err != nil {
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	if alias == nil || alias.UserId() != userID {
+	if alias == nil || alias.Uid() != uid {
 		return nil
 	}
-	if err := repos.Alias.SoftDeleteByAliasId(ctx, alias.AliasId()); err != nil {
+	if err := repos.Alias.SoftDeleteByAid(ctx, alias.Aid()); err != nil {
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	return nil

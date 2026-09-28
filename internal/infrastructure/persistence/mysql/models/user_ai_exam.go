@@ -6,7 +6,7 @@ import (
 
 type UserAiExamModel struct {
 	UserAiExamId       int64
-	UserId             int64
+	Uid                int64
 	ProfileId          int64
 	AiExamId           int64
 	UserExamId         *int64

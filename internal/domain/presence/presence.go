@@ -15,7 +15,7 @@ import "math-ai.com/math-ai/internal/domain/shared/mtime"
 // person has the app open on a phone and a tablet: the row only flips to
 // OFFLINE when the last connection goes away.
 type Presence struct {
-	userId          int64
+	uid             int64
 	presenceState   string
 	connectionCount int64
 	lastOnlineDt    mtime.MathTime
@@ -34,8 +34,8 @@ type Presence struct {
 
 func NewPresence() *Presence { return &Presence{} }
 
-func (p *Presence) UserId() int64                { return p.userId }
-func (p *Presence) SetUserId(id int64)           { p.userId = id }
+func (p *Presence) Uid() int64                   { return p.uid }
+func (p *Presence) SetUid(id int64)              { p.uid = id }
 func (p *Presence) PresenceState() string        { return p.presenceState }
 func (p *Presence) SetPresenceState(s string)    { p.presenceState = s }
 func (p *Presence) ConnectionCount() int64       { return p.connectionCount }

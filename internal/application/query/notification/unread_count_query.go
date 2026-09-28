@@ -8,7 +8,7 @@ import (
 
 // UnreadCountQuery returns the caller's unread notification count.
 type UnreadCountQuery struct {
-	UserID int64
+	UID int64
 }
 
 type UnreadCountQueryHandler struct {
@@ -20,5 +20,5 @@ func NewUnreadCountQueryHandler(repo notification.IRepository) *UnreadCountQuery
 }
 
 func (h *UnreadCountQueryHandler) Handle(ctx context.Context, q UnreadCountQuery) (int64, error) {
-	return h.repo.CountUnreadByUserId(ctx, q.UserID)
+	return h.repo.CountUnreadByUid(ctx, q.UID)
 }

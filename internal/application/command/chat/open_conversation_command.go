@@ -20,9 +20,9 @@ import (
 // Callers resolve the user ids before reaching here.
 type OpenConversationCommand struct {
 	ActorProfileID  int64
-	ActorUserID     int64
+	ActorUID        int64
 	TargetProfileID int64
-	TargetUserID    int64
+	TargetUID       int64
 }
 
 type OpenConversationCommandHandler struct {
@@ -111,7 +111,7 @@ func (h *OpenConversationCommandHandler) create(ctx context.Context, cmd *OpenCo
 		c.SetParticipantCount(2)
 		c.SetConversationStatus(&active)
 		c.SetStatus(string(enum.StatusActive))
-		c.SetCreateId(&cmd.ActorUserID)
+		c.SetCreateId(&cmd.ActorUID)
 
 		created, err := repos.ChatConversation.Create(ctx, c)
 		if err != nil {
@@ -125,9 +125,9 @@ func (h *OpenConversationCommandHandler) create(ctx context.Context, cmd *OpenCo
 		// Both participant rows are inserted in the same transaction as the
 		// conversation: a thread that exists with only one side in it would be
 		// invisible to the other person and impossible to repair from the API.
-		for _, side := range []struct{ profileID, userID int64 }{
-			{cmd.ActorProfileID, cmd.ActorUserID},
-			{cmd.TargetProfileID, cmd.TargetUserID},
+		for _, side := range []struct{ profileID, uid int64 }{
+			{cmd.ActorProfileID, cmd.ActorUID},
+			{cmd.TargetProfileID, cmd.TargetUID},
 		} {
 			participantID, err := seqgen.Next(ctx, repos.Seq, seq.NameChatParticipant)
 			if err != nil {
@@ -139,12 +139,12 @@ func (h *OpenConversationCommandHandler) create(ctx context.Context, cmd *OpenCo
 			p.SetParticipantId(participantID)
 			p.SetConversationId(conversationID)
 			p.SetProfileId(side.profileID)
-			p.SetUserId(side.userID)
+			p.SetUid(side.uid)
 			p.SetParticipantRole(string(enum.ChatParticipantRoleMember))
 			p.SetJoinedDt(mtime.Now())
 			p.SetParticipantStatus(&activeParticipant)
 			p.SetStatus(string(enum.StatusActive))
-			p.SetCreateId(&cmd.ActorUserID)
+			p.SetCreateId(&cmd.ActorUID)
 
 			if _, err := repos.ChatParticipant.Create(ctx, p); err != nil {
 				return errs.NewError(ctx, status.CHAT_CONVERSATION_CREATE_FAILED, nil, err)

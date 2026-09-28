@@ -27,7 +27,7 @@ const coverUrlTTL = 1 * time.Hour
 
 // Service is the classroom module's public façade. It composes the CQRS
 // handlers behind the validators, holds the curriculum/profile repos
-// needed for foreign-key validation, and exposes a sessionUserID-aware
+// needed for foreign-key validation, and exposes a sessionUID-aware
 // API so handlers can enforce the §0 Q1 contract.
 type Service struct {
 	getClassroomQuery                  *query.GetClassroomByIdQueryHandler
@@ -124,11 +124,11 @@ func NewService(
 // a TEACHER profile can become an OWNER. Curriculum tie validation runs
 // here so a bad program_id / grade_id is rejected before we mint a
 // classroom row inside UoW.
-func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomReq, sessionUserID int64) (*dto.CreateClassroomRes, error) {
+func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomReq, sessionUID int64) (*dto.CreateClassroomRes, error) {
 	if err := ValidateCreateClassroom(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -163,11 +163,11 @@ func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomR
 	return &dto.CreateClassroomRes{Classroom: resp}, nil
 }
 
-func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq, sessionUserID int64) (*dto.UpdateClassroomRes, error) {
+func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq, sessionUID int64) (*dto.UpdateClassroomRes, error) {
 	if err := ValidateUpdateClassroom(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -221,14 +221,14 @@ func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomR
 // complete card. The previous member-only gate is intentionally
 // dropped: the Relationship field now carries the same information the
 // gate used to enforce, in a form the client can branch on directly.
-func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, sessionUserID int64) (*dto.GetClassroomRes, error) {
+func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, sessionUID int64) (*dto.GetClassroomRes, error) {
 	if err := ValidateGetClassroom(ctx, req); err != nil {
 		return nil, err
 	}
 
 	var callerProfileID int64
 	if req.ProfileID != 0 {
-		caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+		caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 		if err != nil {
 			return nil, err
 		}
@@ -299,7 +299,7 @@ func (s *Service) FindClassroomByCode(ctx context.Context, req *dto.FindClassroo
 	return &dto.FindClassroomByCodeRes{Classroom: resp}, nil
 }
 
-func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq, sessionUserID int64) (*dto.ListClassroomsRes, error) {
+func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq, sessionUID int64) (*dto.ListClassroomsRes, error) {
 	if err := ValidateListClassrooms(ctx, req); err != nil {
 		return nil, err
 	}
@@ -346,11 +346,11 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 // triggers the repo's ACTIVE-member inner-join — only classrooms the
 // caller is currently an ACTIVE member of are returned. Relationship
 // will hydrate to MEMBER for every row.
-func (s *Service) ListMyJoinedClassrooms(ctx context.Context, req *dto.ListMyJoinedClassroomsReq, sessionUserID int64) (*dto.ListMyJoinedClassroomsRes, error) {
+func (s *Service) ListMyJoinedClassrooms(ctx context.Context, req *dto.ListMyJoinedClassroomsReq, sessionUID int64) (*dto.ListMyJoinedClassroomsRes, error) {
 	if err := ValidateListMyJoinedClassrooms(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -383,11 +383,11 @@ func (s *Service) ListMyJoinedClassrooms(ctx context.Context, req *dto.ListMyJoi
 	}, nil
 }
 
-func (s *Service) ArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroomReq, sessionUserID int64) (*dto.ArchiveClassroomRes, error) {
+func (s *Service) ArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroomReq, sessionUID int64) (*dto.ArchiveClassroomRes, error) {
 	if err := ValidateArchiveClassroom(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -400,11 +400,11 @@ func (s *Service) ArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroo
 	return &dto.ArchiveClassroomRes{}, nil
 }
 
-func (s *Service) RestoreClassroom(ctx context.Context, req *dto.RestoreClassroomReq, sessionUserID int64) (*dto.RestoreClassroomRes, error) {
+func (s *Service) RestoreClassroom(ctx context.Context, req *dto.RestoreClassroomReq, sessionUID int64) (*dto.RestoreClassroomRes, error) {
 	if err := ValidateRestoreClassroom(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -417,11 +417,11 @@ func (s *Service) RestoreClassroom(ctx context.Context, req *dto.RestoreClassroo
 	return &dto.RestoreClassroomRes{}, nil
 }
 
-func (s *Service) SoftDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq, sessionUserID int64) (*dto.DeleteClassroomRes, error) {
+func (s *Service) SoftDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq, sessionUID int64) (*dto.DeleteClassroomRes, error) {
 	if err := ValidateDeleteClassroom(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -434,11 +434,11 @@ func (s *Service) SoftDeleteClassroom(ctx context.Context, req *dto.DeleteClassr
 	return &dto.DeleteClassroomRes{}, nil
 }
 
-func (s *Service) ForceDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq, sessionUserID int64) (*dto.DeleteClassroomRes, error) {
+func (s *Service) ForceDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq, sessionUID int64) (*dto.DeleteClassroomRes, error) {
 	if err := ValidateDeleteClassroom(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}

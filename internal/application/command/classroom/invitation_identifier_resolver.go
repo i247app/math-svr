@@ -72,7 +72,7 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 			out.skipReason = status.PROFILE_NOT_FOUND
 			return out, nil
 		}
-		profiles, err := repos.Profile.ListByUserId(ctx, alias.UserId())
+		profiles, err := repos.Profile.ListByUid(ctx, alias.Uid())
 		if err != nil {
 			return out, errs.NewError(ctx, status.FAIL, nil, err)
 		}

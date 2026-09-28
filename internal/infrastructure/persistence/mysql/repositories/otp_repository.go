@@ -40,7 +40,7 @@ func NewOtpRepository(db database.Executor) otp.IRepository {
 
 func scanOtp(s database.RowScanner) (*models.OtpModel, error) {
 	var m models.OtpModel
-	if err := s.Scan(&m.OtpId, &m.OtpType, &m.UserId, &m.Identifier,
+	if err := s.Scan(&m.OtpId, &m.OtpType, &m.Uid, &m.Identifier,
 		&m.DeviceUUID, &m.DeviceName, &m.OtpCode, &m.OtpCreateDt, &m.OtpExpireDt, &m.OtpVerifiedDt,
 		&m.AttemptCount, &m.RptFlg, &m.Kwords, &m.Note, &m.OtpStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -136,7 +136,7 @@ func (r *OtpRepository) Create(ctx context.Context, o *otp.Otp) (*otp.Otp, error
 	}
 
 	_, err := r.db.Exec(ctx, query,
-		o.OtpId(), o.OtpType(), o.UserId(), o.Identifier(), o.DeviceUUID(), o.DeviceName(),
+		o.OtpId(), o.OtpType(), o.Uid(), o.Identifier(), o.DeviceUUID(), o.DeviceName(),
 		o.OtpCode(), createDtArg, expireDtArg, o.AttemptCount(), o.RptFlg(), o.Kwords(), o.Note(), o.OtpStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("otp repo create: %w", err)
@@ -213,7 +213,7 @@ func ModelToDomainOtp(m *models.OtpModel) *otp.Otp {
 	o := otp.NewOtp()
 	o.SetOtpId(m.OtpId)
 	o.SetOtpType(m.OtpType)
-	o.SetUserId(m.UserId)
+	o.SetUid(m.Uid)
 	o.SetIdentifier(m.Identifier)
 	o.SetDeviceUUID(m.DeviceUUID)
 	o.SetDeviceName(m.DeviceName)

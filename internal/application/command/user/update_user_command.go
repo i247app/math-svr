@@ -13,7 +13,7 @@ import (
 )
 
 type UpdateUserCommand struct {
-	UserID    int64   `json:"uid"`
+	UID       int64   `json:"uid"`
 	UserName  *string `json:"user_name,omitempty"`
 	Email     *string `json:"email,omitempty"`
 	Phone     *string `json:"phone,omitempty"`
@@ -43,7 +43,7 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 	var updated *user.User
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
-		u, err := repos.User.FindByUserId(ctx, cmd.UserID)
+		u, err := repos.User.FindByUid(ctx, cmd.UID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -70,7 +70,7 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 			u.SetAvatarKey(cmd.AvatarKey)
 		}
 
-		aliases, err := repos.Alias.FindByUserId(ctx, cmd.UserID)
+		aliases, err := repos.Alias.FindByUid(ctx, cmd.UID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -103,7 +103,7 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 				}
 			}
 
-			err = repos.Alias.UpdateByAliasId(ctx, alias)
+			err = repos.Alias.UpdateByAid(ctx, alias)
 			if err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
@@ -114,7 +114,7 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 		}
 
 		// Fetch updated record to return fresh timestamps
-		updated, err = repos.User.FindByUserId(ctx, cmd.UserID)
+		updated, err = repos.User.FindByUid(ctx, cmd.UID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}

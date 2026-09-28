@@ -243,11 +243,11 @@ func (r *ClassroomMemberRepository) ListActiveByProfileIds(ctx context.Context, 
 	return out, nil
 }
 
-// ListPeerUserIdsByUserId walks profile → my memberships → co-memberships →
+// ListPeerUidsByUid walks profile → my memberships → co-memberships →
 // their profiles in one statement. The self-join on ma_classroom_members is
 // what expresses "shares a classroom"; DISTINCT collapses people the user
 // shares more than one classroom with.
-func (r *ClassroomMemberRepository) ListPeerUserIdsByUserId(ctx context.Context, userId int64) ([]int64, error) {
+func (r *ClassroomMemberRepository) ListPeerUidsByUid(ctx context.Context, uid int64) ([]int64, error) {
 	query := `SELECT DISTINCT peer_p.uid
 		FROM ` + profileTable + ` me
 		INNER JOIN ` + classroomMemberTable + ` my_m
@@ -270,7 +270,7 @@ func (r *ClassroomMemberRepository) ListPeerUserIdsByUserId(ctx context.Context,
 		enum.StatusActive,
 		enum.ClassroomMemberStatusTypeActive, enum.StatusActive,
 		enum.StatusActive,
-		userId, userId, enum.StatusActive,
+		uid, uid, enum.StatusActive,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("classroom_member repo list peer user ids: %w", err)

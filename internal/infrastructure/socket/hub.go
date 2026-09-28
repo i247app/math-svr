@@ -66,13 +66,13 @@ func NewHub(cfg Config) *Hub {
 
 const defaultMaxConnsPerUser = 5
 
-// NewConn registers a fresh connection for userID and returns it ready to
+// NewConn registers a fresh connection for uid and returns it ready to
 // Serve. It enforces the per-user cap. ws may be nil in transport-only tests.
-func (h *Hub) NewConn(ws *websocket.Conn, userID int64) (*Conn, error) {
+func (h *Hub) NewConn(ws *websocket.Conn, uid int64) (*Conn, error) {
 	id := strconv.FormatUint(h.nextID.Add(1), 10)
 	c := &Conn{
 		id:     id,
-		userID: userID,
+		uid:    uid,
 		ws:     ws,
 		hub:    h,
 		cfg:    h.connCfg,
@@ -83,15 +83,15 @@ func (h *Hub) NewConn(ws *websocket.Conn, userID int64) (*Conn, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	if existing := h.byUser[userID]; len(existing) >= h.maxPerUser {
+	if existing := h.byUser[uid]; len(existing) >= h.maxPerUser {
 		return nil, ErrTooManyConnections
 	}
 
 	h.conns[id] = c
-	if h.byUser[userID] == nil {
-		h.byUser[userID] = make(map[string]*Conn)
+	if h.byUser[uid] == nil {
+		h.byUser[uid] = make(map[string]*Conn)
 	}
-	h.byUser[userID][id] = c
+	h.byUser[uid][id] = c
 	h.subs[id] = make(map[string]bool)
 	return c, nil
 }
@@ -106,10 +106,10 @@ func (h *Hub) unregister(c *Conn) {
 	}
 	delete(h.conns, c.id)
 
-	if userConns := h.byUser[c.userID]; userConns != nil {
+	if userConns := h.byUser[c.uid]; userConns != nil {
 		delete(userConns, c.id)
 		if len(userConns) == 0 {
-			delete(h.byUser, c.userID)
+			delete(h.byUser, c.uid)
 		}
 	}
 
@@ -172,9 +172,9 @@ func (h *Hub) Publish(topic, event string, data any) int {
 	return h.deliver(h.topicTargets(topic), frame)
 }
 
-// BroadcastUser fans an event out to every connection owned by userID
+// BroadcastUser fans an event out to every connection owned by uid
 // regardless of topic subscription (used for direct, user-addressed pushes).
-func (h *Hub) BroadcastUser(userID int64, event string, data any) int {
+func (h *Hub) BroadcastUser(uid int64, event string, data any) int {
 	frame, err := json.Marshal(Outbound{
 		Type:  TypeEvent,
 		Event: event,
@@ -183,7 +183,7 @@ func (h *Hub) BroadcastUser(userID int64, event string, data any) int {
 	if err != nil {
 		return 0
 	}
-	return h.deliver(h.userTargets(userID), frame)
+	return h.deliver(h.userTargets(uid), frame)
 }
 
 // topicTargets snapshots the connections subscribed to topic.
@@ -200,12 +200,12 @@ func (h *Hub) topicTargets(topic string) []*Conn {
 	return snapshotConns(h.topics[topic])
 }
 
-// userTargets snapshots every connection owned by userID. Same locking rule as
+// userTargets snapshots every connection owned by uid. Same locking rule as
 // topicTargets: the h.byUser lookup happens under the read lock.
-func (h *Hub) userTargets(userID int64) []*Conn {
+func (h *Hub) userTargets(uid int64) []*Conn {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	return snapshotConns(h.byUser[userID])
+	return snapshotConns(h.byUser[uid])
 }
 
 // allTargets snapshots every registered connection.

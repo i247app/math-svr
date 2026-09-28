@@ -16,9 +16,9 @@ import (
 
 // resolveActingProfile loads the profile and confirms it belongs to the
 // session user — the same ownership contract the classroom module
-// enforces. A zero sessionUserID skips the ownership check (internal
+// enforces. A zero sessionUID skips the ownership check (internal
 // callers / tests only).
-func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUserID int64) (*profileDomain.Profile, error) {
+func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUID int64) (*profileDomain.Profile, error) {
 	p, err := s.profileRepo.FindByProfileId(ctx, profileID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -26,7 +26,7 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 	if p == nil {
 		return nil, errs.NewError(ctx, status.HOME_PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
 	}
-	if sessionUserID != 0 && sessionUserID != p.UserId() {
+	if sessionUID != 0 && sessionUID != p.Uid() {
 		return nil, errs.NewError(ctx, status.HOME_PROFILE_NOT_OWNED, nil, ErrProfileNotOwnedByUser)
 	}
 	return p, nil

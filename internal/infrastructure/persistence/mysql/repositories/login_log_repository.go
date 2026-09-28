@@ -38,7 +38,7 @@ func NewLoginLogRepository(db database.Executor) loginlog.IRepository {
 
 func scanLoginLog(s database.RowScanner) (*models.LoginLogModel, error) {
 	var m models.LoginLogModel
-	if err := s.Scan(&m.LoginLogId, &m.UserId, &m.IpAddress, &m.DeviceUUID,
+	if err := s.Scan(&m.LoginLogId, &m.Uid, &m.IpAddress, &m.DeviceUUID,
 		&m.Token, &m.RptFlg, &m.Kwords, &m.Note, &m.LoginLogStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -72,14 +72,14 @@ func (r *LoginLogRepository) FindActiveByToken(ctx context.Context, token string
 	return r.findOneBy(ctx, "l.token = ? AND l.login_log_status = ?", token, enum.LoginLogStatusTypeActive)
 }
 
-func (r *LoginLogRepository) FindActiveByUserDevice(ctx context.Context, userId int64, deviceUUID string) (*loginlog.LoginLog, error) {
+func (r *LoginLogRepository) FindActiveByUserDevice(ctx context.Context, uid int64, deviceUUID string) (*loginlog.LoginLog, error) {
 	return r.findOneBy(ctx,
 		"l.uid = ? AND l.device_uuid = ? AND l.login_log_status = ?",
-		userId, deviceUUID, enum.LoginLogStatusTypeActive)
+		uid, deviceUUID, enum.LoginLogStatusTypeActive)
 }
 
-func (r *LoginLogRepository) ListByUserId(ctx context.Context, userId int64) ([]*loginlog.LoginLog, error) {
-	args := slices.Concat([]any{userId}, loginLogActiveArgs())
+func (r *LoginLogRepository) ListByUid(ctx context.Context, uid int64) ([]*loginlog.LoginLog, error) {
+	args := slices.Concat([]any{uid}, loginLogActiveArgs())
 	query := `SELECT ` + loginLogColumns + ` FROM ` + loginLogTable + ` l WHERE (l.uid = ?) AND ` +
 		loginLogActiveWhere + ` ORDER BY l.login_log_id DESC`
 
@@ -111,7 +111,7 @@ func (r *LoginLogRepository) Create(ctx context.Context, l *loginlog.LoginLog) (
 	`
 
 	_, err := r.db.Exec(ctx, query,
-		l.LoginLogId(), l.UserId(), l.IpAddress(), l.DeviceUUID(),
+		l.LoginLogId(), l.Uid(), l.IpAddress(), l.DeviceUUID(),
 		l.Token(), l.RptFlg(), l.Kwords(), l.Note(), l.LoginLogStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("login_log repo create: %w", err)
@@ -136,7 +136,7 @@ func (r *LoginLogRepository) MarkStatusByLoginLogId(ctx context.Context, loginLo
 // MarkStatusByUserDevice flips every still-ACTIVE row for the (user, device)
 // pair. Used at login to enforce the "one active session per device" rule —
 // the new login_log row is inserted right after.
-func (r *LoginLogRepository) MarkStatusByUserDevice(ctx context.Context, userId int64, deviceUUID string, st enum.LoginLogStatusType) error {
+func (r *LoginLogRepository) MarkStatusByUserDevice(ctx context.Context, uid int64, deviceUUID string, st enum.LoginLogStatusType) error {
 	query := `
 		UPDATE ` + loginLogTable + `
 		SET login_log_status = ?,
@@ -145,7 +145,7 @@ func (r *LoginLogRepository) MarkStatusByUserDevice(ctx context.Context, userId 
 		  AND device_uuid = ?
 		  AND login_log_status = ?
 	`
-	if _, err := r.db.Exec(ctx, query, st, mtime.Now().Time, userId, deviceUUID, enum.LoginLogStatusTypeActive); err != nil {
+	if _, err := r.db.Exec(ctx, query, st, mtime.Now().Time, uid, deviceUUID, enum.LoginLogStatusTypeActive); err != nil {
 		return fmt.Errorf("login_log repo mark status by user device: %w", err)
 	}
 	return nil
@@ -169,7 +169,7 @@ func (r *LoginLogRepository) SoftDeleteByLoginLogId(ctx context.Context, loginLo
 func ModelToDomainLoginLog(m *models.LoginLogModel) *loginlog.LoginLog {
 	l := loginlog.NewLoginLog()
 	l.SetLoginLogId(m.LoginLogId)
-	l.SetUserId(m.UserId)
+	l.SetUid(m.Uid)
 	l.SetIpAddress(m.IpAddress)
 	l.SetDeviceUUID(m.DeviceUUID)
 	l.SetToken(m.Token)

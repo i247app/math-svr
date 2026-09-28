@@ -49,7 +49,7 @@ func NewChatMessageRepository(db database.Executor) chat.IMessageRepository {
 func scanChatMessage(s database.RowScanner) (*models.ChatMessageModel, error) {
 	var m models.ChatMessageModel
 	if err := s.Scan(&m.MessageId, &m.ConversationId, &m.SeqNo,
-		&m.SenderProfileId, &m.SenderUserId, &m.MessageType, &m.Content,
+		&m.SenderProfileId, &m.SenderUid, &m.MessageType, &m.Content,
 		&m.AttachmentCount, &m.ReplyToMessageId, &m.SystemEvent, &m.SystemPayload,
 		&m.Metadata, &m.ClientMsgId, &m.SentDt, &m.EditedDt, &m.RevokedDt,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.MessageStatus, &m.Status, &m.CreateId, &m.CreateDt,
@@ -65,7 +65,7 @@ func ModelToDomainChatMessage(m *models.ChatMessageModel) *chat.Message {
 	msg.SetConversationId(m.ConversationId)
 	msg.SetSeqNo(m.SeqNo)
 	msg.SetSenderProfileId(m.SenderProfileId)
-	msg.SetSenderUserId(m.SenderUserId)
+	msg.SetSenderUid(m.SenderUid)
 	msg.SetMessageType(m.MessageType)
 	msg.SetContent(m.Content)
 	msg.SetAttachmentCount(m.AttachmentCount)
@@ -203,7 +203,7 @@ func (r *ChatMessageRepository) Create(ctx context.Context, m *chat.Message) (*c
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := r.db.Exec(ctx, query,
-		m.MessageId(), m.ConversationId(), m.SeqNo(), m.SenderProfileId(), m.SenderUserId(),
+		m.MessageId(), m.ConversationId(), m.SeqNo(), m.SenderProfileId(), m.SenderUid(),
 		m.MessageType(), m.Content(), m.AttachmentCount(), m.ReplyToMessageId(),
 		m.SystemEvent(), m.SystemPayload(), m.Metadata(), m.ClientMsgId(), m.SentDt().Time,
 		m.RptFlg(), m.Kwords(), m.Note(), m.MessageStatus(), m.Status(), m.CreateId(), mtime.Now().Time,

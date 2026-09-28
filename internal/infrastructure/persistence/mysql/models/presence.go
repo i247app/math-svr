@@ -3,7 +3,7 @@ package models
 import "time"
 
 type PresenceModel struct {
-	UserId          int64
+	Uid             int64
 	PresenceState   string
 	ConnectionCount int64
 	LastOnlineDt    *time.Time

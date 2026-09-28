@@ -18,7 +18,7 @@ type Publisher interface {
 	// Publish fans event+data out to every connection subscribed to topic.
 	Publish(ctx context.Context, topic, event string, data any) error
 
-	// BroadcastUser fans event+data out to every connection owned by userID,
+	// BroadcastUser fans event+data out to every connection owned by uid,
 	// independent of topic subscription (direct, user-addressed push).
-	BroadcastUser(ctx context.Context, userID int64, event string, data any) error
+	BroadcastUser(ctx context.Context, uid int64, event string, data any) error
 }

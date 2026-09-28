@@ -14,7 +14,7 @@ import (
 // user's notification.
 type SoftDeleteNotificationCommand struct {
 	NotificationID int64
-	UserID         int64
+	UID            int64
 }
 
 type SoftDeleteNotificationCommandHandler struct {
@@ -35,7 +35,7 @@ func (h *SoftDeleteNotificationCommandHandler) Handle(ctx context.Context, cmd S
 			return errs.NewError(ctx, status.NOTIFICATION_NOT_FOUND, nil,
 				errors.New("notification not found"))
 		}
-		if n.UserId() != cmd.UserID {
+		if n.Uid() != cmd.UID {
 			return errs.NewError(ctx, status.NOTIFICATION_NOT_OWNED, nil,
 				errors.New("notification not owned by user"))
 		}

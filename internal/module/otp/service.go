@@ -93,19 +93,19 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 		user = userResp.User
 	}
 
-	var userId *int64
+	var uid *int64
 	switch req.OtpType {
 	case string(enum.OtpTypeLogin2FA):
 		if user == nil {
 			return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil, ErrUserNotFound)
 		}
 
-		userId = &user.UserID
+		uid = &user.UID
 	case string(enum.OtpTypeRegister):
 		if user != nil {
 			return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, ErrUserAlreadyExists)
 		}
-		userId = nil
+		uid = nil
 	default:
 	}
 
@@ -115,7 +115,7 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	result, err := s.sendCmd.Handle(ctx, command.SendOtpCommand{
 		OtpType:        enum.OtpType(req.OtpType),
 		Identifier:     req.Identifier,
-		UserID:         userId,
+		UID:            uid,
 		DeviceUUID:     &deviceUUID,
 		DeviceName:     &deviceName,
 		Channel:        channel,
@@ -135,20 +135,20 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	// Skipped when the command handed back a still-valid PENDING OTP: no
 	// code was delivered, so announcing one would re-notify the owner every
 	// time the client re-opens the OTP screen.
-	if !result.Reused && req.TargetDeviceID != nil && userId != nil && s.notificationSvc != nil {
+	if !result.Reused && req.TargetDeviceID != nil && uid != nil && s.notificationSvc != nil {
 		requestingDevice := metadata.GetDeviceName(ctx)
 		if requestingDevice == "" {
 			requestingDevice = "một thiết bị"
 		}
 		category := enum.NotificationCategoryTypeWarning.String()
 		_, nerr := s.notificationSvc.SendNotification(ctx, &notifDto.SendNotificationReq{
-			UserID:    *userId,
+			UID:       *uid,
 			Title:     "Cảnh báo đăng nhập",
 			ShortText: fmt.Sprintf("Có yêu cầu đăng nhập mới từ %s.Mã OTP của bạn là %s. Nếu không phải bạn, vui lòng đổi không được để lộ mã otp.", requestingDevice, result.PushedCode),
 			Category:  &category,
 		})
 		if nerr != nil {
-			log.Warnf("otp.login_security_notice_failed uid=%d err=%v", *userId, nerr)
+			log.Warnf("otp.login_security_notice_failed uid=%d err=%v", *uid, nerr)
 		}
 	}
 
@@ -185,8 +185,8 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 	}
 
 	var user *userDto.UserResponse
-	if result != nil && result.UserID != nil {
-		userRes, err := s.userSvc.GetUserById(ctx, &userDto.GetUserByUserIdReq{UserID: *result.UserID})
+	if result != nil && result.UID != nil {
+		userRes, err := s.userSvc.GetUserById(ctx, &userDto.GetUserByUidReq{UID: *result.UID})
 		if err != nil {
 			return nil, err
 		}
@@ -204,7 +204,7 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 			deviceUUID := metadata.GetDeviceUUID(ctx)
 			log.Info("Mark device as trusted")
 			_, err := s.deviceSvc.VerifyDevice(ctx, &deviceDTO.VerifyDeviceReq{
-				UserID:          *result.UserID,
+				UID:             *result.UID,
 				DeviceUUID:      deviceUUID,
 				DeviceName:      metadata.GetDeviceName(ctx),
 				Platform:        metadata.GetPlatform(ctx),
@@ -218,7 +218,7 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 			sessionData := session.InitData{
 				Source:    "login",
 				IsSecure:  true,
-				UID:       userRes.User.UserID,
+				UID:       userRes.User.UID,
 				LoginName: req.Identifier,
 			}
 
@@ -230,7 +230,7 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 
 			// The OTP just proved this account is theirs. Anything they
 			// did as a guest before signing in follows them now.
-			s.userSvc.AdoptGuestInto(ctx, previousUID, userRes.User.UserID)
+			s.userSvc.AdoptGuestInto(ctx, previousUID, userRes.User.UID)
 		}
 		user = userRes.User
 	}

@@ -27,12 +27,12 @@ func (s *Service) requireProfileProgressAccess(
 
 // GetProfileProgress powers POST /classrooms/progress/profile — the
 // single-student progress detail (chart series + summary cards).
-func (s *Service) GetProfileProgress(ctx context.Context, req dto.ProfileProgressReq, sessionUserID int64) (*dto.ProfileProgressRes, error) {
+func (s *Service) GetProfileProgress(ctx context.Context, req dto.ProfileProgressReq, sessionUID int64) (*dto.ProfileProgressRes, error) {
 	if err := s.ValidateProfileProgress(ctx, &req); err != nil {
 		return nil, err
 	}
 
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}

@@ -7,7 +7,7 @@ import (
 type ProfileModel struct {
 	ProfileId     int64
 	ProfileCode   string
-	UserId        int64
+	Uid           int64
 	Name          string
 	Phone         *string
 	Email         *string

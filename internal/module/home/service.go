@@ -52,12 +52,12 @@ func NewService(
 
 // GetHomeLayout builds the home dashboard for the profile named in the
 // request, after confirming it belongs to the authenticated user.
-func (s *Service) GetHomeLayout(ctx context.Context, req *dto.HomeLayoutReq, sessionUserID int64) (*dto.HomeLayoutRes, error) {
+func (s *Service) GetHomeLayout(ctx context.Context, req *dto.HomeLayoutReq, sessionUID int64) (*dto.HomeLayoutRes, error) {
 	if err := ValidateHomeLayout(ctx, req); err != nil {
 		return nil, err
 	}
 
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}

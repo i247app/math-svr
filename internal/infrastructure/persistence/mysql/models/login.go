@@ -6,7 +6,7 @@ import (
 
 type LoginModel struct {
 	LoginId      int64
-	UserId       int64
+	Uid          int64
 	Upass        *string
 	LoginsStatus *string
 	RptFlg       *string

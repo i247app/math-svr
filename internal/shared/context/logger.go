@@ -5,26 +5,26 @@ import (
 )
 
 const (
-	ctxKeyUserID      contextKey = "math-ai.uid"
+	ctxKeyUID         contextKey = "math-ai.uid"
 	ctxKeyTokenSuffix contextKey = "math-ai.token_suffix"
 )
 
-// WithUserID binds the authenticated end-user's id to ctx for log
+// WithUID binds the authenticated end-user's id to ctx for log
 // attribution. The logger middleware is the canonical writer; auth
 // middleware (when added) should also set this so background work
 // triggered from a request retains uid context.
-func WithUserID(ctx context.Context, uid int64) context.Context {
-	return context.WithValue(ctx, ctxKeyUserID, uid)
+func WithUID(ctx context.Context, uid int64) context.Context {
+	return context.WithValue(ctx, ctxKeyUID, uid)
 }
 
-// UserID returns the authenticated end-user id bound to ctx, or 0 when
-// absent. Logger callers convert 0 to "anon" — UserID itself does not
+// UID returns the authenticated end-user id bound to ctx, or 0 when
+// absent. Logger callers convert 0 to "anon" — UID itself does not
 // pre-format.
-func UserID(ctx context.Context) int64 {
+func UID(ctx context.Context) int64 {
 	if ctx == nil {
 		return 0
 	}
-	v, _ := ctx.Value(ctxKeyUserID).(int64)
+	v, _ := ctx.Value(ctxKeyUID).(int64)
 	return v
 }
 

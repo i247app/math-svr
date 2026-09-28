@@ -95,13 +95,13 @@ func NewService(
 // resolves curriculum labels for the bot → calls the bot OUTSIDE the
 // UoW → persists the result inside a UoW. ProgramID, when supplied, is
 // verified against the classroom's active program junction.
-func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq, sessionUserID int64) (*dto.CreateExerciseRes, error) {
+func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq, sessionUID int64) (*dto.CreateExerciseRes, error) {
 	log := logger.From(ctx)
 
 	if err := ValidateCreateExercise(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -202,11 +202,11 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 	return &dto.CreateExerciseRes{Exercise: dto.DomainToResponse(saved, true)}, nil
 }
 
-func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq, sessionUserID int64) (*dto.UpdateExerciseRes, error) {
+func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq, sessionUID int64) (*dto.UpdateExerciseRes, error) {
 	if err := ValidateUpdateExercise(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -246,7 +246,7 @@ func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq
 	return &dto.UpdateExerciseRes{Exercise: dto.DomainToResponse(updated, true)}, nil
 }
 
-func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sessionUserID int64) (*dto.GetExerciseRes, error) {
+func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sessionUID int64) (*dto.GetExerciseRes, error) {
 	if err := ValidateGetExercise(ctx, req); err != nil {
 		return nil, err
 	}
@@ -261,7 +261,7 @@ func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sess
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil, ErrClassroomExerciseNotFound)
 	}
 
-	// caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	// caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
 	// if err != nil {
 	// 	return nil, err
 	// }
@@ -288,11 +288,11 @@ func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sess
 	}, nil
 }
 
-func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, sessionUserID int64) (*dto.ListExercisesRes, error) {
+func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, sessionUID int64) (*dto.ListExercisesRes, error) {
 	if err := ValidateListExercises(ctx, req); err != nil {
 		return nil, err
 	}
-	// caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	// caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
 	// if err != nil {
 	// 	return nil, err
 	// }
@@ -344,11 +344,11 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 	}, nil
 }
 
-func (s *Service) SoftDeleteExercise(ctx context.Context, req *dto.DeleteExerciseReq, sessionUserID int64) (*dto.DeleteExerciseRes, error) {
+func (s *Service) SoftDeleteExercise(ctx context.Context, req *dto.DeleteExerciseReq, sessionUID int64) (*dto.DeleteExerciseRes, error) {
 	if err := ValidateDeleteExercise(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}

@@ -28,7 +28,7 @@ import (
 // A child who has never generated has no row at all, and that is not an
 // error: the caller renders an empty state rather than a failure.
 type GetExamStatsQuery struct {
-	UserID    int64
+	UID       int64
 	ProfileID int64
 	ExamType  *string
 	Status    *string
@@ -69,7 +69,7 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 		}
 	}
 
-	rows, err := h.statsRepo.ListByUserProfile(ctx, q.UserID, q.ProfileID, filter)
+	rows, err := h.statsRepo.ListByUserProfile(ctx, q.UID, q.ProfileID, filter)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}

@@ -46,11 +46,11 @@ func (c ConnConfig) withDefaults() ConnConfig {
 // (readPump) and one writes (writePump); all outbound frames flow through the
 // buffered send channel so the Hub never blocks on a single slow client.
 type Conn struct {
-	id     string
-	userID int64
-	ws     *websocket.Conn
-	hub    *Hub
-	cfg    ConnConfig
+	id  string
+	uid int64
+	ws  *websocket.Conn
+	hub *Hub
+	cfg ConnConfig
 
 	// onMsg handles decoded control frames other than ping (subscribe /
 	// unsubscribe). Set by the module layer; nil in transport-only tests.
@@ -68,8 +68,8 @@ type Conn struct {
 // ID returns the process-unique connection id.
 func (c *Conn) ID() string { return c.id }
 
-// UserID returns the authenticated user this connection belongs to.
-func (c *Conn) UserID() int64 { return c.userID }
+// UID returns the authenticated user this connection belongs to.
+func (c *Conn) UID() int64 { return c.uid }
 
 // SetOnMessage installs the control-frame handler. Call before Serve.
 func (c *Conn) SetOnMessage(fn func(c *Conn, in Inbound)) { c.onMsg = fn }

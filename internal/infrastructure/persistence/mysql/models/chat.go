@@ -34,7 +34,7 @@ type ChatParticipantModel struct {
 	ParticipantId      int64
 	ConversationId     int64
 	ProfileId          int64
-	UserId             int64
+	Uid                int64
 	ParticipantRole    string
 	LastReadSeqNo      int64
 	LastReadMessageId  *int64
@@ -64,7 +64,7 @@ type ChatMessageModel struct {
 	ConversationId   int64
 	SeqNo            int64
 	SenderProfileId  *int64
-	SenderUserId     *int64
+	SenderUid        *int64
 	MessageType      string
 	Content          *string
 	AttachmentCount  int64

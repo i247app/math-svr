@@ -143,7 +143,7 @@ func (h *ExamHandler) HandleGenerateExam(w http.ResponseWriter, r *http.Request)
 	}
 
 	if uid, ok := h.callerUID(ctx, sess); ok {
-		req.UserID = &uid
+		req.UID = &uid
 		if req.ProfileID <= 0 {
 			profileID, isGuest, err := h.service.guest.DefaultProfileOf(ctx, uid)
 			if err != nil {
@@ -174,11 +174,11 @@ func (h *ExamHandler) HandleGenerateExam(w http.ResponseWriter, r *http.Request)
 		sess.Init(session.InitData{
 			Source:    "guest",
 			IsSecure:  false,
-			UID:       identity.UserID,
+			UID:       identity.UID,
 			LoginName: metadata.GetDeviceUUID(ctx),
 		})
 
-		req.UserID = &identity.UserID
+		req.UID = &identity.UID
 		req.ProfileID = identity.ProfileID
 	}
 
@@ -224,7 +224,7 @@ func (h *ExamHandler) HandleSubmitExam(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	req.UserID = uid
+	req.UID = uid
 
 	res, err := h.service.SubmitExam(r.Context(), &req)
 	if err != nil {
@@ -245,7 +245,7 @@ func (h *ExamHandler) HandleGetExam(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	req.UserID = uid
+	req.UID = uid
 
 	res, err := h.service.GetExam(r.Context(), &req)
 	if err != nil {
@@ -266,7 +266,7 @@ func (h *ExamHandler) HandleListExams(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	req.UserID = uid
+	req.UID = uid
 
 	res, err := h.service.ListExams(r.Context(), &req)
 	if err != nil {
@@ -287,7 +287,7 @@ func (h *ExamHandler) HandleGetExamStats(w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return
 	}
-	req.UserID = uid
+	req.UID = uid
 
 	res, err := h.service.GetExamStats(r.Context(), &req)
 	if err != nil {
@@ -308,7 +308,7 @@ func (h *ExamHandler) HandleGetExamProgress(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		return
 	}
-	req.UserID = uid
+	req.UID = uid
 
 	res, err := h.service.GetExamProgress(r.Context(), &req)
 	if err != nil {
@@ -329,7 +329,7 @@ func (h *ExamHandler) HandleGetJourneyProgress(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
-	req.UserID = uid
+	req.UID = uid
 
 	res, err := h.service.GetJourneyProgress(r.Context(), &req)
 	if err != nil {
@@ -350,7 +350,7 @@ func (h *ExamHandler) HandleMarkExamJourney(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		return
 	}
-	req.UserID = uid
+	req.UID = uid
 
 	res, err := h.service.MarkExamJourney(r.Context(), &req)
 	if err != nil {

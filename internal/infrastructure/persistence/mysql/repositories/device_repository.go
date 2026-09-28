@@ -39,7 +39,7 @@ func NewDeviceRepository(db database.Executor) device.IRepository {
 
 func scanDevice(s database.RowScanner) (*models.DeviceModel, error) {
 	var m models.DeviceModel
-	if err := s.Scan(&m.DeviceId, &m.UserId, &m.DeviceUUID, &m.DeviceName, &m.Platform,
+	if err := s.Scan(&m.DeviceId, &m.Uid, &m.DeviceUUID, &m.DeviceName, &m.Platform,
 		&m.DevicePushToken, &m.IsVerified, &m.TrustDt, &m.RptFlg, &m.Kwords, &m.Note, &m.DeviceStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -69,11 +69,11 @@ func (r *DeviceRepository) FindByDeviceId(ctx context.Context, deviceId int64) (
 // FindByUserDevice looks up the registration for the (user, device_uuid) pair.
 // device_uuid is the client-supplied stable identifier (installation id, IDFV,
 // etc.); device_id is our own UUID for the row.
-func (r *DeviceRepository) FindByUserDevice(ctx context.Context, userId int64, deviceUUID string) (*device.Device, error) {
-	return r.findOneBy(ctx, "d.uid = ? AND d.device_uuid = ?", userId, deviceUUID)
+func (r *DeviceRepository) FindByUserDevice(ctx context.Context, uid int64, deviceUUID string) (*device.Device, error) {
+	return r.findOneBy(ctx, "d.uid = ? AND d.device_uuid = ?", uid, deviceUUID)
 }
 
-func (r *DeviceRepository) ListByUserId(ctx context.Context, params *device.ListDevicesParams) ([]*device.Device, error) {
+func (r *DeviceRepository) ListByUid(ctx context.Context, params *device.ListDevicesParams) ([]*device.Device, error) {
 	filterWhere, filterArgs := buildDeviceListFilter(params)
 
 	args := slices.Concat(filterArgs, deviceActiveArgs())
@@ -102,7 +102,7 @@ func (r *DeviceRepository) ListByUserId(ctx context.Context, params *device.List
 
 // buildDeviceListFilter mirrors buildProfileListFilter's shape: it turns an
 // optional *ListDevicesParams into an appendable WHERE fragment + its bound
-// args. UserID is always required by the caller (see ListByUserId); IsVerified
+// args. UID is always required by the caller (see ListByUid); IsVerified
 // is only added to the query when non-nil, so omitting it reproduces the
 // exact query this method ran before the filter existed.
 func buildDeviceListFilter(params *device.ListDevicesParams) (string, []any) {
@@ -114,7 +114,7 @@ func buildDeviceListFilter(params *device.ListDevicesParams) (string, []any) {
 		args   []any
 	)
 	clause.WriteString(` AND d.uid = ?`)
-	args = append(args, params.UserID)
+	args = append(args, params.UID)
 	if params.IsVerified != nil {
 		clause.WriteString(` AND d.is_verified = ?`)
 		args = append(args, *params.IsVerified)
@@ -131,7 +131,7 @@ func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) (*devic
 	`
 
 	_, err := r.db.Exec(ctx, query,
-		d.DeviceId(), d.UserId(), d.DeviceUUID(), d.DeviceName(), d.Platform(), d.DevicePushToken(),
+		d.DeviceId(), d.Uid(), d.DeviceUUID(), d.DeviceName(), d.Platform(), d.DevicePushToken(),
 		d.IsVerified(), d.TrustDt(), d.RptFlg(), d.Kwords(), d.Note(), d.DeviceStatus(),
 		mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
@@ -172,7 +172,7 @@ func (r *DeviceRepository) Update(ctx context.Context, d *device.Device) error {
 // time whenever isVerified=true (starting the TTL clock) and cleared back to
 // NULL whenever isVerified=false, so a revoked device shows no stale trust
 // timestamp and is forced through 2FA again regardless of TTL.
-func (r *DeviceRepository) MarkVerifiedByUserDevice(ctx context.Context, userId int64, deviceUUID string, isVerified bool) error {
+func (r *DeviceRepository) MarkVerifiedByUserDevice(ctx context.Context, uid int64, deviceUUID string, isVerified bool) error {
 	query := `
 		UPDATE ` + deviceTable + `
 		SET is_verified = ?,
@@ -181,7 +181,7 @@ func (r *DeviceRepository) MarkVerifiedByUserDevice(ctx context.Context, userId 
 		WHERE uid = ? AND device_uuid = ?
 	`
 	now := mtime.Now().Time
-	if _, err := r.db.Exec(ctx, query, isVerified, isVerified, now, now, userId, deviceUUID); err != nil {
+	if _, err := r.db.Exec(ctx, query, isVerified, isVerified, now, now, uid, deviceUUID); err != nil {
 		return fmt.Errorf("device repo mark verified by user device: %w", err)
 	}
 	return nil
@@ -246,7 +246,7 @@ func (r *DeviceRepository) ClearPushTokens(ctx context.Context, tokens []string)
 func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
 	d := device.NewDevice()
 	d.SetDeviceId(m.DeviceId)
-	d.SetUserId(m.UserId)
+	d.SetUid(m.Uid)
 	d.SetDeviceUUID(m.DeviceUUID)
 	d.SetDeviceName(m.DeviceName)
 	d.SetPlatform(m.Platform)

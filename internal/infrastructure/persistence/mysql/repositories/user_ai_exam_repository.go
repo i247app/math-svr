@@ -44,7 +44,7 @@ func NewUserAiExamRepository(db database.Executor) exam.IUserAiExamRepository {
 
 func scanUserAiExam(s database.RowScanner) (*models.UserAiExamModel, error) {
 	var m models.UserAiExamModel
-	if err := s.Scan(&m.UserAiExamId, &m.UserId, &m.ProfileId, &m.AiExamId, &m.UserExamId, &m.ShuffleMap,
+	if err := s.Scan(&m.UserAiExamId, &m.Uid, &m.ProfileId, &m.AiExamId, &m.UserExamId, &m.ShuffleMap,
 		&m.ReqExamType, &m.ReqGrade, &m.ReqLevel,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
 		&m.StartedDt, &m.SubmittedDt,
@@ -157,9 +157,9 @@ func buildUserAiExamFilterClause(filter exam.ListAttemptsFilter) (string, []any)
 // ReassignOwnerByProfile re-points every sitting of one child at another
 // account. Addressed by profile_id because the child is what moves; the
 // rows themselves are unchanged apart from who owns them.
-func (r *UserAiExamRepository) ReassignOwnerByProfile(ctx context.Context, profileId int64, newUserId int64) error {
+func (r *UserAiExamRepository) ReassignOwnerByProfile(ctx context.Context, profileId int64, newUid int64) error {
 	query := `UPDATE ` + userAiExamTable + ` SET uid = ?, modify_dt = ? WHERE profile_id = ?`
-	if _, err := r.db.Exec(ctx, query, newUserId, mtime.Now().Time, profileId); err != nil {
+	if _, err := r.db.Exec(ctx, query, newUid, mtime.Now().Time, profileId); err != nil {
 		return fmt.Errorf("user ai exam repo reassign owner: %w", err)
 	}
 	return nil
@@ -306,7 +306,7 @@ func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (
 	startedDt := mtime.MathTimePtrToTime(a.StartedDt().Ptr())
 
 	_, err := r.db.Exec(ctx, query,
-		a.UserAiExamId(), a.UserId(), a.ProfileId(), a.AiExamId(), a.UserExamId(), a.ShuffleMap(),
+		a.UserAiExamId(), a.Uid(), a.ProfileId(), a.AiExamId(), a.UserExamId(), a.ShuffleMap(),
 		a.ReqExamType(), a.ReqGrade(), a.ReqLevel(),
 		startedDt, a.RptFlg(), a.Kwords(), a.Note(), a.UserAiExamStatus(), a.CreateId(), now, now)
 	if err != nil {
@@ -446,7 +446,7 @@ func (r *UserAiExamRepository) ListProgressPoints(ctx context.Context, params ex
 func ModelToDomainUserAiExam(m *models.UserAiExamModel) *exam.UserAiExam {
 	a := exam.NewUserAiExam()
 	a.SetUserAiExamId(m.UserAiExamId)
-	a.SetUserId(m.UserId)
+	a.SetUid(m.Uid)
 	a.SetProfileId(m.ProfileId)
 	a.SetAiExamId(m.AiExamId)
 	a.SetUserExamId(m.UserExamId)

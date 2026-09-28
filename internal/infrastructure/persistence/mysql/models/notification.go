@@ -6,7 +6,7 @@ import "time"
 // it to the domain Notification via ModelToDomainNotification.
 type NotificationModel struct {
 	NotificationId     int64
-	UserId             int64
+	Uid                int64
 	Title              string
 	ShortText          string
 	Category           *string

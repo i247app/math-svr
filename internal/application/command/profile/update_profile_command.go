@@ -75,7 +75,7 @@ func (h *UpdateProfileCommandHandler) Handle(ctx context.Context, cmd UpdateProf
 		}
 
 		if cmd.IsDefault != nil && *cmd.IsDefault {
-			if err := repos.Profile.MarkDefaultByProfileId(ctx, updated.UserId(), cmd.ProfileID); err != nil {
+			if err := repos.Profile.MarkDefaultByProfileId(ctx, updated.Uid(), cmd.ProfileID); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 		}

@@ -46,9 +46,9 @@ func NewService(
 // MarkOnline records one new live connection. It returns whether this was the
 // offline→online transition so the caller can broadcast only on a real change
 // rather than on every reconnect.
-func (s *Service) MarkOnline(ctx context.Context, userId int64, deviceUuid, platform *string) (becameOnline bool, err error) {
+func (s *Service) MarkOnline(ctx context.Context, uid int64, deviceUuid, platform *string) (becameOnline bool, err error) {
 	p, err := s.markOnlineCmd.Handle(ctx, &command.MarkOnlineCommand{
-		UserId:     userId,
+		Uid:        uid,
 		DeviceUuid: deviceUuid,
 		Platform:   platform,
 	})
@@ -58,15 +58,15 @@ func (s *Service) MarkOnline(ctx context.Context, userId int64, deviceUuid, plat
 
 	becameOnline = p != nil && p.ConnectionCount() == 1
 	if becameOnline {
-		s.announceOnline(ctx, userId)
+		s.announceOnline(ctx, uid)
 	}
 	return becameOnline, nil
 }
 
 // MarkOffline removes one live connection, reporting whether the user's last
 // device just went away.
-func (s *Service) MarkOffline(ctx context.Context, userId int64) (becameOffline bool, err error) {
-	p, err := s.markOfflineCmd.Handle(ctx, &command.MarkOfflineCommand{UserId: userId})
+func (s *Service) MarkOffline(ctx context.Context, uid int64) (becameOffline bool, err error) {
+	p, err := s.markOfflineCmd.Handle(ctx, &command.MarkOfflineCommand{Uid: uid})
 	if err != nil {
 		return false, err
 	}
@@ -74,15 +74,15 @@ func (s *Service) MarkOffline(ctx context.Context, userId int64) (becameOffline 
 	becameOffline = p != nil && p.ConnectionCount() == 0
 	if becameOffline {
 		// Scheduled, not sent: a reconnect within the window cancels it.
-		s.announceOffline(ctx, userId)
+		s.announceOffline(ctx, uid)
 	}
 	return becameOffline, nil
 }
 
-// ListByUserIds is the batch read behind a member list. Users absent from the
+// ListByUids is the batch read behind a member list. Users absent from the
 // map have never connected and must be rendered OFFLINE.
-func (s *Service) ListByUserIds(ctx context.Context, userIds []int64) (map[int64]*domain.Presence, error) {
-	return s.repo.ListByUserIds(ctx, userIds)
+func (s *Service) ListByUids(ctx context.Context, uids []int64) (map[int64]*domain.Presence, error) {
+	return s.repo.ListByUids(ctx, uids)
 }
 
 // ResetAll clears counters left over from the previous process. Called from

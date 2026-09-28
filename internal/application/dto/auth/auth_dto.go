@@ -30,7 +30,7 @@ type LoginWithOTPRes struct {
 }
 
 type LogoutReq struct {
-	UserID     *int64 `json:"-"`
+	UID        *int64 `json:"-"`
 	DeviceUUID string `json:"-"`
 }
 

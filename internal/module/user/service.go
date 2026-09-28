@@ -33,19 +33,19 @@ import (
 const avatarFolder = "user-avatars"
 
 type Service struct {
-	deviceSvc            *device.Service
-	getUserByUserIdQuery *query.GetUserByUserIdQueryHandler
-	getUserByPhoneQuery  *query.GetUserByPhoneQueryHandler
-	getUserByEmailQuery  *query.GetUserByEmailQueryHandler
-	listUsersQuery       *query.ListUsersQueryHandler
-	createUserCmd        *command.CreateUserCommandHandler
-	createGuestCmd       *command.CreateGuestCommandHandler
-	updateUserCmd        *command.UpdateUserCommandHandler
-	setAvatarKeyCmd      *command.SetAvatarKeyCommandHandler
-	adoptGuestCmd        *command.AdoptGuestCommandHandler
-	softDeleteUserCmd    *command.SoftDeleteUserCommandHandler
-	forceDeleteUserCmd   *command.ForceDeleteUserCommandHandler
-	storageProvider      *storage.Adapter
+	deviceSvc           *device.Service
+	getUserByUidQuery   *query.GetUserByUidQueryHandler
+	getUserByPhoneQuery *query.GetUserByPhoneQueryHandler
+	getUserByEmailQuery *query.GetUserByEmailQueryHandler
+	listUsersQuery      *query.ListUsersQueryHandler
+	createUserCmd       *command.CreateUserCommandHandler
+	createGuestCmd      *command.CreateGuestCommandHandler
+	updateUserCmd       *command.UpdateUserCommandHandler
+	setAvatarKeyCmd     *command.SetAvatarKeyCommandHandler
+	adoptGuestCmd       *command.AdoptGuestCommandHandler
+	softDeleteUserCmd   *command.SoftDeleteUserCommandHandler
+	forceDeleteUserCmd  *command.ForceDeleteUserCommandHandler
+	storageProvider     *storage.Adapter
 }
 
 func NewService(
@@ -56,24 +56,24 @@ func NewService(
 	hasher login.PasswordHasher,
 ) *Service {
 	return &Service{
-		deviceSvc:            deviceSvc,
-		getUserByUserIdQuery: query.NewGetUserByUserIdQueryHandler(repo),
-		getUserByPhoneQuery:  query.NewGetUserByPhoneQueryHandler(repo),
-		getUserByEmailQuery:  query.NewGetUserByEmailQueryHandler(repo),
-		listUsersQuery:       query.NewListUsersQueryHandler(repo),
-		createUserCmd:        command.NewCreateUserCommandHandler(uow, hasher),
-		createGuestCmd:       command.NewCreateGuestCommandHandler(uow),
-		adoptGuestCmd:        command.NewAdoptGuestCommandHandler(uow),
-		updateUserCmd:        command.NewUpdateUserCommandHandler(uow),
-		setAvatarKeyCmd:      command.NewSetAvatarKeyCommandHandler(uow),
-		softDeleteUserCmd:    command.NewSoftDeleteUserCommandHandler(uow),
-		forceDeleteUserCmd:   command.NewForceDeleteUserCommandHandler(uow),
-		storageProvider:      storageProvider,
+		deviceSvc:           deviceSvc,
+		getUserByUidQuery:   query.NewGetUserByUidQueryHandler(repo),
+		getUserByPhoneQuery: query.NewGetUserByPhoneQueryHandler(repo),
+		getUserByEmailQuery: query.NewGetUserByEmailQueryHandler(repo),
+		listUsersQuery:      query.NewListUsersQueryHandler(repo),
+		createUserCmd:       command.NewCreateUserCommandHandler(uow, hasher),
+		createGuestCmd:      command.NewCreateGuestCommandHandler(uow),
+		adoptGuestCmd:       command.NewAdoptGuestCommandHandler(uow),
+		updateUserCmd:       command.NewUpdateUserCommandHandler(uow),
+		setAvatarKeyCmd:     command.NewSetAvatarKeyCommandHandler(uow),
+		softDeleteUserCmd:   command.NewSoftDeleteUserCommandHandler(uow),
+		forceDeleteUserCmd:  command.NewForceDeleteUserCommandHandler(uow),
+		storageProvider:     storageProvider,
 	}
 }
 
-func (s *Service) GetUserById(ctx context.Context, req *dto.GetUserByUserIdReq) (*dto.GetUserByUserIdRes, error) {
-	user, err := s.getUserByUserIdQuery.Handle(ctx, query.GetUserByUserIdQuery{UserId: req.UserID})
+func (s *Service) GetUserById(ctx context.Context, req *dto.GetUserByUidReq) (*dto.GetUserByUidRes, error) {
+	user, err := s.getUserByUidQuery.Handle(ctx, query.GetUserByUidQuery{Uid: req.UID})
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +81,7 @@ func (s *Service) GetUserById(ctx context.Context, req *dto.GetUserByUserIdReq) 
 	userRes := dto.DomainToResponse(user)
 	s.populateImageUrl(ctx, userRes)
 
-	return &dto.GetUserByUserIdRes{User: userRes}, nil
+	return &dto.GetUserByUidRes{User: userRes}, nil
 }
 
 func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.ListUsersRes, error) {
@@ -220,20 +220,20 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	// rather than duplicated. The uid comes from the session — never from
 	// the body — so a client cannot nominate somebody else's account to
 	// take over.
-	guestUserID, err := s.guestUserIDFromSession(ctx, sess)
+	guestUID, err := s.guestUIDFromSession(ctx, sess)
 	if err != nil {
 		return nil, err
 	}
 
 	created, err := s.createUserCmd.Handle(ctx, command.CreateUserCommand{
-		Role:        enum.RoleType(req.Role),
-		Phone:       phoneForString,
-		Email:       email,
-		UserName:    req.Name,
-		AvatarKey:   avatarKey,
-		DeviceUUID:  metadata.GetDeviceUUID(ctx),
-		GuestUserID: guestUserID,
-		Password:    req.Password,
+		Role:       enum.RoleType(req.Role),
+		Phone:      phoneForString,
+		Email:      email,
+		UserName:   req.Name,
+		AvatarKey:  avatarKey,
+		DeviceUUID: metadata.GetDeviceUUID(ctx),
+		GuestUID:   guestUID,
+		Password:   req.Password,
 	})
 	if err != nil {
 		// Only delete objects we just uploaded — a client-supplied
@@ -250,7 +250,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 
 	log.Info("Mark device as trusted")
 	_, err = s.deviceSvc.VerifyDevice(ctx, &deviceDTO.VerifyDeviceReq{
-		UserID:          created.User.UserId(),
+		UID:             created.User.Uid(),
 		DeviceUUID:      metadata.GetDeviceUUID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
 		Platform:        metadata.GetPlatform(ctx),
@@ -267,7 +267,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	sessionData := session.InitData{
 		Source:    "login",
 		IsSecure:  true,
-		UID:       userRes.UserID,
+		UID:       userRes.UID,
 		LoginName: dto.LoginNameOf(userRes),
 	}
 
@@ -326,12 +326,12 @@ func (s *Service) CreateGuest(ctx context.Context, sess *session.AppSession, req
 	sess.Init(session.InitData{
 		Source:    "guest",
 		IsSecure:  false,
-		UID:       created.User.UserId(),
+		UID:       created.User.Uid(),
 		LoginName: loginName,
 	})
 
 	logger.From(ctx).Info("user.guest.opened",
-		"uid", created.User.UserId(), "profile_id", created.Profile.ProfileId())
+		"uid", created.User.Uid(), "profile_id", created.Profile.ProfileId())
 
 	return &dto.CreateGuestRes{
 		User: dto.DomainToResponse(created.User),
@@ -343,7 +343,7 @@ func (s *Service) SoftDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (*
 		return nil, err
 	}
 
-	user, err := s.getUserByUserIdQuery.Handle(ctx, query.GetUserByUserIdQuery{UserId: req.UserID})
+	user, err := s.getUserByUidQuery.Handle(ctx, query.GetUserByUidQuery{Uid: req.UID})
 	if err != nil {
 		return nil, err
 	}
@@ -353,7 +353,7 @@ func (s *Service) SoftDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (*
 	}
 
 	if err := s.softDeleteUserCmd.Handle(ctx, command.SoftDeleteUserCommand{
-		UserID: user.UserId(),
+		UID: user.Uid(),
 	}); err != nil {
 		return nil, err
 	}
@@ -369,7 +369,7 @@ func (s *Service) ForceDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (
 	}
 
 	result, err := s.forceDeleteUserCmd.Handle(ctx, command.ForceDeleteUserCommand{
-		UserID: req.UserID,
+		UID: req.UID,
 	})
 	if err != nil {
 		return nil, err
@@ -399,7 +399,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 		return nil, err
 	}
 
-	existsUser, err := s.getUserByUserIdQuery.Handle(ctx, query.GetUserByUserIdQuery{UserId: req.UserID})
+	existsUser, err := s.getUserByUidQuery.Handle(ctx, query.GetUserByUidQuery{Uid: req.UID})
 	if err != nil {
 		return nil, err
 	}
@@ -427,7 +427,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 	}
 
 	user, err := s.updateUserCmd.Handle(ctx, command.UpdateUserCommand{
-		UserID:     req.UserID,
+		UID:        req.UID,
 		UserName:   req.Name,
 		Email:      req.Email,
 		Phone:      req.Phone,
@@ -464,10 +464,10 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 // plus a short-lived presigned URL for immediate display. Mirrors the
 // profile module's UploadAvatar so the mobile client can reuse its
 // uploader for both endpoints.
-func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
-	if userID == 0 {
+func (s *Service) UploadAvatar(ctx context.Context, uid int64, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
+	if uid == 0 {
 		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil,
-			ErrUserIDRequired)
+			ErrUIDRequired)
 	}
 	if s.storageProvider == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
@@ -480,7 +480,7 @@ func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, cont
 
 	// Verify the user exists BEFORE uploading so we don't leave orphan
 	// S3 objects when the caller passes a bogus uid.
-	existing, err := s.getUserByUserIdQuery.Handle(ctx, query.GetUserByUserIdQuery{UserId: userID})
+	existing, err := s.getUserByUidQuery.Handle(ctx, query.GetUserByUidQuery{Uid: uid})
 	if err != nil {
 		return nil, err
 	}
@@ -511,7 +511,7 @@ func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, cont
 	}
 
 	if err := s.setAvatarKeyCmd.Handle(ctx, command.SetAvatarKeyCommand{
-		UserID:    userID,
+		UID:       uid,
 		AvatarKey: uploaded.Key,
 	}); err != nil {
 		// Best-effort cleanup of the orphaned S3 object — we ignore
@@ -529,28 +529,28 @@ func (s *Service) UploadAvatar(ctx context.Context, userID int64, filename, cont
 		// Key is persisted; failing here just means we can't return a
 		// preview URL now. Log and return the key without it — the
 		// client can re-fetch via /users/me to get a fresh presigned URL.
-		logger.From(ctx).Warnf("user.avatar presign failed uid=%d err=%v", userID, err)
+		logger.From(ctx).Warnf("user.avatar presign failed uid=%d err=%v", uid, err)
 		signed = ""
 	}
 
 	logger.From(ctx).Info("user.avatar_uploaded",
-		"uid", userID,
+		"uid", uid,
 		"avatar_key", uploaded.Key,
 	)
 
 	return &dto.UploadAvatarRes{
-		UserID:    userID,
+		UID:       uid,
 		AvatarKey: uploaded.Key,
 		AvatarUrl: signed,
 	}, nil
 }
 
-// guestUserIDFromSession reports the uid to upgrade, or nil when this is
+// guestUIDFromSession reports the uid to upgrade, or nil when this is
 // an ordinary registration. Anything unreadable — no session, no uid, a
 // uid that no longer resolves, a user who is not a guest — means "not an
 // upgrade" rather than an error: registering must keep working even when
 // the session is stale.
-func (s *Service) guestUserIDFromSession(ctx context.Context, sess *session.AppSession) (*int64, error) {
+func (s *Service) guestUIDFromSession(ctx context.Context, sess *session.AppSession) (*int64, error) {
 	if sess == nil || !sess.IsValid() {
 		return nil, nil
 	}
@@ -559,7 +559,7 @@ func (s *Service) guestUserIDFromSession(ctx context.Context, sess *session.AppS
 		return nil, nil
 	}
 
-	existing, err := s.getUserByUserIdQuery.Handle(ctx, query.GetUserByUserIdQuery{UserId: uid})
+	existing, err := s.getUserByUidQuery.Handle(ctx, query.GetUserByUidQuery{Uid: uid})
 	if err != nil || existing == nil {
 		return nil, nil
 	}
@@ -578,19 +578,19 @@ func (s *Service) guestUserIDFromSession(ctx context.Context, sess *session.AppS
 // happened and must not fail because the move did. Nothing is lost when
 // it does — the guest account still holds its child and its exams, and
 // the move can be repeated on the next sign-in from that device.
-func (s *Service) AdoptGuestInto(ctx context.Context, previousUserID, ownerUserID int64) {
-	if previousUserID == 0 || previousUserID == ownerUserID {
+func (s *Service) AdoptGuestInto(ctx context.Context, previousUID, ownerUID int64) {
+	if previousUID == 0 || previousUID == ownerUID {
 		return
 	}
 	res, err := s.adoptGuestCmd.Handle(ctx, command.AdoptGuestCommand{
-		GuestUserID: previousUserID,
-		OwnerUserID: ownerUserID,
+		GuestUID: previousUID,
+		OwnerUID: ownerUID,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("user.guest.adopt_failed guest_uid=%d uid=%d err=%v", previousUserID, ownerUserID, err)
+		logger.From(ctx).Warnf("user.guest.adopt_failed guest_uid=%d uid=%d err=%v", previousUID, ownerUID, err)
 		return
 	}
 	if res.Adopted {
-		logger.From(ctx).Info("user.guest.adopt_ok", "uid", ownerUserID, "profiles", len(res.ProfileIDs))
+		logger.From(ctx).Info("user.guest.adopt_ok", "uid", ownerUID, "profiles", len(res.ProfileIDs))
 	}
 }

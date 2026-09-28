@@ -26,7 +26,7 @@ import (
 // the child attends, which is a different fact.
 type UserExam struct {
 	userExamId   int64
-	userId       int64
+	uid          int64
 	profileId    int64
 	reqExamType  string
 	currentGrade *int
@@ -58,8 +58,8 @@ func NewUserExam() *UserExam { return &UserExam{} }
 
 func (u *UserExam) UserExamId() int64                   { return u.userExamId }
 func (u *UserExam) SetUserExamId(id int64)              { u.userExamId = id }
-func (u *UserExam) UserId() int64                       { return u.userId }
-func (u *UserExam) SetUserId(id int64)                  { u.userId = id }
+func (u *UserExam) Uid() int64                          { return u.uid }
+func (u *UserExam) SetUid(id int64)                     { u.uid = id }
 func (u *UserExam) ProfileId() int64                    { return u.profileId }
 func (u *UserExam) SetProfileId(id int64)               { u.profileId = id }
 func (u *UserExam) ReqExamType() string                 { return u.reqExamType }

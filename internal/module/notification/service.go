@@ -79,7 +79,7 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 		return nil, err
 	}
 
-	user, err := s.userRepo.FindByUserId(ctx, req.UserID)
+	user, err := s.userRepo.FindByUid(ctx, req.UID)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 	}
 
 	notiDomain := domain.NewNotification()
-	notiDomain.SetUserId(user.UserId())
+	notiDomain.SetUid(user.Uid())
 	notiDomain.SetTitle("Ping")
 
 	shortText := fmt.Sprintf("Hello %s, have a great day! ", user.UserName())
@@ -99,13 +99,13 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 	notiDomain.SetCategory(&cate)
 
 	if s.push.enabled() {
-		token, terr := s.determineToken(ctx, req.UserID, deviceId)
+		token, terr := s.determineToken(ctx, req.UID, deviceId)
 		if terr != nil {
-			log.Warnf("notification.token_lookup_failed uid=%d err=%v", req.UserID, terr)
+			log.Warnf("notification.token_lookup_failed uid=%d err=%v", req.UID, terr)
 		} else if token != nil {
 			sendRes, serr := s.push.send(ctx, []string{*token}, notiDomain)
 			if serr != nil {
-				log.Warnf("notification.push_failed uid=%d err=%v", req.UserID, serr)
+				log.Warnf("notification.push_failed uid=%d err=%v", req.UID, serr)
 			} else {
 				if len(sendRes.InvalidTokens) > 0 {
 					if cerr := s.clearTokensCmd.Handle(ctx, command.ClearDeadTokensCommand{
@@ -126,7 +126,7 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 	return res, nil
 }
 
-// SendNotification persists a notification for req.UserID then pushes it to that
+// SendNotification persists a notification for req.UID then pushes it to that
 // user's device tokens. Persistence is authoritative — a push failure is
 // logged but never fails the request (the in-app inbox row already exists).
 func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificationReq) (*dto.SendNotificationRes, error) {
@@ -141,7 +141,7 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 	}
 
 	created, err := s.createCmd.Handle(ctx, command.CreateNotificationCommand{
-		UserID:     req.UserID,
+		UID:        req.UID,
 		Title:      req.Title,
 		ShortText:  req.ShortText,
 		Category:   req.Category,
@@ -159,16 +159,16 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 
 	// // Push delivery — out of any tx, best-effort.
 	// if s.push.enabled() {
-	// 	tokens, terr := s.recipientTokens(ctx, req.UserID)
+	// 	tokens, terr := s.recipientTokens(ctx, req.UID)
 	// 	if terr != nil {
-	// 		log.Warnf("notification.token_lookup_failed uid=%d err=%v", req.UserID, terr)
+	// 		log.Warnf("notification.token_lookup_failed uid=%d err=%v", req.UID, terr)
 	// 	} else if len(tokens) > 0 {
 	// 		sendRes, serr := s.push.send(ctx, tokens, created)
 	// 		if serr != nil {
 	// 			// Inbox row is already persisted; surface delivery failure in
 	// 			// logs only so the caller still sees a created notification.
 	// 			log.Warnf("notification.push_failed notification_id=%d uid=%d err=%v",
-	// 				created.NotificationId(), req.UserID, serr)
+	// 				created.NotificationId(), req.UID, serr)
 	// 		} else {
 	// 			res.PushSuccess = sendRes.SuccessCount
 	// 			res.PushFailure = sendRes.FailureCount
@@ -191,10 +191,10 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 	// /notifications/list. s.socket is nil when SOCKET_ENABLED=false.
 	if s.socket != nil {
 		log := logger.From(ctx)
-		topic := appsocket.NotificationsTopic(req.UserID)
+		topic := appsocket.NotificationsTopic(req.UID)
 		if perr := s.socket.Publish(ctx, topic, notificationCreatedEvent, res.Notification); perr != nil {
 			log.Warnf("notification.socket_publish_failed notification_id=%d uid=%d err=%v",
-				created.NotificationId(), req.UserID, perr)
+				created.NotificationId(), req.UID, perr)
 		}
 	}
 
@@ -203,8 +203,8 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 
 // recipientTokens returns the deduplicated, non-empty push tokens registered
 // to the user's active devices.
-func (s *Service) recipientTokens(ctx context.Context, userID int64) ([]string, error) {
-	devices, err := s.deviceRepo.ListByUserId(ctx, &deviceDomain.ListDevicesParams{UserID: userID})
+func (s *Service) recipientTokens(ctx context.Context, uid int64) ([]string, error) {
+	devices, err := s.deviceRepo.ListByUid(ctx, &deviceDomain.ListDevicesParams{UID: uid})
 	if err != nil {
 		return nil, err
 	}
@@ -224,8 +224,8 @@ func (s *Service) recipientTokens(ctx context.Context, userID int64) ([]string, 
 	return tokens, nil
 }
 
-func (s *Service) determineToken(ctx context.Context, userID int64, deviceId string) (*string, error) {
-	device, err := s.deviceRepo.FindByUserDevice(ctx, userID, deviceId)
+func (s *Service) determineToken(ctx context.Context, uid int64, deviceId string) (*string, error) {
+	device, err := s.deviceRepo.FindByUserDevice(ctx, uid, deviceId)
 	if err != nil || device == nil {
 		return nil, nil
 	}
@@ -234,7 +234,7 @@ func (s *Service) determineToken(ctx context.Context, userID int64, deviceId str
 }
 
 func (s *Service) ListNotifications(ctx context.Context, req *dto.ListNotificationsReq) (*dto.ListNotificationsRes, error) {
-	if req.UserID == nil {
+	if req.UID == nil {
 		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession)
 	}
 	page := int64(req.Page)
@@ -247,7 +247,7 @@ func (s *Service) ListNotifications(ctx context.Context, req *dto.ListNotificati
 	}
 
 	notifications, pg, err := s.listQuery.Handle(ctx, query.ListNotificationsQuery{
-		UserID:     *req.UserID,
+		UID:        *req.UID,
 		OnlyUnread: req.OnlyUnread,
 		Page:       page,
 		Limit:      size,
@@ -262,10 +262,10 @@ func (s *Service) ListNotifications(ctx context.Context, req *dto.ListNotificati
 }
 
 func (s *Service) UnreadCount(ctx context.Context, req *dto.UnreadCountReq) (*dto.UnreadCountRes, error) {
-	if req.UserID == nil {
+	if req.UID == nil {
 		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession)
 	}
-	count, err := s.unreadCountQuery.Handle(ctx, query.UnreadCountQuery{UserID: *req.UserID})
+	count, err := s.unreadCountQuery.Handle(ctx, query.UnreadCountQuery{UID: *req.UID})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -273,7 +273,7 @@ func (s *Service) UnreadCount(ctx context.Context, req *dto.UnreadCountReq) (*dt
 }
 
 func (s *Service) MarkRead(ctx context.Context, req *dto.MarkReadReq) error {
-	if req.UserID == nil {
+	if req.UID == nil {
 		return errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession)
 	}
 	if req.NotificationID <= 0 {
@@ -281,19 +281,19 @@ func (s *Service) MarkRead(ctx context.Context, req *dto.MarkReadReq) error {
 	}
 	return s.markReadCmd.Handle(ctx, command.MarkReadCommand{
 		NotificationID: req.NotificationID,
-		UserID:         *req.UserID,
+		UID:            *req.UID,
 	})
 }
 
 func (s *Service) MarkAllRead(ctx context.Context, req *dto.MarkAllReadReq) error {
-	if req.UserID == nil {
+	if req.UID == nil {
 		return errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession)
 	}
-	return s.markAllReadCmd.Handle(ctx, command.MarkAllReadCommand{UserID: *req.UserID})
+	return s.markAllReadCmd.Handle(ctx, command.MarkAllReadCommand{UID: *req.UID})
 }
 
 func (s *Service) SoftDelete(ctx context.Context, req *dto.DeleteNotificationReq) error {
-	if req.UserID == nil {
+	if req.UID == nil {
 		return errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession)
 	}
 	if req.NotificationID <= 0 {
@@ -301,6 +301,6 @@ func (s *Service) SoftDelete(ctx context.Context, req *dto.DeleteNotificationReq
 	}
 	return s.softDeleteCmd.Handle(ctx, command.SoftDeleteNotificationCommand{
 		NotificationID: req.NotificationID,
-		UserID:         *req.UserID,
+		UID:            *req.UID,
 	})
 }

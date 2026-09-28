@@ -9,7 +9,7 @@ import (
 )
 
 type GetDeviceByUserDeviceQuery struct {
-	UserID     int64
+	UID        int64
 	DeviceUUID string
 }
 
@@ -22,7 +22,7 @@ func NewGetDeviceByUserDeviceQueryHandler(repo device.IRepository) *GetDeviceByU
 }
 
 func (h *GetDeviceByUserDeviceQueryHandler) Handle(ctx context.Context, q GetDeviceByUserDeviceQuery) (*device.Device, error) {
-	d, err := h.repo.FindByUserDevice(ctx, q.UserID, q.DeviceUUID)
+	d, err := h.repo.FindByUserDevice(ctx, q.UID, q.DeviceUUID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
 	}

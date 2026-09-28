@@ -89,16 +89,16 @@ func (h *CreateGuestCommandHandler) Handle(ctx context.Context, cmd CreateGuestC
 	result := &CreateGuestCommandResult{}
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
-		userID, err := seqgen.Next(ctx, repos.Seq, seq.NameUser)
+		uid, err := seqgen.Next(ctx, repos.Seq, seq.NameUser)
 		if err != nil {
 			return err
 		}
-		userName := guestAccountNamePrefix + strconv.FormatInt(userID, 10)
+		userName := guestAccountNamePrefix + strconv.FormatInt(uid, 10)
 
 		identity := enum.IdentityCodeGuest.String()
 
 		u := user.NewUser()
-		u.SetUserId(userID)
+		u.SetUid(uid)
 		u.SetUserName(userName)
 		u.SetIdentityCode(&identity)
 		u.SetStatus(enum.StatusActive.String())
@@ -119,10 +119,10 @@ func (h *CreateGuestCommandHandler) Handle(ctx context.Context, cmd CreateGuestC
 		// CreateUser does today (it reuses the user's own id). The profile
 		// sequence has never been used and starting now would hand out ids
 		// that already exist — see the seq cleanup task.
-		p.SetProfileId(userID)
+		p.SetProfileId(uid)
 		p.SetProfileCode(profileCode)
-		p.SetUserId(created.UserId())
-		p.SetName(guestChildName(cmd.ChildName, userID))
+		p.SetUid(created.Uid())
+		p.SetName(guestChildName(cmd.ChildName, uid))
 		p.SetIdentityCode(&identity)
 		p.SetIsDefault(true)
 		p.SetStatus(enum.StatusActive.String())

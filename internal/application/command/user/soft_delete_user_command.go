@@ -11,7 +11,7 @@ import (
 )
 
 type SoftDeleteUserCommand struct {
-	UserID int64
+	UID int64
 }
 
 type SoftDeleteUserCommandHandler struct {
@@ -24,21 +24,21 @@ func NewSoftDeleteUserCommandHandler(uow transaction.UnitOfWork) *SoftDeleteUser
 
 func (h *SoftDeleteUserCommandHandler) Handle(ctx context.Context, cmd SoftDeleteUserCommand) error {
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		if err := repos.User.SoftDeleteByUserId(ctx, cmd.UserID); err != nil {
+		if err := repos.User.SoftDeleteByUid(ctx, cmd.UID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.Alias.SoftDeleteByUserId(ctx, cmd.UserID); err != nil {
+		if err := repos.Alias.SoftDeleteByUid(ctx, cmd.UID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.Profile.ForceDeleteByUserId(ctx, cmd.UserID); err != nil {
+		if err := repos.Profile.ForceDeleteByUid(ctx, cmd.UID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		return nil
 	})
 	if err != nil {
-		log.Printf("[admin.soft_delete_user] uid=%d action=soft_delete outcome=error err=%v", cmd.UserID, err)
+		log.Printf("[admin.soft_delete_user] uid=%d action=soft_delete outcome=error err=%v", cmd.UID, err)
 		return err
 	}
-	log.Printf("[admin.soft_delete_user] uid=%d action=soft_delete outcome=success", cmd.UserID)
+	log.Printf("[admin.soft_delete_user] uid=%d action=soft_delete outcome=success", cmd.UID)
 	return nil
 }

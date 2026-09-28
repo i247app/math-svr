@@ -8,25 +8,25 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
-type ListDevicesByUserIdQuery struct {
-	UserID int64
+type ListDevicesByUidQuery struct {
+	UID int64
 	// IsVerified is an optional tri-state filter: nil = no filter (all
 	// devices, current behavior), non-nil = restrict to that exact
 	// is_verified value.
 	IsVerified *bool
 }
 
-type ListDevicesByUserIdQueryHandler struct {
+type ListDevicesByUidQueryHandler struct {
 	repo device.IRepository
 }
 
-func NewListDevicesByUserIdQueryHandler(repo device.IRepository) *ListDevicesByUserIdQueryHandler {
-	return &ListDevicesByUserIdQueryHandler{repo: repo}
+func NewListDevicesByUidQueryHandler(repo device.IRepository) *ListDevicesByUidQueryHandler {
+	return &ListDevicesByUidQueryHandler{repo: repo}
 }
 
-func (h *ListDevicesByUserIdQueryHandler) Handle(ctx context.Context, q ListDevicesByUserIdQuery) ([]*device.Device, error) {
-	devices, err := h.repo.ListByUserId(ctx, &device.ListDevicesParams{
-		UserID:     q.UserID,
+func (h *ListDevicesByUidQueryHandler) Handle(ctx context.Context, q ListDevicesByUidQuery) ([]*device.Device, error) {
+	devices, err := h.repo.ListByUid(ctx, &device.ListDevicesParams{
+		UID:        q.UID,
 		IsVerified: q.IsVerified,
 	})
 	if err != nil {

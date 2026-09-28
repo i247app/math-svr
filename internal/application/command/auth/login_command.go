@@ -37,14 +37,14 @@ type LoginCommand struct {
 // LoginCommandResult communicates one of two outcomes:
 //
 //   - TwoFactorRequired=true → device is new or not yet trusted; the caller
-//     must run the 2FA challenge. No session is created. UserID and DeviceID
+//     must run the 2FA challenge. No session is created. UID and DeviceID
 //     are populated so the 2FA endpoint can target the right device.
 //
 //   - TwoFactorRequired=false → device is trusted; a fresh login_log row was
 //     inserted (any prior active session for the same device was revoked).
 //     LoginLogID identifies the new session.
 type LoginCommandResult struct {
-	UserID          int64
+	UID             int64
 	DeviceID        int64
 	LoginLogID      int64
 	IsTrustedDevice bool
@@ -87,12 +87,12 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		}
 
 		result = &LoginCommandResult{
-			UserID:          u.UserId(),
+			UID:             u.Uid(),
 			IsTrustedDevice: true,
 		}
 		// return nil
 
-		d, err := ensureDevice(ctx, repos, u.UserId(), cmd)
+		d, err := ensureDevice(ctx, repos, u.Uid(), cmd)
 		if err != nil {
 			return err
 		}
@@ -101,19 +101,19 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		result.IsTrustedDevice = d.IsVerified() && !d.IsTrustExpired(h.trustDeviceTTLDays, time.Now().UTC())
 
 		if result.IsTrustedDevice {
-			err := repos.Device.MarkVerifiedByUserDevice(ctx, u.UserId(), cmd.DeviceUUID, true)
+			err := repos.Device.MarkVerifiedByUserDevice(ctx, u.Uid(), cmd.DeviceUUID, true)
 			if err != nil {
 				return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
 			}
 
-			ll, err := repos.LoginLog.FindActiveByUserDevice(ctx, u.UserId(), cmd.DeviceUUID)
+			ll, err := repos.LoginLog.FindActiveByUserDevice(ctx, u.Uid(), cmd.DeviceUUID)
 			if err != nil {
 				return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 			}
 
 			if ll != nil {
 				result.LoginLogID = ll.LoginLogId()
-				if err := repos.LoginLog.MarkStatusByUserDevice(ctx, u.UserId(), cmd.DeviceUUID, enum.LoginLogStatusTypeActive); err != nil {
+				if err := repos.LoginLog.MarkStatusByUserDevice(ctx, u.Uid(), cmd.DeviceUUID, enum.LoginLogStatusTypeActive); err != nil {
 					return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 				}
 			} else {
@@ -121,7 +121,7 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 				if err != nil {
 					return err
 				}
-				ll := BuildLoginLog(u.UserId(), cmd)
+				ll := BuildLoginLog(u.Uid(), cmd)
 				ll.SetLoginLogId(loginLogId)
 				_, err = repos.LoginLog.Create(ctx, ll)
 				if err != nil {
@@ -158,7 +158,7 @@ func (h *LoginCommandHandler) verifyPassword(ctx context.Context, cmd LoginComma
 			return err
 		}
 		found = true
-		cred, err := repos.Login.FindByUserId(ctx, u.UserId())
+		cred, err := repos.Login.FindByUid(ctx, u.Uid())
 		if err != nil {
 			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 		}
@@ -201,7 +201,7 @@ func resolveUser(ctx context.Context, repos transaction.Repositories, loginName 
 		return nil, nil
 	}
 
-	u, err := repos.User.FindByUserId(ctx, alias.UserId())
+	u, err := repos.User.FindByUid(ctx, alias.Uid())
 	if err != nil {
 		return nil, errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 	}
@@ -219,10 +219,10 @@ func resolveUser(ctx context.Context, repos transaction.Repositories, loginName 
 func ensureDevice(
 	ctx context.Context,
 	repos transaction.Repositories,
-	userId int64,
+	uid int64,
 	cmd LoginCommand,
 ) (*device.Device, error) {
-	existing, err := repos.Device.FindByUserDevice(ctx, userId, cmd.DeviceUUID)
+	existing, err := repos.Device.FindByUserDevice(ctx, uid, cmd.DeviceUUID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
 	}
@@ -247,7 +247,7 @@ func ensureDevice(
 		return existing, nil
 	}
 
-	deviceBuild := BuildDevice(userId, cmd)
+	deviceBuild := BuildDevice(uid, cmd)
 	deviceID, err := seqgen.Next(ctx, repos.Seq, seq.NameDevice)
 	if err != nil {
 		return nil, err
@@ -261,9 +261,9 @@ func ensureDevice(
 	return created, nil
 }
 
-func BuildDevice(userId int64, cmd LoginCommand) *device.Device {
+func BuildDevice(uid int64, cmd LoginCommand) *device.Device {
 	d := device.NewDevice()
-	d.SetUserId(&userId)
+	d.SetUid(&uid)
 	d.SetDeviceUUID(cmd.DeviceUUID)
 	d.SetDeviceName(cmd.DeviceName)
 	d.SetPlatform(enum.ParsePlatformType(cmd.Platform).String())
@@ -279,9 +279,9 @@ func BuildDevice(userId int64, cmd LoginCommand) *device.Device {
 	return d
 }
 
-func BuildLoginLog(userId int64, cmd LoginCommand) *loginlog.LoginLog {
+func BuildLoginLog(uid int64, cmd LoginCommand) *loginlog.LoginLog {
 	ll := loginlog.NewLoginLog()
-	ll.SetUserId(userId)
+	ll.SetUid(uid)
 	ll.SetDeviceUUID(cmd.DeviceUUID)
 	ll.SetIpAddress(cmd.IPAddress)
 	ll.SetToken(cmd.DevicePushToken)

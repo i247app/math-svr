@@ -7,7 +7,7 @@ import (
 )
 
 type LogoutCommand struct {
-	UserID     int64
+	UID        int64
 	DeviceUUID string
 }
 
@@ -21,7 +21,7 @@ func NewLogoutCommandHandler(uow transaction.UnitOfWork) *LogoutCommandHandler {
 
 func (h *LogoutCommandHandler) Handle(ctx context.Context, cmd LogoutCommand) error {
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		// ll, err := repos.LoginLog.FindActiveByUserDevice(ctx, cmd.UserID, cmd.DeviceUUID)
+		// ll, err := repos.LoginLog.FindActiveByUserDevice(ctx, cmd.UID, cmd.DeviceUUID)
 		// if err != nil {
 		// 	return errs.NewError(ctx, status.AUTH_LOGOUT_FAILED, nil, err)
 		// }
@@ -35,7 +35,7 @@ func (h *LogoutCommandHandler) Handle(ctx context.Context, cmd LogoutCommand) er
 		// 	return errs.NewError(ctx, status.AUTH_LOGOUT_FAILED, nil, err)
 		// }
 
-		// err := repos.LoginLog.MarkStatusByUserDevice(ctx, cmd.UserID, cmd.DeviceUUID, enum.LoginLogStatusTypeRevoked)
+		// err := repos.LoginLog.MarkStatusByUserDevice(ctx, cmd.UID, cmd.DeviceUUID, enum.LoginLogStatusTypeRevoked)
 		// if err != nil {
 		// 	return err
 		// }

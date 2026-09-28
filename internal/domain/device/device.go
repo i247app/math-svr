@@ -15,7 +15,7 @@ import (
 // the column nullability.
 type Device struct {
 	deviceId        int64
-	userId          *int64
+	uid             *int64
 	deviceUUID      string
 	deviceName      string
 	platform        string
@@ -39,8 +39,8 @@ func NewDevice() *Device {
 
 func (d *Device) DeviceId() int64                 { return d.deviceId }
 func (d *Device) SetDeviceId(deviceId int64)      { d.deviceId = deviceId }
-func (d *Device) UserId() *int64                  { return d.userId }
-func (d *Device) SetUserId(userId *int64)         { d.userId = userId }
+func (d *Device) Uid() *int64                     { return d.uid }
+func (d *Device) SetUid(uid *int64)               { d.uid = uid }
 func (d *Device) DeviceUUID() string              { return d.deviceUUID }
 func (d *Device) SetDeviceUUID(deviceUUID string) { d.deviceUUID = deviceUUID }
 func (d *Device) DeviceName() string              { return d.deviceName }

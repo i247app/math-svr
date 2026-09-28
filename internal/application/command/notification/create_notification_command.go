@@ -13,11 +13,11 @@ import (
 )
 
 // CreateNotificationCommand persists one notification row for a recipient
-// (UserID). The external id is minted via ma_seqs inside the UoW. Push
+// (UID). The external id is minted via ma_seqs inside the UoW. Push
 // delivery is orchestrated separately by the module service (the FCM call must
 // not hold a transaction open).
 type CreateNotificationCommand struct {
-	UserID     int64
+	UID        int64
 	Title      string
 	ShortText  string
 	Category   *string
@@ -47,7 +47,7 @@ func (h *CreateNotificationCommandHandler) Handle(ctx context.Context, cmd Creat
 
 		n := notification.NewNotification()
 		n.SetNotificationId(id)
-		n.SetUserId(cmd.UserID)
+		n.SetUid(cmd.UID)
 		n.SetTitle(cmd.Title)
 		n.SetShortText(cmd.ShortText)
 		n.SetCategory(cmd.Category)

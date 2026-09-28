@@ -13,7 +13,7 @@ import (
 )
 
 type CreateProfileCommand struct {
-	UserID     int64
+	UID        int64
 	Name       string
 	Phone      *string
 	Email      *string
@@ -66,7 +66,7 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 		}
 
 		if cmd.IsDefault {
-			if err := repos.Profile.MarkDefaultByProfileId(ctx, cmd.UserID, profileID); err != nil {
+			if err := repos.Profile.MarkDefaultByProfileId(ctx, cmd.UID, profileID); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 		}
@@ -84,7 +84,7 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 
 func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
 	p := profile.NewProfile()
-	p.SetUserId(cmd.UserID)
+	p.SetUid(cmd.UID)
 	p.SetName(cmd.Name)
 	p.SetPhone(cmd.Phone)
 	p.SetEmail(cmd.Email)

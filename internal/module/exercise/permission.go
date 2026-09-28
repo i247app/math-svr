@@ -15,7 +15,7 @@ import (
 // belongs to the authenticated user. Mirrors the classroom module's
 // gate so an exercise endpoint cannot act on a profile the session
 // doesn't own.
-func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUserID int64) (*profileDomain.Profile, error) {
+func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUID int64) (*profileDomain.Profile, error) {
 	p, err := s.profileRepo.FindByProfileId(ctx, profileID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -24,7 +24,7 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			ErrProfileNotFound)
 	}
-	if sessionUserID != 0 && sessionUserID != p.UserId() {
+	if sessionUID != 0 && sessionUID != p.Uid() {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
 			ErrProfileNotOwnedByUser)
 	}

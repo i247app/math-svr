@@ -11,7 +11,7 @@ import (
 type Profile struct {
 	profileId     int64
 	profileCode   string
-	userId        int64
+	uid           int64
 	name          string
 	phone         *string
 	email         *string
@@ -61,12 +61,12 @@ func (p *Profile) SetProfileCode(code string) {
 	p.profileCode = code
 }
 
-func (p *Profile) UserId() int64 {
-	return p.userId
+func (p *Profile) Uid() int64 {
+	return p.uid
 }
 
-func (p *Profile) SetUserId(userId int64) {
-	p.userId = userId
+func (p *Profile) SetUid(uid int64) {
+	p.uid = uid
 }
 
 func (p *Profile) Name() string {

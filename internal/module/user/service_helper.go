@@ -117,7 +117,7 @@ func (s *Service) populateImageUrl(ctx context.Context, resp *userDTO.UserRespon
 		Expiration: imageUrlTTL,
 	})
 	if err != nil {
-		logger.From(ctx).Warnf("user.avatar presign failed uid=%d err=%v", resp.UserID, err)
+		logger.From(ctx).Warnf("user.avatar presign failed uid=%d err=%v", resp.UID, err)
 		return
 	}
 	resp.AvatarUrl = &url

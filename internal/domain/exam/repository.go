@@ -136,7 +136,7 @@ type IUserAiExamRepository interface {
 	// ReassignOwnerByProfile re-points every sitting of one child at
 	// another account. The child does not change — only who owns them —
 	// so the rows are addressed by profile_id.
-	ReassignOwnerByProfile(ctx context.Context, profileId int64, newUserId int64) error
+	ReassignOwnerByProfile(ctx context.Context, profileId int64, newUid int64) error
 	// FindLatestSubmittedByUserExamId returns the most recently submitted
 	// sitting of a journey, whatever its type — the base a PRACTICE round
 	// is drawn from. (nil, nil) when nothing has been submitted yet.
@@ -165,7 +165,7 @@ type ListJourneysFilter struct {
 // column. ExamType nil means every journey type except PRACTICE, whose
 // rows are not journeys of their own. Limit is pre-clamped by the caller.
 type JourneyProgressParams struct {
-	UserID          int64
+	UID             int64
 	ProfileID       int64
 	ExamType        *string
 	From            *mtime.MathTime
@@ -208,14 +208,14 @@ type IUserExamRepository interface {
 	FindByUserExamIdAndType(ctx context.Context, userExamId int64, examType string) (*UserExam, error)
 	// FindActiveByUserProfileType returns the open journey, or (nil, nil)
 	// when the child has none of that type right now.
-	FindActiveByUserProfileType(ctx context.Context, userId, profileId int64, examType string) (*UserExam, error)
+	FindActiveByUserProfileType(ctx context.Context, uid, profileId int64, examType string) (*UserExam, error)
 	// FindLatestCompletedByUserProfileType returns the most recently
 	// COMPLETED journey of that type — what a new journey inherits its
 	// starting grade from. CANCELLED journeys are skipped on purpose.
-	FindLatestCompletedByUserProfileType(ctx context.Context, userId, profileId int64, examType string) (*UserExam, error)
+	FindLatestCompletedByUserProfileType(ctx context.Context, uid, profileId int64, examType string) (*UserExam, error)
 	// ListByUserProfile returns a child's journeys, newest first within
 	// each exam type.
-	ListByUserProfile(ctx context.Context, userId, profileId int64, filter ListJourneysFilter) ([]*UserExam, error)
+	ListByUserProfile(ctx context.Context, uid, profileId int64, filter ListJourneysFilter) ([]*UserExam, error)
 	// ListProgressPoints returns a child's scored journeys, newest
 	// submission first, capped at params.Limit — the journey-level series
 	// behind the progress chart. A journey nothing was ever submitted in
@@ -225,7 +225,7 @@ type IUserExamRepository interface {
 	// another account. uk_active_journey keys on (uid, profile_id, type),
 	// and the profile moves with its journeys, so an open journey stays
 	// open and cannot collide with one the receiving account already has.
-	ReassignOwnerByProfile(ctx context.Context, profileId int64, newUserId int64) error
+	ReassignOwnerByProfile(ctx context.Context, profileId int64, newUid int64) error
 	// Create opens a journey with delta as its first totals.
 	Create(ctx context.Context, e *UserExam, delta StatsDelta) error
 	// Accumulate folds delta into the row (userExamId, examType) while it

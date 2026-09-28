@@ -12,7 +12,7 @@ import (
 )
 
 func ValidatePing(ctx context.Context, req *dto.PingNotificationReq) error {
-	if req.UserID <= 0 {
+	if req.UID <= 0 {
 		return errs.NewError(ctx, status.NOTIFICATION_MISSING_UID, nil, ErrUidRequired)
 	}
 	return nil
@@ -20,7 +20,7 @@ func ValidatePing(ctx context.Context, req *dto.PingNotificationReq) error {
 
 // ValidateSend checks the create-and-push request.
 func ValidateSend(ctx context.Context, req *dto.SendNotificationReq) error {
-	if req.UserID <= 0 {
+	if req.UID <= 0 {
 		return errs.NewError(ctx, status.NOTIFICATION_MISSING_UID, nil, ErrUidRequired)
 	}
 	if strings.TrimSpace(req.Title) == "" {

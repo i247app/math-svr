@@ -6,7 +6,7 @@ import (
 
 type LoginLogModel struct {
 	LoginLogId     int64
-	UserId         int64
+	Uid            int64
 	IpAddress      string
 	DeviceUUID     string
 	Token          string

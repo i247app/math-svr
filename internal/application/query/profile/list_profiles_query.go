@@ -10,7 +10,7 @@ import (
 // ListProfilesQuery powers /profiles/list. Every filter is optional; the
 // repo only adds a predicate when the field is non-zero / non-nil.
 type ListProfilesQuery struct {
-	UserID        *int64
+	UID           *int64
 	Role          *string
 	ProfileStatus *string
 	SchoolID      *int64
@@ -33,7 +33,7 @@ func NewListProfilesQueryHandler(profileRepo profile.IRepository) *ListProfilesQ
 
 func (h *ListProfilesQueryHandler) Handle(ctx context.Context, q ListProfilesQuery) ([]*profile.Profile, *pagination.Pagination, error) {
 	return h.profileRepo.ListProfiles(ctx, &profile.ListProfilesParams{
-		UserId:        q.UserID,
+		Uid:           q.UID,
 		Role:          q.Role,
 		ProfileStatus: q.ProfileStatus,
 		SchoolId:      q.SchoolID,

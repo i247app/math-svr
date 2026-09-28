@@ -30,11 +30,11 @@ import (
 // re-pointed, never merged, and the moved profile arrives with
 // is_default cleared so the account keeps the child it already had.
 type AdoptGuestCommand struct {
-	// GuestUserID is the account the session belonged to BEFORE the
+	// GuestUID is the account the session belonged to BEFORE the
 	// login — the server's own record, not a client claim.
-	GuestUserID int64
-	// OwnerUserID is the account just proven by the login.
-	OwnerUserID int64
+	GuestUID int64
+	// OwnerUID is the account just proven by the login.
+	OwnerUID int64
 }
 
 // AdoptGuestCommandResult reports what moved, so the caller can log it.
@@ -55,12 +55,12 @@ func NewAdoptGuestCommandHandler(uow transaction.UnitOfWork) *AdoptGuestCommandH
 
 func (h *AdoptGuestCommandHandler) Handle(ctx context.Context, cmd AdoptGuestCommand) (*AdoptGuestCommandResult, error) {
 	result := &AdoptGuestCommandResult{}
-	if cmd.GuestUserID == 0 || cmd.OwnerUserID == 0 || cmd.GuestUserID == cmd.OwnerUserID {
+	if cmd.GuestUID == 0 || cmd.OwnerUID == 0 || cmd.GuestUID == cmd.OwnerUID {
 		return result, nil
 	}
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
-		guest, err := repos.User.FindByUserId(ctx, cmd.GuestUserID)
+		guest, err := repos.User.FindByUid(ctx, cmd.GuestUID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -71,7 +71,7 @@ func (h *AdoptGuestCommandHandler) Handle(ctx context.Context, cmd AdoptGuestCom
 			return nil
 		}
 
-		owner, err := repos.User.FindByUserId(ctx, cmd.OwnerUserID)
+		owner, err := repos.User.FindByUid(ctx, cmd.OwnerUID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -79,7 +79,7 @@ func (h *AdoptGuestCommandHandler) Handle(ctx context.Context, cmd AdoptGuestCom
 			return errs.NewError(ctx, status.USER_NOT_FOUND, nil, ErrUserNotFound)
 		}
 
-		profiles, err := repos.Profile.ListByUserId(ctx, cmd.GuestUserID)
+		profiles, err := repos.Profile.ListByUid(ctx, cmd.GuestUID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -88,13 +88,13 @@ func (h *AdoptGuestCommandHandler) Handle(ctx context.Context, cmd AdoptGuestCom
 			// Order matters only in that everything is one transaction:
 			// a crash between the profile and its exams would leave a
 			// child on one account and their work on another.
-			if err := repos.Profile.ReassignOwner(ctx, p.ProfileId(), cmd.OwnerUserID); err != nil {
+			if err := repos.Profile.ReassignOwner(ctx, p.ProfileId(), cmd.OwnerUID); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
-			if err := repos.UserExam.ReassignOwnerByProfile(ctx, p.ProfileId(), cmd.OwnerUserID); err != nil {
+			if err := repos.UserExam.ReassignOwnerByProfile(ctx, p.ProfileId(), cmd.OwnerUID); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
-			if err := repos.UserAiExam.ReassignOwnerByProfile(ctx, p.ProfileId(), cmd.OwnerUserID); err != nil {
+			if err := repos.UserAiExam.ReassignOwnerByProfile(ctx, p.ProfileId(), cmd.OwnerUID); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			result.ProfileIDs = append(result.ProfileIDs, p.ProfileId())
@@ -103,10 +103,10 @@ func (h *AdoptGuestCommandHandler) Handle(ctx context.Context, cmd AdoptGuestCom
 		// The guest row has nothing left to own. Its aliases go first —
 		// the device_uuid among them — so the device is not still a
 		// resolvable login name pointing at a retired account.
-		if err := repos.Alias.SoftDeleteByUserId(ctx, cmd.GuestUserID); err != nil {
+		if err := repos.Alias.SoftDeleteByUid(ctx, cmd.GuestUID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.User.SoftDeleteByUserId(ctx, cmd.GuestUserID); err != nil {
+		if err := repos.User.SoftDeleteByUid(ctx, cmd.GuestUID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 
@@ -119,7 +119,7 @@ func (h *AdoptGuestCommandHandler) Handle(ctx context.Context, cmd AdoptGuestCom
 	}
 	if result.Adopted {
 		logger.From(ctx).Info("user.guest.adopted",
-			"guest_uid", cmd.GuestUserID, "uid", cmd.OwnerUserID, "profiles", len(result.ProfileIDs))
+			"guest_uid", cmd.GuestUID, "uid", cmd.OwnerUID, "profiles", len(result.ProfileIDs))
 	}
 	return result, nil
 }

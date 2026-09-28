@@ -249,14 +249,14 @@ func (s *Service) populateCoverUrl(ctx context.Context, resp *dto.ClassroomRespo
 // that is an ACTIVE member of the given classroom. It enumerates the
 // user's profiles (typically one or two), looks them up against
 // ma_classroom_members in one call, and returns the first matching
-// profile_id. Returns CLASSROOM_PERMISSION_DENIED when sessionUserID is
+// profile_id. Returns CLASSROOM_PERMISSION_DENIED when sessionUID is
 // zero (anonymous) or no owned profile is a member.
-func (s *Service) resolveMemberProfileForUser(ctx context.Context, sessionUserID, classroomID int64) (int64, error) {
-	if sessionUserID == 0 {
+func (s *Service) resolveMemberProfileForUser(ctx context.Context, sessionUID, classroomID int64) (int64, error) {
+	if sessionUID == 0 {
 		return 0, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
 			ErrProfileIDRequiredNoSession)
 	}
-	profiles, err := s.profileRepo.ListByUserId(ctx, sessionUserID)
+	profiles, err := s.profileRepo.ListByUid(ctx, sessionUID)
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}

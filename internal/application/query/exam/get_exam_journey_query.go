@@ -17,7 +17,7 @@ type GetExamJourneyQuery struct {
 	// ExamType picks the row of the journey — ASSESSMENT or PRACTICE —
 	// since both share UserExamID. Normalised by the caller.
 	ExamType  string
-	UserID    int64
+	UID       int64
 	ProfileID int64
 }
 
@@ -76,7 +76,7 @@ func (h *GetExamJourneyQueryHandler) Handle(ctx context.Context, q GetExamJourne
 	if journey == nil {
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil, nil)
 	}
-	if journey.UserId() != q.UserID || journey.ProfileId() != q.ProfileID {
+	if journey.Uid() != q.UID || journey.ProfileId() != q.ProfileID {
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil, nil)
 	}
 

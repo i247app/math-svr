@@ -42,7 +42,7 @@ func NewPresenceRepository(db database.Executor) presence.IRepository {
 
 func scanPresence(s database.RowScanner) (*models.PresenceModel, error) {
 	var m models.PresenceModel
-	if err := s.Scan(&m.UserId, &m.PresenceState, &m.ConnectionCount,
+	if err := s.Scan(&m.Uid, &m.PresenceState, &m.ConnectionCount,
 		&m.LastOnlineDt, &m.LastSeenDt, &m.LastDeviceUuid, &m.LastPlatform,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.Status, &m.CreateId, &m.CreateDt, &m.ModifyId,
 		&m.ModifyDt); err != nil {
@@ -51,8 +51,8 @@ func scanPresence(s database.RowScanner) (*models.PresenceModel, error) {
 	return &m, nil
 }
 
-func (r *PresenceRepository) FindByUserId(ctx context.Context, userId int64) (*presence.Presence, error) {
-	args := slices.Concat([]any{userId}, presenceActiveArgs())
+func (r *PresenceRepository) FindByUid(ctx context.Context, uid int64) (*presence.Presence, error) {
+	args := slices.Concat([]any{uid}, presenceActiveArgs())
 	query := `SELECT ` + presenceColumns + ` FROM ` + presenceTable + ` p WHERE (p.uid = ?) AND ` +
 		presenceActiveWhere
 
@@ -66,15 +66,15 @@ func (r *PresenceRepository) FindByUserId(ctx context.Context, userId int64) (*p
 	return ModelToDomainPresence(m), nil
 }
 
-func (r *PresenceRepository) ListByUserIds(ctx context.Context, userIds []int64) (map[int64]*presence.Presence, error) {
-	out := make(map[int64]*presence.Presence, len(userIds))
-	if len(userIds) == 0 {
+func (r *PresenceRepository) ListByUids(ctx context.Context, uids []int64) (map[int64]*presence.Presence, error) {
+	out := make(map[int64]*presence.Presence, len(uids))
+	if len(uids) == 0 {
 		return out, nil
 	}
 
-	placeholders := strings.Repeat("?,", len(userIds)-1) + "?"
-	args := make([]any, 0, len(userIds)+1)
-	for _, id := range userIds {
+	placeholders := strings.Repeat("?,", len(uids)-1) + "?"
+	args := make([]any, 0, len(uids)+1)
+	for _, id := range uids {
 		args = append(args, id)
 	}
 	args = append(args, presenceActiveArgs()...)
@@ -93,7 +93,7 @@ func (r *PresenceRepository) ListByUserIds(ctx context.Context, userIds []int64)
 		if err != nil {
 			return nil, fmt.Errorf("presence repo scan: %w", err)
 		}
-		out[m.UserId] = ModelToDomainPresence(m)
+		out[m.Uid] = ModelToDomainPresence(m)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("presence repo list rows: %w", err)
@@ -108,7 +108,7 @@ func (r *PresenceRepository) ListByUserIds(ctx context.Context, userIds []int64)
 //
 // The update clause repeats the placeholders rather than using VALUES(col),
 // which MySQL 8.0.20 deprecated.
-func (r *PresenceRepository) IncrementConnection(ctx context.Context, userId int64, deviceUuid, platform *string, now mtime.MathTime) (*presence.Presence, error) {
+func (r *PresenceRepository) IncrementConnection(ctx context.Context, uid int64, deviceUuid, platform *string, now mtime.MathTime) (*presence.Presence, error) {
 	query := `INSERT INTO ` + presenceTable + `
 		  (uid, presence_state, connection_count, last_online_dt, last_seen_dt,
 		   last_device_uuid, last_platform, status)
@@ -123,13 +123,13 @@ func (r *PresenceRepository) IncrementConnection(ctx context.Context, userId int
 
 	online := string(enum.PresenceStateOnline)
 	if _, err := r.db.Exec(ctx, query,
-		userId, online, now.Time, now.Time, deviceUuid, platform, enum.StatusActive,
+		uid, online, now.Time, now.Time, deviceUuid, platform, enum.StatusActive,
 		online, now.Time, now.Time, deviceUuid, platform,
 	); err != nil {
 		return nil, fmt.Errorf("presence repo increment connection: %w", err)
 	}
 
-	return r.FindByUserId(ctx, userId)
+	return r.FindByUid(ctx, uid)
 }
 
 // DecrementConnection clamps at zero so a double-disconnect (or a counter that
@@ -140,18 +140,18 @@ func (r *PresenceRepository) IncrementConnection(ctx context.Context, userId int
 // presence_state must therefore be decided BEFORE connection_count is
 // decremented, or the CASE would read the new count and never fire. Do not
 // reorder these two lines.
-func (r *PresenceRepository) DecrementConnection(ctx context.Context, userId int64, now mtime.MathTime) (*presence.Presence, error) {
+func (r *PresenceRepository) DecrementConnection(ctx context.Context, uid int64, now mtime.MathTime) (*presence.Presence, error) {
 	query := `UPDATE ` + presenceTable + ` SET
 		  presence_state   = CASE WHEN connection_count <= 1 THEN ? ELSE presence_state END,
 		  connection_count = GREATEST(0, connection_count - 1),
 		  last_seen_dt     = ?
 		WHERE uid = ?`
 
-	if _, err := r.db.Exec(ctx, query, string(enum.PresenceStateOffline), now.Time, userId); err != nil {
+	if _, err := r.db.Exec(ctx, query, string(enum.PresenceStateOffline), now.Time, uid); err != nil {
 		return nil, fmt.Errorf("presence repo decrement connection: %w", err)
 	}
 
-	return r.FindByUserId(ctx, userId)
+	return r.FindByUid(ctx, uid)
 }
 
 // ResetAll deliberately leaves last_seen_dt untouched. For a process that died
@@ -171,7 +171,7 @@ func (r *PresenceRepository) ResetAll(ctx context.Context) error {
 
 func ModelToDomainPresence(m *models.PresenceModel) *presence.Presence {
 	p := presence.NewPresence()
-	p.SetUserId(m.UserId)
+	p.SetUid(m.Uid)
 	p.SetPresenceState(m.PresenceState)
 	p.SetConnectionCount(m.ConnectionCount)
 	if m.LastOnlineDt != nil {

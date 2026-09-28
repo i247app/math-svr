@@ -16,11 +16,11 @@ import (
 // from this permission (per the workflow spec). The max_members
 // check runs inside the command's UoW so a concurrent join doesn't
 // overflow capacity.
-func (s *Service) ApproveJoinRequest(ctx context.Context, req *dto.ApproveJoinRequestReq, sessionUserID int64) (*dto.ApproveJoinRequestRes, error) {
+func (s *Service) ApproveJoinRequest(ctx context.Context, req *dto.ApproveJoinRequestReq, sessionUID int64) (*dto.ApproveJoinRequestRes, error) {
 	if err := ValidateApproveJoinRequest(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -40,11 +40,11 @@ func (s *Service) ApproveJoinRequest(ctx context.Context, req *dto.ApproveJoinRe
 }
 
 // RejectJoinRequest is owner-gated (same as approve).
-func (s *Service) RejectJoinRequest(ctx context.Context, req *dto.RejectJoinRequestReq, sessionUserID int64) (*dto.RejectJoinRequestRes, error) {
+func (s *Service) RejectJoinRequest(ctx context.Context, req *dto.RejectJoinRequestReq, sessionUID int64) (*dto.RejectJoinRequestRes, error) {
 	if err := ValidateRejectJoinRequest(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -66,11 +66,11 @@ func (s *Service) RejectJoinRequest(ctx context.Context, req *dto.RejectJoinRequ
 // owner gate — the caller-is-requester check is implicit: the
 // command looks up the (ClassroomID, callerProfileId) row, which by
 // design is the caller's own request.
-func (s *Service) CancelJoinRequest(ctx context.Context, req *dto.CancelJoinRequestReq, sessionUserID int64) (*dto.CancelJoinRequestRes, error) {
+func (s *Service) CancelJoinRequest(ctx context.Context, req *dto.CancelJoinRequestReq, sessionUID int64) (*dto.CancelJoinRequestRes, error) {
 	if err := ValidateCancelJoinRequest(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -85,11 +85,11 @@ func (s *Service) CancelJoinRequest(ctx context.Context, req *dto.CancelJoinRequ
 
 // ListJoinRequestsByClassroom returns every pending request for a
 // classroom — owner-only.
-func (s *Service) ListJoinRequestsByClassroom(ctx context.Context, req *dto.ListJoinRequestsByClassroomReq, sessionUserID int64) (*dto.ListJoinRequestsByClassroomRes, error) {
+func (s *Service) ListJoinRequestsByClassroom(ctx context.Context, req *dto.ListJoinRequestsByClassroomReq, sessionUID int64) (*dto.ListJoinRequestsByClassroomRes, error) {
 	if err := ValidateListJoinRequestsByClassroom(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -131,11 +131,11 @@ func (s *Service) ListJoinRequestsByClassroom(ctx context.Context, req *dto.List
 // ListMyJoinRequests returns the caller's outstanding join requests
 // across every classroom. No additional gate — the caller IS the
 // requester.
-func (s *Service) ListMyJoinRequests(ctx context.Context, req *dto.ListMyJoinRequestsReq, sessionUserID int64) (*dto.ListMyJoinRequestsRes, error) {
+func (s *Service) ListMyJoinRequests(ctx context.Context, req *dto.ListMyJoinRequestsReq, sessionUID int64) (*dto.ListMyJoinRequestsRes, error) {
 	if err := ValidateListMyJoinRequests(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}

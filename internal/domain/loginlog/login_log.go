@@ -6,7 +6,7 @@ import (
 
 type LoginLog struct {
 	loginLogId     int64
-	userId         int64
+	uid            int64
 	ipAddress      string
 	deviceUUID     string
 	token          string
@@ -33,12 +33,12 @@ func (l *LoginLog) SetLoginLogId(loginLogId int64) {
 	l.loginLogId = loginLogId
 }
 
-func (l *LoginLog) UserId() int64 {
-	return l.userId
+func (l *LoginLog) Uid() int64 {
+	return l.uid
 }
 
-func (l *LoginLog) SetUserId(userId int64) {
-	l.userId = userId
+func (l *LoginLog) SetUid(uid int64) {
+	l.uid = uid
 }
 
 func (l *LoginLog) IpAddress() string {

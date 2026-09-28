@@ -22,7 +22,7 @@ import (
 // Ownership is enforced so a leaked DeviceID for a different user cannot be
 // flipped.
 type MarkDeviceVerifiedCommand struct {
-	UserID          int64
+	UID             int64
 	DeviceUUID      string
 	DeviceName      string
 	Platform        string
@@ -40,7 +40,7 @@ func NewMarkDeviceVerifiedCommandHandler(uow transaction.UnitOfWork) *MarkDevice
 func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkDeviceVerifiedCommand) error {
 	log := logger.From(ctx)
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		d, err := repos.Device.FindByUserDevice(ctx, cmd.UserID, cmd.DeviceUUID)
+		d, err := repos.Device.FindByUserDevice(ctx, cmd.UID, cmd.DeviceUUID)
 		if err != nil {
 			return errs.NewError(ctx, status.DEVICE_VERIFICATION_FAIL, nil, err)
 		}
@@ -53,7 +53,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			}
 
 			d.SetDeviceId(deviceID)
-			d.SetUserId(&cmd.UserID)
+			d.SetUid(&cmd.UID)
 			d.SetDeviceUUID(cmd.DeviceUUID)
 			d.SetDeviceName(cmd.DeviceName)
 			d.SetPlatform(enum.ParsePlatformType(cmd.Platform).String())
@@ -70,7 +70,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			}
 			return nil
 		}
-		if d.UserId() == nil || *d.UserId() != cmd.UserID {
+		if d.Uid() == nil || *d.Uid() != cmd.UID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil, ErrDeviceNotOwnedByUser)
 		}
 		if d.IsVerified() {
@@ -78,7 +78,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			log.Info("device is already verified")
 		}
 
-		if err := repos.Device.MarkVerifiedByUserDevice(ctx, cmd.UserID, cmd.DeviceUUID, true); err != nil {
+		if err := repos.Device.MarkVerifiedByUserDevice(ctx, cmd.UID, cmd.DeviceUUID, true); err != nil {
 			return errs.NewError(ctx, status.DEVICE_VERIFICATION_FAIL, nil, err)
 		}
 		return nil

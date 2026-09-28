@@ -38,58 +38,58 @@ func NewService(hub *socket.Hub, authz Authorizer, originPatterns []string, pres
 // OriginPatterns exposes the accept-time origin allowlist to the handler.
 func (s *Service) OriginPatterns() []string { return s.originPatterns }
 
-// Connect takes an already-accepted socket, registers it for userID, and blocks
+// Connect takes an already-accepted socket, registers it for uid, and blocks
 // serving it until close. It enforces the per-user connection cap.
-func (s *Service) Connect(ctx context.Context, ws *websocket.Conn, userID int64) {
+func (s *Service) Connect(ctx context.Context, ws *websocket.Conn, uid int64) {
 	log := logger.From(ctx)
 
-	conn, err := s.hub.NewConn(ws, userID)
+	conn, err := s.hub.NewConn(ws, uid)
 	if err != nil {
 		_ = ws.Close(websocket.StatusTryAgainLater, "too many connections")
-		log.Warnf("socket.connect_rejected uid=%d err=%v", userID, err)
+		log.Warnf("socket.connect_rejected uid=%d err=%v", uid, err)
 		return
 	}
 
 	// Auto-subscribe the user's personal topics, then install the control-frame
 	// dispatcher before serving so no early client frame is missed.
-	s.hub.Subscribe(conn, personalTopic(userID))
-	s.hub.Subscribe(conn, notificationsTopic(userID))
+	s.hub.Subscribe(conn, personalTopic(uid))
+	s.hub.Subscribe(conn, notificationsTopic(uid))
 	conn.SetOnMessage(s.onMessage)
 
-	s.markOnline(ctx, userID)
+	s.markOnline(ctx, uid)
 
-	log.Infof("socket.connected uid=%d conn=%s", userID, conn.ID())
+	log.Infof("socket.connected uid=%d conn=%s", uid, conn.ID())
 	conn.Serve(ctx) // blocks until the connection closes
-	log.Infof("socket.disconnected uid=%d conn=%s", userID, conn.ID())
+	log.Infof("socket.disconnected uid=%d conn=%s", uid, conn.ID())
 
 	// Deliberately uses context.WithoutCancel: by the time Serve returns, ctx
 	// is usually already cancelled (that is what ended the connection), and a
 	// cancelled context would abort the very write that marks the user
 	// offline — leaving them permanently green.
-	s.markOffline(context.WithoutCancel(ctx), userID)
+	s.markOffline(context.WithoutCancel(ctx), uid)
 }
 
 // markOnline / markOffline never propagate their error. A presence write is
 // bookkeeping for a status dot; failing it is not a reason to refuse or tear
 // down a working realtime connection, so the error is logged and swallowed.
-func (s *Service) markOnline(ctx context.Context, userID int64) {
+func (s *Service) markOnline(ctx context.Context, uid int64) {
 	if s.presence == nil {
 		return
 	}
 	deviceUUID := utils.OptionalString(metadata.GetDeviceUUID(ctx))
 	platform := utils.OptionalString(metadata.GetPlatform(ctx))
 
-	if _, err := s.presence.MarkOnline(ctx, userID, deviceUUID, platform); err != nil {
-		logger.From(ctx).Warnf("socket.presence_online_failed uid=%d err=%v", userID, err)
+	if _, err := s.presence.MarkOnline(ctx, uid, deviceUUID, platform); err != nil {
+		logger.From(ctx).Warnf("socket.presence_online_failed uid=%d err=%v", uid, err)
 	}
 }
 
-func (s *Service) markOffline(ctx context.Context, userID int64) {
+func (s *Service) markOffline(ctx context.Context, uid int64) {
 	if s.presence == nil {
 		return
 	}
-	if _, err := s.presence.MarkOffline(ctx, userID); err != nil {
-		logger.From(ctx).Warnf("socket.presence_offline_failed uid=%d err=%v", userID, err)
+	if _, err := s.presence.MarkOffline(ctx, uid); err != nil {
+		logger.From(ctx).Warnf("socket.presence_offline_failed uid=%d err=%v", uid, err)
 	}
 }
 
@@ -102,7 +102,7 @@ func (s *Service) onMessage(c *socket.Conn, in socket.Inbound) {
 			s.sendErr(c, in.Topic, status.SOCKET_MISSING_TOPIC)
 			return
 		}
-		if !s.authz.CanSubscribe(c.UserID(), in.Topic) {
+		if !s.authz.CanSubscribe(c.UID(), in.Topic) {
 			s.sendErr(c, in.Topic, status.SOCKET_TOPIC_FORBIDDEN)
 			return
 		}

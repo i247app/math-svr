@@ -15,7 +15,7 @@ const tokenTailLen = 6
 // binds it to the request context. Handlers and services pull it back out
 // with logger.From(ctx). The middleware runs before any auth middleware;
 // if auth later validates the bearer token and resolves the user, it
-// should also call kctx.WithUserID so subsequent log lines carry [uid].
+// should also call kctx.WithUID so subsequent log lines carry [uid].
 //
 // The full bearer token is never stored or logged — only its last
 // tokenTailLen characters land in the context, enough to correlate a
@@ -38,7 +38,7 @@ func LoggerMiddleware(p *logger.Provider, res *resource.Resource) func(http.Hand
 
 			// Set user ID for logger
 			if uid, err := res.GetRequestUID(r); err == nil {
-				ctx = sctx.WithUserID(ctx, uid)
+				ctx = sctx.WithUID(ctx, uid)
 			}
 
 			lg := p.New(ctx, r)

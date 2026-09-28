@@ -80,11 +80,11 @@ func NewService(
 
 // ListClassroomMembers backs the classroom message tab: every member, their
 // online dot, and the existing thread with each so a tap opens into history.
-func (s *Service) ListClassroomMembers(ctx context.Context, req *dto.ListClassroomMembersReq, sessionUserID int64) (*dto.ListClassroomMembersRes, error) {
+func (s *Service) ListClassroomMembers(ctx context.Context, req *dto.ListClassroomMembersReq, sessionUID int64) (*dto.ListClassroomMembersRes, error) {
 	if err := ValidateListClassroomMembers(ctx, req); err != nil {
 		return nil, err
 	}
-	if _, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID); err != nil {
+	if _, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID); err != nil {
 		return nil, err
 	}
 	// The caller must be in the classroom to see its roster.
@@ -134,11 +134,11 @@ func (s *Service) ListClassroomMembers(ctx context.Context, req *dto.ListClassro
 
 // OpenConversation resolves (creating on first contact) the 1-1 thread with a
 // classmate. Idempotent: calling it repeatedly returns the same thread.
-func (s *Service) OpenConversation(ctx context.Context, req *dto.OpenConversationReq, sessionUserID int64) (*dto.OpenConversationRes, error) {
+func (s *Service) OpenConversation(ctx context.Context, req *dto.OpenConversationReq, sessionUID int64) (*dto.OpenConversationRes, error) {
 	if err := ValidateOpenConversation(ctx, req); err != nil {
 		return nil, err
 	}
-	actor, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	actor, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -149,9 +149,9 @@ func (s *Service) OpenConversation(ctx context.Context, req *dto.OpenConversatio
 
 	conversation, err := s.openConversationCmd.Handle(ctx, &command.OpenConversationCommand{
 		ActorProfileID:  actor.ProfileId(),
-		ActorUserID:     actor.UserId(),
+		ActorUID:        actor.Uid(),
 		TargetProfileID: target.ProfileId(),
-		TargetUserID:    target.UserId(),
+		TargetUID:       target.Uid(),
 	})
 	if err != nil {
 		return nil, err
@@ -164,11 +164,11 @@ func (s *Service) OpenConversation(ctx context.Context, req *dto.OpenConversatio
 }
 
 // ListConversations is the inbox screen.
-func (s *Service) ListConversations(ctx context.Context, req *dto.ListConversationsReq, sessionUserID int64) (*dto.ListConversationsRes, error) {
+func (s *Service) ListConversations(ctx context.Context, req *dto.ListConversationsReq, sessionUID int64) (*dto.ListConversationsRes, error) {
 	if err := ValidateProfileOnly(ctx, req.ProfileID); err != nil {
 		return nil, err
 	}
-	if _, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID); err != nil {
+	if _, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID); err != nil {
 		return nil, err
 	}
 
@@ -198,11 +198,11 @@ func (s *Service) ListConversations(ctx context.Context, req *dto.ListConversati
 
 // ListMessages pages a thread's history. Authorization happens inside the
 // query, on the participant row.
-func (s *Service) ListMessages(ctx context.Context, req *dto.ListMessagesReq, sessionUserID int64) (*dto.ListMessagesRes, error) {
+func (s *Service) ListMessages(ctx context.Context, req *dto.ListMessagesReq, sessionUID int64) (*dto.ListMessagesRes, error) {
 	if err := ValidateListMessages(ctx, req); err != nil {
 		return nil, err
 	}
-	if _, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID); err != nil {
+	if _, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID); err != nil {
 		return nil, err
 	}
 
@@ -225,11 +225,11 @@ func (s *Service) ListMessages(ctx context.Context, req *dto.ListMessagesReq, se
 // happens after the transaction commits and its failure is logged, never
 // returned. A recipient who was offline picks the message up from
 // /chats/messages/list on next open.
-func (s *Service) SendMessage(ctx context.Context, req *dto.SendMessageReq, sessionUserID int64) (*dto.SendMessageRes, error) {
+func (s *Service) SendMessage(ctx context.Context, req *dto.SendMessageReq, sessionUID int64) (*dto.SendMessageRes, error) {
 	if err := ValidateSendMessage(ctx, req); err != nil {
 		return nil, err
 	}
-	actor, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	actor, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +237,7 @@ func (s *Service) SendMessage(ctx context.Context, req *dto.SendMessageReq, sess
 	result, err := s.sendMessageCmd.Handle(ctx, &command.SendMessageCommand{
 		ConversationID:   req.ConversationID,
 		SenderProfileID:  actor.ProfileId(),
-		SenderUserID:     actor.UserId(),
+		SenderUID:        actor.Uid(),
 		Content:          req.Content,
 		ClientMsgID:      req.ClientMsgID,
 		ReplyToMessageID: req.ReplyToMessageID,
@@ -256,11 +256,11 @@ func (s *Service) SendMessage(ctx context.Context, req *dto.SendMessageReq, sess
 }
 
 // MarkRead advances the caller's read watermark.
-func (s *Service) MarkRead(ctx context.Context, req *dto.MarkReadReq, sessionUserID int64) (*dto.MarkReadRes, error) {
+func (s *Service) MarkRead(ctx context.Context, req *dto.MarkReadReq, sessionUID int64) (*dto.MarkReadRes, error) {
 	if err := ValidateMarkRead(ctx, req); err != nil {
 		return nil, err
 	}
-	if _, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID); err != nil {
+	if _, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID); err != nil {
 		return nil, err
 	}
 
@@ -276,11 +276,11 @@ func (s *Service) MarkRead(ctx context.Context, req *dto.MarkReadReq, sessionUse
 }
 
 // UnreadCount is the badge on the message tab.
-func (s *Service) UnreadCount(ctx context.Context, req *dto.UnreadCountReq, sessionUserID int64) (*dto.UnreadCountRes, error) {
+func (s *Service) UnreadCount(ctx context.Context, req *dto.UnreadCountReq, sessionUID int64) (*dto.UnreadCountRes, error) {
 	if err := ValidateProfileOnly(ctx, req.ProfileID); err != nil {
 		return nil, err
 	}
-	if _, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID); err != nil {
+	if _, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID); err != nil {
 		return nil, err
 	}
 
@@ -321,7 +321,7 @@ func (s *Service) attachCounterpart(ctx context.Context, res *dto.ConversationRe
 		AvatarKey: peer.AvatarKey(),
 		AvatarURL: s.presign(ctx, peer.AvatarKey()),
 	}
-	if pr, err := s.presenceRepo.FindByUserId(ctx, peer.UserId()); err == nil && pr != nil {
+	if pr, err := s.presenceRepo.FindByUid(ctx, peer.Uid()); err == nil && pr != nil {
 		item.IsOnline = pr.IsOnline()
 		item.LastSeenDt = pr.LastSeenDt()
 	}

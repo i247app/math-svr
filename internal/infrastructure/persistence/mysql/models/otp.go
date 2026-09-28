@@ -7,7 +7,7 @@ import (
 type OtpModel struct {
 	OtpId         int64
 	OtpType       string
-	UserId        *int64
+	Uid           *int64
 	Identifier    string
 	DeviceUUID    *string
 	DeviceName    *string

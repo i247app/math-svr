@@ -42,7 +42,7 @@ func NewUserExamRepository(db database.Executor) exam.IUserExamRepository {
 
 func scanUserExam(s database.RowScanner) (*models.UserExamModel, error) {
 	var m models.UserExamModel
-	if err := s.Scan(&m.UserExamId, &m.UserId, &m.ProfileId, &m.ReqExamType,
+	if err := s.Scan(&m.UserExamId, &m.Uid, &m.ProfileId, &m.ReqExamType,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
 		&m.ResReview, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.UserExamStatus, &m.Status,
@@ -81,17 +81,17 @@ func (r *UserExamRepository) FindByUserExamIdAndType(ctx context.Context, userEx
 
 // FindActiveByUserProfileType reads the open journey. uk_active_journey
 // guarantees there is at most one, so no ORDER BY is needed to pick.
-func (r *UserExamRepository) FindActiveByUserProfileType(ctx context.Context, userId, profileId int64, examType string) (*exam.UserExam, error) {
+func (r *UserExamRepository) FindActiveByUserProfileType(ctx context.Context, uid, profileId int64, examType string) (*exam.UserExam, error) {
 	return r.findOneBy(ctx,
 		"e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.user_exam_status = ?",
-		userId, profileId, examType, string(enum.UserExamStatusActive))
+		uid, profileId, examType, string(enum.UserExamStatusActive))
 }
 
 // FindLatestCompletedByUserProfileType reads the journey a new one
 // inherits from. Ordered by ended_dt, not create_dt: the row that closed
 // most recently is the freshest measurement, whichever opened first.
-func (r *UserExamRepository) FindLatestCompletedByUserProfileType(ctx context.Context, userId, profileId int64, examType string) (*exam.UserExam, error) {
-	args := slices.Concat([]any{userId, profileId, examType, string(enum.UserExamStatusComplete)}, userExamActiveArgs())
+func (r *UserExamRepository) FindLatestCompletedByUserProfileType(ctx context.Context, uid, profileId int64, examType string) (*exam.UserExam, error) {
+	args := slices.Concat([]any{uid, profileId, examType, string(enum.UserExamStatusComplete)}, userExamActiveArgs())
 	query := `SELECT ` + userExamColumns + ` FROM ` + userExamTable + ` e WHERE ` +
 		`(e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.user_exam_status = ?)` +
 		` AND ` + userExamActiveWhere +
@@ -110,9 +110,9 @@ func (r *UserExamRepository) FindLatestCompletedByUserProfileType(ctx context.Co
 // ListByUserProfile returns a child's journeys, newest first inside each
 // exam type, so the open journey (if any) is always the first row of its
 // group and the ended ones follow as history.
-func (r *UserExamRepository) ListByUserProfile(ctx context.Context, userId, profileId int64, filter exam.ListJourneysFilter) ([]*exam.UserExam, error) {
+func (r *UserExamRepository) ListByUserProfile(ctx context.Context, uid, profileId int64, filter exam.ListJourneysFilter) ([]*exam.UserExam, error) {
 	where := `e.uid = ? AND e.profile_id = ?`
-	args := []any{userId, profileId}
+	args := []any{uid, profileId}
 
 	if filter.ExamType != nil && *filter.ExamType != "" {
 		where += ` AND e.req_exam_type = ?`
@@ -155,9 +155,9 @@ func (r *UserExamRepository) ListByUserProfile(ctx context.Context, userId, prof
 // ReassignOwnerByProfile re-points every journey of one child at another
 // account. Addressed by profile_id because the child is what moves; the
 // rows themselves are unchanged apart from who owns them.
-func (r *UserExamRepository) ReassignOwnerByProfile(ctx context.Context, profileId int64, newUserId int64) error {
+func (r *UserExamRepository) ReassignOwnerByProfile(ctx context.Context, profileId int64, newUid int64) error {
 	query := `UPDATE ` + userExamTable + ` SET uid = ?, modify_dt = ? WHERE profile_id = ?`
-	if _, err := r.db.Exec(ctx, query, newUserId, mtime.Now().Time, profileId); err != nil {
+	if _, err := r.db.Exec(ctx, query, newUid, mtime.Now().Time, profileId); err != nil {
 		return fmt.Errorf("user exam repo reassign owner: %w", err)
 	}
 	return nil
@@ -165,7 +165,7 @@ func (r *UserExamRepository) ReassignOwnerByProfile(ctx context.Context, profile
 
 func (r *UserExamRepository) ListProgressPoints(ctx context.Context, params exam.JourneyProgressParams) ([]*exam.UserExam, error) {
 	where := `e.uid = ? AND e.profile_id = ? AND e.res_score_percentage IS NOT NULL AND e.last_submitted_dt IS NOT NULL`
-	args := []any{params.UserID, params.ProfileID}
+	args := []any{params.UID, params.ProfileID}
 
 	if params.ExamType != nil && *params.ExamType != "" {
 		where += ` AND e.req_exam_type = ?`
@@ -369,7 +369,7 @@ func (r *UserExamRepository) Create(ctx context.Context, e *exam.UserExam, delta
 	}
 
 	if _, err := r.db.Exec(ctx, query,
-		e.UserExamId(), e.UserId(), e.ProfileId(), e.ReqExamType(),
+		e.UserExamId(), e.Uid(), e.ProfileId(), e.ReqExamType(),
 		delta.TotalQuestions, delta.CorrectNumber, delta.SkippedNumber, percentage,
 		e.ResReview(), e.CurrentGrade(), e.CurrentLevel(), lastSubmitted,
 		rowStatus, e.CreateId(), now, now); err != nil {
@@ -441,7 +441,7 @@ func nullableTime(mt mtime.MathTime) *time.Time {
 func ModelToDomainUserExam(m *models.UserExamModel) *exam.UserExam {
 	e := exam.NewUserExam()
 	e.SetUserExamId(m.UserExamId)
-	e.SetUserId(m.UserId)
+	e.SetUid(m.Uid)
 	e.SetProfileId(m.ProfileId)
 	e.SetReqExamType(m.ReqExamType)
 	e.SetResTotalQuestions(m.ResTotalQuestions)

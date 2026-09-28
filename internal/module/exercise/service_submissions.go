@@ -29,13 +29,13 @@ const avatarUrlTTL = 1 * time.Hour
 // membership + window + duplicate guards → marshals the answers payload
 // → calls the bot OUTSIDE the UoW → persists inside one short UoW.
 // The result is the freshly graded submission.
-func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExerciseAnswersReq, sessionUserID int64) (*dto.SubmitExerciseAnswersRes, error) {
+func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExerciseAnswersReq, sessionUID int64) (*dto.SubmitExerciseAnswersRes, error) {
 	log := logger.From(ctx)
 
 	if err := ValidateSubmitExerciseAnswers(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -153,11 +153,11 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 //   - no bot client construction;
 //   - no `grading.ScorePercentage` log line until after the scorer runs
 //     — the scored values come from the command's log line itself.
-func (s *Service) SubmitExerciseAnswersV2(ctx context.Context, req *dto.SubmitExerciseAnswersReq, sessionUserID int64) (*dto.SubmitExerciseAnswersRes, error) {
+func (s *Service) SubmitExerciseAnswersV2(ctx context.Context, req *dto.SubmitExerciseAnswersReq, sessionUID int64) (*dto.SubmitExerciseAnswersRes, error) {
 	if err := ValidateSubmitExerciseAnswers(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +225,7 @@ func (s *Service) SubmitExerciseAnswersV2(ctx context.Context, req *dto.SubmitEx
 
 // GetSubmission resolves the row → enforces "caller is the owner OR
 // caller is a manager of the parent classroom" before returning.
-func (s *Service) GetSubmission(ctx context.Context, req *dto.GetSubmissionReq, sessionUserID int64) (*dto.GetSubmissionRes, error) {
+func (s *Service) GetSubmission(ctx context.Context, req *dto.GetSubmissionReq, sessionUID int64) (*dto.GetSubmissionRes, error) {
 	if err := ValidateGetSubmission(ctx, req); err != nil {
 		return nil, err
 	}
@@ -241,7 +241,7 @@ func (s *Service) GetSubmission(ctx context.Context, req *dto.GetSubmissionReq, 
 			ErrSubmissionNotFound)
 	}
 
-	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +267,7 @@ func (s *Service) GetSubmission(ctx context.Context, req *dto.GetSubmissionReq, 
 // returns rows for any student in the scope, gated by the caller being
 // an active OWNER / CO_TEACHER of the scoped classroom (resolved either
 // directly from classroom_id or via the exercise's classroom).
-func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsReq, sessionUserID int64) (*dto.ListSubmissionsRes, error) {
+func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsReq, sessionUID int64) (*dto.ListSubmissionsRes, error) {
 	if err := ValidateListSubmissions(ctx, req); err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsR
 			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 				ErrProfileNotFound)
 		}
-		if sessionUserID != 0 && p.UserId() == sessionUserID {
+		if sessionUID != 0 && p.Uid() == sessionUID {
 			isSelfList = true
 		}
 	}
@@ -299,7 +299,7 @@ func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsR
 			return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
 				ErrClassroomIDOrClassroomExerciseIDRequiredWhenListingAcrossProfiles)
 		}
-		// if _, err := s.requireManagerForUser(ctx, scopeClassroomID, sessionUserID); err != nil {
+		// if _, err := s.requireManagerForUser(ctx, scopeClassroomID, sessionUID); err != nil {
 		// 	return nil, err
 		// }
 	}
@@ -360,11 +360,11 @@ func (s *Service) resolveListScopeClassroomID(ctx context.Context, req *dto.List
 
 // ListSubmissionsByExercise is the teacher view: every submission for
 // a single exercise. Manager-gated.
-func (s *Service) ListSubmissionsByExercise(ctx context.Context, req *dto.ListSubmissionsByExerciseReq, sessionUserID int64) (*dto.ListSubmissionsByExerciseRes, error) {
+func (s *Service) ListSubmissionsByExercise(ctx context.Context, req *dto.ListSubmissionsByExerciseReq, sessionUID int64) (*dto.ListSubmissionsByExerciseRes, error) {
 	if err := ValidateListSubmissionsByExercise(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -405,15 +405,15 @@ func (s *Service) ListSubmissionsByExercise(ctx context.Context, req *dto.ListSu
 // ListSubmittedMembers is the teacher-side roster of classroom members
 // who already submitted the exercise. Returns each member's profile
 // detail and submission metadata.
-func (s *Service) ListSubmittedMembers(ctx context.Context, req *dto.ListAudienceMembersReq, sessionUserID int64) (*dto.ListAudienceMembersRes, error) {
-	return s.listAudienceMembers(ctx, req, sessionUserID, true)
+func (s *Service) ListSubmittedMembers(ctx context.Context, req *dto.ListAudienceMembersReq, sessionUID int64) (*dto.ListAudienceMembersRes, error) {
+	return s.listAudienceMembers(ctx, req, sessionUID, true)
 }
 
 // ListNonSubmittedMembers is the teacher-side roster of classroom
 // members who have NOT submitted the exercise. Submission summary is
 // omitted on each row.
-func (s *Service) ListNonSubmittedMembers(ctx context.Context, req *dto.ListAudienceMembersReq, sessionUserID int64) (*dto.ListAudienceMembersRes, error) {
-	return s.listAudienceMembers(ctx, req, sessionUserID, false)
+func (s *Service) ListNonSubmittedMembers(ctx context.Context, req *dto.ListAudienceMembersReq, sessionUID int64) (*dto.ListAudienceMembersRes, error) {
+	return s.listAudienceMembers(ctx, req, sessionUID, false)
 }
 
 // listAudienceMembers is the shared implementation behind the two
@@ -422,11 +422,11 @@ func (s *Service) ListNonSubmittedMembers(ctx context.Context, req *dto.ListAudi
 // row; submitted=false uses the LEFT JOIN ... IS NULL flavor and skips
 // the submission lookup. Permission, classroom resolution, and the
 // page query stay identical between the two paths.
-func (s *Service) listAudienceMembers(ctx context.Context, req *dto.ListAudienceMembersReq, sessionUserID int64, submitted bool) (*dto.ListAudienceMembersRes, error) {
+func (s *Service) listAudienceMembers(ctx context.Context, req *dto.ListAudienceMembersReq, sessionUID int64, submitted bool) (*dto.ListAudienceMembersRes, error) {
 	if err := ValidateListAudienceMembers(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -583,11 +583,11 @@ func (s *Service) signAudienceAvatarURL(ctx context.Context, detail *dto.Audienc
 
 // SoftDeleteSubmission is manager-only — the use case is invalidating
 // a spammed / bad attempt, not student-side withdrawal.
-func (s *Service) SoftDeleteSubmission(ctx context.Context, req *dto.DeleteSubmissionReq, sessionUserID int64) (*dto.DeleteSubmissionRes, error) {
+func (s *Service) SoftDeleteSubmission(ctx context.Context, req *dto.DeleteSubmissionReq, sessionUID int64) (*dto.DeleteSubmissionRes, error) {
 	if err := ValidateDeleteSubmission(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}

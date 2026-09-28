@@ -15,15 +15,15 @@ import (
 // omits it, the session's authenticated user must have exactly one
 // profile (otherwise the caller has to disambiguate). Mirrors how the
 // classroom module derives the acting profile.
-func (s *Service) resolveCaller(ctx context.Context, profileID *int64, sessionUserID int64) (*profileDomain.Profile, error) {
+func (s *Service) resolveCaller(ctx context.Context, profileID *int64, sessionUID int64) (*profileDomain.Profile, error) {
 	if profileID != nil && *profileID != 0 {
-		return s.resolveActingProfile(ctx, *profileID, sessionUserID)
+		return s.resolveActingProfile(ctx, *profileID, sessionUID)
 	}
 	// No ProfileID supplied — require the session and look up by user.
-	if sessionUserID == 0 {
+	if sessionUID == 0 {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil, ErrProfileIDRequired)
 	}
-	profiles, err := s.profileRepo.ListByUserId(ctx, sessionUserID)
+	profiles, err := s.profileRepo.ListByUid(ctx, sessionUID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}

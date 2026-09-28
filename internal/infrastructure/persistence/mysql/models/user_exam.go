@@ -6,7 +6,7 @@ import (
 
 type UserExamModel struct {
 	UserExamId         int64
-	UserId             int64
+	Uid                int64
 	ProfileId          int64
 	ReqExamType        string
 	ResTotalQuestions  int

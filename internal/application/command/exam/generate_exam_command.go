@@ -38,7 +38,7 @@ type NewAiExamContent struct {
 // attempt. That asymmetry is the entire point of splitting ma_ai_exams
 // from ma_user_ai_exams.
 type GenerateExamCommand struct {
-	UserID    int64
+	UID       int64
 	ProfileID int64
 	ExamType  enum.ExamType
 	// Grade is the band the paper is written at, resolved by the caller.
@@ -112,7 +112,7 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 
 		a := exam.NewUserAiExam()
 		a.SetUserAiExamId(attemptID)
-		a.SetUserId(cmd.UserID)
+		a.SetUid(cmd.UID)
 		a.SetProfileId(cmd.ProfileID)
 		a.SetAiExamId(aiExam.AiExamId())
 		a.SetUserExamId(&journeyID)
@@ -165,7 +165,7 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 	}
 
 	examType := string(cmd.ExamType)
-	open, err := repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UserID, cmd.ProfileID, examType)
+	open, err := repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, examType)
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -179,7 +179,7 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 	}
 	row := exam.NewUserExam()
 	row.SetUserExamId(journeyID)
-	row.SetUserId(cmd.UserID)
+	row.SetUid(cmd.UID)
 	row.SetProfileId(cmd.ProfileID)
 	row.SetReqExamType(examType)
 	// A brand-new journey starts where this paper is written — the
@@ -196,7 +196,7 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	open, err = repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UserID, cmd.ProfileID, examType)
+	open, err = repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, examType)
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -264,7 +264,7 @@ func (h *GenerateExamCommandHandler) resolveAiExam(ctx context.Context, repos tr
 	e.SetAiQuestionsJson(cmd.NewContent.QuestionsJSON)
 	active := string(enum.AiExamStatusActive)
 	e.SetAiExamStatus(&active)
-	e.SetCreateId(utils.ToInt64Ptr(cmd.UserID))
+	e.SetCreateId(utils.ToInt64Ptr(cmd.UID))
 
 	saved, err := repos.AiExam.Create(ctx, e)
 	if err != nil {

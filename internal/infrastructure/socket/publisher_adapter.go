@@ -21,8 +21,8 @@ func (p *HubPublisher) Publish(_ context.Context, topic, event string, data any)
 	return nil
 }
 
-func (p *HubPublisher) BroadcastUser(_ context.Context, userID int64, event string, data any) error {
-	p.hub.BroadcastUser(userID, event, data)
+func (p *HubPublisher) BroadcastUser(_ context.Context, uid int64, event string, data any) error {
+	p.hub.BroadcastUser(uid, event, data)
 	return nil
 }
 

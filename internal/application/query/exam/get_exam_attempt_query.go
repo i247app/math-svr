@@ -13,7 +13,7 @@ import (
 // whose it is rather than trusting whoever asked.
 type GetExamAttemptQuery struct {
 	UserAiExamID int64
-	UserID       int64
+	UID          int64
 	ProfileID    int64
 }
 
@@ -56,7 +56,7 @@ func (h *GetExamAttemptQueryHandler) Handle(ctx context.Context, q GetExamAttemp
 	if attempt == nil {
 		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_FOUND, nil, nil)
 	}
-	if attempt.UserId() != q.UserID || attempt.ProfileId() != q.ProfileID {
+	if attempt.Uid() != q.UID || attempt.ProfileId() != q.ProfileID {
 		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_OWNED, nil, nil)
 	}
 

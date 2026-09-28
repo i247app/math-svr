@@ -164,7 +164,7 @@ func tokenSuffixOr(ctx context.Context) string {
 }
 
 func uidOr(ctx context.Context) string {
-	if v := sctx.UserID(ctx); v != 0 {
+	if v := sctx.UID(ctx); v != 0 {
 		return utils.Int64ToString(v)
 	}
 	return anonUID

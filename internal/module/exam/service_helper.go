@@ -120,8 +120,8 @@ func (s *Service) findReusableExam(ctx context.Context, tag string, profileID in
 // session's user. Every entry point goes through it: a profile id is a
 // plain integer, so without this check one parent could read — or submit
 // against — another family's exams.
-func (s *Service) loadOwnedProfile(ctx context.Context, userID *int64, profileID int64) (*profileDomain.Profile, error) {
-	if userID == nil || *userID == 0 {
+func (s *Service) loadOwnedProfile(ctx context.Context, uid *int64, profileID int64) (*profileDomain.Profile, error) {
+	if uid == nil || *uid == 0 {
 		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession)
 	}
 	p, err := s.profileRepo.FindByProfileId(ctx, profileID)
@@ -131,7 +131,7 @@ func (s *Service) loadOwnedProfile(ctx context.Context, userID *int64, profileID
 	if p == nil {
 		return nil, errs.NewError(ctx, status.EXAM_PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
 	}
-	if p.UserId() != *userID {
+	if p.Uid() != *uid {
 		return nil, errs.NewError(ctx, status.EXAM_PROFILE_NOT_OWNED, nil, ErrProfileNotOwned)
 	}
 	return p, nil
@@ -152,7 +152,7 @@ func (s *Service) loadOwnedProfile(ctx context.Context, userID *int64, profileID
 func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq, examType enum.ExamType, profile *profileDomain.Profile) (grade int, openJourney *int64, err error) {
 	// The open journey is looked up regardless of a stated grade: even a
 	// pinned sitting belongs to the journey that is open.
-	active, err := s.statsRepo.FindActiveByUserProfileType(ctx, profile.UserId(), profile.ProfileId(), string(examType))
+	active, err := s.statsRepo.FindActiveByUserProfileType(ctx, profile.Uid(), profile.ProfileId(), string(examType))
 	if err != nil {
 		return 0, nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -221,7 +221,7 @@ func (s *Service) gradeFromProfile(ctx context.Context, profile *profileDomain.P
 func (s *Service) getAttempt(ctx context.Context, userAiExamID int64, profile *profileDomain.Profile) (*dto.GetExamRes, error) {
 	detail, err := s.getAttemptQuery.Handle(ctx, query.GetExamAttemptQuery{
 		UserAiExamID: userAiExamID,
-		UserID:       profile.UserId(),
+		UID:          profile.Uid(),
 		ProfileID:    profile.ProfileId(),
 	})
 	if err != nil {
@@ -247,7 +247,7 @@ func (s *Service) getJourney(ctx context.Context, userExamID int64, examType str
 	detail, err := s.getJourneyQuery.Handle(ctx, query.GetExamJourneyQuery{
 		UserExamID: userExamID,
 		ExamType:   examType,
-		UserID:     profile.UserId(),
+		UID:        profile.Uid(),
 		ProfileID:  profile.ProfileId(),
 	})
 	if err != nil {

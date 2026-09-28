@@ -99,15 +99,15 @@ func (h *ListClassroomMembersQueryHandler) Handle(ctx context.Context, q *ListCl
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	profileByID := make(map[int64]*profileDomain.Profile, len(profiles))
-	userIDs := make([]int64, 0, len(profiles))
+	uids := make([]int64, 0, len(profiles))
 	for _, p := range profiles {
 		profileByID[p.ProfileId()] = p
-		userIDs = append(userIDs, p.UserId())
+		uids = append(uids, p.Uid())
 	}
 
 	// Presence is keyed by user, not profile: a WebSocket belongs to an
 	// account, so every profile a person holds shares one online state.
-	presenceByUser, err := h.presenceRepo.ListByUserIds(ctx, userIDs)
+	presenceByUser, err := h.presenceRepo.ListByUids(ctx, uids)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -140,7 +140,7 @@ func (h *ListClassroomMembersQueryHandler) Handle(ctx context.Context, q *ListCl
 
 		if p, ok := profileByID[m.ProfileId()]; ok {
 			row.Profile = p
-			if pr, ok := presenceByUser[p.UserId()]; ok {
+			if pr, ok := presenceByUser[p.Uid()]; ok {
 				row.Presence = pr
 			}
 		}

@@ -9,7 +9,7 @@ import (
 )
 
 type UserResponse struct {
-	UserID          int64   `json:"uid"`
+	UID             int64   `json:"uid"`
 	Name            string  `json:"name"`
 	Email           *string `json:"email,omitempty"`
 	IsEmailVerified bool    `json:"is_email_verified"`
@@ -112,10 +112,10 @@ type CreateGuestRes struct {
 }
 
 type UpdateUserReq struct {
-	UserID int64   `json:"uid"`
-	Name   *string `json:"name,omitempty"`
-	Email  *string `json:"email,omitempty"`
-	Phone  *string `json:"phone,omitempty"`
+	UID   int64   `json:"uid"`
+	Name  *string `json:"name,omitempty"`
+	Email *string `json:"email,omitempty"`
+	Phone *string `json:"phone,omitempty"`
 	// Role patches ma_users.role. nil = leave unchanged; non-nil must be a
 	// valid RoleType (STUDENT / TEACHER / PARENT). Mirrors the profile
 	// update contract.
@@ -137,11 +137,11 @@ type UpdateUserRes struct {
 	User *UserResponse `json:"user"`
 }
 
-type GetUserByUserIdReq struct {
-	UserID int64 `json:"uid"`
+type GetUserByUidReq struct {
+	UID int64 `json:"uid"`
 }
 
-type GetUserByUserIdRes struct {
+type GetUserByUidRes struct {
 	User *UserResponse `json:"user"`
 }
 
@@ -156,7 +156,7 @@ type ListUsersRes struct {
 }
 
 type DeleteUserReq struct {
-	UserID int64 `json:"uid"`
+	UID int64 `json:"uid"`
 }
 
 type DeleteUserRes struct {
@@ -167,7 +167,7 @@ type DeleteUserRes struct {
 // presigned URL; AvatarKey is exposed so the caller can persist it for
 // long-lived references (e.g. re-presigning later via /users/me).
 type UploadAvatarRes struct {
-	UserID    int64  `json:"uid"`
+	UID       int64  `json:"uid"`
 	AvatarKey string `json:"avatar_key"`
 	AvatarUrl string `json:"avatar_url"`
 }
@@ -186,7 +186,7 @@ func DomainToResponse(u *user.User) *UserResponse {
 	}
 
 	return &UserResponse{
-		UserID:          u.UserId(),
+		UID:             u.Uid(),
 		Name:            u.UserName(),
 		Email:           u.Email(),
 		IsEmailVerified: u.IsEmailVerified(),

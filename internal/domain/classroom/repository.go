@@ -156,7 +156,7 @@ type IMemberRepository interface {
 	// caller's page count reflects the filtered cohort, not the raw
 	// roster. Search joins ma_profiles for name matching.
 	ListMembersByExerciseSubmission(ctx context.Context, params *ListMembersByExerciseSubmissionParams) ([]*Member, *pagination.Pagination, error)
-	// ListPeerUserIdsByUserId returns the user ids of everyone who shares at
+	// ListPeerUidsByUid returns the user ids of everyone who shares at
 	// least one live classroom with the given user, excluding the user
 	// themselves.
 	//
@@ -168,7 +168,7 @@ type IMemberRepository interface {
 	//
 	// Single query by design: this runs on every connect and disconnect, so a
 	// per-classroom loop would put N queries on the socket lifecycle path.
-	ListPeerUserIdsByUserId(ctx context.Context, userId int64) ([]int64, error)
+	ListPeerUidsByUid(ctx context.Context, uid int64) ([]int64, error)
 	CountActiveByClassroomId(ctx context.Context, classroomId int64) (int64, error)
 	// CountPendingRequestsByClassroomIds returns the number of
 	// member_status = PENDING_REQUEST rows per classroom for the given

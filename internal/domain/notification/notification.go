@@ -14,7 +14,7 @@ import (
 // the application layer, never relationally modelled here).
 type Notification struct {
 	notificationId     int64 // external id (minted via Seq.Next)
-	userId             int64 // recipient uid
+	uid                int64 // recipient uid
 	title              string
 	shortText          string
 	category           *string // INFO, WARNING, ERROR
@@ -37,8 +37,8 @@ func NewNotification() *Notification { return &Notification{} }
 
 func (n *Notification) NotificationId() int64           { return n.notificationId }
 func (n *Notification) SetNotificationId(id int64)      { n.notificationId = id }
-func (n *Notification) UserId() int64                   { return n.userId }
-func (n *Notification) SetUserId(userId int64)          { n.userId = userId }
+func (n *Notification) Uid() int64                      { return n.uid }
+func (n *Notification) SetUid(uid int64)                { n.uid = uid }
 func (n *Notification) Title() string                   { return n.title }
 func (n *Notification) SetTitle(t string)               { n.title = t }
 func (n *Notification) ShortText() string               { return n.shortText }

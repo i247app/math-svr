@@ -19,7 +19,7 @@ type journeyProgressReader interface {
 // optional (empty means an open bound); ExamType nil means every journey
 // type; Limit is pre-clamped by the validator.
 type GetJourneyProgressQuery struct {
-	UserID    int64
+	UID       int64
 	ProfileID int64
 	ExamType  *string
 	From      string
@@ -48,7 +48,7 @@ func NewGetJourneyProgressQueryHandler(reader journeyProgressReader) *GetJourney
 
 func (h *GetJourneyProgressQueryHandler) Handle(ctx context.Context, q GetJourneyProgressQuery) (*GetJourneyProgressResult, error) {
 	params := exam.JourneyProgressParams{
-		UserID:    q.UserID,
+		UID:       q.UID,
 		ProfileID: q.ProfileID,
 		ExamType:  q.ExamType,
 		Limit:     q.Limit,
@@ -82,7 +82,7 @@ func (h *GetJourneyProgressQueryHandler) Handle(ctx context.Context, q GetJourne
 	if len(series) > 0 {
 		anchor := desc[len(desc)-1].LastSubmittedDt()
 		prior, err := h.reader.ListProgressPoints(ctx, exam.JourneyProgressParams{
-			UserID:          q.UserID,
+			UID:             q.UID,
 			ProfileID:       q.ProfileID,
 			ExamType:        q.ExamType,
 			SubmittedBefore: &anchor,

@@ -8,18 +8,18 @@ import (
 )
 
 type PingNotificationReq struct {
-	UserID int64 `json:"-"`
+	UID int64 `json:"-"`
 }
 
 type PingNotificationRes struct {
 	Notification NotificationResponse `json:"notification"`
 }
 
-// SendNotificationReq creates a notification for a recipient (UserID) and
+// SendNotificationReq creates a notification for a recipient (UID) and
 // pushes it to that user's devices. Used by the admin/test endpoint and as the
 // wire shape other modules can map onto when calling the service in-process.
 type SendNotificationReq struct {
-	UserID     int64           `json:"uid"`
+	UID        int64           `json:"uid"`
 	Title      string          `json:"title"`
 	ShortText  string          `json:"short_text"`
 	Category   *string         `json:"category"`
@@ -42,13 +42,13 @@ type SendNotificationRes struct {
 	PushFailure  int                  `json:"push_failure"`
 }
 
-// ListNotificationsReq lists the caller's notifications. UserID is
+// ListNotificationsReq lists the caller's notifications. UID is
 // session-injected.
 type ListNotificationsReq struct {
 	Page       int    `json:"page"`
 	Size       int    `json:"size"`
 	OnlyUnread bool   `json:"only_unread"`
-	UserID     *int64 `json:"-"`
+	UID        *int64 `json:"-"`
 }
 
 type ListNotificationsRes struct {
@@ -58,7 +58,7 @@ type ListNotificationsRes struct {
 
 // UnreadCountReq / Res report the caller's unread notification count.
 type UnreadCountReq struct {
-	UserID *int64 `json:"-"`
+	UID *int64 `json:"-"`
 }
 
 type UnreadCountRes struct {
@@ -68,24 +68,24 @@ type UnreadCountRes struct {
 // MarkReadReq marks a single owned notification read.
 type MarkReadReq struct {
 	NotificationID int64  `json:"notification_id"`
-	UserID         *int64 `json:"-"`
+	UID            *int64 `json:"-"`
 }
 
 // MarkAllReadReq marks every unread notification of the caller read.
 type MarkAllReadReq struct {
-	UserID *int64 `json:"-"`
+	UID *int64 `json:"-"`
 }
 
 // DeleteNotificationReq soft-deletes an owned notification.
 type DeleteNotificationReq struct {
 	NotificationID int64  `json:"notification_id"`
-	UserID         *int64 `json:"-"`
+	UID            *int64 `json:"-"`
 }
 
 // NotificationResponse is the wire shape for one notification row.
 type NotificationResponse struct {
 	NotificationID int64           `json:"notification_id"`
-	UserID         int64           `json:"uid"`
+	UID            int64           `json:"uid"`
 	Title          string          `json:"title"`
 	ShortText      string          `json:"short_text"`
 	Category       *string         `json:"category,omitempty"`
@@ -104,7 +104,7 @@ func DomainToResponse(n *domain.Notification) NotificationResponse {
 	}
 	return NotificationResponse{
 		NotificationID: n.NotificationId(),
-		UserID:         n.UserId(),
+		UID:            n.Uid(),
 		Title:          n.Title(),
 		ShortText:      n.ShortText(),
 		Category:       n.Category(),

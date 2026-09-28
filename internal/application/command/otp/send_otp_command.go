@@ -49,7 +49,7 @@ var (
 type SendOtpCommand struct {
 	OtpType    enum.OtpType
 	Identifier string
-	UserID     *int64
+	UID        *int64
 	DeviceUUID *string
 	DeviceName *string
 	Channel    enum.OtpChannel // empty = auto-detect
@@ -166,7 +166,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 			if targetDevice == nil {
 				return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrTargetDeviceNotFound)
 			}
-			if cmd.UserID == nil || targetDevice.UserId() == nil || *targetDevice.UserId() != *cmd.UserID {
+			if cmd.UID == nil || targetDevice.Uid() == nil || *targetDevice.Uid() != *cmd.UID {
 				return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil, ErrTargetDeviceNotOwned)
 			}
 			if !targetDevice.IsVerified() {
@@ -222,7 +222,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		o.SetOtpId(otpID)
 
 		o.SetOtpType(cmd.OtpType.String())
-		o.SetUserId(cmd.UserID)
+		o.SetUid(cmd.UID)
 		o.SetIdentifier(cmd.Identifier)
 		o.SetDeviceUUID(cmd.DeviceUUID)
 		o.SetDeviceName(cmd.DeviceName)

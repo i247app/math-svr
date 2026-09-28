@@ -36,7 +36,7 @@ func newGuestService(uow transaction.UnitOfWork, userRepo userDomain.IRepository
 // opened: the uid to put in the session, and the profile the exam will
 // be generated for.
 type GuestIdentity struct {
-	UserID    int64
+	UID       int64
 	ProfileID int64
 }
 
@@ -55,10 +55,10 @@ func (g *guestService) EnsureGuest(ctx context.Context, deviceUUID, childName st
 	}
 
 	identity := &GuestIdentity{
-		UserID:    res.User.UserId(),
+		UID:       res.User.Uid(),
 		ProfileID: res.Profile.ProfileId(),
 	}
-	logger.From(ctx).Info("exam.guest.opened", "uid", identity.UserID, "profile_id", identity.ProfileID)
+	logger.From(ctx).Info("exam.guest.opened", "uid", identity.UID, "profile_id", identity.ProfileID)
 	return identity, nil
 }
 
@@ -72,8 +72,8 @@ func (g *guestService) EnsureGuest(ctx context.Context, deviceUUID, childName st
 //
 // (0, false, nil) means "not a guest, or nothing to resolve" — the caller
 // then falls through to the ordinary validation error.
-func (g *guestService) DefaultProfileOf(ctx context.Context, userID int64) (int64, bool, error) {
-	u, err := g.userRepo.FindByUserId(ctx, userID)
+func (g *guestService) DefaultProfileOf(ctx context.Context, uid int64) (int64, bool, error) {
+	u, err := g.userRepo.FindByUid(ctx, uid)
 	if err != nil {
 		return 0, false, err
 	}
@@ -81,7 +81,7 @@ func (g *guestService) DefaultProfileOf(ctx context.Context, userID int64) (int6
 		return 0, false, nil
 	}
 
-	p, err := g.profileRepo.FindDefaultProfileByUserId(ctx, userID)
+	p, err := g.profileRepo.FindDefaultProfileByUid(ctx, uid)
 	if err != nil {
 		return 0, false, err
 	}
@@ -97,8 +97,8 @@ func (g *guestService) DefaultProfileOf(ctx context.Context, userID int64) (int6
 // hand them every other auth-gated route in the product — so this is
 // what distinguishes "a guest on their own session" from "a real user
 // who has not finished logging in".
-func (g *guestService) IsGuest(ctx context.Context, userID int64) (bool, error) {
-	u, err := g.userRepo.FindByUserId(ctx, userID)
+func (g *guestService) IsGuest(ctx context.Context, uid int64) (bool, error) {
+	u, err := g.userRepo.FindByUid(ctx, uid)
 	if err != nil {
 		return false, err
 	}

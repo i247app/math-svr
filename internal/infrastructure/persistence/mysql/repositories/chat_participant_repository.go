@@ -43,7 +43,7 @@ func NewChatParticipantRepository(db database.Executor) chat.IParticipantReposit
 func scanChatParticipant(s database.RowScanner) (*models.ChatParticipantModel, error) {
 	var m models.ChatParticipantModel
 	if err := s.Scan(&m.ParticipantId, &m.ConversationId, &m.ProfileId,
-		&m.UserId, &m.ParticipantRole, &m.LastReadSeqNo, &m.LastReadMessageId,
+		&m.Uid, &m.ParticipantRole, &m.LastReadSeqNo, &m.LastReadMessageId,
 		&m.LastReadDt, &m.LastDeliveredSeqNo, &m.UnreadCount, &m.IsMuted,
 		&m.MutedUntilDt, &m.IsPinned, &m.ClearedBeforeSeqNo, &m.JoinedDt, &m.LeftDt,
 		&m.InvitedByProfileId, &m.RptFlg, &m.Kwords, &m.Note, &m.ParticipantStatus, &m.Status,
@@ -58,7 +58,7 @@ func ModelToDomainChatParticipant(m *models.ChatParticipantModel) *chat.Particip
 	p.SetParticipantId(m.ParticipantId)
 	p.SetConversationId(m.ConversationId)
 	p.SetProfileId(m.ProfileId)
-	p.SetUserId(m.UserId)
+	p.SetUid(m.Uid)
 	p.SetParticipantRole(m.ParticipantRole)
 	p.SetLastReadSeqNo(m.LastReadSeqNo)
 	p.SetLastReadMessageId(m.LastReadMessageId)
@@ -197,7 +197,7 @@ func (r *ChatParticipantRepository) Create(ctx context.Context, p *chat.Particip
 	}
 
 	_, err := r.db.Exec(ctx, query,
-		p.ParticipantId(), p.ConversationId(), p.ProfileId(), p.UserId(), p.ParticipantRole(),
+		p.ParticipantId(), p.ConversationId(), p.ProfileId(), p.Uid(), p.ParticipantRole(),
 		p.IsMuted(), p.IsPinned(), joinedDt.Time, p.InvitedByProfileId(), p.RptFlg(), p.Kwords(), p.Note(),
 		p.ParticipantStatus(), p.Status(), p.CreateId(), now,
 	)

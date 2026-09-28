@@ -17,7 +17,7 @@ import (
 // ma_user_ai_exams — it is a maintenance sweep, not a question either
 // aggregate can answer alone. The MySQL MaintenanceRepository implements it.
 type StaleGuestLister interface {
-	ListStaleGuestUserIds(ctx context.Context, before time.Time, limit int) ([]int64, error)
+	ListStaleGuestUids(ctx context.Context, before time.Time, limit int) ([]int64, error)
 }
 
 // CleanupGuestsCommand retires guests nobody came back for.
@@ -36,7 +36,7 @@ type StaleGuestLister interface {
 // after the accounts are gone.
 type CleanupGuestsCommand struct {
 	// IdleFor is how long a guest must have been quiet. "Quiet" means no
-	// exam handed out — see ListStaleGuestUserIds.
+	// exam handed out — see ListStaleGuestUids.
 	IdleFor time.Duration
 	// Limit caps one sweep. A ceiling, not a target: it bounds the damage
 	// of a mistaken cutoff and keeps one run from holding a long
@@ -64,7 +64,7 @@ func (h *CleanupGuestsCommandHandler) Handle(ctx context.Context, cmd CleanupGue
 	}
 
 	before := time.Now().UTC().Add(-cmd.IdleFor)
-	candidates, err := h.lister.ListStaleGuestUserIds(ctx, before, cmd.Limit)
+	candidates, err := h.lister.ListStaleGuestUids(ctx, before, cmd.Limit)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -102,7 +102,7 @@ func (h *CleanupGuestsCommandHandler) Handle(ctx context.Context, cmd CleanupGue
 // real account. That case is a skip (false, nil), not an error and not a
 // retirement.
 func retireGuest(ctx context.Context, repos transaction.Repositories, uid int64) (bool, error) {
-	u, err := repos.User.FindByUserId(ctx, uid)
+	u, err := repos.User.FindByUid(ctx, uid)
 	if err != nil {
 		return false, err
 	}
@@ -110,13 +110,13 @@ func retireGuest(ctx context.Context, repos transaction.Repositories, uid int64)
 		return false, nil
 	}
 
-	if err := repos.Profile.SoftDeleteByUserId(ctx, uid); err != nil {
+	if err := repos.Profile.SoftDeleteByUid(ctx, uid); err != nil {
 		return false, err
 	}
-	if err := repos.Alias.SoftDeleteByUserId(ctx, uid); err != nil {
+	if err := repos.Alias.SoftDeleteByUid(ctx, uid); err != nil {
 		return false, err
 	}
-	if err := repos.User.SoftDeleteByUserId(ctx, uid); err != nil {
+	if err := repos.User.SoftDeleteByUid(ctx, uid); err != nil {
 		return false, err
 	}
 	return true, nil

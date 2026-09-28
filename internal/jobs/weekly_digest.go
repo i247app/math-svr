@@ -50,11 +50,11 @@ func (j *WeeklyDigestCronJob) Run(ctx context.Context) error {
 	// TODO(tier2): swap this for a UserRepository.ListUsers query that
 	// streams (or paginates) uid + email. Until that exists, the
 	// fan-out is a no-op so we don't spam an empty task queue.
-	userIDs := []string{}
+	uids := []string{}
 
 	enqueued, dropped := 0, 0
-	for _, uid := range userIDs {
-		payload, err := json.Marshal(WeeklyDigestPayload{UserID: uid})
+	for _, uid := range uids {
+		payload, err := json.Marshal(WeeklyDigestPayload{UID: uid})
 		if err != nil {
 			log.Warnf("weekly_digest.marshal_failed uid=%s err=%v", uid, err)
 			dropped++
@@ -67,7 +67,7 @@ func (j *WeeklyDigestCronJob) Run(ctx context.Context) error {
 		}
 		enqueued++
 	}
-	log.Infof("weekly_digest.fanout enqueued=%d dropped=%d total=%d", enqueued, dropped, len(userIDs))
+	log.Infof("weekly_digest.fanout enqueued=%d dropped=%d total=%d", enqueued, dropped, len(uids))
 	return nil
 }
 
@@ -76,10 +76,10 @@ func (j *WeeklyDigestCronJob) Run(ctx context.Context) error {
 // ============================================================
 
 // WeeklyDigestPayload is the JSON shape exchanged between the cron
-// fan-out and the task. UserID is the external uuid; the task resolves
+// fan-out and the task. UID is the external uuid; the task resolves
 // it to a profile + email at run time.
 type WeeklyDigestPayload struct {
-	UserID string `json:"uid"`
+	UID string `json:"uid"`
 }
 
 // WeeklyDigestTask renders and sends one user's weekly digest email.
@@ -108,16 +108,16 @@ func (t *WeeklyDigestTask) Handle(ctx context.Context, payload []byte) error {
 		log.Errorf("weekly_digest.bad_payload err=%v", err)
 		return err
 	}
-	if msg.UserID == "" {
+	if msg.UID == "" {
 		log.Errorf("weekly_digest.empty_uid")
 		return errors.New("weekly_digest: empty uid")
 	}
 	if t.email == nil {
-		log.Warnf("weekly_digest.skip uid=%s reason=email_adapter_disabled", msg.UserID)
+		log.Warnf("weekly_digest.skip uid=%s reason=email_adapter_disabled", msg.UID)
 		return nil
 	}
 
 	// TODO(tier2): resolve user/profile, build template, send via t.email.Send.
-	log.Infof("weekly_digest.stub uid=%s — template + lookup pending", msg.UserID)
+	log.Infof("weekly_digest.stub uid=%s — template + lookup pending", msg.UID)
 	return nil
 }

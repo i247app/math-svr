@@ -11,7 +11,7 @@ import (
 )
 
 type MarkOfflineCommand struct {
-	UserId int64
+	Uid int64
 }
 
 type MarkOfflineCommandHandler struct {
@@ -29,7 +29,7 @@ func (h *MarkOfflineCommandHandler) Handle(ctx context.Context, cmd *MarkOffline
 	var result *domain.Presence
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		p, err := repos.Presence.DecrementConnection(ctx, cmd.UserId, mtime.Now())
+		p, err := repos.Presence.DecrementConnection(ctx, cmd.Uid, mtime.Now())
 		if err != nil {
 			return errs.NewError(ctx, status.PRESENCE_UPDATE_FAILED, nil, err)
 		}

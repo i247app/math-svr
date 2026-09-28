@@ -11,7 +11,7 @@ import (
 )
 
 type ForceDeleteUserCommand struct {
-	UserID int64
+	UID int64
 }
 
 // ForceDeleteUserCommandResult carries side-effect cleanup data the service
@@ -41,27 +41,27 @@ func (h *ForceDeleteUserCommandHandler) Handle(ctx context.Context, cmd ForceDel
 	result := &ForceDeleteUserCommandResult{}
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		keys, err := repos.Profile.ListAvatarKeysByUserId(ctx, cmd.UserID)
+		keys, err := repos.Profile.ListAvatarKeysByUid(ctx, cmd.UID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		result.AvatarKeys = keys
 
-		if err := repos.Alias.DeleteByUserId(ctx, cmd.UserID); err != nil {
+		if err := repos.Alias.DeleteByUid(ctx, cmd.UID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.User.DeleteByUserId(ctx, cmd.UserID); err != nil {
+		if err := repos.User.DeleteByUid(ctx, cmd.UID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.Profile.ForceDeleteByUserId(ctx, cmd.UserID); err != nil {
+		if err := repos.Profile.ForceDeleteByUid(ctx, cmd.UID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		return nil
 	})
 	if err != nil {
-		log.Printf("[admin.force_delete_user] uid=%d action=force_delete outcome=error err=%v", cmd.UserID, err)
+		log.Printf("[admin.force_delete_user] uid=%d action=force_delete outcome=error err=%v", cmd.UID, err)
 		return nil, err
 	}
-	log.Printf("[admin.force_delete_user] uid=%d action=force_delete outcome=success avatar_keys=%d", cmd.UserID, len(result.AvatarKeys))
+	log.Printf("[admin.force_delete_user] uid=%d action=force_delete outcome=success avatar_keys=%d", cmd.UID, len(result.AvatarKeys))
 	return result, nil
 }

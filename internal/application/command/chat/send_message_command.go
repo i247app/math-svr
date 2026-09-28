@@ -24,7 +24,7 @@ const previewRuneLimit = 60
 type SendMessageCommand struct {
 	ConversationID   int64
 	SenderProfileID  int64
-	SenderUserID     int64
+	SenderUID        int64
 	MessageType      string
 	Content          string
 	ClientMsgID      *string
@@ -106,7 +106,7 @@ func (h *SendMessageCommandHandler) Handle(ctx context.Context, cmd *SendMessage
 		m.SetConversationId(cmd.ConversationID)
 		m.SetSeqNo(seqNo)
 		m.SetSenderProfileId(&cmd.SenderProfileID)
-		m.SetSenderUserId(&cmd.SenderUserID)
+		m.SetSenderUid(&cmd.SenderUID)
 		m.SetMessageType(messageType)
 		m.SetContent(&content)
 		m.SetReplyToMessageId(cmd.ReplyToMessageID)
@@ -114,7 +114,7 @@ func (h *SendMessageCommandHandler) Handle(ctx context.Context, cmd *SendMessage
 		m.SetSentDt(mtime.Now())
 		m.SetMessageStatus(&sentStatus)
 		m.SetStatus(string(enum.StatusActive))
-		m.SetCreateId(&cmd.SenderUserID)
+		m.SetCreateId(&cmd.SenderUID)
 
 		created, err := repos.ChatMessage.Create(ctx, m)
 		if err != nil {

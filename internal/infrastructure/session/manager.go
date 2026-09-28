@@ -158,7 +158,7 @@ func (m *SessionManager) DeleteUserSessions(uid int64) {
 	for _, sess := range *m.Sessions() {
 		id, ok := sess.UID()
 		if ok && id == uid {
-			log.Printf("DeleteUserSessions: deleting session for userID is %d", id)
+			log.Printf("DeleteUserSessions: deleting session for uid is %d", id)
 			// sess.MarkForDeletion()
 			sess.MarkNotSecure()
 		}

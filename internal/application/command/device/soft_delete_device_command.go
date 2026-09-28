@@ -10,7 +10,7 @@ import (
 )
 
 type SoftDeleteDeviceCommand struct {
-	UserID   int64
+	UID      int64
 	DeviceID int64
 }
 
@@ -31,7 +31,7 @@ func (h *SoftDeleteDeviceCommandHandler) Handle(ctx context.Context, cmd SoftDel
 		if d == nil {
 			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
 		}
-		if d.UserId() == nil || *d.UserId() != cmd.UserID {
+		if d.Uid() == nil || *d.Uid() != cmd.UID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
 				ErrDeviceNotOwnedByUser)
 		}
@@ -42,7 +42,7 @@ func (h *SoftDeleteDeviceCommandHandler) Handle(ctx context.Context, cmd SoftDel
 
 		// Cascade: kill any active session bound to this device.
 		if err := repos.LoginLog.MarkStatusByUserDevice(
-			ctx, cmd.UserID, d.DeviceUUID(), enum.LoginLogStatusTypeRevoked,
+			ctx, cmd.UID, d.DeviceUUID(), enum.LoginLogStatusTypeRevoked,
 		); err != nil {
 			return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
 		}

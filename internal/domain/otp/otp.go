@@ -7,14 +7,14 @@ import (
 // Otp is a one-time password issuance. The plaintext code never lives in the
 // domain — only the hash that the repository persists to ma_otps.otp_code.
 //
-// userId / deviceUUID / deviceName are nullable because some flows (REGISTER,
+// uid / deviceUUID / deviceName are nullable because some flows (REGISTER,
 // FORGOT_PASSWORD) don't have a known user or device when the OTP is issued.
 // identifier (phone or email) is always present and is the lookup key on
 // verify.
 type Otp struct {
 	otpId         int64
 	otpType       string
-	userId        *int64
+	uid           *int64
 	identifier    string
 	deviceUUID    *string
 	deviceName    *string
@@ -40,8 +40,8 @@ func (o *Otp) OtpId() int64                      { return o.otpId }
 func (o *Otp) SetOtpId(v int64)                  { o.otpId = v }
 func (o *Otp) OtpType() string                   { return o.otpType }
 func (o *Otp) SetOtpType(v string)               { o.otpType = v }
-func (o *Otp) UserId() *int64                    { return o.userId }
-func (o *Otp) SetUserId(v *int64)                { o.userId = v }
+func (o *Otp) Uid() *int64                       { return o.uid }
+func (o *Otp) SetUid(v *int64)                   { o.uid = v }
 func (o *Otp) Identifier() string                { return o.identifier }
 func (o *Otp) SetIdentifier(v string)            { o.identifier = v }
 func (o *Otp) DeviceUUID() *string               { return o.deviceUUID }

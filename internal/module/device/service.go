@@ -30,7 +30,7 @@ import (
 type Service struct {
 	getDeviceByIdQuery         *query.GetDeviceByIdQueryHandler
 	getDeviceByUserDeviceQuery *query.GetDeviceByUserDeviceQueryHandler
-	listDevicesByUserIdQuery   *query.ListDevicesByUserIdQueryHandler
+	listDevicesByUidQuery      *query.ListDevicesByUidQueryHandler
 	markVerifiedCmd            *command.MarkDeviceVerifiedCommandHandler
 	updateDeviceCmd            *command.UpdateDeviceCommandHandler
 	revokeDeviceCmd            *command.RevokeDeviceCommandHandler
@@ -49,7 +49,7 @@ func NewService(
 	return &Service{
 		getDeviceByIdQuery:         query.NewGetDeviceByIdQueryHandler(repo),
 		getDeviceByUserDeviceQuery: query.NewGetDeviceByUserDeviceQueryHandler(repo),
-		listDevicesByUserIdQuery:   query.NewListDevicesByUserIdQueryHandler(repo),
+		listDevicesByUidQuery:      query.NewListDevicesByUidQueryHandler(repo),
 		markVerifiedCmd:            command.NewMarkDeviceVerifiedCommandHandler(uow),
 		updateDeviceCmd:            command.NewUpdateDeviceCommandHandler(uow),
 		revokeDeviceCmd:            command.NewRevokeDeviceCommandHandler(uow),
@@ -74,19 +74,19 @@ func (s *Service) GetDeviceById(ctx context.Context, req *dto.GetDeviceByIdReq) 
 	return &dto.GetDeviceByIdRes{Device: dto.DomainToResponse(d)}, nil
 }
 
-func (s *Service) ListDevicesByUserId(ctx context.Context, req *dto.ListDevicesReq) (*dto.ListDevicesRes, error) {
+func (s *Service) ListDevicesByUid(ctx context.Context, req *dto.ListDevicesReq) (*dto.ListDevicesRes, error) {
 	if err := ValidateListDevices(ctx, req); err != nil {
 		return nil, err
 	}
-	devices, err := s.listDevicesByUserIdQuery.Handle(ctx, query.ListDevicesByUserIdQuery{
-		UserID:     req.UserID,
+	devices, err := s.listDevicesByUidQuery.Handle(ctx, query.ListDevicesByUidQuery{
+		UID:        req.UID,
 		IsVerified: req.IsVerified,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	user, err := s.userRepo.FindByUserId(ctx, req.UserID)
+	user, err := s.userRepo.FindByUid(ctx, req.UID)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func (s *Service) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceReq) (*
 		return nil, err
 	}
 	updated, err := s.updateDeviceCmd.Handle(ctx, command.UpdateDeviceCommand{
-		UserID:          req.UserID,
+		UID:             req.UID,
 		DeviceID:        req.DeviceID,
 		DeviceName:      req.DeviceName,
 		DevicePushToken: req.DevicePushToken,
@@ -132,7 +132,7 @@ func (s *Service) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceReq) (*
 	if err != nil {
 		return nil, err
 	}
-	logger.From(ctx).Info("device.updated", "device_id", req.DeviceID, "uid", req.UserID)
+	logger.From(ctx).Info("device.updated", "device_id", req.DeviceID, "uid", req.UID)
 	return &dto.UpdateDeviceRes{Device: dto.DomainToResponse(updated)}, nil
 }
 
@@ -141,12 +141,12 @@ func (s *Service) RevokeDevice(ctx context.Context, req *dto.RevokeDeviceReq) (*
 		return nil, err
 	}
 	if err := s.revokeDeviceCmd.Handle(ctx, command.RevokeDeviceCommand{
-		UserID:     req.UserID,
+		UID:        req.UID,
 		DeviceUUID: req.DevicUUID,
 	}); err != nil {
 		return nil, err
 	}
-	logger.From(ctx).Info("device.revoked", "device_id", req.DevicUUID, "uid", req.UserID)
+	logger.From(ctx).Info("device.revoked", "device_id", req.DevicUUID, "uid", req.UID)
 	return &dto.RevokeDeviceRes{}, nil
 }
 
@@ -155,12 +155,12 @@ func (s *Service) SoftDeleteDevice(ctx context.Context, req *dto.DeleteDeviceReq
 		return nil, err
 	}
 	if err := s.softDeleteDeviceCmd.Handle(ctx, command.SoftDeleteDeviceCommand{
-		UserID:   req.UserID,
+		UID:      req.UID,
 		DeviceID: req.DeviceID,
 	}); err != nil {
 		return nil, err
 	}
-	logger.From(ctx).Info("device.soft_deleted", "device_id", req.DeviceID, "uid", req.UserID)
+	logger.From(ctx).Info("device.soft_deleted", "device_id", req.DeviceID, "uid", req.UID)
 	return &dto.DeleteDeviceRes{}, nil
 }
 
@@ -173,7 +173,7 @@ func (s *Service) VerifyDevice(ctx context.Context, req *dto.VerifyDeviceReq) (*
 		return nil, err
 	}
 	if err := s.markVerifiedCmd.Handle(ctx, command.MarkDeviceVerifiedCommand{
-		UserID:          req.UserID,
+		UID:             req.UID,
 		DeviceUUID:      req.DeviceUUID,
 		DeviceName:      req.DeviceName,
 		Platform:        req.Platform,
@@ -182,12 +182,12 @@ func (s *Service) VerifyDevice(ctx context.Context, req *dto.VerifyDeviceReq) (*
 		return nil, err
 	}
 	d, err := s.getDeviceByUserDeviceQuery.Handle(ctx, query.GetDeviceByUserDeviceQuery{
-		UserID:     req.UserID,
+		UID:        req.UID,
 		DeviceUUID: req.DeviceUUID})
 	if err != nil {
 		return nil, err
 	}
 
-	logger.From(ctx).Info("device.verified", "device_id", req.DeviceUUID, "uid", req.UserID)
+	logger.From(ctx).Info("device.verified", "device_id", req.DeviceUUID, "uid", req.UID)
 	return &dto.VerifyDeviceRes{Device: dto.DomainToResponse(d)}, nil
 }

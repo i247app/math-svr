@@ -43,7 +43,7 @@ func NewNotificationRepository(db database.Executor) notification.IRepository {
 
 func scanNotification(s database.RowScanner) (*models.NotificationModel, error) {
 	var m models.NotificationModel
-	if err := s.Scan(&m.NotificationId, &m.UserId, &m.Title, &m.ShortText,
+	if err := s.Scan(&m.NotificationId, &m.Uid, &m.Title, &m.ShortText,
 		&m.Category, &m.IsRead, &m.ActionType, &m.ActionData, &m.Priority, &m.RptFlg, &m.Kwords, &m.Note,
 		&m.NotificationStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -71,13 +71,13 @@ func (r *NotificationRepository) FindByNotificationId(ctx context.Context, notif
 	return r.findOneBy(ctx, "n.notification_id = ?", notificationId)
 }
 
-func (r *NotificationRepository) ListByUserId(ctx context.Context, params *notification.ListNotificationsParams) ([]*notification.Notification, *pagination.Pagination, error) {
+func (r *NotificationRepository) ListByUid(ctx context.Context, params *notification.ListNotificationsParams) ([]*notification.Notification, *pagination.Pagination, error) {
 	if params == nil {
 		return nil, nil, fmt.Errorf("notification repo list: params is required")
 	}
 
 	filter := ` AND n.uid = ?`
-	filterArgs := []any{params.UserID}
+	filterArgs := []any{params.UID}
 	if params.OnlyUnread {
 		filter += ` AND n.is_read = ?`
 		filterArgs = append(filterArgs, false)
@@ -119,8 +119,8 @@ func (r *NotificationRepository) ListByUserId(ctx context.Context, params *notif
 	return notifications, pg, nil
 }
 
-func (r *NotificationRepository) CountUnreadByUserId(ctx context.Context, userId int64) (int64, error) {
-	args := slices.Concat([]any{userId, false}, notificationActiveArgs())
+func (r *NotificationRepository) CountUnreadByUid(ctx context.Context, uid int64) (int64, error) {
+	args := slices.Concat([]any{uid, false}, notificationActiveArgs())
 	query := `SELECT COUNT(*) FROM ` + notificationTable + ` n WHERE (n.uid = ? AND n.is_read = ?) AND ` +
 		notificationActiveWhere
 
@@ -140,7 +140,7 @@ func (r *NotificationRepository) Create(ctx context.Context, n *notification.Not
 	`
 	now := mtime.Now().Time
 	_, err := r.db.Exec(ctx, query,
-		n.NotificationId(), n.UserId(), n.Title(), n.ShortText(), n.Category(),
+		n.NotificationId(), n.Uid(), n.Title(), n.ShortText(), n.Category(),
 		n.IsRead(), n.ActionType(), n.ActionData(), n.Priority(), n.RptFlg(), n.Kwords(), n.Note(),
 		n.NotificationStatus(), n.CreateId(), now, now)
 	if err != nil {
@@ -162,14 +162,14 @@ func (r *NotificationRepository) MarkReadByNotificationId(ctx context.Context, n
 	return nil
 }
 
-func (r *NotificationRepository) MarkAllReadByUserId(ctx context.Context, userId int64) error {
+func (r *NotificationRepository) MarkAllReadByUid(ctx context.Context, uid int64) error {
 	query := `
 		UPDATE ` + notificationTable + `
 		SET is_read   = TRUE,
 			modify_dt = ?
 		WHERE uid = ? AND is_read = FALSE
 	`
-	if _, err := r.db.Exec(ctx, query, mtime.Now().Time, userId); err != nil {
+	if _, err := r.db.Exec(ctx, query, mtime.Now().Time, uid); err != nil {
 		return fmt.Errorf("notification repo mark all read: %w", err)
 	}
 	return nil
@@ -195,7 +195,7 @@ func (r *NotificationRepository) SoftDeleteByNotificationId(ctx context.Context,
 func ModelToDomainNotification(m *models.NotificationModel) *notification.Notification {
 	n := notification.NewNotification()
 	n.SetNotificationId(m.NotificationId)
-	n.SetUserId(m.UserId)
+	n.SetUid(m.Uid)
 	n.SetTitle(m.Title)
 	n.SetShortText(m.ShortText)
 	n.SetCategory(m.Category)

@@ -25,7 +25,7 @@ import (
 // submitted sitting, so there is nothing to aim at without one. For a
 // PRACTICE round Grade is ignored — it follows that sitting's grade.
 type GenerateExamReq struct {
-	UserID *int64 `json:"-"`
+	UID *int64 `json:"-"`
 	// ProfileID names the child. It may be omitted ONLY by a caller with
 	// no session: that is the guest path, where the server opens an
 	// account and fills this in. Anyone else must state it.
@@ -48,7 +48,7 @@ type GenerateExamReq struct {
 // ma_ai_exams and is read from there, so a client cannot declare its own
 // correct answers and grade itself upward.
 type SubmitExamReq struct {
-	UserID       *int64                   `json:"-"`
+	UID          *int64                   `json:"-"`
 	ProfileID    int64                    `json:"profile_id"`
 	UserAiExamID int64                    `json:"user_ai_exam_id"`
 	Answers      []question.StudentAnswer `json:"answers"`
@@ -63,7 +63,7 @@ type SubmitExamReq struct {
 //     default, so older clients keep working) or PRACTICE — since the
 //     two share the id. It is ignored when a sitting is asked for.
 type GetExamReq struct {
-	UserID       *int64  `json:"-"`
+	UID          *int64  `json:"-"`
 	ProfileID    int64   `json:"profile_id"`
 	UserAiExamID int64   `json:"user_ai_exam_id,omitempty"`
 	UserExamID   int64   `json:"user_exam_id,omitempty"`
@@ -76,7 +76,7 @@ type GetExamReq struct {
 // PRACTICE: practice rounds only exist inside a journey, so "the practice
 // rounds" is only a question about one.
 type ListExamsReq struct {
-	UserID     *int64  `json:"-"`
+	UID        *int64  `json:"-"`
 	ProfileID  int64   `json:"profile_id"`
 	ExamType   *string `json:"exam_type,omitempty"`
 	UserExamID *int64  `json:"user_exam_id,omitempty"`
@@ -93,7 +93,7 @@ type ListExamsReq struct {
 // along on the ASSESSMENT journey they belong to (ExamStats.Practice) —
 // so asking for it is rejected rather than answered with orphan rows.
 type GetExamStatsReq struct {
-	UserID            *int64  `json:"-"`
+	UID               *int64  `json:"-"`
 	ProfileID         int64   `json:"profile_id"`
 	ExamType          *string `json:"exam_type,omitempty"`
 	JourneyExamStatus *string `json:"status,omitempty"`
@@ -103,7 +103,7 @@ type GetExamStatsReq struct {
 // difference is what the next journey of that type inherits (see
 // enum.UserExamStatusType).
 type MarkExamJourneyReq struct {
-	UserID     *int64 `json:"-"`
+	UID        *int64 `json:"-"`
 	ProfileID  int64  `json:"profile_id"`
 	UserExamID int64  `json:"user_exam_id"`
 	Status     string `json:"status"`
@@ -565,7 +565,7 @@ func servedQuestions(raw string, sh *question.Shuffle, includeAnswerKey bool) []
 }
 
 // ExamProgressReq is the request for the learning-progress chart.
-// UserID comes from the session, never the body. FromDt/ToDt are optional
+// UID comes from the session, never the body. FromDt/ToDt are optional
 // datetime strings; Tz is a numeric offset (IANA names are rejected — see
 // enum.IsValidTzOffset). ExamType optionally narrows to one type; Limit
 // caps the number of chart points.
@@ -581,7 +581,7 @@ type ProgressWindow struct {
 }
 
 type ExamProgressReq struct {
-	UserID     *int64  `json:"-"`
+	UID        *int64  `json:"-"`
 	ProfileID  int64   `json:"profile_id"`
 	ExamType   *string `json:"exam_type"`
 	UserExamID *int64  `json:"user_exam_id,omitempty"` // required with PRACTICE
@@ -593,7 +593,7 @@ type ExamProgressReq struct {
 // PRACTICE is refused, as it is for stats — its rows live inside their
 // ASSESSMENT journey.
 type JourneyProgressReq struct {
-	UserID    *int64  `json:"-"`
+	UID       *int64  `json:"-"`
 	ProfileID int64   `json:"profile_id"`
 	ExamType  *string `json:"exam_type"`
 	ProgressWindow

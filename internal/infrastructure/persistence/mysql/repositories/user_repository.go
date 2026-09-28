@@ -29,7 +29,7 @@ const (
 	// User reads never JOIN ma_aliases. The alias table is a separate
 	// aggregate (login-key registry) owned by AliasRepository; resolving a
 	// login name to a user is composed in the application layer
-	// (alias.FindByAka -> user.FindByUserId), not here.
+	// (alias.FindByAka -> user.FindByUid), not here.
 	userActiveWhere = `u.status IN (?) AND u.deleted_dt IS NULL`
 )
 
@@ -47,7 +47,7 @@ func NewUserRepository(db database.Executor) user.IRepository {
 
 func scanUser(s database.RowScanner) (*models.UserModel, error) {
 	var m models.UserModel
-	if err := s.Scan(&m.UserId, &m.UserName, &m.Phone, &m.Email, &m.IsEmailVerified, &m.AvatarKey, &m.Role, &m.IdentityCode, &m.UserStatus, &m.Status,
+	if err := s.Scan(&m.Uid, &m.UserName, &m.Phone, &m.Email, &m.IsEmailVerified, &m.AvatarKey, &m.Role, &m.IdentityCode, &m.UserStatus, &m.Status,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
@@ -77,8 +77,8 @@ func (r *UserRepository) findOneBy(ctx context.Context, where string, args ...an
 // 	return r.findOneBy(ctx, "u.uid = ?", id)
 // }
 
-func (r *UserRepository) FindByUserId(ctx context.Context, userId int64) (*user.User, error) {
-	return r.findOneBy(ctx, "u.uid = ?", userId)
+func (r *UserRepository) FindByUid(ctx context.Context, uid int64) (*user.User, error) {
+	return r.findOneBy(ctx, "u.uid = ?", uid)
 }
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*user.User, error) {
@@ -99,12 +99,12 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, 
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err := r.db.Exec(ctx, query, u.UserId(), u.UserName(), u.Phone(), u.Email(), u.IsEmailVerified(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.UserStatus(), u.RptFlg(), u.Kwords(), u.Note(), mtime.Now().Time, mtime.Now().Time)
+	_, err := r.db.Exec(ctx, query, u.Uid(), u.UserName(), u.Phone(), u.Email(), u.IsEmailVerified(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.UserStatus(), u.RptFlg(), u.Kwords(), u.Note(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
 		return nil, fmt.Errorf("user repo create: %w", err)
 	}
 
-	return r.FindByUserId(ctx, u.UserId())
+	return r.FindByUid(ctx, u.Uid())
 }
 
 func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersParams) ([]*user.User, *pagination.Pagination, error) {
@@ -142,8 +142,8 @@ func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersPa
 	return users, pg, nil
 }
 
-func (r *UserRepository) DeleteByUserId(ctx context.Context, userId int64) error {
-	if _, err := r.db.Exec(ctx, `DELETE FROM `+userTable+` WHERE uid = ?`, userId); err != nil {
+func (r *UserRepository) DeleteByUid(ctx context.Context, uid int64) error {
+	if _, err := r.db.Exec(ctx, `DELETE FROM `+userTable+` WHERE uid = ?`, uid); err != nil {
 		return fmt.Errorf("user repo delete by user id: %w", err)
 	}
 	return nil
@@ -180,7 +180,7 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 		WHERE uid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.IsEmailVerified(), u.RptFlg(), u.Kwords(), u.UserId()); err != nil {
+	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.IsEmailVerified(), u.RptFlg(), u.Kwords(), u.Uid()); err != nil {
 		return fmt.Errorf("user repo update: %w", err)
 	}
 	return nil
@@ -190,15 +190,15 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 // row. Split out from the general Update path so the multipart upload
 // flow doesn't need to materialise the rest of the User aggregate just
 // to write one column.
-func (r *UserRepository) UpdateAvatarKey(ctx context.Context, userId int64, avatarKey string) error {
+func (r *UserRepository) UpdateAvatarKey(ctx context.Context, uid int64, avatarKey string) error {
 	query := `UPDATE ` + userTable + ` SET avatar_key = ? WHERE uid = ?`
-	if _, err := r.db.Exec(ctx, query, avatarKey, userId); err != nil {
+	if _, err := r.db.Exec(ctx, query, avatarKey, uid); err != nil {
 		return fmt.Errorf("user repo update avatar key: %w", err)
 	}
 	return nil
 }
 
-func (r *UserRepository) MarkStatusByUserId(ctx context.Context, userId int64, status enum.UserStatusType) error {
+func (r *UserRepository) MarkStatusByUid(ctx context.Context, uid int64, status enum.UserStatusType) error {
 	query := `
 		UPDATE ` + userTable + `
 		SET user_status = ?,
@@ -206,13 +206,13 @@ func (r *UserRepository) MarkStatusByUserId(ctx context.Context, userId int64, s
 		WHERE uid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, status, mtime.Now().Time, userId); err != nil {
+	if _, err := r.db.Exec(ctx, query, status, mtime.Now().Time, uid); err != nil {
 		return fmt.Errorf("user repo mark status by user id: %w", err)
 	}
 	return nil
 }
 
-func (r *UserRepository) SoftDeleteByUserId(ctx context.Context, userId int64) error {
+func (r *UserRepository) SoftDeleteByUid(ctx context.Context, uid int64) error {
 	query := `
 		UPDATE ` + userTable + `
 		SET user_status = ?,
@@ -221,7 +221,7 @@ func (r *UserRepository) SoftDeleteByUserId(ctx context.Context, userId int64) e
 		WHERE uid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, enum.UserStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, userId); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.UserStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, uid); err != nil {
 		return fmt.Errorf("user repo soft delete by user id: %w", err)
 	}
 	return nil
@@ -229,7 +229,7 @@ func (r *UserRepository) SoftDeleteByUserId(ctx context.Context, userId int64) e
 
 func DomainToModel(u *user.User) *models.UserModel {
 	return &models.UserModel{
-		UserId:     u.UserId(),
+		Uid:        u.Uid(),
 		UserName:   u.UserName(),
 		Email:      u.Email(),
 		Phone:      u.Phone(),
@@ -249,7 +249,7 @@ func DomainToModel(u *user.User) *models.UserModel {
 
 func ModelToDomain(m *models.UserModel) *user.User {
 	u := user.NewUser()
-	u.SetUserId(m.UserId)
+	u.SetUid(m.Uid)
 	u.SetUserName(m.UserName)
 	u.SetEmail(m.Email)
 	u.SetIsEmailVerified(m.IsEmailVerified)

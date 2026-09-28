@@ -111,13 +111,13 @@ func (h *UserHandler) HandleCreateGuest(w http.ResponseWriter, r *http.Request) 
 
 // POST /users/detail
 func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) {
-	var req user.GetUserByUserIdReq
+	var req user.GetUserByUidReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
 
-	if req.UserID == 0 {
+	if req.UID == 0 {
 		session, err := h.appResource.GetRequestSession(r)
 		if err != nil {
 			response.WriteJson(w, nil, err)
@@ -129,7 +129,7 @@ func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) 
 			response.WriteJson(w, nil, fmt.Errorf("invalid session"))
 			return
 		}
-		req.UserID = uid
+		req.UID = uid
 	}
 
 	res, err := h.service.GetUserById(r.Context(), &req)
@@ -179,7 +179,7 @@ func (h *UserHandler) HandleGetUserMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.service.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: uid})
+	res, err := h.service.GetUserById(r.Context(), &user.GetUserByUidReq{UID: uid})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -221,7 +221,7 @@ func (h *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 			response.WriteJson(w, nil, fmt.Errorf("invalid form data"))
 			return
 		}
-		req.UserID = utils.StringToInt64(r.FormValue("uid"), 0)
+		req.UID = utils.StringToInt64(r.FormValue("uid"), 0)
 		req.Name = utils.ToStringPtr(r.FormValue("name"))
 		req.Phone = utils.ToStringPtr(r.FormValue("phone"))
 		req.Email = utils.ToStringPtr(r.FormValue("email"))
@@ -266,14 +266,14 @@ func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userIDStr := r.FormValue("uid")
-	if userIDStr == "" {
+	uidStr := r.FormValue("uid")
+	if uidStr == "" {
 		response.WriteJson(w, nil,
 			errs.NewError(ctx, status.USER_NOT_FOUND, nil,
-				ErrUserIDFormFieldRequired))
+				ErrUIDFormFieldRequired))
 		return
 	}
-	userID := utils.StringToInt64(userIDStr, 0)
+	uid := utils.StringToInt64(uidStr, 0)
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
@@ -285,7 +285,7 @@ func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request)
 
 	res, err := h.service.UploadAvatar(
 		ctx,
-		userID,
+		uid,
 		header.Filename,
 		header.Header.Get("Content-Type"),
 		file,

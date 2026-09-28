@@ -42,7 +42,7 @@ func NewProfileRepository(db database.Executor) profile.IRepository {
 
 func scanProfile(s database.RowScanner) (*models.ProfileModel, error) {
 	var m models.ProfileModel
-	if err := s.Scan(&m.ProfileId, &m.ProfileCode, &m.UserId, &m.Name, &m.Phone, &m.Email, &m.Role, &m.IdentityCode, &m.AvatarKey, &m.Dob,
+	if err := s.Scan(&m.ProfileId, &m.ProfileCode, &m.Uid, &m.Name, &m.Phone, &m.Email, &m.Role, &m.IdentityCode, &m.AvatarKey, &m.Dob,
 		&m.SchoolId, &m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault,
 		&m.IdType, &m.TeacherId, &m.StudentId,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.ProfileStatus, &m.Status,
@@ -71,16 +71,16 @@ func (r *ProfileRepository) FindByProfileId(ctx context.Context, profileId int64
 	return r.findOneBy(ctx, "p.profile_id = ?", profileId)
 }
 
-func (r *ProfileRepository) FindDefaultProfileByUserId(ctx context.Context, userId int64) (*profile.Profile, error) {
-	return r.findOneBy(ctx, "p.uid = ? AND p.is_default = true", userId)
+func (r *ProfileRepository) FindDefaultProfileByUid(ctx context.Context, uid int64) (*profile.Profile, error) {
+	return r.findOneBy(ctx, "p.uid = ? AND p.is_default = true", uid)
 }
 
 func (r *ProfileRepository) FindByProfileCode(ctx context.Context, profileCode string) (*profile.Profile, error) {
 	return r.findOneBy(ctx, "p.profile_code = ?", profileCode)
 }
 
-func (r *ProfileRepository) ListByUserId(ctx context.Context, userId int64) ([]*profile.Profile, error) {
-	args := slices.Concat([]any{userId}, profileActiveArgs())
+func (r *ProfileRepository) ListByUid(ctx context.Context, uid int64) ([]*profile.Profile, error) {
+	args := slices.Concat([]any{uid}, profileActiveArgs())
 	query := `SELECT ` + profileColumns + ` FROM ` + profileTable + ` p WHERE (p.uid = ?) AND ` +
 		profileActiveWhere + ` ORDER BY p.profile_id DESC`
 
@@ -206,9 +206,9 @@ func buildProfileListFilter(params *profile.ListProfilesParams) (string, []any) 
 		clause strings.Builder
 		args   []any
 	)
-	if params.UserId != nil && *params.UserId != 0 {
+	if params.Uid != nil && *params.Uid != 0 {
 		clause.WriteString(` AND p.uid = ?`)
-		args = append(args, *params.UserId)
+		args = append(args, *params.Uid)
 	}
 	if params.Role != nil && *params.Role != "" {
 		clause.WriteString(` AND p.role = ?`)
@@ -255,14 +255,14 @@ func buildProfileListFilter(params *profile.ListProfilesParams) (string, []any) 
 	return clause.String(), args
 }
 
-// ListAvatarKeysByUserId returns every non-null avatar_key for the user's
+// ListAvatarKeysByUid returns every non-null avatar_key for the user's
 // profiles, regardless of status. Used by force-delete to drive S3 cleanup
 // after the DB cascade — soft-deleted profiles still own S3 objects that need
 // to go.
-func (r *ProfileRepository) ListAvatarKeysByUserId(ctx context.Context, userId int64) ([]string, error) {
+func (r *ProfileRepository) ListAvatarKeysByUid(ctx context.Context, uid int64) ([]string, error) {
 	query := `SELECT avatar_key FROM ` + profileTable + ` WHERE uid = ? AND avatar_key IS NOT NULL`
 
-	rows, err := r.db.Query(ctx, query, userId)
+	rows, err := r.db.Query(ctx, query, uid)
 	if err != nil {
 		return nil, fmt.Errorf("profile repo list avatar keys by user id: %w", err)
 	}
@@ -293,7 +293,7 @@ func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*pr
 	`
 
 	_, err := r.db.Exec(ctx, query,
-		p.ProfileId(), p.ProfileCode(), p.UserId(), p.Name(), p.Phone(), p.Email(), p.Role(), p.IdentityCode(), p.AvatarKey(), p.Dob(),
+		p.ProfileId(), p.ProfileCode(), p.Uid(), p.Name(), p.Phone(), p.Email(), p.Role(), p.IdentityCode(), p.AvatarKey(), p.Dob(),
 		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(),
 		p.IdType(), p.TeacherId(), p.StudentId(), p.RptFlg(), p.Kwords(), p.Note(), p.ProfileStatus(), mtime.Now().Time, mtime.Now().Time)
 	if err != nil {
@@ -391,14 +391,14 @@ func (r *ProfileRepository) MarkStatusByProfileId(ctx context.Context, profileId
 	return nil
 }
 
-func (r *ProfileRepository) MarkDefaultByProfileId(ctx context.Context, userId int64, profileId int64) error {
+func (r *ProfileRepository) MarkDefaultByProfileId(ctx context.Context, uid int64, profileId int64) error {
 	query := `
 		UPDATE ` + profileTable + `
 		SET is_default = CASE WHEN profile_id = ? THEN TRUE ELSE FALSE END,
 			modify_dt    = ?
 		WHERE uid = ?
 	`
-	if _, err := r.db.Exec(ctx, query, profileId, mtime.Now().Time, userId); err != nil {
+	if _, err := r.db.Exec(ctx, query, profileId, mtime.Now().Time, uid); err != nil {
 		return fmt.Errorf("profile repo mark is default: %w", err)
 	}
 	return nil
@@ -443,7 +443,7 @@ func (r *ProfileRepository) ForceDelete(ctx context.Context, profileId int64) er
 //
 // One statement rather than three calls: every intermediate state here is
 // one a concurrent read could observe.
-func (r *ProfileRepository) ReassignOwner(ctx context.Context, profileId int64, newUserId int64) error {
+func (r *ProfileRepository) ReassignOwner(ctx context.Context, profileId int64, newUid int64) error {
 	query := `
 		UPDATE ` + profileTable + `
 		SET uid           = ?,
@@ -452,13 +452,13 @@ func (r *ProfileRepository) ReassignOwner(ctx context.Context, profileId int64, 
 			modify_dt     = ?
 		WHERE profile_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, newUserId, enum.IdentityCodeUser, mtime.Now().Time, profileId); err != nil {
+	if _, err := r.db.Exec(ctx, query, newUid, enum.IdentityCodeUser, mtime.Now().Time, profileId); err != nil {
 		return fmt.Errorf("profile repo reassign owner: %w", err)
 	}
 	return nil
 }
 
-func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId int64) error {
+func (r *ProfileRepository) SoftDeleteByUid(ctx context.Context, uid int64) error {
 	query := `
 		UPDATE ` + profileTable + `
 		SET profile_status = ?,
@@ -466,18 +466,18 @@ func (r *ProfileRepository) SoftDeleteByUserId(ctx context.Context, userId int64
 			deleted_dt = ?
 		WHERE uid = ?
 	`
-	if _, err := r.db.Exec(ctx, query, enum.ProfileStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, userId); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.ProfileStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, uid); err != nil {
 		return fmt.Errorf("profile repo soft delete by user id: %w", err)
 	}
 	return nil
 }
 
-func (r *ProfileRepository) ForceDeleteByUserId(ctx context.Context, userId int64) error {
+func (r *ProfileRepository) ForceDeleteByUid(ctx context.Context, uid int64) error {
 	query := `
 		DELETE FROM ` + profileTable + `
 		WHERE uid = ?
 	`
-	if _, err := r.db.Exec(ctx, query, userId); err != nil {
+	if _, err := r.db.Exec(ctx, query, uid); err != nil {
 		return fmt.Errorf("profile repo force delete by user id: %w", err)
 	}
 	return nil
@@ -487,7 +487,7 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p := profile.NewProfile()
 	p.SetProfileId(m.ProfileId)
 	p.SetProfileCode(m.ProfileCode)
-	p.SetUserId(m.UserId)
+	p.SetUid(m.Uid)
 	p.SetName(m.Name)
 	p.SetPhone(m.Phone)
 	p.SetEmail(m.Email)

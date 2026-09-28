@@ -17,7 +17,7 @@ const MessageCreatedEvent = "chat.message.created"
 // needs. It is an interface rather than the appsocket.Publisher type so the
 // module can be constructed and tested with realtime switched off.
 type MessagePublisher interface {
-	BroadcastUser(ctx context.Context, userID int64, event string, data any) error
+	BroadcastUser(ctx context.Context, uid int64, event string, data any) error
 }
 
 // publishMessage pushes a new message to every participant except the sender.
@@ -54,11 +54,11 @@ func (s *Service) publishMessage(ctx context.Context, m *chatDomain.Message, pay
 		if p.ProfileId() == senderProfileID {
 			continue
 		}
-		if err := s.realtime.BroadcastUser(ctx, p.UserId(), MessageCreatedEvent, payload); err != nil {
+		if err := s.realtime.BroadcastUser(ctx, p.Uid(), MessageCreatedEvent, payload); err != nil {
 			// Never log the message body — a chat payload carries a child's
 			// name and whatever they wrote.
 			log.Warnf("chat.publish_failed conversation_id=%d message_id=%d uid=%d err=%v",
-				m.ConversationId(), m.MessageId(), p.UserId(), err)
+				m.ConversationId(), m.MessageId(), p.Uid(), err)
 		}
 	}
 }

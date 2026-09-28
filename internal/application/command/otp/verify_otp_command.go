@@ -24,7 +24,7 @@ type VerifyOtpCommand struct {
 
 type VerifyOtpCommandResult struct {
 	OtpID      int64
-	UserID     *int64
+	UID        *int64
 	DeviceUUID *string
 }
 
@@ -121,7 +121,7 @@ func (h *VerifyOtpCommandHandler) markVerified(ctx context.Context, repos transa
 	}
 	*out = &VerifyOtpCommandResult{
 		OtpID:      o.OtpId(),
-		UserID:     o.UserId(),
+		UID:        o.Uid(),
 		DeviceUUID: o.DeviceUUID(),
 	}
 	return nil

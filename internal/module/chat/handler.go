@@ -19,10 +19,10 @@ func NewHandler(appResource *resource.Resource, service *Service) *Handler {
 	return &Handler{appResource: appResource, service: service}
 }
 
-// sessionUserID pulls the authenticated user off the session. Every chat route
+// sessionUID pulls the authenticated user off the session. Every chat route
 // is auth-gated, so a zero here means the session was unreadable; the service
 // treats 0 as "no ownership proof" and the profile check then fails closed.
-func (h *Handler) sessionUserID(r *http.Request) int64 {
+func (h *Handler) sessionUID(r *http.Request) int64 {
 	sess, err := h.appResource.GetRequestSession(r)
 	if err != nil || sess == nil {
 		return 0
@@ -48,7 +48,7 @@ func (h *Handler) HandleListClassroomMembers(w http.ResponseWriter, r *http.Requ
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.ListClassroomMembers(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.ListClassroomMembers(r.Context(), &req, h.sessionUID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -59,7 +59,7 @@ func (h *Handler) HandleOpenConversation(w http.ResponseWriter, r *http.Request)
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.OpenConversation(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.OpenConversation(r.Context(), &req, h.sessionUID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -70,7 +70,7 @@ func (h *Handler) HandleListConversations(w http.ResponseWriter, r *http.Request
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.ListConversations(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.ListConversations(r.Context(), &req, h.sessionUID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -81,7 +81,7 @@ func (h *Handler) HandleListMessages(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.ListMessages(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.ListMessages(r.Context(), &req, h.sessionUID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -92,7 +92,7 @@ func (h *Handler) HandleSendMessage(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.SendMessage(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.SendMessage(r.Context(), &req, h.sessionUID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -103,7 +103,7 @@ func (h *Handler) HandleMarkRead(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.MarkRead(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.MarkRead(r.Context(), &req, h.sessionUID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -114,6 +114,6 @@ func (h *Handler) HandleUnreadCount(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.UnreadCount(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.UnreadCount(r.Context(), &req, h.sessionUID(r))
 	response.WriteJson(w, res, err)
 }

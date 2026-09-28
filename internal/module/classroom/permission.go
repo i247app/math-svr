@@ -12,12 +12,12 @@ import (
 )
 
 // resolveActingProfile loads the profile named by profileID and confirms
-// it belongs to sessionUserID. This is the §0 Q1 enforcement point: the
+// it belongs to sessionUID. This is the §0 Q1 enforcement point: the
 // body's profile_id can only act for profiles owned by the authenticated
 // user. Handlers extract the session UID and pass it through; an empty
-// sessionUserID skips the ownership check (intended for tests and
+// sessionUID skips the ownership check (intended for tests and
 // internal callers, never for HTTP).
-func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUserID int64) (*profileDomain.Profile, error) {
+func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUID int64) (*profileDomain.Profile, error) {
 	p, err := s.profileRepo.FindByProfileId(ctx, profileID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -25,7 +25,7 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUs
 	if p == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
 	}
-	if sessionUserID != 0 && sessionUserID != p.UserId() {
+	if sessionUID != 0 && sessionUID != p.Uid() {
 		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil, ErrProfileNotOwnedByUser)
 	}
 	return p, nil

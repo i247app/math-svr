@@ -38,7 +38,7 @@ func NewLoginRepository(db database.Executor) login.IRepository {
 
 func scanLogin(s database.RowScanner) (*models.LoginModel, error) {
 	var m models.LoginModel
-	if err := s.Scan(&m.LoginId, &m.UserId, &m.Upass, &m.LoginsStatus, &m.RptFlg,
+	if err := s.Scan(&m.LoginId, &m.Uid, &m.Upass, &m.LoginsStatus, &m.RptFlg,
 		&m.Kwords, &m.Note, &m.Status, &m.CreateId, &m.CreateDt,
 		&m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -65,8 +65,8 @@ func (r *LoginRepository) FindByLoginId(ctx context.Context, loginId int64) (*lo
 	return r.findOneBy(ctx, "lg.login_id = ?", loginId)
 }
 
-func (r *LoginRepository) FindByUserId(ctx context.Context, userId int64) (*login.Login, error) {
-	return r.findOneBy(ctx, "lg.uid = ?", userId)
+func (r *LoginRepository) FindByUid(ctx context.Context, uid int64) (*login.Login, error) {
+	return r.findOneBy(ctx, "lg.uid = ?", uid)
 }
 
 func (r *LoginRepository) Create(ctx context.Context, l *login.Login) (*login.Login, error) {
@@ -78,7 +78,7 @@ func (r *LoginRepository) Create(ctx context.Context, l *login.Login) (*login.Lo
 
 	now := mtime.Now().Time
 	_, err := r.db.Exec(ctx, query,
-		l.LoginId(), l.UserId(), l.Upass(), l.LoginsStatus(), l.RptFlg(), l.Kwords(),
+		l.LoginId(), l.Uid(), l.Upass(), l.LoginsStatus(), l.RptFlg(), l.Kwords(),
 		l.Note(), l.Status(), l.CreateId(), now, now)
 	if err != nil {
 		return nil, fmt.Errorf("login repo create: %w", err)
@@ -90,7 +90,7 @@ func (r *LoginRepository) Create(ctx context.Context, l *login.Login) (*login.Lo
 func ModelToDomainLogin(m *models.LoginModel) *login.Login {
 	l := login.NewLogin()
 	l.SetLoginId(m.LoginId)
-	l.SetUserId(m.UserId)
+	l.SetUid(m.Uid)
 	l.SetUpass(m.Upass)
 	l.SetLoginsStatus(m.LoginsStatus)
 	l.SetRptFlg(m.RptFlg)

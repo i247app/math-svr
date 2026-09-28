@@ -13,7 +13,7 @@ import (
 // rename, refresh push token, attach a note. is_verified is intentionally NOT
 // in this surface; verification flips only via the 2FA flow or revoke.
 type UpdateDeviceCommand struct {
-	UserID          int64
+	UID             int64
 	DeviceID        int64
 	DeviceName      string
 	DevicePushToken *string
@@ -39,7 +39,7 @@ func (h *UpdateDeviceCommandHandler) Handle(ctx context.Context, cmd UpdateDevic
 		if existing == nil {
 			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
 		}
-		if existing.UserId() == nil || *existing.UserId() != cmd.UserID {
+		if existing.Uid() == nil || *existing.Uid() != cmd.UID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
 				ErrDeviceNotOwnedByUser)
 		}

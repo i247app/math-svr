@@ -109,7 +109,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	if err != nil {
 		return nil, err
 	}
-	profile, err := s.loadOwnedProfile(ctx, req.UserID, req.ProfileID)
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	tag := BuildCacheTag(validated.ExamType, grade, promptLevel, req.NumQuestions, req.Semester, req.Program)
 
 	cmd := command.GenerateExamCommand{
-		UserID:      profile.UserId(),
+		UID:         profile.Uid(),
 		ProfileID:   profile.ProfileId(),
 		ExamType:    validated.ExamType,
 		Grade:       grade,
@@ -219,7 +219,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
 			fmt.Errorf("exam: journey %d not found", journeyID))
 	}
-	if journey.UserId() != profile.UserId() || journey.ProfileId() != profile.ProfileId() {
+	if journey.Uid() != profile.Uid() || journey.ProfileId() != profile.ProfileId() {
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
 	}
@@ -274,7 +274,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		journeyID, base.UserAiExamId(), brief.Mode, len(brief.Wrong), brief.WeakTopics)
 
 	return s.handOut(ctx, command.GenerateExamCommand{
-		UserID:     profile.UserId(),
+		UID:        profile.Uid(),
 		ProfileID:  profile.ProfileId(),
 		ExamType:   enum.ExamTypePractice,
 		Grade:      grade,
@@ -319,14 +319,14 @@ func (s *Service) SubmitExam(ctx context.Context, req *dto.SubmitExamReq) (*dto.
 	if err := ValidateSubmitExam(ctx, req); err != nil {
 		return nil, err
 	}
-	profile, err := s.loadOwnedProfile(ctx, req.UserID, req.ProfileID)
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
 	if err != nil {
 		return nil, err
 	}
 
 	result, err := s.submitCmd.Handle(ctx, command.SubmitExamCommand{
 		UserAiExamID: req.UserAiExamID,
-		UserID:       profile.UserId(),
+		UID:          profile.Uid(),
 		ProfileID:    profile.ProfileId(),
 		Answers:      req.Answers,
 		Language:     metadata.GetClientLanguage(ctx).ToEnumLanguage(),
@@ -353,7 +353,7 @@ func (s *Service) GetExam(ctx context.Context, req *dto.GetExamReq) (*dto.GetExa
 	if err := ValidateGetExam(ctx, req); err != nil {
 		return nil, err
 	}
-	profile, err := s.loadOwnedProfile(ctx, req.UserID, req.ProfileID)
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
 	if err != nil {
 		return nil, err
 	}
@@ -368,7 +368,7 @@ func (s *Service) ListExams(ctx context.Context, req *dto.ListExamsReq) (*dto.Li
 	if err := ValidateListExams(ctx, req); err != nil {
 		return nil, err
 	}
-	profile, err := s.loadOwnedProfile(ctx, req.UserID, req.ProfileID)
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
 	if err != nil {
 		return nil, err
 	}
@@ -395,13 +395,13 @@ func (s *Service) GetExamStats(ctx context.Context, req *dto.GetExamStatsReq) (*
 	if err := ValidateGetExamStats(ctx, req); err != nil {
 		return nil, err
 	}
-	profile, err := s.loadOwnedProfile(ctx, req.UserID, req.ProfileID)
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
 	if err != nil {
 		return nil, err
 	}
 
 	rows, err := s.statsQuery.Handle(ctx, query.GetExamStatsQuery{
-		UserID:    profile.UserId(),
+		UID:       profile.Uid(),
 		ProfileID: profile.ProfileId(),
 		ExamType:  req.ExamType,
 		Status:    req.JourneyExamStatus,
@@ -421,14 +421,14 @@ func (s *Service) MarkExamJourney(ctx context.Context, req *dto.MarkExamJourneyR
 	if err != nil {
 		return nil, err
 	}
-	profile, err := s.loadOwnedProfile(ctx, req.UserID, req.ProfileID)
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
 	if err != nil {
 		return nil, err
 	}
 
 	journey, err := s.markJourneyCmd.Handle(ctx, command.MarkUserExamCommand{
 		UserExamID: req.UserExamID,
-		UserID:     profile.UserId(),
+		UID:        profile.Uid(),
 		ProfileID:  profile.ProfileId(),
 		Status:     validated.Status,
 	})
@@ -443,7 +443,7 @@ func (s *Service) GetExamProgress(ctx context.Context, req *dto.ExamProgressReq)
 	if err := ValidateExamProgress(ctx, req); err != nil {
 		return nil, err
 	}
-	profile, err := s.loadOwnedProfile(ctx, req.UserID, req.ProfileID)
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
 	if err != nil {
 		return nil, err
 	}
@@ -479,13 +479,13 @@ func (s *Service) GetJourneyProgress(ctx context.Context, req *dto.JourneyProgre
 	if err := ValidateJourneyProgress(ctx, req); err != nil {
 		return nil, err
 	}
-	profile, err := s.loadOwnedProfile(ctx, req.UserID, req.ProfileID)
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
 	if err != nil {
 		return nil, err
 	}
 
 	result, err := s.journeyProgress.Handle(ctx, query.GetJourneyProgressQuery{
-		UserID:    profile.UserId(),
+		UID:       profile.Uid(),
 		ProfileID: profile.ProfileId(),
 		ExamType:  req.ExamType,
 		From:      req.FromDt,

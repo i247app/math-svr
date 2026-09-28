@@ -5,8 +5,8 @@ import (
 )
 
 type Alias struct {
-	aliasId     int64
-	userId      int64
+	aid         int64
+	uid         int64
 	aka         string
 	aliasStatus *string
 	rptFlg      *string
@@ -23,20 +23,20 @@ func NewAlias() *Alias {
 	return &Alias{}
 }
 
-func (a *Alias) AliasId() int64 {
-	return a.aliasId
+func (a *Alias) Aid() int64 {
+	return a.aid
 }
 
-func (a *Alias) SetAliasId(aliasId int64) {
-	a.aliasId = aliasId
+func (a *Alias) SetAid(aid int64) {
+	a.aid = aid
 }
 
-func (a *Alias) UserId() int64 {
-	return a.userId
+func (a *Alias) Uid() int64 {
+	return a.uid
 }
 
-func (a *Alias) SetUserId(userId int64) {
-	a.userId = userId
+func (a *Alias) SetUid(uid int64) {
+	a.uid = uid
 }
 
 func (a *Alias) Aka() string {

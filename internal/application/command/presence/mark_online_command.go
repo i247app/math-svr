@@ -14,7 +14,7 @@ import (
 )
 
 type MarkOnlineCommand struct {
-	UserId     int64
+	Uid        int64
 	DeviceUuid *string
 	Platform   *string
 }
@@ -34,7 +34,7 @@ func (h *MarkOnlineCommandHandler) Handle(ctx context.Context, cmd *MarkOnlineCo
 	var result *domain.Presence
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		p, err := repos.Presence.IncrementConnection(ctx, cmd.UserId, cmd.DeviceUuid, cmd.Platform, mtime.Now())
+		p, err := repos.Presence.IncrementConnection(ctx, cmd.Uid, cmd.DeviceUuid, cmd.Platform, mtime.Now())
 		if err != nil {
 			return errs.NewError(ctx, status.PRESENCE_UPDATE_FAILED, nil, err)
 		}

@@ -31,9 +31,9 @@ func validateLanguage(ctx context.Context, lang enum.LanguageType) error {
 }
 
 func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error {
-	if req.UserID == 0 {
+	if req.UID == 0 {
 		return errs.NewError(ctx, status.PROFILE_MISSING_USER_ID, nil,
-			ErrUserIDRequired)
+			ErrUIDRequired)
 	}
 	if strings.TrimSpace(req.Name) == "" {
 		return errs.NewError(ctx, status.PROFILE_MISSING_NAME, nil,
@@ -93,8 +93,8 @@ func ValidateGetProfile(ctx context.Context, req *dto.GetProfileByIdReq) error {
 // validated against the enum sets so a typo surfaces as a typed error
 // rather than a silently empty result.
 func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
-	if req.UserID != nil && *req.UserID == 0 {
-		req.UserID = nil
+	if req.UID != nil && *req.UID == 0 {
+		req.UID = nil
 	}
 	if req.SchoolID != nil && *req.SchoolID == 0 {
 		req.SchoolID = nil

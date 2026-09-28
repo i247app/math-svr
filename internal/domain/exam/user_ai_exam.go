@@ -30,7 +30,7 @@ import (
 // indexed read rather than a walk through the answer log.
 type UserAiExam struct {
 	userAiExamId int64
-	userId       int64
+	uid          int64
 	profileId    int64
 	aiExamId     int64
 	userExamId   *int64
@@ -65,8 +65,8 @@ func NewUserAiExam() *UserAiExam { return &UserAiExam{} }
 
 func (u *UserAiExam) UserAiExamId() int64             { return u.userAiExamId }
 func (u *UserAiExam) SetUserAiExamId(id int64)        { u.userAiExamId = id }
-func (u *UserAiExam) UserId() int64                   { return u.userId }
-func (u *UserAiExam) SetUserId(id int64)              { u.userId = id }
+func (u *UserAiExam) Uid() int64                      { return u.uid }
+func (u *UserAiExam) SetUid(id int64)                 { u.uid = id }
 func (u *UserAiExam) ProfileId() int64                { return u.profileId }
 func (u *UserAiExam) SetProfileId(id int64)           { u.profileId = id }
 func (u *UserAiExam) AiExamId() int64                 { return u.aiExamId }

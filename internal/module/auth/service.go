@@ -84,7 +84,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		}, errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, ErrUserNotFound)
 	}
 
-	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: result.UserID})
+	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUidReq{UID: result.UID})
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		sessionData := session.InitData{
 			Source:    "login",
 			IsSecure:  true,
-			UID:       userRes.User.UserID,
+			UID:       userRes.User.UID,
 			LoginName: loginName,
 		}
 
@@ -113,7 +113,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		// only thing that licenses writing to it. If they had been
 		// working as a guest, their child and every exam that child sat
 		// move across now.
-		s.userSvc.AdoptGuestInto(ctx, previousUID, userRes.User.UserID)
+		s.userSvc.AdoptGuestInto(ctx, previousUID, userRes.User.UID)
 	}
 
 	return &dto.LoginRes{
@@ -135,7 +135,7 @@ func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (
 		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUIDNotFoundInSession)
 	}
 
-	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: uid})
+	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUidReq{UID: uid})
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (
 	sessionData := session.InitData{
 		Source:    "login",
 		IsSecure:  true,
-		UID:       userRes.User.UserID,
+		UID:       userRes.User.UID,
 		LoginName: dtoUser.LoginNameOf(userRes.User),
 	}
 
@@ -196,7 +196,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 		}, errs.NewError(ctx, status.NO_DATA, nil, ErrUserNotFound)
 	}
 
-	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUserIdReq{UserID: result.UserID})
+	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUidReq{UID: result.UID})
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +209,7 @@ func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.Log
 	otpCreated, err := s.otpSvc.Send(ctx, &dtoOtp.SendOtpReq{
 		OtpType:    string(enum.OtpTypeLogin2FA),
 		Identifier: loginName,
-		UserID:     &userRes.User.UserID,
+		UID:        &userRes.User.UID,
 	})
 	if err != nil {
 		return nil, err
@@ -229,7 +229,7 @@ func (s *Service) Logout(ctx context.Context, sess *session.AppSession, req *dto
 	}
 
 	if err := s.logoutCmd.Handle(ctx, command.LogoutCommand{
-		UserID:     *req.UserID,
+		UID:        *req.UID,
 		DeviceUUID: req.DeviceUUID,
 	}); err != nil {
 		return nil, err

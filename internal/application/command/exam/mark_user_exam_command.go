@@ -30,7 +30,7 @@ import (
 // shares its id along with it; a PRACTICE row is never marked on its own.
 type MarkUserExamCommand struct {
 	UserExamID int64
-	UserID     int64
+	UID        int64
 	ProfileID  int64
 	Status     enum.UserExamStatusType
 }
@@ -101,7 +101,7 @@ func (h *MarkUserExamCommandHandler) loadOwnedJourney(ctx context.Context, repos
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
 			fmt.Errorf("exam: journey %d not found", cmd.UserExamID))
 	}
-	if journey.UserId() != cmd.UserID || journey.ProfileId() != cmd.ProfileID {
+	if journey.Uid() != cmd.UID || journey.ProfileId() != cmd.ProfileID {
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", cmd.UserExamID))
 	}
@@ -143,7 +143,7 @@ func (h *MarkUserExamCommandHandler) reopen(ctx context.Context, repos transacti
 			fmt.Errorf("exam: journey %d is in state %q and cannot be reopened", cmd.UserExamID, utils.DerefString(journey.UserExamStatus())))
 	}
 
-	open, err := repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UserID, cmd.ProfileID, journey.ReqExamType())
+	open, err := repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, journey.ReqExamType())
 	if err != nil {
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}

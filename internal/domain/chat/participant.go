@@ -7,8 +7,8 @@ import "math-ai.com/math-ai/internal/domain/shared/mtime"
 //
 // It carries BOTH identities on purpose. profileId is the acting identity
 // (classroom membership is keyed by profile, and it is the profile's name and
-// avatar that render). userId is the delivery target — WebSocket topics are
-// user:{uid} and push tokens hang off devices. Denormalising userId here keeps
+// avatar that render). uid is the delivery target — WebSocket topics are
+// user:{uid} and push tokens hang off devices. Denormalising uid here keeps
 // the send path, the hottest query in the feature, from joining ma_profiles.
 //
 // Read state is a watermark, not one row per read message: lastReadSeqNo
@@ -19,7 +19,7 @@ type Participant struct {
 	participantId      int64
 	conversationId     int64
 	profileId          int64
-	userId             int64
+	uid                int64
 	participantRole    string
 	lastReadSeqNo      int64
 	lastReadMessageId  *int64
@@ -52,8 +52,8 @@ func (p *Participant) ConversationId() int64            { return p.conversationI
 func (p *Participant) SetConversationId(id int64)       { p.conversationId = id }
 func (p *Participant) ProfileId() int64                 { return p.profileId }
 func (p *Participant) SetProfileId(id int64)            { p.profileId = id }
-func (p *Participant) UserId() int64                    { return p.userId }
-func (p *Participant) SetUserId(id int64)               { p.userId = id }
+func (p *Participant) Uid() int64                       { return p.uid }
+func (p *Participant) SetUid(id int64)                  { p.uid = id }
 func (p *Participant) ParticipantRole() string          { return p.participantRole }
 func (p *Participant) SetParticipantRole(r string)      { p.participantRole = r }
 func (p *Participant) LastReadSeqNo() int64             { return p.lastReadSeqNo }

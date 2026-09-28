@@ -117,7 +117,7 @@ func (s *Service) ListProfiles(ctx context.Context, req *dto.ListProfilesReq) (*
 	}
 
 	profiles, pg, err := s.listProfilesQuery.Handle(ctx, query.ListProfilesQuery{
-		UserID:        req.UserID,
+		UID:           req.UID,
 		Role:          req.Role,
 		ProfileStatus: req.ProfileStatus,
 		SchoolID:      req.SchoolID,
@@ -185,7 +185,7 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 	}
 
 	created, err := s.createProfileCmd.Handle(ctx, command.CreateProfileCommand{
-		UserID:     req.UserID,
+		UID:        req.UID,
 		Name:       req.Name,
 		Phone:      req.Phone,
 		Email:      req.Email,
@@ -215,7 +215,7 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 
 	log.Info("profile.created",
 		"profile_id", created.ProfileId(),
-		"uid", created.UserId(),
+		"uid", created.Uid(),
 		"name_len", len(created.Name()),
 	)
 

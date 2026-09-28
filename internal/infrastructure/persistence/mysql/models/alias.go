@@ -5,8 +5,8 @@ import (
 )
 
 type AliasModel struct {
-	AliasId     int64
-	UserId      int64
+	Aid         int64
+	Uid         int64
 	Aka         string
 	AliasStatus *string
 	RptFlg      *string

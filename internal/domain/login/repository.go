@@ -4,9 +4,9 @@ import "context"
 
 type IRepository interface {
 	FindByLoginId(ctx context.Context, loginId int64) (*Login, error)
-	// FindByUserId returns the account's credential, or (nil, nil) when the
+	// FindByUid returns the account's credential, or (nil, nil) when the
 	// account was registered without a password.
-	FindByUserId(ctx context.Context, userId int64) (*Login, error)
+	FindByUid(ctx context.Context, uid int64) (*Login, error)
 	Create(ctx context.Context, l *Login) (*Login, error)
 }
 

@@ -8,7 +8,7 @@ import "fmt"
 // publisher from drifting on the format.
 
 // UserTopic is a user's personal address, auto-subscribed on connect.
-func UserTopic(userID int64) string { return fmt.Sprintf("user:%d", userID) }
+func UserTopic(uid int64) string { return fmt.Sprintf("user:%d", uid) }
 
 // NotificationsTopic carries in-app notification events for a user.
-func NotificationsTopic(userID int64) string { return fmt.Sprintf("notifications:%d", userID) }
+func NotificationsTopic(uid int64) string { return fmt.Sprintf("notifications:%d", uid) }

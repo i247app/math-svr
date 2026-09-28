@@ -17,7 +17,7 @@ func ValidateLogin(ctx context.Context, req *dto.LoginReq) error {
 }
 
 func ValidateLogout(ctx context.Context, req *dto.LogoutReq) error {
-	if req.UserID == nil || *req.UserID == 0 {
+	if req.UID == nil || *req.UID == 0 {
 		return errs.NewUnauthorizedError(ctx, ErrUIDNotFoundInSession)
 	}
 	if req.DeviceUUID == "" {

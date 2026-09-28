@@ -14,21 +14,21 @@ import (
 // single atomic statement and return the resulting row, letting the caller see
 // whether the write crossed the online/offline boundary without a second read.
 type IRepository interface {
-	FindByUserId(ctx context.Context, userId int64) (*Presence, error)
+	FindByUid(ctx context.Context, uid int64) (*Presence, error)
 
-	// ListByUserIds batches the lookup for a member list. Users with no row
+	// ListByUids batches the lookup for a member list. Users with no row
 	// are simply absent from the map — callers must treat a missing key as
 	// OFFLINE, not as an error, because a row only appears after the user's
 	// first ever connection.
-	ListByUserIds(ctx context.Context, userIds []int64) (map[int64]*Presence, error)
+	ListByUids(ctx context.Context, uids []int64) (map[int64]*Presence, error)
 
 	// IncrementConnection upserts the row, adds one connection and marks the
 	// user ONLINE.
-	IncrementConnection(ctx context.Context, userId int64, deviceUuid, platform *string, now mtime.MathTime) (*Presence, error)
+	IncrementConnection(ctx context.Context, uid int64, deviceUuid, platform *string, now mtime.MathTime) (*Presence, error)
 
 	// DecrementConnection removes one connection, clamped at zero, and flips
 	// the row to OFFLINE when the last one goes away.
-	DecrementConnection(ctx context.Context, userId int64, now mtime.MathTime) (*Presence, error)
+	DecrementConnection(ctx context.Context, uid int64, now mtime.MathTime) (*Presence, error)
 
 	// ResetAll zeroes every counter and marks everyone OFFLINE. Called once at
 	// boot: the Hub's registry is process memory, so after a restart or crash

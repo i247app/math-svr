@@ -66,7 +66,7 @@ func (h *jsonHandler) Handle(ctx context.Context, rec slog.Record) error {
 	if tok := tokenSuffixOr(ctx); tok != "" && tok != anonToken {
 		m["token"] = tok
 	}
-	if uid := sctx.UserID(ctx); uid != 0 {
+	if uid := sctx.UID(ctx); uid != 0 {
 		m["uid"] = uid
 	}
 	if h.request != nil {

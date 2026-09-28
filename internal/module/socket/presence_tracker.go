@@ -12,7 +12,7 @@ import "context"
 type PresenceTracker interface {
 	// MarkOnline reports whether this connection took the user from offline
 	// to online.
-	MarkOnline(ctx context.Context, userId int64, deviceUuid, platform *string) (bool, error)
+	MarkOnline(ctx context.Context, uid int64, deviceUuid, platform *string) (bool, error)
 	// MarkOffline reports whether this disconnect was the user's last.
-	MarkOffline(ctx context.Context, userId int64) (bool, error)
+	MarkOffline(ctx context.Context, uid int64) (bool, error)
 }

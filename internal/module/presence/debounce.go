@@ -37,16 +37,16 @@ func newOfflineDebouncer(delay time.Duration) *offlineDebouncer {
 
 // schedule arranges for fn to run after the delay unless cancelled first.
 // A second call for the same user replaces the pending timer.
-func (d *offlineDebouncer) schedule(userId int64, fn func()) {
+func (d *offlineDebouncer) schedule(uid int64, fn func()) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	if existing, ok := d.timers[userId]; ok {
+	if existing, ok := d.timers[uid]; ok {
 		existing.Stop()
 	}
-	d.timers[userId] = time.AfterFunc(d.delay, func() {
+	d.timers[uid] = time.AfterFunc(d.delay, func() {
 		d.mu.Lock()
-		delete(d.timers, userId)
+		delete(d.timers, uid)
 		d.mu.Unlock()
 		fn()
 	})
@@ -59,16 +59,16 @@ func (d *offlineDebouncer) schedule(userId int64, fn func()) {
 // means nobody was ever told this user went offline, so there is nothing to
 // correct and the matching online broadcast must be suppressed. Without it,
 // every brief network blip would emit a spurious "came online" to the class.
-func (d *offlineDebouncer) cancel(userId int64) (wasPending bool) {
+func (d *offlineDebouncer) cancel(uid int64) (wasPending bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	timer, ok := d.timers[userId]
+	timer, ok := d.timers[uid]
 	if !ok {
 		return false
 	}
 	timer.Stop()
-	delete(d.timers, userId)
+	delete(d.timers, uid)
 	return true
 }
 

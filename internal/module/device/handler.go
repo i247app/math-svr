@@ -41,7 +41,7 @@ func (h *DeviceHandler) HandleListDevices(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	res, err := h.service.ListDevicesByUserId(r.Context(), &req)
+	res, err := h.service.ListDevicesByUid(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

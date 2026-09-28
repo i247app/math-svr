@@ -14,7 +14,7 @@ import (
 // itself is preserved so subsequent logins still find it (they will then be
 // gated by 2FA again).
 type RevokeDeviceCommand struct {
-	UserID     int64
+	UID        int64
 	DeviceUUID string
 }
 
@@ -28,19 +28,19 @@ func NewRevokeDeviceCommandHandler(uow transaction.UnitOfWork) *RevokeDeviceComm
 
 func (h *RevokeDeviceCommandHandler) Handle(ctx context.Context, cmd RevokeDeviceCommand) error {
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		d, err := repos.Device.FindByUserDevice(ctx, cmd.UserID, cmd.DeviceUUID)
+		d, err := repos.Device.FindByUserDevice(ctx, cmd.UID, cmd.DeviceUUID)
 		if err != nil {
 			return errs.NewError(ctx, status.DEVICE_VERIFICATION_FAIL, nil, err)
 		}
 		if d == nil {
 			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
 		}
-		if d.UserId() == nil || *d.UserId() != cmd.UserID {
+		if d.Uid() == nil || *d.Uid() != cmd.UID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
 				ErrDeviceNotOwnedByUser)
 		}
 
-		if err := repos.Device.MarkVerifiedByUserDevice(ctx, cmd.UserID, cmd.DeviceUUID, false); err != nil {
+		if err := repos.Device.MarkVerifiedByUserDevice(ctx, cmd.UID, cmd.DeviceUUID, false); err != nil {
 			return errs.NewError(ctx, status.DEVICE_REVOKE_FAIL, nil, err)
 		}
 		if err := repos.Device.MarkStatusByDeviceId(ctx, d.DeviceId(), enum.DeviceStatusTypeRevoked); err != nil {
@@ -51,7 +51,7 @@ func (h *RevokeDeviceCommandHandler) Handle(ctx context.Context, cmd RevokeDevic
 		// login_log row is preserved (status flipped to REVOKED) so audit
 		// history survives.
 		if err := repos.LoginLog.MarkStatusByUserDevice(
-			ctx, cmd.UserID, d.DeviceUUID(), enum.LoginLogStatusTypeRevoked,
+			ctx, cmd.UID, d.DeviceUUID(), enum.LoginLogStatusTypeRevoked,
 		); err != nil {
 			return errs.NewError(ctx, status.DEVICE_REVOKE_FAIL, nil, err)
 		}

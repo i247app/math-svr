@@ -37,7 +37,7 @@ import (
 // are supposed to summarise, and nothing would ever notice.
 type SubmitExamCommand struct {
 	UserAiExamID int64
-	UserID       int64
+	UID          int64
 	ProfileID    int64
 	Answers      []question.StudentAnswer
 	Language     enum.LanguageType
@@ -174,7 +174,7 @@ func (h *SubmitExamCommandHandler) loadOpenAttempt(ctx context.Context, repos tr
 		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_FOUND, nil,
 			fmt.Errorf("exam: attempt %d not found", cmd.UserAiExamID))
 	}
-	if attempt.UserId() != cmd.UserID || attempt.ProfileId() != cmd.ProfileID {
+	if attempt.Uid() != cmd.UID || attempt.ProfileId() != cmd.ProfileID {
 		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_OWNED, nil,
 			fmt.Errorf("exam: attempt %d belongs to another profile", cmd.UserAiExamID))
 	}
@@ -289,7 +289,7 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
 			fmt.Errorf("exam: journey %d not found for attempt %d", journeyID, attempt.UserAiExamId()))
 	}
-	if owner.UserId() != cmd.UserID || owner.ProfileId() != cmd.ProfileID {
+	if owner.Uid() != cmd.UID || owner.ProfileId() != cmd.ProfileID {
 		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
 	}
@@ -372,7 +372,7 @@ func (h *SubmitExamCommandHandler) practiceRow(cmd SubmitExamCommand, existing *
 
 	row := exam.NewUserExam()
 	row.SetUserExamId(journeyID)
-	row.SetUserId(cmd.UserID)
+	row.SetUid(cmd.UID)
 	row.SetProfileId(cmd.ProfileID)
 	row.SetReqExamType(string(enum.ExamTypePractice))
 	complete := string(enum.UserExamStatusComplete)
@@ -403,7 +403,7 @@ func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *ex
 
 	row := exam.NewUserExam()
 	row.SetUserExamId(userExamID)
-	row.SetUserId(cmd.UserID)
+	row.SetUid(cmd.UID)
 	row.SetProfileId(cmd.ProfileID)
 	row.SetReqExamType(attempt.ReqExamType())
 	row.SetResReview(&derived.Review)

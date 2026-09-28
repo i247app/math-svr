@@ -18,7 +18,7 @@ import (
 type ProfileResponse struct {
 	ProfileID   int64   `json:"profile_id"`
 	ProfileCode string  `json:"profile_code"`
-	UserID      int64   `json:"uid"`
+	UID         int64   `json:"uid"`
 	Name        string  `json:"name"`
 	Phone       *string `json:"phone"`
 	Email       *string `json:"email"`
@@ -47,7 +47,7 @@ type ProfileResponse struct {
 }
 
 type CreateProfileReq struct {
-	UserID     int64   `json:"uid"`
+	UID        int64   `json:"uid"`
 	Name       string  `json:"name"`
 	Phone      *string `json:"phone,omitempty"`
 	Email      *string `json:"email,omitempty"`
@@ -123,7 +123,7 @@ type GetProfileByIdRes struct {
 // is_default flag, and a free-text search against name. Pagination is
 // standard (page / size, defaults applied by pagination.NewPagination).
 type ListProfilesReq struct {
-	UserID        *int64            `json:"uid,omitempty"`
+	UID           *int64            `json:"uid,omitempty"`
 	Role          *string           `json:"role,omitempty"`
 	ProfileStatus *string           `json:"profile_status,omitempty"`
 	SchoolID      *int64            `json:"school_id,omitempty"`
@@ -208,7 +208,7 @@ func DomainToResponse(p *domain.Profile) *ProfileResponse {
 	return &ProfileResponse{
 		ProfileID:     p.ProfileId(),
 		ProfileCode:   p.ProfileCode(),
-		UserID:        p.UserId(),
+		UID:           p.Uid(),
 		Name:          p.Name(),
 		Phone:         p.Phone(),
 		Email:         p.Email(),

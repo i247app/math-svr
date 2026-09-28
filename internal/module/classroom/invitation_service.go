@@ -18,11 +18,11 @@ import (
 // invitations — only OWNER can mint co-teachers. The classroom must
 // be ACTIVE (the command re-verifies inside the UoW to close the
 // race window).
-func (s *Service) SendInvitation(ctx context.Context, req *dto.SendInvitationReq, sessionUserID int64) (*dto.SendInvitationRes, error) {
+func (s *Service) SendInvitation(ctx context.Context, req *dto.SendInvitationReq, sessionUID int64) (*dto.SendInvitationRes, error) {
 	if err := ValidateSendInvitation(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -70,11 +70,11 @@ func (s *Service) SendInvitation(ctx context.Context, req *dto.SendInvitationReq
 
 // ListMyPendingInvitations returns every PENDING invitation targeting
 // the caller's profile. No manager gate — the caller is the invitee.
-func (s *Service) ListMyPendingInvitations(ctx context.Context, req *dto.ListMyPendingInvitationsReq, sessionUserID int64) (*dto.ListMyPendingInvitationsRes, error) {
+func (s *Service) ListMyPendingInvitations(ctx context.Context, req *dto.ListMyPendingInvitationsReq, sessionUID int64) (*dto.ListMyPendingInvitationsRes, error) {
 	if err := ValidateListMyPendingInvitations(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -116,11 +116,11 @@ func (s *Service) ListMyPendingInvitations(ctx context.Context, req *dto.ListMyP
 
 // ListClassroomInvitations returns every PENDING invitation a
 // classroom has outstanding. Caller must be a manager of the classroom.
-func (s *Service) ListClassroomInvitations(ctx context.Context, req *dto.ListClassroomInvitationsReq, sessionUserID int64) (*dto.ListClassroomInvitationsRes, error) {
+func (s *Service) ListClassroomInvitations(ctx context.Context, req *dto.ListClassroomInvitationsReq, sessionUID int64) (*dto.ListClassroomInvitationsRes, error) {
 	if err := ValidateListClassroomInvitations(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -148,11 +148,11 @@ func (s *Service) ListClassroomInvitations(ctx context.Context, req *dto.ListCla
 
 // AcceptInvitation flips a PENDING row owned by the caller to ACTIVE
 // inside one UoW with the classroom counters.
-func (s *Service) AcceptInvitation(ctx context.Context, req *dto.AcceptInvitationReq, sessionUserID int64) (*dto.AcceptInvitationRes, error) {
+func (s *Service) AcceptInvitation(ctx context.Context, req *dto.AcceptInvitationReq, sessionUID int64) (*dto.AcceptInvitationRes, error) {
 	if err := ValidateAcceptInvitation(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.InviteeProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.InviteeProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -171,11 +171,11 @@ func (s *Service) AcceptInvitation(ctx context.Context, req *dto.AcceptInvitatio
 }
 
 // RejectInvitation flips a PENDING row owned by the caller to REJECTED.
-func (s *Service) RejectInvitation(ctx context.Context, req *dto.RejectInvitationReq, sessionUserID int64) (*dto.RejectInvitationRes, error) {
+func (s *Service) RejectInvitation(ctx context.Context, req *dto.RejectInvitationReq, sessionUID int64) (*dto.RejectInvitationRes, error) {
 	if err := ValidateRejectInvitation(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.InviteeProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.InviteeProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}
@@ -193,11 +193,11 @@ func (s *Service) RejectInvitation(ctx context.Context, req *dto.RejectInvitatio
 
 // CancelInvitation lets a classroom manager revoke a PENDING
 // invitation for a target profile.
-func (s *Service) CancelInvitation(ctx context.Context, req *dto.CancelInvitationReq, sessionUserID int64) (*dto.CancelInvitationRes, error) {
+func (s *Service) CancelInvitation(ctx context.Context, req *dto.CancelInvitationReq, sessionUID int64) (*dto.CancelInvitationRes, error) {
 	if err := ValidateCancelInvitation(ctx, req); err != nil {
 		return nil, err
 	}
-	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUserID)
+	caller, err := s.resolveActingProfile(ctx, req.ProfileID, sessionUID)
 	if err != nil {
 		return nil, err
 	}

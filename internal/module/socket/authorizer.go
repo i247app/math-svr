@@ -6,7 +6,7 @@ import appsocket "math-ai.com/math-ai/internal/application/socket"
 // into the Service so topic policy can grow (classroom membership, AI-thread
 // ownership, …) without touching the transport layer.
 type Authorizer interface {
-	CanSubscribe(userID int64, topic string) bool
+	CanSubscribe(uid int64, topic string) bool
 }
 
 // DefaultAuthorizer permits only a user's own personal topics. Resource topics
@@ -14,9 +14,9 @@ type Authorizer interface {
 // aware authorizer is wired in a later phase — deny-by-default is the safe base.
 type DefaultAuthorizer struct{}
 
-func (DefaultAuthorizer) CanSubscribe(userID int64, topic string) bool {
+func (DefaultAuthorizer) CanSubscribe(uid int64, topic string) bool {
 	switch topic {
-	case personalTopic(userID), notificationsTopic(userID):
+	case personalTopic(uid), notificationsTopic(uid):
 		return true
 	default:
 		return false
@@ -26,5 +26,5 @@ func (DefaultAuthorizer) CanSubscribe(userID int64, topic string) bool {
 // personalTopic / notificationsTopic delegate to the shared builders in
 // application/socket so the subscriber (here) and publishers (producers) never
 // disagree on the topic string.
-func personalTopic(userID int64) string      { return appsocket.UserTopic(userID) }
-func notificationsTopic(userID int64) string { return appsocket.NotificationsTopic(userID) }
+func personalTopic(uid int64) string      { return appsocket.UserTopic(uid) }
+func notificationsTopic(uid int64) string { return appsocket.NotificationsTopic(uid) }

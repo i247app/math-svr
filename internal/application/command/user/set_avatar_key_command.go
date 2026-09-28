@@ -14,7 +14,7 @@ import (
 // owns only the transactional DB write that links the two. Mirrors the
 // profile module's command of the same name.
 type SetAvatarKeyCommand struct {
-	UserID    int64
+	UID       int64
 	AvatarKey string
 }
 
@@ -28,7 +28,7 @@ func NewSetAvatarKeyCommandHandler(uow transaction.UnitOfWork) *SetAvatarKeyComm
 
 func (h *SetAvatarKeyCommandHandler) Handle(ctx context.Context, cmd SetAvatarKeyCommand) error {
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		existing, err := repos.User.FindByUserId(ctx, cmd.UserID)
+		existing, err := repos.User.FindByUid(ctx, cmd.UID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -36,7 +36,7 @@ func (h *SetAvatarKeyCommandHandler) Handle(ctx context.Context, cmd SetAvatarKe
 			return errs.NewError(ctx, status.USER_NOT_FOUND, nil,
 				ErrUserNotFound)
 		}
-		if err := repos.User.UpdateAvatarKey(ctx, cmd.UserID, cmd.AvatarKey); err != nil {
+		if err := repos.User.UpdateAvatarKey(ctx, cmd.UID, cmd.AvatarKey); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		return nil

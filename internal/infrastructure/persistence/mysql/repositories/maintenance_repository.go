@@ -28,7 +28,7 @@ type clearTarget struct {
 // curriculum data seeded outside the app survives. Mirrors sql/clear_data.sql.
 var clearDataTargets = []clearTarget{
 	{userTable, seq.NameUser, "uid"},
-	{aliasTable, seq.NameAlias, "alias_id"},
+	{aliasTable, seq.NameAlias, "aid"},
 	{deviceTable, seq.NameDevice, "device_id"},
 	{loginLogTable, seq.NameLoginLog, "login_log_id"},
 	{profileTable, seq.NameProfile, "profile_id"},
@@ -179,7 +179,7 @@ func NewMaintenanceRepository(db database.Executor) *MaintenanceRepository {
 	return &MaintenanceRepository{db: db}
 }
 
-// ListStaleGuestUserIds returns guests whose last sign of life is older
+// ListStaleGuestUids returns guests whose last sign of life is older
 // than `before`, newest-idle first, capped at `limit`.
 //
 // "Last sign of life" is the newest exam they were handed, falling back
@@ -191,7 +191,7 @@ func NewMaintenanceRepository(db database.Executor) *MaintenanceRepository {
 // The read spans ma_users and ma_user_ai_exams, which is why it lives
 // here rather than in either aggregate's repository: this is a
 // maintenance sweep, the same shape as ClearData.
-func (r *MaintenanceRepository) ListStaleGuestUserIds(ctx context.Context, before time.Time, limit int) ([]int64, error) {
+func (r *MaintenanceRepository) ListStaleGuestUids(ctx context.Context, before time.Time, limit int) ([]int64, error) {
 	if limit <= 0 {
 		return nil, nil
 	}

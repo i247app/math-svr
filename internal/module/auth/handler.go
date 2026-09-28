@@ -137,7 +137,7 @@ func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	req.UserID = uid
+	req.UID = uid
 
 	res, err := h.service.Logout(r.Context(), session, &req)
 	if err != nil {

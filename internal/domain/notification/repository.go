@@ -7,10 +7,10 @@ import (
 )
 
 // ListNotificationsParams narrows the per-user notification listing. Results
-// are scoped to UserID (ownership isolation) and ordered most-recent-first.
+// are scoped to UID (ownership isolation) and ordered most-recent-first.
 // OnlyUnread restricts the list to is_read = false rows.
 type ListNotificationsParams struct {
-	UserID     int64
+	UID        int64
 	OnlyUnread bool
 	Page       int64
 	Limit      int64
@@ -20,10 +20,10 @@ type ListNotificationsParams struct {
 // soft-deleted/inactive rows.
 type IRepository interface {
 	FindByNotificationId(ctx context.Context, notificationId int64) (*Notification, error)
-	ListByUserId(ctx context.Context, params *ListNotificationsParams) ([]*Notification, *pagination.Pagination, error)
-	CountUnreadByUserId(ctx context.Context, userId int64) (int64, error)
+	ListByUid(ctx context.Context, params *ListNotificationsParams) ([]*Notification, *pagination.Pagination, error)
+	CountUnreadByUid(ctx context.Context, uid int64) (int64, error)
 	Create(ctx context.Context, n *Notification) (*Notification, error)
 	MarkReadByNotificationId(ctx context.Context, notificationId int64) error
-	MarkAllReadByUserId(ctx context.Context, userId int64) error
+	MarkAllReadByUid(ctx context.Context, uid int64) error
 	SoftDeleteByNotificationId(ctx context.Context, notificationId int64) error
 }
