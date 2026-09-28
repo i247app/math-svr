@@ -52,8 +52,6 @@ type CheckIdentifierReq struct {
 }
 
 type CheckIdentifierRes struct {
-	// User           *UserResponse `json:"user"`
-	IsAvailable    bool `json:"is_available"`
 	EmailOTPEnable bool `json:"email_otp_enable"`
 	PhoneOTPEnable bool `json:"phone_otp_enable"`
 }

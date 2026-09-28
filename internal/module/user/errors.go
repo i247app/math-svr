@@ -21,4 +21,5 @@ var (
 	ErrUserIDFormFieldRequired                   = errors.New("uid form field is required")
 	ErrUserIDRequired                            = errors.New("uid is required")
 	ErrUserNameMustBeNonEmptyWhenProvided        = errors.New("user_name must be non-empty when provided")
+	ErrAccountAlreadyExists                      = errors.New("account already exists")
 )

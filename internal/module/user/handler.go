@@ -162,12 +162,7 @@ func (h *UserHandler) HandleIdentifierAvailable(w http.ResponseWriter, r *http.R
 		res.PhoneOTPEnable = h.appResource.Env.PhoneOTPEnable
 	}
 
-	if res.IsAvailable {
-		response.WriteJson(w, res, nil)
-		return
-	}
-
-	response.WriteJsonNoContent(w, res)
+	response.WriteJson(w, res, nil)
 }
 
 // Get /users/me

@@ -146,9 +146,11 @@ func (s *Service) CheckIdentifierAvailable(ctx context.Context, req *dto.CheckId
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	res := dto.CheckIdentifierRes{
-		IsAvailable: u == nil,
+	if u != nil {
+		return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, ErrAccountAlreadyExists)
 	}
+
+	res := dto.CheckIdentifierRes{}
 
 	return &res, nil
 }

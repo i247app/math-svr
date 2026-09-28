@@ -74,9 +74,9 @@ func flatten(data any) (map[string]any, error) {
 	}
 
 	// json.Marshal output is compact, so the first byte identifies the kind.
-	if raw[0] != '{' {
-		return map[string]any{keyResult: json.RawMessage(raw)}, nil
-	}
+	// if raw[0] != '{' {
+	// 	return map[string]any{keyResult: json.RawMessage(raw)}, nil
+	// }
 
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &fields); err != nil {
