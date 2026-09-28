@@ -99,7 +99,7 @@ func ValidateUpdateUser(ctx context.Context, req *dto.UpdateUserReq) error {
 
 func ValidateDeleteUser(ctx context.Context, req *dto.DeleteUserReq) error {
 	if req.UserID == 0 {
-		return errs.NewError(ctx, status.BAD_REQUEST, nil, ErrUserIDMustBeValidUUID)
+		return errs.NewError(ctx, status.BAD_REQUEST, nil, ErrUserIDMustBeValidId)
 	}
 	return nil
 }

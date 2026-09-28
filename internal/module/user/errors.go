@@ -16,7 +16,7 @@ var (
 	ErrProvideEitherAvatarFileOrAvatarReference  = errors.New("provide either avatar file or avatar reference")
 	ErrStorageAdapterNotConfigured               = errors.New("storage adapter is not configured")
 	ErrUploadReturnedEmptyKey                    = errors.New("upload returned an empty key")
-	ErrUserIDMustBeValidUUID                     = errors.New("user id must be a valid uuid")
+	ErrUserIDMustBeValidId                       = errors.New("user id must be a valid id")
 	ErrUserNotFound                              = errors.New("user not found")
 	ErrUserIDFormFieldRequired                   = errors.New("uid form field is required")
 	ErrUserIDRequired                            = errors.New("uid is required")
