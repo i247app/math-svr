@@ -518,6 +518,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	// Server lifecycle
 	case SERVER_SHUTTING_DOWN:
 		return "Máy chủ đang tắt"
+	case SERVER_RELOAD_INVALID_ENV:
+		return "Tệp cấu hình môi trường không hợp lệ, máy chủ chưa được tải lại"
+	case SERVER_RELOAD_NOT_SUPPORTED:
+		return "Nền tảng này không hỗ trợ tải lại máy chủ"
 
 	// Home layout
 	case HOME_MISSING_PROFILE_ID:

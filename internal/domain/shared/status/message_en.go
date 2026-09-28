@@ -518,6 +518,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	// Server lifecycle
 	case SERVER_SHUTTING_DOWN:
 		return "Server is shutting down"
+	case SERVER_RELOAD_INVALID_ENV:
+		return "Environment file is invalid; the server was not reloaded"
+	case SERVER_RELOAD_NOT_SUPPORTED:
+		return "Server reload is not supported on this platform"
 
 	// Home layout
 	case HOME_MISSING_PROFILE_ID:

@@ -281,7 +281,9 @@ const (
 	CLASSROOM_EXERCISE_INVALID_PURPOSE          StatusCode = 12620
 
 	// Server lifecycle — 13000-13099
-	SERVER_SHUTTING_DOWN StatusCode = 13001
+	SERVER_SHUTTING_DOWN        StatusCode = 13001
+	SERVER_RELOAD_INVALID_ENV   StatusCode = 13002
+	SERVER_RELOAD_NOT_SUPPORTED StatusCode = 13003
 
 	// Classroom exercise submissions — 12700-12799
 	CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND            StatusCode = 12700

@@ -81,6 +81,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	{
 		serverHandler := server.NewHandler()
 		reg("POST /server/shutdown", serverHandler.HandleShutdown, authMiddleware)
+		reg("POST /server/reload", serverHandler.HandleReload, authMiddleware)
 	}
 
 	// session routes

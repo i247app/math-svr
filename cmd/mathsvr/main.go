@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	// Embed the IANA timezone database in the binary. Cron schedules
 	// resolve their Hour/Minute against a *time.Location, and
@@ -15,9 +16,17 @@ import (
 	_ "time/tzdata"
 
 	"math-ai.com/math-ai/internal/bootstrap"
+	"math-ai.com/math-ai/internal/module/server"
 )
 
+const envPath = ".env"
+
 func main() {
+	// Pre-flight child of POST /server/reload: validate .env and exit.
+	if server.IsEnvCheckRun() {
+		os.Exit(server.RunEnvCheck(envPath))
+	}
+
 	// Surface startup failures. run() wraps every fatal error with context
 	// (config load, DB connect, resource setup); previously main swallowed it
 	// with a bare return, so the process exited with no reason logged.
@@ -25,11 +34,22 @@ func main() {
 		log.Printf("startup failed: %+v", err)
 		return
 	}
+
+	// POST /server/reload: the graceful shutdown has run (hooks, app.Close),
+	// so start over as a fresh process. A failed exec exits non-zero so
+	// systemd's Restart=on-failure brings the server back instead.
+	if server.ReloadRequested() {
+		log.Println("Reloading server...")
+		if err := server.Reexec(); err != nil {
+			log.Printf("reload failed: %v", err)
+			os.Exit(1)
+		}
+	}
 }
 
 func run() error {
 	// Initialize app
-	app, err := bootstrap.NewFromEnv(".env")
+	app, err := bootstrap.NewFromEnv(envPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize app: %w", err)
 	}

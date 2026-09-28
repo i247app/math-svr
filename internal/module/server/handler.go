@@ -1,9 +1,12 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
+	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/response"
@@ -34,13 +37,13 @@ func (h *Handler) HandleShutdown(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	log := logger.From(ctx)
 
-	uid := int64(-1)
-	if sess := session.GetRequestSession(r); sess != nil {
-		if id, ok := sess.UID(); ok {
-			uid = id
-		}
+	if !stopping.CompareAndSwap(false, true) {
+		response.WriteJson(w, nil, errs.NewError(ctx, status.SERVER_SHUTTING_DOWN, nil,
+			errors.New("a shutdown or reload is already in progress")))
+		return
 	}
-	log.Warnf("server.shutdown.requested uid=%d remote=%s", uid, r.RemoteAddr)
+
+	log.Warnf("server.shutdown.requested uid=%d remote=%s", requesterUID(r), r.RemoteAddr)
 
 	response.WriteJsonNoContent(w, nil)
 
@@ -49,4 +52,14 @@ func (h *Handler) HandleShutdown(w http.ResponseWriter, r *http.Request) {
 			logger.From(ctx).Errorf("server.shutdown.signal_failed err=%v", err)
 		}
 	})
+}
+
+// requesterUID is the caller's uid for the audit log line, -1 when unknown.
+func requesterUID(r *http.Request) int64 {
+	if sess := session.GetRequestSession(r); sess != nil {
+		if id, ok := sess.UID(); ok {
+			return id
+		}
+	}
+	return -1
 }

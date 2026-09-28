@@ -43,7 +43,7 @@ What the server does, as implemented in `internal/module/` and
   registered only when `SOCKET_ENABLED=true`.
 - **Operations** — background job runtime (`/jobs/*`, `/tasks/enqueue`), session
   inspection (`/sessions/*`), liveness (`POST /ping`), and a graceful shutdown
-  endpoint (`/server/shutdown`).
+  endpoints (`/server/shutdown`, and `/server/reload`, which validates `.env` in a child process, shuts down gracefully, then re-execs the binary so edited env values take effect).
 
 API conventions worth knowing before calling the server:
 
