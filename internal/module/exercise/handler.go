@@ -13,11 +13,11 @@ import (
 
 type ClassroomExerciseHandler struct {
 	appResource *resource.Resource
-	svc         *Service
+	service     *Service
 }
 
-func NewClassroomExerciseHandler(appResource *resource.Resource, svc *Service) *ClassroomExerciseHandler {
-	return &ClassroomExerciseHandler{appResource: appResource, svc: svc}
+func NewClassroomExerciseHandler(appResource *resource.Resource, service *Service) *ClassroomExerciseHandler {
+	return &ClassroomExerciseHandler{appResource: appResource, service: service}
 }
 
 // sessionUID extracts the authenticated user's id from the request
@@ -51,7 +51,7 @@ func (h *ClassroomExerciseHandler) HandleCreateExercise(w http.ResponseWriter, r
 		return
 	}
 
-	res, err := h.svc.CreateExercise(r.Context(), &req, uid)
+	res, err := h.service.CreateExercise(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -74,7 +74,7 @@ func (h *ClassroomExerciseHandler) HandleUpdateExercise(w http.ResponseWriter, r
 		return
 	}
 
-	res, err := h.svc.UpdateExercise(r.Context(), &req, uid)
+	res, err := h.service.UpdateExercise(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -97,7 +97,7 @@ func (h *ClassroomExerciseHandler) HandleGetExercise(w http.ResponseWriter, r *h
 		return
 	}
 
-	res, err := h.svc.GetExercise(r.Context(), &req, uid)
+	res, err := h.service.GetExercise(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -120,7 +120,7 @@ func (h *ClassroomExerciseHandler) HandleListExercises(w http.ResponseWriter, r 
 		return
 	}
 
-	res, err := h.svc.ListExercises(r.Context(), &req, uid)
+	res, err := h.service.ListExercises(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -143,7 +143,7 @@ func (h *ClassroomExerciseHandler) HandleSoftDeleteExercise(w http.ResponseWrite
 		return
 	}
 
-	res, err := h.svc.SoftDeleteExercise(r.Context(), &req, uid)
+	res, err := h.service.SoftDeleteExercise(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

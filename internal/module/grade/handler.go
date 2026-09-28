@@ -15,11 +15,11 @@ const (
 )
 
 type GradeHandler struct {
-	gradeSvc *Service
+	service *Service
 }
 
-func NewGradeHandler(gradeSvc *Service) *GradeHandler {
-	return &GradeHandler{gradeSvc: gradeSvc}
+func NewGradeHandler(service *Service) *GradeHandler {
+	return &GradeHandler{service: service}
 }
 
 // POST /grades/list
@@ -30,7 +30,7 @@ func (h *GradeHandler) HandleListGrades(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res, err := h.gradeSvc.ListGrades(r.Context(), &req)
+	res, err := h.service.ListGrades(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -47,7 +47,7 @@ func (h *GradeHandler) HandleCreateGrade(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	res, err := h.gradeSvc.CreateGrade(r.Context(), &req)
+	res, err := h.service.CreateGrade(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -86,7 +86,7 @@ func (h *GradeHandler) HandleUpdateGrade(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	res, err := h.gradeSvc.UpdateGrade(r.Context(), &req)
+	res, err := h.service.UpdateGrade(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -103,7 +103,7 @@ func (h *GradeHandler) HandleSoftDeleteGrade(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	res, err := h.gradeSvc.SoftDeleteGrade(r.Context(), &req)
+	res, err := h.service.SoftDeleteGrade(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -120,7 +120,7 @@ func (h *GradeHandler) HandleForceDeleteGrade(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	res, err := h.gradeSvc.ForceDeleteGrade(r.Context(), &req)
+	res, err := h.service.ForceDeleteGrade(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -137,7 +137,7 @@ func (h *GradeHandler) HandleGetGrade(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.gradeSvc.GetGrade(r.Context(), &req)
+	res, err := h.service.GetGrade(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

@@ -13,11 +13,11 @@ import (
 
 type Handler struct {
 	appResource *resource.Resource
-	svc         *Service
+	service     *Service
 }
 
-func NewHandler(appResource *resource.Resource, svc *Service) *Handler {
-	return &Handler{appResource: appResource, svc: svc}
+func NewHandler(appResource *resource.Resource, service *Service) *Handler {
+	return &Handler{appResource: appResource, service: service}
 }
 
 // uidFromSession extracts the authenticated user id, or writes an
@@ -50,7 +50,7 @@ func (h *Handler) HandlePing(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UserID = uid
 
-	res, err := h.svc.Ping(r.Context(), &req)
+	res, err := h.service.Ping(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -71,7 +71,7 @@ func (h *Handler) HandleSend(w http.ResponseWriter, r *http.Request) {
 	}
 	req.CreatorUID = &uid
 
-	res, err := h.svc.SendNotification(r.Context(), &req)
+	res, err := h.service.SendNotification(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -92,7 +92,7 @@ func (h *Handler) HandleList(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UserID = &uid
 
-	res, err := h.svc.ListNotifications(r.Context(), &req)
+	res, err := h.service.ListNotifications(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -106,7 +106,7 @@ func (h *Handler) HandleUnreadCount(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	res, err := h.svc.UnreadCount(r.Context(), &dto.UnreadCountReq{UserID: &uid})
+	res, err := h.service.UnreadCount(r.Context(), &dto.UnreadCountReq{UserID: &uid})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -127,7 +127,7 @@ func (h *Handler) HandleMarkRead(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UserID = &uid
 
-	if err := h.svc.MarkRead(r.Context(), &req); err != nil {
+	if err := h.service.MarkRead(r.Context(), &req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
@@ -140,7 +140,7 @@ func (h *Handler) HandleMarkAllRead(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if err := h.svc.MarkAllRead(r.Context(), &dto.MarkAllReadReq{UserID: &uid}); err != nil {
+	if err := h.service.MarkAllRead(r.Context(), &dto.MarkAllReadReq{UserID: &uid}); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
@@ -160,7 +160,7 @@ func (h *Handler) HandleSoftDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UserID = &uid
 
-	if err := h.svc.SoftDelete(r.Context(), &req); err != nil {
+	if err := h.service.SoftDelete(r.Context(), &req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}

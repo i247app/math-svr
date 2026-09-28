@@ -16,7 +16,7 @@ func (h *UserHandler) HandleSoftDeleteUser(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if _, err := h.userSvc.SoftDeleteUser(r.Context(), &req); err != nil {
+	if _, err := h.service.SoftDeleteUser(r.Context(), &req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
@@ -32,7 +32,7 @@ func (h *UserHandler) HandleForceDeleteUser(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if _, err := h.userSvc.ForceDeleteUser(r.Context(), &req); err != nil {
+	if _, err := h.service.ForceDeleteUser(r.Context(), &req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}

@@ -9,11 +9,11 @@ import (
 )
 
 type DeviceHandler struct {
-	deviceSvc *Service
+	service *Service
 }
 
-func NewDeviceHandler(deviceSvc *Service) *DeviceHandler {
-	return &DeviceHandler{deviceSvc: deviceSvc}
+func NewDeviceHandler(service *Service) *DeviceHandler {
+	return &DeviceHandler{service: service}
 }
 
 // POST /devices/detail
@@ -24,7 +24,7 @@ func (h *DeviceHandler) HandleGetDeviceById(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	res, err := h.deviceSvc.GetDeviceById(r.Context(), &req)
+	res, err := h.service.GetDeviceById(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -41,7 +41,7 @@ func (h *DeviceHandler) HandleListDevices(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	res, err := h.deviceSvc.ListDevicesByUserId(r.Context(), &req)
+	res, err := h.service.ListDevicesByUserId(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -58,7 +58,7 @@ func (h *DeviceHandler) HandleUpdateDevice(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	res, err := h.deviceSvc.UpdateDevice(r.Context(), &req)
+	res, err := h.service.UpdateDevice(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -75,7 +75,7 @@ func (h *DeviceHandler) HandleRevokeDevice(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	res, err := h.deviceSvc.RevokeDevice(r.Context(), &req)
+	res, err := h.service.RevokeDevice(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -92,7 +92,7 @@ func (h *DeviceHandler) HandleSoftDeleteDevice(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	res, err := h.deviceSvc.SoftDeleteDevice(r.Context(), &req)
+	res, err := h.service.SoftDeleteDevice(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

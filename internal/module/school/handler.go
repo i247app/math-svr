@@ -11,13 +11,13 @@ import (
 
 type SchoolHandler struct {
 	appResource *resource.Resource
-	schoolSvc   *Service
+	service     *Service
 }
 
-func NewSchoolHandler(appResource *resource.Resource, schoolSvc *Service) *SchoolHandler {
+func NewSchoolHandler(appResource *resource.Resource, service *Service) *SchoolHandler {
 	return &SchoolHandler{
 		appResource: appResource,
-		schoolSvc:   schoolSvc,
+		service:     service,
 	}
 }
 
@@ -29,7 +29,7 @@ func (h *SchoolHandler) HandleCreateSchool(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	res, err := h.schoolSvc.CreateSchool(r.Context(), &req)
+	res, err := h.service.CreateSchool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -46,7 +46,7 @@ func (h *SchoolHandler) HandleUpdateSchool(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	res, err := h.schoolSvc.UpdateSchool(r.Context(), &req)
+	res, err := h.service.UpdateSchool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -63,7 +63,7 @@ func (h *SchoolHandler) HandleSoftDeleteSchool(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	res, err := h.schoolSvc.SoftDeleteSchool(r.Context(), &req)
+	res, err := h.service.SoftDeleteSchool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -80,7 +80,7 @@ func (h *SchoolHandler) HandleForceDeleteSchool(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	res, err := h.schoolSvc.ForceDeleteSchool(r.Context(), &req)
+	res, err := h.service.ForceDeleteSchool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -97,7 +97,7 @@ func (h *SchoolHandler) HandleGetSchool(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res, err := h.schoolSvc.GetSchool(r.Context(), &req)
+	res, err := h.service.GetSchool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -114,7 +114,7 @@ func (h *SchoolHandler) HandleListSchools(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	res, err := h.schoolSvc.ListSchools(r.Context(), &req)
+	res, err := h.service.ListSchools(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

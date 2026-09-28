@@ -25,6 +25,6 @@ func (h *ClassroomHandler) HandleProfileProgress(w http.ResponseWriter, r *http.
 		return
 	}
 
-	res, err := h.classroomSvc.GetProfileProgress(r.Context(), req, uid)
+	res, err := h.service.GetProfileProgress(r.Context(), req, uid)
 	response.WriteJson(w, res, err)
 }

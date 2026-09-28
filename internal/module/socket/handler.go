@@ -12,10 +12,10 @@ import (
 
 // Handler exposes the WebSocket upgrade endpoint.
 type Handler struct {
-	svc *Service
+	service *Service
 }
 
-func NewHandler(svc *Service) *Handler { return &Handler{svc: svc} }
+func NewHandler(service *Service) *Handler { return &Handler{service: service} }
 
 // HandleConnect upgrades an authenticated request to a WebSocket connection.
 //
@@ -47,7 +47,7 @@ func (h *Handler) HandleConnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		OriginPatterns: h.svc.OriginPatterns(),
+		OriginPatterns: h.service.OriginPatterns(),
 	})
 	if err != nil {
 		// Accept has already written the HTTP error response (e.g. 403 on a
@@ -56,7 +56,7 @@ func (h *Handler) HandleConnect(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Blocks until the peer, a pump error, or Hub shutdown closes the socket.
-	h.svc.Connect(ctx, conn, uid)
+	h.service.Connect(ctx, conn, uid)
 }
 
 // writeHandshakeUnauthorized rejects a WebSocket handshake with a real HTTP 401

@@ -20,12 +20,12 @@ import (
 // body: the body is the client's claim, the session is the server's.
 type ExamHandler struct {
 	appResource *resource.Resource
-	examSvc     *Service
+	service     *Service
 	powSvc      *pow.Service
 }
 
-func NewExamHandler(appResource *resource.Resource, examSvc *Service, powSvc *pow.Service) *ExamHandler {
-	return &ExamHandler{appResource: appResource, examSvc: examSvc, powSvc: powSvc}
+func NewExamHandler(appResource *resource.Resource, service *Service, powSvc *pow.Service) *ExamHandler {
+	return &ExamHandler{appResource: appResource, service: service, powSvc: powSvc}
 }
 
 // uid pulls the caller's user id out of the request's session, applying
@@ -57,7 +57,7 @@ func (h *ExamHandler) uid(w http.ResponseWriter, r *http.Request) (*int64, bool)
 		return nil, false
 	}
 	if !ss.IsSecure() {
-		isGuest, err := h.examSvc.guest.IsGuest(ctx, id)
+		isGuest, err := h.service.guest.IsGuest(ctx, id)
 		if err != nil {
 			response.WriteJson(w, nil, errs.NewError(ctx, status.FAIL, nil, err))
 			return nil, false
@@ -87,7 +87,7 @@ func (h *ExamHandler) resolveCaller(w http.ResponseWriter, r *http.Request, prof
 	}
 	if profileID != nil && *profileID <= 0 {
 		ctx := r.Context()
-		resolved, isGuest, err := h.examSvc.guest.DefaultProfileOf(ctx, *uid)
+		resolved, isGuest, err := h.service.guest.DefaultProfileOf(ctx, *uid)
 		if err != nil {
 			response.WriteJson(w, nil, errs.NewError(ctx, status.FAIL, nil, err))
 			return nil, false
@@ -145,7 +145,7 @@ func (h *ExamHandler) HandleGenerateExam(w http.ResponseWriter, r *http.Request)
 	if uid, ok := h.callerUID(ctx, sess); ok {
 		req.UserID = &uid
 		if req.ProfileID <= 0 {
-			profileID, isGuest, err := h.examSvc.guest.DefaultProfileOf(ctx, uid)
+			profileID, isGuest, err := h.service.guest.DefaultProfileOf(ctx, uid)
 			if err != nil {
 				response.WriteJson(w, nil, errs.NewError(ctx, status.FAIL, nil, err))
 				return
@@ -160,7 +160,7 @@ func (h *ExamHandler) HandleGenerateExam(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		identity, err := h.examSvc.guest.EnsureGuest(ctx, metadata.GetDeviceUUID(ctx), req.ChildName)
+		identity, err := h.service.guest.EnsureGuest(ctx, metadata.GetDeviceUUID(ctx), req.ChildName)
 		if err != nil {
 			response.WriteJson(w, nil, err)
 			return
@@ -182,7 +182,7 @@ func (h *ExamHandler) HandleGenerateExam(w http.ResponseWriter, r *http.Request)
 		req.ProfileID = identity.ProfileID
 	}
 
-	res, err := h.examSvc.GenerateExam(ctx, &req)
+	res, err := h.service.GenerateExam(ctx, &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -206,7 +206,7 @@ func (h *ExamHandler) callerUID(ctx context.Context, sess *session.AppSession) (
 	if sess.IsSecure() {
 		return id, true
 	}
-	isGuest, err := h.examSvc.guest.IsGuest(ctx, id)
+	isGuest, err := h.service.guest.IsGuest(ctx, id)
 	if err != nil || !isGuest {
 		return 0, false
 	}
@@ -226,7 +226,7 @@ func (h *ExamHandler) HandleSubmitExam(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UserID = uid
 
-	res, err := h.examSvc.SubmitExam(r.Context(), &req)
+	res, err := h.service.SubmitExam(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -247,7 +247,7 @@ func (h *ExamHandler) HandleGetExam(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UserID = uid
 
-	res, err := h.examSvc.GetExam(r.Context(), &req)
+	res, err := h.service.GetExam(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -268,7 +268,7 @@ func (h *ExamHandler) HandleListExams(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UserID = uid
 
-	res, err := h.examSvc.ListExams(r.Context(), &req)
+	res, err := h.service.ListExams(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -289,7 +289,7 @@ func (h *ExamHandler) HandleGetExamStats(w http.ResponseWriter, r *http.Request)
 	}
 	req.UserID = uid
 
-	res, err := h.examSvc.GetExamStats(r.Context(), &req)
+	res, err := h.service.GetExamStats(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -310,7 +310,7 @@ func (h *ExamHandler) HandleGetExamProgress(w http.ResponseWriter, r *http.Reque
 	}
 	req.UserID = uid
 
-	res, err := h.examSvc.GetExamProgress(r.Context(), &req)
+	res, err := h.service.GetExamProgress(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -331,7 +331,7 @@ func (h *ExamHandler) HandleGetJourneyProgress(w http.ResponseWriter, r *http.Re
 	}
 	req.UserID = uid
 
-	res, err := h.examSvc.GetJourneyProgress(r.Context(), &req)
+	res, err := h.service.GetJourneyProgress(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -352,7 +352,7 @@ func (h *ExamHandler) HandleMarkExamJourney(w http.ResponseWriter, r *http.Reque
 	}
 	req.UserID = uid
 
-	res, err := h.examSvc.MarkExamJourney(r.Context(), &req)
+	res, err := h.service.MarkExamJourney(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

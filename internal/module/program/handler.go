@@ -9,11 +9,11 @@ import (
 )
 
 type ProgramHandler struct {
-	programSvc *Service
+	service *Service
 }
 
-func NewProgramHandler(programSvc *Service) *ProgramHandler {
-	return &ProgramHandler{programSvc: programSvc}
+func NewProgramHandler(service *Service) *ProgramHandler {
+	return &ProgramHandler{service: service}
 }
 
 // POST /programs/list
@@ -24,7 +24,7 @@ func (h *ProgramHandler) HandleListPrograms(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	res, err := h.programSvc.ListPrograms(r.Context(), &req)
+	res, err := h.service.ListPrograms(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -41,7 +41,7 @@ func (h *ProgramHandler) HandleCreateProgram(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	res, err := h.programSvc.CreateProgram(r.Context(), &req)
+	res, err := h.service.CreateProgram(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -58,7 +58,7 @@ func (h *ProgramHandler) HandleUpdateProgram(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	res, err := h.programSvc.UpdateProgram(r.Context(), &req)
+	res, err := h.service.UpdateProgram(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -75,7 +75,7 @@ func (h *ProgramHandler) HandleSoftDeleteProgram(w http.ResponseWriter, r *http.
 		return
 	}
 
-	res, err := h.programSvc.SoftDeleteProgram(r.Context(), &req)
+	res, err := h.service.SoftDeleteProgram(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -92,7 +92,7 @@ func (h *ProgramHandler) HandleForceDeleteProgram(w http.ResponseWriter, r *http
 		return
 	}
 
-	res, err := h.programSvc.ForceDeleteProgram(r.Context(), &req)
+	res, err := h.service.ForceDeleteProgram(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -109,7 +109,7 @@ func (h *ProgramHandler) HandleGetProgram(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	res, err := h.programSvc.GetProgram(r.Context(), &req)
+	res, err := h.service.GetProgram(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

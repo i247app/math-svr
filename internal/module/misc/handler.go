@@ -11,12 +11,12 @@ import (
 )
 
 type Handler struct {
-	svc *Service
+	service *Service
 }
 
-func NewHandler(svc *Service) *Handler {
+func NewHandler(service *Service) *Handler {
 	return &Handler{
-		svc: svc,
+		service: service,
 	}
 }
 
@@ -27,7 +27,7 @@ func (h *Handler) LogsTimeFormat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.svc.LogsTimeFormat(r.Context(), &req)
+	res, err := h.service.LogsTimeFormat(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -45,7 +45,7 @@ func (h *Handler) ClearData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.svc.ClearData(r.Context(), &req)
+	res, err := h.service.ClearData(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -57,7 +57,7 @@ func (h *Handler) ClearData(w http.ResponseWriter, r *http.Request) {
 // DBPoolStats returns a live snapshot of the MySQL connection pool. The body
 // carries only metadata, so it is not decoded.
 func (h *Handler) DBPoolStats(w http.ResponseWriter, r *http.Request) {
-	res, err := h.svc.DBPoolStats(r.Context())
+	res, err := h.service.DBPoolStats(r.Context())
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -73,7 +73,7 @@ func (h *Handler) ClearDataTables(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.svc.ClearDataTables(r.Context(), &req)
+	res, err := h.service.ClearDataTables(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

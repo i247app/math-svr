@@ -12,11 +12,11 @@ import (
 
 type Handler struct {
 	appResource *resource.Resource
-	chatSvc     *Service
+	service     *Service
 }
 
-func NewHandler(appResource *resource.Resource, chatSvc *Service) *Handler {
-	return &Handler{appResource: appResource, chatSvc: chatSvc}
+func NewHandler(appResource *resource.Resource, service *Service) *Handler {
+	return &Handler{appResource: appResource, service: service}
 }
 
 // sessionUserID pulls the authenticated user off the session. Every chat route
@@ -48,7 +48,7 @@ func (h *Handler) HandleListClassroomMembers(w http.ResponseWriter, r *http.Requ
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.chatSvc.ListClassroomMembers(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.ListClassroomMembers(r.Context(), &req, h.sessionUserID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -59,7 +59,7 @@ func (h *Handler) HandleOpenConversation(w http.ResponseWriter, r *http.Request)
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.chatSvc.OpenConversation(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.OpenConversation(r.Context(), &req, h.sessionUserID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -70,7 +70,7 @@ func (h *Handler) HandleListConversations(w http.ResponseWriter, r *http.Request
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.chatSvc.ListConversations(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.ListConversations(r.Context(), &req, h.sessionUserID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -81,7 +81,7 @@ func (h *Handler) HandleListMessages(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.chatSvc.ListMessages(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.ListMessages(r.Context(), &req, h.sessionUserID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -92,7 +92,7 @@ func (h *Handler) HandleSendMessage(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.chatSvc.SendMessage(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.SendMessage(r.Context(), &req, h.sessionUserID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -103,7 +103,7 @@ func (h *Handler) HandleMarkRead(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.chatSvc.MarkRead(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.MarkRead(r.Context(), &req, h.sessionUserID(r))
 	response.WriteJson(w, res, err)
 }
 
@@ -114,6 +114,6 @@ func (h *Handler) HandleUnreadCount(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.chatSvc.UnreadCount(r.Context(), &req, h.sessionUserID(r))
+	res, err := h.service.UnreadCount(r.Context(), &req, h.sessionUserID(r))
 	response.WriteJson(w, res, err)
 }

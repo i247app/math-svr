@@ -32,11 +32,11 @@ func multipartTextValue(r *http.Request, name string) (string, bool) {
 }
 
 type ProfileHandler struct {
-	profileSvc *Service
+	service *Service
 }
 
-func NewProfileHandler(profileSvc *Service) *ProfileHandler {
-	return &ProfileHandler{profileSvc: profileSvc}
+func NewProfileHandler(service *Service) *ProfileHandler {
+	return &ProfileHandler{service: service}
 }
 
 // POST /profiles/create
@@ -79,7 +79,7 @@ func (h *ProfileHandler) HandleCreateProfile(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	res, err := h.profileSvc.CreateProfile(r.Context(), &req)
+	res, err := h.service.CreateProfile(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -100,7 +100,7 @@ func (h *ProfileHandler) HandleGetProfileById(w http.ResponseWriter, r *http.Req
 		req.Language = metadata.GetClientLanguage(r.Context()).ToEnumLanguage()
 	}
 
-	res, err := h.profileSvc.GetProfileById(r.Context(), &req)
+	res, err := h.service.GetProfileById(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -121,7 +121,7 @@ func (h *ProfileHandler) HandleListProfiles(w http.ResponseWriter, r *http.Reque
 		req.Language = metadata.GetClientLanguage(r.Context()).ToEnumLanguage()
 	}
 
-	res, err := h.profileSvc.ListProfiles(r.Context(), &req)
+	res, err := h.service.ListProfiles(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -170,7 +170,7 @@ func (h *ProfileHandler) HandleUpdateProfile(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	res, err := h.profileSvc.UpdateProfile(r.Context(), &req)
+	res, err := h.service.UpdateProfile(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -186,7 +186,7 @@ func (h *ProfileHandler) HandleSoftDeleteProfile(w http.ResponseWriter, r *http.
 		return
 	}
 
-	res, err := h.profileSvc.SoftDeleteProfile(r.Context(), &req)
+	res, err := h.service.SoftDeleteProfile(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -203,7 +203,7 @@ func (h *ProfileHandler) HandleForceDeleteProfile(w http.ResponseWriter, r *http
 		return
 	}
 
-	res, err := h.profileSvc.ForceDeleteProfile(r.Context(), &req)
+	res, err := h.service.ForceDeleteProfile(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -242,7 +242,7 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 	}
 	defer file.Close()
 
-	res, err := h.profileSvc.UploadAvatar(
+	res, err := h.service.UploadAvatar(
 		ctx,
 		utils.StringToInt64(profileIDStr, 0),
 		header.Filename,
@@ -265,7 +265,7 @@ func (h *ProfileHandler) HandleAssignSchool(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	res, err := h.profileSvc.AssignSchool(r.Context(), &req)
+	res, err := h.service.AssignSchool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -282,7 +282,7 @@ func (h *ProfileHandler) HandleRemoveSchool(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	res, err := h.profileSvc.RemoveSchool(r.Context(), &req)
+	res, err := h.service.RemoveSchool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

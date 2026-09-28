@@ -11,13 +11,13 @@ import (
 
 type OtpHandler struct {
 	appResource *resource.Resource
-	otpSvc      *Service
+	service     *Service
 }
 
-func NewOtpHandler(appResource *resource.Resource, otpSvc *Service) *OtpHandler {
+func NewOtpHandler(appResource *resource.Resource, service *Service) *OtpHandler {
 	return &OtpHandler{
 		appResource: appResource,
-		otpSvc:      otpSvc,
+		service:     service,
 	}
 }
 
@@ -32,7 +32,7 @@ func (h *OtpHandler) HandleSend(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.otpSvc.Send(r.Context(), &req)
+	res, err := h.service.Send(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -56,7 +56,7 @@ func (h *OtpHandler) HandleVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.otpSvc.Verify(r.Context(), session, &req)
+	res, err := h.service.Verify(r.Context(), session, &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

@@ -9,11 +9,11 @@ import (
 )
 
 type SemesterHandler struct {
-	semesterSvc *Service
+	service *Service
 }
 
-func NewSemesterHandler(semesterSvc *Service) *SemesterHandler {
-	return &SemesterHandler{semesterSvc: semesterSvc}
+func NewSemesterHandler(service *Service) *SemesterHandler {
+	return &SemesterHandler{service: service}
 }
 
 // POST /semesters/list
@@ -24,7 +24,7 @@ func (h *SemesterHandler) HandleListSemesters(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	res, err := h.semesterSvc.ListSemesters(r.Context(), &req)
+	res, err := h.service.ListSemesters(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -41,7 +41,7 @@ func (h *SemesterHandler) HandleCreateSemester(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	res, err := h.semesterSvc.CreateSemester(r.Context(), &req)
+	res, err := h.service.CreateSemester(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -58,7 +58,7 @@ func (h *SemesterHandler) HandleUpdateSemester(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	res, err := h.semesterSvc.UpdateSemester(r.Context(), &req)
+	res, err := h.service.UpdateSemester(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -75,7 +75,7 @@ func (h *SemesterHandler) HandleSoftDeleteSemester(w http.ResponseWriter, r *htt
 		return
 	}
 
-	res, err := h.semesterSvc.SoftDeleteSemester(r.Context(), &req)
+	res, err := h.service.SoftDeleteSemester(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -92,7 +92,7 @@ func (h *SemesterHandler) HandleForceDeleteSemester(w http.ResponseWriter, r *ht
 		return
 	}
 
-	res, err := h.semesterSvc.ForceDeleteSemester(r.Context(), &req)
+	res, err := h.service.ForceDeleteSemester(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -109,7 +109,7 @@ func (h *SemesterHandler) HandleGetSemester(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	res, err := h.semesterSvc.GetSemester(r.Context(), &req)
+	res, err := h.service.GetSemester(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

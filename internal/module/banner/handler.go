@@ -16,13 +16,13 @@ const (
 
 type BannerHandler struct {
 	appResource *resource.Resource
-	bannerSvc   *Service
+	service     *Service
 }
 
-func NewBannerHandler(appResource *resource.Resource, bannerSvc *Service) *BannerHandler {
+func NewBannerHandler(appResource *resource.Resource, service *Service) *BannerHandler {
 	return &BannerHandler{
 		appResource: appResource,
-		bannerSvc:   bannerSvc,
+		service:     service,
 	}
 }
 
@@ -90,7 +90,7 @@ func (h *BannerHandler) HandleCreateBanner(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	res, err := h.bannerSvc.CreateBanner(r.Context(), &req, h.actorID(r))
+	res, err := h.service.CreateBanner(r.Context(), &req, h.actorID(r))
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -148,7 +148,7 @@ func (h *BannerHandler) HandleUpdateBanner(w http.ResponseWriter, r *http.Reques
 			req.MediaContentType = header.Header.Get("Content-Type")
 		}
 	}
-	res, err := h.bannerSvc.UpdateBanner(r.Context(), &req, h.actorID(r))
+	res, err := h.service.UpdateBanner(r.Context(), &req, h.actorID(r))
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -165,7 +165,7 @@ func (h *BannerHandler) HandleSoftDeleteBanner(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	res, err := h.bannerSvc.SoftDeleteBanner(r.Context(), &req)
+	res, err := h.service.SoftDeleteBanner(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -182,7 +182,7 @@ func (h *BannerHandler) HandleForceDeleteBanner(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	res, err := h.bannerSvc.ForceDeleteBanner(r.Context(), &req)
+	res, err := h.service.ForceDeleteBanner(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -199,7 +199,7 @@ func (h *BannerHandler) HandleGetBanner(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res, err := h.bannerSvc.GetBanner(r.Context(), &req)
+	res, err := h.service.GetBanner(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -216,7 +216,7 @@ func (h *BannerHandler) HandleListBanners(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	res, err := h.bannerSvc.ListBanners(r.Context(), &req)
+	res, err := h.service.ListBanners(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

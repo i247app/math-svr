@@ -8,11 +8,11 @@ import (
 )
 
 type JobHandler struct {
-	svc *Service
+	service *Service
 }
 
-func NewJobHandler(svc *Service) *JobHandler {
-	return &JobHandler{svc: svc}
+func NewJobHandler(service *Service) *JobHandler {
+	return &JobHandler{service: service}
 }
 
 // POST /jobs/list
@@ -22,7 +22,7 @@ func NewJobHandler(svc *Service) *JobHandler {
 // in_flight flag; every registered task by name; and the in-memory
 // queue gauges. Read-only.
 func (h *JobHandler) HandleListJobs(w http.ResponseWriter, r *http.Request) {
-	snap, err := h.svc.Snapshot(r.Context())
+	snap, err := h.service.Snapshot(r.Context())
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -42,7 +42,7 @@ func (h *JobHandler) HandleTriggerJob(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.svc.TriggerJob(r.Context(), &req)
+	res, err := h.service.TriggerJob(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -62,7 +62,7 @@ func (h *JobHandler) HandlePauseJob(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.svc.PauseJob(r.Context(), &req)
+	res, err := h.service.PauseJob(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -81,7 +81,7 @@ func (h *JobHandler) HandleResumeJob(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.svc.ResumeJob(r.Context(), &req)
+	res, err := h.service.ResumeJob(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -115,7 +115,7 @@ func (h *JobHandler) HandleUpdateJobSchedule(w http.ResponseWriter, r *http.Requ
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.svc.UpdateSchedule(r.Context(), &req)
+	res, err := h.service.UpdateSchedule(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -136,7 +136,7 @@ func (h *JobHandler) HandleResetJobSchedule(w http.ResponseWriter, r *http.Reque
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.svc.ResetSchedule(r.Context(), &req)
+	res, err := h.service.ResetSchedule(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -159,7 +159,7 @@ func (h *JobHandler) HandleEnqueueTask(w http.ResponseWriter, r *http.Request) {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.svc.EnqueueTask(r.Context(), &req)
+	res, err := h.service.EnqueueTask(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

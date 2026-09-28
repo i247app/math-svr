@@ -19,13 +19,13 @@ const (
 
 type UserHandler struct {
 	appResource *resource.Resource
-	userSvc     *Service
+	service     *Service
 }
 
-func NewUserHandler(appResource *resource.Resource, userSvc *Service) *UserHandler {
+func NewUserHandler(appResource *resource.Resource, service *Service) *UserHandler {
 	return &UserHandler{
 		appResource: appResource,
-		userSvc:     userSvc,
+		service:     service,
 	}
 }
 
@@ -71,7 +71,7 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.userSvc.CreateUser(r.Context(), sess, &req)
+	res, err := h.service.CreateUser(r.Context(), sess, &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -100,7 +100,7 @@ func (h *UserHandler) HandleCreateGuest(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res, err := h.userSvc.CreateGuest(r.Context(), sess, &req)
+	res, err := h.service.CreateGuest(r.Context(), sess, &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -132,7 +132,7 @@ func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) 
 		req.UserID = uid
 	}
 
-	res, err := h.userSvc.GetUserById(r.Context(), &req)
+	res, err := h.service.GetUserById(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -149,7 +149,7 @@ func (h *UserHandler) HandleCheckIdentifier(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	res, err := h.userSvc.CheckIdentifier(r.Context(), &req)
+	res, err := h.service.CheckIdentifier(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, res, err)
 		return
@@ -172,7 +172,7 @@ func (h *UserHandler) HandleGetUserMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.userSvc.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: uid})
+	res, err := h.service.GetUserById(r.Context(), &user.GetUserByUserIdReq{UserID: uid})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -189,7 +189,7 @@ func (h *UserHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.userSvc.ListUsers(r.Context(), &req)
+	res, err := h.service.ListUsers(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -231,7 +231,7 @@ func (h *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	res, err := h.userSvc.UpdateUser(r.Context(), &req)
+	res, err := h.service.UpdateUser(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -276,7 +276,7 @@ func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request)
 	}
 	defer file.Close()
 
-	res, err := h.userSvc.UploadAvatar(
+	res, err := h.service.UploadAvatar(
 		ctx,
 		userID,
 		header.Filename,

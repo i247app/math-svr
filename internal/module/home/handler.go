@@ -17,11 +17,11 @@ import (
 // profiles.
 type Handler struct {
 	appResource *resource.Resource
-	homeSvc     *Service
+	service     *Service
 }
 
-func NewHandler(appResource *resource.Resource, homeSvc *Service) *Handler {
-	return &Handler{appResource: appResource, homeSvc: homeSvc}
+func NewHandler(appResource *resource.Resource, service *Service) *Handler {
+	return &Handler{appResource: appResource, service: service}
 }
 
 // sessionUID pulls the authenticated user's id off the session so the
@@ -52,7 +52,7 @@ func (h *Handler) HandleGetHomeLayout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.homeSvc.GetHomeLayout(r.Context(), &req, uid)
+	res, err := h.service.GetHomeLayout(r.Context(), &req, uid)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

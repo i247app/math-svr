@@ -41,7 +41,7 @@ func (h *ProfileHandler) HandleUploadStaticFile(w http.ResponseWriter, r *http.R
 	}
 
 	// Upload file
-	uploadRes, err := h.profileSvc.UploadAvatarStatic(r.Context(), uploadReq)
+	uploadRes, err := h.service.UploadAvatarStatic(r.Context(), uploadReq)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -63,7 +63,7 @@ func (h *ProfileHandler) HandleDeleteStaticFile(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	res, err := h.profileSvc.DeleteFile(r.Context(), &req)
+	res, err := h.service.DeleteFile(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

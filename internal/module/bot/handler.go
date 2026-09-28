@@ -10,11 +10,11 @@ import (
 
 // Handler exposes the AI connection warm-up over HTTP.
 type Handler struct {
-	svc *Service
+	service *Service
 }
 
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(service *Service) *Handler {
+	return &Handler{service: service}
 }
 
 // HandleShake serves POST /ai/shake.
@@ -34,6 +34,6 @@ func (h *Handler) HandleShake(w http.ResponseWriter, r *http.Request) {
 	}
 
 	force := r.URL.Query().Get("force") == "true"
-	res := h.svc.Shake(r.Context(), req, force)
+	res := h.service.Shake(r.Context(), req, force)
 	response.WriteJson(w, res, nil)
 }
