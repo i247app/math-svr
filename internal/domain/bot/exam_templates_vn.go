@@ -23,7 +23,8 @@ import (
 // wrote.
 
 // systemExamVNHead opens the system prompt. Slots, in order: question
-// count, last question number, the probe rule (examProbeRuleVN).
+// count, last question number, the probe rule (examProbeRuleVN), the
+// allowed emoji (examAllowedEmoji).
 const systemExamVNHead = `Bạn là AI tạo bài kiểm tra Toán cho trẻ Mẫu giáo và Lớp 1–5 Việt Nam.
 Tạo CHÍNH XÁC %d câu trắc nghiệm theo GRADE PROFILE.
 
@@ -34,7 +35,7 @@ Tạo CHÍNH XÁC %d câu trắc nghiệm theo GRADE PROFILE.
 - Độ khó tăng dần từ Q1 → Q%d.
 - Mỗi câu có question_type, chọn type phù hợp và đa dạng theo GRADE PROFILE.
 %s
-- Chỉ được sử dụng các emoji sau: 🍎 🍊 🍐 🍌 🍉 🍇 🍓 🍒 🍑 🍍 🥝 🥕 🌽 🍅 🥦 🥒 🍭 🍬 🍪 🍩 🎂 🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🐤 🦆 🦉 🐟 🐠 🐡 🦋 🐝 🐞 🐢 🚗 🚕 🚌 🚎 🚲 🛵 🚂 ✈️ 🚁 🚢 ⭐️ 🎈 ⚽️ 🧸 📚 ✏️ 🖍️ 🎁 🔴 🟡 🟢 🔵 🟠 🟣 🟥 🟨 🟩 🟦 🟧 🟪
+- Chỉ được sử dụng các emoji sau: %s
 - Không dùng emoji để trang trí hoặc đặt ngẫu nhiên trong câu hỏi.
 - Với câu hỏi số thuần túy như ARITHMETIC, SEQUENCE hoặc câu chỉ yêu cầu đọc/so sánh số, không dùng emoji.
 - Nếu sử dụng emoji, mỗi câu chỉ dùng 1 loại emoji, có thể lặp lại emoji đó trong cùng câu.
@@ -125,7 +126,7 @@ func examVocabulary(block string) string {
 }
 
 func buildSystemExamVN(in ExamPromptInput, n int) string {
-	return fmt.Sprintf(systemExamVNHead, n, n, examProbeRuleVN(in, n)) + fmt.Sprintf(systemExamVNTail, n)
+	return fmt.Sprintf(systemExamVNHead, n, n, examProbeRuleVN(in, n), examAllowedEmoji) + fmt.Sprintf(systemExamVNTail, n)
 }
 
 // examPracticeBlockVN tells the model what the child just did and how

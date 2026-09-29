@@ -16,13 +16,19 @@ import (
 // templates, and this one says so explicitly, since a model reading an
 // English prompt will otherwise answer in English.
 //
-// The user message here is only the grade. The GRADE PROFILE the rules
-// refer to, the LEVEL PROFILE and the practice brief are not sent in this
-// language — that is the shape the teaching team asked to trial, and the
-// Vietnamese template still renders all of them for comparison.
+// The system prompt is the teaching team's own format (CASE KG / CASE NUM
+// and the KG question types stand in for the Vietnamese GRADE PROFILE), so
+// the two system prompts are deliberately NOT line-for-line twins. The
+// user message is different: it carries what varies per request, and it
+// must carry the same facts in both languages — a fact only one template
+// renders is a request field that silently stops working the day the
+// prompt language flips. It therefore mirrors buildUserExamVN block for
+// block: current_grade, the LEVEL PROFILE of a GRADE review, the practice
+// brief of a PRACTICE round, and the curriculum context. The GRADE PROFILE
+// is the one block left out, on purpose — CASE KG / CASE NUM replace it.
 
 // systemExamENTmpl is the whole system prompt, filled by strings.Replacer:
-// {{N}} is the question count; {{PROBE_RULE}}, {{KG_GRADE}} and
+// {{N}} is the question count; {{EMOJI}} is examAllowedEmoji; {{PROBE_RULE}}, {{KG_GRADE}} and
 // {{NUM_GRADE}} are the three lines that name the probe positions
 // (examProbeLinesEN), so the prompt and the server-side re-stamp always
 // agree on which questions reach up a grade.
@@ -36,15 +42,18 @@ Generate EXACTLY {{N}} multiple-choice questions for {grade}.
 GENERAL:
 * Difficulty increases Q1→Q{{N}}.
 * No same type in adjacent questions; each type max 2 times.
+* No repeated question or calculation.
 * {{PROBE_RULE}}
 * Exactly 4 answers A–D; exactly 1 correct answer; plausible distractors.
 * Each question must include all data needed to solve it; never leave the question incomplete.
+* Fractions in ASCII (1/2, 3/4); never Unicode fractions or LaTeX.
 * All child-facing content must be in Vietnamese; never use English words.
 
 CASE KG — if {grade} = "Mẫu giáo":
 * {{KG_GRADE}}
 * Start from a KG type, then generate the question.
-* Icons allowed; no same icon category 3 questions in a row.
+* Icons allowed ONLY from this list: {{EMOJI}}
+* No same icon category 3 questions in a row.
 * Use short Vietnamese text only when symbols/icons are insufficient.
 * "|" separates icon groups; max 10 icons/group.
 
@@ -189,17 +198,90 @@ func buildSystemExamEN(in ExamPromptInput, n int) string {
 		"{{PROBE_RULE}}", rule,
 		"{{KG_GRADE}}", kg,
 		"{{NUM_GRADE}}", num,
+		"{{EMOJI}}", examAllowedEmoji,
 	).Replace(systemExamENTmpl)
 }
 
+// examPracticeBlockEN is examPracticeBlockVN in English — the same facts
+// and the same two modes, rule for rule. The child's own stems, answers
+// and topics are quoted as stored (Vietnamese): they are data the model
+// must recognise, not instructions to translate.
+//
+// The probe positions are named outright rather than as "the probe rule":
+// this system prompt never uses that phrase, it states the positions.
+func examPracticeBlockEN(b *PracticeBrief, n int, probes []int) string {
+	gradeRule := "keep the question_grade rules above"
+	if len(probes) > 0 {
+		gradeRule = fmt.Sprintf("keep the question_grade rules above (%s = next grade, every other question = current_grade)",
+			joinPositions(probes, ", "))
+	}
+
+	var sb strings.Builder
+	sb.WriteString("PRACTICE ROUND (built on the child's last sitting):\n")
+
+	switch b.Mode {
+	case enum.PracticeModeRetryWeak:
+		fmt.Fprintf(&sb, "- The child got %d questions wrong. Weak topics (question_topic, most-missed first): %s.\n",
+			len(b.Wrong), joinOr(b.WeakTopics, "(topic unknown)"))
+		sb.WriteString("- Questions answered wrong:\n")
+		for _, w := range b.Wrong {
+			fmt.Fprintf(&sb, "  • %s — correct answer: %s; child chose: %s\n",
+				strings.TrimSpace(w.Stem), w.RightAnswer, w.ChildAnswer)
+		}
+		fmt.Fprintf(&sb, "- REQUIRED: %s; all %d questions focus on the weak topics (more questions for the most-missed ones).\n", gradeRule, n)
+		sb.WriteString("- Same skill as the missed questions but NEVER copied verbatim: change the numbers and the context.\n")
+		if len(b.StrongTopics) > 0 {
+			fmt.Fprintf(&sb, "- You may mix in 1–2 questions on topics the child got right, to consolidate: %s.", joinOr(b.StrongTopics, ""))
+		}
+	default: // ADVANCE
+		fmt.Fprintf(&sb, "- The child got EVERY question right, in these topics: %s.\n", joinOr(b.StrongTopics, "(topic unknown)"))
+		fmt.Fprintf(&sb, "- REQUIRED: %s; apart from those next-grade questions, none of the %d questions may go above current_grade.\n", gradeRule, n)
+		sb.WriteString("- But make them harder WITHIN current_grade: larger numbers inside the allowed range, more steps, word problems;\n")
+		sb.WriteString("  and/or move to other curriculum topics the child has not been tested on yet.")
+	}
+	return strings.TrimRight(sb.String(), "\n")
+}
+
+// examContextEN is examContextVN in English: only the curriculum lines
+// that carry a value.
+func examContextEN(in ExamPromptInput) string {
+	var b strings.Builder
+	if v := strings.TrimSpace(in.Semester); v != "" {
+		fmt.Fprintf(&b, "- Semester: %s\n", v)
+	}
+	if v := strings.TrimSpace(in.Program); v != "" {
+		fmt.Fprintf(&b, "- Textbook: %s\n", v)
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
 // buildUserExamEN binds {grade} to the Vietnamese band label the system
-// prompt's MODE switch and question_grade vocabulary are written in, then
-// lists the stems the child has recently met so the round does not
-// repeat them.
-func buildUserExamEN(in ExamPromptInput, _ int) string {
-	out := "current_grade: " + ExamTitle(in.Grade)
+// prompt's CASE switch and question_grade vocabulary are written in, then
+// adds the per-request blocks in the same order as buildUserExamVN.
+func buildUserExamEN(in ExamPromptInput, n int) string {
+	var out strings.Builder
+	out.WriteString("current_grade: " + ExamTitle(in.Grade) + "\n")
+
+	// The intensity block refines the grade and must not be read as
+	// licence to leave it.
+	if in.ExamType == enum.ExamTypeGrade && in.Level != nil {
+		if block := levelProfileBlock(QuizLanguageEnglish, *in.Level); block != "" {
+			out.WriteString("\n" + block + "\n")
+		}
+	}
+
+	if in.ExamType == enum.ExamTypePractice && in.Practice != nil {
+		out.WriteString("\n" + examPracticeBlockEN(in.Practice, n, ProbePositions(in.ExamType, n)) + "\n")
+	}
+
+	// CASE NUM tells the model to pick a textbook itself; a stated one
+	// must win over that, or the request field does nothing.
+	if ctx := examContextEN(in); ctx != "" {
+		out.WriteString("\nCURRICULUM (use only to choose topics — NOT to raise or lower difficulty; if a textbook is given, use it instead of choosing one):\n" + ctx + "\n")
+	}
 	// if avoid := examAvoidBlock(QuizLanguageEnglish, in.Avoid); avoid != "" {
-	// 	out += "\n\n" + avoid
+	// 	out.WriteString("\n" + avoid + "\n")
 	// }
-	return out
+
+	return strings.TrimRight(out.String(), "\n")
 }

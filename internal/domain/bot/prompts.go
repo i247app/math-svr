@@ -29,10 +29,15 @@ const (
 )
 
 func normalizeLanguage(lang QuizLanguage) (QuizLanguage, error) {
+	// The package's own constants are accepted alongside the request
+	// language codes. QuizLanguageVietnamese is "vn", which is not a
+	// request code ("vi" / "vi-VN") — without its own case, passing the
+	// constant back in failed, and so did flipping the exam prompt to
+	// Vietnamese (module/exam examPromptLanguage).
 	switch strings.ToLower(strings.TrimSpace(string(lang))) {
-	case string(enum.LanguageTypeVietnamese), string(enum.LanguageTypeVietnameseV2):
+	case string(QuizLanguageVietnamese), string(enum.LanguageTypeVietnamese), string(enum.LanguageTypeVietnameseV2):
 		return QuizLanguageVietnamese, nil
-	case string(enum.LanguageTypeEnglish), string(enum.LanguageTypeEnglishV2):
+	case string(enum.LanguageTypeEnglish), string(enum.LanguageTypeEnglishV2): // QuizLanguageEnglish is "en" too
 		return QuizLanguageEnglish, nil
 	default:
 		return "", fmt.Errorf("bot: unsupported language %q", string(lang))

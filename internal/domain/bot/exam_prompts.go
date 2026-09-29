@@ -89,6 +89,11 @@ type PracticeItem struct {
 	ChildAnswer string
 }
 
+// examAllowedEmoji is the only icon set a generated round may use. It is
+// ONE list for both prompt languages: the two templates are written
+// separately, and a list copied into each is a list that drifts.
+const examAllowedEmoji = "🍎 🍊 🍐 🍌 🍉 🍇 🍓 🍒 🍑 🍍 🥝 🥕 🌽 🍅 🥦 🥒 🍭 🍬 🍪 🍩 🎂 🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🐤 🦆 🦉 🐟 🐠 🐡 🦋 🐝 🐞 🐢 🚗 🚕 🚌 🚎 🚲 🛵 🚂 ✈️ 🚁 🚢 ⭐️ 🎈 ⚽️ 🧸 📚 ✏️ 🖍️ 🎁 🔴 🟡 🟢 🔵 🟠 🟣 🟥 🟨 🟩 🟦 🟧 🟪"
+
 // examDefaultNumQuestions matches the module validator's default. It is
 // repeated here so the domain builder stays usable without going through
 // the module layer.

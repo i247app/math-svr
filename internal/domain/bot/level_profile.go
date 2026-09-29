@@ -100,7 +100,7 @@ var levelProfiles = map[int]levelProfile{
 // and asking for it only tempts the model past the band. Every other grade
 // uses the full scale until the teaching team says otherwise.
 var levelCeilingByGrade = map[GradeLevel]int{
-	GradeKindergarten: 4,
+	GradeKindergarten: 10,
 }
 
 // ClampLevelToGrade is the exported entrance, used by the module layer so
@@ -146,7 +146,7 @@ func levelProfileBlock(lang QuizLanguage, level int) string {
 - Numbers from: %s
 - Question form: %s
 - Distractors: %s
-- The GRADE PROFILE above decides the CONTENT. This intensity may only raise difficulty INSIDE that range; never borrow a higher grade's material to make a question harder.`,
+- current_grade decides the CONTENT. This intensity may only raise difficulty INSIDE that grade's range; never borrow a higher grade's material to make a question harder.`,
 			level, p.stepsEN, p.rangeSpotEN, p.formEN, p.distractorEN)
 	}
 	return fmt.Sprintf(`LEVEL PROFILE — cường độ bậc %d trên 10.
