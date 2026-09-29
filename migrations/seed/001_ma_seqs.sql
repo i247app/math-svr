@@ -37,7 +37,9 @@ INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
 ('chat_message',                  0, 'CMG', 8),
 ('chat_attachment',               0, 'CAT', 8),
 ('user_presence',                 0, 'UP',  8),
-('ai_exam',                       0, 'AE',  8),
-('user_ai_exam',                  0, 'UAE', 8),
-('user_exam',                     0, 'UE',  8),
-('user_exam_detail',              0, 'UED', 8);
+-- exam tables — named after ma_exam_pools / ma_exam_links / ma_exam_sessions /
+-- ma_exam_session_lines since up/032, which also renamed these rows.
+('exam_pool',                     0, 'EP',  8),
+('exam_link',                     0, 'EL',  8),
+('exam_session',                  0, 'ES',  8),
+('exam_session_line',             0, 'ESL', 8);

@@ -27,7 +27,7 @@ import (
 // lifetime record.
 //
 // The client sends only the attempt id and the answers. It does NOT send
-// the questions: the answer key lives in ma_ai_exams and is read from
+// the questions: the answer key lives in ma_exam_pools and is read from
 // there, so a client cannot declare its own correct answers and score
 // itself into a higher grade.
 //
@@ -36,18 +36,18 @@ import (
 // between them would leave the totals disagreeing with the history they
 // are supposed to summarise, and nothing would ever notice.
 type SubmitExamCommand struct {
-	UserAiExamID int64
-	UID          int64
-	ProfileID    int64
-	Answers      []question.StudentAnswer
-	Language     enum.LanguageType
+	ElinkID   int64
+	UID       int64
+	ProfileID int64
+	Answers   []question.StudentAnswer
+	Language  enum.LanguageType
 }
 
 // SubmitExamResult carries what the client is told: the sitting it just
 // finished, and the running record it now belongs to.
 type SubmitExamResult struct {
-	Attempt *exam.UserAiExam
-	Stats   *exam.UserExam
+	Attempt *exam.ExamLink
+	Stats   *exam.ExamSession
 }
 
 type SubmitExamCommandHandler struct {
@@ -68,19 +68,19 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			return err
 		}
 
-		aiExam, err := repos.AiExam.FindByAiExamId(ctx, attempt.AiExamId())
+		examPool, err := repos.ExamPool.FindByExamId(ctx, attempt.ExamId())
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if aiExam == nil {
+		if examPool == nil {
 			return errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
-				fmt.Errorf("exam: attempt %d points at missing ai_exam %d", cmd.UserAiExamID, attempt.AiExamId()))
+				fmt.Errorf("exam: attempt %d points at missing exam_pool %d", cmd.ElinkID, attempt.ExamId()))
 		}
 
 		// The stored payload uses the exam vocabulary, so it is decoded
 		// here rather than inside the scorer, which only knows the shared
 		// one.
-		questions, err := decodeExamQuestions(aiExam.AiQuestionsJson())
+		questions, err := decodeExamQuestions(examPool.AiQuestionsJson())
 		if err != nil {
 			return errs.NewError(ctx, status.EXAM_GRADING_FAILED, nil, err)
 		}
@@ -116,13 +116,13 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 		// zero rows here and rolls the whole transaction back — which is
 		// how the loser finds out, and why the fold above is never
 		// double-counted.
-		if err := repos.UserAiExam.MarkSubmitted(ctx, attempt.UserAiExamId(), exam.AttemptResult{
+		if err := repos.ExamLink.MarkSubmitted(ctx, attempt.ElinkId(), exam.AttemptResult{
 			TotalQuestions:  scored.TotalQuestions,
 			CorrectNumber:   scored.CorrectNumber,
 			SkippedNumber:   scored.SkippedNumber,
 			ScorePercentage: scored.ScorePercentage,
 			SubmittedDt:     mtime.Now(),
-			UserExamId:      &journeyID,
+			EsessId:         &journeyID,
 		}); err != nil {
 			if errors.Is(err, exam.ErrAttemptNotInProgress) {
 				return errs.NewError(ctx, status.EXAM_ALREADY_SUBMITTED, nil, err)
@@ -130,7 +130,7 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 
-		updatedStats, err := repos.UserExam.FindByUserExamIdAndType(ctx, journeyID, attempt.ReqExamType())
+		updatedStats, err := repos.ExamSession.FindByEsessIdAndType(ctx, journeyID, attempt.ReqExamType())
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -143,13 +143,13 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			return err
 		}
 
-		fresh, err := repos.UserAiExam.FindByUserAiExamId(ctx, attempt.UserAiExamId())
+		fresh, err := repos.ExamLink.FindByElinkId(ctx, attempt.ElinkId())
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 
 		log.Infof("exam.submitted attempt=%d profile=%d type=%s answered=%d correct=%d skipped=%d pct=%d",
-			attempt.UserAiExamId(), cmd.ProfileID, attempt.ReqExamType(),
+			attempt.ElinkId(), cmd.ProfileID, attempt.ReqExamType(),
 			scored.TotalQuestions, scored.CorrectNumber, scored.SkippedNumber, scored.ScorePercentage)
 
 		result = SubmitExamResult{Attempt: fresh, Stats: updatedStats}
@@ -165,22 +165,22 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 // loadOpenAttempt fetches the attempt and refuses everything that is not
 // this child's open sitting. Ownership is checked on BOTH ids: a profile
 // id alone is guessable, and the session only proves the user.
-func (h *SubmitExamCommandHandler) loadOpenAttempt(ctx context.Context, repos transaction.Repositories, cmd SubmitExamCommand) (*exam.UserAiExam, error) {
-	attempt, err := repos.UserAiExam.FindByUserAiExamId(ctx, cmd.UserAiExamID)
+func (h *SubmitExamCommandHandler) loadOpenAttempt(ctx context.Context, repos transaction.Repositories, cmd SubmitExamCommand) (*exam.ExamLink, error) {
+	attempt, err := repos.ExamLink.FindByElinkId(ctx, cmd.ElinkID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if attempt == nil {
 		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_FOUND, nil,
-			fmt.Errorf("exam: attempt %d not found", cmd.UserAiExamID))
+			fmt.Errorf("exam: attempt %d not found", cmd.ElinkID))
 	}
 	if attempt.Uid() != cmd.UID || attempt.ProfileId() != cmd.ProfileID {
 		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_OWNED, nil,
-			fmt.Errorf("exam: attempt %d belongs to another profile", cmd.UserAiExamID))
+			fmt.Errorf("exam: attempt %d belongs to another profile", cmd.ElinkID))
 	}
-	if s := attempt.UserAiExamStatus(); s == nil || *s != string(enum.UserAiExamStatusInProgress) {
+	if s := attempt.ElinkStatus(); s == nil || *s != string(enum.ElinkStatusInProgress) {
 		return nil, errs.NewError(ctx, status.EXAM_ALREADY_SUBMITTED, nil,
-			fmt.Errorf("exam: attempt %d is not in progress", cmd.UserAiExamID))
+			fmt.Errorf("exam: attempt %d is not in progress", cmd.ElinkID))
 	}
 	return attempt, nil
 }
@@ -194,24 +194,24 @@ func (h *SubmitExamCommandHandler) loadOpenAttempt(ctx context.Context, repos tr
 // a submit; if it ever stops being acceptable, the fix is a batch
 // allocator on the seq repository, not a private counter here.
 func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos transaction.Repositories,
-	attempt *exam.UserAiExam, userExamID int64, outcomes []scorer.Outcome) error {
+	attempt *exam.ExamLink, esessID int64, outcomes []scorer.Outcome) error {
 
 	if len(outcomes) == 0 {
 		return nil
 	}
 
-	details := make([]*exam.UserExamDetail, 0, len(outcomes))
+	details := make([]*exam.ExamSessionLine, 0, len(outcomes))
 	for _, o := range outcomes {
-		detailID, err := seqgen.Next(ctx, repos.Seq, seq.NameUserExamDetail)
+		detailID, err := seqgen.Next(ctx, repos.Seq, seq.NameExamSessionLine)
 		if err != nil {
 			return err
 		}
 
-		d := exam.NewUserExamDetail()
-		d.SetUserExamDetailId(detailID)
-		d.SetUserAiExamId(attempt.UserAiExamId())
-		d.SetUserExamId(userExamID)
-		d.SetAiExamId(attempt.AiExamId())
+		d := exam.NewExamSessionLine()
+		d.SetEsessLnId(detailID)
+		d.SetElinkId(attempt.ElinkId())
+		d.SetEsessId(esessID)
+		d.SetExamId(attempt.ExamId())
 		d.SetReqExamType(attempt.ReqExamType())
 		d.SetQuestionNumber(o.Question.QuestionNumber)
 		d.SetQuestionType(utils.ToStringPtr(o.Question.QuestionType))
@@ -226,7 +226,7 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 		details = append(details, d)
 	}
 
-	if err := repos.UserExamDetail.CreateBatch(ctx, details); err != nil {
+	if err := repos.ExamSessionLine.CreateBatch(ctx, details); err != nil {
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	return nil
@@ -261,7 +261,7 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 // current_grade / current_level are never touched here: they are what the
 // client stated at hand-out, not a result.
 func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transaction.Repositories,
-	cmd SubmitExamCommand, attempt *exam.UserAiExam, scored *scorer.DetailedResult) (int64, error) {
+	cmd SubmitExamCommand, attempt *exam.ExamLink, scored *scorer.DetailedResult) (int64, error) {
 
 	delta := exam.StatsDelta{
 		TotalQuestions: scored.TotalQuestions,
@@ -269,11 +269,11 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 		SkippedNumber:  scored.SkippedNumber,
 	}
 
-	if attempt.UserExamId() == nil {
+	if attempt.EsessId() == nil {
 		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
-			fmt.Errorf("exam: attempt %d was handed out without a journey", attempt.UserAiExamId()))
+			fmt.Errorf("exam: attempt %d was handed out without a journey", attempt.ElinkId()))
 	}
-	journeyID := *attempt.UserExamId()
+	journeyID := *attempt.EsessId()
 
 	// The row that owns the journey's lifecycle: the sitting's own type,
 	// except that PRACTICE hangs off the ASSESSMENT row.
@@ -281,49 +281,49 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 	if ownerType == string(enum.ExamTypePractice) {
 		ownerType = string(enum.ExamTypeAssessment)
 	}
-	owner, err := repos.UserExam.FindByUserExamIdAndType(ctx, journeyID, ownerType)
+	owner, err := repos.ExamSession.FindByEsessIdAndType(ctx, journeyID, ownerType)
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if owner == nil {
 		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
-			fmt.Errorf("exam: journey %d not found for attempt %d", journeyID, attempt.UserAiExamId()))
+			fmt.Errorf("exam: journey %d not found for attempt %d", journeyID, attempt.ElinkId()))
 	}
 	if owner.Uid() != cmd.UID || owner.ProfileId() != cmd.ProfileID {
 		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
 	}
 	if attempt.ReqExamType() != string(enum.ExamTypePractice) {
-		if !hasStatus(owner, enum.UserExamStatusActive) {
+		if !hasStatus(owner, enum.EsessStatusActive) {
 			return 0, errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil,
-				fmt.Errorf("exam: journey %d has ended; attempt %d cannot fold into it", journeyID, attempt.UserAiExamId()))
+				fmt.Errorf("exam: journey %d has ended; attempt %d cannot fold into it", journeyID, attempt.ElinkId()))
 		}
 		row := h.journeyRow(cmd, attempt, owner, delta, journeyID)
-		return journeyID, h.accumulate(ctx, repos, journeyID, attempt.ReqExamType(), string(enum.UserExamStatusActive), row, delta)
+		return journeyID, h.accumulate(ctx, repos, journeyID, attempt.ReqExamType(), string(enum.EsessStatusActive), row, delta)
 	}
 
 	// Practice belongs to a finished journey. A round handed out while the
 	// journey was COMPLETE and submitted after the parent reopened it is
 	// refused — the journey is being measured again, not drilled.
-	if !hasStatus(owner, enum.UserExamStatusComplete) {
+	if !hasStatus(owner, enum.EsessStatusComplete) {
 		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_COMPLETE, nil,
-			fmt.Errorf("exam: journey %d is %s; practice attempt %d needs it COMPLETE", journeyID, utils.DerefString(owner.UserExamStatus()), attempt.UserAiExamId()))
+			fmt.Errorf("exam: journey %d is %s; practice attempt %d needs it COMPLETE", journeyID, utils.DerefString(owner.EsessStatus()), attempt.ElinkId()))
 	}
 
 	practiceType := string(enum.ExamTypePractice)
-	existing, err := repos.UserExam.FindByUserExamIdAndType(ctx, journeyID, practiceType)
+	existing, err := repos.ExamSession.FindByEsessIdAndType(ctx, journeyID, practiceType)
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if existing == nil {
-		err = repos.UserExam.Create(ctx, h.practiceRow(cmd, nil, delta, journeyID), delta)
+		err = repos.ExamSession.Create(ctx, h.practiceRow(cmd, nil, delta, journeyID), delta)
 		if err == nil {
 			return journeyID, nil
 		}
 		if !errors.Is(err, exam.ErrJourneyConflict) {
 			return 0, errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		existing, err = repos.UserExam.FindByUserExamIdAndType(ctx, journeyID, practiceType)
+		existing, err = repos.ExamSession.FindByEsessIdAndType(ctx, journeyID, practiceType)
 		if err != nil {
 			return 0, errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -332,15 +332,15 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 				fmt.Errorf("exam: opening the practice row of journey %d collided with a row that cannot be read back — check uk_journey_type", journeyID))
 		}
 	}
-	return journeyID, h.accumulate(ctx, repos, journeyID, practiceType, string(enum.UserExamStatusComplete), h.practiceRow(cmd, existing, delta, journeyID), delta)
+	return journeyID, h.accumulate(ctx, repos, journeyID, practiceType, string(enum.EsessStatusComplete), h.practiceRow(cmd, existing, delta, journeyID), delta)
 }
 
 // accumulate folds delta into one row while it is in expectedStatus,
 // translating the repository's guard miss into the error the client
 // understands: the row's state moved under us.
 func (h *SubmitExamCommandHandler) accumulate(ctx context.Context, repos transaction.Repositories,
-	journeyID int64, examType, expectedStatus string, row *exam.UserExam, delta exam.StatsDelta) error {
-	if err := repos.UserExam.Accumulate(ctx, journeyID, examType, expectedStatus, row, delta); err != nil {
+	journeyID int64, examType, expectedStatus string, row *exam.ExamSession, delta exam.StatsDelta) error {
+	if err := repos.ExamSession.Accumulate(ctx, journeyID, examType, expectedStatus, row, delta); err != nil {
 		if errors.Is(err, exam.ErrJourneyNotActive) {
 			if examType == string(enum.ExamTypePractice) {
 				return errs.NewError(ctx, status.EXAM_JOURNEY_NOT_COMPLETE, nil, err)
@@ -355,8 +355,8 @@ func (h *SubmitExamCommandHandler) accumulate(ctx context.Context, repos transac
 // practiceRow builds the PRACTICE row the repository writes. It shares
 // the journey's id and is born COMPLETE like the journey it belongs to.
 // It carries no grade or level of its own — those live on the journey.
-func (h *SubmitExamCommandHandler) practiceRow(cmd SubmitExamCommand, existing *exam.UserExam,
-	delta exam.StatsDelta, journeyID int64) *exam.UserExam {
+func (h *SubmitExamCommandHandler) practiceRow(cmd SubmitExamCommand, existing *exam.ExamSession,
+	delta exam.StatsDelta, journeyID int64) *exam.ExamSession {
 
 	in := placement.Input{
 		LifetimeTotal:   delta.TotalQuestions,
@@ -370,13 +370,13 @@ func (h *SubmitExamCommandHandler) practiceRow(cmd SubmitExamCommand, existing *
 	}
 	derived := placement.DerivePractice(in)
 
-	row := exam.NewUserExam()
-	row.SetUserExamId(journeyID)
+	row := exam.NewExamSession()
+	row.SetEsessId(journeyID)
 	row.SetUid(cmd.UID)
 	row.SetProfileId(cmd.ProfileID)
 	row.SetReqExamType(string(enum.ExamTypePractice))
-	complete := string(enum.UserExamStatusComplete)
-	row.SetUserExamStatus(&complete)
+	complete := string(enum.EsessStatusComplete)
+	row.SetEsessStatus(&complete)
 	row.SetResReview(&derived.Review)
 	row.SetLastSubmittedDt(mtime.Now())
 	return row
@@ -386,8 +386,8 @@ func (h *SubmitExamCommandHandler) practiceRow(cmd SubmitExamCommand, existing *
 // review derived from the totals after this sitting is folded in.
 // existing is the journey's row as it stands. current_grade /
 // current_level are deliberately absent — a submit never moves them.
-func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *exam.UserAiExam,
-	existing *exam.UserExam, delta exam.StatsDelta, userExamID int64) *exam.UserExam {
+func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *exam.ExamLink,
+	existing *exam.ExamSession, delta exam.StatsDelta, esessID int64) *exam.ExamSession {
 
 	in := placement.Input{
 		LifetimeTotal:   delta.TotalQuestions,
@@ -401,8 +401,8 @@ func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *ex
 	}
 	derived := placement.Derive(in)
 
-	row := exam.NewUserExam()
-	row.SetUserExamId(userExamID)
+	row := exam.NewExamSession()
+	row.SetEsessId(esessID)
 	row.SetUid(cmd.UID)
 	row.SetProfileId(cmd.ProfileID)
 	row.SetReqExamType(attempt.ReqExamType())
@@ -414,7 +414,7 @@ func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *ex
 // canonicalAnswersFor undoes the sitting's shuffle on the submitted
 // answers. A sitting with no recorded ordering (NULL shuffle_map) was
 // served as stored, and its answers pass through unchanged.
-func canonicalAnswersFor(attempt *exam.UserAiExam, served []question.StudentAnswer) ([]question.StudentAnswer, error) {
+func canonicalAnswersFor(attempt *exam.ExamLink, served []question.StudentAnswer) ([]question.StudentAnswer, error) {
 	shuffle, err := question.ParseShuffle(attempt.ShuffleMap())
 	if err != nil {
 		return nil, err

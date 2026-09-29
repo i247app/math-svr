@@ -625,7 +625,7 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case EXAM_ALREADY_SUBMITTED:
 		return "Bài kiểm tra này đã được nộp"
 	case EXAM_MISSING_ATTEMPT_ID:
-		return "Thiếu user_ai_exam_id"
+		return "Thiếu elink_id"
 	case EXAM_MISSING_ANSWERS:
 		return "Thiếu câu trả lời"
 	case EXAM_INVALID_ANSWERS:
@@ -663,11 +663,11 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case EXAM_JOURNEY_ALREADY_ENDED:
 		return "Hành trình kiểm tra này đã kết thúc"
 	case EXAM_MISSING_JOURNEY_ID:
-		return "Thiếu user_exam_id"
+		return "Thiếu esess_id"
 	case EXAM_INVALID_JOURNEY_STATUS:
 		return "Trạng thái phải là ACTIVE, COMPLETE hoặc CANCEL"
 	case EXAM_AMBIGUOUS_DETAIL_ID:
-		return "Chỉ gửi một trong user_ai_exam_id hoặc user_exam_id"
+		return "Chỉ gửi một trong elink_id hoặc esess_id"
 	case EXAM_PRACTICE_NO_BASE:
 		return "Chưa có bài để luyện tập — hãy nộp một bài trong hành trình này trước"
 	case EXAM_JOURNEY_ALREADY_ACTIVE:

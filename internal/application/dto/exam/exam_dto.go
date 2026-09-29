@@ -20,7 +20,7 @@ import (
 // journey's current grade, then the class the profile attends. Level is
 // 1..10 and is recorded only — no server rule reads it yet.
 //
-// UserExamID names the journey a PRACTICE round is drawn on, and is
+// EsessID names the journey a PRACTICE round is drawn on, and is
 // required for that type: the round is aimed at the journey's latest
 // submitted sitting, so there is nothing to aim at without one. For a
 // PRACTICE round Grade is ignored — it follows that sitting's grade.
@@ -34,7 +34,7 @@ type GenerateExamReq struct {
 	// opened. Ignored once a profile exists — renaming is /profiles/update.
 	ChildName    string `json:"child_name,omitempty"`
 	ExamType     string `json:"exam_type"`
-	UserExamID   *int64 `json:"user_exam_id,omitempty"`
+	EsessID      *int64 `json:"esess_id,omitempty"`
 	Grade        *int   `json:"grade,omitempty"`
 	Level        *int   `json:"level,omitempty"`
 	NumQuestions int    `json:"num_questions,omitempty"`
@@ -45,44 +45,44 @@ type GenerateExamReq struct {
 // SubmitExamReq carries only the attempt id and the answers.
 //
 // It deliberately does NOT accept the questions. The answer key lives in
-// ma_ai_exams and is read from there, so a client cannot declare its own
+// ma_exam_pools and is read from there, so a client cannot declare its own
 // correct answers and grade itself upward.
 type SubmitExamReq struct {
-	UID          *int64                   `json:"-"`
-	ProfileID    int64                    `json:"profile_id"`
-	UserAiExamID int64                    `json:"user_ai_exam_id"`
-	Answers      []question.StudentAnswer `json:"answers"`
+	UID       *int64                   `json:"-"`
+	ProfileID int64                    `json:"profile_id"`
+	ElinkID   int64                    `json:"elink_id"`
+	Answers   []question.StudentAnswer `json:"answers"`
 }
 
 // GetExamReq reads either ONE sitting or ONE row of a journey:
 //
-//   - user_ai_exam_id → that sitting: the exam as served, plus its answers.
-//   - user_exam_id    → that journey: its running totals, every sitting
+//   - elink_id → that sitting: the exam as served, plus its answers.
+//   - esess_id    → that journey: its running totals, every sitting
 //     that fed them, and every question answered across them.
 //     ReqExamType picks which row of the journey — ASSESSMENT (the
 //     default, so older clients keep working) or PRACTICE — since the
 //     two share the id. It is ignored when a sitting is asked for.
 type GetExamReq struct {
-	UID          *int64  `json:"-"`
-	ProfileID    int64   `json:"profile_id"`
-	UserAiExamID int64   `json:"user_ai_exam_id,omitempty"`
-	UserExamID   int64   `json:"user_exam_id,omitempty"`
-	ExamType     *string `json:"exam_type,omitempty"`
+	UID       *int64  `json:"-"`
+	ProfileID int64   `json:"profile_id"`
+	ElinkID   int64   `json:"elink_id,omitempty"`
+	EsessID   int64   `json:"esess_id,omitempty"`
+	ExamType  *string `json:"exam_type,omitempty"`
 }
 
 // ListExamsReq pages a child's history. Status narrows to unfinished
 // attempts ("IN_PROGRESS"), which is how the resume surface is built.
-// UserExamID narrows to one journey, and is required when ExamType is
+// EsessID narrows to one journey, and is required when ExamType is
 // PRACTICE: practice rounds only exist inside a journey, so "the practice
 // rounds" is only a question about one.
 type ListExamsReq struct {
-	UID        *int64  `json:"-"`
-	ProfileID  int64   `json:"profile_id"`
-	ExamType   *string `json:"exam_type,omitempty"`
-	UserExamID *int64  `json:"user_exam_id,omitempty"`
-	Status     *string `json:"status,omitempty"`
-	Page       int     `json:"page,omitempty"`
-	Size       int     `json:"size,omitempty"`
+	UID       *int64  `json:"-"`
+	ProfileID int64   `json:"profile_id"`
+	ExamType  *string `json:"exam_type,omitempty"`
+	EsessID   *int64  `json:"esess_id,omitempty"`
+	Status    *string `json:"status,omitempty"`
+	Page      int     `json:"page,omitempty"`
+	Size      int     `json:"size,omitempty"`
 }
 
 // GetExamStatsReq reads a child's journeys. Status narrows to one
@@ -101,12 +101,12 @@ type GetExamStatsReq struct {
 
 // MarkExamJourneyReq ends one journey. Status is COMPLETE or CANCEL; the
 // difference is what the next journey of that type inherits (see
-// enum.UserExamStatusType).
+// enum.EsessStatusType).
 type MarkExamJourneyReq struct {
-	UID        *int64 `json:"-"`
-	ProfileID  int64  `json:"profile_id"`
-	UserExamID int64  `json:"user_exam_id"`
-	Status     string `json:"status"`
+	UID       *int64 `json:"-"`
+	ProfileID int64  `json:"profile_id"`
+	EsessID   int64  `json:"esess_id"`
+	Status    string `json:"status"`
 }
 
 type MarkExamJourneyRes struct {
@@ -129,11 +129,11 @@ type ExamResult struct {
 // question set it was drawn from, flattened into a single object so the
 // app never has to join two payloads.
 type ExamResponse struct {
-	UserAiExamID int64  `json:"user_ai_exam_id"`
-	AiExamID     int64  `json:"ai_exam_id"`
-	ProfileID    int64  `json:"profile_id"`
-	ExamType     string `json:"exam_type"`
-	Grade        int    `json:"grade"`
+	ElinkID   int64  `json:"elink_id"`
+	ExamID    int64  `json:"exam_id"`
+	ProfileID int64  `json:"profile_id"`
+	ExamType  string `json:"exam_type"`
+	Grade     int    `json:"grade"`
 	// Level mirrors req_level: the level the client stated when this
 	// sitting was handed out, or absent when none was.
 	Level *int `json:"level,omitempty"`
@@ -152,7 +152,7 @@ type ExamResponse struct {
 }
 
 // ExamAnswerDetail is one answered question on the review screen.
-// UserAiExamID says which sitting it came from — redundant on a single
+// ElinkID says which sitting it came from — redundant on a single
 // sitting's review, load-bearing on a journey's, where the rows span
 // many.
 //
@@ -163,7 +163,7 @@ type ExamResponse struct {
 // itself stores only the two labels that matter for grading — and is
 // omitted when that set can no longer be found.
 type ExamAnswerDetail struct {
-	UserAiExamID       int64                   `json:"user_ai_exam_id"`
+	ElinkID            int64                   `json:"elink_id"`
 	QuestionNumber     int                     `json:"question_number"`
 	QuestionType       *string                 `json:"question_type,omitempty"`
 	QuestionName       *string                 `json:"question_name,omitempty"`
@@ -178,10 +178,10 @@ type ExamAnswerDetail struct {
 }
 
 // ExamStats is one JOURNEY — a stretch of one exam type the child worked
-// through. UserExamID is what a client sends back to end it; Status says
+// through. EsessID is what a client sends back to end it; Status says
 // whether it is the open one (ACTIVE) or history (COMPLETE / CANCEL).
 type ExamStats struct {
-	UserExamID      int64   `json:"user_exam_id"`
+	EsessID         int64   `json:"esess_id"`
 	ExamType        string  `json:"exam_type"`
 	Status          string  `json:"status"`
 	TotalQuestions  int     `json:"total_questions"`
@@ -199,7 +199,7 @@ type ExamStats struct {
 	CreateDt        string `json:"create_dt"`
 	// Practice is the journey's PRACTICE row, present once the child has
 	// submitted a practice round in it. Only an ASSESSMENT journey carries
-	// one; it shares user_exam_id and never has a grade.
+	// one; it shares esess_id and never has a grade.
 	Practice *ExamStats `json:"practice,omitempty"`
 	// InProgressExams are the journey's sittings — ASSESSMENT or PRACTICE,
 	// see each one's exam_type — that were handed out and never submitted,
@@ -222,10 +222,10 @@ type SubmitExamRes struct {
 
 // GetExamRes is shaped by which id was asked for.
 //
-//   - by user_ai_exam_id: Exam + Details (Stats and Exams stay empty).
-//   - by user_exam_id:    Stats + Exams + Details (Exam stays empty). Exams
+//   - by elink_id: Exam + Details (Stats and Exams stay empty).
+//   - by esess_id:    Stats + Exams + Details (Exam stays empty). Exams
 //     are cards — no questions blob — in chronological order; Details span
-//     every sitting and carry user_ai_exam_id so they can be grouped.
+//     every sitting and carry elink_id so they can be grouped.
 type GetExamRes struct {
 	Exam    *ExamResponse      `json:"exam,omitempty"`
 	Stats   *ExamStats         `json:"stats,omitempty"`
@@ -243,10 +243,10 @@ type GetExamRes struct {
 // sitting it was read from. It is derived by the same function the
 // hand-out uses, so requesting the round delivers exactly this.
 type PracticePreview struct {
-	Mode             string       `json:"mode"`
-	BaseUserAiExamID int64        `json:"base_user_ai_exam_id"`
-	WeakTopics       []TopicScore `json:"weak_topics"`
-	StrongTopics     []string     `json:"strong_topics"`
+	Mode         string       `json:"mode"`
+	BaseElinkID  int64        `json:"base_elink_id"`
+	WeakTopics   []TopicScore `json:"weak_topics"`
+	StrongTopics []string     `json:"strong_topics"`
 }
 
 // TopicScore is one weak topic with the numbers behind the verdict,
@@ -259,7 +259,7 @@ type TopicScore struct {
 
 // PracticePreviewFrom renders a brief for the wire. Lists are never nil
 // so the client can iterate without a null check.
-func PracticePreviewFrom(base *domain.UserAiExam, brief *bot.PracticeBrief) *PracticePreview {
+func PracticePreviewFrom(base *domain.ExamLink, brief *bot.PracticeBrief) *PracticePreview {
 	if base == nil || brief == nil {
 		return nil
 	}
@@ -273,10 +273,10 @@ func PracticePreviewFrom(base *domain.UserAiExam, brief *bot.PracticeBrief) *Pra
 		strong = []string{}
 	}
 	return &PracticePreview{
-		Mode:             string(brief.Mode),
-		BaseUserAiExamID: base.UserAiExamId(),
-		WeakTopics:       weak,
-		StrongTopics:     strong,
+		Mode:         string(brief.Mode),
+		BaseElinkID:  base.ElinkId(),
+		WeakTopics:   weak,
+		StrongTopics: strong,
 	}
 }
 
@@ -295,21 +295,21 @@ type GetExamStatsRes struct {
 // not ship the key, or the client holds the answers to the paper it is
 // currently sitting. A submitted one does, so the review screen can mark
 // each question.
-func AttemptToResponse(a *domain.UserAiExam, e *domain.AiExam, includeAnswerKey bool) *ExamResponse {
+func AttemptToResponse(a *domain.ExamLink, e *domain.ExamPool, includeAnswerKey bool) *ExamResponse {
 	if a == nil {
 		return nil
 	}
 
 	res := &ExamResponse{
-		UserAiExamID: a.UserAiExamId(),
-		AiExamID:     a.AiExamId(),
-		ProfileID:    a.ProfileId(),
-		ExamType:     a.ReqExamType(),
-		Grade:        a.ReqGrade(),
-		Level:        a.ReqLevel(),
-		CreateDt:     a.CreateDt().String(),
+		ElinkID:   a.ElinkId(),
+		ExamID:    a.ExamId(),
+		ProfileID: a.ProfileId(),
+		ExamType:  a.ReqExamType(),
+		Grade:     a.ReqGrade(),
+		Level:     a.ReqLevel(),
+		CreateDt:  a.CreateDt().String(),
 	}
-	if s := a.UserAiExamStatus(); s != nil {
+	if s := a.ElinkStatus(); s != nil {
 		res.Status = *s
 	}
 	if !a.StartedDt().IsZero() {
@@ -342,11 +342,11 @@ func AttemptToResponse(a *domain.UserAiExam, e *domain.AiExam, includeAnswerKey 
 // AttemptListToResponse maps a page of attempts against the question sets
 // hydrated alongside them. The answer key is exposed only for submitted
 // rows, so a history list cannot leak the answers to an exam still open.
-func AttemptListToResponse(attempts []*domain.UserAiExam, aiExams map[int64]*domain.AiExam) []*ExamResponse {
+func AttemptListToResponse(attempts []*domain.ExamLink, examPools map[int64]*domain.ExamPool) []*ExamResponse {
 	out := make([]*ExamResponse, 0, len(attempts))
 	for _, a := range attempts {
-		e := aiExams[a.AiExamId()]
-		submitted := a.UserAiExamStatus() != nil && *a.UserAiExamStatus() == "SUBMITTED"
+		e := examPools[a.ExamId()]
+		submitted := a.ElinkStatus() != nil && *a.ElinkStatus() == "SUBMITTED"
 		res := AttemptToResponse(a, e, submitted)
 		// A list renders cards, not papers: drop the questions blob so a
 		// twenty-row page does not ship twenty question sets.
@@ -363,23 +363,23 @@ func AttemptListToResponse(attempts []*domain.UserAiExam, aiExams map[int64]*dom
 // their memory. shuffles maps each sitting to its ordering; a sitting
 // absent from the map — or mapped to nil — is rendered canonically.
 //
-// aiExams supplies the question sets the sittings were drawn from, keyed
-// by ai_exam_id, so every row can carry its full option list. Each set is
+// examPools supplies the question sets the sittings were drawn from, keyed
+// by exam_id, so every row can carry its full option list. Each set is
 // parsed once, however many rows point at it.
-func DetailsToResponse(details []*domain.UserExamDetail, shuffles map[int64]*question.Shuffle, aiExams map[int64]*domain.AiExam) []ExamAnswerDetail {
-	questions := newQuestionIndex(aiExams)
+func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*question.Shuffle, examPools map[int64]*domain.ExamPool) []ExamAnswerDetail {
+	questions := newQuestionIndex(examPools)
 
 	out := make([]ExamAnswerDetail, 0, len(details))
 	for _, d := range details {
-		sh := shuffles[d.UserAiExamId()]
+		sh := shuffles[d.ElinkId()]
 
 		var answers []question.AnswerChoice
-		if q, ok := questions.lookup(d.AiExamId(), d.QuestionNumber()); ok {
+		if q, ok := questions.lookup(d.ExamId(), d.QuestionNumber()); ok {
 			answers = sh.ServedAnswers(d.QuestionNumber(), q)
 		}
 
 		out = append(out, ExamAnswerDetail{
-			UserAiExamID:       d.UserAiExamId(),
+			ElinkID:            d.ElinkId(),
 			QuestionNumber:     sh.ServedNumber(d.QuestionNumber()),
 			QuestionType:       d.QuestionType(),
 			QuestionName:       d.QuestionName(),
@@ -397,8 +397,8 @@ func DetailsToResponse(details []*domain.UserExamDetail, shuffles map[int64]*que
 	// Rows arrive in canonical order; the student saw them in served
 	// order. Re-sort per sitting so the review reads like the paper did.
 	sort.SliceStable(out, func(i, j int) bool {
-		if out[i].UserAiExamID != out[j].UserAiExamID {
-			return out[i].UserAiExamID < out[j].UserAiExamID
+		if out[i].ElinkID != out[j].ElinkID {
+			return out[i].ElinkID < out[j].ElinkID
 		}
 		return out[i].QuestionNumber < out[j].QuestionNumber
 	})
@@ -410,19 +410,19 @@ func DetailsToResponse(details []*domain.UserExamDetail, shuffles map[int64]*que
 // journey review touches every row of every sitting, so this is the
 // difference between parsing each set once and parsing it per row.
 type questionIndex struct {
-	sets   map[int64]*domain.AiExam
+	sets   map[int64]*domain.ExamPool
 	parsed map[int64]map[int]question.Question
 }
 
-func newQuestionIndex(sets map[int64]*domain.AiExam) *questionIndex {
+func newQuestionIndex(sets map[int64]*domain.ExamPool) *questionIndex {
 	return &questionIndex{sets: sets, parsed: make(map[int64]map[int]question.Question, len(sets))}
 }
 
-func (x *questionIndex) lookup(aiExamID int64, canonicalQN int) (question.Question, bool) {
-	byNumber, ok := x.parsed[aiExamID]
+func (x *questionIndex) lookup(examID int64, canonicalQN int) (question.Question, bool) {
+	byNumber, ok := x.parsed[examID]
 	if !ok {
-		byNumber = x.parse(aiExamID)
-		x.parsed[aiExamID] = byNumber
+		byNumber = x.parse(examID)
+		x.parsed[examID] = byNumber
 	}
 	q, ok := byNumber[canonicalQN]
 	return q, ok
@@ -432,8 +432,8 @@ func (x *questionIndex) lookup(aiExamID int64, canonicalQN int) (question.Questi
 // index rather than an error: the review still renders, just without the
 // option list for those rows — which is the graceful outcome when a
 // shared question set has been retired from under a child's history.
-func (x *questionIndex) parse(aiExamID int64) map[int]question.Question {
-	set, ok := x.sets[aiExamID]
+func (x *questionIndex) parse(examID int64) map[int]question.Question {
+	set, ok := x.sets[examID]
 	if !ok || set == nil {
 		return nil
 	}
@@ -452,18 +452,18 @@ func (x *questionIndex) parse(aiExamID int64) map[int]question.Question {
 // DetailsToResponse consumes. A malformed ordering is treated as none:
 // the review then renders that sitting canonically rather than failing
 // the whole screen over one row.
-func ShufflesOf(attempts ...*domain.UserAiExam) map[int64]*question.Shuffle {
+func ShufflesOf(attempts ...*domain.ExamLink) map[int64]*question.Shuffle {
 	out := make(map[int64]*question.Shuffle, len(attempts))
 	for _, a := range attempts {
 		if a == nil {
 			continue
 		}
-		out[a.UserAiExamId()] = shuffleOf(a)
+		out[a.ElinkId()] = shuffleOf(a)
 	}
 	return out
 }
 
-func shuffleOf(a *domain.UserAiExam) *question.Shuffle {
+func shuffleOf(a *domain.ExamLink) *question.Shuffle {
 	sh, err := question.ParseShuffle(a.ShuffleMap())
 	if err != nil {
 		return nil
@@ -479,11 +479,11 @@ func servedLabelPtr(sh *question.Shuffle, canonicalQN int, label *string) *strin
 	return &served
 }
 
-func StatsToResponse(rows []*domain.UserExam) []ExamStats {
+func StatsToResponse(rows []*domain.ExamSession) []ExamStats {
 	out := make([]ExamStats, 0, len(rows))
 	for _, r := range rows {
 		s := ExamStats{
-			UserExamID:      r.UserExamId(),
+			EsessID:         r.EsessId(),
 			ExamType:        r.ReqExamType(),
 			CreateDt:        r.CreateDt().String(),
 			TotalQuestions:  r.ResTotalQuestions(),
@@ -494,7 +494,7 @@ func StatsToResponse(rows []*domain.UserExam) []ExamStats {
 			Grade:           r.CurrentGrade(),
 			Level:           r.CurrentLevel(),
 		}
-		if st := r.UserExamStatus(); st != nil {
+		if st := r.EsessStatus(); st != nil {
 			s.Status = *st
 		}
 		if !r.LastSubmittedDt().IsZero() {
@@ -508,11 +508,11 @@ func StatsToResponse(rows []*domain.UserExam) []ExamStats {
 	return out
 }
 
-func StatsToSingleResponse(row *domain.UserExam) *ExamStats {
+func StatsToSingleResponse(row *domain.ExamSession) *ExamStats {
 	if row == nil {
 		return nil
 	}
-	all := StatsToResponse([]*domain.UserExam{row})
+	all := StatsToResponse([]*domain.ExamSession{row})
 	return &all[0]
 }
 
@@ -523,7 +523,7 @@ func StatsToSingleResponse(row *domain.UserExam) *ExamStats {
 // An unfinished sitting ships with its answer key, the same as the
 // hand-out response does — the two must agree, or a child resuming an
 // exam would see a different paper than the one they started.
-func JourneyStatsToResponse(journeys []domain.JourneyStats, aiExams map[int64]*domain.AiExam) []ExamStats {
+func JourneyStatsToResponse(journeys []domain.JourneyStats, examPools map[int64]*domain.ExamPool) []ExamStats {
 	out := make([]ExamStats, 0, len(journeys))
 	for _, j := range journeys {
 		s := StatsToSingleResponse(j.Journey)
@@ -532,7 +532,7 @@ func JourneyStatsToResponse(journeys []domain.JourneyStats, aiExams map[int64]*d
 		}
 		s.Practice = StatsToSingleResponse(j.Practice)
 		for _, a := range j.InProgress {
-			s.InProgressExams = append(s.InProgressExams, AttemptToResponse(a, aiExams[a.AiExamId()], true))
+			s.InProgressExams = append(s.InProgressExams, AttemptToResponse(a, examPools[a.ExamId()], true))
 		}
 		out = append(out, *s)
 	}
@@ -581,14 +581,14 @@ type ProgressWindow struct {
 }
 
 type ExamProgressReq struct {
-	UID        *int64  `json:"-"`
-	ProfileID  int64   `json:"profile_id"`
-	ExamType   *string `json:"exam_type"`
-	UserExamID *int64  `json:"user_exam_id,omitempty"` // required with PRACTICE
+	UID       *int64  `json:"-"`
+	ProfileID int64   `json:"profile_id"`
+	ExamType  *string `json:"exam_type"`
+	EsessID   *int64  `json:"esess_id,omitempty"` // required with PRACTICE
 	ProgressWindow
 }
 
-// JourneyProgressReq asks for the chart over journeys (ma_user_exams
+// JourneyProgressReq asks for the chart over journeys (ma_exam_sessions
 // rows) rather than sittings. ExamType nil means every journey type;
 // PRACTICE is refused, as it is for stats — its rows live inside their
 // ASSESSMENT journey.
@@ -604,7 +604,7 @@ type JourneyProgressReq struct {
 // displays; ScorePct is the raw 0-100 value it was derived from.
 type ExamPoint struct {
 	Sequence       int64   `json:"sequence"`
-	UserAiExamID   int64   `json:"user_ai_exam_id"`
+	ElinkID        int64   `json:"elink_id"`
 	ExamType       string  `json:"exam_type"`
 	Grade          int     `json:"grade"`
 	CompletedDt    string  `json:"completed_dt"`
@@ -634,14 +634,14 @@ type ExamScoreSummary struct {
 // named by its attempt id.
 type ExamProgressSummary struct {
 	ExamScoreSummary
-	HighestExamID *int64 `json:"highest_user_ai_exam_id"`
+	HighestElinkID *int64 `json:"highest_elink_id"`
 }
 
-// ExamStatsSummary is the banner over journeys (ma_user_exams rows) for
+// ExamStatsSummary is the banner over journeys (ma_exam_sessions rows) for
 // the journey progress chart; the highest one is named by its journey id.
 type ExamStatsSummary struct {
 	ExamScoreSummary
-	HighestUserExamID *int64 `json:"highest_user_exam_id"`
+	HighestEsessID *int64 `json:"highest_esess_id"`
 }
 
 type ExamProgressRes struct {
@@ -655,13 +655,13 @@ type ExamProgressRes struct {
 	Summary   ExamProgressSummary `json:"summary"`
 }
 
-// JourneyPoint is one chart point over journeys — one ma_user_exams row
+// JourneyPoint is one chart point over journeys — one ma_exam_sessions row
 // with its cumulative score. Sequence is the 1..N positional label;
 // LastSubmittedDt is the point's moment in time, when that score last
 // moved. Score is on the 10-point scale; ScorePct the raw 0-100 value.
 type JourneyPoint struct {
 	Sequence        int64   `json:"sequence"`
-	UserExamID      int64   `json:"user_exam_id"`
+	EsessID         int64   `json:"esess_id"`
 	ExamType        string  `json:"exam_type"`
 	Status          string  `json:"status"`
 	Grade           *int    `json:"grade"`

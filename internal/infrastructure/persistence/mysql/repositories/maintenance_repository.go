@@ -44,10 +44,10 @@ var clearDataTargets = []clearTarget{
 	{chatConversationTable, seq.NameChatConversation, "conversation_id"},
 	{chatParticipantTable, seq.NameChatParticipant, "participant_id"},
 	{chatMessageTable, seq.NameChatMessage, "message_id"},
-	{aiExamTable, seq.NameAiExam, "ai_exam_id"},
-	{userAiExamTable, seq.NameUserAiExam, "user_ai_exam_id"},
-	{userExamTable, seq.NameUserExam, "user_exam_id"},
-	{userExamDetailTable, seq.NameUserExamDetail, "user_exam_detail_id"},
+	{examPoolTable, seq.NameExamPool, "exam_id"},
+	{examLinkTable, seq.NameExamLink, "elink_id"},
+	{examSessionTable, seq.NameExamSession, "esess_id"},
+	{examSessionLineTable, seq.NameExamSessionLine, "esess_ln_id"},
 }
 
 // clearDataTargetByTable indexes clearDataTargets for O(1) allow-list checks in
@@ -92,10 +92,10 @@ var clearDataSeqs = []string{
 	seq.NameChatConversation,
 	seq.NameChatParticipant,
 	seq.NameChatMessage,
-	seq.NameAiExam,
-	seq.NameUserAiExam,
-	seq.NameUserExam,
-	seq.NameUserExamDetail,
+	seq.NameExamPool,
+	seq.NameExamLink,
+	seq.NameExamSession,
+	seq.NameExamSessionLine,
 }
 
 // keepCol names the column a table-scoped keep filters on when preserving
@@ -106,8 +106,8 @@ type keepCol struct {
 }
 
 // The three classifications below decide, for the whitelist path, HOW each
-// wiped table relates to a user. Together with userExamDetailTable (kept by
-// parent user_exam_id) and aiExamTable (kept by referenced ai_exam_id) they
+// wiped table relates to a user. Together with examSessionLineTable (kept by
+// parent esess_id) and examPoolTable (kept by referenced exam_id) they
 // must cover every entry in clearDataTargets — enforced by init() so adding a
 // table to clearDataTargets forces a matching classification here.
 
@@ -121,8 +121,8 @@ var clearKeepByUid = []keepCol{
 	{otpTable, "uid"},
 	{notificationTable, "uid"},
 	{profileTable, "uid"},
-	{userAiExamTable, "uid"},
-	{userExamTable, "uid"},
+	{examLinkTable, "uid"},
+	{examSessionTable, "uid"},
 	{chatParticipantTable, "uid"},
 	{chatMessageTable, "sender_uid"},
 }
@@ -148,8 +148,8 @@ var clearFullWipe = []string{
 func init() {
 	covered := map[string]bool{
 		// Handled specially in ClearDataKeepingUsers (parent-id linkage).
-		userExamDetailTable: true,
-		aiExamTable:         true,
+		examSessionLineTable: true,
+		examPoolTable:        true,
 	}
 	for _, t := range clearKeepByUid {
 		covered[t.table] = true
@@ -188,7 +188,7 @@ func NewMaintenanceRepository(db database.Executor) *MaintenanceRepository {
 // own timestamps never move, because nothing updates a guest row after
 // it is created, so create_dt alone would retire an actively-used guest.
 //
-// The read spans ma_users and ma_user_ai_exams, which is why it lives
+// The read spans ma_users and ma_exam_links, which is why it lives
 // here rather than in either aggregate's repository: this is a
 // maintenance sweep, the same shape as ClearData.
 func (r *MaintenanceRepository) ListStaleGuestUids(ctx context.Context, before time.Time, limit int) ([]int64, error) {
@@ -200,7 +200,7 @@ func (r *MaintenanceRepository) ListStaleGuestUids(ctx context.Context, before t
 		FROM ` + userTable + ` u
 		LEFT JOIN ` + profileTable + ` p
 			ON p.uid = u.uid AND p.deleted_dt IS NULL
-		LEFT JOIN ` + userAiExamTable + ` a
+		LEFT JOIN ` + examLinkTable + ` a
 			ON a.profile_id = p.profile_id AND a.deleted_dt IS NULL
 		WHERE u.identity_code = ?
 		  AND u.status IN (?) AND u.deleted_dt IS NULL
@@ -361,13 +361,13 @@ func (r *MaintenanceRepository) ClearDataKeepingUsers(ctx context.Context, keepU
 	if err != nil {
 		return nil, nil, err
 	}
-	keepUserExamIds, err := r.selectInt64s(ctx,
-		`SELECT user_exam_id FROM `+userExamTable+` WHERE uid IN (`+uidPh+`)`, uidArgs...)
+	keepEsessIds, err := r.selectInt64s(ctx,
+		`SELECT esess_id FROM `+examSessionTable+` WHERE uid IN (`+uidPh+`)`, uidArgs...)
 	if err != nil {
 		return nil, nil, err
 	}
-	keepAiExamIds, err := r.selectInt64s(ctx,
-		`SELECT DISTINCT ai_exam_id FROM `+userAiExamTable+` WHERE uid IN (`+uidPh+`)`, uidArgs...)
+	keepExamIds, err := r.selectInt64s(ctx,
+		`SELECT DISTINCT exam_id FROM `+examLinkTable+` WHERE uid IN (`+uidPh+`)`, uidArgs...)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -394,17 +394,17 @@ func (r *MaintenanceRepository) ClearDataKeepingUsers(ctx context.Context, keepU
 	}
 
 	// Answer details hang off the kept journey rows.
-	if err := r.deleteExcept(ctx, userExamDetailTable, "user_exam_id", keepUserExamIds); err != nil {
+	if err := r.deleteExcept(ctx, examSessionLineTable, "esess_id", keepEsessIds); err != nil {
 		return nil, nil, err
 	}
-	processed = append(processed, userExamDetailTable)
+	processed = append(processed, examSessionLineTable)
 
 	// ai-exam cache: keep only the exams a kept attempt actually references, so
 	// the kept users' exam content survives; drop the rest of the cache.
-	if err := r.deleteExcept(ctx, aiExamTable, "ai_exam_id", keepAiExamIds); err != nil {
+	if err := r.deleteExcept(ctx, examPoolTable, "exam_id", keepExamIds); err != nil {
 		return nil, nil, err
 	}
-	processed = append(processed, aiExamTable)
+	processed = append(processed, examPoolTable)
 
 	// Shared parents with no per-user owner: emptied whole.
 	for _, table := range clearFullWipe {

@@ -257,8 +257,8 @@ func SubmissionToTaskSubmission(s *exerciseDomain.Submission) *TaskSubmission {
 // Result fields stay nil until the exam is submitted, which is exactly how
 // an unfinished one renders as 0 answered.
 type ExamCard struct {
-	UserAiExamID    int64   `json:"user_ai_exam_id"`
-	AiExamID        int64   `json:"ai_exam_id"`
+	ElinkID         int64   `json:"elink_id"`
+	ExamID          int64   `json:"exam_id"`
 	ExamType        string  `json:"exam_type"`
 	Grade           int     `json:"grade"`
 	Title           *string `json:"title,omitempty"`
@@ -271,19 +271,19 @@ type ExamCard struct {
 	CreateDt        string  `json:"create_dt"`
 }
 
-// ExamToCard maps one sitting plus its question set into a card. aiExam
+// ExamToCard maps one sitting plus its question set into a card. examPool
 // may be nil when the shared row was deleted out from under the history;
 // the card still renders, just without a title.
-func ExamToCard(a *examDomain.UserAiExam, aiExam *examDomain.AiExam) *ExamCard {
+func ExamToCard(a *examDomain.ExamLink, examPool *examDomain.ExamPool) *ExamCard {
 	if a == nil {
 		return nil
 	}
 	card := &ExamCard{
-		UserAiExamID:    a.UserAiExamId(),
-		AiExamID:        a.AiExamId(),
+		ElinkID:         a.ElinkId(),
+		ExamID:          a.ExamId(),
 		ExamType:        a.ReqExamType(),
 		Grade:           a.ReqGrade(),
-		Status:          a.UserAiExamStatus(),
+		Status:          a.ElinkStatus(),
 		TotalQuestions:  a.ResTotalQuestions(),
 		CorrectNumber:   a.ResCorrectNumber(),
 		ScorePercentage: a.ResScorePercentage(),
@@ -292,9 +292,9 @@ func ExamToCard(a *examDomain.UserAiExam, aiExam *examDomain.AiExam) *ExamCard {
 	if !a.SubmittedDt().IsZero() {
 		card.SubmittedDt = a.SubmittedDt().String()
 	}
-	if aiExam != nil {
-		card.Title = aiExam.AiTitle()
-		card.ShortText = aiExam.AiShortText()
+	if examPool != nil {
+		card.Title = examPool.AiTitle()
+		card.ShortText = examPool.AiShortText()
 	}
 	return card
 }

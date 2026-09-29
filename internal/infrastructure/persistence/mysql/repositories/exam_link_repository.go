@@ -18,67 +18,67 @@ import (
 )
 
 const (
-	userAiExamTable = "ma_user_ai_exams"
+	examLinkTable = "ma_exam_links"
 
-	userAiExamColumns = `u.user_ai_exam_id, u.uid, u.profile_id, u.ai_exam_id, u.user_exam_id, u.shuffle_map,
+	examLinkColumns = `u.elink_id, u.uid, u.profile_id, u.exam_id, u.esess_id, u.shuffle_map,
 		u.req_exam_type, u.req_grade, u.req_level,
 		u.res_total_questions, u.res_correct_number, u.res_skipped_number, u.res_score_percentage,
 		u.started_dt, u.submitted_dt,
-		u.rpt_flg, u.kwords, u.note, u.user_ai_exam_status, u.status,
+		u.rpt_flg, u.kwords, u.note, u.elink_status, u.status,
 		u.create_id, u.create_dt, u.modify_id, u.modify_dt`
 
-	userAiExamActiveWhere = `u.status IN (?) AND u.deleted_dt IS NULL`
+	examLinkActiveWhere = `u.status IN (?) AND u.deleted_dt IS NULL`
 )
 
-func userAiExamActiveArgs() []any {
+func examLinkActiveArgs() []any {
 	return []any{enum.StatusActive}
 }
 
-type UserAiExamRepository struct {
+type ExamLinkRepository struct {
 	db database.Executor
 }
 
-func NewUserAiExamRepository(db database.Executor) exam.IUserAiExamRepository {
-	return &UserAiExamRepository{db: db}
+func NewExamLinkRepository(db database.Executor) exam.IExamLinkRepository {
+	return &ExamLinkRepository{db: db}
 }
 
-func scanUserAiExam(s database.RowScanner) (*models.UserAiExamModel, error) {
-	var m models.UserAiExamModel
-	if err := s.Scan(&m.UserAiExamId, &m.Uid, &m.ProfileId, &m.AiExamId, &m.UserExamId, &m.ShuffleMap,
+func scanExamLink(s database.RowScanner) (*models.ExamLinkModel, error) {
+	var m models.ExamLinkModel
+	if err := s.Scan(&m.ElinkId, &m.Uid, &m.ProfileId, &m.ExamId, &m.EsessId, &m.ShuffleMap,
 		&m.ReqExamType, &m.ReqGrade, &m.ReqLevel,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
 		&m.StartedDt, &m.SubmittedDt,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.UserAiExamStatus, &m.Status,
+		&m.RptFlg, &m.Kwords, &m.Note, &m.ElinkStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
 	}
 	return &m, nil
 }
 
-func (r *UserAiExamRepository) findOneBy(ctx context.Context, where string, args ...any) (*exam.UserAiExam, error) {
-	fullArgs := slices.Concat(args, userAiExamActiveArgs())
-	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE (` +
-		where + `) AND ` + userAiExamActiveWhere
+func (r *ExamLinkRepository) findOneBy(ctx context.Context, where string, args ...any) (*exam.ExamLink, error) {
+	fullArgs := slices.Concat(args, examLinkActiveArgs())
+	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u WHERE (` +
+		where + `) AND ` + examLinkActiveWhere
 
-	m, err := scanUserAiExam(r.db.QueryRow(ctx, query, fullArgs...))
+	m, err := scanExamLink(r.db.QueryRow(ctx, query, fullArgs...))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("user ai exam repo find (%s): %w", where, err)
 	}
-	return ModelToDomainUserAiExam(m), nil
+	return ModelToDomainExamLink(m), nil
 }
 
-func (r *UserAiExamRepository) FindByUserAiExamId(ctx context.Context, userAiExamId int64) (*exam.UserAiExam, error) {
-	return r.findOneBy(ctx, "u.user_ai_exam_id = ?", userAiExamId)
+func (r *ExamLinkRepository) FindByElinkId(ctx context.Context, elinkId int64) (*exam.ExamLink, error) {
+	return r.findOneBy(ctx, "u.elink_id = ?", elinkId)
 }
 
 // ListAttempts returns one child's attempt history, newest first. Rows in
 // every state are returned, including IN_PROGRESS ones: an unfinished exam
 // is exactly what the "you left this open" surface needs, and the caller
 // filters by status when it wants only those.
-func (r *UserAiExamRepository) ListAttempts(ctx context.Context, filter exam.ListAttemptsFilter, page, limit int64) ([]*exam.UserAiExam, *pagination.Pagination, error) {
+func (r *ExamLinkRepository) ListAttempts(ctx context.Context, filter exam.ListAttemptsFilter, page, limit int64) ([]*exam.ExamLink, *pagination.Pagination, error) {
 	if limit <= 0 {
 		limit = pagination.DefaultPageSize
 	}
@@ -87,20 +87,20 @@ func (r *UserAiExamRepository) ListAttempts(ctx context.Context, filter exam.Lis
 	}
 	offset := (page - 1) * limit
 
-	filterWhere, filterArgs := buildUserAiExamFilterClause(filter)
+	filterWhere, filterArgs := buildExamLinkFilterClause(filter)
 
-	countArgs := slices.Concat(filterArgs, userAiExamActiveArgs())
-	countQuery := `SELECT COUNT(*) FROM ` + userAiExamTable + ` u` +
-		whereActive(filterWhere, userAiExamActiveWhere)
+	countArgs := slices.Concat(filterArgs, examLinkActiveArgs())
+	countQuery := `SELECT COUNT(*) FROM ` + examLinkTable + ` u` +
+		whereActive(filterWhere, examLinkActiveWhere)
 
 	var total int64
 	if err := r.db.QueryRow(ctx, countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("user ai exam repo count: %w", err)
 	}
 
-	args := slices.Concat(filterArgs, userAiExamActiveArgs(), []any{limit, offset})
-	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u` +
-		whereActive(filterWhere, userAiExamActiveWhere) + ` ORDER BY u.user_ai_exam_id DESC LIMIT ? OFFSET ?`
+	args := slices.Concat(filterArgs, examLinkActiveArgs(), []any{limit, offset})
+	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u` +
+		whereActive(filterWhere, examLinkActiveWhere) + ` ORDER BY u.elink_id DESC LIMIT ? OFFSET ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -108,13 +108,13 @@ func (r *UserAiExamRepository) ListAttempts(ctx context.Context, filter exam.Lis
 	}
 	defer rows.Close()
 
-	var attempts []*exam.UserAiExam
+	var attempts []*exam.ExamLink
 	for rows.Next() {
-		m, err := scanUserAiExam(rows)
+		m, err := scanExamLink(rows)
 		if err != nil {
 			return nil, nil, fmt.Errorf("user ai exam repo scan row: %w", err)
 		}
-		attempts = append(attempts, ModelToDomainUserAiExam(m))
+		attempts = append(attempts, ModelToDomainExamLink(m))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, nil, fmt.Errorf("user ai exam repo rows iteration: %w", err)
@@ -122,9 +122,9 @@ func (r *UserAiExamRepository) ListAttempts(ctx context.Context, filter exam.Lis
 	return attempts, pagination.NewPagination(page, limit, total), nil
 }
 
-// buildUserAiExamFilterClause keeps placeholder order in lockstep with the
+// buildExamLinkFilterClause keeps placeholder order in lockstep with the
 // returned args slice.
-func buildUserAiExamFilterClause(filter exam.ListAttemptsFilter) (string, []any) {
+func buildExamLinkFilterClause(filter exam.ListAttemptsFilter) (string, []any) {
 	var (
 		clause string
 		args   []any
@@ -138,12 +138,12 @@ func buildUserAiExamFilterClause(filter exam.ListAttemptsFilter) (string, []any)
 		args = append(args, *filter.ExamType)
 	}
 	if filter.Status != nil && *filter.Status != "" {
-		clause += ` AND u.user_ai_exam_status = ?`
+		clause += ` AND u.elink_status = ?`
 		args = append(args, *filter.Status)
 	}
-	if filter.UserExamID != nil && *filter.UserExamID != 0 {
-		clause += ` AND u.user_exam_id = ?`
-		args = append(args, *filter.UserExamID)
+	if filter.EsessID != nil && *filter.EsessID != 0 {
+		clause += ` AND u.esess_id = ?`
+		args = append(args, *filter.EsessID)
 	}
 	return clause, args
 }
@@ -157,18 +157,18 @@ func buildUserAiExamFilterClause(filter exam.ListAttemptsFilter) (string, []any)
 // ReassignOwnerByProfile re-points every sitting of one child at another
 // account. Addressed by profile_id because the child is what moves; the
 // rows themselves are unchanged apart from who owns them.
-func (r *UserAiExamRepository) ReassignOwnerByProfile(ctx context.Context, profileId int64, newUid int64) error {
-	query := `UPDATE ` + userAiExamTable + ` SET uid = ?, modify_dt = ? WHERE profile_id = ?`
+func (r *ExamLinkRepository) ReassignOwnerByProfile(ctx context.Context, profileId int64, newUid int64) error {
+	query := `UPDATE ` + examLinkTable + ` SET uid = ?, modify_dt = ? WHERE profile_id = ?`
 	if _, err := r.db.Exec(ctx, query, newUid, mtime.Now().Time, profileId); err != nil {
 		return fmt.Errorf("user ai exam repo reassign owner: %w", err)
 	}
 	return nil
 }
 
-func (r *UserAiExamRepository) CountHandedOutSince(ctx context.Context, profileId int64, since mtime.MathTime) (int64, error) {
-	args := slices.Concat([]any{profileId, since.Time}, userAiExamActiveArgs())
-	query := `SELECT COUNT(*) FROM ` + userAiExamTable + ` u WHERE ` +
-		`(u.profile_id = ? AND u.started_dt >= ?) AND ` + userAiExamActiveWhere
+func (r *ExamLinkRepository) CountHandedOutSince(ctx context.Context, profileId int64, since mtime.MathTime) (int64, error) {
+	args := slices.Concat([]any{profileId, since.Time}, examLinkActiveArgs())
+	query := `SELECT COUNT(*) FROM ` + examLinkTable + ` u WHERE ` +
+		`(u.profile_id = ? AND u.started_dt >= ?) AND ` + examLinkActiveWhere
 
 	var total int64
 	if err := r.db.QueryRow(ctx, query, args...).Scan(&total); err != nil {
@@ -177,11 +177,11 @@ func (r *UserAiExamRepository) CountHandedOutSince(ctx context.Context, profileI
 	return total, nil
 }
 
-func (r *UserAiExamRepository) ListInProgressByProfile(ctx context.Context, profileId int64) ([]*exam.UserAiExam, error) {
-	args := slices.Concat([]any{profileId, string(enum.UserAiExamStatusInProgress)}, userAiExamActiveArgs())
-	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
-		`(u.profile_id = ? AND u.user_ai_exam_status = ?) AND ` + userAiExamActiveWhere +
-		` ORDER BY u.started_dt ASC, u.user_ai_exam_id ASC`
+func (r *ExamLinkRepository) ListInProgressByProfile(ctx context.Context, profileId int64) ([]*exam.ExamLink, error) {
+	args := slices.Concat([]any{profileId, string(enum.ElinkStatusInProgress)}, examLinkActiveArgs())
+	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u WHERE ` +
+		`(u.profile_id = ? AND u.elink_status = ?) AND ` + examLinkActiveWhere +
+		` ORDER BY u.started_dt ASC, u.elink_id ASC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -189,13 +189,13 @@ func (r *UserAiExamRepository) ListInProgressByProfile(ctx context.Context, prof
 	}
 	defer rows.Close()
 
-	var out []*exam.UserAiExam
+	var out []*exam.ExamLink
 	for rows.Next() {
-		m, err := scanUserAiExam(rows)
+		m, err := scanExamLink(rows)
 		if err != nil {
 			return nil, fmt.Errorf("user ai exam repo scan row: %w", err)
 		}
-		out = append(out, ModelToDomainUserAiExam(m))
+		out = append(out, ModelToDomainExamLink(m))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("user ai exam repo rows iteration: %w", err)
@@ -203,37 +203,37 @@ func (r *UserAiExamRepository) ListInProgressByProfile(ctx context.Context, prof
 	return out, nil
 }
 
-// FindLatestSubmittedByUserExamId walks ix_user_exam_submitted backwards:
+// FindLatestSubmittedByEsessId walks ix_esess_submitted backwards:
 // the newest submitted_dt of the journey, id as the tie-break so two
 // sittings submitted in the same microsecond still order deterministically.
-func (r *UserAiExamRepository) FindLatestSubmittedByUserExamId(ctx context.Context, userExamId int64) (*exam.UserAiExam, error) {
-	args := slices.Concat([]any{userExamId, string(enum.UserAiExamStatusSubmitted)}, userAiExamActiveArgs())
-	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
-		`(u.user_exam_id = ? AND u.user_ai_exam_status = ?) AND ` + userAiExamActiveWhere +
-		` ORDER BY u.submitted_dt DESC, u.user_ai_exam_id DESC LIMIT 1`
+func (r *ExamLinkRepository) FindLatestSubmittedByEsessId(ctx context.Context, esessId int64) (*exam.ExamLink, error) {
+	args := slices.Concat([]any{esessId, string(enum.ElinkStatusSubmitted)}, examLinkActiveArgs())
+	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u WHERE ` +
+		`(u.esess_id = ? AND u.elink_status = ?) AND ` + examLinkActiveWhere +
+		` ORDER BY u.submitted_dt DESC, u.elink_id DESC LIMIT 1`
 
-	m, err := scanUserAiExam(r.db.QueryRow(ctx, query, args...))
+	m, err := scanExamLink(r.db.QueryRow(ctx, query, args...))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("user ai exam repo find latest submitted: %w", err)
 	}
-	return ModelToDomainUserAiExam(m), nil
+	return ModelToDomainExamLink(m), nil
 }
 
 // ListRecentByProfileGrade reads a child's newest sittings at one grade.
 // It walks ix_profile_status_started's profile prefix and filters on
 // req_grade; the candidate set per child is small enough that a
 // dedicated index is not worth its write cost.
-func (r *UserAiExamRepository) ListRecentByProfileGrade(ctx context.Context, profileId int64, grade int, limit int) ([]*exam.UserAiExam, error) {
+func (r *ExamLinkRepository) ListRecentByProfileGrade(ctx context.Context, profileId int64, grade int, limit int) ([]*exam.ExamLink, error) {
 	if limit <= 0 {
 		return nil, nil
 	}
-	args := slices.Concat([]any{profileId, grade}, userAiExamActiveArgs(), []any{limit})
-	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE ` +
-		`(u.profile_id = ? AND u.req_grade = ?) AND ` + userAiExamActiveWhere +
-		` ORDER BY u.started_dt DESC, u.user_ai_exam_id DESC LIMIT ?`
+	args := slices.Concat([]any{profileId, grade}, examLinkActiveArgs(), []any{limit})
+	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u WHERE ` +
+		`(u.profile_id = ? AND u.req_grade = ?) AND ` + examLinkActiveWhere +
+		` ORDER BY u.started_dt DESC, u.elink_id DESC LIMIT ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -241,13 +241,13 @@ func (r *UserAiExamRepository) ListRecentByProfileGrade(ctx context.Context, pro
 	}
 	defer rows.Close()
 
-	var out []*exam.UserAiExam
+	var out []*exam.ExamLink
 	for rows.Next() {
-		m, err := scanUserAiExam(rows)
+		m, err := scanExamLink(rows)
 		if err != nil {
 			return nil, fmt.Errorf("user ai exam repo scan row: %w", err)
 		}
-		out = append(out, ModelToDomainUserAiExam(m))
+		out = append(out, ModelToDomainExamLink(m))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("user ai exam repo rows iteration: %w", err)
@@ -255,24 +255,24 @@ func (r *UserAiExamRepository) ListRecentByProfileGrade(ctx context.Context, pro
 	return out, nil
 }
 
-// ListByUserAiExamIds hydrates a batch of attempts, oldest first. The IN
+// ListByElinkIds hydrates a batch of attempts, oldest first. The IN
 // list is built from the id count so the query stays parameterised.
-func (r *UserAiExamRepository) ListByUserAiExamIds(ctx context.Context, userAiExamIds []int64) ([]*exam.UserAiExam, error) {
-	if len(userAiExamIds) == 0 {
+func (r *ExamLinkRepository) ListByElinkIds(ctx context.Context, elinkIds []int64) ([]*exam.ExamLink, error) {
+	if len(elinkIds) == 0 {
 		return nil, nil
 	}
 
-	placeholders := make([]string, 0, len(userAiExamIds))
-	args := make([]any, 0, len(userAiExamIds)+1)
-	for _, id := range userAiExamIds {
+	placeholders := make([]string, 0, len(elinkIds))
+	args := make([]any, 0, len(elinkIds)+1)
+	for _, id := range elinkIds {
 		placeholders = append(placeholders, "?")
 		args = append(args, id)
 	}
-	args = append(args, userAiExamActiveArgs()...)
+	args = append(args, examLinkActiveArgs()...)
 
-	query := `SELECT ` + userAiExamColumns + ` FROM ` + userAiExamTable + ` u WHERE (u.user_ai_exam_id IN (` +
-		strings.Join(placeholders, ", ") + `)) AND ` + userAiExamActiveWhere +
-		` ORDER BY u.user_ai_exam_id ASC`
+	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u WHERE (u.elink_id IN (` +
+		strings.Join(placeholders, ", ") + `)) AND ` + examLinkActiveWhere +
+		` ORDER BY u.elink_id ASC`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -280,13 +280,13 @@ func (r *UserAiExamRepository) ListByUserAiExamIds(ctx context.Context, userAiEx
 	}
 	defer rows.Close()
 
-	var out []*exam.UserAiExam
+	var out []*exam.ExamLink
 	for rows.Next() {
-		m, err := scanUserAiExam(rows)
+		m, err := scanExamLink(rows)
 		if err != nil {
 			return nil, fmt.Errorf("user ai exam repo scan row: %w", err)
 		}
-		out = append(out, ModelToDomainUserAiExam(m))
+		out = append(out, ModelToDomainExamLink(m))
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("user ai exam repo rows iteration: %w", err)
@@ -294,26 +294,26 @@ func (r *UserAiExamRepository) ListByUserAiExamIds(ctx context.Context, userAiEx
 	return out, nil
 }
 
-func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (*exam.UserAiExam, error) {
+func (r *ExamLinkRepository) Create(ctx context.Context, a *exam.ExamLink) (*exam.ExamLink, error) {
 	query := `
-		INSERT INTO ` + userAiExamTable + `
-			(user_ai_exam_id, uid, profile_id, ai_exam_id, user_exam_id, shuffle_map,
+		INSERT INTO ` + examLinkTable + `
+			(elink_id, uid, profile_id, exam_id, esess_id, shuffle_map,
 			 req_exam_type, req_grade, req_level,
-			 started_dt, rpt_flg, kwords, note, user_ai_exam_status, create_id, create_dt, modify_dt)
+			 started_dt, rpt_flg, kwords, note, elink_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	now := mtime.Now().Time
 	startedDt := mtime.MathTimePtrToTime(a.StartedDt().Ptr())
 
 	_, err := r.db.Exec(ctx, query,
-		a.UserAiExamId(), a.Uid(), a.ProfileId(), a.AiExamId(), a.UserExamId(), a.ShuffleMap(),
+		a.ElinkId(), a.Uid(), a.ProfileId(), a.ExamId(), a.EsessId(), a.ShuffleMap(),
 		a.ReqExamType(), a.ReqGrade(), a.ReqLevel(),
-		startedDt, a.RptFlg(), a.Kwords(), a.Note(), a.UserAiExamStatus(), a.CreateId(), now, now)
+		startedDt, a.RptFlg(), a.Kwords(), a.Note(), a.ElinkStatus(), a.CreateId(), now, now)
 	if err != nil {
 		return nil, fmt.Errorf("user ai exam repo create: %w", err)
 	}
 
-	return r.FindByUserAiExamId(ctx, a.UserAiExamId())
+	return r.FindByElinkId(ctx, a.ElinkId())
 }
 
 // MarkSubmitted performs the attempt's single state transition and writes
@@ -325,20 +325,20 @@ func (r *UserAiExamRepository) Create(ctx context.Context, a *exam.UserAiExam) (
 // exam.ErrAttemptNotInProgress instead of silently double-counting the
 // answers into the lifetime totals.
 //
-// user_exam_id is COALESCEd: a nil result leaves what the hand-out wrote,
+// esess_id is COALESCEd: a nil result leaves what the hand-out wrote,
 // a value pins the sitting to the journey it actually folded into.
-func (r *UserAiExamRepository) MarkSubmitted(ctx context.Context, userAiExamId int64, res exam.AttemptResult) error {
+func (r *ExamLinkRepository) MarkSubmitted(ctx context.Context, elinkId int64, res exam.AttemptResult) error {
 	query := `
-		UPDATE ` + userAiExamTable + `
+		UPDATE ` + examLinkTable + `
 		SET res_total_questions  = ?,
 			res_correct_number   = ?,
 			res_skipped_number   = ?,
 			res_score_percentage = ?,
 			submitted_dt         = ?,
-			user_exam_id         = COALESCE(?, user_exam_id),
-			user_ai_exam_status  = ?,
+			esess_id         = COALESCE(?, esess_id),
+			elink_status  = ?,
 			modify_dt            = ?
-		WHERE user_ai_exam_id = ? AND user_ai_exam_status = ?
+		WHERE elink_id = ? AND elink_status = ?
 	`
 	submittedDt := res.SubmittedDt.Time
 	if res.SubmittedDt.IsZero() {
@@ -347,8 +347,8 @@ func (r *UserAiExamRepository) MarkSubmitted(ctx context.Context, userAiExamId i
 
 	result, err := r.db.Exec(ctx, query,
 		res.TotalQuestions, res.CorrectNumber, res.SkippedNumber, res.ScorePercentage,
-		submittedDt, res.UserExamId, string(enum.UserAiExamStatusSubmitted), mtime.Now().Time,
-		userAiExamId, string(enum.UserAiExamStatusInProgress))
+		submittedDt, res.EsessId, string(enum.ElinkStatusSubmitted), mtime.Now().Time,
+		elinkId, string(enum.ElinkStatusInProgress))
 	if err != nil {
 		return fmt.Errorf("user ai exam repo mark submitted: %w", err)
 	}
@@ -365,7 +365,7 @@ func (r *UserAiExamRepository) MarkSubmitted(ctx context.Context, userAiExamId i
 
 // progressPointColumnsExam is the narrow projection for the analytics
 // chart. Order == scanExamProgressPoint's Scan order.
-const progressPointColumnsExam = `u.user_ai_exam_id, u.ai_exam_id, u.req_exam_type, u.req_grade,
+const progressPointColumnsExam = `u.elink_id, u.exam_id, u.req_exam_type, u.req_grade,
 	u.res_score_percentage, u.res_correct_number, u.res_total_questions, u.submitted_dt`
 
 func scanExamProgressPoint(s database.RowScanner) (*exam.ProgressPoint, error) {
@@ -375,7 +375,7 @@ func scanExamProgressPoint(s database.RowScanner) (*exam.ProgressPoint, error) {
 		total       *int64
 		submittedDt *time.Time
 	)
-	if err := s.Scan(&p.UserAiExamId, &p.AiExamId, &p.ExamType, &p.Grade,
+	if err := s.Scan(&p.ElinkId, &p.ExamId, &p.ExamType, &p.Grade,
 		&p.ScorePercentage, &correct, &total, &submittedDt); err != nil {
 		return nil, err
 	}
@@ -388,17 +388,17 @@ func scanExamProgressPoint(s database.RowScanner) (*exam.ProgressPoint, error) {
 // ListProgressPoints returns submitted, scored attempts for one profile,
 // newest first, capped at params.Limit. The caller reverses into
 // chronological order.
-func (r *UserAiExamRepository) ListProgressPoints(ctx context.Context, params exam.ProgressPointsParams) ([]*exam.ProgressPoint, error) {
-	where := `u.user_ai_exam_status = ? AND u.profile_id = ? AND u.res_score_percentage IS NOT NULL`
-	args := []any{string(enum.UserAiExamStatusSubmitted), params.ProfileID}
+func (r *ExamLinkRepository) ListProgressPoints(ctx context.Context, params exam.ProgressPointsParams) ([]*exam.ProgressPoint, error) {
+	where := `u.elink_status = ? AND u.profile_id = ? AND u.res_score_percentage IS NOT NULL`
+	args := []any{string(enum.ElinkStatusSubmitted), params.ProfileID}
 
 	if params.ExamType != nil && *params.ExamType != "" {
 		where += ` AND u.req_exam_type = ?`
 		args = append(args, *params.ExamType)
 	}
-	if params.UserExamID != nil && *params.UserExamID != 0 {
-		where += ` AND u.user_exam_id = ?`
-		args = append(args, *params.UserExamID)
+	if params.EsessID != nil && *params.EsessID != 0 {
+		where += ` AND u.esess_id = ?`
+		args = append(args, *params.EsessID)
 	}
 	if params.From != nil && !params.From.IsZero() {
 		where += ` AND u.submitted_dt >= ?`
@@ -417,11 +417,11 @@ func (r *UserAiExamRepository) ListProgressPoints(ctx context.Context, params ex
 	if limit <= 0 {
 		limit = 10
 	}
-	args = append(args, userAiExamActiveArgs()...)
+	args = append(args, examLinkActiveArgs()...)
 	args = append(args, limit)
 
-	query := `SELECT ` + progressPointColumnsExam + ` FROM ` + userAiExamTable + ` u WHERE (` +
-		where + `) AND ` + userAiExamActiveWhere + ` ORDER BY u.submitted_dt DESC, u.user_ai_exam_id DESC LIMIT ?`
+	query := `SELECT ` + progressPointColumnsExam + ` FROM ` + examLinkTable + ` u WHERE (` +
+		where + `) AND ` + examLinkActiveWhere + ` ORDER BY u.submitted_dt DESC, u.elink_id DESC LIMIT ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
@@ -443,13 +443,13 @@ func (r *UserAiExamRepository) ListProgressPoints(ctx context.Context, params ex
 	return points, nil
 }
 
-func ModelToDomainUserAiExam(m *models.UserAiExamModel) *exam.UserAiExam {
-	a := exam.NewUserAiExam()
-	a.SetUserAiExamId(m.UserAiExamId)
+func ModelToDomainExamLink(m *models.ExamLinkModel) *exam.ExamLink {
+	a := exam.NewExamLink()
+	a.SetElinkId(m.ElinkId)
 	a.SetUid(m.Uid)
 	a.SetProfileId(m.ProfileId)
-	a.SetAiExamId(m.AiExamId)
-	a.SetUserExamId(m.UserExamId)
+	a.SetExamId(m.ExamId)
+	a.SetEsessId(m.EsessId)
 	a.SetShuffleMap(m.ShuffleMap)
 	a.SetReqExamType(m.ReqExamType)
 	a.SetReqGrade(m.ReqGrade)
@@ -463,7 +463,7 @@ func ModelToDomainUserAiExam(m *models.UserAiExamModel) *exam.UserAiExam {
 	a.SetRptFlg(m.RptFlg)
 	a.SetKwords(m.Kwords)
 	a.SetNote(m.Note)
-	a.SetUserAiExamStatus(m.UserAiExamStatus)
+	a.SetElinkStatus(m.ElinkStatus)
 	a.SetStatus(m.Status)
 	a.SetCreateId(m.CreateId)
 	a.SetCreateDt(mtime.MathTime{Time: m.CreateDt})

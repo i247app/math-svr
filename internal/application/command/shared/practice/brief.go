@@ -33,7 +33,7 @@ import (
 // alphabetically so the same log always yields the same brief. A topic
 // counts as strong only when every answer in it was right; a topic with
 // one wrong out of five is weak, because the drill is about the miss.
-func BuildBrief(details []*exam.UserExamDetail) bot.PracticeBrief {
+func BuildBrief(details []*exam.ExamSessionLine) bot.PracticeBrief {
 	wrongByTopic := map[string]int{}
 	seenTopic := map[string]bool{}
 	tally := map[string]bot.TopicTally{}
@@ -96,6 +96,6 @@ func BuildBrief(details []*exam.UserExamDetail) bot.PracticeBrief {
 // topicOf normalises the stored topic for grouping. Topics come from the
 // model and arrive in whatever case and spacing it chose; without this
 // "Phép cộng" and "phép cộng" would rank as two topics.
-func topicOf(d *exam.UserExamDetail) string {
+func topicOf(d *exam.ExamSessionLine) string {
 	return strings.ToLower(strings.TrimSpace(utils.DerefString(d.QuestionTopic())))
 }

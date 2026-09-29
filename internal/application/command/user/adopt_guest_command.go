@@ -91,10 +91,10 @@ func (h *AdoptGuestCommandHandler) Handle(ctx context.Context, cmd AdoptGuestCom
 			if err := repos.Profile.ReassignOwner(ctx, p.ProfileId(), cmd.OwnerUID); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
-			if err := repos.UserExam.ReassignOwnerByProfile(ctx, p.ProfileId(), cmd.OwnerUID); err != nil {
+			if err := repos.ExamSession.ReassignOwnerByProfile(ctx, p.ProfileId(), cmd.OwnerUID); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
-			if err := repos.UserAiExam.ReassignOwnerByProfile(ctx, p.ProfileId(), cmd.OwnerUID); err != nil {
+			if err := repos.ExamLink.ReassignOwnerByProfile(ctx, p.ProfileId(), cmd.OwnerUID); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			result.ProfileIDs = append(result.ProfileIDs, p.ProfileId())

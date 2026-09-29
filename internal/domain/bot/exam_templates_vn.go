@@ -9,7 +9,7 @@ import (
 )
 
 // Vietnamese exam-generation templates. Vietnamese only, and not by
-// omission: the product serves Vietnamese children and ma_ai_exams has no
+// omission: the product serves Vietnamese children and ma_exam_pools has no
 // language column, so a stored row could not record being anything else.
 //
 // JSON keys stay English — the parser, the DB columns and the mobile

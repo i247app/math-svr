@@ -53,21 +53,21 @@ func (s *Service) recentStems(ctx context.Context, profileID int64, grade int) (
 	}
 	ids := make([]int64, 0, len(attempts))
 	for _, a := range attempts {
-		ids = append(ids, a.AiExamId())
+		ids = append(ids, a.ExamId())
 	}
-	sets, err := s.aiExamRepo.ListByAiExamIds(ctx, ids)
+	sets, err := s.examPoolRepo.ListByExamIds(ctx, ids)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	byID := make(map[int64]*examDomain.AiExam, len(sets))
+	byID := make(map[int64]*examDomain.ExamPool, len(sets))
 	for _, e := range sets {
-		byID[e.AiExamId()] = e
+		byID[e.ExamId()] = e
 	}
 
 	seen := make(map[string]struct{})
 	var stems []string
 	for _, a := range attempts {
-		e := byID[a.AiExamId()]
+		e := byID[a.ExamId()]
 		if e == nil {
 			continue
 		}
@@ -94,10 +94,10 @@ func (s *Service) recentStems(ctx context.Context, profileID int64, grade int) (
 // is deep enough to pick from, and never one this child has sat before.
 // A miss is an ordinary outcome, not an error — the caller generates
 // instead, and that generation deepens the pool for everyone.
-func (s *Service) findReusableExam(ctx context.Context, tag string, profileID int64) (*examDomain.AiExam, error) {
+func (s *Service) findReusableExam(ctx context.Context, tag string, profileID int64) (*examDomain.ExamPool, error) {
 	log := logger.From(ctx)
 
-	variants, err := s.aiExamRepo.CountByExtras(ctx, tag)
+	variants, err := s.examPoolRepo.CountByExtras(ctx, tag)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -106,7 +106,7 @@ func (s *Service) findReusableExam(ctx context.Context, tag string, profileID in
 		return nil, nil
 	}
 
-	cached, err := s.aiExamRepo.FindReusableByExtras(ctx, tag, profileID)
+	cached, err := s.examPoolRepo.FindReusableByExtras(ctx, tag, profileID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -157,7 +157,7 @@ func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq
 		return 0, nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if active != nil {
-		id := active.UserExamId()
+		id := active.EsessId()
 		openJourney = &id
 	}
 
@@ -218,23 +218,23 @@ func (s *Service) gradeFromProfile(ctx context.Context, profile *profileDomain.P
 
 // getAttempt is the single-sitting review: the exam as it was served,
 // plus what the child answered on it.
-func (s *Service) getAttempt(ctx context.Context, userAiExamID int64, profile *profileDomain.Profile) (*dto.GetExamRes, error) {
+func (s *Service) getAttempt(ctx context.Context, elinkID int64, profile *profileDomain.Profile) (*dto.GetExamRes, error) {
 	detail, err := s.getAttemptQuery.Handle(ctx, query.GetExamAttemptQuery{
-		UserAiExamID: userAiExamID,
-		UID:          profile.Uid(),
-		ProfileID:    profile.ProfileId(),
+		ElinkID:   elinkID,
+		UID:       profile.Uid(),
+		ProfileID: profile.ProfileId(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	submitted := detail.Attempt.UserAiExamStatus() != nil &&
-		*detail.Attempt.UserAiExamStatus() == string(enum.UserAiExamStatusSubmitted)
+	submitted := detail.Attempt.ElinkStatus() != nil &&
+		*detail.Attempt.ElinkStatus() == string(enum.ElinkStatusSubmitted)
 
 	return &dto.GetExamRes{
-		Exam: dto.AttemptToResponse(detail.Attempt, detail.AiExam, submitted),
+		Exam: dto.AttemptToResponse(detail.Attempt, detail.ExamPool, submitted),
 		Details: dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempt),
-			map[int64]*examDomain.AiExam{detail.AiExam.AiExamId(): detail.AiExam}),
+			map[int64]*examDomain.ExamPool{detail.ExamPool.ExamId(): detail.ExamPool}),
 	}, nil
 }
 
@@ -243,12 +243,12 @@ func (s *Service) getAttempt(ctx context.Context, userAiExamID int64, profile *p
 // question across those sittings. Every sitting here is SUBMITTED by
 // construction — that is the moment a sitting joins a journey — so the
 // answer key is always safe to expose.
-func (s *Service) getJourney(ctx context.Context, userExamID int64, examType string, profile *profileDomain.Profile) (*dto.GetExamRes, error) {
+func (s *Service) getJourney(ctx context.Context, esessID int64, examType string, profile *profileDomain.Profile) (*dto.GetExamRes, error) {
 	detail, err := s.getJourneyQuery.Handle(ctx, query.GetExamJourneyQuery{
-		UserExamID: userExamID,
-		ExamType:   examType,
-		UID:        profile.Uid(),
-		ProfileID:  profile.ProfileId(),
+		EsessID:   esessID,
+		ExamType:  examType,
+		UID:       profile.Uid(),
+		ProfileID: profile.ProfileId(),
 	})
 	if err != nil {
 		return nil, err
@@ -256,8 +256,8 @@ func (s *Service) getJourney(ctx context.Context, userExamID int64, examType str
 
 	return &dto.GetExamRes{
 		Stats:           dto.StatsToSingleResponse(detail.Journey),
-		Exams:           dto.AttemptListToResponse(detail.Attempts, detail.AiExams),
-		Details:         dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...), detail.AiExams),
+		Exams:           dto.AttemptListToResponse(detail.Attempts, detail.ExamPools),
+		Details:         dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...), detail.ExamPools),
 		PracticePreview: dto.PracticePreviewFrom(detail.PracticeBase, detail.PracticeBrief),
 	}, nil
 }

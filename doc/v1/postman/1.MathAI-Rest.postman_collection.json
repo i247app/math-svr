@@ -6278,7 +6278,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\nconst response = pm.response.json();\nif (response.exam.user_ai_exam_id) {\n    pm.environment.set(\"user_ai_exam_id\", response.exam.user_ai_exam_id);\n}\n"
+                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\nconst response = pm.response.json();\nif (response.exam.elink_id) {\n    pm.environment.set(\"user_ai_exam_id\", response.exam.elink_id);\n}\n"
                 ]
               }
             }
@@ -6288,7 +6288,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n    \"profile_id\": {{profile_id}},\n    \"num_questions\": 10,\n    // \"exam_type\": \"ASSESSMENT\",  // ASSESSMENT, // PRACTICE\n    // \"grade\": 2\n\n    \"exam_type\": \"PRACTICE\",\n    \"user_exam_id\": {{user_exam_id}}\n\n    // \"level\": 1\n    // \"semester\": \"\",\n    // \"program\": \"Mẫu giáo\"\n}\n\n",
+              "raw": "{\n    \"metadata\": {{metadata}},\n    \"profile_id\": {{profile_id}},\n    \"num_questions\": 10,\n    // \"exam_type\": \"ASSESSMENT\",  // ASSESSMENT, // PRACTICE\n    // \"grade\": 2\n\n    \"exam_type\": \"PRACTICE\",\n    \"esess_id\": {{user_exam_id}}\n\n    // \"level\": 1\n    // \"semester\": \"\",\n    // \"program\": \"Mẫu giáo\"\n}\n\n",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6316,7 +6316,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\nconst response = pm.response.json();\nif (response.exam.user_ai_exam_id) {\n    pm.environment.set(\"user_ai_exam_id\", response.exam.user_ai_exam_id);\n}\n"
+                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\nconst response = pm.response.json();\nif (response.exam.elink_id) {\n    pm.environment.set(\"user_ai_exam_id\", response.exam.elink_id);\n}\n"
                 ]
               }
             }
@@ -6354,7 +6354,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n    \"profile_id\": {{profile_id}},\n    \"user_ai_exam_id\": {{user_ai_exam_id}},\n    \"answers\": [\n        {\n            \"question_number\": 1,\n            \"label\": \"A\"\n        },\n        {\n            \"question_number\": 2,\n            \"label\": \"A\"\n        },\n        {\n            \"question_number\": 3,\n            \"label\": \"D\"\n        },\n        {\n            \"question_number\": 4,\n            \"label\": \"D\"\n        },\n        {\n            \"question_number\": 5,\n            \"label\": \"B\"\n        },\n         {\n            \"question_number\": 6,\n            \"label\": \"C\"\n        },\n        {\n            \"question_number\": 7,\n            \"label\": \"D\"\n        },\n        {\n            \"question_number\": 8,\n            \"label\": \"B\"\n        },\n        {\n            \"question_number\": 9,\n            \"label\": \"C\"\n        },\n        {\n            \"question_number\": 10,\n            \"label\": \"D\"\n        }\n    ]\n}",
+              "raw": "{\n    \"metadata\": {{metadata}},\n    \"profile_id\": {{profile_id}},\n    \"elink_id\": {{user_ai_exam_id}},\n    \"answers\": [\n        {\n            \"question_number\": 1,\n            \"label\": \"A\"\n        },\n        {\n            \"question_number\": 2,\n            \"label\": \"A\"\n        },\n        {\n            \"question_number\": 3,\n            \"label\": \"D\"\n        },\n        {\n            \"question_number\": 4,\n            \"label\": \"D\"\n        },\n        {\n            \"question_number\": 5,\n            \"label\": \"B\"\n        },\n         {\n            \"question_number\": 6,\n            \"label\": \"C\"\n        },\n        {\n            \"question_number\": 7,\n            \"label\": \"D\"\n        },\n        {\n            \"question_number\": 8,\n            \"label\": \"B\"\n        },\n        {\n            \"question_number\": 9,\n            \"label\": \"C\"\n        },\n        {\n            \"question_number\": 10,\n            \"label\": \"D\"\n        }\n    ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6381,7 +6381,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n    \"profile_id\": {{profile_id}},\n    // \"user_ai_exam_id\": 3\n    \"user_exam_id\": 1,\n    \"exam_type\": \"PRACTICE\" // ASSESSMENT, PRACTICE\n}",
+              "raw": "{\n    \"metadata\": {{metadata}},\n    \"profile_id\": {{profile_id}},\n    // \"elink_id\": 3\n    \"esess_id\": 1,\n    \"exam_type\": \"PRACTICE\" // ASSESSMENT, PRACTICE\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6528,7 +6528,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n    \"profile_id\": {{profile_id}},\n    \"user_exam_id\": {{user_exam_id}},\n    \"status\": \"COMPLETE\"\n}",
+              "raw": "{\n    \"metadata\": {{metadata}},\n    \"profile_id\": {{profile_id}},\n    \"esess_id\": {{user_exam_id}},\n    \"status\": \"COMPLETE\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

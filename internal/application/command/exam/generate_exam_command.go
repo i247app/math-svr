@@ -16,10 +16,10 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
-// NewAiExamContent is a freshly generated question set on its way to
+// NewExamPoolContent is a freshly generated question set on its way to
 // storage. The module layer fills it in after the bot call, which happens
 // OUTSIDE this transaction — an LLM round trip must never hold a tx open.
-type NewAiExamContent struct {
+type NewExamPoolContent struct {
 	NumQues       int
 	Level         *int
 	Semester      *string
@@ -32,11 +32,11 @@ type NewAiExamContent struct {
 
 // GenerateExamCommand hands one exam to one child.
 //
-// Exactly one of ReuseAiExamID and NewContent is set, and which one says
+// Exactly one of ReuseExamID and NewContent is set, and which one says
 // whether the cache was hit. On a hit no question set is written at all —
 // the row already exists and is shared — and the only new row is the
-// attempt. That asymmetry is the entire point of splitting ma_ai_exams
-// from ma_user_ai_exams.
+// attempt. That asymmetry is the entire point of splitting ma_exam_pools
+// from ma_exam_links.
 type GenerateExamCommand struct {
 	UID       int64
 	ProfileID int64
@@ -59,20 +59,20 @@ type GenerateExamCommand struct {
 	// so the child who triggered it sees no different treatment from the
 	// next child who is served it from cache.
 	ShuffleJSON *string
-	// UserExamID is the journey the sitting is drawn for, when the caller
+	// EsessID is the journey the sitting is drawn for, when the caller
 	// already knows it: always for a PRACTICE round, and for an ASSESSMENT
 	// while a journey is open. nil when the caller found none — the
 	// command then OPENS the journey here, in the same transaction as the
 	// attempt, so a sitting never exists without a journey to show it in.
-	UserExamID *int64
+	EsessID *int64
 
-	ReuseAiExamID *int64
-	NewContent    *NewAiExamContent
+	ReuseExamID *int64
+	NewContent  *NewExamPoolContent
 }
 
 type GenerateExamResult struct {
-	AiExam  *exam.AiExam
-	Attempt *exam.UserAiExam
+	ExamPool *exam.ExamPool
+	Attempt  *exam.ExamLink
 }
 
 type GenerateExamCommandHandler struct {
@@ -84,7 +84,7 @@ func NewGenerateExamCommandHandler(uow transaction.UnitOfWork) *GenerateExamComm
 }
 
 func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExamCommand) (*GenerateExamResult, error) {
-	if cmd.ReuseAiExamID == nil && cmd.NewContent == nil {
+	if cmd.ReuseExamID == nil && cmd.NewContent == nil {
 		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil,
 			fmt.Errorf("exam: generate command needs either a cached exam id or new content"))
 	}
@@ -92,7 +92,7 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 	var result GenerateExamResult
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
-		aiExam, err := h.resolveAiExam(ctx, repos, cmd)
+		examPool, err := h.resolveExamPool(ctx, repos, cmd)
 		if err != nil {
 			return err
 		}
@@ -105,31 +105,31 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 			return err
 		}
 
-		attemptID, err := seqgen.Next(ctx, repos.Seq, seq.NameUserAiExam)
+		attemptID, err := seqgen.Next(ctx, repos.Seq, seq.NameExamLink)
 		if err != nil {
 			return err
 		}
 
-		a := exam.NewUserAiExam()
-		a.SetUserAiExamId(attemptID)
+		a := exam.NewExamLink()
+		a.SetElinkId(attemptID)
 		a.SetUid(cmd.UID)
 		a.SetProfileId(cmd.ProfileID)
-		a.SetAiExamId(aiExam.AiExamId())
-		a.SetUserExamId(&journeyID)
+		a.SetExamId(examPool.ExamId())
+		a.SetEsessId(&journeyID)
 		a.SetShuffleMap(cmd.ShuffleJSON)
 		a.SetReqExamType(string(cmd.ExamType))
 		a.SetReqGrade(cmd.Grade)
 		a.SetReqLevel(cmd.Level)
 		a.SetStartedDt(mtime.Now())
-		inProgress := string(enum.UserAiExamStatusInProgress)
-		a.SetUserAiExamStatus(&inProgress)
+		inProgress := string(enum.ElinkStatusInProgress)
+		a.SetElinkStatus(&inProgress)
 
-		saved, err := repos.UserAiExam.Create(ctx, a)
+		saved, err := repos.ExamLink.Create(ctx, a)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 
-		result = GenerateExamResult{AiExam: aiExam, Attempt: saved}
+		result = GenerateExamResult{ExamPool: examPool, Attempt: saved}
 		return nil
 	}
 
@@ -144,7 +144,7 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 //
 // A journey used to be opened at the first SUBMIT, which left a child who
 // generated an exam and walked away with a sitting that showed up nowhere:
-// the journey list reads ma_user_exams, and there was no row. Opening it
+// the journey list reads ma_exam_sessions, and there was no row. Opening it
 // at hand-out — in the same transaction as the attempt — is what makes
 // "come back and finish" possible. The row starts empty (no totals, no
 // grade, no review) and fills on the first submit.
@@ -156,8 +156,8 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 // racing to open the same child's journey resolve the way submits do:
 // the loser collides, re-reads, and joins the winner's row.
 func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos transaction.Repositories, cmd GenerateExamCommand) (int64, error) {
-	if cmd.UserExamID != nil {
-		return *cmd.UserExamID, nil
+	if cmd.EsessID != nil {
+		return *cmd.EsessID, nil
 	}
 	if cmd.ExamType == enum.ExamTypePractice {
 		return 0, errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil,
@@ -165,20 +165,20 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 	}
 
 	examType := string(cmd.ExamType)
-	open, err := repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, examType)
+	open, err := repos.ExamSession.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, examType)
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if open != nil {
-		return open.UserExamId(), nil
+		return open.EsessId(), nil
 	}
 
-	journeyID, err := seqgen.Next(ctx, repos.Seq, seq.NameUserExam)
+	journeyID, err := seqgen.Next(ctx, repos.Seq, seq.NameExamSession)
 	if err != nil {
 		return 0, err
 	}
-	row := exam.NewUserExam()
-	row.SetUserExamId(journeyID)
+	row := exam.NewExamSession()
+	row.SetEsessId(journeyID)
 	row.SetUid(cmd.UID)
 	row.SetProfileId(cmd.ProfileID)
 	row.SetReqExamType(examType)
@@ -188,7 +188,7 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 	row.SetCurrentGrade(&grade)
 	row.SetCurrentLevel(cmd.StatedLevel)
 
-	err = repos.UserExam.Create(ctx, row, exam.StatsDelta{})
+	err = repos.ExamSession.Create(ctx, row, exam.StatsDelta{})
 	if err == nil {
 		return journeyID, nil
 	}
@@ -196,7 +196,7 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	open, err = repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, examType)
+	open, err = repos.ExamSession.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, examType)
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -205,7 +205,7 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 			fmt.Errorf("exam: opening a journey for profile %d type %s collided with a row that is not active — check uk_active_journey and ma_seqs",
 				cmd.ProfileID, examType))
 	}
-	return open.UserExamId(), nil
+	return open.EsessId(), nil
 }
 
 // recordCurrent writes the client's stated grade / level onto the open
@@ -218,7 +218,7 @@ func (h *GenerateExamCommandHandler) recordCurrent(ctx context.Context, repos tr
 	if cmd.ExamType == enum.ExamTypePractice {
 		return nil
 	}
-	if err := repos.UserExam.SetCurrent(ctx, journeyID, string(cmd.ExamType), cmd.StatedGrade, cmd.StatedLevel); err != nil {
+	if err := repos.ExamSession.SetCurrent(ctx, journeyID, string(cmd.ExamType), cmd.StatedGrade, cmd.StatedLevel); err != nil {
 		if errors.Is(err, exam.ErrJourneyNotActive) {
 			return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
 		}
@@ -227,31 +227,31 @@ func (h *GenerateExamCommandHandler) recordCurrent(ctx context.Context, repos tr
 	return nil
 }
 
-// resolveAiExam either loads the cached question set or stores the freshly
+// resolveExamPool either loads the cached question set or stores the freshly
 // generated one. A cached id that no longer resolves is treated as a hard
 // error rather than falling back to generation: the caller read that id
 // out of the cache moments earlier, so a miss here means something deleted
 // the row mid-flight and silently paying for a new generation would hide it.
-func (h *GenerateExamCommandHandler) resolveAiExam(ctx context.Context, repos transaction.Repositories, cmd GenerateExamCommand) (*exam.AiExam, error) {
-	if cmd.ReuseAiExamID != nil {
-		cached, err := repos.AiExam.FindByAiExamId(ctx, *cmd.ReuseAiExamID)
+func (h *GenerateExamCommandHandler) resolveExamPool(ctx context.Context, repos transaction.Repositories, cmd GenerateExamCommand) (*exam.ExamPool, error) {
+	if cmd.ReuseExamID != nil {
+		cached, err := repos.ExamPool.FindByExamId(ctx, *cmd.ReuseExamID)
 		if err != nil {
 			return nil, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if cached == nil {
 			return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
-				fmt.Errorf("exam: cached ai_exam %d disappeared before it could be served", *cmd.ReuseAiExamID))
+				fmt.Errorf("exam: cached exam_pool %d disappeared before it could be served", *cmd.ReuseExamID))
 		}
 		return cached, nil
 	}
 
-	aiExamID, err := seqgen.Next(ctx, repos.Seq, seq.NameAiExam)
+	examID, err := seqgen.Next(ctx, repos.Seq, seq.NameExamPool)
 	if err != nil {
 		return nil, err
 	}
 
-	e := exam.NewAiExam()
-	e.SetAiExamId(aiExamID)
+	e := exam.NewExamPool()
+	e.SetExamId(examID)
 	e.SetReqExamType(string(cmd.ExamType))
 	e.SetReqGrade(cmd.Grade)
 	e.SetReqLevel(cmd.NewContent.Level)
@@ -262,11 +262,11 @@ func (h *GenerateExamCommandHandler) resolveAiExam(ctx context.Context, repos tr
 	e.SetAiTitle(cmd.NewContent.Title)
 	e.SetAiShortText(cmd.NewContent.ShortText)
 	e.SetAiQuestionsJson(cmd.NewContent.QuestionsJSON)
-	active := string(enum.AiExamStatusActive)
-	e.SetAiExamStatus(&active)
+	active := string(enum.ExamStatusActive)
+	e.SetExamStatus(&active)
 	e.SetCreateId(utils.ToInt64Ptr(cmd.UID))
 
-	saved, err := repos.AiExam.Create(ctx, e)
+	saved, err := repos.ExamPool.Create(ctx, e)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}

@@ -86,10 +86,10 @@ type RepositoryContainer struct {
 	LoginLogRepository           loginLogDomain.IRepository
 	DeviceRepository             deviceDomain.IRepository
 	OtpRepository                otpDomain.IRepository
-	AiExamRepository             examDomain.IAiExamRepository
-	UserAiExamRepository         examDomain.IUserAiExamRepository
-	UserExamRepository           examDomain.IUserExamRepository
-	UserExamDetailRepository     examDomain.IUserExamDetailRepository
+	ExamPoolRepository           examDomain.IExamPoolRepository
+	ExamLinkRepository           examDomain.IExamLinkRepository
+	ExamSessionRepository        examDomain.IExamSessionRepository
+	ExamSessionLineRepository    examDomain.IExamSessionLineRepository
 	SchoolRepository             schoolDomain.IRepository
 	SeqRepository                seqDomain.IRepository
 	ClassroomRepository          classroomDomain.IRepository

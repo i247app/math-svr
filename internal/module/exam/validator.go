@@ -48,7 +48,7 @@ func ValidateGenerateExam(ctx context.Context, req *dto.GenerateExamReq) (Valida
 
 	// A PRACTICE round lives inside a journey and is aimed at that
 	// journey's latest sitting, so the journey must be named.
-	if examType == enum.ExamTypePractice && (req.UserExamID == nil || *req.UserExamID <= 0) {
+	if examType == enum.ExamTypePractice && (req.EsessID == nil || *req.EsessID <= 0) {
 		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrPracticeJourneyRequired)
 	}
 
@@ -76,7 +76,7 @@ func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {
 	if req.ProfileID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
 	}
-	if req.UserAiExamID <= 0 {
+	if req.ElinkID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_ATTEMPT_ID, nil, ErrAttemptIDRequired)
 	}
 	if len(req.Answers) == 0 {
@@ -104,7 +104,7 @@ func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {
 	return nil
 }
 
-// ValidateGetExam accepts user_ai_exam_id (a sitting) or user_exam_id (a
+// ValidateGetExam accepts elink_id (a sitting) or esess_id (a
 // journey); when both are sent the journey wins. Neither is a
 // missing-attempt error — the older of the two shapes, kept so existing
 // clients see the code they already handle.
@@ -117,8 +117,8 @@ func ValidateGetExam(ctx context.Context, req *dto.GetExamReq) error {
 	if req.ProfileID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
 	}
-	hasAttempt := req.UserAiExamID > 0
-	hasJourney := req.UserExamID > 0
+	hasAttempt := req.ElinkID > 0
+	hasJourney := req.EsessID > 0
 	if !hasAttempt && !hasJourney {
 		return errs.NewError(ctx, status.EXAM_MISSING_ATTEMPT_ID, nil, ErrDetailIDRequired)
 	}
@@ -157,8 +157,8 @@ func normalizeExamType(ctx context.Context, raw *string) (*string, error) {
 // requireJourneyForPractice is the rule shared by the history reads: a
 // PRACTICE round only exists inside a journey, so listing "the practice
 // rounds" is only a question about one.
-func requireJourneyForPractice(ctx context.Context, examType *string, userExamID *int64) error {
-	if examType != nil && *examType == string(enum.ExamTypePractice) && (userExamID == nil || *userExamID <= 0) {
+func requireJourneyForPractice(ctx context.Context, examType *string, esessID *int64) error {
+	if examType != nil && *examType == string(enum.ExamTypePractice) && (esessID == nil || *esessID <= 0) {
 		return errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrPracticeJourneyRequired)
 	}
 	return nil
@@ -173,7 +173,7 @@ func ValidateListExams(ctx context.Context, req *dto.ListExamsReq) error {
 		return err
 	}
 	req.ExamType = examType
-	if err := requireJourneyForPractice(ctx, req.ExamType, req.UserExamID); err != nil {
+	if err := requireJourneyForPractice(ctx, req.ExamType, req.EsessID); err != nil {
 		return err
 	}
 	if req.Status != nil {
@@ -196,7 +196,7 @@ func ValidateGetExamStats(ctx context.Context, req *dto.GetExamStatsReq) error {
 		if normalized == "" {
 			req.JourneyExamStatus = nil
 		} else {
-			if !enum.UserExamStatusType(normalized).IsValid() {
+			if !enum.EsessStatusType(normalized).IsValid() {
 				return errs.NewError(ctx, status.EXAM_INVALID_JOURNEY_STATUS, nil, ErrJourneyStatusInvalid)
 			}
 			req.JourneyExamStatus = &normalized
@@ -240,7 +240,7 @@ func ValidateExamProgress(ctx context.Context, req *dto.ExamProgressReq) error {
 		return err
 	}
 	req.ExamType = examType
-	if err := requireJourneyForPractice(ctx, req.ExamType, req.UserExamID); err != nil {
+	if err := requireJourneyForPractice(ctx, req.ExamType, req.EsessID); err != nil {
 		return err
 	}
 	return validateProgressWindow(ctx, &req.ProgressWindow)
@@ -310,7 +310,7 @@ func validateProgressWindow(ctx context.Context, w *dto.ProgressWindow) error {
 // ValidatedMarkJourney carries the normalised status so the service does
 // not re-parse the request's string.
 type ValidatedMarkJourney struct {
-	Status enum.UserExamStatusType
+	Status enum.EsessStatusType
 }
 
 // ValidateMarkExamJourney checks an end-of-journey request. Only COMPLETE
@@ -320,10 +320,10 @@ func ValidateMarkExamJourney(ctx context.Context, req *dto.MarkExamJourneyReq) (
 	if req.ProfileID <= 0 {
 		return ValidatedMarkJourney{}, errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
 	}
-	if req.UserExamID <= 0 {
+	if req.EsessID <= 0 {
 		return ValidatedMarkJourney{}, errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrJourneyIDRequired)
 	}
-	st := enum.UserExamStatusType(strings.ToUpper(strings.TrimSpace(req.Status)))
+	st := enum.EsessStatusType(strings.ToUpper(strings.TrimSpace(req.Status)))
 	if !st.IsMarkable() {
 		return ValidatedMarkJourney{}, errs.NewError(ctx, status.EXAM_INVALID_JOURNEY_STATUS, nil, ErrJourneyStatusInvalid)
 	}

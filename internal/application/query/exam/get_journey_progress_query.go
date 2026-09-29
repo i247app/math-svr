@@ -12,7 +12,7 @@ import (
 // journeyProgressReader is the slice of the journey repository this
 // query needs, so a hand-rolled fake can stand in for it.
 type journeyProgressReader interface {
-	ListProgressPoints(ctx context.Context, params exam.JourneyProgressParams) ([]*exam.UserExam, error)
+	ListProgressPoints(ctx context.Context, params exam.JourneyProgressParams) ([]*exam.ExamSession, error)
 }
 
 // GetJourneyProgressQuery carries the resolved inputs. From/To are
@@ -34,7 +34,7 @@ type GetJourneyProgressResult struct {
 
 // GetJourneyProgressQueryHandler is the journey-level twin of
 // GetExamProgressQueryHandler: the same windowed series and banner, read
-// over ma_user_exams rows instead of sittings. Reading a bounded window
+// over ma_exam_sessions rows instead of sittings. Reading a bounded window
 // rather than every journey is the point — the stats list's banner
 // aggregates a child's whole history in one call, and that does not
 // scale with the table.
@@ -98,13 +98,13 @@ func (h *GetJourneyProgressQueryHandler) Handle(ctx context.Context, q GetJourne
 
 	points := make([]scorePoint, 0, len(series))
 	for _, p := range series {
-		points = append(points, scorePoint{ID: p.UserExamID, ScorePct: p.ScorePct})
+		points = append(points, scorePoint{ID: p.EsessID, ScorePct: p.ScorePct})
 	}
 	core, hiID := summarizeScores(points, priorAvg10)
 
 	return &GetJourneyProgressResult{
 		Series:  series,
-		Summary: dto.ExamStatsSummary{ExamScoreSummary: core, HighestUserExamID: hiID},
+		Summary: dto.ExamStatsSummary{ExamScoreSummary: core, HighestEsessID: hiID},
 	}, nil
 }
 
@@ -113,7 +113,7 @@ func (h *GetJourneyProgressQueryHandler) Handle(ctx context.Context, q GetJourne
 // Rows without a score never reach here (the repository filters them),
 // so a nil percentage is a defect, not a case — it is skipped rather
 // than shown as zero.
-func toJourneySeriesAsc(desc []*exam.UserExam) []dto.JourneyPoint {
+func toJourneySeriesAsc(desc []*exam.ExamSession) []dto.JourneyPoint {
 	n := len(desc)
 	out := make([]dto.JourneyPoint, 0, n)
 	for i := n - 1; i >= 0; i-- {
@@ -124,7 +124,7 @@ func toJourneySeriesAsc(desc []*exam.UserExam) []dto.JourneyPoint {
 		}
 		p := dto.JourneyPoint{
 			Sequence:       int64(len(out) + 1),
-			UserExamID:     j.UserExamId(),
+			EsessID:        j.EsessId(),
 			ExamType:       j.ReqExamType(),
 			Grade:          j.CurrentGrade(),
 			Score:          progress.PctTo10Pt(float64(*pct)),
@@ -132,7 +132,7 @@ func toJourneySeriesAsc(desc []*exam.UserExam) []dto.JourneyPoint {
 			CorrectNumber:  j.ResCorrectNumber(),
 			TotalQuestions: j.ResTotalQuestions(),
 		}
-		if st := j.UserExamStatus(); st != nil {
+		if st := j.EsessStatus(); st != nil {
 			p.Status = *st
 		}
 		if !j.LastSubmittedDt().IsZero() {
@@ -143,7 +143,7 @@ func toJourneySeriesAsc(desc []*exam.UserExam) []dto.JourneyPoint {
 	return out
 }
 
-func avg10OfJourneys(rows []*exam.UserExam) (float64, bool) {
+func avg10OfJourneys(rows []*exam.ExamSession) (float64, bool) {
 	var sum, n int64
 	for _, j := range rows {
 		if pct := j.ResScorePercentage(); pct != nil {

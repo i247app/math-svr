@@ -43,10 +43,10 @@ type HomeLayoutData struct {
 
 	// Exams is the acting profile's exam history, most recent first —
 	// populated for every role — with the shared question sets the
-	// sittings were drawn from keyed by ai_exam_id (a card needs the
+	// sittings were drawn from keyed by exam_id (a card needs the
 	// title, which lives there).
-	Exams       []*examDomain.UserAiExam
-	ExamAiExams map[int64]*examDomain.AiExam
+	Exams     []*examDomain.ExamLink
+	ExamPools map[int64]*examDomain.ExamPool
 
 	Exercises   []*exerciseDomain.Exercise
 	Submissions []*exerciseDomain.Submission
@@ -96,8 +96,8 @@ type GetHomeLayoutQueryHandler struct {
 	exerciseRepo   exerciseDomain.IRepository
 	submissionRepo exerciseDomain.ISubmissionRepository
 	profileRepo    profileDomain.IRepository
-	attemptRepo    examDomain.IUserAiExamRepository
-	aiExamRepo     examDomain.IAiExamRepository
+	attemptRepo    examDomain.IExamLinkRepository
+	examPoolRepo   examDomain.IExamPoolRepository
 }
 
 func NewGetHomeLayoutQueryHandler(
@@ -106,8 +106,8 @@ func NewGetHomeLayoutQueryHandler(
 	exerciseRepo exerciseDomain.IRepository,
 	submissionRepo exerciseDomain.ISubmissionRepository,
 	profileRepo profileDomain.IRepository,
-	attemptRepo examDomain.IUserAiExamRepository,
-	aiExamRepo examDomain.IAiExamRepository,
+	attemptRepo examDomain.IExamLinkRepository,
+	examPoolRepo examDomain.IExamPoolRepository,
 ) *GetHomeLayoutQueryHandler {
 	return &GetHomeLayoutQueryHandler{
 		classroomRepo:  classroomRepo,
@@ -116,7 +116,7 @@ func NewGetHomeLayoutQueryHandler(
 		submissionRepo: submissionRepo,
 		profileRepo:    profileRepo,
 		attemptRepo:    attemptRepo,
-		aiExamRepo:     aiExamRepo,
+		examPoolRepo:   examPoolRepo,
 	}
 }
 
@@ -163,7 +163,7 @@ func (h *GetHomeLayoutQueryHandler) loadProfileExams(ctx context.Context, p *pro
 		return err
 	}
 	data.Exams = attempts
-	data.ExamAiExams = map[int64]*examDomain.AiExam{}
+	data.ExamPools = map[int64]*examDomain.ExamPool{}
 	if len(attempts) == 0 {
 		return nil
 	}
@@ -171,19 +171,19 @@ func (h *GetHomeLayoutQueryHandler) loadProfileExams(ctx context.Context, p *pro
 	seen := make(map[int64]struct{}, len(attempts))
 	ids := make([]int64, 0, len(attempts))
 	for _, a := range attempts {
-		if _, ok := seen[a.AiExamId()]; ok {
+		if _, ok := seen[a.ExamId()]; ok {
 			continue
 		}
-		seen[a.AiExamId()] = struct{}{}
-		ids = append(ids, a.AiExamId())
+		seen[a.ExamId()] = struct{}{}
+		ids = append(ids, a.ExamId())
 	}
 
-	rows, err := h.aiExamRepo.ListByAiExamIds(ctx, ids)
+	rows, err := h.examPoolRepo.ListByExamIds(ctx, ids)
 	if err != nil {
 		return err
 	}
 	for _, r := range rows {
-		data.ExamAiExams[r.AiExamId()] = r
+		data.ExamPools[r.ExamId()] = r
 	}
 	return nil
 }

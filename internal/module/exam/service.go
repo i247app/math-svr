@@ -30,7 +30,7 @@ import (
 type Service struct {
 	generateCmd     *command.GenerateExamCommandHandler
 	submitCmd       *command.SubmitExamCommandHandler
-	markJourneyCmd  *command.MarkUserExamCommandHandler
+	markJourneyCmd  *command.MarkExamSessionCommandHandler
 	getAttemptQuery *query.GetExamAttemptQueryHandler
 	getJourneyQuery *query.GetExamJourneyQueryHandler
 	listQuery       *query.ListExamAttemptsQueryHandler
@@ -38,12 +38,12 @@ type Service struct {
 	progressQuery   *query.GetExamProgressQueryHandler
 	journeyProgress *query.GetJourneyProgressQueryHandler
 
-	aiExamRepo  examDomain.IAiExamRepository
-	attemptRepo examDomain.IUserAiExamRepository
-	statsRepo   examDomain.IUserExamRepository
-	detailRepo  examDomain.IUserExamDetailRepository
-	profileRepo profileDomain.IRepository
-	gradeRepo   gradeDomain.IRepository
+	examPoolRepo examDomain.IExamPoolRepository
+	attemptRepo  examDomain.IExamLinkRepository
+	statsRepo    examDomain.IExamSessionRepository
+	detailRepo   examDomain.IExamSessionLineRepository
+	profileRepo  profileDomain.IRepository
+	gradeRepo    gradeDomain.IRepository
 
 	bot   *botClient
 	guest *guestService
@@ -58,10 +58,10 @@ type Service struct {
 // credentials still boots, and generation then fails with a uniform
 // BOT_CONFIG_INVALID instead of a panic.
 func NewService(
-	aiExamRepo examDomain.IAiExamRepository,
-	attemptRepo examDomain.IUserAiExamRepository,
-	statsRepo examDomain.IUserExamRepository,
-	detailRepo examDomain.IUserExamDetailRepository,
+	examPoolRepo examDomain.IExamPoolRepository,
+	attemptRepo examDomain.IExamLinkRepository,
+	statsRepo examDomain.IExamSessionRepository,
+	detailRepo examDomain.IExamSessionLineRepository,
 	uow transaction.UnitOfWork,
 	bot *botAdapter.Adapter,
 	profileRepo profileDomain.IRepository,
@@ -72,14 +72,14 @@ func NewService(
 	return &Service{
 		generateCmd:     command.NewGenerateExamCommandHandler(uow),
 		submitCmd:       command.NewSubmitExamCommandHandler(uow),
-		markJourneyCmd:  command.NewMarkUserExamCommandHandler(uow),
-		getAttemptQuery: query.NewGetExamAttemptQueryHandler(attemptRepo, aiExamRepo, detailRepo),
-		getJourneyQuery: query.NewGetExamJourneyQueryHandler(statsRepo, attemptRepo, aiExamRepo, detailRepo),
-		listQuery:       query.NewListExamAttemptsQueryHandler(attemptRepo, aiExamRepo),
-		statsQuery:      query.NewGetExamStatsQueryHandler(statsRepo, attemptRepo, aiExamRepo),
+		markJourneyCmd:  command.NewMarkExamSessionCommandHandler(uow),
+		getAttemptQuery: query.NewGetExamAttemptQueryHandler(attemptRepo, examPoolRepo, detailRepo),
+		getJourneyQuery: query.NewGetExamJourneyQueryHandler(statsRepo, attemptRepo, examPoolRepo, detailRepo),
+		listQuery:       query.NewListExamAttemptsQueryHandler(attemptRepo, examPoolRepo),
+		statsQuery:      query.NewGetExamStatsQueryHandler(statsRepo, attemptRepo, examPoolRepo),
 		progressQuery:   query.NewGetExamProgressQueryHandler(attemptRepo),
 		journeyProgress: query.NewGetJourneyProgressQueryHandler(statsRepo),
-		aiExamRepo:      aiExamRepo,
+		examPoolRepo:    examPoolRepo,
 		attemptRepo:     attemptRepo,
 		statsRepo:       statsRepo,
 		detailRepo:      detailRepo,
@@ -145,7 +145,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 		Level:       level,
 		StatedGrade: req.Grade,
 		StatedLevel: level,
-		UserExamID:  openJourney,
+		EsessID:     openJourney,
 	}
 
 	cached, err := s.findReusableExam(ctx, tag, profile.ProfileId())
@@ -158,9 +158,9 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	var canonical []question.Question
 
 	if cached != nil {
-		log.Infof("exam.cache.hit tag=%s ai_exam_id=%d", tag, cached.AiExamId())
-		id := cached.AiExamId()
-		cmd.ReuseAiExamID = &id
+		log.Infof("exam.cache.hit tag=%s exam_id=%d", tag, cached.ExamId())
+		id := cached.ExamId()
+		cmd.ReuseExamID = &id
 		canonical, err = decodeStoredQuestions(ctx, cached.AiQuestionsJson())
 		if err != nil {
 			return nil, err
@@ -209,9 +209,9 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 // it can never be picked up as a variant.
 func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq, profile *profileDomain.Profile) (*dto.GenerateExamRes, error) {
 	log := logger.From(ctx)
-	journeyID := *req.UserExamID
+	journeyID := *req.EsessID
 
-	journey, err := s.statsRepo.FindByUserExamIdAndType(ctx, journeyID, string(enum.ExamTypeAssessment))
+	journey, err := s.statsRepo.FindByEsessIdAndType(ctx, journeyID, string(enum.ExamTypeAssessment))
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -223,12 +223,12 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
 	}
-	if st := journey.UserExamStatus(); st == nil || *st != string(enum.UserExamStatusComplete) {
+	if st := journey.EsessStatus(); st == nil || *st != string(enum.EsessStatusComplete) {
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_COMPLETE, nil,
 			fmt.Errorf("exam: journey %d is %s; practice needs it COMPLETE", journeyID, utils.DerefString(st)))
 	}
 
-	base, err := s.attemptRepo.FindLatestSubmittedByUserExamId(ctx, journeyID)
+	base, err := s.attemptRepo.FindLatestSubmittedByEsessId(ctx, journeyID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -236,7 +236,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		return nil, errs.NewError(ctx, status.EXAM_PRACTICE_NO_BASE, nil,
 			fmt.Errorf("exam: journey %d has no submitted sitting to practise from", journeyID))
 	}
-	details, err := s.detailRepo.ListByUserAiExamId(ctx, base.UserAiExamId())
+	details, err := s.detailRepo.ListByElinkId(ctx, base.ElinkId())
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -271,7 +271,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 	}
 
 	log.Infof("exam.practice.drawn journey=%d base=%d mode=%s wrong=%d weak=%v",
-		journeyID, base.UserAiExamId(), brief.Mode, len(brief.Wrong), brief.WeakTopics)
+		journeyID, base.ElinkId(), brief.Mode, len(brief.Wrong), brief.WeakTopics)
 
 	return s.handOut(ctx, command.GenerateExamCommand{
 		UID:        profile.Uid(),
@@ -279,7 +279,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		ExamType:   enum.ExamTypePractice,
 		Grade:      grade,
 		Level:      req.Level,
-		UserExamID: &journeyID,
+		EsessID:    &journeyID,
 		NewContent: content,
 	}, generated.Questions, profile)
 }
@@ -304,13 +304,13 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 		return nil, err
 	}
 
-	logger.From(ctx).Infof("exam.generated attempt=%d ai_exam=%d profile=%d type=%s grade=%d",
-		created.Attempt.UserAiExamId(), created.AiExam.AiExamId(),
+	logger.From(ctx).Infof("exam.generated attempt=%d exam_pool=%d profile=%d type=%s grade=%d",
+		created.Attempt.ElinkId(), created.ExamPool.ExamId(),
 		profile.ProfileId(), cmd.ExamType, cmd.Grade)
 
 	// A live exam never ships the answer key.
 	return &dto.GenerateExamRes{
-		Exam: dto.AttemptToResponse(created.Attempt, created.AiExam, true),
+		Exam: dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
 	}, nil
 }
 
@@ -325,24 +325,24 @@ func (s *Service) SubmitExam(ctx context.Context, req *dto.SubmitExamReq) (*dto.
 	}
 
 	result, err := s.submitCmd.Handle(ctx, command.SubmitExamCommand{
-		UserAiExamID: req.UserAiExamID,
-		UID:          profile.Uid(),
-		ProfileID:    profile.ProfileId(),
-		Answers:      req.Answers,
-		Language:     metadata.GetClientLanguage(ctx).ToEnumLanguage(),
+		ElinkID:   req.ElinkID,
+		UID:       profile.Uid(),
+		ProfileID: profile.ProfileId(),
+		Answers:   req.Answers,
+		Language:  metadata.GetClientLanguage(ctx).ToEnumLanguage(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	aiExam, err := s.aiExamRepo.FindByAiExamId(ctx, result.Attempt.AiExamId())
+	examPool, err := s.examPoolRepo.FindByExamId(ctx, result.Attempt.ExamId())
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
 	// Submitted: the review screen needs the key to mark each question.
 	return &dto.SubmitExamRes{
-		Exam:  dto.AttemptToResponse(result.Attempt, aiExam, true),
+		Exam:  dto.AttemptToResponse(result.Attempt, examPool, true),
 		Stats: dto.StatsToSingleResponse(result.Stats),
 	}, nil
 }
@@ -358,10 +358,10 @@ func (s *Service) GetExam(ctx context.Context, req *dto.GetExamReq) (*dto.GetExa
 		return nil, err
 	}
 
-	if req.UserExamID > 0 {
-		return s.getJourney(ctx, req.UserExamID, *req.ExamType, profile)
+	if req.EsessID > 0 {
+		return s.getJourney(ctx, req.EsessID, *req.ExamType, profile)
 	}
-	return s.getAttempt(ctx, req.UserAiExamID, profile)
+	return s.getAttempt(ctx, req.ElinkID, profile)
 }
 
 func (s *Service) ListExams(ctx context.Context, req *dto.ListExamsReq) (*dto.ListExamsRes, error) {
@@ -374,19 +374,19 @@ func (s *Service) ListExams(ctx context.Context, req *dto.ListExamsReq) (*dto.Li
 	}
 
 	result, err := s.listQuery.Handle(ctx, query.ListExamAttemptsQuery{
-		ProfileID:  profile.ProfileId(),
-		ExamType:   req.ExamType,
-		UserExamID: req.UserExamID,
-		Status:     req.Status,
-		Page:       int64(req.Page),
-		Limit:      int64(req.Size),
+		ProfileID: profile.ProfileId(),
+		ExamType:  req.ExamType,
+		EsessID:   req.EsessID,
+		Status:    req.Status,
+		Page:      int64(req.Page),
+		Limit:     int64(req.Size),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	return &dto.ListExamsRes{
-		Exams:      dto.AttemptListToResponse(result.Attempts, result.AiExams),
+		Exams:      dto.AttemptListToResponse(result.Attempts, result.ExamPools),
 		Pagination: result.Pagination,
 	}, nil
 }
@@ -409,7 +409,7 @@ func (s *Service) GetExamStats(ctx context.Context, req *dto.GetExamStatsReq) (*
 	if err != nil {
 		return nil, err
 	}
-	return &dto.GetExamStatsRes{Stats: dto.JourneyStatsToResponse(rows.Journeys, rows.AiExams)}, nil
+	return &dto.GetExamStatsRes{Stats: dto.JourneyStatsToResponse(rows.Journeys, rows.ExamPools)}, nil
 }
 
 // MarkExamJourney ends a journey as COMPLETE or CANCEL. From then on the
@@ -426,11 +426,11 @@ func (s *Service) MarkExamJourney(ctx context.Context, req *dto.MarkExamJourneyR
 		return nil, err
 	}
 
-	journey, err := s.markJourneyCmd.Handle(ctx, command.MarkUserExamCommand{
-		UserExamID: req.UserExamID,
-		UID:        profile.Uid(),
-		ProfileID:  profile.ProfileId(),
-		Status:     validated.Status,
+	journey, err := s.markJourneyCmd.Handle(ctx, command.MarkExamSessionCommand{
+		EsessID:   req.EsessID,
+		UID:       profile.Uid(),
+		ProfileID: profile.ProfileId(),
+		Status:    validated.Status,
 	})
 	if err != nil {
 		return nil, err
@@ -449,12 +449,12 @@ func (s *Service) GetExamProgress(ctx context.Context, req *dto.ExamProgressReq)
 	}
 
 	result, err := s.progressQuery.Handle(ctx, query.GetExamProgressQuery{
-		ProfileID:  profile.ProfileId(),
-		ExamType:   req.ExamType,
-		UserExamID: req.UserExamID,
-		From:       req.FromDt,
-		To:         req.ToDt,
-		Limit:      int64(req.Limit),
+		ProfileID: profile.ProfileId(),
+		ExamType:  req.ExamType,
+		EsessID:   req.EsessID,
+		From:      req.FromDt,
+		To:        req.ToDt,
+		Limit:     int64(req.Limit),
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -473,7 +473,7 @@ func (s *Service) GetExamProgress(ctx context.Context, req *dto.ExamProgressReq)
 }
 
 // GetJourneyProgress returns the learning-progress chart over a child's
-// journeys — one point per ma_user_exams row with a score — bounded by
+// journeys — one point per ma_exam_sessions row with a score — bounded by
 // the same window as GetExamProgress.
 func (s *Service) GetJourneyProgress(ctx context.Context, req *dto.JourneyProgressReq) (*dto.JourneyProgressRes, error) {
 	if err := ValidateJourneyProgress(ctx, req); err != nil {

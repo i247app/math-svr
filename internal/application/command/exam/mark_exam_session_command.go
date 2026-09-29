@@ -15,7 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
-// MarkUserExamCommand moves one journey between lifecycle states.
+// MarkExamSessionCommand moves one journey between lifecycle states.
 //
 // Two moves exist, and they are each other's inverse:
 //
@@ -28,22 +28,22 @@ import (
 //
 // Both moves address the ASSESSMENT row and carry the PRACTICE row that
 // shares its id along with it; a PRACTICE row is never marked on its own.
-type MarkUserExamCommand struct {
-	UserExamID int64
-	UID        int64
-	ProfileID  int64
-	Status     enum.UserExamStatusType
+type MarkExamSessionCommand struct {
+	EsessID   int64
+	UID       int64
+	ProfileID int64
+	Status    enum.EsessStatusType
 }
 
-type MarkUserExamCommandHandler struct {
+type MarkExamSessionCommandHandler struct {
 	uow transaction.UnitOfWork
 }
 
-func NewMarkUserExamCommandHandler(uow transaction.UnitOfWork) *MarkUserExamCommandHandler {
-	return &MarkUserExamCommandHandler{uow: uow}
+func NewMarkExamSessionCommandHandler(uow transaction.UnitOfWork) *MarkExamSessionCommandHandler {
+	return &MarkExamSessionCommandHandler{uow: uow}
 }
 
-func (h *MarkUserExamCommandHandler) Handle(ctx context.Context, cmd MarkUserExamCommand) (*exam.UserExam, error) {
+func (h *MarkExamSessionCommandHandler) Handle(ctx context.Context, cmd MarkExamSessionCommand) (*exam.ExamSession, error) {
 	log := logger.From(ctx)
 
 	if !cmd.Status.IsMarkable() {
@@ -51,7 +51,7 @@ func (h *MarkUserExamCommandHandler) Handle(ctx context.Context, cmd MarkUserExa
 			fmt.Errorf("exam: %q is not a status a journey can be marked with", string(cmd.Status)))
 	}
 
-	var updated *exam.UserExam
+	var updated *exam.ExamSession
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
 		journey, err := h.loadOwnedJourney(ctx, repos, cmd)
@@ -59,7 +59,7 @@ func (h *MarkUserExamCommandHandler) Handle(ctx context.Context, cmd MarkUserExa
 			return err
 		}
 
-		if cmd.Status == enum.UserExamStatusActive {
+		if cmd.Status == enum.EsessStatusActive {
 			err = h.reopen(ctx, repos, cmd, journey)
 		} else {
 			err = h.end(ctx, repos, cmd, journey)
@@ -68,7 +68,7 @@ func (h *MarkUserExamCommandHandler) Handle(ctx context.Context, cmd MarkUserExa
 			return err
 		}
 
-		fresh, err := repos.UserExam.FindByUserExamIdAndType(ctx, journey.UserExamId(), journey.ReqExamType())
+		fresh, err := repos.ExamSession.FindByEsessIdAndType(ctx, journey.EsessId(), journey.ReqExamType())
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -77,8 +77,8 @@ func (h *MarkUserExamCommandHandler) Handle(ctx context.Context, cmd MarkUserExa
 		}
 		updated = fresh
 
-		log.Infof("exam.journey.marked user_exam_id=%d profile=%d type=%s status=%s",
-			journey.UserExamId(), cmd.ProfileID, journey.ReqExamType(), cmd.Status)
+		log.Infof("exam.journey.marked esess_id=%d profile=%d type=%s status=%s",
+			journey.EsessId(), cmd.ProfileID, journey.ReqExamType(), cmd.Status)
 		return nil
 	}
 
@@ -92,30 +92,30 @@ func (h *MarkUserExamCommandHandler) Handle(ctx context.Context, cmd MarkUserExa
 // lifecycle — and proves it belongs to this child. Ownership is checked
 // on BOTH ids: a profile id alone is guessable, and the session only
 // proves the user.
-func (h *MarkUserExamCommandHandler) loadOwnedJourney(ctx context.Context, repos transaction.Repositories, cmd MarkUserExamCommand) (*exam.UserExam, error) {
-	journey, err := repos.UserExam.FindByUserExamId(ctx, cmd.UserExamID)
+func (h *MarkExamSessionCommandHandler) loadOwnedJourney(ctx context.Context, repos transaction.Repositories, cmd MarkExamSessionCommand) (*exam.ExamSession, error) {
+	journey, err := repos.ExamSession.FindByEsessId(ctx, cmd.EsessID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if journey == nil {
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
-			fmt.Errorf("exam: journey %d not found", cmd.UserExamID))
+			fmt.Errorf("exam: journey %d not found", cmd.EsessID))
 	}
 	if journey.Uid() != cmd.UID || journey.ProfileId() != cmd.ProfileID {
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
-			fmt.Errorf("exam: journey %d belongs to another profile", cmd.UserExamID))
+			fmt.Errorf("exam: journey %d belongs to another profile", cmd.EsessID))
 	}
 	return journey, nil
 }
 
 // end closes an open journey.
-func (h *MarkUserExamCommandHandler) end(ctx context.Context, repos transaction.Repositories, cmd MarkUserExamCommand, journey *exam.UserExam) error {
-	if !hasStatus(journey, enum.UserExamStatusActive) {
+func (h *MarkExamSessionCommandHandler) end(ctx context.Context, repos transaction.Repositories, cmd MarkExamSessionCommand, journey *exam.ExamSession) error {
+	if !hasStatus(journey, enum.EsessStatusActive) {
 		return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil,
-			fmt.Errorf("exam: journey %d is not active", cmd.UserExamID))
+			fmt.Errorf("exam: journey %d is not active", cmd.EsessID))
 	}
 
-	if err := repos.UserExam.MarkStatus(ctx, journey.UserExamId(), string(cmd.Status), mtime.Now()); err != nil {
+	if err := repos.ExamSession.MarkStatus(ctx, journey.EsessId(), string(cmd.Status), mtime.Now()); err != nil {
 		// The read above and this write are not atomic with respect to
 		// another mark; the WHERE clause in MarkStatus is. This is how
 		// the loser of that race finds out.
@@ -133,26 +133,26 @@ func (h *MarkUserExamCommandHandler) end(ctx context.Context, repos transaction.
 // here gives the client a clean answer in the ordinary case; the unique
 // key the repository trips under a race is what actually holds the rule,
 // and it reports back through ErrJourneyConflict.
-func (h *MarkUserExamCommandHandler) reopen(ctx context.Context, repos transaction.Repositories, cmd MarkUserExamCommand, journey *exam.UserExam) error {
-	if hasStatus(journey, enum.UserExamStatusActive) {
+func (h *MarkExamSessionCommandHandler) reopen(ctx context.Context, repos transaction.Repositories, cmd MarkExamSessionCommand, journey *exam.ExamSession) error {
+	if hasStatus(journey, enum.EsessStatusActive) {
 		return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ACTIVE, nil,
-			fmt.Errorf("exam: journey %d is already active", cmd.UserExamID))
+			fmt.Errorf("exam: journey %d is already active", cmd.EsessID))
 	}
-	if !enum.UserExamStatusType(utils.DerefString(journey.UserExamStatus())).IsEnding() {
+	if !enum.EsessStatusType(utils.DerefString(journey.EsessStatus())).IsEnding() {
 		return errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
-			fmt.Errorf("exam: journey %d is in state %q and cannot be reopened", cmd.UserExamID, utils.DerefString(journey.UserExamStatus())))
+			fmt.Errorf("exam: journey %d is in state %q and cannot be reopened", cmd.EsessID, utils.DerefString(journey.EsessStatus())))
 	}
 
-	open, err := repos.UserExam.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, journey.ReqExamType())
+	open, err := repos.ExamSession.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, journey.ReqExamType())
 	if err != nil {
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if open != nil {
 		return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ACTIVE, nil,
-			fmt.Errorf("exam: journey %d is open; end it before reopening %d", open.UserExamId(), cmd.UserExamID))
+			fmt.Errorf("exam: journey %d is open; end it before reopening %d", open.EsessId(), cmd.EsessID))
 	}
 
-	if err := repos.UserExam.Reopen(ctx, journey.UserExamId()); err != nil {
+	if err := repos.ExamSession.Reopen(ctx, journey.EsessId()); err != nil {
 		switch {
 		case errors.Is(err, exam.ErrJourneyConflict):
 			// Another journey took the open slot between the read above
@@ -168,6 +168,6 @@ func (h *MarkUserExamCommandHandler) reopen(ctx context.Context, repos transacti
 	return nil
 }
 
-func hasStatus(journey *exam.UserExam, want enum.UserExamStatusType) bool {
-	return utils.DerefString(journey.UserExamStatus()) == string(want)
+func hasStatus(journey *exam.ExamSession, want enum.EsessStatusType) bool {
+	return utils.DerefString(journey.EsessStatus()) == string(want)
 }

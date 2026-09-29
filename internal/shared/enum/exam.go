@@ -18,7 +18,7 @@ const (
 	// been COMPLETED, from the child's latest submitted sitting in it —
 	// re-drilling what went wrong, or pushing further when nothing did.
 	// It is not a journey of its own: it shares the journey's
-	// user_exam_id and never moves the journey's grade. A journey that is
+	// esess_id and never moves the journey's grade. A journey that is
 	// still open, or was cancelled, cannot be practised in; reopening a
 	// completed one closes practice again until it is completed anew. It
 	// carries the same probe questions an ASSESSMENT does (see HasProbes).
@@ -64,43 +64,43 @@ const (
 
 func (m PracticeMode) String() string { return string(m) }
 
-// UserAiExamStatusType is the lifecycle of ONE attempt at an exam.
+// ElinkStatusType is the lifecycle of ONE attempt at an exam.
 //
 // An attempt is created IN_PROGRESS the moment the exam is handed out and
 // only ever leaves that state by being submitted. An attempt the child
 // abandons simply stays IN_PROGRESS — that is what lets the app show
 // "you still have this one open" and render it as 0/N.
-type UserAiExamStatusType string
+type ElinkStatusType string
 
 const (
-	UserAiExamStatusInProgress UserAiExamStatusType = "IN_PROGRESS"
-	UserAiExamStatusSubmitted  UserAiExamStatusType = "SUBMITTED"
-	UserAiExamStatusDeleted    UserAiExamStatusType = "DELETED"
+	ElinkStatusInProgress ElinkStatusType = "IN_PROGRESS"
+	ElinkStatusSubmitted  ElinkStatusType = "SUBMITTED"
+	ElinkStatusDeleted    ElinkStatusType = "DELETED"
 )
 
-func (s UserAiExamStatusType) String() string { return string(s) }
+func (s ElinkStatusType) String() string { return string(s) }
 
-func (s UserAiExamStatusType) IsValid() bool {
+func (s ElinkStatusType) IsValid() bool {
 	switch s {
-	case UserAiExamStatusInProgress, UserAiExamStatusSubmitted, UserAiExamStatusDeleted:
+	case ElinkStatusInProgress, ElinkStatusSubmitted, ElinkStatusDeleted:
 		return true
 	default:
 		return false
 	}
 }
 
-// AiExamStatusType is the business lifecycle of a generated question set.
+// ExamStatusType is the business lifecycle of a generated question set.
 // A DELETED row is excluded from cache lookups as well as from reads.
-type AiExamStatusType string
+type ExamStatusType string
 
 const (
-	AiExamStatusActive  AiExamStatusType = "ACTIVE"
-	AiExamStatusDeleted AiExamStatusType = "DELETED"
+	ExamStatusActive  ExamStatusType = "ACTIVE"
+	ExamStatusDeleted ExamStatusType = "DELETED"
 )
 
-func (s AiExamStatusType) String() string { return string(s) }
+func (s ExamStatusType) String() string { return string(s) }
 
-// UserExamStatusType is the lifecycle of one JOURNEY — a stretch of
+// EsessStatusType is the lifecycle of one JOURNEY — a stretch of
 // ASSESSMENT sittings (and the PRACTICE rounds drawn inside it) that a
 // child works through and then closes.
 //
@@ -121,20 +121,20 @@ func (s AiExamStatusType) String() string { return string(s) }
 // (and the only state a PRACTICE round may be drawn on), CANCEL a run
 // they abandoned. Neither hands anything to the next journey — a new one
 // starts where the client, or the profile, says.
-type UserExamStatusType string
+type EsessStatusType string
 
 const (
-	UserExamStatusActive   UserExamStatusType = "ACTIVE"
-	UserExamStatusComplete UserExamStatusType = "COMPLETE"
-	UserExamStatusCancel   UserExamStatusType = "CANCEL"
-	UserExamStatusDeleted  UserExamStatusType = "DELETED"
+	EsessStatusActive   EsessStatusType = "ACTIVE"
+	EsessStatusComplete EsessStatusType = "COMPLETE"
+	EsessStatusCancel   EsessStatusType = "CANCEL"
+	EsessStatusDeleted  EsessStatusType = "DELETED"
 )
 
 // IsValid accepts every lifecycle value, including DELETED, for callers
 // that filter on status.
-func (s UserExamStatusType) IsValid() bool {
+func (s EsessStatusType) IsValid() bool {
 	switch s {
-	case UserExamStatusActive, UserExamStatusComplete, UserExamStatusCancel, UserExamStatusDeleted:
+	case EsessStatusActive, EsessStatusComplete, EsessStatusCancel, EsessStatusDeleted:
 		return true
 	default:
 		return false
@@ -142,36 +142,36 @@ func (s UserExamStatusType) IsValid() bool {
 }
 
 // IsEnding reports whether a status finishes a journey.
-func (s UserExamStatusType) IsEnding() bool {
-	return s == UserExamStatusComplete || s == UserExamStatusCancel
+func (s EsessStatusType) IsEnding() bool {
+	return s == EsessStatusComplete || s == EsessStatusCancel
 }
 
 // IsActive reports whether a status finishes a journey.
-func (s UserExamStatusType) IsActive() bool {
-	return s == UserExamStatusActive
+func (s EsessStatusType) IsActive() bool {
+	return s == EsessStatusActive
 }
 
 // IsMarkable reports whether a status is one a client may MARK a journey
 // with: an ending, or ACTIVE to reopen an ended journey. DELETED is
 // deliberately excluded: it is a soft-delete, not a lifecycle move, and
 // reaches the row through a different path.
-func (s UserExamStatusType) IsMarkable() bool {
+func (s EsessStatusType) IsMarkable() bool {
 	return s.IsEnding() || s.IsActive()
 }
 
-func (s UserExamStatusType) String() string { return string(s) }
+func (s EsessStatusType) String() string { return string(s) }
 
-// UserExamDetailStatusType is the business lifecycle of one answered
+// EsessLnStatusType is the business lifecycle of one answered
 // question. Rows are written once at submit and never edited, so SUBMITTED
 // is the only state they normally hold.
-type UserExamDetailStatusType string
+type EsessLnStatusType string
 
 const (
-	UserExamDetailStatusActive  UserExamDetailStatusType = "ACTIVE"
-	UserExamDetailStatusDeleted UserExamDetailStatusType = "DELETED"
+	EsessLnStatusActive  EsessLnStatusType = "ACTIVE"
+	EsessLnStatusDeleted EsessLnStatusType = "DELETED"
 )
 
-func (s UserExamDetailStatusType) String() string { return string(s) }
+func (s EsessLnStatusType) String() string { return string(s) }
 
 // Bounds for the grade axis.
 //
@@ -179,7 +179,7 @@ func (s UserExamDetailStatusType) String() string { return string(s) }
 // 0 is kindergarten (mẫu giáo), 5 is the last elementary year.
 //
 // Level is a 1..10 scale the CLIENT states on a hand-out and the server
-// records (ma_user_exams.current_level, ma_user_ai_exams.req_level). No
+// records (ma_exam_sessions.current_level, ma_exam_links.req_level). No
 // server rule reads it yet — the prompt does not see it and nothing
 // derives it — so it is a recorded fact, not a behaviour.
 //

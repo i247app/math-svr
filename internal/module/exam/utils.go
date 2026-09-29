@@ -15,7 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
-// maxExamTextLen mirrors the VARCHAR(255) limit on ma_ai_exams.ai_title
+// maxExamTextLen mirrors the VARCHAR(255) limit on ma_exam_pools.ai_title
 // and ai_short_text. The prompt asks for far less; this is a backstop
 // against drift, not the primary enforcement.
 const maxExamTextLen = 255
@@ -35,7 +35,7 @@ func sanitizeExamText(text string) *string {
 
 // marshalQuestions stores the round in the EXAM vocabulary, so what sits
 // in ai_questions_json is what the client reads and what
-// ma_user_exam_details mirrors — one set of names end to end.
+// ma_exam_session_lines mirrors — one set of names end to end.
 func marshalQuestions(ctx context.Context, questions []question.Question) (string, error) {
 	raw, err := json.Marshal(dto.FromSharedQuestions(questions))
 	if err != nil {
@@ -48,12 +48,12 @@ func marshalQuestions(ctx context.Context, questions []question.Question) (strin
 // newContentFrom packages a fresh generation for storage. extras is the
 // cache tag the set is filed under, or nil for a set that must never be
 // served to anyone else.
-func newContentFrom(ctx context.Context, req *dto.GenerateExamReq, generated *generateExamOutput, extras *string, level *int) (*command.NewAiExamContent, error) {
+func newContentFrom(ctx context.Context, req *dto.GenerateExamReq, generated *generateExamOutput, extras *string, level *int) (*command.NewExamPoolContent, error) {
 	questionsJSON, err := marshalQuestions(ctx, generated.Questions)
 	if err != nil {
 		return nil, err
 	}
-	return &command.NewAiExamContent{
+	return &command.NewExamPoolContent{
 		NumQues:       req.NumQuestions,
 		Level:         level,
 		Semester:      utils.ToStringPtr(req.Semester),

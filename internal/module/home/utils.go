@@ -11,7 +11,7 @@ import (
 func examCards(data *query.HomeLayoutData) []*dto.ExamCard {
 	cards := make([]*dto.ExamCard, 0, len(data.Exams))
 	for _, a := range data.Exams {
-		cards = append(cards, dto.ExamToCard(a, data.ExamAiExams[a.AiExamId()]))
+		cards = append(cards, dto.ExamToCard(a, data.ExamPools[a.ExamId()]))
 	}
 	return cards
 }

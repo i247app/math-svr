@@ -25,11 +25,11 @@ import (
 // cost decision — English instructions tokenise shorter than Vietnamese
 // ones — and is separate from the language of the round: the questions,
 // topics and short_text the model writes are Vietnamese in both, because
-// the product serves Vietnamese children and ma_ai_exams cannot record a
+// the product serves Vietnamese children and ma_exam_pools cannot record a
 // row as being anything else.
 
 // ExamPromptInput is everything the generation prompt consumes. It mirrors
-// the req_* columns on ma_ai_exams, so what shaped a prompt can always be
+// the req_* columns on ma_exam_pools, so what shaped a prompt can always be
 // read back off the stored row.
 type ExamPromptInput struct {
 	// Language is the language the INSTRUCTIONS are written in. Empty

@@ -12,9 +12,9 @@ import (
 // optional: an attempt id is a plain integer, so the read has to prove
 // whose it is rather than trusting whoever asked.
 type GetExamAttemptQuery struct {
-	UserAiExamID int64
-	UID          int64
-	ProfileID    int64
+	ElinkID   int64
+	UID       int64
+	ProfileID int64
 }
 
 // ExamAttemptDetail is the review screen in one read: the sitting, the
@@ -22,34 +22,34 @@ type GetExamAttemptQuery struct {
 //
 // Details is empty while the attempt is still IN_PROGRESS — nothing is
 // logged until submit — so a client rendering an unfinished exam falls
-// back to AiExam's questions, which is exactly what it was handed at
+// back to ExamPool's questions, which is exactly what it was handed at
 // generation time.
 type ExamAttemptDetail struct {
-	Attempt *exam.UserAiExam
-	AiExam  *exam.AiExam
-	Details []*exam.UserExamDetail
+	Attempt  *exam.ExamLink
+	ExamPool *exam.ExamPool
+	Details  []*exam.ExamSessionLine
 }
 
 type GetExamAttemptQueryHandler struct {
-	attemptRepo exam.IUserAiExamRepository
-	aiExamRepo  exam.IAiExamRepository
-	detailRepo  exam.IUserExamDetailRepository
+	attemptRepo  exam.IExamLinkRepository
+	examPoolRepo exam.IExamPoolRepository
+	detailRepo   exam.IExamSessionLineRepository
 }
 
 func NewGetExamAttemptQueryHandler(
-	attemptRepo exam.IUserAiExamRepository,
-	aiExamRepo exam.IAiExamRepository,
-	detailRepo exam.IUserExamDetailRepository,
+	attemptRepo exam.IExamLinkRepository,
+	examPoolRepo exam.IExamPoolRepository,
+	detailRepo exam.IExamSessionLineRepository,
 ) *GetExamAttemptQueryHandler {
 	return &GetExamAttemptQueryHandler{
-		attemptRepo: attemptRepo,
-		aiExamRepo:  aiExamRepo,
-		detailRepo:  detailRepo,
+		attemptRepo:  attemptRepo,
+		examPoolRepo: examPoolRepo,
+		detailRepo:   detailRepo,
 	}
 }
 
 func (h *GetExamAttemptQueryHandler) Handle(ctx context.Context, q GetExamAttemptQuery) (*ExamAttemptDetail, error) {
-	attempt, err := h.attemptRepo.FindByUserAiExamId(ctx, q.UserAiExamID)
+	attempt, err := h.attemptRepo.FindByElinkId(ctx, q.ElinkID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -60,18 +60,18 @@ func (h *GetExamAttemptQueryHandler) Handle(ctx context.Context, q GetExamAttemp
 		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_OWNED, nil, nil)
 	}
 
-	aiExam, err := h.aiExamRepo.FindByAiExamId(ctx, attempt.AiExamId())
+	examPool, err := h.examPoolRepo.FindByExamId(ctx, attempt.ExamId())
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	if aiExam == nil {
+	if examPool == nil {
 		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil, nil)
 	}
 
-	details, err := h.detailRepo.ListByUserAiExamId(ctx, attempt.UserAiExamId())
+	details, err := h.detailRepo.ListByElinkId(ctx, attempt.ElinkId())
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	return &ExamAttemptDetail{Attempt: attempt, AiExam: aiExam, Details: details}, nil
+	return &ExamAttemptDetail{Attempt: attempt, ExamPool: examPool, Details: details}, nil
 }

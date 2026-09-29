@@ -53,10 +53,10 @@ type Repositories struct {
 	ChatConversation   chat.IRepository
 	ChatParticipant    chat.IParticipantRepository
 	ChatMessage        chat.IMessageRepository
-	AiExam             exam.IAiExamRepository
-	UserAiExam         exam.IUserAiExamRepository
-	UserExam           exam.IUserExamRepository
-	UserExamDetail     exam.IUserExamDetailRepository
+	ExamPool           exam.IExamPoolRepository
+	ExamLink           exam.IExamLinkRepository
+	ExamSession        exam.IExamSessionRepository
+	ExamSessionLine    exam.IExamSessionLineRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

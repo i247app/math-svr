@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-type UserExamModel struct {
-	UserExamId         int64
+type ExamSessionModel struct {
+	EsessId            int64
 	Uid                int64
 	ProfileId          int64
 	ReqExamType        string
@@ -21,7 +21,7 @@ type UserExamModel struct {
 	RptFlg             *string
 	Kwords             *string
 	Note               *string
-	UserExamStatus     *string
+	EsessStatus        *string
 	Status             string
 	CreateId           *int64
 	CreateDt           time.Time

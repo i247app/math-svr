@@ -20,12 +20,12 @@ type examProgressReader interface {
 // (empty means an open bound); ExamType nil means every type; Limit is
 // pre-clamped by the validator.
 type GetExamProgressQuery struct {
-	ProfileID  int64
-	ExamType   *string
-	UserExamID *int64
-	From       string
-	To         string
-	Limit      int64
+	ProfileID int64
+	ExamType  *string
+	EsessID   *int64
+	From      string
+	To        string
+	Limit     int64
 }
 
 type GetExamProgressResult struct {
@@ -43,10 +43,10 @@ func NewGetExamProgressQueryHandler(reader examProgressReader) *GetExamProgressQ
 
 func (h *GetExamProgressQueryHandler) Handle(ctx context.Context, q GetExamProgressQuery) (*GetExamProgressResult, error) {
 	params := exam.ProgressPointsParams{
-		ProfileID:  q.ProfileID,
-		ExamType:   q.ExamType,
-		UserExamID: q.UserExamID,
-		Limit:      q.Limit,
+		ProfileID: q.ProfileID,
+		ExamType:  q.ExamType,
+		EsessID:   q.EsessID,
+		Limit:     q.Limit,
 	}
 	if q.From != "" {
 		from, err := mtime.ParseFromString(q.From)
@@ -80,7 +80,7 @@ func (h *GetExamProgressQueryHandler) Handle(ctx context.Context, q GetExamProgr
 		prior, err := h.reader.ListProgressPoints(ctx, exam.ProgressPointsParams{
 			ProfileID:       q.ProfileID,
 			ExamType:        q.ExamType,
-			UserExamID:      q.UserExamID,
+			EsessID:         q.EsessID,
 			CompletedBefore: &anchor,
 			Limit:           q.Limit,
 		})
@@ -107,7 +107,7 @@ func toSeriesAsc(desc []*exam.ProgressPoint) []dto.ExamPoint {
 		p := desc[i]
 		out = append(out, dto.ExamPoint{
 			Sequence:       int64(n - i),
-			UserAiExamID:   p.UserAiExamId,
+			ElinkID:        p.ElinkId,
 			ExamType:       p.ExamType,
 			Grade:          p.Grade,
 			CompletedDt:    p.CompletedDt.String(),
@@ -135,8 +135,8 @@ func avg10OfPoints(points []*exam.ProgressPoint) (float64, bool) {
 func buildSummary(series []dto.ExamPoint, priorAvg10 *float64) dto.ExamProgressSummary {
 	points := make([]scorePoint, 0, len(series))
 	for _, p := range series {
-		points = append(points, scorePoint{ID: p.UserAiExamID, ScorePct: p.ScorePct})
+		points = append(points, scorePoint{ID: p.ElinkID, ScorePct: p.ScorePct})
 	}
 	core, hiID := summarizeScores(points, priorAvg10)
-	return dto.ExamProgressSummary{ExamScoreSummary: core, HighestExamID: hiID}
+	return dto.ExamProgressSummary{ExamScoreSummary: core, HighestElinkID: hiID}
 }

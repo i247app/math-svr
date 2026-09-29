@@ -35,25 +35,25 @@ type GetExamStatsQuery struct {
 }
 
 // ExamStatsResult is the journeys plus the question sets the unfinished
-// sittings were drawn from, keyed by ai_exam_id, so the caller can render
+// sittings were drawn from, keyed by exam_id, so the caller can render
 // each paper without a read per sitting.
 type ExamStatsResult struct {
-	Journeys []exam.JourneyStats
-	AiExams  map[int64]*exam.AiExam
+	Journeys  []exam.JourneyStats
+	ExamPools map[int64]*exam.ExamPool
 }
 
 type GetExamStatsQueryHandler struct {
-	statsRepo   exam.IUserExamRepository
-	attemptRepo exam.IUserAiExamRepository
-	aiExamRepo  exam.IAiExamRepository
+	statsRepo    exam.IExamSessionRepository
+	attemptRepo  exam.IExamLinkRepository
+	examPoolRepo exam.IExamPoolRepository
 }
 
 func NewGetExamStatsQueryHandler(
-	statsRepo exam.IUserExamRepository,
-	attemptRepo exam.IUserAiExamRepository,
-	aiExamRepo exam.IAiExamRepository,
+	statsRepo exam.IExamSessionRepository,
+	attemptRepo exam.IExamLinkRepository,
+	examPoolRepo exam.IExamPoolRepository,
 ) *GetExamStatsQueryHandler {
-	return &GetExamStatsQueryHandler{statsRepo: statsRepo, attemptRepo: attemptRepo, aiExamRepo: aiExamRepo}
+	return &GetExamStatsQueryHandler{statsRepo: statsRepo, attemptRepo: attemptRepo, examPoolRepo: examPoolRepo}
 }
 
 func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQuery) (*ExamStatsResult, error) {
@@ -75,7 +75,7 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 	}
 	journeys := nestPractice(rows, wantType)
 	if len(journeys) == 0 {
-		return &ExamStatsResult{Journeys: journeys, AiExams: map[int64]*exam.AiExam{}}, nil
+		return &ExamStatsResult{Journeys: journeys, ExamPools: map[int64]*exam.ExamPool{}}, nil
 	}
 
 	// One read for every unfinished sitting of the child, then attach by
@@ -87,23 +87,23 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 	}
 	attached := attachInProgress(journeys, open)
 
-	aiExams, err := hydrateAiExams(ctx, h.aiExamRepo, attached)
+	examPools, err := hydrateExamPools(ctx, h.examPoolRepo, attached)
 	if err != nil {
 		return nil, err
 	}
-	return &ExamStatsResult{Journeys: journeys, AiExams: aiExams}, nil
+	return &ExamStatsResult{Journeys: journeys, ExamPools: examPools}, nil
 }
 
 // nestPractice folds PRACTICE rows into the ASSESSMENT journey of the
 // same id and drops them from the top level. wantType, when set, keeps
 // only journeys of that type — the practice rows still nest, since they
 // were fetched for exactly that.
-func nestPractice(rows []*exam.UserExam, wantType string) []exam.JourneyStats {
-	practice := make(map[int64]*exam.UserExam)
-	var journeys []*exam.UserExam
+func nestPractice(rows []*exam.ExamSession, wantType string) []exam.JourneyStats {
+	practice := make(map[int64]*exam.ExamSession)
+	var journeys []*exam.ExamSession
 	for _, r := range rows {
 		if r.ReqExamType() == string(enum.ExamTypePractice) {
-			practice[r.UserExamId()] = r
+			practice[r.EsessId()] = r
 			continue
 		}
 		if wantType != "" && r.ReqExamType() != wantType {
@@ -116,7 +116,7 @@ func nestPractice(rows []*exam.UserExam, wantType string) []exam.JourneyStats {
 	for _, j := range journeys {
 		js := exam.JourneyStats{Journey: j}
 		if j.ReqExamType() == string(enum.ExamTypeAssessment) {
-			js.Practice = practice[j.UserExamId()]
+			js.Practice = practice[j.EsessId()]
 		}
 		out = append(out, js)
 	}
@@ -126,18 +126,18 @@ func nestPractice(rows []*exam.UserExam, wantType string) []exam.JourneyStats {
 // attachInProgress hangs each unfinished sitting under its journey, in
 // place, and returns the ones that found a home — the set whose question
 // sets need hydrating. open is oldest first and that order is kept.
-func attachInProgress(journeys []exam.JourneyStats, open []*exam.UserAiExam) []*exam.UserAiExam {
+func attachInProgress(journeys []exam.JourneyStats, open []*exam.ExamLink) []*exam.ExamLink {
 	byID := make(map[int64]int, len(journeys))
 	for i, j := range journeys {
-		byID[j.Journey.UserExamId()] = i
+		byID[j.Journey.EsessId()] = i
 	}
 
-	var attached []*exam.UserAiExam
+	var attached []*exam.ExamLink
 	for _, a := range open {
-		if a.UserExamId() == nil {
+		if a.EsessId() == nil {
 			continue
 		}
-		i, ok := byID[*a.UserExamId()]
+		i, ok := byID[*a.EsessId()]
 		if !ok {
 			continue
 		}

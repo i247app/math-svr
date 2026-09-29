@@ -14,7 +14,7 @@ import (
 
 // StaleGuestLister finds guests that have gone quiet. It is declared here
 // rather than in a domain package because the read spans ma_users and
-// ma_user_ai_exams — it is a maintenance sweep, not a question either
+// ma_exam_links — it is a maintenance sweep, not a question either
 // aggregate can answer alone. The MySQL MaintenanceRepository implements it.
 type StaleGuestLister interface {
 	ListStaleGuestUids(ctx context.Context, before time.Time, limit int) ([]int64, error)

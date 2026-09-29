@@ -158,10 +158,10 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 
 	log.Info("> Setup ExamSvc...")
 	examService := exam.NewService(
-		repos.AiExamRepository,
-		repos.UserAiExamRepository,
-		repos.UserExamRepository,
-		repos.UserExamDetailRepository,
+		repos.ExamPoolRepository,
+		repos.ExamLinkRepository,
+		repos.ExamSessionRepository,
+		repos.ExamSessionLineRepository,
 		uow,
 		res.BotProvider,
 		repos.ProfileRepository,
@@ -223,8 +223,8 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ExerciseRepository,
 		repos.ExerciseSubmissionRepository,
 		repos.ProfileRepository,
-		repos.UserAiExamRepository,
-		repos.AiExamRepository,
+		repos.ExamLinkRepository,
+		repos.ExamPoolRepository,
 		res.StorageProvider,
 	)
 

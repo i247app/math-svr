@@ -14,7 +14,7 @@ import (
 // It exists because the exam vocabulary is its own: the field names here
 // match the columns they end up in (right_answer_label,
 // right_answer_content, question_topic, question_grade),
-// so a question can be read from the JSON, written to ma_user_exam_details
+// so a question can be read from the JSON, written to ma_exam_session_lines
 // and rendered by the client without anybody renaming anything on the way.
 //
 // The quiz and exercise flows keep the older names (right_answer,

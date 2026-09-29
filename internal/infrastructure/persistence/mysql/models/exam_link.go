@@ -4,12 +4,12 @@ import (
 	"time"
 )
 
-type UserAiExamModel struct {
-	UserAiExamId       int64
+type ExamLinkModel struct {
+	ElinkId            int64
 	Uid                int64
 	ProfileId          int64
-	AiExamId           int64
-	UserExamId         *int64
+	ExamId             int64
+	EsessId            *int64
 	ShuffleMap         *string
 	ReqExamType        string
 	ReqGrade           int
@@ -23,7 +23,7 @@ type UserAiExamModel struct {
 	RptFlg             *string
 	Kwords             *string
 	Note               *string
-	UserAiExamStatus   *string
+	ElinkStatus        *string
 	Status             string
 	CreateId           *int64
 	CreateDt           time.Time

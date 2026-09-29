@@ -7,7 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// BuildCacheTag is the ONE function that builds ma_ai_exams.req_extras.
+// BuildCacheTag is the ONE function that builds ma_exam_pools.req_extras.
 //
 // The tag is a cache key, so its only real requirement is that identical
 // requests produce an identical string, forever. That is why it lives

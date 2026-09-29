@@ -1,5 +1,5 @@
 // Package placement turns a child's exam statistics into the one
-// server-derived field on ma_user_exams: res_review.
+// server-derived field on ma_exam_sessions: res_review.
 //
 // It used to derive res_grade as well — a single-attempt window that
 // moved the child up or down a band on each submit. That rule is gone:

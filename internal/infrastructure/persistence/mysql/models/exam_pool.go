@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-type AiExamModel struct {
-	AiExamId        int64
+type ExamPoolModel struct {
+	ExamId          int64
 	ReqExamType     string
 	ReqGrade        int
 	ReqLevel        *int
@@ -19,7 +19,7 @@ type AiExamModel struct {
 	RptFlg          *string
 	Kwords          *string
 	Note            *string
-	AiExamStatus    *string
+	ExamStatus      *string
 	Status          string
 	CreateId        *int64
 	CreateDt        time.Time

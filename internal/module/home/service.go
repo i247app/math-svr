@@ -36,14 +36,14 @@ func NewService(
 	exerciseRepo exerciseDomain.IRepository,
 	submissionRepo exerciseDomain.ISubmissionRepository,
 	profileRepo profileDomain.IRepository,
-	attemptRepo examDomain.IUserAiExamRepository,
-	aiExamRepo examDomain.IAiExamRepository,
+	attemptRepo examDomain.IExamLinkRepository,
+	examPoolRepo examDomain.IExamPoolRepository,
 	storageProvider *storage.Adapter,
 ) *Service {
 	return &Service{
 		getHomeLayoutQuery: query.NewGetHomeLayoutQueryHandler(
 			classroomRepo, memberRepo, exerciseRepo, submissionRepo, profileRepo,
-			attemptRepo, aiExamRepo,
+			attemptRepo, examPoolRepo,
 		),
 		profileRepo:     profileRepo,
 		storageProvider: storageProvider,
