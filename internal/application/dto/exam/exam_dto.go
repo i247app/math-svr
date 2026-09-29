@@ -90,7 +90,7 @@ type ListExamsReq struct {
 // showing where the child is now; omit it for the full history.
 //
 // ExamType names a JOURNEY type. PRACTICE is not one — its totals ride
-// along on the ASSESSMENT journey they belong to (ExamStats.Practice) —
+// along on the journey they belong to (ExamStats.Practice) —
 // so asking for it is rejected rather than answered with orphan rows.
 type GetExamStatsReq struct {
 	UID               *int64  `json:"-"`
@@ -198,8 +198,8 @@ type ExamStats struct {
 	EndedDt         string `json:"ended_dt,omitempty"`
 	CreateDt        string `json:"create_dt"`
 	// Practice is the journey's PRACTICE row, present once the child has
-	// submitted a practice round in it. Only an ASSESSMENT journey carries
-	// one; it shares esess_id and never has a grade.
+	// submitted a practice round in it. Either kind of journey — ASSESSMENT
+	// or GRADE — may carry one; it shares esess_id and never has a grade.
 	Practice *ExamStats `json:"practice,omitempty"`
 	// InProgressExams are the journey's sittings — ASSESSMENT or PRACTICE,
 	// see each one's exam_type — that were handed out and never submitted,
@@ -591,7 +591,7 @@ type ExamProgressReq struct {
 // JourneyProgressReq asks for the chart over journeys (ma_exam_sessions
 // rows) rather than sittings. ExamType nil means every journey type;
 // PRACTICE is refused, as it is for stats — its rows live inside their
-// ASSESSMENT journey.
+// journey (ASSESSMENT or GRADE).
 type JourneyProgressReq struct {
 	UID       *int64  `json:"-"`
 	ProfileID int64   `json:"profile_id"`

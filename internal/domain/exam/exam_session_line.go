@@ -10,8 +10,8 @@ import (
 //
 // Rows accumulate under esessId for the life of the journey; grouping
 // by elinkId splits them back into individual sittings. reqExamType
-// is copied from the sitting so the journey's ASSESSMENT rows and its
-// PRACTICE rows — which share esessId — can be told apart without a
+// is copied from the sitting so the journey's own rows (ASSESSMENT or
+// GRADE) and its PRACTICE rows — which share esessId — can be told apart without a
 // join: every per-journey read filters on the pair.
 //
 // The question fields are a snapshot taken at submit time out of the

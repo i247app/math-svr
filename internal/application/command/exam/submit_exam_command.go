@@ -275,13 +275,19 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 	}
 	journeyID := *attempt.EsessId()
 
-	// The row that owns the journey's lifecycle: the sitting's own type,
-	// except that PRACTICE hangs off the ASSESSMENT row.
-	ownerType := attempt.ReqExamType()
-	if ownerType == string(enum.ExamTypePractice) {
-		ownerType = string(enum.ExamTypeAssessment)
+	// The row that owns the journey's lifecycle. A graded sitting names it
+	// by its own type. A PRACTICE sitting hangs off whichever row the
+	// journey was opened as — ASSESSMENT or GRADE — so it is read by id
+	// alone; FindByEsessId never returns the PRACTICE row sharing that id.
+	var (
+		owner *exam.ExamSession
+		err   error
+	)
+	if attempt.ReqExamType() == string(enum.ExamTypePractice) {
+		owner, err = repos.ExamSession.FindByEsessId(ctx, journeyID)
+	} else {
+		owner, err = repos.ExamSession.FindByEsessIdAndType(ctx, journeyID, attempt.ReqExamType())
 	}
-	owner, err := repos.ExamSession.FindByEsessIdAndType(ctx, journeyID, ownerType)
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}

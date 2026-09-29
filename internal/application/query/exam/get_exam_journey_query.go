@@ -14,8 +14,9 @@ import (
 // both ids, the same as for a single attempt.
 type GetExamJourneyQuery struct {
 	EsessID int64
-	// ExamType picks the row of the journey — ASSESSMENT or PRACTICE —
-	// since both share EsessID. Normalised by the caller.
+	// ExamType picks the row of the journey, since the owning row and the
+	// PRACTICE row share EsessID. Empty reads the owning row (ASSESSMENT
+	// or GRADE). Normalised by the caller.
 	ExamType  string
 	UID       int64
 	ProfileID int64
@@ -69,7 +70,15 @@ func NewGetExamJourneyQueryHandler(
 }
 
 func (h *GetExamJourneyQueryHandler) Handle(ctx context.Context, q GetExamJourneyQuery) (*ExamJourneyDetail, error) {
-	journey, err := h.journeyRepo.FindByEsessIdAndType(ctx, q.EsessID, q.ExamType)
+	var (
+		journey *exam.ExamSession
+		err     error
+	)
+	if q.ExamType == "" {
+		journey, err = h.journeyRepo.FindByEsessId(ctx, q.EsessID)
+	} else {
+		journey, err = h.journeyRepo.FindByEsessIdAndType(ctx, q.EsessID, q.ExamType)
+	}
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}

@@ -154,7 +154,7 @@ so the two are interchangeable; re-running is a no-op.
 | `make migrate-baseline` | record every `up/` file as applied **without** running it — one-off for a database set up by hand before this script existed |
 
 New migration: `./deploy/scripts/create_migration.sh ma_foo_table` scaffolds
-`up/NNN_ma_foo_table.sql` + `down/NNN_ma_foo_table.sql` with the next free number.
+`up/NNN_ma_foo.sql` + `down/NNN_ma_foo.sql` with the next free number (files are named after their table).
 
 > Migrations are forward-only in the sense that `up` never re-executes a recorded version;
 > `down` exists to tear a **local** database down, not to roll back production. MySQL DDL

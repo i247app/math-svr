@@ -76,7 +76,7 @@ func (r *ExamSessionRepository) FindByEsessId(ctx context.Context, esessId int64
 }
 
 // FindByEsessIdAndType reads one row of a journey. esess_id alone
-// is not a key here — the ASSESSMENT row and the PRACTICE row of one
+// is not a key here — the owning row and the PRACTICE row of one
 // journey share it — so the type is part of every by-id read.
 func (r *ExamSessionRepository) FindByEsessIdAndType(ctx context.Context, esessId int64, examType string) (*exam.ExamSession, error) {
 	return r.findOneBy(ctx, "e.esess_id = ? AND e.req_exam_type = ?", esessId, examType)
@@ -343,7 +343,7 @@ func (r *ExamSessionRepository) SetCurrent(ctx context.Context, esessId int64, e
 // and folds into the winner. The PRIMARY KEY is (esess_id, req_exam_type)
 // — not esess_id alone (up/035) — which is what lets a PRACTICE row reuse
 // its journey's id without ever doubling up. The caller decides the id: a fresh one for an
-// ASSESSMENT row, the journey's own for a PRACTICE row.
+// ASSESSMENT or GRADE row, the journey's own for a PRACTICE row.
 func (r *ExamSessionRepository) Create(ctx context.Context, e *exam.ExamSession, delta exam.StatsDelta) error {
 	query := `
 		INSERT INTO ` + examSessionTable + `

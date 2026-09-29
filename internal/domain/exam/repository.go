@@ -177,11 +177,12 @@ type JourneyProgressParams struct {
 // IExamSessionRepository owns journeys.
 //
 // A journey is one esess_id and holds up to TWO rows in this table:
-// the ASSESSMENT row (always; it owns the lifecycle and the measured
-// grade) and a PRACTICE row (once the child has submitted a practice
+// the owning row — ASSESSMENT or GRADE, whichever the journey was opened
+// as (always; it owns the lifecycle and the measured grade) and a PRACTICE row (once the child has submitted a practice
 // round; it shares the id and keeps its own totals). The row key is
-// therefore the pair (esess_id, req_exam_type), and every by-id read
-// names the type.
+// therefore the pair (esess_id, req_exam_type). A by-id read either
+// names the type or uses FindByEsessId for the owning row — never a
+// hard-coded ASSESSMENT, which refuses every GRADE journey.
 //
 // Opening and accumulating are two explicit operations, not one upsert.
 // Create is a plain INSERT: it succeeds only when no other row holds the

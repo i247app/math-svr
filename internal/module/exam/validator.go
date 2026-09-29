@@ -110,9 +110,11 @@ func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {
 // clients see the code they already handle.
 //
 // A journey read also settles req_exam_type: it names which row of the
-// journey to read, defaults to ASSESSMENT so clients that predate the
-// PRACTICE row keep getting what they always did, and is normalised in
-// place so the service can use it as-is.
+// journey to read and is normalised in place. Left empty, the journey's
+// owning row is read — ASSESSMENT or GRADE, whichever it was opened as —
+// which is what clients that predate the PRACTICE row always got. It is
+// deliberately NOT defaulted to ASSESSMENT: that made every GRADE journey
+// read as "not found".
 func ValidateGetExam(ctx context.Context, req *dto.GetExamReq) error {
 	if req.ProfileID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
@@ -127,10 +129,6 @@ func ValidateGetExam(ctx context.Context, req *dto.GetExamReq) error {
 		examType, err := normalizeExamType(ctx, req.ExamType)
 		if err != nil {
 			return err
-		}
-		if examType == nil {
-			def := string(enum.ExamTypeAssessment)
-			examType = &def
 		}
 		req.ExamType = examType
 	}

@@ -37,7 +37,7 @@ UNION ALL SELECT '033 ma_logins table',
        (SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='ma_logins'),
        '1',
        IF((SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='ma_logins')=1,
-          'APPLIED','MISSING -> run migrations/up/029_ma_logins_table.sql')
+          'APPLIED','MISSING -> run migrations/up/029_ma_logins.sql')
 
 -- 034 only means something while 035 has not run: 035 replaces these two
 -- indexes with the PRIMARY KEY, so their absence afterwards is correct.

@@ -4,7 +4,7 @@ package enum
 // only discriminator the exam model keeps — the old GENERAL /
 // REINFORCEMENT axis was dropped along with the reinforcement flow, and
 // the EXAM checkpoint round was dropped when PRACTICE moved inside the
-// ASSESSMENT journey.
+// journeys (ASSESSMENT and GRADE).
 type ExamType string
 
 const (
@@ -14,8 +14,8 @@ const (
 	// An ASSESSMENT journey is the unit of lifecycle: it opens, accumulates
 	// sittings, and is ended by the parent.
 	ExamTypeAssessment ExamType = "ASSESSMENT"
-	// ExamTypePractice is a round drawn AFTER an ASSESSMENT journey has
-	// been COMPLETED, from the child's latest submitted sitting in it —
+	// ExamTypePractice is a round drawn AFTER a journey — ASSESSMENT or
+	// GRADE — has been COMPLETED, from the child's latest submitted sitting in it —
 	// re-drilling what went wrong, or pushing further when nothing did.
 	// It is not a journey of its own: it shares the journey's
 	// esess_id and never moves the journey's grade. A journey that is
@@ -104,9 +104,9 @@ func (s ExamStatusType) String() string { return string(s) }
 // ASSESSMENT sittings (and the PRACTICE rounds drawn inside it) that a
 // child works through and then closes.
 //
-// ACTIVE is the open journey; every submission folds into it — ASSESSMENT
-// sittings into its ASSESSMENT row, PRACTICE sittings into the PRACTICE
-// row that shares its id. Ending the journey ends both rows.
+// ACTIVE is the open journey; every submission folds into it — its own
+// sittings into its owning row (ASSESSMENT or GRADE), PRACTICE sittings
+// into the PRACTICE row that shares its id. Ending the journey ends both rows.
 //
 // An ended journey CAN be reopened — marked ACTIVE again — as long as no
 // other journey of its type is open: a child may change their mind and

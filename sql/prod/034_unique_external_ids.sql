@@ -9,7 +9,7 @@
 -- 4a. duplicate check
 SELECT profile_id, COUNT(*) AS c FROM ma_profiles GROUP BY profile_id HAVING c > 1;
 -- (user_exam_id, req_exam_type), not user_exam_id alone: a journey's PRACTICE
--- row shares its id by design (see migrations/up/035_exam_session_pk_by_type.sql).
+-- row shares its id by design (see migrations/up/027_ma_exam_sessions.sql).
 SELECT user_exam_id, req_exam_type, COUNT(*) AS c FROM ma_user_exams GROUP BY user_exam_id, req_exam_type HAVING c > 1;
 
 -- 4b. the indexes. Non-destructive: adds an index, drops nothing.

@@ -26,8 +26,8 @@ import (
 //     mind. Only one journey of a type may be open at a time, so this is
 //     refused while another is — end that one first.
 //
-// Both moves address the ASSESSMENT row and carry the PRACTICE row that
-// shares its id along with it; a PRACTICE row is never marked on its own.
+// Both moves address the journey's owning row (ASSESSMENT or GRADE) and
+// carry the PRACTICE row that shares its id along with it; a PRACTICE row is never marked on its own.
 type MarkExamSessionCommand struct {
 	EsessID   int64
 	UID       int64
@@ -88,8 +88,8 @@ func (h *MarkExamSessionCommandHandler) Handle(ctx context.Context, cmd MarkExam
 	return updated, nil
 }
 
-// loadOwnedJourney reads the ASSESSMENT row — the one that owns the
-// lifecycle — and proves it belongs to this child. Ownership is checked
+// loadOwnedJourney reads the owning row (ASSESSMENT or GRADE) — the one
+// that owns the lifecycle — and proves it belongs to this child. Ownership is checked
 // on BOTH ids: a profile id alone is guessable, and the session only
 // proves the user.
 func (h *MarkExamSessionCommandHandler) loadOwnedJourney(ctx context.Context, repos transaction.Repositories, cmd MarkExamSessionCommand) (*exam.ExamSession, error) {

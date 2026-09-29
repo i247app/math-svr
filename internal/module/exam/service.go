@@ -196,8 +196,9 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 
 // generatePractice draws a PRACTICE round on a finished journey.
 //
-// The journey's ASSESSMENT row is the gate: it must exist, belong to this
-// child, and be COMPLETE — practice is what comes after a run has been
+// The journey's owning row — ASSESSMENT or GRADE, whichever the journey
+// was opened as — is the gate: it must exist, belong to this child, and be
+// COMPLETE — practice is what comes after a run has been
 // finished and measured; an open journey is still being measured, and a
 // cancelled one was abandoned. The round is then aimed at the journey's
 // latest SUBMITTED sitting, of any type: its grade is the round's grade,
@@ -211,7 +212,9 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 	log := logger.From(ctx)
 	journeyID := *req.EsessID
 
-	journey, err := s.statsRepo.FindByEsessIdAndType(ctx, journeyID, string(enum.ExamTypeAssessment))
+	// By id alone: PRACTICE drills either kind of journey, so naming a type
+	// here would refuse every journey of the other kind as "not found".
+	journey, err := s.statsRepo.FindByEsessId(ctx, journeyID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -359,7 +362,7 @@ func (s *Service) GetExam(ctx context.Context, req *dto.GetExamReq) (*dto.GetExa
 	}
 
 	if req.EsessID > 0 {
-		return s.getJourney(ctx, req.EsessID, *req.ExamType, profile)
+		return s.getJourney(ctx, req.EsessID, utils.DerefString(req.ExamType), profile)
 	}
 	return s.getAttempt(ctx, req.ElinkID, profile)
 }

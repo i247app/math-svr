@@ -15,7 +15,7 @@ import (
 // newest first inside each type.
 //
 // PRACTICE rows are never returned on their own. Each rides inside the
-// ASSESSMENT journey it belongs to (JourneyStats.Practice), so the
+// journey it belongs to — ASSESSMENT or GRADE — (JourneyStats.Practice), so the
 // dashboard sees one entry per journey — not two rows sharing an id.
 // The validator refuses ExamType = PRACTICE for that reason.
 //
@@ -57,16 +57,14 @@ func NewGetExamStatsQueryHandler(
 }
 
 func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQuery) (*ExamStatsResult, error) {
-	// An ASSESSMENT read must also pull the PRACTICE rows to nest them, so
-	// it fetches every type and partitions below. Any other named type
-	// has no practice and is fetched alone.
+	// Any journey — ASSESSMENT or GRADE — may carry a PRACTICE row, so the
+	// type is never narrowed in SQL: that would drop the very PRACTICE rows
+	// the journey needs nested. Every type is fetched and nestPractice
+	// filters. (PRACTICE itself is refused by the validator — not a journey.)
 	filter := exam.ListJourneysFilter{Status: q.Status}
 	wantType := ""
-	if q.ExamType != nil && *q.ExamType != "" {
+	if q.ExamType != nil {
 		wantType = *q.ExamType
-		if wantType != string(enum.ExamTypeAssessment) {
-			filter.ExamType = q.ExamType
-		}
 	}
 
 	rows, err := h.statsRepo.ListByUserProfile(ctx, q.UID, q.ProfileID, filter)
@@ -94,8 +92,8 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 	return &ExamStatsResult{Journeys: journeys, ExamPools: examPools}, nil
 }
 
-// nestPractice folds PRACTICE rows into the ASSESSMENT journey of the
-// same id and drops them from the top level. wantType, when set, keeps
+// nestPractice folds each PRACTICE row into the journey of the same id —
+// ASSESSMENT or GRADE — and drops it from the top level. wantType, when set, keeps
 // only journeys of that type — the practice rows still nest, since they
 // were fetched for exactly that.
 func nestPractice(rows []*exam.ExamSession, wantType string) []exam.JourneyStats {
@@ -114,11 +112,7 @@ func nestPractice(rows []*exam.ExamSession, wantType string) []exam.JourneyStats
 
 	out := make([]exam.JourneyStats, 0, len(journeys))
 	for _, j := range journeys {
-		js := exam.JourneyStats{Journey: j}
-		if j.ReqExamType() == string(enum.ExamTypeAssessment) {
-			js.Practice = practice[j.EsessId()]
-		}
-		out = append(out, js)
+		out = append(out, exam.JourneyStats{Journey: j, Practice: practice[j.EsessId()]})
 	}
 	return out
 }
