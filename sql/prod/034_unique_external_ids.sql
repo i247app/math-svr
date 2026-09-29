@@ -8,13 +8,15 @@
 
 -- 4a. duplicate check
 SELECT profile_id, COUNT(*) AS c FROM ma_profiles GROUP BY profile_id HAVING c > 1;
-SELECT user_exam_id, COUNT(*) AS c FROM ma_user_exams GROUP BY user_exam_id HAVING c > 1;
+-- (user_exam_id, req_exam_type), not user_exam_id alone: a journey's PRACTICE
+-- row shares its id by design (see migrations/up/035_exam_session_pk_by_type.sql).
+SELECT user_exam_id, req_exam_type, COUNT(*) AS c FROM ma_user_exams GROUP BY user_exam_id, req_exam_type HAVING c > 1;
 
 -- 4b. the indexes. Non-destructive: adds an index, drops nothing.
 --     ma_profiles.profile_id has NO index today, so this also removes a full
 --     table scan from every `WHERE profile_id = ?`.
 ALTER TABLE ma_profiles   ADD UNIQUE KEY uk_profile_id   (profile_id);
-ALTER TABLE ma_user_exams ADD UNIQUE KEY uk_user_exam_id (user_exam_id);
+ALTER TABLE ma_user_exams ADD UNIQUE KEY uk_user_exam_id (user_exam_id, req_exam_type);
 
 -- Already there? You get
 --   ERROR 1061: Duplicate key name 'uk_profile_id'

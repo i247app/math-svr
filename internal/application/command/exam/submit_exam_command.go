@@ -248,8 +248,8 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 // row, which exists only once the journey is COMPLETE — practice is what
 // comes after a finished run — opening it under the journey's own id the
 // first time, born COMPLETE like its journey; a race to open it resolves
-// like any other — the loser collides on uk_journey_type, re-reads, and
-// accumulates into the winner's row.
+// like any other — the loser collides on the (esess_id, req_exam_type)
+// primary key, re-reads, and accumulates into the winner's row.
 //
 // Every write carries its guard in the WHERE clause (the expected status
 // for an UPDATE, the unique keys for an INSERT), so a journey whose state
@@ -329,7 +329,7 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 		}
 		if existing == nil {
 			return 0, errs.NewError(ctx, status.FAIL, nil,
-				fmt.Errorf("exam: opening the practice row of journey %d collided with a row that cannot be read back — check uk_journey_type", journeyID))
+				fmt.Errorf("exam: opening the practice row of journey %d collided with a row that cannot be read back — check the (esess_id, req_exam_type) primary key", journeyID))
 		}
 	}
 	return journeyID, h.accumulate(ctx, repos, journeyID, practiceType, string(enum.EsessStatusComplete), h.practiceRow(cmd, existing, delta, journeyID), delta)

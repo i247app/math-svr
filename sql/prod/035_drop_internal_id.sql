@@ -176,10 +176,11 @@ ALTER TABLE ma_user_exam_details
   ADD PRIMARY KEY (user_exam_detail_id),
   DROP COLUMN id;
 
+-- The pair, not user_exam_id alone: a journey's PRACTICE row shares its id.
 ALTER TABLE ma_user_exams
   DROP INDEX uk_user_exam_id,
   DROP PRIMARY KEY,
-  ADD PRIMARY KEY (user_exam_id),
+  ADD PRIMARY KEY (user_exam_id, req_exam_type),
   DROP COLUMN id;
 
 ALTER TABLE ma_user_presence

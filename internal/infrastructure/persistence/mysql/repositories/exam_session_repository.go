@@ -67,9 +67,12 @@ func (r *ExamSessionRepository) findOneBy(ctx context.Context, where string, arg
 	return ModelToDomainExamSession(m), nil
 }
 
-// FindByEsessId reads one row of a journey.
+// FindByEsessId reads the row that owns the journey's lifecycle — never
+// its PRACTICE row, which shares the esess_id (see FindByEsessIdAndType).
+// Without the type filter a journey that has been practised could come
+// back as its COMPLETE PRACTICE row even while the journey itself is open.
 func (r *ExamSessionRepository) FindByEsessId(ctx context.Context, esessId int64) (*exam.ExamSession, error) {
-	return r.findOneBy(ctx, "e.esess_id = ?", esessId)
+	return r.findOneBy(ctx, "e.esess_id = ? AND e.req_exam_type <> ?", esessId, string(enum.ExamTypePractice))
 }
 
 // FindByEsessIdAndType reads one row of a journey. esess_id alone
@@ -337,9 +340,9 @@ func (r *ExamSessionRepository) SetCurrent(ctx context.Context, esessId int64, e
 // Two unique keys back this. uk_active_journey makes "at most one open
 // row per (user, profile, type)" hold under concurrency: two first-ever
 // submits both try to INSERT, one wins, the other gets ErrJourneyConflict
-// and folds into the winner. uk_journey_type makes (esess_id, type)
-// unique, which is what lets a PRACTICE row reuse its journey's id
-// without ever doubling up. The caller decides the id: a fresh one for an
+// and folds into the winner. The PRIMARY KEY is (esess_id, req_exam_type)
+// — not esess_id alone (up/035) — which is what lets a PRACTICE row reuse
+// its journey's id without ever doubling up. The caller decides the id: a fresh one for an
 // ASSESSMENT row, the journey's own for a PRACTICE row.
 func (r *ExamSessionRepository) Create(ctx context.Context, e *exam.ExamSession, delta exam.StatsDelta) error {
 	query := `

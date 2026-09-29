@@ -25,7 +25,7 @@ ALTER TABLE ma_user_presence DROP PRIMARY KEY,
 ALTER TABLE ma_user_exams DROP PRIMARY KEY,
   ADD COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT FIRST,
   ADD PRIMARY KEY (id),
-  ADD UNIQUE KEY uk_user_exam_id (user_exam_id);
+  ADD UNIQUE KEY uk_user_exam_id (user_exam_id, req_exam_type);
 
 ALTER TABLE ma_user_exam_details DROP PRIMARY KEY,
   ADD COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT FIRST,

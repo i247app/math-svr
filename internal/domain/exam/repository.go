@@ -200,7 +200,8 @@ type JourneyProgressParams struct {
 // ErrJourneyNotEnded when nothing was ended and ErrJourneyConflict when
 // another journey already holds the open slot.
 type IExamSessionRepository interface {
-	// FindByEsessId reads one row of a journey.
+	// FindByEsessId reads the row that owns the journey's lifecycle (the
+	// ASSESSMENT or GRADE row), never the PRACTICE row sharing its id.
 	FindByEsessId(ctx context.Context, esessId int64) (*ExamSession, error)
 	// FindByEsessIdAndType reads one row of a journey. (nil, nil) when
 	// the journey has no row of that type yet — a journey with no PRACTICE
