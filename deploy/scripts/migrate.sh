@@ -18,6 +18,12 @@
 #   ./deploy/scripts/migrate.sh baseline    # record every up/ file as applied WITHOUT
 #                                           # running it (one-off, for a database that
 #                                           # was set up by hand — see README.md §2)
+#   MIGRATE_DB_NAME=x_scratch ./deploy/scripts/migrate.sh up
+#                                           # build into a throwaway database instead of
+#                                           # DB_NAME (created if missing) — e.g. to prove a
+#                                           # from-scratch build without touching real data
+#   MIGRATE_DB_NAME=x_scratch ./deploy/scripts/migrate.sh drop-scratch
+#                                           # DROP that throwaway database
 #
 # `up` mirrors the Go runner (internal/infrastructure/database/migration.go):
 # files sorted in byte order, version = filename without ".sql", recorded in
@@ -25,6 +31,9 @@
 #
 # Env:      DB_HOST, DB_USER, DB_NAME required in .env (DB_PASS optional; DB_PORT 3306).
 #           MIGRATE_YES=1 skips the confirmation prompt on down / baseline.
+#           MIGRATE_DB_NAME overrides DB_NAME; it must end in "_scratch", so it can
+#           never point at a real database. MIGRATE_DIR replaces migrations/ (e.g. an
+#           older checkout's copy, to build the schema it describes).
 # Caveats:  MySQL DDL auto-commits — an up file that fails halfway may leave earlier
 #           statements applied while its version stays unrecorded. Fix and re-run;
 #           the version is only recorded after the whole file succeeds.
@@ -34,15 +43,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_DIR"
 
-UP_DIR="$PROJECT_DIR/migrations/up"
-DOWN_DIR="$PROJECT_DIR/migrations/down"
-SEED_DIR="$PROJECT_DIR/migrations/seed"
+MIGRATIONS_DIR="${MIGRATE_DIR:-$PROJECT_DIR/migrations}"
+UP_DIR="$MIGRATIONS_DIR/up"
+DOWN_DIR="$MIGRATIONS_DIR/down"
+SEED_DIR="$MIGRATIONS_DIR/seed"
 
 CMD="${1:-up}"
 case "$CMD" in
-  up|down|seed|status|baseline) ;;
-  -h|--help) sed -n '2,32p' "$0"; exit 0 ;;
-  *) echo "error: unknown command '$CMD' (up | down | seed | status | baseline)" >&2; exit 1 ;;
+  up|down|seed|status|baseline|drop-scratch) ;;
+  -h|--help) sed -n '2,40p' "$0"; exit 0 ;;
+  *) echo "error: unknown command '$CMD' (up | down | seed | status | baseline | drop-scratch)" >&2; exit 1 ;;
 esac
 
 command -v mysql >/dev/null 2>&1 || { echo "error: mysql client not found" >&2; exit 1; }
@@ -53,6 +63,14 @@ set -a; source .env; set +a
 : "${DB_USER:?DB_USER not set in .env}"
 : "${DB_NAME:?DB_NAME not set in .env}"
 DB_PORT="${DB_PORT:-3306}"
+
+if [[ -n "${MIGRATE_DB_NAME:-}" ]]; then
+  [[ "$MIGRATE_DB_NAME" =~ ^[a-z0-9_]+_scratch$ ]] ||
+    { echo "error: MIGRATE_DB_NAME must match [a-z0-9_]+_scratch (got '$MIGRATE_DB_NAME')" >&2; exit 1; }
+  DB_NAME="$MIGRATE_DB_NAME"
+elif [[ $CMD == drop-scratch ]]; then
+  echo "error: drop-scratch needs MIGRATE_DB_NAME=<name>_scratch" >&2; exit 1
+fi
 
 # --defaults-extra-file keeps the password off the command line / process list.
 DEFAULTS=$(mktemp); trap 'rm -f "$DEFAULTS"' EXIT
@@ -67,6 +85,18 @@ default-character-set=utf8mb4
 CNF
 
 sql() { mysql --defaults-extra-file="$DEFAULTS" "$DB_NAME" "$@"; }
+
+# A scratch target is created on demand and is the only database this script
+# will ever DROP; the name check above is what keeps it away from real data.
+if [[ -n "${MIGRATE_DB_NAME:-}" ]]; then
+  if [[ $CMD == drop-scratch ]]; then
+    mysql --defaults-extra-file="$DEFAULTS" -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`"
+    echo ">>> dropped scratch database ${DB_NAME}"
+    exit 0
+  fi
+  mysql --defaults-extra-file="$DEFAULTS" -e \
+    "CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci"
+fi
 
 confirm() {
   [[ "${MIGRATE_YES:-0}" == "1" ]] && return 0

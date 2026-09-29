@@ -1,7 +1,7 @@
 -- migration up
 CREATE TABLE IF NOT EXISTS ma_notifications (
   notification_id       BIGINT UNSIGNED NOT NULL PRIMARY KEY,  -- external id (minted via ma_seqs)
-  uid                   BIGINT UNSIGNED NOT NULL,          -- recipient user_id
+  uid                   BIGINT UNSIGNED NOT NULL,          -- recipient uid
   title                 VARCHAR(255) NOT NULL,
   short_text            VARCHAR(255) NOT NULL,
   category              VARCHAR(32) DEFAULT NULL,    -- INFO, WARNING, ERROR
@@ -22,3 +22,17 @@ CREATE TABLE IF NOT EXISTS ma_notifications (
   KEY idx_uid (uid),
   KEY idx_uid_is_read (uid, is_read)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ---- Indexes -------------------------------------------------------------
+-- Reference only: the CREATE TABLE above already declares every index
+-- listed here. Copy a line to add or drop one by hand.
+--
+-- Create:
+--   ALTER TABLE ma_notifications ADD PRIMARY KEY (notification_id);
+--   CREATE INDEX idx_uid ON ma_notifications (uid);
+--   CREATE INDEX idx_uid_is_read ON ma_notifications (uid, is_read);
+--
+-- Drop:
+--   ALTER TABLE ma_notifications DROP PRIMARY KEY;   -- pair it with ADD PRIMARY KEY in the same statement
+--   DROP INDEX idx_uid ON ma_notifications;
+--   DROP INDEX idx_uid_is_read ON ma_notifications;

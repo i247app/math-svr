@@ -2,9 +2,12 @@
 # deploy/scripts/create_migration.sh — scaffold an up/down migration pair.
 #
 # Usage:
-#   ./deploy/scripts/create_migration.sh ma_foo_table
-#   → migrations/up/NNN_ma_foo_table.sql   (next free 3-digit number)
-#   → migrations/down/NNN_ma_foo_table.sql
+#   ./deploy/scripts/create_migration.sh ma_foos
+#   → migrations/up/NNN_ma_foos.sql   (next free 3-digit number)
+#   → migrations/down/NNN_ma_foos.sql
+#
+# One file per table, named after the table (the 2026-09-29 convention). A
+# trailing "_table" in the argument is dropped, so the old spelling still works.
 #
 # Reference data does not belong here — add an INSERT IGNORE file under
 # migrations/seed/ instead (see deploy/scripts/migrate.sh).
@@ -16,8 +19,9 @@ UP_DIR="$PROJECT_DIR/migrations/up"
 DOWN_DIR="$PROJECT_DIR/migrations/down"
 
 NAME="${1:-}"
-[[ -n "$NAME" ]] || { echo "usage: $0 <migration_name>   e.g. $0 ma_foo_table" >&2; exit 1; }
+[[ -n "$NAME" ]] || { echo "usage: $0 <table_name>   e.g. $0 ma_foos" >&2; exit 1; }
 [[ "$NAME" =~ ^[a-z0-9_]+$ ]] || { echo "error: name must be lowercase [a-z0-9_]" >&2; exit 1; }
+NAME="${NAME%_table}"   # the file is named after the table itself
 
 mkdir -p "$UP_DIR" "$DOWN_DIR"
 
@@ -30,9 +34,9 @@ UP_FILE="$UP_DIR/${next}_${NAME}.sql"
 DOWN_FILE="$DOWN_DIR/${next}_${NAME}.sql"
 [[ ! -e "$UP_FILE" && ! -e "$DOWN_FILE" ]] || { echo "error: ${next}_${NAME}.sql already exists" >&2; exit 1; }
 
-# Entity name for the <entity>_status column: strip the ma_ prefix and a
-# trailing _table, e.g. ma_foo_table → foo_status.
-entity="${NAME#ma_}"; entity="${entity%_table}"
+# Entity name for the <entity>_id / <entity>_status columns: the table name
+# without its ma_ prefix, e.g. ma_foos → foos (singularise it by hand).
+entity="${NAME#ma_}"
 
 cat >"$UP_FILE" <<SQL
 -- migration up
@@ -40,10 +44,11 @@ cat >"$UP_FILE" <<SQL
 -- statement safe on a fresh database (CREATE TABLE IF NOT EXISTS, INSERT IGNORE).
 --
 -- The audit-column block below is the project-wide standard (see
--- .claude/rules/database.md §3 and up/030_audit_columns_standard.sql). Keep
--- its order and definitions; add domain columns above it.
+-- .claude/rules/database.md §3). Keep its order and definitions; add domain
+-- columns above it, and declare every index inside the CREATE TABLE so the
+-- file stays a single, re-runnable statement.
 
-CREATE TABLE IF NOT EXISTS ${NAME%_table} (
+CREATE TABLE IF NOT EXISTS ${NAME} (
   ${entity}_id    BIGINT UNSIGNED NOT NULL PRIMARY KEY,
   -- ...domain columns...
   ${entity}_status VARCHAR(32)  DEFAULT NULL,
@@ -58,13 +63,23 @@ CREATE TABLE IF NOT EXISTS ${NAME%_table} (
   deleted_dt      DATETIME(6)  DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- Remember the ma_seqs row for '${NAME%_table}' (seq_name = table name) → migrations/seed/001_ma_seqs.sql (INSERT IGNORE),
+-- ---- Indexes -------------------------------------------------------------
+-- Reference only: the CREATE TABLE above already declares every index
+-- listed here. Copy a line to add or drop one by hand.
+--
+-- Create:
+--   ALTER TABLE ${NAME} ADD PRIMARY KEY (${entity}_id);
+--
+-- Drop:
+--   ALTER TABLE ${NAME} DROP PRIMARY KEY;   -- pair it with ADD PRIMARY KEY in the same statement
+
+-- Remember the ma_seqs row for '${NAME}' (seq_name = table name) → migrations/seed/001_ma_seqs.sql (INSERT IGNORE),
 -- and a seq.Name<Entity> constant in internal/domain/seq/names.go.
 SQL
 
 cat >"$DOWN_FILE" <<SQL
 -- migration down — reverses up/${next}_${NAME}.sql
-DROP TABLE IF EXISTS ${NAME%_table};
+DROP TABLE IF EXISTS ${NAME};
 SQL
 
 echo "created:"

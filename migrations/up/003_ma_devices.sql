@@ -1,13 +1,15 @@
-CREATE TABLE IF NOT EXISTS ma_banners  (
-  banner_id         BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  title             VARCHAR(255) DEFAULT NULL,
-  short_text        VARCHAR(1000) DEFAULT NULL,
-  media_type        VARCHAR(32) NOT NULL DEFAULT 'IMAGE', -- 'TEXT' or 'IMAGE' or 'VIDEO'
-  media_url_key     VARCHAR(1000) NOT NULL,
-  button_text       VARCHAR(255) DEFAULT NULL,
-  button_link_url   VARCHAR(1000) DEFAULT NULL,
+-- migration up
+CREATE TABLE IF NOT EXISTS ma_devices (
+  device_id         BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  uid               BIGINT UNSIGNED DEFAULT NULL,
+  device_uuid       VARCHAR(255) NOT NULL,
+  device_name       VARCHAR(255) NOT NULL,
+  platform          VARCHAR(20) DEFAULT 'UNKNOWN',
+  device_push_token VARCHAR(255) DEFAULT NULL,
+  is_verified       TINYINT(1) DEFAULT '0',
+  trust_dt          DATETIME(6) DEFAULT NULL,
   note              VARCHAR(500) DEFAULT NULL,
-  banner_status     VARCHAR(32) DEFAULT NULL,
+  device_status     VARCHAR(32) DEFAULT NULL,
   rpt_flg           VARCHAR(16)  DEFAULT NULL,
   kwords            VARCHAR(255) DEFAULT NULL,
   status            VARCHAR(32) DEFAULT 'ACTIVE',
@@ -23,7 +25,7 @@ CREATE TABLE IF NOT EXISTS ma_banners  (
 -- listed here. Copy a line to add or drop one by hand.
 --
 -- Create:
---   ALTER TABLE ma_banners ADD PRIMARY KEY (banner_id);
+--   ALTER TABLE ma_devices ADD PRIMARY KEY (device_id);
 --
 -- Drop:
---   ALTER TABLE ma_banners DROP PRIMARY KEY;   -- pair it with ADD PRIMARY KEY in the same statement
+--   ALTER TABLE ma_devices DROP PRIMARY KEY;   -- pair it with ADD PRIMARY KEY in the same statement

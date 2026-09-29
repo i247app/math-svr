@@ -1,0 +1,41 @@
+-- migration up
+-- Junction table: a classroom can hold multiple programs ("books") and a
+-- program can belong to multiple classrooms. Replaces the single
+-- ma_classrooms.program_id column (dropped in 019).
+--
+-- The pair is hard-deleted on removal — unlike member rows, the
+-- (classroom, program) edge has no business state worth preserving and
+-- keeping it soft would force a partial unique index (not supported on
+-- MySQL 8) to allow re-adding the same program later.
+CREATE TABLE IF NOT EXISTS ma_classroom_programs (
+  classroom_program_id     BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+  classroom_id             BIGINT UNSIGNED NOT NULL,
+  program_id               BIGINT UNSIGNED NOT NULL,
+  classroom_program_status VARCHAR(32)  DEFAULT NULL,
+  rpt_flg                  VARCHAR(16)  DEFAULT NULL,
+  kwords                   VARCHAR(255) DEFAULT NULL,
+  note                     VARCHAR(500) DEFAULT NULL,
+  status                   VARCHAR(32) DEFAULT 'ACTIVE',
+  create_id                BIGINT UNSIGNED DEFAULT NULL,
+  create_dt                DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6),
+  modify_id                BIGINT UNSIGNED DEFAULT NULL,
+  modify_dt                DATETIME(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  deleted_dt               DATETIME(6) DEFAULT NULL,
+  UNIQUE KEY uk_classroom_program (classroom_id, program_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- ALTER TABLE ma_classroom_programs
+--   ADD INDEX idx_program (program_id, status, deleted_dt),
+--   ADD INDEX idx_classroom (classroom_id, status, deleted_dt);
+
+-- ---- Indexes -------------------------------------------------------------
+-- Reference only: the CREATE TABLE above already declares every index
+-- listed here. Copy a line to add or drop one by hand.
+--
+-- Create:
+--   ALTER TABLE ma_classroom_programs ADD PRIMARY KEY (classroom_program_id);
+--   CREATE UNIQUE INDEX uk_classroom_program ON ma_classroom_programs (classroom_id, program_id);
+--
+-- Drop:
+--   ALTER TABLE ma_classroom_programs DROP PRIMARY KEY;   -- pair it with ADD PRIMARY KEY in the same statement
+--   DROP INDEX uk_classroom_program ON ma_classroom_programs;
