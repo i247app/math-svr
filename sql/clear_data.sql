@@ -45,24 +45,24 @@ SET FOREIGN_KEY_CHECKS = 1;
 UPDATE ma_seqs
 SET current_value = 0
 WHERE seq_name IN (
-  'user',
-  'alias',
-  'device',
-  'login_log',
-  'profile',
-  'otp',
-  'classroom',
-  'classroom_member',
-  'classroom_invitation',
-  'classroom_program',
-  'classroom_exercise',
-  'classroom_exercise_submission',
-  'notification',
-  'user_presence',
-  'chat_conversation',
-  'chat_participant',
-  'chat_message',
-  'chat_attachment'
+  'ma_users',
+  'ma_aliases',
+  'ma_devices',
+  'ma_login_logs',
+  'ma_profiles',
+  'ma_otps',
+  'ma_classrooms',
+  'ma_classroom_members',
+  'ma_classroom_invitations',
+  'ma_classroom_programs',
+  'ma_exercises',
+  'ma_exercise_submissions',
+  'ma_notifications',
+  'ma_user_presence',
+  'ma_chat_conversations',
+  'ma_chat_participants',
+  'ma_chat_messages',
+  'ma_chat_attachments'
 );
 
 -- ── Verify (printed after the run) ───────────────────────

@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS ${NAME%_table} (
   deleted_dt      DATETIME(6)  DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- Remember the ma_seqs row for '${entity}' → migrations/seed/001_ma_seqs.sql (INSERT IGNORE),
+-- Remember the ma_seqs row for '${NAME%_table}' (seq_name = table name) → migrations/seed/001_ma_seqs.sql (INSERT IGNORE),
 -- and a seq.Name<Entity> constant in internal/domain/seq/names.go.
 SQL
 
