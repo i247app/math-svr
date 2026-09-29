@@ -223,8 +223,9 @@ func (r *ExamSessionRepository) ListProgressPoints(ctx context.Context, params e
 // exam.ErrJourneyNotActive rather than silently "ending" it twice with a
 // different status. A PRACTICE row is never ACTIVE and so is never hit.
 //
-// Flipping esess_status also flips the generated active_key to NULL,
-// which is what frees the (user, profile, type) slots for the next journey.
+// Moving esess_status off ACTIVE takes the row out of uk_active_journey
+// (its IF(esess_status = 'ACTIVE', 1, NULL) key part becomes NULL), which is
+// what frees the (user, profile, type) slot for the next journey.
 func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, newStatus string, endedDt mtime.MathTime) error {
 	query := `
 		UPDATE ` + examSessionTable + `
@@ -262,9 +263,9 @@ func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, n
 //
 // Two guards. The WHERE clause carries the ended states, so a reopen
 // racing a mark matches zero rows and gets ErrJourneyNotEnded rather than
-// re-opening something that just changed. And flipping esess_status
-// regenerates active_key, so if another journey of the type is open the
-// UPDATE trips uk_active_journey and comes back as ErrJourneyConflict —
+// re-opening something that just changed. And moving esess_status back to
+// ACTIVE puts the row back into uk_active_journey, so if another journey of
+// the type is open the UPDATE trips the key and comes back as ErrJourneyConflict —
 // the database, not the caller's earlier read, is what holds "one open
 // journey at a time".
 func (r *ExamSessionRepository) Reopen(ctx context.Context, esessId int64) error {
@@ -329,7 +330,7 @@ func (r *ExamSessionRepository) SetCurrent(ctx context.Context, esessId int64, e
 // Create opens a journey row. It is a plain INSERT on purpose: the
 // previous INSERT ... ON DUPLICATE KEY UPDATE quietly redirected the write
 // into whatever row collided on ANY unique key — and when the schema
-// drifted and the triple key came back without its active_key column,
+// drifted and the triple key came back without its ACTIVE-only key part,
 // that row was an already-ended journey. Now a collision is reported, not
 // absorbed.
 //
