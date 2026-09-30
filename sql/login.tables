@@ -1,0 +1,116 @@
+CREATE TABLE ma_domains (
+  domain_id int NOT NULL AUTO_INCREMENT,
+  domain_name varchar(255) DEFAULT NULL,
+  reverse_name varchar(255) DEFAULT NULL,
+  domain_status varchar(32) DEFAULT NULL,
+
+  kwords varchar(512) DEFAULT NULL,
+
+  note varchar(500) DEFAULT NULL,
+  status varchar(32) DEFAULT 'ACTIVE',
+  create_id int DEFAULT '0',
+  create_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  modify_id int DEFAULT '0',
+  modify_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+
+  PRIMARY KEY (domain_id),
+  UNIQUE KEY domain_name (domain_name),
+  UNIQUE KEY reverse_name (reverse_name),
+	FULLTEXT INDEX fts (domain_name)
+) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE ma_aliases (
+  alias_id int NOT NULL AUTO_INCREMENT,
+  uid int NOT NULL,
+  aka varchar(128) NOT NULL,
+  alias_status varchar(16) DEFAULT NULL,
+
+  kwords varchar(512) DEFAULT NULL,
+
+  rpt_flg varchar(16) DEFAULT NULL,
+  note varchar(500) DEFAULT NULL,
+  status varchar(32) DEFAULT 'ACTIVE',
+  create_id int DEFAULT '0',
+  create_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  modify_id int DEFAULT '0',
+  modify_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+
+  PRIMARY KEY (alias_id),
+  UNIQUE KEY aka (aka),
+  KEY uid (uid),
+	FULLTEXT INDEX fts (aka)
+) ENGINE=InnoDB AUTO_INCREMENT=2429 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE ma_logins (
+  uid int NOT NULL AUTO_INCREMENT,
+  upass varchar(128) DEFAULT NULL,
+  login_status varchar(16) DEFAULT NULL,
+
+  rpt_flg varchar(16) DEFAULT NULL,
+  note varchar(500) DEFAULT NULL,
+  status varchar(32) DEFAULT 'ACTIVE',
+  create_id int DEFAULT '0',
+  create_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  modify_id int DEFAULT '0',
+  modify_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+
+  PRIMARY KEY (uid)
+) ENGINE=InnoDB AUTO_INCREMENT=623139 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE ma_users (
+  uid int NOT NULL AUTO_INCREMENT,
+  unm varchar(128) DEFAULT NULL,
+  fnm varchar(128) DEFAULT NULL,
+  mnm varchar(128) DEFAULT NULL,
+  lnm varchar(128) DEFAULT NULL,
+  fone varchar(128) DEFAULT NULL,
+  email varchar(512) DEFAULT NULL,
+  user_status varchar(16) DEFAULT NULL,
+
+  kwords varchar(512) DEFAULT NULL,
+
+  rpt_flg varchar(16) DEFAULT NULL,
+  note varchar(500) DEFAULT NULL,
+  status varchar(32) DEFAULT 'ACTIVE',
+  create_id int DEFAULT '0',
+  create_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  modify_id int DEFAULT '0',
+  modify_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+
+  PRIMARY KEY (uid),
+	FULLTEXT INDEX fts (unm, fnm, mnm, lnm)
+) ENGINE=InnoDB AUTO_INCREMENT=623139 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE ma_devices (
+  id int NOT NULL AUTO_INCREMENT,
+  uid int DEFAULT NULL,
+  device_uuid varchar(255) NOT NULL,
+  device_name varchar(255) DEFAULT NULL,
+  device_push_token varchar(255) DEFAULT NULL,
+  is_verified tinyint(1) DEFAULT '0',
+
+  note varchar(500) DEFAULT NULL,
+  status varchar(32) DEFAULT 'ACTIVE',
+  create_id int DEFAULT '0',
+  create_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  modify_id int DEFAULT '0',
+  modify_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id)
+) ENGINE=InnoDB AUTO_INCREMENT=2094 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE ma_login_logs (
+  id int NOT NULL AUTO_INCREMENT,
+  uid int NOT NULL,
+  ip_addr varchar(255) NOT NULL,
+  device_uuid varchar(255) NOT NULL,
+  token varchar(512) NOT NULL,
+
+  note varchar(500) DEFAULT NULL,
+  status varchar(32) DEFAULT 'ACTIVE',
+  create_id int DEFAULT '0',
+  create_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6),
+  modify_id int DEFAULT '0',
+  modify_dt datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (id)
+) ENGINE=InnoDB AUTO_INCREMENT=3924 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
