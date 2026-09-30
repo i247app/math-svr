@@ -421,4 +421,19 @@ const (
 	POW_INVALID_PROOF       StatusCode = 13803
 	POW_REQUIRED            StatusCode = 13804 // a gated route was called without a fresh, unused proof
 	POW_INVALID_REQUEST     StatusCode = 13805
+
+	// Role (permission module) — 13900-13999
+	ROLE_NOT_FOUND            StatusCode = 13900
+	ROLE_MISSING_ID           StatusCode = 13901
+	ROLE_MISSING_CODE         StatusCode = 13902
+	ROLE_INVALID_CODE         StatusCode = 13903
+	ROLE_CODE_ALREADY_EXISTS  StatusCode = 13904
+	ROLE_MISSING_NAME         StatusCode = 13905
+	ROLE_NAME_TOO_LONG        StatusCode = 13906
+	ROLE_DESCRIPTION_TOO_LONG StatusCode = 13907
+	ROLE_NOTE_TOO_LONG        StatusCode = 13908
+	ROLE_INVALID_STATUS       StatusCode = 13909
+	ROLE_IMAGE_INVALID_FILE   StatusCode = 13910
+	ROLE_IMAGE_UPLOAD_FAILED  StatusCode = 13911
+	ROLE_IMAGE_CONFLICT       StatusCode = 13912 // update sent a new role_image AND remove_role_image
 )

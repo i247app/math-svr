@@ -32,5 +32,6 @@ func SetupRepositories(db *database.DatabaseWithLogs) *RepositoryContainer {
 		ChatConversationRepository:   repositories.NewChatConversationRepository(db),
 		ChatParticipantRepository:    repositories.NewChatParticipantRepository(db),
 		ChatMessageRepository:        repositories.NewChatMessageRepository(db),
+		RoleRepository:               repositories.NewRoleRepository(db),
 	}
 }

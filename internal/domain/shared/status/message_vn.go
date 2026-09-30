@@ -698,6 +698,34 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case POW_INVALID_REQUEST:
 		return "Yêu cầu xác minh không hợp lệ"
 
+	// Role (permission module)
+	case ROLE_NOT_FOUND:
+		return "Không tìm thấy vai trò"
+	case ROLE_MISSING_ID:
+		return "Thiếu role_id"
+	case ROLE_MISSING_CODE:
+		return "Mã vai trò là bắt buộc"
+	case ROLE_INVALID_CODE:
+		return "Mã vai trò chỉ gồm chữ in hoa, chữ số và dấu gạch dưới, bắt đầu bằng chữ cái, tối đa 64 ký tự"
+	case ROLE_CODE_ALREADY_EXISTS:
+		return "Mã vai trò đã tồn tại"
+	case ROLE_MISSING_NAME:
+		return "Tên vai trò là bắt buộc"
+	case ROLE_NAME_TOO_LONG:
+		return "Tên vai trò quá dài"
+	case ROLE_DESCRIPTION_TOO_LONG:
+		return "Mô tả vai trò quá dài"
+	case ROLE_NOTE_TOO_LONG:
+		return "Ghi chú quá dài"
+	case ROLE_INVALID_STATUS:
+		return "Trạng thái vai trò không hợp lệ"
+	case ROLE_IMAGE_INVALID_FILE:
+		return "Tệp ảnh vai trò không hợp lệ"
+	case ROLE_IMAGE_UPLOAD_FAILED:
+		return "Tải ảnh vai trò lên thất bại"
+	case ROLE_IMAGE_CONFLICT:
+		return "Không thể vừa tải ảnh mới vừa xóa ảnh vai trò"
+
 	default:
 		return ""
 	}

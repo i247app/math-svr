@@ -17,6 +17,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/presence"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/program"
+	"math-ai.com/math-ai/internal/domain/role"
 	"math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/semester"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -57,6 +58,7 @@ type Repositories struct {
 	ExamLink           exam.IExamLinkRepository
 	ExamSession        exam.IExamSessionRepository
 	ExamSessionLine    exam.IExamSessionLineRepository
+	Role               role.IRepository
 }
 
 // UnitOfWork runs fn inside a transaction, committing on nil error and

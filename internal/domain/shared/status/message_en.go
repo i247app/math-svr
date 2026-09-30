@@ -698,6 +698,34 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case POW_INVALID_REQUEST:
 		return "Invalid verification request"
 
+	// Role (permission module)
+	case ROLE_NOT_FOUND:
+		return "Role not found"
+	case ROLE_MISSING_ID:
+		return "role_id is required"
+	case ROLE_MISSING_CODE:
+		return "Role code is required"
+	case ROLE_INVALID_CODE:
+		return "Role code must start with a letter and contain only upper-case letters, digits and underscores (max 64 characters)"
+	case ROLE_CODE_ALREADY_EXISTS:
+		return "Role code already exists"
+	case ROLE_MISSING_NAME:
+		return "Role name is required"
+	case ROLE_NAME_TOO_LONG:
+		return "Role name is too long"
+	case ROLE_DESCRIPTION_TOO_LONG:
+		return "Role description is too long"
+	case ROLE_NOTE_TOO_LONG:
+		return "Note is too long"
+	case ROLE_INVALID_STATUS:
+		return "Invalid role status"
+	case ROLE_IMAGE_INVALID_FILE:
+		return "Invalid role image file"
+	case ROLE_IMAGE_UPLOAD_FAILED:
+		return "Failed to upload role image"
+	case ROLE_IMAGE_CONFLICT:
+		return "Send either a new role image or remove_role_image, not both"
+
 	default:
 		return ""
 	}

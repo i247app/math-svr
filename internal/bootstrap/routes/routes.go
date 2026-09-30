@@ -22,6 +22,7 @@ import (
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
+	"math-ai.com/math-ai/internal/module/permission"
 	"math-ai.com/math-ai/internal/module/pow"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
@@ -185,6 +186,18 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /banners/update", bannerHandler.HandleUpdateBanner, authMiddleware)
 		reg("POST /banners/soft-delete", bannerHandler.HandleSoftDeleteBanner, authMiddleware)
 		reg("POST /banners/force-delete", bannerHandler.HandleForceDeleteBanner, authMiddleware)
+	}
+
+	// permission module — role registry. Scaffolding only: nothing checks
+	// these roles yet (see migrations/up/030_ma_roles.sql).
+	{
+		roleHandler := permission.NewRoleHandler(res, services.PermissionSvc)
+		reg("POST /roles/detail", roleHandler.HandleGetRole, authMiddleware)
+		reg("POST /roles/list", roleHandler.HandleListRoles, authMiddleware)
+		reg("POST /roles/create", roleHandler.HandleCreateRole, authMiddleware)
+		reg("POST /roles/update", roleHandler.HandleUpdateRole, authMiddleware)
+		reg("POST /roles/soft-delete", roleHandler.HandleSoftDeleteRole, authMiddleware)
+		reg("POST /roles/force-delete", roleHandler.HandleForceDeleteRole, authMiddleware)
 	}
 
 	// device routes

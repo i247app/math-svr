@@ -23,6 +23,7 @@ import (
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
+	"math-ai.com/math-ai/internal/module/permission"
 	"math-ai.com/math-ai/internal/module/pow"
 	"math-ai.com/math-ai/internal/module/presence"
 	"math-ai.com/math-ai/internal/module/profile"
@@ -216,6 +217,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		res.StorageProvider,
 	)
 
+	log.Info("> Setup PermissionSvc...")
+	permissionService := permission.NewService(repos.RoleRepository, uow, res.StorageProvider)
+
 	log.Info("> Setup HomeSvc...")
 	homeService := home.NewService(
 		repos.ClassroomRepository,
@@ -253,5 +257,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		BotSvc:           botService,
 		NotificationSvc:  notificationService,
 		BannerSvc:        bannerService,
+		PermissionSvc:    permissionService,
 	}, nil
 }

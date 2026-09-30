@@ -16,6 +16,7 @@ import (
 	presenceDomain "math-ai.com/math-ai/internal/domain/presence"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
+	roleDomain "math-ai.com/math-ai/internal/domain/role"
 	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	seqDomain "math-ai.com/math-ai/internal/domain/seq"
@@ -34,6 +35,7 @@ import (
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
+	"math-ai.com/math-ai/internal/module/permission"
 	"math-ai.com/math-ai/internal/module/pow"
 	"math-ai.com/math-ai/internal/module/presence"
 	"math-ai.com/math-ai/internal/module/profile"
@@ -69,6 +71,7 @@ type ServiceContainer struct {
 	PresenceSvc     *presence.Service
 	ChatSvc         *chat.Service
 	PowSvc          *pow.Service
+	PermissionSvc   *permission.Service
 
 	// CleanupGuestsCmd is not a service — it is the one application
 	// command the job runtime needs directly (jobs consume
@@ -103,4 +106,5 @@ type RepositoryContainer struct {
 	ChatConversationRepository   chatDomain.IRepository
 	ChatParticipantRepository    chatDomain.IParticipantRepository
 	ChatMessageRepository        chatDomain.IMessageRepository
+	RoleRepository               roleDomain.IRepository
 }

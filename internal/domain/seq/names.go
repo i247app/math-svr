@@ -39,4 +39,5 @@ const (
 	NameExamLink                    = "ma_exam_links"
 	NameExamSession                 = "ma_exam_sessions"
 	NameExamSessionLine             = "ma_exam_session_lines"
+	NameRole                        = "ma_roles"
 )

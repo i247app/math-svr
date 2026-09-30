@@ -41,6 +41,10 @@ func WriteJsonNoContent(w http.ResponseWriter, data any) {
 	writeEnvelope(w, data, nil, status.NO_CONTENT)
 }
 
+func WriteJsonNoData(w http.ResponseWriter) {
+	writeEnvelope(w, nil, nil, status.NO_DATA)
+}
+
 // writeEnvelope is the one path both writers share: data first, then the
 // error half or the success half (with successCode) on top of it.
 func writeEnvelope(w http.ResponseWriter, data any, err error, successCode status.StatusCode) {

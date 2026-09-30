@@ -40,4 +40,5 @@ INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
 ('ma_exam_pools',            0, 'EP',  8),
 ('ma_exam_links',            0, 'EL',  8),
 ('ma_exam_sessions',         0, 'ES',  8),
-('ma_exam_session_lines',    0, 'ESL', 8);
+('ma_exam_session_lines',    0, 'ESL', 8),
+('ma_roles',                 0, 'RL',  8);
