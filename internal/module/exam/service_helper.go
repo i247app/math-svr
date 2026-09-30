@@ -183,8 +183,9 @@ func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq
 // resolveLevel is the one place a stated level is clamped, so the number
 // that reaches the cache tag, the stored rows, the journey and the
 // prompt is the same number. A GRADE review is the only round that
-// writes at a level, and kindergarten cannot be pushed past 4 (the child
-// cannot read yet); asking for more degrades to the ceiling, with a log
+// writes at a level, and a band may cap it (domainBot.ClampLevelToGrade —
+// kindergarten, whose child cannot read yet, is the case the cap exists
+// for); asking for more degrades to the ceiling, with a log
 // line, rather than being refused — the request was reasonable, the
 // band just has nowhere higher to go. Other types keep the stated value
 // as a record only.

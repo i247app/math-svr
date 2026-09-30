@@ -42,7 +42,7 @@ type ExamPromptInput struct {
 	NumQuestions int
 	Semester     string
 	Program      string
-	// Level is the client-stated intensity, 1..10, already clamped to the
+	// Level is the client-stated intensity, 0..9, already clamped to the
 	// grade's ceiling by the caller. Rendered for a GRADE review only;
 	// nil, or any other type, means no LEVEL PROFILE block.
 	Level *int

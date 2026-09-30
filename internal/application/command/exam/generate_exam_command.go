@@ -43,7 +43,7 @@ type GenerateExamCommand struct {
 	ExamType  enum.ExamType
 	// Grade is the band the paper is written at, resolved by the caller.
 	Grade int
-	// Level is the client-stated level (1..10) recorded on the sitting;
+	// Level is the client-stated level (0..9) recorded on the sitting;
 	// nil when none was sent.
 	Level *int
 	// StatedGrade / StatedLevel are what the client put in the request,

@@ -675,7 +675,7 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case EXAM_JOURNEY_NOT_COMPLETE:
 		return "Practice opens once the journey is complete"
 	case EXAM_INVALID_LEVEL:
-		return "level must be between 1 and 10"
+		return "level must be between 0 and 9"
 	case EXAM_GUEST_PROFILE_NOT_OWNED:
 		return "Please sign in to open this profile's exams"
 	case EXAM_GUEST_TYPE_NOT_ALLOWED:

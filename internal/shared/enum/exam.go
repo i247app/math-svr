@@ -178,10 +178,12 @@ func (s EsessLnStatusType) String() string { return string(s) }
 // Grade is the CONTENT band and maps 1:1 onto the bot's grade profiles:
 // 0 is kindergarten (mẫu giáo), 5 is the last elementary year.
 //
-// Level is a 1..10 scale the CLIENT states on a hand-out and the server
-// records (ma_exam_sessions.current_level, ma_exam_links.req_level). No
-// server rule reads it yet — the prompt does not see it and nothing
-// derives it — so it is a recorded fact, not a behaviour.
+// Level is a 0..9 scale the CLIENT states on a hand-out and the server
+// records (ma_exam_sessions.current_level, ma_exam_links.req_level). 0 is
+// the first rung, so 0 is a real level, never "not supplied" — that is
+// what a nil *int is for. (It was 1..10 until up/031 moved every stored
+// level down one.) A GRADE review renders it into the prompt as its
+// intensity; nothing on the server derives it.
 //
 // ExamQuestionGradeMax is one above ExamGradeMax on purpose: an
 // ASSESSMENT at grade 5 still has to probe upward, so its probe questions
@@ -191,6 +193,6 @@ const (
 	ExamGradeMax         = 5
 	ExamQuestionGradeMax = ExamGradeMax + 1
 
-	ExamLevelMin = 1
-	ExamLevelMax = 10
+	ExamLevelMin = 0
+	ExamLevelMax = 9
 )

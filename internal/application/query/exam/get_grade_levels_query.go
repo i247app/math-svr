@@ -4,15 +4,14 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/domain/exam"
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// Defaults for a grade the child has no standing in. LatestLevel 0 says
-// "never worked this grade"; MaxLevel 1 is the first lock, which is open
-// to everyone — so the client can render the ladder without a special case.
-const (
-	NoLatestLevel = 0
-	FirstLevel    = 1
-)
+// FirstLevel is what a grade the child has no standing in reports for
+// both ends: the first lock, open to everyone, so the client can render
+// the ladder without a special case. By decision this does not tell
+// "never worked this grade" apart from "working the first lock".
+const FirstLevel = enum.ExamLevelMin
 
 // gradeLevelsReader is the slice of the journey repository this query
 // needs, so a hand-rolled fake can stand in for it.
@@ -50,7 +49,7 @@ func (h *GetGradeLevelsQueryHandler) Handle(ctx context.Context, q GetGradeLevel
 
 	// Each end falls back on its own, though in practice both are set or
 	// neither is: they read the same rows.
-	res := &GetGradeLevelsResult{LatestLevel: NoLatestLevel, MaxLevel: FirstLevel}
+	res := &GetGradeLevelsResult{LatestLevel: FirstLevel, MaxLevel: FirstLevel}
 	if levels.Latest != nil {
 		res.LatestLevel = *levels.Latest
 	}

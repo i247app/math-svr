@@ -598,9 +598,9 @@ type GradeLevelsReq struct {
 }
 
 // GradeLevelsRes: LatestLevel is the level of the GRADE journey worked
-// last at this grade (0 when none); MaxLevel the highest level any GRADE
-// journey at this grade has reached, in any state (1 when none — the
-// first lock is open to everyone).
+// last at this grade; MaxLevel the highest level any GRADE journey at
+// this grade has reached, in any state. Both are 0 — the first lock, on
+// the 0..9 scale — when the child has no journey at this grade.
 type GradeLevelsRes struct {
 	LatestLevel int `json:"latest_level"`
 	MaxLevel    int `json:"max_level"`
