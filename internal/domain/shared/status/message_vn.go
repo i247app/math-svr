@@ -682,6 +682,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Hãy đăng ký để mở bài luyện tập và bài kiểm tra theo lớp"
 	case EXAM_GUEST_DAILY_LIMIT:
 		return "Bé đã dùng hết số bài miễn phí hôm nay. Hãy đăng ký để tiếp tục"
+	case EXAM_MISSING_GRADE:
+		return "Vui lòng chọn lớp"
 
 	case POW_CHALLENGE_FAILED:
 		return "Không tạo được thử thách xác minh. Vui lòng thử lại"

@@ -129,6 +129,41 @@ func (r *ExamSessionRepository) FindLatestCompletedByUserProfileType(ctx context
 	return ModelToDomainExamSession(m), nil
 }
 
+// FindGradeLevels reads both ends of one grade's level ladder in one
+// round trip, over the same rows. Only rows that name a level count — a
+// GRADE journey opened without one says nothing about the ladder.
+// ix_profile_type_status serves both subqueries.
+func (r *ExamSessionRepository) FindGradeLevels(ctx context.Context, uid, profileId int64, grade int) (exam.GradeLevels, error) {
+	const ladder = `(e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.current_grade = ?` +
+		` AND e.current_level IS NOT NULL AND e.esess_status IN (?, ?, ?)) AND ` + examSessionActiveWhere
+	query := `SELECT
+		(SELECT e.current_level FROM ` + examSessionTable + ` e WHERE ` + ladder + `
+		  ORDER BY e.modify_dt DESC, e.esess_id DESC LIMIT 1),
+		(SELECT MAX(e.current_level) FROM ` + examSessionTable + ` e WHERE ` + ladder + `)`
+
+	ladderArgs := slices.Concat(
+		[]any{uid, profileId, string(enum.ExamTypeGrade), grade,
+			string(enum.EsessStatusActive), string(enum.EsessStatusComplete), string(enum.EsessStatusCancel)},
+		examSessionActiveArgs(),
+	)
+	args := slices.Concat(ladderArgs, ladderArgs)
+
+	var latest, highest sql.NullInt64
+	if err := r.db.QueryRow(ctx, query, args...).Scan(&latest, &highest); err != nil {
+		return exam.GradeLevels{}, fmt.Errorf("user exam repo find grade levels: %w", err)
+	}
+	var out exam.GradeLevels
+	if latest.Valid {
+		v := int(latest.Int64)
+		out.Latest = &v
+	}
+	if highest.Valid {
+		v := int(highest.Int64)
+		out.Max = &v
+	}
+	return out, nil
+}
+
 // ListByUserProfile returns a child's journeys, newest first inside each
 // exam type, so an open journey comes before the ended ones of its slot,
 // which follow as history.

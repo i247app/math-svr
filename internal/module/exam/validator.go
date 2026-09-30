@@ -263,6 +263,21 @@ func ValidateJourneyProgress(ctx context.Context, req *dto.JourneyProgressReq) e
 	return validateProgressWindow(ctx, &req.ProgressWindow)
 }
 
+// ValidateGradeLevels checks the level-ladder request: a profile and a
+// grade the product teaches.
+func ValidateGradeLevels(ctx context.Context, req *dto.GradeLevelsReq) error {
+	if req.ProfileID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+	if req.Grade == nil {
+		return errs.NewError(ctx, status.EXAM_MISSING_GRADE, nil, ErrGradeRequired)
+	}
+	if *req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax {
+		return errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
+	}
+	return nil
+}
+
 // validateProgressWindow normalises the part both charts share: Tz gets
 // its default, the date range must be complete and bounded, Limit is
 // clamped in place.

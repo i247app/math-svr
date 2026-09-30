@@ -682,6 +682,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Sign up to unlock practice and grade reviews"
 	case EXAM_GUEST_DAILY_LIMIT:
 		return "You have used all of today's free exams. Sign up to keep going"
+	case EXAM_MISSING_GRADE:
+		return "Grade is required"
 
 	case POW_CHALLENGE_FAILED:
 		return "Could not create a verification challenge. Please try again"

@@ -410,6 +410,9 @@ const (
 	// someone who has not registered, so the ceiling is the product's,
 	// not a per-user setting.
 	EXAM_GUEST_DAILY_LIMIT StatusCode = 13734
+	// EXAM_MISSING_GRADE: a request that is answered per grade
+	// (/exams/grade/levels) named none.
+	EXAM_MISSING_GRADE StatusCode = 13735
 
 	// Proof of work — 13800-13899. Gates /exams/generate against bots.
 	POW_CHALLENGE_FAILED    StatusCode = 13800 // could not mint a challenge

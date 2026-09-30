@@ -174,6 +174,24 @@ type JourneyProgressParams struct {
 	Limit           int64
 }
 
+// GradeLevels is where a child stands on the GRADE level ladder of one
+// grade. Each GRADE journey is one "lock" at one level (its
+// current_level); the client moves the child up after a lock is
+// COMPLETE and down after a round that fell short.
+//
+// Both read the GRADE journeys of that grade in any state but DELETED.
+// Latest is the level of the journey touched last — where the child is
+// now, including after a step down. Max is the highest level the child
+// has ever reached: a journey exists at a level only once the client has
+// moved the child up to it, so an ACTIVE journey counts as much as a
+// finished one. COMPLETE is not a pass mark (a journey is completed with
+// any score), so it is no filter here. Each is nil when no journey
+// qualifies.
+type GradeLevels struct {
+	Latest *int
+	Max    *int
+}
+
 // IExamSessionRepository owns journeys.
 //
 // A journey is one esess_id and holds up to TWO rows in this table:
@@ -216,6 +234,9 @@ type IExamSessionRepository interface {
 	// COMPLETED journey of that type — what a new journey inherits its
 	// starting grade from. CANCELLED journeys are skipped on purpose.
 	FindLatestCompletedByUserProfileType(ctx context.Context, uid, profileId int64, examType string) (*ExamSession, error)
+	// FindGradeLevels reads a child's GradeLevels for one grade, over the
+	// GRADE journeys of that grade.
+	FindGradeLevels(ctx context.Context, uid, profileId int64, grade int) (GradeLevels, error)
 	// ListByUserProfile returns a child's journeys, newest first within
 	// each exam type.
 	ListByUserProfile(ctx context.Context, uid, profileId int64, filter ListJourneysFilter) ([]*ExamSession, error)

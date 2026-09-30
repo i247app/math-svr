@@ -588,6 +588,24 @@ type ExamProgressReq struct {
 	ProgressWindow
 }
 
+// GradeLevelsReq asks where a child stands on one grade's GRADE level
+// ladder. Grade is required (0 is kindergarten, so it is a pointer);
+// ProfileID may be omitted by a guest, like every exam route.
+type GradeLevelsReq struct {
+	UID       *int64 `json:"-"`
+	ProfileID int64  `json:"profile_id"`
+	Grade     *int   `json:"grade"`
+}
+
+// GradeLevelsRes: LatestLevel is the level of the GRADE journey worked
+// last at this grade (0 when none); MaxLevel the highest level any GRADE
+// journey at this grade has reached, in any state (1 when none — the
+// first lock is open to everyone).
+type GradeLevelsRes struct {
+	LatestLevel int `json:"latest_level"`
+	MaxLevel    int `json:"max_level"`
+}
+
 // JourneyProgressReq asks for the chart over journeys (ma_exam_sessions
 // rows) rather than sittings. ExamType nil means every journey type;
 // PRACTICE is refused, as it is for stats — its rows live inside their

@@ -37,6 +37,7 @@ type Service struct {
 	statsQuery      *query.GetExamStatsQueryHandler
 	progressQuery   *query.GetExamProgressQueryHandler
 	journeyProgress *query.GetJourneyProgressQueryHandler
+	gradeLevels     *query.GetGradeLevelsQueryHandler
 
 	examPoolRepo examDomain.IExamPoolRepository
 	attemptRepo  examDomain.IExamLinkRepository
@@ -79,6 +80,7 @@ func NewService(
 		statsQuery:      query.NewGetExamStatsQueryHandler(statsRepo, attemptRepo, examPoolRepo),
 		progressQuery:   query.NewGetExamProgressQueryHandler(attemptRepo),
 		journeyProgress: query.NewGetJourneyProgressQueryHandler(statsRepo),
+		gradeLevels:     query.NewGetGradeLevelsQueryHandler(statsRepo),
 		examPoolRepo:    examPoolRepo,
 		attemptRepo:     attemptRepo,
 		statsRepo:       statsRepo,
@@ -508,5 +510,32 @@ func (s *Service) GetJourneyProgress(ctx context.Context, req *dto.JourneyProgre
 		Limit:     req.Limit,
 		Series:    result.Series,
 		Summary:   result.Summary,
+	}, nil
+}
+
+// GetGradeLevels tells the client where the child stands on one grade's
+// GRADE level ladder: the level of the journey worked last and the highest
+// level ever reached, so it can offer the right lock next.
+func (s *Service) GetGradeLevels(ctx context.Context, req *dto.GradeLevelsReq) (*dto.GradeLevelsRes, error) {
+	if err := ValidateGradeLevels(ctx, req); err != nil {
+		return nil, err
+	}
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := s.gradeLevels.Handle(ctx, query.GetGradeLevelsQuery{
+		UID:       profile.Uid(),
+		ProfileID: profile.ProfileId(),
+		Grade:     *req.Grade,
+	})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	return &dto.GradeLevelsRes{
+		LatestLevel: result.LatestLevel,
+		MaxLevel:    result.MaxLevel,
 	}, nil
 }

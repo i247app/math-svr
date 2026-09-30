@@ -20,6 +20,7 @@ var (
 	ErrStatsPracticeNotAJourney = errors.New("PRACTICE is not a journey; read it under its journey's practice field")
 	ErrLevelOutOfRange          = errors.New("level must be between 1 and 10")
 	ErrGradeOutOfRange          = errors.New("grade must be between 0 and 5")
+	ErrGradeRequired            = errors.New("grade is required")
 	ErrAttemptIDRequired        = errors.New("elink_id is required")
 	ErrAnswersRequired          = errors.New("answers is required")
 	ErrDuplicateAnswer          = errors.New("answers contain a duplicate question_number")
