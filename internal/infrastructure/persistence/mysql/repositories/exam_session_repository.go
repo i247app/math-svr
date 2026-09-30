@@ -313,6 +313,20 @@ func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, n
 	return nil
 }
 
+// LockJourney is a primary-key locking read, so it locks exactly the
+// owning row: two hand-outs on one journey queue here, other journeys are
+// untouched. The row may be absent (sql.ErrNoRows) — nothing to lock.
+func (r *ExamSessionRepository) LockJourney(ctx context.Context, esessId int64) error {
+	var id int64
+	err := r.db.QueryRow(ctx,
+		`SELECT esess_id FROM `+examSessionTable+` WHERE esess_id = ? AND req_exam_type <> ? FOR UPDATE`,
+		esessId, string(enum.ExamTypePractice)).Scan(&id)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return fmt.Errorf("user exam repo lock journey: %w", err)
+	}
+	return nil
+}
+
 // Reopen puts an ended journey back in play and clears ended_dt so the
 // row reads as open again. The PRACTICE row is left as it is: it is born
 // COMPLETE and must not be dragged to ACTIVE, where it would contend for

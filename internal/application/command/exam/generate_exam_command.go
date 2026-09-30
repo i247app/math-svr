@@ -73,6 +73,10 @@ type GenerateExamCommand struct {
 type GenerateExamResult struct {
 	ExamPool *exam.ExamPool
 	Attempt  *exam.ExamLink
+	// Resumed reports that the journey already had an IN_PROGRESS sitting
+	// of this type: Attempt is that sitting and nothing was written — the
+	// command's own content, if any, was discarded.
+	Resumed bool
 }
 
 type GenerateExamCommandHandler struct {
@@ -92,6 +96,18 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 	var result GenerateExamResult
 
 	handler := func(ctx context.Context, repos transaction.Repositories) error {
+		// Must stay the first statement of the transaction (LockJourney).
+		if cmd.EsessID != nil {
+			open, err := h.findOpenSitting(ctx, repos, cmd)
+			if err != nil {
+				return err
+			}
+			if open != nil {
+				result = *open
+				return nil
+			}
+		}
+
 		examPool, err := h.resolveExamPool(ctx, repos, cmd)
 		if err != nil {
 			return err
@@ -137,6 +153,37 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		return nil, err
 	}
 	return &result, nil
+}
+
+// findOpenSitting enforces "one IN_PROGRESS sitting per journey and
+// type": when the journey already has one, that sitting is the answer to
+// this hand-out and nothing new is written.
+//
+// The service checks the same thing before paying for a model call; this
+// is the check that holds under concurrency. The journey row is locked
+// first, so a second hand-out on the same journey waits here until the
+// first commits and then finds the sitting it wrote. A hand-out that has
+// no journey yet (EsessID nil) cannot have an open sitting to find.
+func (h *GenerateExamCommandHandler) findOpenSitting(ctx context.Context, repos transaction.Repositories, cmd GenerateExamCommand) (*GenerateExamResult, error) {
+	if err := repos.ExamSession.LockJourney(ctx, *cmd.EsessID); err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	open, err := repos.ExamLink.FindInProgressInJourney(ctx, cmd.ProfileID, *cmd.EsessID, string(cmd.ExamType))
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if open == nil {
+		return nil, nil
+	}
+	pool, err := repos.ExamPool.FindByExamId(ctx, open.ExamId())
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if pool == nil {
+		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
+			fmt.Errorf("exam: open sitting %d points at exam_pool %d, which is gone", open.ElinkId(), open.ExamId()))
+	}
+	return &GenerateExamResult{ExamPool: pool, Attempt: open, Resumed: true}, nil
 }
 
 // resolveJourney returns the journey this sitting belongs to, opening one

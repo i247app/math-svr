@@ -2,6 +2,7 @@ package exam
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -312,4 +313,33 @@ func (s *Service) guardGuest(ctx context.Context, p *profileDomain.Profile, exam
 			map[string]any{"limit": GuestDailyExamLimit}, ErrGuestDailyLimit)
 	}
 	return nil
+}
+
+// resumeOpenSitting returns the child's IN_PROGRESS sitting of examType in
+// the journey, served exactly as it was handed out (same elink_id, same
+// ordering, no answer key), or (nil, nil) when there is none. It is a
+// plain read that saves the model call in the ordinary case; the
+// generate command repeats the check under a lock for the concurrent one.
+func (s *Service) resumeOpenSitting(ctx context.Context, profile *profileDomain.Profile, esessID int64, examType enum.ExamType) (*dto.GenerateExamRes, error) {
+	open, err := s.attemptRepo.FindInProgressInJourney(ctx, profile.ProfileId(), esessID, string(examType))
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if open == nil {
+		return nil, nil
+	}
+	pool, err := s.examPoolRepo.FindByExamId(ctx, open.ExamId())
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if pool == nil {
+		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
+			fmt.Errorf("exam: open sitting %d points at exam_pool %d, which is gone", open.ElinkId(), open.ExamId()))
+	}
+
+	logger.From(ctx).Infof("exam.resumed attempt=%d journey=%d type=%s", open.ElinkId(), esessID, examType)
+	return &dto.GenerateExamRes{
+		Exam:    dto.AttemptToResponse(open, pool, true),
+		Resumed: true,
+	}, nil
 }

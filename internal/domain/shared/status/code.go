@@ -387,9 +387,10 @@ const (
 	EXAM_AMBIGUOUS_DETAIL_ID     StatusCode = 13726
 	EXAM_PRACTICE_NO_BASE        StatusCode = 13727
 	EXAM_JOURNEY_ALREADY_ACTIVE  StatusCode = 13728
-	// 13729 was EXAM_ATTEMPT_IN_PROGRESS ("one open sitting per journey").
-	// Retired the same day it was added: a child may be handed a new exam
-	// while one is open. Do not reuse the number.
+	// 13729 was EXAM_ATTEMPT_IN_PROGRESS ("one open sitting per journey"),
+	// which REFUSED a hand-out while one was open. Retired; the rule is
+	// back as a non-error: generate hands the open sitting back instead
+	// (GenerateExamRes.resumed). Do not reuse the number.
 	EXAM_JOURNEY_NOT_COMPLETE StatusCode = 13730
 	// EXAM_INVALID_LEVEL lives at 13731, not at the retired 13710: the
 	// axis came back as a client-stated value, not the derived one 13710

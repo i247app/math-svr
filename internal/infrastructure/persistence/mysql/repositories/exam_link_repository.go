@@ -222,6 +222,27 @@ func (r *ExamLinkRepository) FindLatestSubmittedByEsessId(ctx context.Context, e
 	return ModelToDomainExamLink(m), nil
 }
 
+// FindInProgressInJourney walks ix_profile_status_started (profile_id,
+// elink_status) — a child has only a handful of open sittings — and
+// filters on the journey and type.
+func (r *ExamLinkRepository) FindInProgressInJourney(ctx context.Context, profileId, esessId int64, examType string) (*exam.ExamLink, error) {
+	args := slices.Concat(
+		[]any{profileId, string(enum.ElinkStatusInProgress), esessId, examType},
+		examLinkActiveArgs())
+	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u WHERE ` +
+		`(u.profile_id = ? AND u.elink_status = ? AND u.esess_id = ? AND u.req_exam_type = ?) AND ` +
+		examLinkActiveWhere + ` ORDER BY u.started_dt DESC, u.elink_id DESC LIMIT 1`
+
+	m, err := scanExamLink(r.db.QueryRow(ctx, query, args...))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("user ai exam repo find in progress in journey: %w", err)
+	}
+	return ModelToDomainExamLink(m), nil
+}
+
 // ListRecentByProfileGrade reads a child's newest sittings at one grade.
 // It walks ix_profile_status_started's profile prefix and filters on
 // req_grade; the candidate set per child is small enough that a

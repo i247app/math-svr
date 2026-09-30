@@ -211,6 +211,10 @@ type ExamStats struct {
 
 type GenerateExamRes struct {
 	Exam *ExamResponse `json:"exam"`
+	// Resumed is true when the journey already had an IN_PROGRESS sitting
+	// of this type and Exam is that sitting, handed back instead of a new
+	// one (same elink_id, same question order).
+	Resumed bool `json:"resumed"`
 }
 
 // SubmitExamRes answers the question the child just asked — how did I do

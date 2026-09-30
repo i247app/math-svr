@@ -115,16 +115,28 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	if err != nil {
 		return nil, err
 	}
-	if err := s.guardGuest(ctx, profile, validated.ExamType); err != nil {
-		return nil, err
-	}
 
 	if validated.ExamType == enum.ExamTypePractice {
+		if err := s.guardGuest(ctx, profile, validated.ExamType); err != nil {
+			return nil, err
+		}
 		return s.generatePractice(ctx, req, profile)
 	}
 
 	grade, openJourney, err := s.resolvePlacement(ctx, req, validated.ExamType, profile)
 	if err != nil {
+		return nil, err
+	}
+	// A journey holds one open sitting per type: while the child has one,
+	// generate hands it back instead of paying for another. Checked before
+	// the guest ceiling on purpose — handing back a sitting is not a new
+	// hand-out, and a guest at the limit must still get their open paper.
+	if openJourney != nil {
+		if res, err := s.resumeOpenSitting(ctx, profile, *openJourney, validated.ExamType); err != nil || res != nil {
+			return res, err
+		}
+	}
+	if err := s.guardGuest(ctx, profile, validated.ExamType); err != nil {
 		return nil, err
 	}
 	level := resolveLevel(ctx, validated.ExamType, grade, req.Level)
@@ -233,6 +245,12 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 			fmt.Errorf("exam: journey %d is %s; practice needs it COMPLETE", journeyID, utils.DerefString(st)))
 	}
 
+	// One open PRACTICE sitting per journey: hand it back rather than
+	// paying for another round (see GenerateExam).
+	if res, err := s.resumeOpenSitting(ctx, profile, journeyID, enum.ExamTypePractice); err != nil || res != nil {
+		return res, err
+	}
+
 	base, err := s.attemptRepo.FindLatestSubmittedByEsessId(ctx, journeyID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -307,6 +325,17 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 	created, err := s.generateCmd.Handle(ctx, cmd)
 	if err != nil {
 		return nil, err
+	}
+	if created.Resumed {
+		// Another hand-out on this journey committed between our check
+		// and our transaction; its sitting wins and this one's content
+		// (a model call, on a cache miss) is dropped.
+		logger.From(ctx).Infof("exam.resumed.in_tx attempt=%d journey=%d type=%s discarded_new_content=%t",
+			created.Attempt.ElinkId(), utils.DerefInt64(cmd.EsessID), cmd.ExamType, cmd.NewContent != nil)
+		return &dto.GenerateExamRes{
+			Exam:    dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
+			Resumed: true,
+		}, nil
 	}
 
 	logger.From(ctx).Infof("exam.generated attempt=%d exam_pool=%d profile=%d type=%s grade=%d",

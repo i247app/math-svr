@@ -141,6 +141,11 @@ type IExamLinkRepository interface {
 	// sitting of a journey, whatever its type — the base a PRACTICE round
 	// is drawn from. (nil, nil) when nothing has been submitted yet.
 	FindLatestSubmittedByEsessId(ctx context.Context, esessId int64) (*ExamLink, error)
+	// FindInProgressInJourney returns the child's newest IN_PROGRESS
+	// sitting of one type in one journey, or (nil, nil). A journey holds at
+	// most one per type — generate hands it back instead of opening a
+	// second — but rows from before that rule may hold several.
+	FindInProgressInJourney(ctx context.Context, profileId, esessId int64, examType string) (*ExamLink, error)
 	// ListRecentByProfileGrade returns a child's latest sittings at one
 	// grade, newest first, whether submitted or still open — a paper
 	// handed out was seen. It feeds the "do not repeat these" list the
@@ -261,6 +266,13 @@ type IExamSessionRepository interface {
 	// column untouched. ErrJourneyNotActive when the row is not open.
 	SetCurrent(ctx context.Context, esessId int64, examType string, grade, level *int) error
 	MarkStatus(ctx context.Context, esessId int64, newStatus string, endedDt mtime.MathTime) error
+	// LockJourney takes a row lock on the journey's owning row (never its
+	// PRACTICE row) until the transaction ends, so hand-outs on one
+	// journey run one at a time. Call it FIRST in the transaction: under
+	// REPEATABLE READ a plain read made before the lock would pin a
+	// snapshot from before the other hand-out committed. A journey with no
+	// such row locks nothing and is not an error.
+	LockJourney(ctx context.Context, esessId int64) error
 	Reopen(ctx context.Context, esessId int64) error
 }
 
