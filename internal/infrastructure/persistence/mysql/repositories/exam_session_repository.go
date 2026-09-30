@@ -129,6 +129,36 @@ func (r *ExamSessionRepository) FindLatestCompletedByUserProfileType(ctx context
 	return ModelToDomainExamSession(m), nil
 }
 
+// FindLatestJourney orders exactly like FindGradeLevels' latest subquery
+// (modify_dt, then esess_id), so /exams/sessions/latest and latest_level
+// never disagree about which journey is the latest.
+// ix_profile_type_status serves it when a type is given.
+func (r *ExamSessionRepository) FindLatestJourney(ctx context.Context, filter exam.LatestJourneyFilter) (*exam.ExamSession, error) {
+	where := `e.uid = ? AND e.profile_id = ? AND e.req_exam_type <> ? AND e.esess_status IN (?)`
+	args := []any{filter.Uid, filter.ProfileId, string(enum.ExamTypePractice), string(enum.EsessStatusComplete)}
+	if filter.ExamType != nil {
+		where += ` AND e.req_exam_type = ?`
+		args = append(args, *filter.ExamType)
+	}
+	if filter.Grade != nil {
+		where += ` AND e.current_grade = ?`
+		args = append(args, *filter.Grade)
+	}
+
+	args = append(args, examSessionActiveArgs()...)
+	query := `SELECT ` + examSessionColumns + ` FROM ` + examSessionTable + ` e WHERE (` + where + `) AND ` +
+		examSessionActiveWhere + ` ORDER BY e.modify_dt DESC, e.esess_id DESC LIMIT 1`
+
+	m, err := scanExamSession(r.db.QueryRow(ctx, query, args...))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("user exam repo find latest journey: %w", err)
+	}
+	return ModelToDomainExamSession(m), nil
+}
+
 // FindGradeLevels reads both ends of one grade's level ladder in one
 // round trip, over the same rows. Only rows that name a level count — a
 // GRADE journey opened without one says nothing about the ladder.

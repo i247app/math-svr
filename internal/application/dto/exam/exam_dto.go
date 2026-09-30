@@ -598,6 +598,22 @@ type ExamProgressReq struct {
 	ProgressWindow
 }
 
+// LatestJourneyReq asks for the child's latest journey. Both filters are
+// optional: ExamType ASSESSMENT or GRADE (PRACTICE is not a journey),
+// Grade 0..5 matched against the journey's current grade.
+type LatestJourneyReq struct {
+	UID       *int64  `json:"-"`
+	ProfileID int64   `json:"profile_id"`
+	ExamType  *string `json:"exam_type"`
+	Grade     *int    `json:"grade"`
+}
+
+// LatestJourneyRes carries the journey in the same shape as
+// /exams/sessions/mark; Stats is null when no journey matches.
+type LatestJourneyRes struct {
+	ExamSession *ExamStats `json:"exam_session"`
+}
+
 // GradeLevelsReq asks where a child stands on one grade's GRADE level
 // ladder. Grade is required (0 is kindergarten, so it is a pointer);
 // ProfileID may be omitted by a guest, like every exam route.

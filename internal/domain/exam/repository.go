@@ -179,6 +179,16 @@ type JourneyProgressParams struct {
 	Limit           int64
 }
 
+// LatestJourneyFilter narrows FindLatestJourney. ExamType nil means any
+// journey type; Grade nil means any grade (it filters current_grade).
+// PRACTICE rows are never journeys of their own and are always excluded.
+type LatestJourneyFilter struct {
+	Uid       int64
+	ProfileId int64
+	ExamType  *string
+	Grade     *int
+}
+
 // GradeLevels is where a child stands on the GRADE level ladder of one
 // grade. Each GRADE journey is one "lock" at one level (its
 // current_level); the client moves the child up after a lock is
@@ -239,6 +249,11 @@ type IExamSessionRepository interface {
 	// COMPLETED journey of that type — what a new journey inherits its
 	// starting grade from. CANCELLED journeys are skipped on purpose.
 	FindLatestCompletedByUserProfileType(ctx context.Context, uid, profileId int64, examType string) (*ExamSession, error)
+	// FindLatestJourney returns the child's journey touched last among
+	// those matching filter, in any state but DELETED, or (nil, nil). It
+	// uses the same "latest" as GradeLevels.Latest, so for one GRADE grade
+	// the two always name the same journey.
+	FindLatestJourney(ctx context.Context, filter LatestJourneyFilter) (*ExamSession, error)
 	// FindGradeLevels reads a child's GradeLevels for one grade, over the
 	// GRADE journeys of that grade.
 	FindGradeLevels(ctx context.Context, uid, profileId int64, grade int) (GradeLevels, error)

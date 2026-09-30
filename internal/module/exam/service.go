@@ -568,3 +568,28 @@ func (s *Service) GetGradeLevels(ctx context.Context, req *dto.GradeLevelsReq) (
 		MaxLevel:    result.MaxLevel,
 	}, nil
 }
+
+// GetLatestJourney returns the child's latest journey — the one touched
+// last, in any state but DELETED — optionally narrowed to one exam type
+// and grade. No match is an ordinary answer (stats null), not an error:
+// a child who has not started yet is a normal state.
+func (s *Service) GetLatestJourney(ctx context.Context, req *dto.LatestJourneyReq) (*dto.LatestJourneyRes, error) {
+	if err := ValidateLatestJourney(ctx, req); err != nil {
+		return nil, err
+	}
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
+	if err != nil {
+		return nil, err
+	}
+
+	journey, err := s.statsRepo.FindLatestJourney(ctx, examDomain.LatestJourneyFilter{
+		Uid:       profile.Uid(),
+		ProfileId: profile.ProfileId(),
+		ExamType:  req.ExamType,
+		Grade:     req.Grade,
+	})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	return &dto.LatestJourneyRes{ExamSession: dto.StatsToSingleResponse(journey)}, nil
+}

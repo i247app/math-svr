@@ -263,6 +263,28 @@ func ValidateJourneyProgress(ctx context.Context, req *dto.JourneyProgressReq) e
 	return validateProgressWindow(ctx, &req.ProgressWindow)
 }
 
+// ValidateLatestJourney checks the latest-journey request. Both filters
+// are optional; an empty exam_type means any type.
+func ValidateLatestJourney(ctx context.Context, req *dto.LatestJourneyReq) error {
+	if req.ProfileID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+	examType, err := normalizeExamType(ctx, req.ExamType)
+	if err != nil {
+		return err
+	}
+	// A PRACTICE row lives inside its journey (under "practice"); it is
+	// never a journey of its own, so it cannot be the latest one.
+	if examType != nil && *examType == string(enum.ExamTypePractice) {
+		return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrStatsPracticeNotAJourney)
+	}
+	req.ExamType = examType
+	if req.Grade != nil && (*req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax) {
+		return errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
+	}
+	return nil
+}
+
 // ValidateGradeLevels checks the level-ladder request: a profile and a
 // grade the product teaches.
 func ValidateGradeLevels(ctx context.Context, req *dto.GradeLevelsReq) error {
