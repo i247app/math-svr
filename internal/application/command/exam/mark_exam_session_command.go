@@ -115,7 +115,11 @@ func (h *MarkExamSessionCommandHandler) end(ctx context.Context, repos transacti
 			fmt.Errorf("exam: journey %d is not active", cmd.EsessID))
 	}
 
-	if err := repos.ExamSession.MarkStatus(ctx, journey.EsessId(), string(cmd.Status), mtime.Now()); err != nil {
+	// Completing a GRADE journey judges whether the level was passed
+	// (exam.PassMarkFor); the repository compares against the score in the
+	// same UPDATE that ends the journey.
+	passMark := exam.PassMarkFor(journey.ReqExamType(), cmd.Status)
+	if err := repos.ExamSession.MarkStatus(ctx, journey.EsessId(), string(cmd.Status), mtime.Now(), passMark); err != nil {
 		// The read above and this write are not atomic with respect to
 		// another mark; the WHERE clause in MarkStatus is. This is how
 		// the loser of that race finds out.

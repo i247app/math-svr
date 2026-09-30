@@ -265,7 +265,11 @@ type IExamSessionRepository interface {
 	// on the OPEN row (esessId, examType); a nil value leaves that
 	// column untouched. ErrJourneyNotActive when the row is not open.
 	SetCurrent(ctx context.Context, esessId int64, examType string, grade, level *int) error
-	MarkStatus(ctx context.Context, esessId int64, newStatus string, endedDt mtime.MathTime) error
+	// MarkStatus ends an open journey. passMark (PassMarkFor) nil leaves
+	// esess_flag NULL; otherwise esess_flag is whether the row's score, as
+	// it stands in the same UPDATE, reaches passMark — a journey with no
+	// score has not passed.
+	MarkStatus(ctx context.Context, esessId int64, newStatus string, endedDt mtime.MathTime, passMark *int) error
 	// LockJourney takes a row lock on the journey's owning row (never its
 	// PRACTICE row) until the transaction ends, so hand-outs on one
 	// journey run one at a time. Call it FIRST in the transaction: under

@@ -21,7 +21,7 @@ const (
 
 	examSessionColumns = `e.esess_id, e.uid, e.profile_id, e.req_exam_type,
 		e.res_total_questions, e.res_correct_number, e.res_skipped_number, e.res_score_percentage,
-		e.res_review, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
+		e.res_review, e.esess_flag, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
 		e.rpt_flg, e.kwords, e.note, e.esess_status, e.status,
 		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
 
@@ -44,7 +44,7 @@ func scanExamSession(s database.RowScanner) (*models.ExamSessionModel, error) {
 	var m models.ExamSessionModel
 	if err := s.Scan(&m.EsessId, &m.Uid, &m.ProfileId, &m.ReqExamType,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
-		&m.ResReview, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
+		&m.ResReview, &m.EsessFlag, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.EsessStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -283,10 +283,17 @@ func (r *ExamSessionRepository) ListProgressPoints(ctx context.Context, params e
 // Moving esess_status off ACTIVE takes the row out of uk_active_journey
 // (its IF(esess_status = 'ACTIVE', …, NULL) key part becomes NULL), which
 // is what frees the journey's slot for the next one.
-func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, newStatus string, endedDt mtime.MathTime) error {
+//
+// The pass verdict is computed in the same statement, from the score the
+// row holds at that moment: reading the score first and writing the flag
+// after would judge a journey on a score a concurrent submit had already
+// moved. The caller decides whether there is a verdict and at what mark;
+// the database only compares.
+func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, newStatus string, endedDt mtime.MathTime, passMark *int) error {
 	query := `
 		UPDATE ` + examSessionTable + `
 		SET esess_status = ?,
+			esess_flag       = IF(? IS NULL, NULL, COALESCE(res_score_percentage, 0) >= ?),
 			ended_dt         = ?,
 			modify_dt        = ?
 		WHERE esess_id = ? AND esess_status = ?
@@ -297,7 +304,7 @@ func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, n
 	}
 
 	result, err := r.db.Exec(ctx, query,
-		newStatus, ended, mtime.Now().Time,
+		newStatus, passMark, passMark, ended, mtime.Now().Time,
 		esessId, string(enum.EsessStatusActive))
 	if err != nil {
 		return fmt.Errorf("user exam repo mark status: %w", err)
@@ -327,8 +334,9 @@ func (r *ExamSessionRepository) LockJourney(ctx context.Context, esessId int64) 
 	return nil
 }
 
-// Reopen puts an ended journey back in play and clears ended_dt so the
-// row reads as open again. The PRACTICE row is left as it is: it is born
+// Reopen puts an ended journey back in play and clears ended_dt and the
+// pass verdict (esess_flag) so the row reads as open again — the verdict
+// belongs to the COMPLETE it is leaving, and the next COMPLETE judges anew. The PRACTICE row is left as it is: it is born
 // COMPLETE and must not be dragged to ACTIVE, where it would contend for
 // the (user, profile, PRACTICE) slot and read as a journey of its own.
 //
@@ -343,6 +351,7 @@ func (r *ExamSessionRepository) Reopen(ctx context.Context, esessId int64) error
 	query := `
 		UPDATE ` + examSessionTable + `
 		SET esess_status = ?,
+			esess_flag       = NULL,
 			ended_dt         = NULL,
 			modify_dt        = ?
 		WHERE esess_id = ? AND req_exam_type <> ? AND esess_status IN (?, ?)
@@ -526,6 +535,7 @@ func ModelToDomainExamSession(m *models.ExamSessionModel) *exam.ExamSession {
 	e.SetResSkippedNumber(m.ResSkippedNumber)
 	e.SetResScorePercentage(m.ResScorePercentage)
 	e.SetResReview(m.ResReview)
+	e.SetEsessFlag(m.EsessFlag)
 	e.SetCurrentGrade(m.CurrentGrade)
 	e.SetCurrentLevel(m.CurrentLevel)
 	e.SetLastSubmittedDt(mtime.MathTimeFromPtr(m.LastSubmittedDt))

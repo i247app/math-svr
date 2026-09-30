@@ -189,6 +189,11 @@ type ExamStats struct {
 	SkippedNumber   int     `json:"skipped_number"`
 	ScorePercentage *int    `json:"score_percentage,omitempty"`
 	Review          *string `json:"review,omitempty"`
+	// EsessFlag is whether a COMPLETE GRADE journey passed its level
+	// (score_percentage >= 50): true = passed, unlock the next level;
+	// false = not passed. null when there is no verdict — the journey is
+	// still open, was cancelled, or is not a GRADE journey.
+	EsessFlag *bool `json:"esess_flag"`
 	// Grade and Level are where the child is working, as the client last
 	// stated on a hand-out (current_grade / current_level). The server
 	// records them; it does not derive them from results.
@@ -495,6 +500,7 @@ func StatsToResponse(rows []*domain.ExamSession) []ExamStats {
 			SkippedNumber:   r.ResSkippedNumber(),
 			ScorePercentage: r.ResScorePercentage(),
 			Review:          r.ResReview(),
+			EsessFlag:       r.EsessFlag(),
 			Grade:           r.CurrentGrade(),
 			Level:           r.CurrentLevel(),
 		}

@@ -236,7 +236,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /exams/analytics/progress", examHandler.HandleGetExamProgress)
 		reg("POST /exams/journey/progress", examHandler.HandleGetJourneyProgress)
 		reg("POST /exams/grade/levels", examHandler.HandleGetGradeLevels)
-		reg("POST /exams/update-user-exam-status", examHandler.HandleMarkExamJourney)
+		reg("POST /exams/sessions/mark", examHandler.HandleMarkExamJourney)
 	}
 
 	// classroom routes

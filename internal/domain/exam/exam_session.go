@@ -72,6 +72,11 @@ type ExamSession struct {
 	resSkippedNumber   int
 	resScorePercentage *int
 	resReview          *string
+	// esessFlag is the verdict on a finished GRADE journey: true when it
+	// was completed at or above GradePassScorePercentage (the child passed
+	// the level), false below it, nil when no verdict was given — the
+	// journey is open, was cancelled, or is not a GRADE journey.
+	esessFlag *bool
 
 	lastSubmittedDt mtime.MathTime
 	endedDt         mtime.MathTime
@@ -109,6 +114,8 @@ func (u *ExamSession) ResScorePercentage() *int            { return u.resScorePe
 func (u *ExamSession) SetResScorePercentage(n *int)        { u.resScorePercentage = n }
 func (u *ExamSession) ResReview() *string                  { return u.resReview }
 func (u *ExamSession) SetResReview(s *string)              { u.resReview = s }
+func (u *ExamSession) EsessFlag() *bool                    { return u.esessFlag }
+func (u *ExamSession) SetEsessFlag(v *bool)                { u.esessFlag = v }
 func (u *ExamSession) CurrentGrade() *int                  { return u.currentGrade }
 func (u *ExamSession) SetCurrentGrade(g *int)              { u.currentGrade = g }
 func (u *ExamSession) CurrentLevel() *int                  { return u.currentLevel }
@@ -135,3 +142,22 @@ func (u *ExamSession) ModifyId() *int64                    { return u.modifyId }
 func (u *ExamSession) SetModifyId(id *int64)               { u.modifyId = id }
 func (u *ExamSession) ModifyDt() mtime.MathTime            { return u.modifyDt }
 func (u *ExamSession) SetModifyDt(t mtime.MathTime)        { u.modifyDt = t }
+
+// GradePassScorePercentage is the pass mark of a GRADE journey: one
+// completed with res_score_percentage at or above it has passed its level,
+// and the client may unlock the next one.
+const GradePassScorePercentage = 50
+
+// PassMarkFor returns the mark a journey is judged against when it is
+// marked newStatus, or nil when that move gives no verdict. Only
+// completing a GRADE journey does: a GRADE journey is one level "lock",
+// and COMPLETE on its own says only that the child finished it, not that
+// they passed (the client completes a journey whatever the score).
+// Cancelling, reopening and every other type leave the verdict empty.
+func PassMarkFor(examType string, newStatus enum.EsessStatusType) *int {
+	if examType != string(enum.ExamTypeGrade) || newStatus != enum.EsessStatusComplete {
+		return nil
+	}
+	mark := GradePassScorePercentage
+	return &mark
+}
