@@ -1,0 +1,1 @@
+mysqldump -h x21 -u mot -p dvldb --no-tablespaces --no-data --default-character-set=utf8mb4 --result-file=tables.dmp
