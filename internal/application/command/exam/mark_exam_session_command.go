@@ -143,7 +143,8 @@ func (h *MarkExamSessionCommandHandler) reopen(ctx context.Context, repos transa
 			fmt.Errorf("exam: journey %d is in state %q and cannot be reopened", cmd.EsessID, utils.DerefString(journey.EsessStatus())))
 	}
 
-	open, err := repos.ExamSession.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, journey.ReqExamType())
+	key := exam.JourneyKeyOf(cmd.UID, cmd.ProfileID, journey.ReqExamType(), journey.CurrentGrade())
+	open, err := repos.ExamSession.FindActiveJourney(ctx, key)
 	if err != nil {
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}

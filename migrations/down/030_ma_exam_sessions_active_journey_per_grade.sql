@@ -1,0 +1,14 @@
+-- migration down
+--
+-- Nothing to revert: 030 only reshapes uk_active_journey, and
+-- down/027_ma_exam_sessions.sql drops the table — and the key with it — right
+-- after this file runs.
+--
+-- Restoring the one-open-journey-per-type key here would fail on any
+-- database where a child has open GRADE journeys at two grades, and a failed
+-- down blocks the whole teardown. To go back by hand instead, end the extra
+-- journeys first, then:
+--
+--   ALTER TABLE ma_exam_sessions
+--     DROP INDEX uk_active_journey,
+--     ADD UNIQUE KEY uk_active_journey (uid, profile_id, req_exam_type, (IF(esess_status = 'ACTIVE', 1, NULL)));

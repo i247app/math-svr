@@ -26,14 +26,14 @@ var ErrJourneyNotActive = errors.New("exam: journey is not active")
 var ErrJourneyNotEnded = errors.New("exam: journey is not ended")
 
 // ErrJourneyConflict reports that opening a journey collided with a row
-// that already holds the (user, profile, type) slot — in practice, another
+// that already holds the journey's slot (JourneyKey) — in practice, another
 // submit opened the journey a moment earlier. The caller re-reads the open
 // journey and folds into it instead.
 //
 // A reopen reports it too: flipping an ended journey back to ACTIVE
-// re-enters the (user, profile, type) slot, and if another journey holds
-// it the database refuses — which is the rule "one open journey at a
-// time" being enforced where a code check alone could be raced.
+// re-enters its slot, and if another journey holds it the database
+// refuses — which is the rule "one open journey per slot" being enforced
+// where a code check alone could be raced.
 //
 // It is a distinct error rather than a silent merge so that a collision
 // on ANY unique key surfaces here. An INSERT ... ON DUPLICATE KEY UPDATE

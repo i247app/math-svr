@@ -2,7 +2,42 @@ package exam
 
 import (
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"math-ai.com/math-ai/internal/shared/enum"
 )
+
+// JourneyKey names the slot an open journey occupies: a submission folds
+// into the ACTIVE journey of its slot, and a slot holds at most one.
+//
+// For most types the slot is (user, profile, type). A GRADE review adds
+// the grade: a Grade 1 review and a Grade 2 review measure different
+// things, so a child working both keeps two open journeys side by side
+// and neither score is diluted by the other's questions. The grade is
+// therefore the identity of a GRADE journey, fixed when it opens —
+// current_grade is never moved on one.
+//
+// uk_active_journey holds the same rule in the database; build a key
+// with JourneyKeyOf so code and schema cannot disagree about it.
+type JourneyKey struct {
+	Uid       int64
+	ProfileId int64
+	ExamType  string
+	// Grade narrows the slot to one grade; set on a GRADE key only. nil
+	// on a GRADE key means "whichever grade the child worked last": the
+	// most recently touched open journey of the type.
+	Grade *int
+}
+
+// JourneyKeyOf builds the slot key for one child and exam type. grade is
+// kept only for GRADE — for every other type the child has one open
+// journey whatever the grade, and passing it is harmless.
+func JourneyKeyOf(uid, profileId int64, examType string, grade *int) JourneyKey {
+	k := JourneyKey{Uid: uid, ProfileId: profileId, ExamType: examType}
+	if examType == string(enum.ExamTypeGrade) && grade != nil {
+		g := *grade
+		k.Grade = &g
+	}
+	return k
+}
 
 // ExamSession is one JOURNEY: a stretch of one exam type that a (user,
 // profile) pair works through and then closes. Every submission of that
@@ -11,8 +46,8 @@ import (
 // profiles (one per child), so the pair, not the user alone, is the
 // subject of the statistics.
 //
-// At most one journey per triple is ACTIVE at a time — the database holds
-// that line (uk_active_journey), not this type.
+// At most one journey per slot (JourneyKey) is ACTIVE at a time — the
+// database holds that line (uk_active_journey), not this type.
 //
 // resTotalQuestions accumulates ANSWERED questions, never the size of the
 // exams. Three ten-question rounds with six answers each give 18, not 30,

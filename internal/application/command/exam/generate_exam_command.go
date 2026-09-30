@@ -151,7 +151,8 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 //
 // A PRACTICE round names its journey up front and must never open one.
 // Anything else takes the caller's id when it has one, and otherwise
-// looks for the open journey of its type, opening it if there is none.
+// looks for the open journey of its slot — its type, and for GRADE the
+// grade of this paper — opening it if there is none.
 // The open is a plain INSERT under uk_active_journey, so two hand-outs
 // racing to open the same child's journey resolve the way submits do:
 // the loser collides, re-reads, and joins the winner's row.
@@ -165,7 +166,8 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 	}
 
 	examType := string(cmd.ExamType)
-	open, err := repos.ExamSession.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, examType)
+	key := exam.JourneyKeyOf(cmd.UID, cmd.ProfileID, examType, &cmd.Grade)
+	open, err := repos.ExamSession.FindActiveJourney(ctx, key)
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -183,7 +185,8 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 	row.SetProfileId(cmd.ProfileID)
 	row.SetReqExamType(examType)
 	// A brand-new journey starts where this paper is written — the
-	// stated grade, or the profile's when none was stated.
+	// stated grade, or the profile's when none was stated. For GRADE this
+	// is the journey's identity and never moves (recordCurrent).
 	grade := cmd.Grade
 	row.SetCurrentGrade(&grade)
 	row.SetCurrentLevel(cmd.StatedLevel)
@@ -196,7 +199,7 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	open, err = repos.ExamSession.FindActiveByUserProfileType(ctx, cmd.UID, cmd.ProfileID, examType)
+	open, err = repos.ExamSession.FindActiveJourney(ctx, key)
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -214,11 +217,19 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 // a request naming just the grade leaves the level as it was. A journey
 // that was just opened already carries them, and the COALESCE below is a
 // no-op there.
+//
+// A GRADE journey's grade is its slot (exam.JourneyKey): the journey was
+// chosen BY that grade, so it is never rewritten — a paper at another
+// grade belongs to another journey.
 func (h *GenerateExamCommandHandler) recordCurrent(ctx context.Context, repos transaction.Repositories, cmd GenerateExamCommand, journeyID int64) error {
 	if cmd.ExamType == enum.ExamTypePractice {
 		return nil
 	}
-	if err := repos.ExamSession.SetCurrent(ctx, journeyID, string(cmd.ExamType), cmd.StatedGrade, cmd.StatedLevel); err != nil {
+	grade := cmd.StatedGrade
+	if cmd.ExamType == enum.ExamTypeGrade {
+		grade = nil
+	}
+	if err := repos.ExamSession.SetCurrent(ctx, journeyID, string(cmd.ExamType), grade, cmd.StatedLevel); err != nil {
 		if errors.Is(err, exam.ErrJourneyNotActive) {
 			return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
 		}

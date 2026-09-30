@@ -109,8 +109,8 @@ func (s ExamStatusType) String() string { return string(s) }
 // into the PRACTICE row that shares its id. Ending the journey ends both rows.
 //
 // An ended journey CAN be reopened — marked ACTIVE again — as long as no
-// other journey of its type is open: a child may change their mind and
-// pick a run back up. Reopening clears ended_dt, and from then on the
+// other journey holds its slot open (same type, and same grade for GRADE):
+// a child may change their mind and pick a run back up. Reopening clears ended_dt, and from then on the
 // journey behaves as if it had never ended.
 //
 // The PRACTICE row that shares a journey's id is not part of this

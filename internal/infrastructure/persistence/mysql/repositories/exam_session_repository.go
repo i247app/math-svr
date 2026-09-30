@@ -82,12 +82,31 @@ func (r *ExamSessionRepository) FindByEsessIdAndType(ctx context.Context, esessI
 	return r.findOneBy(ctx, "e.esess_id = ? AND e.req_exam_type = ?", esessId, examType)
 }
 
-// FindActiveByUserProfileType reads the open journey. uk_active_journey
-// guarantees there is at most one, so no ORDER BY is needed to pick.
-func (r *ExamSessionRepository) FindActiveByUserProfileType(ctx context.Context, uid, profileId int64, examType string) (*exam.ExamSession, error) {
-	return r.findOneBy(ctx,
-		"e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.esess_status = ?",
-		uid, profileId, examType, string(enum.EsessStatusActive))
+// FindActiveJourney reads the open journey of one slot. uk_active_journey
+// allows one per slot, so a full key matches at most one row; the ORDER BY
+// only decides for a GRADE key that leaves the grade open, where each grade
+// may hold its own journey and the one touched last (hand-out and submit
+// both stamp modify_dt) is the one the child is working.
+func (r *ExamSessionRepository) FindActiveJourney(ctx context.Context, key exam.JourneyKey) (*exam.ExamSession, error) {
+	where := `e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.esess_status = ?`
+	args := []any{key.Uid, key.ProfileId, key.ExamType, string(enum.EsessStatusActive)}
+	if key.Grade != nil {
+		where += ` AND e.current_grade = ?`
+		args = append(args, *key.Grade)
+	}
+
+	args = append(args, examSessionActiveArgs()...)
+	query := `SELECT ` + examSessionColumns + ` FROM ` + examSessionTable + ` e WHERE (` + where + `) AND ` +
+		examSessionActiveWhere + ` ORDER BY e.modify_dt DESC, e.esess_id DESC LIMIT 1`
+
+	m, err := scanExamSession(r.db.QueryRow(ctx, query, args...))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("user exam repo find active journey: %w", err)
+	}
+	return ModelToDomainExamSession(m), nil
 }
 
 // FindLatestCompletedByUserProfileType reads the journey a new one
@@ -111,8 +130,8 @@ func (r *ExamSessionRepository) FindLatestCompletedByUserProfileType(ctx context
 }
 
 // ListByUserProfile returns a child's journeys, newest first inside each
-// exam type, so the open journey (if any) is always the first row of its
-// group and the ended ones follow as history.
+// exam type, so an open journey comes before the ended ones of its slot,
+// which follow as history.
 func (r *ExamSessionRepository) ListByUserProfile(ctx context.Context, uid, profileId int64, filter exam.ListJourneysFilter) ([]*exam.ExamSession, error) {
 	where := `e.uid = ? AND e.profile_id = ?`
 	args := []any{uid, profileId}
@@ -227,8 +246,8 @@ func (r *ExamSessionRepository) ListProgressPoints(ctx context.Context, params e
 // different status. A PRACTICE row is never ACTIVE and so is never hit.
 //
 // Moving esess_status off ACTIVE takes the row out of uk_active_journey
-// (its IF(esess_status = 'ACTIVE', 1, NULL) key part becomes NULL), which is
-// what frees the (user, profile, type) slot for the next journey.
+// (its IF(esess_status = 'ACTIVE', …, NULL) key part becomes NULL), which
+// is what frees the journey's slot for the next one.
 func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, newStatus string, endedDt mtime.MathTime) error {
 	query := `
 		UPDATE ` + examSessionTable + `
@@ -267,10 +286,10 @@ func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, n
 // Two guards. The WHERE clause carries the ended states, so a reopen
 // racing a mark matches zero rows and gets ErrJourneyNotEnded rather than
 // re-opening something that just changed. And moving esess_status back to
-// ACTIVE puts the row back into uk_active_journey, so if another journey of
-// the type is open the UPDATE trips the key and comes back as ErrJourneyConflict —
-// the database, not the caller's earlier read, is what holds "one open
-// journey at a time".
+// ACTIVE puts the row back into uk_active_journey, so if another journey
+// holds its slot (same type, and same grade for GRADE) the UPDATE trips the
+// key and comes back as ErrJourneyConflict — the database, not the caller's
+// earlier read, is what holds "one open journey per slot".
 func (r *ExamSessionRepository) Reopen(ctx context.Context, esessId int64) error {
 	query := `
 		UPDATE ` + examSessionTable + `
@@ -304,6 +323,10 @@ func (r *ExamSessionRepository) Reopen(ctx context.Context, esessId int64) error
 // is, so a request that names only the grade does not blank the level.
 // Only the open row of the journey's own type is touched — a PRACTICE
 // row has no placement of its own.
+//
+// The grade of a GRADE journey is part of its slot (exam.JourneyKey), so
+// callers never move it; if one did into a grade that already has an open
+// journey, uk_active_journey would refuse the UPDATE.
 func (r *ExamSessionRepository) SetCurrent(ctx context.Context, esessId int64, examType string, grade, level *int) error {
 	if grade == nil && level == nil {
 		return nil
@@ -338,7 +361,8 @@ func (r *ExamSessionRepository) SetCurrent(ctx context.Context, esessId int64, e
 // absorbed.
 //
 // Two unique keys back this. uk_active_journey makes "at most one open
-// row per (user, profile, type)" hold under concurrency: two first-ever
+// row per slot" — (user, profile, type), plus the grade for GRADE — hold
+// under concurrency: two first-ever
 // submits both try to INSERT, one wins, the other gets ErrJourneyConflict
 // and folds into the winner. The PRIMARY KEY is (esess_id, req_exam_type)
 // — not esess_id alone (up/035) — which is what lets a PRACTICE row reuse

@@ -186,7 +186,7 @@ type JourneyProgressParams struct {
 //
 // Opening and accumulating are two explicit operations, not one upsert.
 // Create is a plain INSERT: it succeeds only when no other row holds the
-// (user, profile, type) slot — or the (id, type) pair — and reports
+// journey's slot (JourneyKey) — or the (id, type) pair — and reports
 // ErrJourneyConflict otherwise. Accumulate is an UPDATE by (id, type) that
 // carries the status the caller expects in its WHERE clause — ACTIVE for
 // a journey's own row, COMPLETE for a PRACTICE row — so totals can never
@@ -208,9 +208,10 @@ type IExamSessionRepository interface {
 	// the journey has no row of that type yet — a journey with no PRACTICE
 	// round submitted is the ordinary case, not an error.
 	FindByEsessIdAndType(ctx context.Context, esessId int64, examType string) (*ExamSession, error)
-	// FindActiveByUserProfileType returns the open journey, or (nil, nil)
-	// when the child has none of that type right now.
-	FindActiveByUserProfileType(ctx context.Context, uid, profileId int64, examType string) (*ExamSession, error)
+	// FindActiveJourney returns the open journey of one slot, or (nil, nil)
+	// when the slot is empty. A GRADE key without a grade may match several
+	// open journeys (one per grade); the most recently touched one wins.
+	FindActiveJourney(ctx context.Context, key JourneyKey) (*ExamSession, error)
 	// FindLatestCompletedByUserProfileType returns the most recently
 	// COMPLETED journey of that type — what a new journey inherits its
 	// starting grade from. CANCELLED journeys are skipped on purpose.
@@ -224,8 +225,8 @@ type IExamSessionRepository interface {
 	// has no score and is left out.
 	ListProgressPoints(ctx context.Context, params JourneyProgressParams) ([]*ExamSession, error)
 	// ReassignOwnerByProfile re-points every journey of one child at
-	// another account. uk_active_journey keys on (uid, profile_id, type),
-	// and the profile moves with its journeys, so an open journey stays
+	// another account. uk_active_journey keys on (uid, profile_id, type[,
+	// grade]), and the profile moves with its journeys, so an open journey stays
 	// open and cannot collide with one the receiving account already has.
 	ReassignOwnerByProfile(ctx context.Context, profileId int64, newUid int64) error
 	// Create opens a journey with delta as its first totals.

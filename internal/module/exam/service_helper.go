@@ -141,9 +141,16 @@ func (s *Service) loadOwnedProfile(ctx context.Context, uid *int64, profileID in
 // reports the open journey (if any) so the sitting can be pinned to it.
 //
 // Grade, in order of preference: what the client stated on this request,
-// then the journey's current grade (what the client stated last time),
-// then the class the profile says the child attends, and finally
-// kindergarten. Nothing here is measured by the server any more — the
+// then the open journey's current grade (what the client stated last
+// time), then the class the profile says the child attends, and finally
+// kindergarten.
+//
+// Which journey is "the open one" depends on the type (exam.JourneyKey).
+// An ASSESSMENT child has one, whatever the grade. A GRADE child has one
+// per grade: a stated grade picks the journey of that grade — none open
+// means the command opens a new one — and never folds into a journey of
+// another grade. With no grade stated, the GRADE journey worked last is
+// continued at its own grade. Nothing here is measured by the server any more — the
 // journey's grade is the client's statement, recorded at hand-out — so
 // there is no longer a "carry the last measurement forward" step between
 // journeys: a new journey starts where the client, or the profile, says.
@@ -151,8 +158,9 @@ func (s *Service) loadOwnedProfile(ctx context.Context, uid *int64, profileID in
 // Level is not resolved. It is recorded when stated and read by no rule.
 func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq, examType enum.ExamType, profile *profileDomain.Profile) (grade int, openJourney *int64, err error) {
 	// The open journey is looked up regardless of a stated grade: even a
-	// pinned sitting belongs to the journey that is open.
-	active, err := s.statsRepo.FindActiveByUserProfileType(ctx, profile.Uid(), profile.ProfileId(), string(examType))
+	// pinned sitting belongs to the journey that is open in its slot.
+	key := examDomain.JourneyKeyOf(profile.Uid(), profile.ProfileId(), string(examType), req.Grade)
+	active, err := s.statsRepo.FindActiveJourney(ctx, key)
 	if err != nil {
 		return 0, nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
