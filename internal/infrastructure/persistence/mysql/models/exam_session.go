@@ -15,6 +15,7 @@ type ExamSessionModel struct {
 	ResScorePercentage *int
 	ResReview          *string
 	EsessFlag          *bool // TINYINT(1): NULL = no verdict
+	AiShortText        *string
 	CurrentGrade       *int
 	CurrentLevel       *int
 	LastSubmittedDt    *time.Time

@@ -286,6 +286,12 @@ type IExamSessionRepository interface {
 	// on the OPEN row (esessId, examType); a nil value leaves that
 	// column untouched. ErrJourneyNotActive when the row is not open.
 	SetCurrent(ctx context.Context, esessId int64, examType string, grade, level *int) error
+	// SetShortText records the ai_short_text of the exam just handed out
+	// on the OPEN row (esessId, examType). Unlike SetCurrent it always
+	// writes, nil included: the column describes the latest exam, and a
+	// latest exam without a summary must not show the previous one's.
+	// ErrJourneyNotActive when the row is not open.
+	SetShortText(ctx context.Context, esessId int64, examType string, shortText *string) error
 	// MarkStatus ends an open journey. passMark (PassMarkFor) nil leaves
 	// esess_flag NULL; otherwise esess_flag is whether the row's score, as
 	// it stands in the same UPDATE, reaches passMark — a journey with no

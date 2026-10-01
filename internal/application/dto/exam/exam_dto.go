@@ -138,9 +138,9 @@ type ExamResponse struct {
 	// sitting was handed out, or absent when none was.
 	Level *int `json:"level,omitempty"`
 
-	Title     *string `json:"title,omitempty"`
-	ShortText *string `json:"short_text,omitempty"`
-	NumQues   int     `json:"num_questions"`
+	Title       *string `json:"title,omitempty"`
+	AIShortText *string `json:"ai_short_text,omitempty"`
+	NumQues     int     `json:"num_questions"`
 
 	Questions []ExamQuestion `json:"questions,omitempty"`
 	Result    *ExamResult    `json:"result,omitempty"`
@@ -194,6 +194,10 @@ type ExamStats struct {
 	// false = not passed. null when there is no verdict — the journey is
 	// still open, was cancelled, or is not a GRADE journey.
 	EsessFlag *bool `json:"esess_flag"`
+	// ShortText is the summary of the exam handed out last in this
+	// journey (its ai_short_text) — the same field the exam itself
+	// carries as short_text.
+	AIShortText *string `json:"ai_short_text,omitempty"`
 	// Grade and Level are where the child is working, as the client last
 	// stated on a hand-out (current_grade / current_level). The server
 	// records them; it does not derive them from results.
@@ -330,7 +334,7 @@ func AttemptToResponse(a *domain.ExamLink, e *domain.ExamPool, includeAnswerKey 
 
 	if e != nil {
 		res.Title = e.AiTitle()
-		res.ShortText = e.AiShortText()
+		res.AIShortText = e.AiShortText()
 		res.NumQues = e.ReqNumQues()
 		// The sitting's own ordering, not the stored one: two children
 		// served the same cached set each see their own arrangement.
@@ -501,6 +505,7 @@ func StatsToResponse(rows []*domain.ExamSession) []ExamStats {
 			ScorePercentage: r.ResScorePercentage(),
 			Review:          r.ResReview(),
 			EsessFlag:       r.EsessFlag(),
+			AIShortText:     r.AiShortText(),
 			Grade:           r.CurrentGrade(),
 			Level:           r.CurrentLevel(),
 		}

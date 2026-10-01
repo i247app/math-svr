@@ -117,7 +117,7 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		if err != nil {
 			return err
 		}
-		if err := h.recordCurrent(ctx, repos, cmd, journeyID); err != nil {
+		if err := h.recordCurrent(ctx, repos, cmd, journeyID, examPool.AiShortText()); err != nil {
 			return err
 		}
 
@@ -258,17 +258,19 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 	return open.EsessId(), nil
 }
 
-// recordCurrent writes the client's stated grade / level onto the open
-// journey. A PRACTICE round names a finished journey and states nothing
-// about it; for any other round, only the values actually sent move —
-// a request naming just the grade leaves the level as it was. A journey
-// that was just opened already carries them, and the COALESCE below is a
-// no-op there.
+// recordCurrent writes what this hand-out says about the open journey:
+// the client's stated grade / level, and the summary (ai_short_text) of
+// the exam being handed out. A PRACTICE round names a finished journey
+// and states nothing about it; for any other round, only the grade /
+// level values actually sent move — a request naming just the grade
+// leaves the level as it was (a journey that was just opened already
+// carries them, and the COALESCE is a no-op there) — while the summary
+// always follows the new exam, cache hit or fresh generation alike.
 //
 // A GRADE journey's grade is its slot (exam.JourneyKey): the journey was
 // chosen BY that grade, so it is never rewritten — a paper at another
 // grade belongs to another journey.
-func (h *GenerateExamCommandHandler) recordCurrent(ctx context.Context, repos transaction.Repositories, cmd GenerateExamCommand, journeyID int64) error {
+func (h *GenerateExamCommandHandler) recordCurrent(ctx context.Context, repos transaction.Repositories, cmd GenerateExamCommand, journeyID int64, shortText *string) error {
 	if cmd.ExamType == enum.ExamTypePractice {
 		return nil
 	}
@@ -277,12 +279,21 @@ func (h *GenerateExamCommandHandler) recordCurrent(ctx context.Context, repos tr
 		grade = nil
 	}
 	if err := repos.ExamSession.SetCurrent(ctx, journeyID, string(cmd.ExamType), grade, cmd.StatedLevel); err != nil {
-		if errors.Is(err, exam.ErrJourneyNotActive) {
-			return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
-		}
-		return errs.NewError(ctx, status.FAIL, nil, err)
+		return journeyWriteError(ctx, err)
+	}
+	if err := repos.ExamSession.SetShortText(ctx, journeyID, string(cmd.ExamType), shortText); err != nil {
+		return journeyWriteError(ctx, err)
 	}
 	return nil
+}
+
+// journeyWriteError maps a write on the open journey row: a row that is
+// no longer open means the journey ended under this hand-out.
+func journeyWriteError(ctx context.Context, err error) error {
+	if errors.Is(err, exam.ErrJourneyNotActive) {
+		return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
+	}
+	return errs.NewError(ctx, status.FAIL, nil, err)
 }
 
 // resolveExamPool either loads the cached question set or stores the freshly

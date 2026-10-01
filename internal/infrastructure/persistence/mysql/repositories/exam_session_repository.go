@@ -21,7 +21,7 @@ const (
 
 	examSessionColumns = `e.esess_id, e.uid, e.profile_id, e.req_exam_type,
 		e.res_total_questions, e.res_correct_number, e.res_skipped_number, e.res_score_percentage,
-		e.res_review, e.esess_flag, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
+		e.res_review, e.esess_flag, e.ai_short_text, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
 		e.rpt_flg, e.kwords, e.note, e.esess_status, e.status,
 		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
 
@@ -44,7 +44,7 @@ func scanExamSession(s database.RowScanner) (*models.ExamSessionModel, error) {
 	var m models.ExamSessionModel
 	if err := s.Scan(&m.EsessId, &m.Uid, &m.ProfileId, &m.ReqExamType,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
-		&m.ResReview, &m.EsessFlag, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
+		&m.ResReview, &m.EsessFlag, &m.AiShortText, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.EsessStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -488,6 +488,31 @@ func (r *ExamSessionRepository) SetCurrent(ctx context.Context, esessId int64, e
 	return nil
 }
 
+// SetShortText stamps modify_dt like SetCurrent does: a hand-out touches
+// the journey, and the write must change the row for RowsAffected to tell
+// "not open" apart from "same text as before".
+func (r *ExamSessionRepository) SetShortText(ctx context.Context, esessId int64, examType string, shortText *string) error {
+	query := `
+		UPDATE ` + examSessionTable + `
+		SET ai_short_text = ?,
+			modify_dt     = ?
+		WHERE esess_id = ? AND req_exam_type = ? AND esess_status = ?
+	`
+	result, err := r.db.Exec(ctx, query, shortText, mtime.Now().Time,
+		esessId, examType, string(enum.EsessStatusActive))
+	if err != nil {
+		return fmt.Errorf("user exam repo set short text: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("user exam repo set short text rows affected: %w", err)
+	}
+	if affected == 0 {
+		return exam.ErrJourneyNotActive
+	}
+	return nil
+}
+
 // Create opens a journey row. It is a plain INSERT on purpose: the
 // previous INSERT ... ON DUPLICATE KEY UPDATE quietly redirected the write
 // into whatever row collided on ANY unique key — and when the schema
@@ -613,6 +638,7 @@ func ModelToDomainExamSession(m *models.ExamSessionModel) *exam.ExamSession {
 	e.SetResScorePercentage(m.ResScorePercentage)
 	e.SetResReview(m.ResReview)
 	e.SetEsessFlag(m.EsessFlag)
+	e.SetAiShortText(m.AiShortText)
 	e.SetCurrentGrade(m.CurrentGrade)
 	e.SetCurrentLevel(m.CurrentLevel)
 	e.SetLastSubmittedDt(mtime.MathTimeFromPtr(m.LastSubmittedDt))
