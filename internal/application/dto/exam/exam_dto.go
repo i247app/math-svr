@@ -641,30 +641,30 @@ type LatestJourneyRes struct {
 	ExamSession *ExamStats `json:"exam_session"`
 }
 
-// GradeLadderReq asks for one grade's level ladder. Grade is required.
-type GradeLadderReq struct {
+// GradeMapReq asks for one grade's level map. Grade is required.
+type GradeMapReq struct {
 	UID       *int64 `json:"-"`
 	ProfileID int64  `json:"profile_id"`
 	Grade     *int   `json:"grade"`
 }
 
-// GradeLadderEntry is a journey in the ExamStats shape plus IsLatest,
+// GradeMapEntry is a journey in the ExamStats shape plus IsLatest,
 // true on exactly the entry that is the journey the child worked last
 // (no entry when the grade has no journey). No esess_id appears twice.
-type GradeLadderEntry struct {
+type GradeMapEntry struct {
 	ExamStats
 	IsLatest bool `json:"is_latest"`
 }
 
-// GradeLadderRes lists the ladder: one entry per completed level, lowest
+// GradeMapRes lists the map: one entry per completed level, lowest
 // first — each the level's latest COMPLETE journey, esess_flag telling
 // pass or fail — plus, at the end, the latest journey when it is not
 // already one of them (still ACTIVE, or CANCELLED). Empty when the child has no journey at
 // this grade.
-type GradeLadderRes struct {
-	ProfileID    int64              `json:"profile_id"`
-	Grade        int                `json:"grade"`
-	ExamSessions []GradeLadderEntry `json:"exam_sessions"`
+type GradeMapRes struct {
+	ProfileID    int64           `json:"profile_id"`
+	Grade        int             `json:"grade"`
+	ExamSessions []GradeMapEntry `json:"exam_sessions"`
 }
 
 // GradeLevelsReq asks where a child stands on one grade's GRADE level

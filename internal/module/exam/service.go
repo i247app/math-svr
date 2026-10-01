@@ -39,7 +39,7 @@ type Service struct {
 	progressQuery   *query.GetExamProgressQueryHandler
 	journeyProgress *query.GetJourneyProgressQueryHandler
 	gradeLevels     *query.GetGradeLevelsQueryHandler
-	gradeLadder     *query.GetGradeLadderQueryHandler
+	gradeMap        *query.GetGradeMapQueryHandler
 
 	examPoolRepo examDomain.IExamPoolRepository
 	attemptRepo  examDomain.IExamLinkRepository
@@ -84,7 +84,7 @@ func NewService(
 		progressQuery:   query.NewGetExamProgressQueryHandler(attemptRepo),
 		journeyProgress: query.NewGetJourneyProgressQueryHandler(statsRepo),
 		gradeLevels:     query.NewGetGradeLevelsQueryHandler(statsRepo),
-		gradeLadder:     query.NewGetGradeLadderQueryHandler(statsRepo),
+		gradeMap:        query.NewGetGradeMapQueryHandler(statsRepo),
 		examPoolRepo:    examPoolRepo,
 		attemptRepo:     attemptRepo,
 		statsRepo:       statsRepo,
@@ -598,11 +598,11 @@ func (s *Service) GetLatestJourney(ctx context.Context, req *dto.LatestJourneyRe
 	return &dto.LatestJourneyRes{ExamSession: dto.StatsToSingleResponse(journey)}, nil
 }
 
-// GetGradeLadder returns one grade's level ladder as a single list: the
+// GetGradeMap returns one grade's level ladder as a single list: the
 // latest completed journey of every level, with is_latest on the journey
-// worked last (see query.GetGradeLadderQueryHandler).
-func (s *Service) GetGradeLadder(ctx context.Context, req *dto.GradeLadderReq) (*dto.GradeLadderRes, error) {
-	if err := ValidateGradeLadder(ctx, req); err != nil {
+// worked last (see query.GetGradeMapQueryHandler).
+func (s *Service) GetGradeRoadMap(ctx context.Context, req *dto.GradeMapReq) (*dto.GradeMapRes, error) {
+	if err := ValidateGradeMap(ctx, req); err != nil {
 		return nil, err
 	}
 	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
@@ -610,7 +610,7 @@ func (s *Service) GetGradeLadder(ctx context.Context, req *dto.GradeLadderReq) (
 		return nil, err
 	}
 
-	entries, err := s.gradeLadder.Handle(ctx, query.GetGradeLadderQuery{
+	entries, err := s.gradeMap.Handle(ctx, query.GetGradeMapQuery{
 		UID:       profile.Uid(),
 		ProfileID: profile.ProfileId(),
 		Grade:     *req.Grade,
@@ -619,16 +619,16 @@ func (s *Service) GetGradeLadder(ctx context.Context, req *dto.GradeLadderReq) (
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	ladder := make([]dto.GradeLadderEntry, 0, len(entries))
+	sessions := make([]dto.GradeMapEntry, 0, len(entries))
 	for _, e := range entries {
 		if stats := dto.StatsToSingleResponse(e.Journey); stats != nil {
-			ladder = append(ladder, dto.GradeLadderEntry{ExamStats: *stats, IsLatest: e.IsLatest})
+			sessions = append(sessions, dto.GradeMapEntry{ExamStats: *stats, IsLatest: e.IsLatest})
 		}
 	}
-	return &dto.GradeLadderRes{
+	return &dto.GradeMapRes{
 		ProfileID:    profile.ProfileId(),
 		Grade:        *req.Grade,
-		ExamSessions: ladder,
+		ExamSessions: sessions,
 	}, nil
 }
 

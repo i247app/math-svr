@@ -312,8 +312,8 @@ func ValidateGradeLevels(ctx context.Context, req *dto.GradeLevelsReq) error {
 	return validateProfileAndGrade(ctx, req.ProfileID, req.Grade)
 }
 
-// ValidateGradeLadder checks /exams/grade/ladder the same way.
-func ValidateGradeLadder(ctx context.Context, req *dto.GradeLadderReq) error {
+// ValidateGradeMap checks /exams/grade/map the same way.
+func ValidateGradeMap(ctx context.Context, req *dto.GradeMapReq) error {
 	return validateProfileAndGrade(ctx, req.ProfileID, req.Grade)
 }
 

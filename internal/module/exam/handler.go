@@ -360,9 +360,9 @@ func (h *ExamHandler) HandleGetLatestJourney(w http.ResponseWriter, r *http.Requ
 	response.WriteJson(w, res, nil)
 }
 
-// POST /exams/grade/ladder
-func (h *ExamHandler) HandleGetGradeLadder(w http.ResponseWriter, r *http.Request) {
-	var req dto.GradeLadderReq
+// POST /exams/grade/map
+func (h *ExamHandler) HandleGetGradeRoadMap(w http.ResponseWriter, r *http.Request) {
+	var req dto.GradeMapReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -373,7 +373,7 @@ func (h *ExamHandler) HandleGetGradeLadder(w http.ResponseWriter, r *http.Reques
 	}
 	req.UID = uid
 
-	res, err := h.service.GetGradeLadder(r.Context(), &req)
+	res, err := h.service.GetGradeRoadMap(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
