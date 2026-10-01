@@ -196,9 +196,10 @@ type ExamStats struct {
 	// false = not passed. null when there is no verdict — the journey is
 	// still open, was cancelled, or is not a GRADE journey.
 	EsessFlag *bool `json:"esess_flag"`
-	// ShortText is the summary of the exam handed out last in this
-	// journey (its ai_short_text) — the same field the exam itself
-	// carries as short_text.
+	// AITitle / AIShortText are the title and summary of the exam handed
+	// out last in this journey (its ai_title / ai_short_text) — the same
+	// fields the exam itself carries as title / short_text.
+	AITitle     *string `json:"ai_title,omitempty"`
 	AIShortText *string `json:"ai_short_text,omitempty"`
 	// AIReviewShort / AIReviewLong are the AI's review of the answers in
 	// this journey (/exams/sessions/review), absent until one was asked for.
@@ -511,6 +512,7 @@ func StatsToResponse(rows []*domain.ExamSession) []ExamStats {
 			ScorePercentage: r.ResScorePercentage(),
 			Review:          r.ResReview(),
 			EsessFlag:       r.EsessFlag(),
+			AITitle:         r.AiTitle(),
 			AIShortText:     r.AiShortText(),
 			AIReviewShort:   r.AiReviewShort(),
 			AIReviewLong:    r.AiReviewLong(),

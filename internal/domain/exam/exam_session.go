@@ -77,10 +77,12 @@ type ExamSession struct {
 	// the level), false below it, nil when no verdict was given — the
 	// journey is open, was cancelled, or is not a GRADE journey.
 	esessFlag *bool
-	// aiShortText is the model's one-line summary (ma_exam_pools.ai_short_text)
-	// of the exam handed out last in this journey, copied at every
-	// hand-out of the journey's own type so a journey list can show what
-	// the child is working on without reading the pool.
+	// aiTitle / aiShortText are the title and one-line summary
+	// (ma_exam_pools.ai_title / ai_short_text) of the exam handed out last
+	// in this journey, copied at every hand-out of the journey's own type
+	// so a journey list can show what the child is working on without
+	// reading the pool.
+	aiTitle     *string
 	aiShortText *string
 	// aiReviewShort / aiReviewLong are the AI's review of the answers given
 	// in this journey, in two lengths, written by /exams/sessions/review
@@ -126,6 +128,8 @@ func (u *ExamSession) ResReview() *string           { return u.resReview }
 func (u *ExamSession) SetResReview(s *string)       { u.resReview = s }
 func (u *ExamSession) EsessFlag() *bool             { return u.esessFlag }
 func (u *ExamSession) SetEsessFlag(v *bool)         { u.esessFlag = v }
+func (u *ExamSession) AiTitle() *string             { return u.aiTitle }
+func (u *ExamSession) SetAiTitle(s *string)         { u.aiTitle = s }
 func (u *ExamSession) AiShortText() *string         { return u.aiShortText }
 func (u *ExamSession) SetAiShortText(s *string)     { u.aiShortText = s }
 func (u *ExamSession) AiReviewShort() *string       { return u.aiReviewShort }

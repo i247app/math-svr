@@ -46,6 +46,12 @@ CREATE TABLE IF NOT EXISTS ma_exam_sessions (
   -- ---- Server-derived feedback --------------------------------------------
   res_review           TEXT         DEFAULT NULL,            -- cumulative VN feedback, rewritten each submit
 
+  -- ---- Latest exam handed out (copied from ma_exam_pools) -----------------
+  -- Both written together at every hand-out of the journey's own type
+  -- (cache hit or fresh generation; NULL copies as NULL). NULL on PRACTICE rows.
+  ai_title             VARCHAR(255) DEFAULT NULL,            -- ma_exam_pools.ai_title of the exam handed out last
+  ai_short_text        VARCHAR(255) DEFAULT NULL,            -- ma_exam_pools.ai_short_text of that exam
+
   last_submitted_dt    DATETIME(6)  DEFAULT NULL,
   ended_dt             DATETIME(6)  DEFAULT NULL,
 

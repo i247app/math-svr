@@ -291,12 +291,12 @@ type IExamSessionRepository interface {
 	// on the OPEN row (esessId, examType); a nil value leaves that
 	// column untouched. ErrJourneyNotActive when the row is not open.
 	SetCurrent(ctx context.Context, esessId int64, examType string, grade, level *int) error
-	// SetShortText records the ai_short_text of the exam just handed out
-	// on the OPEN row (esessId, examType). Unlike SetCurrent it always
-	// writes, nil included: the column describes the latest exam, and a
-	// latest exam without a summary must not show the previous one's.
-	// ErrJourneyNotActive when the row is not open.
-	SetShortText(ctx context.Context, esessId int64, examType string, shortText *string) error
+	// SetExamTexts records the ai_title and ai_short_text of the exam just
+	// handed out on the OPEN row (esessId, examType). Unlike SetCurrent it
+	// always writes both, nil included: the columns describe the latest
+	// exam, and a latest exam without a title or summary must not show
+	// the previous one's. ErrJourneyNotActive when the row is not open.
+	SetExamTexts(ctx context.Context, esessId int64, examType string, title, shortText *string) error
 	// SetAiReview stores the AI review on the row (esessId, examType),
 	// whatever its state, WITHOUT moving modify_dt: reading a review of an
 	// old journey must not make it the "latest" one. ErrJourneyNotFound
