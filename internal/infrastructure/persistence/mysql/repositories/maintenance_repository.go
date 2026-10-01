@@ -45,7 +45,7 @@ var clearDataTargets = []clearTarget{
 	{chatConversationTable, seq.NameChatConversation, "conversation_id"},
 	{chatParticipantTable, seq.NameChatParticipant, "participant_id"},
 	{chatMessageTable, seq.NameChatMessage, "message_id"},
-	{examPoolTable, seq.NameExamPool, "exam_id"},
+	// {examPoolTable, seq.NameExamPool, "exam_id"}, -- keep this table
 	{examLinkTable, seq.NameExamLink, "elink_id"},
 	{examSessionTable, seq.NameExamSession, "esess_id"},
 	{examSessionLineTable, seq.NameExamSessionLine, "esess_ln_id"},
