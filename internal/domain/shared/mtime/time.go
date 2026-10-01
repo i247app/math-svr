@@ -99,7 +99,7 @@ func (mt MathTime) String() string {
 	if mt.IsZero() {
 		return ""
 	}
-	return mt.Format(DefaultFormat)
+	return mt.Format(Format20FSP)
 }
 
 func (mt MathTime) StringWithFormat(format string) string {
