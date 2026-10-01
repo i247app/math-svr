@@ -82,6 +82,11 @@ type ExamSession struct {
 	// hand-out of the journey's own type so a journey list can show what
 	// the child is working on without reading the pool.
 	aiShortText *string
+	// aiReviewShort / aiReviewLong are the AI's review of the answers given
+	// in this journey, in two lengths, written by /exams/sessions/review
+	// and overwritten by each later review. Nil until one is asked for.
+	aiReviewShort *string
+	aiReviewLong  *string
 
 	lastSubmittedDt mtime.MathTime
 	endedDt         mtime.MathTime
@@ -123,6 +128,10 @@ func (u *ExamSession) EsessFlag() *bool                    { return u.esessFlag 
 func (u *ExamSession) SetEsessFlag(v *bool)                { u.esessFlag = v }
 func (u *ExamSession) AiShortText() *string                { return u.aiShortText }
 func (u *ExamSession) SetAiShortText(s *string)            { u.aiShortText = s }
+func (u *ExamSession) AiReviewShort() *string              { return u.aiReviewShort }
+func (u *ExamSession) SetAiReviewShort(s *string)          { u.aiReviewShort = s }
+func (u *ExamSession) AiReviewLong() *string               { return u.aiReviewLong }
+func (u *ExamSession) SetAiReviewLong(s *string)           { u.aiReviewLong = s }
 func (u *ExamSession) CurrentGrade() *int                  { return u.currentGrade }
 func (u *ExamSession) SetCurrentGrade(g *int)              { u.currentGrade = g }
 func (u *ExamSession) CurrentLevel() *int                  { return u.currentLevel }

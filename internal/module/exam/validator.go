@@ -263,6 +263,17 @@ func ValidateJourneyProgress(ctx context.Context, req *dto.JourneyProgressReq) e
 	return validateProgressWindow(ctx, &req.ProgressWindow)
 }
 
+// ValidateJourneyReview checks the review request: a profile and a journey.
+func ValidateJourneyReview(ctx context.Context, req *dto.JourneyReviewReq) error {
+	if req.ProfileID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+	if req.EsessID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrJourneyIDRequired)
+	}
+	return nil
+}
+
 // ValidateLatestJourney checks the latest-journey request. Both filters
 // are optional; an empty exam_type means any type.
 func ValidateLatestJourney(ctx context.Context, req *dto.LatestJourneyReq) error {

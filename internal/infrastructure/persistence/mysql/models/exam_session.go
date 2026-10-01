@@ -16,6 +16,8 @@ type ExamSessionModel struct {
 	ResReview          *string
 	EsessFlag          *bool // TINYINT(1): NULL = no verdict
 	AiShortText        *string
+	AiReviewShort      *string
+	AiReviewLong       *string
 	CurrentGrade       *int
 	CurrentLevel       *int
 	LastSubmittedDt    *time.Time

@@ -41,3 +41,7 @@ var ErrJourneyNotEnded = errors.New("exam: journey is not ended")
 // collide — which, when the schema once drifted, turned out to be an
 // already-ended journey.
 var ErrJourneyConflict = errors.New("exam: journey slot already taken")
+
+// ErrJourneyNotFound reports that a write addressed a journey row
+// (esess_id, req_exam_type) that does not exist.
+var ErrJourneyNotFound = errors.New("exam: journey not found")

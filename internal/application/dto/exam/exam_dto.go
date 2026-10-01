@@ -198,6 +198,10 @@ type ExamStats struct {
 	// journey (its ai_short_text) — the same field the exam itself
 	// carries as short_text.
 	AIShortText *string `json:"ai_short_text,omitempty"`
+	// AIReviewShort / AIReviewLong are the AI's review of the answers in
+	// this journey (/exams/sessions/review), absent until one was asked for.
+	AIReviewShort *string `json:"ai_review_short,omitempty"`
+	AIReviewLong  *string `json:"ai_review_long,omitempty"`
 	// Grade and Level are where the child is working, as the client last
 	// stated on a hand-out (current_grade / current_level). The server
 	// records them; it does not derive them from results.
@@ -506,6 +510,8 @@ func StatsToResponse(rows []*domain.ExamSession) []ExamStats {
 			Review:          r.ResReview(),
 			EsessFlag:       r.EsessFlag(),
 			AIShortText:     r.AiShortText(),
+			AIReviewShort:   r.AiReviewShort(),
+			AIReviewLong:    r.AiReviewLong(),
 			Grade:           r.CurrentGrade(),
 			Level:           r.CurrentLevel(),
 		}
@@ -601,6 +607,20 @@ type ExamProgressReq struct {
 	ExamType  *string `json:"exam_type"`
 	EsessID   *int64  `json:"esess_id,omitempty"` // required with PRACTICE
 	ProgressWindow
+}
+
+// JourneyReviewReq asks the AI to review the answers of one journey.
+type JourneyReviewReq struct {
+	UID       *int64 `json:"-"`
+	ProfileID int64  `json:"profile_id"`
+	EsessID   int64  `json:"esess_id"`
+}
+
+// JourneyReviewRes is the journey after the review was stored, in the
+// shape /exams/sessions/latest returns; ai_review_short / ai_review_long
+// carry the review just written.
+type JourneyReviewRes struct {
+	ExamSession *ExamStats `json:"exam_session"`
 }
 
 // LatestJourneyReq asks for the child's latest journey. Both filters are

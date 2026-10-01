@@ -21,7 +21,7 @@ const (
 
 	examSessionColumns = `e.esess_id, e.uid, e.profile_id, e.req_exam_type,
 		e.res_total_questions, e.res_correct_number, e.res_skipped_number, e.res_score_percentage,
-		e.res_review, e.esess_flag, e.ai_short_text, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
+		e.res_review, e.esess_flag, e.ai_short_text, e.ai_review_short, e.ai_review_long, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
 		e.rpt_flg, e.kwords, e.note, e.esess_status, e.status,
 		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
 
@@ -44,7 +44,7 @@ func scanExamSession(s database.RowScanner) (*models.ExamSessionModel, error) {
 	var m models.ExamSessionModel
 	if err := s.Scan(&m.EsessId, &m.Uid, &m.ProfileId, &m.ReqExamType,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
-		&m.ResReview, &m.EsessFlag, &m.AiShortText, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
+		&m.ResReview, &m.EsessFlag, &m.AiShortText, &m.AiReviewShort, &m.AiReviewLong, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.EsessStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -513,6 +513,40 @@ func (r *ExamSessionRepository) SetShortText(ctx context.Context, esessId int64,
 	return nil
 }
 
+// SetAiReview sets modify_dt to itself on purpose: the column is ON UPDATE
+// CURRENT_TIMESTAMP, and modify_dt is the order "latest journey" is read
+// by — a review is not work on the journey. For the same reason
+// RowsAffected cannot tell "no row" from "same text as before", so a
+// miss is confirmed with a read.
+func (r *ExamSessionRepository) SetAiReview(ctx context.Context, esessId int64, examType string, short, long string) error {
+	query := `
+		UPDATE ` + examSessionTable + `
+		SET ai_review_short = ?,
+			ai_review_long  = ?,
+			modify_dt       = modify_dt
+		WHERE esess_id = ? AND req_exam_type = ?
+	`
+	result, err := r.db.Exec(ctx, query, short, long, esessId, examType)
+	if err != nil {
+		return fmt.Errorf("user exam repo set ai review: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("user exam repo set ai review rows affected: %w", err)
+	}
+	if affected > 0 {
+		return nil
+	}
+	row, err := r.FindByEsessIdAndType(ctx, esessId, examType)
+	if err != nil {
+		return err
+	}
+	if row == nil {
+		return exam.ErrJourneyNotFound
+	}
+	return nil
+}
+
 // Create opens a journey row. It is a plain INSERT on purpose: the
 // previous INSERT ... ON DUPLICATE KEY UPDATE quietly redirected the write
 // into whatever row collided on ANY unique key — and when the schema
@@ -639,6 +673,8 @@ func ModelToDomainExamSession(m *models.ExamSessionModel) *exam.ExamSession {
 	e.SetResReview(m.ResReview)
 	e.SetEsessFlag(m.EsessFlag)
 	e.SetAiShortText(m.AiShortText)
+	e.SetAiReviewShort(m.AiReviewShort)
+	e.SetAiReviewLong(m.AiReviewLong)
 	e.SetCurrentGrade(m.CurrentGrade)
 	e.SetCurrentLevel(m.CurrentLevel)
 	e.SetLastSubmittedDt(mtime.MathTimeFromPtr(m.LastSubmittedDt))

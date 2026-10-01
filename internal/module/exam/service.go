@@ -31,6 +31,7 @@ type Service struct {
 	generateCmd     *command.GenerateExamCommandHandler
 	submitCmd       *command.SubmitExamCommandHandler
 	markJourneyCmd  *command.MarkExamSessionCommandHandler
+	saveReviewCmd   *command.SaveJourneyReviewCommandHandler
 	getAttemptQuery *query.GetExamAttemptQueryHandler
 	getJourneyQuery *query.GetExamJourneyQueryHandler
 	listQuery       *query.ListExamAttemptsQueryHandler
@@ -75,6 +76,7 @@ func NewService(
 		generateCmd:     command.NewGenerateExamCommandHandler(uow),
 		submitCmd:       command.NewSubmitExamCommandHandler(uow),
 		markJourneyCmd:  command.NewMarkExamSessionCommandHandler(uow),
+		saveReviewCmd:   command.NewSaveJourneyReviewCommandHandler(uow),
 		getAttemptQuery: query.NewGetExamAttemptQueryHandler(attemptRepo, examPoolRepo, detailRepo),
 		getJourneyQuery: query.NewGetExamJourneyQueryHandler(statsRepo, attemptRepo, examPoolRepo, detailRepo),
 		listQuery:       query.NewListExamAttemptsQueryHandler(attemptRepo, examPoolRepo),
@@ -628,4 +630,76 @@ func (s *Service) GetGradeLadder(ctx context.Context, req *dto.GradeLadderReq) (
 		Grade:        *req.Grade,
 		ExamSessions: ladder,
 	}, nil
+}
+
+// reviewAnswerWindow bounds how many answers the review reads: the most
+// recent ones, so a long journey costs the same tokens as a short one.
+const reviewAnswerWindow = 60
+
+// ReviewJourney asks the AI to review the answers the child gave in one
+// journey and stores the review (ai_review_short / ai_review_long) on it.
+//
+// Only a COMPLETE journey is reviewed: an open one is still being worked,
+// and a cancelled one was abandoned. Checked before the model call, so a
+// refused request costs nothing.
+//
+// It reads the journey's OWN sittings — ASSESSMENT or GRADE, whichever it
+// was opened as — not its PRACTICE rounds, which drill mistakes rather
+// than measure. Every call is a fresh model call that overwrites the last
+// review; the call runs outside any transaction, and only its result is
+// written.
+func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) (*dto.JourneyReviewRes, error) {
+	if err := ValidateJourneyReview(ctx, req); err != nil {
+		return nil, err
+	}
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
+	if err != nil {
+		return nil, err
+	}
+
+	journey, err := s.statsRepo.FindByEsessId(ctx, req.EsessID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if journey == nil {
+		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
+			fmt.Errorf("exam: journey %d not found", req.EsessID))
+	}
+	if journey.Uid() != profile.Uid() || journey.ProfileId() != profile.ProfileId() {
+		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
+			fmt.Errorf("exam: journey %d belongs to another profile", req.EsessID))
+	}
+	if err := requireCompleteForReview(ctx, journey); err != nil {
+		return nil, err
+	}
+
+	lines, err := s.detailRepo.ListRecentByEsessId(ctx, journey.EsessId(), journey.ReqExamType(), reviewAnswerWindow)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if len(lines) == 0 {
+		return nil, errs.NewError(ctx, status.EXAM_REVIEW_NO_ANSWERS, nil,
+			fmt.Errorf("exam: journey %d has no answered question", req.EsessID))
+	}
+
+	review, err := s.bot.ReviewJourney(ctx, journeyReviewInput(journey, lines))
+	if err != nil {
+		return nil, err
+	}
+
+	saved, err := s.saveReviewCmd.Handle(ctx, command.SaveJourneyReviewCommand{
+		EsessID:     journey.EsessId(),
+		ExamType:    journey.ReqExamType(),
+		UID:         profile.Uid(),
+		ProfileID:   profile.ProfileId(),
+		ReviewShort: review.Short,
+		ReviewLong:  review.Long,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	logger.From(ctx).Infof("exam.journey.reviewed esess_id=%d type=%s answers=%d",
+		journey.EsessId(), journey.ReqExamType(), len(lines))
+	return &dto.JourneyReviewRes{ExamSession: dto.StatsToSingleResponse(saved)}, nil
 }

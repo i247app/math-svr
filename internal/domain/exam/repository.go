@@ -292,6 +292,11 @@ type IExamSessionRepository interface {
 	// latest exam without a summary must not show the previous one's.
 	// ErrJourneyNotActive when the row is not open.
 	SetShortText(ctx context.Context, esessId int64, examType string, shortText *string) error
+	// SetAiReview stores the AI review on the row (esessId, examType),
+	// whatever its state, WITHOUT moving modify_dt: reading a review of an
+	// old journey must not make it the "latest" one. ErrJourneyNotFound
+	// when no such row exists.
+	SetAiReview(ctx context.Context, esessId int64, examType string, short, long string) error
 	// MarkStatus ends an open journey. passMark (PassMarkFor) nil leaves
 	// esess_flag NULL; otherwise esess_flag is whether the row's score, as
 	// it stands in the same UPDATE, reaches passMark — a journey with no

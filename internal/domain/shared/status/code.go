@@ -414,6 +414,16 @@ const (
 	// EXAM_MISSING_GRADE: a request that is answered per grade
 	// (/exams/grade/levels) named none.
 	EXAM_MISSING_GRADE StatusCode = 13735
+	// EXAM_REVIEW_NO_ANSWERS: an AI review was asked for a journey with
+	// no answered question yet — there is nothing to review.
+	EXAM_REVIEW_NO_ANSWERS StatusCode = 13736
+	// EXAM_REVIEW_FAILED: the model's review could not be used (not the
+	// JSON asked for, or empty).
+	EXAM_REVIEW_FAILED StatusCode = 13737
+	// EXAM_REVIEW_JOURNEY_NOT_COMPLETE: an AI review was asked for a
+	// journey that is not COMPLETE — only a finished journey is reviewed.
+	// (EXAM_JOURNEY_NOT_COMPLETE is worded for practice, so not reused.)
+	EXAM_REVIEW_JOURNEY_NOT_COMPLETE StatusCode = 13738
 
 	// Proof of work — 13800-13899. Gates /exams/generate against bots.
 	POW_CHALLENGE_FAILED    StatusCode = 13800 // could not mint a challenge

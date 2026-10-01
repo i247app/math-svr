@@ -2,6 +2,9 @@ package exam
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
+	"unicode/utf8"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
@@ -140,4 +143,71 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		ShortText: gen.ShortText,
 		Questions: questions,
 	}, nil
+}
+
+type journeyReviewOutput struct {
+	Short string
+	Long  string
+}
+
+// ReviewJourney asks the model to review the answers of one journey and
+// returns the review in two lengths. Temperature 0.3: the wording may vary
+// between calls, the facts it states may not. The short version is cut to
+// ReviewShortMaxChars runes if the model overruns it, so it always fits
+// its column; the long one goes to a TEXT column and is kept whole.
+func (c *botClient) ReviewJourney(ctx context.Context, in domainBot.JourneyReviewInput) (*journeyReviewOutput, error) {
+	log := logger.From(ctx)
+	if c.adapter == nil {
+		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil, ErrBotAdapterNotConfigured)
+	}
+
+	system, user, err := domainBot.BuildJourneyReviewPrompt(in)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.EXAM_REVIEW_NO_ANSWERS, nil, err)
+	}
+
+	log.Infof("PROMPT REVIEW JOURNEY: system=%s user=%s", system, user)
+
+	res, err := c.adapter.Chat(ctx, botAdapter.ChatRequest{
+		Messages: []botAdapter.Message{
+			{Role: botAdapter.RoleSystem, Content: system},
+			{Role: botAdapter.RoleUser, Content: user},
+		},
+		Temperature: 0.3,
+		TopP:        0.95,
+		JSONMode:    true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var out struct {
+		Short string `json:"short"`
+		Long  string `json:"long"`
+	}
+	if err := json.Unmarshal([]byte(stripJSONFence(res.Content)), &out); err != nil {
+		log.Warnf("exam.review.parse_failed err=%v len=%d", err, len(res.Content))
+		return nil, errs.NewError(ctx, status.EXAM_REVIEW_FAILED, nil, err)
+	}
+	short, long := strings.TrimSpace(out.Short), strings.TrimSpace(out.Long)
+	if short == "" || long == "" {
+		return nil, errs.NewError(ctx, status.EXAM_REVIEW_FAILED, nil, ErrReviewEmpty)
+	}
+	if utf8.RuneCountInString(short) > domainBot.ReviewShortMaxChars {
+		log.Warnf("exam.review.short_truncated runes=%d", utf8.RuneCountInString(short))
+		short = string([]rune(short)[:domainBot.ReviewShortMaxChars])
+	}
+	return &journeyReviewOutput{Short: short, Long: long}, nil
+}
+
+// stripJSONFence tolerates a model that wraps its JSON in a Markdown code
+// fence despite JSON mode.
+func stripJSONFence(s string) string {
+	s = strings.TrimSpace(s)
+	if strings.HasPrefix(s, "```") {
+		s = strings.TrimPrefix(s, "```json")
+		s = strings.TrimPrefix(s, "```")
+		s = strings.TrimSuffix(s, "```")
+	}
+	return strings.TrimSpace(s)
 }

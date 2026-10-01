@@ -343,3 +343,47 @@ func (s *Service) resumeOpenSitting(ctx context.Context, profile *profileDomain.
 		Resumed: true,
 	}, nil
 }
+
+// journeyReviewInput turns the stored answer lines (newest first, as
+// ListRecentByEsessId returns them) into the review prompt's input,
+// oldest first. Only question content and correctness cross over — no
+// profile field ever reaches the prompt.
+func journeyReviewInput(journey *examDomain.ExamSession, lines []*examDomain.ExamSessionLine) domainBot.JourneyReviewInput {
+	answers := make([]domainBot.ReviewAnswer, 0, len(lines))
+	for i := len(lines) - 1; i >= 0; i-- {
+		l := lines[i]
+		child := l.SelectedLabel()
+		if c := utils.DerefString(l.SelectedContent()); c != "" {
+			child += " (" + c + ")"
+		}
+		right := utils.DerefString(l.RightAnswerLabel())
+		if c := utils.DerefString(l.RightAnswerContent()); c != "" {
+			right += " (" + c + ")"
+		}
+		answers = append(answers, domainBot.ReviewAnswer{
+			Question:    utils.DerefString(l.QuestionName()),
+			Topic:       utils.DerefString(l.QuestionTopic()),
+			Grade:       l.QuestionGrade(),
+			RightAnswer: right,
+			ChildAnswer: child,
+			Correct:     l.IsCorrect(),
+		})
+	}
+	return domainBot.JourneyReviewInput{
+		ExamType:        journey.ReqExamType(),
+		Grade:           journey.CurrentGrade(),
+		Level:           journey.CurrentLevel(),
+		ScorePercentage: journey.ResScorePercentage(),
+		Answers:         answers,
+	}
+}
+
+// requireCompleteForReview refuses an AI review of a journey that is not
+// COMPLETE (still ACTIVE, or CANCELLED).
+func requireCompleteForReview(ctx context.Context, journey *examDomain.ExamSession) error {
+	if st := utils.DerefString(journey.EsessStatus()); st != string(enum.EsessStatusComplete) {
+		return errs.NewError(ctx, status.EXAM_REVIEW_JOURNEY_NOT_COMPLETE, nil,
+			fmt.Errorf("exam: journey %d is %s; only a COMPLETE journey is reviewed", journey.EsessId(), st))
+	}
+	return nil
+}

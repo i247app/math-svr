@@ -684,6 +684,12 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Bé đã dùng hết số bài miễn phí hôm nay. Hãy đăng ký để tiếp tục"
 	case EXAM_MISSING_GRADE:
 		return "Vui lòng chọn lớp"
+	case EXAM_REVIEW_NO_ANSWERS:
+		return "Chưa có câu trả lời nào để đánh giá. Hãy hoàn thành một bài kiểm tra trước"
+	case EXAM_REVIEW_FAILED:
+		return "Không tạo được đánh giá. Vui lòng thử lại"
+	case EXAM_REVIEW_JOURNEY_NOT_COMPLETE:
+		return "Chỉ xem được đánh giá khi hành trình đã hoàn thành"
 
 	case POW_CHALLENGE_FAILED:
 		return "Không tạo được thử thách xác minh. Vui lòng thử lại"

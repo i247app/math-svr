@@ -102,8 +102,12 @@ func (r *ExamSessionLineRepository) CreateBatch(ctx context.Context, details []*
 	return nil
 }
 
-func (r *ExamSessionLineRepository) list(ctx context.Context, where string, args []any, orderLimit string) ([]*exam.ExamSessionLine, error) {
-	fullArgs := slices.Concat(args, examSessionLineActiveArgs())
+// list binds placeholders in the order they appear in the SQL: the WHERE
+// args, then the active filter's, then orderArgs for any placeholder in
+// orderLimit (a LIMIT ?). orderArgs must stay separate from args — passed
+// together, the LIMIT value lands in the active filter's slot.
+func (r *ExamSessionLineRepository) list(ctx context.Context, where string, args []any, orderLimit string, orderArgs ...any) ([]*exam.ExamSessionLine, error) {
+	fullArgs := slices.Concat(args, examSessionLineActiveArgs(), orderArgs)
 	query := `SELECT ` + examSessionLineColumns + ` FROM ` + examSessionLineTable + ` d WHERE (` +
 		where + `) AND ` + examSessionLineActiveWhere + ` ` + orderLimit
 
@@ -150,8 +154,8 @@ func (r *ExamSessionLineRepository) ListRecentByEsessId(ctx context.Context, ese
 	if limit <= 0 {
 		limit = 50
 	}
-	return r.list(ctx, "d.esess_id = ? AND d.req_exam_type = ?", []any{esessId, examType, limit},
-		"ORDER BY d.esess_ln_id DESC LIMIT ?")
+	return r.list(ctx, "d.esess_id = ? AND d.req_exam_type = ?", []any{esessId, examType},
+		"ORDER BY d.esess_ln_id DESC LIMIT ?", limit)
 }
 
 func ModelToDomainExamSessionLine(m *models.ExamSessionLineModel) *exam.ExamSessionLine {

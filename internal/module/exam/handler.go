@@ -381,6 +381,27 @@ func (h *ExamHandler) HandleGetGradeLadder(w http.ResponseWriter, r *http.Reques
 	response.WriteJson(w, res, nil)
 }
 
+// POST /exams/sessions/review
+func (h *ExamHandler) HandleReviewJourney(w http.ResponseWriter, r *http.Request) {
+	var req dto.JourneyReviewReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	uid, ok := h.resolveCaller(w, r, &req.ProfileID)
+	if !ok {
+		return
+	}
+	req.UID = uid
+
+	res, err := h.service.ReviewJourney(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // POST /exams/grade/levels
 func (h *ExamHandler) HandleGetGradeLevels(w http.ResponseWriter, r *http.Request) {
 	var req dto.GradeLevelsReq

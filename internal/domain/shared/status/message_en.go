@@ -684,6 +684,12 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "You have used all of today's free exams. Sign up to keep going"
 	case EXAM_MISSING_GRADE:
 		return "Grade is required"
+	case EXAM_REVIEW_NO_ANSWERS:
+		return "There are no answers to review yet. Finish an exam first"
+	case EXAM_REVIEW_FAILED:
+		return "Could not create the review. Please try again"
+	case EXAM_REVIEW_JOURNEY_NOT_COMPLETE:
+		return "A review is available once the journey is complete"
 
 	case POW_CHALLENGE_FAILED:
 		return "Could not create a verification challenge. Please try again"
