@@ -57,9 +57,9 @@ func buildReview(in Input) string {
 	body := fmt.Sprintf("Đã trả lời (%d/%d) câu đúng (%d%%).",
 		in.LifetimeCorrect, in.LifetimeTotal, accuracy)
 
-	if in.LifetimeSkipped > 0 {
-		body += fmt.Sprintf(" Còn bỏ trống %d câu.", in.LifetimeSkipped)
-	}
+	// if in.LifetimeSkipped > 0 {
+	// 	body += fmt.Sprintf(" Còn bỏ trống %d câu.", in.LifetimeSkipped)
+	// }
 
 	if runes := []rune(body); len(runes) > reviewMaxLen {
 		body = string(runes[:reviewMaxLen-1]) + "…"
