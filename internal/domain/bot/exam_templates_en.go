@@ -73,7 +73,6 @@ Format: TYPE | question pattern | example question_name | correct answer
 CASE NUM — if {grade} = Lớp 1–5:
 * NO emoji.
 * Select exactly ONE textbook: Chân Trời Sáng Tạo / Kết Nối Tri Thức / Cánh Diều.
-* State textbook in short_text.
 * Follow that textbook's grade-level topic scope.
 * Select question_topic FIRST, then derive a suitable question_type.
 * Do NOT start from question type.
@@ -113,6 +112,10 @@ Return ONLY valid JSON. Do not return Markdown or explanations. All JSON keys mu
 KG: question_name and answers[].content may contain only numbers, mathematical symbols, allowed emojis, and visual arrangements.
 Grades 1–5: all child-facing content must be in Vietnamese.
 JSON keys must always remain in English.
+short_text — shown to the parent as the one-line description of this exam:
+* One Vietnamese phrase, max 80 characters, naming the 1–3 main math topics the questions actually cover (from your question_topic values), most frequent first.
+* e.g. "Phép cộng, phép trừ trong phạm vi 20" / "Đếm và so sánh số lượng trong phạm vi 5".
+* NEVER the textbook, the grade, the exam type, or an instruction such as "Chọn đáp án đúng".
 STRUCTURE:
 {
   "title": "...",

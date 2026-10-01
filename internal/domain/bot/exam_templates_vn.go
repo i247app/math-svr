@@ -43,6 +43,7 @@ Tạo CHÍNH XÁC %d câu trắc nghiệm theo GRADE PROFILE.
 - Câu tính toán trực tiếp: question_name chỉ chứa số, toán tử + - * / ^, dấu ngoặc và ?, không chữ, emoji hoặc LaTeX.
 - Nội dung phải phù hợp độ tuổi và không vượt GRADE PROFILE.
 - right_answer_label và right_answer_content phải khớp chính xác.
+- short_text là dòng mô tả bài cho phụ huynh: 1 cụm từ tối đa 80 ký tự, nêu 1–3 chủ đề toán chính mà các câu hỏi thực sự kiểm tra (lấy từ question_topic), chủ đề nhiều câu nhất trước. KHÔNG ghi tên bộ sách, lớp, loại bài hay lời hướng dẫn kiểu "Chọn đáp án đúng".
 
 ### OUTPUT
 
