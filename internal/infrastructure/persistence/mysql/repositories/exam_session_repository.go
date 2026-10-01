@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"strings"
 	"time"
 
 	"math-ai.com/math-ai/internal/domain/exam"
@@ -248,22 +249,48 @@ func (r *ExamSessionRepository) ListByUserProfile(ctx context.Context, uid, prof
 	where := `e.uid = ? AND e.profile_id = ?`
 	args := []any{uid, profileId}
 
-	if filter.ExamType != nil && *filter.ExamType != "" {
-		where += ` AND e.req_exam_type = ?`
-		args = append(args, *filter.ExamType)
+	// No type asked for means every journey type — which is every type but
+	// PRACTICE: a PRACTICE row shares its journey's id and is read apart.
+	if len(filter.ExamTypes) > 0 {
+		where += ` AND e.req_exam_type IN (` + strings.Repeat("?,", len(filter.ExamTypes)-1) + `?)`
+		for _, t := range filter.ExamTypes {
+			args = append(args, t)
+		}
+	} else {
+		where += ` AND e.req_exam_type <> ?`
+		args = append(args, string(enum.ExamTypePractice))
 	}
 	if filter.Status != nil && *filter.Status != "" {
 		where += ` AND e.esess_status = ?`
 		args = append(args, *filter.Status)
 	}
 
-	args = append(args, examSessionActiveArgs()...)
+	return r.listSessions(ctx, "list by user/profile", where, args, `ORDER BY e.create_dt DESC, e.esess_id DESC`)
+}
+
+func (r *ExamSessionRepository) ListPracticeByEsessIds(ctx context.Context, uid, profileId int64, esessIds []int64) ([]*exam.ExamSession, error) {
+	if len(esessIds) == 0 {
+		return nil, nil
+	}
+	where := `e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.esess_id IN (` +
+		strings.Repeat("?,", len(esessIds)-1) + `?)`
+	args := []any{uid, profileId, string(enum.ExamTypePractice)}
+	for _, id := range esessIds {
+		args = append(args, id)
+	}
+	return r.listSessions(ctx, "list practice by esess ids", where, args, ``)
+}
+
+// listSessions runs SELECT … WHERE (where) AND <active filter> <orderBy>
+// and scans every row; op names the caller in errors.
+func (r *ExamSessionRepository) listSessions(ctx context.Context, op, where string, args []any, orderBy string) ([]*exam.ExamSession, error) {
+	args = slices.Concat(args, examSessionActiveArgs())
 	query := `SELECT ` + examSessionColumns + ` FROM ` + examSessionTable + ` e WHERE (` + where + `) AND ` +
-		examSessionActiveWhere + ` ORDER BY e.create_dt DESC, e.esess_id DESC`
+		examSessionActiveWhere + ` ` + orderBy
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("user exam repo list by user/profile: %w", err)
+		return nil, fmt.Errorf("user exam repo %s: %w", op, err)
 	}
 	defer rows.Close()
 

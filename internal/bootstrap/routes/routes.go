@@ -232,7 +232,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /exams/submit", examHandler.HandleSubmitExam)
 		reg("POST /exams/detail", examHandler.HandleGetExam)
 		reg("POST /exams/list", examHandler.HandleListExams)
-		reg("POST /exams/stats", examHandler.HandleGetExamStats)
+		reg("POST /exams/sessions/list", examHandler.HandleListExamSessions)
 		reg("POST /exams/analytics/progress", examHandler.HandleGetExamProgress)
 		reg("POST /exams/journey/progress", examHandler.HandleGetJourneyProgress)
 		reg("POST /exams/grade/levels", examHandler.HandleGetGradeLevels)

@@ -85,18 +85,20 @@ type ListExamsReq struct {
 	Size      int     `json:"size,omitempty"`
 }
 
-// GetExamStatsReq reads a child's journeys. Status narrows to one
+// ListExamSessionsReq reads a child's journeys. Status narrows to one
 // lifecycle state — "ACTIVE" is the natural filter for a dashboard
 // showing where the child is now; omit it for the full history.
 //
-// ExamType names a JOURNEY type. PRACTICE is not one — its totals ride
-// along on the journey they belong to (ExamStats.Practice) —
-// so asking for it is rejected rather than answered with orphan rows.
-type GetExamStatsReq struct {
-	UID               *int64  `json:"-"`
-	ProfileID         int64   `json:"profile_id"`
-	ExamType          *string `json:"exam_type,omitempty"`
-	JourneyExamStatus *string `json:"status,omitempty"`
+// ExamTypes keeps the journeys of the listed types (e.g. ["ASSESSMENT",
+// "GRADE"]); omitted or empty means every type. Each names a JOURNEY
+// type. PRACTICE is not one — its totals ride along on the journey they
+// belong to (ExamStats.Practice) — so asking for it is rejected rather
+// than answered with orphan rows.
+type ListExamSessionsReq struct {
+	UID               *int64   `json:"-"`
+	ProfileID         int64    `json:"profile_id"`
+	ExamTypes         []string `json:"exam_types,omitempty"`
+	JourneyExamStatus *string  `json:"status,omitempty"`
 }
 
 // MarkExamJourneyReq ends one journey. Status is COMPLETE or CANCEL; the
@@ -302,8 +304,8 @@ type ListExamsRes struct {
 	Pagination *pagination.Pagination `json:"pagination"`
 }
 
-type GetExamStatsRes struct {
-	Stats []ExamStats `json:"stats"`
+type ListExamSessionsRes struct {
+	ExamSessions []ExamStats `json:"exam_sessions"`
 }
 
 // AttemptToResponse flattens an attempt and its question set.

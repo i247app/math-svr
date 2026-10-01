@@ -6,13 +6,12 @@ import (
 	"math-ai.com/math-ai/internal/domain/exam"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// GetExamStatsQuery reads a child's journeys. ExamType narrows to one
-// JOURNEY type, Status to one lifecycle state (ACTIVE for "where am I
-// now", COMPLETE / CANCEL for history); both nil returns everything,
-// newest first inside each type.
+// GetExamStatsQuery reads a child's journeys. ExamTypes narrows to the
+// listed JOURNEY types (empty = all), Status to one lifecycle state
+// (ACTIVE for "where am I now", COMPLETE / CANCEL for history); both
+// filters run in SQL. Newest first.
 //
 // PRACTICE rows are never returned on their own. Each rides inside the
 // journey it belongs to — ASSESSMENT or GRADE — (JourneyStats.Practice), so the
@@ -30,7 +29,7 @@ import (
 type GetExamStatsQuery struct {
 	UID       int64
 	ProfileID int64
-	ExamType  *string
+	ExamTypes []string
 	Status    *string
 }
 
@@ -57,24 +56,29 @@ func NewGetExamStatsQueryHandler(
 }
 
 func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQuery) (*ExamStatsResult, error) {
-	// Any journey — ASSESSMENT or GRADE — may carry a PRACTICE row, so the
-	// type is never narrowed in SQL: that would drop the very PRACTICE rows
-	// the journey needs nested. Every type is fetched and nestPractice
-	// filters. (PRACTICE itself is refused by the validator — not a journey.)
-	filter := exam.ListJourneysFilter{Status: q.Status}
-	wantType := ""
-	if q.ExamType != nil {
-		wantType = *q.ExamType
-	}
-
+	// Type and status narrow the journeys in SQL. The PRACTICE rows are
+	// then read for exactly the journeys returned — by id, whatever their
+	// own state: a PRACTICE row stays COMPLETE when its journey is
+	// reopened, and it still belongs to that journey. (PRACTICE itself is
+	// refused by the validator — not a journey.)
+	filter := exam.ListJourneysFilter{ExamTypes: q.ExamTypes, Status: q.Status}
 	rows, err := h.statsRepo.ListByUserProfile(ctx, q.UID, q.ProfileID, filter)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	journeys := nestPractice(rows, wantType)
-	if len(journeys) == 0 {
-		return &ExamStatsResult{Journeys: journeys, ExamPools: map[int64]*exam.ExamPool{}}, nil
+	if len(rows) == 0 {
+		return &ExamStatsResult{Journeys: []exam.JourneyStats{}, ExamPools: map[int64]*exam.ExamPool{}}, nil
 	}
+
+	ids := make([]int64, 0, len(rows))
+	for _, r := range rows {
+		ids = append(ids, r.EsessId())
+	}
+	practice, err := h.statsRepo.ListPracticeByEsessIds(ctx, q.UID, q.ProfileID, ids)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	journeys := nestPractice(rows, practice)
 
 	// One read for every unfinished sitting of the child, then attach by
 	// journey. A sitting whose journey is not in this page (a filtered-out
@@ -92,22 +96,12 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 	return &ExamStatsResult{Journeys: journeys, ExamPools: examPools}, nil
 }
 
-// nestPractice folds each PRACTICE row into the journey of the same id —
-// ASSESSMENT or GRADE — and drops it from the top level. wantType, when set, keeps
-// only journeys of that type — the practice rows still nest, since they
-// were fetched for exactly that.
-func nestPractice(rows []*exam.ExamSession, wantType string) []exam.JourneyStats {
-	practice := make(map[int64]*exam.ExamSession)
-	var journeys []*exam.ExamSession
-	for _, r := range rows {
-		if r.ReqExamType() == string(enum.ExamTypePractice) {
-			practice[r.EsessId()] = r
-			continue
-		}
-		if wantType != "" && r.ReqExamType() != wantType {
-			continue
-		}
-		journeys = append(journeys, r)
+// nestPractice hangs each PRACTICE row under the journey of the same id —
+// ASSESSMENT or GRADE — keeping the journeys' order.
+func nestPractice(journeys, practiceRows []*exam.ExamSession) []exam.JourneyStats {
+	practice := make(map[int64]*exam.ExamSession, len(practiceRows))
+	for _, p := range practiceRows {
+		practice[p.EsessId()] = p
 	}
 
 	out := make([]exam.JourneyStats, 0, len(journeys))

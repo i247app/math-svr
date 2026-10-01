@@ -276,9 +276,9 @@ func (h *ExamHandler) HandleListExams(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
-// POST /exams/stats
-func (h *ExamHandler) HandleGetExamStats(w http.ResponseWriter, r *http.Request) {
-	var req dto.GetExamStatsReq
+// POST /exams/sessions/list
+func (h *ExamHandler) HandleListExamSessions(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListExamSessionsReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -289,7 +289,7 @@ func (h *ExamHandler) HandleGetExamStats(w http.ResponseWriter, r *http.Request)
 	}
 	req.UID = uid
 
-	res, err := h.service.GetExamStats(r.Context(), &req)
+	res, err := h.service.ListExamSessions(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

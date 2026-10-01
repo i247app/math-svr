@@ -2,6 +2,7 @@ package exam
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"time"
 
@@ -185,7 +186,7 @@ func ValidateListExams(ctx context.Context, req *dto.ListExamsReq) error {
 	return nil
 }
 
-func ValidateGetExamStats(ctx context.Context, req *dto.GetExamStatsReq) error {
+func ValidateListExamSessions(ctx context.Context, req *dto.ListExamSessionsReq) error {
 	if req.ProfileID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
 	}
@@ -200,17 +201,26 @@ func ValidateGetExamStats(ctx context.Context, req *dto.GetExamStatsReq) error {
 			req.JourneyExamStatus = &normalized
 		}
 	}
-	examType, err := normalizeExamType(ctx, req.ExamType)
-	if err != nil {
-		return err
+	// Normalised, blanks dropped, duplicates folded; nothing left means
+	// every type.
+	var examTypes []string
+	for _, raw := range req.ExamTypes {
+		examType, err := normalizeExamType(ctx, &raw)
+		if err != nil {
+			return err
+		}
+		if examType == nil || slices.Contains(examTypes, *examType) {
+			continue
+		}
+		// PRACTICE is not a journey: its totals are read inside the
+		// journey they belong to. Answering with bare practice rows would
+		// hand the client two entries per id.
+		if *examType == string(enum.ExamTypePractice) {
+			return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrStatsPracticeNotAJourney)
+		}
+		examTypes = append(examTypes, *examType)
 	}
-	// PRACTICE is not a journey: its totals are read inside the ASSESSMENT
-	// journey they belong to. Answering with bare practice rows would
-	// hand the client two entries per id.
-	if examType != nil && *examType == string(enum.ExamTypePractice) {
-		return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrStatsPracticeNotAJourney)
-	}
-	req.ExamType = examType
+	req.ExamTypes = examTypes
 	return nil
 }
 

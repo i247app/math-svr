@@ -157,10 +157,12 @@ type IExamLinkRepository interface {
 }
 
 // ListJourneysFilter narrows a child's journey history. Status nil means
-// every journey regardless of state; ExamType nil means every type.
+// every journey regardless of state; ExamTypes empty means every journey
+// type. PRACTICE rows are never listed as journeys (see
+// IExamSessionRepository.ListPracticeByEsessIds).
 type ListJourneysFilter struct {
-	ExamType *string
-	Status   *string
+	ExamTypes []string
+	Status    *string
 }
 
 // JourneyProgressParams drives IExamSessionRepository.ListProgressPoints,
@@ -263,9 +265,12 @@ type IExamSessionRepository interface {
 	// FindGradeLevels reads a child's GradeLevels for one grade, over the
 	// GRADE journeys of that grade.
 	FindGradeLevels(ctx context.Context, uid, profileId int64, grade int) (GradeLevels, error)
-	// ListByUserProfile returns a child's journeys, newest first within
-	// each exam type.
+	// ListByUserProfile returns a child's journeys (never PRACTICE rows),
+	// newest first, narrowed in SQL by filter.
 	ListByUserProfile(ctx context.Context, uid, profileId int64, filter ListJourneysFilter) ([]*ExamSession, error)
+	// ListPracticeByEsessIds returns the PRACTICE rows of the given
+	// journeys of one child, whatever their state — at most one per id.
+	ListPracticeByEsessIds(ctx context.Context, uid, profileId int64, esessIds []int64) ([]*ExamSession, error)
 	// ListProgressPoints returns a child's scored journeys, newest
 	// submission first, capped at params.Limit — the journey-level series
 	// behind the progress chart. A journey nothing was ever submitted in

@@ -429,8 +429,8 @@ func (s *Service) ListExams(ctx context.Context, req *dto.ListExamsReq) (*dto.Li
 	}, nil
 }
 
-func (s *Service) GetExamStats(ctx context.Context, req *dto.GetExamStatsReq) (*dto.GetExamStatsRes, error) {
-	if err := ValidateGetExamStats(ctx, req); err != nil {
+func (s *Service) ListExamSessions(ctx context.Context, req *dto.ListExamSessionsReq) (*dto.ListExamSessionsRes, error) {
+	if err := ValidateListExamSessions(ctx, req); err != nil {
 		return nil, err
 	}
 	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
@@ -441,13 +441,13 @@ func (s *Service) GetExamStats(ctx context.Context, req *dto.GetExamStatsReq) (*
 	rows, err := s.statsQuery.Handle(ctx, query.GetExamStatsQuery{
 		UID:       profile.Uid(),
 		ProfileID: profile.ProfileId(),
-		ExamType:  req.ExamType,
+		ExamTypes: req.ExamTypes,
 		Status:    req.JourneyExamStatus,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &dto.GetExamStatsRes{Stats: dto.JourneyStatsToResponse(rows.Journeys, rows.ExamPools)}, nil
+	return &dto.ListExamSessionsRes{ExamSessions: dto.JourneyStatsToResponse(rows.Journeys, rows.ExamPools)}, nil
 }
 
 // MarkExamJourney ends a journey as COMPLETE or CANCEL. From then on the
