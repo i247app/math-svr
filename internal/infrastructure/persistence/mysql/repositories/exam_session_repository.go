@@ -159,6 +159,53 @@ func (r *ExamSessionRepository) FindLatestJourney(ctx context.Context, filter ex
 	return ModelToDomainExamSession(m), nil
 }
 
+// ListLatestPassedByLevel ranks each level's passed journeys by ended_dt
+// — the moment the pass was given — and keeps the first. The inner query
+// re-exposes every column under the alias e, so the outer SELECT reuses
+// examSessionColumns and scanExamSession unchanged.
+func (r *ExamSessionRepository) ListLatestPassedByLevel(ctx context.Context, uid, profileId int64, grade int) ([]*exam.ExamSession, error) {
+	args := slices.Concat(
+		[]any{uid, profileId, string(enum.ExamTypeGrade), grade, string(enum.EsessStatusComplete)},
+		examSessionActiveArgs())
+	query := `SELECT ` + examSessionColumns + ` 
+			  	FROM (
+				  	SELECT e.*, 
+					ROW_NUMBER() OVER (
+						PARTITION BY e.current_level 
+						ORDER BY e.ended_dt DESC, e.esess_id DESC
+					) AS rn
+		  		FROM ` + examSessionTable + ` e
+		 		WHERE (e.uid = ? AND e.profile_id = ? 
+						AND e.req_exam_type = ? 
+						AND e.current_grade = ?
+		        		AND e.current_level IS NOT NULL 
+						AND e.esess_status = ? 
+						AND e.esess_flag = 1)
+		   				AND ` + examSessionActiveWhere + `
+				) e 
+				WHERE e.rn = 1 
+				ORDER BY e.current_level ASC`
+
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("user exam repo list latest passed by level: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*exam.ExamSession
+	for rows.Next() {
+		m, err := scanExamSession(rows)
+		if err != nil {
+			return nil, fmt.Errorf("user exam repo scan row: %w", err)
+		}
+		out = append(out, ModelToDomainExamSession(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("user exam repo rows iteration: %w", err)
+	}
+	return out, nil
+}
+
 // FindGradeLevels reads both ends of one grade's level ladder in one
 // round trip, over the same rows. Only rows that name a level count — a
 // GRADE journey opened without one says nothing about the ladder.

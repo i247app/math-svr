@@ -29,6 +29,7 @@ type clearTarget struct {
 var clearDataTargets = []clearTarget{
 	{userTable, seq.NameUser, "uid"},
 	{aliasTable, seq.NameAlias, "aid"},
+	{loginTable, seq.NameLogin, "login_id"},
 	{deviceTable, seq.NameDevice, "device_id"},
 	{loginLogTable, seq.NameLoginLog, "login_log_id"},
 	{profileTable, seq.NameProfile, "profile_id"},
@@ -77,6 +78,7 @@ var clearDataTables = func() []string {
 var clearDataSeqs = []string{
 	seq.NameUser,
 	seq.NameAlias,
+	seq.NameLogin,
 	seq.NameDevice,
 	seq.NameLoginLog,
 	seq.NameProfile,
@@ -116,6 +118,7 @@ type keepCol struct {
 var clearKeepByUid = []keepCol{
 	{userTable, "uid"},
 	{aliasTable, "uid"},
+	{loginTable, "uid"},
 	{deviceTable, "uid"},
 	{loginLogTable, "uid"},
 	{otpTable, "uid"},

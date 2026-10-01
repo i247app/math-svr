@@ -2,7 +2,7 @@
 --
 -- Wipe USER-GENERATED data, KEEP REFERENCE/SEED data.
 --
---   Wiped   : users, aliases, devices, login logs, profiles, otps,
+--   Wiped   : users, aliases, logins (passwords), devices, login logs, profiles, otps,
 --             classrooms (+ members, invitations, programs), exercises, contact-us.
 --   Kept    : programs, grades, semesters and schools — the curriculum /
 --             reference data seeded outside the app.
@@ -19,6 +19,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ── User / business tables ───────────────────────────────
 TRUNCATE TABLE ma_users;
 TRUNCATE TABLE ma_aliases;
+TRUNCATE TABLE ma_logins;
 TRUNCATE TABLE ma_devices;
 TRUNCATE TABLE ma_login_logs;
 TRUNCATE TABLE ma_profiles;
@@ -47,6 +48,7 @@ SET current_value = 0
 WHERE seq_name IN (
   'ma_users',
   'ma_aliases',
+  'ma_logins',
   'ma_devices',
   'ma_login_logs',
   'ma_profiles',

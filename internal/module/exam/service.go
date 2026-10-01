@@ -38,6 +38,7 @@ type Service struct {
 	progressQuery   *query.GetExamProgressQueryHandler
 	journeyProgress *query.GetJourneyProgressQueryHandler
 	gradeLevels     *query.GetGradeLevelsQueryHandler
+	gradeLadder     *query.GetGradeLadderQueryHandler
 
 	examPoolRepo examDomain.IExamPoolRepository
 	attemptRepo  examDomain.IExamLinkRepository
@@ -81,6 +82,7 @@ func NewService(
 		progressQuery:   query.NewGetExamProgressQueryHandler(attemptRepo),
 		journeyProgress: query.NewGetJourneyProgressQueryHandler(statsRepo),
 		gradeLevels:     query.NewGetGradeLevelsQueryHandler(statsRepo),
+		gradeLadder:     query.NewGetGradeLadderQueryHandler(statsRepo),
 		examPoolRepo:    examPoolRepo,
 		attemptRepo:     attemptRepo,
 		statsRepo:       statsRepo,
@@ -592,4 +594,38 @@ func (s *Service) GetLatestJourney(ctx context.Context, req *dto.LatestJourneyRe
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	return &dto.LatestJourneyRes{ExamSession: dto.StatsToSingleResponse(journey)}, nil
+}
+
+// GetGradeLadder returns one grade's level ladder as a single list: the
+// latest pass of every level passed, then the latest journey marked
+// is_latest (see query.GetGradeLadderQueryHandler).
+func (s *Service) GetGradeLadder(ctx context.Context, req *dto.GradeLadderReq) (*dto.GradeLadderRes, error) {
+	if err := ValidateGradeLadder(ctx, req); err != nil {
+		return nil, err
+	}
+	profile, err := s.loadOwnedProfile(ctx, req.UID, req.ProfileID)
+	if err != nil {
+		return nil, err
+	}
+
+	entries, err := s.gradeLadder.Handle(ctx, query.GetGradeLadderQuery{
+		UID:       profile.Uid(),
+		ProfileID: profile.ProfileId(),
+		Grade:     *req.Grade,
+	})
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	ladder := make([]dto.GradeLadderEntry, 0, len(entries))
+	for _, e := range entries {
+		if stats := dto.StatsToSingleResponse(e.Journey); stats != nil {
+			ladder = append(ladder, dto.GradeLadderEntry{ExamStats: *stats, IsLatest: e.IsLatest})
+		}
+	}
+	return &dto.GradeLadderRes{
+		ProfileID:    profile.ProfileId(),
+		Grade:        *req.Grade,
+		ExamSessions: ladder,
+	}, nil
 }

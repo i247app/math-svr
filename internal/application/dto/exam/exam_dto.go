@@ -614,6 +614,30 @@ type LatestJourneyRes struct {
 	ExamSession *ExamStats `json:"exam_session"`
 }
 
+// GradeLadderReq asks for one grade's level ladder. Grade is required.
+type GradeLadderReq struct {
+	UID       *int64 `json:"-"`
+	ProfileID int64  `json:"profile_id"`
+	Grade     *int   `json:"grade"`
+}
+
+// GradeLadderEntry is a journey in the ExamStats shape plus IsLatest:
+// false = the latest pass of its level, true = the journey the child
+// worked last (any flag; it may repeat a pass entry's esess_id).
+type GradeLadderEntry struct {
+	ExamStats
+	IsLatest bool `json:"is_latest"`
+}
+
+// GradeLadderRes lists the ladder: passed levels lowest first, then the
+// latest journey (is_latest true). Empty when the child has no journey at
+// this grade.
+type GradeLadderRes struct {
+	ProfileID    int64              `json:"profile_id"`
+	Grade        int                `json:"grade"`
+	ExamSessions []GradeLadderEntry `json:"exam_sessions"`
+}
+
 // GradeLevelsReq asks where a child stands on one grade's GRADE level
 // ladder. Grade is required (0 is kindergarten, so it is a pointer);
 // ProfileID may be omitted by a guest, like every exam route.

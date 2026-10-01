@@ -288,13 +288,24 @@ func ValidateLatestJourney(ctx context.Context, req *dto.LatestJourneyReq) error
 // ValidateGradeLevels checks the level-ladder request: a profile and a
 // grade the product teaches.
 func ValidateGradeLevels(ctx context.Context, req *dto.GradeLevelsReq) error {
-	if req.ProfileID <= 0 {
+	return validateProfileAndGrade(ctx, req.ProfileID, req.Grade)
+}
+
+// ValidateGradeLadder checks /exams/grade/ladder the same way.
+func ValidateGradeLadder(ctx context.Context, req *dto.GradeLadderReq) error {
+	return validateProfileAndGrade(ctx, req.ProfileID, req.Grade)
+}
+
+// validateProfileAndGrade is the rule every per-grade read shares: a
+// profile, and a required grade the product teaches.
+func validateProfileAndGrade(ctx context.Context, profileID int64, grade *int) error {
+	if profileID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
 	}
-	if req.Grade == nil {
+	if grade == nil {
 		return errs.NewError(ctx, status.EXAM_MISSING_GRADE, nil, ErrGradeRequired)
 	}
-	if *req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax {
+	if *grade < enum.ExamGradeMin || *grade > enum.ExamGradeMax {
 		return errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
 	}
 	return nil
