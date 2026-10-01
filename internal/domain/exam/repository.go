@@ -254,11 +254,12 @@ type IExamSessionRepository interface {
 	// uses the same "latest" as GradeLevels.Latest, so for one GRADE grade
 	// the two always name the same journey.
 	FindLatestJourney(ctx context.Context, filter LatestJourneyFilter) (*ExamSession, error)
-	// ListLatestPassedByLevel returns, for one grade, the most recently
-	// passed GRADE journey (esess_flag true, newest ended_dt) of every
-	// level the child has passed, lowest level first. A level passed
-	// several times appears once; a level never passed not at all.
-	ListLatestPassedByLevel(ctx context.Context, uid, profileId int64, grade int) ([]*ExamSession, error)
+	// ListLatestCompletedByLevel returns, for one grade, the most recently
+	// COMPLETED GRADE journey (newest ended_dt) of every level the child
+	// has completed, lowest level first — passed or not; its esess_flag
+	// says which. A level completed several times appears once; a level
+	// never completed not at all.
+	ListLatestCompletedByLevel(ctx context.Context, uid, profileId int64, grade int) ([]*ExamSession, error)
 	// FindGradeLevels reads a child's GradeLevels for one grade, over the
 	// GRADE journeys of that grade.
 	FindGradeLevels(ctx context.Context, uid, profileId int64, grade int) (GradeLevels, error)

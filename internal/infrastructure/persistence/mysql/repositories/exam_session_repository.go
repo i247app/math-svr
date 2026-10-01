@@ -159,11 +159,12 @@ func (r *ExamSessionRepository) FindLatestJourney(ctx context.Context, filter ex
 	return ModelToDomainExamSession(m), nil
 }
 
-// ListLatestPassedByLevel ranks each level's passed journeys by ended_dt
-// — the moment the pass was given — and keeps the first. The inner query
+// ListLatestCompletedByLevel ranks each level's COMPLETE journeys by
+// ended_dt — the moment each was completed — and keeps the first,
+// whatever its esess_flag. The inner query
 // re-exposes every column under the alias e, so the outer SELECT reuses
 // examSessionColumns and scanExamSession unchanged.
-func (r *ExamSessionRepository) ListLatestPassedByLevel(ctx context.Context, uid, profileId int64, grade int) ([]*exam.ExamSession, error) {
+func (r *ExamSessionRepository) ListLatestCompletedByLevel(ctx context.Context, uid, profileId int64, grade int) ([]*exam.ExamSession, error) {
 	args := slices.Concat(
 		[]any{uid, profileId, string(enum.ExamTypeGrade), grade, string(enum.EsessStatusComplete)},
 		examSessionActiveArgs())
@@ -179,8 +180,7 @@ func (r *ExamSessionRepository) ListLatestPassedByLevel(ctx context.Context, uid
 						AND e.req_exam_type = ? 
 						AND e.current_grade = ?
 		        		AND e.current_level IS NOT NULL 
-						AND e.esess_status = ? 
-						AND e.esess_flag = 1)
+						AND e.esess_status = ?)
 		   				AND ` + examSessionActiveWhere + `
 				) e 
 				WHERE e.rn = 1 
@@ -188,7 +188,7 @@ func (r *ExamSessionRepository) ListLatestPassedByLevel(ctx context.Context, uid
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("user exam repo list latest passed by level: %w", err)
+		return nil, fmt.Errorf("user exam repo list latest completed by level: %w", err)
 	}
 	defer rows.Close()
 

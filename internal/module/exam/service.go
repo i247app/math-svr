@@ -597,8 +597,8 @@ func (s *Service) GetLatestJourney(ctx context.Context, req *dto.LatestJourneyRe
 }
 
 // GetGradeLadder returns one grade's level ladder as a single list: the
-// latest pass of every level passed, then the latest journey marked
-// is_latest (see query.GetGradeLadderQueryHandler).
+// latest completed journey of every level, with is_latest on the journey
+// worked last (see query.GetGradeLadderQueryHandler).
 func (s *Service) GetGradeLadder(ctx context.Context, req *dto.GradeLadderReq) (*dto.GradeLadderRes, error) {
 	if err := ValidateGradeLadder(ctx, req); err != nil {
 		return nil, err

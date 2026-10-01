@@ -621,16 +621,18 @@ type GradeLadderReq struct {
 	Grade     *int   `json:"grade"`
 }
 
-// GradeLadderEntry is a journey in the ExamStats shape plus IsLatest:
-// false = the latest pass of its level, true = the journey the child
-// worked last (any flag; it may repeat a pass entry's esess_id).
+// GradeLadderEntry is a journey in the ExamStats shape plus IsLatest,
+// true on exactly the entry that is the journey the child worked last
+// (no entry when the grade has no journey). No esess_id appears twice.
 type GradeLadderEntry struct {
 	ExamStats
 	IsLatest bool `json:"is_latest"`
 }
 
-// GradeLadderRes lists the ladder: passed levels lowest first, then the
-// latest journey (is_latest true). Empty when the child has no journey at
+// GradeLadderRes lists the ladder: one entry per completed level, lowest
+// first — each the level's latest COMPLETE journey, esess_flag telling
+// pass or fail — plus, at the end, the latest journey when it is not
+// already one of them (still ACTIVE, or CANCELLED). Empty when the child has no journey at
 // this grade.
 type GradeLadderRes struct {
 	ProfileID    int64              `json:"profile_id"`
