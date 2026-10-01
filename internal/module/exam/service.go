@@ -669,7 +669,7 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", req.EsessID))
 	}
-	if err := requireCompleteForReview(ctx, journey); err != nil {
+	if err := requireReviewable(ctx, journey); err != nil {
 		return nil, err
 	}
 

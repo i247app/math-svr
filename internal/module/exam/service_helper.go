@@ -378,12 +378,17 @@ func journeyReviewInput(journey *examDomain.ExamSession, lines []*examDomain.Exa
 	}
 }
 
-// requireCompleteForReview refuses an AI review of a journey that is not
-// COMPLETE (still ACTIVE, or CANCELLED).
-func requireCompleteForReview(ctx context.Context, journey *examDomain.ExamSession) error {
+// requireReviewable refuses an AI review of a journey that is not
+// COMPLETE (still ACTIVE, or CANCELLED), or that already holds both
+// versions of its review.
+func requireReviewable(ctx context.Context, journey *examDomain.ExamSession) error {
 	if st := utils.DerefString(journey.EsessStatus()); st != string(enum.EsessStatusComplete) {
 		return errs.NewError(ctx, status.EXAM_REVIEW_JOURNEY_NOT_COMPLETE, nil,
 			fmt.Errorf("exam: journey %d is %s; only a COMPLETE journey is reviewed", journey.EsessId(), st))
+	}
+	if journey.HasAiReview() {
+		return errs.NewError(ctx, status.EXAM_REVIEW_ALREADY_EXISTS, nil,
+			fmt.Errorf("exam: journey %d already has its AI review", journey.EsessId()))
 	}
 	return nil
 }

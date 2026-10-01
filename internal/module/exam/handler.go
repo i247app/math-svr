@@ -360,7 +360,7 @@ func (h *ExamHandler) HandleGetLatestJourney(w http.ResponseWriter, r *http.Requ
 	response.WriteJson(w, res, nil)
 }
 
-// POST /exams/grade/map
+// POST /exams/grade/roadmap
 func (h *ExamHandler) HandleGetGradeRoadMap(w http.ResponseWriter, r *http.Request) {
 	var req dto.GradeMapReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

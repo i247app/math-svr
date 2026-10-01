@@ -106,32 +106,39 @@ type ExamSession struct {
 
 func NewExamSession() *ExamSession { return &ExamSession{} }
 
-func (u *ExamSession) EsessId() int64                      { return u.esessId }
-func (u *ExamSession) SetEsessId(id int64)                 { u.esessId = id }
-func (u *ExamSession) Uid() int64                          { return u.uid }
-func (u *ExamSession) SetUid(id int64)                     { u.uid = id }
-func (u *ExamSession) ProfileId() int64                    { return u.profileId }
-func (u *ExamSession) SetProfileId(id int64)               { u.profileId = id }
-func (u *ExamSession) ReqExamType() string                 { return u.reqExamType }
-func (u *ExamSession) SetReqExamType(t string)             { u.reqExamType = t }
-func (u *ExamSession) ResTotalQuestions() int              { return u.resTotalQuestions }
-func (u *ExamSession) SetResTotalQuestions(n int)          { u.resTotalQuestions = n }
-func (u *ExamSession) ResCorrectNumber() int               { return u.resCorrectNumber }
-func (u *ExamSession) SetResCorrectNumber(n int)           { u.resCorrectNumber = n }
-func (u *ExamSession) ResSkippedNumber() int               { return u.resSkippedNumber }
-func (u *ExamSession) SetResSkippedNumber(n int)           { u.resSkippedNumber = n }
-func (u *ExamSession) ResScorePercentage() *int            { return u.resScorePercentage }
-func (u *ExamSession) SetResScorePercentage(n *int)        { u.resScorePercentage = n }
-func (u *ExamSession) ResReview() *string                  { return u.resReview }
-func (u *ExamSession) SetResReview(s *string)              { u.resReview = s }
-func (u *ExamSession) EsessFlag() *bool                    { return u.esessFlag }
-func (u *ExamSession) SetEsessFlag(v *bool)                { u.esessFlag = v }
-func (u *ExamSession) AiShortText() *string                { return u.aiShortText }
-func (u *ExamSession) SetAiShortText(s *string)            { u.aiShortText = s }
-func (u *ExamSession) AiReviewShort() *string              { return u.aiReviewShort }
-func (u *ExamSession) SetAiReviewShort(s *string)          { u.aiReviewShort = s }
-func (u *ExamSession) AiReviewLong() *string               { return u.aiReviewLong }
-func (u *ExamSession) SetAiReviewLong(s *string)           { u.aiReviewLong = s }
+func (u *ExamSession) EsessId() int64               { return u.esessId }
+func (u *ExamSession) SetEsessId(id int64)          { u.esessId = id }
+func (u *ExamSession) Uid() int64                   { return u.uid }
+func (u *ExamSession) SetUid(id int64)              { u.uid = id }
+func (u *ExamSession) ProfileId() int64             { return u.profileId }
+func (u *ExamSession) SetProfileId(id int64)        { u.profileId = id }
+func (u *ExamSession) ReqExamType() string          { return u.reqExamType }
+func (u *ExamSession) SetReqExamType(t string)      { u.reqExamType = t }
+func (u *ExamSession) ResTotalQuestions() int       { return u.resTotalQuestions }
+func (u *ExamSession) SetResTotalQuestions(n int)   { u.resTotalQuestions = n }
+func (u *ExamSession) ResCorrectNumber() int        { return u.resCorrectNumber }
+func (u *ExamSession) SetResCorrectNumber(n int)    { u.resCorrectNumber = n }
+func (u *ExamSession) ResSkippedNumber() int        { return u.resSkippedNumber }
+func (u *ExamSession) SetResSkippedNumber(n int)    { u.resSkippedNumber = n }
+func (u *ExamSession) ResScorePercentage() *int     { return u.resScorePercentage }
+func (u *ExamSession) SetResScorePercentage(n *int) { u.resScorePercentage = n }
+func (u *ExamSession) ResReview() *string           { return u.resReview }
+func (u *ExamSession) SetResReview(s *string)       { u.resReview = s }
+func (u *ExamSession) EsessFlag() *bool             { return u.esessFlag }
+func (u *ExamSession) SetEsessFlag(v *bool)         { u.esessFlag = v }
+func (u *ExamSession) AiShortText() *string         { return u.aiShortText }
+func (u *ExamSession) SetAiShortText(s *string)     { u.aiShortText = s }
+func (u *ExamSession) AiReviewShort() *string       { return u.aiReviewShort }
+func (u *ExamSession) SetAiReviewShort(s *string)   { u.aiReviewShort = s }
+func (u *ExamSession) AiReviewLong() *string        { return u.aiReviewLong }
+func (u *ExamSession) SetAiReviewLong(s *string)    { u.aiReviewLong = s }
+
+// HasAiReview reports whether the journey already holds both versions of
+// its AI review; such a journey is not reviewed again.
+func (u *ExamSession) HasAiReview() bool {
+	return u.aiReviewShort != nil && *u.aiReviewShort != "" &&
+		u.aiReviewLong != nil && *u.aiReviewLong != ""
+}
 func (u *ExamSession) CurrentGrade() *int                  { return u.currentGrade }
 func (u *ExamSession) SetCurrentGrade(g *int)              { u.currentGrade = g }
 func (u *ExamSession) CurrentLevel() *int                  { return u.currentLevel }

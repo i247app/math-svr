@@ -15,9 +15,10 @@ import (
 
 // SaveJourneyReviewCommand stores the AI review of one journey row. The
 // model call happens before, outside any transaction; this only writes
-// its result — and only while the journey is still COMPLETE: one reopened
-// during the model call is being worked again, and the review would
-// describe a run that is no longer finished. The caller has already
+// its result — and only while the journey is still COMPLETE and holds no
+// review yet: one reopened during the model call is being worked again,
+// and the review would describe a run that is no longer finished; one
+// reviewed by a concurrent call keeps that review. The caller has already
 // proved the journey belongs to the child, but ownership is part of the
 // row read here too, so the write can never land on another family's
 // journey.
@@ -43,6 +44,13 @@ func (h *SaveJourneyReviewCommandHandler) Handle(ctx context.Context, cmd SaveJo
 	var updated *exam.ExamSession
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
+		// Row lock first, as the transaction's first statement: two calls
+		// for one journey then run this one after the other, and the read
+		// below — the first non-locking read, so its snapshot is taken now —
+		// sees the review the earlier one committed.
+		if err := repos.ExamSession.LockJourney(ctx, cmd.EsessID); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
 		journey, err := repos.ExamSession.FindByEsessIdAndType(ctx, cmd.EsessID, cmd.ExamType)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
@@ -58,6 +66,10 @@ func (h *SaveJourneyReviewCommandHandler) Handle(ctx context.Context, cmd SaveJo
 		if st := utils.DerefString(journey.EsessStatus()); st != string(enum.EsessStatusComplete) {
 			return errs.NewError(ctx, status.EXAM_REVIEW_JOURNEY_NOT_COMPLETE, nil,
 				fmt.Errorf("exam: journey %d is %s; only a COMPLETE journey is reviewed", cmd.EsessID, st))
+		}
+		if journey.HasAiReview() {
+			return errs.NewError(ctx, status.EXAM_REVIEW_ALREADY_EXISTS, nil,
+				fmt.Errorf("exam: journey %d already has its AI review", cmd.EsessID))
 		}
 
 		if err := repos.ExamSession.SetAiReview(ctx, cmd.EsessID, cmd.ExamType, cmd.ReviewShort, cmd.ReviewLong); err != nil {

@@ -690,6 +690,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Could not create the review. Please try again"
 	case EXAM_REVIEW_JOURNEY_NOT_COMPLETE:
 		return "A review is available once the journey is complete"
+	case EXAM_REVIEW_ALREADY_EXISTS:
+		return "This journey has already been reviewed"
 
 	case POW_CHALLENGE_FAILED:
 		return "Could not create a verification challenge. Please try again"

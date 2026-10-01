@@ -424,6 +424,9 @@ const (
 	// journey that is not COMPLETE — only a finished journey is reviewed.
 	// (EXAM_JOURNEY_NOT_COMPLETE is worded for practice, so not reused.)
 	EXAM_REVIEW_JOURNEY_NOT_COMPLETE StatusCode = 13738
+	// EXAM_REVIEW_ALREADY_EXISTS: the journey already holds both its short
+	// and long AI review — it is read from the journey, not generated again.
+	EXAM_REVIEW_ALREADY_EXISTS StatusCode = 13739
 
 	// Proof of work — 13800-13899. Gates /exams/generate against bots.
 	POW_CHALLENGE_FAILED    StatusCode = 13800 // could not mint a challenge
