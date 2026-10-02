@@ -12,9 +12,11 @@ What the server does, as implemented in `internal/module/` and
 `internal/bootstrap/routes/routes.go`:
 
 - **Accounts & auth** — phone-first signup (`/users/create`) and an OTP login flow
-  (`/auth/login` → `/auth/otp` → `/auth/logout`). A session starts *unsecure* and is
-  promoted to *secure* only after OTP verification; device registration and a
-  `ma_login_logs` audit row are written in the same step. OTP delivery is routed to
+  (`/auth/login`; on an untrusted device `/otps/send` → `/otps/verify` with
+  `otp_type: LOGIN_2FA`; `/auth/logout`). `/auth/login` writes the device row and a
+  `ma_login_logs` audit row and makes a trusted device's session *secure* at once;
+  otherwise the session is promoted to *secure* by the OTP verify, which also marks
+  the device verified. OTP delivery is routed to
   SMS or email depending on the identifier shape (`internal/adapter/otp_delivery/`).
 - **Learner profiles** — a user account holds one or more profiles (`ma_profiles`),
   each pinned to a curriculum program, grade, semester, and optionally a school.
@@ -261,11 +263,14 @@ template rather than the concrete path. Per-route auth is
 `middleware.AuthRequiredMiddleware(res.SessionManager)`, which requires a *secure*
 (OTP-verified) session.
 
-Routes intentionally registered **without** auth today: `POST /ping`,
-`/misc/logs-time-format`, `/users/create`, `/auth/login`, `/auth/login-resume`,
-`/auth/otp`, `/otps/send`, `/otps/verify`, `/programs/list`, `/grades/list`,
-`/semesters/list`, `/ai/shake`, all of `/devices/*`, and
-`/sessions/delete-unsecure`. `/sessions/dump` and `/sessions/delete-all` need a
+Routes registered **without** auth today: `POST /ping`,
+`/misc/logs-time-format`, **`/misc/clear-data`** (destructive — see
+`.claude/rules/known-issues.md` §20), `/pow/*`, `/users/me`, `/users/create`,
+`/users/create/guest`, `/users/identifier-available`, `/auth/login`,
+`/auth/resume-session`, `/auth/otp`, `/otps/send`, `/otps/verify`, `/programs/list`,
+`/grades/list`, `/semesters/list`, `/profiles/list`, `/ai/shake`, all of `/devices/*`,
+all of `/exams/*` (they gate themselves, guests included), and
+`/sessions/delete-unsecure`. Known auth soft-spots: `.claude/rules/known-issues.md` §24. `/sessions/dump` and `/sessions/delete-all` need a
 secure session.
 
 ### Persistence and the Unit of Work
@@ -317,9 +322,9 @@ One process hosts all of the following (`cmd/woker/main.go` is a non-buildable s
   trace-id exemplars) and `GET /ping`. `/metrics` is deliberately not an app route.
 - **Job runtime** — `internal/infrastructure/job/` (registry + cron scheduler + task
   worker pool), fed by `internal/jobs/RegisterAll` and exposed over `/jobs/*` and
-  `/tasks/enqueue`. In-memory, no persistent queue. **Only `NewNoopJob()` is
-  registered today**; the session-cleanup, quiz-cleanup, and weekly-digest
-  registrations are commented out, so triggering them returns a not-found status.
+  `/tasks/enqueue`. In-memory, no persistent queue. Two crons are
+  registered today — `user.guest_cleanup` and `system.session_cleanup`; the test jobs
+  and the weekly-digest task are commented out, so triggering them returns a not-found status.
 - **WebSocket hub** — `internal/infrastructure/socket/` (Hub + per-connection read/write
   pumps) behind the `application/socket` `Publisher` port and the `module/socket`
   handler/authorizer. Built only when `SOCKET_ENABLED=true`.
