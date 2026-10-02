@@ -144,7 +144,7 @@ type ExamResponse struct {
 	// sitting was handed out, or absent when none was.
 	Level *int `json:"level,omitempty"`
 
-	Title       *string `json:"title,omitempty"`
+	AiTitle     *string `json:"ai_title,omitempty"`
 	AIShortText *string `json:"ai_short_text,omitempty"`
 	NumQues     int     `json:"num_questions"`
 
@@ -348,7 +348,7 @@ func AttemptToResponse(a *domain.ExamLink, e *domain.ExamPool, includeAnswerKey 
 	}
 
 	if e != nil {
-		res.Title = e.AiTitle()
+		res.AiTitle = e.AiTitle()
 		res.AIShortText = e.AiShortText()
 		res.NumQues = e.ReqNumQues()
 		// The sitting's own ordering, not the stored one: two children

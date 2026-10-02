@@ -171,12 +171,26 @@ func BuildExamPrompt(in ExamPromptInput) (system string, user string, err error)
 	return buildSystemExamVN(in, n), buildUserExamVN(in, n), nil
 }
 
-// ExamTitle is the stored ai_title for a round at this grade: the band
-// name, and nothing else. The schema shows the model a title slot, but the
-// server overwrites it with this — the title was always a pure function of
-// the grade, and stamping it is cheaper and steadier than a prompt rule
-// telling the model not to decorate it.
-func ExamTitle(grade int) string {
+// examTypeTitleVN is how each exam type reads in a title.
+var examTypeTitleVN = map[enum.ExamType]string{
+	enum.ExamTypeAssessment: "Đánh Giá",
+	enum.ExamTypeGrade:      "Theo Lớp",
+	enum.ExamTypePractice:   "Luyện Tập",
+}
+
+// ExamTitle is the stored ai_title of a round: "Toán <type> - <band>",
+// e.g. "Toán Đánh Giá - Lớp 2". It is a pure function of the type and the
+// grade, so the server stamps it and the model is not asked for one.
+func ExamTitle(examType enum.ExamType, grade int) string {
+	if label, ok := examTypeTitleVN[examType]; ok {
+		return "Toán " + label + " - " + GradeLabel(grade)
+	}
+	return "Toán - " + GradeLabel(grade)
+}
+
+// GradeLabel is the Vietnamese band name of a grade ("Mẫu giáo",
+// "Lớp 1", …), used to name the grade in prompts and in the exam title.
+func GradeLabel(grade int) string {
 	band := gradeBandName(QuizLanguageVietnamese, GradeLevel(grade))
 	if band == "" {
 		band = fmt.Sprintf("Grade %d", grade)

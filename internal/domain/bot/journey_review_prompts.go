@@ -75,7 +75,7 @@ func BuildJourneyReviewPrompt(in JourneyReviewInput) (system, user string, err e
 	var b strings.Builder
 	fmt.Fprintf(&b, "Exam type: %s\n", in.ExamType)
 	if in.Grade != nil {
-		fmt.Fprintf(&b, "Current grade: %d (%s)\n", *in.Grade, ExamTitle(*in.Grade))
+		fmt.Fprintf(&b, "Current grade: %d (%s)\n", *in.Grade, GradeLabel(*in.Grade))
 	}
 	if in.Level != nil {
 		fmt.Fprintf(&b, "Level: %d (scale 0–9)\n", *in.Level)

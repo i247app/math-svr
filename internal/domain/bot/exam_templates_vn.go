@@ -19,8 +19,7 @@ import (
 // call, so each line here is paid for in tokens on every round; the rules
 // that survived are the ones the server cannot enforce after the fact.
 // Everything the server DOES enforce — question_grade, question_level,
-// the title — is stamped in code afterwards regardless of what the model
-// wrote.
+// the title — is set in code afterwards; the title is not even asked for.
 
 // systemExamVNHead opens the system prompt. Slots, in order: question
 // count, last question number, the probe rule (examProbeRuleVN), the
@@ -50,8 +49,7 @@ Tạo CHÍNH XÁC %d câu trắc nghiệm theo GRADE PROFILE.
 Chỉ trả về JSON hợp lệ, không Markdown, không giải thích, không text ngoài JSON.
 CẤU TRÚC:
 {
-  "title": "Lớp 1",
-  "short_text": "Phép cộng và phép trừ trong phạm vi 20",
+  "short_text": "Phép cộng, phép trừ và so sánh số trong phạm vi 20",
   "questions":[
     {
       "question_number": 1,
@@ -215,7 +213,7 @@ func buildUserExamVN(in ExamPromptInput, n int) string {
 	if block := gradeProfileBlockByLevel(QuizLanguageVietnamese, GradeLevel(in.Grade)); block != "" {
 		out.WriteString(examVocabulary(block) + "\n\n")
 	}
-	fmt.Fprintf(&out, "current_grade: %d (%s)\n", in.Grade, ExamTitle(in.Grade))
+	fmt.Fprintf(&out, "current_grade: %d (%s)\n", in.Grade, GradeLabel(in.Grade))
 
 	// The intensity block refines the grade profile it follows and must
 	// not be read as licence to leave the grade.

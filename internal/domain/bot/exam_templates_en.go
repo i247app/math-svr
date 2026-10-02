@@ -118,7 +118,6 @@ short_text — shown to the parent as the one-line description of this exam:
 * NEVER the textbook, the grade, the exam type, or an instruction such as "Chọn đáp án đúng".
 STRUCTURE:
 {
-  "title": "...",
   "short_text": "...",
   "questions": [
     {
@@ -263,7 +262,7 @@ func examContextEN(in ExamPromptInput) string {
 // adds the per-request blocks in the same order as buildUserExamVN.
 func buildUserExamEN(in ExamPromptInput, n int) string {
 	var out strings.Builder
-	out.WriteString("current_grade: " + ExamTitle(in.Grade) + "\n")
+	out.WriteString("current_grade: " + GradeLabel(in.Grade) + "\n")
 
 	// The intensity block refines the grade and must not be read as
 	// licence to leave it.
