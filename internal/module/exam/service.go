@@ -380,14 +380,14 @@ func (s *Service) SubmitExam(ctx context.Context, req *dto.SubmitExamReq) (*dto.
 
 	// Submitted: the review screen needs the key to mark each question.
 	return &dto.SubmitExamRes{
-		Exam:  dto.AttemptToResponse(result.Attempt, examPool, true),
-		Stats: dto.StatsToSingleResponse(result.Stats),
+		Exam:        dto.AttemptToResponse(result.Attempt, examPool, true),
+		ExamSession: dto.ExamSessionToResponse(result.ExamSession),
 	}, nil
 }
 
-// GetExam answers for one sitting or one journey, depending on which id
+// GetExamSessionDetail answers for one sitting or one journey, depending on which id
 // the request carries; the validator has already guaranteed exactly one.
-func (s *Service) GetExam(ctx context.Context, req *dto.GetExamReq) (*dto.GetExamRes, error) {
+func (s *Service) GetExamSessionDetail(ctx context.Context, req *dto.GetExamReq) (*dto.GetExamRes, error) {
 	if err := ValidateGetExam(ctx, req); err != nil {
 		return nil, err
 	}
@@ -449,7 +449,7 @@ func (s *Service) ListExamSessions(ctx context.Context, req *dto.ListExamSession
 		return nil, err
 	}
 	return &dto.ListExamSessionsRes{
-		ExamSessions: dto.JourneyStatsToResponse(rows.Journeys, rows.ExamPools),
+		ExamSessions: dto.JourneysToResponse(rows.Journeys, rows.ExamPools),
 		Pagination:   rows.Pagination,
 		Cursor:       rows.Cursor,
 	}, nil
@@ -478,7 +478,7 @@ func (s *Service) MarkExamJourney(ctx context.Context, req *dto.MarkExamJourneyR
 	if err != nil {
 		return nil, err
 	}
-	return &dto.MarkExamJourneyRes{Stats: dto.StatsToSingleResponse(journey)}, nil
+	return &dto.MarkExamJourneyRes{ExamSession: dto.ExamSessionToResponse(journey)}, nil
 }
 
 // GetExamProgress returns the learning-progress chart for one child.
@@ -580,7 +580,7 @@ func (s *Service) GetGradeLevels(ctx context.Context, req *dto.GradeLevelsReq) (
 
 // GetLatestJourney returns the child's latest journey — the one touched
 // last, in any state but DELETED — optionally narrowed to one exam type
-// and grade. No match is an ordinary answer (stats null), not an error:
+// and grade. No match is an ordinary answer (exam_session null), not an error:
 // a child who has not started yet is a normal state.
 func (s *Service) GetLatestJourney(ctx context.Context, req *dto.LatestJourneyReq) (*dto.LatestJourneyRes, error) {
 	if err := ValidateLatestJourney(ctx, req); err != nil {
@@ -600,7 +600,7 @@ func (s *Service) GetLatestJourney(ctx context.Context, req *dto.LatestJourneyRe
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	return &dto.LatestJourneyRes{ExamSession: dto.StatsToSingleResponse(journey)}, nil
+	return &dto.LatestJourneyRes{ExamSession: dto.ExamSessionToResponse(journey)}, nil
 }
 
 // GetGradeMap returns one grade's level ladder as a single list: the
@@ -626,8 +626,8 @@ func (s *Service) GetGradeRoadMap(ctx context.Context, req *dto.GradeMapReq) (*d
 
 	sessions := make([]dto.GradeMapEntry, 0, len(entries))
 	for _, e := range entries {
-		if stats := dto.StatsToSingleResponse(e.Journey); stats != nil {
-			sessions = append(sessions, dto.GradeMapEntry{ExamStats: *stats, IsLatest: e.IsLatest})
+		if session := dto.ExamSessionToResponse(e.Journey); session != nil {
+			sessions = append(sessions, dto.GradeMapEntry{ExamSessionResponse: *session, IsLatest: e.IsLatest})
 		}
 	}
 	return &dto.GradeMapRes{
@@ -706,5 +706,5 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 
 	logger.From(ctx).Infof("exam.journey.reviewed esess_id=%d type=%s answers=%d",
 		journey.EsessId(), journey.ReqExamType(), len(lines))
-	return &dto.JourneyReviewRes{ExamSession: dto.StatsToSingleResponse(saved)}, nil
+	return &dto.JourneyReviewRes{ExamSession: dto.ExamSessionToResponse(saved)}, nil
 }

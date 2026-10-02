@@ -92,7 +92,7 @@ type ListExamsReq struct {
 // ExamTypes keeps the journeys of the listed types (e.g. ["ASSESSMENT",
 // "GRADE"]); omitted or empty means every type. Each names a JOURNEY
 // type. PRACTICE is not one — its totals ride along on the journey they
-// belong to (ExamStats.Practice) — so asking for it is rejected rather
+// belong to (ExamSessionResponse.Practice) — so asking for it is rejected rather
 // than answered with orphan rows.
 //
 // Paged in either style (pagination.Request — default CURSOR, newest
@@ -116,7 +116,7 @@ type MarkExamJourneyReq struct {
 }
 
 type MarkExamJourneyRes struct {
-	Stats *ExamStats `json:"stats"`
+	ExamSession *ExamSessionResponse `json:"exam_session"`
 }
 
 // ExamResult is one sitting's score. Nil until the exam is submitted.
@@ -183,10 +183,10 @@ type ExamAnswerDetail struct {
 	IsCorrect          bool                    `json:"is_correct"`
 }
 
-// ExamStats is one JOURNEY — a stretch of one exam type the child worked
+// ExamSessionResponse is one JOURNEY — a stretch of one exam type the child worked
 // through. EsessID is what a client sends back to end it; Status says
 // whether it is the open one (ACTIVE) or history (COMPLETE / CANCEL).
-type ExamStats struct {
+type ExamSessionResponse struct {
 	EsessID         int64   `json:"esess_id"`
 	ExamType        string  `json:"exam_type"`
 	Status          string  `json:"status"`
@@ -220,7 +220,7 @@ type ExamStats struct {
 	// Practice is the journey's PRACTICE row, present once the child has
 	// submitted a practice round in it. Either kind of journey — ASSESSMENT
 	// or GRADE — may carry one; it shares esess_id and never has a grade.
-	Practice *ExamStats `json:"practice,omitempty"`
+	Practice *ExamSessionResponse `json:"practice,omitempty"`
 	// InProgressExams are the journey's sittings — ASSESSMENT or PRACTICE,
 	// see each one's exam_type — that were handed out and never submitted,
 	// oldest first; absent when there are none. Each carries its questions
@@ -240,21 +240,21 @@ type GenerateExamRes struct {
 // SubmitExamRes answers the question the child just asked — how did I do
 // on THIS one — and hands back the updated running record beside it.
 type SubmitExamRes struct {
-	Exam  *ExamResponse `json:"exam"`
-	Stats *ExamStats    `json:"stats,omitempty"`
+	Exam        *ExamResponse        `json:"exam"`
+	ExamSession *ExamSessionResponse `json:"exam_session,omitempty"`
 }
 
 // GetExamRes is shaped by which id was asked for.
 //
-//   - by elink_id: Exam + Details (Stats and Exams stay empty).
-//   - by esess_id:    Stats + Exams + Details (Exam stays empty). Exams
+//   - by elink_id: Exam + Details (ExamSession and Exams stay empty).
+//   - by esess_id:    ExamSession + Exams + Details (Exam stays empty). Exams
 //     are cards — no questions blob — in chronological order; Details span
 //     every sitting and carry elink_id so they can be grouped.
 type GetExamRes struct {
-	Exam    *ExamResponse      `json:"exam,omitempty"`
-	Stats   *ExamStats         `json:"stats,omitempty"`
-	Exams   []*ExamResponse    `json:"exams,omitempty"`
-	Details []ExamAnswerDetail `json:"details,omitempty"`
+	Exam        *ExamResponse        `json:"exam,omitempty"`
+	ExamSession *ExamSessionResponse `json:"exam_session,omitempty"`
+	Exams       []*ExamResponse      `json:"exams,omitempty"`
+	Details     []ExamAnswerDetail   `json:"details,omitempty"`
 	// PracticePreview says what a PRACTICE round on this journey would
 	// drill, were one requested now. Journey view only; absent until the
 	// journey has a submitted sitting.
@@ -312,7 +312,7 @@ type ListExamsRes struct {
 // ListExamSessionsRes carries exactly one of Pagination (OFFSET) or Cursor
 // (CURSOR).
 type ListExamSessionsRes struct {
-	ExamSessions []ExamStats                  `json:"exam_sessions"`
+	ExamSessions []ExamSessionResponse        `json:"exam_sessions"`
 	Pagination   *pagination.Pagination       `json:"pagination,omitempty"`
 	Cursor       *pagination.CursorPagination `json:"cursor,omitempty"`
 }
@@ -507,10 +507,10 @@ func servedLabelPtr(sh *question.Shuffle, canonicalQN int, label *string) *strin
 	return &served
 }
 
-func StatsToResponse(rows []*domain.ExamSession) []ExamStats {
-	out := make([]ExamStats, 0, len(rows))
+func ExamSessionsToResponse(rows []*domain.ExamSession) []ExamSessionResponse {
+	out := make([]ExamSessionResponse, 0, len(rows))
 	for _, r := range rows {
-		s := ExamStats{
+		s := ExamSessionResponse{
 			EsessID:         r.EsessId(),
 			ExamType:        r.ReqExamType(),
 			CreateDt:        r.CreateDt().String(),
@@ -541,29 +541,29 @@ func StatsToResponse(rows []*domain.ExamSession) []ExamStats {
 	return out
 }
 
-func StatsToSingleResponse(row *domain.ExamSession) *ExamStats {
+func ExamSessionToResponse(row *domain.ExamSession) *ExamSessionResponse {
 	if row == nil {
 		return nil
 	}
-	all := StatsToResponse([]*domain.ExamSession{row})
+	all := ExamSessionsToResponse([]*domain.ExamSession{row})
 	return &all[0]
 }
 
-// JourneyStatsToResponse renders journeys with their practice row and
+// JourneysToResponse renders journeys with their practice row and
 // unfinished sittings tucked inside, so the client sees one entry per
 // journey rather than two rows that happen to share an id.
 //
 // An unfinished sitting ships with its answer key, the same as the
 // hand-out response does — the two must agree, or a child resuming an
 // exam would see a different paper than the one they started.
-func JourneyStatsToResponse(journeys []domain.JourneyStats, examPools map[int64]*domain.ExamPool) []ExamStats {
-	out := make([]ExamStats, 0, len(journeys))
+func JourneysToResponse(journeys []domain.JourneyStats, examPools map[int64]*domain.ExamPool) []ExamSessionResponse {
+	out := make([]ExamSessionResponse, 0, len(journeys))
 	for _, j := range journeys {
-		s := StatsToSingleResponse(j.Journey)
+		s := ExamSessionToResponse(j.Journey)
 		if s == nil {
 			continue
 		}
-		s.Practice = StatsToSingleResponse(j.Practice)
+		s.Practice = ExamSessionToResponse(j.Practice)
 		for _, a := range j.InProgress {
 			s.InProgressExams = append(s.InProgressExams, AttemptToResponse(a, examPools[a.ExamId()], true))
 		}
@@ -632,7 +632,7 @@ type JourneyReviewReq struct {
 // shape /exams/sessions/latest returns; ai_review_short / ai_review_long
 // carry the review just written.
 type JourneyReviewRes struct {
-	ExamSession *ExamStats `json:"exam_session"`
+	ExamSession *ExamSessionResponse `json:"exam_session"`
 }
 
 // LatestJourneyReq asks for the child's latest journey. Both filters are
@@ -646,9 +646,9 @@ type LatestJourneyReq struct {
 }
 
 // LatestJourneyRes carries the journey in the same shape as
-// /exams/sessions/mark; Stats is null when no journey matches.
+// /exams/sessions/mark; ExamSession is null when no journey matches.
 type LatestJourneyRes struct {
-	ExamSession *ExamStats `json:"exam_session"`
+	ExamSession *ExamSessionResponse `json:"exam_session"`
 }
 
 // GradeMapReq asks for one grade's level map. Grade is required.
@@ -658,11 +658,11 @@ type GradeMapReq struct {
 	Grade     *int   `json:"grade"`
 }
 
-// GradeMapEntry is a journey in the ExamStats shape plus IsLatest,
+// GradeMapEntry is a journey in the ExamSessionResponse shape plus IsLatest,
 // true on exactly the entry that is the journey the child worked last
 // (no entry when the grade has no journey). No esess_id appears twice.
 type GradeMapEntry struct {
-	ExamStats
+	ExamSessionResponse
 	IsLatest bool `json:"is_latest"`
 }
 
@@ -697,7 +697,7 @@ type GradeLevelsRes struct {
 
 // JourneyProgressReq asks for the chart over journeys (ma_exam_sessions
 // rows) rather than sittings. ExamType nil means every journey type;
-// PRACTICE is refused, as it is for stats — its rows live inside their
+// PRACTICE is refused, as it is for /exams/sessions/list — its rows live inside their
 // journey (ASSESSMENT or GRADE).
 type JourneyProgressReq struct {
 	UID       *int64  `json:"-"`

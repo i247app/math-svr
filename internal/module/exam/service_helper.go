@@ -265,7 +265,7 @@ func (s *Service) getJourney(ctx context.Context, esessID int64, examType string
 	}
 
 	return &dto.GetExamRes{
-		Stats:           dto.StatsToSingleResponse(detail.Journey),
+		ExamSession:     dto.ExamSessionToResponse(detail.Journey),
 		Exams:           dto.AttemptListToResponse(detail.Attempts, detail.ExamPools),
 		Details:         dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...), detail.ExamPools),
 		PracticePreview: dto.PracticePreviewFrom(detail.PracticeBase, detail.PracticeBrief),

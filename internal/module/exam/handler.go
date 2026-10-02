@@ -234,8 +234,8 @@ func (h *ExamHandler) HandleSubmitExam(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
-// POST /exams/detail
-func (h *ExamHandler) HandleGetExam(w http.ResponseWriter, r *http.Request) {
+// POST /exams/sessions/detail
+func (h *ExamHandler) HandleGetExamSessionDetail(w http.ResponseWriter, r *http.Request) {
 	var req dto.GetExamReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
@@ -247,7 +247,7 @@ func (h *ExamHandler) HandleGetExam(w http.ResponseWriter, r *http.Request) {
 	}
 	req.UID = uid
 
-	res, err := h.service.GetExam(r.Context(), &req)
+	res, err := h.service.GetExamSessionDetail(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return

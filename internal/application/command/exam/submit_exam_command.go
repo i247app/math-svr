@@ -46,8 +46,8 @@ type SubmitExamCommand struct {
 // SubmitExamResult carries what the client is told: the sitting it just
 // finished, and the running record it now belongs to.
 type SubmitExamResult struct {
-	Attempt *exam.ExamLink
-	Stats   *exam.ExamSession
+	Attempt     *exam.ExamLink
+	ExamSession *exam.ExamSession
 }
 
 type SubmitExamCommandHandler struct {
@@ -152,7 +152,7 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			attempt.ElinkId(), cmd.ProfileID, attempt.ReqExamType(),
 			scored.TotalQuestions, scored.CorrectNumber, scored.SkippedNumber, scored.ScorePercentage)
 
-		result = SubmitExamResult{Attempt: fresh, Stats: updatedStats}
+		result = SubmitExamResult{Attempt: fresh, ExamSession: updatedStats}
 		return nil
 	}
 

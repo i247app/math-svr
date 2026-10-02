@@ -255,7 +255,7 @@ func ValidateExamProgress(ctx context.Context, req *dto.ExamProgressReq) error {
 }
 
 // ValidateJourneyProgress checks the journeys chart request the same way.
-// PRACTICE is refused for the reason stats refuses it: a PRACTICE row is
+// PRACTICE is refused for the reason /exams/sessions/list refuses it: a PRACTICE row is
 // not a journey, it is a part of one.
 func ValidateJourneyProgress(ctx context.Context, req *dto.JourneyProgressReq) error {
 	if req.ProfileID <= 0 {
