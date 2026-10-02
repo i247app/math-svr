@@ -94,11 +94,15 @@ type ListExamsReq struct {
 // type. PRACTICE is not one — its totals ride along on the journey they
 // belong to (ExamStats.Practice) — so asking for it is rejected rather
 // than answered with orphan rows.
+//
+// Paged in either style (pagination.Request — default CURSOR, newest
+// journey first).
 type ListExamSessionsReq struct {
 	UID               *int64   `json:"-"`
 	ProfileID         int64    `json:"profile_id"`
 	ExamTypes         []string `json:"exam_types,omitempty"`
 	JourneyExamStatus *string  `json:"status,omitempty"`
+	pagination.Request
 }
 
 // MarkExamJourneyReq ends one journey. Status is COMPLETE or CANCEL; the
@@ -305,8 +309,12 @@ type ListExamsRes struct {
 	Pagination *pagination.Pagination `json:"pagination"`
 }
 
+// ListExamSessionsRes carries exactly one of Pagination (OFFSET) or Cursor
+// (CURSOR).
 type ListExamSessionsRes struct {
-	ExamSessions []ExamStats `json:"exam_sessions"`
+	ExamSessions []ExamStats                  `json:"exam_sessions"`
+	Pagination   *pagination.Pagination       `json:"pagination,omitempty"`
+	Cursor       *pagination.CursorPagination `json:"cursor,omitempty"`
 }
 
 // AttemptToResponse flattens an attempt and its question set.

@@ -2,16 +2,19 @@ package query
 
 import (
 	"context"
+	"time"
 
 	"math-ai.com/math-ai/internal/domain/exam"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
 // GetExamStatsQuery reads a child's journeys. ExamTypes narrows to the
 // listed JOURNEY types (empty = all), Status to one lifecycle state
 // (ACTIVE for "where am I now", COMPLETE / CANCEL for history); both
-// filters run in SQL. Newest first.
+// filters run in SQL. Newest first, one page at a time — by offset or by
+// cursor (Paging, already validated).
 //
 // PRACTICE rows are never returned on their own. Each rides inside the
 // journey it belongs to — ASSESSMENT or GRADE — (JourneyStats.Practice), so the
@@ -31,14 +34,31 @@ type GetExamStatsQuery struct {
 	ProfileID int64
 	ExamTypes []string
 	Status    *string
+	Paging    pagination.Request
 }
 
 // ExamStatsResult is the journeys plus the question sets the unfinished
 // sittings were drawn from, keyed by exam_id, so the caller can render
-// each paper without a read per sitting.
+// each paper without a read per sitting. Exactly one of Pagination
+// (OFFSET) / Cursor (CURSOR) is set.
 type ExamStatsResult struct {
-	Journeys  []exam.JourneyStats
-	ExamPools map[int64]*exam.ExamPool
+	Journeys   []exam.JourneyStats
+	ExamPools  map[int64]*exam.ExamPool
+	Pagination *pagination.Pagination
+	Cursor     *pagination.CursorPagination
+}
+
+// journeyCursor is what a /exams/sessions/list cursor holds: a journey's
+// position in the list (exam.JourneyListKey). create_dt is kept to the
+// microsecond (DATETIME(6), RFC 3339 in JSON), so it compares equal to the
+// stored value.
+type journeyCursor struct {
+	CreateDt time.Time `json:"create_dt"`
+	EsessId  int64     `json:"esess_id"`
+}
+
+func (c journeyCursor) key() exam.JourneyListKey {
+	return exam.JourneyListKey{CreateDt: c.CreateDt, EsessId: c.EsessId}
 }
 
 type GetExamStatsQueryHandler struct {
@@ -62,12 +82,22 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 	// reopened, and it still belongs to that journey. (PRACTICE itself is
 	// refused by the validator — not a journey.)
 	filter := exam.ListJourneysFilter{ExamTypes: q.ExamTypes, Status: q.Status}
-	rows, err := h.statsRepo.ListByUserProfile(ctx, q.UID, q.ProfileID, filter)
+	result := &ExamStatsResult{Journeys: []exam.JourneyStats{}, ExamPools: map[int64]*exam.ExamPool{}}
+	var rows []*exam.ExamSession
+	var err error
+	if q.Paging.IsCursor() {
+		rows, result.Cursor, err = pagination.KeysetPage(ctx, h.journeyKeyset(q.UID, q.ProfileID, filter), q.Paging.Next, q.Paging.Previous, q.Paging.Size)
+	} else {
+		rows, result.Pagination, err = h.statsRepo.ListByUserProfilePage(ctx, q.UID, q.ProfileID, filter, q.Paging.Page, q.Paging.Size)
+	}
 	if err != nil {
+		if _, ok := errs.IsMathError(err); ok {
+			return nil, err // a bad cursor — already PAGINATION_INVALID_CURSOR
+		}
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if len(rows) == 0 {
-		return &ExamStatsResult{Journeys: []exam.JourneyStats{}, ExamPools: map[int64]*exam.ExamPool{}}, nil
+		return result, nil
 	}
 
 	ids := make([]int64, 0, len(rows))
@@ -93,7 +123,37 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 	if err != nil {
 		return nil, err
 	}
-	return &ExamStatsResult{Journeys: journeys, ExamPools: examPools}, nil
+	result.Journeys, result.ExamPools = journeys, examPools
+	return result, nil
+}
+
+// journeyKeyset is the child's filtered journey list as a keyset source.
+func (h *GetExamStatsQueryHandler) journeyKeyset(uid, profileId int64, filter exam.ListJourneysFilter) pagination.Keyset[*exam.ExamSession, journeyCursor] {
+	return pagination.Keyset[*exam.ExamSession, journeyCursor]{
+		Read: func(ctx context.Context, after, before *journeyCursor, limit int64) ([]*exam.ExamSession, error) {
+			params := exam.JourneyKeysetParams{Limit: limit}
+			if after != nil {
+				k := after.key()
+				params.Older = &k
+			}
+			if before != nil {
+				k := before.key()
+				params.Newer = &k
+			}
+			return h.statsRepo.ListByUserProfileKeyset(ctx, uid, profileId, filter, params)
+		},
+		// Newest first: "before" a journey in the list means newer.
+		ExistsAtOrBefore: func(ctx context.Context, c journeyCursor) (bool, error) {
+			return h.statsRepo.ExistsJourneyAtOrNewer(ctx, uid, profileId, filter, c.key())
+		},
+		ExistsAtOrAfter: func(ctx context.Context, c journeyCursor) (bool, error) {
+			return h.statsRepo.ExistsJourneyAtOrOlder(ctx, uid, profileId, filter, c.key())
+		},
+		Key: func(j *exam.ExamSession) journeyCursor {
+			return journeyCursor{CreateDt: j.CreateDt().ToTime().UTC(), EsessId: j.EsessId()}
+		},
+		Valid: func(c journeyCursor) bool { return c.EsessId > 0 && !c.CreateDt.IsZero() },
+	}
 }
 
 // nestPractice hangs each PRACTICE row under the journey of the same id —

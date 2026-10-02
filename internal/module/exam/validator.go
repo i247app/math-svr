@@ -221,7 +221,7 @@ func ValidateListExamSessions(ctx context.Context, req *dto.ListExamSessionsReq)
 		examTypes = append(examTypes, *examType)
 	}
 	req.ExamTypes = examTypes
-	return nil
+	return req.Request.Validate(ctx)
 }
 
 // Progress chart bounds. The window is capped at roughly two years

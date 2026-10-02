@@ -3,8 +3,6 @@ package query
 import (
 	"context"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
@@ -34,77 +32,26 @@ func NewListUsersByCursorQueryHandler(userRepo user.IRepository) *ListUsersByCur
 	return &ListUsersByCursorQueryHandler{userRepo: userRepo}
 }
 
-// Handle reads one page plus one row in the direction of travel — that extra
-// row is the flag for that direction — and settles the flag for the opposite
-// direction with one existence probe from the cursor's uid. The probe is
-// exact: the page holds every row between the cursor and its far end, so a
-// row beyond the near end exists iff one exists at or past the cursor.
 func (h *ListUsersByCursorQueryHandler) Handle(ctx context.Context, query *ListUsersByCursorQuery) ([]*user.User, *pagination.CursorPagination, error) {
-	size := pagination.ClampSize(query.Size)
-	params := &user.ListUsersKeysetParams{Limit: size + 1}
-	var err error
-	if query.Next != "" {
-		if params.AfterUid, err = decodeUserCursor(ctx, query.Next); err != nil {
-			return nil, nil, err
-		}
-	} else if query.Previous != "" {
-		if params.BeforeUid, err = decodeUserCursor(ctx, query.Previous); err != nil {
-			return nil, nil, err
-		}
-	}
-
-	users, err := h.userRepo.ListUsersByKeyset(ctx, params)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	page := &pagination.CursorPagination{}
-	more := int64(len(users)) > size
-	if params.BeforeUid != nil {
-		// Read upward: the extra row is the one farthest from the cursor,
-		// i.e. the first in display order.
-		if more {
-			users = users[1:]
-		}
-		page.HasPrev = more
-		if page.HasNext, err = h.userRepo.ExistsUserUidAtMost(ctx, *params.BeforeUid); err != nil {
-			return nil, nil, err
-		}
-	} else {
-		if more {
-			users = users[:size]
-		}
-		page.HasNext = more
-		if params.AfterUid != nil {
-			if page.HasPrev, err = h.userRepo.ExistsUserUidAtLeast(ctx, *params.AfterUid); err != nil {
-				return nil, nil, err
+	return pagination.KeysetPage(ctx, pagination.Keyset[*user.User, userCursor]{
+		Read: func(ctx context.Context, after, before *userCursor, limit int64) ([]*user.User, error) {
+			params := &user.ListUsersKeysetParams{Limit: limit}
+			if after != nil {
+				params.AfterUid = &after.Uid
 			}
-		}
-	}
-
-	if len(users) > 0 {
-		if page.StartCursor, err = encodeUserCursor(users[0]); err != nil {
-			return nil, nil, err
-		}
-		if page.EndCursor, err = encodeUserCursor(users[len(users)-1]); err != nil {
-			return nil, nil, err
-		}
-	}
-	return users, page, nil
-}
-
-func decodeUserCursor(ctx context.Context, cursor string) (*int64, error) {
-	var pos userCursor
-	if err := pagination.DecodeCursor(cursor, &pos); err != nil || pos.Uid <= 0 {
-		return nil, errs.NewError(ctx, status.PAGINATION_INVALID_CURSOR, nil, pagination.ErrInvalidCursor)
-	}
-	return &pos.Uid, nil
-}
-
-func encodeUserCursor(u *user.User) (*string, error) {
-	c, err := pagination.EncodeCursor(userCursor{Uid: u.Uid()})
-	if err != nil {
-		return nil, err
-	}
-	return &c, nil
+			if before != nil {
+				params.BeforeUid = &before.Uid
+			}
+			return h.userRepo.ListUsersByKeyset(ctx, params)
+		},
+		// Display order is uid DESC: "before" a row means a higher uid.
+		ExistsAtOrBefore: func(ctx context.Context, k userCursor) (bool, error) {
+			return h.userRepo.ExistsUserUidAtLeast(ctx, k.Uid)
+		},
+		ExistsAtOrAfter: func(ctx context.Context, k userCursor) (bool, error) {
+			return h.userRepo.ExistsUserUidAtMost(ctx, k.Uid)
+		},
+		Key:   func(u *user.User) userCursor { return userCursor{Uid: u.Uid()} },
+		Valid: func(k userCursor) bool { return k.Uid > 0 },
+	}, query.Next, query.Previous, query.Size)
 }

@@ -86,10 +86,10 @@ func (s *Service) GetUserById(ctx context.Context, req *dto.GetUserByUidReq) (*d
 	return &dto.GetUserByUidRes{User: userRes}, nil
 }
 
-// ListUsers serves both paging styles from one route; ValidateListUsers
-// decides which (pagination_type, default OFFSET).
+// ListUsers serves both paging styles from one route; pagination_type
+// decides which (default CURSOR — pagination.Request.Validate).
 func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.ListUsersRes, error) {
-	if err := ValidateListUsers(ctx, req); err != nil {
+	if err := req.Validate(ctx); err != nil {
 		return nil, err
 	}
 
@@ -98,7 +98,7 @@ func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.Li
 		res   = &dto.ListUsersRes{}
 		err   error
 	)
-	if req.PaginationType == enum.PaginationTypeCursor {
+	if req.IsCursor() {
 		users, res.Cursor, err = s.listUsersByCursor.Handle(ctx, &query.ListUsersByCursorQuery{
 			Next:     req.Next,
 			Previous: req.Previous,

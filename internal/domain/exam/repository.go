@@ -2,6 +2,7 @@ package exam
 
 import (
 	"context"
+	"time"
 
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
@@ -165,6 +166,23 @@ type ListJourneysFilter struct {
 	Status    *string
 }
 
+// JourneyListKey is a journey's position in the journey list, which shows
+// newest first: create_dt DESC, then esess_id DESC as the tie-break (a
+// journey row — never PRACTICE — is unique on esess_id). "Older" than a key
+// = further down the list.
+type JourneyListKey struct {
+	CreateDt time.Time
+	EsessId  int64
+}
+
+// JourneyKeysetParams drives IExamSessionRepository.ListByUserProfileKeyset.
+// At most one of Older / Newer is set.
+type JourneyKeysetParams struct {
+	Older *JourneyListKey // next page: the journeys right below this one
+	Newer *JourneyListKey // previous page: the journeys right above this one
+	Limit int64
+}
+
 // JourneyProgressParams drives IExamSessionRepository.ListProgressPoints,
 // the journey-level counterpart of ProgressPointsParams. A journey's
 // point in time is its last_submitted_dt — the moment its cumulative
@@ -265,9 +283,18 @@ type IExamSessionRepository interface {
 	// FindGradeLevels reads a child's GradeLevels for one grade, over the
 	// GRADE journeys of that grade.
 	FindGradeLevels(ctx context.Context, uid, profileId int64, grade int) (GradeLevels, error)
-	// ListByUserProfile returns a child's journeys (never PRACTICE rows),
-	// newest first, narrowed in SQL by filter.
-	ListByUserProfile(ctx context.Context, uid, profileId int64, filter ListJourneysFilter) ([]*ExamSession, error)
+	// ListByUserProfilePage and ListByUserProfileKeyset return a child's
+	// journeys (never PRACTICE rows), newest first (JourneyListKey order),
+	// narrowed in SQL by filter — one page by offset, or by keyset: up to
+	// Limit rows right below Older (next page), right above Newer
+	// (previous page, still returned newest first), or the newest.
+	ListByUserProfilePage(ctx context.Context, uid, profileId int64, filter ListJourneysFilter, page, size int64) ([]*ExamSession, *pagination.Pagination, error)
+	ListByUserProfileKeyset(ctx context.Context, uid, profileId int64, filter ListJourneysFilter, params JourneyKeysetParams) ([]*ExamSession, error)
+	// ExistsJourneyAtOrNewer / AtOrOlder report whether any journey of the
+	// filtered list sits at key or above / below it — the keyset list's
+	// "is there a page on the other side" probe.
+	ExistsJourneyAtOrNewer(ctx context.Context, uid, profileId int64, filter ListJourneysFilter, key JourneyListKey) (bool, error)
+	ExistsJourneyAtOrOlder(ctx context.Context, uid, profileId int64, filter ListJourneysFilter, key JourneyListKey) (bool, error)
 	// ListPracticeByEsessIds returns the PRACTICE rows of the given
 	// journeys of one child, whatever their state — at most one per id.
 	ListPracticeByEsessIds(ctx context.Context, uid, profileId int64, esessIds []int64) ([]*ExamSession, error)

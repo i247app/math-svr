@@ -4,7 +4,6 @@ import (
 	"io"
 
 	"math-ai.com/math-ai/internal/domain/user"
-	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -148,16 +147,9 @@ type GetUserByUidRes struct {
 	User *UserResponse `json:"user"`
 }
 
-// ListUsersReq serves both paging styles (enum.PaginationType):
-// CURSOR (default) reads size plus at most one of next (the previous
-// response's end_cursor → next page) and previous (its start_cursor →
-// previous page), neither = the first page; OFFSET reads page + size.
+// ListUsersReq serves both paging styles — see pagination.Request.
 type ListUsersReq struct {
-	PaginationType enum.PaginationType `json:"pagination_type"`
-	Page           int64               `json:"page"`
-	Size           int64               `json:"size"`
-	Next           string              `json:"next"`
-	Previous       string              `json:"previous"`
+	pagination.Request
 }
 
 // ListUsersRes carries exactly one of Pagination (OFFSET) or Cursor (CURSOR).

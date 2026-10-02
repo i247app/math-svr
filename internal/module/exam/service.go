@@ -443,11 +443,16 @@ func (s *Service) ListExamSessions(ctx context.Context, req *dto.ListExamSession
 		ProfileID: profile.ProfileId(),
 		ExamTypes: req.ExamTypes,
 		Status:    req.JourneyExamStatus,
+		Paging:    req.Request,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &dto.ListExamSessionsRes{ExamSessions: dto.JourneyStatsToResponse(rows.Journeys, rows.ExamPools)}, nil
+	return &dto.ListExamSessionsRes{
+		ExamSessions: dto.JourneyStatsToResponse(rows.Journeys, rows.ExamPools),
+		Pagination:   rows.Pagination,
+		Cursor:       rows.Cursor,
+	}, nil
 }
 
 // MarkExamJourney ends a journey as COMPLETE or CANCEL. From then on the

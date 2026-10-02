@@ -15,6 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
 const (
@@ -245,7 +246,78 @@ func (r *ExamSessionRepository) FindGradeLevels(ctx context.Context, uid, profil
 // ListByUserProfile returns a child's journeys, newest first inside each
 // exam type, so an open journey comes before the ended ones of its slot,
 // which follow as history.
-func (r *ExamSessionRepository) ListByUserProfile(ctx context.Context, uid, profileId int64, filter exam.ListJourneysFilter) ([]*exam.ExamSession, error) {
+// journeyOrder is the journey list's display order (exam.JourneyListKey).
+const journeyOrder = `ORDER BY e.create_dt DESC, e.esess_id DESC`
+
+func (r *ExamSessionRepository) ListByUserProfilePage(ctx context.Context, uid, profileId int64, filter exam.ListJourneysFilter, page, size int64) ([]*exam.ExamSession, *pagination.Pagination, error) {
+	where, args := journeyListWhere(uid, profileId, filter)
+
+	var total int64
+	countQuery := `SELECT COUNT(*) FROM ` + examSessionTable + ` e WHERE (` + where + `) AND ` + examSessionActiveWhere
+	if err := r.db.QueryRow(ctx, countQuery, slices.Concat(args, examSessionActiveArgs())...).Scan(&total); err != nil {
+		return nil, nil, fmt.Errorf("user exam repo count by user/profile: %w", err)
+	}
+	pg := pagination.NewPagination(page, size, total)
+
+	rows, err := r.listSessions(ctx, "list page by user/profile", where, args, journeyOrder+` LIMIT ? OFFSET ?`, pg.Size, pg.Skip)
+	if err != nil {
+		return nil, nil, err
+	}
+	return rows, pg, nil
+}
+
+// ListByUserProfileKeyset pages by keyset on (create_dt, esess_id). A
+// previous page is read upward (oldest-first from Newer, so LIMIT keeps the
+// nearest rows) and reversed here, so every caller sees display order.
+func (r *ExamSessionRepository) ListByUserProfileKeyset(ctx context.Context, uid, profileId int64, filter exam.ListJourneysFilter, params exam.JourneyKeysetParams) ([]*exam.ExamSession, error) {
+	where, args := journeyListWhere(uid, profileId, filter)
+	order := journeyOrder
+	switch {
+	case params.Older != nil:
+		where += ` AND (e.create_dt < ? OR (e.create_dt = ? AND e.esess_id < ?))`
+		args = append(args, params.Older.CreateDt, params.Older.CreateDt, params.Older.EsessId)
+	case params.Newer != nil:
+		where += ` AND (e.create_dt > ? OR (e.create_dt = ? AND e.esess_id > ?))`
+		args = append(args, params.Newer.CreateDt, params.Newer.CreateDt, params.Newer.EsessId)
+		order = `ORDER BY e.create_dt ASC, e.esess_id ASC`
+	}
+
+	rows, err := r.listSessions(ctx, "list keyset by user/profile", where, args, order+` LIMIT ?`, params.Limit)
+	if err != nil {
+		return nil, err
+	}
+	if params.Older == nil && params.Newer != nil {
+		slices.Reverse(rows)
+	}
+	return rows, nil
+}
+
+func (r *ExamSessionRepository) ExistsJourneyAtOrNewer(ctx context.Context, uid, profileId int64, filter exam.ListJourneysFilter, key exam.JourneyListKey) (bool, error) {
+	return r.existsJourney(ctx, uid, profileId, filter,
+		`(e.create_dt > ? OR (e.create_dt = ? AND e.esess_id >= ?))`, key)
+}
+
+func (r *ExamSessionRepository) ExistsJourneyAtOrOlder(ctx context.Context, uid, profileId int64, filter exam.ListJourneysFilter, key exam.JourneyListKey) (bool, error) {
+	return r.existsJourney(ctx, uid, profileId, filter,
+		`(e.create_dt < ? OR (e.create_dt = ? AND e.esess_id <= ?))`, key)
+}
+
+func (r *ExamSessionRepository) existsJourney(ctx context.Context, uid, profileId int64, filter exam.ListJourneysFilter, keyCond string, key exam.JourneyListKey) (bool, error) {
+	where, args := journeyListWhere(uid, profileId, filter)
+	where += ` AND ` + keyCond
+	args = append(args, key.CreateDt, key.CreateDt, key.EsessId)
+	query := `SELECT EXISTS(SELECT 1 FROM ` + examSessionTable + ` e WHERE (` + where + `) AND ` + examSessionActiveWhere + `)`
+	var exists bool
+	if err := r.db.QueryRow(ctx, query, slices.Concat(args, examSessionActiveArgs())...).Scan(&exists); err != nil {
+		return false, fmt.Errorf("user exam repo exists journey: %w", err)
+	}
+	return exists, nil
+}
+
+// journeyListWhere is the WHERE of a child's journey list: owner, types,
+// status. Shared by the page, keyset and existence reads so all three
+// agree on which rows the list holds.
+func journeyListWhere(uid, profileId int64, filter exam.ListJourneysFilter) (string, []any) {
 	where := `e.uid = ? AND e.profile_id = ?`
 	args := []any{uid, profileId}
 
@@ -264,8 +336,7 @@ func (r *ExamSessionRepository) ListByUserProfile(ctx context.Context, uid, prof
 		where += ` AND e.esess_status = ?`
 		args = append(args, *filter.Status)
 	}
-
-	return r.listSessions(ctx, "list by user/profile", where, args, `ORDER BY e.create_dt DESC, e.esess_id DESC`)
+	return where, args
 }
 
 func (r *ExamSessionRepository) ListPracticeByEsessIds(ctx context.Context, uid, profileId int64, esessIds []int64) ([]*exam.ExamSession, error) {
@@ -282,9 +353,10 @@ func (r *ExamSessionRepository) ListPracticeByEsessIds(ctx context.Context, uid,
 }
 
 // listSessions runs SELECT … WHERE (where) AND <active filter> <orderBy>
-// and scans every row; op names the caller in errors.
-func (r *ExamSessionRepository) listSessions(ctx context.Context, op, where string, args []any, orderBy string) ([]*exam.ExamSession, error) {
-	args = slices.Concat(args, examSessionActiveArgs())
+// and scans every row; op names the caller in errors. tailArgs bind the
+// placeholders in orderBy (e.g. LIMIT ?), which follow the active filter's.
+func (r *ExamSessionRepository) listSessions(ctx context.Context, op, where string, args []any, orderBy string, tailArgs ...any) ([]*exam.ExamSession, error) {
+	args = slices.Concat(args, examSessionActiveArgs(), tailArgs)
 	query := `SELECT ` + examSessionColumns + ` FROM ` + examSessionTable + ` e WHERE (` + where + `) AND ` +
 		examSessionActiveWhere + ` ` + orderBy
 
