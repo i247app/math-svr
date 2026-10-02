@@ -86,8 +86,8 @@ func (s *Service) GetUserById(ctx context.Context, req *dto.GetUserByUidReq) (*d
 
 func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.ListUsersRes, error) {
 	users, pg, err := s.listUsersQuery.Handle(ctx, &query.ListUsersQuery{
-		Page:  int64(req.Page),
-		Limit: int64(req.Size),
+		Page:  req.Page,
+		Limit: req.Size,
 	})
 	if err != nil {
 		return nil, err

@@ -175,8 +175,8 @@ type ListExercisesReq struct {
 	Purpose          *string `json:"purpose,omitempty"`
 	SortBy           *string `json:"sort_by,omitempty"`
 	SortOrder        *string `json:"sort_order,omitempty"`
-	Page             int     `json:"page,omitempty"`
-	Size             int     `json:"size,omitempty"`
+	Page             int64   `json:"page,omitempty"`
+	Size             int64   `json:"size,omitempty"`
 }
 
 type ListExercisesRes struct {

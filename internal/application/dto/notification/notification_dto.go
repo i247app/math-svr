@@ -45,8 +45,8 @@ type SendNotificationRes struct {
 // ListNotificationsReq lists the caller's notifications. UID is
 // session-injected.
 type ListNotificationsReq struct {
-	Page       int    `json:"page"`
-	Size       int    `json:"size"`
+	Page       int64  `json:"page"`
+	Size       int64  `json:"size"`
 	OnlyUnread bool   `json:"only_unread"`
 	UID        *int64 `json:"-"`
 }

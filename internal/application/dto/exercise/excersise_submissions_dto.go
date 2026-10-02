@@ -123,8 +123,8 @@ type ListSubmissionsReq struct {
 	Status              *string `json:"status,omitempty"`
 	SortBy              *string `json:"sort_by,omitempty"`
 	SortOrder           *string `json:"sort_order,omitempty"`
-	Page                int     `json:"page,omitempty"`
-	Size                int     `json:"size,omitempty"`
+	Page                int64   `json:"page,omitempty"`
+	Size                int64   `json:"size,omitempty"`
 }
 
 type ListSubmissionsRes struct {
@@ -141,8 +141,8 @@ type ListSubmissionsByExerciseReq struct {
 	Status              *string `json:"status,omitempty"`
 	SortBy              *string `json:"sort_by,omitempty"`
 	SortOrder           *string `json:"sort_order,omitempty"`
-	Page                int     `json:"page,omitempty"`
-	Size                int     `json:"size,omitempty"`
+	Page                int64   `json:"page,omitempty"`
+	Size                int64   `json:"size,omitempty"`
 }
 
 type ListSubmissionsByExerciseRes struct {
@@ -207,8 +207,8 @@ type ListAudienceMembersReq struct {
 	Search              *string `json:"search,omitempty"`
 	SortBy              *string `json:"sort_by,omitempty"`
 	SortOrder           *string `json:"sort_order,omitempty"`
-	Page                int     `json:"page,omitempty"`
-	Size                int     `json:"size,omitempty"`
+	Page                int64   `json:"page,omitempty"`
+	Size                int64   `json:"size,omitempty"`
 }
 
 type ListAudienceMembersRes struct {

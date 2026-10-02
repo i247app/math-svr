@@ -416,8 +416,8 @@ func (s *Service) ListExams(ctx context.Context, req *dto.ListExamsReq) (*dto.Li
 		ExamType:  req.ExamType,
 		EsessID:   req.EsessID,
 		Status:    req.Status,
-		Page:      int64(req.Page),
-		Limit:     int64(req.Size),
+		Page:      req.Page,
+		Limit:     req.Page,
 	})
 	if err != nil {
 		return nil, err

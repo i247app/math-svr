@@ -237,7 +237,7 @@ func (s *Service) ListNotifications(ctx context.Context, req *dto.ListNotificati
 	if req.UID == nil {
 		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession)
 	}
-	page := int64(req.Page)
+	page := req.Page
 	if page <= 0 {
 		page = 1
 	}

@@ -308,8 +308,8 @@ func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsR
 		Status:    req.Status,
 		SortBy:    req.SortBy,
 		SortOrder: req.SortOrder,
-		Page:      int64(req.Page),
-		Limit:     int64(req.Size),
+		Page:      req.Page,
+		Limit:     req.Size,
 	}
 	if req.ProfileID != nil {
 		q.ProfileID = *req.ProfileID
@@ -386,8 +386,8 @@ func (s *Service) ListSubmissionsByExercise(ctx context.Context, req *dto.ListSu
 		Status:              req.Status,
 		SortBy:              req.SortBy,
 		SortOrder:           req.SortOrder,
-		Page:                int64(req.Page),
-		Limit:               int64(req.Size),
+		Page:                req.Page,
+		Limit:               req.Size,
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -451,8 +451,8 @@ func (s *Service) listAudienceMembers(ctx context.Context, req *dto.ListAudience
 			Search:              req.Search,
 			SortBy:              req.SortBy,
 			SortOrder:           req.SortOrder,
-			Page:                int64(req.Page),
-			Limit:               int64(req.Size),
+			Page:                req.Page,
+			Limit:               req.Size,
 		})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)

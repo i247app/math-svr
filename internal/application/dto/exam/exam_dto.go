@@ -81,8 +81,8 @@ type ListExamsReq struct {
 	ExamType  *string `json:"exam_type,omitempty"`
 	EsessID   *int64  `json:"esess_id,omitempty"`
 	Status    *string `json:"status,omitempty"`
-	Page      int     `json:"page,omitempty"`
-	Size      int     `json:"size,omitempty"`
+	Page      int64   `json:"page,omitempty"`
+	Size      int64   `json:"size,omitempty"`
 }
 
 // ListExamSessionsReq reads a child's journeys. Status narrows to one

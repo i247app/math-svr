@@ -320,8 +320,8 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 		Purpose:          req.Purpose,
 		SortBy:           req.SortBy,
 		SortOrder:        req.SortOrder,
-		Page:             int64(req.Page),
-		Limit:            int64(req.Size),
+		Page:             req.Page,
+		Limit:            req.Size,
 	})
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
