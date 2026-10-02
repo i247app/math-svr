@@ -734,6 +734,14 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case ROLE_IMAGE_CONFLICT:
 		return "Không thể vừa tải ảnh mới vừa xóa ảnh vai trò"
 
+	// Pagination
+	case PAGINATION_INVALID_TYPE:
+		return "Kiểu phân trang không hợp lệ"
+	case PAGINATION_INVALID_CURSOR:
+		return "Con trỏ phân trang không hợp lệ"
+	case PAGINATION_PARAMS_CONFLICT:
+		return "Chỉ gửi page khi phân trang OFFSET; khi phân trang CURSOR chỉ gửi một trong hai next hoặc previous"
+
 	default:
 		return ""
 	}

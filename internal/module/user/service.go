@@ -38,6 +38,7 @@ type Service struct {
 	getUserByPhoneQuery *query.GetUserByPhoneQueryHandler
 	getUserByEmailQuery *query.GetUserByEmailQueryHandler
 	listUsersQuery      *query.ListUsersQueryHandler
+	listUsersByCursor   *query.ListUsersByCursorQueryHandler
 	createUserCmd       *command.CreateUserCommandHandler
 	createGuestCmd      *command.CreateGuestCommandHandler
 	updateUserCmd       *command.UpdateUserCommandHandler
@@ -61,6 +62,7 @@ func NewService(
 		getUserByPhoneQuery: query.NewGetUserByPhoneQueryHandler(repo),
 		getUserByEmailQuery: query.NewGetUserByEmailQueryHandler(repo),
 		listUsersQuery:      query.NewListUsersQueryHandler(repo),
+		listUsersByCursor:   query.NewListUsersByCursorQueryHandler(repo),
 		createUserCmd:       command.NewCreateUserCommandHandler(uow, hasher),
 		createGuestCmd:      command.NewCreateGuestCommandHandler(uow),
 		adoptGuestCmd:       command.NewAdoptGuestCommandHandler(uow),
@@ -84,24 +86,39 @@ func (s *Service) GetUserById(ctx context.Context, req *dto.GetUserByUidReq) (*d
 	return &dto.GetUserByUidRes{User: userRes}, nil
 }
 
+// ListUsers serves both paging styles from one route; ValidateListUsers
+// decides which (pagination_type, default OFFSET).
 func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.ListUsersRes, error) {
-	users, pg, err := s.listUsersQuery.Handle(ctx, &query.ListUsersQuery{
-		Page:  req.Page,
-		Limit: req.Size,
-	})
+	if err := ValidateListUsers(ctx, req); err != nil {
+		return nil, err
+	}
+
+	var (
+		users []*domain.User
+		res   = &dto.ListUsersRes{}
+		err   error
+	)
+	if req.PaginationType == enum.PaginationTypeCursor {
+		users, res.Cursor, err = s.listUsersByCursor.Handle(ctx, &query.ListUsersByCursorQuery{
+			Next:     req.Next,
+			Previous: req.Previous,
+			Size:     req.Size,
+		})
+	} else {
+		users, res.Pagination, err = s.listUsersQuery.Handle(ctx, &query.ListUsersQuery{
+			Page:  req.Page,
+			Limit: req.Size,
+		})
+	}
 	if err != nil {
 		return nil, err
 	}
 
-	responses := dto.DomainListToResponse(users)
-	for _, r := range responses {
+	res.Users = dto.DomainListToResponse(users)
+	for _, r := range res.Users {
 		s.populateImageUrl(ctx, r)
 	}
-
-	return &dto.ListUsersRes{
-		Users:      responses,
-		Pagination: pg,
-	}, nil
+	return res, nil
 }
 
 func (s *Service) GetUserByPhone(ctx context.Context, req *dto.GetUserByPhoneReq) (*dto.GetUserByPhoneRes, error) {

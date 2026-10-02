@@ -97,6 +97,44 @@ func ValidateUpdateUser(ctx context.Context, req *dto.UpdateUserReq) error {
 	return nil
 }
 
+// ValidateListUsers resolves the paging style (empty = CURSOR) and refuses
+// next AND previous together — they are two directions, both at once has
+// no meaning. The other style's parameter (page with CURSOR, next/previous
+// with OFFSET) is currently ignored, not refused; the checks are kept
+// commented below. The cursors' content is checked where they are decoded
+// (ListUsersByCursorQuery).
+func ValidateListUsers(ctx context.Context, req *dto.ListUsersReq) error {
+	req.PaginationType = enum.PaginationType(strings.TrimSpace(string(req.PaginationType)))
+	if req.PaginationType == "" {
+		req.PaginationType = enum.PaginationTypeCursor
+	}
+	if !req.PaginationType.IsValid() {
+		args := map[string]any{
+			"pagination_types": enum.ListPaginationTypes(),
+		}
+		return errs.NewError(ctx, status.PAGINATION_INVALID_TYPE, args, ErrPaginationTypeInvalid)
+	}
+	req.Next = strings.TrimSpace(req.Next)
+	req.Previous = strings.TrimSpace(req.Previous)
+
+	switch req.PaginationType {
+	case enum.PaginationTypeCursor:
+		// TODO: Turn on if we need, now don't care
+		// if req.Page != 0 {
+		// 	return errs.NewError(ctx, status.PAGINATION_PARAMS_CONFLICT, nil, ErrPageWithCursorPagination)
+		// }
+		if req.Next != "" && req.Previous != "" {
+			return errs.NewError(ctx, status.PAGINATION_PARAMS_CONFLICT, nil, ErrNextAndPrevious)
+		}
+	case enum.PaginationTypeOffset:
+		// TODO: Turn on if we need, now don't care
+		// if req.Next != "" || req.Previous != "" {
+		// 	return errs.NewError(ctx, status.PAGINATION_PARAMS_CONFLICT, nil, ErrCursorWithOffsetPagination)
+		// }
+	}
+	return nil
+}
+
 func ValidateDeleteUser(ctx context.Context, req *dto.DeleteUserReq) error {
 	if req.UID == 0 {
 		return errs.NewError(ctx, status.BAD_REQUEST, nil, ErrUIDMustBeValidId)

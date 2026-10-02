@@ -22,4 +22,8 @@ var (
 	ErrUIDRequired                               = errors.New("uid is required")
 	ErrUserNameMustBeNonEmptyWhenProvided        = errors.New("user_name must be non-empty when provided")
 	ErrAccountAlreadyExists                      = errors.New("account already exists")
+	ErrPaginationTypeInvalid                     = errors.New("pagination_type is invalid")
+	ErrPageWithCursorPagination                  = errors.New("page is not accepted with CURSOR pagination")
+	ErrCursorWithOffsetPagination                = errors.New("next / previous is not accepted with OFFSET pagination")
+	ErrNextAndPrevious                           = errors.New("send either next or previous, not both")
 )

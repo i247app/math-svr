@@ -15,6 +15,18 @@ type IRepository interface {
 	FindByPhone(ctx context.Context, phone string) (*User, error)
 	FindByUserName(ctx context.Context, userName string) (*User, error)
 	ListUsers(ctx context.Context, params *ListUsersParams) ([]*User, *pagination.Pagination, error)
+	// ListUsersByKeyset is the keyset (cursor) read behind /users/list with
+	// pagination_type CURSOR. Up to Limit rows, ALWAYS returned uid DESC
+	// (display order): with AfterUid, the rows right below it (next page);
+	// with BeforeUid, the rows right above it (previous page); with neither,
+	// the newest. No COUNT — the caller asks for one row more than it shows
+	// to learn whether the list goes on in the direction it is reading.
+	ListUsersByKeyset(ctx context.Context, params *ListUsersKeysetParams) ([]*User, error)
+	// ExistsUserUidAtLeast / ExistsUserUidAtMost report whether any active
+	// user has uid >= / <= uid — the keyset list's "is there a page on the
+	// other side" probe. One PRIMARY KEY lookup each.
+	ExistsUserUidAtLeast(ctx context.Context, uid int64) (bool, error)
+	ExistsUserUidAtMost(ctx context.Context, uid int64) (bool, error)
 	Create(ctx context.Context, user *User) (*User, error)
 	Update(ctx context.Context, user *User) error
 	UpdateAvatarKey(ctx context.Context, uid int64, avatarKey string) error
@@ -38,6 +50,13 @@ type IAliasRepository interface {
 	DeleteByUid(ctx context.Context, uid int64) error
 	MarkStatusByUid(ctx context.Context, uid int64, status enum.UserAliasStatusType) error
 	SoftDeleteByUid(ctx context.Context, uid int64) error
+}
+
+// ListUsersKeysetParams: at most one of AfterUid / BeforeUid is set.
+type ListUsersKeysetParams struct {
+	AfterUid  *int64 // next page: uid < AfterUid
+	BeforeUid *int64 // previous page: uid > BeforeUid
+	Limit     int64
 }
 
 type ListUsersParams struct {

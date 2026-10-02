@@ -4,6 +4,7 @@ import "math"
 
 const (
 	DefaultPageSize int64 = 20
+	MaxPageSize     int64 = 1000
 )
 
 type Pagination struct {
@@ -17,14 +18,18 @@ type Pagination struct {
 	HasNext     bool  `json:"has_next"`
 }
 
+// ClampSize is the page-size rule shared by offset and cursor paging:
+// anything outside [1, MaxPageSize] falls back to DefaultPageSize.
+func ClampSize(size int64) int64 {
+	if size > 0 && size <= MaxPageSize {
+		return size
+	}
+	return DefaultPageSize
+}
+
 func NewPagination(page int64, size int64, total int64) *Pagination {
 	var pageInfo Pagination
-	limit := DefaultPageSize
-	if size > 0 && size <= 1000 {
-		pageInfo.Size = size
-	} else {
-		pageInfo.Size = limit
-	}
+	pageInfo.Size = ClampSize(size)
 
 	totalPage := int64(math.Ceil(float64(total) / float64(pageInfo.Size)))
 	pageInfo.TotalCount = total
@@ -35,26 +40,8 @@ func NewPagination(page int64, size int64, total int64) *Pagination {
 
 	pageInfo.Page = page
 	pageInfo.Skip = (page - 1) * pageInfo.Size
-
-	if page == 1 {
-		pageInfo.HasPrevious = false
-		pageInfo.HasNext = true
-	}
-
-	if page > 1 && page < totalPage {
-		pageInfo.HasPrevious = true
-		pageInfo.HasNext = true
-	}
-
-	if page == totalPage {
-		pageInfo.HasPrevious = true
-		pageInfo.HasNext = false
-	}
-
-	if totalPage == 1 {
-		pageInfo.HasPrevious = false
-		pageInfo.HasNext = false
-	}
+	pageInfo.HasPrevious = page > 1
+	pageInfo.HasNext = page < totalPage
 
 	return &pageInfo
 }

@@ -121,9 +121,66 @@ func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersPa
 	query := `SELECT ` + userColumns + ` FROM ` + userFrom +
 		` WHERE ` + userActiveWhere +
 		` ORDER BY u.uid DESC LIMIT ? OFFSET ?`
-	rows, err := r.db.Query(ctx, query, listArgs...)
+	users, err := r.queryUsers(ctx, query, listArgs...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("user repo list: %w", err)
+	}
+
+	return users, pg, nil
+}
+
+// ListUsersByKeyset pages by keyset on uid (the PK), so it reads exactly
+// the rows it returns — no COUNT, no OFFSET scan — and a row inserted or
+// deleted between two pages neither repeats nor skips one. A previous page
+// is read upward (uid ASC, nearest to BeforeUid first, so LIMIT keeps the
+// right rows) and reversed here, so every caller sees uid DESC.
+func (r *UserRepository) ListUsersByKeyset(ctx context.Context, params *user.ListUsersKeysetParams) ([]*user.User, error) {
+	filter, order := ``, ` ORDER BY u.uid DESC`
+	var args []any
+	switch {
+	case params.AfterUid != nil:
+		filter = `(u.uid < ?)`
+		args = append(args, *params.AfterUid)
+	case params.BeforeUid != nil:
+		filter, order = `(u.uid > ?)`, ` ORDER BY u.uid ASC`
+		args = append(args, *params.BeforeUid)
+	}
+
+	listArgs := slices.Concat(args, userActiveArgs(), []any{params.Limit})
+	query := `SELECT ` + userColumns + ` FROM ` + userFrom +
+		whereActive(filter, userActiveWhere) + order + ` LIMIT ?`
+	users, err := r.queryUsers(ctx, query, listArgs...)
+	if err != nil {
+		return nil, fmt.Errorf("user repo list by keyset: %w", err)
+	}
+	if params.AfterUid == nil && params.BeforeUid != nil {
+		slices.Reverse(users)
+	}
+	return users, nil
+}
+
+func (r *UserRepository) ExistsUserUidAtLeast(ctx context.Context, uid int64) (bool, error) {
+	return r.existsUser(ctx, `u.uid >= ?`, uid)
+}
+
+func (r *UserRepository) ExistsUserUidAtMost(ctx context.Context, uid int64) (bool, error) {
+	return r.existsUser(ctx, `u.uid <= ?`, uid)
+}
+
+func (r *UserRepository) existsUser(ctx context.Context, where string, args ...any) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM ` + userFrom +
+		` WHERE (` + where + `) AND ` + userActiveWhere + `)`
+	var exists bool
+	if err := r.db.QueryRow(ctx, query, slices.Concat(args, userActiveArgs())...).Scan(&exists); err != nil {
+		return false, fmt.Errorf("user repo exists (%s): %w", where, err)
+	}
+	return exists, nil
+}
+
+func (r *UserRepository) queryUsers(ctx context.Context, query string, args ...any) ([]*user.User, error) {
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -131,15 +188,14 @@ func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersPa
 	for rows.Next() {
 		m, err := scanUser(rows)
 		if err != nil {
-			return nil, nil, fmt.Errorf("user repo scan row: %w", err)
+			return nil, fmt.Errorf("scan row: %w", err)
 		}
 		users = append(users, ModelToDomain(m))
 	}
 	if err := rows.Err(); err != nil {
-		return nil, nil, fmt.Errorf("user repo rows iteration: %w", err)
+		return nil, fmt.Errorf("rows iteration: %w", err)
 	}
-
-	return users, pg, nil
+	return users, nil
 }
 
 func (r *UserRepository) DeleteByUid(ctx context.Context, uid int64) error {

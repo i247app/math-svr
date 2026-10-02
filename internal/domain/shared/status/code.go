@@ -450,4 +450,11 @@ const (
 	ROLE_IMAGE_INVALID_FILE   StatusCode = 13910
 	ROLE_IMAGE_UPLOAD_FAILED  StatusCode = 13911
 	ROLE_IMAGE_CONFLICT       StatusCode = 13912 // update sent a new role_image AND remove_role_image
+
+	// Pagination — 14000-14099. Shared by every list endpoint that supports
+	// both offset and cursor paging (enum.PaginationType), so a list adding
+	// cursor paging reuses these instead of minting its own.
+	PAGINATION_INVALID_TYPE    StatusCode = 14000 // pagination_type is neither OFFSET nor CURSOR
+	PAGINATION_INVALID_CURSOR  StatusCode = 14001 // cursor was not issued by this list
+	PAGINATION_PARAMS_CONFLICT StatusCode = 14002 // page with CURSOR, next/previous with OFFSET, or next AND previous
 )

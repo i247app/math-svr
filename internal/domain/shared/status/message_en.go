@@ -734,6 +734,14 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case ROLE_IMAGE_CONFLICT:
 		return "Send either a new role image or remove_role_image, not both"
 
+	// Pagination
+	case PAGINATION_INVALID_TYPE:
+		return "Invalid pagination type"
+	case PAGINATION_INVALID_CURSOR:
+		return "Invalid pagination cursor"
+	case PAGINATION_PARAMS_CONFLICT:
+		return "Send page only with OFFSET pagination, and at most one of next / previous only with CURSOR pagination"
+
 	default:
 		return ""
 	}
