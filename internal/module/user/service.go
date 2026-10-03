@@ -278,7 +278,10 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 //     device, so the new user's first sign-in goes through OTP;
 //   - an email needs no REGISTER OTP (the admin cannot receive it) and is
 //     stored unverified.
-func (s *Service) AdminCreateUser(ctx context.Context, adminUID int64, req *dto.CreateUserReq) (*dto.CreateUserRes, error) {
+//
+// adminUID is the acting admin, or nil when the call came through the
+// admin API key, which belongs to no account.
+func (s *Service) AdminCreateUser(ctx context.Context, adminUID *int64, req *dto.CreateUserReq) (*dto.CreateUserRes, error) {
 	if err := ValidateAdminCreateUser(ctx, req); err != nil {
 		return nil, err
 	}
@@ -302,8 +305,13 @@ func (s *Service) AdminCreateUser(ctx context.Context, adminUID int64, req *dto.
 		return nil, err
 	}
 
-	logger.From(ctx).Info("user.admin_created", "uid", created.User.Uid(),
-		"by_uid", adminUID, "role", utils.DerefString(created.User.Role()))
+	log := logger.From(ctx)
+	role := utils.DerefString(created.User.Role())
+	if adminUID != nil {
+		log.Info("user.admin_created", "uid", created.User.Uid(), "by_uid", *adminUID, "role", role)
+	} else {
+		log.Info("user.admin_created", "uid", created.User.Uid(), "via", "api_key", "role", role)
+	}
 
 	userRes := dto.DomainToResponse(created.User)
 	s.populateImageUrl(ctx, userRes)

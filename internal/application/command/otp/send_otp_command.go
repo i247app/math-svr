@@ -154,6 +154,11 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	var reused bool
 	var targetPushToken string
 	err = h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
+		// Avoid two concurrent sends for the same (type, identifier) deadlock
+		if err := seqgen.Lock(ctx, repos.Seq, seq.NameOtp); err != nil {
+			return err
+		}
+
 		// 0. Target-device validation (trusted-device push 2FA). Runs before
 		// any cooldown/rate-limit/revoke side effects so a bad target_device_id
 		// fails fast without consuming the caller's send budget or revoking a

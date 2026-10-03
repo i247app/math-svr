@@ -11,6 +11,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	sctx "math-ai.com/math-ai/internal/shared/context"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -64,15 +65,21 @@ func (h *UserHandler) HandleAdminCreateUser(w http.ResponseWriter, r *http.Reque
 	}
 	defer closeAvatarFile(req)
 
-	sess, err := h.appResource.GetRequestSession(r)
-	if err != nil {
-		response.WriteJson(w, nil, err)
-		return
-	}
-	adminUID, ok := sess.UID()
-	if !ok {
-		response.WriteJson(w, nil, errs.NewUnauthorizedError(r.Context(), session.ErrUidNotFoundFromSession))
-		return
+	// A key caller has no account (and may have no session at all), so
+	// there is no acting uid to record; an ADMIN session caller has one.
+	var adminUID *int64
+	if sctx.GetAdminVia(r.Context()) != sctx.AdminViaAPIKey {
+		sess, err := h.appResource.GetRequestSession(r)
+		if err != nil {
+			response.WriteJson(w, nil, err)
+			return
+		}
+		uid, ok := sess.UID()
+		if !ok {
+			response.WriteJson(w, nil, errs.NewUnauthorizedError(r.Context(), session.ErrUidNotFoundFromSession))
+			return
+		}
+		adminUID = &uid
 	}
 
 	res, err := h.service.AdminCreateUser(r.Context(), adminUID, req)

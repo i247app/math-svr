@@ -48,19 +48,20 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	authMiddleware := middleware.AuthRequiredMiddleware(res.SessionManager)
 	// adminMiddleware = signed in AND ma_users.role = ADMIN (it runs the auth
 	// check itself — pass it alone, not together with authMiddleware).
-	adminMiddleware := middleware.AdminRequiredMiddleware(res.SessionManager, services.UserSvc.RoleOf)
+	// adminMiddleware := middleware.AdminRequiredMiddleware(res.SessionManager, services.UserSvc.RoleOf)
+	adminOrApiKeyMiddleware := middleware.AdminOrApiKeyMiddleware(res.SessionManager, services.UserSvc.RoleOf, res.Env.AdminApiKey)
 
 	// misc routes
 	{
 		miscHandler := misc.NewHandler(services.MiscSvc)
 		reg("POST /misc/logs-time-format", miscHandler.LogsTimeFormat)
 		// Destructive: wipes all user-generated data. Admin only.
-		reg("POST /misc/clear-data", miscHandler.ClearData, adminMiddleware)
+		reg("POST /misc/clear-data", miscHandler.ClearData, adminOrApiKeyMiddleware)
 		// Destructive: wipes only the tables named in the request body
 		// (validated against the clear-data allow-list). Admin only.
-		reg("POST /misc/clear-data-tables", miscHandler.ClearDataTables, adminMiddleware)
+		reg("POST /misc/clear-data-tables", miscHandler.ClearDataTables, adminOrApiKeyMiddleware)
 		// Diagnostic: live connection-pool snapshot (sql.DB.Stats). Admin only.
-		reg("POST /misc/db-pool-stats", miscHandler.DBPoolStats, adminMiddleware)
+		reg("POST /misc/db-pool-stats", miscHandler.DBPoolStats, adminOrApiKeyMiddleware)
 	}
 
 	// health routes
@@ -84,8 +85,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// server lifecycle routes
 	{
 		serverHandler := server.NewHandler()
-		reg("POST /server/shutdown", serverHandler.HandleShutdown, adminMiddleware)
-		reg("POST /server/reload", serverHandler.HandleReload, adminMiddleware)
+		reg("POST /server/shutdown", serverHandler.HandleShutdown, adminOrApiKeyMiddleware)
+		reg("POST /server/reload", serverHandler.HandleReload, adminOrApiKeyMiddleware)
 	}
 
 	// session routes
@@ -93,9 +94,9 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		sessionHandler := session.NewHandler(res)
 		// dump returns every session's token and delete-all signs everyone out:
 		// admin only.
-		reg("POST /sessions/dump", sessionHandler.HandleSessionDump, adminMiddleware)
-		reg("POST /sessions/delete-unsecure", sessionHandler.HandleDeleteUnSecureSessions)
-		reg("POST /sessions/delete-all", sessionHandler.HandleDeleteAllSessions, adminMiddleware)
+		reg("POST /sessions/dump", sessionHandler.HandleSessionDump, adminOrApiKeyMiddleware)
+		reg("POST /sessions/delete-unsecure", sessionHandler.HandleDeleteUnSecureSessions, adminOrApiKeyMiddleware)
+		reg("POST /sessions/delete-all", sessionHandler.HandleDeleteAllSessions, adminOrApiKeyMiddleware)
 	}
 
 	// user routes
@@ -106,8 +107,10 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /users/list", userHandler.HandleListUsers, authMiddleware)
 		reg("POST /users/create", userHandler.HandleCreateUser)
 		reg("POST /users/create/guest", userHandler.HandleCreateGuest)
-		// ADMIN only: registers someone else, any role (ADMIN included).
-		reg("POST /users/admin/create", userHandler.HandleAdminCreateUser, adminMiddleware)
+		// Registers someone else, any role (ADMIN included). An ADMIN
+		// session OR the X-Api-Admin-Key header — the key is how the first
+		// admin is made (env ADMIN_API_KEY; empty = key path closed).
+		reg("POST /users/admin/create", userHandler.HandleAdminCreateUser, adminOrApiKeyMiddleware)
 		reg("POST /users/identifier-available", userHandler.HandleIdentifierAvailable)
 		reg("POST /users/update", userHandler.HandleUpdateUser, authMiddleware)
 		reg("POST /users/upload-avatar", userHandler.HandleUploadAvatar, authMiddleware)
@@ -352,12 +355,12 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// jobs routes
 	{
 		jobHandler := job.NewJobHandler(services.JobSvc)
-		reg("POST /jobs/list", jobHandler.HandleListJobs, adminMiddleware)
-		reg("POST /jobs/trigger", jobHandler.HandleTriggerJob, adminMiddleware)
-		reg("POST /jobs/pause", jobHandler.HandlePauseJob, adminMiddleware)
-		reg("POST /jobs/resume", jobHandler.HandleResumeJob, adminMiddleware)
-		reg("POST /jobs/schedule/update", jobHandler.HandleUpdateJobSchedule, adminMiddleware)
-		reg("POST /jobs/schedule/reset", jobHandler.HandleResetJobSchedule, adminMiddleware)
-		reg("POST /tasks/enqueue", jobHandler.HandleEnqueueTask, adminMiddleware)
+		reg("POST /jobs/list", jobHandler.HandleListJobs, adminOrApiKeyMiddleware)
+		reg("POST /jobs/trigger", jobHandler.HandleTriggerJob, adminOrApiKeyMiddleware)
+		reg("POST /jobs/pause", jobHandler.HandlePauseJob, adminOrApiKeyMiddleware)
+		reg("POST /jobs/resume", jobHandler.HandleResumeJob, adminOrApiKeyMiddleware)
+		reg("POST /jobs/schedule/update", jobHandler.HandleUpdateJobSchedule, adminOrApiKeyMiddleware)
+		reg("POST /jobs/schedule/reset", jobHandler.HandleResetJobSchedule, adminOrApiKeyMiddleware)
+		reg("POST /tasks/enqueue", jobHandler.HandleEnqueueTask, adminOrApiKeyMiddleware)
 	}
 }

@@ -222,7 +222,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 
-		if guest != nil && cmd.Role != enum.RoleTypeAdmin {
+		if guest != nil {
 			// The guest's default profile is the child who has been sitting
 			// exams all along — it is updated, never replaced, so the
 			// journeys pointing at its profile_id keep pointing somewhere.
@@ -255,19 +255,21 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			return nil
 		}
 
-		profileCode, err := mintUniqueProfileCode(ctx, repos)
-		if err != nil {
-			return err
-		}
+		if cmd.Role != enum.RoleTypeAdmin {
+			profileCode, err := mintUniqueProfileCode(ctx, repos)
+			if err != nil {
+				return err
+			}
 
-		profileDomain := BuildProfile(ctx, cmd)
-		profileDomain.SetUid(u.Uid())
-		profileDomain.SetProfileId(uid)
-		profileDomain.SetIsDefault(true)
-		profileDomain.SetProfileCode(profileCode)
+			profileDomain := BuildProfile(ctx, cmd)
+			profileDomain.SetUid(u.Uid())
+			profileDomain.SetProfileId(uid)
+			profileDomain.SetIsDefault(true)
+			profileDomain.SetProfileCode(profileCode)
 
-		if _, err = repos.Profile.Create(ctx, profileDomain); err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
+			if _, err = repos.Profile.Create(ctx, profileDomain); err != nil {
+				return errs.NewError(ctx, status.FAIL, nil, err)
+			}
 		}
 
 		result.User = u

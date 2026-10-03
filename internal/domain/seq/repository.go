@@ -23,4 +23,9 @@ var ErrNotFound = errors.New("seq: sequence not found")
 type IRepository interface {
 	Next(ctx context.Context, name string) (int64, error)
 	Find(ctx context.Context, name string) (*Sequence, error)
+	// Lock takes the row lock Next would take, without advancing the
+	// counter, and holds it until the transaction ends. A command that
+	// must not run twice at once for the same table makes it its FIRST
+	// statement — see SendOtpCommandHandler. Missing row → ErrNotFound.
+	Lock(ctx context.Context, name string) error
 }

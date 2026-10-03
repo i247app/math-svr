@@ -41,6 +41,7 @@ func NewEnv(envpath string) (*Env, error) {
 		OtpBypassCode:          getConfigOptionalString("OTP_BYPASS_CODE"),
 		TrustDeviceTTLDays:     getIntConfigOptionalWithDefault("TRUST_DEVICE_TTL", 30),
 		DemoNames:              getCSVConfig("DEMO_NAMES"),
+		AdminApiKey:            getConfigOptionalString("ADMIN_API_KEY"),
 		ExamShuffleEnabled:     getBoolConfigWithDefault("EXAM_SHUFFLE_ENABLED", true),
 
 		DBConfig: DBConfig{

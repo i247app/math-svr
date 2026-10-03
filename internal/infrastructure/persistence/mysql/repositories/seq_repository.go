@@ -79,6 +79,26 @@ func (r *SeqRepository) Next(ctx context.Context, name string) (int64, error) {
 
 // Find reads the row for inspection / admin use. It never advances the
 // counter; callers that need an ID must use Next.
+// Lock is a primary-key locking read: it X-locks exactly the named row
+// (the same lock Next's UPDATE takes) and nothing else. Must run inside a
+// transaction — outside one the lock is released at once.
+func (r *SeqRepository) Lock(ctx context.Context, name string) error {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return fmt.Errorf("seq repo lock: name is required")
+	}
+	var got string
+	err := r.db.QueryRow(ctx,
+		`SELECT seq_name FROM `+seqTable+` WHERE seq_name = ? FOR UPDATE`, trimmed).Scan(&got)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("seq repo lock (%s): %w", trimmed, seq.ErrNotFound)
+		}
+		return fmt.Errorf("seq repo lock (%s): %w", trimmed, err)
+	}
+	return nil
+}
+
 func (r *SeqRepository) Find(ctx context.Context, name string) (*seq.Sequence, error) {
 	trimmed := strings.TrimSpace(name)
 	if trimmed == "" {

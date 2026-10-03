@@ -40,6 +40,11 @@ type Env struct {
 	OtpBypassCode      string
 	TrustDeviceTTLDays int
 	DemoNames          []string
+	// AdminApiKey lets a caller holding it use the admin-create route
+	// without an ADMIN session (header X-Api-Admin-Key) — how the first
+	// admin is made. Env ADMIN_API_KEY; empty disables the key path
+	// entirely. Use a long random value (openssl rand -hex 32).
+	AdminApiKey string
 	// ExamShuffleEnabled decides whether each sitting of an exam gets its
 	// own question/answer ordering — env EXAM_SHUFFLE_ENABLED, default
 	// true (the behaviour before the switch existed). Turning it off only

@@ -28,10 +28,24 @@ import (
 func Next(ctx context.Context, repo seq.IRepository, name string) (int64, error) {
 	id, err := repo.Next(ctx, name)
 	if err != nil {
-		if errors.Is(err, seq.ErrNotFound) {
-			return 0, errs.NewError(ctx, status.SEQ_NOT_FOUND, map[string]any{"name": name}, err)
-		}
-		return 0, errs.NewError(ctx, status.SEQ_GENERATION_FAILED, map[string]any{"name": name}, err)
+		return 0, mapErr(ctx, name, err)
 	}
 	return id, nil
+}
+
+// Lock holds the named sequence's row lock until the surrounding UoW ends,
+// without minting an id, with the same error mapping as Next. Use it as
+// the FIRST statement of a transaction that must be serialised.
+func Lock(ctx context.Context, repo seq.IRepository, name string) error {
+	if err := repo.Lock(ctx, name); err != nil {
+		return mapErr(ctx, name, err)
+	}
+	return nil
+}
+
+func mapErr(ctx context.Context, name string, err error) error {
+	if errors.Is(err, seq.ErrNotFound) {
+		return errs.NewError(ctx, status.SEQ_NOT_FOUND, map[string]any{"name": name}, err)
+	}
+	return errs.NewError(ctx, status.SEQ_GENERATION_FAILED, map[string]any{"name": name}, err)
 }
