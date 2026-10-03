@@ -104,7 +104,7 @@ func (s *Service) RoleOf(ctx context.Context, uid int64) (enum.RoleType, error) 
 // ListUsers serves both paging styles from one route; pagination_type
 // decides which (default CURSOR — pagination.Request.Validate).
 func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.ListUsersRes, error) {
-	if err := req.Validate(ctx); err != nil {
+	if err := ValidateListUsers(ctx, req); err != nil {
 		return nil, err
 	}
 
@@ -118,11 +118,13 @@ func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.Li
 			Next:     req.Next,
 			Previous: req.Previous,
 			Size:     req.Size,
+			Roles:    req.Roles,
 		})
 	} else {
 		users, res.Pagination, err = s.listUsersQuery.Handle(ctx, &query.ListUsersQuery{
 			Page:  req.Page,
 			Limit: req.Size,
+			Roles: req.Roles,
 		})
 	}
 	if err != nil {

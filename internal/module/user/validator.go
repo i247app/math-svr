@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/login"
@@ -64,6 +65,29 @@ func validateCreateUserReq(ctx context.Context, req *dto.CreateUserReq, roleAllo
 		}
 	}
 	return nil
+}
+
+// ValidateListUsers checks the role filter of /users/list and normalises it
+// in place: values are trimmed and de-duplicated, blanks dropped. Any role
+// the system knows may be filtered on, ADMIN included — filtering is not
+// assigning. An unknown role is refused rather than silently matching no one.
+func ValidateListUsers(ctx context.Context, req *dto.ListUsersReq) error {
+	roles := make([]string, 0, len(req.Roles))
+	for _, r := range req.Roles {
+		role := strings.TrimSpace(r)
+		if role == "" || slices.Contains(roles, role) {
+			continue
+		}
+		if !enum.RoleType(role).IsValid() {
+			args := map[string]any{
+				"roles": enum.ListRoles(),
+			}
+			return errs.NewError(ctx, status.USER_INVALID_ROLE, args, ErrRoleInvalid)
+		}
+		roles = append(roles, role)
+	}
+	req.Roles = roles
+	return req.Validate(ctx)
 }
 
 func ValidateCheckIdentifier(ctx context.Context, req *dto.CheckIdentifierReq) error {

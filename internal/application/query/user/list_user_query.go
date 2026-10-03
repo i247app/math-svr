@@ -8,8 +8,9 @@ import (
 )
 
 type ListUsersQuery struct {
-	Page  int64 `json:"page"`
-	Limit int64 `json:"limit"`
+	Page  int64    `json:"page"`
+	Limit int64    `json:"limit"`
+	Roles []string `json:"roles"` // empty = every role
 }
 
 type ListUsersQueryHandler struct {
@@ -26,6 +27,7 @@ func (h *ListUsersQueryHandler) Handle(ctx context.Context, query *ListUsersQuer
 	params := &user.ListUsersParams{
 		Page:  query.Page,
 		Limit: query.Limit,
+		Roles: query.Roles,
 	}
 
 	users, pg, err := h.userRepo.ListUsers(ctx, params)

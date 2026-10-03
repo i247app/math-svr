@@ -24,9 +24,11 @@ type IRepository interface {
 	ListUsersByKeyset(ctx context.Context, params *ListUsersKeysetParams) ([]*User, error)
 	// ExistsUserUidAtLeast / ExistsUserUidAtMost report whether any active
 	// user has uid >= / <= uid — the keyset list's "is there a page on the
-	// other side" probe. One PRIMARY KEY lookup each.
-	ExistsUserUidAtLeast(ctx context.Context, uid int64) (bool, error)
-	ExistsUserUidAtMost(ctx context.Context, uid int64) (bool, error)
+	// other side" probe. roles narrows them exactly like the list itself
+	// (empty = every role), or has_prev / has_next would count rows the
+	// list never shows.
+	ExistsUserUidAtLeast(ctx context.Context, uid int64, roles []string) (bool, error)
+	ExistsUserUidAtMost(ctx context.Context, uid int64, roles []string) (bool, error)
 	Create(ctx context.Context, user *User) (*User, error)
 	Update(ctx context.Context, user *User) error
 	UpdateAvatarKey(ctx context.Context, uid int64, avatarKey string) error
@@ -57,9 +59,11 @@ type ListUsersKeysetParams struct {
 	AfterUid  *int64 // next page: uid < AfterUid
 	BeforeUid *int64 // previous page: uid > BeforeUid
 	Limit     int64
+	Roles     []string // ma_users.role IN Roles; empty = every role
 }
 
 type ListUsersParams struct {
+	Roles     []string // ma_users.role IN Roles; empty = every role
 	Search    string
 	Page      int64
 	Limit     int64

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/user"
@@ -108,18 +109,20 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, 
 }
 
 func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersParams) ([]*user.User, *pagination.Pagination, error) {
+	filter, filterArgs := userRoleFilter(params.Roles)
+	where := whereActive(filter, userActiveWhere)
+	whereArgs := slices.Concat(filterArgs, userActiveArgs())
+
 	var total int64
-	countQuery := `SELECT COUNT(*) FROM ` + userFrom +
-		` WHERE ` + userActiveWhere
-	if err := r.db.QueryRow(ctx, countQuery, userActiveArgs()...).Scan(&total); err != nil {
+	countQuery := `SELECT COUNT(*) FROM ` + userFrom + where
+	if err := r.db.QueryRow(ctx, countQuery, whereArgs...).Scan(&total); err != nil {
 		return nil, nil, fmt.Errorf("user repo count: %w", err)
 	}
 
 	pg := pagination.NewPagination(params.Page, params.Limit, total)
 
-	listArgs := slices.Concat(userActiveArgs(), []any{pg.Size, pg.Skip})
-	query := `SELECT ` + userColumns + ` FROM ` + userFrom +
-		` WHERE ` + userActiveWhere +
+	listArgs := slices.Concat(whereArgs, []any{pg.Size, pg.Skip})
+	query := `SELECT ` + userColumns + ` FROM ` + userFrom + where +
 		` ORDER BY u.uid DESC LIMIT ? OFFSET ?`
 	users, err := r.queryUsers(ctx, query, listArgs...)
 	if err != nil {
@@ -145,6 +148,13 @@ func (r *UserRepository) ListUsersByKeyset(ctx context.Context, params *user.Lis
 		filter, order = `(u.uid > ?)`, ` ORDER BY u.uid ASC`
 		args = append(args, *params.BeforeUid)
 	}
+	if roleFilter, roleArgs := userRoleFilter(params.Roles); roleFilter != "" {
+		if filter != "" {
+			filter += ` AND `
+		}
+		filter += roleFilter
+		args = append(args, roleArgs...)
+	}
 
 	listArgs := slices.Concat(args, userActiveArgs(), []any{params.Limit})
 	query := `SELECT ` + userColumns + ` FROM ` + userFrom +
@@ -159,12 +169,35 @@ func (r *UserRepository) ListUsersByKeyset(ctx context.Context, params *user.Lis
 	return users, nil
 }
 
-func (r *UserRepository) ExistsUserUidAtLeast(ctx context.Context, uid int64) (bool, error) {
-	return r.existsUser(ctx, `u.uid >= ?`, uid)
+func (r *UserRepository) ExistsUserUidAtLeast(ctx context.Context, uid int64, roles []string) (bool, error) {
+	return r.existsUserInRoles(ctx, `u.uid >= ?`, uid, roles)
 }
 
-func (r *UserRepository) ExistsUserUidAtMost(ctx context.Context, uid int64) (bool, error) {
-	return r.existsUser(ctx, `u.uid <= ?`, uid)
+func (r *UserRepository) ExistsUserUidAtMost(ctx context.Context, uid int64, roles []string) (bool, error) {
+	return r.existsUserInRoles(ctx, `u.uid <= ?`, uid, roles)
+}
+
+func (r *UserRepository) existsUserInRoles(ctx context.Context, where string, uid int64, roles []string) (bool, error) {
+	args := []any{uid}
+	if roleFilter, roleArgs := userRoleFilter(roles); roleFilter != "" {
+		where += ` AND ` + roleFilter
+		args = append(args, roleArgs...)
+	}
+	return r.existsUser(ctx, where, args...)
+}
+
+// userRoleFilter narrows a user list to the given roles: `u.role IN (?, …)`
+// with one placeholder per role. Empty roles means no narrowing and returns
+// "". A guest (role NULL) never matches a non-empty filter.
+func userRoleFilter(roles []string) (string, []any) {
+	if len(roles) == 0 {
+		return "", nil
+	}
+	args := make([]any, len(roles))
+	for i, role := range roles {
+		args[i] = role
+	}
+	return `u.role IN (` + strings.TrimSuffix(strings.Repeat("?, ", len(roles)), ", ") + `)`, args
 }
 
 func (r *UserRepository) existsUser(ctx context.Context, where string, args ...any) (bool, error) {

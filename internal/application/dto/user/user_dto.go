@@ -148,8 +148,12 @@ type GetUserByUidRes struct {
 }
 
 // ListUsersReq serves both paging styles — see pagination.Request.
+// Roles keeps only users whose role is one of them (STUDENT / TEACHER /
+// PARENT / ADMIN); omitted or empty = every user. Guests have no role, so
+// any non-empty Roles leaves them out.
 type ListUsersReq struct {
 	pagination.Request
+	Roles []string `json:"roles,omitempty"`
 }
 
 // ListUsersRes carries exactly one of Pagination (OFFSET) or Cursor (CURSOR).
