@@ -58,6 +58,14 @@ type CreateUserCommand struct {
 	// module validator) its hash is stored in ma_logins; when empty no
 	// credential row is written and the account signs in by OTP alone.
 	Password string
+
+	// UnverifiedEmail is set only by the admin create route, where an
+	// operator registers someone else and cannot receive that person's
+	// REGISTER OTP. The email is then accepted without one and stored with
+	// is_email_verified = false — the column still never vouches for an
+	// address nobody proved. Self-registration leaves it false, so a
+	// supplied email must carry a verified OTP.
+	UnverifiedEmail bool
 }
 
 func (c CreateUserCommand) Validate() error {
@@ -155,7 +163,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		// stays optional); only a *supplied-but-unverified* email blocks
 		// creation.
 		hasEmail := cmd.Email != nil && *cmd.Email != ""
-		if hasEmail {
+		if hasEmail && !cmd.UnverifiedEmail {
 			verified, err := repos.Otp.FindLatestVerified(ctx, enum.OtpTypeRegister, *cmd.Email)
 			if err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
@@ -167,9 +175,9 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 
 		userDomain := BuildUser(cmd)
 		userDomain.SetUid(uid)
-		// Reaching here with hasEmail=true means the check above passed, so
-		// the email is provably verified.
-		userDomain.SetIsEmailVerified(hasEmail)
+		// Reaching here with hasEmail=true and UnverifiedEmail=false means
+		// the check above passed, so the email is provably verified.
+		userDomain.SetIsEmailVerified(hasEmail && !cmd.UnverifiedEmail)
 
 		u := userDomain
 		if guest != nil {
@@ -214,7 +222,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 
-		if guest != nil {
+		if guest != nil && cmd.Role != enum.RoleTypeAdmin {
 			// The guest's default profile is the child who has been sitting
 			// exams all along — it is updated, never replaced, so the
 			// journeys pointing at its profile_id keep pointing somewhere.

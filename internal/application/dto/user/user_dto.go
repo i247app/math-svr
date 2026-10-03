@@ -119,8 +119,8 @@ type UpdateUserReq struct {
 	Email *string `json:"email,omitempty"`
 	Phone *string `json:"phone,omitempty"`
 	// Role patches ma_users.role. nil = leave unchanged; non-nil must be a
-	// valid RoleType (STUDENT / TEACHER / PARENT). Mirrors the profile
-	// update contract.
+	// self-assignable RoleType (STUDENT / TEACHER / PARENT — never ADMIN).
+	// Mirrors the profile update contract.
 	Role *string `json:"role,omitempty"`
 
 	// Avatar is a client-supplied reference to an object already in our

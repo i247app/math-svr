@@ -113,7 +113,7 @@ func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
 		if role == "" {
 			req.Role = nil
 		} else {
-			if !enum.RoleType(role).IsValid() {
+			if !enum.RoleType(role).IsSelfAssignable() {
 				return errs.NewError(ctx, status.FAIL, nil,
 					ErrRoleInvalid)
 			}

@@ -86,6 +86,21 @@ func (s *Service) GetUserById(ctx context.Context, req *dto.GetUserByUidReq) (*d
 	return &dto.GetUserByUidRes{User: userRes}, nil
 }
 
+// RoleOf returns the role stored on the account right now — read from the
+// database, never from the session, so taking ADMIN away from someone takes
+// effect on their next request. An account that does not exist or has no
+// role yields "".
+func (s *Service) RoleOf(ctx context.Context, uid int64) (enum.RoleType, error) {
+	u, err := s.getUserByUidQuery.Handle(ctx, query.GetUserByUidQuery{Uid: uid})
+	if err != nil {
+		return "", err
+	}
+	if u == nil || u.Role() == nil {
+		return "", nil
+	}
+	return enum.RoleType(*u.Role()), nil
+}
+
 // ListUsers serves both paging styles from one route; pagination_type
 // decides which (default CURSOR — pagination.Request.Validate).
 func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.ListUsersRes, error) {
@@ -187,57 +202,9 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		return nil, err
 	}
 
-	// Resolve the avatar reference (if any) BEFORE opening the
-	// transaction. Two mutually-exclusive paths — validator already
-	// enforced "at most one":
-	//
-	//   1. req.Avatar != "" — client supplied a URL or bare key for an
-	//      object that already lives in our bucket. Just normalize and
-	//      persist; nothing to upload.
-	//
-	//   2. req.AvatarFile != nil — multipart upload; ship to S3 and use
-	//      the returned key.
-	//
-	// Branch one is the new path. The DB write is the cheap, fast step;
-	// the S3 round-trip (when it happens) is slow and would hold a tx
-	// open if interleaved. If the UoW fails after a fresh upload, the
-	// orphan S3 object is best-effort deleted. An object referenced via
-	// path 1 is NOT deleted on rollback — the client owns its lifecycle.
-	var (
-		avatarKey      *string
-		uploadedOnThis bool
-	)
-	switch {
-	case strings.TrimSpace(req.Avatar) != "":
-		key, err := s.normalizeAvatarKey(ctx, req.Avatar, status.USER_AVATAR_INVALID_REFERENCE)
-		if err != nil {
-			return nil, err
-		}
-		avatarKey = &key
-	case req.AvatarFile != nil:
-		key, err := s.uploadAvatarIfPresent(ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		avatarKey = key
-		uploadedOnThis = key != nil
-	}
-
-	var email *string
-	if strings.TrimSpace(req.Email) != "" {
-		e := req.Email
-		email = &e
-	}
-
-	// Phone is optional when an email is supplied (the validator requires
-	// at least one of the two); only a supplied phone is normalised.
-	var phoneForString string
-	if strings.TrimSpace(req.Phone) != "" {
-		normalized, err := utils.NormalizePhone(req.Phone)
-		if err != nil {
-			return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to normalize phone: %w", err))
-		}
-		phoneForString = normalized
+	in, err := s.prepareCreateUser(ctx, req)
+	if err != nil {
+		return nil, err
 	}
 
 	// Someone registering FROM a guest session is the same person who has
@@ -252,24 +219,16 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 
 	created, err := s.createUserCmd.Handle(ctx, command.CreateUserCommand{
 		Role:       enum.RoleType(req.Role),
-		Phone:      phoneForString,
-		Email:      email,
+		Phone:      in.phone,
+		Email:      in.email,
 		UserName:   req.Name,
-		AvatarKey:  avatarKey,
+		AvatarKey:  in.avatarKey,
 		DeviceUUID: metadata.GetDeviceUUID(ctx),
 		GuestUID:   guestUID,
 		Password:   req.Password,
 	})
 	if err != nil {
-		// Only delete objects we just uploaded — a client-supplied
-		// reference points to storage the client owns (or a prior
-		// upload they're reusing); we must not garbage-collect it on
-		// our rollback.
-		if uploadedOnThis && avatarKey != nil {
-			if delErr := s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{Key: *avatarKey}); delErr != nil {
-				log.Warnf("user.create avatar orphan cleanup failed key=%s err=%v", *avatarKey, delErr)
-			}
-		}
+		s.discardUploadedAvatar(ctx, in)
 		return nil, err
 	}
 
@@ -305,6 +264,119 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	return &dto.CreateUserRes{
 		User: userRes,
 	}, nil
+}
+
+// AdminCreateUser registers an account on someone else's behalf
+// (/users/admin/create, ADMIN only). It shares the create command with
+// self-registration but differs where "the caller IS the new user" no
+// longer holds:
+//
+//   - any valid role is accepted, ADMIN included (ValidateAdminCreateUser);
+//   - the admin's session is left alone — no sign-in as the new account,
+//     no guest upgrade from the admin's session;
+//   - the admin's device is not registered as the new user's trusted
+//     device, so the new user's first sign-in goes through OTP;
+//   - an email needs no REGISTER OTP (the admin cannot receive it) and is
+//     stored unverified.
+func (s *Service) AdminCreateUser(ctx context.Context, adminUID int64, req *dto.CreateUserReq) (*dto.CreateUserRes, error) {
+	if err := ValidateAdminCreateUser(ctx, req); err != nil {
+		return nil, err
+	}
+
+	in, err := s.prepareCreateUser(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	created, err := s.createUserCmd.Handle(ctx, command.CreateUserCommand{
+		Role:            enum.RoleType(req.Role),
+		Phone:           in.phone,
+		Email:           in.email,
+		UserName:        req.Name,
+		AvatarKey:       in.avatarKey,
+		Password:        req.Password,
+		UnverifiedEmail: true,
+	})
+	if err != nil {
+		s.discardUploadedAvatar(ctx, in)
+		return nil, err
+	}
+
+	logger.From(ctx).Info("user.admin_created", "uid", created.User.Uid(),
+		"by_uid", adminUID, "role", utils.DerefString(created.User.Role()))
+
+	userRes := dto.DomainToResponse(created.User)
+	s.populateImageUrl(ctx, userRes)
+	return &dto.CreateUserRes{User: userRes}, nil
+}
+
+// createUserInput is what both create routes resolve from the request
+// before the command runs.
+type createUserInput struct {
+	phone     string
+	email     *string
+	avatarKey *string
+	// uploaded marks an avatar this request put in storage, which is ours
+	// to delete if the create fails.
+	uploaded bool
+}
+
+// prepareCreateUser normalises the phone and email, then resolves the
+// avatar. The avatar comes LAST: it may upload to S3, and every check
+// that can still fail runs before that, so a refused request leaves no
+// orphan object behind. The upload also stays outside the transaction —
+// the S3 round-trip is slow and would hold the tx open.
+//
+// Two mutually-exclusive avatar paths (the validator enforced "at most
+// one"): req.Avatar is a URL or bare key of an object already in our
+// bucket — normalised, nothing uploaded; req.AvatarFile is a multipart
+// upload shipped to S3.
+func (s *Service) prepareCreateUser(ctx context.Context, req *dto.CreateUserReq) (*createUserInput, error) {
+	in := &createUserInput{}
+
+	if strings.TrimSpace(req.Email) != "" {
+		e := req.Email
+		in.email = &e
+	}
+
+	// Phone is optional when an email is supplied (the validator requires
+	// at least one of the two); only a supplied phone is normalised.
+	if strings.TrimSpace(req.Phone) != "" {
+		normalized, err := utils.NormalizePhone(req.Phone)
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to normalize phone: %w", err))
+		}
+		in.phone = normalized
+	}
+
+	switch {
+	case strings.TrimSpace(req.Avatar) != "":
+		key, err := s.normalizeAvatarKey(ctx, req.Avatar, status.USER_AVATAR_INVALID_REFERENCE)
+		if err != nil {
+			return nil, err
+		}
+		in.avatarKey = &key
+	case req.AvatarFile != nil:
+		key, err := s.uploadAvatarIfPresent(ctx, req)
+		if err != nil {
+			return nil, err
+		}
+		in.avatarKey = key
+		in.uploaded = key != nil
+	}
+	return in, nil
+}
+
+// discardUploadedAvatar deletes the avatar this request uploaded, after
+// the create failed. A client-supplied reference points to storage the
+// client owns (or a prior upload it is reusing) and is never deleted.
+func (s *Service) discardUploadedAvatar(ctx context.Context, in *createUserInput) {
+	if !in.uploaded || in.avatarKey == nil {
+		return
+	}
+	if err := s.storageProvider.HandleDelete(ctx, &storage.DeleteFileRequest{Key: *in.avatarKey}); err != nil {
+		logger.From(ctx).Warnf("user.create avatar orphan cleanup failed key=%s err=%v", *in.avatarKey, err)
+	}
 }
 
 // CreateGuest opens a guest account for someone who has not registered,

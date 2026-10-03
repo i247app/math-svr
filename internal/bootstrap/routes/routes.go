@@ -46,18 +46,21 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 	// middleware
 	authMiddleware := middleware.AuthRequiredMiddleware(res.SessionManager)
+	// adminMiddleware = signed in AND ma_users.role = ADMIN (it runs the auth
+	// check itself — pass it alone, not together with authMiddleware).
+	adminMiddleware := middleware.AdminRequiredMiddleware(res.SessionManager, services.UserSvc.RoleOf)
 
 	// misc routes
 	{
 		miscHandler := misc.NewHandler(services.MiscSvc)
 		reg("POST /misc/logs-time-format", miscHandler.LogsTimeFormat)
-		// Destructive: wipes all user-generated data. Auth-gated (secure session).
-		reg("POST /misc/clear-data", miscHandler.ClearData)
+		// Destructive: wipes all user-generated data. Admin only.
+		reg("POST /misc/clear-data", miscHandler.ClearData, adminMiddleware)
 		// Destructive: wipes only the tables named in the request body
-		// (validated against the clear-data allow-list). Auth-gated.
-		reg("POST /misc/clear-data-tables", miscHandler.ClearDataTables, authMiddleware)
-		// Diagnostic: live connection-pool snapshot (sql.DB.Stats). Auth-gated.
-		reg("POST /misc/db-pool-stats", miscHandler.DBPoolStats, authMiddleware)
+		// (validated against the clear-data allow-list). Admin only.
+		reg("POST /misc/clear-data-tables", miscHandler.ClearDataTables, adminMiddleware)
+		// Diagnostic: live connection-pool snapshot (sql.DB.Stats). Admin only.
+		reg("POST /misc/db-pool-stats", miscHandler.DBPoolStats, adminMiddleware)
 	}
 
 	// health routes
@@ -81,18 +84,18 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// server lifecycle routes
 	{
 		serverHandler := server.NewHandler()
-		reg("POST /server/shutdown", serverHandler.HandleShutdown, authMiddleware)
-		reg("POST /server/reload", serverHandler.HandleReload, authMiddleware)
+		reg("POST /server/shutdown", serverHandler.HandleShutdown, adminMiddleware)
+		reg("POST /server/reload", serverHandler.HandleReload, adminMiddleware)
 	}
 
 	// session routes
 	{
 		sessionHandler := session.NewHandler(res)
 		// dump returns every session's token and delete-all signs everyone out:
-		// never public.
-		reg("POST /sessions/dump", sessionHandler.HandleSessionDump, authMiddleware)
+		// admin only.
+		reg("POST /sessions/dump", sessionHandler.HandleSessionDump, adminMiddleware)
 		reg("POST /sessions/delete-unsecure", sessionHandler.HandleDeleteUnSecureSessions)
-		reg("POST /sessions/delete-all", sessionHandler.HandleDeleteAllSessions, authMiddleware)
+		reg("POST /sessions/delete-all", sessionHandler.HandleDeleteAllSessions, adminMiddleware)
 	}
 
 	// user routes
@@ -103,6 +106,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /users/list", userHandler.HandleListUsers, authMiddleware)
 		reg("POST /users/create", userHandler.HandleCreateUser)
 		reg("POST /users/create/guest", userHandler.HandleCreateGuest)
+		// ADMIN only: registers someone else, any role (ADMIN included).
+		reg("POST /users/admin/create", userHandler.HandleAdminCreateUser, adminMiddleware)
 		reg("POST /users/identifier-available", userHandler.HandleIdentifierAvailable)
 		reg("POST /users/update", userHandler.HandleUpdateUser, authMiddleware)
 		reg("POST /users/upload-avatar", userHandler.HandleUploadAvatar, authMiddleware)
@@ -347,12 +352,12 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// jobs routes
 	{
 		jobHandler := job.NewJobHandler(services.JobSvc)
-		reg("POST /jobs/list", jobHandler.HandleListJobs, authMiddleware)
-		reg("POST /jobs/trigger", jobHandler.HandleTriggerJob, authMiddleware)
-		reg("POST /jobs/pause", jobHandler.HandlePauseJob, authMiddleware)
-		reg("POST /jobs/resume", jobHandler.HandleResumeJob, authMiddleware)
-		reg("POST /jobs/schedule/update", jobHandler.HandleUpdateJobSchedule, authMiddleware)
-		reg("POST /jobs/schedule/reset", jobHandler.HandleResetJobSchedule, authMiddleware)
-		reg("POST /tasks/enqueue", jobHandler.HandleEnqueueTask, authMiddleware)
+		reg("POST /jobs/list", jobHandler.HandleListJobs, adminMiddleware)
+		reg("POST /jobs/trigger", jobHandler.HandleTriggerJob, adminMiddleware)
+		reg("POST /jobs/pause", jobHandler.HandlePauseJob, adminMiddleware)
+		reg("POST /jobs/resume", jobHandler.HandleResumeJob, adminMiddleware)
+		reg("POST /jobs/schedule/update", jobHandler.HandleUpdateJobSchedule, adminMiddleware)
+		reg("POST /jobs/schedule/reset", jobHandler.HandleResetJobSchedule, adminMiddleware)
+		reg("POST /tasks/enqueue", jobHandler.HandleEnqueueTask, adminMiddleware)
 	}
 }

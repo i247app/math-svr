@@ -3,12 +3,14 @@ package user
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"math-ai.com/math-ai/internal/application/dto/user"
 	"math-ai.com/math-ai/internal/application/resource"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -31,39 +33,12 @@ func NewUserHandler(appResource *resource.Resource, service *Service) *UserHandl
 
 // POST /users/create
 func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
-	var req user.CreateUserReq
-	contentType := r.Header.Get("Content-Type")
-
-	if contentType == "application/json" {
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			response.WriteJson(w, nil, fmt.Errorf("invalid parameters"))
-			return
-		}
-	} else {
-		if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
-			response.WriteJson(w, nil, fmt.Errorf("invalid form data"))
-			return
-		}
-		req.Name = r.FormValue("name")
-		req.Phone = r.FormValue("phone")
-		req.Email = r.FormValue("email")
-		req.Role = r.FormValue("role")
-		req.Password = r.FormValue("password")
-		// The multipart text part "avatar" carries a string reference
-		// (URL or S3 key). The file part "avatar" carries an upload.
-		// FormValue and FormFile read from disjoint maps so the same
-		// name coexists; the validator rejects sending both.
-		req.Avatar = r.FormValue("avatar_key")
-
-		// Handle avatar file
-		file, header, err := r.FormFile("avatar")
-		if err == nil {
-			defer file.Close()
-			req.AvatarFile = file
-			req.AvatarFilename = header.Filename
-			req.AvatarContentType = header.Header.Get("Content-Type")
-		}
+	req, err := decodeCreateUserReq(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
 	}
+	defer closeAvatarFile(req)
 
 	sess, err := h.appResource.GetRequestSession(r)
 	if err != nil {
@@ -71,13 +46,83 @@ func (h *UserHandler) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.service.CreateUser(r.Context(), sess, &req)
+	res, err := h.service.CreateUser(r.Context(), sess, req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
 
 	response.WriteJson(w, res, nil)
+}
+
+// POST /users/admin/create
+func (h *UserHandler) HandleAdminCreateUser(w http.ResponseWriter, r *http.Request) {
+	req, err := decodeCreateUserReq(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	defer closeAvatarFile(req)
+
+	sess, err := h.appResource.GetRequestSession(r)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	adminUID, ok := sess.UID()
+	if !ok {
+		response.WriteJson(w, nil, errs.NewUnauthorizedError(r.Context(), session.ErrUidNotFoundFromSession))
+		return
+	}
+
+	res, err := h.service.AdminCreateUser(r.Context(), adminUID, req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	response.WriteJson(w, res, nil)
+}
+
+// closeAvatarFile closes the multipart avatar decodeCreateUserReq opened.
+func closeAvatarFile(req *user.CreateUserReq) {
+	if c, ok := req.AvatarFile.(io.Closer); ok {
+		_ = c.Close()
+	}
+}
+
+// decodeCreateUserReq reads a create-user body: JSON, or multipart when
+// it carries an avatar file.
+func decodeCreateUserReq(r *http.Request) (*user.CreateUserReq, error) {
+	var req user.CreateUserReq
+	if r.Header.Get("Content-Type") == "application/json" {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			return nil, fmt.Errorf("invalid parameters")
+		}
+		return &req, nil
+	}
+
+	if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
+		return nil, fmt.Errorf("invalid form data")
+	}
+	req.Name = r.FormValue("name")
+	req.Phone = r.FormValue("phone")
+	req.Email = r.FormValue("email")
+	req.Role = r.FormValue("role")
+	req.Password = r.FormValue("password")
+	// The multipart text part "avatar" carries a string reference
+	// (URL or S3 key). The file part "avatar" carries an upload.
+	// FormValue and FormFile read from disjoint maps so the same
+	// name coexists; the validator rejects sending both.
+	req.Avatar = r.FormValue("avatar_key")
+
+	// The caller closes the file (closeAvatarFile) once the service is done.
+	if file, header, err := r.FormFile("avatar"); err == nil {
+		req.AvatarFile = file
+		req.AvatarFilename = header.Filename
+		req.AvatarContentType = header.Header.Get("Content-Type")
+	}
+	return &req, nil
 }
 
 // POST /users/create/guest

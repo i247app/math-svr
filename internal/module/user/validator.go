@@ -12,7 +12,19 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/user"
 )
 
+// ValidateCreateUser checks a self-registration (/users/create): the role,
+// if any, must be one a person may give themselves — never ADMIN.
 func ValidateCreateUser(ctx context.Context, req *dto.CreateUserReq) error {
+	return validateCreateUserReq(ctx, req, enum.RoleType.IsSelfAssignable, enum.ListSelfAssignableRoles())
+}
+
+// ValidateAdminCreateUser checks /users/admin/create, where an admin
+// registers someone else: any valid role is accepted, ADMIN included.
+func ValidateAdminCreateUser(ctx context.Context, req *dto.CreateUserReq) error {
+	return validateCreateUserReq(ctx, req, enum.RoleType.IsValid, enum.ListRoles())
+}
+
+func validateCreateUserReq(ctx context.Context, req *dto.CreateUserReq, roleAllowed func(enum.RoleType) bool, allowedRoles []string) error {
 	// Phone and email are both login keys; either one alone is enough to
 	// register, but an account with neither could never sign in.
 	if strings.TrimSpace(req.Phone) == "" && strings.TrimSpace(req.Email) == "" {
@@ -23,15 +35,15 @@ func ValidateCreateUser(ctx context.Context, req *dto.CreateUserReq) error {
 	}
 	// role is optional on the wire — the create command defaults an empty
 	// value to STUDENT (ma_users.role is NOT NULL). When supplied it must
-	// be a valid RoleType. Normalised in place so the command sees the
+	// pass roleAllowed. Normalised in place so the command sees the
 	// trimmed token.
 	role := strings.TrimSpace(req.Role)
 	if role == "" {
 		req.Role = ""
 	} else {
-		if !enum.RoleType(role).IsValid() {
+		if !roleAllowed(enum.RoleType(role)) {
 			args := map[string]any{
-				"roles": enum.ListRoles(),
+				"roles": allowedRoles,
 			}
 			return errs.NewError(ctx, status.USER_INVALID_ROLE, args, ErrRoleInvalid)
 		}
@@ -79,7 +91,7 @@ func ValidateUpdateUser(ctx context.Context, req *dto.UpdateUserReq) error {
 		if role == "" {
 			req.Role = nil
 		} else {
-			if !enum.RoleType(role).IsValid() {
+			if !enum.RoleType(role).IsSelfAssignable() {
 				return errs.NewError(ctx, status.USER_INVALID_ROLE, nil, ErrRoleInvalid)
 			}
 			req.Role = &role

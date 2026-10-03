@@ -264,8 +264,7 @@ template rather than the concrete path. Per-route auth is
 (OTP-verified) session.
 
 Routes registered **without** auth today: `POST /ping`,
-`/misc/logs-time-format`, **`/misc/clear-data`** (destructive — see
-`.claude/rules/known-issues.md` §20), `/pow/*`, `/users/me`, `/users/create`,
+`/misc/logs-time-format`, `/pow/*`, `/users/me`, `/users/create`,
 `/users/create/guest`, `/users/identifier-available`, `/auth/login`,
 `/auth/resume-session`, `/otps/send`, `/otps/verify`, `/programs/list`,
 `/grades/list`, `/semesters/list`, `/profiles/list`, `/ai/shake`, all of `/devices/*`,
