@@ -21,14 +21,6 @@ type LoginRes struct {
 	User        *user.UserResponse `json:"user"`
 }
 
-type LoginWithOTPRes struct {
-	ExpiresAt  string             `json:"expires_at"`
-	OTPCode    string             `json:"otp_code,omitempty"`
-	OtpType    string             `json:"otp_type,omitempty"`
-	OTPEnabled bool               `json:"otp_enabled"`
-	User       *user.UserResponse `json:"user"`
-}
-
 type LogoutReq struct {
 	UID        *int64 `json:"-"`
 	DeviceUUID string `json:"-"`

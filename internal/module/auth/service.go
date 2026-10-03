@@ -7,7 +7,6 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/auth"
 
 	// dtoDevice "math-ai.com/math-ai/internal/application/dto/device"
-	dtoOtp "math-ai.com/math-ai/internal/application/dto/otp"
 	dtoUser "math-ai.com/math-ai/internal/application/dto/user"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/login"
@@ -17,15 +16,12 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/module/device"
-	"math-ai.com/math-ai/internal/module/otp"
 	"math-ai.com/math-ai/internal/module/user"
-	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 type Service struct {
 	userSvc   *user.Service
-	otpSvc    *otp.Service
 	deviceSvc *device.Service
 	loginCmd  *command.LoginCommandHandler
 	logoutCmd *command.LogoutCommandHandler
@@ -33,13 +29,11 @@ type Service struct {
 
 func NewService(
 	userSvc *user.Service,
-	otpSvc *otp.Service,
 	uow transaction.UnitOfWork,
 	hasher login.PasswordHasher,
 	trustDeviceTTLDays int) *Service {
 	return &Service{
 		userSvc:   userSvc,
-		otpSvc:    otpSvc,
 		loginCmd:  command.NewLoginCommandHandler(uow, hasher, trustDeviceTTLDays),
 		logoutCmd: command.NewLogoutCommandHandler(uow),
 	}
@@ -161,65 +155,6 @@ func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (
 
 	return &dto.LoginRes{
 		User: userRes.User,
-	}, nil
-}
-
-func (s *Service) LoginWithOTP(ctx context.Context, req *dto.LoginReq) (*dto.LoginWithOTPRes, error) {
-	if err := ValidateLogin(ctx, req); err != nil {
-		return nil, err
-	}
-
-	loginName := req.LoginName
-	if utils.ValidatePhone(req.LoginName) {
-		normalizePhone, err := utils.NormalizePhone(loginName)
-		if err != nil {
-			return nil, errs.NewError(ctx, status.FAIL, nil, err)
-		}
-		loginName = normalizePhone
-	}
-
-	result, err := s.loginCmd.Handle(ctx, command.LoginCommand{
-		LoginName:       loginName,
-		DeviceUUID:      metadata.GetDeviceUUID(ctx),
-		DeviceName:      metadata.GetDeviceName(ctx),
-		Platform:        metadata.GetPlatform(ctx),
-		IPAddress:       metadata.GetIPAddress(ctx),
-		DevicePushToken: metadata.GetDevicePushToken(ctx),
-		Password:        req.Password,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if result == nil {
-		return &dto.LoginWithOTPRes{
-			User: nil,
-		}, errs.NewError(ctx, status.NO_DATA, nil, ErrUserNotFound)
-	}
-
-	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUidReq{UID: result.UID})
-	if err != nil {
-		return nil, err
-	}
-	if userRes == nil || userRes.User == nil {
-		return &dto.LoginWithOTPRes{
-			User: nil,
-		}, nil
-	}
-
-	otpCreated, err := s.otpSvc.Send(ctx, &dtoOtp.SendOtpReq{
-		OtpType:    string(enum.OtpTypeLogin2FA),
-		Identifier: loginName,
-		UID:        &userRes.User.UID,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &dto.LoginWithOTPRes{
-		User:      userRes.User,
-		OTPCode:   otpCreated.OTPCode,
-		OtpType:   otpCreated.OtpType,
-		ExpiresAt: otpCreated.ExpiresAt,
 	}, nil
 }
 

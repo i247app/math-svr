@@ -117,7 +117,6 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		authHandler := auth.NewAuthHandler(res, services.AuthSvc)
 		reg("POST /auth/login", authHandler.HandleLogin)
 		reg("POST /auth/resume-session", authHandler.HandleResumeSession)
-		reg("POST /auth/otp", authHandler.HandleLoginOTP)
 		reg("POST /auth/logout", authHandler.HandleLogout, authMiddleware)
 	}
 

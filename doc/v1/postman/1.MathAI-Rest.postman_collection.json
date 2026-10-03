@@ -780,43 +780,6 @@
           "response": []
         },
         {
-          "name": "Login With OTP",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{access_token}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n    \n    \"phone\": \"+84702465811\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{url}}/auth/otp",
-              "host": [
-                "{{url}}"
-              ],
-              "path": [
-                "auth",
-                "otp"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
           "name": "Logout",
           "request": {
             "method": "POST",

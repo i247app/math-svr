@@ -65,36 +65,6 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
-// POST /auth/otp
-func (h *AuthHandler) HandleLoginOTP(w http.ResponseWriter, r *http.Request) {
-	var req dto.LoginReq
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, nil, err)
-		return
-	}
-
-	// Get session
-	session, err := h.appResource.GetRequestSession(r)
-	if err != nil {
-		response.WriteJson(w, nil, err)
-		return
-	}
-	req.OTPEnabled = h.appResource.Env.EnableOTP
-
-	res, err := h.service.Login(r.Context(), session, &req)
-	if err != nil {
-		if res != nil {
-			response.WriteJson(w, res, err)
-			return
-		}
-
-		response.WriteJson(w, nil, err)
-		return
-	}
-
-	response.WriteJson(w, res, nil)
-}
-
 // POST /auth/resume-session
 func (h *AuthHandler) HandleResumeSession(w http.ResponseWriter, r *http.Request) {
 	// Get session

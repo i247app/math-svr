@@ -267,7 +267,7 @@ Routes registered **without** auth today: `POST /ping`,
 `/misc/logs-time-format`, **`/misc/clear-data`** (destructive — see
 `.claude/rules/known-issues.md` §20), `/pow/*`, `/users/me`, `/users/create`,
 `/users/create/guest`, `/users/identifier-available`, `/auth/login`,
-`/auth/resume-session`, `/auth/otp`, `/otps/send`, `/otps/verify`, `/programs/list`,
+`/auth/resume-session`, `/otps/send`, `/otps/verify`, `/programs/list`,
 `/grades/list`, `/semesters/list`, `/profiles/list`, `/ai/shake`, all of `/devices/*`,
 all of `/exams/*` (they gate themselves, guests included), and
 `/sessions/delete-unsecure`. Known auth soft-spots: `.claude/rules/known-issues.md` §24. `/sessions/dump` and `/sessions/delete-all` need a
