@@ -35,6 +35,7 @@ type Service struct {
 	updateDeviceCmd            *command.UpdateDeviceCommandHandler
 	revokeDeviceCmd            *command.RevokeDeviceCommandHandler
 	softDeleteDeviceCmd        *command.SoftDeleteDeviceCommandHandler
+	forceDeleteDeviceCmd       *command.ForceDeleteDeviceCommandHandler
 	repo                       domain.IRepository
 	userRepo                   userDomain.IRepository
 	demoNames                  []string
@@ -54,6 +55,7 @@ func NewService(
 		updateDeviceCmd:            command.NewUpdateDeviceCommandHandler(uow),
 		revokeDeviceCmd:            command.NewRevokeDeviceCommandHandler(uow),
 		softDeleteDeviceCmd:        command.NewSoftDeleteDeviceCommandHandler(uow),
+		forceDeleteDeviceCmd:       command.NewForceDeleteDeviceCommandHandler(uow),
 		repo:                       repo,
 		userRepo:                   userRepo,
 		demoNames:                  demoNames,
@@ -161,6 +163,20 @@ func (s *Service) SoftDeleteDevice(ctx context.Context, req *dto.DeleteDeviceReq
 		return nil, err
 	}
 	logger.From(ctx).Info("device.soft_deleted", "device_id", req.DeviceID, "uid", req.UID)
+	return &dto.DeleteDeviceRes{}, nil
+}
+
+func (s *Service) ForceDeleteDevice(ctx context.Context, req *dto.DeleteDeviceReq) (*dto.DeleteDeviceRes, error) {
+	if err := ValidateDeleteDevice(ctx, req); err != nil {
+		return nil, err
+	}
+	if err := s.forceDeleteDeviceCmd.Handle(ctx, command.ForceDeleteDeviceCommand{
+		UID:      req.UID,
+		DeviceID: req.DeviceID,
+	}); err != nil {
+		return nil, err
+	}
+	logger.From(ctx).Info("device.force_deleted", "device_id", req.DeviceID, "uid", req.UID)
 	return &dto.DeleteDeviceRes{}, nil
 }
 

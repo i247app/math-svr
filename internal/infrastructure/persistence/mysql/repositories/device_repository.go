@@ -215,6 +215,17 @@ func (r *DeviceRepository) SoftDeleteByDeviceId(ctx context.Context, deviceId in
 	return nil
 }
 
+func (r *DeviceRepository) ForceDeleteByDeviceId(ctx context.Context, deviceId int64) error {
+	query := `
+		DELETE FROM ` + deviceTable + `
+		WHERE device_id = ?
+	`
+	if _, err := r.db.Exec(ctx, query, deviceId); err != nil {
+		return fmt.Errorf("device repo force delete: %w", err)
+	}
+	return nil
+}
+
 // ClearPushTokens nulls device_push_token for every device whose current
 // token appears in tokens. Used to prune dead FCM tokens reported by a push
 // send. Empty input is a no-op.

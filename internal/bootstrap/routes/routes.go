@@ -48,7 +48,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	authMiddleware := middleware.AuthRequiredMiddleware(res.SessionManager)
 	// adminMiddleware = signed in AND ma_users.role = ADMIN (it runs the auth
 	// check itself — pass it alone, not together with authMiddleware).
-	// adminMiddleware := middleware.AdminRequiredMiddleware(res.SessionManager, services.UserSvc.RoleOf)
+	adminMiddleware := middleware.AdminRequiredMiddleware(res.SessionManager, services.UserSvc.RoleOf)
 	adminOrApiKeyMiddleware := middleware.AdminOrApiKeyMiddleware(res.SessionManager, services.UserSvc.RoleOf, res.Env.AdminApiKey)
 
 	// misc routes
@@ -216,6 +216,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /devices/update", deviceHandler.HandleUpdateDevice)
 		reg("POST /devices/revoke", deviceHandler.HandleRevokeDevice)
 		reg("POST /devices/soft-delete", deviceHandler.HandleSoftDeleteDevice)
+		reg("POST /devices/force-delete", deviceHandler.HandleForceDeleteDevice, adminMiddleware)
 	}
 
 	// otp routes

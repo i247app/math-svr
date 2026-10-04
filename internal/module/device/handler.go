@@ -100,3 +100,20 @@ func (h *DeviceHandler) HandleSoftDeleteDevice(w http.ResponseWriter, r *http.Re
 
 	response.WriteJson(w, res, nil)
 }
+
+// POST /devices/force-delete
+func (h *DeviceHandler) HandleForceDeleteDevice(w http.ResponseWriter, r *http.Request) {
+	var req dto.DeleteDeviceReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := h.service.ForceDeleteDevice(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	response.WriteJson(w, res, nil)
+}
