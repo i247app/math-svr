@@ -26,6 +26,9 @@ func DeriveProfileStatus(role, idType, teacherId, studentId string) enum.Profile
 		if strings.TrimSpace(studentId) != "" {
 			return enum.ProfileStatusTypeOfficial
 		}
+	case enum.RoleTypeAdmin.String(),
+		enum.RoleTypeParent.String():
+		return enum.ProfileStatusTypeOfficial
 	}
 	return enum.ProfileStatusTypeIncomplete
 }
