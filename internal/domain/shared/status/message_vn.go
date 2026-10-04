@@ -742,6 +742,12 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case PAGINATION_PARAMS_CONFLICT:
 		return "Chỉ gửi page khi phân trang OFFSET; khi phân trang CURSOR chỉ gửi một trong hai next hoặc previous"
 
+	// Session
+	case SESSION_MISSING_TOKEN:
+		return "Vui lòng gửi token của phiên đăng nhập"
+	case SESSION_NOT_FOUND:
+		return "Không tìm thấy phiên đăng nhập"
+
 	default:
 		return ""
 	}

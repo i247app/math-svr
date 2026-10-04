@@ -97,6 +97,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /sessions/dump", sessionHandler.HandleSessionDump, adminOrApiKeyMiddleware)
 		reg("POST /sessions/delete-unsecure", sessionHandler.HandleDeleteUnSecureSessions, adminOrApiKeyMiddleware)
 		reg("POST /sessions/delete-all", sessionHandler.HandleDeleteAllSessions, adminOrApiKeyMiddleware)
+		reg("POST /sessions/delete", sessionHandler.HandleDeleteSession, adminOrApiKeyMiddleware)
 	}
 
 	// user routes

@@ -742,6 +742,12 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case PAGINATION_PARAMS_CONFLICT:
 		return "Send page only with OFFSET pagination, and at most one of next / previous only with CURSOR pagination"
 
+	// Session
+	case SESSION_MISSING_TOKEN:
+		return "Please send the session token"
+	case SESSION_NOT_FOUND:
+		return "Session not found"
+
 	default:
 		return ""
 	}

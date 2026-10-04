@@ -457,4 +457,8 @@ const (
 	PAGINATION_INVALID_TYPE    StatusCode = 14000 // pagination_type is neither OFFSET nor CURSOR
 	PAGINATION_INVALID_CURSOR  StatusCode = 14001 // cursor was not issued by this list
 	PAGINATION_PARAMS_CONFLICT StatusCode = 14002 // page with CURSOR, next/previous with OFFSET, or next AND previous
+
+	// Session (in-memory session store, /sessions/*) — 14100-14199
+	SESSION_MISSING_TOKEN StatusCode = 14100
+	SESSION_NOT_FOUND     StatusCode = 14101 // no live session is stored under that token
 )

@@ -122,6 +122,19 @@ func (m *SessionManager) DeleteSession(sessionKey string) {
 	m.MarkDirty()
 }
 
+// TakeSession deletes the session stored under sessionKey and returns it,
+// or reports false when there is none (nothing is deleted then). The key is
+// the session token exactly as the client holds it — the gex providers
+// store sessions under it.
+func (m *SessionManager) TakeSession(sessionKey string) (*AppSession, bool) {
+	sess, ok := m.Session(sessionKey)
+	if !ok {
+		return nil, false
+	}
+	m.DeleteSession(sessionKey)
+	return sess, true
+}
+
 // The loops below take each session's key from the snapshot map rather than
 // from the session itself: a session does not need to know its own key.
 
