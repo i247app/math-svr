@@ -270,7 +270,8 @@ Routes registered **without** auth today: `POST /ping`,
 `/grades/list`, `/semesters/list`, `/profiles/list`, `/ai/shake`, all of `/devices/*`,
 and all of `/exams/*` (they gate themselves, guests included). Known auth
 soft-spots: `.claude/rules/known-issues.md` §24. Every `/sessions/*` route —
-`dump`, `delete` (one session, by token), `delete-unsecure`, `delete-all` — is
+`dump`, `delete` (one session, by token), `mark-secure` (set `is_secure` on one
+session, by token), `delete-unsecure`, `delete-all` — is
 ADMIN-only: an ADMIN session or the `X-Api-Admin-Key` header.
 
 ### Persistence and the Unit of Work

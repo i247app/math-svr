@@ -135,6 +135,20 @@ func (m *SessionManager) TakeSession(sessionKey string) (*AppSession, bool) {
 	return sess, true
 }
 
+// SetSecure sets is_secure on the session stored under sessionKey and
+// returns it, or reports false when there is none. It marks the store dirty
+// itself: GexSessionMiddleware only notices a change to the REQUEST's own
+// session, and this one belongs to someone else.
+func (m *SessionManager) SetSecure(sessionKey string, secure bool) (*AppSession, bool) {
+	sess, ok := m.Session(sessionKey)
+	if !ok {
+		return nil, false
+	}
+	sess.Put("is_secure", secure)
+	m.MarkDirty()
+	return sess, true
+}
+
 // The loops below take each session's key from the snapshot map rather than
 // from the session itself: a session does not need to know its own key.
 

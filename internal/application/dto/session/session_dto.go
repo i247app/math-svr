@@ -13,3 +13,18 @@ type DeleteSessionRes struct {
 	UID      *int64 `json:"uid"`
 	IsSecure bool   `json:"is_secure"`
 }
+
+// MarkSessionSecureReq sets is_secure on the session stored under Token
+// (same token rules as DeleteSessionReq). IsSecure is required: a missing
+// value must not silently read as false and sign the user out.
+type MarkSessionSecureReq struct {
+	Token    string `json:"token"`
+	IsSecure *bool  `json:"is_secure"`
+}
+
+// MarkSessionSecureRes is the session after the change. UID is null for a
+// session no user is signed into (only is_secure: false is accepted there).
+type MarkSessionSecureRes struct {
+	UID      *int64 `json:"uid"`
+	IsSecure bool   `json:"is_secure"`
+}

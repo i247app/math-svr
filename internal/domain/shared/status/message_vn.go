@@ -747,6 +747,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Vui lòng gửi token của phiên đăng nhập"
 	case SESSION_NOT_FOUND:
 		return "Không tìm thấy phiên đăng nhập"
+	case SESSION_MISSING_IS_SECURE:
+		return "Vui lòng gửi is_secure (true hoặc false)"
+	case SESSION_MISSING_UID:
+		return "Chỉ phiên đã có người dùng đăng nhập mới được đánh dấu bảo mật"
 
 	default:
 		return ""

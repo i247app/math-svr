@@ -747,6 +747,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Please send the session token"
 	case SESSION_NOT_FOUND:
 		return "Session not found"
+	case SESSION_MISSING_IS_SECURE:
+		return "Please send is_secure (true or false)"
+	case SESSION_MISSING_UID:
+		return "Only a session with a signed-in user can be marked secure"
 
 	default:
 		return ""

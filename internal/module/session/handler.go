@@ -52,3 +52,20 @@ func (c *Handler) HandleDeleteSession(w http.ResponseWriter, r *http.Request) {
 	}
 	response.WriteJson(w, res, nil)
 }
+
+// POST /sessions/mark-secure — sets is_secure on the one session stored
+// under the token.
+func (c *Handler) HandleMarkSessionSecure(w http.ResponseWriter, r *http.Request) {
+	var req dto.MarkSessionSecureReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+
+	res, err := c.service.MarkSecureByToken(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
