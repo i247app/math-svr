@@ -11,6 +11,7 @@ var (
 	ErrProfileIDRequired        = errors.New("profile_id is required")
 	ErrProfileNotFound          = errors.New("profile not found")
 	ErrProfileNotOwned          = errors.New("profile does not belong to this user")
+	ErrAdminGateMissing         = errors.New("admin route reached without passing the admin gate")
 	ErrGuestProfileNotOwned     = errors.New("a profile_id may only be stated by an authenticated caller")
 	ErrGuestAssessmentOnly      = errors.New("a guest may only be handed an ASSESSMENT round")
 	ErrGuestDailyLimit          = errors.New("this guest has reached the daily exam ceiling")

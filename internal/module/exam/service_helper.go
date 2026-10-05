@@ -15,6 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	sctx "math-ai.com/math-ai/internal/shared/context"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -136,6 +137,38 @@ func (s *Service) loadOwnedProfile(ctx context.Context, uid *int64, profileID in
 		return nil, errs.NewError(ctx, status.EXAM_PROFILE_NOT_OWNED, nil, ErrProfileNotOwned)
 	}
 	return p, nil
+}
+
+// actAsOwner is how an /admin/exams/* route reaches a child's data: it
+// returns the uid that OWNS profileID, and the admin handler then runs the
+// ordinary owner service method with that uid. Every ownership check below
+// (loadOwnedProfile, the commands, the uid in the SQL) still runs and
+// passes, so an admin sees exactly what the parent sees, and the owner
+// routes carry no admin branch to get wrong.
+//
+// It refuses unless the request passed the admin gate (sctx.AdminVia, set
+// only by the admin middleware), so a route registered without it fails
+// closed instead of handing out anyone's data. Every use is logged: who
+// read whose data, through which route.
+func (s *Service) actAsOwner(ctx context.Context, route string, profileID int64) (*int64, error) {
+	via := sctx.GetAdminVia(ctx)
+	if via == "" {
+		return nil, errs.NewError(ctx, status.FORBIDDEN, nil, ErrAdminGateMissing)
+	}
+	if profileID <= 0 {
+		return nil, errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+	}
+	p, err := s.profileRepo.FindByProfileId(ctx, profileID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if p == nil {
+		return nil, errs.NewError(ctx, status.EXAM_PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
+	}
+	owner := p.Uid()
+	logger.From(ctx).Infof("admin.act_as_owner admin_uid=%d via=%s route=%s profile_id=%d owner_uid=%d",
+		sctx.UID(ctx), via, route, profileID, owner)
+	return &owner, nil
 }
 
 // resolvePlacement decides which band the next paper is written at, and

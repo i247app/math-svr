@@ -99,6 +99,18 @@ func (h *ExamHandler) resolveCaller(w http.ResponseWriter, r *http.Request, prof
 	return uid, true
 }
 
+// actAsOwner is the admin counterpart of resolveCaller: it answers the
+// uid an /admin/exams/* request runs as — the owner of profileID (see
+// Service.actAsOwner) — or writes the error and reports false.
+func (h *ExamHandler) actAsOwner(w http.ResponseWriter, r *http.Request, profileID int64) (*int64, bool) {
+	owner, err := h.service.actAsOwner(r.Context(), r.Method+" "+r.URL.Path, profileID)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return nil, false
+	}
+	return owner, true
+}
+
 // POST /exams/generate
 //
 // The one route registered WITHOUT AuthRequiredMiddleware, because it is
@@ -437,6 +449,58 @@ func (h *ExamHandler) HandleMarkExamJourney(w http.ResponseWriter, r *http.Reque
 	req.UID = uid
 
 	res, err := h.service.MarkExamJourney(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /admin/exams/sessions/list
+//
+// The admin view of /exams/sessions/list: same body, same response, any
+// child's journeys. profile_id is required (no guest default). The route
+// sits behind adminMiddleware; the request then runs as the profile's
+// owner through the ordinary service method (see Service.actAsOwner).
+func (h *ExamHandler) HandleAdminListExamSessions(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListExamSessionsReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	owner, ok := h.actAsOwner(w, r, req.ProfileID)
+	if !ok {
+		return
+	}
+	req.UID = owner
+
+	res, err := h.service.ListExamSessions(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /admin/exams/sessions/detail
+//
+// The admin view of /exams/sessions/detail: same body (profile_id plus
+// elink_id or esess_id), same response, any child. profile_id is required
+// and must be the profile the sitting / journey belongs to — the owner
+// path checks that, exactly as it does for the parent.
+func (h *ExamHandler) HandleAdminGetExamSessionDetail(w http.ResponseWriter, r *http.Request) {
+	var req dto.GetExamReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	owner, ok := h.actAsOwner(w, r, req.ProfileID)
+	if !ok {
+		return
+	}
+	req.UID = owner
+
+	res, err := h.service.GetExamSessionDetail(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
