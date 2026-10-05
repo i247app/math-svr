@@ -159,6 +159,6 @@ func levelProfileBlock(lang QuizLanguage, level int) string {
 - Chọn số ở: %s
 - Dạng câu: %s
 - Phương án nhiễu: %s
-- GRADE PROFILE ở trên quyết định NỘI DUNG. Bậc cường độ này chỉ được làm khó lên TRONG phạm vi đó; tuyệt đối không mượn kiến thức của lớp cao hơn để tăng độ khó.`,
+- current_grade ở trên quyết định NỘI DUNG. Bậc cường độ này chỉ được làm khó lên TRONG phạm vi đó; tuyệt đối không mượn kiến thức của lớp cao hơn để tăng độ khó.`,
 		level, enum.ExamLevelMin, enum.ExamLevelMax, p.stepsVN, p.rangeSpotVN, p.formVN, p.distractorVN)
 }

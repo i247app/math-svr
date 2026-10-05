@@ -2,6 +2,7 @@ package bot
 
 import (
 	"fmt"
+	"strings"
 
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -14,16 +15,19 @@ import (
 // to the quiz prompts it replaces.
 //
 // GRADE is the axis that decides the content (number range, operations,
-// icon policy). Its block opens the user message so it outranks the schema
-// example in the system prompt, which otherwise teaches its own difficulty
-// by imitation. LEVEL refines intensity inside that grade and is rendered
-// for a GRADE review only — see level_profile.go.
+// icon policy). The system prompt carries it as the CASE KG / CASE NUM
+// switch plus the 11 kindergarten question types, and the user message
+// binds {grade} to the band label that switch keys on. LEVEL refines
+// intensity inside that grade and is rendered for a GRADE review only —
+// see level_profile.go.
 //
-// The system prompt is a terse rule sheet, written once per prompt
-// language (exam_templates_vn.go, exam_templates_en.go); the user message
-// carries only what varies per request. The LANGUAGE OF THE PROMPT is a
-// cost decision — English instructions tokenise shorter than Vietnamese
-// ones — and is separate from the language of the round: the questions,
+// The system prompt is a rule sheet written once per prompt language
+// (exam_templates_vn.go, exam_templates_en.go) in the same format; the
+// user message carries only what varies per request.
+//
+// The LANGUAGE OF THE PROMPT is a cost decision — English instructions
+// tokenise shorter than Vietnamese ones — and is separate from the
+// language of the round: the questions,
 // topics and short_text the model writes are Vietnamese in both, because
 // the product serves Vietnamese children and ma_exam_pools cannot record a
 // row as being anything else.
@@ -129,6 +133,47 @@ func ProbePositions(examType enum.ExamType, numQuestions int) []int {
 		}
 	}
 	return out
+}
+
+// joinPositions renders 1-based positions as Q3, Q6, … with the given
+// separator.
+func joinPositions(positions []int, sep string) string {
+	labels := make([]string, 0, len(positions))
+	for _, p := range positions {
+		labels = append(labels, fmt.Sprintf("Q%d", p))
+	}
+	return strings.Join(labels, sep)
+}
+
+// compactPositions renders 1-based positions the way the teaching team
+// writes them — "Q1,2,4,5" — one Q prefix, the rest bare.
+func compactPositions(positions []int) string {
+	if len(positions) == 0 {
+		return ""
+	}
+	parts := make([]string, 0, len(positions))
+	for _, p := range positions {
+		parts = append(parts, fmt.Sprint(p))
+	}
+	return "Q" + strings.Join(parts, ",")
+}
+
+// probeAndRestLists renders the two lists every CASE block names: the
+// probe positions, and every other question in a round of n. The
+// complement is computed here, once for both prompt languages, so a
+// prompt can never name a question twice or leave one unassigned.
+func probeAndRestLists(probes []int, n int) (probeList, restList string) {
+	isProbe := make(map[int]bool, len(probes))
+	for _, p := range probes {
+		isProbe[p] = true
+	}
+	var rest []int
+	for q := 1; q <= n; q++ {
+		if !isProbe[q] {
+			rest = append(rest, q)
+		}
+	}
+	return compactPositions(probes), compactPositions(rest)
 }
 
 // ProbeGrade is the band a probe question targets: one above the child's,
