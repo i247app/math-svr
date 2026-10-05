@@ -62,17 +62,17 @@ func (c journeyCursor) key() exam.JourneyListKey {
 }
 
 type GetExamStatsQueryHandler struct {
-	statsRepo    exam.IExamSessionRepository
-	attemptRepo  exam.IExamLinkRepository
-	examPoolRepo exam.IExamPoolRepository
+	examSessionRepo exam.IExamSessionRepository
+	attemptRepo     exam.IExamLinkRepository
+	examPoolRepo    exam.IExamPoolRepository
 }
 
 func NewGetExamStatsQueryHandler(
-	statsRepo exam.IExamSessionRepository,
+	examSessionRepo exam.IExamSessionRepository,
 	attemptRepo exam.IExamLinkRepository,
 	examPoolRepo exam.IExamPoolRepository,
 ) *GetExamStatsQueryHandler {
-	return &GetExamStatsQueryHandler{statsRepo: statsRepo, attemptRepo: attemptRepo, examPoolRepo: examPoolRepo}
+	return &GetExamStatsQueryHandler{examSessionRepo: examSessionRepo, attemptRepo: attemptRepo, examPoolRepo: examPoolRepo}
 }
 
 func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQuery) (*ExamStatsResult, error) {
@@ -88,7 +88,7 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 	if q.Paging.IsCursor() {
 		rows, result.Cursor, err = pagination.KeysetPage(ctx, h.journeyKeyset(q.UID, q.ProfileID, filter), q.Paging.Next, q.Paging.Previous, q.Paging.Size)
 	} else {
-		rows, result.Pagination, err = h.statsRepo.ListByUserProfilePage(ctx, q.UID, q.ProfileID, filter, q.Paging.Page, q.Paging.Size)
+		rows, result.Pagination, err = h.examSessionRepo.ListByUserProfilePage(ctx, q.UID, q.ProfileID, filter, q.Paging.Page, q.Paging.Size)
 	}
 	if err != nil {
 		if _, ok := errs.IsMathError(err); ok {
@@ -104,7 +104,7 @@ func (h *GetExamStatsQueryHandler) Handle(ctx context.Context, q GetExamStatsQue
 	for _, r := range rows {
 		ids = append(ids, r.EsessId())
 	}
-	practice, err := h.statsRepo.ListPracticeByEsessIds(ctx, q.UID, q.ProfileID, ids)
+	practice, err := h.examSessionRepo.ListPracticeByEsessIds(ctx, q.UID, q.ProfileID, ids)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -140,14 +140,14 @@ func (h *GetExamStatsQueryHandler) journeyKeyset(uid, profileId int64, filter ex
 				k := before.key()
 				params.Newer = &k
 			}
-			return h.statsRepo.ListByUserProfileKeyset(ctx, uid, profileId, filter, params)
+			return h.examSessionRepo.ListByUserProfileKeyset(ctx, uid, profileId, filter, params)
 		},
 		// Newest first: "before" a journey in the list means newer.
 		ExistsAtOrBefore: func(ctx context.Context, c journeyCursor) (bool, error) {
-			return h.statsRepo.ExistsJourneyAtOrNewer(ctx, uid, profileId, filter, c.key())
+			return h.examSessionRepo.ExistsJourneyAtOrNewer(ctx, uid, profileId, filter, c.key())
 		},
 		ExistsAtOrAfter: func(ctx context.Context, c journeyCursor) (bool, error) {
-			return h.statsRepo.ExistsJourneyAtOrOlder(ctx, uid, profileId, filter, c.key())
+			return h.examSessionRepo.ExistsJourneyAtOrOlder(ctx, uid, profileId, filter, c.key())
 		},
 		Key: func(j *exam.ExamSession) journeyCursor {
 			return journeyCursor{CreateDt: j.CreateDt().ToTime().UTC(), EsessId: j.EsessId()}

@@ -41,12 +41,12 @@ type Service struct {
 	gradeLevels     *query.GetGradeLevelsQueryHandler
 	gradeMap        *query.GetGradeMapQueryHandler
 
-	examPoolRepo examDomain.IExamPoolRepository
-	attemptRepo  examDomain.IExamLinkRepository
-	statsRepo    examDomain.IExamSessionRepository
-	detailRepo   examDomain.IExamSessionLineRepository
-	profileRepo  profileDomain.IRepository
-	gradeRepo    gradeDomain.IRepository
+	examPoolRepo    examDomain.IExamPoolRepository
+	attemptRepo     examDomain.IExamLinkRepository
+	examSessionRepo examDomain.IExamSessionRepository
+	detailRepo      examDomain.IExamSessionLineRepository
+	profileRepo     profileDomain.IRepository
+	gradeRepo       gradeDomain.IRepository
 
 	bot   *botClient
 	guest *guestService
@@ -63,7 +63,7 @@ type Service struct {
 func NewService(
 	examPoolRepo examDomain.IExamPoolRepository,
 	attemptRepo examDomain.IExamLinkRepository,
-	statsRepo examDomain.IExamSessionRepository,
+	examSessionRepo examDomain.IExamSessionRepository,
 	detailRepo examDomain.IExamSessionLineRepository,
 	uow transaction.UnitOfWork,
 	bot *botAdapter.Adapter,
@@ -78,16 +78,16 @@ func NewService(
 		markJourneyCmd:  command.NewMarkExamSessionCommandHandler(uow),
 		saveReviewCmd:   command.NewSaveJourneyReviewCommandHandler(uow),
 		getAttemptQuery: query.NewGetExamAttemptQueryHandler(attemptRepo, examPoolRepo, detailRepo),
-		getJourneyQuery: query.NewGetExamJourneyQueryHandler(statsRepo, attemptRepo, examPoolRepo, detailRepo),
+		getJourneyQuery: query.NewGetExamJourneyQueryHandler(examSessionRepo, attemptRepo, examPoolRepo, detailRepo),
 		listQuery:       query.NewListExamAttemptsQueryHandler(attemptRepo, examPoolRepo),
-		statsQuery:      query.NewGetExamStatsQueryHandler(statsRepo, attemptRepo, examPoolRepo),
+		statsQuery:      query.NewGetExamStatsQueryHandler(examSessionRepo, attemptRepo, examPoolRepo),
 		progressQuery:   query.NewGetExamProgressQueryHandler(attemptRepo),
-		journeyProgress: query.NewGetJourneyProgressQueryHandler(statsRepo),
-		gradeLevels:     query.NewGetGradeLevelsQueryHandler(statsRepo),
-		gradeMap:        query.NewGetGradeMapQueryHandler(statsRepo),
+		journeyProgress: query.NewGetJourneyProgressQueryHandler(examSessionRepo),
+		gradeLevels:     query.NewGetGradeLevelsQueryHandler(examSessionRepo),
+		gradeMap:        query.NewGetGradeMapQueryHandler(examSessionRepo),
 		examPoolRepo:    examPoolRepo,
 		attemptRepo:     attemptRepo,
-		statsRepo:       statsRepo,
+		examSessionRepo: examSessionRepo,
 		detailRepo:      detailRepo,
 		profileRepo:     profileRepo,
 		gradeRepo:       gradeRepo,
@@ -232,7 +232,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 
 	// By id alone: PRACTICE drills either kind of journey, so naming a type
 	// here would refuse every journey of the other kind as "not found".
-	journey, err := s.statsRepo.FindByEsessId(ctx, journeyID)
+	journey, err := s.examSessionRepo.FindByEsessId(ctx, journeyID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -337,8 +337,9 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 		logger.From(ctx).Infof("exam.resumed.in_tx attempt=%d journey=%d type=%s discarded_new_content=%t",
 			created.Attempt.ElinkId(), utils.DerefInt64(cmd.EsessID), cmd.ExamType, cmd.NewContent != nil)
 		return &dto.GenerateExamRes{
-			Exam:    dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
-			Resumed: true,
+			Exam:        dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
+			Resumed:     true,
+			ExamSession: dto.ExamSessionToResponse(created.ExamSession),
 		}, nil
 	}
 
@@ -348,7 +349,8 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 
 	// A live exam never ships the answer key.
 	return &dto.GenerateExamRes{
-		Exam: dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
+		Exam:        dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
+		ExamSession: dto.ExamSessionToResponse(created.ExamSession),
 	}, nil
 }
 
@@ -591,7 +593,7 @@ func (s *Service) GetLatestJourney(ctx context.Context, req *dto.LatestJourneyRe
 		return nil, err
 	}
 
-	journey, err := s.statsRepo.FindLatestJourney(ctx, examDomain.LatestJourneyFilter{
+	journey, err := s.examSessionRepo.FindLatestJourney(ctx, examDomain.LatestJourneyFilter{
 		Uid:       profile.Uid(),
 		ProfileId: profile.ProfileId(),
 		ExamType:  req.ExamType,
@@ -662,7 +664,7 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 		return nil, err
 	}
 
-	journey, err := s.statsRepo.FindByEsessId(ctx, req.EsessID)
+	journey, err := s.examSessionRepo.FindByEsessId(ctx, req.EsessID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}

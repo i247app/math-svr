@@ -76,7 +76,8 @@ type GenerateExamResult struct {
 	// Resumed reports that the journey already had an IN_PROGRESS sitting
 	// of this type: Attempt is that sitting and nothing was written — the
 	// command's own content, if any, was discarded.
-	Resumed bool
+	Resumed     bool
+	ExamSession *exam.ExamSession
 }
 
 type GenerateExamCommandHandler struct {
@@ -117,6 +118,12 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		if err != nil {
 			return err
 		}
+
+		journey, err := repos.ExamSession.FindByEsessId(ctx, journeyID)
+		if err != nil {
+			return err
+		}
+
 		if err := h.recordCurrent(ctx, repos, cmd, journeyID, examPool); err != nil {
 			return err
 		}
@@ -131,6 +138,7 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		a.SetUid(cmd.UID)
 		a.SetProfileId(cmd.ProfileID)
 		a.SetExamId(examPool.ExamId())
+		// a.SetEsessId(utils.ToAnyPtr(journey.EsessId()))
 		a.SetEsessId(&journeyID)
 		a.SetShuffleMap(cmd.ShuffleJSON)
 		a.SetReqExamType(string(cmd.ExamType))
@@ -145,7 +153,11 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 
-		result = GenerateExamResult{ExamPool: examPool, Attempt: saved}
+		result = GenerateExamResult{
+			ExamPool:    examPool,
+			Attempt:     saved,
+			ExamSession: journey,
+		}
 		return nil
 	}
 
@@ -183,7 +195,20 @@ func (h *GenerateExamCommandHandler) findOpenSitting(ctx context.Context, repos 
 		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
 			fmt.Errorf("exam: open sitting %d points at exam_pool %d, which is gone", open.ElinkId(), open.ExamId()))
 	}
-	return &GenerateExamResult{ExamPool: pool, Attempt: open, Resumed: true}, nil
+
+	journey, err := repos.ExamSession.FindByEsessId(ctx, *cmd.EsessID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
+	res := &GenerateExamResult{
+		ExamPool:    pool,
+		Attempt:     open,
+		Resumed:     true,
+		ExamSession: journey,
+	}
+
+	return res, nil
 }
 
 // resolveJourney returns the journey this sitting belongs to, opening one

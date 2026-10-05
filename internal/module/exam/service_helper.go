@@ -194,7 +194,7 @@ func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq
 	// The open journey is looked up regardless of a stated grade: even a
 	// pinned sitting belongs to the journey that is open in its slot.
 	key := examDomain.JourneyKeyOf(profile.Uid(), profile.ProfileId(), string(examType), req.Grade)
-	active, err := s.statsRepo.FindActiveJourney(ctx, key)
+	active, err := s.examSessionRepo.FindActiveJourney(ctx, key)
 	if err != nil {
 		return 0, nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -370,10 +370,16 @@ func (s *Service) resumeOpenSitting(ctx context.Context, profile *profileDomain.
 			fmt.Errorf("exam: open sitting %d points at exam_pool %d, which is gone", open.ElinkId(), open.ExamId()))
 	}
 
+	journey, err := s.examSessionRepo.FindByEsessId(ctx, esessID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+
 	logger.From(ctx).Infof("exam.resumed attempt=%d journey=%d type=%s", open.ElinkId(), esessID, examType)
 	return &dto.GenerateExamRes{
-		Exam:    dto.AttemptToResponse(open, pool, true),
-		Resumed: true,
+		Exam:        dto.AttemptToResponse(open, pool, true),
+		Resumed:     true,
+		ExamSession: dto.ExamSessionToResponse(journey),
 	}, nil
 }
 

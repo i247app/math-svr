@@ -55,8 +55,8 @@ GENERAL:
 
 CASE KG — if {grade} = "Mẫu giáo":
 * {{KG_GRADE}}
-* Create Kindergarten questions using the 11 question types below.
-* Use a wide variety of icons from the approved list. Avoid repeating the same icon too often.
+* Create Kindergarten questions using the 11 question types below for Q1, Q2, Q4, Q5, Q7, Q8, Q9, and Q10.
+* Use a wide variety of icons from the approved list. Avoid using the same icon too frequently.
 * Icons are allowed ONLY from this list: {{EMOJI}}
 
 11 KG QUESTION TYPES:
@@ -155,7 +155,7 @@ func examProbeLinesEN(probes []int, n int) (rule, kg, num string) {
 	probeList, restList := probeAndRestLists(probes, n)
 	rule = fmt.Sprintf("%s = next-grade content. Grade %d → early Grade %d.",
 		joinPositions(probes, ", "), enum.ExamGradeMax, GradeProbeCeiling)
-	kg = fmt.Sprintf("%s = Mẫu giáo; %s = Lớp 1.", restList, probeList)
+	kg = fmt.Sprintf("%s = Mẫu giáo; %s = Lớp 1, %s must not use icons.", restList, probeList, probeList)
 	num = fmt.Sprintf("%s = current grade; %s = next grade.", restList, probeList)
 	return rule, kg, num
 }
