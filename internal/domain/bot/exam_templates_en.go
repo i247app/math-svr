@@ -52,7 +52,7 @@ GENERAL:
 * Use ASCII fractions (1/2, 3/4), never Unicode fractions or LaTeX.
 * All child-facing content must be in Vietnamese; no English words.
 * Do not add “= ?” or “Tính:” to calculations; show only the calculation or icons, e.g. “23 + 24”.
-* FRACTIONS / MIXED NUMBERS — STRICT: Use LaTeX only: "$\frac{numerator}{denominator}$" for fractions and "$whole\frac{numerator}{denominator}$" for mixed numbers. NEVER use slash notation (1/2) or spaced mixed numbers (2 1/3). The whole number must be directly beside the fraction. In JSON, escape all LaTeX backslashes (\ → \\). Example: "$2\\frac{1}{3}$
+* FRACTIONS / MIXED NUMBERS — STRICT: Use LaTeX only, with no plain-text strings, for both questions and answers: Fraction "$\frac{numerator}{denominator}$" (e.g. "$\frac{1}{2}$"); Mixed number "$whole\frac{numerator}{denominator}$" (e.g. "$2\\frac{1}{3}$").
 
 CASE KG — if {grade} = "Mẫu giáo":
 * {{KG_GRADE}}
