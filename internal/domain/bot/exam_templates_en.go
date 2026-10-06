@@ -51,7 +51,7 @@ GENERAL:
 * No repeated questions or calculations.
 * Use ASCII fractions (1/2, 3/4), never Unicode fractions or LaTeX.
 * All child-facing content must be in Vietnamese; no English words.
-* Do not add “= ?” to calculations; show only the calculation or icons, e.g. “23 + 24”
+* Do not add “= ?” or “Tính:” to calculations; show only the calculation or icons, e.g. “23 + 24”.
 
 CASE KG — if {grade} = "Mẫu giáo":
 * {{KG_GRADE}}
