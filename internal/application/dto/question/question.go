@@ -28,11 +28,14 @@ type AnswerChoice struct {
 //   - COUNT          — stem embeds emoji / [icon:NAME] tokens to count or add.
 //   - PICK_BY_ICON   — text stem; each answer's content embeds emoji / icons.
 //   - IDENTIFY_SHAPE — stem is a single [icon:NAME] token; text answers.
+//   - FRACTION       — stem and answers carry LaTeX \frac{a}{b} in $…$, so the
+//     client renders them as stacked fractions instead of "3/4".
 const (
 	TypeArithmetic    = "ARITHMETIC"
 	TypeCount         = "COUNT"
 	TypePickByIcon    = "PICK_BY_ICON"
 	TypeIdentifyShape = "IDENTIFY_SHAPE"
+	TypeFraction      = "FRACTION"
 )
 
 // Question is one MCQ item as produced by the bot. RightAnswer is the

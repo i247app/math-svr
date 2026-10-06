@@ -54,7 +54,7 @@ QUY ĐỊNH CHUNG:
 * Đúng 4 phương án (A–D), 1 đáp án đúng, các phương án sai phải hợp lý.
 * Mọi câu phải có đủ dữ kiện để giải; không ra câu hỏi thiếu thông tin.
 * Không lặp lại câu hỏi hay phép tính.
-* Phân số viết dạng ASCII (1/2, 3/4), không dùng phân số Unicode hay LaTeX.
+* PHÂN SỐ / HỖN SỐ — BẮT BUỘC: question_type PHẢI là "FRACTION", và mọi phân số ở đề bài và ở cả 4 phương án PHẢI viết bằng LaTeX — không viết thường, không dùng phân số Unicode (không 3/4, không ½): phân số "$\frac{tử}{mẫu}$" (ví dụ "$\frac{1}{2}$"); hỗn số "$phầnnguyên\frac{tử}{mẫu}$" (ví dụ "$2\frac{1}{3}$").
 * Toàn bộ nội dung cho trẻ phải bằng tiếng Việt; không dùng từ tiếng Anh.
 
 TRƯỜNG HỢP MG — nếu {grade} = "Mẫu giáo":

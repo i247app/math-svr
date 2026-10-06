@@ -12,6 +12,7 @@ var validTypes = map[string]struct{}{
 	TypeCount:         {},
 	TypePickByIcon:    {},
 	TypeIdentifyShape: {},
+	TypeFraction:      {},
 }
 
 // typeAliases folds spellings the exam prompt's own schema example uses

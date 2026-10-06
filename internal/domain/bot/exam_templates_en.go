@@ -49,10 +49,9 @@ GENERAL:
 * Exactly 4 choices (A–D), 1 correct answer, with plausible distractors.
 * Include all necessary information; no incomplete questions.
 * No repeated questions or calculations.
-* Use ASCII fractions (1/2, 3/4), never Unicode fractions or LaTeX.
 * All child-facing content must be in Vietnamese; no English words.
 * Do not add “= ?” or “Tính:” to calculations; show only the calculation or icons, e.g. “23 + 24”.
-* FRACTIONS / MIXED NUMBERS — STRICT: Use LaTeX only, with no plain-text strings, for both questions and answers: Fraction "$\frac{numerator}{denominator}$" (e.g. "$\frac{1}{2}$"); Mixed number "$whole\frac{numerator}{denominator}$" (e.g. "$2\\frac{1}{3}$").
+* FRACTIONS / MIXED NUMBERS — STRICT: question_type MUST be "FRACTION", and every fraction in the stem and in all 4 answers MUST be LaTeX — never plain text, never a Unicode fraction (no 3/4, no ½): Fraction "$\frac{numerator}{denominator}$" (e.g. "$\frac{1}{2}$"); Mixed number "$whole\frac{numerator}{denominator}$" (e.g. "$2\frac{1}{3}$").
 
 CASE KG — if {grade} = "Mẫu giáo":
 * {{KG_GRADE}}
