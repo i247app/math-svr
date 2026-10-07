@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"slices"
 
-	"math-ai.com/math-ai/internal/domain/user"
+	"math-ai.com/math-ai/internal/domain/alias"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -33,7 +33,7 @@ type AliasRepository struct {
 	db database.Executor
 }
 
-func NewAliasRepository(db database.Executor) user.IAliasRepository {
+func NewAliasRepository(db database.Executor) alias.IRepository {
 	return &AliasRepository{db: db}
 }
 
@@ -48,7 +48,7 @@ func scanAlias(s database.RowScanner) (*models.AliasModel, error) {
 // findOneBy runs a single-row lookup. `where` is a package-controlled SQL
 // fragment (never user input). aliasActiveWhere is appended last;
 // a missing row is reported as (nil, nil), never sql.ErrNoRows.
-func (r *AliasRepository) findOneBy(ctx context.Context, where string, args ...any) (*user.Alias, error) {
+func (r *AliasRepository) findOneBy(ctx context.Context, where string, args ...any) (*alias.Alias, error) {
 	fullArgs := slices.Concat(args, aliasActiveArgs())
 	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable +
 		` WHERE (` + where + `) AND ` + aliasActiveWhere
@@ -63,7 +63,7 @@ func (r *AliasRepository) findOneBy(ctx context.Context, where string, args ...a
 	return ModelToDomainAlias(m), nil
 }
 
-func (r *AliasRepository) Create(ctx context.Context, alias *user.Alias) (*user.Alias, error) {
+func (r *AliasRepository) Create(ctx context.Context, alias *alias.Alias) (*alias.Alias, error) {
 	query := `
 		INSERT INTO ` + aliasTable + ` (aid, uid, aka, alias_status, rpt_flg, kwords, note, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -78,15 +78,15 @@ func (r *AliasRepository) Create(ctx context.Context, alias *user.Alias) (*user.
 	return alias, nil
 }
 
-func (r *AliasRepository) FindByAid(ctx context.Context, aid int64) (*user.Alias, error) {
+func (r *AliasRepository) FindByAid(ctx context.Context, aid int64) (*alias.Alias, error) {
 	return r.findOneBy(ctx, "aid = ?", aid)
 }
 
-func (r *AliasRepository) FindByAka(ctx context.Context, aka string) (*user.Alias, error) {
+func (r *AliasRepository) FindByAka(ctx context.Context, aka string) (*alias.Alias, error) {
 	return r.findOneBy(ctx, "aka = ?", aka)
 }
 
-func (r *AliasRepository) FindByUid(ctx context.Context, uid int64) ([]*user.Alias, error) {
+func (r *AliasRepository) FindByUid(ctx context.Context, uid int64) ([]*alias.Alias, error) {
 	args := slices.Concat([]any{uid}, aliasActiveArgs())
 	query := `SELECT ` + aliasColumns + ` FROM ` + aliasTable +
 		` WHERE (uid = ?) AND ` + aliasActiveWhere
@@ -96,7 +96,7 @@ func (r *AliasRepository) FindByUid(ctx context.Context, uid int64) ([]*user.Ali
 	}
 	defer rows.Close()
 
-	var aliases []*user.Alias
+	var aliases []*alias.Alias
 	for rows.Next() {
 		m, err := scanAlias(rows)
 		if err != nil {
@@ -110,7 +110,7 @@ func (r *AliasRepository) FindByUid(ctx context.Context, uid int64) ([]*user.Ali
 	return aliases, nil
 }
 
-func (r *AliasRepository) UpdateByAid(ctx context.Context, alias *user.Alias) error {
+func (r *AliasRepository) UpdateByAid(ctx context.Context, alias *alias.Alias) error {
 	query := `
 		UPDATE ` + aliasTable + `
 		SET aka = COALESCE(?, aka),
@@ -183,8 +183,8 @@ func (r *AliasRepository) SoftDeleteByAid(ctx context.Context, aid int64) error 
 	return nil
 }
 
-func ModelToDomainAlias(m *models.AliasModel) *user.Alias {
-	a := user.NewAlias()
+func ModelToDomainAlias(m *models.AliasModel) *alias.Alias {
+	a := alias.NewAlias()
 	a.SetAid(m.Aid)
 	a.SetUid(m.Uid)
 	a.SetAka(m.Aka)

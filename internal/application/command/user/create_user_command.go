@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
+	"math-ai.com/math-ai/internal/domain/alias"
 	"math-ai.com/math-ai/internal/domain/login"
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/profile"
@@ -201,7 +202,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		aliases := []*string{cmd.Email, &cmd.Phone}
 		for _, aka := range aliases {
 			if aka != nil && *aka != "" {
-				alias := user.NewAlias()
+				alias := alias.NewAlias()
 				aid, err := seqgen.Next(ctx, repos.Seq, seq.NameAlias)
 				if err != nil {
 					return err

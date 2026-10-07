@@ -1,122 +1,122 @@
 package user
 
-import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
-)
+// import (
+// 	"math-ai.com/math-ai/internal/domain/shared/mtime"
+// )
 
-type Alias struct {
-	aid         int64
-	uid         int64
-	aka         string
-	aliasStatus *string
-	rptFlg      *string
-	kwords      *string
-	note        *string
-	status      string
-	createId    *int64
-	createDt    mtime.MathTime
-	modifyId    *int64
-	modifyDt    mtime.MathTime
-}
+// type Alias struct {
+// 	aid         int64
+// 	uid         int64
+// 	aka         string
+// 	aliasStatus *string
+// 	rptFlg      *string
+// 	kwords      *string
+// 	note        *string
+// 	status      string
+// 	createId    *int64
+// 	createDt    mtime.MathTime
+// 	modifyId    *int64
+// 	modifyDt    mtime.MathTime
+// }
 
-func NewAlias() *Alias {
-	return &Alias{}
-}
+// func NewAlias() *Alias {
+// 	return &Alias{}
+// }
 
-func (a *Alias) Aid() int64 {
-	return a.aid
-}
+// func (a *Alias) Aid() int64 {
+// 	return a.aid
+// }
 
-func (a *Alias) SetAid(aid int64) {
-	a.aid = aid
-}
+// func (a *Alias) SetAid(aid int64) {
+// 	a.aid = aid
+// }
 
-func (a *Alias) Uid() int64 {
-	return a.uid
-}
+// func (a *Alias) Uid() int64 {
+// 	return a.uid
+// }
 
-func (a *Alias) SetUid(uid int64) {
-	a.uid = uid
-}
+// func (a *Alias) SetUid(uid int64) {
+// 	a.uid = uid
+// }
 
-func (a *Alias) Aka() string {
-	return a.aka
-}
+// func (a *Alias) Aka() string {
+// 	return a.aka
+// }
 
-func (a *Alias) SetAka(aka string) {
-	a.aka = aka
-}
+// func (a *Alias) SetAka(aka string) {
+// 	a.aka = aka
+// }
 
-func (a *Alias) AliasStatus() *string {
-	return a.aliasStatus
-}
+// func (a *Alias) AliasStatus() *string {
+// 	return a.aliasStatus
+// }
 
-func (a *Alias) SetAliasStatus(aliasStatus *string) {
-	a.aliasStatus = aliasStatus
-}
+// func (a *Alias) SetAliasStatus(aliasStatus *string) {
+// 	a.aliasStatus = aliasStatus
+// }
 
-func (a *Alias) Note() *string {
-	return a.note
-}
+// func (a *Alias) Note() *string {
+// 	return a.note
+// }
 
-func (a *Alias) SetNote(note *string) {
-	a.note = note
-}
+// func (a *Alias) SetNote(note *string) {
+// 	a.note = note
+// }
 
-// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
-func (a *Alias) RptFlg() *string {
-	return a.rptFlg
-}
+// // RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
+// func (a *Alias) RptFlg() *string {
+// 	return a.rptFlg
+// }
 
-func (a *Alias) SetRptFlg(rptFlg *string) {
-	a.rptFlg = rptFlg
-}
+// func (a *Alias) SetRptFlg(rptFlg *string) {
+// 	a.rptFlg = rptFlg
+// }
 
-// Kwords holds search keywords (kwords) for a future text-search index.
-func (a *Alias) Kwords() *string {
-	return a.kwords
-}
+// // Kwords holds search keywords (kwords) for a future text-search index.
+// func (a *Alias) Kwords() *string {
+// 	return a.kwords
+// }
 
-func (a *Alias) SetKwords(kwords *string) {
-	a.kwords = kwords
-}
+// func (a *Alias) SetKwords(kwords *string) {
+// 	a.kwords = kwords
+// }
 
-func (a *Alias) Status() string {
-	return a.status
-}
+// func (a *Alias) Status() string {
+// 	return a.status
+// }
 
-func (a *Alias) SetStatus(status string) {
-	a.status = status
-}
+// func (a *Alias) SetStatus(status string) {
+// 	a.status = status
+// }
 
-func (a *Alias) CreateId() *int64 {
-	return a.createId
-}
+// func (a *Alias) CreateId() *int64 {
+// 	return a.createId
+// }
 
-func (a *Alias) SetCreateId(createId *int64) {
-	a.createId = createId
-}
+// func (a *Alias) SetCreateId(createId *int64) {
+// 	a.createId = createId
+// }
 
-func (a *Alias) CreateDt() mtime.MathTime {
-	return a.createDt
-}
+// func (a *Alias) CreateDt() mtime.MathTime {
+// 	return a.createDt
+// }
 
-func (a *Alias) SetCreateDt(createDt mtime.MathTime) {
-	a.createDt = createDt
-}
+// func (a *Alias) SetCreateDt(createDt mtime.MathTime) {
+// 	a.createDt = createDt
+// }
 
-func (a *Alias) ModifyId() *int64 {
-	return a.modifyId
-}
+// func (a *Alias) ModifyId() *int64 {
+// 	return a.modifyId
+// }
 
-func (a *Alias) SetModifyId(modifyId *int64) {
-	a.modifyId = modifyId
-}
+// func (a *Alias) SetModifyId(modifyId *int64) {
+// 	a.modifyId = modifyId
+// }
 
-func (a *Alias) ModifyDt() mtime.MathTime {
-	return a.modifyDt
-}
+// func (a *Alias) ModifyDt() mtime.MathTime {
+// 	return a.modifyDt
+// }
 
-func (a *Alias) SetModifyDt(modifyDt mtime.MathTime) {
-	a.modifyDt = modifyDt
-}
+// func (a *Alias) SetModifyDt(modifyDt mtime.MathTime) {
+// 	a.modifyDt = modifyDt
+// }

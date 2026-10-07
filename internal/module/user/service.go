@@ -10,8 +10,10 @@ import (
 	command "math-ai.com/math-ai/internal/application/command/user"
 	deviceDTO "math-ai.com/math-ai/internal/application/dto/device"
 	dto "math-ai.com/math-ai/internal/application/dto/user"
+	aliasQuery "math-ai.com/math-ai/internal/application/query/alias"
 	query "math-ai.com/math-ai/internal/application/query/user"
 	"math-ai.com/math-ai/internal/application/transaction"
+	aliasDomain "math-ai.com/math-ai/internal/domain/alias"
 	"math-ai.com/math-ai/internal/domain/login"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -37,6 +39,7 @@ type Service struct {
 	getUserByUidQuery   *query.GetUserByUidQueryHandler
 	getUserByPhoneQuery *query.GetUserByPhoneQueryHandler
 	getUserByEmailQuery *query.GetUserByEmailQueryHandler
+	getAliasByAkaQuery  *aliasQuery.GetAliasByAkaQueryHandler
 	listUsersQuery      *query.ListUsersQueryHandler
 	listUsersByCursor   *query.ListUsersByCursorQueryHandler
 	createUserCmd       *command.CreateUserCommandHandler
@@ -52,6 +55,7 @@ type Service struct {
 func NewService(
 	deviceSvc *device.Service,
 	repo domain.IRepository,
+	aliasRepo aliasDomain.IRepository,
 	uow transaction.UnitOfWork,
 	storageProvider *storage.Adapter,
 	hasher login.PasswordHasher,
@@ -63,6 +67,7 @@ func NewService(
 		getUserByEmailQuery: query.NewGetUserByEmailQueryHandler(repo),
 		listUsersQuery:      query.NewListUsersQueryHandler(repo),
 		listUsersByCursor:   query.NewListUsersByCursorQueryHandler(repo),
+		getAliasByAkaQuery:  aliasQuery.NewGetAliasByAkaQueryHandler(aliasRepo),
 		createUserCmd:       command.NewCreateUserCommandHandler(uow, hasher),
 		createGuestCmd:      command.NewCreateGuestCommandHandler(uow),
 		adoptGuestCmd:       command.NewAdoptGuestCommandHandler(uow),
@@ -172,6 +177,7 @@ func (s *Service) CheckIdentifierAvailable(ctx context.Context, req *dto.CheckId
 
 	var (
 		u   *domain.User
+		a   *aliasDomain.Alias
 		err error
 	)
 	if strings.Contains(req.Identifier, "@") {
@@ -179,13 +185,19 @@ func (s *Service) CheckIdentifierAvailable(ctx context.Context, req *dto.CheckId
 		phoneOtpEnable = false
 	} else if phone, normErr := utils.NormalizePhone(req.Identifier); normErr == nil {
 		u, err = s.getUserByPhoneQuery.Handle(ctx, query.GetUserByPhoneQuery{Phone: phone})
+
 		emailOtpEnable = false
 	}
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	if u != nil {
+	a, err = s.getAliasByAkaQuery.Handle(ctx, aliasQuery.GetByAkaQuery{Identifier: req.Identifier})
+	if err != nil {
+		return nil, err
+	}
+
+	if u != nil || a != nil {
 		return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, ErrAccountAlreadyExists)
 	}
 

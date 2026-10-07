@@ -3,6 +3,7 @@ package container
 import (
 	// "math-ai.com/math-ai/internal/application/socket"
 	userCommand "math-ai.com/math-ai/internal/application/command/user"
+	aliasDomain "math-ai.com/math-ai/internal/domain/alias"
 	bannerDomain "math-ai.com/math-ai/internal/domain/banner"
 	chatDomain "math-ai.com/math-ai/internal/domain/chat"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
@@ -82,6 +83,7 @@ type ServiceContainer struct {
 
 type RepositoryContainer struct {
 	UserRepository               userDomain.IRepository
+	AliasRepository              aliasDomain.IRepository
 	ProgramRepository            programDomain.IRepository
 	GradeRepository              gradeDomain.IRepository
 	SemesterRepository           semesterDomain.IRepository

@@ -99,7 +99,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	deviceService := device.NewService(repos.DeviceRepository, uow, repos.UserRepository, res.Env.DemoNames)
 
 	log.Info("> Setup UserSvc...")
-	userService := user.NewService(deviceService, repos.UserRepository, uow, res.StorageProvider, security.DefaultHasher)
+	userService := user.NewService(deviceService, repos.UserRepository, repos.AliasRepository, uow, res.StorageProvider, security.DefaultHasher)
 
 	log.Info("> Setup ProgramSvc...")
 	programService := program.NewService(

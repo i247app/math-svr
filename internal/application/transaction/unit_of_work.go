@@ -3,6 +3,7 @@ package transaction
 import (
 	"context"
 
+	"math-ai.com/math-ai/internal/domain/alias"
 	"math-ai.com/math-ai/internal/domain/banner"
 	"math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/classroom"
@@ -32,7 +33,7 @@ import (
 // of generating a UUID, so concurrent inserts share one atomic counter.
 type Repositories struct {
 	User               user.IRepository
-	Alias              user.IAliasRepository
+	Alias              alias.IRepository
 	Profile            profile.IRepository
 	Login              login.IRepository
 	LoginLog           loginlog.IRepository
