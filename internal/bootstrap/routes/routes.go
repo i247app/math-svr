@@ -254,8 +254,14 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 
 		// Admin dashboard: any child's data, through the owner code paths
 		// (Service.actAsOwner). adminMiddleware alone — it runs the auth check.
-		reg("POST /admin/exams/sessions/list", examHandler.HandleAdminListExamSessions, adminMiddleware)
-		reg("POST /admin/exams/sessions/detail", examHandler.HandleAdminGetExamSessionDetail, adminMiddleware)
+		reg("POST /admin/exams/sessions/list", examHandler.HandleAdminListExamSessions, adminOrApiKeyMiddleware)
+		reg("POST /admin/exams/sessions/detail", examHandler.HandleAdminGetExamSessionDetail, adminOrApiKeyMiddleware)
+
+		// The pool belongs to no user, generation pays for a model call and
+		// every set carries its answer key: admin only, unlike /exams/*.
+		reg("POST /exams/pools/generate", examHandler.HandleGenerateExamPool, adminOrApiKeyMiddleware)
+		reg("POST /exams/pools/list", examHandler.HandleListExamPools, adminOrApiKeyMiddleware)
+		reg("POST /exams/pools/detail", examHandler.HandleGetExamPool, adminOrApiKeyMiddleware)
 	}
 
 	// classroom routes

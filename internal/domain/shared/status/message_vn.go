@@ -692,6 +692,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Chỉ xem được đánh giá khi hành trình đã hoàn thành"
 	case EXAM_REVIEW_ALREADY_EXISTS:
 		return "Hành trình này đã có đánh giá"
+	case EXAM_MISSING_EXAM_ID:
+		return "Thiếu mã đề (exam_id)"
 
 	case POW_CHALLENGE_FAILED:
 		return "Không tạo được thử thách xác minh. Vui lòng thử lại"

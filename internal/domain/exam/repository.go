@@ -91,6 +91,13 @@ type ProgressPointsParams struct {
 	Limit           int64
 }
 
+// ListExamPoolsFilter narrows the pool listing. ExamTypes empty means
+// every type; Grade nil means every grade.
+type ListExamPoolsFilter struct {
+	ExamTypes []string
+	Grade     *int
+}
+
 // IExamPoolRepository owns the shared, user-less question sets.
 //
 // FindReusableByExtras is the cache read. It returns (nil, nil) on a miss
@@ -110,6 +117,8 @@ type IExamPoolRepository interface {
 	// renders one title per attempt, and fetching them one by one would
 	// turn a twenty-row screen into twenty-one queries.
 	ListByExamIds(ctx context.Context, examIds []int64) ([]*ExamPool, error)
+	// ListPage returns one page of question sets, newest first.
+	ListPage(ctx context.Context, filter ListExamPoolsFilter, page, size int64) ([]*ExamPool, *pagination.Pagination, error)
 	Create(ctx context.Context, e *ExamPool) (*ExamPool, error)
 }
 

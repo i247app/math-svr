@@ -151,9 +151,9 @@ func (s *Service) loadOwnedProfile(ctx context.Context, uid *int64, profileID in
 // closed instead of handing out anyone's data. Every use is logged: who
 // read whose data, through which route.
 func (s *Service) actAsOwner(ctx context.Context, route string, profileID int64) (*int64, error) {
-	via := sctx.GetAdminVia(ctx)
-	if via == "" {
-		return nil, errs.NewError(ctx, status.FORBIDDEN, nil, ErrAdminGateMissing)
+	via, err := requireAdminGate(ctx)
+	if err != nil {
+		return nil, err
 	}
 	if profileID <= 0 {
 		return nil, errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
@@ -169,6 +169,17 @@ func (s *Service) actAsOwner(ctx context.Context, route string, profileID int64)
 	logger.From(ctx).Infof("admin.act_as_owner admin_uid=%d via=%s route=%s profile_id=%d owner_uid=%d",
 		sctx.UID(ctx), via, route, profileID, owner)
 	return &owner, nil
+}
+
+// requireAdminGate refuses unless the request passed the admin
+// middleware (sctx.AdminVia is set only there), so an admin-only method
+// reached through a route registered without it fails closed.
+func requireAdminGate(ctx context.Context) (sctx.AdminVia, error) {
+	via := sctx.GetAdminVia(ctx)
+	if via == "" {
+		return "", errs.NewError(ctx, status.FORBIDDEN, nil, ErrAdminGateMissing)
+	}
+	return via, nil
 }
 
 // resolvePlacement decides which band the next paper is written at, and

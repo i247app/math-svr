@@ -64,13 +64,69 @@ func ValidateGenerateExam(ctx context.Context, req *dto.GenerateExamReq) (Valida
 		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrLevelOutOfRange)
 	}
 
-	if req.NumQuestions <= 0 {
-		req.NumQuestions = DefaultNumQuestions
-	} else if req.NumQuestions > MaxNumQuestions {
-		req.NumQuestions = MaxNumQuestions
-	}
+	req.NumQuestions = clampNumQuestions(req.NumQuestions)
 
 	return ValidatedGenerate{ExamType: examType}, nil
+}
+
+func clampNumQuestions(n int) int {
+	if n <= 0 {
+		return DefaultNumQuestions
+	}
+	return min(n, MaxNumQuestions)
+}
+
+// ValidateGenerateExamPool checks a pool generation. Same rules as a
+// hand-out's placement fields, except that grade is required (there is
+// no child to fall back on) and PRACTICE is refused.
+func ValidateGenerateExamPool(ctx context.Context, req *dto.GenerateExamPoolReq) (enum.ExamType, error) {
+	raw := strings.ToUpper(strings.TrimSpace(req.ExamType))
+	if raw == "" {
+		return "", errs.NewError(ctx, status.EXAM_MISSING_EXAM_TYPE, nil, ErrExamTypeRequired)
+	}
+	examType := enum.ExamType(raw)
+	if !examType.IsValid() {
+		return "", errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
+	}
+	if examType == enum.ExamTypePractice {
+		return "", errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrPracticeNotPooled)
+	}
+	if req.Grade == nil {
+		return "", errs.NewError(ctx, status.EXAM_MISSING_GRADE, nil, ErrGradeRequired)
+	}
+	if *req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax {
+		return "", errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
+	}
+	if req.Level != nil && (*req.Level < enum.ExamLevelMin || *req.Level > enum.ExamLevelMax) {
+		return "", errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrLevelOutOfRange)
+	}
+	req.NumQuestions = clampNumQuestions(req.NumQuestions)
+	return examType, nil
+}
+
+func ValidateListExamPools(ctx context.Context, req *dto.ListExamPoolsReq) error {
+	var examTypes []string
+	for _, raw := range req.ExamTypes {
+		examType, err := normalizeExamType(ctx, &raw)
+		if err != nil {
+			return err
+		}
+		if examType != nil && !slices.Contains(examTypes, *examType) {
+			examTypes = append(examTypes, *examType)
+		}
+	}
+	req.ExamTypes = examTypes
+	if req.Grade != nil && (*req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax) {
+		return errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
+	}
+	return nil
+}
+
+func ValidateGetExamPool(ctx context.Context, req *dto.GetExamPoolReq) error {
+	if req.ExamID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_EXAM_ID, nil, ErrExamIDRequired)
+	}
+	return nil
 }
 
 func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {

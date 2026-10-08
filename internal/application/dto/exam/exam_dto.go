@@ -790,3 +790,90 @@ type JourneyProgressRes struct {
 	Series    []JourneyPoint   `json:"series"`
 	Summary   ExamStatsSummary `json:"summary"`
 }
+
+// GenerateExamPoolReq asks the model for one question set that joins the
+// pool without being handed to anyone (POST /exams/pools/generate). It
+// takes the placement fields of GenerateExamReq; with no child to read a
+// grade from, grade is required. PRACTICE is refused: a practice round is
+// built from one child's mistakes.
+type GenerateExamPoolReq struct {
+	ExamType     string `json:"exam_type"`
+	Grade        *int   `json:"grade"`
+	Level        *int   `json:"level,omitempty"`
+	NumQuestions int    `json:"num_questions,omitempty"`
+	Semester     string `json:"semester,omitempty"`
+	Program      string `json:"program,omitempty"`
+}
+
+// ListExamPoolsReq pages the pool, newest first (OFFSET: page, size).
+// ExamTypes empty = every type; Grade nil = every grade.
+type ListExamPoolsReq struct {
+	ExamTypes []string `json:"exam_types,omitempty"`
+	Grade     *int     `json:"grade,omitempty"`
+	Page      int64    `json:"page,omitempty"`
+	Size      int64    `json:"size,omitempty"`
+}
+
+type GetExamPoolReq struct {
+	ExamID int64 `json:"exam_id"`
+}
+
+// ExamPoolResponse is one stored question set. Questions — in stored
+// order, answer key included — is filled on generate and detail only;
+// the list leaves it out.
+type ExamPoolResponse struct {
+	ExamID      int64          `json:"exam_id"`
+	ExamType    string         `json:"exam_type"`
+	Grade       int            `json:"grade"`
+	Level       *int           `json:"level,omitempty"`
+	NumQues     int            `json:"num_questions"`
+	Semester    *string        `json:"semester,omitempty"`
+	Program     *string        `json:"program,omitempty"`
+	Extras      *string        `json:"req_extras,omitempty"`
+	AiTitle     *string        `json:"ai_title,omitempty"`
+	AIShortText *string        `json:"ai_short_text,omitempty"`
+	Questions   []ExamQuestion `json:"questions,omitempty"`
+	Status      *string        `json:"status,omitempty"`
+	CreateDt    string         `json:"create_dt"`
+}
+
+type ExamPoolRes struct {
+	ExamPool *ExamPoolResponse `json:"exam_pool"`
+}
+
+type ListExamPoolsRes struct {
+	ExamPools  []*ExamPoolResponse    `json:"exam_pools"`
+	Pagination *pagination.Pagination `json:"pagination"`
+}
+
+func ExamPoolToResponse(e *domain.ExamPool, withQuestions bool) *ExamPoolResponse {
+	if e == nil {
+		return nil
+	}
+	res := &ExamPoolResponse{
+		ExamID:      e.ExamId(),
+		ExamType:    e.ReqExamType(),
+		Grade:       e.ReqGrade(),
+		Level:       e.ReqLevel(),
+		NumQues:     e.ReqNumQues(),
+		Semester:    e.ReqSemester(),
+		Program:     e.ReqProgram(),
+		Extras:      e.ReqExtras(),
+		AiTitle:     e.AiTitle(),
+		AIShortText: e.AiShortText(),
+		Status:      e.ExamStatus(),
+		CreateDt:    e.CreateDt().String(),
+	}
+	if withQuestions {
+		res.Questions = servedQuestions(e.AiQuestionsJson(), nil, true)
+	}
+	return res
+}
+
+func ExamPoolsToResponse(pools []*domain.ExamPool) []*ExamPoolResponse {
+	out := make([]*ExamPoolResponse, 0, len(pools))
+	for _, e := range pools {
+		out = append(out, ExamPoolToResponse(e, false))
+	}
+	return out
+}

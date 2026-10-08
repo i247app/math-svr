@@ -79,9 +79,7 @@ func (r *ExamLinkRepository) FindByElinkId(ctx context.Context, elinkId int64) (
 // is exactly what the "you left this open" surface needs, and the caller
 // filters by status when it wants only those.
 func (r *ExamLinkRepository) ListAttempts(ctx context.Context, filter exam.ListAttemptsFilter, page, limit int64) ([]*exam.ExamLink, *pagination.Pagination, error) {
-	if limit <= 0 {
-		limit = pagination.DefaultPageSize
-	}
+	limit = pagination.ClampSize(limit)
 	if page < 1 {
 		page = 1
 	}

@@ -19,6 +19,7 @@ import (
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	sctx "math-ai.com/math-ai/internal/shared/context"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -32,6 +33,7 @@ type Service struct {
 	submitCmd       *command.SubmitExamCommandHandler
 	markJourneyCmd  *command.MarkExamSessionCommandHandler
 	saveReviewCmd   *command.SaveJourneyReviewCommandHandler
+	createPoolCmd   *command.CreateExamPoolCommandHandler
 	getAttemptQuery *query.GetExamAttemptQueryHandler
 	getJourneyQuery *query.GetExamJourneyQueryHandler
 	listQuery       *query.ListExamAttemptsQueryHandler
@@ -77,6 +79,7 @@ func NewService(
 		submitCmd:       command.NewSubmitExamCommandHandler(uow),
 		markJourneyCmd:  command.NewMarkExamSessionCommandHandler(uow),
 		saveReviewCmd:   command.NewSaveJourneyReviewCommandHandler(uow),
+		createPoolCmd:   command.NewCreateExamPoolCommandHandler(uow),
 		getAttemptQuery: query.NewGetExamAttemptQueryHandler(attemptRepo, examPoolRepo, detailRepo),
 		getJourneyQuery: query.NewGetExamJourneyQueryHandler(examSessionRepo, attemptRepo, examPoolRepo, detailRepo),
 		listQuery:       query.NewListExamAttemptsQueryHandler(attemptRepo, examPoolRepo),
@@ -189,7 +192,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 		if err != nil {
 			return nil, err
 		}
-		generated, err := s.bot.GenerateExam(ctx, generateExamInput{
+		in := generateExamInput{
 			ExamType:     validated.ExamType,
 			Grade:        grade,
 			NumQuestions: req.NumQuestions,
@@ -197,11 +200,12 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 			Program:      req.Program,
 			Level:        promptLevel,
 			Avoid:        avoid,
-		})
+		}
+		generated, err := s.bot.GenerateExam(ctx, in)
 		if err != nil {
 			return nil, err
 		}
-		content, err := newContentFrom(ctx, req, generated, &tag, promptLevel)
+		content, err := newContentFrom(ctx, in, generated, &tag)
 		if err != nil {
 			return nil, err
 		}
@@ -280,7 +284,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 	if err != nil {
 		return nil, err
 	}
-	generated, err := s.bot.GenerateExam(ctx, generateExamInput{
+	in := generateExamInput{
 		ExamType:     enum.ExamTypePractice,
 		Grade:        grade,
 		NumQuestions: req.NumQuestions,
@@ -288,11 +292,12 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		Program:      req.Program,
 		Practice:     &brief,
 		Avoid:        avoid,
-	})
+	}
+	generated, err := s.bot.GenerateExam(ctx, in)
 	if err != nil {
 		return nil, err
 	}
-	content, err := newContentFrom(ctx, req, generated, nil, nil)
+	content, err := newContentFrom(ctx, in, generated, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -419,7 +424,7 @@ func (s *Service) ListExams(ctx context.Context, req *dto.ListExamsReq) (*dto.Li
 		EsessID:   req.EsessID,
 		Status:    req.Status,
 		Page:      req.Page,
-		Limit:     req.Page,
+		Limit:     req.Size,
 	})
 	if err != nil {
 		return nil, err
@@ -709,4 +714,95 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 	logger.From(ctx).Infof("exam.journey.reviewed esess_id=%d type=%s answers=%d",
 		journey.EsessId(), journey.ReqExamType(), len(lines))
 	return &dto.JourneyReviewRes{ExamSession: dto.ExamSessionToResponse(saved)}, nil
+}
+
+// GenerateExamPool asks the model for one question set and files it in
+// the pool under the same cache tag a hand-out with these fields would
+// look up, so /exams/generate can serve it later. No sitting, no journey,
+// no "avoid" list (there is no child). Admin only: it pays for a model
+// call and returns the answer key. The model call runs outside any tx.
+func (s *Service) GenerateExamPool(ctx context.Context, req *dto.GenerateExamPoolReq) (*dto.ExamPoolRes, error) {
+	if _, err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	examType, err := ValidateGenerateExamPool(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	grade := *req.Grade
+
+	// Same rule as GenerateExam: only a GRADE paper is written at a level,
+	// so only it carries one into the prompt and the tag.
+	var promptLevel *int
+	if examType == enum.ExamTypeGrade {
+		promptLevel = resolveLevel(ctx, examType, grade, req.Level)
+	}
+	tag := BuildCacheTag(examType, grade, promptLevel, req.NumQuestions, req.Semester, req.Program)
+
+	in := generateExamInput{
+		ExamType:     examType,
+		Grade:        grade,
+		NumQuestions: req.NumQuestions,
+		Semester:     req.Semester,
+		Program:      req.Program,
+		Level:        promptLevel,
+	}
+	generated, err := s.bot.GenerateExam(ctx, in)
+	if err != nil {
+		return nil, err
+	}
+	content, err := newContentFrom(ctx, in, generated, &tag)
+	if err != nil {
+		return nil, err
+	}
+
+	saved, err := s.createPoolCmd.Handle(ctx, command.CreateExamPoolCommand{
+		ExamType:  examType,
+		Grade:     grade,
+		CreatedBy: sctx.UID(ctx),
+		Content:   content,
+	})
+	if err != nil {
+		return nil, err
+	}
+	logger.From(ctx).Infof("exam.pool.generated admin_uid=%d exam_id=%d tag=%s", sctx.UID(ctx), saved.ExamId(), tag)
+	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(saved, true)}, nil
+}
+
+// ListExamPools pages the pool, newest first, without the questions.
+func (s *Service) ListExamPools(ctx context.Context, req *dto.ListExamPoolsReq) (*dto.ListExamPoolsRes, error) {
+	if _, err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	if err := ValidateListExamPools(ctx, req); err != nil {
+		return nil, err
+	}
+	pools, page, err := s.examPoolRepo.ListPage(ctx, examDomain.ListExamPoolsFilter{
+		ExamTypes: req.ExamTypes,
+		Grade:     req.Grade,
+	}, req.Page, req.Size)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	return &dto.ListExamPoolsRes{ExamPools: dto.ExamPoolsToResponse(pools), Pagination: page}, nil
+}
+
+// GetExamPool reads one question set with its questions and answer key,
+// in stored order.
+func (s *Service) GetExamPool(ctx context.Context, req *dto.GetExamPoolReq) (*dto.ExamPoolRes, error) {
+	if _, err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	if err := ValidateGetExamPool(ctx, req); err != nil {
+		return nil, err
+	}
+	pool, err := s.examPoolRepo.FindByExamId(ctx, req.ExamID)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if pool == nil {
+		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
+			fmt.Errorf("exam: exam_pool %d not found", req.ExamID))
+	}
+	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}, nil
 }

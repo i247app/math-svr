@@ -13,6 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
 const (
@@ -161,6 +162,65 @@ func (r *ExamPoolRepository) ListByExamIds(ctx context.Context, examIds []int64)
 		return nil, fmt.Errorf("ai exam repo rows iteration: %w", err)
 	}
 	return out, nil
+}
+
+// ListPage pages the pool newest first. It reads ai_questions_json too —
+// one LONGTEXT per row, a page is small enough that a second column list
+// is not worth keeping in lockstep with scanExamPool.
+func (r *ExamPoolRepository) ListPage(ctx context.Context, filter exam.ListExamPoolsFilter, page, size int64) ([]*exam.ExamPool, *pagination.Pagination, error) {
+	size = pagination.ClampSize(size)
+	if page < 1 {
+		page = 1
+	}
+	filterWhere, filterArgs := buildExamPoolFilterClause(filter)
+	where := whereActive(filterWhere, examPoolActiveWhere)
+	whereArgs := slices.Concat(filterArgs, examPoolActiveArgs())
+
+	var total int64
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM `+examPoolTable+` a`+where, whereArgs...).Scan(&total); err != nil {
+		return nil, nil, fmt.Errorf("exam pool repo count: %w", err)
+	}
+
+	query := `SELECT ` + examPoolColumns + ` FROM ` + examPoolTable + ` a` + where +
+		` ORDER BY a.create_dt DESC, a.exam_id DESC LIMIT ? OFFSET ?`
+	rows, err := r.db.Query(ctx, query, slices.Concat(whereArgs, []any{size, (page - 1) * size})...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("exam pool repo list: %w", err)
+	}
+	defer rows.Close()
+
+	var out []*exam.ExamPool
+	for rows.Next() {
+		m, err := scanExamPool(rows)
+		if err != nil {
+			return nil, nil, fmt.Errorf("exam pool repo scan row: %w", err)
+		}
+		out = append(out, ModelToDomainExamPool(m))
+	}
+	if err := rows.Err(); err != nil {
+		return nil, nil, fmt.Errorf("exam pool repo rows iteration: %w", err)
+	}
+	return out, pagination.NewPagination(page, size, total), nil
+}
+
+// buildExamPoolFilterClause keeps placeholder order in lockstep with the
+// returned args slice.
+func buildExamPoolFilterClause(filter exam.ListExamPoolsFilter) (string, []any) {
+	var (
+		clause string
+		args   []any
+	)
+	if n := len(filter.ExamTypes); n > 0 {
+		clause += ` AND a.req_exam_type IN (?` + strings.Repeat(",?", n-1) + `)`
+		for _, t := range filter.ExamTypes {
+			args = append(args, t)
+		}
+	}
+	if filter.Grade != nil {
+		clause += ` AND a.req_grade = ?`
+		args = append(args, *filter.Grade)
+	}
+	return clause, args
 }
 
 func (r *ExamPoolRepository) Create(ctx context.Context, e *exam.ExamPool) (*exam.ExamPool, error) {

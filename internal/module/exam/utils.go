@@ -45,19 +45,20 @@ func marshalQuestions(ctx context.Context, questions []question.Question) (strin
 	return string(raw), nil
 }
 
-// newContentFrom packages a fresh generation for storage. extras is the
-// cache tag the set is filed under, or nil for a set that must never be
-// served to anyone else.
-func newContentFrom(ctx context.Context, req *dto.GenerateExamReq, generated *generateExamOutput, extras *string, level *int) (*command.NewExamPoolContent, error) {
+// newContentFrom packages a fresh generation for storage, with the
+// request fields it was generated from. extras is the cache tag the set
+// is filed under, or nil for a set that must never be served to anyone
+// else.
+func newContentFrom(ctx context.Context, in generateExamInput, generated *generateExamOutput, extras *string) (*command.NewExamPoolContent, error) {
 	questionsJSON, err := marshalQuestions(ctx, generated.Questions)
 	if err != nil {
 		return nil, err
 	}
 	return &command.NewExamPoolContent{
-		NumQues:       req.NumQuestions,
-		Level:         level,
-		Semester:      utils.ToStringPtr(req.Semester),
-		Program:       utils.ToStringPtr(req.Program),
+		NumQues:       in.NumQuestions,
+		Level:         in.Level,
+		Semester:      utils.ToStringPtr(in.Semester),
+		Program:       utils.ToStringPtr(in.Program),
 		Extras:        extras,
 		Title:         sanitizeExamText(generated.Title),
 		ShortText:     sanitizeExamText(generated.ShortText),

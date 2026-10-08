@@ -102,5 +102,3 @@ dist/
 
 # Session files
 data/
-
-internal/handlers/transaction_later

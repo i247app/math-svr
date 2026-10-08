@@ -507,3 +507,49 @@ func (h *ExamHandler) HandleAdminGetExamSessionDetail(w http.ResponseWriter, r *
 	}
 	response.WriteJson(w, res, nil)
 }
+
+// POST /exams/pools/generate — admin only (adminMiddleware): one model
+// call whose question set joins the pool; nobody is handed it.
+func (h *ExamHandler) HandleGenerateExamPool(w http.ResponseWriter, r *http.Request) {
+	var req dto.GenerateExamPoolReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.GenerateExamPool(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /exams/pools/list — admin only.
+func (h *ExamHandler) HandleListExamPools(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListExamPoolsReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.ListExamPools(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /exams/pools/detail — admin only; carries the answer key.
+func (h *ExamHandler) HandleGetExamPool(w http.ResponseWriter, r *http.Request) {
+	var req dto.GetExamPoolReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.GetExamPool(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
