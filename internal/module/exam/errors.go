@@ -21,6 +21,8 @@ var (
 	ErrStatsPracticeNotAJourney = errors.New("PRACTICE is not a journey; read it under its journey's practice field")
 	ErrPracticeNotPooled        = errors.New("PRACTICE is built from one child's mistakes and cannot be pre-generated")
 	ErrExamIDRequired           = errors.New("exam_id is required")
+	ErrIsVerifyRequired         = errors.New("is_verify is required")
+	ErrQuestionsRequired        = errors.New("questions is required")
 	ErrLevelOutOfRange          = errors.New("level must be between 0 and 9")
 	ErrGradeOutOfRange          = errors.New("grade must be between 0 and 5")
 	ErrGradeRequired            = errors.New("grade is required")

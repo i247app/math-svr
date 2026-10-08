@@ -182,6 +182,16 @@ func requireAdminGate(ctx context.Context) (sctx.AdminVia, error) {
 	return via, nil
 }
 
+// adminActor is the admin's uid for create_id / modify_id, or nil when
+// the request passed the gate with the X-Api-Admin-Key header and so has
+// no account behind it — NULL, never a uid 0 that belongs to nobody.
+func adminActor(ctx context.Context) *int64 {
+	if uid := sctx.UID(ctx); uid > 0 {
+		return &uid
+	}
+	return nil
+}
+
 // resolvePlacement decides which band the next paper is written at, and
 // reports the open journey (if any) so the sitting can be pinned to it.
 //

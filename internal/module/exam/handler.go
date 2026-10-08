@@ -553,3 +553,33 @@ func (h *ExamHandler) HandleGetExamPool(w http.ResponseWriter, r *http.Request) 
 	}
 	response.WriteJson(w, res, nil)
 }
+
+// POST /exams/pools/mark-verify — admin only.
+func (h *ExamHandler) HandleMarkExamPoolVerify(w http.ResponseWriter, r *http.Request) {
+	var req dto.MarkExamPoolVerifyReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.MarkExamPoolVerify(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /exams/pools/verify — admin only.
+func (h *ExamHandler) HandleVerifyExamPool(w http.ResponseWriter, r *http.Request) {
+	var req dto.VerifyExamPoolReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.VerifyExamPool(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}

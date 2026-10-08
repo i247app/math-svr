@@ -694,6 +694,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "This journey has already been reviewed"
 	case EXAM_MISSING_EXAM_ID:
 		return "exam_id is required"
+	case EXAM_MISSING_IS_VERIFY:
+		return "is_verify is required"
+	case EXAM_POOL_INVALID_QUESTIONS:
+		return "The corrected questions must keep the exam's question numbers and answer labels"
 
 	case POW_CHALLENGE_FAILED:
 		return "Could not create a verification challenge. Please try again"

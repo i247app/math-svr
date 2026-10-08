@@ -818,6 +818,21 @@ type GetExamPoolReq struct {
 	ExamID int64 `json:"exam_id"`
 }
 
+// MarkExamPoolVerifyReq: is_verify true moves verified_count 0 -> 1 (an
+// already verified set keeps its count); false resets it to 0.
+type MarkExamPoolVerifyReq struct {
+	ExamID   int64 `json:"exam_id"`
+	IsVerify *bool `json:"is_verify"`
+}
+
+// VerifyExamPoolReq carries the WHOLE corrected question set, which
+// replaces the stored one and adds 1 to verified_count. It must keep the
+// stored question_numbers and each question's answer labels.
+type VerifyExamPoolReq struct {
+	ExamID    int64          `json:"exam_id"`
+	Questions []ExamQuestion `json:"questions"`
+}
+
 // ExamPoolResponse is one stored question set. Questions — in stored
 // order, answer key included — is filled on generate and detail only;
 // the list leaves it out.
@@ -833,8 +848,10 @@ type ExamPoolResponse struct {
 	AiTitle     *string        `json:"ai_title,omitempty"`
 	AIShortText *string        `json:"ai_short_text,omitempty"`
 	Questions   []ExamQuestion `json:"questions,omitempty"`
-	Status      *string        `json:"status,omitempty"`
-	CreateDt    string         `json:"create_dt"`
+	// VerifiedCount: 0 = not verified, >0 = verified.
+	VerifiedCount int     `json:"verified_count"`
+	Status        *string `json:"status,omitempty"`
+	CreateDt      string  `json:"create_dt"`
 }
 
 type ExamPoolRes struct {
@@ -851,18 +868,19 @@ func ExamPoolToResponse(e *domain.ExamPool, withQuestions bool) *ExamPoolRespons
 		return nil
 	}
 	res := &ExamPoolResponse{
-		ExamID:      e.ExamId(),
-		ExamType:    e.ReqExamType(),
-		Grade:       e.ReqGrade(),
-		Level:       e.ReqLevel(),
-		NumQues:     e.ReqNumQues(),
-		Semester:    e.ReqSemester(),
-		Program:     e.ReqProgram(),
-		Extras:      e.ReqExtras(),
-		AiTitle:     e.AiTitle(),
-		AIShortText: e.AiShortText(),
-		Status:      e.ExamStatus(),
-		CreateDt:    e.CreateDt().String(),
+		ExamID:        e.ExamId(),
+		ExamType:      e.ReqExamType(),
+		Grade:         e.ReqGrade(),
+		Level:         e.ReqLevel(),
+		NumQues:       e.ReqNumQues(),
+		Semester:      e.ReqSemester(),
+		Program:       e.ReqProgram(),
+		Extras:        e.ReqExtras(),
+		AiTitle:       e.AiTitle(),
+		AIShortText:   e.AiShortText(),
+		VerifiedCount: e.VerifiedCount(),
+		Status:        e.ExamStatus(),
+		CreateDt:      e.CreateDt().String(),
 	}
 	if withQuestions {
 		res.Questions = servedQuestions(e.AiQuestionsJson(), nil, true)

@@ -429,6 +429,11 @@ const (
 	EXAM_REVIEW_ALREADY_EXISTS StatusCode = 13739
 	// EXAM_MISSING_EXAM_ID: an exam pool read named no exam_id.
 	EXAM_MISSING_EXAM_ID StatusCode = 13740
+	// EXAM_MISSING_IS_VERIFY: /exams/pools/mark-verify sent no is_verify.
+	EXAM_MISSING_IS_VERIFY StatusCode = 13741
+	// EXAM_POOL_INVALID_QUESTIONS: a corrected question set is empty or does
+	// not keep the stored set's question numbers and answer labels.
+	EXAM_POOL_INVALID_QUESTIONS StatusCode = 13742
 
 	// Proof of work — 13800-13899. Gates /exams/generate against bots.
 	POW_CHALLENGE_FAILED    StatusCode = 13800 // could not mint a challenge

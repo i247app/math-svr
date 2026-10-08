@@ -15,7 +15,7 @@ import (
 type CreateExamPoolCommand struct {
 	ExamType  enum.ExamType
 	Grade     int
-	CreatedBy int64
+	CreatedBy *int64 // nil = no uid (API-key admin)
 	Content   *NewExamPoolContent
 }
 

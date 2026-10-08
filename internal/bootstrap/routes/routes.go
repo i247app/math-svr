@@ -253,7 +253,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /exams/sessions/review/generate", examHandler.HandleReviewJourney)
 
 		// Admin dashboard: any child's data, through the owner code paths
-		// (Service.actAsOwner). adminMiddleware alone — it runs the auth check.
+		// (Service.actAsOwner). One admin gate alone — it runs the auth check.
 		reg("POST /admin/exams/sessions/list", examHandler.HandleAdminListExamSessions, adminOrApiKeyMiddleware)
 		reg("POST /admin/exams/sessions/detail", examHandler.HandleAdminGetExamSessionDetail, adminOrApiKeyMiddleware)
 
@@ -262,6 +262,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /exams/pools/generate", examHandler.HandleGenerateExamPool, adminOrApiKeyMiddleware)
 		reg("POST /exams/pools/list", examHandler.HandleListExamPools, adminOrApiKeyMiddleware)
 		reg("POST /exams/pools/detail", examHandler.HandleGetExamPool, adminOrApiKeyMiddleware)
+		reg("POST /exams/pools/mark-verify", examHandler.HandleMarkExamPoolVerify, adminOrApiKeyMiddleware)
+		reg("POST /exams/pools/verify", examHandler.HandleVerifyExamPool, adminOrApiKeyMiddleware)
 	}
 
 	// classroom routes

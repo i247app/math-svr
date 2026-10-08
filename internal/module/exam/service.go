@@ -34,6 +34,8 @@ type Service struct {
 	markJourneyCmd  *command.MarkExamSessionCommandHandler
 	saveReviewCmd   *command.SaveJourneyReviewCommandHandler
 	createPoolCmd   *command.CreateExamPoolCommandHandler
+	markVerifyCmd   *command.MarkExamPoolVerifyCommandHandler
+	verifyPoolCmd   *command.VerifyExamPoolCommandHandler
 	getAttemptQuery *query.GetExamAttemptQueryHandler
 	getJourneyQuery *query.GetExamJourneyQueryHandler
 	listQuery       *query.ListExamAttemptsQueryHandler
@@ -80,6 +82,8 @@ func NewService(
 		markJourneyCmd:  command.NewMarkExamSessionCommandHandler(uow),
 		saveReviewCmd:   command.NewSaveJourneyReviewCommandHandler(uow),
 		createPoolCmd:   command.NewCreateExamPoolCommandHandler(uow),
+		markVerifyCmd:   command.NewMarkExamPoolVerifyCommandHandler(uow),
+		verifyPoolCmd:   command.NewVerifyExamPoolCommandHandler(uow),
 		getAttemptQuery: query.NewGetExamAttemptQueryHandler(attemptRepo, examPoolRepo, detailRepo),
 		getJourneyQuery: query.NewGetExamJourneyQueryHandler(examSessionRepo, attemptRepo, examPoolRepo, detailRepo),
 		listQuery:       query.NewListExamAttemptsQueryHandler(attemptRepo, examPoolRepo),
@@ -759,7 +763,7 @@ func (s *Service) GenerateExamPool(ctx context.Context, req *dto.GenerateExamPoo
 	saved, err := s.createPoolCmd.Handle(ctx, command.CreateExamPoolCommand{
 		ExamType:  examType,
 		Grade:     grade,
-		CreatedBy: sctx.UID(ctx),
+		CreatedBy: adminActor(ctx),
 		Content:   content,
 	})
 	if err != nil {
@@ -804,5 +808,51 @@ func (s *Service) GetExamPool(ctx context.Context, req *dto.GetExamPoolReq) (*dt
 		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
 			fmt.Errorf("exam: exam_pool %d not found", req.ExamID))
 	}
+	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}, nil
+}
+
+// MarkExamPoolVerify flags a question set verified (verified_count 0 -> 1)
+// or not (-> 0). Admin only.
+func (s *Service) MarkExamPoolVerify(ctx context.Context, req *dto.MarkExamPoolVerifyReq) (*dto.ExamPoolRes, error) {
+	if _, err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	if err := ValidateMarkExamPoolVerify(ctx, req); err != nil {
+		return nil, err
+	}
+	pool, err := s.markVerifyCmd.Handle(ctx, command.MarkExamPoolVerifyCommand{
+		ExamID:   req.ExamID,
+		IsVerify: *req.IsVerify,
+		AdminUID: adminActor(ctx),
+	})
+	if err != nil {
+		return nil, err
+	}
+	logger.From(ctx).Infof("exam.pool.mark_verify admin_uid=%d exam_id=%d is_verify=%t verified_count=%d",
+		sctx.UID(ctx), req.ExamID, *req.IsVerify, pool.VerifiedCount())
+	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}, nil
+}
+
+// VerifyExamPool replaces a question set with an admin's corrected
+// version and counts one more verification. Admin only. The new key
+// applies to every sitting graded from now on, including ones already
+// handed out.
+func (s *Service) VerifyExamPool(ctx context.Context, req *dto.VerifyExamPoolReq) (*dto.ExamPoolRes, error) {
+	if _, err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	if err := ValidateVerifyExamPool(ctx, req); err != nil {
+		return nil, err
+	}
+	pool, err := s.verifyPoolCmd.Handle(ctx, command.VerifyExamPoolCommand{
+		ExamID:    req.ExamID,
+		Questions: req.Questions,
+		AdminUID:  adminActor(ctx),
+	})
+	if err != nil {
+		return nil, err
+	}
+	logger.From(ctx).Infof("exam.pool.verified admin_uid=%d exam_id=%d verified_count=%d",
+		sctx.UID(ctx), req.ExamID, pool.VerifiedCount())
 	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}, nil
 }

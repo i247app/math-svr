@@ -32,6 +32,9 @@ type ExamPool struct {
 	aiTitle         *string
 	aiShortText     *string
 	aiQuestionsJson string
+	// verifiedCount: 0 = not verified by an admin, >0 = verified (see
+	// IExamPoolRepository.MarkVerified / ReplaceQuestions).
+	verifiedCount int
 
 	rptFlg *string
 
@@ -70,6 +73,8 @@ func (a *ExamPool) AiShortText() *string         { return a.aiShortText }
 func (a *ExamPool) SetAiShortText(s *string)     { a.aiShortText = s }
 func (a *ExamPool) AiQuestionsJson() string      { return a.aiQuestionsJson }
 func (a *ExamPool) SetAiQuestionsJson(s string)  { a.aiQuestionsJson = s }
+func (a *ExamPool) VerifiedCount() int           { return a.verifiedCount }
+func (a *ExamPool) SetVerifiedCount(n int)       { a.verifiedCount = n }
 func (a *ExamPool) Note() *string                { return a.note }
 func (a *ExamPool) SetNote(s *string)            { a.note = s }
 func (a *ExamPool) RptFlg() *string              { return a.rptFlg }

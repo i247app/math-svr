@@ -16,6 +16,7 @@ type ExamPoolModel struct {
 	AiTitle         *string
 	AiShortText     *string
 	AiQuestionsJson string
+	VerifiedCount   int
 	RptFlg          *string
 	Kwords          *string
 	Note            *string

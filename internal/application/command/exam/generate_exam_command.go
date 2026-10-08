@@ -339,13 +339,14 @@ func (h *GenerateExamCommandHandler) resolveExamPool(ctx context.Context, repos 
 		return cached, nil
 	}
 
-	return insertExamPool(ctx, repos, cmd.ExamType, cmd.Grade, cmd.UID, cmd.NewContent)
+	return insertExamPool(ctx, repos, cmd.ExamType, cmd.Grade, utils.ToInt64Ptr(cmd.UID), cmd.NewContent)
 }
 
 // insertExamPool mints an exam_id and stores one freshly generated
 // question set. createdBy is the uid recorded as create_id: the child's
-// parent on a hand-out, the admin on a pool generation.
-func insertExamPool(ctx context.Context, repos transaction.Repositories, examType enum.ExamType, grade int, createdBy int64, content *NewExamPoolContent) (*exam.ExamPool, error) {
+// parent on a hand-out, the admin on a pool generation (nil when the admin
+// came in with the API key and has no uid).
+func insertExamPool(ctx context.Context, repos transaction.Repositories, examType enum.ExamType, grade int, createdBy *int64, content *NewExamPoolContent) (*exam.ExamPool, error) {
 	examID, err := seqgen.Next(ctx, repos.Seq, seq.NameExamPool)
 	if err != nil {
 		return nil, err
@@ -365,7 +366,7 @@ func insertExamPool(ctx context.Context, repos transaction.Repositories, examTyp
 	e.SetAiQuestionsJson(content.QuestionsJSON)
 	active := string(enum.ExamStatusActive)
 	e.SetExamStatus(&active)
-	e.SetCreateId(utils.ToInt64Ptr(createdBy))
+	e.SetCreateId(createdBy)
 
 	saved, err := repos.ExamPool.Create(ctx, e)
 	if err != nil {

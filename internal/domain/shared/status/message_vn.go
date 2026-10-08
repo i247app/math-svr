@@ -694,6 +694,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Hành trình này đã có đánh giá"
 	case EXAM_MISSING_EXAM_ID:
 		return "Thiếu mã đề (exam_id)"
+	case EXAM_MISSING_IS_VERIFY:
+		return "Thiếu trạng thái xác minh (is_verify)"
+	case EXAM_POOL_INVALID_QUESTIONS:
+		return "Bộ câu hỏi đã sửa phải giữ nguyên số câu và nhãn đáp án của đề"
 
 	case POW_CHALLENGE_FAILED:
 		return "Không tạo được thử thách xác minh. Vui lòng thử lại"

@@ -122,6 +122,28 @@ func ValidateListExamPools(ctx context.Context, req *dto.ListExamPoolsReq) error
 	return nil
 }
 
+func ValidateMarkExamPoolVerify(ctx context.Context, req *dto.MarkExamPoolVerifyReq) error {
+	if req.ExamID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_EXAM_ID, nil, ErrExamIDRequired)
+	}
+	if req.IsVerify == nil {
+		return errs.NewError(ctx, status.EXAM_MISSING_IS_VERIFY, nil, ErrIsVerifyRequired)
+	}
+	return nil
+}
+
+// ValidateVerifyExamPool checks what needs no stored row; the shape
+// against the stored set is checked in the command.
+func ValidateVerifyExamPool(ctx context.Context, req *dto.VerifyExamPoolReq) error {
+	if req.ExamID <= 0 {
+		return errs.NewError(ctx, status.EXAM_MISSING_EXAM_ID, nil, ErrExamIDRequired)
+	}
+	if len(req.Questions) == 0 {
+		return errs.NewError(ctx, status.EXAM_POOL_INVALID_QUESTIONS, nil, ErrQuestionsRequired)
+	}
+	return nil
+}
+
 func ValidateGetExamPool(ctx context.Context, req *dto.GetExamPoolReq) error {
 	if req.ExamID <= 0 {
 		return errs.NewError(ctx, status.EXAM_MISSING_EXAM_ID, nil, ErrExamIDRequired)

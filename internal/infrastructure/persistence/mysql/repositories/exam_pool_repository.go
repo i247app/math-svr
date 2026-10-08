@@ -21,7 +21,7 @@ const (
 
 	examPoolColumns = `a.exam_id, a.req_exam_type, a.req_grade, a.req_level, a.req_num_ques,
 		a.req_semester, a.req_program, a.req_extras,
-		a.ai_title, a.ai_short_text, a.ai_questions_json,
+		a.ai_title, a.ai_short_text, a.ai_questions_json, a.verified_count,
 		a.rpt_flg, a.kwords, a.note, a.exam_status, a.status,
 		a.create_id, a.create_dt, a.modify_id, a.modify_dt`
 
@@ -44,7 +44,7 @@ func scanExamPool(s database.RowScanner) (*models.ExamPoolModel, error) {
 	var m models.ExamPoolModel
 	if err := s.Scan(&m.ExamId, &m.ReqExamType, &m.ReqGrade, &m.ReqLevel, &m.ReqNumQues,
 		&m.ReqSemester, &m.ReqProgram, &m.ReqExtras,
-		&m.AiTitle, &m.AiShortText, &m.AiQuestionsJson,
+		&m.AiTitle, &m.AiShortText, &m.AiQuestionsJson, &m.VerifiedCount,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.ExamStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -245,6 +245,36 @@ func (r *ExamPoolRepository) Create(ctx context.Context, e *exam.ExamPool) (*exa
 	return r.FindByExamId(ctx, e.ExamId())
 }
 
+// MarkVerified sets verified_count to 1 when it is 0 (verified) — a set
+// already verified keeps its count — or back to 0 (not verified). One
+// statement, so two concurrent marks cannot both count. A missing row is
+// not reported (an unchanged row affects 0 rows too); the caller reads
+// first.
+func (r *ExamPoolRepository) MarkVerified(ctx context.Context, examId int64, verified bool, modifyId *int64) error {
+	set := `verified_count = 0`
+	if verified {
+		set = `verified_count = IF(verified_count = 0, 1, verified_count)`
+	}
+	query := `UPDATE ` + examPoolTable + ` a SET ` + set + `, a.modify_id = ?` +
+		` WHERE (a.exam_id = ?) AND ` + examPoolActiveWhere
+	if _, err := r.db.Exec(ctx, query, slices.Concat([]any{modifyId, examId}, examPoolActiveArgs())...); err != nil {
+		return fmt.Errorf("exam pool repo mark verified: %w", err)
+	}
+	return nil
+}
+
+// ReplaceQuestions overwrites the question set and adds 1 to
+// verified_count in the same statement: every corrected version an admin
+// sends counts as one more verification.
+func (r *ExamPoolRepository) ReplaceQuestions(ctx context.Context, examId int64, questionsJSON string, modifyId *int64) error {
+	query := `UPDATE ` + examPoolTable + ` a SET a.ai_questions_json = ?, a.verified_count = a.verified_count + 1, a.modify_id = ?` +
+		` WHERE (a.exam_id = ?) AND ` + examPoolActiveWhere
+	if _, err := r.db.Exec(ctx, query, slices.Concat([]any{questionsJSON, modifyId, examId}, examPoolActiveArgs())...); err != nil {
+		return fmt.Errorf("exam pool repo replace questions: %w", err)
+	}
+	return nil
+}
+
 func ModelToDomainExamPool(m *models.ExamPoolModel) *exam.ExamPool {
 	e := exam.NewExamPool()
 	e.SetExamId(m.ExamId)
@@ -258,6 +288,7 @@ func ModelToDomainExamPool(m *models.ExamPoolModel) *exam.ExamPool {
 	e.SetAiTitle(m.AiTitle)
 	e.SetAiShortText(m.AiShortText)
 	e.SetAiQuestionsJson(m.AiQuestionsJson)
+	e.SetVerifiedCount(m.VerifiedCount)
 	e.SetRptFlg(m.RptFlg)
 	e.SetKwords(m.Kwords)
 	e.SetNote(m.Note)
