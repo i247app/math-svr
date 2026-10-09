@@ -67,20 +67,6 @@ func gradeBandName(lang QuizLanguage, level GradeLevel) string {
 	return p.nameVN
 }
 
-// gradeBandRange returns the number-range sentence of a band, or "" when
-// the band is unknown. The exam prompt renders it so a probe question is
-// anchored to real content instead of the model's guess at "one grade up".
-func gradeBandRange(lang QuizLanguage, level GradeLevel) string {
-	p, ok := gradeProfiles[level]
-	if !ok {
-		return ""
-	}
-	if lang == QuizLanguageEnglish {
-		return p.rangeEN
-	}
-	return p.rangeVN
-}
-
 // gradeProfile is the authoritative, code-owned difficulty + visual
 // contract for a single band. It is the SINGLE SOURCE OF TRUTH the
 // prompt builders render into a high-salience GRADE PROFILE block, so

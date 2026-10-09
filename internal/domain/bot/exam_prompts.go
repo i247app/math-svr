@@ -11,35 +11,26 @@ import (
 //
 // Grading has no prompt at all any more: the server scores every
 // submission deterministically, so the model is never asked to mark a
-// child's work. That is why this file has no Grade/Reinforce counterpart
-// to the quiz prompts it replaces.
+// child's work.
 //
-// GRADE is the axis that decides the content (number range, operations,
-// icon policy). The system prompt carries it as the CASE KG / CASE NUM
-// switch plus the 11 kindergarten question types, and the user message
-// binds {grade} to the band label that switch keys on. LEVEL refines
-// intensity inside that grade and is rendered for a GRADE review only —
-// see level_profile.go.
+// The SYSTEM prompt is data, not code: ma_exam_prompts holds one per grade,
+// written by admins, sent verbatim. Everything in it — question count,
+// probe questions, curriculum scope, output structure — is fixed text. This
+// package builds the USER message beside it (exam_user_prompt.go), and owns
+// the rules the server enforces on the reply whatever the prompt says:
+// which questions are probes (ProbePositions), which band they reach
+// (ProbeGrade), and the title (ExamTitle).
 //
-// The system prompt is a rule sheet written once per prompt language
-// (exam_templates_vn.go, exam_templates_en.go) in the same format; the
-// user message carries only what varies per request.
-//
-// The LANGUAGE OF THE PROMPT is a cost decision — English instructions
-// tokenise shorter than Vietnamese ones — and is separate from the
-// language of the round: the questions,
-// topics and short_text the model writes are Vietnamese in both, because
-// the product serves Vietnamese children and ma_exam_pools cannot record a
-// row as being anything else.
+// The instructions are English, because English tokenises shorter and a
+// generation pays for its prompt every time. The round the model writes —
+// questions, topics, short_text — is Vietnamese: the product serves
+// Vietnamese children and ma_exam_pools cannot record a row as anything
+// else.
 
 // ExamPromptInput is everything the generation prompt consumes. It mirrors
 // the req_* columns on ma_exam_pools, so what shaped a prompt can always be
 // read back off the stored row.
 type ExamPromptInput struct {
-	// Language is the language the INSTRUCTIONS are written in. Empty
-	// means Vietnamese. It does not change the language of the generated
-	// round, which is always Vietnamese — see the package note.
-	Language QuizLanguage
 	ExamType enum.ExamType
 	// Grade is the content band, 0..5 (0 = mẫu giáo).
 	Grade        int
@@ -93,11 +84,6 @@ type PracticeItem struct {
 	ChildAnswer string
 }
 
-// examAllowedEmoji is the only icon set a generated round may use. It is
-// ONE list for both prompt languages: the two templates are written
-// separately, and a list copied into each is a list that drifts.
-const examAllowedEmoji = "🍎 🍊 🍐 🍌 🍉 🍇 🍓 🍒 🍑 🍍 🥝 🥕 🌽 🍅 🥦 🥒 🍭 🍬 🍪 🍩 🎂 🐶 🐱 🐭 🐹 🐰 🦊 🐻 🐼 🐨 🐯 🦁 🐮 🐷 🐸 🐵 🐔 🐧 🐦 🐤 🦆 🦉 🐟 🐠 🐡 🦋 🐝 🐞 🐢 🚗 🚕 🚌 🚎 🚲 🛵 🚂 ✈️ 🚁 🚢 ⭐️ 🎈 ⚽️ 🧸 📚 ✏️ 🖍️ 🎁 🔴 🟡 🟢 🔵 🟠 🟣 🟥 🟨 🟩 🟦 🟧 🟪"
-
 // examDefaultNumQuestions matches the module validator's default. It is
 // repeated here so the domain builder stays usable without going through
 // the module layer.
@@ -145,37 +131,6 @@ func joinPositions(positions []int, sep string) string {
 	return strings.Join(labels, sep)
 }
 
-// compactPositions renders 1-based positions the way the teaching team
-// writes them — "Q1,2,4,5" — one Q prefix, the rest bare.
-func compactPositions(positions []int) string {
-	if len(positions) == 0 {
-		return ""
-	}
-	parts := make([]string, 0, len(positions))
-	for _, p := range positions {
-		parts = append(parts, fmt.Sprint(p))
-	}
-	return "Q" + strings.Join(parts, ",")
-}
-
-// probeAndRestLists renders the two lists every CASE block names: the
-// probe positions, and every other question in a round of n. The
-// complement is computed here, once for both prompt languages, so a
-// prompt can never name a question twice or leave one unassigned.
-func probeAndRestLists(probes []int, n int) (probeList, restList string) {
-	isProbe := make(map[int]bool, len(probes))
-	for _, p := range probes {
-		isProbe[p] = true
-	}
-	var rest []int
-	for q := 1; q <= n; q++ {
-		if !isProbe[q] {
-			rest = append(rest, q)
-		}
-	}
-	return compactPositions(probes), compactPositions(rest)
-}
-
 // ProbeGrade is the band a probe question targets: one above the child's,
 // capped so an ASSESSMENT at Grade 5 reaches Grade 6 and stops there.
 func ProbeGrade(grade int) int {
@@ -186,63 +141,24 @@ func ProbeGrade(grade int) int {
 	return probe
 }
 
-// BuildExamPrompt returns the (system, user) contents for one generation
-// call. The caller sets JSONMode and a low temperature and forwards them
-// through the bot adapter.
-//
-// Deprecated: the system prompt now lives in ma_exam_prompts, one row per
-// grade; generation uses BuildExamUserPrompt. This stays until the code
-// templates are removed.
-func BuildExamPrompt(in ExamPromptInput) (system string, user string, err error) {
-	lang, n, err := examPromptParams(in)
-	if err != nil {
-		return "", "", err
-	}
-	if lang == QuizLanguageEnglish {
-		return buildSystemExamEN(in, n), buildUserExamEN(in, n), nil
-	}
-	return buildSystemExamVN(in, n), buildUserExamVN(in, n), nil
-}
-
 // BuildExamUserPrompt returns the user message of one generation call: the
-// per-request brief (current_grade, level, practice round, curriculum)
-// that goes beside the grade's stored system prompt.
+// per-request brief that goes beside the grade's stored system prompt.
 func BuildExamUserPrompt(in ExamPromptInput) (string, error) {
-	lang, n, err := examPromptParams(in)
-	if err != nil {
-		return "", err
-	}
-	if lang == QuizLanguageEnglish {
-		return buildUserExamEN(in, n), nil
-	}
-	return buildUserExamVN(in, n), nil
-}
-
-// examPromptParams validates the input and resolves the prompt language
-// and question count both builders need.
-func examPromptParams(in ExamPromptInput) (QuizLanguage, int, error) {
 	if in.Grade < enum.ExamGradeMin || in.Grade > enum.ExamGradeMax {
-		return "", 0, fmt.Errorf("bot: exam grade %d out of range [%d,%d]",
+		return "", fmt.Errorf("bot: exam grade %d out of range [%d,%d]",
 			in.Grade, enum.ExamGradeMin, enum.ExamGradeMax)
 	}
 	if !in.ExamType.IsValid() {
-		return "", 0, fmt.Errorf("bot: unsupported exam type %q", string(in.ExamType))
+		return "", fmt.Errorf("bot: unsupported exam type %q", string(in.ExamType))
 	}
 	if in.ExamType == enum.ExamTypePractice && in.Practice == nil {
-		return "", 0, fmt.Errorf("bot: a PRACTICE prompt needs a practice brief")
-	}
-	lang := QuizLanguageVietnamese
-	if in.Language != "" {
-		var err error
-		if lang, err = normalizeLanguage(in.Language); err != nil {
-			return "", 0, err
-		}
+		return "", fmt.Errorf("bot: a PRACTICE prompt needs a practice brief")
 	}
 	n := in.NumQuestions
 	if n <= 0 {
 		n = examDefaultNumQuestions
 	}
-	return lang, n, nil
+	return buildUserExamEN(in, n), nil
 }
 
 // examTypeTitleVN is how each exam type reads in a title.

@@ -34,12 +34,6 @@ type botClient struct {
 	adapter *botAdapter.Adapter
 }
 
-// examPromptLanguage is the language the generation INSTRUCTIONS are
-// written in. It is a cost knob, not a product one: English tokenises
-// shorter than Vietnamese, and the round the model writes is Vietnamese
-// either way. Flip it to QuizLanguageVietnamese to compare.
-const examPromptLanguage = domainBot.QuizLanguageEnglish
-
 func newBotClient(adapter *botAdapter.Adapter) *botClient {
 	return &botClient{adapter: adapter}
 }
@@ -75,7 +69,6 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	}
 
 	promptIn := domainBot.ExamPromptInput{
-		Language:     examPromptLanguage,
 		ExamType:     in.ExamType,
 		Grade:        in.Grade,
 		NumQuestions: in.NumQuestions,
