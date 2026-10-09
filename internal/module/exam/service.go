@@ -49,6 +49,7 @@ type Service struct {
 	attemptRepo     examDomain.IExamLinkRepository
 	examSessionRepo examDomain.IExamSessionRepository
 	detailRepo      examDomain.IExamSessionLineRepository
+	examPromptRepo  examDomain.IExamPromptRepository
 	profileRepo     profileDomain.IRepository
 	gradeRepo       gradeDomain.IRepository
 
@@ -69,6 +70,7 @@ func NewService(
 	attemptRepo examDomain.IExamLinkRepository,
 	examSessionRepo examDomain.IExamSessionRepository,
 	detailRepo examDomain.IExamSessionLineRepository,
+	examPromptRepo examDomain.IExamPromptRepository,
 	uow transaction.UnitOfWork,
 	bot *botAdapter.Adapter,
 	profileRepo profileDomain.IRepository,
@@ -96,6 +98,7 @@ func NewService(
 		attemptRepo:     attemptRepo,
 		examSessionRepo: examSessionRepo,
 		detailRepo:      detailRepo,
+		examPromptRepo:  examPromptRepo,
 		profileRepo:     profileRepo,
 		gradeRepo:       gradeRepo,
 		bot:             newBotClient(bot),
@@ -160,7 +163,11 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 		promptLevel = level
 	}
 
-	tag := BuildCacheTag(validated.ExamType, grade, promptLevel, req.NumQuestions, req.Semester, req.Program)
+	prompt, err := s.loadExamPrompt(ctx, grade)
+	if err != nil {
+		return nil, err
+	}
+	tag := BuildCacheTag(validated.ExamType, grade, promptLevel, req.NumQuestions, req.Semester, req.Program, prompt.PromptVersion())
 
 	cmd := command.GenerateExamCommand{
 		UID:         profile.Uid(),
@@ -197,6 +204,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 			return nil, err
 		}
 		in := generateExamInput{
+			Prompt:       prompt,
 			ExamType:     validated.ExamType,
 			Grade:        grade,
 			NumQuestions: req.NumQuestions,
@@ -288,7 +296,12 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 	if err != nil {
 		return nil, err
 	}
+	prompt, err := s.loadExamPrompt(ctx, grade)
+	if err != nil {
+		return nil, err
+	}
 	in := generateExamInput{
+		Prompt:       prompt,
 		ExamType:     enum.ExamTypePractice,
 		Grade:        grade,
 		NumQuestions: req.NumQuestions,
@@ -741,9 +754,14 @@ func (s *Service) GenerateExamPool(ctx context.Context, req *dto.GenerateExamPoo
 	if examType == enum.ExamTypeGrade {
 		promptLevel = resolveLevel(ctx, examType, grade, req.Level)
 	}
-	tag := BuildCacheTag(examType, grade, promptLevel, req.NumQuestions, req.Semester, req.Program)
+	prompt, err := s.loadExamPrompt(ctx, grade)
+	if err != nil {
+		return nil, err
+	}
+	tag := BuildCacheTag(examType, grade, promptLevel, req.NumQuestions, req.Semester, req.Program, prompt.PromptVersion())
 
 	in := generateExamInput{
+		Prompt:       prompt,
 		ExamType:     examType,
 		Grade:        grade,
 		NumQuestions: req.NumQuestions,

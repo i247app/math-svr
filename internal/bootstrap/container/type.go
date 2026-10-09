@@ -95,6 +95,7 @@ type RepositoryContainer struct {
 	ExamLinkRepository           examDomain.IExamLinkRepository
 	ExamSessionRepository        examDomain.IExamSessionRepository
 	ExamSessionLineRepository    examDomain.IExamSessionLineRepository
+	ExamPromptRepository         examDomain.IExamPromptRepository
 	SchoolRepository             schoolDomain.IRepository
 	SeqRepository                seqDomain.IRepository
 	ClassroomRepository          classroomDomain.IRepository

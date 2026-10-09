@@ -16,17 +16,19 @@ import (
 // and a silent miss looks exactly like normal operation while costing a
 // generation every time.
 //
-// Shape: TYPE-G<grade>-Q<questions>-S<semester>-P<program>
+// Shape: TYPE-G<grade>-L<level>-Q<questions>-S<semester>-P<program>-V<prompt_version>
 //
-//	ASSESSMENT-G1-Q10-SHOC_KY_1-PCANH_DIEU
+//	GRADE-G1-L3-Q10-SHỌC_KỲ_1-PCÁNH_DIỀU-V1
+//	ASSESSMENT-G2-LNA-Q10-SNA-PNA-V4
 //
-// There is no level segment. An earlier shape carried L<level>/LNA between
-// grade and question count; it was removed with the level axis itself
-// (the teaching team has no rule for it, so no request can vary by it and
-// the segment could only ever have been the LNA constant). Tags written in
-// the old shape simply never match again, which is correct — those exams
-// were generated from a prompt that no longer exists.
-func BuildCacheTag(examType enum.ExamType, grade int, level *int, numQues int, semester, program string) string {
+// L is the level a GRADE paper is written at, LNA for every other type
+// (only a GRADE review reads a level). V is ma_exam_prompts.prompt_version
+// of the grade: it moves on every admin rewrite of that grade's prompt, so
+// a set generated from the old text is never served again — the next
+// request misses and generates from the new one. Tags written before V
+// existed never match either, which is correct for the same reason: those
+// sets were generated from a prompt that no longer exists.
+func BuildCacheTag(examType enum.ExamType, grade int, level *int, numQues int, semester, program string, promptVersion int) string {
 	levelPart := "LNA"
 	if level != nil {
 		levelPart = fmt.Sprintf("L%d", *level)
@@ -38,6 +40,7 @@ func BuildCacheTag(examType enum.ExamType, grade int, level *int, numQues int, s
 		fmt.Sprintf("Q%d", numQues),
 		"S" + normalizeTagPart(semester),
 		"P" + normalizeTagPart(program),
+		fmt.Sprintf("V%d", promptVersion),
 	}, "-")
 }
 

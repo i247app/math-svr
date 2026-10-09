@@ -189,31 +189,60 @@ func ProbeGrade(grade int) int {
 // BuildExamPrompt returns the (system, user) contents for one generation
 // call. The caller sets JSONMode and a low temperature and forwards them
 // through the bot adapter.
+//
+// Deprecated: the system prompt now lives in ma_exam_prompts, one row per
+// grade; generation uses BuildExamUserPrompt. This stays until the code
+// templates are removed.
 func BuildExamPrompt(in ExamPromptInput) (system string, user string, err error) {
+	lang, n, err := examPromptParams(in)
+	if err != nil {
+		return "", "", err
+	}
+	if lang == QuizLanguageEnglish {
+		return buildSystemExamEN(in, n), buildUserExamEN(in, n), nil
+	}
+	return buildSystemExamVN(in, n), buildUserExamVN(in, n), nil
+}
+
+// BuildExamUserPrompt returns the user message of one generation call: the
+// per-request brief (current_grade, level, practice round, curriculum)
+// that goes beside the grade's stored system prompt.
+func BuildExamUserPrompt(in ExamPromptInput) (string, error) {
+	lang, n, err := examPromptParams(in)
+	if err != nil {
+		return "", err
+	}
+	if lang == QuizLanguageEnglish {
+		return buildUserExamEN(in, n), nil
+	}
+	return buildUserExamVN(in, n), nil
+}
+
+// examPromptParams validates the input and resolves the prompt language
+// and question count both builders need.
+func examPromptParams(in ExamPromptInput) (QuizLanguage, int, error) {
 	if in.Grade < enum.ExamGradeMin || in.Grade > enum.ExamGradeMax {
-		return "", "", fmt.Errorf("bot: exam grade %d out of range [%d,%d]",
+		return "", 0, fmt.Errorf("bot: exam grade %d out of range [%d,%d]",
 			in.Grade, enum.ExamGradeMin, enum.ExamGradeMax)
 	}
 	if !in.ExamType.IsValid() {
-		return "", "", fmt.Errorf("bot: unsupported exam type %q", string(in.ExamType))
+		return "", 0, fmt.Errorf("bot: unsupported exam type %q", string(in.ExamType))
 	}
 	if in.ExamType == enum.ExamTypePractice && in.Practice == nil {
-		return "", "", fmt.Errorf("bot: a PRACTICE prompt needs a practice brief")
+		return "", 0, fmt.Errorf("bot: a PRACTICE prompt needs a practice brief")
 	}
 	lang := QuizLanguageVietnamese
 	if in.Language != "" {
+		var err error
 		if lang, err = normalizeLanguage(in.Language); err != nil {
-			return "", "", err
+			return "", 0, err
 		}
 	}
 	n := in.NumQuestions
 	if n <= 0 {
 		n = examDefaultNumQuestions
 	}
-	if lang == QuizLanguageEnglish {
-		return buildSystemExamEN(in, n), buildUserExamEN(in, n), nil
-	}
-	return buildSystemExamVN(in, n), buildUserExamVN(in, n), nil
+	return lang, n, nil
 }
 
 // examTypeTitleVN is how each exam type reads in a title.

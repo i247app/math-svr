@@ -3,6 +3,7 @@ package exam
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"unicode/utf8"
 
@@ -10,6 +11,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	"math-ai.com/math-ai/internal/application/dto/question"
 	domainBot "math-ai.com/math-ai/internal/domain/bot"
+	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -43,6 +45,10 @@ func newBotClient(adapter *botAdapter.Adapter) *botClient {
 }
 
 type generateExamInput struct {
+	// Prompt is the grade's system prompt (ma_exam_prompts), sent verbatim.
+	// The caller loads it once per request so the text sent and the
+	// version written into the cache tag are the same row.
+	Prompt       *examDomain.ExamPrompt
 	ExamType     enum.ExamType
 	Grade        int
 	NumQuestions int
@@ -80,12 +86,20 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		Avoid:        in.Avoid,
 	}
 
-	system, user, err := domainBot.BuildExamPrompt(promptIn)
+	if in.Prompt == nil || in.Prompt.SystemPrompt() == "" {
+		return nil, errs.NewError(ctx, status.EXAM_PROMPT_NOT_FOUND, nil,
+			fmt.Errorf("exam: no system prompt for grade %d", in.Grade))
+	}
+	system := in.Prompt.SystemPrompt()
+	user, err := domainBot.BuildExamUserPrompt(promptIn)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)
 	}
 
-	log.Infof("PROMPT GENERATE EXAM: system=%s user=%s", system, user)
+	// The full system text is logged on purpose: a rewrite overwrites the
+	// row, so this line is the only record of what a past set was made from.
+	log.Infof("PROMPT GENERATE EXAM: grade=%d prompt_version=%d system=%s user=%s",
+		in.Grade, in.Prompt.PromptVersion(), system, user)
 
 	res, err := c.adapter.Chat(ctx, botAdapter.ChatRequest{
 		Messages: []botAdapter.Message{

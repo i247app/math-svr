@@ -13,18 +13,13 @@ import (
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
-// DefaultNumQuestions is what a generate request gets when it names no
-// count. MaxNumQuestions caps prompt size, token cost and latency; a
-// larger request is clamped rather than rejected, since the caller's
-// intent ("a longer exam") is still servable.
-//
-// The ASSESSMENT probe positions are fixed at questions 3 and 6, so an
-// exam shorter than six loses one or both probes. That is allowed — it
-// just measures less.
-const (
-	DefaultNumQuestions = 10
-	MaxNumQuestions     = 20
-)
+// DefaultNumQuestions is the size of every exam. It is fixed, not a
+// default: the per-grade system prompt in ma_exam_prompts is written for
+// exactly 10 questions (probes at Q3 and Q6 included) and fills nothing in
+// at runtime, so a request asking for another count is served 10. The
+// num_questions request field is kept so older clients still decode, and
+// ignored.
+const DefaultNumQuestions = 10
 
 // ValidatedGenerate carries the normalised values the service needs, so
 // nothing downstream has to re-parse the request's strings.
@@ -64,16 +59,9 @@ func ValidateGenerateExam(ctx context.Context, req *dto.GenerateExamReq) (Valida
 		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrLevelOutOfRange)
 	}
 
-	req.NumQuestions = clampNumQuestions(req.NumQuestions)
+	req.NumQuestions = DefaultNumQuestions
 
 	return ValidatedGenerate{ExamType: examType}, nil
-}
-
-func clampNumQuestions(n int) int {
-	if n <= 0 {
-		return DefaultNumQuestions
-	}
-	return min(n, MaxNumQuestions)
 }
 
 // ValidateGenerateExamPool checks a pool generation. Same rules as a
@@ -100,7 +88,7 @@ func ValidateGenerateExamPool(ctx context.Context, req *dto.GenerateExamPoolReq)
 	if req.Level != nil && (*req.Level < enum.ExamLevelMin || *req.Level > enum.ExamLevelMax) {
 		return "", errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrLevelOutOfRange)
 	}
-	req.NumQuestions = clampNumQuestions(req.NumQuestions)
+	req.NumQuestions = DefaultNumQuestions
 	return examType, nil
 }
 

@@ -59,6 +59,7 @@ type Repositories struct {
 	ExamLink           exam.IExamLinkRepository
 	ExamSession        exam.IExamSessionRepository
 	ExamSessionLine    exam.IExamSessionLineRepository
+	ExamPrompt         exam.IExamPromptRepository
 	Role               role.IRepository
 }
 

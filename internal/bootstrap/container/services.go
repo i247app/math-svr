@@ -163,6 +163,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ExamLinkRepository,
 		repos.ExamSessionRepository,
 		repos.ExamSessionLineRepository,
+		repos.ExamPromptRepository,
 		uow,
 		res.BotProvider,
 		repos.ProfileRepository,

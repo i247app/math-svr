@@ -452,3 +452,20 @@ func requireReviewable(ctx context.Context, journey *examDomain.ExamSession) err
 	}
 	return nil
 }
+
+// loadExamPrompt reads the grade's system prompt, once per request. The
+// same row supplies the version written into the cache tag and the text
+// sent to the model, so an admin rewrite landing mid-request cannot pair a
+// V3 tag with V4 text. A missing row fails the request: there is no prompt
+// in code to fall back to.
+func (s *Service) loadExamPrompt(ctx context.Context, grade int) (*examDomain.ExamPrompt, error) {
+	p, err := s.examPromptRepo.FindByGrade(ctx, grade)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if p == nil {
+		return nil, errs.NewError(ctx, status.EXAM_PROMPT_NOT_FOUND, nil,
+			fmt.Errorf("exam: ma_exam_prompts has no row for grade %d", grade))
+	}
+	return p, nil
+}

@@ -37,7 +37,7 @@ type GenerateExamReq struct {
 	EsessID      *int64 `json:"esess_id,omitempty"`
 	Grade        *int   `json:"grade,omitempty"`
 	Level        *int   `json:"level,omitempty"`
-	NumQuestions int    `json:"num_questions,omitempty"`
+	NumQuestions int    `json:"num_questions,omitempty"` // ignored: every exam is 10 questions (module/exam DefaultNumQuestions)
 	Semester     string `json:"semester,omitempty"`
 	Program      string `json:"program,omitempty"`
 }
@@ -800,7 +800,7 @@ type GenerateExamPoolReq struct {
 	ExamType     string `json:"exam_type"`
 	Grade        *int   `json:"grade"`
 	Level        *int   `json:"level,omitempty"`
-	NumQuestions int    `json:"num_questions,omitempty"`
+	NumQuestions int    `json:"num_questions,omitempty"` // ignored: every exam is 10 questions (module/exam DefaultNumQuestions)
 	Semester     string `json:"semester,omitempty"`
 	Program      string `json:"program,omitempty"`
 }

@@ -698,6 +698,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Thiếu trạng thái xác minh (is_verify)"
 	case EXAM_POOL_INVALID_QUESTIONS:
 		return "Bộ câu hỏi đã sửa phải giữ nguyên số câu và nhãn đáp án của đề"
+	case EXAM_PROMPT_NOT_FOUND:
+		return "Chưa cấu hình prompt tạo đề cho lớp này"
 
 	case POW_CHALLENGE_FAILED:
 		return "Không tạo được thử thách xác minh. Vui lòng thử lại"

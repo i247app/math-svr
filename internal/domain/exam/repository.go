@@ -128,6 +128,19 @@ type IExamPoolRepository interface {
 	Create(ctx context.Context, e *ExamPool) (*ExamPool, error)
 }
 
+// IExamPromptRepository owns the exam-generation system prompts, one row
+// per grade. There is no Create or Delete: the six rows are seeded, and an
+// admin can only rewrite one in place.
+type IExamPromptRepository interface {
+	FindByGrade(ctx context.Context, grade int) (*ExamPrompt, error)
+	// List returns every grade's prompt, lowest grade first.
+	List(ctx context.Context) ([]*ExamPrompt, error)
+	// UpdatePrompt overwrites system_prompt and adds 1 to prompt_version in
+	// one statement, so two concurrent rewrites never share a version
+	// number. It reports false when no live row exists for the grade.
+	UpdatePrompt(ctx context.Context, grade int, systemPrompt string, modifyId *int64) (bool, error)
+}
+
 // IExamLinkRepository owns individual attempts.
 //
 // MarkSubmitted is deliberately narrow rather than a general Update: an

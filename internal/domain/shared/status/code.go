@@ -434,6 +434,10 @@ const (
 	// EXAM_POOL_INVALID_QUESTIONS: a corrected question set is empty or does
 	// not keep the stored set's question numbers and answer labels.
 	EXAM_POOL_INVALID_QUESTIONS StatusCode = 13742
+	// EXAM_PROMPT_NOT_FOUND: ma_exam_prompts has no live row for the grade,
+	// so there is no system prompt to generate with. Generation fails rather
+	// than falling back to a prompt in code.
+	EXAM_PROMPT_NOT_FOUND StatusCode = 13743
 
 	// Proof of work — 13800-13899. Gates /exams/generate against bots.
 	POW_CHALLENGE_FAILED    StatusCode = 13800 // could not mint a challenge

@@ -698,6 +698,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "is_verify is required"
 	case EXAM_POOL_INVALID_QUESTIONS:
 		return "The corrected questions must keep the exam's question numbers and answer labels"
+	case EXAM_PROMPT_NOT_FOUND:
+		return "No exam prompt is configured for this grade"
 
 	case POW_CHALLENGE_FAILED:
 		return "Could not create a verification challenge. Please try again"
