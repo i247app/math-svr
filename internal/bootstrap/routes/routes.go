@@ -264,6 +264,9 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /exams/pools/detail", examHandler.HandleGetExamPool, adminOrApiKeyMiddleware)
 		reg("POST /exams/pools/mark-verify", examHandler.HandleMarkExamPoolVerify, adminOrApiKeyMiddleware)
 		reg("POST /exams/pools/verify", examHandler.HandleVerifyExamPool, adminOrApiKeyMiddleware)
+		reg("POST /exams/prompts/list", examHandler.HandleListExamPrompts, adminOrApiKeyMiddleware)
+		reg("POST /exams/prompts/detail", examHandler.HandleGetExamPrompt, adminOrApiKeyMiddleware)
+		reg("POST /exams/prompts/update", examHandler.HandleUpdateExamPrompt, adminOrApiKeyMiddleware)
 	}
 
 	// classroom routes

@@ -3,6 +3,7 @@ package exam
 import (
 	"context"
 	"fmt"
+	"unicode/utf8"
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	command "math-ai.com/math-ai/internal/application/command/exam"
@@ -36,6 +37,7 @@ type Service struct {
 	createPoolCmd   *command.CreateExamPoolCommandHandler
 	markVerifyCmd   *command.MarkExamPoolVerifyCommandHandler
 	verifyPoolCmd   *command.VerifyExamPoolCommandHandler
+	updatePromptCmd *command.UpdateExamPromptCommandHandler
 	getAttemptQuery *query.GetExamAttemptQueryHandler
 	getJourneyQuery *query.GetExamJourneyQueryHandler
 	listQuery       *query.ListExamAttemptsQueryHandler
@@ -86,6 +88,7 @@ func NewService(
 		createPoolCmd:   command.NewCreateExamPoolCommandHandler(uow),
 		markVerifyCmd:   command.NewMarkExamPoolVerifyCommandHandler(uow),
 		verifyPoolCmd:   command.NewVerifyExamPoolCommandHandler(uow),
+		updatePromptCmd: command.NewUpdateExamPromptCommandHandler(uow),
 		getAttemptQuery: query.NewGetExamAttemptQueryHandler(attemptRepo, examPoolRepo, detailRepo),
 		getJourneyQuery: query.NewGetExamJourneyQueryHandler(examSessionRepo, attemptRepo, examPoolRepo, detailRepo),
 		listQuery:       query.NewListExamAttemptsQueryHandler(attemptRepo, examPoolRepo),
@@ -873,4 +876,58 @@ func (s *Service) VerifyExamPool(ctx context.Context, req *dto.VerifyExamPoolReq
 	logger.From(ctx).Infof("exam.pool.verified admin_uid=%d exam_id=%d verified_count=%d",
 		sctx.UID(ctx), req.ExamID, pool.VerifiedCount())
 	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}, nil
+}
+
+// ListExamPrompts returns every grade's system prompt, lowest grade first,
+// full text included. Admin only.
+func (s *Service) ListExamPrompts(ctx context.Context) (*dto.ListExamPromptsRes, error) {
+	if _, err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	prompts, err := s.examPromptRepo.List(ctx)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	return &dto.ListExamPromptsRes{ExamPrompts: dto.ExamPromptsToResponse(prompts)}, nil
+}
+
+// GetExamPrompt reads one grade's system prompt, full text included.
+// Admin only.
+func (s *Service) GetExamPrompt(ctx context.Context, req *dto.GetExamPromptReq) (*dto.ExamPromptRes, error) {
+	if _, err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	if err := ValidateGetExamPrompt(ctx, req); err != nil {
+		return nil, err
+	}
+	prompt, err := s.loadExamPrompt(ctx, *req.Grade)
+	if err != nil {
+		return nil, err
+	}
+	return &dto.ExamPromptRes{ExamPrompt: dto.ExamPromptToResponse(prompt)}, nil
+}
+
+// UpdateExamPrompt overwrites one grade's system prompt. The new text is
+// used from the next generation on, and the version it bumps moves the
+// grade's cache tag, so sets generated from the old text stop being served.
+// Admin only.
+func (s *Service) UpdateExamPrompt(ctx context.Context, req *dto.UpdateExamPromptReq) (*dto.ExamPromptRes, error) {
+	via, err := requireAdminGate(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := ValidateUpdateExamPrompt(ctx, req); err != nil {
+		return nil, err
+	}
+	saved, err := s.updatePromptCmd.Handle(ctx, command.UpdateExamPromptCommand{
+		Grade:        *req.Grade,
+		SystemPrompt: req.SystemPrompt,
+		AdminUID:     adminActor(ctx),
+	})
+	if err != nil {
+		return nil, err
+	}
+	logger.From(ctx).Infof("exam.prompt.updated admin_uid=%d via=%s grade=%d prompt_version=%d runes=%d",
+		sctx.UID(ctx), via, saved.Grade(), saved.PromptVersion(), utf8.RuneCountInString(saved.SystemPrompt()))
+	return &dto.ExamPromptRes{ExamPrompt: dto.ExamPromptToResponse(saved)}, nil
 }

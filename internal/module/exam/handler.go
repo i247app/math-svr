@@ -583,3 +583,43 @@ func (h *ExamHandler) HandleVerifyExamPool(w http.ResponseWriter, r *http.Reques
 	}
 	response.WriteJson(w, res, nil)
 }
+
+// POST /exams/prompts/list — admin only; every grade's system prompt.
+func (h *ExamHandler) HandleListExamPrompts(w http.ResponseWriter, r *http.Request) {
+	res, err := h.service.ListExamPrompts(r.Context())
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /exams/prompts/detail — admin only; one grade's system prompt.
+func (h *ExamHandler) HandleGetExamPrompt(w http.ResponseWriter, r *http.Request) {
+	var req dto.GetExamPromptReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.GetExamPrompt(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /exams/prompts/update — admin only; overwrites one grade's prompt.
+func (h *ExamHandler) HandleUpdateExamPrompt(w http.ResponseWriter, r *http.Request) {
+	var req dto.UpdateExamPromptReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.UpdateExamPrompt(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}

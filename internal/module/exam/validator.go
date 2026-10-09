@@ -2,9 +2,11 @@ package exam
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -462,4 +464,62 @@ func ValidateMarkExamJourney(ctx context.Context, req *dto.MarkExamJourneyReq) (
 	}
 	req.Status = string(st)
 	return ValidatedMarkJourney{Status: st}, nil
+}
+
+// MaxExamPromptRunes caps a stored system prompt. The column is MEDIUMTEXT,
+// so the limit is about cost, not storage: every generation of the grade
+// sends the whole text.
+const MaxExamPromptRunes = 50000
+
+// examPromptJSONKeys are the keys the generation parser reads
+// (question.ParseGenerationOf over dto.ExamQuestion / question.AnswerChoice).
+// The admin owns the whole prompt, output structure included, so a save
+// that drops one of these would make every later generation of that grade
+// unreadable — it is refused instead. Quoted, because the structure block
+// names them that way and prose that merely mentions a key is not enough.
+// This proves the text NAMES each key; it cannot prove the model obeys.
+var examPromptJSONKeys = []string{
+	`"short_text"`, `"questions"`, `"question_number"`, `"question_type"`,
+	`"question_name"`, `"answers"`, `"label"`, `"content"`,
+	`"right_answer_label"`, `"right_answer_content"`, `"question_topic"`, `"question_grade"`,
+}
+
+// validatePromptGrade is the grade check both prompt routes share.
+func validatePromptGrade(ctx context.Context, grade *int) error {
+	if grade == nil {
+		return errs.NewError(ctx, status.EXAM_MISSING_GRADE, nil, ErrGradeRequired)
+	}
+	if *grade < enum.ExamGradeMin || *grade > enum.ExamGradeMax {
+		return errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
+	}
+	return nil
+}
+
+// ValidateGetExamPrompt checks a prompt read.
+func ValidateGetExamPrompt(ctx context.Context, req *dto.GetExamPromptReq) error {
+	return validatePromptGrade(ctx, req.Grade)
+}
+
+// ValidateUpdateExamPrompt checks a prompt rewrite before it is stored.
+func ValidateUpdateExamPrompt(ctx context.Context, req *dto.UpdateExamPromptReq) error {
+	if err := validatePromptGrade(ctx, req.Grade); err != nil {
+		return err
+	}
+	if strings.TrimSpace(req.SystemPrompt) == "" {
+		return errs.NewError(ctx, status.EXAM_PROMPT_EMPTY, nil, ErrPromptEmpty)
+	}
+	if utf8.RuneCountInString(req.SystemPrompt) > MaxExamPromptRunes {
+		return errs.NewError(ctx, status.EXAM_PROMPT_TOO_LONG, nil, ErrPromptTooLong)
+	}
+	var missing []string
+	for _, key := range examPromptJSONKeys {
+		if !strings.Contains(req.SystemPrompt, key) {
+			missing = append(missing, key)
+		}
+	}
+	if len(missing) > 0 {
+		return errs.NewError(ctx, status.EXAM_PROMPT_MISSING_JSON_KEY, nil,
+			fmt.Errorf("system_prompt does not name the JSON key(s) %s", strings.Join(missing, ", ")))
+	}
+	return nil
 }

@@ -895,3 +895,57 @@ func ExamPoolsToResponse(pools []*domain.ExamPool) []*ExamPoolResponse {
 	}
 	return out
 }
+
+// GetExamPromptReq reads one grade's system prompt.
+type GetExamPromptReq struct {
+	Grade *int `json:"grade"`
+}
+
+// UpdateExamPromptReq replaces one grade's system prompt. The text is
+// stored and sent to the model verbatim; nothing in it is filled in.
+type UpdateExamPromptReq struct {
+	Grade        *int   `json:"grade"`
+	SystemPrompt string `json:"system_prompt"`
+}
+
+// ExamPromptResponse is one grade's exam-generation system prompt.
+// prompt_version grows by one per rewrite and is part of the exam cache
+// tag: sets generated before a rewrite are not served after it.
+type ExamPromptResponse struct {
+	PromptID      int64  `json:"prompt_id"`
+	Grade         int    `json:"grade"`
+	SystemPrompt  string `json:"system_prompt"`
+	PromptVersion int    `json:"prompt_version"`
+	ModifyID      *int64 `json:"modify_id,omitempty"`
+	ModifyDt      string `json:"modify_dt"`
+}
+
+type ExamPromptRes struct {
+	ExamPrompt *ExamPromptResponse `json:"exam_prompt"`
+}
+
+type ListExamPromptsRes struct {
+	ExamPrompts []*ExamPromptResponse `json:"exam_prompts"`
+}
+
+func ExamPromptToResponse(p *domain.ExamPrompt) *ExamPromptResponse {
+	if p == nil {
+		return nil
+	}
+	return &ExamPromptResponse{
+		PromptID:      p.PromptId(),
+		Grade:         p.Grade(),
+		SystemPrompt:  p.SystemPrompt(),
+		PromptVersion: p.PromptVersion(),
+		ModifyID:      p.ModifyId(),
+		ModifyDt:      p.ModifyDt().String(),
+	}
+}
+
+func ExamPromptsToResponse(ps []*domain.ExamPrompt) []*ExamPromptResponse {
+	out := make([]*ExamPromptResponse, 0, len(ps))
+	for _, p := range ps {
+		out = append(out, ExamPromptToResponse(p))
+	}
+	return out
+}

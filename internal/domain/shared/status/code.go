@@ -438,6 +438,15 @@ const (
 	// so there is no system prompt to generate with. Generation fails rather
 	// than falling back to a prompt in code.
 	EXAM_PROMPT_NOT_FOUND StatusCode = 13743
+	// EXAM_PROMPT_EMPTY: /exams/prompts/update sent no text (or only
+	// whitespace).
+	EXAM_PROMPT_EMPTY StatusCode = 13744
+	// EXAM_PROMPT_TOO_LONG: the text is over the 50,000-character limit.
+	EXAM_PROMPT_TOO_LONG StatusCode = 13745
+	// EXAM_PROMPT_MISSING_JSON_KEY: the text does not name every JSON key
+	// the generation parser reads; debug lists the missing ones. Saving it
+	// would make every generation of that grade unreadable.
+	EXAM_PROMPT_MISSING_JSON_KEY StatusCode = 13746
 
 	// Proof of work — 13800-13899. Gates /exams/generate against bots.
 	POW_CHALLENGE_FAILED    StatusCode = 13800 // could not mint a challenge

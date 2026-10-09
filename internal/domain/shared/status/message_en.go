@@ -700,6 +700,12 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "The corrected questions must keep the exam's question numbers and answer labels"
 	case EXAM_PROMPT_NOT_FOUND:
 		return "No exam prompt is configured for this grade"
+	case EXAM_PROMPT_EMPTY:
+		return "The exam prompt cannot be empty"
+	case EXAM_PROMPT_TOO_LONG:
+		return "The exam prompt is too long (at most 50,000 characters)"
+	case EXAM_PROMPT_MISSING_JSON_KEY:
+		return "The exam prompt must name every JSON key of the output structure"
 
 	case POW_CHALLENGE_FAILED:
 		return "Could not create a verification challenge. Please try again"

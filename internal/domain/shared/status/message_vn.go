@@ -700,6 +700,12 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Bộ câu hỏi đã sửa phải giữ nguyên số câu và nhãn đáp án của đề"
 	case EXAM_PROMPT_NOT_FOUND:
 		return "Chưa cấu hình prompt tạo đề cho lớp này"
+	case EXAM_PROMPT_EMPTY:
+		return "Prompt tạo đề không được để trống"
+	case EXAM_PROMPT_TOO_LONG:
+		return "Prompt tạo đề quá dài (tối đa 50.000 ký tự)"
+	case EXAM_PROMPT_MISSING_JSON_KEY:
+		return "Prompt tạo đề phải nêu đủ các khóa JSON của cấu trúc kết quả"
 
 	case POW_CHALLENGE_FAILED:
 		return "Không tạo được thử thách xác minh. Vui lòng thử lại"
