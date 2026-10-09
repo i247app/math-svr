@@ -3,10 +3,10 @@
 ## Overview
 
 `math-svr` (Go module `math-ai.com/math-ai`) is the HTTP backend for **Math-AI**, an
-AI-powered math quiz platform for **Vietnamese primary-school students (Grades 1–5)**.
-The audience is stated explicitly in the LLM prompt templates — e.g.
-`internal/domain/bot/prompt_templates_en.go`: *"You are a math quiz generator for
-Vietnamese primary-school students (Grades 1-5)."*
+AI-powered math practice and exam platform for **Vietnamese children from kindergarten
+(Mẫu giáo) to Grade 5**. Each grade's exam-generation prompt is stored in the database
+(`ma_exam_prompts`, one row per grade) and rewritten by admins through `/exams/prompts/*`
+— changing a prompt needs no deploy.
 
 What the server does, as implemented in `internal/module/` and
 `internal/bootstrap/routes/routes.go`:
@@ -23,12 +23,13 @@ What the server does, as implemented in `internal/module/` and
 - **Curriculum reference data** — programs, grades, semesters
   (`/programs/*`, `/grades/*`, `/semesters/*`). Single-language; rows are seeded
   outside the app.
-- **AI quizzes** — `/quizzes/generate` builds a quiz through the bot adapter using
-  curriculum context; `/quizzes/submit` grades deterministically, while
-  `/quizzes/submit/cost-ai` grades through the LLM. Quizzes carry a *purpose*
-  (`ASSESSMENT` / `PRACTICE` / `EXAM`) and a *type* (`GENERAL` / `REINFORCEMENT`,
-  where reinforcement quizzes target previously-missed material) — see
-  `internal/shared/enum/quiz.go` and `internal/domain/bot/prompts.go`.
+- **AI exams** — `/exams/generate` hands a child a 10-question exam: from the cache of
+  earlier generations (`ma_exam_pools`) when one matches, otherwise through the bot
+  adapter with the grade's stored system prompt. `/exams/submit` grades
+  deterministically. An exam is `ASSESSMENT`, `GRADE` (levels 0–9) or `PRACTICE` (built
+  from the child's last mistakes), and folds into a journey — see
+  `internal/shared/enum/exam.go` and `.claude/rules/product.md` §2. Admins manage the
+  cache (`/exams/pools/*`) and the per-grade prompts (`/exams/prompts/*`).
 - **Classrooms** — teacher-owned classrooms (`/classrooms/*`) with members, roles,
   archiving, invite codes, teacher-initiated invitations and student-initiated join
   requests (both are `ma_classroom_members` rows distinguished by `member_status`),
@@ -307,9 +308,10 @@ factory is the only place that knows the vendor:
 | `notification` | Firebase | `nil` when disabled |
 | `otp_delivery` | composite over `sms` + `email` | routes by identifier: contains `@` → email, else → SMS |
 
-The quiz and exercise modules reach the LLM only through their own
-`bot_service.go`, which owns prompt construction (`internal/domain/bot/`), JSON-mode
-enforcement, and response parsing.
+The exam and exercise modules reach the LLM only through their own
+`bot_service.go`, which owns prompt assembly (the exam system prompt is a
+`ma_exam_prompts` row; the exam user message and the exercise prompts are built in
+`internal/domain/bot/`), JSON-mode enforcement, and response parsing.
 
 ### Runtime components inside `cmd/mathsvr`
 
