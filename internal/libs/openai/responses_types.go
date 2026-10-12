@@ -189,4 +189,7 @@ const (
 	outputContentText    = "output_text"
 	outputContentRefusal = "refusal"
 	textFormatJSONObject = "json_object"
+
+	roleDeveloper      = "developer"
+	jsonModeInputNudge = "Respond with a single JSON object."
 )

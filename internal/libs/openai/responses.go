@@ -123,9 +123,19 @@ func (c *Client) Respond(ctx context.Context, req RespondRequest) (*RespondRespo
 func (c *Client) buildResponsesRequest(req RespondRequest) wireResponsesRequest {
 	model := firstNonEmpty(req.Model, c.cfg.Model)
 
-	input := make([]wireInputMessage, 0, len(req.Input))
+	input := make([]wireInputMessage, 0, len(req.Input)+1)
+	mentionsJSON := false
 	for _, m := range req.Input {
 		input = append(input, wireInputMessage{Role: string(m.Role), Content: m.Content})
+		mentionsJSON = mentionsJSON || strings.Contains(strings.ToLower(m.Content), "json")
+	}
+	// json_object mode is refused (400, param=input) unless an INPUT
+	// message names JSON — instructions do not count, unlike the system
+	// message on chat-completions. Moving the system prompt into input
+	// would re-bill it on every chained turn, so a one-line developer
+	// message is added instead.
+	if req.JSONMode && !mentionsJSON {
+		input = append(input, wireInputMessage{Role: roleDeveloper, Content: jsonModeInputNudge})
 	}
 
 	store := req.Store
