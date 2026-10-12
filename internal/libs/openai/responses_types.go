@@ -152,10 +152,20 @@ type wireOutputContent struct {
 // wireResponsesUsage uses the Responses vocabulary (input/output) rather
 // than chat-completions' prompt/completion. toUsage folds it into the
 // shared Usage so the adapter sees one shape.
+//
+// The two detail blocks are read for the log line only: cached_tokens is
+// the part of a chained turn's input billed at the cache rate, which is
+// what tells whether a long chain is actually expensive.
 type wireResponsesUsage struct {
-	InputTokens  int `json:"input_tokens"`
-	OutputTokens int `json:"output_tokens"`
-	TotalTokens  int `json:"total_tokens"`
+	InputTokens        int `json:"input_tokens"`
+	InputTokensDetails struct {
+		CachedTokens int `json:"cached_tokens"`
+	} `json:"input_tokens_details"`
+	OutputTokens        int `json:"output_tokens"`
+	OutputTokensDetails struct {
+		ReasoningTokens int `json:"reasoning_tokens"`
+	} `json:"output_tokens_details"`
+	TotalTokens int `json:"total_tokens"`
 }
 
 func (u *wireResponsesUsage) toUsage() Usage {
@@ -171,6 +181,9 @@ func (u *wireResponsesUsage) toUsage() Usage {
 
 const (
 	responseStatusIncomplete = "incomplete"
+	// incompleteContentFilter is the incomplete_details.reason for output
+	// stopped by the content filter — a refusal, not a budget problem.
+	incompleteContentFilter = "content_filter"
 
 	outputItemMessage    = "message"
 	outputContentText    = "output_text"

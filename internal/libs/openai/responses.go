@@ -23,9 +23,10 @@ import (
 //   - ErrInvalidConfig      — empty Input, or PreviousResponseID without Store.
 //   - ErrPreviousResponseGone — the pointer is no longer usable (expired,
 //     wrong, or foreign). The caller decides whether to rebuild.
-//   - ErrContentRefused     — 200 whose output is a refusal.
+//   - ErrContentRefused     — 200 whose output is a refusal, or Status
+//     "incomplete" with reason "content_filter".
 //   - ErrDecodeResponse     — 200 with no message text, or Status
-//     "incomplete" (truncated by max_output_tokens) — the partial
+//     "incomplete" for any other reason (max_output_tokens, ...) — the partial
 //     response is returned alongside so the caller can log its ID, but
 //     it must not be chained on.
 //   - everything else       — same classification as Generate.
@@ -80,9 +81,14 @@ func (c *Client) Respond(ctx context.Context, req RespondRequest) (*RespondRespo
 	resp.Content = content
 
 	// Operator metadata only — never the prompt or the response body.
-	logger.From(ctx).Infof("openai.respond id=%s model=%s status=%s chained=%v input_tokens=%d output_tokens=%d",
+	var cached, reasoning int
+	if wire.Usage != nil {
+		cached = wire.Usage.InputTokensDetails.CachedTokens
+		reasoning = wire.Usage.OutputTokensDetails.ReasoningTokens
+	}
+	logger.From(ctx).Infof("openai.respond id=%s model=%s status=%s chained=%v input_tokens=%d cached_tokens=%d output_tokens=%d reasoning_tokens=%d",
 		resp.ID, resp.Model, resp.Status, chained,
-		resp.Usage.PromptTokens, resp.Usage.CompletionTokens)
+		resp.Usage.PromptTokens, cached, resp.Usage.CompletionTokens, reasoning)
 
 	// Order matters below: a refusal is a decision about the content, a
 	// truncation is a decision about the budget, an empty body is a
@@ -91,9 +97,19 @@ func (c *Client) Respond(ctx context.Context, req RespondRequest) (*RespondRespo
 	if refused {
 		return resp, fmt.Errorf("%w: output contained a refusal item", ErrContentRefused)
 	}
+	if wire.Status == responseStatusIncomplete && resp.IncompleteReason == incompleteContentFilter {
+		return resp, fmt.Errorf("%w: response stopped by the content filter", ErrContentRefused)
+	}
 	if wire.Status == responseStatusIncomplete {
-		return resp, fmt.Errorf("%w: response incomplete (reason=%s, output_tokens=%d) — raise MaxTokens",
-			ErrDecodeResponse, firstNonEmpty(resp.IncompleteReason, "unknown"), resp.Usage.CompletionTokens)
+		// max_output_tokens is the budget case; other reasons (max_messages,
+		// steered) are reported as-is so the log does not point at the
+		// wrong knob.
+		hint := ""
+		if resp.IncompleteReason == "max_output_tokens" {
+			hint = " — raise MaxTokens"
+		}
+		return resp, fmt.Errorf("%w: response incomplete (reason=%s, output_tokens=%d)%s",
+			ErrDecodeResponse, firstNonEmpty(resp.IncompleteReason, "unknown"), resp.Usage.CompletionTokens, hint)
 	}
 	if strings.TrimSpace(content) == "" {
 		return resp, fmt.Errorf("%w: response carried no message text", ErrDecodeResponse)
