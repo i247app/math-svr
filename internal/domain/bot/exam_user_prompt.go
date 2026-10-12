@@ -101,11 +101,28 @@ func buildUserExamEN(in ExamPromptInput, n int) string {
 	if ctx := examContextEN(in); ctx != "" {
 		out.WriteString("\nCURRICULUM (use only to choose topics — NOT to raise or lower difficulty; if a textbook is given, use it instead of choosing one):\n" + ctx + "\n")
 	}
-	// if avoid := examAvoidBlock(in.Avoid); avoid != "" {
-	// 	out.WriteString("\n" + avoid + "\n")
-	// }
+	if avoid := examAvoidBlock(in.Avoid); avoid != "" {
+		out.WriteString("\n" + avoid + "\n")
+	}
 
 	return strings.TrimRight(out.String(), "\n")
+}
+
+// examAvoidBlock lists the stems the child has already met, one per line.
+// Blank stems are skipped; an empty list renders nothing so the caller can
+// append it unconditionally.
+func examAvoidBlock(stems []string) string {
+	var sb strings.Builder
+	for _, stem := range stems {
+		if stem = strings.TrimSpace(stem); stem != "" {
+			sb.WriteString("- " + stem + "\n")
+		}
+	}
+	if sb.Len() == 0 {
+		return ""
+	}
+	return "NO REPEATS (MANDATORY)\nDo NOT repeat any question below. For each question number, use different numbers, calculations, sequences, patterns AND icons. Swapping two numbers or changing only the sign is NOT different:\n" +
+		strings.TrimRight(sb.String(), "\n")
 }
 
 // joinOr renders a topic list, or the fallback when there is none.
