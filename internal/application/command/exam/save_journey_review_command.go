@@ -29,6 +29,9 @@ type SaveJourneyReviewCommand struct {
 	ProfileID   int64
 	ReviewShort string
 	ReviewLong  string
+	// RespID is the model turn that wrote the review, written as the
+	// journey's last_resp_id (nil clears it).
+	RespID *string
 }
 
 type SaveJourneyReviewCommandHandler struct {
@@ -78,6 +81,10 @@ func (h *SaveJourneyReviewCommandHandler) Handle(ctx context.Context, cmd SaveJo
 			}
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
+		if err := repos.ExamSession.SetLastRespID(ctx, cmd.EsessID, cmd.RespID); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		journey.SetLastRespId(cmd.RespID)
 		short, long := cmd.ReviewShort, cmd.ReviewLong
 		journey.SetAiReviewShort(&short)
 		journey.SetAiReviewLong(&long)

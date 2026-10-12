@@ -469,3 +469,22 @@ func (s *Service) loadExamPrompt(ctx context.Context, grade int) (*examDomain.Ex
 	}
 	return p, nil
 }
+
+// journeyChain returns the open journey's last_resp_id, "" when there is
+// no journey yet (the hand-out opens one) or no live chain. Read outside
+// the transaction: a concurrent hand-out on the same journey is resolved
+// by the command's journey lock, which hands its sitting back and writes
+// no pointer.
+func (s *Service) journeyChain(ctx context.Context, openJourney *int64) (string, error) {
+	if openJourney == nil {
+		return "", nil
+	}
+	j, err := s.examSessionRepo.FindByEsessId(ctx, *openJourney)
+	if err != nil {
+		return "", errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if j == nil {
+		return "", nil
+	}
+	return utils.DerefString(j.LastRespId()), nil
+}

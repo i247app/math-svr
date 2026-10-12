@@ -23,7 +23,7 @@ const (
 
 	examSessionColumns = `e.esess_id, e.uid, e.profile_id, e.req_exam_type,
 		e.res_total_questions, e.res_correct_number, e.res_skipped_number, e.res_score_percentage,
-		e.res_review, e.esess_flag, e.ai_title, e.ai_short_text, e.ai_review_short, e.ai_review_long, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
+		e.res_review, e.esess_flag, e.ai_title, e.ai_short_text, e.ai_review_short, e.ai_review_long, e.last_resp_id, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
 		e.rpt_flg, e.kwords, e.note, e.esess_status, e.status,
 		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
 
@@ -46,7 +46,7 @@ func scanExamSession(s database.RowScanner) (*models.ExamSessionModel, error) {
 	var m models.ExamSessionModel
 	if err := s.Scan(&m.EsessId, &m.Uid, &m.ProfileId, &m.ReqExamType,
 		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
-		&m.ResReview, &m.EsessFlag, &m.AiTitle, &m.AiShortText, &m.AiReviewShort, &m.AiReviewLong, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
+		&m.ResReview, &m.EsessFlag, &m.AiTitle, &m.AiShortText, &m.AiReviewShort, &m.AiReviewLong, &m.LastRespId, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.EsessStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -647,6 +647,21 @@ func (r *ExamSessionRepository) SetAiReview(ctx context.Context, esessId int64, 
 	return nil
 }
 
+// SetLastRespID keeps modify_dt for the same reason as SetAiReview. The
+// row was locked and read in the caller's transaction, so no miss check.
+func (r *ExamSessionRepository) SetLastRespID(ctx context.Context, esessId int64, respID *string) error {
+	query := `
+		UPDATE ` + examSessionTable + `
+		SET last_resp_id = ?,
+			modify_dt    = modify_dt
+		WHERE esess_id = ? AND req_exam_type <> ?
+	`
+	if _, err := r.db.Exec(ctx, query, respID, esessId, string(enum.ExamTypePractice)); err != nil {
+		return fmt.Errorf("user exam repo set last resp id: %w", err)
+	}
+	return nil
+}
+
 // Create opens a journey row. It is a plain INSERT on purpose: the
 // previous INSERT ... ON DUPLICATE KEY UPDATE quietly redirected the write
 // into whatever row collided on ANY unique key — and when the schema
@@ -776,6 +791,7 @@ func ModelToDomainExamSession(m *models.ExamSessionModel) *exam.ExamSession {
 	e.SetAiShortText(m.AiShortText)
 	e.SetAiReviewShort(m.AiReviewShort)
 	e.SetAiReviewLong(m.AiReviewLong)
+	e.SetLastRespId(m.LastRespId)
 	e.SetCurrentGrade(m.CurrentGrade)
 	e.SetCurrentLevel(m.CurrentLevel)
 	e.SetLastSubmittedDt(mtime.MathTimeFromPtr(m.LastSubmittedDt))

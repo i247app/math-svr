@@ -19,6 +19,7 @@ type ExamSessionModel struct {
 	AiShortText        *string
 	AiReviewShort      *string
 	AiReviewLong       *string
+	LastRespId         *string
 	CurrentGrade       *int
 	CurrentLevel       *int
 	LastSubmittedDt    *time.Time

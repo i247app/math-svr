@@ -206,6 +206,10 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 		if err != nil {
 			return nil, err
 		}
+		chain, err := s.journeyChain(ctx, openJourney)
+		if err != nil {
+			return nil, err
+		}
 		in := generateExamInput{
 			Prompt:       prompt,
 			ExamType:     validated.ExamType,
@@ -215,6 +219,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 			Program:      req.Program,
 			Level:        promptLevel,
 			Avoid:        avoid,
+			Chain:        &chain,
 		}
 		generated, err := s.bot.GenerateExam(ctx, in)
 		if err != nil {
@@ -225,6 +230,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 			return nil, err
 		}
 		cmd.NewContent = content
+		cmd.RespID = generated.RespID
 		canonical = generated.Questions
 	}
 
@@ -312,6 +318,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		Program:      req.Program,
 		Practice:     &brief,
 		Avoid:        avoid,
+		Chain:        utils.ToAnyPtr(utils.DerefString(journey.LastRespId())),
 	}
 	generated, err := s.bot.GenerateExam(ctx, in)
 	if err != nil {
@@ -333,6 +340,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		Level:      req.Level,
 		EsessID:    &journeyID,
 		NewContent: content,
+		RespID:     generated.RespID,
 	}, generated.Questions, profile)
 }
 
@@ -714,7 +722,7 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 			fmt.Errorf("exam: journey %d has no answered question", req.EsessID))
 	}
 
-	review, err := s.bot.ReviewJourney(ctx, journeyReviewInput(journey, lines))
+	review, err := s.bot.ReviewJourney(ctx, journeyReviewInput(journey, lines), utils.DerefString(journey.LastRespId()))
 	if err != nil {
 		return nil, err
 	}
@@ -726,6 +734,7 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 		ProfileID:   profile.ProfileId(),
 		ReviewShort: review.Short,
 		ReviewLong:  review.Long,
+		RespID:      review.RespID,
 	})
 	if err != nil {
 		return nil, err

@@ -359,6 +359,11 @@ type IExamSessionRepository interface {
 	// old journey must not make it the "latest" one. ErrJourneyNotFound
 	// when no such row exists.
 	SetAiReview(ctx context.Context, esessId int64, examType string, short, long string) error
+	// SetLastRespID stores the journey's chain pointer (nil clears it) on
+	// its OWN row — never the PRACTICE row sharing the id — whatever its
+	// state, WITHOUT moving modify_dt: a model turn is not work on the
+	// journey. The caller holds the journey lock.
+	SetLastRespID(ctx context.Context, esessId int64, respID *string) error
 	// MarkStatus ends an open journey. passMark (PassMarkFor) nil leaves
 	// esess_flag NULL; otherwise esess_flag is whether the row's score, as
 	// it stands in the same UPDATE, reaches passMark — a journey with no

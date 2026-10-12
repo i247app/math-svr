@@ -89,6 +89,11 @@ type ExamSession struct {
 	// and overwritten by each later review. Nil until one is asked for.
 	aiReviewShort *string
 	aiReviewLong  *string
+	// lastRespId is the vendor id of the latest model turn made for this
+	// journey (generation, PRACTICE round or review), sent back as
+	// previous_response_id so the model keeps the journey's context. Nil =
+	// no live chain. Internal: never on a DTO.
+	lastRespId *string
 
 	lastSubmittedDt mtime.MathTime
 	endedDt         mtime.MathTime
@@ -136,6 +141,8 @@ func (u *ExamSession) AiReviewShort() *string       { return u.aiReviewShort }
 func (u *ExamSession) SetAiReviewShort(s *string)   { u.aiReviewShort = s }
 func (u *ExamSession) AiReviewLong() *string        { return u.aiReviewLong }
 func (u *ExamSession) SetAiReviewLong(s *string)    { u.aiReviewLong = s }
+func (u *ExamSession) LastRespId() *string          { return u.lastRespId }
+func (u *ExamSession) SetLastRespId(s *string)      { u.lastRespId = s }
 
 // HasAiReview reports whether the journey already holds both versions of
 // its AI review; such a journey is not reviewed again.

@@ -68,6 +68,10 @@ type GenerateExamCommand struct {
 
 	ReuseExamID *int64
 	NewContent  *NewExamPoolContent
+	// RespID is the model turn that produced NewContent, written as the
+	// journey's last_resp_id (nil clears it: a stateless provider, or the
+	// chain hit its cap). Ignored on a cache hit — no turn was made.
+	RespID *string
 }
 
 type GenerateExamResult struct {
@@ -127,6 +131,11 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		if err := h.recordCurrent(ctx, repos, cmd, journeyID, examPool); err != nil {
 			return err
 		}
+		if cmd.NewContent != nil {
+			if err := repos.ExamSession.SetLastRespID(ctx, journeyID, cmd.RespID); err != nil {
+				return errs.NewError(ctx, status.FAIL, nil, err)
+			}
+		}
 
 		attemptID, err := seqgen.Next(ctx, repos.Seq, seq.NameExamLink)
 		if err != nil {
@@ -138,7 +147,6 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		a.SetUid(cmd.UID)
 		a.SetProfileId(cmd.ProfileID)
 		a.SetExamId(examPool.ExamId())
-		// a.SetEsessId(utils.ToAnyPtr(journey.EsessId()))
 		a.SetEsessId(&journeyID)
 		a.SetShuffleMap(cmd.ShuffleJSON)
 		a.SetReqExamType(string(cmd.ExamType))

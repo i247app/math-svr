@@ -54,12 +54,17 @@ type generateExamInput struct {
 	Practice *domainBot.PracticeBrief
 	// Avoid is the stems of the child's recent sittings at this grade.
 	Avoid []string
+	// Chain is the journey's last_resp_id: nil when the set belongs to no
+	// journey (admin pool generation), "" for a journey with no live chain.
+	Chain *string
 }
 
 type generateExamOutput struct {
 	Title     string
 	ShortText string
 	Questions []question.Question
+	// RespID is the journey's new chain pointer; nil breaks the chain.
+	RespID *string
 }
 
 func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*generateExamOutput, error) {
@@ -94,25 +99,17 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	log.Infof("PROMPT GENERATE EXAM: grade=%d prompt_version=%d system=%s user=%s",
 		in.Grade, in.Prompt.PromptVersion(), system, user)
 
-	res, err := c.adapter.Chat(ctx, botAdapter.ChatRequest{
-		Messages: []botAdapter.Message{
-			{Role: botAdapter.RoleSystem, Content: system},
-			{Role: botAdapter.RoleUser, Content: user},
-		},
-		Temperature: 0.4,
-		TopP:        0.95,
-		JSONMode:    true,
-	})
+	content, respID, err := c.complete(ctx, system, user, 0.1, in.Chain)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Infof("BOT RESPONSE: %s", res.Content)
+	log.Infof("BOT RESPONSE: %s", content)
 
 	// Parsed with the exam vocabulary (right_answer_label, question_topic,
 	// ...) and converted straight into the shared shape, which is what the
 	// normalisers and the scorer operate on.
-	gen, err := question.ParseGenerationOf[dto.ExamQuestion](res.Content)
+	gen, err := question.ParseGenerationOf[dto.ExamQuestion](content)
 	if err != nil {
 		log.Warnf("exam.bot.generate_parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED,
@@ -149,12 +146,76 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		Title:     domainBot.ExamTitle(in.ExamType, in.Grade),
 		ShortText: gen.ShortText,
 		Questions: questions,
+		RespID:    respID,
 	}, nil
+}
+
+// maxChainInputTokens caps what a journey's chain may cost. Every chained
+// turn is billed for the whole chain's input again, so once a turn's
+// input passes this the pointer is dropped and the next turn starts a new
+// chain — continuity then rests on the Avoid list, which is sent anyway.
+// ponytail: fixed constant; make it config if it needs tuning per model.
+const maxChainInputTokens = 30000
+
+// complete sends one system+user turn and returns the model's text.
+//
+// chain nil means the turn belongs to no journey: a stateless Chat. A
+// non-nil chain is a journey turn: on a provider that keeps server-side
+// state (OpenAI Responses API) it is chained on *chain ("" starts a new
+// chain), stored, and the new response id is returned for the caller to
+// persist; on any other provider it falls back to Chat and returns a nil
+// id. A chain pointer the vendor no longer holds (30-day retention) is
+// retried once as a new chain.
+func (c *botClient) complete(ctx context.Context, system, user string, temperature float64, chain *string) (string, *string, error) {
+	log := logger.From(ctx)
+
+	if chain == nil || !c.adapter.SupportsRespond("") {
+		res, err := c.adapter.Chat(ctx, botAdapter.ChatRequest{
+			Messages: []botAdapter.Message{
+				{Role: botAdapter.RoleSystem, Content: system},
+				{Role: botAdapter.RoleUser, Content: user},
+			},
+			Temperature: temperature,
+			TopP:        0.95,
+			JSONMode:    true,
+		})
+		if err != nil {
+			return "", nil, err
+		}
+		return res.Content, nil, nil
+	}
+
+	req := botAdapter.RespondRequest{
+		// Instructions are not inherited along the chain: resent every turn.
+		Instructions:       system,
+		Input:              []botAdapter.Message{{Role: botAdapter.RoleUser, Content: user}},
+		PreviousResponseID: *chain,
+		Store:              true,
+		Temperature:        temperature,
+		TopP:               0.95,
+		JSONMode:           true,
+	}
+	res, err := c.adapter.Respond(ctx, req)
+	if err != nil && req.PreviousResponseID != "" && botAdapter.IsChainPointerGone(err) {
+		log.Warnf("exam.chain.gone previous_response_id=%s, starting a new chain", req.PreviousResponseID)
+		req.PreviousResponseID = ""
+		res, err = c.adapter.Respond(ctx, req)
+	}
+	if err != nil {
+		return "", nil, err
+	}
+	if res.Usage.PromptTokens > maxChainInputTokens {
+		log.Infof("exam.chain.capped response_id=%s input_tokens=%d", res.ResponseID, res.Usage.PromptTokens)
+		return res.Content, nil, nil
+	}
+	return res.Content, &res.ResponseID, nil
 }
 
 type journeyReviewOutput struct {
 	Short string
 	Long  string
+	// RespID is the journey's new chain pointer; nil breaks the chain.
+	RespID *string
 }
 
 // ReviewJourney asks the model to review the answers of one journey and
@@ -162,7 +223,10 @@ type journeyReviewOutput struct {
 // between calls, the facts it states may not. The short version is cut to
 // ReviewShortMaxChars runes if the model overruns it, so it always fits
 // its column; the long one goes to a TEXT column and is kept whole.
-func (c *botClient) ReviewJourney(ctx context.Context, in domainBot.JourneyReviewInput) (*journeyReviewOutput, error) {
+//
+// chain is the journey's last_resp_id ("" when none), so the review is
+// one more turn of the journey's chain.
+func (c *botClient) ReviewJourney(ctx context.Context, in domainBot.JourneyReviewInput, chain string) (*journeyReviewOutput, error) {
 	log := logger.From(ctx)
 	if c.adapter == nil {
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil, ErrBotAdapterNotConfigured)
@@ -175,15 +239,7 @@ func (c *botClient) ReviewJourney(ctx context.Context, in domainBot.JourneyRevie
 
 	log.Infof("PROMPT REVIEW JOURNEY: system=%s user=%s", system, user)
 
-	res, err := c.adapter.Chat(ctx, botAdapter.ChatRequest{
-		Messages: []botAdapter.Message{
-			{Role: botAdapter.RoleSystem, Content: system},
-			{Role: botAdapter.RoleUser, Content: user},
-		},
-		Temperature: 0.3,
-		TopP:        0.95,
-		JSONMode:    true,
-	})
+	content, respID, err := c.complete(ctx, system, user, 0.3, &chain)
 	if err != nil {
 		return nil, err
 	}
@@ -192,8 +248,8 @@ func (c *botClient) ReviewJourney(ctx context.Context, in domainBot.JourneyRevie
 		Short string `json:"short"`
 		Long  string `json:"long"`
 	}
-	if err := json.Unmarshal([]byte(stripJSONFence(res.Content)), &out); err != nil {
-		log.Warnf("exam.review.parse_failed err=%v len=%d", err, len(res.Content))
+	if err := json.Unmarshal([]byte(stripJSONFence(content)), &out); err != nil {
+		log.Warnf("exam.review.parse_failed err=%v len=%d", err, len(content))
 		return nil, errs.NewError(ctx, status.EXAM_REVIEW_FAILED, nil, err)
 	}
 	short, long := strings.TrimSpace(out.Short), strings.TrimSpace(out.Long)
@@ -204,7 +260,7 @@ func (c *botClient) ReviewJourney(ctx context.Context, in domainBot.JourneyRevie
 		log.Warnf("exam.review.short_truncated runes=%d", utf8.RuneCountInString(short))
 		short = string([]rune(short)[:domainBot.ReviewShortMaxChars])
 	}
-	return &journeyReviewOutput{Short: short, Long: long}, nil
+	return &journeyReviewOutput{Short: short, Long: long, RespID: respID}, nil
 }
 
 // stripJSONFence tolerates a model that wraps its JSON in a Markdown code
