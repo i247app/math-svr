@@ -803,8 +803,9 @@ func (s *Service) ListExamPools(ctx context.Context, req *dto.ListExamPoolsReq) 
 		return nil, err
 	}
 	pools, page, err := s.examPoolRepo.ListPage(ctx, examDomain.ListExamPoolsFilter{
-		ExamTypes: req.ExamTypes,
-		Grade:     req.Grade,
+		ExamTypes:  req.ExamTypes,
+		Grade:      req.Grade,
+		IsVerified: req.IsVerified,
 	}, req.Page, req.Size)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)

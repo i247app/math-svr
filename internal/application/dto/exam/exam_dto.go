@@ -806,12 +806,14 @@ type GenerateExamPoolReq struct {
 }
 
 // ListExamPoolsReq pages the pool, newest first (OFFSET: page, size).
-// ExamTypes empty = every type; Grade nil = every grade.
+// ExamTypes empty = every type; Grade nil = every grade; IsVerified nil =
+// verified or not, true = verified_count > 0, false = verified_count = 0.
 type ListExamPoolsReq struct {
-	ExamTypes []string `json:"exam_types,omitempty"`
-	Grade     *int     `json:"grade,omitempty"`
-	Page      int64    `json:"page,omitempty"`
-	Size      int64    `json:"size,omitempty"`
+	ExamTypes  []string `json:"exam_types,omitempty"`
+	Grade      *int     `json:"grade,omitempty"`
+	IsVerified *bool    `json:"is_verified,omitempty"`
+	Page       int64    `json:"page,omitempty"`
+	Size       int64    `json:"size,omitempty"`
 }
 
 type GetExamPoolReq struct {

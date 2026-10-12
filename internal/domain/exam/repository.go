@@ -92,10 +92,12 @@ type ProgressPointsParams struct {
 }
 
 // ListExamPoolsFilter narrows the pool listing. ExamTypes empty means
-// every type; Grade nil means every grade.
+// every type; Grade nil means every grade; IsVerified nil means verified
+// or not (true = verified_count > 0, false = verified_count = 0).
 type ListExamPoolsFilter struct {
-	ExamTypes []string
-	Grade     *int
+	ExamTypes  []string
+	Grade      *int
+	IsVerified *bool
 }
 
 // IExamPoolRepository owns the shared, user-less question sets.

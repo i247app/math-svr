@@ -220,6 +220,13 @@ func buildExamPoolFilterClause(filter exam.ListExamPoolsFilter) (string, []any) 
 		clause += ` AND a.req_grade = ?`
 		args = append(args, *filter.Grade)
 	}
+	if filter.IsVerified != nil {
+		if *filter.IsVerified {
+			clause += ` AND a.verified_count > 0`
+		} else {
+			clause += ` AND a.verified_count = 0`
+		}
+	}
 	return clause, args
 }
 
