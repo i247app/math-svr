@@ -39,7 +39,7 @@ const MinCacheVariants = 100
 // after finishing and meets the same sums. Raise it if repeats across
 // older papers turn out to bother children too; every paper costs about
 // ten short lines of prompt.
-const RecentExamsForAvoid = 1
+const RecentExamsForAvoid = 2
 
 // recentStems collects the question stems of the child's latest sittings
 // at grade, newest paper first, deduplicated. It reads the stored
