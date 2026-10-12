@@ -99,7 +99,7 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 			{Role: botAdapter.RoleSystem, Content: system},
 			{Role: botAdapter.RoleUser, Content: user},
 		},
-		Temperature: 0.2,
+		Temperature: 0.4,
 		TopP:        0.95,
 		JSONMode:    true,
 	})
