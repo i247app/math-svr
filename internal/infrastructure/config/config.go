@@ -43,6 +43,7 @@ func NewEnv(envpath string) (*Env, error) {
 		DemoNames:              getCSVConfig("DEMO_NAMES"),
 		AdminApiKey:            getConfigOptionalString("ADMIN_API_KEY"),
 		ExamShuffleEnabled:     getBoolConfigWithDefault("EXAM_SHUFFLE_ENABLED", true),
+		RateLimitMode:          getConfigOptionalStringWithDefault("RATE_LIMIT_MODE", "shadow"),
 
 		DBConfig: DBConfig{
 			DBHost: getConfig("DB_HOST"),

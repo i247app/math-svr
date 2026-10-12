@@ -483,4 +483,7 @@ const (
 	SESSION_NOT_FOUND         StatusCode = 14101 // no live session is stored under that token
 	SESSION_MISSING_IS_SECURE StatusCode = 14102
 	SESSION_MISSING_UID       StatusCode = 14103 // is_secure: true on a session no user is signed into
+
+	// Rate limit (bootstrap/middleware/rate_limit_middleware.go) — 14200-14299
+	RATE_LIMIT_EXCEEDED StatusCode = 14200
 )

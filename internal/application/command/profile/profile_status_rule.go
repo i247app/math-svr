@@ -11,7 +11,8 @@ import (
 //   - TEACHER → OFFICIAL only when BOTH id_type and teacher_id are present
 //     (non-empty after trimming).
 //   - STUDENT → OFFICIAL only when student_id is present.
-//   - Anything else → INCOMPLETE.
+//   - PARENT / ADMIN → ACTIVE (no identifier to prove; never OFFICIAL).
+//   - Anything else (incl. a teacher/student missing its id) → INCOMPLETE.
 //
 // Inputs are taken as plain strings so the caller can pre-merge a patch
 // over an existing row (see Update) before applying the rule. Pass "" for

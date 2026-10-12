@@ -766,6 +766,9 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case SESSION_MISSING_UID:
 		return "Only a session with a signed-in user can be marked secure"
 
+	case RATE_LIMIT_EXCEEDED:
+		return "Too many requests, please try again later"
+
 	default:
 		return ""
 	}

@@ -52,6 +52,10 @@ type Env struct {
 	// it was served with, so attempts already in flight keep rendering and
 	// grading exactly as they were handed out.
 	ExamShuffleEnabled bool
+	// RateLimitMode is env RATE_LIMIT_MODE: "off" | "shadow" | "enforce",
+	// default "shadow" (log + count would-be rejections, block nothing).
+	// See bootstrap/middleware/rate_limit_middleware.go.
+	RateLimitMode string
 
 	DBConfig            DBConfig
 	EmailConfig         EmailConfig

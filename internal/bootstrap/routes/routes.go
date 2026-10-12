@@ -50,6 +50,10 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// check itself — pass it alone, not together with authMiddleware).
 	adminMiddleware := middleware.AdminRequiredMiddleware(res.SessionManager, services.UserSvc.RoleOf)
 	adminOrApiKeyMiddleware := middleware.AdminOrApiKeyMiddleware(res.SessionManager, services.UserSvc.RoleOf, res.Env.AdminApiKey)
+	// L2 rate limits (policies in middleware/rate_limit_policies.go). Put
+	// them AFTER the auth middleware so an unauthenticated call does not
+	// spend the caller's budget.
+	rl := middleware.NewRouteRateLimits(res.Env.RateLimitMode, res.Metrics)
 
 	// misc routes
 	{
@@ -73,8 +77,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// POW challenge routes — public, no auth required. The frontend uses these to
 	{
 		powHandler := pow.NewPowHandler(res, services.PowSvc)
-		reg("POST /pow/challenge", powHandler.GetChallenge)
-		reg("POST /pow/verify", powHandler.VerifyChallenge)
+		reg("POST /pow/challenge", powHandler.GetChallenge, rl.Auth)
+		reg("POST /pow/verify", powHandler.VerifyChallenge, rl.Auth)
 	}
 
 	// NOTE: /metrics is intentionally NOT registered here. It is served on a
@@ -107,13 +111,13 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /users/me", userHandler.HandleGetUserById)
 		// reg("POST /users/me", userHandler.HandleGetUserMe, authMiddleware)
 		reg("POST /users/list", userHandler.HandleListUsers, authMiddleware)
-		reg("POST /users/create", userHandler.HandleCreateUser)
-		reg("POST /users/create/guest", userHandler.HandleCreateGuest)
+		reg("POST /users/create", userHandler.HandleCreateUser, rl.Auth)
+		reg("POST /users/create/guest", userHandler.HandleCreateGuest, rl.Auth)
 		// Registers someone else, any role (ADMIN included). An ADMIN
 		// session OR the X-Api-Admin-Key header — the key is how the first
 		// admin is made (env ADMIN_API_KEY; empty = key path closed).
 		reg("POST /users/admin/create", userHandler.HandleAdminCreateUser, adminOrApiKeyMiddleware)
-		reg("POST /users/identifier-available", userHandler.HandleIdentifierAvailable)
+		reg("POST /users/identifier-available", userHandler.HandleIdentifierAvailable, rl.Auth)
 		reg("POST /users/update", userHandler.HandleUpdateUser, authMiddleware)
 		reg("POST /users/upload-avatar", userHandler.HandleUploadAvatar, authMiddleware)
 
@@ -125,8 +129,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// auth routes
 	{
 		authHandler := auth.NewAuthHandler(res, services.AuthSvc)
-		reg("POST /auth/login", authHandler.HandleLogin)
-		reg("POST /auth/resume-session", authHandler.HandleResumeSession)
+		reg("POST /auth/login", authHandler.HandleLogin, rl.Auth)
+		reg("POST /auth/resume-session", authHandler.HandleResumeSession, rl.Auth)
 		reg("POST /auth/logout", authHandler.HandleLogout, authMiddleware)
 	}
 
@@ -223,8 +227,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// otp routes
 	{
 		otpHandler := otp.NewOtpHandler(res, services.OtpSvc)
-		reg("POST /otps/send", otpHandler.HandleSend)
-		reg("POST /otps/verify", otpHandler.HandleVerify)
+		reg("POST /otps/send", otpHandler.HandleSend, rl.Auth)
+		reg("POST /otps/verify", otpHandler.HandleVerify, rl.Auth)
 	}
 
 	// ai routes — LLM connection warm-up (public + globally throttled) so the
@@ -238,6 +242,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// exam routes
 	{
 		examHandler := exam.NewExamHandler(res, services.ExamSvc, services.PowSvc)
+		//TODO: put rl.LLM here
 		reg("POST /exams/generate", examHandler.HandleGenerateExam)
 		reg("POST /exams/submit", examHandler.HandleSubmitExam)
 		reg("POST /exams/list", examHandler.HandleListExams)
@@ -250,6 +255,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /exams/grade/roadmap", examHandler.HandleGetGradeRoadMap)
 		reg("POST /exams/sessions/mark", examHandler.HandleMarkExamJourney)
 		reg("POST /exams/sessions/latest", examHandler.HandleGetLatestJourney)
+		//TODO: put rl.LLM here
 		reg("POST /exams/sessions/review/generate", examHandler.HandleReviewJourney)
 
 		// Admin dashboard: any child's data, through the owner code paths
@@ -313,6 +319,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// classroom exercise routes — teacher-issued, AI-generated assignments
 	{
 		exerciseHandler := exercise.NewClassroomExerciseHandler(res, services.ExerciseSvc)
+		//TODO: put rl.LLM here
 		reg("POST /classroom-exercises/create", exerciseHandler.HandleCreateExercise, authMiddleware)
 		reg("POST /classroom-exercises/update", exerciseHandler.HandleUpdateExercise, authMiddleware)
 		reg("POST /classroom-exercises/detail", exerciseHandler.HandleGetExercise, authMiddleware)
@@ -322,6 +329,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		// classroom exercise submissions — student submit + history,
 		// teacher roster + soft-delete. Every route is auth-gated.
 		submissionHandler := exercise.NewClassroomExerciseSubmissionHandler(res, services.ExerciseSvc)
+		//TODO: put rl.LLM here
 		reg("POST /classroom-exercise/submissions/submit/cost-ai", submissionHandler.HandleSubmitExerciseAnswers, authMiddleware)
 		reg("POST /classroom-exercise/submissions/submit", submissionHandler.HandleSubmitExerciseAnswersV2, authMiddleware)
 		reg("POST /classroom-exercise/submissions/detail", submissionHandler.HandleGetSubmission, authMiddleware)

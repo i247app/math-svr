@@ -178,6 +178,10 @@ func (a *App) setupMiddleware(gexSvr *gex.Server, res *resource.Resource, _ *con
 		// log line for the request can carry its trace_id. Pass-through when
 		// tracing is disabled.
 		middleware.TracingMiddleware(res.Env.ObservabilityConfig.TracingEnabled, res.RouteClassifier),
+		// L1 rate limit, per real client IP: before MetadataMiddleware, so a
+		// flood is refused before its body (up to 16 MiB) is read. Per-route
+		// (L2) limits are attached in routes.SetupHttpRoutes.
+		middleware.GlobalRateLimit(res.Env.RateLimitMode, res.Metrics),
 		// Metadata parses the body's `metadata` object into ctx once. It runs
 		// before the session middleware, which takes the session token from
 		// metadata.authorization and nowhere else — a client's Authorization

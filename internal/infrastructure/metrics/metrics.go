@@ -21,6 +21,8 @@ type Metrics struct {
 	httpRequests *prometheus.CounterVec
 	httpDuration *prometheus.HistogramVec
 	httpInFlight prometheus.Gauge
+
+	rateLimitDecisions *prometheus.CounterVec
 }
 
 // New builds a private registry (not the global default, to avoid picking up
@@ -44,12 +46,19 @@ func New(serviceName, version string) *Metrics {
 			Name: "http_requests_in_flight",
 			Help: "HTTP requests currently being served.",
 		}),
+		// Labelled by policy and result only — never by key (IP / uid),
+		// which would be unbounded cardinality.
+		rateLimitDecisions: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Name: "ratelimit_decisions_total",
+			Help: "Rate-limit decisions, by policy and result (allowed, limited, shadow_limited).",
+		}, []string{"policy", "result"}),
 	}
 
 	reg.MustRegister(
 		m.httpRequests,
 		m.httpDuration,
 		m.httpInFlight,
+		m.rateLimitDecisions,
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 	)
@@ -103,6 +112,13 @@ func (m *Metrics) RegisterSocketConnections(fn func() int) {
 		},
 		func() float64 { return float64(fn()) },
 	))
+}
+
+// ObserveRateLimit counts one rate-limit decision. No-op on a nil receiver.
+func (m *Metrics) ObserveRateLimit(policy, result string) {
+	if m != nil {
+		m.rateLimitDecisions.WithLabelValues(policy, result).Inc()
+	}
 }
 
 // IncInFlight / DecInFlight bracket a request. No-op on a nil receiver.

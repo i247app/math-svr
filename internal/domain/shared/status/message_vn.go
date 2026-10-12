@@ -766,6 +766,9 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case SESSION_MISSING_UID:
 		return "Chỉ phiên đã có người dùng đăng nhập mới được đánh dấu bảo mật"
 
+	case RATE_LIMIT_EXCEEDED:
+		return "Bạn đã yêu cầu vượt mức cho phép, vui lòng thử lại sau"
+
 	default:
 		return ""
 	}
