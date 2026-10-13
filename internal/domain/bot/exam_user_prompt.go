@@ -9,8 +9,8 @@ import (
 
 // The USER message of an exam generation: what varies per request.
 //
-// The system prompt is not here. It lives in ma_exam_prompts, one row per
-// grade, written and rewritten by admins (/exams/prompts/*), and is sent
+// The system prompt is not here. It lives in ma_prompts, one row per exam
+// type (and grade), written and rewritten by admins (/prompts/*), and is sent
 // verbatim. This file builds what goes beside it: current_grade, the LEVEL
 // PROFILE of a GRADE review, the brief of a PRACTICE round, and the
 // curriculum context. The instructions are English; the child's own stems,

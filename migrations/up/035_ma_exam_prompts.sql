@@ -23,7 +23,10 @@
 
 CREATE TABLE IF NOT EXISTS ma_exam_prompts (
   prompt_id       BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-  grade           TINYINT UNSIGNED NOT NULL,             -- 0 = Mẫu giáo, 1..5 = Lớp 1..5
+  prompt_code     VARCHAR(64) NOT NULL DEFAULT 'EXAM_ASSESSMENT',
+  grade           TINYINT UNSIGNED DEFAULT NULL,             -- 0 = Mẫu giáo, 1..5 = Lớp 1..5
+  language        VARCHAR(8) DEFAULT NULL,
+  description     VARCHAR(500) DEFAULT NULL,
   system_prompt   MEDIUMTEXT NOT NULL,
   prompt_version  INT UNSIGNED NOT NULL DEFAULT 1,       -- +1 per update; 1 = the seed
   prompt_status   VARCHAR(32)  DEFAULT NULL,

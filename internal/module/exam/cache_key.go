@@ -22,8 +22,9 @@ import (
 //	ASSESSMENT-G2-LNA-Q10-SNA-PNA-V4
 //
 // L is the level a GRADE paper is written at, LNA for every other type
-// (only a GRADE review reads a level). V is ma_exam_prompts.prompt_version
-// of the grade: it moves on every admin rewrite of that grade's prompt, so
+// (only a GRADE review reads a level). V is ma_prompts.prompt_version of
+// the row the set was generated from (per type, and per grade for ASSESSMENT
+// and GRADE): it moves on every admin rewrite of that prompt, so
 // a set generated from the old text is never served again — the next
 // request misses and generates from the new one. Tags written before V
 // existed never match either, which is correct for the same reason: those

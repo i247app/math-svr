@@ -26,6 +26,7 @@ import (
 	"math-ai.com/math-ai/internal/module/pow"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
+	"math-ai.com/math-ai/internal/module/prompt"
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/server"
@@ -270,9 +271,15 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /exams/pools/detail", examHandler.HandleGetExamPool, adminOrApiKeyMiddleware)
 		reg("POST /exams/pools/mark-verify", examHandler.HandleMarkExamPoolVerify, adminOrApiKeyMiddleware)
 		reg("POST /exams/pools/verify", examHandler.HandleVerifyExamPool, adminOrApiKeyMiddleware)
-		reg("POST /exams/prompts/list", examHandler.HandleListExamPrompts, adminOrApiKeyMiddleware)
-		reg("POST /exams/prompts/detail", examHandler.HandleGetExamPrompt, adminOrApiKeyMiddleware)
-		reg("POST /exams/prompts/update", examHandler.HandleUpdateExamPrompt, adminOrApiKeyMiddleware)
+	}
+
+	// prompt routes — the static half of every LLM call (ma_prompts). Admin
+	// only: one rewrite changes what every child of that scope is served.
+	{
+		promptHandler := prompt.NewHandler(services.PromptSvc)
+		reg("POST /prompts/list", promptHandler.HandleListPrompts, adminOrApiKeyMiddleware)
+		reg("POST /prompts/detail", promptHandler.HandleGetPrompt, adminOrApiKeyMiddleware)
+		reg("POST /prompts/update", promptHandler.HandleUpdatePrompt, adminOrApiKeyMiddleware)
 	}
 
 	// classroom routes

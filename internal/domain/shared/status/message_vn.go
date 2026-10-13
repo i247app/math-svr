@@ -698,14 +698,6 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Thiếu trạng thái xác minh (is_verify)"
 	case EXAM_POOL_INVALID_QUESTIONS:
 		return "Bộ câu hỏi đã sửa phải giữ nguyên số câu và nhãn đáp án của đề"
-	case EXAM_PROMPT_NOT_FOUND:
-		return "Chưa cấu hình prompt tạo đề cho lớp này"
-	case EXAM_PROMPT_EMPTY:
-		return "Prompt tạo đề không được để trống"
-	case EXAM_PROMPT_TOO_LONG:
-		return "Prompt tạo đề quá dài (tối đa 50.000 ký tự)"
-	case EXAM_PROMPT_MISSING_JSON_KEY:
-		return "Prompt tạo đề phải nêu đủ các khóa JSON của cấu trúc kết quả"
 
 	case POW_CHALLENGE_FAILED:
 		return "Không tạo được thử thách xác minh. Vui lòng thử lại"
@@ -768,6 +760,17 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 
 	case RATE_LIMIT_EXCEEDED:
 		return "Bạn đã yêu cầu vượt mức cho phép, vui lòng thử lại sau"
+
+	case PROMPT_NOT_FOUND:
+		return "Chưa cấu hình prompt cho yêu cầu này"
+	case PROMPT_MISSING_ID:
+		return "Thiếu prompt_id"
+	case PROMPT_EMPTY:
+		return "Prompt không được để trống"
+	case PROMPT_TOO_LONG:
+		return "Prompt quá dài (tối đa 50.000 ký tự)"
+	case PROMPT_MISSING_JSON_KEY:
+		return "Prompt phải nêu đủ các khóa JSON của cấu trúc kết quả"
 
 	default:
 		return ""

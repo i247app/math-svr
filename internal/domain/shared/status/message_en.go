@@ -698,14 +698,6 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "is_verify is required"
 	case EXAM_POOL_INVALID_QUESTIONS:
 		return "The corrected questions must keep the exam's question numbers and answer labels"
-	case EXAM_PROMPT_NOT_FOUND:
-		return "No exam prompt is configured for this grade"
-	case EXAM_PROMPT_EMPTY:
-		return "The exam prompt cannot be empty"
-	case EXAM_PROMPT_TOO_LONG:
-		return "The exam prompt is too long (at most 50,000 characters)"
-	case EXAM_PROMPT_MISSING_JSON_KEY:
-		return "The exam prompt must name every JSON key of the output structure"
 
 	case POW_CHALLENGE_FAILED:
 		return "Could not create a verification challenge. Please try again"
@@ -768,6 +760,17 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 
 	case RATE_LIMIT_EXCEEDED:
 		return "Too many requests, please try again later"
+
+	case PROMPT_NOT_FOUND:
+		return "No prompt is configured for this request"
+	case PROMPT_MISSING_ID:
+		return "prompt_id is required"
+	case PROMPT_EMPTY:
+		return "The prompt cannot be empty"
+	case PROMPT_TOO_LONG:
+		return "The prompt is too long (at most 50,000 characters)"
+	case PROMPT_MISSING_JSON_KEY:
+		return "The prompt must name every JSON key of its output structure"
 
 	default:
 		return ""

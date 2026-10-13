@@ -434,19 +434,8 @@ const (
 	// EXAM_POOL_INVALID_QUESTIONS: a corrected question set is empty or does
 	// not keep the stored set's question numbers and answer labels.
 	EXAM_POOL_INVALID_QUESTIONS StatusCode = 13742
-	// EXAM_PROMPT_NOT_FOUND: ma_exam_prompts has no live row for the grade,
-	// so there is no system prompt to generate with. Generation fails rather
-	// than falling back to a prompt in code.
-	EXAM_PROMPT_NOT_FOUND StatusCode = 13743
-	// EXAM_PROMPT_EMPTY: /exams/prompts/update sent no text (or only
-	// whitespace).
-	EXAM_PROMPT_EMPTY StatusCode = 13744
-	// EXAM_PROMPT_TOO_LONG: the text is over the 50,000-character limit.
-	EXAM_PROMPT_TOO_LONG StatusCode = 13745
-	// EXAM_PROMPT_MISSING_JSON_KEY: the text does not name every JSON key
-	// the generation parser reads; debug lists the missing ones. Saving it
-	// would make every generation of that grade unreadable.
-	EXAM_PROMPT_MISSING_JSON_KEY StatusCode = 13746
+	// 13743–13746 are RETIRED (EXAM_PROMPT_* of /exams/prompts/*, replaced by
+	// PROMPT_* 14300+ when the prompts left the exam aggregate). Do not reuse.
 
 	// Proof of work — 13800-13899. Gates /exams/generate against bots.
 	POW_CHALLENGE_FAILED    StatusCode = 13800 // could not mint a challenge
@@ -486,4 +475,20 @@ const (
 
 	// Rate limit (bootstrap/middleware/rate_limit_middleware.go) — 14200-14299
 	RATE_LIMIT_EXCEEDED StatusCode = 14200
+
+	// Prompts — 14300-14399. The static half of every LLM call (ma_prompts,
+	// /prompts/*).
+	// PROMPT_NOT_FOUND: no live row for the scope an LLM call needs, or for
+	// the prompt_id a /prompts route names. Generation fails rather than
+	// falling back to a prompt in code.
+	PROMPT_NOT_FOUND StatusCode = 14300
+	// PROMPT_MISSING_ID: /prompts/detail or /prompts/update named no prompt_id.
+	PROMPT_MISSING_ID StatusCode = 14301
+	// PROMPT_EMPTY: /prompts/update sent no text (or only whitespace).
+	PROMPT_EMPTY StatusCode = 14302
+	// PROMPT_TOO_LONG: the text is over the 50,000-character limit.
+	PROMPT_TOO_LONG StatusCode = 14303
+	// PROMPT_MISSING_JSON_KEY: the text does not name every JSON key the
+	// reply parser of that prompt_code reads; debug lists the missing ones.
+	PROMPT_MISSING_JSON_KEY StatusCode = 14304
 )

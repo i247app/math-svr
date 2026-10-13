@@ -11,7 +11,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	"math-ai.com/math-ai/internal/application/dto/question"
 	domainBot "math-ai.com/math-ai/internal/domain/bot"
-	examDomain "math-ai.com/math-ai/internal/domain/exam"
+	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -39,10 +39,10 @@ func newBotClient(adapter *botAdapter.Adapter) *botClient {
 }
 
 type generateExamInput struct {
-	// Prompt is the grade's system prompt (ma_exam_prompts), sent verbatim.
-	// The caller loads it once per request so the text sent and the
-	// version written into the cache tag are the same row.
-	Prompt       *examDomain.ExamPrompt
+	// Prompt is the static system prompt (ma_prompts), sent verbatim. The
+	// caller loads it once per request so the text sent and the version
+	// written into the cache tag are the same row.
+	Prompt       *promptDomain.Prompt
 	ExamType     enum.ExamType
 	Grade        int
 	NumQuestions int
@@ -85,8 +85,8 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	}
 
 	if in.Prompt == nil || in.Prompt.SystemPrompt() == "" {
-		return nil, errs.NewError(ctx, status.EXAM_PROMPT_NOT_FOUND, nil,
-			fmt.Errorf("exam: no system prompt for grade %d", in.Grade))
+		return nil, errs.NewError(ctx, status.PROMPT_NOT_FOUND, nil,
+			fmt.Errorf("exam: no system prompt for %s grade %d", in.ExamType, in.Grade))
 	}
 	system := in.Prompt.SystemPrompt()
 	user, err := domainBot.BuildExamUserPrompt(promptIn)
@@ -96,8 +96,8 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 
 	// The full system text is logged on purpose: a rewrite overwrites the
 	// row, so this line is the only record of what a past set was made from.
-	log.Infof("PROMPT GENERATE EXAM: grade=%d prompt_version=%d system=%s user=%s",
-		in.Grade, in.Prompt.PromptVersion(), system, user)
+	log.Infof("PROMPT GENERATE EXAM: code=%s grade=%d prompt_id=%d prompt_version=%d system=%s user=%s",
+		in.Prompt.PromptCode(), in.Grade, in.Prompt.PromptId(), in.Prompt.PromptVersion(), system, user)
 
 	content, respID, err := c.complete(ctx, system, user, 0.1, in.Chain)
 	if err != nil {
@@ -224,20 +224,28 @@ type journeyReviewOutput struct {
 // ReviewShortMaxChars runes if the model overruns it, so it always fits
 // its column; the long one goes to a TEXT column and is kept whole.
 //
-// chain is the journey's last_resp_id ("" when none), so the review is
-// one more turn of the journey's chain.
-func (c *botClient) ReviewJourney(ctx context.Context, in domainBot.JourneyReviewInput, chain string) (*journeyReviewOutput, error) {
+// prompt is the EXAM_REVIEW row of ma_prompts, sent verbatim as the system
+// message. chain is the journey's last_resp_id ("" when none), so the
+// review is one more turn of the journey's chain.
+func (c *botClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prompt, in domainBot.JourneyReviewInput, chain string) (*journeyReviewOutput, error) {
 	log := logger.From(ctx)
 	if c.adapter == nil {
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil, ErrBotAdapterNotConfigured)
 	}
+	if prompt == nil || prompt.SystemPrompt() == "" {
+		return nil, errs.NewError(ctx, status.PROMPT_NOT_FOUND, nil, fmt.Errorf("exam: no system prompt for the journey review"))
+	}
+	system := prompt.SystemPrompt()
 
-	system, user, err := domainBot.BuildJourneyReviewPrompt(in)
+	user, err := domainBot.BuildJourneyReviewUserPrompt(in)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.EXAM_REVIEW_NO_ANSWERS, nil, err)
 	}
 
-	log.Infof("PROMPT REVIEW JOURNEY: system=%s user=%s", system, user)
+	// The full system text is logged on purpose: a rewrite overwrites the
+	// row, so this line is the only record of what a past review was made from.
+	log.Infof("PROMPT REVIEW JOURNEY: prompt_id=%d prompt_version=%d system=%s user=%s",
+		prompt.PromptId(), prompt.PromptVersion(), system, user)
 
 	content, respID, err := c.complete(ctx, system, user, 0.1, &chain)
 	if err != nil {

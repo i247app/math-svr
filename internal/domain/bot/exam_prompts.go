@@ -13,7 +13,7 @@ import (
 // submission deterministically, so the model is never asked to mark a
 // child's work.
 //
-// The SYSTEM prompt is data, not code: ma_exam_prompts holds one per grade,
+// The SYSTEM prompt is data, not code: ma_prompts holds one per exam type (and grade),
 // written by admins, sent verbatim. Everything in it — question count,
 // probe questions, curriculum scope, output structure — is fixed text. This
 // package builds the USER message beside it (exam_user_prompt.go), and owns

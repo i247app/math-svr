@@ -17,6 +17,7 @@ import (
 	presenceDomain "math-ai.com/math-ai/internal/domain/presence"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
+	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
 	roleDomain "math-ai.com/math-ai/internal/domain/role"
 	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
@@ -41,6 +42,7 @@ import (
 	"math-ai.com/math-ai/internal/module/presence"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
+	"math-ai.com/math-ai/internal/module/prompt"
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/seq"
@@ -60,6 +62,7 @@ type ServiceContainer struct {
 	DeviceSvc       *device.Service
 	OtpSvc          *otp.Service
 	ExamSvc         *exam.Service
+	PromptSvc       *prompt.Service
 	SchoolSvc       *school.Service
 	JobSvc          *job.Service
 	SeqSvc          *seq.Service
@@ -95,7 +98,7 @@ type RepositoryContainer struct {
 	ExamLinkRepository           examDomain.IExamLinkRepository
 	ExamSessionRepository        examDomain.IExamSessionRepository
 	ExamSessionLineRepository    examDomain.IExamSessionLineRepository
-	ExamPromptRepository         examDomain.IExamPromptRepository
+	PromptRepository             promptDomain.IRepository
 	SchoolRepository             schoolDomain.IRepository
 	SeqRepository                seqDomain.IRepository
 	ClassroomRepository          classroomDomain.IRepository

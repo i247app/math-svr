@@ -38,39 +38,20 @@ type JourneyReviewInput struct {
 	Answers []ReviewAnswer
 }
 
-// Bounds the prompt asks for. ReviewShortMaxChars is also the column
-// size the caller guards against (ai_review_short).
-const (
-	ReviewShortMaxChars = 200
-	reviewLongMaxChars  = 1200
-)
+// ReviewShortMaxChars bounds the short review: the size of the column it
+// is stored in (ai_review_short), enforced on the reply whatever the stored
+// system prompt asks for.
+const ReviewShortMaxChars = 200
 
 var ErrReviewNoAnswers = errors.New("bot: a journey review needs at least one answered question")
 
-const systemJourneyReviewEN = `You review a Vietnamese child's math practice (kindergarten to grade 5) for the child's parent.
-
-Write TWO reviews, both in natural, warm VIETNAMESE, addressed to the parent ("bé" for the child):
-- "short": ONE or TWO sentences, at most %d characters. The overall result and the single most useful next step.
-- "long": at most %d characters, plain text, 2–4 short paragraphs:
-  1. What the child does well (name the topics).
-  2. Where the child struggles: name the topics and the kind of mistake, using the wrong answers given (e.g. forgetting to carry, mixing up more/less).
-  3. Two or three concrete practice suggestions a parent can do at home.
-
-RULES
-- Base every statement ONLY on the answers listed. Do not invent topics or mistakes.
-- Be encouraging and specific; never shame the child. No emoji, no Markdown, no lists with symbols.
-- If every answer is correct, praise and suggest moving to harder material instead of inventing weaknesses.
-- Do not repeat the questions verbatim.
-
-OUTPUT: only valid JSON, nothing else:
-{"short": "...", "long": "..."}`
-
-// BuildJourneyReviewPrompt renders the system and user messages.
-func BuildJourneyReviewPrompt(in JourneyReviewInput) (system, user string, err error) {
+// BuildJourneyReviewUserPrompt renders the USER message: the journey and
+// its answers. The SYSTEM prompt is the EXAM_REVIEW row of ma_prompts,
+// written by admins and sent verbatim.
+func BuildJourneyReviewUserPrompt(in JourneyReviewInput) (string, error) {
 	if len(in.Answers) == 0 {
-		return "", "", ErrReviewNoAnswers
+		return "", ErrReviewNoAnswers
 	}
-	system = fmt.Sprintf(systemJourneyReviewEN, ReviewShortMaxChars, reviewLongMaxChars)
 
 	var b strings.Builder
 	fmt.Fprintf(&b, "Exam type: %s\n", in.ExamType)
@@ -103,5 +84,5 @@ func BuildJourneyReviewPrompt(in JourneyReviewInput) (system, user string, err e
 		fmt.Fprintf(&b, "] %s — correct: %s; child: %s — %s\n",
 			strings.TrimSpace(a.Question), a.RightAnswer, a.ChildAnswer, mark)
 	}
-	return system, strings.TrimRight(b.String(), "\n"), nil
+	return strings.TrimRight(b.String(), "\n"), nil
 }

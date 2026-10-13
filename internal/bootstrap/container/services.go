@@ -28,6 +28,7 @@ import (
 	"math-ai.com/math-ai/internal/module/presence"
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
+	"math-ai.com/math-ai/internal/module/prompt"
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/seq"
@@ -163,7 +164,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ExamLinkRepository,
 		repos.ExamSessionRepository,
 		repos.ExamSessionLineRepository,
-		repos.ExamPromptRepository,
+		repos.PromptRepository,
 		uow,
 		res.BotProvider,
 		repos.ProfileRepository,
@@ -171,6 +172,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.UserRepository,
 		res.Env.ExamShuffleEnabled,
 	)
+
+	log.Info("> Setup PromptSvc...")
+	promptService := prompt.NewService(repos.PromptRepository, uow)
 
 	log.Info("> Setup JobSvc...")
 	jobService := job.NewService(res.JobRuntime)
@@ -248,6 +252,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		DeviceSvc:        deviceService,
 		OtpSvc:           otpService,
 		ExamSvc:          examService,
+		PromptSvc:        promptService,
 		PowSvc:           powService,
 		SchoolSvc:        schoolService,
 		JobSvc:           jobService,

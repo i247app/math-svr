@@ -4,11 +4,14 @@ import (
 	"time"
 )
 
-type ExamPromptModel struct {
+type PromptModel struct {
 	PromptId      int64
-	Grade         int
+	PromptCode    string
+	Grade         *int
+	Language      *string
 	SystemPrompt  string
 	PromptVersion int
+	Description   *string
 	PromptStatus  *string
 	RptFlg        *string
 	Kwords        *string
