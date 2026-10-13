@@ -49,10 +49,8 @@ type generateExamInput struct {
 	NumQuestions int
 	Semester     string
 	Program      string
-	// Level is the round's level: the clamped intensity of a GRADE review,
-	// the level a PRACTICE round is drawn at (resolvePracticeLevel); nil
-	// otherwise. It fills the prompt's {{LEVEL}} and is stamped on every
-	// question.
+	// Level is the clamped level of a GRADE paper; nil otherwise. It fills
+	// the prompt's {{LEVEL}} and is stamped on every question.
 	Level *int
 	// Practice aims a PRACTICE round; nil for every other type.
 	Practice *domainBot.PracticeBrief
@@ -85,7 +83,9 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		Program:      in.Program,
 		Level:        in.Level,
 		Practice:     in.Practice,
-		Avoid:        in.Avoid,
+		// Read from the stored text before rendering fills it in.
+		SystemDefinesLevels: in.Prompt != nil && strings.Contains(in.Prompt.SystemPrompt(), domainBot.PlaceholderLevel),
+		Avoid:               in.Avoid,
 	}
 
 	if in.Prompt == nil || in.Prompt.SystemPrompt() == "" {

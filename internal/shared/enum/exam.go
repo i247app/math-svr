@@ -21,8 +21,7 @@ const (
 	// esess_id and never moves the journey's grade. A journey that is
 	// still open, or was cancelled, cannot be practised in; reopening a
 	// completed one closes practice again until it is completed anew. It
-	// carries NO next-grade questions: every question stays at the
-	// journey's grade (see HasProbes).
+	// carries the same probe questions an ASSESSMENT does (see HasProbes).
 	ExamTypePractice ExamType = "PRACTICE"
 	// ExamTypeGrade 1-5 is for review specific grade 1-5
 	ExamTypeGrade ExamType = "GRADE"
@@ -32,11 +31,11 @@ func (t ExamType) String() string { return string(t) }
 
 // HasProbes reports whether a round of this type carries the harder
 // probe questions (Q3/Q6 at grade + 1). ASSESSMENT needs them to measure
-// and GRADE keeps them; PRACTICE does not (2026-10-13) — a drill stays at
-// the child's grade, and its stored prompt makes Q3/Q6 one LEVEL harder
+// and PRACTICE keeps them; GRADE does not (2026-10-13) — a level journey
+// stays at its grade, and its stored prompt makes Q3/Q6 one LEVEL harder
 // inside that grade instead, which the server does not stamp.
 func (t ExamType) HasProbes() bool {
-	return t == ExamTypeAssessment || t == ExamTypeGrade
+	return t == ExamTypeAssessment || t == ExamTypePractice
 }
 
 func (t ExamType) IsValid() bool {

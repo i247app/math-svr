@@ -41,6 +41,10 @@ type ExamPromptInput struct {
 	// grade's ceiling by the caller. Rendered for a GRADE review only;
 	// nil, or any other type, means no LEVEL PROFILE block.
 	Level *int
+	// SystemDefinesLevels: the stored system prompt names {{LEVEL}}, i.e. it
+	// carries its own level table, so a GRADE user message states the bare
+	// level instead of the generic LEVEL PROFILE.
+	SystemDefinesLevels bool
 	// Practice aims a PRACTICE round at what the child just did. Required
 	// when ExamType is PRACTICE, ignored otherwise.
 	Practice *PracticeBrief
