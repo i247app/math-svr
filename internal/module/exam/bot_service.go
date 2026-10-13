@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"strings"
 	"unicode/utf8"
 
@@ -48,7 +49,10 @@ type generateExamInput struct {
 	NumQuestions int
 	Semester     string
 	Program      string
-	// Level is the clamped intensity for a GRADE review; nil otherwise.
+	// Level is the round's level: the clamped intensity of a GRADE review,
+	// the level a PRACTICE round is drawn at (resolvePracticeLevel); nil
+	// otherwise. It fills the prompt's {{LEVEL}} and is stamped on every
+	// question.
 	Level *int
 	// Practice aims a PRACTICE round; nil for every other type.
 	Practice *domainBot.PracticeBrief
@@ -88,7 +92,11 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		return nil, errs.NewError(ctx, status.PROMPT_NOT_FOUND, nil,
 			fmt.Errorf("exam: no system prompt for %s grade %d", in.ExamType, in.Grade))
 	}
-	system := in.Prompt.SystemPrompt()
+	system := domainBot.RenderSystemPrompt(in.Prompt.SystemPrompt(), in.Level, rand.Int64N(1_000_000))
+	if domainBot.HasUnfilledLevel(system) {
+		log.Warnf("exam.prompt.level_unfilled prompt_id=%d type=%s grade=%d — the prompt names %s but the round has no level",
+			in.Prompt.PromptId(), in.ExamType, in.Grade, domainBot.PlaceholderLevel)
+	}
 	user, err := domainBot.BuildExamUserPrompt(promptIn)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)

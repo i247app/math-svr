@@ -16,27 +16,21 @@ import (
 // curriculum context. The instructions are English; the child's own stems,
 // answers and topics are quoted as stored (Vietnamese).
 //
-// Every block here talks about the round in general terms ("the
-// question_grade rules above", "the weak topics") so it fits whatever an
-// admin writes into the system prompt, as long as that prompt keeps the
-// probe questions at Q3 and Q6 (ProbePositions, which the server also uses
-// to stamp question_grade).
+// Every block here talks about the round in general terms ("the weak
+// topics") so it fits whatever an admin writes into the system prompt. An
+// ASSESSMENT / GRADE prompt must keep its probe questions at Q3 and Q6
+// (ProbePositions, which the server also uses to stamp question_grade);
+// PRACTICE has none.
 
 // examPracticeBlockEN tells the model what the child just did and how the
 // round must respond to it. The two modes are spelled out as separate rules
 // rather than left to the model's judgement: "harder" without a bound
 // drifts into the next grade, and the grade is the one thing a practice
-// round must not move. The child's own stems, answers and topics are data
-// the model must recognise, not instructions to translate.
-//
-// The probe positions are named outright, so the block does not depend on
-// how the stored system prompt phrases its probe rule.
-func examPracticeBlockEN(b *PracticeBrief, n int, probes []int) string {
-	gradeRule := "keep the question_grade rules above"
-	if len(probes) > 0 {
-		gradeRule = fmt.Sprintf("keep the question_grade rules above (%s = next grade, every other question = current_grade)",
-			joinPositions(probes, ", "))
-	}
+// round must not move — PRACTICE has no next-grade questions at all. The
+// child's own stems, answers and topics are data the model must recognise,
+// not instructions to translate.
+func examPracticeBlockEN(b *PracticeBrief, n int) string {
+	const gradeRule = "every question stays at current_grade (question_grade = current_grade for all of them, Q3 and Q6 included)"
 
 	var sb strings.Builder
 	sb.WriteString("PRACTICE ROUND (built on the child's last sitting):\n")
@@ -57,7 +51,7 @@ func examPracticeBlockEN(b *PracticeBrief, n int, probes []int) string {
 		}
 	default: // ADVANCE
 		fmt.Fprintf(&sb, "- The child got EVERY question right, in these topics: %s.\n", joinOr(b.StrongTopics, "(topic unknown)"))
-		fmt.Fprintf(&sb, "- REQUIRED: %s; apart from those next-grade questions, none of the %d questions may go above current_grade.\n", gradeRule, n)
+		fmt.Fprintf(&sb, "- REQUIRED: %s; none of the %d questions may go above current_grade.\n", gradeRule, n)
 		sb.WriteString("- But make them harder WITHIN current_grade: larger numbers inside the allowed range, more steps, word problems;\n")
 		sb.WriteString("  and/or move to other curriculum topics the child has not been tested on yet.")
 	}
@@ -82,6 +76,11 @@ func examContextEN(in ExamPromptInput) string {
 func buildUserExamEN(in ExamPromptInput, n int) string {
 	var out strings.Builder
 	out.WriteString("current_grade: " + GradeLabel(in.Grade) + "\n")
+	// A PRACTICE prompt is written per level (its {{LEVEL}} is filled in
+	// too, RenderSystemPrompt); the line states it where the request does.
+	if in.ExamType == enum.ExamTypePractice && in.Level != nil {
+		fmt.Fprintf(&out, "level: %d (scale %d–%d)\n", *in.Level, enum.ExamLevelMin, enum.ExamLevelMax)
+	}
 
 	// The intensity block refines the grade and must not be read as
 	// licence to leave it.
@@ -92,7 +91,7 @@ func buildUserExamEN(in ExamPromptInput, n int) string {
 	}
 
 	if in.ExamType == enum.ExamTypePractice && in.Practice != nil {
-		out.WriteString("\n" + examPracticeBlockEN(in.Practice, n, ProbePositions(in.ExamType, n)) + "\n")
+		out.WriteString("\n" + examPracticeBlockEN(in.Practice, n) + "\n")
 	}
 
 	// The system prompt lets the model follow any of the textbooks; a

@@ -256,6 +256,23 @@ func resolveLevel(ctx context.Context, examType enum.ExamType, grade int, stated
 	return &clamped
 }
 
+// resolvePracticeLevel is the level a PRACTICE round is drawn at: the one
+// the request states, else the level of the sitting being drilled, else
+// the journey's current level. nil only when none of them has one (an
+// ASSESSMENT journey practised without a level) — the prompt's {{LEVEL}}
+// then stays unfilled and GenerateExam logs it.
+func resolvePracticeLevel(stated *int, base *examDomain.ExamLink, journey *examDomain.ExamSession) *int {
+	switch {
+	case stated != nil:
+		return stated
+	case base != nil && base.ReqLevel() != nil:
+		return base.ReqLevel()
+	case journey != nil:
+		return journey.CurrentLevel()
+	}
+	return nil
+}
+
 // gradeFromProfile reads the class the child attends. The profile stores
 // a grade id, and the band number lives in that row's label ("Lớp 1",
 // "Mẫu giáo"), so it has to be resolved rather than cast. An unreadable

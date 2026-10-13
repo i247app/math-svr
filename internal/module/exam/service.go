@@ -307,10 +307,12 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 	if err != nil {
 		return nil, err
 	}
+	level := resolvePracticeLevel(req.Level, base, journey)
 	in := generateExamInput{
 		Prompt:       prompt,
 		ExamType:     enum.ExamTypePractice,
 		Grade:        grade,
+		Level:        level,
 		NumQuestions: req.NumQuestions,
 		Semester:     req.Semester,
 		Program:      req.Program,
@@ -335,7 +337,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		ProfileID:  profile.ProfileId(),
 		ExamType:   enum.ExamTypePractice,
 		Grade:      grade,
-		Level:      req.Level,
+		Level:      level,
 		EsessID:    &journeyID,
 		NewContent: content,
 		RespID:     generated.RespID,
