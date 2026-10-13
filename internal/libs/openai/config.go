@@ -2,8 +2,8 @@
 // (https://api.openai.com/v1). It owns the LLM client lifecycle
 // (credentials, timeouts, retries) and exposes the same narrow chat
 // surface the adapter layer (`internal/adapter/bot`) consumes — mirroring
-// the role of `internal/libs/langchain`, `internal/libs/eino` and
-// `internal/libs/openrouter`.
+// the role of `internal/libs/openrouter`, `internal/libs/gemini` and
+// `internal/libs/deepseek`.
 //
 // Like libs/openrouter and unlike the other two, this package uses NO
 // vendor SDK: every call goes out through `internal/shared/http_client`,
@@ -40,15 +40,13 @@
 //
 // # API choice
 //
-// This client targets Chat Completions, not the newer Responses API. The
-// bot adapter's ChatRequest is a messages/role/content shape that maps 1:1
-// onto chat-completions, and both existing OpenAI paths (the eino openai
-// backend and openrouter) already speak it — so prompts, JSON mode and
-// results stay directly comparable across all four providers, which is the
-// entire point of keeping them switchable. Responses' advantages (built-in
-// tools, server-side state, reasoning items) are unused by quiz and
-// exercise generation, and its `store` defaults to true, which would flip
-// a data-retention decision silently.
+// Generate / GenerateStream target Chat Completions: the bot adapter's
+// ChatRequest is a messages/role/content shape that maps 1:1 onto it, and
+// openrouter speaks it too — so prompts, JSON mode and results stay
+// directly comparable across providers, which is the point of keeping
+// them switchable. Respond (responses.go) targets the Responses API, used
+// only for its server-side state (previous_response_id); its `store` is
+// always sent explicitly because the endpoint defaults it to true.
 //
 // This package never imports from `internal/domain`, `internal/application`,
 // or `internal/adapter` — it is the lowest layer. Errors returned here are
@@ -109,7 +107,7 @@ type Config struct {
 	// EmbedModel is the default embedding model id (e.g.
 	// "text-embedding-3-small"). Optional; Embed falls back to
 	// EmbedRequest.Model, then EmbedModel, then Model — same precedence as
-	// libs/langchain.
+	// libs/gemini.
 	EmbedModel string
 
 	// Organization sets the "OpenAI-Organization" header. Optional; only

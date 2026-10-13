@@ -22,7 +22,7 @@ type ShakeRes struct {
 	Cached bool `json:"cached"`
 
 	// Provider is the bot provider that serves AI requests, e.g.
-	// "langchain". Empty when the bot adapter is disabled.
+	// "openai". Empty when the bot adapter is disabled.
 	Provider string `json:"provider,omitempty"`
 
 	// Model is the resolved model id reported by the provider. May be empty.

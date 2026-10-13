@@ -9,9 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/libs/deepseek"
-	"math-ai.com/math-ai/internal/libs/eino"
 	"math-ai.com/math-ai/internal/libs/gemini"
-	"math-ai.com/math-ai/internal/libs/langchain"
 	"math-ai.com/math-ai/internal/libs/openai"
 	"math-ai.com/math-ai/internal/libs/openrouter"
 )
@@ -23,10 +21,8 @@ import (
 // Behaviour matrix:
 //
 //	cfg.BotProvider == "" or "disabled" → (nil, nil); boot continues.
-//	cfg.BotProvider == "langchain"|"eino"|"openrouter"|"openai"|"gemini"|"deepseek" →
-//	    every configured framework is registered:
-//	      - langchain  when cfg.LangChainBackend != ""
-//	      - eino       when cfg.EinoBackend      != ""
+//	cfg.BotProvider == "openrouter"|"openai"|"gemini"|"deepseek" →
+//	    every configured provider is registered:
 //	      - openrouter when cfg.OpenRouterAPIKey != ""
 //	      - openai     when cfg.OpenAIAPIKey     != ""
 //	      - gemini     when cfg.GeminiAPIKey     != ""
@@ -35,20 +31,19 @@ import (
 //	    route per-call to a specific provider via ChatVia / StreamVia.
 //	cfg.BotProvider == anything else    → MathError(BOT_CONFIG_INVALID).
 //
-// openrouter, openai, gemini and deepseek key off their API key rather
-// than a backend name because none has a backend selector: OpenRouter's
-// model id picks the vendor, and each direct client talks to one vendor.
+// Every provider keys off its API key: OpenRouter's model id picks the
+// vendor, and each direct client talks to one vendor.
 //
-// Naming a default whose framework is not configured (e.g.
-// BOT_PROVIDER=eino without BOT_EINO_BACKEND) is a deploy mistake and
+// Naming a default whose provider is not configured (e.g.
+// BOT_PROVIDER=gemini without BOT_GEMINI_API_KEY) is a deploy mistake and
 // fails with BOT_CONFIG_INVALID.
 //
 // Disabled returns nil rather than an error so dev profiles without
 // LLM credentials can boot. Module services that consume the adapter
 // must nil-guard, the same way they do with res.SMSProvider in local dev.
 //
-// Errors from libs/langchain, libs/eino, libs/openrouter, libs/openai,
-// libs/gemini and libs/deepseek are translated here:
+// Errors from libs/openrouter, libs/openai, libs/gemini and libs/deepseek
+// are translated here:
 //
 //	ErrInvalidConfig → MathError(BOT_CONFIG_INVALID, {"reason": ...})
 //	anything else    → MathError(BOT_CONNECT_FAILED) wrapping the cause
@@ -58,8 +53,7 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 	switch cfg.DefaultBotProvider {
 	case "", "disabled":
 		return nil, nil
-	case string(ProviderLangChain), string(ProviderEino),
-		string(ProviderOpenRouter), string(ProviderOpenAI),
+	case string(ProviderOpenRouter), string(ProviderOpenAI),
 		string(ProviderGemini), string(ProviderDeepSeek):
 		// recognised — continue below
 	default:
@@ -68,61 +62,6 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 	}
 
 	adapter := NewAdapter()
-
-	if cfg.LangChainBackend != "" {
-		client, err := langchain.NewClient(ctx, langchain.Config{
-			Backend:       langchain.Backend(cfg.LangChainBackend),
-			APIKey:        cfg.LangChainAPIKey,
-			BaseURL:       cfg.LangChainBaseURL,
-			Model:         cfg.LangChainModel,
-			EmbedModel:    cfg.LangChainEmbedModel,
-			Temperature:   cfg.LangChainTemperature,
-			TopP:          cfg.LangChainTopP,
-			MaxTokens:     cfg.LangChainMaxTokens,
-			Timeout:       cfg.Timeout,
-			MaxRetries:    cfg.MaxRetries,
-			RetryDelay:    cfg.RetryDelay,
-			RequireAtBoot: cfg.RequireAtBoot,
-		})
-		if err != nil {
-			if errors.Is(err, langchain.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
-					map[string]any{"reason": err.Error()}, err)
-			}
-			return nil, errs.NewError(ctx, status.BOT_CONNECT_FAILED,
-				map[string]any{"backend": cfg.LangChainBackend}, err)
-		}
-		adapter.Register(NewLangChainProvider(client))
-	}
-
-	if cfg.EinoBackend != "" {
-		client, err := eino.NewClient(ctx, eino.Config{
-			Backend:       eino.Backend(cfg.EinoBackend),
-			APIKey:        cfg.EinoAPIKey,
-			BaseURL:       cfg.EinoBaseURL,
-			Model:         cfg.EinoModel,
-			Temperature:   cfg.EinoTemperature,
-			TopP:          cfg.EinoTopP,
-			MaxTokens:     cfg.EinoMaxTokens,
-			Store:         cfg.EinoStore,
-			Timeout:       cfg.Timeout,
-			MaxRetries:    cfg.MaxRetries,
-			RetryDelay:    cfg.RetryDelay,
-			RequireAtBoot: cfg.RequireAtBoot,
-		})
-
-		if err != nil {
-			log.Error("eino: client not rceady %v", err)
-			if errors.Is(err, eino.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
-					map[string]any{"reason": err.Error()}, err)
-			}
-			return nil, errs.NewError(ctx, status.BOT_CONNECT_FAILED,
-				map[string]any{"backend": cfg.EinoBackend}, err)
-		}
-
-		adapter.Register(NewEinoProvider(client))
-	}
 
 	if cfg.OpenRouterAPIKey != "" {
 		client, err := openrouter.NewClient(ctx, openrouter.Config{
@@ -242,7 +181,7 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
 			map[string]any{
 				"provider": cfg.DefaultBotProvider,
-				"reason":   "default provider is not configured (missing BOT_<PROVIDER>_BACKEND?)",
+				"reason":   "default provider is not configured (missing BOT_<PROVIDER>_API_KEY?)",
 			}, err)
 	}
 

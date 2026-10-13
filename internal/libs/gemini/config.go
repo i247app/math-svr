@@ -2,7 +2,7 @@
 // (https://generativelanguage.googleapis.com/v1beta). It owns the LLM
 // client lifecycle (credentials, timeouts, retries) and exposes the same
 // narrow chat surface the adapter layer (`internal/adapter/bot`) consumes
-// — mirroring libs/langchain, libs/eino, libs/openrouter and libs/openai.
+// — mirroring libs/openrouter, libs/openai and libs/deepseek.
 //
 // Like libs/openrouter and libs/openai, this package uses NO vendor SDK:
 // every call goes out through `internal/shared/http_client`. There is no
@@ -94,7 +94,7 @@ type Config struct {
 	// EmbedModel is the default embedding model id (e.g.
 	// "text-embedding-004"). Optional; Embed falls back to
 	// EmbedRequest.Model, then EmbedModel, then Model — same precedence as
-	// libs/langchain and libs/openai.
+	// libs/openai.
 	EmbedModel string
 
 	// Temperature is the default sampling temperature. A negative value

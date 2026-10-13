@@ -27,7 +27,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"metadata\": {{metadata}},\n    // \"provider\": \"langchain\"\n    \"provider\": \"eino\"\n}",
+              "raw": "{\n    \"metadata\": {{metadata}},\n    \"provider\": \"openai\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

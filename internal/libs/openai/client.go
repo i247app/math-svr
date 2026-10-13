@@ -20,8 +20,8 @@ import (
 // and exposes the same narrow surface as the sibling libs packages.
 //
 // Capability matrix: Chat, Stream and Embed are all supported. Embed is
-// the differentiator versus libs/eino and libs/openrouter, which have no
-// embedding endpoint to call.
+// the differentiator versus libs/openrouter and libs/deepseek, which have
+// no embedding endpoint to call.
 //
 // The client is safe for concurrent use; http_client wraps a stdlib
 // http.Client which pools connections internally. Nothing to Close —
@@ -246,7 +246,7 @@ func (c *Client) GenerateStream(ctx context.Context, req ChatRequest, onChunk fu
 // Embed produces one vector per input via POST /v1/embeddings.
 //
 // Model precedence is EmbedRequest.Model → Config.EmbedModel →
-// Config.Model, matching libs/langchain.
+// Config.Model, matching libs/gemini.
 //
 // Output order: the response is re-sorted by the `index` field each
 // element carries rather than trusting array order, because the API
@@ -372,8 +372,7 @@ func (c *Client) buildRequest(req ChatRequest, stream bool) wireChatRequest {
 	if maxTokens > 0 {
 		// Always max_completion_tokens: `max_tokens` is deprecated upstream
 		// and rejected outright by the reasoning models. Supported by every
-		// current OpenAI chat model, so no per-model branching is needed —
-		// same call libs/eino makes for its openai backend.
+		// current OpenAI chat model, so no per-model branching is needed.
 		out.MaxCompletionTokens = &maxTokens
 	}
 

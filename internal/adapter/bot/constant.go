@@ -9,32 +9,20 @@
 //   - Adding a vendor = a new bot_<vendor>_provider.go file + a new
 //     constant here + a new case in factory.go.
 //
-// The first wired provider is "langchain", backed by
-// `internal/libs/langchain` which itself dispatches to one of several
-// LLM vendors (googleai, openai, anthropic, ollama) selected at boot.
+// Every provider is a direct REST client over the shared http_client
+// (internal/libs/<vendor>) — no vendor SDK.
 package bot
 
 // BotProviderName is the registered name of a concrete provider.
 type BotProviderName string
 
 const (
-	// ProviderLangChain dispatches via internal/libs/langchain. The
-	// backend vendor (Gemini, OpenAI, etc.) is selected inside that
-	// library by BotConfig.LangChainBackend.
-	ProviderLangChain BotProviderName = "langchain"
-
-	// ProviderEino dispatches via internal/libs/eino (cloudwego/eino +
-	// eino-ext). The backend vendor is selected inside that library by
-	// BotConfig.EinoBackend. Registered alongside langchain when
-	// configured; BOT_PROVIDER picks which one is the default.
-	ProviderEino BotProviderName = "eino"
-
 	// ProviderOpenRouter dispatches via internal/libs/openrouter, which
 	// calls the OpenRouter REST API directly over the shared http_client
 	// (no vendor SDK). There is no backend selector: OpenRouter is itself
 	// the router and the vendor is chosen by the model id
 	// ("vendor/model-name") in BotConfig.OpenRouterModel. Registered
-	// alongside the other frameworks when configured; BOT_PROVIDER picks
+	// alongside the other providers when configured; BOT_PROVIDER picks
 	// which one is the default.
 	ProviderOpenRouter BotProviderName = "openrouter"
 
@@ -44,13 +32,7 @@ const (
 	// OpenAI and only OpenAI, and BotConfig.OpenAIModel names a bare model
 	// id ("gpt-4.1", not "openai/gpt-4.1").
 	//
-	// Naming caution: "openai" is ALSO a valid value for
-	// BOT_LANGCHAIN_BACKEND / BOT_EINO_BACKEND, where it selects the vendor
-	// an SDK talks to. As a BOT_PROVIDER value it means the direct client
-	// below. The two never collide because they are read from different
-	// env keys, but read a config twice before assuming which one is meant.
-	//
-	// This is the only provider besides langchain that implements Embed.
+	// Supports Chat, Stream, Embed and Respond (Responses API).
 	ProviderOpenAI BotProviderName = "openai"
 
 	// ProviderGemini dispatches via internal/libs/gemini, which calls
@@ -59,10 +41,6 @@ const (
 	// backend selector, and BotConfig.GeminiModel names a bare model id
 	// ("gemini-2.0-flash"); the "models/" URL prefix is added by the
 	// client.
-	//
-	// Same naming caution as ProviderOpenAI: "googleai" is the BACKEND
-	// name langchain and eino use to reach the same vendor through an SDK.
-	// This provider is the direct path.
 	//
 	// Supports Chat, Stream and Embed.
 	ProviderGemini BotProviderName = "gemini"

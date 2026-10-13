@@ -175,56 +175,26 @@ type SMSConfig struct {
 }
 
 // BotConfig configures the AI bot adapter (`internal/adapter/bot`). The
-// factory translates these into provider-specific configs. Three
-// frameworks are supported: "langchain" and "eino" (each SDK-backed and
-// pointed at one of googleai / openai / anthropic / ollama by their
-// respective Backend key) and "openrouter" (direct REST, vendor chosen by
-// the model id).
+// factory translates these into provider-specific configs. Four providers
+// are supported, each a direct REST client with no vendor SDK:
+// "openrouter" (vendor chosen by the model id), "openai", "gemini" and
+// "deepseek".
 //
-// LangChainAPIKey, EinoAPIKey and OpenRouterAPIKey are long-lived secrets.
-// They are never logged; each libs package masks its key out of every code
-// path.
+// Every <Provider>APIKey is a long-lived secret. They are never logged;
+// each libs package masks its key out of every code path.
 //
 // Behaviour matrix for BotProvider:
 //
 //	""  or "disabled" → adapter is nil; module services must nil-guard.
-//	"langchain" | "eino" | "openrouter" | "openai" | "gemini" | "deepseek"
-//	                  → every framework whose config key is set gets
-//	                    registered (BOT_LANGCHAIN_BACKEND /
-//	                    BOT_EINO_BACKEND / BOT_OPENROUTER_API_KEY /
+//	"openrouter" | "openai" | "gemini" | "deepseek"
+//	                  → every provider whose API key is set gets
+//	                    registered (BOT_OPENROUTER_API_KEY /
 //	                    BOT_OPENAI_API_KEY / BOT_GEMINI_API_KEY /
 //	                    BOT_DEEPSEEK_API_KEY);
 //	                    BotProvider names the DEFAULT one.
 //	anything else     → MathError(BOT_CONFIG_INVALID) at boot.
 type BotConfig struct {
-	DefaultBotProvider string // env BOT_PROVIDER; "langchain" | "eino" | "openrouter" | "openai" | "gemini" | "deepseek" | "" | "disabled"
-
-	// LangChain-backed provider settings. Consumed (and the provider
-	// registered) whenever LangChainBackend is non-empty.
-	LangChainBackend     string  // env BOT_LANGCHAIN_BACKEND; "googleai" | "openai" | "anthropic" | "ollama"
-	LangChainAPIKey      string  // env BOT_LANGCHAIN_API_KEY — SECRET
-	LangChainBaseURL     string  // env BOT_LANGCHAIN_BASE_URL; optional vendor override / required for ollama
-	LangChainModel       string  // env BOT_LANGCHAIN_MODEL; e.g. "gemini-1.5-flash"
-	LangChainEmbedModel  string  // env BOT_LANGCHAIN_EMBED_MODEL; e.g. "text-embedding-004"
-	LangChainTemperature float64 // env BOT_LANGCHAIN_TEMPERATURE; <0 means vendor default
-	LangChainTopP        float64 // env BOT_LANGCHAIN_TOP_P;        <0 means vendor default
-	LangChainMaxTokens   int     // env BOT_LANGCHAIN_MAX_TOKENS;   0  means vendor default
-
-	// Eino-backed provider settings (cloudwego/eino + eino-ext). Consumed
-	// (and the provider registered) whenever EinoBackend is non-empty.
-	// No embed model: the eino provider reports Embed as unsupported.
-	EinoBackend     string  // env BOT_EINO_BACKEND; "googleai" | "openai" | "anthropic" | "ollama"
-	EinoAPIKey      string  // env BOT_EINO_API_KEY — SECRET
-	EinoBaseURL     string  // env BOT_EINO_BASE_URL; optional vendor override / required for ollama
-	EinoModel       string  // env BOT_EINO_MODEL; e.g. "gemini-1.5-flash"
-	EinoTemperature float64 // env BOT_EINO_TEMPERATURE; <0 means vendor default
-	EinoTopP        float64 // env BOT_EINO_TOP_P;        <0 means vendor default
-	EinoMaxTokens   int     // env BOT_EINO_MAX_TOKENS;   0  means vendor default
-	// EinoStore sends chat-completions `store: true` so the request and
-	// response appear at platform.openai.com/logs. OPENAI BACKEND ONLY;
-	// ignored by googleai / anthropic / ollama. Default false — enabling it
-	// stores prompt + response content on OpenAI for 30 days.
-	EinoStore bool // env BOT_EINO_STORE; default false
+	DefaultBotProvider string // env BOT_PROVIDER; "openrouter" | "openai" | "gemini" | "deepseek" | "" | "disabled"
 
 	// OpenRouter-backed provider settings (direct REST over
 	// internal/shared/http_client — no SDK). Consumed (and the provider
@@ -254,7 +224,7 @@ type BotConfig struct {
 	// The model is REQUIRED — there is no built-in default, because
 	// defaulting it would pick a price on the operator's behalf.
 	//
-	// This is the only provider besides langchain that supports Embed.
+	// Supports Chat, Stream, Embed and Respond (Responses API).
 	OpenAIAPIKey       string  // env BOT_OPENAI_API_KEY — SECRET
 	OpenAIBaseURL      string  // env BOT_OPENAI_BASE_URL; optional, defaults to https://api.openai.com/v1
 	OpenAIModel        string  // env BOT_OPENAI_MODEL; e.g. "gpt-4.1"

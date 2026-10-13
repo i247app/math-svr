@@ -257,7 +257,7 @@ func (c *Client) GenerateStream(ctx context.Context, req ChatRequest, onChunk fu
 // Embed produces one vector per input via :batchEmbedContents.
 //
 // Model precedence is EmbedRequest.Model → Config.EmbedModel →
-// Config.Model, matching libs/langchain and libs/openai.
+// Config.Model, matching libs/openai.
 //
 // Order: unlike OpenAI's embeddings endpoint, the Gemini reference states
 // the embeddings come back "in the same order as provided in the batch

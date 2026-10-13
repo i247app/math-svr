@@ -78,6 +78,7 @@ func (s *Service) Shake(ctx context.Context, req dto.ShakeReq, force bool) *dto.
 		Messages:    []botAdapter.Message{{Role: botAdapter.RoleUser, Content: shakePrompt}},
 		MaxTokens:   10,
 		Temperature: 0,
+		TopP:        -1, // unset; the zero value would send top_p=0
 	})
 	latency := time.Since(start)
 

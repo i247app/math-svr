@@ -97,24 +97,6 @@ func NewEnv(envpath string) (*Env, error) {
 		BotConfig: BotConfig{
 			DefaultBotProvider: getConfigOptionalString("BOT_PROVIDER"),
 
-			LangChainBackend:     getConfigOptionalString("BOT_LANGCHAIN_BACKEND"),
-			LangChainAPIKey:      getConfigOptionalString("BOT_LANGCHAIN_API_KEY"),
-			LangChainBaseURL:     getConfigOptionalString("BOT_LANGCHAIN_BASE_URL"),
-			LangChainModel:       getConfigOptionalString("BOT_LANGCHAIN_MODEL"),
-			LangChainEmbedModel:  getConfigOptionalString("BOT_LANGCHAIN_EMBED_MODEL"),
-			LangChainTemperature: getFloatConfigWithDefault("BOT_LANGCHAIN_TEMPERATURE", -1),
-			LangChainTopP:        getFloatConfigWithDefault("BOT_LANGCHAIN_TOP_P", -1),
-			LangChainMaxTokens:   getIntConfigOptional("BOT_LANGCHAIN_MAX_TOKENS"),
-
-			EinoBackend:     getConfigOptionalString("BOT_EINO_BACKEND"),
-			EinoAPIKey:      getConfigOptionalString("BOT_EINO_API_KEY"),
-			EinoBaseURL:     getConfigOptionalString("BOT_EINO_BASE_URL"),
-			EinoModel:       getConfigOptionalString("BOT_EINO_MODEL"),
-			EinoTemperature: getFloatConfigWithDefault("BOT_EINO_TEMPERATURE", -1),
-			EinoTopP:        getFloatConfigWithDefault("BOT_EINO_TOP_P", -1),
-			EinoMaxTokens:   getIntConfigOptional("BOT_EINO_MAX_TOKENS"),
-			EinoStore:       getBoolConfigWithDefault("BOT_EINO_STORE", false),
-
 			OpenRouterAPIKey:      getConfigOptionalString("BOT_OPENROUTER_API_KEY"),
 			OpenRouterBaseURL:     getConfigOptionalString("BOT_OPENROUTER_BASE_URL"),
 			OpenRouterModel:       getConfigOptionalString("BOT_OPENROUTER_MODEL"),

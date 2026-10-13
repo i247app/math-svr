@@ -12,8 +12,8 @@ import (
 // OpenRouterProvider is the BotProvider implementation backed by
 // libs/openrouter, which calls the OpenRouter REST API directly through
 // the project's shared http_client — no vendor SDK involved. It owns
-// nothing besides the wired *openrouter.Client and mirrors
-// EinoProvider's translation duties.
+// nothing besides the wired *openrouter.Client and mirrors the other
+// providers' translation duties.
 //
 // The single OpenRouterProvider can serve any model on OpenRouter; the
 // vendor is chosen by the model id ("vendor/model-name") configured at
@@ -100,7 +100,7 @@ func (p *OpenRouterProvider) Stream(ctx context.Context, req ChatRequest, onChun
 
 // Embed reports the capability as unsupported. OpenRouter exposes no
 // embedding endpoint; deploys that need embeddings should route Embed via
-// the langchain provider (EmbedVia).
+// the openai or gemini provider (EmbedVia).
 func (p *OpenRouterProvider) Embed(ctx context.Context, _ EmbedRequest) (*EmbedResult, error) {
 	return nil, errs.NewError(ctx, status.BOT_UNSUPPORTED_OP,
 		map[string]any{"provider": string(ProviderOpenRouter)},

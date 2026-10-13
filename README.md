@@ -113,7 +113,7 @@ if the file is missing or unparsable, and that error aborts startup.
 | Key | Values |
 |---|---|
 | `SMS_PROVIDER` | `twilio` \| `""` \| `disabled` (+ `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`, `TWILIO_MESSAGING_SERVICE_SID`) |
-| `BOT_PROVIDER` | `langchain` \| `eino` \| `""` \| `disabled`; the backend vendor is picked by `BOT_LANGCHAIN_BACKEND` / `BOT_EINO_BACKEND` ∈ `googleai` \| `openai` \| `anthropic` \| `ollama` |
+| `BOT_PROVIDER` | `openai` \| `gemini` \| `deepseek` \| `openrouter` \| `""` \| `disabled`; every provider whose `BOT_<X>_API_KEY` is set registers, `BOT_PROVIDER` names the default |
 | `NOTIFICATION_PROVIDER` | `firebase` \| `""` \| `disabled` (+ `FIREBASE_CREDENTIALS_FILE`, `FIREBASE_PROJECT_ID`) |
 | `STORAGE_PROVIDER` | `s3` or empty (empty is treated as S3) + `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `STORAGE_REGION`, `STORAGE_BUCKET` |
 | `SOCKET_ENABLED` | `false` → `/ws/connect` is not registered at all |
@@ -235,7 +235,7 @@ internal/domain/<agg>/             entities, repository interfaces, status codes
 internal/infrastructure/           MySQL repositories implement the domain interfaces;
                                    database, logger, config, session, metrics, tracing, httproute, job, socket
 internal/adapter/<kind>/           the only layer that talks to a third-party SaaS
-internal/libs/<vendor>/            raw vendor clients (s3, email, twilio, firebase, langchain, eino)
+internal/libs/<vendor>/            raw vendor clients (s3, email, twilio, firebase, openai, gemini, deepseek, openrouter)
 ```
 
 Supporting packages: `internal/jobs/` (concrete background jobs) and
@@ -304,7 +304,7 @@ factory is the only place that knows the vendor:
 | `email` | Gmail API (`google`) | **required** — boot fails without valid credentials |
 | `sms` | Twilio | `nil` when disabled |
 | `storage` | AWS S3 | used for avatar/static-file uploads |
-| `bot` | LangChain (`tmc/langchaingo`) and eino (`cloudwego/eino`), each over googleai / openai / anthropic / ollama | `nil` when disabled; every framework whose `BOT_<X>_BACKEND` is set registers, `BOT_PROVIDER` picks the default |
+| `bot` | Direct REST clients (no SDK): OpenAI, Gemini, DeepSeek, OpenRouter | `nil` when disabled; every provider whose `BOT_<X>_API_KEY` is set registers, `BOT_PROVIDER` picks the default |
 | `notification` | Firebase | `nil` when disabled |
 | `otp_delivery` | composite over `sms` + `email` | routes by identifier: contains `@` → email, else → SMS |
 
@@ -356,6 +356,5 @@ several layers: infrastructure (`metrics`, `httproute`, `logger`, `tracing`,
 `metadata`, the socket hub, one repository test), bootstrap middleware (metrics,
 session token, WebSocket upgrade), application (`command/otp`, `command/user`,
 `command/shared/seqgen`, `query/quiz`, `query/progress`), modules (`quiz` validator,
-`socket` integration over a real `websocket.Dial`), the bot adapter, and
-`libs/eino`. Most module services and repositories remain untested. There is no CI
+`socket` integration over a real `websocket.Dial`), and the bot adapter. Most module services and repositories remain untested. There is no CI
 workflow in the repository.

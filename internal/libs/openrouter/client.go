@@ -16,7 +16,7 @@ import (
 // Client is the OpenRouter-backed LLM client. It speaks the REST API
 // directly over the project's shared http_client — no vendor SDK, no
 // private http.Client — and exposes the same narrow chat surface as
-// libs/eino.Client, minus embeddings (OpenRouter's chat-completions API
+// libs/openai.Client, minus embeddings (OpenRouter's chat-completions API
 // has no embedding endpoint; the adapter reports Embed as unsupported).
 //
 // The client is safe for concurrent use; http_client wraps a stdlib
@@ -162,8 +162,7 @@ func (c *Client) Generate(ctx context.Context, req ChatRequest) (*ChatResponse, 
 // transport first.
 //
 // Streaming is not retried: a mid-stream failure would require replaying
-// delivered tokens, which is the caller's policy decision — same contract
-// as libs/eino.
+// delivered tokens, which is the caller's policy decision.
 func (c *Client) GenerateStream(ctx context.Context, req ChatRequest, onChunk func(StreamChunk) error) (*ChatResponse, error) {
 	if len(req.Messages) == 0 {
 		return nil, fmt.Errorf("%w: at least one message is required", ErrInvalidConfig)
@@ -297,7 +296,7 @@ func (c *Client) buildRequest(req ChatRequest, stream bool) wireChatRequest {
 // doChat POSTs body to /chat/completions under the retry budget and
 // returns the raw 2xx response bytes.
 //
-// Retry policy mirrors libs/eino: transport failures and the statuses
+// Retry policy: transport failures and the statuses
 // IsRetryable accepts are re-issued; auth / config / credit / context
 // failures are not, because they cannot recover within the same call. A
 // 429 is retried only when it carries a Retry-After the client is willing

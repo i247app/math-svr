@@ -3,9 +3,9 @@
 // LLM client lifecycle (credentials, timeouts, retries) and exposes the
 // same narrow chat surface that the adapter layer
 // (`internal/adapter/bot`) consumes — mirroring the role of
-// `internal/libs/langchain` and `internal/libs/eino`.
+// `internal/libs/openai`, `internal/libs/gemini` and `internal/libs/deepseek`.
 //
-// Unlike those two, this package uses NO vendor SDK: every call goes out
+// Like them, this package uses NO vendor SDK: every call goes out
 // through `internal/shared/http_client`, the project's shared outbound
 // HTTP client. There is no `http.Client` constructed here.
 //
@@ -91,7 +91,7 @@ type Config struct {
 	Timeout time.Duration
 
 	// MaxRetries is the per-call retry budget for transient failures.
-	// applyDefaults sets 2 when zero. Same policy as libs/eino: only
+	// applyDefaults sets 2 when zero. Only
 	// transport errors, HTTP 408/502/503/504 and Retry-After-carrying 429s
 	// are re-issued.
 	MaxRetries int
@@ -119,8 +119,8 @@ const (
 )
 
 // Validate enforces the credential invariants and returns errors wrapped
-// with ErrInvalidConfig. Deliberately the same shape of rules as
-// libs/eino.Config.Validate so the providers misconfigure the same way.
+// with ErrInvalidConfig. Deliberately the same shape of rules as the
+// other libs clients so the providers misconfigure the same way.
 func (c Config) Validate() error {
 	if strings.TrimSpace(c.APIKey) == "" {
 		return fmt.Errorf("%w: APIKey is required", ErrInvalidConfig)

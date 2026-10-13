@@ -28,10 +28,10 @@ type BotProvider interface {
 // ResponderProvider is the OPTIONAL capability of holding conversation
 // state on the vendor side and chaining turns by id. It is a separate
 // interface rather than a method on BotProvider so that adding it did not
-// touch the five providers that cannot implement it; the adapter
-// discovers support by type assertion (Adapter.SupportsRespond) and
-// answers BOT_UNSUPPORTED_OP for the rest — the same shape Embed already
-// has on eino.
+// touch the providers that cannot implement it; the adapter discovers
+// support by type assertion (Adapter.SupportsRespond) and answers
+// BOT_UNSUPPORTED_OP for the rest — the same shape Embed already has on
+// openrouter and deepseek.
 //
 // Today only the OpenAI provider implements it (Responses API,
 // previous_response_id).

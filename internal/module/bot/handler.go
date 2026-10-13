@@ -25,7 +25,7 @@ func NewHandler(service *Service) *Handler {
 // the body's `shaked` flag.
 //
 // ?force=true bypasses the warm-up cache so the call really hits the vendor —
-// useful for observing connection reuse (see the langchain.conn log line).
+// useful for measuring a cold call's latency.
 func (h *Handler) HandleShake(w http.ResponseWriter, r *http.Request) {
 	var req dto.ShakeReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

@@ -176,7 +176,7 @@ func (c *botClient) complete(ctx context.Context, system, user string, temperatu
 				{Role: botAdapter.RoleUser, Content: user},
 			},
 			Temperature: temperature,
-			TopP:        0.95,
+			TopP:        -1, // temperature is the knob; top_p comes from BOT_*_TOP_P or the model default
 			JSONMode:    true,
 		})
 		if err != nil {
@@ -192,7 +192,7 @@ func (c *botClient) complete(ctx context.Context, system, user string, temperatu
 		PreviousResponseID: *chain,
 		Store:              true,
 		Temperature:        temperature,
-		TopP:               0.95,
+		TopP:               -1,
 		JSONMode:           true,
 	}
 	res, err := c.adapter.Respond(ctx, req)

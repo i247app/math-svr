@@ -12,15 +12,15 @@ import (
 // besides the wired *openai.Client and mirrors the other providers'
 // translation duties.
 //
-// Why it exists alongside three providers that can already reach OpenAI:
-// langchain and eino reach it through an SDK, and openrouter reaches it
-// through a broker that rebills the call. This one is the only path where
+// Why it exists alongside openrouter, which can already reach OpenAI:
+// openrouter reaches it through a broker that rebills the call. This one
+// is the only path where
 // the request leaves the process addressed to api.openai.com with the
 // project's own key — which is what makes usage, rate limits and the
 // platform.openai.com/logs dashboard attributable to this account.
 //
-// Capability matrix: Chat, Stream and Embed are ALL supported. That makes
-// it the only provider besides langchain that can serve embeddings.
+// Capability matrix: Chat, Stream, Embed and Respond are ALL supported.
+// Embed is shared with gemini only; Respond is OpenAI's alone.
 //
 // Note on Stream: libs/openai parses the SSE events out of a
 // fully-buffered response, so chunk order and the assembled result are
@@ -86,7 +86,7 @@ func (p *OpenAIProvider) Stream(ctx context.Context, req ChatRequest, onChunk fu
 }
 
 // Embed invokes openai.Client.Embed against /v1/embeddings. Unlike the
-// eino and openrouter providers, this is a real implementation rather than
+// openrouter and deepseek providers, this is a real implementation rather than
 // a BOT_UNSUPPORTED_OP stub.
 func (p *OpenAIProvider) Embed(ctx context.Context, req EmbedRequest) (*EmbedResult, error) {
 	out, err := p.client.Embed(ctx, openai.EmbedRequest{

@@ -24,7 +24,7 @@ import (
 // Capability matrix: Chat and Stream are supported. Embed is NOT — the
 // platform has no embeddings endpoint, so it returns
 // MathError(BOT_UNSUPPORTED_OP) per the BotProvider contract for optional
-// capabilities, the same posture as the eino and openrouter providers.
+// capabilities, the same posture as the openrouter provider.
 //
 // Note on Stream: libs/deepseek parses the SSE events out of a
 // fully-buffered response, so chunk order and the assembled result are
@@ -96,7 +96,7 @@ func (p *DeepSeekProvider) Stream(ctx context.Context, req ChatRequest, onChunk 
 
 // Embed reports the capability as unsupported. DeepSeek exposes no
 // embedding endpoint; deploys that need embeddings should route Embed via
-// the openai, gemini or langchain providers (EmbedVia).
+// the openai or gemini providers (EmbedVia).
 func (p *DeepSeekProvider) Embed(ctx context.Context, _ EmbedRequest) (*EmbedResult, error) {
 	return nil, errs.NewError(ctx, status.BOT_UNSUPPORTED_OP,
 		map[string]any{"provider": string(ProviderDeepSeek)},

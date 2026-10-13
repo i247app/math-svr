@@ -11,8 +11,8 @@ import (
 
 // Sentinel errors surfaced by the Client. Each maps to a distinct
 // MathError(BOT_*) code in the adapter layer; see adapter/bot/errors.go.
-// The taxonomy is identical to libs/langchain and libs/eino so
-// mapOpenRouterError stays symmetrical with its two siblings.
+// The taxonomy is shared with the other libs clients so
+// mapOpenRouterError stays symmetrical with its siblings.
 var (
 	// ErrDecodeResponse signals that a call returned 2xx but the body the
 	// client expected was missing or unparsable. Adapter maps to
@@ -187,7 +187,7 @@ func classifyAPIError(api *APIError) error {
 }
 
 // isContextLengthMessage matches the vendor phrasings that mean "the input
-// did not fit". Same substring set as libs/eino.translateError.
+// did not fit".
 func isContextLengthMessage(msg string) bool {
 	m := strings.ToLower(msg)
 	return strings.Contains(m, "context length") ||

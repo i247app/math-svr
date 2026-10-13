@@ -2,7 +2,7 @@
 // (https://api.deepseek.com). It owns the LLM client lifecycle
 // (credentials, timeouts, retries) and exposes the same narrow chat
 // surface the adapter layer (`internal/adapter/bot`) consumes — mirroring
-// libs/langchain, libs/eino, libs/openrouter, libs/openai and libs/gemini.
+// libs/openrouter, libs/openai and libs/gemini.
 //
 // Like the other three direct clients, this package uses NO vendor SDK:
 // every call goes out through `internal/shared/http_client`. There is no

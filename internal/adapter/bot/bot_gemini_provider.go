@@ -11,8 +11,7 @@ import (
 // project's shared http_client — no vendor SDK, no third party in the
 // path. It owns nothing besides the wired *gemini.Client.
 //
-// Why it exists alongside providers that can already reach Gemini:
-// langchain and eino reach it through an SDK (googleai backend), and
+// Why it exists alongside openrouter, which can already reach Gemini:
 // openrouter reaches it through a broker that rebills the call. This is
 // the only path where the request leaves the process addressed to Google
 // with the project's own key, so quota, rate limits and billing are
