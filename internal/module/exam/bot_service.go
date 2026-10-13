@@ -239,7 +239,7 @@ func (c *botClient) ReviewJourney(ctx context.Context, in domainBot.JourneyRevie
 
 	log.Infof("PROMPT REVIEW JOURNEY: system=%s user=%s", system, user)
 
-	content, respID, err := c.complete(ctx, system, user, 0.3, &chain)
+	content, respID, err := c.complete(ctx, system, user, 0.1, &chain)
 	if err != nil {
 		return nil, err
 	}
