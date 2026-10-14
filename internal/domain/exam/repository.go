@@ -164,11 +164,11 @@ type IExamLinkRepository interface {
 	// most one per type — generate hands it back instead of opening a
 	// second — but rows from before that rule may hold several.
 	FindInProgressInJourney(ctx context.Context, profileId, esessId int64, examType string) (*ExamLink, error)
-	// ListRecentByProfileGrade returns a child's latest sittings at one
-	// grade, newest first, whether submitted or still open — a paper
-	// handed out was seen. It feeds the "do not repeat these" list the
-	// next generation at that grade is prompted with.
-	ListRecentByProfileGrade(ctx context.Context, profileId int64, grade int, limit int) ([]*ExamLink, error)
+	// ListRecentSubmittedByProfileGrade returns a child's latest SUBMITTED
+	// sittings at one grade, newest first. Their answered questions feed
+	// the "do not repeat these" list the next generation at that grade is
+	// prompted with; an open sitting has nothing answered yet.
+	ListRecentSubmittedByProfileGrade(ctx context.Context, profileId int64, grade int, limit int) ([]*ExamLink, error)
 	Create(ctx context.Context, a *ExamLink) (*ExamLink, error)
 	MarkSubmitted(ctx context.Context, elinkId int64, result AttemptResult) error
 	ListProgressPoints(ctx context.Context, params ProgressPointsParams) ([]*ProgressPoint, error)
@@ -374,6 +374,9 @@ type IExamSessionRepository interface {
 type IExamSessionLineRepository interface {
 	CreateBatch(ctx context.Context, details []*ExamSessionLine) error
 	ListByElinkId(ctx context.Context, elinkId int64) ([]*ExamSessionLine, error)
+	// ListByElinkIds returns the answered questions of several sittings,
+	// newest sitting first (elink_id DESC), then question order.
+	ListByElinkIds(ctx context.Context, elinkIds []int64) ([]*ExamSessionLine, error)
 	// ListByEsessId returns EVERY answered question of one row of a
 	// journey — its ASSESSMENT sittings or its PRACTICE sittings — in
 	// sitting order then question order: the journey review screen.

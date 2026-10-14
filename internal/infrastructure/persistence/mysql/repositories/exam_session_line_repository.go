@@ -137,6 +137,21 @@ func (r *ExamSessionLineRepository) ListByElinkId(ctx context.Context, elinkId i
 	return r.list(ctx, "d.elink_id = ?", []any{elinkId}, "ORDER BY d.question_number ASC")
 }
 
+// ListByElinkIds returns the answered questions of several sittings,
+// newest sitting first (elink ids are minted monotonically), then
+// question order. It reads uk_attempt_question's elink_id prefix.
+func (r *ExamSessionLineRepository) ListByElinkIds(ctx context.Context, elinkIds []int64) ([]*exam.ExamSessionLine, error) {
+	if len(elinkIds) == 0 {
+		return nil, nil
+	}
+	args := make([]any, 0, len(elinkIds))
+	for _, id := range elinkIds {
+		args = append(args, id)
+	}
+	return r.list(ctx, "d.elink_id IN (?"+strings.Repeat(",?", len(elinkIds)-1)+")", args,
+		"ORDER BY d.elink_id DESC, d.question_number ASC")
+}
+
 // ListByEsessId returns one row of a journey's log — its ASSESSMENT
 // sittings or its PRACTICE sittings, never both. Ordered by sitting id
 // first — ids are minted monotonically, so that IS chronological — then

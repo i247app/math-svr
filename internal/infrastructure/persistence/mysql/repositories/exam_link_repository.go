@@ -241,17 +241,18 @@ func (r *ExamLinkRepository) FindInProgressInJourney(ctx context.Context, profil
 	return ModelToDomainExamLink(m), nil
 }
 
-// ListRecentByProfileGrade reads a child's newest sittings at one grade.
-// It walks ix_profile_status_started's profile prefix and filters on
-// req_grade; the candidate set per child is small enough that a
-// dedicated index is not worth its write cost.
-func (r *ExamLinkRepository) ListRecentByProfileGrade(ctx context.Context, profileId int64, grade int, limit int) ([]*exam.ExamLink, error) {
+// ListRecentSubmittedByProfileGrade reads a child's newest SUBMITTED
+// sittings at one grade. It walks ix_profile_status_started (profile_id,
+// elink_status, started_dt) and filters on req_grade; the candidate set
+// per child is small enough that a dedicated index is not worth its
+// write cost.
+func (r *ExamLinkRepository) ListRecentSubmittedByProfileGrade(ctx context.Context, profileId int64, grade int, limit int) ([]*exam.ExamLink, error) {
 	if limit <= 0 {
 		return nil, nil
 	}
-	args := slices.Concat([]any{profileId, grade}, examLinkActiveArgs(), []any{limit})
+	args := slices.Concat([]any{profileId, string(enum.ElinkStatusSubmitted), grade}, examLinkActiveArgs(), []any{limit})
 	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u WHERE ` +
-		`(u.profile_id = ? AND u.req_grade = ?) AND ` + examLinkActiveWhere +
+		`(u.profile_id = ? AND u.elink_status = ? AND u.req_grade = ?) AND ` + examLinkActiveWhere +
 		` ORDER BY u.started_dt DESC, u.elink_id DESC LIMIT ?`
 
 	rows, err := r.db.Query(ctx, query, args...)
