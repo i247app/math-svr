@@ -107,7 +107,7 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	log.Infof("PROMPT GENERATE EXAM: code=%s grade=%d prompt_id=%d prompt_version=%d system=%s user=%s",
 		in.Prompt.PromptCode(), in.Grade, in.Prompt.PromptId(), in.Prompt.PromptVersion(), system, user)
 
-	content, respID, err := c.complete(ctx, system, user, 0.1, in.Chain)
+	content, respID, err := c.complete(ctx, system, user, 0.4, in.Chain)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func (c *botClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prom
 	log.Infof("PROMPT REVIEW JOURNEY: prompt_id=%d prompt_version=%d system=%s user=%s",
 		prompt.PromptId(), prompt.PromptVersion(), system, user)
 
-	content, respID, err := c.complete(ctx, system, user, 0.1, &chain)
+	content, respID, err := c.complete(ctx, system, user, 0.4, &chain)
 	if err != nil {
 		return nil, err
 	}

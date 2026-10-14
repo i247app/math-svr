@@ -82,7 +82,7 @@ func (c *botClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 			{Role: botAdapter.RoleSystem, Content: system},
 			{Role: botAdapter.RoleUser, Content: user},
 		},
-		Temperature: 0.1,
+		Temperature: 0.4,
 		TopP:        -1, // temperature is the knob; top_p comes from BOT_*_TOP_P or the model default
 		JSONMode:    true,
 	})
@@ -143,7 +143,7 @@ func (c *botClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*
 			{Role: botAdapter.RoleSystem, Content: system},
 			{Role: botAdapter.RoleUser, Content: user},
 		},
-		Temperature: 0.1,
+		Temperature: 0.4,
 		TopP:        -1, // temperature is the knob; top_p comes from BOT_*_TOP_P or the model default
 		JSONMode:    true,
 	})
