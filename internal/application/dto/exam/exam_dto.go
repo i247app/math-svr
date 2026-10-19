@@ -5,8 +5,8 @@ import (
 	"sort"
 
 	"math-ai.com/math-ai/internal/application/dto/question"
-	"math-ai.com/math-ai/internal/domain/bot"
 	domain "math-ai.com/math-ai/internal/domain/exam"
+	"math-ai.com/math-ai/internal/domain/prompt/input"
 	"math-ai.com/math-ai/internal/shared/pagination"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -284,7 +284,7 @@ type TopicScore struct {
 
 // PracticePreviewFrom renders a brief for the wire. Lists are never nil
 // so the client can iterate without a null check.
-func PracticePreviewFrom(base *domain.ExamLink, brief *bot.PracticeBrief) *PracticePreview {
+func PracticePreviewFrom(base *domain.ExamLink, brief *input.PracticeBrief) *PracticePreview {
 	if base == nil || brief == nil {
 		return nil
 	}

@@ -2,7 +2,7 @@ package exam
 
 import (
 	"math-ai.com/math-ai/internal/application/dto/question"
-	domainBot "math-ai.com/math-ai/internal/domain/bot"
+	"math-ai.com/math-ai/internal/domain/prompt/input"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -36,10 +36,10 @@ func NormalizeQuestionBands(questions []question.Question, examType enum.ExamTyp
 	}
 
 	probeAt := make(map[int]struct{})
-	for _, pos := range domainBot.ProbePositions(examType, len(questions)) {
+	for _, pos := range input.ProbePositions(examType, len(questions)) {
 		probeAt[pos] = struct{}{}
 	}
-	probeGrade := domainBot.ProbeGrade(grade)
+	probeGrade := input.ProbeGrade(grade)
 
 	var mismatches []GradeMismatch
 	for i := range questions {

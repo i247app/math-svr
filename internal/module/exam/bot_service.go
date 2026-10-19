@@ -11,8 +11,10 @@ import (
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	"math-ai.com/math-ai/internal/application/dto/question"
-	domainBot "math-ai.com/math-ai/internal/domain/bot"
+
+	// input "math-ai.com/math-ai/internal/domain/bot"
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
+	"math-ai.com/math-ai/internal/domain/prompt/input"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -53,7 +55,7 @@ type generateExamInput struct {
 	// the prompt's {{LEVEL}} and is stamped on every question.
 	Level *int
 	// Practice aims a PRACTICE round; nil for every other type.
-	Practice *domainBot.PracticeBrief
+	Practice *input.PracticeBrief
 	// Avoid is the stems of the child's recent sittings at this grade.
 	Avoid []string
 	// Chain is the journey's last_resp_id: nil when the set belongs to no
@@ -75,7 +77,7 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil, ErrBotAdapterNotConfigured)
 	}
 
-	promptIn := domainBot.ExamPromptInput{
+	promptIn := input.ExamPromptInput{
 		ExamType:     in.ExamType,
 		Grade:        in.Grade,
 		NumQuestions: in.NumQuestions,
@@ -84,7 +86,7 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		Level:        in.Level,
 		Practice:     in.Practice,
 		// Read from the stored text before rendering fills it in.
-		SystemDefinesLevels: in.Prompt != nil && strings.Contains(in.Prompt.SystemPrompt(), domainBot.PlaceholderLevel),
+		SystemDefinesLevels: in.Prompt != nil && strings.Contains(in.Prompt.SystemPrompt(), input.PlaceholderLevel),
 		Avoid:               in.Avoid,
 	}
 
@@ -92,12 +94,12 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		return nil, errs.NewError(ctx, status.PROMPT_NOT_FOUND, nil,
 			fmt.Errorf("exam: no system prompt for %s grade %d", in.ExamType, in.Grade))
 	}
-	system := domainBot.RenderSystemPrompt(in.Prompt.SystemPrompt(), in.Level, rand.Int64N(1_000_000))
-	if domainBot.HasUnfilledLevel(system) {
+	system := input.RenderSystemPrompt(in.Prompt.SystemPrompt(), in.Level, rand.Int64N(1_000_000))
+	if input.HasUnfilledLevel(system) {
 		log.Warnf("exam.prompt.level_unfilled prompt_id=%d type=%s grade=%d — the prompt names %s but the round has no level",
-			in.Prompt.PromptId(), in.ExamType, in.Grade, domainBot.PlaceholderLevel)
+			in.Prompt.PromptId(), in.ExamType, in.Grade, input.PlaceholderLevel)
 	}
-	user, err := domainBot.BuildExamUserPrompt(promptIn)
+	user, err := input.BuildExamUserPrompt(promptIn)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)
 	}
@@ -151,7 +153,7 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	// stamps it (the prompt does not ask for one); the short_text is the
 	// model's own summary of the round and is kept.
 	return &generateExamOutput{
-		Title:     domainBot.ExamTitle(in.ExamType, in.Grade),
+		Title:     input.ExamTitle(in.ExamType, in.Grade),
 		ShortText: gen.ShortText,
 		Questions: questions,
 		RespID:    respID,
@@ -235,7 +237,7 @@ type journeyReviewOutput struct {
 // prompt is the EXAM_REVIEW row of ma_prompts, sent verbatim as the system
 // message. chain is the journey's last_resp_id ("" when none), so the
 // review is one more turn of the journey's chain.
-func (c *botClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prompt, in domainBot.JourneyReviewInput, chain string) (*journeyReviewOutput, error) {
+func (c *botClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prompt, in input.JourneyReviewInput, chain string) (*journeyReviewOutput, error) {
 	log := logger.From(ctx)
 	if c.adapter == nil {
 		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil, ErrBotAdapterNotConfigured)
@@ -245,7 +247,7 @@ func (c *botClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prom
 	}
 	system := prompt.SystemPrompt()
 
-	user, err := domainBot.BuildJourneyReviewUserPrompt(in)
+	user, err := input.BuildJourneyReviewUserPrompt(in)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.EXAM_REVIEW_NO_ANSWERS, nil, err)
 	}
@@ -272,9 +274,9 @@ func (c *botClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prom
 	if short == "" || long == "" {
 		return nil, errs.NewError(ctx, status.EXAM_REVIEW_FAILED, nil, ErrReviewEmpty)
 	}
-	if utf8.RuneCountInString(short) > domainBot.ReviewShortMaxChars {
+	if utf8.RuneCountInString(short) > input.ReviewShortMaxChars {
 		log.Warnf("exam.review.short_truncated runes=%d", utf8.RuneCountInString(short))
-		short = string([]rune(short)[:domainBot.ReviewShortMaxChars])
+		short = string([]rune(short)[:input.ReviewShortMaxChars])
 	}
 	return &journeyReviewOutput{Short: short, Long: long, RespID: respID}, nil
 }

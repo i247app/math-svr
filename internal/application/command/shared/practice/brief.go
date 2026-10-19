@@ -10,8 +10,8 @@ import (
 	"sort"
 	"strings"
 
-	"math-ai.com/math-ai/internal/domain/bot"
 	"math-ai.com/math-ai/internal/domain/exam"
+	"math-ai.com/math-ai/internal/domain/prompt/input"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -33,11 +33,11 @@ import (
 // alphabetically so the same log always yields the same brief. A topic
 // counts as strong only when every answer in it was right; a topic with
 // one wrong out of five is weak, because the drill is about the miss.
-func BuildBrief(details []*exam.ExamSessionLine) bot.PracticeBrief {
+func BuildBrief(details []*exam.ExamSessionLine) input.PracticeBrief {
 	wrongByTopic := map[string]int{}
 	seenTopic := map[string]bool{}
-	tally := map[string]bot.TopicTally{}
-	var wrong []bot.PracticeItem
+	tally := map[string]input.TopicTally{}
+	var wrong []input.PracticeItem
 
 	for _, d := range details {
 		topic := topicOf(d)
@@ -52,7 +52,7 @@ func BuildBrief(details []*exam.ExamSessionLine) bot.PracticeBrief {
 			continue
 		}
 		wrongByTopic[topic]++
-		wrong = append(wrong, bot.PracticeItem{
+		wrong = append(wrong, input.PracticeItem{
 			Stem:        utils.DerefString(d.QuestionName()),
 			Topic:       topic,
 			RightAnswer: utils.DerefString(d.RightAnswerContent()),
@@ -84,7 +84,7 @@ func BuildBrief(details []*exam.ExamSessionLine) bot.PracticeBrief {
 		mode = enum.PracticeModeRetryWeak
 	}
 	delete(tally, "")
-	return bot.PracticeBrief{
+	return input.PracticeBrief{
 		Mode:         mode,
 		Wrong:        wrong,
 		WeakTopics:   weak,

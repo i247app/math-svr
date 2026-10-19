@@ -5,7 +5,7 @@ import (
 
 	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
 	"math-ai.com/math-ai/internal/application/dto/question"
-	domainBot "math-ai.com/math-ai/internal/domain/bot"
+	"math-ai.com/math-ai/internal/domain/prompt/input"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -60,10 +60,10 @@ func (c *botClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 			ErrBotAdapterNotConfigured)
 	}
 
-	system, user, err := domainBot.BuildExercisePrompt(
-		domainBot.ExercisePromptKindGenerate,
-		domainBot.ExercisePromptInput{
-			Language:     domainBot.QuizLanguage(normalizeLanguage(in.Language)),
+	system, user, err := input.BuildExercisePrompt(
+		input.ExercisePromptKindGenerate,
+		input.ExercisePromptInput{
+			Language:     input.QuizLanguage(normalizeLanguage(in.Language)),
 			Grade:        in.GradeLabel,
 			Program:      in.ProgramLabel,
 			Description:  in.Description,
@@ -125,10 +125,10 @@ func (c *botClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*
 			ErrClassroomExerciseSubmissionBotAdapterNotConfigured)
 	}
 
-	system, user, err := domainBot.BuildExercisePrompt(
-		domainBot.ExercisePromptKindGrade,
-		domainBot.ExercisePromptInput{
-			Language:  domainBot.QuizLanguage(normalizeLanguage(in.Language)),
+	system, user, err := input.BuildExercisePrompt(
+		input.ExercisePromptKindGrade,
+		input.ExercisePromptInput{
+			Language:  input.QuizLanguage(normalizeLanguage(in.Language)),
 			Questions: in.Questions,
 			Answers:   in.Answers,
 		})

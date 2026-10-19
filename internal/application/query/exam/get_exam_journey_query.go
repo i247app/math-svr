@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/command/shared/practice"
-	"math-ai.com/math-ai/internal/domain/bot"
 	"math-ai.com/math-ai/internal/domain/exam"
+	"math-ai.com/math-ai/internal/domain/prompt/input"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
@@ -45,7 +45,7 @@ type ExamJourneyDetail struct {
 	// function the hand-out uses, so what the screen previews is what the
 	// paper will drill.
 	PracticeBase  *exam.ExamLink
-	PracticeBrief *bot.PracticeBrief
+	PracticeBrief *input.PracticeBrief
 }
 
 type GetExamJourneyQueryHandler struct {

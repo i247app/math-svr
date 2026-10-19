@@ -8,10 +8,10 @@ import (
 
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	query "math-ai.com/math-ai/internal/application/query/exam"
-	domainBot "math-ai.com/math-ai/internal/domain/bot"
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
+	"math-ai.com/math-ai/internal/domain/prompt/input"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -236,7 +236,7 @@ func resolveLevel(ctx context.Context, examType enum.ExamType, grade int, stated
 	if stated == nil || examType != enum.ExamTypeGrade {
 		return stated
 	}
-	clamped := domainBot.ClampLevelToGrade(grade, *stated)
+	clamped := input.ClampLevelToGrade(grade, *stated)
 	if clamped != *stated {
 		logger.From(ctx).Warnf("exam.level.clamped grade=%d stated=%d applied=%d", grade, *stated, clamped)
 	}
@@ -260,7 +260,7 @@ func (s *Service) gradeFromProfile(ctx context.Context, profile *profileDomain.P
 	if len(grades) == 0 {
 		return enum.ExamGradeMin, nil
 	}
-	if number, ok := domainBot.ResolveGradeNumber(grades[0].Label()); ok {
+	if number, ok := input.ResolveGradeNumber(grades[0].Label()); ok {
 		return number, nil
 	}
 	logger.From(ctx).Warnf("exam.grade_label_unresolved label=%q profile=%d",
@@ -396,8 +396,8 @@ func (s *Service) resumeOpenSitting(ctx context.Context, profile *profileDomain.
 // ListRecentByEsessId returns them) into the review prompt's input,
 // oldest first. Only question content and correctness cross over — no
 // profile field ever reaches the prompt.
-func journeyReviewInput(journey *examDomain.ExamSession, lines []*examDomain.ExamSessionLine) domainBot.JourneyReviewInput {
-	answers := make([]domainBot.ReviewAnswer, 0, len(lines))
+func journeyReviewInput(journey *examDomain.ExamSession, lines []*examDomain.ExamSessionLine) input.JourneyReviewInput {
+	answers := make([]input.ReviewAnswer, 0, len(lines))
 	for i := len(lines) - 1; i >= 0; i-- {
 		l := lines[i]
 		child := l.SelectedLabel()
@@ -408,7 +408,7 @@ func journeyReviewInput(journey *examDomain.ExamSession, lines []*examDomain.Exa
 		if c := utils.DerefString(l.RightAnswerContent()); c != "" {
 			right += " (" + c + ")"
 		}
-		answers = append(answers, domainBot.ReviewAnswer{
+		answers = append(answers, input.ReviewAnswer{
 			Question:    utils.DerefString(l.QuestionName()),
 			Topic:       utils.DerefString(l.QuestionTopic()),
 			Grade:       l.QuestionGrade(),
@@ -417,7 +417,7 @@ func journeyReviewInput(journey *examDomain.ExamSession, lines []*examDomain.Exa
 			Correct:     l.IsCorrect(),
 		})
 	}
-	return domainBot.JourneyReviewInput{
+	return input.JourneyReviewInput{
 		ExamType:        journey.ReqExamType(),
 		Grade:           journey.CurrentGrade(),
 		Level:           journey.CurrentLevel(),
