@@ -1,4 +1,4 @@
-package bot
+package llm
 
 import (
 	"context"
@@ -15,28 +15,28 @@ import (
 )
 
 // NewFromConfig builds a fully-wired *Adapter from cfg, or returns
-// (nil, nil) when the bot adapter is intentionally disabled in this
+// (nil, nil) when the LLM adapter is intentionally disabled in this
 // deploy.
 //
 // Behaviour matrix:
 //
-//	cfg.BotProvider == "" or "disabled" → (nil, nil); boot continues.
-//	cfg.BotProvider == "openrouter"|"openai"|"gemini"|"deepseek" →
+//	cfg.LLMProvider == "" or "disabled" → (nil, nil); boot continues.
+//	cfg.LLMProvider == "openrouter"|"openai"|"gemini"|"deepseek" →
 //	    every configured provider is registered:
 //	      - openrouter when cfg.OpenRouterAPIKey != ""
 //	      - openai     when cfg.OpenAIAPIKey     != ""
 //	      - gemini     when cfg.GeminiAPIKey     != ""
 //	      - deepseek   when cfg.DeepSeekAPIKey   != ""
-//	    then cfg.BotProvider is set as the default. Callers can still
+//	    then cfg.LLMProvider is set as the default. Callers can still
 //	    route per-call to a specific provider via ChatVia / StreamVia.
-//	cfg.BotProvider == anything else    → MathError(BOT_CONFIG_INVALID).
+//	cfg.LLMProvider == anything else    → MathError(LLM_CONFIG_INVALID).
 //
 // Every provider keys off its API key: OpenRouter's model id picks the
 // vendor, and each direct client talks to one vendor.
 //
 // Naming a default whose provider is not configured (e.g.
-// BOT_PROVIDER=gemini without BOT_GEMINI_API_KEY) is a deploy mistake and
-// fails with BOT_CONFIG_INVALID.
+// LLM_PROVIDER=gemini without LLM_GEMINI_API_KEY) is a deploy mistake and
+// fails with LLM_CONFIG_INVALID.
 //
 // Disabled returns nil rather than an error so dev profiles without
 // LLM credentials can boot. Module services that consume the adapter
@@ -45,20 +45,20 @@ import (
 // Errors from libs/openrouter, libs/openai, libs/gemini and libs/deepseek
 // are translated here:
 //
-//	ErrInvalidConfig → MathError(BOT_CONFIG_INVALID, {"reason": ...})
-//	anything else    → MathError(BOT_CONNECT_FAILED) wrapping the cause
-func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) {
+//	ErrInvalidConfig → MathError(LLM_CONFIG_INVALID, {"reason": ...})
+//	anything else    → MathError(LLM_CONNECT_FAILED) wrapping the cause
+func NewFromConfig(ctx context.Context, cfg config.LLMConfig) (*Adapter, error) {
 	log := logger.From(ctx)
 
-	switch cfg.DefaultBotProvider {
+	switch cfg.DefaultLLMProvider {
 	case "", "disabled":
 		return nil, nil
 	case string(ProviderOpenRouter), string(ProviderOpenAI),
 		string(ProviderGemini), string(ProviderDeepSeek):
 		// recognised — continue below
 	default:
-		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
-			map[string]any{"provider": cfg.DefaultBotProvider}, nil)
+		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
+			map[string]any{"provider": cfg.DefaultLLMProvider}, nil)
 	}
 
 	adapter := NewAdapter()
@@ -80,11 +80,11 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 		})
 		if err != nil {
 			if errors.Is(err, openrouter.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
+				return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
 					map[string]any{"reason": err.Error()}, err)
 			}
 			log.Warnf("openrouter: client not ready: %v", err)
-			return nil, errs.NewError(ctx, status.BOT_CONNECT_FAILED,
+			return nil, errs.NewError(ctx, status.LLM_CONNECT_FAILED,
 				map[string]any{"model": cfg.OpenRouterModel}, err)
 		}
 
@@ -111,11 +111,11 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 		})
 		if err != nil {
 			if errors.Is(err, openai.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
+				return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
 					map[string]any{"reason": err.Error()}, err)
 			}
 			log.Warnf("openai: client not ready: %v", err)
-			return nil, errs.NewError(ctx, status.BOT_CONNECT_FAILED,
+			return nil, errs.NewError(ctx, status.LLM_CONNECT_FAILED,
 				map[string]any{"model": cfg.OpenAIModel}, err)
 		}
 
@@ -138,11 +138,11 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 		})
 		if err != nil {
 			if errors.Is(err, gemini.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
+				return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
 					map[string]any{"reason": err.Error()}, err)
 			}
 			log.Warnf("gemini: client not ready: %v", err)
-			return nil, errs.NewError(ctx, status.BOT_CONNECT_FAILED,
+			return nil, errs.NewError(ctx, status.LLM_CONNECT_FAILED,
 				map[string]any{"model": cfg.GeminiModel}, err)
 		}
 
@@ -166,22 +166,22 @@ func NewFromConfig(ctx context.Context, cfg config.BotConfig) (*Adapter, error) 
 		})
 		if err != nil {
 			if errors.Is(err, deepseek.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
+				return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
 					map[string]any{"reason": err.Error()}, err)
 			}
 			log.Warnf("deepseek: client not ready: %v", err)
-			return nil, errs.NewError(ctx, status.BOT_CONNECT_FAILED,
+			return nil, errs.NewError(ctx, status.LLM_CONNECT_FAILED,
 				map[string]any{"model": cfg.DeepSeekModel}, err)
 		}
 
 		adapter.Register(NewDeepSeekProvider(client))
 	}
 
-	if err := adapter.SetDefault(BotProviderName(cfg.DefaultBotProvider)); err != nil {
-		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID,
+	if err := adapter.SetDefault(LLMProviderName(cfg.DefaultLLMProvider)); err != nil {
+		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
 			map[string]any{
-				"provider": cfg.DefaultBotProvider,
-				"reason":   "default provider is not configured (missing BOT_<PROVIDER>_API_KEY?)",
+				"provider": cfg.DefaultLLMProvider,
+				"reason":   "default provider is not configured (missing LLM_<PROVIDER>_API_KEY?)",
 			}, err)
 	}
 

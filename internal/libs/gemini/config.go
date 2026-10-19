@@ -1,7 +1,7 @@
 // Package gemini is the math-svr libs wrapper around Google's Gemini API
 // (https://generativelanguage.googleapis.com/v1beta). It owns the LLM
 // client lifecycle (credentials, timeouts, retries) and exposes the same
-// narrow chat surface the adapter layer (`internal/adapter/bot`) consumes
+// narrow chat surface the adapter layer (`internal/adapter/llm`) consumes
 // — mirroring libs/openrouter, libs/openai and libs/deepseek.
 //
 // Like libs/openrouter and libs/openai, this package uses NO vendor SDK:
@@ -33,13 +33,13 @@
 //
 // This client targets the v1beta REST surface, which is what every current
 // Gemini model is served from and what the official docs document. The
-// bot adapter's ChatRequest is translated in buildRequest; see the role
+// LLM adapter's ChatRequest is translated in buildRequest; see the role
 // mapping there, which is the only genuinely lossy step.
 //
 // This package never imports from `internal/domain`, `internal/application`,
 // or `internal/adapter` — it is the lowest layer. Errors returned here are
 // plain wrapped errors or typed sentinels; the adapter layer translates
-// them into MathError(BOT_*) status codes.
+// them into MathError(LLM_*) status codes.
 //
 // Secret handling: cfg.APIKey is read once at construction and set as the
 // x-goog-api-key header. It is never placed in the URL — Gemini also
@@ -58,8 +58,8 @@ import (
 
 // ErrInvalidConfig is the sentinel wrapped by Config.Validate. The adapter
 // factory uses errors.Is to distinguish "config is wrong"
-// (→ BOT_CONFIG_INVALID) from "config is fine but the network or upstream
-// said no" (→ BOT_CONNECT_FAILED).
+// (→ LLM_CONFIG_INVALID) from "config is fine but the network or upstream
+// said no" (→ LLM_CONNECT_FAILED).
 var ErrInvalidConfig = errors.New("gemini: invalid config")
 
 // DefaultBaseURL is the Gemini v1beta REST root. Config.BaseURL overrides
@@ -78,7 +78,7 @@ const apiKeyHeader = "x-goog-api-key"
 // APIKey is the long-lived vendor credential and is sensitive — see
 // package doc.
 type Config struct {
-	// APIKey is the Gemini credential (env BOT_GEMINI_API_KEY). Required.
+	// APIKey is the Gemini credential (env LLM_GEMINI_API_KEY). Required.
 	// Sent as the x-goog-api-key header. NEVER log.
 	APIKey string
 

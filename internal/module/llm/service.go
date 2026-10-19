@@ -1,4 +1,4 @@
-package bot
+package llm
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
-	dto "math-ai.com/math-ai/internal/application/dto/bot"
+	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
+	dto "math-ai.com/math-ai/internal/application/dto/llm"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
@@ -28,7 +28,7 @@ const (
 // fast. Globally throttled by shakeTTL + single-flight so the vendor is hit
 // at most once per window regardless of caller volume.
 type Service struct {
-	bot *botAdapter.Adapter
+	llm *llmAdapter.Adapter
 
 	flightMu sync.Mutex
 
@@ -38,10 +38,10 @@ type Service struct {
 	model        string
 }
 
-// NewService wires the handshake service. bot may be nil (BOT_PROVIDER
+// NewService wires the handshake service. LLM may be nil (LLM_PROVIDER
 // disabled) — Shake then reports shaked=false.
-func NewService(bot *botAdapter.Adapter) *Service {
-	return &Service{bot: bot}
+func NewService(llm *llmAdapter.Adapter) *Service {
+	return &Service{llm: llm}
 }
 
 // Shake warms the LLM connection. force bypasses the TTL cache so each call
@@ -50,8 +50,8 @@ func NewService(bot *botAdapter.Adapter) *Service {
 func (s *Service) Shake(ctx context.Context, req dto.ShakeReq, force bool) *dto.ShakeRes {
 	log := logger.From(ctx)
 
-	if s.bot == nil {
-		return &dto.ShakeRes{Shaked: false, Reason: "bot_disabled"}
+	if s.llm == nil {
+		return &dto.ShakeRes{Shaked: false, Reason: "llm_disabled"}
 	}
 
 	if !force {
@@ -73,9 +73,9 @@ func (s *Service) Shake(ctx context.Context, req dto.ShakeReq, force bool) *dto.
 	defer cancel()
 
 	start := time.Now()
-	out, err := s.bot.Chat(callCtx, botAdapter.ChatRequest{
-		Provider:    botAdapter.BotProviderName(req.ProviderBotName),
-		Messages:    []botAdapter.Message{{Role: botAdapter.RoleUser, Content: shakePrompt}},
+	out, err := s.llm.Chat(callCtx, llmAdapter.ChatRequest{
+		Provider:    llmAdapter.LLMProviderName(req.Provider),
+		Messages:    []llmAdapter.Message{{Role: llmAdapter.RoleUser, Content: shakePrompt}},
 		MaxTokens:   10,
 		Temperature: 0,
 		TopP:        -1, // unset; the zero value would send top_p=0
@@ -83,7 +83,7 @@ func (s *Service) Shake(ctx context.Context, req dto.ShakeReq, force bool) *dto.
 	latency := time.Since(start)
 
 	if err != nil {
-		log.Warnf("bot.shake_failed latency_ms=%d err=%v", latency.Milliseconds(), err)
+		log.Warnf("llm.shake_failed latency_ms=%d err=%v", latency.Milliseconds(), err)
 		return &dto.ShakeRes{
 			Shaked:    false,
 			Reason:    "shake_failed",
@@ -93,7 +93,7 @@ func (s *Service) Shake(ctx context.Context, req dto.ShakeReq, force bool) *dto.
 
 	provider := string(out.Provider)
 	if provider == "" {
-		provider = string(s.bot.DefaultName())
+		provider = string(s.llm.DefaultName())
 	}
 	model := strings.TrimSpace(out.Model)
 
@@ -103,7 +103,7 @@ func (s *Service) Shake(ctx context.Context, req dto.ShakeReq, force bool) *dto.
 	s.model = model
 	s.stateMu.Unlock()
 
-	log.Infof("bot.shake_ok provider=%s model=%s latency_ms=%d", provider, model, latency.Milliseconds())
+	log.Infof("llm.shake_ok provider=%s model=%s latency_ms=%d", provider, model, latency.Milliseconds())
 
 	res := &dto.ShakeRes{
 		Shaked:    true,

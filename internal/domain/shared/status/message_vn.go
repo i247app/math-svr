@@ -275,24 +275,24 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case SMS_SERIALIZE_FAILED:
 		return "Không thể tuần tự hoá payload SMS"
 
-	// Bot (AI / chat)
-	case BOT_CONNECT_FAILED:
+	// LLM (AI / chat)
+	case LLM_CONNECT_FAILED:
 		return "Kết nối nhà cung cấp AI thất bại"
-	case BOT_CONFIG_INVALID:
+	case LLM_CONFIG_INVALID:
 		return "Cấu hình AI không hợp lệ"
-	case BOT_OP_FAILED:
+	case LLM_OP_FAILED:
 		return "Thao tác AI thất bại"
-	case BOT_SERIALIZE_FAILED:
+	case LLM_SERIALIZE_FAILED:
 		return "Không thể giải mã phản hồi AI"
-	case BOT_INVALID_PROMPT:
+	case LLM_INVALID_PROMPT:
 		return "Nội dung yêu cầu AI không hợp lệ"
-	case BOT_CONTEXT_TOO_LARGE:
+	case LLM_CONTEXT_TOO_LARGE:
 		return "Vượt quá giới hạn ngữ cảnh của mô hình AI"
-	case BOT_RATE_LIMITED:
+	case LLM_RATE_LIMITED:
 		return "Đã vượt quá giới hạn tần suất gọi AI"
-	case BOT_UNSUPPORTED_OP:
+	case LLM_UNSUPPORTED_OP:
 		return "Thao tác AI không được nhà cung cấp hiện tại hỗ trợ"
-	case BOT_CONTENT_BLOCKED:
+	case LLM_CONTENT_BLOCKED:
 		return "Nội dung đã bị nhà cung cấp AI chặn"
 
 	// Job

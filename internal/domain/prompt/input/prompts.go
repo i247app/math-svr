@@ -39,7 +39,7 @@ func normalizeLanguage(lang QuizLanguage) (QuizLanguage, error) {
 	case string(enum.LanguageTypeEnglish), string(enum.LanguageTypeEnglishV2): // QuizLanguageEnglish is "en" too
 		return QuizLanguageEnglish, nil
 	default:
-		return "", fmt.Errorf("bot: unsupported language %q", string(lang))
+		return "", fmt.Errorf("prompt: unsupported language %q", string(lang))
 	}
 }
 
@@ -48,11 +48,11 @@ func normalizeLanguage(lang QuizLanguage) (QuizLanguage, error) {
 // readable at the call site.
 func requireFields(pairs ...string) error {
 	if len(pairs)%2 != 0 {
-		return fmt.Errorf("bot: requireFields expects (value, name) pairs")
+		return fmt.Errorf("prompt: requireFields expects (value, name) pairs")
 	}
 	for i := 0; i < len(pairs); i += 2 {
 		if strings.TrimSpace(pairs[i]) == "" {
-			return fmt.Errorf("bot: %s is required", pairs[i+1])
+			return fmt.Errorf("prompt: %s is required", pairs[i+1])
 		}
 	}
 	return nil

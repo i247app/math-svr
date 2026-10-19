@@ -35,7 +35,7 @@ type ChatRequest struct {
 	//
 	// DeepSeek's JSON mode constrains the decoder but does not by itself
 	// instruct the model — the prompt must still ask for JSON. Every
-	// prompt in domain/bot already does, so this is a note for whoever
+	// prompt in domain/prompt/input already does, so this is a note for whoever
 	// writes the next one, not a gap.
 	JSONMode bool
 }

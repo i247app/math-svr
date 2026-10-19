@@ -49,7 +49,7 @@ type ExercisePromptInput struct {
 // BuildExercisePrompt returns the (system, user) message contents for
 // the requested exercise prompt kind. ChapterName + LessonName are
 // required because they are the teacher's explicit topic scope; without
-// them the exercise has no anchor and the bot would degrade to a generic
+// them the exercise has no anchor and the LLM would degrade to a generic
 // curriculum-only generation.
 func BuildExercisePrompt(kind ExercisePromptKind, in ExercisePromptInput) (system string, user string, err error) {
 	lang, err := normalizeLanguage(in.Language)
@@ -73,7 +73,7 @@ func BuildExercisePrompt(kind ExercisePromptKind, in ExercisePromptInput) (syste
 		}
 		return buildExerciseGradePrompt(lang), buildExerciseGradeUser(lang, in), nil
 	default:
-		return "", "", fmt.Errorf("bot: unknown exercise prompt kind %d", kind)
+		return "", "", fmt.Errorf("prompt: unknown exercise prompt kind %d", kind)
 	}
 }
 

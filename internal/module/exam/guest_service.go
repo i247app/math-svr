@@ -17,7 +17,7 @@ import (
 // product, so it is also where their account gets opened — but opening
 // an account is a user-aggregate concern, so the work itself lives in
 // command/user and only the call sits here. Keeping it out of service.go
-// mirrors what bot_service.go does for the LLM adapter.
+// mirrors what llm_service.go does for the LLM adapter.
 type guestService struct {
 	createGuest *userCommand.CreateGuestCommandHandler
 	userRepo    userDomain.IRepository

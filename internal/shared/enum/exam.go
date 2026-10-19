@@ -175,7 +175,7 @@ func (s EsessLnStatusType) String() string { return string(s) }
 
 // Bounds for the grade axis.
 //
-// Grade is the CONTENT band and maps 1:1 onto the bot's grade profiles:
+// Grade is the CONTENT band and maps 1:1 onto the LLM's grade profiles:
 // 0 is kindergarten (mẫu giáo), 5 is the last elementary year.
 //
 // Level is a 0..9 scale the CLIENT states on a hand-out and the server

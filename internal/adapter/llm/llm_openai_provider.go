@@ -1,4 +1,4 @@
-package bot
+package llm
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/libs/openai"
 )
 
-// OpenAIProvider is the BotProvider implementation backed by libs/openai,
+// OpenAIProvider is the LLMProvider implementation backed by libs/openai,
 // which calls OpenAI's REST API directly through the project's shared
 // http_client — no vendor SDK, no third party in the path. It owns nothing
 // besides the wired *openai.Client and mirrors the other providers'
@@ -35,7 +35,7 @@ func NewOpenAIProvider(client *openai.Client) *OpenAIProvider {
 	return &OpenAIProvider{client: client}
 }
 
-func (p *OpenAIProvider) Name() BotProviderName { return ProviderOpenAI }
+func (p *OpenAIProvider) Name() LLMProviderName { return ProviderOpenAI }
 
 // Model exposes the configured default chat model id. Useful for log/audit
 // surfaces that need to record which model served a request.
@@ -55,7 +55,7 @@ func (p *OpenAIProvider) Chat(ctx context.Context, req ChatRequest) (*ChatResult
 		Model:        out.Model,
 		Content:      out.Content,
 		FinishReason: out.FinishReason,
-		Usage:        toBotUsage(out.Usage),
+		Usage:        toLLMUsage(out.Usage),
 	}, nil
 }
 
@@ -64,7 +64,7 @@ func (p *OpenAIProvider) Stream(ctx context.Context, req ChatRequest, onChunk fu
 	out, err := p.client.GenerateStream(ctx, toOpenAIChat(req), func(c openai.StreamChunk) error {
 		var usage *Usage
 		if c.Usage != nil {
-			u := toBotUsage(*c.Usage)
+			u := toLLMUsage(*c.Usage)
 			usage = &u
 		}
 		return onChunk(StreamChunk{
@@ -81,13 +81,13 @@ func (p *OpenAIProvider) Stream(ctx context.Context, req ChatRequest, onChunk fu
 		Model:        out.Model,
 		Content:      out.Content,
 		FinishReason: out.FinishReason,
-		Usage:        toBotUsage(out.Usage),
+		Usage:        toLLMUsage(out.Usage),
 	}, nil
 }
 
 // Embed invokes openai.Client.Embed against /v1/embeddings. Unlike the
 // openrouter and deepseek providers, this is a real implementation rather than
-// a BOT_UNSUPPORTED_OP stub.
+// an LLM_UNSUPPORTED_OP stub.
 func (p *OpenAIProvider) Embed(ctx context.Context, req EmbedRequest) (*EmbedResult, error) {
 	out, err := p.client.Embed(ctx, openai.EmbedRequest{
 		Model:  req.Model,
@@ -100,7 +100,7 @@ func (p *OpenAIProvider) Embed(ctx context.Context, req EmbedRequest) (*EmbedRes
 		Provider: ProviderOpenAI,
 		Model:    out.Model,
 		Vectors:  out.Vectors,
-		Usage:    toBotUsage(out.Usage),
+		Usage:    toLLMUsage(out.Usage),
 	}, nil
 }
 
@@ -117,14 +117,14 @@ func (p *OpenAIProvider) Respond(ctx context.Context, req RespondRequest) (*Resp
 		Model:      out.Model,
 		ResponseID: out.ID,
 		Content:    out.Content,
-		Usage:      toBotUsage(out.Usage),
+		Usage:      toLLMUsage(out.Usage),
 	}, nil
 }
 
 // Compile-time proof that the optional capability is actually wired.
 var _ ResponderProvider = (*OpenAIProvider)(nil)
 
-func toBotUsage(u openai.Usage) Usage {
+func toLLMUsage(u openai.Usage) Usage {
 	return Usage{
 		PromptTokens:     u.PromptTokens,
 		CompletionTokens: u.CompletionTokens,

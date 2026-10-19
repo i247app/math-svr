@@ -47,11 +47,11 @@ var (
 	ErrProfileNotOwnedByUser  = errors.New("profile does not belong to the authenticated user")
 
 	// Adapter wiring.
-	ErrBotAdapterNotConfigured = errors.New("classroom exercise: bot adapter is not configured")
+	ErrLLMAdapterNotConfigured = errors.New("classroom exercise: LLM adapter is not configured")
 
 	ErrAnswerLabelRequired                                               = errors.New("answer label is required")
 	ErrAnswersRequired                                                   = errors.New("answers is required")
-	ErrClassroomExerciseSubmissionBotAdapterNotConfigured                = errors.New("classroom exercise submission: bot adapter is not configured")
+	ErrClassroomExerciseSubmissionLLMAdapterNotConfigured                = errors.New("classroom exercise submission: LLM adapter is not configured")
 	ErrClassroomExerciseSubmissionIDRequired                             = errors.New("classroom_exercise_submission_id is required")
 	ErrClassroomIDOrClassroomExerciseIDRequiredWhenListingAcrossProfiles = errors.New("classroom_id or classroom_exercise_id is required when listing across profiles")
 	ErrDuplicateQuestionNumber                                           = errors.New("duplicate question_number")

@@ -2,7 +2,7 @@
 // REST API (https://openrouter.ai/api/v1/chat/completions). It owns the
 // LLM client lifecycle (credentials, timeouts, retries) and exposes the
 // same narrow chat surface that the adapter layer
-// (`internal/adapter/bot`) consumes — mirroring the role of
+// (`internal/adapter/llm`) consumes — mirroring the role of
 // `internal/libs/openai`, `internal/libs/gemini` and `internal/libs/deepseek`.
 //
 // Like them, this package uses NO vendor SDK: every call goes out
@@ -13,7 +13,7 @@
 // or `internal/adapter` — it is the lowest layer. Errors returned here are
 // plain wrapped errors or typed sentinels (ErrInvalidConfig,
 // ErrDecodeResponse, ErrContextTooLarge, ErrUnsupportedOp, ErrRateLimited);
-// the adapter layer translates them into MathError(BOT_*) status codes.
+// the adapter layer translates them into MathError(LLM_*) status codes.
 //
 // Secret handling: cfg.APIKey is read once at construction, set as the
 // Authorization header on the shared client, and never logged from this
@@ -31,8 +31,8 @@ import (
 
 // ErrInvalidConfig is the sentinel wrapped by Config.Validate. The adapter
 // factory uses errors.Is to distinguish "config is wrong"
-// (→ BOT_CONFIG_INVALID) from "config is fine but the network or upstream
-// said no" (→ BOT_CONNECT_FAILED).
+// (→ LLM_CONFIG_INVALID) from "config is fine but the network or upstream
+// said no" (→ LLM_CONNECT_FAILED).
 var ErrInvalidConfig = errors.New("openrouter: invalid config")
 
 // DefaultBaseURL is OpenRouter's v1 REST root. Config.BaseURL overrides it
@@ -51,7 +51,7 @@ const chatCompletionsPath = "/chat/completions"
 // APIKey is the long-lived vendor credential and is sensitive — see
 // package doc.
 type Config struct {
-	// APIKey is the OpenRouter credential (env BOT_OPENROUTER_API_KEY).
+	// APIKey is the OpenRouter credential (env LLM_OPENROUTER_API_KEY).
 	// Required. Sent as "Authorization: Bearer <key>". NEVER log.
 	APIKey string
 

@@ -36,7 +36,7 @@ var (
 	ErrJourneyStatusInvalid     = errors.New("status must be ACTIVE, COMPLETE or CANCEL")
 	ErrDetailIDRequired         = errors.New("one of elink_id or esess_id is required")
 	ErrDetailIDAmbiguous        = errors.New("send either elink_id or esess_id, not both")
-	ErrBotAdapterNotConfigured  = errors.New("bot adapter is not configured")
+	ErrLLMAdapterNotConfigured  = errors.New("LLM adapter is not configured")
 	ErrModelReturnedNothing     = errors.New("model returned no questions")
 	ErrInvalidTz                = errors.New("tz must be a numeric offset such as +07:00")
 	ErrInvalidDateRange         = errors.New("from_dt and to_dt must both be set and span at most two years")

@@ -10,7 +10,7 @@
 // — they are the runtime's consumers of domain/application services.
 // Concretely, they import application/command/* like any module
 // service would, and may reach side-effect adapters (email, storage,
-// bot) directly. They never see *sql.DB.
+// LLM) directly. They never see *sql.DB.
 package jobs
 
 import (
@@ -24,7 +24,7 @@ import (
 // field here whenever a new job requires a new dependency; the
 // alternative — fishing services out of a Resource pointer at run
 // time — hides the wiring. Keep nil-tolerant where the underlying
-// adapter is disable-friendly (email/SMS/bot/storage), so a dev that
+// adapter is disable-friendly (email/SMS/LLM/storage), so a dev that
 // turns one off in .env can still boot.
 type Deps struct {
 	// Runtime is the same *job.Runtime that owns the Registry. Cron

@@ -178,7 +178,7 @@ func (s *Service) hydrateClassroomAndProgram(
 }
 
 // resolveCurriculumLabels best-effort hydrates grade + program labels
-// for the bot prompt. Errors here are logged but do not fail the
+// for the LLM prompt. Errors here are logged but do not fail the
 // request — the prompt renders only the lines whose label is non-empty.
 func (s *Service) resolveCurriculumLabels(ctx context.Context, gradeID, programID *int64) (string, string) {
 	log := logger.From(ctx)

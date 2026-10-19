@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
+	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/exercise"
 	dto "math-ai.com/math-ai/internal/application/dto/exercise"
@@ -26,7 +26,7 @@ import (
 // dependency surface mirrors the classroom module: classroom + member
 // repos for permission checks, classroom_program for the program-pick
 // validation, profile/program/grade repos to resolve curriculum labels
-// for the bot prompt, and the bot adapter itself.
+// for the LLM prompt, and the LLM adapter itself.
 type Service struct {
 	getExerciseQuery   *query.GetClassroomExerciseByIdQueryHandler
 	listExercisesQuery *query.ListClassroomExercisesQueryHandler
@@ -48,7 +48,7 @@ type Service struct {
 	profileRepo          profileDomain.IRepository
 	programRepo          programDomain.IRepository
 	gradeRepo            gradeDomain.IRepository
-	bot                  *botClient
+	llm                  *llmClient
 	storageProvider      *storage.Adapter
 }
 
@@ -56,7 +56,7 @@ func NewService(
 	exerciseRepo domain.IRepository,
 	submissionRepo domain.ISubmissionRepository,
 	uow transaction.UnitOfWork,
-	bot *botAdapter.Adapter,
+	llm *llmAdapter.Adapter,
 	classroomRepo classroomDomain.IRepository,
 	classroomMemberRepo classroomDomain.IMemberRepository,
 	classroomProgramRepo classroomDomain.IClassroomProgramRepository,
@@ -86,13 +86,13 @@ func NewService(
 		profileRepo:          profileRepo,
 		programRepo:          programRepo,
 		gradeRepo:            gradeRepo,
-		bot:                  newBotClient(bot),
+		llm:                  newLLMClient(llm),
 		storageProvider:      storageProvider,
 	}
 }
 
 // CreateExercise validates → checks the caller is a classroom manager →
-// resolves curriculum labels for the bot → calls the bot OUTSIDE the
+// resolves curriculum labels for the LLM → calls the LLM OUTSIDE the
 // UoW → persists the result inside a UoW. ProgramID, when supplied, is
 // verified against the classroom's active program junction.
 func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq, sessionUID int64) (*dto.CreateExerciseRes, error) {
@@ -138,7 +138,7 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 	if req.Description != nil {
 		description = *req.Description
 	}
-	generated, err := s.bot.GenerateExercise(ctx, generateExerciseInput{
+	generated, err := s.llm.GenerateExercise(ctx, generateExerciseInput{
 		Language:     lang,
 		GradeLabel:   gradeLabel,
 		ProgramLabel: programLabel,

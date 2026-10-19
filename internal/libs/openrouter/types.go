@@ -32,7 +32,7 @@ type ChatRequest struct {
 	Stop        []string
 	// JSONMode sets response_format={"type":"json_object"}. OpenRouter
 	// forwards it to backends that support it; models that do not simply
-	// ignore it, matching the posture of the other two bot providers.
+	// ignore it, matching the posture of the other two LLM providers.
 	JSONMode bool
 }
 

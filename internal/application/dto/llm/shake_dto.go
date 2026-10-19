@@ -1,8 +1,8 @@
-package bot
+package llm
 
 type ShakeReq struct {
-	ProviderBotName string `json:"provider"`
-	UID             int64  `json:"-"`
+	Provider string `json:"provider"`
+	UID      int64  `json:"-"`
 }
 
 // ShakeRes is the result of an AI connection handshake.
@@ -21,8 +21,8 @@ type ShakeRes struct {
 	// previous handshake without contacting the LLM again.
 	Cached bool `json:"cached"`
 
-	// Provider is the bot provider that serves AI requests, e.g.
-	// "openai". Empty when the bot adapter is disabled.
+	// Provider is the LLM provider that serves AI requests, e.g.
+	// "openai". Empty when the LLM adapter is disabled.
 	Provider string `json:"provider,omitempty"`
 
 	// Model is the resolved model id reported by the provider. May be empty.
@@ -33,7 +33,7 @@ type ShakeRes struct {
 	LatencyMs int64 `json:"latency_ms"`
 
 	// Reason carries a machine-readable explanation when Shaked=false
-	// ("bot_disabled", "shake_failed"). Empty on success.
+	// ("llm_disabled", "shake_failed"). Empty on success.
 	Reason string `json:"reason,omitempty"`
 
 	Content string `json:"content"`

@@ -1,4 +1,4 @@
-package bot
+package llm
 
 import (
 	"context"
@@ -16,18 +16,18 @@ import (
 // domain-layer MathError. Every provider's mapper follows the same policy,
 // so identical failure shapes surface as identical status codes:
 //
-//   - openrouter.ErrInvalidConfig / IsConfigError → BOT_CONFIG_INVALID.
-//   - openrouter.ErrInsufficientCredits (HTTP 402) → BOT_CONFIG_INVALID.
-//   - openrouter.ErrUnsupportedOp                 → BOT_UNSUPPORTED_OP.
-//   - openrouter.ErrContextTooLarge               → BOT_CONTEXT_TOO_LARGE.
-//   - openrouter.ErrRateLimited / IsRateLimited   → BOT_RATE_LIMITED.
-//   - openrouter.ErrDecodeResponse                → BOT_SERIALIZE_FAILED.
-//   - HTTP 401 / 403 (auth, moderation block)     → BOT_CONFIG_INVALID.
-//   - anything else (incl. 408 / 5xx)             → BOT_OP_FAILED.
+//   - openrouter.ErrInvalidConfig / IsConfigError → LLM_CONFIG_INVALID.
+//   - openrouter.ErrInsufficientCredits (HTTP 402) → LLM_CONFIG_INVALID.
+//   - openrouter.ErrUnsupportedOp                 → LLM_UNSUPPORTED_OP.
+//   - openrouter.ErrContextTooLarge               → LLM_CONTEXT_TOO_LARGE.
+//   - openrouter.ErrRateLimited / IsRateLimited   → LLM_RATE_LIMITED.
+//   - openrouter.ErrDecodeResponse                → LLM_SERIALIZE_FAILED.
+//   - HTTP 401 / 403 (auth, moderation block)     → LLM_CONFIG_INVALID.
+//   - anything else (incl. 408 / 5xx)             → LLM_OP_FAILED.
 //
 // HTTP 402 rides with the config failures on purpose: an exhausted
 // balance cannot recover inside the call and needs an operator, which is
-// exactly what BOT_CONFIG_INVALID signals to the caller.
+// exactly what LLM_CONFIG_INVALID signals to the caller.
 //
 // There is no backend arg — OpenRouter routes to the vendor itself, so
 // the model id is the closest equivalent and it is carried on the
@@ -53,40 +53,40 @@ func mapOpenRouterError(ctx context.Context, err error) *errs.MathError {
 	case errors.Is(err, openrouter.ErrInvalidConfig),
 		errors.Is(err, openrouter.ErrInsufficientCredits),
 		openrouter.IsConfigError(err):
-		return errs.NewError(ctx, status.BOT_CONFIG_INVALID, args, err)
+		return errs.NewError(ctx, status.LLM_CONFIG_INVALID, args, err)
 
 	case errors.Is(err, openrouter.ErrUnsupportedOp):
-		return errs.NewError(ctx, status.BOT_UNSUPPORTED_OP, args, err)
+		return errs.NewError(ctx, status.LLM_UNSUPPORTED_OP, args, err)
 
 	case errors.Is(err, openrouter.ErrContextTooLarge):
-		return errs.NewError(ctx, status.BOT_CONTEXT_TOO_LARGE, args, err)
+		return errs.NewError(ctx, status.LLM_CONTEXT_TOO_LARGE, args, err)
 
 	case errors.Is(err, openrouter.ErrRateLimited), openrouter.IsRateLimited(err):
-		return errs.NewError(ctx, status.BOT_RATE_LIMITED, args, err)
+		return errs.NewError(ctx, status.LLM_RATE_LIMITED, args, err)
 
 	case errors.Is(err, openrouter.ErrDecodeResponse):
-		return errs.NewError(ctx, status.BOT_SERIALIZE_FAILED, args, err)
+		return errs.NewError(ctx, status.LLM_SERIALIZE_FAILED, args, err)
 	}
 
-	return errs.NewError(ctx, status.BOT_OP_FAILED, args, err)
+	return errs.NewError(ctx, status.LLM_OP_FAILED, args, err)
 }
 
 // mapOpenAIError translates a libs/openai error into a domain-layer
 // MathError, mirroring its siblings so all four providers surface
 // identical status codes for identical failure shapes:
 //
-//   - openai.ErrInvalidConfig / IsConfigError → BOT_CONFIG_INVALID.
-//   - openai.ErrQuotaExhausted (billing 429)  → BOT_CONFIG_INVALID.
-//   - openai.ErrUnsupportedOp                 → BOT_UNSUPPORTED_OP.
-//   - openai.ErrContextTooLarge               → BOT_CONTEXT_TOO_LARGE.
-//   - openai.ErrRateLimited / IsRateLimited   → BOT_RATE_LIMITED.
-//   - openai.ErrDecodeResponse                → BOT_SERIALIZE_FAILED.
-//   - HTTP 401 / 403 (bad key, geo block)     → BOT_CONFIG_INVALID.
-//   - anything else (incl. 408 / 5xx)         → BOT_OP_FAILED.
+//   - openai.ErrInvalidConfig / IsConfigError → LLM_CONFIG_INVALID.
+//   - openai.ErrQuotaExhausted (billing 429)  → LLM_CONFIG_INVALID.
+//   - openai.ErrUnsupportedOp                 → LLM_UNSUPPORTED_OP.
+//   - openai.ErrContextTooLarge               → LLM_CONTEXT_TOO_LARGE.
+//   - openai.ErrRateLimited / IsRateLimited   → LLM_RATE_LIMITED.
+//   - openai.ErrDecodeResponse                → LLM_SERIALIZE_FAILED.
+//   - HTTP 401 / 403 (bad key, geo block)     → LLM_CONFIG_INVALID.
+//   - anything else (incl. 408 / 5xx)         → LLM_OP_FAILED.
 //
 // The 429 split is the one asymmetry worth knowing: OpenAI reuses that
 // status for both throttling and an exhausted credit balance. Throttling
-// is transient (BOT_RATE_LIMITED, retried upstream); billing is not, so it
+// is transient (LLM_RATE_LIMITED, retried upstream); billing is not, so it
 // rides with the config failures — the same posture as openrouter's HTTP
 // 402, which is the equivalent signal on that provider.
 //
@@ -114,41 +114,41 @@ func mapOpenAIError(ctx context.Context, err error) *errs.MathError {
 	// FIRST, before the config check: a dead chain pointer usually
 	// arrives as HTTP 404, which IsConfigError would otherwise claim as
 	// "unknown model". The key and model are fine; only the pointer is
-	// gone, and it will never come back. BOT_OP_FAILED with a stable
+	// gone, and it will never come back. LLM_OP_FAILED with a stable
 	// vendor_reason is what the exam module branches on to rebuild the
 	// chain — see IsChainPointerGone.
 	case openai.IsPreviousResponseGone(err):
 		args["vendor_reason"] = VendorReasonPreviousResponseGone
-		return errs.NewError(ctx, status.BOT_OP_FAILED, args, err)
+		return errs.NewError(ctx, status.LLM_OP_FAILED, args, err)
 
 	case errors.Is(err, openai.ErrInvalidConfig),
 		errors.Is(err, openai.ErrQuotaExhausted),
 		openai.IsConfigError(err):
-		return errs.NewError(ctx, status.BOT_CONFIG_INVALID, args, err)
+		return errs.NewError(ctx, status.LLM_CONFIG_INVALID, args, err)
 
 	case errors.Is(err, openai.ErrUnsupportedOp):
-		return errs.NewError(ctx, status.BOT_UNSUPPORTED_OP, args, err)
+		return errs.NewError(ctx, status.LLM_UNSUPPORTED_OP, args, err)
 
 	case errors.Is(err, openai.ErrContextTooLarge):
-		return errs.NewError(ctx, status.BOT_CONTEXT_TOO_LARGE, args, err)
+		return errs.NewError(ctx, status.LLM_CONTEXT_TOO_LARGE, args, err)
 
 	case errors.Is(err, openai.ErrRateLimited), openai.IsRateLimited(err):
-		return errs.NewError(ctx, status.BOT_RATE_LIMITED, args, err)
+		return errs.NewError(ctx, status.LLM_RATE_LIMITED, args, err)
 
 	case errors.Is(err, openai.ErrContentRefused):
 		// Deterministic for the same input — same reasoning as Gemini's
 		// safety block: a retry would be refused identically.
-		return errs.NewError(ctx, status.BOT_CONTENT_BLOCKED, args, err)
+		return errs.NewError(ctx, status.LLM_CONTENT_BLOCKED, args, err)
 
 	case errors.Is(err, openai.ErrDecodeResponse):
-		return errs.NewError(ctx, status.BOT_SERIALIZE_FAILED, args, err)
+		return errs.NewError(ctx, status.LLM_SERIALIZE_FAILED, args, err)
 	}
 
-	return errs.NewError(ctx, status.BOT_OP_FAILED, args, err)
+	return errs.NewError(ctx, status.LLM_OP_FAILED, args, err)
 }
 
 // VendorReasonPreviousResponseGone is the args["vendor_reason"] value a
-// BOT_OP_FAILED carries when the chain pointer a RespondRequest sent is no
+// LLM_OP_FAILED carries when the chain pointer a RespondRequest sent is no
 // longer usable. Stable string: callers match on it, not on the message.
 const VendorReasonPreviousResponseGone = "previous_response_gone"
 
@@ -171,19 +171,19 @@ func IsChainPointerGone(err error) bool {
 // MathError, mirroring its siblings so all five providers surface
 // identical status codes for identical failure shapes:
 //
-//   - gemini.ErrInvalidConfig / IsConfigError → BOT_CONFIG_INVALID.
-//   - gemini.ErrQuotaExhausted (daily 429)    → BOT_CONFIG_INVALID.
-//   - gemini.ErrContentBlocked                → BOT_CONTENT_BLOCKED.
-//   - gemini.ErrUnsupportedOp                 → BOT_UNSUPPORTED_OP.
-//   - gemini.ErrContextTooLarge               → BOT_CONTEXT_TOO_LARGE.
-//   - gemini.ErrRateLimited / IsRateLimited   → BOT_RATE_LIMITED.
-//   - gemini.ErrDecodeResponse                → BOT_SERIALIZE_FAILED.
-//   - HTTP 401 / 403 (bad key, no permission) → BOT_CONFIG_INVALID.
-//   - anything else (incl. 408 / 5xx)         → BOT_OP_FAILED.
+//   - gemini.ErrInvalidConfig / IsConfigError → LLM_CONFIG_INVALID.
+//   - gemini.ErrQuotaExhausted (daily 429)    → LLM_CONFIG_INVALID.
+//   - gemini.ErrContentBlocked                → LLM_CONTENT_BLOCKED.
+//   - gemini.ErrUnsupportedOp                 → LLM_UNSUPPORTED_OP.
+//   - gemini.ErrContextTooLarge               → LLM_CONTEXT_TOO_LARGE.
+//   - gemini.ErrRateLimited / IsRateLimited   → LLM_RATE_LIMITED.
+//   - gemini.ErrDecodeResponse                → LLM_SERIALIZE_FAILED.
+//   - HTTP 401 / 403 (bad key, no permission) → LLM_CONFIG_INVALID.
+//   - anything else (incl. 408 / 5xx)         → LLM_OP_FAILED.
 //
-// Two mappings are Gemini-specific. BOT_CONTENT_BLOCKED exists because a
+// Two mappings are Gemini-specific. LLM_CONTENT_BLOCKED exists because a
 // safety or recitation refusal is not a transient fault: the same prompt
-// is refused every time, so folding it into BOT_OP_FAILED would invite a
+// is refused every time, so folding it into LLM_OP_FAILED would invite a
 // caller to retry forever. And the 429 split mirrors the OpenAI provider's
 // — a burst limit is transient, a daily quota is not.
 //
@@ -209,48 +209,48 @@ func mapGeminiError(ctx context.Context, err error) *errs.MathError {
 
 	switch {
 	case errors.Is(err, gemini.ErrContentBlocked):
-		return errs.NewError(ctx, status.BOT_CONTENT_BLOCKED, args, err)
+		return errs.NewError(ctx, status.LLM_CONTENT_BLOCKED, args, err)
 
 	case errors.Is(err, gemini.ErrInvalidConfig),
 		errors.Is(err, gemini.ErrQuotaExhausted),
 		gemini.IsConfigError(err):
-		return errs.NewError(ctx, status.BOT_CONFIG_INVALID, args, err)
+		return errs.NewError(ctx, status.LLM_CONFIG_INVALID, args, err)
 
 	case errors.Is(err, gemini.ErrUnsupportedOp):
-		return errs.NewError(ctx, status.BOT_UNSUPPORTED_OP, args, err)
+		return errs.NewError(ctx, status.LLM_UNSUPPORTED_OP, args, err)
 
 	case errors.Is(err, gemini.ErrContextTooLarge):
-		return errs.NewError(ctx, status.BOT_CONTEXT_TOO_LARGE, args, err)
+		return errs.NewError(ctx, status.LLM_CONTEXT_TOO_LARGE, args, err)
 
 	case errors.Is(err, gemini.ErrRateLimited), gemini.IsRateLimited(err):
-		return errs.NewError(ctx, status.BOT_RATE_LIMITED, args, err)
+		return errs.NewError(ctx, status.LLM_RATE_LIMITED, args, err)
 
 	case errors.Is(err, gemini.ErrDecodeResponse):
-		return errs.NewError(ctx, status.BOT_SERIALIZE_FAILED, args, err)
+		return errs.NewError(ctx, status.LLM_SERIALIZE_FAILED, args, err)
 	}
 
-	return errs.NewError(ctx, status.BOT_OP_FAILED, args, err)
+	return errs.NewError(ctx, status.LLM_OP_FAILED, args, err)
 }
 
 // mapDeepSeekError translates a libs/deepseek error into a domain-layer
 // MathError, mirroring its siblings so all six providers surface identical
 // status codes for identical failure shapes:
 //
-//   - deepseek.ErrInvalidConfig / IsConfigError → BOT_CONFIG_INVALID.
-//   - deepseek.ErrInsufficientBalance (402)     → BOT_CONFIG_INVALID.
-//   - deepseek.ErrContentFiltered               → BOT_CONTENT_BLOCKED.
-//   - deepseek.ErrUnsupportedOp                 → BOT_UNSUPPORTED_OP.
-//   - deepseek.ErrContextTooLarge               → BOT_CONTEXT_TOO_LARGE.
-//   - deepseek.ErrRateLimited / IsRateLimited   → BOT_RATE_LIMITED.
-//   - deepseek.ErrDecodeResponse                → BOT_SERIALIZE_FAILED.
-//   - deepseek.ErrServerOverloaded              → BOT_OP_FAILED (transient).
-//   - HTTP 401 (bad key)                        → BOT_CONFIG_INVALID.
-//   - anything else (incl. 422 / 5xx)           → BOT_OP_FAILED.
+//   - deepseek.ErrInvalidConfig / IsConfigError → LLM_CONFIG_INVALID.
+//   - deepseek.ErrInsufficientBalance (402)     → LLM_CONFIG_INVALID.
+//   - deepseek.ErrContentFiltered               → LLM_CONTENT_BLOCKED.
+//   - deepseek.ErrUnsupportedOp                 → LLM_UNSUPPORTED_OP.
+//   - deepseek.ErrContextTooLarge               → LLM_CONTEXT_TOO_LARGE.
+//   - deepseek.ErrRateLimited / IsRateLimited   → LLM_RATE_LIMITED.
+//   - deepseek.ErrDecodeResponse                → LLM_SERIALIZE_FAILED.
+//   - deepseek.ErrServerOverloaded              → LLM_OP_FAILED (transient).
+//   - HTTP 401 (bad key)                        → LLM_CONFIG_INVALID.
+//   - anything else (incl. 422 / 5xx)           → LLM_OP_FAILED.
 //
 // Two mappings line up with decisions already made for the siblings.
 // HTTP 402 rides with the config failures exactly as openrouter's 402 and
 // openai's billing 429 do — an empty balance needs an operator, not a
-// retry. And ErrContentFiltered reuses BOT_CONTENT_BLOCKED, the code added
+// retry. And ErrContentFiltered reuses LLM_CONTENT_BLOCKED, the code added
 // for Gemini's safety filter, because it is the same situation: the same
 // prompt is refused every time.
 //
@@ -276,28 +276,28 @@ func mapDeepSeekError(ctx context.Context, err error) *errs.MathError {
 
 	switch {
 	case errors.Is(err, deepseek.ErrContentFiltered):
-		return errs.NewError(ctx, status.BOT_CONTENT_BLOCKED, args, err)
+		return errs.NewError(ctx, status.LLM_CONTENT_BLOCKED, args, err)
 
 	case errors.Is(err, deepseek.ErrInvalidConfig),
 		errors.Is(err, deepseek.ErrInsufficientBalance),
 		deepseek.IsConfigError(err):
-		return errs.NewError(ctx, status.BOT_CONFIG_INVALID, args, err)
+		return errs.NewError(ctx, status.LLM_CONFIG_INVALID, args, err)
 
 	case errors.Is(err, deepseek.ErrUnsupportedOp):
-		return errs.NewError(ctx, status.BOT_UNSUPPORTED_OP, args, err)
+		return errs.NewError(ctx, status.LLM_UNSUPPORTED_OP, args, err)
 
 	case errors.Is(err, deepseek.ErrContextTooLarge):
-		return errs.NewError(ctx, status.BOT_CONTEXT_TOO_LARGE, args, err)
+		return errs.NewError(ctx, status.LLM_CONTEXT_TOO_LARGE, args, err)
 
 	case errors.Is(err, deepseek.ErrRateLimited), deepseek.IsRateLimited(err):
-		return errs.NewError(ctx, status.BOT_RATE_LIMITED, args, err)
+		return errs.NewError(ctx, status.LLM_RATE_LIMITED, args, err)
 
 	case errors.Is(err, deepseek.ErrDecodeResponse):
-		return errs.NewError(ctx, status.BOT_SERIALIZE_FAILED, args, err)
+		return errs.NewError(ctx, status.LLM_SERIALIZE_FAILED, args, err)
 	}
 
-	// ErrServerOverloaded lands here on purpose: BOT_OP_FAILED is the
+	// ErrServerOverloaded lands here on purpose: LLM_OP_FAILED is the
 	// adapter's transient bucket, which is exactly what an overloaded
 	// platform is.
-	return errs.NewError(ctx, status.BOT_OP_FAILED, args, err)
+	return errs.NewError(ctx, status.LLM_OP_FAILED, args, err)
 }

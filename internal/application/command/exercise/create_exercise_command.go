@@ -14,7 +14,7 @@ import (
 )
 
 // CreateClassroomExerciseCommand persists a teacher-created exercise.
-// The expensive bot call (question generation) happens BEFORE this
+// The expensive LLM call (question generation) happens BEFORE this
 // command — the QuestionsJSON / AnswersJSON values arrive already
 // serialised so the UoW is a short DB-only insert.
 //

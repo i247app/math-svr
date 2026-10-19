@@ -362,7 +362,7 @@ func (r *ExerciseSubmissionRepository) Create(ctx context.Context, sub *domain.S
 	return r.FindBySubmissionId(ctx, sub.ClassroomExerciseSubmissionId())
 }
 
-// UpdateGrading applies the bot's grading result via COALESCE so a
+// UpdateGrading applies the LLM's grading result via COALESCE so a
 // caller can refine partial scores without nulling out prior progress.
 // GradedDt is written explicitly (non-COALESCE) when valid because the
 // row is typically transitioning from un-graded to graded in one shot.

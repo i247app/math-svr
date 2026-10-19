@@ -15,7 +15,7 @@ import (
 )
 
 // SubmitExerciseAnswersCommand persists a freshly graded submission.
-// The expensive bot grading call happens BEFORE this command — the
+// The expensive LLM grading call happens BEFORE this command — the
 // Review / score numbers arrive already computed so the UoW stays a
 // short DB-only insert.
 //

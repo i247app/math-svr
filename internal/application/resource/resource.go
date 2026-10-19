@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"math-ai.com/math-ai/internal/adapter/bot"
 	"math-ai.com/math-ai/internal/adapter/email"
+	"math-ai.com/math-ai/internal/adapter/llm"
 	"math-ai.com/math-ai/internal/adapter/notification"
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	"math-ai.com/math-ai/internal/adapter/sms"
@@ -36,7 +36,7 @@ type Resource struct {
 	EmailProvider        *email.Adapter
 	SMSProvider          *sms.Adapter
 	StorageProvider      *storage.Adapter
-	BotProvider          *bot.Adapter
+	LLMProvider          *llm.Adapter
 	NotificationProvider *notification.Adapter
 	OtpDelivery          *otp_delivery.Adapter
 

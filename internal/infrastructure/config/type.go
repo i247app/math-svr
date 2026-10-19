@@ -61,7 +61,7 @@ type Env struct {
 	EmailConfig         EmailConfig
 	StorageConfig       StorageConfig
 	SMSConfig           SMSConfig
-	BotConfig           BotConfig
+	LLMConfig           LLMConfig
 	NotificationConfig  NotificationConfig
 	ObservabilityConfig ObservabilityConfig
 	SocketConfig        SocketConfig
@@ -174,7 +174,7 @@ type SMSConfig struct {
 	RequireAtBoot bool          // env SMS_REQUIRE_AT_BOOT, default false
 }
 
-// BotConfig configures the AI bot adapter (`internal/adapter/bot`). The
+// LLMConfig configures the AI LLM adapter (`internal/adapter/llm`). The
 // factory translates these into provider-specific configs. Four providers
 // are supported, each a direct REST client with no vendor SDK:
 // "openrouter" (vendor chosen by the model id), "openai", "gemini" and
@@ -183,18 +183,18 @@ type SMSConfig struct {
 // Every <Provider>APIKey is a long-lived secret. They are never logged;
 // each libs package masks its key out of every code path.
 //
-// Behaviour matrix for BotProvider:
+// Behaviour matrix for LLMProvider:
 //
 //	""  or "disabled" → adapter is nil; module services must nil-guard.
 //	"openrouter" | "openai" | "gemini" | "deepseek"
 //	                  → every provider whose API key is set gets
-//	                    registered (BOT_OPENROUTER_API_KEY /
-//	                    BOT_OPENAI_API_KEY / BOT_GEMINI_API_KEY /
-//	                    BOT_DEEPSEEK_API_KEY);
-//	                    BotProvider names the DEFAULT one.
-//	anything else     → MathError(BOT_CONFIG_INVALID) at boot.
-type BotConfig struct {
-	DefaultBotProvider string // env BOT_PROVIDER; "openrouter" | "openai" | "gemini" | "deepseek" | "" | "disabled"
+//	                    registered (LLM_OPENROUTER_API_KEY /
+//	                    LLM_OPENAI_API_KEY / LLM_GEMINI_API_KEY /
+//	                    LLM_DEEPSEEK_API_KEY);
+//	                    LLMProvider names the DEFAULT one.
+//	anything else     → MathError(LLM_CONFIG_INVALID) at boot.
+type LLMConfig struct {
+	DefaultLLMProvider string // env LLM_PROVIDER; "openrouter" | "openai" | "gemini" | "deepseek" | "" | "disabled"
 
 	// OpenRouter-backed provider settings (direct REST over
 	// internal/shared/http_client — no SDK). Consumed (and the provider
@@ -206,14 +206,14 @@ type BotConfig struct {
 	// pick a vendor and a price on the operator's behalf.
 	//
 	// No embed model: the openrouter provider reports Embed as unsupported.
-	OpenRouterAPIKey      string  // env BOT_OPENROUTER_API_KEY — SECRET
-	OpenRouterBaseURL     string  // env BOT_OPENROUTER_BASE_URL; optional, defaults to https://openrouter.ai/api/v1
-	OpenRouterModel       string  // env BOT_OPENROUTER_MODEL; e.g. "openai/gpt-4o-mini"
-	OpenRouterSiteURL     string  // env BOT_OPENROUTER_SITE_URL;  optional "HTTP-Referer" — OpenRouter rankings attribution only
-	OpenRouterAppTitle    string  // env BOT_OPENROUTER_APP_TITLE; optional "X-OpenRouter-Title" — attribution only
-	OpenRouterTemperature float64 // env BOT_OPENROUTER_TEMPERATURE; <0 means vendor default
-	OpenRouterTopP        float64 // env BOT_OPENROUTER_TOP_P;        <0 means vendor default
-	OpenRouterMaxTokens   int     // env BOT_OPENROUTER_MAX_TOKENS;   0  means vendor default
+	OpenRouterAPIKey      string  // env LLM_OPENROUTER_API_KEY — SECRET
+	OpenRouterBaseURL     string  // env LLM_OPENROUTER_BASE_URL; optional, defaults to https://openrouter.ai/api/v1
+	OpenRouterModel       string  // env LLM_OPENROUTER_MODEL; e.g. "openai/gpt-4o-mini"
+	OpenRouterSiteURL     string  // env LLM_OPENROUTER_SITE_URL;  optional "HTTP-Referer" — OpenRouter rankings attribution only
+	OpenRouterAppTitle    string  // env LLM_OPENROUTER_APP_TITLE; optional "X-OpenRouter-Title" — attribution only
+	OpenRouterTemperature float64 // env LLM_OPENROUTER_TEMPERATURE; <0 means vendor default
+	OpenRouterTopP        float64 // env LLM_OPENROUTER_TOP_P;        <0 means vendor default
+	OpenRouterMaxTokens   int     // env LLM_OPENROUTER_MAX_TOKENS;   0  means vendor default
 
 	// Direct-OpenAI provider settings (REST over
 	// internal/shared/http_client — no SDK, no broker). Consumed (and the
@@ -225,17 +225,17 @@ type BotConfig struct {
 	// defaulting it would pick a price on the operator's behalf.
 	//
 	// Supports Chat, Stream, Embed and Respond (Responses API).
-	OpenAIAPIKey       string  // env BOT_OPENAI_API_KEY — SECRET
-	OpenAIBaseURL      string  // env BOT_OPENAI_BASE_URL; optional, defaults to https://api.openai.com/v1
-	OpenAIModel        string  // env BOT_OPENAI_MODEL; e.g. "gpt-4.1"
-	OpenAIEmbedModel   string  // env BOT_OPENAI_EMBED_MODEL; e.g. "text-embedding-3-small"
-	OpenAIOrganization string  // env BOT_OPENAI_ORGANIZATION; optional "OpenAI-Organization" header
-	OpenAIProject      string  // env BOT_OPENAI_PROJECT; optional "OpenAI-Project" header
-	OpenAITemperature  float64 // env BOT_OPENAI_TEMPERATURE; <0 means model default
-	OpenAITopP         float64 // env BOT_OPENAI_TOP_P;        <0 means model default
-	OpenAIMaxTokens    int     // env BOT_OPENAI_MAX_TOKENS;   0  means model default
+	OpenAIAPIKey       string  // env LLM_OPENAI_API_KEY — SECRET
+	OpenAIBaseURL      string  // env LLM_OPENAI_BASE_URL; optional, defaults to https://api.openai.com/v1
+	OpenAIModel        string  // env LLM_OPENAI_MODEL; e.g. "gpt-4.1"
+	OpenAIEmbedModel   string  // env LLM_OPENAI_EMBED_MODEL; e.g. "text-embedding-3-small"
+	OpenAIOrganization string  // env LLM_OPENAI_ORGANIZATION; optional "OpenAI-Organization" header
+	OpenAIProject      string  // env LLM_OPENAI_PROJECT; optional "OpenAI-Project" header
+	OpenAITemperature  float64 // env LLM_OPENAI_TEMPERATURE; <0 means model default
+	OpenAITopP         float64 // env LLM_OPENAI_TOP_P;        <0 means model default
+	OpenAIMaxTokens    int     // env LLM_OPENAI_MAX_TOKENS;   0  means model default
 	// OpenAIReasoningEffort sets `reasoning_effort` on every OpenAI call
-	// (env BOT_OPENAI_REASONING_EFFORT). "" sends nothing. "none" turns
+	// (env LLM_OPENAI_REASONING_EFFORT). "" sends nothing. "none" turns
 	// the reasoning pass off — the setting that makes a reasoning model
 	// answer at non-reasoning latency. Rejected at boot if not one of
 	// none/minimal/low/medium/high/xhigh/max.
@@ -243,7 +243,7 @@ type BotConfig struct {
 	// OpenAIStore sends `store: true` so request and response appear at
 	// platform.openai.com/logs. Default false — enabling it retains prompt
 	// + response content on OpenAI for 30 days.
-	OpenAIStore bool // env BOT_OPENAI_STORE; default false
+	OpenAIStore bool // env LLM_OPENAI_STORE; default false
 
 	// Direct-Gemini provider settings (REST over
 	// internal/shared/http_client — no SDK, no broker). Consumed (and the
@@ -256,13 +256,13 @@ type BotConfig struct {
 	// the operator's behalf.
 	//
 	// Supports Chat, Stream and Embed.
-	GeminiAPIKey      string  // env BOT_GEMINI_API_KEY — SECRET
-	GeminiBaseURL     string  // env BOT_GEMINI_BASE_URL; optional, defaults to the v1beta root
-	GeminiModel       string  // env BOT_GEMINI_MODEL; e.g. "gemini-2.0-flash"
-	GeminiEmbedModel  string  // env BOT_GEMINI_EMBED_MODEL; e.g. "text-embedding-004"
-	GeminiTemperature float64 // env BOT_GEMINI_TEMPERATURE; <0 means model default
-	GeminiTopP        float64 // env BOT_GEMINI_TOP_P;        <0 means model default
-	GeminiMaxTokens   int     // env BOT_GEMINI_MAX_TOKENS;   0  means model default
+	GeminiAPIKey      string  // env LLM_GEMINI_API_KEY — SECRET
+	GeminiBaseURL     string  // env LLM_GEMINI_BASE_URL; optional, defaults to the v1beta root
+	GeminiModel       string  // env LLM_GEMINI_MODEL; e.g. "gemini-2.0-flash"
+	GeminiEmbedModel  string  // env LLM_GEMINI_EMBED_MODEL; e.g. "text-embedding-004"
+	GeminiTemperature float64 // env LLM_GEMINI_TEMPERATURE; <0 means model default
+	GeminiTopP        float64 // env LLM_GEMINI_TOP_P;        <0 means model default
+	GeminiMaxTokens   int     // env LLM_GEMINI_MAX_TOKENS;   0  means model default
 
 	// Direct-DeepSeek provider settings (REST over
 	// internal/shared/http_client — no SDK, no broker). Consumed (and the
@@ -273,24 +273,24 @@ type BotConfig struct {
 	// that is why it has its own client rather than reusing the openai one.
 	//
 	// Supports Chat and Stream. Embed is unsupported (no endpoint).
-	DeepSeekAPIKey  string // env BOT_DEEPSEEK_API_KEY — SECRET
-	DeepSeekBaseURL string // env BOT_DEEPSEEK_BASE_URL; optional, defaults to https://api.deepseek.com
-	DeepSeekModel   string // env BOT_DEEPSEEK_MODEL; e.g. "deepseek-v4-flash"
+	DeepSeekAPIKey  string // env LLM_DEEPSEEK_API_KEY — SECRET
+	DeepSeekBaseURL string // env LLM_DEEPSEEK_BASE_URL; optional, defaults to https://api.deepseek.com
+	DeepSeekModel   string // env LLM_DEEPSEEK_MODEL; e.g. "deepseek-v4-flash"
 	// DeepSeekThinking / DeepSeekReasoningEffort control the reasoning
 	// block. Empty sends nothing, leaving the model's own default. Worth
 	// setting to "disabled" when only quiz JSON is needed: reasoning
 	// tokens are billed on top of the answer.
-	DeepSeekThinking        string  // env BOT_DEEPSEEK_THINKING; "enabled" | "disabled" | ""
-	DeepSeekReasoningEffort string  // env BOT_DEEPSEEK_REASONING_EFFORT; "low" | "high" | "max" | ""
-	DeepSeekTemperature     float64 // env BOT_DEEPSEEK_TEMPERATURE; <0 means model default
-	DeepSeekTopP            float64 // env BOT_DEEPSEEK_TOP_P;        <0 means model default
-	DeepSeekMaxTokens       int     // env BOT_DEEPSEEK_MAX_TOKENS;   0  means model default
+	DeepSeekThinking        string  // env LLM_DEEPSEEK_THINKING; "enabled" | "disabled" | ""
+	DeepSeekReasoningEffort string  // env LLM_DEEPSEEK_REASONING_EFFORT; "low" | "high" | "max" | ""
+	DeepSeekTemperature     float64 // env LLM_DEEPSEEK_TEMPERATURE; <0 means model default
+	DeepSeekTopP            float64 // env LLM_DEEPSEEK_TOP_P;        <0 means model default
+	DeepSeekMaxTokens       int     // env LLM_DEEPSEEK_MAX_TOKENS;   0  means model default
 
 	// Transport tuning shared by ALL providers.
-	Timeout       time.Duration // env BOT_TIMEOUT,        e.g. "60s"
-	MaxRetries    int           // env BOT_MAX_RETRIES,    default 2
-	RetryDelay    time.Duration // env BOT_RETRY_DELAY,    e.g. "500ms"
-	RequireAtBoot bool          // env BOT_REQUIRE_AT_BOOT, default false
+	Timeout       time.Duration // env LLM_TIMEOUT,        e.g. "60s"
+	MaxRetries    int           // env LLM_MAX_RETRIES,    default 2
+	RetryDelay    time.Duration // env LLM_RETRY_DELAY,    e.g. "500ms"
+	RequireAtBoot bool          // env LLM_REQUIRE_AT_BOOT, default false
 }
 
 // NotificationConfig configures the push-notification adapter

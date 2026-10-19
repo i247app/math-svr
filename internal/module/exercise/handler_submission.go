@@ -57,7 +57,7 @@ func (h *ClassroomExerciseSubmissionHandler) HandleSubmitExerciseAnswers(w http.
 }
 
 // POST /classroom-exercise/submissions/submit/v2 — deterministic, no
-// bot call. Same request / response shape as HandleSubmitExerciseAnswers
+// LLM call. Same request / response shape as HandleSubmitExerciseAnswers
 // so mobile clients can swap the URL without DTO changes.
 func (h *ClassroomExerciseSubmissionHandler) HandleSubmitExerciseAnswersV2(w http.ResponseWriter, r *http.Request) {
 	var req dto.SubmitExerciseAnswersReq

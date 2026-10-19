@@ -153,21 +153,21 @@ const (
 	SMS_OP_FAILED        StatusCode = 9003
 	SMS_SERIALIZE_FAILED StatusCode = 9004
 
-	BOT_CONNECT_FAILED    StatusCode = 10001
-	BOT_CONFIG_INVALID    StatusCode = 10002
-	BOT_OP_FAILED         StatusCode = 10003
-	BOT_SERIALIZE_FAILED  StatusCode = 10004
-	BOT_INVALID_PROMPT    StatusCode = 10005
-	BOT_CONTEXT_TOO_LARGE StatusCode = 10006
-	BOT_RATE_LIMITED      StatusCode = 10007
-	BOT_UNSUPPORTED_OP    StatusCode = 10008
-	// BOT_CONTENT_BLOCKED is the provider's safety / recitation filter
-	// refusing to answer. Distinct from BOT_OP_FAILED on purpose: that one
+	LLM_CONNECT_FAILED    StatusCode = 10001
+	LLM_CONFIG_INVALID    StatusCode = 10002
+	LLM_OP_FAILED         StatusCode = 10003
+	LLM_SERIALIZE_FAILED  StatusCode = 10004
+	LLM_INVALID_PROMPT    StatusCode = 10005
+	LLM_CONTEXT_TOO_LARGE StatusCode = 10006
+	LLM_RATE_LIMITED      StatusCode = 10007
+	LLM_UNSUPPORTED_OP    StatusCode = 10008
+	// LLM_CONTENT_BLOCKED is the provider's safety / recitation filter
+	// refusing to answer. Distinct from LLM_OP_FAILED on purpose: that one
 	// reads as transient and invites a retry, whereas a blocked prompt
 	// returns the same block every time and needs the prompt changed.
 	// Gemini surfaces this as finishReason SAFETY / RECITATION /
 	// PROHIBITED_CONTENT or promptFeedback.blockReason.
-	BOT_CONTENT_BLOCKED StatusCode = 10009
+	LLM_CONTENT_BLOCKED StatusCode = 10009
 
 	// 11000–11099 was QUIZ_*. The quiz module was replaced by exam
 	// (EXAM_* at 13700+) and deleted; the block is retired, not free —
@@ -258,7 +258,7 @@ const (
 	// Classroom exercise — teacher-issued, AI-generated assignment
 	// scoped to a classroom. Curriculum context (grade, program) is
 	// derived from the classroom; chapter_name + lesson_name are the
-	// teacher-supplied topic anchors fed to the bot.
+	// teacher-supplied topic anchors fed to the llm.
 	CLASSROOM_EXERCISE_NOT_FOUND                StatusCode = 12601
 	CLASSROOM_EXERCISE_MISSING_ID               StatusCode = 12602
 	CLASSROOM_EXERCISE_MISSING_CLASSROOM_ID     StatusCode = 12603

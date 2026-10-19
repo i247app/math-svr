@@ -1,7 +1,7 @@
 // Package openai is the math-svr libs wrapper around OpenAI's REST API
 // (https://api.openai.com/v1). It owns the LLM client lifecycle
 // (credentials, timeouts, retries) and exposes the same narrow chat
-// surface the adapter layer (`internal/adapter/bot`) consumes — mirroring
+// surface the adapter layer (`internal/adapter/llm`) consumes — mirroring
 // the role of `internal/libs/openrouter`, `internal/libs/gemini` and
 // `internal/libs/deepseek`.
 //
@@ -40,7 +40,7 @@
 //
 // # API choice
 //
-// Generate / GenerateStream target Chat Completions: the bot adapter's
+// Generate / GenerateStream target Chat Completions: the LLM adapter's
 // ChatRequest is a messages/role/content shape that maps 1:1 onto it, and
 // openrouter speaks it too — so prompts, JSON mode and results stay
 // directly comparable across providers, which is the point of keeping
@@ -51,7 +51,7 @@
 // This package never imports from `internal/domain`, `internal/application`,
 // or `internal/adapter` — it is the lowest layer. Errors returned here are
 // plain wrapped errors or typed sentinels; the adapter layer translates
-// them into MathError(BOT_*) status codes.
+// them into MathError(LLM_*) status codes.
 //
 // Secret handling: cfg.APIKey is read once at construction, set as the
 // Authorization header on the shared client, and never logged from this
@@ -69,8 +69,8 @@ import (
 
 // ErrInvalidConfig is the sentinel wrapped by Config.Validate. The adapter
 // factory uses errors.Is to distinguish "config is wrong"
-// (→ BOT_CONFIG_INVALID) from "config is fine but the network or upstream
-// said no" (→ BOT_CONNECT_FAILED).
+// (→ LLM_CONFIG_INVALID) from "config is fine but the network or upstream
+// said no" (→ LLM_CONNECT_FAILED).
 var ErrInvalidConfig = errors.New("openai: invalid config")
 
 // DefaultBaseURL is OpenAI's v1 REST root. Config.BaseURL overrides it
@@ -91,7 +91,7 @@ const (
 // APIKey is the long-lived vendor credential and is sensitive — see
 // package doc.
 type Config struct {
-	// APIKey is the OpenAI credential (env BOT_OPENAI_API_KEY). Required.
+	// APIKey is the OpenAI credential (env LLM_OPENAI_API_KEY). Required.
 	// Sent as "Authorization: Bearer <key>". NEVER log.
 	APIKey string
 
@@ -149,7 +149,7 @@ type Config struct {
 	MaxTokens int
 
 	// ReasoningEffort sets how much hidden reasoning the model does
-	// before answering (env BOT_OPENAI_REASONING_EFFORT). Optional; empty
+	// before answering (env LLM_OPENAI_REASONING_EFFORT). Optional; empty
 	// sends nothing and the model default applies.
 	//
 	// Set it to ReasoningEffortNone on a reasoning model to get a

@@ -213,7 +213,7 @@ func (p ClassroomExercisePurposeType) IsValid() bool {
 
 // ClassroomExerciseSubmissionStatusType is the submission-row lifecycle.
 // Rows are inserted at submit time so SUBMITTED is the entry state; the
-// row flips to GRADED after the bot returns. DELETED is the soft-delete
+// row flips to GRADED after the LLM returns. DELETED is the soft-delete
 // tombstone used by the manager-side moderation flow.
 type ClassroomExerciseSubmissionStatusType string
 

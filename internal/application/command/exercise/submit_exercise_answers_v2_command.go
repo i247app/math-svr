@@ -21,10 +21,10 @@ import (
 
 // SubmitExerciseAnswersV2Command is the deterministic counterpart of
 // SubmitExerciseAnswersCommand. It scores the student's answers entirely
-// in process — no bot adapter call — and persists the row through the
+// in process — no LLM adapter call — and persists the row through the
 // same repo write path as v1, including the seq-minted external ID.
 //
-// Compared to v1, the bot grading inputs (Review / TotalQuestions /
+// Compared to v1, the LLM grading inputs (Review / TotalQuestions /
 // ...) are computed inline from the exercise row's `questions` JSON so
 // the caller doesn't have to plumb them in.
 //

@@ -10,37 +10,37 @@ import (
 )
 
 // Sentinel errors surfaced by the Client. Each maps to a distinct
-// MathError(BOT_*) code in the adapter layer; see adapter/bot/errors.go.
+// MathError(LLM_*) code in the adapter layer; see adapter/llm/errors.go.
 // The taxonomy matches the sibling libs packages so mapGeminiError stays
 // symmetrical with its four siblings — plus ErrContentBlocked, which has
 // no analogue on the OpenAI-shaped providers.
 var (
 	// ErrDecodeResponse signals that a call returned 2xx but the body the
-	// client expected was missing or unparsable. → BOT_SERIALIZE_FAILED.
+	// client expected was missing or unparsable. → LLM_SERIALIZE_FAILED.
 	ErrDecodeResponse = errors.New("gemini: failed to decode response")
 
 	// ErrContextTooLarge signals that the input exceeded the model's
-	// context window. → BOT_CONTEXT_TOO_LARGE.
+	// context window. → LLM_CONTEXT_TOO_LARGE.
 	ErrContextTooLarge = errors.New("gemini: context window exceeded")
 
 	// ErrUnsupportedOp signals that the requested capability is not
-	// configured. → BOT_UNSUPPORTED_OP.
+	// configured. → LLM_UNSUPPORTED_OP.
 	ErrUnsupportedOp = errors.New("gemini: operation not supported")
 
 	// ErrRateLimited signals a throttling 429 (RESOURCE_EXHAUSTED from a
-	// per-minute limit) — transient. → BOT_RATE_LIMITED.
+	// per-minute limit) — transient. → LLM_RATE_LIMITED.
 	ErrRateLimited = errors.New("gemini: rate limit exceeded")
 
 	// ErrQuotaExhausted signals a 429 that is a DAILY quota or a billing
 	// stop rather than a burst limit. It shares the status code with
 	// throttling but will not recover within the call.
-	// → BOT_CONFIG_INVALID.
+	// → LLM_CONFIG_INVALID.
 	ErrQuotaExhausted = errors.New("gemini: quota exhausted")
 
 	// ErrContentBlocked signals that a safety / recitation filter refused
 	// the request. Unique to this provider among the four; retrying is
 	// pointless because the same prompt produces the same block.
-	// → BOT_CONTENT_BLOCKED.
+	// → LLM_CONTENT_BLOCKED.
 	ErrContentBlocked = errors.New("gemini: content blocked by safety filter")
 )
 
@@ -245,7 +245,7 @@ func (w *wireError) toAPIError(httpStatus int, retryAfter time.Duration) *APIErr
 // classifyAPIError lifts a typed *APIError onto the package sentinels so
 // the adapter's status mapping is driven by the taxonomy rather than by
 // raw HTTP numbers. Unrecognised statuses are returned unchanged and end
-// up as BOT_OP_FAILED.
+// up as LLM_OP_FAILED.
 //
 // Wrapping uses two %w verbs on purpose: callers must be able to reach the
 // sentinel with errors.Is AND the *APIError (for http_status / status)

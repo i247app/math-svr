@@ -1,4 +1,4 @@
-// Package bot is the AI / chat adapter. It exposes a provider-agnostic
+// Package llm is the AI / chat adapter. It exposes a provider-agnostic
 // chat / stream / embed surface to module services (e.g. quiz grading,
 // assessment review) while hiding the underlying LLM SDK.
 //
@@ -6,44 +6,44 @@
 // `internal/adapter/storage`:
 //   - Adapter holds a map of registered providers and a default name.
 //   - factory.go is the only place that knows which vendor.
-//   - Adding a vendor = a new bot_<vendor>_provider.go file + a new
+//   - Adding a vendor = a new llm_<vendor>_provider.go file + a new
 //     constant here + a new case in factory.go.
 //
 // Every provider is a direct REST client over the shared http_client
 // (internal/libs/<vendor>) — no vendor SDK.
-package bot
+package llm
 
-// BotProviderName is the registered name of a concrete provider.
-type BotProviderName string
+// LLMProviderName is the registered name of a concrete provider.
+type LLMProviderName string
 
 const (
 	// ProviderOpenRouter dispatches via internal/libs/openrouter, which
 	// calls the OpenRouter REST API directly over the shared http_client
 	// (no vendor SDK). There is no backend selector: OpenRouter is itself
 	// the router and the vendor is chosen by the model id
-	// ("vendor/model-name") in BotConfig.OpenRouterModel. Registered
-	// alongside the other providers when configured; BOT_PROVIDER picks
+	// ("vendor/model-name") in LLMConfig.OpenRouterModel. Registered
+	// alongside the other providers when configured; LLM_PROVIDER picks
 	// which one is the default.
-	ProviderOpenRouter BotProviderName = "openrouter"
+	ProviderOpenRouter LLMProviderName = "openrouter"
 
 	// ProviderOpenAI dispatches via internal/libs/openai, which calls
 	// api.openai.com directly over the shared http_client (no vendor SDK,
 	// no broker). Like openrouter it has no backend selector — it talks to
-	// OpenAI and only OpenAI, and BotConfig.OpenAIModel names a bare model
+	// OpenAI and only OpenAI, and LLMConfig.OpenAIModel names a bare model
 	// id ("gpt-4.1", not "openai/gpt-4.1").
 	//
 	// Supports Chat, Stream, Embed and Respond (Responses API).
-	ProviderOpenAI BotProviderName = "openai"
+	ProviderOpenAI LLMProviderName = "openai"
 
 	// ProviderGemini dispatches via internal/libs/gemini, which calls
 	// generativelanguage.googleapis.com directly over the shared
 	// http_client (no vendor SDK, no broker). Like openai it has no
-	// backend selector, and BotConfig.GeminiModel names a bare model id
+	// backend selector, and LLMConfig.GeminiModel names a bare model id
 	// ("gemini-2.0-flash"); the "models/" URL prefix is added by the
 	// client.
 	//
 	// Supports Chat, Stream and Embed.
-	ProviderGemini BotProviderName = "gemini"
+	ProviderGemini LLMProviderName = "gemini"
 
 	// ProviderDeepSeek dispatches via internal/libs/deepseek, which calls
 	// api.deepseek.com directly over the shared http_client (no vendor
@@ -55,7 +55,7 @@ const (
 	// package doc for why that warranted its own client.
 	//
 	// Supports Chat and Stream; Embed is unsupported (no endpoint).
-	ProviderDeepSeek BotProviderName = "deepseek"
+	ProviderDeepSeek LLMProviderName = "deepseek"
 )
 
 // Role enumerates the chat message roles the adapter recognises. The

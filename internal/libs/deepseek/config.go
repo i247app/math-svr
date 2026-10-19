@@ -1,7 +1,7 @@
 // Package deepseek is the math-svr libs wrapper around the DeepSeek API
 // (https://api.deepseek.com). It owns the LLM client lifecycle
 // (credentials, timeouts, retries) and exposes the same narrow chat
-// surface the adapter layer (`internal/adapter/bot`) consumes — mirroring
+// surface the adapter layer (`internal/adapter/llm`) consumes — mirroring
 // libs/openrouter, libs/openai and libs/gemini.
 //
 // Like the other three direct clients, this package uses NO vendor SDK:
@@ -36,7 +36,7 @@
 // This package never imports from `internal/domain`, `internal/application`,
 // or `internal/adapter` — it is the lowest layer. Errors returned here are
 // plain wrapped errors or typed sentinels; the adapter layer translates
-// them into MathError(BOT_*) status codes.
+// them into MathError(LLM_*) status codes.
 //
 // Secret handling: cfg.APIKey is read once at construction, set as the
 // Authorization header, and never logged from this package. The
@@ -54,8 +54,8 @@ import (
 
 // ErrInvalidConfig is the sentinel wrapped by Config.Validate. The adapter
 // factory uses errors.Is to distinguish "config is wrong"
-// (→ BOT_CONFIG_INVALID) from "config is fine but the network or upstream
-// said no" (→ BOT_CONNECT_FAILED).
+// (→ LLM_CONFIG_INVALID) from "config is fine but the network or upstream
+// said no" (→ LLM_CONNECT_FAILED).
 var ErrInvalidConfig = errors.New("deepseek: invalid config")
 
 // DefaultBaseURL is DeepSeek's REST root. The vendor also serves the same
@@ -83,7 +83,7 @@ const (
 // APIKey is the long-lived vendor credential and is sensitive — see
 // package doc.
 type Config struct {
-	// APIKey is the DeepSeek credential (env BOT_DEEPSEEK_API_KEY).
+	// APIKey is the DeepSeek credential (env LLM_DEEPSEEK_API_KEY).
 	// Required. Sent as "Authorization: Bearer <key>". NEVER log.
 	APIKey string
 

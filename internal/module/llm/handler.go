@@ -1,10 +1,10 @@
-package bot
+package llm
 
 import (
 	"encoding/json"
 	"net/http"
 
-	dto "math-ai.com/math-ai/internal/application/dto/bot"
+	dto "math-ai.com/math-ai/internal/application/dto/llm"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 

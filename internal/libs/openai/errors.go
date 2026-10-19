@@ -9,44 +9,44 @@ import (
 )
 
 // Sentinel errors surfaced by the Client. Each maps to a distinct
-// MathError(BOT_*) code in the adapter layer; see adapter/bot/errors.go.
+// MathError(LLM_*) code in the adapter layer; see adapter/llm/errors.go.
 // The taxonomy matches the sibling libs packages so mapOpenAIError stays
 // symmetrical with its three siblings.
 var (
 	// ErrDecodeResponse signals that a call returned 2xx but the body the
-	// client expected was missing or unparsable. → BOT_SERIALIZE_FAILED.
+	// client expected was missing or unparsable. → LLM_SERIALIZE_FAILED.
 	ErrDecodeResponse = errors.New("openai: failed to decode response")
 
 	// ErrContextTooLarge signals that the input exceeded the model's
-	// context window. → BOT_CONTEXT_TOO_LARGE.
+	// context window. → LLM_CONTEXT_TOO_LARGE.
 	ErrContextTooLarge = errors.New("openai: context window exceeded")
 
 	// ErrUnsupportedOp signals that the requested capability is not
-	// configured. → BOT_UNSUPPORTED_OP.
+	// configured. → LLM_UNSUPPORTED_OP.
 	ErrUnsupportedOp = errors.New("openai: operation not supported")
 
 	// ErrRateLimited signals a throttling 429 — transient, worth retrying.
-	// → BOT_RATE_LIMITED.
+	// → LLM_RATE_LIMITED.
 	ErrRateLimited = errors.New("openai: rate limit exceeded")
 
 	// ErrQuotaExhausted signals a BILLING 429, which OpenAI reports as
 	// type=rate_limit_error + code=credit_balance_exhausted (historically
 	// insufficient_quota). It shares the status code with plain throttling
 	// but is the opposite situation: it will never succeed on retry and
-	// needs an operator to add credit. → BOT_CONFIG_INVALID.
+	// needs an operator to add credit. → LLM_CONFIG_INVALID.
 	ErrQuotaExhausted = errors.New("openai: quota / credit balance exhausted")
 
 	// ErrPreviousResponseGone signals that a Responses-API call chained on
 	// a previous_response_id the vendor no longer holds — stored responses
 	// expire after 30 days, and an id can also be wrong or belong to
 	// another project. Never retried here: only the caller can decide to
-	// rebuild the chain. → BOT_OP_FAILED with vendor_reason set, so the
+	// rebuild the chain. → LLM_OP_FAILED with vendor_reason set, so the
 	// module layer can branch on it.
 	ErrPreviousResponseGone = errors.New("openai: previous response no longer available")
 
 	// ErrContentRefused signals a 200 whose output carried a refusal item
 	// instead of text. Deterministic for the same input, so it must not be
-	// retried. → BOT_CONTENT_BLOCKED.
+	// retried. → LLM_CONTENT_BLOCKED.
 	ErrContentRefused = errors.New("openai: model refused to answer")
 )
 
@@ -235,7 +235,7 @@ func isContextLengthMessage(msg string) bool {
 // classifyAPIError lifts a typed *APIError onto the package sentinels so
 // the adapter's status mapping is driven by the taxonomy rather than by
 // raw HTTP numbers. Unrecognised statuses are returned unchanged and end
-// up as BOT_OP_FAILED.
+// up as LLM_OP_FAILED.
 //
 // Wrapping uses two %w verbs on purpose: callers must be able to reach the
 // sentinel with errors.Is AND the *APIError (for http_status / vendor

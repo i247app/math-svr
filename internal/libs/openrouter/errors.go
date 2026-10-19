@@ -10,29 +10,29 @@ import (
 )
 
 // Sentinel errors surfaced by the Client. Each maps to a distinct
-// MathError(BOT_*) code in the adapter layer; see adapter/bot/errors.go.
+// MathError(LLM_*) code in the adapter layer; see adapter/llm/errors.go.
 // The taxonomy is shared with the other libs clients so
 // mapOpenRouterError stays symmetrical with its siblings.
 var (
 	// ErrDecodeResponse signals that a call returned 2xx but the body the
 	// client expected was missing or unparsable. Adapter maps to
-	// BOT_SERIALIZE_FAILED.
+	// LLM_SERIALIZE_FAILED.
 	ErrDecodeResponse = errors.New("openrouter: failed to decode response")
 
 	// ErrContextTooLarge signals that the input exceeded the model's
-	// context window. Adapter maps to BOT_CONTEXT_TOO_LARGE.
+	// context window. Adapter maps to LLM_CONTEXT_TOO_LARGE.
 	ErrContextTooLarge = errors.New("openrouter: context window exceeded")
 
 	// ErrUnsupportedOp signals that OpenRouter does not support the
-	// requested capability. Adapter maps to BOT_UNSUPPORTED_OP.
+	// requested capability. Adapter maps to LLM_UNSUPPORTED_OP.
 	ErrUnsupportedOp = errors.New("openrouter: operation not supported")
 
-	// ErrRateLimited signals a 429. Adapter maps to BOT_RATE_LIMITED.
+	// ErrRateLimited signals a 429. Adapter maps to LLM_RATE_LIMITED.
 	ErrRateLimited = errors.New("openrouter: rate limit exceeded")
 
 	// ErrInsufficientCredits signals a 402 — the account is out of credit.
 	// Non-recoverable within the call and needs operator action, so the
-	// adapter maps it to BOT_CONFIG_INVALID alongside the auth failures
+	// adapter maps it to LLM_CONFIG_INVALID alongside the auth failures
 	// rather than to a transient code.
 	ErrInsufficientCredits = errors.New("openrouter: insufficient credits")
 )
@@ -162,7 +162,7 @@ func (w *wireError) toAPIError(httpStatus int) *APIError {
 // classifyAPIError lifts a typed *APIError onto the package sentinels so
 // the adapter's status mapping is driven by the taxonomy rather than by
 // raw HTTP numbers. Unrecognised statuses are returned unchanged and end
-// up as BOT_OP_FAILED.
+// up as LLM_OP_FAILED.
 //
 // Wrapping uses two %w verbs on purpose: callers must be able to reach the
 // sentinel with errors.Is AND the *APIError (for http_status / vendor_code)

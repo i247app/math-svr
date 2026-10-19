@@ -43,7 +43,7 @@ type JourneyReviewInput struct {
 // system prompt asks for.
 const ReviewShortMaxChars = 200
 
-var ErrReviewNoAnswers = errors.New("bot: a journey review needs at least one answered question")
+var ErrReviewNoAnswers = errors.New("prompt: a journey review needs at least one answered question")
 
 // BuildJourneyReviewUserPrompt renders the USER message: the journey and
 // its answers. The SYSTEM prompt is the EXAM_REVIEW row of ma_prompts,

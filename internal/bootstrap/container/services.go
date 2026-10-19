@@ -11,7 +11,6 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/security"
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/banner"
-	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
@@ -20,6 +19,7 @@ import (
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
+	"math-ai.com/math-ai/internal/module/llm"
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
@@ -166,7 +166,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ExamSessionLineRepository,
 		repos.PromptRepository,
 		uow,
-		res.BotProvider,
+		res.LLMProvider,
 		repos.ProfileRepository,
 		repos.GradeRepository,
 		repos.UserRepository,
@@ -202,7 +202,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ExerciseRepository,
 		repos.ExerciseSubmissionRepository,
 		uow,
-		res.BotProvider,
+		res.LLMProvider,
 		repos.ClassroomRepository,
 		repos.ClassroomMemberRepository,
 		repos.ClassroomProgramRepository,
@@ -212,8 +212,8 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		res.StorageProvider,
 	)
 
-	log.Info("> Setup BotSvc...")
-	botService := bot.NewService(res.BotProvider)
+	log.Info("> Setup LLMSvc...")
+	llmService := llm.NewService(res.LLMProvider)
 
 	log.Info("> Setup BannerSvc...")
 	bannerService := banner.NewService(
@@ -260,7 +260,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		ClassroomSvc:     classroomService,
 		ExerciseSvc:      exerciseService,
 		HomeSvc:          homeService,
-		BotSvc:           botService,
+		LLMSvc:           llmService,
 		NotificationSvc:  notificationService,
 		BannerSvc:        bannerService,
 		PermissionSvc:    permissionService,

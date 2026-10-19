@@ -49,7 +49,7 @@ type SubmissionProfileSummary struct {
 //
 // total_questions / correct_number / score_percentage / review are
 // surfaced as the optional Grading block — nil when the row hasn't
-// been graded yet (e.g. SUBMITTED state after a bot failure).
+// been graded yet (e.g. SUBMITTED state after an LLM failure).
 //
 // Exercise and Profile are hydrated by the service via batched
 // IN-lookups (one round trip per page each). They are nil when the

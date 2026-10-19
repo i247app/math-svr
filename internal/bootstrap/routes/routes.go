@@ -9,7 +9,6 @@ import (
 	"math-ai.com/math-ai/internal/bootstrap/middleware"
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/banner"
-	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
@@ -19,6 +18,7 @@ import (
 	"math-ai.com/math-ai/internal/module/health"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
+	"math-ai.com/math-ai/internal/module/llm"
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
@@ -236,8 +236,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	// frontend can prime the AI connection early and the first real
 	// exam/exercise generation is fast.
 	{
-		botHandler := bot.NewHandler(services.BotSvc)
-		reg("POST /ai/shake", botHandler.HandleShake)
+		llmHandler := llm.NewHandler(services.LLMSvc)
+		reg("POST /ai/shake", llmHandler.HandleShake)
 	}
 
 	// exam routes

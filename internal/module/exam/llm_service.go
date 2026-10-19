@@ -8,11 +8,11 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
+	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	"math-ai.com/math-ai/internal/application/dto/question"
 
-	// input "math-ai.com/math-ai/internal/domain/bot"
+	// input "math-ai.com/math-ai/internal/domain/prompt/input"
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -22,7 +22,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
-// botClient is the exam module's typed surface over the generic bot
+// llmClient is the exam module's typed surface over the generic LLM
 // adapter: prompt in, validated questions out.
 //
 // It has one method. Grading never reaches the model — the server scores
@@ -33,12 +33,12 @@ import (
 // schema drift; JSON mode is requested even though the system prompt
 // mandates the shape anyway, because backends that honour it fail earlier
 // and more cheaply.
-type botClient struct {
-	adapter *botAdapter.Adapter
+type llmClient struct {
+	adapter *llmAdapter.Adapter
 }
 
-func newBotClient(adapter *botAdapter.Adapter) *botClient {
-	return &botClient{adapter: adapter}
+func newLLMClient(adapter *llmAdapter.Adapter) *llmClient {
+	return &llmClient{adapter: adapter}
 }
 
 type generateExamInput struct {
@@ -71,10 +71,10 @@ type generateExamOutput struct {
 	RespID *string
 }
 
-func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*generateExamOutput, error) {
+func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*generateExamOutput, error) {
 	log := logger.From(ctx)
 	if c.adapter == nil {
-		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil, ErrBotAdapterNotConfigured)
+		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil, ErrLLMAdapterNotConfigured)
 	}
 
 	promptIn := input.ExamPromptInput{
@@ -114,14 +114,14 @@ func (c *botClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		return nil, err
 	}
 
-	log.Infof("BOT RESPONSE: %s", content)
+	log.Infof("LLM RESPONSE: %s", content)
 
 	// Parsed with the exam vocabulary (right_answer_label, question_topic,
 	// ...) and converted straight into the shared shape, which is what the
 	// normalisers and the scorer operate on.
 	gen, err := question.ParseGenerationOf[dto.ExamQuestion](content)
 	if err != nil {
-		log.Warnf("exam.bot.generate_parse_failed err=%v", err)
+		log.Warnf("exam.llm.generate_parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED,
 			map[string]any{"reason": err.Error()}, err)
 	}
@@ -176,17 +176,17 @@ const maxChainInputTokens = 30000
 // persist; on any other provider it falls back to Chat and returns a nil
 // id. A chain pointer the vendor no longer holds (30-day retention) is
 // retried once as a new chain.
-func (c *botClient) complete(ctx context.Context, system, user string, temperature float64, chain *string) (string, *string, error) {
+func (c *llmClient) complete(ctx context.Context, system, user string, temperature float64, chain *string) (string, *string, error) {
 	log := logger.From(ctx)
 
 	if chain == nil || !c.adapter.SupportsRespond("") {
-		res, err := c.adapter.Chat(ctx, botAdapter.ChatRequest{
-			Messages: []botAdapter.Message{
-				{Role: botAdapter.RoleSystem, Content: system},
-				{Role: botAdapter.RoleUser, Content: user},
+		res, err := c.adapter.Chat(ctx, llmAdapter.ChatRequest{
+			Messages: []llmAdapter.Message{
+				{Role: llmAdapter.RoleSystem, Content: system},
+				{Role: llmAdapter.RoleUser, Content: user},
 			},
 			Temperature: temperature,
-			TopP:        -1, // temperature is the knob; top_p comes from BOT_*_TOP_P or the model default
+			TopP:        -1, // temperature is the knob; top_p comes from LLM_*_TOP_P or the model default
 			JSONMode:    true,
 		})
 		if err != nil {
@@ -195,10 +195,10 @@ func (c *botClient) complete(ctx context.Context, system, user string, temperatu
 		return res.Content, nil, nil
 	}
 
-	req := botAdapter.RespondRequest{
+	req := llmAdapter.RespondRequest{
 		// Instructions are not inherited along the chain: resent every turn.
 		Instructions:       system,
-		Input:              []botAdapter.Message{{Role: botAdapter.RoleUser, Content: user}},
+		Input:              []llmAdapter.Message{{Role: llmAdapter.RoleUser, Content: user}},
 		PreviousResponseID: *chain,
 		Store:              true,
 		Temperature:        temperature,
@@ -206,7 +206,7 @@ func (c *botClient) complete(ctx context.Context, system, user string, temperatu
 		JSONMode:           true,
 	}
 	res, err := c.adapter.Respond(ctx, req)
-	if err != nil && req.PreviousResponseID != "" && botAdapter.IsChainPointerGone(err) {
+	if err != nil && req.PreviousResponseID != "" && llmAdapter.IsChainPointerGone(err) {
 		log.Warnf("exam.chain.gone previous_response_id=%s, starting a new chain", req.PreviousResponseID)
 		req.PreviousResponseID = ""
 		res, err = c.adapter.Respond(ctx, req)
@@ -237,10 +237,10 @@ type journeyReviewOutput struct {
 // prompt is the EXAM_REVIEW row of ma_prompts, sent verbatim as the system
 // message. chain is the journey's last_resp_id ("" when none), so the
 // review is one more turn of the journey's chain.
-func (c *botClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prompt, in input.JourneyReviewInput, chain string) (*journeyReviewOutput, error) {
+func (c *llmClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prompt, in input.JourneyReviewInput, chain string) (*journeyReviewOutput, error) {
 	log := logger.From(ctx)
 	if c.adapter == nil {
-		return nil, errs.NewError(ctx, status.BOT_CONFIG_INVALID, nil, ErrBotAdapterNotConfigured)
+		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil, ErrLLMAdapterNotConfigured)
 	}
 	if prompt == nil || prompt.SystemPrompt() == "" {
 		return nil, errs.NewError(ctx, status.PROMPT_NOT_FOUND, nil, fmt.Errorf("exam: no system prompt for the journey review"))

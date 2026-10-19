@@ -4,9 +4,9 @@
 
 `math-svr` (Go module `math-ai.com/math-ai`) is the HTTP backend for **Math-AI**, an
 AI-powered math practice and exam platform for **Vietnamese children from kindergarten
-(Mẫu giáo) to Grade 5**. Each grade's exam-generation prompt is stored in the database
-(`ma_exam_prompts`, one row per grade) and rewritten by admins through `/exams/prompts/*`
-— changing a prompt needs no deploy.
+(Mẫu giáo) to Grade 5**. The static system prompt of every LLM call is
+stored in the database (`ma_prompts`: one row per exam type × grade, plus the journey
+review) and rewritten by admins through `/prompts/*` — changing a prompt needs no deploy.
 
 What the server does, as implemented in `internal/module/` and
 `internal/bootstrap/routes/routes.go`:
@@ -24,12 +24,12 @@ What the server does, as implemented in `internal/module/` and
   (`/programs/*`, `/grades/*`, `/semesters/*`). Single-language; rows are seeded
   outside the app.
 - **AI exams** — `/exams/generate` hands a child a 10-question exam: from the cache of
-  earlier generations (`ma_exam_pools`) when one matches, otherwise through the bot
+  earlier generations (`ma_exam_pools`) when one matches, otherwise through the LLM
   adapter with the grade's stored system prompt. `/exams/submit` grades
   deterministically. An exam is `ASSESSMENT`, `GRADE` (levels 0–9) or `PRACTICE` (built
   from the child's last mistakes), and folds into a journey — see
   `internal/shared/enum/exam.go` and `.claude/rules/product.md` §2. Admins manage the
-  cache (`/exams/pools/*`) and the per-grade prompts (`/exams/prompts/*`).
+  cache (`/exams/pools/*`); prompts are managed through `/prompts/*` (`.claude/rules/product.md` §2c).
 - **Classrooms** — teacher-owned classrooms (`/classrooms/*`) with members, roles,
   archiving, invite codes, teacher-initiated invitations and student-initiated join
   requests (both are `ma_classroom_members` rows distinguished by `member_status`),
@@ -113,7 +113,7 @@ if the file is missing or unparsable, and that error aborts startup.
 | Key | Values |
 |---|---|
 | `SMS_PROVIDER` | `twilio` \| `""` \| `disabled` (+ `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`, `TWILIO_MESSAGING_SERVICE_SID`) |
-| `BOT_PROVIDER` | `openai` \| `gemini` \| `deepseek` \| `openrouter` \| `""` \| `disabled`; every provider whose `BOT_<X>_API_KEY` is set registers, `BOT_PROVIDER` names the default |
+| `LLM_PROVIDER` | `openai` \| `gemini` \| `deepseek` \| `openrouter` \| `""` \| `disabled`; every provider whose `LLM_<X>_API_KEY` is set registers, `LLM_PROVIDER` names the default |
 | `NOTIFICATION_PROVIDER` | `firebase` \| `""` \| `disabled` (+ `FIREBASE_CREDENTIALS_FILE`, `FIREBASE_PROJECT_ID`) |
 | `STORAGE_PROVIDER` | `s3` or empty (empty is treated as S3) + `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `STORAGE_REGION`, `STORAGE_BUCKET` |
 | `SOCKET_ENABLED` | `false` → `/ws/connect` is not registered at all |
@@ -304,14 +304,14 @@ factory is the only place that knows the vendor:
 | `email` | Gmail API (`google`) | **required** — boot fails without valid credentials |
 | `sms` | Twilio | `nil` when disabled |
 | `storage` | AWS S3 | used for avatar/static-file uploads |
-| `bot` | Direct REST clients (no SDK): OpenAI, Gemini, DeepSeek, OpenRouter | `nil` when disabled; every provider whose `BOT_<X>_API_KEY` is set registers, `BOT_PROVIDER` picks the default |
+| `llm` | Direct REST clients (no SDK): OpenAI, Gemini, DeepSeek, OpenRouter | `nil` when disabled; every provider whose `LLM_<X>_API_KEY` is set registers, `LLM_PROVIDER` picks the default |
 | `notification` | Firebase | `nil` when disabled |
 | `otp_delivery` | composite over `sms` + `email` | routes by identifier: contains `@` → email, else → SMS |
 
 The exam and exercise modules reach the LLM only through their own
-`bot_service.go`, which owns prompt assembly (the exam system prompt is a
-`ma_exam_prompts` row; the exam user message and the exercise prompts are built in
-`internal/domain/bot/`), JSON-mode enforcement, and response parsing.
+`llm_service.go`, which owns prompt assembly (every exam system prompt is a
+`ma_prompts` row; the exam user message and the exercise prompts are built in
+`internal/domain/prompt/input/`), JSON-mode enforcement, and response parsing.
 
 ### Runtime components inside `cmd/mathsvr`
 
@@ -356,5 +356,5 @@ several layers: infrastructure (`metrics`, `httproute`, `logger`, `tracing`,
 `metadata`, the socket hub, one repository test), bootstrap middleware (metrics,
 session token, WebSocket upgrade), application (`command/otp`, `command/user`,
 `command/shared/seqgen`, `query/quiz`, `query/progress`), modules (`quiz` validator,
-`socket` integration over a real `websocket.Dial`), and the bot adapter. Most module services and repositories remain untested. There is no CI
+`socket` integration over a real `websocket.Dial`), and the LLM adapter. Most module services and repositories remain untested. There is no CI
 workflow in the repository.

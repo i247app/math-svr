@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	botAdapter "math-ai.com/math-ai/internal/adapter/bot"
+	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
 	command "math-ai.com/math-ai/internal/application/command/exam"
 	"math-ai.com/math-ai/internal/application/command/shared/practice"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
@@ -54,7 +54,7 @@ type Service struct {
 	profileRepo     profileDomain.IRepository
 	gradeRepo       gradeDomain.IRepository
 
-	bot   *botClient
+	llm   *llmClient
 	guest *guestService
 
 	// shuffleEnabled mirrors EXAM_SHUFFLE_ENABLED. It gates only the
@@ -63,9 +63,9 @@ type Service struct {
 	shuffleEnabled bool
 }
 
-// NewService wires the module. bot may be nil — a deploy without LLM
+// NewService wires the module. llm may be nil — a deploy without LLM
 // credentials still boots, and generation then fails with a uniform
-// BOT_CONFIG_INVALID instead of a panic.
+// LLM_CONFIG_INVALID instead of a panic.
 func NewService(
 	examPoolRepo examDomain.IExamPoolRepository,
 	attemptRepo examDomain.IExamLinkRepository,
@@ -73,7 +73,7 @@ func NewService(
 	detailRepo examDomain.IExamSessionLineRepository,
 	promptRepo promptDomain.IRepository,
 	uow transaction.UnitOfWork,
-	bot *botAdapter.Adapter,
+	llm *llmAdapter.Adapter,
 	profileRepo profileDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
 	userRepo userDomain.IRepository,
@@ -102,7 +102,7 @@ func NewService(
 		promptRepo:      promptRepo,
 		profileRepo:     profileRepo,
 		gradeRepo:       gradeRepo,
-		bot:             newBotClient(bot),
+		llm:             newLLMClient(llm),
 		guest:           newGuestService(uow, userRepo, profileRepo),
 		shuffleEnabled:  shuffleEnabled,
 	}
@@ -117,7 +117,7 @@ func NewService(
 //     named journey. Always a model call — the round is built from one
 //     child's mistakes and can never be shared.
 //
-// Either way the bot call sits OUTSIDE any transaction — an LLM round trip
+// Either way the LLM call sits OUTSIDE any transaction — an LLM round trip
 // must never hold one open.
 func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*dto.GenerateExamRes, error) {
 	log := logger.From(ctx)
@@ -219,7 +219,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 			Avoid:        avoid,
 			Chain:        &chain,
 		}
-		generated, err := s.bot.GenerateExam(ctx, in)
+		generated, err := s.llm.GenerateExam(ctx, in)
 		if err != nil {
 			return nil, err
 		}
@@ -318,7 +318,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		Avoid:        avoid,
 		Chain:        utils.ToAnyPtr(utils.DerefString(journey.LastRespId())),
 	}
-	generated, err := s.bot.GenerateExam(ctx, in)
+	generated, err := s.llm.GenerateExam(ctx, in)
 	if err != nil {
 		return nil, err
 	}
@@ -724,7 +724,7 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 	if err != nil {
 		return nil, err
 	}
-	review, err := s.bot.ReviewJourney(ctx, prompt, journeyReviewInput(journey, lines), utils.DerefString(journey.LastRespId()))
+	review, err := s.llm.ReviewJourney(ctx, prompt, journeyReviewInput(journey, lines), utils.DerefString(journey.LastRespId()))
 	if err != nil {
 		return nil, err
 	}
@@ -783,7 +783,7 @@ func (s *Service) GenerateExamPool(ctx context.Context, req *dto.GenerateExamPoo
 		Program:      req.Program,
 		Level:        promptLevel,
 	}
-	generated, err := s.bot.GenerateExam(ctx, in)
+	generated, err := s.llm.GenerateExam(ctx, in)
 	if err != nil {
 		return nil, err
 	}

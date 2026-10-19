@@ -1,4 +1,4 @@
-package bot
+package llm
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/libs/openrouter"
 )
 
-// OpenRouterProvider is the BotProvider implementation backed by
+// OpenRouterProvider is the LLMProvider implementation backed by
 // libs/openrouter, which calls the OpenRouter REST API directly through
 // the project's shared http_client — no vendor SDK involved. It owns
 // nothing besides the wired *openrouter.Client and mirrors the other
@@ -20,7 +20,7 @@ import (
 // boot and exposed via Model().
 //
 // Capability matrix: Chat and Stream are supported. Embed is NOT — it
-// returns MathError(BOT_UNSUPPORTED_OP) per the BotProvider contract for
+// returns MathError(LLM_UNSUPPORTED_OP) per the LLMProvider contract for
 // optional capabilities (OpenRouter's chat-completions API has no
 // embedding endpoint).
 //
@@ -37,7 +37,7 @@ func NewOpenRouterProvider(client *openrouter.Client) *OpenRouterProvider {
 	return &OpenRouterProvider{client: client}
 }
 
-func (p *OpenRouterProvider) Name() BotProviderName { return ProviderOpenRouter }
+func (p *OpenRouterProvider) Name() LLMProviderName { return ProviderOpenRouter }
 
 // Model exposes the configured default model id. Useful for log/audit
 // surfaces that need to record which model served a request.
@@ -102,7 +102,7 @@ func (p *OpenRouterProvider) Stream(ctx context.Context, req ChatRequest, onChun
 // embedding endpoint; deploys that need embeddings should route Embed via
 // the openai or gemini provider (EmbedVia).
 func (p *OpenRouterProvider) Embed(ctx context.Context, _ EmbedRequest) (*EmbedResult, error) {
-	return nil, errs.NewError(ctx, status.BOT_UNSUPPORTED_OP,
+	return nil, errs.NewError(ctx, status.LLM_UNSUPPORTED_OP,
 		map[string]any{"provider": string(ProviderOpenRouter)},
 		errors.New("openrouter provider does not support embeddings"))
 }

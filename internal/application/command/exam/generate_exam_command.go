@@ -17,7 +17,7 @@ import (
 )
 
 // NewExamPoolContent is a freshly generated question set on its way to
-// storage. The module layer fills it in after the bot call, which happens
+// storage. The module layer fills it in after the LLM call, which happens
 // OUTSIDE this transaction — an LLM round trip must never hold a tx open.
 type NewExamPoolContent struct {
 	NumQues       int

@@ -25,7 +25,6 @@ import (
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/module/auth"
 	"math-ai.com/math-ai/internal/module/banner"
-	"math-ai.com/math-ai/internal/module/bot"
 	"math-ai.com/math-ai/internal/module/chat"
 	"math-ai.com/math-ai/internal/module/classroom"
 	"math-ai.com/math-ai/internal/module/device"
@@ -34,6 +33,7 @@ import (
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
+	"math-ai.com/math-ai/internal/module/llm"
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
@@ -69,7 +69,7 @@ type ServiceContainer struct {
 	ClassroomSvc    *classroom.Service
 	ExerciseSvc     *exercise.Service
 	HomeSvc         *home.Service
-	BotSvc          *bot.Service
+	LLMSvc          *llm.Service
 	NotificationSvc *notification.Service
 	BannerSvc       *banner.Service
 	PresenceSvc     *presence.Service

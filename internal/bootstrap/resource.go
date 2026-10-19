@@ -9,8 +9,8 @@ import (
 	gexsess "github.com/i247app/gex/session"
 	"github.com/i247app/gex/sessionprovider"
 
-	"math-ai.com/math-ai/internal/adapter/bot"
 	"math-ai.com/math-ai/internal/adapter/email"
+	"math-ai.com/math-ai/internal/adapter/llm"
 	"math-ai.com/math-ai/internal/adapter/notification"
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	"math-ai.com/math-ai/internal/adapter/sms"
@@ -132,13 +132,13 @@ func SetupResource(res *resource.Resource) error {
 	}
 	res.StorageProvider = storageAdapter
 
-	log.Info("> Setup BotAdapter...")
-	log.Infof("> Bot Provider (default): %s", env.BotConfig.DefaultBotProvider)
-	botAdapter, err := bot.NewFromConfig(context.Background(), env.BotConfig)
+	log.Info("> Setup LLMAdapter...")
+	log.Infof("> LLM Provider (default): %s", env.LLMConfig.DefaultLLMProvider)
+	llmAdapter, err := llm.NewFromConfig(context.Background(), env.LLMConfig)
 	if err != nil {
-		return fmt.Errorf("failed to setup bot adapter: %w", err)
+		return fmt.Errorf("failed to setup LLM adapter: %w", err)
 	}
-	res.BotProvider = botAdapter
+	res.LLMProvider = llmAdapter
 
 	log.Info("> Setup NotificationAdapter...")
 	log.Infof("> Notification Provider: %s", env.NotificationConfig.Provider)

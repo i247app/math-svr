@@ -1,4 +1,4 @@
-package bot
+package llm
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/libs/gemini"
 )
 
-// GeminiProvider is the BotProvider implementation backed by libs/gemini,
+// GeminiProvider is the LLMProvider implementation backed by libs/gemini,
 // which calls generativelanguage.googleapis.com directly through the
 // project's shared http_client — no vendor SDK, no third party in the
 // path. It owns nothing besides the wired *gemini.Client.
@@ -32,7 +32,7 @@ func NewGeminiProvider(client *gemini.Client) *GeminiProvider {
 	return &GeminiProvider{client: client}
 }
 
-func (p *GeminiProvider) Name() BotProviderName { return ProviderGemini }
+func (p *GeminiProvider) Name() LLMProviderName { return ProviderGemini }
 
 // Model exposes the configured default model id. Useful for log/audit
 // surfaces that need to record which model served a request.

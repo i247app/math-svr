@@ -38,7 +38,7 @@ const (
 	TypeFraction      = "FRACTION"
 )
 
-// Question is one MCQ item as produced by the bot. RightAnswer is the
+// Question is one MCQ item as produced by the llm. RightAnswer is the
 // label of the correct option and is only included in responses once the
 // round has been graded — otherwise it would leak the answer key.
 //

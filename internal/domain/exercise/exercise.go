@@ -8,7 +8,7 @@ import (
 // single classroom. Curriculum context (grade, program) is derived from
 // the parent classroom at create time; chapter_name + lesson_name are
 // the teacher's free-form topic anchors and are fed verbatim into the
-// bot prompt.
+// LLM prompt.
 //
 // questions and answers are opaque JSON blobs persisted from the LLM
 // response — questions follow the generation prompt schema, answers

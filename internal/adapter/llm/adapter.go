@@ -1,4 +1,4 @@
-package bot
+package llm
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
-const botTracerName = "math-svr/bot"
+const llmTracerName = "math-svr/llm"
 
 // Adapter is the entry point callers use to dispatch AI requests. It
 // holds one or more registered providers and a designated default used
@@ -24,19 +24,19 @@ const botTracerName = "math-svr/bot"
 // The Adapter is safe for concurrent use after construction; provider
 // registration is expected to happen at boot inside NewFromConfig.
 type Adapter struct {
-	providers   map[BotProviderName]BotProvider
-	defaultName BotProviderName
+	providers   map[LLMProviderName]LLMProvider
+	defaultName LLMProviderName
 }
 
 func NewAdapter() *Adapter {
-	return &Adapter{providers: make(map[BotProviderName]BotProvider)}
+	return &Adapter{providers: make(map[LLMProviderName]LLMProvider)}
 }
 
 // Register adds a provider to the adapter. The first provider registered
 // becomes the default; callers may override that with SetDefault.
-func (a *Adapter) Register(provider BotProvider) {
+func (a *Adapter) Register(provider LLMProvider) {
 	if a.providers == nil {
-		a.providers = make(map[BotProviderName]BotProvider)
+		a.providers = make(map[LLMProviderName]LLMProvider)
 	}
 	a.providers[provider.Name()] = provider
 	if a.defaultName == "" {
@@ -47,9 +47,9 @@ func (a *Adapter) Register(provider BotProvider) {
 // SetDefault selects which registered provider Chat / Stream / Embed
 // dispatch to when no explicit name is supplied. Returns an error if
 // the provider name has not been registered.
-func (a *Adapter) SetDefault(name BotProviderName) error {
+func (a *Adapter) SetDefault(name LLMProviderName) error {
 	if _, ok := a.providers[name]; !ok {
-		return fmt.Errorf("bot: provider %q is not registered", name)
+		return fmt.Errorf("llm: provider %q is not registered", name)
 	}
 	a.defaultName = name
 	return nil
@@ -57,10 +57,10 @@ func (a *Adapter) SetDefault(name BotProviderName) error {
 
 // DefaultName returns the currently designated default provider name.
 // Empty when no providers are registered.
-func (a *Adapter) DefaultName() BotProviderName { return a.defaultName }
+func (a *Adapter) DefaultName() LLMProviderName { return a.defaultName }
 
 // Has reports whether name is registered.
-func (a *Adapter) Has(name BotProviderName) bool {
+func (a *Adapter) Has(name LLMProviderName) bool {
 	_, ok := a.providers[name]
 	return ok
 }
@@ -69,11 +69,11 @@ func (a *Adapter) Has(name BotProviderName) bool {
 // ChatRequest.Validate.
 func (a *Adapter) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error) {
 	log := logger.From(ctx)
-	log.Infof("bot provider default %s", a.defaultName)
-	log.Infof("bot provider request %s", req.Provider)
+	log.Infof("llm provider default %s", a.defaultName)
+	log.Infof("llm provider request %s", req.Provider)
 
 	if a.defaultName == "" {
-		return nil, errors.New("bot: no default provider configured")
+		return nil, errors.New("llm: no default provider configured")
 	}
 
 	return a.ChatVia(ctx, req.Provider, req)
@@ -84,7 +84,7 @@ func (a *Adapter) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error
 // Validation happens here so failures are caught uniformly regardless
 // of routing entry point; the underlying provider is never called on
 // an invalid payload, which keeps vendor billing clean.
-func (a *Adapter) ChatVia(ctx context.Context, name BotProviderName, req ChatRequest) (*ChatResult, error) {
+func (a *Adapter) ChatVia(ctx context.Context, name LLMProviderName, req ChatRequest) (*ChatResult, error) {
 	log := logger.From(ctx)
 
 	if name == "" {
@@ -92,13 +92,13 @@ func (a *Adapter) ChatVia(ctx context.Context, name BotProviderName, req ChatReq
 	}
 
 	if err := req.Validate(); err != nil {
-		return nil, errs.NewError(ctx, status.BOT_INVALID_PROMPT,
+		return nil, errs.NewError(ctx, status.LLM_INVALID_PROMPT,
 			map[string]any{"reason": err.Error()}, err)
 	}
 
 	provider, ok := a.providers[name]
 	if !ok {
-		return nil, fmt.Errorf("bot: provider %q is not registered", name)
+		return nil, fmt.Errorf("llm: provider %q is not registered", name)
 	}
 
 	ctx, span := startLLMSpan(ctx, name, "chat")
@@ -111,7 +111,7 @@ func (a *Adapter) ChatVia(ctx context.Context, name BotProviderName, req ChatReq
 		return nil, logAndReturn(ctx, log, name, "chat", err)
 	}
 	setLLMResultAttrs(span, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
-	log.Infof("bot.chat provider=%s model=%s prompt_tokens=%d completion_tokens=%d total_tokens=%d",
+	log.Infof("llm.chat provider=%s model=%s prompt_tokens=%d completion_tokens=%d total_tokens=%d",
 		name, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
 	return res, nil
 }
@@ -121,28 +121,28 @@ func (a *Adapter) ChatVia(ctx context.Context, name BotProviderName, req ChatReq
 // the caller's pipeline owns downstream buffering.
 func (a *Adapter) Stream(ctx context.Context, req ChatRequest, onChunk func(StreamChunk) error) (*ChatResult, error) {
 	if a.defaultName == "" {
-		return nil, errors.New("bot: no default provider configured")
+		return nil, errors.New("llm: no default provider configured")
 	}
 	return a.StreamVia(ctx, a.defaultName, req, onChunk)
 }
 
 // StreamVia dispatches a streaming chat request through the provider
 // registered under name.
-func (a *Adapter) StreamVia(ctx context.Context, name BotProviderName, req ChatRequest, onChunk func(StreamChunk) error) (*ChatResult, error) {
+func (a *Adapter) StreamVia(ctx context.Context, name LLMProviderName, req ChatRequest, onChunk func(StreamChunk) error) (*ChatResult, error) {
 	log := logger.From(ctx)
 
 	if onChunk == nil {
-		return nil, errs.NewError(ctx, status.BOT_INVALID_PROMPT, nil,
-			errors.New("bot: onChunk is required for streaming"))
+		return nil, errs.NewError(ctx, status.LLM_INVALID_PROMPT, nil,
+			errors.New("llm: onChunk is required for streaming"))
 	}
 	if err := req.Validate(); err != nil {
-		return nil, errs.NewError(ctx, status.BOT_INVALID_PROMPT,
+		return nil, errs.NewError(ctx, status.LLM_INVALID_PROMPT,
 			map[string]any{"reason": err.Error()}, err)
 	}
 
 	provider, ok := a.providers[name]
 	if !ok {
-		return nil, fmt.Errorf("bot: provider %q is not registered", name)
+		return nil, fmt.Errorf("llm: provider %q is not registered", name)
 	}
 
 	ctx, span := startLLMSpan(ctx, name, "stream")
@@ -155,7 +155,7 @@ func (a *Adapter) StreamVia(ctx context.Context, name BotProviderName, req ChatR
 		return nil, logAndReturn(ctx, log, name, "stream", err)
 	}
 	setLLMResultAttrs(span, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
-	log.Infof("bot.stream provider=%s model=%s prompt_tokens=%d completion_tokens=%d",
+	log.Infof("llm.stream provider=%s model=%s prompt_tokens=%d completion_tokens=%d",
 		name, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens)
 	return res, nil
 }
@@ -164,23 +164,23 @@ func (a *Adapter) StreamVia(ctx context.Context, name BotProviderName, req ChatR
 // EmbedRequest.Validate.
 func (a *Adapter) Embed(ctx context.Context, req EmbedRequest) (*EmbedResult, error) {
 	if a.defaultName == "" {
-		return nil, errors.New("bot: no default provider configured")
+		return nil, errors.New("llm: no default provider configured")
 	}
 	return a.EmbedVia(ctx, a.defaultName, req)
 }
 
 // EmbedVia dispatches req through the provider registered under name.
-func (a *Adapter) EmbedVia(ctx context.Context, name BotProviderName, req EmbedRequest) (*EmbedResult, error) {
+func (a *Adapter) EmbedVia(ctx context.Context, name LLMProviderName, req EmbedRequest) (*EmbedResult, error) {
 	log := logger.From(ctx)
 
 	if err := req.Validate(); err != nil {
-		return nil, errs.NewError(ctx, status.BOT_INVALID_PROMPT,
+		return nil, errs.NewError(ctx, status.LLM_INVALID_PROMPT,
 			map[string]any{"reason": err.Error()}, err)
 	}
 
 	provider, ok := a.providers[name]
 	if !ok {
-		return nil, fmt.Errorf("bot: provider %q is not registered", name)
+		return nil, fmt.Errorf("llm: provider %q is not registered", name)
 	}
 
 	ctx, span := startLLMSpan(ctx, name, "embed")
@@ -193,7 +193,7 @@ func (a *Adapter) EmbedVia(ctx context.Context, name BotProviderName, req EmbedR
 		return nil, logAndReturn(ctx, log, name, "embed", err)
 	}
 	span.SetAttributes(attribute.String("gen_ai.response.model", res.Model))
-	log.Infof("bot.embed provider=%s model=%s inputs=%d", name, res.Model, len(req.Inputs))
+	log.Infof("llm.embed provider=%s model=%s inputs=%d", name, res.Model, len(req.Inputs))
 	return res, nil
 }
 
@@ -201,7 +201,7 @@ func (a *Adapter) EmbedVia(ctx context.Context, name BotProviderName, req EmbedR
 // (or the default when name is empty) can hold server-side conversation
 // state. Callers use it once, at wiring time, to choose between the
 // stateful and the stateless path — not per request.
-func (a *Adapter) SupportsRespond(name BotProviderName) bool {
+func (a *Adapter) SupportsRespond(name LLMProviderName) bool {
 	if name == "" {
 		name = a.defaultName
 	}
@@ -217,15 +217,15 @@ func (a *Adapter) SupportsRespond(name BotProviderName) bool {
 // running RespondRequest.Validate.
 func (a *Adapter) Respond(ctx context.Context, req RespondRequest) (*RespondResult, error) {
 	if a.defaultName == "" {
-		return nil, errors.New("bot: no default provider configured")
+		return nil, errors.New("llm: no default provider configured")
 	}
 	return a.RespondVia(ctx, a.defaultName, req)
 }
 
 // RespondVia dispatches one chained turn through the provider registered
 // under name. A provider that does not implement ResponderProvider
-// answers BOT_UNSUPPORTED_OP without any network call.
-func (a *Adapter) RespondVia(ctx context.Context, name BotProviderName, req RespondRequest) (*RespondResult, error) {
+// answers LLM_UNSUPPORTED_OP without any network call.
+func (a *Adapter) RespondVia(ctx context.Context, name LLMProviderName, req RespondRequest) (*RespondResult, error) {
 	log := logger.From(ctx)
 
 	if name == "" {
@@ -233,18 +233,18 @@ func (a *Adapter) RespondVia(ctx context.Context, name BotProviderName, req Resp
 	}
 
 	if err := req.Validate(); err != nil {
-		return nil, errs.NewError(ctx, status.BOT_INVALID_PROMPT,
+		return nil, errs.NewError(ctx, status.LLM_INVALID_PROMPT,
 			map[string]any{"reason": err.Error()}, err)
 	}
 
 	provider, ok := a.providers[name]
 	if !ok {
-		return nil, fmt.Errorf("bot: provider %q is not registered", name)
+		return nil, fmt.Errorf("llm: provider %q is not registered", name)
 	}
 	responder, ok := provider.(ResponderProvider)
 	if !ok {
-		err := fmt.Errorf("bot: provider %q does not support server-side conversation state", name)
-		return nil, errs.NewError(ctx, status.BOT_UNSUPPORTED_OP,
+		err := fmt.Errorf("llm: provider %q does not support server-side conversation state", name)
+		return nil, errs.NewError(ctx, status.LLM_UNSUPPORTED_OP,
 			map[string]any{"provider": string(name), "op": "respond"}, err)
 	}
 
@@ -261,7 +261,7 @@ func (a *Adapter) RespondVia(ctx context.Context, name BotProviderName, req Resp
 	setLLMResultAttrs(span, res.Model, res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
 	// The response id is an opaque vendor handle, safe to log; the
 	// content is not logged here for the same reason Chat does not.
-	log.Infof("bot.respond provider=%s model=%s response_id=%s chained=%v prompt_tokens=%d completion_tokens=%d total_tokens=%d",
+	log.Infof("llm.respond provider=%s model=%s response_id=%s chained=%v prompt_tokens=%d completion_tokens=%d total_tokens=%d",
 		name, res.Model, res.ResponseID, req.PreviousResponseID != "",
 		res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
 	return res, nil
@@ -272,8 +272,8 @@ func (a *Adapter) RespondVia(ctx context.Context, name BotProviderName, req Resp
 //
 // Log/trace discipline: only operator metadata (provider, operation, model,
 // token counts) is attached — never the prompt content or the response body.
-func startLLMSpan(ctx context.Context, name BotProviderName, op string) (context.Context, trace.Span) {
-	return otel.Tracer(botTracerName).Start(ctx, "llm."+op,
+func startLLMSpan(ctx context.Context, name LLMProviderName, op string) (context.Context, trace.Span) {
+	return otel.Tracer(llmTracerName).Start(ctx, "llm."+op,
 		trace.WithSpanKind(trace.SpanKindClient),
 		trace.WithAttributes(
 			attribute.String("gen_ai.system", string(name)),
@@ -300,29 +300,29 @@ func setLLMResultAttrs(span trace.Span, model string, promptTokens, completionTo
 func logAndReturn(ctx context.Context, log interface {
 	Errorf(string, ...any)
 	Warnf(string, ...any)
-}, name BotProviderName, op string, err error) error {
+}, name LLMProviderName, op string, err error) error {
 	mErr, ok := errs.IsMathError(err)
 	if !ok {
 		// A non-MathError leaking up here means a provider bypassed the
-		// translation contract. Surface as BOT_OP_FAILED so the wire
+		// translation contract. Surface as LLM_OP_FAILED so the wire
 		// shape stays uniform; log loudly to flag the regression.
-		log.Errorf("bot.%s_error provider=%s err=%v (provider returned non-MathError)", op, name, err)
-		return errs.NewError(ctx, status.BOT_OP_FAILED,
+		log.Errorf("llm.%s_error provider=%s err=%v (provider returned non-MathError)", op, name, err)
+		return errs.NewError(ctx, status.LLM_OP_FAILED,
 			map[string]any{"provider": string(name)}, err)
 	}
 
 	switch mErr.GetStatusCode() {
-	case status.BOT_CONFIG_INVALID, status.BOT_UNSUPPORTED_OP:
-		log.Errorf("bot.%s_config_error provider=%s err=%v", op, name, err)
-	case status.BOT_SERIALIZE_FAILED:
-		log.Errorf("bot.%s_serialize_error provider=%s err=%v", op, name, err)
-	case status.BOT_RATE_LIMITED:
-		log.Warnf("bot.%s_rate_limited provider=%s err=%v", op, name, err)
-	case status.BOT_CONTEXT_TOO_LARGE:
-		log.Warnf("bot.%s_context_too_large provider=%s err=%v", op, name, err)
+	case status.LLM_CONFIG_INVALID, status.LLM_UNSUPPORTED_OP:
+		log.Errorf("llm.%s_config_error provider=%s err=%v", op, name, err)
+	case status.LLM_SERIALIZE_FAILED:
+		log.Errorf("llm.%s_serialize_error provider=%s err=%v", op, name, err)
+	case status.LLM_RATE_LIMITED:
+		log.Warnf("llm.%s_rate_limited provider=%s err=%v", op, name, err)
+	case status.LLM_CONTEXT_TOO_LARGE:
+		log.Warnf("llm.%s_context_too_large provider=%s err=%v", op, name, err)
 	default:
-		// BOT_OP_FAILED / BOT_CONNECT_FAILED — transient or upstream-noise.
-		log.Warnf("bot.%s_op_error provider=%s err=%v", op, name, err)
+		// LLM_OP_FAILED / LLM_CONNECT_FAILED — transient or upstream-noise.
+		log.Warnf("llm.%s_op_error provider=%s err=%v", op, name, err)
 	}
 	return mErr
 }

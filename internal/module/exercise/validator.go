@@ -57,7 +57,7 @@ var validSubmissionSortOrder = map[string]struct{}{
 
 // DefaultNumQuestions mirrors quiz.DefaultNumQuestions — when the
 // teacher omits it, we generate this many MCQ items. Kept in lockstep
-// with the bot domain's defaultNumQuestions so the user-facing default
+// with the prompt input package's defaultNumQuestions so the user-facing default
 // matches what the prompt asks for.
 const DefaultNumQuestions = 10
 
@@ -412,7 +412,7 @@ func ValidateSubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExerciseA
 			ErrTooManyAnswers)
 	}
 	// Per-item shape check. We don't enforce that question_numbers form
-	// a contiguous 1..N range — the bot prompt scores missing entries
+	// a contiguous 1..N range — the LLM prompt scores missing entries
 	// as wrong, which is the correct partial-submission behavior.
 	seen := make(map[int]struct{}, len(req.Answers))
 	for _, a := range req.Answers {

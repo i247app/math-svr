@@ -149,14 +149,14 @@ func ProbeGrade(grade int) int {
 // per-request brief that goes beside the grade's stored system prompt.
 func BuildExamUserPrompt(in ExamPromptInput) (string, error) {
 	if in.Grade < enum.ExamGradeMin || in.Grade > enum.ExamGradeMax {
-		return "", fmt.Errorf("bot: exam grade %d out of range [%d,%d]",
+		return "", fmt.Errorf("prompt: exam grade %d out of range [%d,%d]",
 			in.Grade, enum.ExamGradeMin, enum.ExamGradeMax)
 	}
 	if !in.ExamType.IsValid() {
-		return "", fmt.Errorf("bot: unsupported exam type %q", string(in.ExamType))
+		return "", fmt.Errorf("prompt: unsupported exam type %q", string(in.ExamType))
 	}
 	if in.ExamType == enum.ExamTypePractice && in.Practice == nil {
-		return "", fmt.Errorf("bot: a PRACTICE prompt needs a practice brief")
+		return "", fmt.Errorf("prompt: a PRACTICE prompt needs a practice brief")
 	}
 	n := in.NumQuestions
 	if n <= 0 {

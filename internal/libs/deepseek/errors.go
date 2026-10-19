@@ -9,41 +9,41 @@ import (
 )
 
 // Sentinel errors surfaced by the Client. Each maps to a distinct
-// MathError(BOT_*) code in the adapter layer; see adapter/bot/errors.go.
+// MathError(LLM_*) code in the adapter layer; see adapter/llm/errors.go.
 // The taxonomy matches the sibling libs packages so mapDeepSeekError stays
 // symmetrical with its four siblings.
 var (
 	// ErrDecodeResponse signals that a call returned 2xx but the body the
-	// client expected was missing or unparsable. → BOT_SERIALIZE_FAILED.
+	// client expected was missing or unparsable. → LLM_SERIALIZE_FAILED.
 	ErrDecodeResponse = errors.New("deepseek: failed to decode response")
 
 	// ErrContextTooLarge signals that the input exceeded the model's
-	// context window. → BOT_CONTEXT_TOO_LARGE.
+	// context window. → LLM_CONTEXT_TOO_LARGE.
 	ErrContextTooLarge = errors.New("deepseek: context window exceeded")
 
 	// ErrUnsupportedOp signals that the requested capability does not
-	// exist on this provider (embeddings). → BOT_UNSUPPORTED_OP.
+	// exist on this provider (embeddings). → LLM_UNSUPPORTED_OP.
 	ErrUnsupportedOp = errors.New("deepseek: operation not supported")
 
-	// ErrRateLimited signals HTTP 429 — transient. → BOT_RATE_LIMITED.
+	// ErrRateLimited signals HTTP 429 — transient. → LLM_RATE_LIMITED.
 	ErrRateLimited = errors.New("deepseek: rate limit exceeded")
 
 	// ErrInsufficientBalance signals HTTP 402: the account is out of
 	// credit. Non-recoverable within the call and needs an operator to top
 	// up, so it rides with the config failures rather than a transient
 	// code — the same posture as openrouter's 402 and openai's billing
-	// 429. → BOT_CONFIG_INVALID.
+	// 429. → LLM_CONFIG_INVALID.
 	ErrInsufficientBalance = errors.New("deepseek: insufficient balance")
 
 	// ErrContentFiltered signals the platform's content filter refused the
 	// generation (finish_reason=content_filter). Retrying the same prompt
-	// yields the same refusal. → BOT_CONTENT_BLOCKED.
+	// yields the same refusal. → LLM_CONTENT_BLOCKED.
 	ErrContentFiltered = errors.New("deepseek: content filtered")
 
 	// ErrServerOverloaded signals DeepSeek ran out of capacity. It arrives
 	// either as HTTP 503 or, mid-generation, as
 	// finish_reason=insufficient_system_resource. Transient.
-	// → BOT_OP_FAILED.
+	// → LLM_OP_FAILED.
 	ErrServerOverloaded = errors.New("deepseek: server overloaded")
 )
 
@@ -148,7 +148,7 @@ func isContextLengthMessage(msg string) bool {
 // classifyAPIError lifts a typed *APIError onto the package sentinels so
 // the adapter's status mapping is driven by the taxonomy rather than by
 // raw HTTP numbers. Unrecognised statuses are returned unchanged and end
-// up as BOT_OP_FAILED.
+// up as LLM_OP_FAILED.
 //
 // Wrapping uses two %w verbs on purpose: callers must be able to reach the
 // sentinel with errors.Is AND the *APIError (for http_status / vendor

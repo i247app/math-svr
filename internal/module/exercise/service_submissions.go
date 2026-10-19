@@ -27,7 +27,7 @@ const avatarUrlTTL = 1 * time.Hour
 
 // SubmitExerciseAnswers validates → loads the exercise → enforces
 // membership + window + duplicate guards → marshals the answers payload
-// → calls the bot OUTSIDE the UoW → persists inside one short UoW.
+// → calls the LLM OUTSIDE the UoW → persists inside one short UoW.
 // The result is the freshly graded submission.
 func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExerciseAnswersReq, sessionUID int64) (*dto.SubmitExerciseAnswersRes, error) {
 	log := logger.From(ctx)
@@ -88,7 +88,7 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 			ErrExerciseHasNoQuestionsToGrade)
 	}
 
-	grading, err := s.bot.GradeExercise(ctx, gradeExerciseInput{
+	grading, err := s.llm.GradeExercise(ctx, gradeExerciseInput{
 		Language:  lang,
 		Questions: questions,
 		Answers:   string(answersJSON),
@@ -144,13 +144,13 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 // SubmitExerciseAnswersV2 is the deterministic counterpart of
 // SubmitExerciseAnswers. It runs the same membership / window /
 // duplicate-guard checks as v1, then hands the exercise's questions JSON
-// off to the shared scorer instead of the bot. Persistence still goes
+// off to the shared scorer instead of the llm. Persistence still goes
 // through the same UoW path (seq mint + Create) the v1 command uses.
 //
 // Identical permission semantics as v1, minus:
 //   - no curriculum-label resolution (the deterministic review uses
 //     per-question topic tags directly from the row);
-//   - no bot client construction;
+//   - no LLM client construction;
 //   - no `grading.ScorePercentage` log line until after the scorer runs
 //     — the scored values come from the command's log line itself.
 func (s *Service) SubmitExerciseAnswersV2(ctx context.Context, req *dto.SubmitExerciseAnswersReq, sessionUID int64) (*dto.SubmitExerciseAnswersRes, error) {

@@ -1,4 +1,4 @@
-package bot
+package llm
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/libs/deepseek"
 )
 
-// DeepSeekProvider is the BotProvider implementation backed by
+// DeepSeekProvider is the LLMProvider implementation backed by
 // libs/deepseek, which calls api.deepseek.com directly through the
 // project's shared http_client — no vendor SDK, no third party in the
 // path. It owns nothing besides the wired *deepseek.Client.
@@ -23,7 +23,7 @@ import (
 //
 // Capability matrix: Chat and Stream are supported. Embed is NOT — the
 // platform has no embeddings endpoint, so it returns
-// MathError(BOT_UNSUPPORTED_OP) per the BotProvider contract for optional
+// MathError(LLM_UNSUPPORTED_OP) per the LLMProvider contract for optional
 // capabilities, the same posture as the openrouter provider.
 //
 // Note on Stream: libs/deepseek parses the SSE events out of a
@@ -39,7 +39,7 @@ func NewDeepSeekProvider(client *deepseek.Client) *DeepSeekProvider {
 	return &DeepSeekProvider{client: client}
 }
 
-func (p *DeepSeekProvider) Name() BotProviderName { return ProviderDeepSeek }
+func (p *DeepSeekProvider) Name() LLMProviderName { return ProviderDeepSeek }
 
 // Model exposes the configured default model id. Useful for log/audit
 // surfaces that need to record which model served a request.
@@ -98,7 +98,7 @@ func (p *DeepSeekProvider) Stream(ctx context.Context, req ChatRequest, onChunk 
 // embedding endpoint; deploys that need embeddings should route Embed via
 // the openai or gemini providers (EmbedVia).
 func (p *DeepSeekProvider) Embed(ctx context.Context, _ EmbedRequest) (*EmbedResult, error) {
-	return nil, errs.NewError(ctx, status.BOT_UNSUPPORTED_OP,
+	return nil, errs.NewError(ctx, status.LLM_UNSUPPORTED_OP,
 		map[string]any{"provider": string(ProviderDeepSeek)},
 		errors.New("deepseek provider does not support embeddings"))
 }

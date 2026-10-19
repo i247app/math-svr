@@ -1,4 +1,4 @@
-// Package scorer is the deterministic, bot-free grader for MCQ-style
+// Package scorer is the deterministic, LLM-free grader for MCQ-style
 // classroom exercises and exams. Both aggregates ship the same
 // `{question_number, question_name, answers:[{label, content}],
 // right_answer, correct_answer?, topic?, difficulty?}` schema, so a
@@ -33,11 +33,11 @@ import (
 )
 
 // ReviewSourceMarker is the deterministic-path identifier kept here for
-// callers that want to audit/tag a v2-graded row separately from a bot
+// callers that want to audit/tag a v2-graded row separately from an LLM
 // row (e.g. log lines, future analytics columns). The Score function
 // does NOT prefix the generated review with it — by design, the
 // persisted review is plain prose so the mobile client renders identical
-// shapes whether v1 (bot) or v2 (server) produced it.
+// shapes whether v1 (LLM) or v2 (server) produced it.
 const ReviewSourceMarker = "deterministic_v2"
 
 // reviewMaxLen keeps the review compact and consistent across aggregates.
@@ -103,7 +103,7 @@ type DetailedResult struct {
 }
 
 // Score grades the student's answers against the questions payload
-// entirely in process. No bot call, no I/O. lang controls the language
+// entirely in process. No LLM call, no I/O. lang controls the language
 // the review string is built in.
 //
 // questionsJSON is the row's `questions` column verbatim. answers is
