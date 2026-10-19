@@ -179,7 +179,7 @@ func NewEnv(envpath string) (*Env, error) {
 
 func getIntConfigOptional(key string) int {
 	val := getConfigOptional(key)
-	if val == nil {
+	if val == nil || *val == "" {
 		return 0
 	}
 	i, err := strconv.Atoi(*val)
