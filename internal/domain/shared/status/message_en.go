@@ -772,6 +772,11 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case PROMPT_MISSING_JSON_KEY:
 		return "The prompt must name every JSON key of its output structure"
 
+	case QUESTION_MISSING_EXAM_ID:
+		return "exam_id is required"
+	case QUESTION_INVALID_SHAPE:
+		return "The question is malformed and cannot be saved to the question bank"
+
 	default:
 		return ""
 	}

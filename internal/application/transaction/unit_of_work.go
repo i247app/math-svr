@@ -19,6 +19,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/program"
 	"math-ai.com/math-ai/internal/domain/prompt"
+	"math-ai.com/math-ai/internal/domain/question"
 	"math-ai.com/math-ai/internal/domain/role"
 	"math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/semester"
@@ -61,6 +62,7 @@ type Repositories struct {
 	ExamSession        exam.IExamSessionRepository
 	ExamSessionLine    exam.IExamSessionLineRepository
 	Prompt             prompt.IRepository
+	Question           question.IRepository
 	Role               role.IRepository
 }
 

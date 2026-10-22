@@ -14,20 +14,32 @@
 -- in display order, exactly one with is_correct = true (checked by the
 -- application, not the database).
 --
--- ai_tags is a JSON array of short keywords, e.g.
+-- ai_tags (RENAMED to question_tags by up/039 — this CREATE keeps the old
+-- name so 039 runs on a fresh database too) is a JSON array of short
+-- keywords, e.g.
 --   ["addition", "mental_math", "level_1"]
 -- Every INSERT writes it ('[]' when there are none). It has deliberately no
--- DEFAULT (JSON_ARRAY()): once the multi-valued index ix_ai_tags (Indexes
+-- DEFAULT (JSON_ARRAY()): once the multi-valued index ix_question_tags (Indexes
 -- block below) exists, MySQL rejects an INSERT that falls back to that
 -- default with error 3903 "Invalid JSON value for CAST for functional
 -- index" — checked on MySQL 9.3, 2026-10-12.
 --
--- verified_count follows ma_exam_pools.verified_count: 0 = not verified by
--- an admin, >0 = verified.
+-- verified_count is a COPY of ma_exam_pools.verified_count (0 = not verified
+-- by an admin, >0 = verified), never counted on its own: every copy of the
+-- set and /exams/pools/mark-verify write the pool's value.
 --
--- Nothing reads or writes this table yet (no repository, no route). When
--- code lands: add seq.NameQuestion = "ma_questions" (its ma_seqs row is in
--- seed/001_ma_seqs.sql) and decide whether it is a clear-data target.
+-- Written by SaveQuestionsFromPoolCommand (application/command/question/),
+-- which reads the pool row and upserts by hand: a question_number the bank
+-- already holds is UPDATEd and keeps its question_id; a new one mints an id
+-- (seq.NameQuestion = "ma_questions", row in seed/001_ma_seqs.sql) and is
+-- INSERTed — no ON DUPLICATE KEY, so a collision is an error, not a write
+-- into another row. Called best-effort after every fresh generation
+-- (/exams/generate cache miss, PRACTICE included, and /exams/pools/generate),
+-- and in the same transaction by /exams/pools/verify. No route reads it yet.
+--
+-- Clear-data target: wiped with ma_exam_pools, because the pool sequence is
+-- reset and a new pool reusing an exam_id would otherwise collide with a
+-- stale (exam_id, question_number) row.
 
 CREATE TABLE IF NOT EXISTS ma_questions (
   question_id      BIGINT UNSIGNED NOT NULL PRIMARY KEY,       -- external id (minted via ma_seqs)
@@ -38,7 +50,7 @@ CREATE TABLE IF NOT EXISTS ma_questions (
   answers          JSON         NOT NULL,                      -- [{"content": "...", "is_correct": bool}, ...]
   question_topic   VARCHAR(255) DEFAULT NULL,                  -- optional in the pool JSON, so nullable
   question_grade   TINYINT UNSIGNED NOT NULL,                  -- 0 = Mẫu giáo, 1..5 = Lớp 1..5
-  ai_tags          JSON         NOT NULL,                      -- always sent, '[]' when none (no DEFAULT: see header)
+  ai_tags          JSON         NOT NULL,                      -- renamed question_tags by up/039; always sent, '[]' when none (no DEFAULT: see header)
   verified_count   INT UNSIGNED NOT NULL DEFAULT 0,            -- 0 = not verified, >0 = verified
 
   question_status  VARCHAR(32)  DEFAULT NULL,
@@ -60,8 +72,9 @@ CREATE TABLE IF NOT EXISTS ma_questions (
 
 -- ---- Indexes -------------------------------------------------------------
 -- Reference only: the CREATE TABLE above already declares every index
--- listed here, EXCEPT ix_ai_tags (see below). Copy a line to add or drop one
--- by hand.
+-- listed here, EXCEPT ix_question_tags (see below). Copy a line to add or
+-- drop one by hand. The tag statements name the column as it is after
+-- up/039 (question_tags).
 --
 -- Create:
 --   ALTER TABLE ma_questions ADD PRIMARY KEY (question_id);
@@ -69,13 +82,13 @@ CREATE TABLE IF NOT EXISTS ma_questions (
 --   CREATE INDEX ix_grade_topic ON ma_questions (question_grade, question_topic);
 --
 -- Not created yet — add it when the bank searches by tag
--- (WHERE 'addition' MEMBER OF (ai_tags), JSON_CONTAINS / JSON_OVERLAPS).
+-- (WHERE 'addition' MEMBER OF (question_tags), JSON_CONTAINS / JSON_OVERLAPS).
 -- A multi-valued index needs MySQL 8.0.17+, and an INSERT whose tag is
 -- longer than 64 characters fails once it exists:
---   CREATE INDEX ix_ai_tags ON ma_questions ((CAST(ai_tags AS CHAR(64) ARRAY)));
+--   CREATE INDEX ix_question_tags ON ma_questions ((CAST(question_tags AS CHAR(64) ARRAY)));
 --
 -- Drop:
 --   ALTER TABLE ma_questions DROP PRIMARY KEY;   -- pair it with ADD PRIMARY KEY in the same statement
 --   DROP INDEX uk_exam_question ON ma_questions;
 --   DROP INDEX ix_grade_topic ON ma_questions;
---   DROP INDEX ix_ai_tags ON ma_questions;
+--   DROP INDEX ix_question_tags ON ma_questions;

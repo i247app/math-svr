@@ -491,4 +491,12 @@ const (
 	// PROMPT_MISSING_JSON_KEY: the text does not name every JSON key the
 	// reply parser of that prompt_code reads; debug lists the missing ones.
 	PROMPT_MISSING_JSON_KEY StatusCode = 14304
+
+	// Question bank — 14400-14499 (ma_questions).
+	// QUESTION_MISSING_EXAM_ID: a copy into the bank named no exam_id.
+	QUESTION_MISSING_EXAM_ID StatusCode = 14400
+	// QUESTION_INVALID_SHAPE: a pool question cannot become a bank row — no
+	// number or stem, fewer than two answers, a blank or repeated label, or
+	// a right_answer_label that names no answer. debug names the question.
+	QUESTION_INVALID_SHAPE StatusCode = 14401
 )

@@ -20,6 +20,7 @@ import (
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	questionModule "math-ai.com/math-ai/internal/module/question"
 	sctx "math-ai.com/math-ai/internal/shared/context"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
@@ -56,6 +57,9 @@ type Service struct {
 
 	llm   *llmClient
 	guest *guestService
+	// questions files every freshly generated set into the question bank
+	// (best-effort, after the pool commits). nil = no bank copy.
+	questions *questionModule.Service
 
 	// shuffleEnabled mirrors EXAM_SHUFFLE_ENABLED. It gates only the
 	// DRAWING of a new ordering; reading one back is never gated, or the
@@ -77,6 +81,7 @@ func NewService(
 	profileRepo profileDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
 	userRepo userDomain.IRepository,
+	questions *questionModule.Service,
 	shuffleEnabled bool,
 ) *Service {
 	return &Service{
@@ -104,6 +109,7 @@ func NewService(
 		gradeRepo:       gradeRepo,
 		llm:             newLLMClient(llm),
 		guest:           newGuestService(uow, userRepo, profileRepo),
+		questions:       questions,
 		shuffleEnabled:  shuffleEnabled,
 	}
 }
@@ -377,12 +383,35 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 	logger.From(ctx).Infof("exam.generated attempt=%d exam_pool=%d profile=%d type=%s grade=%d",
 		created.Attempt.ElinkId(), created.ExamPool.ExamId(),
 		profile.ProfileId(), cmd.ExamType, cmd.Grade)
+	if cmd.NewContent != nil {
+		s.saveToQuestionBank(ctx, created.ExamPool.ExamId(), utils.ToInt64Ptr(cmd.UID))
+	}
 
 	// A live exam never ships the answer key.
 	return &dto.GenerateExamRes{
 		Exam:        dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
 		ExamSession: dto.ExamSessionToResponse(created.ExamSession),
 	}, nil
+}
+
+// saveToBank copies a set that was just generated AND committed into the
+// question bank. Best-effort, in its own transaction, after the pool's:
+// the exam is already paid for and handed out, and the exam flow serves
+// sets the bank refuses (a question with no valid right_answer_label still
+// renders and grades), so a bank failure must never fail the hand-out. It
+// is logged; the pool stays the source of truth, and the copy is
+// idempotent, so it can be redone from the pool later. A cache hit or a
+// resumed sitting writes no new set and never reaches here.
+func (s *Service) saveToQuestionBank(ctx context.Context, examID int64, actorUID *int64) {
+	if s.questions == nil {
+		return
+	}
+	n, err := s.questions.SaveFromPool(ctx, examID, actorUID)
+	if err != nil {
+		logger.From(ctx).Warnf("exam.question_bank.save_failed exam_id=%d err=%v", examID, err)
+		return
+	}
+	logger.From(ctx).Infof("exam.question_bank.saved exam_id=%d questions=%d", examID, n)
 }
 
 // SubmitExam grades the sitting and folds it into the child's record.
@@ -802,6 +831,7 @@ func (s *Service) GenerateExamPool(ctx context.Context, req *dto.GenerateExamPoo
 		return nil, err
 	}
 	logger.From(ctx).Infof("exam.pool.generated admin_uid=%d exam_id=%d tag=%s", sctx.UID(ctx), saved.ExamId(), tag)
+	s.saveToQuestionBank(ctx, saved.ExamId(), adminActor(ctx))
 	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(saved, true)}, nil
 }
 

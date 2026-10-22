@@ -43,6 +43,7 @@ import (
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/prompt"
+	"math-ai.com/math-ai/internal/module/question"
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/seq"
@@ -63,6 +64,7 @@ type ServiceContainer struct {
 	OtpSvc          *otp.Service
 	ExamSvc         *exam.Service
 	PromptSvc       *prompt.Service
+	QuestionSvc     *question.Service
 	SchoolSvc       *school.Service
 	JobSvc          *job.Service
 	SeqSvc          *seq.Service

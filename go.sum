@@ -114,7 +114,7 @@ github.com/googleapis/gax-go/v2 v2.22.0 h1:PjIWBpgGIVKGoCXuiCoP64altEJCj3/Ei+kSU
 github.com/googleapis/gax-go/v2 v2.22.0/go.mod h1:irWBbALSr0Sk3qlqb9SyJ1h68WjgeFuiOzI4Rqw5+aY=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 h1:HWRh5R2+9EifMyIHV7ZV+MIZqgz+PMpZ14Jynv3O2Zs=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0/go.mod h1:JfhWUomR1baixubs02l85lZYYOm7LV6om4ceouMv45c=
-github.com/i247app/gex v0.2.0 h1:Hw9+QPP9/0HOX8/oD+QOlLiULO8uepqP121stpg6jFM=
+github.com/i247app/gex v0.2.0 h1:YZk/6vEqBwv6vFFxEcdZj4xqKU26t+c5wPMdsNPkBnQ=
 github.com/i247app/gex v0.2.0/go.mod h1:HF1O1eFiYePgc5R7wh7XwgSCQokGqm4YXe5frvZZ87s=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
 github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=

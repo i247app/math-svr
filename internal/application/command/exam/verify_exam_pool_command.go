@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"slices"
 
+	questionCommand "math-ai.com/math-ai/internal/application/command/question"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/exam"
@@ -40,8 +41,15 @@ func (h *MarkExamPoolVerifyCommandHandler) Handle(ctx context.Context, cmd MarkE
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		var err error
-		saved, err = findLivePool(ctx, repos, cmd.ExamID)
-		return err
+		if saved, err = findLivePool(ctx, repos, cmd.ExamID); err != nil {
+			return err
+		}
+		// The bank's verified_count is a copy of the pool's, never counted
+		// on its own; rows not copied yet take it when they are.
+		if err := repos.Question.SetVerifiedCountByExamId(ctx, cmd.ExamID, saved.VerifiedCount(), cmd.AdminUID); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -59,6 +67,10 @@ func (h *MarkExamPoolVerifyCommandHandler) Handle(ctx context.Context, cmd MarkE
 // so a renumbered question or a renamed option would break the papers in
 // flight and the history. Everything else — wording, option contents,
 // which label is right, topic, grade — may change.
+//
+// The question bank (ma_questions) is rewritten from the corrected set in
+// the same transaction; a set the bank cannot hold (QUESTION_INVALID_SHAPE,
+// e.g. a question with one answer) is refused whole.
 type VerifyExamPoolCommand struct {
 	ExamID    int64
 	Questions []dto.ExamQuestion
@@ -94,7 +106,12 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 		if err := repos.ExamPool.ReplaceQuestions(ctx, cmd.ExamID, string(raw), cmd.AdminUID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		saved, err = findLivePool(ctx, repos, cmd.ExamID)
+		if saved, err = findLivePool(ctx, repos, cmd.ExamID); err != nil {
+			return err
+		}
+		// Same transaction: the bank rows take the corrected wording, key
+		// and verified_count with the pool, or the correction is refused.
+		_, err = questionCommand.SaveFromPool(ctx, repos, saved, cmd.AdminUID)
 		return err
 	})
 	if err != nil {

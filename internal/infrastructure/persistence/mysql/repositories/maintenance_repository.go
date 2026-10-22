@@ -49,6 +49,10 @@ var clearDataTargets = []clearTarget{
 	{examLinkTable, seq.NameExamLink, "elink_id"},
 	{examSessionTable, seq.NameExamSession, "esess_id"},
 	{examSessionLineTable, seq.NameExamSessionLine, "esess_ln_id"},
+	// Bank rows are copies of pool questions, keyed (exam_id,
+	// question_number): wiped with the pool, or a pool minted again under
+	// a reset exam_id would overwrite an unrelated old question.
+	{questionTable, seq.NameQuestion, "question_id"},
 }
 
 // clearDataTargetByTable indexes clearDataTargets for O(1) allow-list checks in
@@ -98,6 +102,7 @@ var clearDataSeqs = []string{
 	seq.NameExamLink,
 	seq.NameExamSession,
 	seq.NameExamSessionLine,
+	seq.NameQuestion,
 }
 
 // keepCol names the column a table-scoped keep filters on when preserving
@@ -153,6 +158,7 @@ func init() {
 		// Handled specially in ClearDataKeepingUsers (parent-id linkage).
 		examSessionLineTable: true,
 		examPoolTable:        true,
+		questionTable:        true,
 	}
 	for _, t := range clearKeepByUid {
 		covered[t.table] = true
@@ -408,6 +414,12 @@ func (r *MaintenanceRepository) ClearDataKeepingUsers(ctx context.Context, keepU
 		return nil, nil, err
 	}
 	processed = append(processed, examPoolTable)
+
+	// Question bank: follows the pools it was copied from.
+	if err := r.deleteExcept(ctx, questionTable, "exam_id", keepExamIds); err != nil {
+		return nil, nil, err
+	}
+	processed = append(processed, questionTable)
 
 	// Shared parents with no per-user owner: emptied whole.
 	for _, table := range clearFullWipe {

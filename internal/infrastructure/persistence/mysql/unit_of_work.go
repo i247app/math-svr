@@ -49,6 +49,7 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 			ExamSession:        repositories.NewExamSessionRepository(loggedTx),
 			ExamSessionLine:    repositories.NewExamSessionLineRepository(loggedTx),
 			Prompt:             repositories.NewPromptRepository(loggedTx),
+			Question:           repositories.NewQuestionRepository(loggedTx),
 			Role:               repositories.NewRoleRepository(loggedTx),
 		}
 		return fn(txCtx, repos)

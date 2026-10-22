@@ -772,6 +772,11 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case PROMPT_MISSING_JSON_KEY:
 		return "Prompt phải nêu đủ các khóa JSON của cấu trúc kết quả"
 
+	case QUESTION_MISSING_EXAM_ID:
+		return "Thiếu exam_id"
+	case QUESTION_INVALID_SHAPE:
+		return "Câu hỏi sai định dạng, không thể lưu vào ngân hàng câu hỏi"
+
 	default:
 		return ""
 	}
