@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS ma_exam_sessions (
   esess_id             BIGINT UNSIGNED NOT NULL,             -- external id (minted via ma_seqs); shared by a journey and its PRACTICE row
   uid                  BIGINT UNSIGNED NOT NULL,
   profile_id           BIGINT UNSIGNED NOT NULL,
+  last_resp_id         VARCHAR(128) DEFAULT NULL,
   req_exam_type        VARCHAR(32) NOT NULL,                 -- ASSESSMENT, PRACTICE, GRADE
   current_grade        TINYINT UNSIGNED DEFAULT NULL,        -- 0..5, stated by the client
   current_level        TINYINT UNSIGNED DEFAULT NULL,        -- 1..10, stated by the client; NULL when not sent

@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS ma_questions (
   answers          JSON         NOT NULL,                      -- [{"content": "...", "is_correct": bool}, ...]
   question_topic   VARCHAR(255) DEFAULT NULL,                  -- optional in the pool JSON, so nullable
   question_grade   TINYINT UNSIGNED NOT NULL,                  -- 0 = Mẫu giáo, 1..5 = Lớp 1..5
-  ai_tags          JSON         NOT NULL,                      -- renamed question_tags by up/039; always sent, '[]' when none (no DEFAULT: see header)
+  question_tags    JSON         NOT NULL,                      -- renamed question_tags by up/039; always sent, '[]' when none (no DEFAULT: see header)
   verified_count   INT UNSIGNED NOT NULL DEFAULT 0,            -- 0 = not verified, >0 = verified
 
   question_status  VARCHAR(32)  DEFAULT NULL,
