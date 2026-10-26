@@ -772,10 +772,36 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case PROMPT_MISSING_JSON_KEY:
 		return "The prompt must name every JSON key of its output structure"
 
-	case QUESTION_MISSING_EXAM_ID:
-		return "exam_id is required"
-	case QUESTION_INVALID_SHAPE:
-		return "The question is malformed and cannot be saved to the question bank"
+	case QUESTION_EMPTY_LIST:
+		return "At least one question is required"
+	case QUESTION_INVALID:
+		return "A question is invalid"
+	case QUESTION_TOO_MANY:
+		return "Too many questions in one request"
+	case QUESTION_INVALID_KIND:
+		return "The question kind is invalid"
+	case QUESTION_INVALID_OPTIONS:
+		return "The question's options are invalid"
+	case QUESTION_INVALID_ANSWER:
+		return "The question's correct answer is invalid"
+	case QUESTION_INVALID_IMAGE_KEY:
+		return "The image key is invalid"
+	case QUESTION_DUPLICATE:
+		return "The question already exists in the question bank"
+	case QUESTION_INVALID_FILTER:
+		return "The question filter is invalid"
+	case QUESTION_IMAGE_MISSING:
+		return "An image file is required"
+	case QUESTION_IMAGE_INVALID_FILE:
+		return "The image must be a JPEG, PNG, GIF or WebP file of at most 5 MB"
+	case QUESTION_IMAGE_UPLOAD_FAILED:
+		return "The image could not be uploaded"
+	case QUESTION_MISSING_ID:
+		return "question_id is required"
+	case QUESTION_NOT_FOUND:
+		return "The question does not exist"
+	case QUESTION_NOTHING_TO_UPDATE:
+		return "Nothing to update"
 
 	default:
 		return ""

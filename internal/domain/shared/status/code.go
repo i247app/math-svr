@@ -493,10 +493,44 @@ const (
 	PROMPT_MISSING_JSON_KEY StatusCode = 14304
 
 	// Question bank — 14400-14499 (ma_questions).
-	// QUESTION_MISSING_EXAM_ID: a copy into the bank named no exam_id.
-	QUESTION_MISSING_EXAM_ID StatusCode = 14400
-	// QUESTION_INVALID_SHAPE: a pool question cannot become a bank row — no
-	// number or stem, fewer than two answers, a blank or repeated label, or
-	// a right_answer_label that names no answer. debug names the question.
-	QUESTION_INVALID_SHAPE StatusCode = 14401
+	// 14400 / 14401 were QUESTION_MISSING_EXAM_ID / QUESTION_INVALID_SHAPE
+	// (pool copy, never returned by a route); reused 2026-10-26.
+	// debug names every offending question by path (questions[3].…).
+	// QUESTION_EMPTY_LIST: a create sent no questions.
+	QUESTION_EMPTY_LIST StatusCode = 14400
+	// QUESTION_INVALID: a question breaks a general rule (text, grade,
+	// level, lengths, tags, topic).
+	QUESTION_INVALID StatusCode = 14401
+	// QUESTION_TOO_MANY: a create sent more questions than one call takes.
+	QUESTION_TOO_MANY StatusCode = 14402
+	// QUESTION_INVALID_KIND: an unknown question_kind (create or list filter).
+	QUESTION_INVALID_KIND StatusCode = 14403
+	// QUESTION_INVALID_OPTIONS: options missing / present against the kind,
+	// too few or too many, a blank or repeated id, an empty option.
+	QUESTION_INVALID_OPTIONS StatusCode = 14404
+	// QUESTION_INVALID_ANSWER: correct_answer has the wrong shape for the
+	// kind, names an option that does not exist, or the wrong count.
+	QUESTION_INVALID_ANSWER StatusCode = 14405
+	// QUESTION_INVALID_IMAGE_KEY: an image key outside question-images/ or
+	// shaped like a URL.
+	QUESTION_INVALID_IMAGE_KEY StatusCode = 14406
+	// QUESTION_DUPLICATE: the same question twice in one request, or one the
+	// bank already holds live.
+	QUESTION_DUPLICATE StatusCode = 14407
+	// QUESTION_INVALID_FILTER: a list filter out of range (grade, status,
+	// source).
+	QUESTION_INVALID_FILTER StatusCode = 14408
+	// QUESTION_IMAGE_MISSING: /questions/images/upload carried no "image" file part.
+	QUESTION_IMAGE_MISSING StatusCode = 14409
+	// QUESTION_IMAGE_INVALID_FILE: not a JPEG / PNG / GIF / WebP image (by
+	// extension, declared type and content), or over the size limit.
+	QUESTION_IMAGE_INVALID_FILE StatusCode = 14410
+	// QUESTION_IMAGE_UPLOAD_FAILED: storage refused the upload.
+	QUESTION_IMAGE_UPLOAD_FAILED StatusCode = 14411
+	// QUESTION_MISSING_ID: an update named no question_id.
+	QUESTION_MISSING_ID StatusCode = 14412
+	// QUESTION_NOT_FOUND: no live question has that question_id.
+	QUESTION_NOT_FOUND StatusCode = 14413
+	// QUESTION_NOTHING_TO_UPDATE: an update named no field to change.
+	QUESTION_NOTHING_TO_UPDATE StatusCode = 14414
 )

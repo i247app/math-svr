@@ -27,6 +27,7 @@ import (
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/prompt"
+	"math-ai.com/math-ai/internal/module/question"
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/server"
@@ -280,6 +281,16 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /prompts/list", promptHandler.HandleListPrompts, adminOrApiKeyMiddleware)
 		reg("POST /prompts/detail", promptHandler.HandleGetPrompt, adminOrApiKeyMiddleware)
 		reg("POST /prompts/update", promptHandler.HandleUpdatePrompt, adminOrApiKeyMiddleware)
+	}
+
+	// question bank routes (ma_questions) — admin only and independent of
+	// /exams/*: every response carries the answer key. No model call.
+	{
+		questionHandler := question.NewHandler(services.QuestionSvc)
+		reg("POST /questions/create", questionHandler.HandleCreateQuestions, adminOrApiKeyMiddleware)
+		reg("POST /questions/list", questionHandler.HandleListQuestions, adminOrApiKeyMiddleware)
+		reg("POST /questions/update", questionHandler.HandleUpdateQuestion, adminOrApiKeyMiddleware)
+		reg("POST /questions/images/upload", questionHandler.HandleUploadImage, adminOrApiKeyMiddleware)
 	}
 
 	// classroom routes

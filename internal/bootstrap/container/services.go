@@ -160,7 +160,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	authService := auth.NewService(userService, uow, security.DefaultHasher, res.Env.TrustDeviceTTLDays)
 
 	log.Info("> Setup QuestionSvc...")
-	questionService := question.NewService(uow)
+	questionService := question.NewService(uow, repos.QuestionRepository, res.StorageProvider)
 
 	log.Info("> Setup ExamSvc...")
 	examService := exam.NewService(

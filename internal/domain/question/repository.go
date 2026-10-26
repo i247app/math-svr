@@ -1,20 +1,48 @@
 package question
 
-import "context"
+import (
+	"context"
+	"errors"
+
+	"math-ai.com/math-ai/internal/shared/pagination"
+)
+
+// ErrDuplicate is returned by CreateMany when a row's question_hash is
+// already held by a live question (uk_live_question_hash).
+var ErrDuplicate = errors.New("question: duplicate content")
+
+// ListQuestionsFilter narrows the bank listing. Every field is optional;
+// set fields are ANDed. Tags matches a row holding at least one of them.
+// IsVerified true = verified_count > 0, false = 0, nil = both.
+type ListQuestionsFilter struct {
+	Grade      *int
+	Topic      *string
+	Tags       []string
+	Kinds      []Kind
+	Statuses   []string
+	Source     *Source
+	IsVerified *bool
+}
 
 // IRepository owns ma_questions.
 type IRepository interface {
-	// ListByExamId returns the live bank rows copied from one pool set,
-	// ordered by question_number.
-	ListByExamId(ctx context.Context, examId int64) ([]*Question, error)
-	// CreateMany inserts new rows in one plain INSERT. A collision on any
-	// unique key is an error, never absorbed into the colliding row.
+	// CreateMany inserts new rows in one plain INSERT. A live row with the
+	// same question_hash fails the whole statement with ErrDuplicate.
 	CreateMany(ctx context.Context, questions []*Question, createId *int64) error
-	// UpdateContent overwrites the content columns (type, stem, answers,
-	// topic, grade, tags, verified_count) of the live row with
-	// QuestionId(); question_id, exam_id, question_number and create_* stay.
+	// LockById reads the live row and X-locks it until the transaction
+	// ends, so two edits of one question cannot overwrite each other.
+	// (nil, nil) when there is none.
+	LockById(ctx context.Context, id int64) (*Question, error)
+	// UpdateContent overwrites every editable column (content, grade,
+	// topic, level, tags, explanation, hash) of the live row and stamps
+	// modify_id. A hash another live row holds fails with ErrDuplicate.
 	UpdateContent(ctx context.Context, q *Question, modifyId *int64) error
-	// SetVerifiedCountByExamId copies a pool's verified_count onto every
-	// live bank row of that pool, in one statement.
-	SetVerifiedCountByExamId(ctx context.Context, examId int64, verifiedCount int, modifyId *int64) error
+	// ListByIds returns the live rows among ids, in no particular order.
+	ListByIds(ctx context.Context, ids []int64) ([]*Question, error)
+	// FindLiveHashes returns which of hashes a live row already holds, so a
+	// refusal can name the duplicate questions.
+	FindLiveHashes(ctx context.Context, hashes []string) ([]string, error)
+	// ListPage pages the live rows matching filter, newest first
+	// (create_dt DESC, question_id DESC).
+	ListPage(ctx context.Context, filter ListQuestionsFilter, page, size int64) ([]*Question, *pagination.Pagination, error)
 }

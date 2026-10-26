@@ -56,12 +56,21 @@
 --   * question_text non-blank (an image-only stem still states the task).
 --   * image keys are keys the server uploaded (question-images/ prefix),
 --     never a URL from the client.
---   * question_grade 0..5, question_level 1..10 or NULL,
+--   * question_grade 0..5, question_level 0..9 or NULL,
 --     question_source / question_status known values.
 --   * question_tags always sent ('[]' when none): it has deliberately no
 --     DEFAULT (JSON_ARRAY()) — once ix_question_tags exists, an INSERT that
 --     falls back to that default fails with 3903 "Invalid JSON value for CAST
 --     for functional index" (checked on MySQL 9.3, 2026-10-12).
+--
+-- ---- Duplicates --------------------------------------------------------------
+-- question_hash = SHA-256 (hex) of kind | grade | normalised text (NFC,
+-- trimmed, whitespace collapsed) | stem image key | the options as a set by
+-- content (text + image_key + correct or not) | the TRUE_FALSE value,
+-- computed by the application (domain/question.Hash). Option ids, display
+-- order, topic, tags, level and explanation are NOT part of it: the same
+-- question reordered or filed under another topic is still the same
+-- question. uk_live_question_hash keeps one live row per hash.
 --
 -- Ids are minted from seq.NameQuestion = "ma_questions" (row in
 -- seed/001_ma_seqs.sql). Clear-data target.
@@ -76,10 +85,11 @@ CREATE TABLE IF NOT EXISTS ma_questions (
   explanation         TEXT          DEFAULT NULL,             -- worked solution / why the answer is right, shown after answering
   question_grade      TINYINT UNSIGNED NOT NULL,              -- 0 = Mẫu giáo, 1..5 = Lớp 1..5
   question_topic      VARCHAR(255)  DEFAULT NULL,             -- curriculum topic, free text (e.g. 'phép cộng')
-  question_level      TINYINT UNSIGNED DEFAULT NULL,          -- 1 = easiest .. 10 = hardest; NULL = not rated yet
+  question_level      TINYINT UNSIGNED DEFAULT NULL,          -- 0 = easiest .. 9 = hardest; NULL = not rated yet
   question_tags       JSON          NOT NULL,                 -- ["addition", "mental_math"]; always sent, '[]' when none (no DEFAULT: see header)
   question_source     VARCHAR(16)   NOT NULL,                 -- who wrote it: AI (generated, needs review) / ADMIN (typed in)
   verified_count      INT UNSIGNED  NOT NULL DEFAULT 0,       -- times an admin verified it; 0 = never verified
+  question_hash       CHAR(64)      NOT NULL,                 -- SHA-256 hex of the question's content (see header); duplicate guard
 
   question_status     VARCHAR(32)   DEFAULT NULL,             -- review lifecycle: PENDING_REVIEW / APPROVED / REJECTED (no default: every INSERT sets it)
   rpt_flg             VARCHAR(16)   DEFAULT NULL,             -- client-side report flag
@@ -92,6 +102,9 @@ CREATE TABLE IF NOT EXISTS ma_questions (
   modify_dt           DATETIME(6)   DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   deleted_dt          DATETIME(6)   DEFAULT NULL,             -- soft-delete stamp; the active filter keys on it
 
+  -- One live row per content: a second copy is refused (1062) even when two
+  -- admins send it at once. A soft-deleted row no longer counts.
+  UNIQUE KEY uk_live_question_hash ((IF(deleted_dt IS NULL, question_hash, NULL))),
   -- The review queue: questions in one state, narrowed by grade, newest first.
   KEY ix_status_grade_created (question_status, question_grade, create_dt),
   -- The bank's browse path: questions of one grade, narrowed by topic.
@@ -105,6 +118,7 @@ CREATE TABLE IF NOT EXISTS ma_questions (
 --
 -- Create:
 --   ALTER TABLE ma_questions ADD PRIMARY KEY (question_id);
+--   CREATE UNIQUE INDEX uk_live_question_hash ON ma_questions ((IF(deleted_dt IS NULL, question_hash, NULL)));
 --   CREATE INDEX ix_status_grade_created ON ma_questions (question_status, question_grade, create_dt);
 --   CREATE INDEX ix_grade_topic ON ma_questions (question_grade, question_topic);
 --
@@ -116,6 +130,7 @@ CREATE TABLE IF NOT EXISTS ma_questions (
 --
 -- Drop:
 --   ALTER TABLE ma_questions DROP PRIMARY KEY;   -- pair it with ADD PRIMARY KEY in the same statement
+--   DROP INDEX uk_live_question_hash ON ma_questions;
 --   DROP INDEX ix_status_grade_created ON ma_questions;
 --   DROP INDEX ix_grade_topic ON ma_questions;
 --   DROP INDEX ix_question_tags ON ma_questions;

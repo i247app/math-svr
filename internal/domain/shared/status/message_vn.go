@@ -772,10 +772,36 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case PROMPT_MISSING_JSON_KEY:
 		return "Prompt phải nêu đủ các khóa JSON của cấu trúc kết quả"
 
-	case QUESTION_MISSING_EXAM_ID:
-		return "Thiếu exam_id"
-	case QUESTION_INVALID_SHAPE:
-		return "Câu hỏi sai định dạng, không thể lưu vào ngân hàng câu hỏi"
+	case QUESTION_EMPTY_LIST:
+		return "Cần ít nhất một câu hỏi"
+	case QUESTION_INVALID:
+		return "Câu hỏi không hợp lệ"
+	case QUESTION_TOO_MANY:
+		return "Quá nhiều câu hỏi trong một lần gửi"
+	case QUESTION_INVALID_KIND:
+		return "Dạng câu hỏi không hợp lệ"
+	case QUESTION_INVALID_OPTIONS:
+		return "Các lựa chọn của câu hỏi không hợp lệ"
+	case QUESTION_INVALID_ANSWER:
+		return "Đáp án đúng của câu hỏi không hợp lệ"
+	case QUESTION_INVALID_IMAGE_KEY:
+		return "Khóa ảnh không hợp lệ"
+	case QUESTION_DUPLICATE:
+		return "Câu hỏi đã có trong ngân hàng câu hỏi"
+	case QUESTION_INVALID_FILTER:
+		return "Bộ lọc câu hỏi không hợp lệ"
+	case QUESTION_IMAGE_MISSING:
+		return "Cần gửi kèm tệp ảnh"
+	case QUESTION_IMAGE_INVALID_FILE:
+		return "Ảnh phải là tệp JPEG, PNG, GIF hoặc WebP, tối đa 5 MB"
+	case QUESTION_IMAGE_UPLOAD_FAILED:
+		return "Không tải ảnh lên được"
+	case QUESTION_MISSING_ID:
+		return "Thiếu question_id"
+	case QUESTION_NOT_FOUND:
+		return "Câu hỏi không tồn tại"
+	case QUESTION_NOTHING_TO_UPDATE:
+		return "Không có thông tin nào để cập nhật"
 
 	default:
 		return ""

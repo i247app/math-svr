@@ -2,7 +2,9 @@ package repositories
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -12,13 +14,15 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
 const (
 	questionTable = "ma_questions"
 
-	questionColumns = `q.question_id, q.exam_id, q.question_number, q.question_type, q.question_name,
-		q.answers, q.question_topic, q.question_grade, q.question_tags, q.verified_count,
+	questionColumns = `q.question_id, q.question_kind, q.question_text, q.question_image_key,
+		q.options, q.correct_answer, q.explanation, q.question_grade, q.question_topic,
+		q.question_level, q.question_tags, q.question_source, q.verified_count, q.question_hash,
 		q.question_status, q.rpt_flg, q.kwords, q.note, q.status,
 		q.create_id, q.create_dt, q.modify_id, q.modify_dt`
 
@@ -26,17 +30,24 @@ const (
 
 	// questionInsertRow is one VALUES tuple of CreateMany, in the column
 	// order of its INSERT list.
-	questionInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	questionInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func questionActiveArgs() []any {
 	return []any{enum.StatusActive}
 }
 
-// answerJSON is the stored shape of one element of ma_questions.answers.
-type answerJSON struct {
-	Content   string `json:"content"`
-	IsCorrect bool   `json:"is_correct"`
+// optionJSON / correctAnswerJSON are the stored shapes of the two JSON
+// columns (migration 036 header).
+type optionJSON struct {
+	Id       string  `json:"id"`
+	Text     string  `json:"text"`
+	ImageKey *string `json:"image_key,omitempty"`
+}
+
+type correctAnswerJSON struct {
+	OptionIds []string `json:"option_ids,omitempty"`
+	Value     *bool    `json:"value,omitempty"`
 }
 
 type QuestionRepository struct {
@@ -49,8 +60,9 @@ func NewQuestionRepository(db database.Executor) question.IRepository {
 
 func scanQuestion(s database.RowScanner) (*models.QuestionModel, error) {
 	var m models.QuestionModel
-	if err := s.Scan(&m.QuestionId, &m.ExamId, &m.QuestionNumber, &m.QuestionType, &m.QuestionName,
-		&m.Answers, &m.QuestionTopic, &m.QuestionGrade, &m.QuestionTags, &m.VerifiedCount,
+	if err := s.Scan(&m.QuestionId, &m.QuestionKind, &m.QuestionText, &m.QuestionImageKey,
+		&m.Options, &m.CorrectAnswer, &m.Explanation, &m.QuestionGrade, &m.QuestionTopic,
+		&m.QuestionLevel, &m.QuestionTags, &m.QuestionSource, &m.VerifiedCount, &m.QuestionHash,
 		&m.QuestionStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -58,12 +70,205 @@ func scanQuestion(s database.RowScanner) (*models.QuestionModel, error) {
 	return &m, nil
 }
 
-func (r *QuestionRepository) ListByExamId(ctx context.Context, examId int64) ([]*question.Question, error) {
-	query := `SELECT ` + questionColumns + ` FROM ` + questionTable + ` q WHERE (q.exam_id = ?) AND ` +
-		questionActiveWhere + ` ORDER BY q.question_number`
-	rows, err := r.db.Query(ctx, query, slices.Concat([]any{examId}, questionActiveArgs())...)
+// CreateMany is a plain multi-row INSERT on purpose: ON DUPLICATE KEY
+// UPDATE would fold a duplicate (uk_live_question_hash) or a colliding
+// minted id into an unrelated row. Any collision fails the statement, so
+// the caller's transaction rolls the whole batch back.
+func (r *QuestionRepository) CreateMany(ctx context.Context, questions []*question.Question, createId *int64) error {
+	if len(questions) == 0 {
+		return nil
+	}
+	now := mtime.Now().Time
+	tuples := make([]string, 0, len(questions))
+	args := make([]any, 0, len(questions)*21)
+	for _, q := range questions {
+		options, answer, tags, err := marshalQuestionJSON(q)
+		if err != nil {
+			return err
+		}
+		tuples = append(tuples, questionInsertRow)
+		args = append(args,
+			q.QuestionId(), string(q.QuestionKind()), q.QuestionText(), q.QuestionImageKey(),
+			options, answer, q.Explanation(), q.QuestionGrade(), q.QuestionTopic(),
+			q.QuestionLevel(), tags, string(q.QuestionSource()), q.VerifiedCount(), q.QuestionHash(),
+			q.QuestionStatus(), q.RptFlg(), q.Kwords(), q.Note(),
+			createId, now, now)
+	}
+	query := `INSERT INTO ` + questionTable + `
+			(question_id, question_kind, question_text, question_image_key,
+			 options, correct_answer, explanation, question_grade, question_topic,
+			 question_level, question_tags, question_source, verified_count, question_hash,
+			 question_status, rpt_flg, kwords, note,
+			 create_id, create_dt, modify_dt)
+		VALUES ` + strings.Join(tuples, ", ")
+	if _, err := r.db.Exec(ctx, query, args...); err != nil {
+		if isDuplicateEntry(err) {
+			return fmt.Errorf("question repo create many: %w", question.ErrDuplicate)
+		}
+		return fmt.Errorf("question repo create many: %w", err)
+	}
+	return nil
+}
+
+func (r *QuestionRepository) LockById(ctx context.Context, id int64) (*question.Question, error) {
+	query := `SELECT ` + questionColumns + ` FROM ` + questionTable + ` q WHERE (q.question_id = ?) AND ` +
+		questionActiveWhere + ` FOR UPDATE`
+	m, err := scanQuestion(r.db.QueryRow(ctx, query, slices.Concat([]any{id}, questionActiveArgs())...))
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
 	if err != nil {
-		return nil, fmt.Errorf("question repo list by exam id: %w", err)
+		return nil, fmt.Errorf("question repo lock by id: %w", err)
+	}
+	return ModelToDomainQuestion(m)
+}
+
+// UpdateContent leaves question_id, source, status, verified_count and
+// create_* alone: an edit is not a review.
+func (r *QuestionRepository) UpdateContent(ctx context.Context, q *question.Question, modifyId *int64) error {
+	options, answer, tags, err := marshalQuestionJSON(q)
+	if err != nil {
+		return err
+	}
+	query := `UPDATE ` + questionTable + ` q SET q.question_kind = ?, q.question_text = ?, q.question_image_key = ?,
+			q.options = ?, q.correct_answer = ?, q.explanation = ?, q.question_grade = ?, q.question_topic = ?,
+			q.question_level = ?, q.question_tags = ?, q.question_hash = ?, q.modify_id = ?
+		WHERE (q.question_id = ?) AND ` + questionActiveWhere
+	args := slices.Concat([]any{string(q.QuestionKind()), q.QuestionText(), q.QuestionImageKey(),
+		options, answer, q.Explanation(), q.QuestionGrade(), q.QuestionTopic(),
+		q.QuestionLevel(), tags, q.QuestionHash(), modifyId, q.QuestionId()}, questionActiveArgs())
+	if _, err := r.db.Exec(ctx, query, args...); err != nil {
+		if isDuplicateEntry(err) {
+			return fmt.Errorf("question repo update content: %w", question.ErrDuplicate)
+		}
+		return fmt.Errorf("question repo update content: %w", err)
+	}
+	return nil
+}
+
+func (r *QuestionRepository) ListByIds(ctx context.Context, ids []int64) ([]*question.Question, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	args := make([]any, 0, len(ids)+1)
+	for _, id := range ids {
+		args = append(args, id)
+	}
+	query := `SELECT ` + questionColumns + ` FROM ` + questionTable + ` q WHERE (q.question_id IN (?` +
+		strings.Repeat(", ?", len(ids)-1) + `)) AND ` + questionActiveWhere
+	return r.list(ctx, "list by ids", query, slices.Concat(args, questionActiveArgs()))
+}
+
+func (r *QuestionRepository) FindLiveHashes(ctx context.Context, hashes []string) ([]string, error) {
+	if len(hashes) == 0 {
+		return nil, nil
+	}
+	args := make([]any, 0, len(hashes)+1)
+	for _, h := range hashes {
+		args = append(args, h)
+	}
+	query := `SELECT q.question_hash FROM ` + questionTable + ` q WHERE (q.question_hash IN (?` +
+		strings.Repeat(", ?", len(hashes)-1) + `)) AND ` + questionActiveWhere
+	rows, err := r.db.Query(ctx, query, slices.Concat(args, questionActiveArgs())...)
+	if err != nil {
+		return nil, fmt.Errorf("question repo find live hashes: %w", err)
+	}
+	defer rows.Close()
+
+	var out []string
+	for rows.Next() {
+		var h string
+		if err := rows.Scan(&h); err != nil {
+			return nil, fmt.Errorf("question repo scan hash: %w", err)
+		}
+		out = append(out, h)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("question repo rows iteration: %w", err)
+	}
+	return out, nil
+}
+
+func (r *QuestionRepository) ListPage(ctx context.Context, filter question.ListQuestionsFilter, page, size int64) ([]*question.Question, *pagination.Pagination, error) {
+	size = pagination.ClampSize(size)
+	if page < 1 {
+		page = 1
+	}
+	filterWhere, filterArgs, err := buildQuestionFilterClause(filter)
+	if err != nil {
+		return nil, nil, err
+	}
+	where := whereActive(filterWhere, questionActiveWhere)
+	whereArgs := slices.Concat(filterArgs, questionActiveArgs())
+
+	var total int64
+	if err := r.db.QueryRow(ctx, `SELECT COUNT(*) FROM `+questionTable+` q`+where, whereArgs...).Scan(&total); err != nil {
+		return nil, nil, fmt.Errorf("question repo count: %w", err)
+	}
+
+	// LIMIT / OFFSET bind after the active filter's args.
+	query := `SELECT ` + questionColumns + ` FROM ` + questionTable + ` q` + where +
+		` ORDER BY q.create_dt DESC, q.question_id DESC LIMIT ? OFFSET ?`
+	out, err := r.list(ctx, "list page", query, slices.Concat(whereArgs, []any{size, (page - 1) * size}))
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, pagination.NewPagination(page, size, total), nil
+}
+
+// buildQuestionFilterClause keeps placeholder order in lockstep with the
+// returned args slice.
+func buildQuestionFilterClause(filter question.ListQuestionsFilter) (string, []any, error) {
+	var (
+		clause string
+		args   []any
+	)
+	if filter.Grade != nil {
+		clause += ` AND q.question_grade = ?`
+		args = append(args, *filter.Grade)
+	}
+	if filter.Topic != nil {
+		clause += ` AND q.question_topic = ?`
+		args = append(args, *filter.Topic)
+	}
+	if len(filter.Tags) > 0 {
+		raw, err := json.Marshal(filter.Tags)
+		if err != nil {
+			return "", nil, fmt.Errorf("question repo marshal tag filter: %w", err)
+		}
+		clause += ` AND JSON_OVERLAPS(q.question_tags, CAST(? AS JSON))`
+		args = append(args, string(raw))
+	}
+	if n := len(filter.Kinds); n > 0 {
+		clause += ` AND q.question_kind IN (?` + strings.Repeat(", ?", n-1) + `)`
+		for _, k := range filter.Kinds {
+			args = append(args, string(k))
+		}
+	}
+	if n := len(filter.Statuses); n > 0 {
+		clause += ` AND q.question_status IN (?` + strings.Repeat(", ?", n-1) + `)`
+		for _, s := range filter.Statuses {
+			args = append(args, s)
+		}
+	}
+	if filter.Source != nil {
+		clause += ` AND q.question_source = ?`
+		args = append(args, string(*filter.Source))
+	}
+	if filter.IsVerified != nil {
+		if *filter.IsVerified {
+			clause += ` AND q.verified_count > 0`
+		} else {
+			clause += ` AND q.verified_count = 0`
+		}
+	}
+	return clause, args, nil
+}
+
+func (r *QuestionRepository) list(ctx context.Context, op, query string, args []any) ([]*question.Question, error) {
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("question repo %s: %w", op, err)
 	}
 	defer rows.Close()
 
@@ -85,79 +290,28 @@ func (r *QuestionRepository) ListByExamId(ctx context.Context, examId int64) ([]
 	return out, nil
 }
 
-// CreateMany is a plain multi-row INSERT on purpose: an INSERT … ON
-// DUPLICATE KEY UPDATE would redirect a row whose minted question_id
-// collides (ma_seqs behind the data) into an unrelated question of another
-// exam. The command reads the existing rows first and only inserts numbers
-// the bank does not hold, so a collision here is reported, not absorbed.
-func (r *QuestionRepository) CreateMany(ctx context.Context, questions []*question.Question, createId *int64) error {
-	if len(questions) == 0 {
-		return nil
-	}
-	now := mtime.Now().Time
-	tuples := make([]string, 0, len(questions))
-	args := make([]any, 0, len(questions)*17)
-	for _, q := range questions {
-		answers, tags, err := marshalQuestionJSON(q)
-		if err != nil {
-			return err
+// marshalQuestionJSON renders the three JSON columns. options is NULL for
+// a kind with no options. question_tags is never NULL and never omitted:
+// the column has no DEFAULT (migration 036, error 3903 once
+// ix_question_tags exists), so no tags is '[]'.
+func marshalQuestionJSON(q *question.Question) (*string, string, string, error) {
+	var options *string
+	if q.Options() != nil {
+		out := make([]optionJSON, 0, len(q.Options()))
+		for _, o := range q.Options() {
+			out = append(out, optionJSON{Id: o.Id, Text: o.Text, ImageKey: o.ImageKey})
 		}
-		tuples = append(tuples, questionInsertRow)
-		args = append(args,
-			q.QuestionId(), q.ExamId(), q.QuestionNumber(), q.QuestionType(), q.QuestionName(),
-			answers, q.QuestionTopic(), q.QuestionGrade(), tags, q.VerifiedCount(),
-			q.QuestionStatus(), q.RptFlg(), q.Kwords(), q.Note(),
-			createId, now, now)
+		raw, err := json.Marshal(out)
+		if err != nil {
+			return nil, "", "", fmt.Errorf("question repo marshal options: %w", err)
+		}
+		s := string(raw)
+		options = &s
 	}
-	query := `INSERT INTO ` + questionTable + `
-			(question_id, exam_id, question_number, question_type, question_name,
-			 answers, question_topic, question_grade, question_tags, verified_count,
-			 question_status, rpt_flg, kwords, note,
-			 create_id, create_dt, modify_dt)
-		VALUES ` + strings.Join(tuples, ", ")
-	if _, err := r.db.Exec(ctx, query, args...); err != nil {
-		return fmt.Errorf("question repo create many: %w", err)
-	}
-	return nil
-}
-
-func (r *QuestionRepository) UpdateContent(ctx context.Context, q *question.Question, modifyId *int64) error {
-	answers, tags, err := marshalQuestionJSON(q)
+	a := q.CorrectAnswer()
+	rawAnswer, err := json.Marshal(correctAnswerJSON{OptionIds: a.OptionIds, Value: a.Value})
 	if err != nil {
-		return err
-	}
-	query := `UPDATE ` + questionTable + ` q SET q.question_type = ?, q.question_name = ?, q.answers = ?,
-			q.question_topic = ?, q.question_grade = ?, q.question_tags = ?, q.verified_count = ?, q.modify_id = ?
-		WHERE (q.question_id = ?) AND ` + questionActiveWhere
-	args := slices.Concat([]any{q.QuestionType(), q.QuestionName(), answers,
-		q.QuestionTopic(), q.QuestionGrade(), tags, q.VerifiedCount(), modifyId,
-		q.QuestionId()}, questionActiveArgs())
-	if _, err := r.db.Exec(ctx, query, args...); err != nil {
-		return fmt.Errorf("question repo update content: %w", err)
-	}
-	return nil
-}
-
-func (r *QuestionRepository) SetVerifiedCountByExamId(ctx context.Context, examId int64, verifiedCount int, modifyId *int64) error {
-	query := `UPDATE ` + questionTable + ` q SET q.verified_count = ?, q.modify_id = ?` +
-		` WHERE (q.exam_id = ?) AND ` + questionActiveWhere
-	if _, err := r.db.Exec(ctx, query, slices.Concat([]any{verifiedCount, modifyId, examId}, questionActiveArgs())...); err != nil {
-		return fmt.Errorf("question repo set verified count: %w", err)
-	}
-	return nil
-}
-
-// marshalQuestionJSON renders the two JSON columns. question_tags is never NULL
-// and never omitted: the column has no DEFAULT (migration 036, error 3903
-// once ix_question_tags exists), so no tags is '[]'.
-func marshalQuestionJSON(q *question.Question) (string, string, error) {
-	answers := make([]answerJSON, 0, len(q.Answers()))
-	for _, a := range q.Answers() {
-		answers = append(answers, answerJSON{Content: a.Content, IsCorrect: a.IsCorrect})
-	}
-	rawAnswers, err := json.Marshal(answers)
-	if err != nil {
-		return "", "", fmt.Errorf("question repo marshal answers: %w", err)
+		return nil, "", "", fmt.Errorf("question repo marshal correct_answer: %w", err)
 	}
 	tags := q.QuestionTags()
 	if tags == nil {
@@ -165,36 +319,47 @@ func marshalQuestionJSON(q *question.Question) (string, string, error) {
 	}
 	rawTags, err := json.Marshal(tags)
 	if err != nil {
-		return "", "", fmt.Errorf("question repo marshal question_tags: %w", err)
+		return nil, "", "", fmt.Errorf("question repo marshal question_tags: %w", err)
 	}
-	return string(rawAnswers), string(rawTags), nil
+	return options, string(rawAnswer), string(rawTags), nil
 }
 
 func ModelToDomainQuestion(m *models.QuestionModel) (*question.Question, error) {
-	var answers []answerJSON
-	if err := json.Unmarshal([]byte(m.Answers), &answers); err != nil {
-		return nil, fmt.Errorf("question repo decode answers of %d: %w", m.QuestionId, err)
+	var options []question.Option
+	if m.Options != nil {
+		var stored []optionJSON
+		if err := json.Unmarshal([]byte(*m.Options), &stored); err != nil {
+			return nil, fmt.Errorf("question repo decode options of %d: %w", m.QuestionId, err)
+		}
+		options = make([]question.Option, 0, len(stored))
+		for _, o := range stored {
+			options = append(options, question.Option{Id: o.Id, Text: o.Text, ImageKey: o.ImageKey})
+		}
+	}
+	var answer correctAnswerJSON
+	if err := json.Unmarshal([]byte(m.CorrectAnswer), &answer); err != nil {
+		return nil, fmt.Errorf("question repo decode correct_answer of %d: %w", m.QuestionId, err)
 	}
 	var tags []string
 	if err := json.Unmarshal([]byte(m.QuestionTags), &tags); err != nil {
 		return nil, fmt.Errorf("question repo decode question_tags of %d: %w", m.QuestionId, err)
 	}
-	domainAnswers := make([]question.Answer, 0, len(answers))
-	for _, a := range answers {
-		domainAnswers = append(domainAnswers, question.Answer{Content: a.Content, IsCorrect: a.IsCorrect})
-	}
 
 	q := question.NewQuestion()
 	q.SetQuestionId(m.QuestionId)
-	q.SetExamId(m.ExamId)
-	q.SetQuestionNumber(m.QuestionNumber)
-	q.SetQuestionType(m.QuestionType)
-	q.SetQuestionName(m.QuestionName)
-	q.SetAnswers(domainAnswers)
-	q.SetQuestionTopic(m.QuestionTopic)
+	q.SetQuestionKind(question.Kind(m.QuestionKind))
+	q.SetQuestionText(m.QuestionText)
+	q.SetQuestionImageKey(m.QuestionImageKey)
+	q.SetOptions(options)
+	q.SetCorrectAnswer(question.CorrectAnswer{OptionIds: answer.OptionIds, Value: answer.Value})
+	q.SetExplanation(m.Explanation)
 	q.SetQuestionGrade(m.QuestionGrade)
+	q.SetQuestionTopic(m.QuestionTopic)
+	q.SetQuestionLevel(m.QuestionLevel)
 	q.SetQuestionTags(tags)
+	q.SetQuestionSource(question.Source(m.QuestionSource))
 	q.SetVerifiedCount(m.VerifiedCount)
+	q.SetQuestionHash(m.QuestionHash)
 	q.SetQuestionStatus(m.QuestionStatus)
 	q.SetRptFlg(m.RptFlg)
 	q.SetKwords(m.Kwords)
