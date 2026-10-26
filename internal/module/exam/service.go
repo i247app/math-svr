@@ -383,9 +383,6 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 	logger.From(ctx).Infof("exam.generated attempt=%d exam_pool=%d profile=%d type=%s grade=%d",
 		created.Attempt.ElinkId(), created.ExamPool.ExamId(),
 		profile.ProfileId(), cmd.ExamType, cmd.Grade)
-	if cmd.NewContent != nil {
-		s.saveToQuestionBank(ctx, created.ExamPool.ExamId(), utils.ToInt64Ptr(cmd.UID))
-	}
 
 	// A live exam never ships the answer key.
 	return &dto.GenerateExamRes{
@@ -831,7 +828,7 @@ func (s *Service) GenerateExamPool(ctx context.Context, req *dto.GenerateExamPoo
 		return nil, err
 	}
 	logger.From(ctx).Infof("exam.pool.generated admin_uid=%d exam_id=%d tag=%s", sctx.UID(ctx), saved.ExamId(), tag)
-	s.saveToQuestionBank(ctx, saved.ExamId(), adminActor(ctx))
+	// s.saveToQuestionBank(ctx, saved.ExamId(), adminActor(ctx))
 	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(saved, true)}, nil
 }
 
