@@ -27,8 +27,22 @@
 --   MULTIPLE_CHOICE  {"option_ids": ["a", "c"]}      one or more ids
 --   TRUE_FALSE       {"value": true}                 options is NULL; the
 --                                                    client renders Đúng / Sai
--- Kinds planned, no schema change needed:
---   NUMERIC_INPUT    options NULL, {"value": 12}
+--   NUMERIC_INPUT    {"values": ["5"]}               options is NULL; the child
+--                                                    types the answer. 1..10
+--                                                    numbers as strings: integer,
+--                                                    decimal ("." or ","), or a/b
+--                                                    (b != 0). Stored canonical
+--                                                    ("0,50" → "0.5", "07" → "7";
+--                                                    a/b kept unreduced). Graded
+--                                                    by VALUE (exact rational,
+--                                                    never float): "1/2", "0,5"
+--                                                    and "0.5" all match "0.5".
+--                                                    So two values equal as
+--                                                    numbers are refused
+--                                                    (["0.5","1/2"]); several
+--                                                    values = several distinct
+--                                                    right answers (["0","2","4"]).
+-- Kind planned, no schema change needed:
 --   MATCHING         options = both columns, {"pairs": [["a", "x"], ["b", "y"]]}
 --
 -- Examples:
@@ -42,6 +56,10 @@
 --                   question_image_key = 'question-images/....png'
 --     options        = NULL
 --     correct_answer = {"value":false}
+--   NUMERIC_INPUT   question_text = 'Có bao nhiêu quả chuối?',
+--                   question_image_key = 'question-images/....png'
+--     options        = NULL
+--     correct_answer = {"values":["5"]}
 --   Image options   options = [{"id":"a","text":"","image_key":"question-images/....png"}, ...]
 --
 -- ---- Checked by the application, not the database --------------------------
@@ -53,6 +71,8 @@
 --     options, without repeats; SINGLE_CHOICE exactly one, MULTIPLE_CHOICE
 --     one or more.
 --   * TRUE_FALSE: options NULL, value is a JSON boolean.
+--   * NUMERIC_INPUT: options NULL, values 1..10 strings, each a number
+--     (domain/question.ParseNumber), no two equal as numbers.
 --   * question_text non-blank (an image-only stem still states the task).
 --   * image keys are keys the server uploaded (question-images/ prefix),
 --     never a URL from the client.
@@ -66,7 +86,8 @@
 -- ---- Duplicates --------------------------------------------------------------
 -- question_hash = SHA-256 (hex) of kind | grade | normalised text (NFC,
 -- trimmed, whitespace collapsed) | stem image key | the options as a set by
--- content (text + image_key + correct or not) | the TRUE_FALSE value,
+-- content (text + image_key + correct or not) | the TRUE_FALSE value |
+-- the NUMERIC_INPUT values as a set of reduced numbers ("0.5" = "1/2"),
 -- computed by the application (domain/question.Hash). Option ids, display
 -- order, topic, tags, level and explanation are NOT part of it: the same
 -- question reordered or filed under another topic is still the same
@@ -77,11 +98,11 @@
 
 CREATE TABLE IF NOT EXISTS ma_questions (
   question_id         BIGINT UNSIGNED NOT NULL PRIMARY KEY,   -- external id (minted via ma_seqs)
-  question_kind       VARCHAR(32)   NOT NULL,                 -- how it is answered: SINGLE_CHOICE / MULTIPLE_CHOICE / TRUE_FALSE (more later); decides the JSON shapes
+  question_kind       VARCHAR(32)   NOT NULL,                 -- how it is answered: SINGLE_CHOICE / MULTIPLE_CHOICE / TRUE_FALSE / NUMERIC_INPUT (more later); decides the JSON shapes
   question_text       TEXT          NOT NULL,                 -- the stem shown to the child
   question_image_key  VARCHAR(1000) DEFAULT NULL,             -- optional S3 key of the stem's image; presigned on read
   options             JSON          DEFAULT NULL,             -- [{"id","text","image_key"?}] in display order; NULL for kinds with no options
-  correct_answer      JSON          NOT NULL,                 -- the key, shape per kind (see header); never selected for a child's paper
+  correct_answer      JSON          NOT NULL,                 -- the key, shape per kind: {"option_ids"} / {"value"} / {"values"} (see header); never selected for a child's paper
   explanation         TEXT          DEFAULT NULL,             -- worked solution / why the answer is right, shown after answering
   question_grade      TINYINT UNSIGNED NOT NULL,              -- 0 = Mẫu giáo, 1..5 = Lớp 1..5
   question_topic      VARCHAR(255)  DEFAULT NULL,             -- curriculum topic, free text (e.g. 'phép cộng')

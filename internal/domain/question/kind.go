@@ -11,10 +11,11 @@ const (
 	KindSingleChoice   Kind = "SINGLE_CHOICE"   // options; exactly one correct option id
 	KindMultipleChoice Kind = "MULTIPLE_CHOICE" // options; one or more correct option ids
 	KindTrueFalse      Kind = "TRUE_FALSE"      // no options; a boolean value
+	KindNumericInput   Kind = "NUMERIC_INPUT"   // no options; the child types a number, matched by value
 )
 
 // Kinds lists every kind the bank accepts.
-var Kinds = []Kind{KindSingleChoice, KindMultipleChoice, KindTrueFalse}
+var Kinds = []Kind{KindSingleChoice, KindMultipleChoice, KindTrueFalse, KindNumericInput}
 
 func (k Kind) IsValid() bool { return slices.Contains(Kinds, k) }
 
@@ -48,9 +49,11 @@ type Option struct {
 	ImageKey *string
 }
 
-// CorrectAnswer is the key. Exactly one half is used, by kind: OptionIds
-// for choice kinds, Value for TRUE_FALSE.
+// CorrectAnswer is the key. Exactly one part is used, by kind: OptionIds
+// for choice kinds, Value for TRUE_FALSE, Values (canonical numbers, see
+// ParseNumber) for NUMERIC_INPUT.
 type CorrectAnswer struct {
 	OptionIds []string
 	Value     *bool
+	Values    []string
 }

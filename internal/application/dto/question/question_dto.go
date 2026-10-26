@@ -21,10 +21,12 @@ type OptionDto struct {
 }
 
 // CorrectAnswerDto is the key: option_ids for choice kinds, value for
-// TRUE_FALSE. Exactly one is set; which one is checked by the validator.
+// TRUE_FALSE, values (numbers as strings: "5", "0,5", "1/2") for
+// NUMERIC_INPUT. Exactly one is set; which one is checked by the validator.
 type CorrectAnswerDto struct {
 	OptionIds []string `json:"option_ids,omitempty"`
 	Value     *bool    `json:"value,omitempty"`
+	Values    []string `json:"values,omitempty"`
 }
 
 // CreateQuestionItem is one question an admin sends. Pointer fields tell
@@ -122,7 +124,7 @@ func DomainToResponse(q *domain.Question) *QuestionResponse {
 		QuestionText:     q.QuestionText(),
 		QuestionImageKey: q.QuestionImageKey(),
 		Options:          options,
-		CorrectAnswer:    CorrectAnswerDto{OptionIds: a.OptionIds, Value: a.Value},
+		CorrectAnswer:    CorrectAnswerDto{OptionIds: a.OptionIds, Value: a.Value, Values: a.Values},
 		Explanation:      q.Explanation(),
 		QuestionGrade:    q.QuestionGrade(),
 		QuestionTopic:    q.QuestionTopic(),

@@ -169,7 +169,7 @@ func itemOf(q *domain.Question) dto.CreateQuestionItem {
 		QuestionText:     q.QuestionText(),
 		QuestionImageKey: q.QuestionImageKey(),
 		Options:          options,
-		CorrectAnswer:    &dto.CorrectAnswerDto{OptionIds: a.OptionIds, Value: a.Value},
+		CorrectAnswer:    &dto.CorrectAnswerDto{OptionIds: a.OptionIds, Value: a.Value, Values: a.Values},
 		Explanation:      q.Explanation(),
 		QuestionGrade:    &grade,
 		QuestionTopic:    q.QuestionTopic(),
@@ -219,7 +219,14 @@ func buildQuestion(item dto.CreateQuestionItem) (*domain.Question, []issue) {
 	if item.CorrectAnswer == nil {
 		add(status.QUESTION_INVALID_ANSWER, "correct_answer: required")
 	} else {
-		answer = domain.CorrectAnswer{OptionIds: item.CorrectAnswer.OptionIds, Value: item.CorrectAnswer.Value}
+		answer = domain.CorrectAnswer{OptionIds: item.CorrectAnswer.OptionIds, Value: item.CorrectAnswer.Value, Values: item.CorrectAnswer.Values}
+		if kind == domain.KindNumericInput {
+			// Stored canonical ("0,50" → "0.5"); a value that does not parse
+			// is reported by CheckShape below.
+			if values, err := domain.NormalizeNumbers(answer.Values); err == nil {
+				answer.Values = values
+			}
+		}
 		if err := domain.CheckShape(kind, options, answer); err != nil {
 			add(shapeCode(err), "%s", err.Error())
 		}

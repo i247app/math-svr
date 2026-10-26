@@ -48,6 +48,7 @@ type optionJSON struct {
 type correctAnswerJSON struct {
 	OptionIds []string `json:"option_ids,omitempty"`
 	Value     *bool    `json:"value,omitempty"`
+	Values    []string `json:"values,omitempty"`
 }
 
 type QuestionRepository struct {
@@ -309,7 +310,7 @@ func marshalQuestionJSON(q *question.Question) (*string, string, string, error) 
 		options = &s
 	}
 	a := q.CorrectAnswer()
-	rawAnswer, err := json.Marshal(correctAnswerJSON{OptionIds: a.OptionIds, Value: a.Value})
+	rawAnswer, err := json.Marshal(correctAnswerJSON{OptionIds: a.OptionIds, Value: a.Value, Values: a.Values})
 	if err != nil {
 		return nil, "", "", fmt.Errorf("question repo marshal correct_answer: %w", err)
 	}
@@ -351,7 +352,7 @@ func ModelToDomainQuestion(m *models.QuestionModel) (*question.Question, error) 
 	q.SetQuestionText(m.QuestionText)
 	q.SetQuestionImageKey(m.QuestionImageKey)
 	q.SetOptions(options)
-	q.SetCorrectAnswer(question.CorrectAnswer{OptionIds: answer.OptionIds, Value: answer.Value})
+	q.SetCorrectAnswer(question.CorrectAnswer{OptionIds: answer.OptionIds, Value: answer.Value, Values: answer.Values})
 	q.SetExplanation(m.Explanation)
 	q.SetQuestionGrade(m.QuestionGrade)
 	q.SetQuestionTopic(m.QuestionTopic)

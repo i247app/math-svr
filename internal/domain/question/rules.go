@@ -46,12 +46,19 @@ func CheckShape(kind Kind, options []Option, answer CorrectAnswer) error {
 		return fmt.Errorf("%w: %q", ErrInvalidKind, kind)
 	}
 	if !kind.HasOptions() {
-		// TRUE_FALSE
 		if options != nil {
 			return fmt.Errorf("%w: %s takes no options", ErrInvalidOptions, kind)
 		}
-		if answer.Value == nil || answer.OptionIds != nil {
-			return fmt.Errorf("%w: %s needs value (a boolean) and no option_ids", ErrInvalidAnswer, kind)
+		if kind == KindNumericInput {
+			if answer.Value != nil || answer.OptionIds != nil {
+				return fmt.Errorf("%w: %s needs values (numbers as strings) and no value or option_ids", ErrInvalidAnswer, kind)
+			}
+			_, err := NormalizeNumbers(answer.Values)
+			return err
+		}
+		// TRUE_FALSE
+		if answer.Value == nil || answer.OptionIds != nil || answer.Values != nil {
+			return fmt.Errorf("%w: %s needs value (a boolean) and no option_ids or values", ErrInvalidAnswer, kind)
 		}
 		return nil
 	}
@@ -73,8 +80,8 @@ func CheckShape(kind Kind, options []Option, answer CorrectAnswer) error {
 		ids = append(ids, o.Id)
 	}
 
-	if answer.Value != nil {
-		return fmt.Errorf("%w: %s takes option_ids, not value", ErrInvalidAnswer, kind)
+	if answer.Value != nil || answer.Values != nil {
+		return fmt.Errorf("%w: %s takes option_ids, not value or values", ErrInvalidAnswer, kind)
 	}
 	switch n := len(answer.OptionIds); {
 	case kind == KindSingleChoice && n != 1:
@@ -110,6 +117,7 @@ type hashInput struct {
 	ImageKey *string      `json:"i"`
 	Options  []hashOption `json:"o"`
 	Value    *bool        `json:"v"`
+	Numbers  []string     `json:"n,omitempty"` // omitempty: the hashes of the other kinds stay as they were
 }
 
 // hashOption is one option by CONTENT: its id is left out, so the same
@@ -122,7 +130,8 @@ type hashOption struct {
 
 // Hash is the question_hash of q (migration 036): SHA-256 hex of its kind,
 // grade, normalised text, stem image, its options as a set (normalised text
-// + image key + whether correct) and, for TRUE_FALSE, its value. Option ids
+// + image key + whether correct), for TRUE_FALSE its value and, for
+// NUMERIC_INPUT, its values as a set of numbers ("0.5" = "1/2"). Option ids
 // and display order, topic, tags, level and explanation do not count — the
 // same question shown in another order or filed under another topic is
 // still the same question.
@@ -133,6 +142,9 @@ func Hash(q *Question) string {
 		Text:     NormalizeText(q.QuestionText()),
 		ImageKey: q.QuestionImageKey(),
 		Value:    q.CorrectAnswer().Value,
+	}
+	if q.QuestionKind() == KindNumericInput {
+		in.Numbers = numericHashValues(q.CorrectAnswer().Values)
 	}
 	for _, o := range q.Options() {
 		h := hashOption{Text: NormalizeText(o.Text), Correct: slices.Contains(q.CorrectAnswer().OptionIds, o.Id)}
