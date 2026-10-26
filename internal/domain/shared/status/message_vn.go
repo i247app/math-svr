@@ -802,6 +802,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Câu hỏi không tồn tại"
 	case QUESTION_NOTHING_TO_UPDATE:
 		return "Không có thông tin nào để cập nhật"
+	case QUESTION_INVALID_STATUS:
+		return "question_status phải là PENDING_REVIEW, APPROVED hoặc REJECTED"
 
 	default:
 		return ""

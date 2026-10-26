@@ -198,6 +198,17 @@ type UpdateQuestionReq struct {
 	QuestionTags     *[]string         `json:"question_tags"`
 }
 
+// MarkQuestionStatusReq sets one question's review state.
+type MarkQuestionStatusReq struct {
+	QuestionID     int64  `json:"question_id"`
+	QuestionStatus string `json:"question_status"`
+}
+
+// VerifyQuestionReq records one more admin check of a question.
+type VerifyQuestionReq struct {
+	QuestionID int64 `json:"question_id"`
+}
+
 // QuestionRes wraps one question.
 type QuestionRes struct {
 	Question *QuestionResponse `json:"question"`

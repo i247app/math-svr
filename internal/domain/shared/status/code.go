@@ -533,4 +533,6 @@ const (
 	QUESTION_NOT_FOUND StatusCode = 14413
 	// QUESTION_NOTHING_TO_UPDATE: an update named no field to change.
 	QUESTION_NOTHING_TO_UPDATE StatusCode = 14414
+	// QUESTION_INVALID_STATUS: mark-status named no question_status, or an unknown one.
+	QUESTION_INVALID_STATUS StatusCode = 14415
 )

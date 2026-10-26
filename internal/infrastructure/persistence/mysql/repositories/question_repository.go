@@ -147,6 +147,24 @@ func (r *QuestionRepository) UpdateContent(ctx context.Context, q *question.Ques
 	return nil
 }
 
+func (r *QuestionRepository) MarkStatus(ctx context.Context, id int64, status string, modifyId *int64) error {
+	query := `UPDATE ` + questionTable + ` q SET q.question_status = ?, q.modify_id = ?
+		WHERE (q.question_id = ?) AND ` + questionActiveWhere
+	if _, err := r.db.Exec(ctx, query, slices.Concat([]any{status, modifyId, id}, questionActiveArgs())...); err != nil {
+		return fmt.Errorf("question repo mark status: %w", err)
+	}
+	return nil
+}
+
+func (r *QuestionRepository) IncVerified(ctx context.Context, id int64, modifyId *int64) error {
+	query := `UPDATE ` + questionTable + ` q SET q.verified_count = q.verified_count + 1, q.modify_id = ?
+		WHERE (q.question_id = ?) AND ` + questionActiveWhere
+	if _, err := r.db.Exec(ctx, query, slices.Concat([]any{modifyId, id}, questionActiveArgs())...); err != nil {
+		return fmt.Errorf("question repo inc verified: %w", err)
+	}
+	return nil
+}
+
 func (r *QuestionRepository) ListByIds(ctx context.Context, ids []int64) ([]*question.Question, error) {
 	if len(ids) == 0 {
 		return nil, nil

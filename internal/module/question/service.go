@@ -28,6 +28,7 @@ const imageUrlTTL = 1 * time.Hour
 type Service struct {
 	createCmd *command.CreateQuestionsCommandHandler
 	updateCmd *command.UpdateQuestionCommandHandler
+	reviewCmd *command.ReviewQuestionCommandHandler
 	listQuery *query.ListQuestionsQueryHandler
 	storage   *storage.Adapter
 }
@@ -36,6 +37,7 @@ func NewService(uow transaction.UnitOfWork, repo domain.IRepository, storageProv
 	return &Service{
 		createCmd: command.NewCreateQuestionsCommandHandler(uow),
 		updateCmd: command.NewUpdateQuestionCommandHandler(uow),
+		reviewCmd: command.NewReviewQuestionCommandHandler(uow),
 		listQuery: query.NewListQuestionsQueryHandler(repo),
 		storage:   storageProvider,
 	}
@@ -100,6 +102,47 @@ func (s *Service) UpdateQuestion(ctx context.Context, req *dto.UpdateQuestionReq
 		return nil, err
 	}
 	logger.From(ctx).Infof("question.updated admin_uid=%d via=%s question_id=%d", sctx.UID(ctx), sctx.GetAdminVia(ctx), saved.QuestionId())
+	return &dto.QuestionRes{Question: s.toResponses(ctx, []*domain.Question{saved})[0]}, nil
+}
+
+// MarkQuestionStatus sets one question's review state; content stays.
+func (s *Service) MarkQuestionStatus(ctx context.Context, req *dto.MarkQuestionStatusReq) (*dto.QuestionRes, error) {
+	if err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	if err := ValidateMarkQuestionStatus(ctx, req); err != nil {
+		return nil, err
+	}
+	saved, err := s.reviewCmd.Handle(ctx, command.ReviewQuestionCommand{
+		QuestionID: req.QuestionID,
+		ActorUID:   adminActor(ctx),
+		Status:     &req.QuestionStatus,
+	})
+	if err != nil {
+		return nil, err
+	}
+	logger.From(ctx).Infof("question.status_marked admin_uid=%d via=%s question_id=%d status=%s",
+		sctx.UID(ctx), sctx.GetAdminVia(ctx), saved.QuestionId(), req.QuestionStatus)
+	return &dto.QuestionRes{Question: s.toResponses(ctx, []*domain.Question{saved})[0]}, nil
+}
+
+// VerifyQuestion records one more admin check: verified_count + 1, nothing
+// else changes.
+func (s *Service) VerifyQuestion(ctx context.Context, req *dto.VerifyQuestionReq) (*dto.QuestionRes, error) {
+	if err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	if req.QuestionID <= 0 {
+		return nil, errs.NewError(ctx, status.QUESTION_MISSING_ID, nil, errors.New("question_id is required"))
+	}
+	saved, err := s.reviewCmd.Handle(ctx, command.ReviewQuestionCommand{
+		QuestionID: req.QuestionID, ActorUID: adminActor(ctx), Verify: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	logger.From(ctx).Infof("question.verified admin_uid=%d via=%s question_id=%d verified_count=%d",
+		sctx.UID(ctx), sctx.GetAdminVia(ctx), saved.QuestionId(), saved.VerifiedCount())
 	return &dto.QuestionRes{Question: s.toResponses(ctx, []*domain.Question{saved})[0]}, nil
 }
 

@@ -102,6 +102,18 @@ func ValidateUpdateQuestion(ctx context.Context, req *dto.UpdateQuestionReq) err
 	return nil
 }
 
+// ValidateMarkQuestionStatus needs a question_id and a known review state.
+func ValidateMarkQuestionStatus(ctx context.Context, req *dto.MarkQuestionStatusReq) error {
+	if req.QuestionID <= 0 {
+		return errs.NewError(ctx, status.QUESTION_MISSING_ID, nil, errors.New("question_id is required"))
+	}
+	if !slices.Contains(domain.Statuses, req.QuestionStatus) {
+		return errs.NewError(ctx, status.QUESTION_INVALID_STATUS, nil,
+			fmt.Errorf("question_status %q is not one of %v", req.QuestionStatus, domain.Statuses))
+	}
+	return nil
+}
+
 // MergeUpdate lays the request over the stored question and checks the
 // result with every create rule (so a kind change must bring options and a
 // key that fit it). Source, status and verified_count stay as stored; the
@@ -368,7 +380,7 @@ func ValidateListQuestions(ctx context.Context, req *dto.ListQuestionsReq) (doma
 	}
 	for _, raw := range req.QuestionStatuses {
 		s := strings.TrimSpace(raw)
-		if !slices.Contains([]string{domain.StatusPendingReview, domain.StatusApproved, domain.StatusRejected}, s) {
+		if !slices.Contains(domain.Statuses, s) {
 			return filter, errs.NewError(ctx, status.QUESTION_INVALID_FILTER, nil, fmt.Errorf("question_statuses: unknown status %q", raw))
 		}
 		if !slices.Contains(filter.Statuses, s) {

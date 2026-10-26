@@ -37,6 +37,12 @@ type IRepository interface {
 	// topic, level, tags, explanation, hash) of the live row and stamps
 	// modify_id. A hash another live row holds fails with ErrDuplicate.
 	UpdateContent(ctx context.Context, q *Question, modifyId *int64) error
+	// MarkStatus sets question_status of the live row and stamps modify_id;
+	// content and hash are left alone.
+	MarkStatus(ctx context.Context, id int64, status string, modifyId *int64) error
+	// IncVerified adds 1 to verified_count of the live row in one UPDATE
+	// (concurrent calls each count) and stamps modify_id.
+	IncVerified(ctx context.Context, id int64, modifyId *int64) error
 	// ListByIds returns the live rows among ids, in no particular order.
 	ListByIds(ctx context.Context, ids []int64) ([]*Question, error)
 	// FindLiveHashes returns which of hashes a live row already holds, so a

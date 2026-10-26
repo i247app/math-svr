@@ -802,6 +802,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "The question does not exist"
 	case QUESTION_NOTHING_TO_UPDATE:
 		return "Nothing to update"
+	case QUESTION_INVALID_STATUS:
+		return "question_status must be PENDING_REVIEW, APPROVED or REJECTED"
 
 	default:
 		return ""

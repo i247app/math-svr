@@ -62,6 +62,36 @@ func (h *Handler) HandleUpdateQuestion(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
+// POST /questions/mark-status — admin only; sets one question's review state.
+func (h *Handler) HandleMarkQuestionStatus(w http.ResponseWriter, r *http.Request) {
+	var req dto.MarkQuestionStatusReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.MarkQuestionStatus(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /questions/verify — admin only; verified_count + 1.
+func (h *Handler) HandleVerifyQuestion(w http.ResponseWriter, r *http.Request) {
+	var req dto.VerifyQuestionReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.VerifyQuestion(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // maxUploadBody caps the whole multipart body: the image plus room for the
 // form framing. Beyond it the read fails instead of buffering more.
 const maxUploadBody = MaxImageBytes + 1<<20

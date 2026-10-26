@@ -39,6 +39,9 @@ const (
 	StatusRejected      = "REJECTED"
 )
 
+// Statuses are every review state, in review order.
+var Statuses = []string{StatusPendingReview, StatusApproved, StatusRejected}
+
 // InitialStatus is the review state a new question starts in: an admin's own
 // question needs no review, anything else (a model's) waits for one.
 func (s Source) InitialStatus() string {
