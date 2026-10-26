@@ -40,7 +40,8 @@ type issue struct {
 // ValidateCreateQuestions checks every question and turns the request into
 // bank rows ready to insert (no id yet): text trimmed, blank topic dropped,
 // tags trimmed and deduplicated, server-owned fields set (source ADMIN,
-// PENDING_REVIEW, verified_count 0) and question_hash computed.
+// the source's initial status — APPROVED —, verified_count 0) and
+// question_hash computed.
 //
 // It is all or nothing: every question is checked, and any broken rule
 // refuses the whole request with ONE error — the code of the first issue,
@@ -269,8 +270,8 @@ func buildQuestion(item dto.CreateQuestionItem) (*domain.Question, []issue) {
 	q.SetQuestionLevel(item.QuestionLevel)
 	q.SetQuestionTags(tags)
 	q.SetQuestionSource(domain.SourceAdmin)
-	pending := domain.StatusPendingReview
-	q.SetQuestionStatus(&pending)
+	initial := domain.SourceAdmin.InitialStatus()
+	q.SetQuestionStatus(&initial)
 	q.SetQuestionHash(domain.Hash(q))
 	return q, nil
 }

@@ -39,6 +39,15 @@ const (
 	StatusRejected      = "REJECTED"
 )
 
+// InitialStatus is the review state a new question starts in: an admin's own
+// question needs no review, anything else (a model's) waits for one.
+func (s Source) InitialStatus() string {
+	if s == SourceAdmin {
+		return StatusApproved
+	}
+	return StatusPendingReview
+}
+
 // Option is one choice of a choice question, in display order. Id is short,
 // unique within the question and never changes once written: CorrectAnswer
 // names options by id, so reordering or rewording never moves the key.
