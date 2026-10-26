@@ -92,6 +92,36 @@ func (h *Handler) HandleVerifyQuestion(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
+// POST /questions/soft-delete — admin only; hides one question.
+func (h *Handler) HandleSoftDeleteQuestion(w http.ResponseWriter, r *http.Request) {
+	var req dto.DeleteQuestionReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.SoftDeleteQuestion(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
+// POST /questions/force-delete — admin only; removes one question's row.
+func (h *Handler) HandleForceDeleteQuestion(w http.ResponseWriter, r *http.Request) {
+	var req dto.DeleteQuestionReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.ForceDeleteQuestion(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // maxUploadBody caps the whole multipart body: the image plus room for the
 // form framing. Beyond it the read fails instead of buffering more.
 const maxUploadBody = MaxImageBytes + 1<<20

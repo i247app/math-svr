@@ -29,6 +29,7 @@ type Service struct {
 	createCmd *command.CreateQuestionsCommandHandler
 	updateCmd *command.UpdateQuestionCommandHandler
 	reviewCmd *command.ReviewQuestionCommandHandler
+	deleteCmd *command.DeleteQuestionCommandHandler
 	listQuery *query.ListQuestionsQueryHandler
 	storage   *storage.Adapter
 }
@@ -38,6 +39,7 @@ func NewService(uow transaction.UnitOfWork, repo domain.IRepository, storageProv
 		createCmd: command.NewCreateQuestionsCommandHandler(uow),
 		updateCmd: command.NewUpdateQuestionCommandHandler(uow),
 		reviewCmd: command.NewReviewQuestionCommandHandler(uow),
+		deleteCmd: command.NewDeleteQuestionCommandHandler(uow),
 		listQuery: query.NewListQuestionsQueryHandler(repo),
 		storage:   storageProvider,
 	}
@@ -144,6 +146,33 @@ func (s *Service) VerifyQuestion(ctx context.Context, req *dto.VerifyQuestionReq
 	logger.From(ctx).Infof("question.verified admin_uid=%d via=%s question_id=%d verified_count=%d",
 		sctx.UID(ctx), sctx.GetAdminVia(ctx), saved.QuestionId(), saved.VerifiedCount())
 	return &dto.QuestionRes{Question: s.toResponses(ctx, []*domain.Question{saved})[0]}, nil
+}
+
+// SoftDeleteQuestion hides a live question; the row stays and its content
+// may be created again.
+func (s *Service) SoftDeleteQuestion(ctx context.Context, req *dto.DeleteQuestionReq) (*dto.DeleteQuestionRes, error) {
+	return s.deleteQuestion(ctx, req, false)
+}
+
+// ForceDeleteQuestion removes a question's row for good, live or already
+// soft-deleted.
+func (s *Service) ForceDeleteQuestion(ctx context.Context, req *dto.DeleteQuestionReq) (*dto.DeleteQuestionRes, error) {
+	return s.deleteQuestion(ctx, req, true)
+}
+
+func (s *Service) deleteQuestion(ctx context.Context, req *dto.DeleteQuestionReq, force bool) (*dto.DeleteQuestionRes, error) {
+	if err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	if req.QuestionID <= 0 {
+		return nil, errs.NewError(ctx, status.QUESTION_MISSING_ID, nil, errors.New("question_id is required"))
+	}
+	if err := s.deleteCmd.Handle(ctx, command.DeleteQuestionCommand{QuestionID: req.QuestionID, ActorUID: adminActor(ctx), Force: force}); err != nil {
+		return nil, err
+	}
+	logger.From(ctx).Infof("question.deleted admin_uid=%d via=%s question_id=%d force=%t",
+		sctx.UID(ctx), sctx.GetAdminVia(ctx), req.QuestionID, force)
+	return &dto.DeleteQuestionRes{}, nil
 }
 
 // ListQuestions pages the bank, newest first, key and explanation included.

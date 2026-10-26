@@ -165,6 +165,33 @@ func (r *QuestionRepository) IncVerified(ctx context.Context, id int64, modifyId
 	return nil
 }
 
+// SoftDeleteById leaves question_status (the review state) as it was.
+func (r *QuestionRepository) SoftDeleteById(ctx context.Context, id int64, modifyId *int64) (bool, error) {
+	query := `UPDATE ` + questionTable + ` q SET q.status = ?, q.deleted_dt = ?, q.modify_id = ?
+		WHERE (q.question_id = ?) AND ` + questionActiveWhere
+	res, err := r.db.Exec(ctx, query, slices.Concat([]any{enum.StatusInactive, mtime.Now().Time, modifyId, id}, questionActiveArgs())...)
+	if err != nil {
+		return false, fmt.Errorf("question repo soft delete: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("question repo soft delete: %w", err)
+	}
+	return affected > 0, nil
+}
+
+func (r *QuestionRepository) ForceDeleteById(ctx context.Context, id int64) (bool, error) {
+	res, err := r.db.Exec(ctx, `DELETE FROM `+questionTable+` WHERE question_id = ?`, id)
+	if err != nil {
+		return false, fmt.Errorf("question repo force delete: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return false, fmt.Errorf("question repo force delete: %w", err)
+	}
+	return affected > 0, nil
+}
+
 func (r *QuestionRepository) ListByIds(ctx context.Context, ids []int64) ([]*question.Question, error) {
 	if len(ids) == 0 {
 		return nil, nil

@@ -43,6 +43,11 @@ type IRepository interface {
 	// IncVerified adds 1 to verified_count of the live row in one UPDATE
 	// (concurrent calls each count) and stamps modify_id.
 	IncVerified(ctx context.Context, id int64, modifyId *int64) error
+	// SoftDeleteById hides the live row (status INACTIVE, deleted_dt now)
+	// and stamps modify_id; its hash is free again. false = no live row.
+	SoftDeleteById(ctx context.Context, id int64, modifyId *int64) (bool, error)
+	// ForceDeleteById removes the row, live or soft-deleted. false = no row.
+	ForceDeleteById(ctx context.Context, id int64) (bool, error)
 	// ListByIds returns the live rows among ids, in no particular order.
 	ListByIds(ctx context.Context, ids []int64) ([]*Question, error)
 	// FindLiveHashes returns which of hashes a live row already holds, so a

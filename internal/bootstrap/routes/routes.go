@@ -292,6 +292,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /questions/update", questionHandler.HandleUpdateQuestion, adminOrApiKeyMiddleware)
 		reg("POST /questions/mark-status", questionHandler.HandleMarkQuestionStatus, adminOrApiKeyMiddleware)
 		reg("POST /questions/verify", questionHandler.HandleVerifyQuestion, adminOrApiKeyMiddleware)
+		reg("POST /questions/soft-delete", questionHandler.HandleSoftDeleteQuestion, adminOrApiKeyMiddleware)
+		reg("POST /questions/force-delete", questionHandler.HandleForceDeleteQuestion, adminOrApiKeyMiddleware)
 		reg("POST /questions/images/upload", questionHandler.HandleUploadImage, adminOrApiKeyMiddleware)
 	}
 

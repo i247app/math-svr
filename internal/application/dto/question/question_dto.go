@@ -209,6 +209,14 @@ type VerifyQuestionReq struct {
 	QuestionID int64 `json:"question_id"`
 }
 
+// DeleteQuestionReq names the question to soft- or force-delete.
+type DeleteQuestionReq struct {
+	QuestionID int64 `json:"question_id"`
+}
+
+// DeleteQuestionRes is empty: the question is gone.
+type DeleteQuestionRes struct{}
+
 // QuestionRes wraps one question.
 type QuestionRes struct {
 	Question *QuestionResponse `json:"question"`
