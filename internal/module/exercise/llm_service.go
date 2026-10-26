@@ -4,7 +4,7 @@ import (
 	"context"
 
 	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
-	"math-ai.com/math-ai/internal/application/dto/question"
+	"math-ai.com/math-ai/internal/application/dto/aiquestion"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -15,7 +15,7 @@ import (
 // llmClient is the classroomexercise module's typed surface over the
 // generic LLM adapter. It owns prompt construction (delegated to
 // domain/prompt/input via BuildExercisePrompt) and parses the response through
-// application/dto/question, the package that owns the shared MCQ
+// application/dto/aiquestion, the package that owns the shared MCQ
 // JSON-mode contract.
 //
 // Temperature 0.2 matches QuizPromptKindGenerate — generation creativity
@@ -50,7 +50,7 @@ type generateExerciseOutput struct {
 	// cộng trong phạm vi 10"). The teacher supplies the exercise title
 	// separately, so only short_text is consumed from the model here.
 	ShortText string
-	Questions []question.Question
+	Questions []aiquestion.Question
 }
 
 func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInput) (*generateExerciseOutput, error) {
@@ -95,7 +95,7 @@ func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 	// The exercise schema shares the {short_text, questions} shape; we
 	// ignore the AI title because the teacher supplies the exercise title,
 	// but we keep the AI short_text as the auto-generated topic description.
-	gen, err := question.ParseGeneration(res.Content)
+	gen, err := aiquestion.ParseGeneration(res.Content)
 	if err != nil {
 		log.Warnf("classroom_exercise.llm.parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_GENERATION_FAILED, map[string]any{"reason": err.Error()}, err)
@@ -104,7 +104,7 @@ func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 	// Clamp render discriminators and report icon-token drift, so the
 	// visual contract is enforced identically for classroom exercises.
 	// Grading is label-based, so this never changes correctness.
-	questions, warnings := question.Normalize(gen.Questions)
+	questions, warnings := aiquestion.Normalize(gen.Questions)
 	for _, w := range warnings {
 		log.Warnf("classroom_exercise.normalize.%s value=%q q=%d", w.Kind, w.Value, w.QuestionNumber)
 	}
@@ -118,7 +118,7 @@ type gradeExerciseInput struct {
 	Answers   string
 }
 
-func (c *llmClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*question.GradingResult, error) {
+func (c *llmClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*aiquestion.GradingResult, error) {
 	log := logger.From(ctx)
 	if c.adapter == nil {
 		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil,
@@ -153,7 +153,7 @@ func (c *llmClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*
 
 	log.Infof("LLM RESPONSE: %s", res.Content)
 
-	grading, err := question.ParseGrading(res.Content)
+	grading, err := aiquestion.ParseGrading(res.Content)
 	if err != nil {
 		log.Warnf("classroom_exercise_submission.llm.parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED,

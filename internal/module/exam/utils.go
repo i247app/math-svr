@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	command "math-ai.com/math-ai/internal/application/command/exam"
+	"math-ai.com/math-ai/internal/application/dto/aiquestion"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
-	"math-ai.com/math-ai/internal/application/dto/question"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/utils"
@@ -36,7 +36,7 @@ func sanitizeExamText(text string) *string {
 // marshalQuestions stores the round in the EXAM vocabulary, so what sits
 // in ai_questions_json is what the client reads and what
 // ma_exam_session_lines mirrors — one set of names end to end.
-func marshalQuestions(ctx context.Context, questions []question.Question) (string, error) {
+func marshalQuestions(ctx context.Context, questions []aiquestion.Question) (string, error) {
 	raw, err := json.Marshal(dto.FromSharedQuestions(questions))
 	if err != nil {
 		return "", errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil,
@@ -66,7 +66,7 @@ func newContentFrom(ctx context.Context, in generateExamInput, generated *genera
 	}, nil
 }
 
-// systemRand adapts the process-wide generator to question.Shuffler. The
+// systemRand adapts the process-wide generator to aiquestion.Shuffler. The
 // top-level math/rand/v2 source is seeded by the runtime and safe for
 // concurrent use, which is all a shuffle needs; nothing here is security
 // sensitive.
@@ -82,11 +82,11 @@ func (systemRand) Shuffle(n int, swap func(i, j int)) { rand.Shuffle(n, swap) }
 // no special case anywhere downstream — ParseShuffle already treats a
 // missing ordering as stored order, and sittings handed out while it was
 // on keep the ordering they stored.
-func (s *Service) drawShuffle(ctx context.Context, canonical []question.Question) (*string, error) {
+func (s *Service) drawShuffle(ctx context.Context, canonical []aiquestion.Question) (*string, error) {
 	if !s.shuffleEnabled || len(canonical) == 0 {
 		return nil, nil
 	}
-	raw, err := question.NewShuffle(canonical, systemRand{}).JSON()
+	raw, err := aiquestion.NewShuffle(canonical, systemRand{}).JSON()
 	if err != nil {
 		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)
 	}
@@ -95,7 +95,7 @@ func (s *Service) drawShuffle(ctx context.Context, canonical []question.Question
 
 // decodeStoredQuestions reads a cached set back into the shared shape so
 // a shuffle can be drawn against it.
-func decodeStoredQuestions(ctx context.Context, raw string) ([]question.Question, error) {
+func decodeStoredQuestions(ctx context.Context, raw string) ([]aiquestion.Question, error) {
 	var stored []dto.ExamQuestion
 	if err := json.Unmarshal([]byte(raw), &stored); err != nil {
 		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil,

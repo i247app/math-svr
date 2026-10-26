@@ -7,8 +7,8 @@ import (
 	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
 	command "math-ai.com/math-ai/internal/application/command/exam"
 	"math-ai.com/math-ai/internal/application/command/shared/practice"
+	"math-ai.com/math-ai/internal/application/dto/aiquestion"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
-	"math-ai.com/math-ai/internal/application/dto/question"
 	query "math-ai.com/math-ai/internal/application/query/exam"
 	"math-ai.com/math-ai/internal/application/transaction"
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
@@ -187,7 +187,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	// canonical is the question set as stored — the thing the child's own
 	// ordering is drawn against below. On a cache hit it is decoded from
 	// the shared row; on a miss it is what the model just produced.
-	var canonical []question.Question
+	var canonical []aiquestion.Question
 
 	if cached != nil {
 		log.Infof("exam.cache.hit tag=%s exam_id=%d", tag, cached.ExamId())
@@ -349,7 +349,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 // the next child who is served the same set from cache. This is what
 // stops two children (or one child twice) meeting an identical paper,
 // and it is what EXAM_SHUFFLE_ENABLED turns off.
-func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, canonical []question.Question, profile *profileDomain.Profile) (*dto.GenerateExamRes, error) {
+func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, canonical []aiquestion.Question, profile *profileDomain.Profile) (*dto.GenerateExamRes, error) {
 	shuffleJSON, err := s.drawShuffle(ctx, canonical)
 	if err != nil {
 		return nil, err

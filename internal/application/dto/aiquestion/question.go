@@ -8,7 +8,7 @@
 // The JSON tags here are a wire contract in two directions at once: the
 // mobile client reads them, and the LLM is prompted to emit them. Renaming
 // a Go field is free; renaming a tag is not.
-package question
+package aiquestion
 
 // AnswerChoice is one option in a multiple-choice question. Label is the
 // alphabetical key ("A".."D") the student selects; Content is the text

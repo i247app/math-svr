@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"sort"
 
-	"math-ai.com/math-ai/internal/application/dto/question"
+	"math-ai.com/math-ai/internal/application/dto/aiquestion"
 	domain "math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
 	"math-ai.com/math-ai/internal/shared/pagination"
@@ -48,10 +48,10 @@ type GenerateExamReq struct {
 // ma_exam_pools and is read from there, so a client cannot declare its own
 // correct answers and grade itself upward.
 type SubmitExamReq struct {
-	UID       *int64                   `json:"-"`
-	ProfileID int64                    `json:"profile_id"`
-	ElinkID   int64                    `json:"elink_id"`
-	Answers   []question.StudentAnswer `json:"answers"`
+	UID       *int64                     `json:"-"`
+	ProfileID int64                      `json:"profile_id"`
+	ElinkID   int64                      `json:"elink_id"`
+	Answers   []aiquestion.StudentAnswer `json:"answers"`
 }
 
 // GetExamReq reads either ONE sitting or ONE row of a journey:
@@ -169,18 +169,18 @@ type ExamResponse struct {
 // itself stores only the two labels that matter for grading — and is
 // omitted when that set can no longer be found.
 type ExamAnswerDetail struct {
-	ElinkID            int64                   `json:"elink_id"`
-	QuestionNumber     int                     `json:"question_number"`
-	QuestionType       *string                 `json:"question_type,omitempty"`
-	QuestionName       *string                 `json:"question_name,omitempty"`
-	Answers            []question.AnswerChoice `json:"answers,omitempty"`
-	QuestionTopic      *string                 `json:"question_topic,omitempty"`
-	QuestionGrade      *int                    `json:"question_grade,omitempty"`
-	RightAnswerLabel   *string                 `json:"right_answer_label,omitempty"`
-	RightAnswerContent *string                 `json:"right_answer_content,omitempty"`
-	SelectedLabel      string                  `json:"selected_label"`
-	SelectedContent    *string                 `json:"selected_content,omitempty"`
-	IsCorrect          bool                    `json:"is_correct"`
+	ElinkID            int64                     `json:"elink_id"`
+	QuestionNumber     int                       `json:"question_number"`
+	QuestionType       *string                   `json:"question_type,omitempty"`
+	QuestionName       *string                   `json:"question_name,omitempty"`
+	Answers            []aiquestion.AnswerChoice `json:"answers,omitempty"`
+	QuestionTopic      *string                   `json:"question_topic,omitempty"`
+	QuestionGrade      *int                      `json:"question_grade,omitempty"`
+	RightAnswerLabel   *string                   `json:"right_answer_label,omitempty"`
+	RightAnswerContent *string                   `json:"right_answer_content,omitempty"`
+	SelectedLabel      string                    `json:"selected_label"`
+	SelectedContent    *string                   `json:"selected_content,omitempty"`
+	IsCorrect          bool                      `json:"is_correct"`
 }
 
 // ExamSessionResponse is one JOURNEY — a stretch of one exam type the child worked
@@ -395,14 +395,14 @@ func AttemptListToResponse(attempts []*domain.ExamLink, examPools map[int64]*dom
 // examPools supplies the question sets the sittings were drawn from, keyed
 // by exam_id, so every row can carry its full option list. Each set is
 // parsed once, however many rows point at it.
-func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*question.Shuffle, examPools map[int64]*domain.ExamPool) []ExamAnswerDetail {
+func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*aiquestion.Shuffle, examPools map[int64]*domain.ExamPool) []ExamAnswerDetail {
 	questions := newQuestionIndex(examPools)
 
 	out := make([]ExamAnswerDetail, 0, len(details))
 	for _, d := range details {
 		sh := shuffles[d.ElinkId()]
 
-		var answers []question.AnswerChoice
+		var answers []aiquestion.AnswerChoice
 		if q, ok := questions.lookup(d.ExamId(), d.QuestionNumber()); ok {
 			answers = sh.ServedAnswers(d.QuestionNumber(), q)
 		}
@@ -440,14 +440,14 @@ func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*qu
 // difference between parsing each set once and parsing it per row.
 type questionIndex struct {
 	sets   map[int64]*domain.ExamPool
-	parsed map[int64]map[int]question.Question
+	parsed map[int64]map[int]aiquestion.Question
 }
 
 func newQuestionIndex(sets map[int64]*domain.ExamPool) *questionIndex {
-	return &questionIndex{sets: sets, parsed: make(map[int64]map[int]question.Question, len(sets))}
+	return &questionIndex{sets: sets, parsed: make(map[int64]map[int]aiquestion.Question, len(sets))}
 }
 
-func (x *questionIndex) lookup(examID int64, canonicalQN int) (question.Question, bool) {
+func (x *questionIndex) lookup(examID int64, canonicalQN int) (aiquestion.Question, bool) {
 	byNumber, ok := x.parsed[examID]
 	if !ok {
 		byNumber = x.parse(examID)
@@ -461,7 +461,7 @@ func (x *questionIndex) lookup(examID int64, canonicalQN int) (question.Question
 // index rather than an error: the review still renders, just without the
 // option list for those rows — which is the graceful outcome when a
 // shared question set has been retired from under a child's history.
-func (x *questionIndex) parse(examID int64) map[int]question.Question {
+func (x *questionIndex) parse(examID int64) map[int]aiquestion.Question {
 	set, ok := x.sets[examID]
 	if !ok || set == nil {
 		return nil
@@ -470,7 +470,7 @@ func (x *questionIndex) parse(examID int64) map[int]question.Question {
 	if err := json.Unmarshal([]byte(set.AiQuestionsJson()), &stored); err != nil {
 		return nil
 	}
-	byNumber := make(map[int]question.Question, len(stored))
+	byNumber := make(map[int]aiquestion.Question, len(stored))
 	for _, q := range stored {
 		byNumber[q.QuestionNumber] = q.ToShared()
 	}
@@ -481,8 +481,8 @@ func (x *questionIndex) parse(examID int64) map[int]question.Question {
 // DetailsToResponse consumes. A malformed ordering is treated as none:
 // the review then renders that sitting canonically rather than failing
 // the whole screen over one row.
-func ShufflesOf(attempts ...*domain.ExamLink) map[int64]*question.Shuffle {
-	out := make(map[int64]*question.Shuffle, len(attempts))
+func ShufflesOf(attempts ...*domain.ExamLink) map[int64]*aiquestion.Shuffle {
+	out := make(map[int64]*aiquestion.Shuffle, len(attempts))
 	for _, a := range attempts {
 		if a == nil {
 			continue
@@ -492,15 +492,15 @@ func ShufflesOf(attempts ...*domain.ExamLink) map[int64]*question.Shuffle {
 	return out
 }
 
-func shuffleOf(a *domain.ExamLink) *question.Shuffle {
-	sh, err := question.ParseShuffle(a.ShuffleMap())
+func shuffleOf(a *domain.ExamLink) *aiquestion.Shuffle {
+	sh, err := aiquestion.ParseShuffle(a.ShuffleMap())
 	if err != nil {
 		return nil
 	}
 	return sh
 }
 
-func servedLabelPtr(sh *question.Shuffle, canonicalQN int, label *string) *string {
+func servedLabelPtr(sh *aiquestion.Shuffle, canonicalQN int, label *string) *string {
 	if label == nil {
 		return nil
 	}
@@ -580,7 +580,7 @@ func JourneysToResponse(journeys []domain.JourneyStats, examPools map[int64]*dom
 // this sitting was served, and — when the key must stay hidden — blanks
 // it field by field rather than dropping the question: the child still
 // needs the stem and the options to answer.
-func servedQuestions(raw string, sh *question.Shuffle, includeAnswerKey bool) []ExamQuestion {
+func servedQuestions(raw string, sh *aiquestion.Shuffle, includeAnswerKey bool) []ExamQuestion {
 	if raw == "" {
 		return nil
 	}

@@ -3,7 +3,7 @@ package exercise
 import (
 	"encoding/json"
 
-	"math-ai.com/math-ai/internal/application/dto/question"
+	"math-ai.com/math-ai/internal/application/dto/aiquestion"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
@@ -62,8 +62,8 @@ type SubmissionResponse struct {
 	ClassroomID                   int64                      `json:"classroom_id"`
 	ProfileID                     int64                      `json:"profile_id"`
 	Profile                       *SubmissionProfileSummary  `json:"profile,omitempty"`
-	Answers                       []question.StudentAnswer   `json:"answers,omitempty"`
-	Grading                       *question.GradingResult    `json:"grading,omitempty"`
+	Answers                       []aiquestion.StudentAnswer `json:"answers,omitempty"`
+	Grading                       *aiquestion.GradingResult  `json:"grading,omitempty"`
 	SubmittedDt                   string                     `json:"submitted_dt,omitempty"`
 	GradedDt                      string                     `json:"graded_dt,omitempty"`
 	Note                          *string                    `json:"note,omitempty"`
@@ -77,10 +77,10 @@ type SubmissionResponse struct {
 // is optional; when omitted the service falls back to the session
 // user's sole profile (mirrors the exercise list endpoint).
 type SubmitExerciseAnswersReq struct {
-	ProfileID           *int64                   `json:"profile_id,omitempty"`
-	ClassroomExerciseID int64                    `json:"classroom_exercise_id"`
-	Answers             []question.StudentAnswer `json:"answers"`
-	Note                *string                  `json:"note,omitempty"`
+	ProfileID           *int64                     `json:"profile_id,omitempty"`
+	ClassroomExerciseID int64                      `json:"classroom_exercise_id"`
+	Answers             []aiquestion.StudentAnswer `json:"answers"`
+	Note                *string                    `json:"note,omitempty"`
 }
 
 type SubmitExerciseAnswersRes struct {
@@ -257,11 +257,11 @@ func DomainSubmissionListToResponse(items []*domain.Submission) []*SubmissionRes
 	return out
 }
 
-func parseAnswers(raw *string) []question.StudentAnswer {
+func parseAnswers(raw *string) []aiquestion.StudentAnswer {
 	if raw == nil || *raw == "" {
 		return nil
 	}
-	var out []question.StudentAnswer
+	var out []aiquestion.StudentAnswer
 	if err := json.Unmarshal([]byte(*raw), &out); err != nil {
 		return nil
 	}
@@ -271,7 +271,7 @@ func parseAnswers(raw *string) []question.StudentAnswer {
 // buildGrading folds the per-column grading fields into the shared
 // QuizGradingResult shape. Returns nil when no grading is present so
 // the response stays tight for un-graded rows.
-func buildGrading(s *domain.Submission) *question.GradingResult {
+func buildGrading(s *domain.Submission) *aiquestion.GradingResult {
 	if s == nil {
 		return nil
 	}
@@ -279,7 +279,7 @@ func buildGrading(s *domain.Submission) *question.GradingResult {
 		s.CorrectNumber() == nil && s.ScorePercentage() == nil {
 		return nil
 	}
-	g := &question.GradingResult{}
+	g := &aiquestion.GradingResult{}
 	if v := s.TotalQuestions(); v != nil {
 		g.TotalQuestions = int(*v)
 	}

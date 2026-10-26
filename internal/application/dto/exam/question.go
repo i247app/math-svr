@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"math-ai.com/math-ai/internal/application/dto/question"
+	"math-ai.com/math-ai/internal/application/dto/aiquestion"
 )
 
 // ExamQuestion is the exam flow's wire shape for one MCQ item.
@@ -18,23 +18,23 @@ import (
 // and rendered by the client without anybody renaming anything on the way.
 //
 // The quiz and exercise flows keep the older names (right_answer,
-// correct_answer, topic, difficulty) on question.Question, which they
+// correct_answer, topic, difficulty) on aiquestion.Question, which they
 // share. That struct stays untouched: it is the model's contract with two
 // other aggregates and with an already-shipped client, and renaming its
 // tags to suit a third would rewrite what those two store and return.
 //
 // So this type is a translation at the edges only. Everything in between —
-// parsing, normalisation, scoring — works on question.Question, and the
+// parsing, normalisation, scoring — works on aiquestion.Question, and the
 // conversions below are the single seam where the two vocabularies meet.
 type ExamQuestion struct {
-	QuestionNumber     int                     `json:"question_number"`
-	QuestionType       string                  `json:"question_type,omitempty"`
-	QuestionName       string                  `json:"question_name"`
-	Answers            []question.AnswerChoice `json:"answers"`
-	RightAnswerLabel   string                  `json:"right_answer_label,omitempty"`
-	RightAnswerContent string                  `json:"right_answer_content,omitempty"`
-	QuestionTopic      string                  `json:"question_topic,omitempty"`
-	QuestionGrade      *int                    `json:"question_grade,omitempty"`
+	QuestionNumber     int                       `json:"question_number"`
+	QuestionType       string                    `json:"question_type,omitempty"`
+	QuestionName       string                    `json:"question_name"`
+	Answers            []aiquestion.AnswerChoice `json:"answers"`
+	RightAnswerLabel   string                    `json:"right_answer_label,omitempty"`
+	RightAnswerContent string                    `json:"right_answer_content,omitempty"`
+	QuestionTopic      string                    `json:"question_topic,omitempty"`
+	QuestionGrade      *int                      `json:"question_grade,omitempty"`
 }
 
 // UnmarshalJSON reads question_grade as either a number or a band label.
@@ -86,8 +86,8 @@ func parseGrade(raw json.RawMessage) *int {
 
 // ToShared converts into the internal shape the scorer and normalisers
 // operate on.
-func (q ExamQuestion) ToShared() question.Question {
-	return question.Question{
+func (q ExamQuestion) ToShared() aiquestion.Question {
+	return aiquestion.Question{
 		QuestionNumber:     q.QuestionNumber,
 		QuestionType:       q.QuestionType,
 		QuestionName:       q.QuestionName,
@@ -100,7 +100,7 @@ func (q ExamQuestion) ToShared() question.Question {
 }
 
 // ExamQuestionFrom converts back out to the wire shape.
-func ExamQuestionFrom(q question.Question) ExamQuestion {
+func ExamQuestionFrom(q aiquestion.Question) ExamQuestion {
 	return ExamQuestion{
 		QuestionNumber:     q.QuestionNumber,
 		QuestionType:       q.QuestionType,
@@ -113,15 +113,15 @@ func ExamQuestionFrom(q question.Question) ExamQuestion {
 	}
 }
 
-func ToSharedQuestions(in []ExamQuestion) []question.Question {
-	out := make([]question.Question, 0, len(in))
+func ToSharedQuestions(in []ExamQuestion) []aiquestion.Question {
+	out := make([]aiquestion.Question, 0, len(in))
 	for _, q := range in {
 		out = append(out, q.ToShared())
 	}
 	return out
 }
 
-func FromSharedQuestions(in []question.Question) []ExamQuestion {
+func FromSharedQuestions(in []aiquestion.Question) []ExamQuestion {
 	out := make([]ExamQuestion, 0, len(in))
 	for _, q := range in {
 		out = append(out, ExamQuestionFrom(q))

@@ -28,7 +28,7 @@ import (
 	"strconv"
 	"strings"
 
-	"math-ai.com/math-ai/internal/application/dto/question"
+	"math-ai.com/math-ai/internal/application/dto/aiquestion"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -46,7 +46,7 @@ const ReviewSourceMarker = "deterministic_v2"
 // presentation budget rather than a storage limit.
 const reviewMaxLen = 250
 
-// Result is the deterministic counterpart of question.GradingResult.
+// Result is the deterministic counterpart of aiquestion.GradingResult.
 // The exercise and exam commands map this into their respective
 // row-update / row-insert types.
 type Result struct {
@@ -89,7 +89,7 @@ const (
 // carries the question itself so a caller can snapshot the stem, topic and
 // answer key into its own table without re-parsing the payload.
 type Outcome struct {
-	Question        question.Question
+	Question        aiquestion.Question
 	SelectedLabel   string
 	SelectedContent string
 	IsCorrect       bool
@@ -112,7 +112,7 @@ type DetailedResult struct {
 // It keeps the original denominator (a skipped question counts as wrong)
 // so exercise submissions score exactly as they did before the exam flow
 // introduced the second rule.
-func Score(questionsJSON string, answers []question.StudentAnswer, lang enum.LanguageType) (*Result, error) {
+func Score(questionsJSON string, answers []aiquestion.StudentAnswer, lang enum.LanguageType) (*Result, error) {
 	detailed, err := ScoreDetailed(questionsJSON, answers, lang, DenominatorAllQuestions)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func Score(questionsJSON string, answers []question.StudentAnswer, lang enum.Lan
 
 // ScoreDetailed is the full engine: the same comparison logic, plus the
 // per-question breakdown and an explicit denominator.
-func ScoreDetailed(questionsJSON string, answers []question.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
+func ScoreDetailed(questionsJSON string, answers []aiquestion.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
 	questions, err := parseQuestionsForScoring(questionsJSON)
 	if err != nil {
 		return nil, err
@@ -134,7 +134,7 @@ func ScoreDetailed(questionsJSON string, answers []question.StudentAnswer, lang 
 // its payload. The exam flow needs it: its stored JSON uses its own field
 // names, so it decodes with its own type and hands the questions over
 // rather than having this package parse a vocabulary it does not know.
-func ScoreQuestions(questions []question.Question, answers []question.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
+func ScoreQuestions(questions []aiquestion.Question, answers []aiquestion.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
 	if len(questions) == 0 {
 		return nil, fmt.Errorf("scorer: payload has no questions")
 	}
@@ -221,7 +221,7 @@ func ScoreQuestions(questions []question.Question, answers []question.StudentAns
 
 // choiceContent returns the displayed text of the option the student
 // picked, or "" when the label matches nothing in the payload.
-func choiceContent(q question.Question, label string) string {
+func choiceContent(q aiquestion.Question, label string) string {
 	for _, c := range q.Answers {
 		if strings.EqualFold(strings.TrimSpace(c.Label), strings.TrimSpace(label)) {
 			return c.Content
@@ -234,12 +234,12 @@ func choiceContent(q question.Question, label string) string {
 // the DTO shape. Returns an error on empty / malformed input so the
 // caller can surface the right status code (EXAM_GRADING_FAILED /
 // CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED).
-func parseQuestionsForScoring(raw string) ([]question.Question, error) {
+func parseQuestionsForScoring(raw string) ([]aiquestion.Question, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return nil, fmt.Errorf("scorer: questions payload is empty")
 	}
-	var out []question.Question
+	var out []aiquestion.Question
 	if err := json.Unmarshal([]byte(raw), &out); err != nil {
 		return nil, fmt.Errorf("scorer: parse questions: %w", err)
 	}
@@ -250,7 +250,7 @@ func parseQuestionsForScoring(raw string) ([]question.Question, error) {
 // question_number. Duplicate numbers fail loudly — the per-module
 // validator catches it earlier, but the scorer guards too so out-of-band
 // callers can't smuggle them past.
-func indexStudentAnswers(answers []question.StudentAnswer) (map[int]string, error) {
+func indexStudentAnswers(answers []aiquestion.StudentAnswer) (map[int]string, error) {
 	out := make(map[int]string, len(answers))
 	for i, a := range answers {
 		if _, dup := out[a.QuestionNumber]; dup {
@@ -263,7 +263,7 @@ func indexStudentAnswers(answers []question.StudentAnswer) (map[int]string, erro
 
 // questionIsCorrect: label match first (the v1-compatible path), value
 // compare as fallback only when right_answer is absent.
-func questionIsCorrect(q question.Question, studentLabel string) bool {
+func questionIsCorrect(q aiquestion.Question, studentLabel string) bool {
 	rightLabel := strings.ToUpper(strings.TrimSpace(q.RightAnswerLabel))
 	if rightLabel != "" {
 		return strings.ToUpper(studentLabel) == rightLabel

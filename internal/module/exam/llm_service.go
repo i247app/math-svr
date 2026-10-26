@@ -9,8 +9,8 @@ import (
 	"unicode/utf8"
 
 	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
+	"math-ai.com/math-ai/internal/application/dto/aiquestion"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
-	"math-ai.com/math-ai/internal/application/dto/question"
 
 	// input "math-ai.com/math-ai/internal/domain/prompt/input"
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
@@ -66,7 +66,7 @@ type generateExamInput struct {
 type generateExamOutput struct {
 	Title     string
 	ShortText string
-	Questions []question.Question
+	Questions []aiquestion.Question
 	// RespID is the journey's new chain pointer; nil breaks the chain.
 	RespID *string
 }
@@ -119,7 +119,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	// Parsed with the exam vocabulary (right_answer_label, question_topic,
 	// ...) and converted straight into the shared shape, which is what the
 	// normalisers and the scorer operate on.
-	gen, err := question.ParseGenerationOf[dto.ExamQuestion](content)
+	gen, err := aiquestion.ParseGenerationOf[dto.ExamQuestion](content)
 	if err != nil {
 		log.Warnf("exam.llm.generate_parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED,
@@ -133,7 +133,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	//
 	// The first clamps render types and reports icon drift: cosmetic, never
 	// fatal, since grading is label-based.
-	questions, warnings := question.Normalize(dto.ToSharedQuestions(gen.Questions))
+	questions, warnings := aiquestion.Normalize(dto.ToSharedQuestions(gen.Questions))
 	for _, w := range warnings {
 		log.Warnf("exam.normalize.%s value=%q q=%d", w.Kind, w.Value, w.QuestionNumber)
 	}

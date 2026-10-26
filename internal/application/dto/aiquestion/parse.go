@@ -1,4 +1,4 @@
-package question
+package aiquestion
 
 import (
 	"encoding/json"

@@ -55,7 +55,7 @@ func (h *MarkExamPoolVerifyCommandHandler) Handle(ctx context.Context, cmd MarkE
 // The corrected set must keep the stored set's SHAPE: the same
 // question_numbers, and for each question the same answer labels. Every
 // sitting already handed out stores its ordering in those canonical
-// terms (question.Shuffle) and every answer log names canonical labels,
+// terms (aiquestion.Shuffle) and every answer log names canonical labels,
 // so a renumbered question or a renamed option would break the papers in
 // flight and the history. Everything else — wording, option contents,
 // which label is right, topic, grade — may change.
