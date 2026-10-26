@@ -174,7 +174,6 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ProfileRepository,
 		repos.GradeRepository,
 		repos.UserRepository,
-		questionService,
 		res.Env.ExamShuffleEnabled,
 	)
 
