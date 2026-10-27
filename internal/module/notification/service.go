@@ -255,10 +255,11 @@ func (s *Service) ListNotifications(ctx context.Context, req *dto.ListNotificati
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	return &dto.ListNotificationsRes{
+	res := &dto.ListNotificationsRes{
 		Notifications: dto.DomainListToResponse(notifications),
 		Pagination:    pg,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) UnreadCount(ctx context.Context, req *dto.UnreadCountReq) (*dto.UnreadCountRes, error) {
@@ -269,7 +270,8 @@ func (s *Service) UnreadCount(ctx context.Context, req *dto.UnreadCountReq) (*dt
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	return &dto.UnreadCountRes{Count: count}, nil
+	res := &dto.UnreadCountRes{Count: count}
+	return res, nil
 }
 
 func (s *Service) MarkRead(ctx context.Context, req *dto.MarkReadReq) error {

@@ -64,7 +64,8 @@ func (s *Service) CreateSemester(ctx context.Context, req *dto.CreateSemesterReq
 	}
 	resp := dto.DomainToResponse(created)
 	s.populateImageUrl(ctx, resp)
-	return &dto.CreateSemesterRes{Semester: resp}, nil
+	res := &dto.CreateSemesterRes{Semester: resp}
+	return res, nil
 }
 
 func (s *Service) UpdateSemester(ctx context.Context, req *dto.UpdateSemesterReq) (*dto.UpdateSemesterRes, error) {
@@ -85,7 +86,8 @@ func (s *Service) UpdateSemester(ctx context.Context, req *dto.UpdateSemesterReq
 	}
 	resp := dto.DomainToResponse(updated)
 	s.populateImageUrl(ctx, resp)
-	return &dto.UpdateSemesterRes{Semester: resp}, nil
+	res := &dto.UpdateSemesterRes{Semester: resp}
+	return res, nil
 }
 
 func (s *Service) SoftDeleteSemester(ctx context.Context, req *dto.DeleteSemesterReq) (*dto.DeleteSemesterRes, error) {
@@ -95,7 +97,8 @@ func (s *Service) SoftDeleteSemester(ctx context.Context, req *dto.DeleteSemeste
 	if err := s.softDeleteSemesterCmd.Handle(ctx, command.SoftDeleteSemesterCommand{SemesterID: req.SemesterID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteSemesterRes{}, nil
+	res := &dto.DeleteSemesterRes{}
+	return res, nil
 }
 
 func (s *Service) ForceDeleteSemester(ctx context.Context, req *dto.DeleteSemesterReq) (*dto.DeleteSemesterRes, error) {
@@ -105,7 +108,8 @@ func (s *Service) ForceDeleteSemester(ctx context.Context, req *dto.DeleteSemest
 	if err := s.forceDeleteSemesterCmd.Handle(ctx, command.ForceDeleteSemesterCommand{SemesterID: req.SemesterID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteSemesterRes{}, nil
+	res := &dto.DeleteSemesterRes{}
+	return res, nil
 }
 
 func (s *Service) GetSemester(ctx context.Context, req *dto.GetSemesterReq) (*dto.GetSemesterRes, error) {
@@ -123,7 +127,8 @@ func (s *Service) GetSemester(ctx context.Context, req *dto.GetSemesterReq) (*dt
 	}
 	resp := dto.DomainToResponse(sm)
 	s.populateImageUrl(ctx, resp)
-	return &dto.GetSemesterRes{Semester: resp}, nil
+	res := &dto.GetSemesterRes{Semester: resp}
+	return res, nil
 }
 
 func (s *Service) ListSemesters(ctx context.Context, req *dto.ListSemestersReq) (*dto.ListSemestersRes, error) {
@@ -143,10 +148,11 @@ func (s *Service) ListSemesters(ctx context.Context, req *dto.ListSemestersReq) 
 	for _, r := range responses {
 		s.populateImageUrl(ctx, r)
 	}
-	return &dto.ListSemestersRes{
+	res := &dto.ListSemestersRes{
 		Semesters:  responses,
 		Pagination: pg,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) populateImageUrl(ctx context.Context, resp *dto.SemesterResponse) {

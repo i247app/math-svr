@@ -64,7 +64,8 @@ func (s *Service) CreateGrade(ctx context.Context, req *dto.CreateGradeReq) (*dt
 	}
 	resp := dto.DomainToResponse(created)
 	s.populateImageUrl(ctx, resp)
-	return &dto.CreateGradeRes{Grade: resp}, nil
+	res := &dto.CreateGradeRes{Grade: resp}
+	return res, nil
 }
 
 func (s *Service) UpdateGrade(ctx context.Context, req *dto.UpdateGradeReq) (*dto.UpdateGradeRes, error) {
@@ -94,7 +95,8 @@ func (s *Service) UpdateGrade(ctx context.Context, req *dto.UpdateGradeReq) (*dt
 	}
 	resp := dto.DomainToResponse(updated)
 	s.populateImageUrl(ctx, resp)
-	return &dto.UpdateGradeRes{Grade: resp}, nil
+	res := &dto.UpdateGradeRes{Grade: resp}
+	return res, nil
 }
 
 func (s *Service) SoftDeleteGrade(ctx context.Context, req *dto.DeleteGradeReq) (*dto.DeleteGradeRes, error) {
@@ -104,7 +106,8 @@ func (s *Service) SoftDeleteGrade(ctx context.Context, req *dto.DeleteGradeReq) 
 	if err := s.softDeleteGradeCmd.Handle(ctx, command.SoftDeleteGradeCommand{GradeID: req.GradeID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteGradeRes{}, nil
+	res := &dto.DeleteGradeRes{}
+	return res, nil
 }
 
 func (s *Service) ForceDeleteGrade(ctx context.Context, req *dto.DeleteGradeReq) (*dto.DeleteGradeRes, error) {
@@ -114,7 +117,8 @@ func (s *Service) ForceDeleteGrade(ctx context.Context, req *dto.DeleteGradeReq)
 	if err := s.forceDeleteGradeCmd.Handle(ctx, command.ForceDeleteGradeCommand{GradeID: req.GradeID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteGradeRes{}, nil
+	res := &dto.DeleteGradeRes{}
+	return res, nil
 }
 
 func (s *Service) GetGrade(ctx context.Context, req *dto.GetGradeReq) (*dto.GetGradeRes, error) {
@@ -133,7 +137,8 @@ func (s *Service) GetGrade(ctx context.Context, req *dto.GetGradeReq) (*dto.GetG
 	}
 	resp := dto.DomainToResponse(g)
 	s.populateImageUrl(ctx, resp)
-	return &dto.GetGradeRes{Grade: resp}, nil
+	res := &dto.GetGradeRes{Grade: resp}
+	return res, nil
 }
 
 func (s *Service) ListGrades(ctx context.Context, req *dto.ListGradesReq) (*dto.ListGradesRes, error) {
@@ -154,10 +159,11 @@ func (s *Service) ListGrades(ctx context.Context, req *dto.ListGradesReq) (*dto.
 	for _, r := range responses {
 		s.populateImageUrl(ctx, r)
 	}
-	return &dto.ListGradesRes{
+	res := &dto.ListGradesRes{
 		Grades:     responses,
 		Pagination: pg,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) populateImageUrl(ctx context.Context, resp *dto.GradeResponse) {

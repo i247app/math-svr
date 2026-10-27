@@ -107,7 +107,8 @@ func (s *Service) CreateBanner(ctx context.Context, req *dto.CreateBannerReq, ac
 
 	resp := dto.DomainToResponse(created)
 	s.populateMediaUrl(ctx, resp)
-	return &dto.CreateBannerRes{Banner: resp}, nil
+	res := &dto.CreateBannerRes{Banner: resp}
+	return res, nil
 }
 
 func (s *Service) UpdateBanner(ctx context.Context, req *dto.UpdateBannerReq, actorID *int64) (*dto.UpdateBannerRes, error) {
@@ -180,7 +181,8 @@ func (s *Service) UpdateBanner(ctx context.Context, req *dto.UpdateBannerReq, ac
 
 	resp := dto.DomainToResponse(updated)
 	s.populateMediaUrl(ctx, resp)
-	return &dto.UpdateBannerRes{Banner: resp}, nil
+	res := &dto.UpdateBannerRes{Banner: resp}
+	return res, nil
 }
 
 func (s *Service) SoftDeleteBanner(ctx context.Context, req *dto.DeleteBannerReq) (*dto.DeleteBannerRes, error) {
@@ -190,7 +192,8 @@ func (s *Service) SoftDeleteBanner(ctx context.Context, req *dto.DeleteBannerReq
 	if err := s.softDeleteBannerCmd.Handle(ctx, command.SoftDeleteBannerCommand{BannerID: req.BannerID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteBannerRes{}, nil
+	res := &dto.DeleteBannerRes{}
+	return res, nil
 }
 
 func (s *Service) ForceDeleteBanner(ctx context.Context, req *dto.DeleteBannerReq) (*dto.DeleteBannerRes, error) {
@@ -200,7 +203,8 @@ func (s *Service) ForceDeleteBanner(ctx context.Context, req *dto.DeleteBannerRe
 	if err := s.forceDeleteBannerCmd.Handle(ctx, command.ForceDeleteBannerCommand{BannerID: req.BannerID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteBannerRes{}, nil
+	res := &dto.DeleteBannerRes{}
+	return res, nil
 }
 
 func (s *Service) GetBanner(ctx context.Context, req *dto.GetBannerReq) (*dto.GetBannerRes, error) {
@@ -218,7 +222,8 @@ func (s *Service) GetBanner(ctx context.Context, req *dto.GetBannerReq) (*dto.Ge
 
 	resp := dto.DomainToResponse(found)
 	s.populateMediaUrl(ctx, resp)
-	return &dto.GetBannerRes{Banner: resp}, nil
+	res := &dto.GetBannerRes{Banner: resp}
+	return res, nil
 }
 
 func (s *Service) ListBanners(ctx context.Context, req *dto.ListBannersReq) (*dto.ListBannersRes, error) {
@@ -242,10 +247,11 @@ func (s *Service) ListBanners(ctx context.Context, req *dto.ListBannersReq) (*dt
 	for _, r := range responses {
 		s.populateMediaUrl(ctx, r)
 	}
-	return &dto.ListBannersRes{
+	res := &dto.ListBannersRes{
 		Banners:    responses,
 		Pagination: pg,
-	}, nil
+	}
+	return res, nil
 }
 
 // populateMediaUrl mutates resp in place to add a short-lived presigned URL

@@ -47,7 +47,8 @@ func (s *Service) TriggerJob(ctx context.Context, req *JobNameRequest) (*ActionR
 	if err := s.runtime.TriggerOnce(ctx, req.Name); err != nil {
 		return nil, mapRuntimeError(ctx, err, status.JOB_TRIGGER_FAILED)
 	}
-	return &ActionResponse{Name: req.Name, Result: "triggered"}, nil
+	res := &ActionResponse{Name: req.Name, Result: "triggered"}
+	return res, nil
 }
 
 func (s *Service) PauseJob(ctx context.Context, req *JobNameRequest) (*ActionResponse, error) {
@@ -60,7 +61,8 @@ func (s *Service) PauseJob(ctx context.Context, req *JobNameRequest) (*ActionRes
 	if err := s.runtime.PauseJob(req.Name); err != nil {
 		return nil, mapRuntimeError(ctx, err, status.JOB_TRIGGER_FAILED)
 	}
-	return &ActionResponse{Name: req.Name, Result: "paused"}, nil
+	res := &ActionResponse{Name: req.Name, Result: "paused"}
+	return res, nil
 }
 
 func (s *Service) ResumeJob(ctx context.Context, req *JobNameRequest) (*ActionResponse, error) {
@@ -73,7 +75,8 @@ func (s *Service) ResumeJob(ctx context.Context, req *JobNameRequest) (*ActionRe
 	if err := s.runtime.ResumeJob(req.Name); err != nil {
 		return nil, mapRuntimeError(ctx, err, status.JOB_TRIGGER_FAILED)
 	}
-	return &ActionResponse{Name: req.Name, Result: "resumed"}, nil
+	res := &ActionResponse{Name: req.Name, Result: "resumed"}
+	return res, nil
 }
 
 // UpdateSchedule retargets a CronJob's cadence at runtime. The new
@@ -128,7 +131,8 @@ func (s *Service) scheduleResult(ctx context.Context, name, result string) (*Sch
 	}
 	logger.From(ctx).Infof("job.schedule.%s name=%s schedule=%q next_run_at=%v",
 		result, info.Name, info.Schedule, info.NextRunAt)
-	return &ScheduleResponse{Result: result, Job: info}, nil
+	res := &ScheduleResponse{Result: result, Job: info}
+	return res, nil
 }
 
 func (s *Service) EnqueueTask(ctx context.Context, req *EnqueueTaskRequest) (*ActionResponse, error) {
@@ -168,7 +172,8 @@ func (s *Service) EnqueueTask(ctx context.Context, req *EnqueueTaskRequest) (*Ac
 	if err := s.runtime.Enqueue(ctx, req.Name, payload, opts); err != nil {
 		return nil, mapRuntimeError(ctx, err, status.TASK_ENQUEUE_FAILED)
 	}
-	return &ActionResponse{Name: req.Name, Result: "enqueued"}, nil
+	res := &ActionResponse{Name: req.Name, Result: "enqueued"}
+	return res, nil
 }
 
 func runtimeUnavailable(ctx context.Context) error {

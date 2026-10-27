@@ -199,7 +199,8 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 
 	// Manager-only path — include right-answer key in the response so
 	// the teacher can preview the correct labels.
-	return &dto.CreateExerciseRes{Exercise: dto.DomainToResponse(saved, true)}, nil
+	res := &dto.CreateExerciseRes{Exercise: dto.DomainToResponse(saved, true)}
+	return res, nil
 }
 
 func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq, sessionUID int64) (*dto.UpdateExerciseRes, error) {
@@ -243,7 +244,8 @@ func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq
 	if err != nil {
 		return nil, err
 	}
-	return &dto.UpdateExerciseRes{Exercise: dto.DomainToResponse(updated, true)}, nil
+	res := &dto.UpdateExerciseRes{Exercise: dto.DomainToResponse(updated, true)}
+	return res, nil
 }
 
 func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sessionUID int64) (*dto.GetExerciseRes, error) {
@@ -282,10 +284,11 @@ func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sess
 	if err := s.hydrateClassroomAndProgram(ctx, exercises, responses); err != nil {
 		return nil, err
 	}
-	return &dto.GetExerciseRes{
+	res := &dto.GetExerciseRes{
 		// Exercise: dto.DomainToResponse(exercise, isManagerRole(callerMember)),
 		Exercise: resp,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, sessionUID int64) (*dto.ListExercisesRes, error) {
@@ -338,10 +341,11 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 	if err := s.hydrateClassroomAndProgram(ctx, exercises, responses); err != nil {
 		return nil, err
 	}
-	return &dto.ListExercisesRes{
+	res := &dto.ListExercisesRes{
 		Exercises:  responses,
 		Pagination: pg,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) SoftDeleteExercise(ctx context.Context, req *dto.DeleteExerciseReq, sessionUID int64) (*dto.DeleteExerciseRes, error) {
@@ -374,5 +378,6 @@ func (s *Service) SoftDeleteExercise(ctx context.Context, req *dto.DeleteExercis
 	}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteExerciseRes{}, nil
+	res := &dto.DeleteExerciseRes{}
+	return res, nil
 }

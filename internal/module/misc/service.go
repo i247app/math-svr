@@ -134,11 +134,12 @@ func (s *Service) ClearData(ctx context.Context, req *dto.ClearDataReq) (*dto.Cl
 
 		log.Warn("misc.clear_data.done", "tables_processed", len(tables), "seqs_reset", len(seqs), "kept_uids", len(keep))
 
-		return &dto.ClearDataRes{
+		res := &dto.ClearDataRes{
 			TablesCleared: tables,
 			SeqsReset:     seqs,
 			KeptUids:      keep,
-		}, nil
+		}
+		return res, nil
 	}
 
 	log.Warn("misc.clear_data.start")
@@ -150,10 +151,11 @@ func (s *Service) ClearData(ctx context.Context, req *dto.ClearDataReq) (*dto.Cl
 
 	log.Warn("misc.clear_data.done", "tables_cleared", len(tables), "seqs_reset", len(seqs))
 
-	return &dto.ClearDataRes{
+	res := &dto.ClearDataRes{
 		TablesCleared: tables,
 		SeqsReset:     seqs,
-	}, nil
+	}
+	return res, nil
 }
 
 // dedupeInt64 returns xs with duplicates removed, preserving first-seen order.
@@ -206,8 +208,9 @@ func (s *Service) ClearDataTables(ctx context.Context, req *dto.ClearDataTablesR
 
 	log.Warn("misc.clear_data_tables.done", "tables_cleared", len(tables), "seqs_reset", len(seqs))
 
-	return &dto.ClearDataRes{
+	res := &dto.ClearDataRes{
 		TablesCleared: tables,
 		SeqsReset:     seqs,
-	}, nil
+	}
+	return res, nil
 }

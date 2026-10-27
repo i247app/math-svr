@@ -75,7 +75,8 @@ func (s *Service) CreateRole(ctx context.Context, req *dto.CreateRoleReq, actorI
 		s.deleteRoleImage(ctx, imageKey, "create orphan")
 		return nil, err
 	}
-	return &dto.CreateRoleRes{Role: s.toResponse(ctx, created)}, nil
+	res := &dto.CreateRoleRes{Role: s.toResponse(ctx, created)}
+	return res, nil
 }
 
 func (s *Service) UpdateRole(ctx context.Context, req *dto.UpdateRoleReq, actorID *int64) (*dto.UpdateRoleRes, error) {
@@ -122,7 +123,8 @@ func (s *Service) UpdateRole(ctx context.Context, req *dto.UpdateRoleReq, actorI
 	if imageKey != nil || req.RemoveRoleImage {
 		s.deleteRoleImage(ctx, existing.RoleImageKey(), "update superseded")
 	}
-	return &dto.UpdateRoleRes{Role: s.toResponse(ctx, updated)}, nil
+	res := &dto.UpdateRoleRes{Role: s.toResponse(ctx, updated)}
+	return res, nil
 }
 
 func (s *Service) SoftDeleteRole(ctx context.Context, req *dto.DeleteRoleReq) (*dto.DeleteRoleRes, error) {
@@ -132,7 +134,8 @@ func (s *Service) SoftDeleteRole(ctx context.Context, req *dto.DeleteRoleReq) (*
 	if err := s.softDeleteRoleCmd.Handle(ctx, command.SoftDeleteRoleCommand{RoleID: req.RoleID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteRoleRes{}, nil
+	res := &dto.DeleteRoleRes{}
+	return res, nil
 }
 
 func (s *Service) ForceDeleteRole(ctx context.Context, req *dto.DeleteRoleReq) (*dto.DeleteRoleRes, error) {
@@ -142,7 +145,8 @@ func (s *Service) ForceDeleteRole(ctx context.Context, req *dto.DeleteRoleReq) (
 	if err := s.forceDeleteRoleCmd.Handle(ctx, command.ForceDeleteRoleCommand{RoleID: req.RoleID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteRoleRes{}, nil
+	res := &dto.DeleteRoleRes{}
+	return res, nil
 }
 
 func (s *Service) GetRole(ctx context.Context, req *dto.GetRoleReq) (*dto.GetRoleRes, error) {
@@ -156,7 +160,8 @@ func (s *Service) GetRole(ctx context.Context, req *dto.GetRoleReq) (*dto.GetRol
 	if found == nil {
 		return nil, errs.NewError(ctx, status.ROLE_NOT_FOUND, nil, ErrRoleNotFound)
 	}
-	return &dto.GetRoleRes{Role: s.toResponse(ctx, found)}, nil
+	res := &dto.GetRoleRes{Role: s.toResponse(ctx, found)}
+	return res, nil
 }
 
 func (s *Service) ListRoles(ctx context.Context, req *dto.ListRolesReq) (*dto.ListRolesRes, error) {
@@ -177,10 +182,11 @@ func (s *Service) ListRoles(ctx context.Context, req *dto.ListRolesReq) (*dto.Li
 	for _, r := range responses {
 		s.populateRoleImageUrl(ctx, r)
 	}
-	return &dto.ListRolesRes{
+	res := &dto.ListRolesRes{
 		Roles:      responses,
 		Pagination: pg,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) toResponse(ctx context.Context, r *domain.Role) *dto.RoleResponse {

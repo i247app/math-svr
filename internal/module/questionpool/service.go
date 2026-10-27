@@ -84,7 +84,8 @@ func (s *Service) CreateQuestionPools(ctx context.Context, req *dto.CreateQuesti
 		return nil, err
 	}
 	logger.From(ctx).Infof("question_pool.created admin_uid=%d via=%s count=%d", sctx.UID(ctx), sctx.GetAdminVia(ctx), len(saved))
-	return &dto.CreateQuestionPoolsRes{QuestionPools: s.toResponses(ctx, saved)}, nil
+	res := &dto.CreateQuestionPoolsRes{QuestionPools: s.toResponses(ctx, saved)}
+	return res, nil
 }
 
 // UpdateQuestion edits one question: absent fields keep their value, the
@@ -108,7 +109,8 @@ func (s *Service) UpdateQuestionPool(ctx context.Context, req *dto.UpdateQuestio
 		return nil, err
 	}
 	logger.From(ctx).Infof("question_pool.updated admin_uid=%d via=%s question_pool_id=%d", sctx.UID(ctx), sctx.GetAdminVia(ctx), saved.QuestionPoolId())
-	return &dto.QuestionPoolRes{QuestionPool: s.toResponses(ctx, []*domain.QuestionPool{saved})[0]}, nil
+	res := &dto.QuestionPoolRes{QuestionPool: s.toResponses(ctx, []*domain.QuestionPool{saved})[0]}
+	return res, nil
 }
 
 // MarkQuestionStatus sets one question's review state; content stays.
@@ -129,7 +131,8 @@ func (s *Service) MarkQuestionPoolStatus(ctx context.Context, req *dto.MarkQuest
 	}
 	logger.From(ctx).Infof("question_pool.status_marked admin_uid=%d via=%s question_pool_id=%d status=%s",
 		sctx.UID(ctx), sctx.GetAdminVia(ctx), saved.QuestionPoolId(), req.QuestionStatus)
-	return &dto.QuestionPoolRes{QuestionPool: s.toResponses(ctx, []*domain.QuestionPool{saved})[0]}, nil
+	res := &dto.QuestionPoolRes{QuestionPool: s.toResponses(ctx, []*domain.QuestionPool{saved})[0]}
+	return res, nil
 }
 
 // VerifyQuestion records one more admin check: verified_count + 1, nothing
@@ -149,7 +152,8 @@ func (s *Service) VerifyQuestionPool(ctx context.Context, req *dto.VerifyQuestio
 	}
 	logger.From(ctx).Infof("question_pool.verified admin_uid=%d via=%s question_pool_id=%d verified_count=%d",
 		sctx.UID(ctx), sctx.GetAdminVia(ctx), saved.QuestionPoolId(), saved.VerifiedCount())
-	return &dto.QuestionPoolRes{QuestionPool: s.toResponses(ctx, []*domain.QuestionPool{saved})[0]}, nil
+	res := &dto.QuestionPoolRes{QuestionPool: s.toResponses(ctx, []*domain.QuestionPool{saved})[0]}
+	return res, nil
 }
 
 // SoftDeleteQuestion hides a live question; the row stays and its content
@@ -176,7 +180,8 @@ func (s *Service) deleteQuestionPool(ctx context.Context, req *dto.DeleteQuestio
 	}
 	logger.From(ctx).Infof("question_pool.deleted admin_uid=%d via=%s question_pool_id=%d force=%t",
 		sctx.UID(ctx), sctx.GetAdminVia(ctx), req.QuestionPoolID, force)
-	return &dto.DeleteQuestionPoolRes{}, nil
+	res := &dto.DeleteQuestionPoolRes{}
+	return res, nil
 }
 
 // ListQuestions pages the bank, newest first, key and explanation included.
@@ -192,7 +197,8 @@ func (s *Service) ListQuestionPools(ctx context.Context, req *dto.ListQuestionPo
 	if err != nil {
 		return nil, err
 	}
-	return &dto.ListQuestionPoolsRes{QuestionPools: s.toResponses(ctx, rows), Pagination: page}, nil
+	res := &dto.ListQuestionPoolsRes{QuestionPools: s.toResponses(ctx, rows), Pagination: page}
+	return res, nil
 }
 
 func (s *Service) toResponses(ctx context.Context, qs []*domain.QuestionPool) []*dto.QuestionPoolResponse {

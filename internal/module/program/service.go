@@ -66,7 +66,8 @@ func (s *Service) CreateProgram(ctx context.Context, req *dto.CreateProgramReq) 
 	}
 	resp := dto.DomainToResponse(created)
 	s.populateImageUrl(ctx, resp)
-	return &dto.CreateProgramRes{Program: resp}, nil
+	res := &dto.CreateProgramRes{Program: resp}
+	return res, nil
 }
 
 func (s *Service) UpdateProgram(ctx context.Context, req *dto.UpdateProgramReq) (*dto.UpdateProgramRes, error) {
@@ -87,7 +88,8 @@ func (s *Service) UpdateProgram(ctx context.Context, req *dto.UpdateProgramReq) 
 	}
 	resp := dto.DomainToResponse(updated)
 	s.populateImageUrl(ctx, resp)
-	return &dto.UpdateProgramRes{Program: resp}, nil
+	res := &dto.UpdateProgramRes{Program: resp}
+	return res, nil
 }
 
 func (s *Service) SoftDeleteProgram(ctx context.Context, req *dto.DeleteProgramReq) (*dto.DeleteProgramRes, error) {
@@ -97,7 +99,8 @@ func (s *Service) SoftDeleteProgram(ctx context.Context, req *dto.DeleteProgramR
 	if err := s.softDeleteProgramCmd.Handle(ctx, command.SoftDeleteProgramCommand{ProgramID: req.ProgramID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteProgramRes{}, nil
+	res := &dto.DeleteProgramRes{}
+	return res, nil
 }
 
 func (s *Service) ForceDeleteProgram(ctx context.Context, req *dto.DeleteProgramReq) (*dto.DeleteProgramRes, error) {
@@ -107,7 +110,8 @@ func (s *Service) ForceDeleteProgram(ctx context.Context, req *dto.DeleteProgram
 	if err := s.forceDeleteProgramCmd.Handle(ctx, command.ForceDeleteProgramCommand{ProgramID: req.ProgramID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteProgramRes{}, nil
+	res := &dto.DeleteProgramRes{}
+	return res, nil
 }
 
 func (s *Service) GetProgram(ctx context.Context, req *dto.GetProgramReq) (*dto.GetProgramRes, error) {
@@ -126,7 +130,8 @@ func (s *Service) GetProgram(ctx context.Context, req *dto.GetProgramReq) (*dto.
 	}
 	resp := dto.DomainToResponse(p)
 	s.populateImageUrl(ctx, resp)
-	return &dto.GetProgramRes{Program: resp}, nil
+	res := &dto.GetProgramRes{Program: resp}
+	return res, nil
 }
 
 func (s *Service) ListPrograms(ctx context.Context, req *dto.ListProgramsReq) (*dto.ListProgramsRes, error) {
@@ -146,10 +151,11 @@ func (s *Service) ListPrograms(ctx context.Context, req *dto.ListProgramsReq) (*
 	for _, r := range responses {
 		s.populateImageUrl(ctx, r)
 	}
-	return &dto.ListProgramsRes{
+	res := &dto.ListProgramsRes{
 		Programs:   responses,
 		Pagination: pg,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) populateImageUrl(ctx context.Context, resp *dto.ProgramResponse) {

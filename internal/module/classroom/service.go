@@ -160,7 +160,8 @@ func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomR
 
 	resp := dto.DomainToResponse(created)
 	s.populateCoverUrl(ctx, resp)
-	return &dto.CreateClassroomRes{Classroom: resp}, nil
+	res := &dto.CreateClassroomRes{Classroom: resp}
+	return res, nil
 }
 
 func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomReq, sessionUID int64) (*dto.UpdateClassroomRes, error) {
@@ -209,7 +210,8 @@ func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomR
 
 	resp := dto.DomainToResponse(updated)
 	s.populateCoverUrl(ctx, resp)
-	return &dto.UpdateClassroomRes{Classroom: resp}, nil
+	res := &dto.UpdateClassroomRes{Classroom: resp}
+	return res, nil
 }
 
 // GetClassroom returns the classroom by id. profile_id is OPTIONAL —
@@ -261,7 +263,8 @@ func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, se
 	if err := s.hydratePendingRequestCounts(ctx, []*classroomDomain.Classroom{found}, []*dto.ClassroomResponse{resp}); err != nil {
 		return nil, err
 	}
-	return &dto.GetClassroomRes{Classroom: resp}, nil
+	res := &dto.GetClassroomRes{Classroom: resp}
+	return res, nil
 }
 
 // FindClassroomByCode resolves a classroom from its human-readable join
@@ -296,7 +299,8 @@ func (s *Service) FindClassroomByCode(ctx context.Context, req *dto.FindClassroo
 	if err := s.hydratePendingRequestCounts(ctx, []*classroomDomain.Classroom{found}, []*dto.ClassroomResponse{resp}); err != nil {
 		return nil, err
 	}
-	return &dto.FindClassroomByCodeRes{Classroom: resp}, nil
+	res := &dto.FindClassroomByCodeRes{Classroom: resp}
+	return res, nil
 }
 
 func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq, sessionUID int64) (*dto.ListClassroomsRes, error) {
@@ -335,10 +339,11 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 	if err := s.hydratePendingRequestCounts(ctx, classrooms, responses); err != nil {
 		return nil, err
 	}
-	return &dto.ListClassroomsRes{
+	res := &dto.ListClassroomsRes{
 		Classrooms: responses,
 		Pagination: pg,
-	}, nil
+	}
+	return res, nil
 }
 
 // ListMyJoinedClassrooms is the membership-scoped counterpart to
@@ -377,10 +382,11 @@ func (s *Service) ListMyJoinedClassrooms(ctx context.Context, req *dto.ListMyJoi
 	if err := s.hydratePendingRequestCounts(ctx, classrooms, responses); err != nil {
 		return nil, err
 	}
-	return &dto.ListMyJoinedClassroomsRes{
+	res := &dto.ListMyJoinedClassroomsRes{
 		Classrooms: responses,
 		Pagination: pg,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) ArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroomReq, sessionUID int64) (*dto.ArchiveClassroomRes, error) {
@@ -397,7 +403,8 @@ func (s *Service) ArchiveClassroom(ctx context.Context, req *dto.ArchiveClassroo
 	if err := s.archiveClassroomCmd.Handle(ctx, command.ArchiveClassroomCommand{ClassroomID: req.ClassroomID}); err != nil {
 		return nil, err
 	}
-	return &dto.ArchiveClassroomRes{}, nil
+	res := &dto.ArchiveClassroomRes{}
+	return res, nil
 }
 
 func (s *Service) RestoreClassroom(ctx context.Context, req *dto.RestoreClassroomReq, sessionUID int64) (*dto.RestoreClassroomRes, error) {
@@ -414,7 +421,8 @@ func (s *Service) RestoreClassroom(ctx context.Context, req *dto.RestoreClassroo
 	if err := s.restoreClassroomCmd.Handle(ctx, command.RestoreClassroomCommand{ClassroomID: req.ClassroomID}); err != nil {
 		return nil, err
 	}
-	return &dto.RestoreClassroomRes{}, nil
+	res := &dto.RestoreClassroomRes{}
+	return res, nil
 }
 
 func (s *Service) SoftDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq, sessionUID int64) (*dto.DeleteClassroomRes, error) {
@@ -431,7 +439,8 @@ func (s *Service) SoftDeleteClassroom(ctx context.Context, req *dto.DeleteClassr
 	if err := s.softDeleteClassroomCmd.Handle(ctx, command.SoftDeleteClassroomCommand{ClassroomID: req.ClassroomID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteClassroomRes{}, nil
+	res := &dto.DeleteClassroomRes{}
+	return res, nil
 }
 
 func (s *Service) ForceDeleteClassroom(ctx context.Context, req *dto.DeleteClassroomReq, sessionUID int64) (*dto.DeleteClassroomRes, error) {
@@ -448,7 +457,8 @@ func (s *Service) ForceDeleteClassroom(ctx context.Context, req *dto.DeleteClass
 	if err := s.forceDeleteClassroomCmd.Handle(ctx, command.ForceDeleteClassroomCommand{ClassroomID: req.ClassroomID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteClassroomRes{}, nil
+	res := &dto.DeleteClassroomRes{}
+	return res, nil
 }
 
 func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs []int64, gradeID *int64) error {

@@ -366,11 +366,12 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 		// (a model call, on a cache miss) is dropped.
 		logger.From(ctx).Infof("exam.resumed.in_tx attempt=%d journey=%d type=%s discarded_new_content=%t",
 			created.Attempt.ElinkId(), utils.DerefInt64(cmd.EsessID), cmd.ExamType, cmd.NewContent != nil)
-		return &dto.GenerateExamRes{
+		res := &dto.GenerateExamRes{
 			Exam:        dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
 			Resumed:     true,
 			ExamSession: dto.ExamSessionToResponse(created.ExamSession),
-		}, nil
+		}
+		return res, nil
 	}
 
 	logger.From(ctx).Infof("exam.generated attempt=%d exam_pool=%d profile=%d type=%s grade=%d",
@@ -378,10 +379,11 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 		profile.ProfileId(), cmd.ExamType, cmd.Grade)
 
 	// A live exam never ships the answer key.
-	return &dto.GenerateExamRes{
+	res := &dto.GenerateExamRes{
 		Exam:        dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
 		ExamSession: dto.ExamSessionToResponse(created.ExamSession),
-	}, nil
+	}
+	return res, nil
 }
 
 // SubmitExam grades the sitting and folds it into the child's record.
@@ -411,10 +413,11 @@ func (s *Service) SubmitExam(ctx context.Context, req *dto.SubmitExamReq) (*dto.
 	}
 
 	// Submitted: the review screen needs the key to mark each question.
-	return &dto.SubmitExamRes{
+	res := &dto.SubmitExamRes{
 		Exam:        dto.AttemptToResponse(result.Attempt, examPool, true),
 		ExamSession: dto.ExamSessionToResponse(result.ExamSession),
-	}, nil
+	}
+	return res, nil
 }
 
 // GetExamSessionDetail answers for one sitting or one journey, depending on which id
@@ -455,10 +458,11 @@ func (s *Service) ListExams(ctx context.Context, req *dto.ListExamsReq) (*dto.Li
 		return nil, err
 	}
 
-	return &dto.ListExamsRes{
+	res := &dto.ListExamsRes{
 		Exams:      dto.AttemptListToResponse(result.Attempts, result.ExamPools),
 		Pagination: result.Pagination,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) ListExamSessions(ctx context.Context, req *dto.ListExamSessionsReq) (*dto.ListExamSessionsRes, error) {
@@ -480,11 +484,12 @@ func (s *Service) ListExamSessions(ctx context.Context, req *dto.ListExamSession
 	if err != nil {
 		return nil, err
 	}
-	return &dto.ListExamSessionsRes{
+	res := &dto.ListExamSessionsRes{
 		ExamSessions: dto.JourneysToResponse(rows.Journeys, rows.ExamPools),
 		Pagination:   rows.Pagination,
 		Cursor:       rows.Cursor,
-	}, nil
+	}
+	return res, nil
 }
 
 // MarkExamJourney ends a journey as COMPLETE or CANCEL. From then on the
@@ -510,7 +515,8 @@ func (s *Service) MarkExamJourney(ctx context.Context, req *dto.MarkExamJourneyR
 	if err != nil {
 		return nil, err
 	}
-	return &dto.MarkExamJourneyRes{ExamSession: dto.ExamSessionToResponse(journey)}, nil
+	res := &dto.MarkExamJourneyRes{ExamSession: dto.ExamSessionToResponse(journey)}
+	return res, nil
 }
 
 // GetExamProgress returns the learning-progress chart for one child.
@@ -535,7 +541,7 @@ func (s *Service) GetExamProgress(ctx context.Context, req *dto.ExamProgressReq)
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	return &dto.ExamProgressRes{
+	res := &dto.ExamProgressRes{
 		ProfileID: req.ProfileID,
 		FromDt:    req.FromDt,
 		ToDt:      req.ToDt,
@@ -544,7 +550,8 @@ func (s *Service) GetExamProgress(ctx context.Context, req *dto.ExamProgressReq)
 		Limit:     req.Limit,
 		Series:    result.Series,
 		Summary:   result.Summary,
-	}, nil
+	}
+	return res, nil
 }
 
 // GetJourneyProgress returns the learning-progress chart over a child's
@@ -571,7 +578,7 @@ func (s *Service) GetJourneyProgress(ctx context.Context, req *dto.JourneyProgre
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	return &dto.JourneyProgressRes{
+	res := &dto.JourneyProgressRes{
 		ProfileID: req.ProfileID,
 		FromDt:    req.FromDt,
 		ToDt:      req.ToDt,
@@ -580,7 +587,8 @@ func (s *Service) GetJourneyProgress(ctx context.Context, req *dto.JourneyProgre
 		Limit:     req.Limit,
 		Series:    result.Series,
 		Summary:   result.Summary,
-	}, nil
+	}
+	return res, nil
 }
 
 // GetGradeLevels tells the client where the child stands on one grade's
@@ -604,10 +612,11 @@ func (s *Service) GetGradeLevels(ctx context.Context, req *dto.GradeLevelsReq) (
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	return &dto.GradeLevelsRes{
+	res := &dto.GradeLevelsRes{
 		LatestLevel: result.LatestLevel,
 		MaxLevel:    result.MaxLevel,
-	}, nil
+	}
+	return res, nil
 }
 
 // GetLatestJourney returns the child's latest journey — the one touched
@@ -632,7 +641,8 @@ func (s *Service) GetLatestJourney(ctx context.Context, req *dto.LatestJourneyRe
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	return &dto.LatestJourneyRes{ExamSession: dto.ExamSessionToResponse(journey)}, nil
+	res := &dto.LatestJourneyRes{ExamSession: dto.ExamSessionToResponse(journey)}
+	return res, nil
 }
 
 // GetGradeMap returns one grade's level ladder as a single list: the
@@ -662,11 +672,12 @@ func (s *Service) GetGradeRoadMap(ctx context.Context, req *dto.GradeMapReq) (*d
 			sessions = append(sessions, dto.GradeMapEntry{ExamSessionResponse: *session, IsLatest: e.IsLatest})
 		}
 	}
-	return &dto.GradeMapRes{
+	res := &dto.GradeMapRes{
 		ProfileID:    profile.ProfileId(),
 		Grade:        *req.Grade,
 		ExamSessions: sessions,
-	}, nil
+	}
+	return res, nil
 }
 
 // reviewAnswerWindow bounds how many answers the review reads: the most
@@ -743,7 +754,8 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 
 	logger.From(ctx).Infof("exam.journey.reviewed esess_id=%d type=%s answers=%d",
 		journey.EsessId(), journey.ReqExamType(), len(lines))
-	return &dto.JourneyReviewRes{ExamSession: dto.ExamSessionToResponse(saved)}, nil
+	res := &dto.JourneyReviewRes{ExamSession: dto.ExamSessionToResponse(saved)}
+	return res, nil
 }
 
 // GenerateExamPool asks the model for one question set and files it in
@@ -801,7 +813,8 @@ func (s *Service) GenerateExamPool(ctx context.Context, req *dto.GenerateExamPoo
 		return nil, err
 	}
 	logger.From(ctx).Infof("exam.pool.generated admin_uid=%d exam_id=%d tag=%s", sctx.UID(ctx), saved.ExamId(), tag)
-	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(saved, true)}, nil
+	res := &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(saved, true)}
+	return res, nil
 }
 
 // ListExamPools pages the pool, newest first, without the questions.
@@ -820,7 +833,8 @@ func (s *Service) ListExamPools(ctx context.Context, req *dto.ListExamPoolsReq) 
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	return &dto.ListExamPoolsRes{ExamPools: dto.ExamPoolsToResponse(pools), Pagination: page}, nil
+	res := &dto.ListExamPoolsRes{ExamPools: dto.ExamPoolsToResponse(pools), Pagination: page}
+	return res, nil
 }
 
 // GetExamPool reads one question set with its questions and answer key,
@@ -840,7 +854,8 @@ func (s *Service) GetExamPool(ctx context.Context, req *dto.GetExamPoolReq) (*dt
 		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
 			fmt.Errorf("exam: exam_pool %d not found", req.ExamID))
 	}
-	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}, nil
+	res := &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}
+	return res, nil
 }
 
 // MarkExamPoolVerify flags a question set verified (verified_count 0 -> 1)
@@ -862,7 +877,8 @@ func (s *Service) MarkExamPoolVerify(ctx context.Context, req *dto.MarkExamPoolV
 	}
 	logger.From(ctx).Infof("exam.pool.mark_verify admin_uid=%d exam_id=%d is_verify=%t verified_count=%d",
 		sctx.UID(ctx), req.ExamID, *req.IsVerify, pool.VerifiedCount())
-	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}, nil
+	res := &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}
+	return res, nil
 }
 
 // VerifyExamPool replaces a question set with an admin's corrected
@@ -886,5 +902,6 @@ func (s *Service) VerifyExamPool(ctx context.Context, req *dto.VerifyExamPoolReq
 	}
 	logger.From(ctx).Infof("exam.pool.verified admin_uid=%d exam_id=%d verified_count=%d",
 		sctx.UID(ctx), req.ExamID, pool.VerifiedCount())
-	return &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}, nil
+	res := &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}
+	return res, nil
 }

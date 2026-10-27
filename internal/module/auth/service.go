@@ -83,9 +83,10 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		return nil, err
 	}
 	if userRes == nil || userRes.User == nil {
-		return &dto.LoginRes{
+		res := &dto.LoginRes{
 			User: nil,
-		}, nil
+		}
+		return res, nil
 	}
 
 	if result.IsTrustedDevice {
@@ -110,11 +111,12 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		s.userSvc.AdoptGuestInto(ctx, previousUID, userRes.User.UID)
 	}
 
-	return &dto.LoginRes{
+	res := &dto.LoginRes{
 		User:        userRes.User,
 		IsTrusted:   result.IsTrustedDevice,
 		RequiredOTP: !result.IsTrustedDevice,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (*dto.LoginRes, error) {
@@ -134,9 +136,10 @@ func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (
 		return nil, err
 	}
 	if userRes == nil || userRes.User == nil {
-		return &dto.LoginRes{
+		res := &dto.LoginRes{
 			User: nil,
-		}, nil
+		}
+		return res, nil
 	}
 
 	log.Info("Login successful, updating session data...")
@@ -153,9 +156,10 @@ func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (
 
 	sess.Init(sessionData)
 
-	return &dto.LoginRes{
+	res := &dto.LoginRes{
 		User: userRes.User,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) Logout(ctx context.Context, sess *session.AppSession, req *dto.LogoutReq) (*dto.LogoutRes, error) {
@@ -172,5 +176,6 @@ func (s *Service) Logout(ctx context.Context, sess *session.AppSession, req *dto
 
 	sess.MarkNotSecure()
 
-	return &dto.LogoutRes{}, nil
+	res := &dto.LogoutRes{}
+	return res, nil
 }

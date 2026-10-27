@@ -69,7 +69,8 @@ func (s *Service) CreateSchool(ctx context.Context, req *dto.CreateSchoolReq) (*
 
 	resp := dto.DomainToResponse(created)
 	s.populateImageUrl(ctx, resp)
-	return &dto.CreateSchoolRes{School: resp}, nil
+	res := &dto.CreateSchoolRes{School: resp}
+	return res, nil
 }
 
 func (s *Service) UpdateSchool(ctx context.Context, req *dto.UpdateSchoolReq) (*dto.UpdateSchoolRes, error) {
@@ -92,7 +93,8 @@ func (s *Service) UpdateSchool(ctx context.Context, req *dto.UpdateSchoolReq) (*
 
 	resp := dto.DomainToResponse(updated)
 	s.populateImageUrl(ctx, resp)
-	return &dto.UpdateSchoolRes{School: resp}, nil
+	res := &dto.UpdateSchoolRes{School: resp}
+	return res, nil
 }
 
 func (s *Service) SoftDeleteSchool(ctx context.Context, req *dto.DeleteSchoolReq) (*dto.DeleteSchoolRes, error) {
@@ -102,7 +104,8 @@ func (s *Service) SoftDeleteSchool(ctx context.Context, req *dto.DeleteSchoolReq
 	if err := s.softDeleteSchoolCmd.Handle(ctx, command.SoftDeleteSchoolCommand{SchoolID: req.SchoolID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteSchoolRes{}, nil
+	res := &dto.DeleteSchoolRes{}
+	return res, nil
 }
 
 func (s *Service) ForceDeleteSchool(ctx context.Context, req *dto.DeleteSchoolReq) (*dto.DeleteSchoolRes, error) {
@@ -112,7 +115,8 @@ func (s *Service) ForceDeleteSchool(ctx context.Context, req *dto.DeleteSchoolRe
 	if err := s.forceDeleteSchoolCmd.Handle(ctx, command.ForceDeleteSchoolCommand{SchoolID: req.SchoolID}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteSchoolRes{}, nil
+	res := &dto.DeleteSchoolRes{}
+	return res, nil
 }
 
 func (s *Service) GetSchool(ctx context.Context, req *dto.GetSchoolReq) (*dto.GetSchoolRes, error) {
@@ -130,7 +134,8 @@ func (s *Service) GetSchool(ctx context.Context, req *dto.GetSchoolReq) (*dto.Ge
 
 	resp := dto.DomainToResponse(found)
 	s.populateImageUrl(ctx, resp)
-	return &dto.GetSchoolRes{School: resp}, nil
+	res := &dto.GetSchoolRes{School: resp}
+	return res, nil
 }
 
 func (s *Service) ListSchools(ctx context.Context, req *dto.ListSchoolsReq) (*dto.ListSchoolsRes, error) {
@@ -154,10 +159,11 @@ func (s *Service) ListSchools(ctx context.Context, req *dto.ListSchoolsReq) (*dt
 	for _, r := range responses {
 		s.populateImageUrl(ctx, r)
 	}
-	return &dto.ListSchoolsRes{
+	res := &dto.ListSchoolsRes{
 		Schools:    responses,
 		Pagination: pg,
-	}, nil
+	}
+	return res, nil
 }
 
 // populateImageUrl mutates resp in place to add a short-lived presigned

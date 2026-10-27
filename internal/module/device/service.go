@@ -73,7 +73,8 @@ func (s *Service) GetDeviceById(ctx context.Context, req *dto.GetDeviceByIdReq) 
 	if d == nil {
 		return nil, errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
 	}
-	return &dto.GetDeviceByIdRes{Device: dto.DomainToResponse(d)}, nil
+	res := &dto.GetDeviceByIdRes{Device: dto.DomainToResponse(d)}
+	return res, nil
 }
 
 func (s *Service) ListDevicesByUid(ctx context.Context, req *dto.ListDevicesReq) (*dto.ListDevicesRes, error) {
@@ -114,10 +115,12 @@ func (s *Service) ListDevicesByUid(ctx context.Context, req *dto.ListDevicesReq)
 		}
 
 		demoDevices = append(demoDevices, devices...)
-		return &dto.ListDevicesRes{Devices: dto.DomainListToResponse(demoDevices)}, nil
+		res := &dto.ListDevicesRes{Devices: dto.DomainListToResponse(demoDevices)}
+		return res, nil
 	}
 
-	return &dto.ListDevicesRes{Devices: dto.DomainListToResponse(devices)}, nil
+	res := &dto.ListDevicesRes{Devices: dto.DomainListToResponse(devices)}
+	return res, nil
 }
 
 func (s *Service) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceReq) (*dto.UpdateDeviceRes, error) {
@@ -135,7 +138,8 @@ func (s *Service) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceReq) (*
 		return nil, err
 	}
 	logger.From(ctx).Info("device.updated", "device_id", req.DeviceID, "uid", req.UID)
-	return &dto.UpdateDeviceRes{Device: dto.DomainToResponse(updated)}, nil
+	res := &dto.UpdateDeviceRes{Device: dto.DomainToResponse(updated)}
+	return res, nil
 }
 
 func (s *Service) RevokeDevice(ctx context.Context, req *dto.RevokeDeviceReq) (*dto.RevokeDeviceRes, error) {
@@ -149,7 +153,8 @@ func (s *Service) RevokeDevice(ctx context.Context, req *dto.RevokeDeviceReq) (*
 		return nil, err
 	}
 	logger.From(ctx).Info("device.revoked", "device_id", req.DevicUUID, "uid", req.UID)
-	return &dto.RevokeDeviceRes{}, nil
+	res := &dto.RevokeDeviceRes{}
+	return res, nil
 }
 
 func (s *Service) SoftDeleteDevice(ctx context.Context, req *dto.DeleteDeviceReq) (*dto.DeleteDeviceRes, error) {
@@ -163,7 +168,8 @@ func (s *Service) SoftDeleteDevice(ctx context.Context, req *dto.DeleteDeviceReq
 		return nil, err
 	}
 	logger.From(ctx).Info("device.soft_deleted", "device_id", req.DeviceID, "uid", req.UID)
-	return &dto.DeleteDeviceRes{}, nil
+	res := &dto.DeleteDeviceRes{}
+	return res, nil
 }
 
 func (s *Service) ForceDeleteDevice(ctx context.Context, req *dto.DeleteDeviceReq) (*dto.DeleteDeviceRes, error) {
@@ -177,7 +183,8 @@ func (s *Service) ForceDeleteDevice(ctx context.Context, req *dto.DeleteDeviceRe
 		return nil, err
 	}
 	logger.From(ctx).Info("device.force_deleted", "device_id", req.DeviceID, "uid", req.UID)
-	return &dto.DeleteDeviceRes{}, nil
+	res := &dto.DeleteDeviceRes{}
+	return res, nil
 }
 
 // VerifyDevice is the seam the future 2FA module calls after a successful
@@ -205,5 +212,6 @@ func (s *Service) VerifyDevice(ctx context.Context, req *dto.VerifyDeviceReq) (*
 	}
 
 	logger.From(ctx).Info("device.verified", "device_id", req.DeviceUUID, "uid", req.UID)
-	return &dto.VerifyDeviceRes{Device: dto.DomainToResponse(d)}, nil
+	res := &dto.VerifyDeviceRes{Device: dto.DomainToResponse(d)}
+	return res, nil
 }

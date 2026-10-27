@@ -104,7 +104,8 @@ func (s *Service) GetProfileById(ctx context.Context, req *dto.GetProfileByIdReq
 	if err != nil {
 		return nil, err
 	}
-	return &dto.GetProfileByIdRes{Profile: responses[0]}, nil
+	res := &dto.GetProfileByIdRes{Profile: responses[0]}
+	return res, nil
 }
 
 // ListProfiles paginates over active profiles using the optional filters
@@ -138,10 +139,11 @@ func (s *Service) ListProfiles(ctx context.Context, req *dto.ListProfilesReq) (*
 		return nil, err
 	}
 
-	return &dto.ListProfilesRes{
+	res := &dto.ListProfilesRes{
 		Profiles:   responses,
 		Pagination: pg,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) (*dto.CreateProfileRes, error) {
@@ -223,7 +225,8 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 	if err != nil {
 		return nil, err
 	}
-	return &dto.CreateProfileRes{Profile: responses[0]}, nil
+	res := &dto.CreateProfileRes{Profile: responses[0]}
+	return res, nil
 }
 
 func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) (*dto.UpdateProfileRes, error) {
@@ -303,7 +306,8 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 	if err != nil {
 		return nil, err
 	}
-	return &dto.UpdateProfileRes{Profile: responses[0]}, nil
+	res := &dto.UpdateProfileRes{Profile: responses[0]}
+	return res, nil
 }
 
 func (s *Service) SoftDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) (*dto.DeleteProfileRes, error) {
@@ -325,7 +329,8 @@ func (s *Service) SoftDeleteProfile(ctx context.Context, req *dto.DeleteProfileR
 	}); err != nil {
 		return nil, err
 	}
-	return &dto.DeleteProfileRes{}, nil
+	res := &dto.DeleteProfileRes{}
+	return res, nil
 }
 
 func (s *Service) ForceDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) (*dto.DeleteProfileRes, error) {
@@ -366,7 +371,8 @@ func (s *Service) ForceDeleteProfile(ctx context.Context, req *dto.DeleteProfile
 		}
 	}
 
-	return &dto.DeleteProfileRes{}, nil
+	res := &dto.DeleteProfileRes{}
+	return res, nil
 }
 
 // UploadAvatar streams the request body to S3 then persists the resulting
@@ -445,11 +451,12 @@ func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, c
 		"avatar_key", uploaded.Key,
 	)
 
-	return &dto.UploadAvatarRes{
+	res := &dto.UploadAvatarRes{
 		ProfileID: profileID,
 		AvatarKey: uploaded.Key,
 		AvatarUrl: signed,
-	}, nil
+	}
+	return res, nil
 }
 
 // AssignSchool links a school to the profile. Both rows are looked up
@@ -472,7 +479,8 @@ func (s *Service) AssignSchool(ctx context.Context, req *dto.AssignSchoolReq) (*
 	if err != nil {
 		return nil, err
 	}
-	return &dto.AssignSchoolRes{Profile: responses[0]}, nil
+	res := &dto.AssignSchoolRes{Profile: responses[0]}
+	return res, nil
 }
 
 // RemoveSchool clears profile.school_id. Idempotent — calling it on a
@@ -493,7 +501,8 @@ func (s *Service) RemoveSchool(ctx context.Context, req *dto.RemoveSchoolReq) (*
 	if err != nil {
 		return nil, err
 	}
-	return &dto.RemoveSchoolRes{Profile: responses[0]}, nil
+	res := &dto.RemoveSchoolRes{Profile: responses[0]}
+	return res, nil
 }
 
 // collectRefIds extracts the distinct program/grade/semester/school UUIDs

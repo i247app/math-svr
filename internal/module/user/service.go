@@ -88,7 +88,8 @@ func (s *Service) GetUserById(ctx context.Context, req *dto.GetUserByUidReq) (*d
 	userRes := dto.DomainToResponse(user)
 	s.populateImageUrl(ctx, userRes)
 
-	return &dto.GetUserByUidRes{User: userRes}, nil
+	res := &dto.GetUserByUidRes{User: userRes}
+	return res, nil
 }
 
 // RoleOf returns the role stored on the account right now — read from the
@@ -152,7 +153,8 @@ func (s *Service) GetUserByPhone(ctx context.Context, req *dto.GetUserByPhoneReq
 	userRes := dto.DomainToResponse(user)
 	s.populateImageUrl(ctx, userRes)
 
-	return &dto.GetUserByPhoneRes{User: userRes}, nil
+	res := &dto.GetUserByPhoneRes{User: userRes}
+	return res, nil
 }
 
 func (s *Service) GetUserByEmail(ctx context.Context, req *dto.GetUserByEmailReq) (*dto.GetUserByEmailRes, error) {
@@ -164,7 +166,8 @@ func (s *Service) GetUserByEmail(ctx context.Context, req *dto.GetUserByEmailReq
 	userRes := dto.DomainToResponse(user)
 	s.populateImageUrl(ctx, userRes)
 
-	return &dto.GetUserByEmailRes{User: userRes}, nil
+	res := &dto.GetUserByEmailRes{User: userRes}
+	return res, nil
 }
 
 func (s *Service) CheckIdentifierAvailable(ctx context.Context, req *dto.CheckIdentifierReq) (*dto.CheckIdentifierRes, error) {
@@ -275,9 +278,10 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 
 	sess.Init(sessionData)
 
-	return &dto.CreateUserRes{
+	res := &dto.CreateUserRes{
 		User: userRes,
-	}, nil
+	}
+	return res, nil
 }
 
 // AdminCreateUser registers an account on someone else's behalf
@@ -329,7 +333,8 @@ func (s *Service) AdminCreateUser(ctx context.Context, adminUID *int64, req *dto
 
 	userRes := dto.DomainToResponse(created.User)
 	s.populateImageUrl(ctx, userRes)
-	return &dto.CreateUserRes{User: userRes}, nil
+	res := &dto.CreateUserRes{User: userRes}
+	return res, nil
 }
 
 // createUserInput is what both create routes resolve from the request
@@ -452,9 +457,10 @@ func (s *Service) CreateGuest(ctx context.Context, sess *session.AppSession, req
 	logger.From(ctx).Info("user.guest.opened",
 		"uid", created.User.Uid(), "profile_id", created.Profile.ProfileId())
 
-	return &dto.CreateGuestRes{
+	res := &dto.CreateGuestRes{
 		User: dto.DomainToResponse(created.User),
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) SoftDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (*dto.DeleteUserRes, error) {
@@ -477,7 +483,8 @@ func (s *Service) SoftDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (*
 		return nil, err
 	}
 
-	return &dto.DeleteUserRes{}, nil
+	res := &dto.DeleteUserRes{}
+	return res, nil
 }
 
 func (s *Service) ForceDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (*dto.DeleteUserRes, error) {
@@ -510,7 +517,8 @@ func (s *Service) ForceDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (
 		}
 	}
 
-	return &dto.DeleteUserRes{}, nil
+	res := &dto.DeleteUserRes{}
+	return res, nil
 }
 
 func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.UpdateUserRes, error) {
@@ -575,7 +583,8 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 	userRes := dto.DomainToResponse(user)
 	s.populateImageUrl(ctx, userRes)
 
-	return &dto.UpdateUserRes{User: userRes}, nil
+	res := &dto.UpdateUserRes{User: userRes}
+	return res, nil
 }
 
 // UploadAvatar streams the multipart body to S3 then persists the
@@ -657,11 +666,12 @@ func (s *Service) UploadAvatar(ctx context.Context, uid int64, filename, content
 		"avatar_key", uploaded.Key,
 	)
 
-	return &dto.UploadAvatarRes{
+	res := &dto.UploadAvatarRes{
 		UID:       uid,
 		AvatarKey: uploaded.Key,
 		AvatarUrl: signed,
-	}, nil
+	}
+	return res, nil
 }
 
 // guestUIDFromSession reports the uid to upgrade, or nil when this is

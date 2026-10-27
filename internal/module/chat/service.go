@@ -129,7 +129,8 @@ func (s *Service) ListClassroomMembers(ctx context.Context, req *dto.ListClassro
 		members = append(members, item)
 	}
 
-	return &dto.ListClassroomMembersRes{Members: members, Pagination: result.Pagination}, nil
+	res := &dto.ListClassroomMembersRes{Members: members, Pagination: result.Pagination}
+	return res, nil
 }
 
 // OpenConversation resolves (creating on first contact) the 1-1 thread with a
@@ -157,10 +158,11 @@ func (s *Service) OpenConversation(ctx context.Context, req *dto.OpenConversatio
 		return nil, err
 	}
 
-	res := dto.DomainToConversationResponse(conversation)
-	s.attachCounterpart(ctx, res, target)
-	s.attachOwnState(ctx, res, req.ProfileID)
-	return &dto.OpenConversationRes{Conversation: res}, nil
+	conv := dto.DomainToConversationResponse(conversation)
+	s.attachCounterpart(ctx, conv, target)
+	s.attachOwnState(ctx, conv, req.ProfileID)
+	res := &dto.OpenConversationRes{Conversation: conv}
+	return res, nil
 }
 
 // ListConversations is the inbox screen.
@@ -193,7 +195,8 @@ func (s *Service) ListConversations(ctx context.Context, req *dto.ListConversati
 		out = append(out, item)
 	}
 
-	return &dto.ListConversationsRes{Conversations: out, Pagination: result.Pagination}, nil
+	res := &dto.ListConversationsRes{Conversations: out, Pagination: result.Pagination}
+	return res, nil
 }
 
 // ListMessages pages a thread's history. Authorization happens inside the
@@ -216,7 +219,8 @@ func (s *Service) ListMessages(ctx context.Context, req *dto.ListMessagesReq, se
 	if err != nil {
 		return nil, err
 	}
-	return &dto.ListMessagesRes{Messages: dto.DomainListToMessageResponse(messages)}, nil
+	res := &dto.ListMessagesRes{Messages: dto.DomainListToMessageResponse(messages)}
+	return res, nil
 }
 
 // SendMessage persists the message, then pushes it to the other participants.
@@ -246,13 +250,14 @@ func (s *Service) SendMessage(ctx context.Context, req *dto.SendMessageReq, sess
 		return nil, err
 	}
 
-	res := dto.DomainToMessageResponse(result.Message)
+	msg := dto.DomainToMessageResponse(result.Message)
 	// A retry resolved to an existing message: it was already delivered, and
 	// re-publishing would make it appear twice in an open thread.
 	if !result.Duplicate {
-		s.publishMessage(ctx, result.Message, res)
+		s.publishMessage(ctx, result.Message, msg)
 	}
-	return &dto.SendMessageRes{Message: res}, nil
+	res := &dto.SendMessageRes{Message: msg}
+	return res, nil
 }
 
 // MarkRead advances the caller's read watermark.
@@ -272,7 +277,8 @@ func (s *Service) MarkRead(ctx context.Context, req *dto.MarkReadReq, sessionUID
 	if err != nil {
 		return nil, err
 	}
-	return &dto.MarkReadRes{ConversationID: req.ConversationID, LastReadSeqNo: effective}, nil
+	res := &dto.MarkReadRes{ConversationID: req.ConversationID, LastReadSeqNo: effective}
+	return res, nil
 }
 
 // UnreadCount is the badge on the message tab.
@@ -288,7 +294,8 @@ func (s *Service) UnreadCount(ctx context.Context, req *dto.UnreadCountReq, sess
 	if err != nil {
 		return nil, err
 	}
-	return &dto.UnreadCountRes{UnreadCount: total}, nil
+	res := &dto.UnreadCountRes{UnreadCount: total}
+	return res, nil
 }
 
 // ---------- hydration helpers ----------

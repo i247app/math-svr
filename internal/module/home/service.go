@@ -71,5 +71,6 @@ func (s *Service) GetHomeLayout(ctx context.Context, req *dto.HomeLayoutReq, ses
 	}
 
 	layout := s.buildLayout(ctx, caller, data)
-	return &dto.HomeLayoutRes{Home: layout}, nil
+	res := &dto.HomeLayoutRes{Home: layout}
+	return res, nil
 }

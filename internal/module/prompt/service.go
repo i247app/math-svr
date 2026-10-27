@@ -64,7 +64,8 @@ func (s *Service) ListPrompts(ctx context.Context, req *dto.ListPromptsReq) (*dt
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	return &dto.ListPromptsRes{Prompts: dto.PromptsToResponse(prompts)}, nil
+	res := &dto.ListPromptsRes{Prompts: dto.PromptsToResponse(prompts)}
+	return res, nil
 }
 
 func (s *Service) GetPrompt(ctx context.Context, req *dto.GetPromptReq) (*dto.PromptRes, error) {
@@ -75,7 +76,8 @@ func (s *Service) GetPrompt(ctx context.Context, req *dto.GetPromptReq) (*dto.Pr
 	if err != nil {
 		return nil, err
 	}
-	return &dto.PromptRes{Prompt: dto.PromptToResponse(p)}, nil
+	res := &dto.PromptRes{Prompt: dto.PromptToResponse(p)}
+	return res, nil
 }
 
 // UpdatePrompt rewrites one row. The new text is used from the next call
@@ -109,7 +111,8 @@ func (s *Service) UpdatePrompt(ctx context.Context, req *dto.UpdatePromptReq) (*
 	}
 	logger.From(ctx).Infof("prompt.updated admin_uid=%d via=%s prompt_id=%d code=%s prompt_version=%d runes=%d",
 		sctx.UID(ctx), via, saved.PromptId(), saved.PromptCode(), saved.PromptVersion(), utf8.RuneCountInString(saved.SystemPrompt()))
-	return &dto.PromptRes{Prompt: dto.PromptToResponse(saved)}, nil
+	res := &dto.PromptRes{Prompt: dto.PromptToResponse(saved)}
+	return res, nil
 }
 
 func (s *Service) findPrompt(ctx context.Context, promptID int64) (*domain.Prompt, error) {

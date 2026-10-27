@@ -152,12 +152,13 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 		}
 	}
 
-	return &dto.SendOtpRes{
+	res := &dto.SendOtpRes{
 		ExpiresAt: result.ExpiresAt.String(),
 		Channel:   string(result.Channel),
 		OTPCode:   result.OTPCode,
 		OtpType:   result.OTPType,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto.VerifyOtpReq) (*dto.VerifyOtpRes, error) {
@@ -191,11 +192,12 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 			return nil, err
 		}
 		if userRes == nil || userRes.User == nil {
-			return &dto.VerifyOtpRes{
+			res := &dto.VerifyOtpRes{
 				OtpType:  req.OtpType,
 				Verified: true,
 				User:     user,
-			}, nil
+			}
+			return res, nil
 		}
 
 		// Update session
@@ -235,11 +237,12 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 		user = userRes.User
 	}
 
-	return &dto.VerifyOtpRes{
+	res := &dto.VerifyOtpRes{
 		Verified: true,
 		OtpType:  req.OtpType,
 		User:     user,
-	}, nil
+	}
+	return res, nil
 }
 
 func (s *Service) Revoke(ctx context.Context, req *dto.RevokeOtpReq) (*dto.RevokeOtpRes, error) {
@@ -253,5 +256,6 @@ func (s *Service) Revoke(ctx context.Context, req *dto.RevokeOtpReq) (*dto.Revok
 	}); err != nil {
 		return nil, err
 	}
-	return &dto.RevokeOtpRes{}, nil
+	res := &dto.RevokeOtpRes{}
+	return res, nil
 }
