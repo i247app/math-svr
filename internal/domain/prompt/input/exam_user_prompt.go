@@ -81,7 +81,9 @@ func examContextEN(in ExamPromptInput) string {
 // then adds the per-request blocks that apply.
 func buildUserExamEN(in ExamPromptInput, n int) string {
 	var out strings.Builder
-	out.WriteString("current_grade: " + GradeLabel(in.Grade) + "\n")
+	out.WriteString("current_grade: ")
+	out.WriteString(GradeLabel(in.Grade))
+	out.WriteString("\n")
 
 	// The intensity block refines the grade and must not be read as
 	// licence to leave it.
@@ -92,22 +94,30 @@ func buildUserExamEN(in ExamPromptInput, n int) string {
 		if in.SystemDefinesLevels {
 			fmt.Fprintf(&out, "level: %d (scale %d–%d)\n", *in.Level, enum.ExamLevelMin, enum.ExamLevelMax)
 		} else if block := levelProfileBlock(QuizLanguageEnglish, *in.Level); block != "" {
-			out.WriteString("\n" + block + "\n")
+			out.WriteString("\n")
+			out.WriteString(block)
+			out.WriteString("\n")
 		}
 	}
 
 	if in.ExamType == enum.ExamTypePractice && in.Practice != nil {
-		out.WriteString("\n" + examPracticeBlockEN(in.Practice, n, ProbePositions(in.ExamType, n)) + "\n")
+		out.WriteString("\n")
+		out.WriteString(examPracticeBlockEN(in.Practice, n, ProbePositions(in.ExamType, n)))
+		out.WriteString("\n")
 	}
 
 	// The system prompt lets the model follow any of the textbooks; a
 	// stated one must win over that choice, or the request field does
 	// nothing.
 	if ctx := examContextEN(in); ctx != "" {
-		out.WriteString("\nCURRICULUM (use only to choose topics — NOT to raise or lower difficulty; if a textbook is given, use it instead of choosing one):\n" + ctx + "\n")
+		out.WriteString("\nCURRICULUM (use only to choose topics — NOT to raise or lower difficulty; if a textbook is given, use it instead of choosing one):\n")
+		out.WriteString(ctx)
+		out.WriteString("\n")
 	}
 	if avoid := examAvoidBlock(in.Avoid); avoid != "" {
-		out.WriteString("\n" + avoid + "\n")
+		out.WriteString("\n")
+		out.WriteString(avoid)
+		out.WriteString("\n")
 	}
 
 	return strings.TrimRight(out.String(), "\n")
@@ -120,7 +130,9 @@ func examAvoidBlock(stems []string) string {
 	var sb strings.Builder
 	for _, stem := range stems {
 		if stem = strings.TrimSpace(stem); stem != "" {
-			sb.WriteString("- " + stem + "\n")
+			sb.WriteString("- ")
+			sb.WriteString(stem)
+			sb.WriteString("\n")
 		}
 	}
 	if sb.Len() == 0 {
