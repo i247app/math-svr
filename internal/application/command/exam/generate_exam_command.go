@@ -380,5 +380,15 @@ func insertExamPool(ctx context.Context, repos transaction.Repositories, examTyp
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
+
+	// The set's questions go to ma_questions in the same transaction, from
+	// the JSON just stored, so a failure here rolls the generation back.
+	rows, err := mintQuestionRows(ctx, repos, examID, content.QuestionsJSON)
+	if err != nil {
+		return nil, err
+	}
+	if err := repos.Question.CreateMany(ctx, rows, createdBy); err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
 	return saved, nil
 }

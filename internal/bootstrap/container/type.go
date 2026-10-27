@@ -18,6 +18,7 @@ import (
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
+	questionDomain "math-ai.com/math-ai/internal/domain/question"
 	questionPoolDomain "math-ai.com/math-ai/internal/domain/questionpool"
 	roleDomain "math-ai.com/math-ai/internal/domain/role"
 	schoolDomain "math-ai.com/math-ai/internal/domain/school"
@@ -102,6 +103,7 @@ type RepositoryContainer struct {
 	ExamSessionRepository        examDomain.IExamSessionRepository
 	ExamSessionLineRepository    examDomain.IExamSessionLineRepository
 	PromptRepository             promptDomain.IRepository
+	QuestionRepository           questionDomain.IRepository
 	QuestionPoolRepository       questionPoolDomain.IRepository
 	SchoolRepository             schoolDomain.IRepository
 	SeqRepository                seqDomain.IRepository

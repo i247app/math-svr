@@ -94,6 +94,14 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 		if err := repos.ExamPool.ReplaceQuestions(ctx, cmd.ExamID, string(raw), cmd.AdminUID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
+		// ma_questions follows the overwritten JSON in the same tx.
+		rows, err := mintQuestionRows(ctx, repos, cmd.ExamID, string(raw))
+		if err != nil {
+			return err
+		}
+		if err := repos.Question.ReplaceByExamId(ctx, cmd.ExamID, rows, cmd.AdminUID); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
 		saved, err = findLivePool(ctx, repos, cmd.ExamID)
 		return err
 	})

@@ -5,9 +5,12 @@
 -- the admin bank (that is ma_question_pools, up/036 — the two tables share no
 -- column and no code).
 --
--- Schema only for now (2026-10-27): no domain, no repository, nothing writes
--- it yet. When the generation starts writing it, its status codes take the
--- QUESTION_* block 14500+ (14400–14499 is QUESTION_POOL_*).
+-- Written since 2026-10-27 (domain/question, question_repository.go): every
+-- new ma_exam_pools row writes its rows in the same transaction (the
+-- /exams/generate cache miss and /exams/pools/generate; older pools are not
+-- backfilled), with question_status = 'ACTIVE' and the pool's create_id.
+-- Status codes, if ever needed, take QUESTION_* 14500+ (14400–14499 is
+-- QUESTION_POOL_*).
 --
 -- ---- Shape ---------------------------------------------------------------
 -- The columns mirror the JSON the model is prompted to emit
@@ -33,8 +36,9 @@
 --
 -- ---- Kept in step with the pool -------------------------------------------
 -- ai_questions_json stays the source a sitting is served and graded from.
--- /exams/pools/verify overwrites that JSON, so whatever writes this table
--- must rewrite the exam's rows in the same transaction.
+-- /exams/pools/verify overwrites that JSON and rewrites the exam's rows in
+-- the same transaction: the live rows are soft-deleted and the corrected
+-- set inserted with new ids (uk_live_exam_question counts live rows only).
 --
 -- Ids are minted from "ma_questions" (row in seed/001_ma_seqs.sql). Not a
 -- clear-data target, like ma_exam_pools (cached generations, owned by no
