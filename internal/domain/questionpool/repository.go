@@ -1,4 +1,4 @@
-package question
+package questionpool
 
 import (
 	"context"
@@ -9,12 +9,12 @@ import (
 
 // ErrDuplicate is returned by CreateMany when a row's question_hash is
 // already held by a live question (uk_live_question_hash).
-var ErrDuplicate = errors.New("question: duplicate content")
+var ErrDuplicate = errors.New("question_pool: duplicate content")
 
 // ListQuestionsFilter narrows the bank listing. Every field is optional;
 // set fields are ANDed. Tags matches a row holding at least one of them.
 // IsVerified true = verified_count > 0, false = 0, nil = both.
-type ListQuestionsFilter struct {
+type ListQuestionPoolsFilter struct {
 	Grade      *int
 	Topic      *string
 	Tags       []string
@@ -24,19 +24,19 @@ type ListQuestionsFilter struct {
 	IsVerified *bool
 }
 
-// IRepository owns ma_questions.
+// IRepository owns ma_question_pools.
 type IRepository interface {
 	// CreateMany inserts new rows in one plain INSERT. A live row with the
 	// same question_hash fails the whole statement with ErrDuplicate.
-	CreateMany(ctx context.Context, questions []*Question, createId *int64) error
+	CreateMany(ctx context.Context, questions []*QuestionPool, createId *int64) error
 	// LockById reads the live row and X-locks it until the transaction
 	// ends, so two edits of one question cannot overwrite each other.
 	// (nil, nil) when there is none.
-	LockById(ctx context.Context, id int64) (*Question, error)
+	LockById(ctx context.Context, id int64) (*QuestionPool, error)
 	// UpdateContent overwrites every editable column (content, grade,
 	// topic, level, tags, explanation, hash) of the live row and stamps
 	// modify_id. A hash another live row holds fails with ErrDuplicate.
-	UpdateContent(ctx context.Context, q *Question, modifyId *int64) error
+	UpdateContent(ctx context.Context, q *QuestionPool, modifyId *int64) error
 	// MarkStatus sets question_status of the live row and stamps modify_id;
 	// content and hash are left alone.
 	MarkStatus(ctx context.Context, id int64, status string, modifyId *int64) error
@@ -49,11 +49,11 @@ type IRepository interface {
 	// ForceDeleteById removes the row, live or soft-deleted. false = no row.
 	ForceDeleteById(ctx context.Context, id int64) (bool, error)
 	// ListByIds returns the live rows among ids, in no particular order.
-	ListByIds(ctx context.Context, ids []int64) ([]*Question, error)
+	ListByIds(ctx context.Context, ids []int64) ([]*QuestionPool, error)
 	// FindLiveHashes returns which of hashes a live row already holds, so a
 	// refusal can name the duplicate questions.
 	FindLiveHashes(ctx context.Context, hashes []string) ([]string, error)
 	// ListPage pages the live rows matching filter, newest first
-	// (create_dt DESC, question_id DESC).
-	ListPage(ctx context.Context, filter ListQuestionsFilter, page, size int64) ([]*Question, *pagination.Pagination, error)
+	// (create_dt DESC, question_pool_id DESC).
+	ListPage(ctx context.Context, filter ListQuestionPoolsFilter, page, size int64) ([]*QuestionPool, *pagination.Pagination, error)
 }

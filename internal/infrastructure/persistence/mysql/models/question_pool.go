@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-type QuestionModel struct {
-	QuestionId       int64
+type QuestionPoolModel struct {
+	QuestionPoolId   int64
 	QuestionKind     string
 	QuestionText     string
 	QuestionImageKey *string

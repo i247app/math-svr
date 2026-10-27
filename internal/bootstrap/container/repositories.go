@@ -21,7 +21,7 @@ func SetupRepositories(db *database.DatabaseWithLogs) *RepositoryContainer {
 		ExamSessionRepository:        repositories.NewExamSessionRepository(db),
 		ExamSessionLineRepository:    repositories.NewExamSessionLineRepository(db),
 		PromptRepository:             repositories.NewPromptRepository(db),
-		QuestionRepository:           repositories.NewQuestionRepository(db),
+		QuestionPoolRepository:       repositories.NewQuestionPoolRepository(db),
 		SchoolRepository:             repositories.NewSchoolRepository(db),
 		SeqRepository:                repositories.NewSeqRepository(db),
 		ClassroomRepository:          repositories.NewClassroomRepository(db),

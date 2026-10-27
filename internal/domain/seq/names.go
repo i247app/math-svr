@@ -40,5 +40,5 @@ const (
 	NameExamSession                 = "ma_exam_sessions"
 	NameExamSessionLine             = "ma_exam_session_lines"
 	NameRole                        = "ma_roles"
-	NameQuestion                    = "ma_questions"
+	NameQuestionPool                = "ma_question_pools"
 )

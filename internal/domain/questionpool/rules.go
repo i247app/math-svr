@@ -1,4 +1,4 @@
-package question
+package questionpool
 
 import (
 	"crypto/sha256"
@@ -135,7 +135,7 @@ type hashOption struct {
 // and display order, topic, tags, level and explanation do not count — the
 // same question shown in another order or filed under another topic is
 // still the same question.
-func Hash(q *Question) string {
+func Hash(q *QuestionPool) string {
 	in := hashInput{
 		Kind:     q.QuestionKind(),
 		Grade:    q.QuestionGrade(),

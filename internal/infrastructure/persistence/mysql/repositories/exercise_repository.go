@@ -136,7 +136,9 @@ func (r *ExerciseRepository) ListByClassroomIds(ctx context.Context, params doma
 	}
 
 	var clause strings.Builder
-	clause.WriteString(` AND e.classroom_id IN (` + strings.Join(placeholders, ", ") + `)`)
+	clause.WriteString(` AND e.classroom_id IN (`)
+	clause.WriteString(strings.Join(placeholders, ", "))
+	clause.WriteString(`)`)
 
 	// Visibility access gate — mirrors buildClassroomExerciseFilter.
 	if params.CallerProfileID != 0 {

@@ -1,4 +1,4 @@
-package question
+package questionpool
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
-	dto "math-ai.com/math-ai/internal/application/dto/question"
+	dto "math-ai.com/math-ai/internal/application/dto/questionpool"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -38,7 +38,7 @@ var imageTypes = map[string]string{
 var (
 	ErrImageMissing  = errors.New("image file part is required")
 	ErrImageTooLarge = errors.New("request body is over the image size limit")
-	ErrStorageOff    = errors.New("question: storage adapter is not configured")
+	ErrStorageOff    = errors.New("question_pool: storage adapter is not configured")
 )
 
 // imageFormError maps a body that is not a usable multipart form. The admin
@@ -48,9 +48,9 @@ func (s *Service) imageFormError(ctx context.Context, err error) error {
 		return gateErr
 	}
 	if errors.Is(err, ErrImageTooLarge) {
-		return errs.NewError(ctx, status.QUESTION_IMAGE_INVALID_FILE, nil, err)
+		return errs.NewError(ctx, status.QUESTION_POOL_IMAGE_INVALID_FILE, nil, err)
 	}
-	return errs.NewError(ctx, status.QUESTION_IMAGE_MISSING, nil, fmt.Errorf("body is not multipart/form-data with an image part: %w", err))
+	return errs.NewError(ctx, status.QUESTION_POOL_IMAGE_MISSING, nil, fmt.Errorf("body is not multipart/form-data with an image part: %w", err))
 }
 
 // ImageFile is the multipart "image" part. Size is the part's size as the
@@ -72,14 +72,14 @@ func (s *Service) UploadImage(ctx context.Context, file ImageFile) (*dto.UploadI
 		return nil, err
 	}
 	if file.Reader == nil {
-		return nil, errs.NewError(ctx, status.QUESTION_IMAGE_MISSING, nil, ErrImageMissing)
+		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_MISSING, nil, ErrImageMissing)
 	}
 	if s.storage == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil, ErrStorageOff)
 	}
 	data, contentType, err := readImage(file)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.QUESTION_IMAGE_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_INVALID_FILE, nil, err)
 	}
 
 	uploaded, err := s.storage.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -89,13 +89,13 @@ func (s *Service) UploadImage(ctx context.Context, file ImageFile) (*dto.UploadI
 		Folder:      imageFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.QUESTION_IMAGE_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_UPLOAD_FAILED, nil, err)
 	}
 	if uploaded == nil || !strings.HasPrefix(uploaded.Key, ImageKeyPrefix) {
-		return nil, errs.NewError(ctx, status.QUESTION_IMAGE_UPLOAD_FAILED, nil,
-			fmt.Errorf("question: storage returned key %q, want one under %s", keyOf(uploaded), ImageKeyPrefix))
+		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_UPLOAD_FAILED, nil,
+			fmt.Errorf("question_pool: storage returned key %q, want one under %s", keyOf(uploaded), ImageKeyPrefix))
 	}
-	logger.From(ctx).Infof("question.image.uploaded admin_uid=%d key=%s bytes=%d", sctx.UID(ctx), uploaded.Key, len(data))
+	logger.From(ctx).Infof("question_pool.image.uploaded admin_uid=%d key=%s bytes=%d", sctx.UID(ctx), uploaded.Key, len(data))
 	return &dto.UploadImageRes{ImageKey: uploaded.Key, ImageUrl: s.presign(ctx, 0, &uploaded.Key)}, nil
 }
 

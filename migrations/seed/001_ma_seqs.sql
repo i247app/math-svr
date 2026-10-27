@@ -43,4 +43,5 @@ INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
 ('ma_exam_session_lines',    0, 'ESL', 8),
 ('ma_roles',                 0, 'RL',  8),
 ('ma_prompts',              19, 'PRM', 8),   -- = highest prompt_id in seed/005_ma_prompts.sql; nothing mints yet (was ma_exam_prompts, renamed by up/038)
-('ma_questions',             0, 'QST', 8);
+('ma_question_pools',        0, 'QPL', 8),   -- admin bank (was 'ma_questions' until 2026-10-27, moved by sql/prod/2026-10-27_rename_…)
+('ma_questions',             0, 'QST', 8);   -- questions an exam generation returned (up/039); nothing mints yet

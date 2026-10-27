@@ -9,7 +9,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
-	"math-ai.com/math-ai/internal/domain/question"
+	"math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -18,17 +18,17 @@ import (
 // CreateQuestionsCommand stores a batch of questions in the bank, all or
 // none. Questions come checked and hashed (module/question
 // ValidateCreateQuestions), without ids.
-type CreateQuestionsCommand struct {
-	Questions []*question.Question
-	ActorUID  *int64 // create_id; nil = no uid (API-key admin)
+type CreateQuestionPoolsCommand struct {
+	QuestionPools []*questionpool.QuestionPool
+	ActorUID      *int64 // create_id; nil = no uid (API-key admin)
 }
 
-type CreateQuestionsCommandHandler struct {
+type CreateQuestionPoolsCommandHandler struct {
 	uow transaction.UnitOfWork
 }
 
-func NewCreateQuestionsCommandHandler(uow transaction.UnitOfWork) *CreateQuestionsCommandHandler {
-	return &CreateQuestionsCommandHandler{uow: uow}
+func NewCreateQuestionPoolsCommandHandler(uow transaction.UnitOfWork) *CreateQuestionPoolsCommandHandler {
+	return &CreateQuestionPoolsCommandHandler{uow: uow}
 }
 
 // Handle runs in one transaction: refuse what the bank already holds
@@ -38,14 +38,14 @@ func NewCreateQuestionsCommandHandler(uow transaction.UnitOfWork) *CreateQuestio
 // fails the INSERT (1062), and the whole batch rolls back.
 //
 // The result is in the order of cmd.Questions.
-func (h *CreateQuestionsCommandHandler) Handle(ctx context.Context, cmd CreateQuestionsCommand) ([]*question.Question, error) {
-	var saved []*question.Question
+func (h *CreateQuestionPoolsCommandHandler) Handle(ctx context.Context, cmd CreateQuestionPoolsCommand) ([]*questionpool.QuestionPool, error) {
+	var saved []*questionpool.QuestionPool
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		hashes := make([]string, 0, len(cmd.Questions))
-		for _, q := range cmd.Questions {
+		hashes := make([]string, 0, len(cmd.QuestionPools))
+		for _, q := range cmd.QuestionPools {
 			hashes = append(hashes, q.QuestionHash())
 		}
-		held, err := repos.Question.FindLiveHashes(ctx, hashes)
+		held, err := repos.QuestionPool.FindLiveHashes(ctx, hashes)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -56,40 +56,40 @@ func (h *CreateQuestionsCommandHandler) Handle(ctx context.Context, cmd CreateQu
 					at = append(at, fmt.Sprintf("questions[%d]", i))
 				}
 			}
-			return errs.NewError(ctx, status.QUESTION_DUPLICATE, nil,
+			return errs.NewError(ctx, status.QUESTION_POOL_DUPLICATE, nil,
 				fmt.Errorf("already in the question bank: %s", strings.Join(at, ", ")))
 		}
 
-		ids := make([]int64, 0, len(cmd.Questions))
-		for _, q := range cmd.Questions {
-			id, err := seqgen.Next(ctx, repos.Seq, seq.NameQuestion)
+		ids := make([]int64, 0, len(cmd.QuestionPools))
+		for _, q := range cmd.QuestionPools {
+			id, err := seqgen.Next(ctx, repos.Seq, seq.NameQuestionPool)
 			if err != nil {
 				return err
 			}
-			q.SetQuestionId(id)
+			q.SetQuestionPoolId(id)
 			ids = append(ids, id)
 		}
-		if err := repos.Question.CreateMany(ctx, cmd.Questions, cmd.ActorUID); err != nil {
-			if errors.Is(err, question.ErrDuplicate) {
-				return errs.NewError(ctx, status.QUESTION_DUPLICATE, nil,
+		if err := repos.QuestionPool.CreateMany(ctx, cmd.QuestionPools, cmd.ActorUID); err != nil {
+			if errors.Is(err, questionpool.ErrDuplicate) {
+				return errs.NewError(ctx, status.QUESTION_POOL_DUPLICATE, nil,
 					fmt.Errorf("already in the question bank (stored by another request meanwhile): %w", err))
 			}
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 
-		rows, err := repos.Question.ListByIds(ctx, ids)
+		rows, err := repos.QuestionPool.ListByIds(ctx, ids)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		byId := make(map[int64]*question.Question, len(rows))
+		byId := make(map[int64]*questionpool.QuestionPool, len(rows))
 		for _, q := range rows {
-			byId[q.QuestionId()] = q
+			byId[q.QuestionPoolId()] = q
 		}
-		saved = make([]*question.Question, 0, len(ids))
+		saved = make([]*questionpool.QuestionPool, 0, len(ids))
 		for _, id := range ids {
 			q, ok := byId[id]
 			if !ok {
-				return errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("question: inserted %d but cannot read it back", id))
+				return errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("question_pool: inserted %d but cannot read it back", id))
 			}
 			saved = append(saved, q)
 		}

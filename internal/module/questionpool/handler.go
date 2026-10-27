@@ -1,11 +1,11 @@
-package question
+package questionpool
 
 import (
 	"encoding/json"
 	"errors"
 	"net/http"
 
-	dto "math-ai.com/math-ai/internal/application/dto/question"
+	dto "math-ai.com/math-ai/internal/application/dto/questionpool"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -17,14 +17,14 @@ func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
 }
 
-// POST /questions/create — admin only; stores a batch of questions, all or none.
-func (h *Handler) HandleCreateQuestions(w http.ResponseWriter, r *http.Request) {
-	var req dto.CreateQuestionsReq
+// POST /question-pools/create — admin only; stores a batch of questions, all or none.
+func (h *Handler) HandleCreateQuestionPools(w http.ResponseWriter, r *http.Request) {
+	var req dto.CreateQuestionPoolsReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.CreateQuestions(r.Context(), &req)
+	res, err := h.service.CreateQuestionPools(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -32,14 +32,14 @@ func (h *Handler) HandleCreateQuestions(w http.ResponseWriter, r *http.Request) 
 	response.WriteJson(w, res, nil)
 }
 
-// POST /questions/list — admin only; pages the bank, answer key included.
-func (h *Handler) HandleListQuestions(w http.ResponseWriter, r *http.Request) {
-	var req dto.ListQuestionsReq
+// POST /question-pools/list — admin only; pages the bank, answer key included.
+func (h *Handler) HandleListQuestionPools(w http.ResponseWriter, r *http.Request) {
+	var req dto.ListQuestionPoolsReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.ListQuestions(r.Context(), &req)
+	res, err := h.service.ListQuestionPools(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -47,14 +47,14 @@ func (h *Handler) HandleListQuestions(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
-// POST /questions/update — admin only; edits one question (absent fields kept).
-func (h *Handler) HandleUpdateQuestion(w http.ResponseWriter, r *http.Request) {
-	var req dto.UpdateQuestionReq
+// POST /question-pools/update — admin only; edits one question (absent fields kept).
+func (h *Handler) HandleUpdateQuestionPool(w http.ResponseWriter, r *http.Request) {
+	var req dto.UpdateQuestionPoolReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.UpdateQuestion(r.Context(), &req)
+	res, err := h.service.UpdateQuestionPool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -62,14 +62,14 @@ func (h *Handler) HandleUpdateQuestion(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
-// POST /questions/mark-status — admin only; sets one question's review state.
-func (h *Handler) HandleMarkQuestionStatus(w http.ResponseWriter, r *http.Request) {
-	var req dto.MarkQuestionStatusReq
+// POST /question-pools/mark-status — admin only; sets one question's review state.
+func (h *Handler) HandleMarkQuestionPoolStatus(w http.ResponseWriter, r *http.Request) {
+	var req dto.MarkQuestionPoolStatusReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.MarkQuestionStatus(r.Context(), &req)
+	res, err := h.service.MarkQuestionPoolStatus(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -77,14 +77,14 @@ func (h *Handler) HandleMarkQuestionStatus(w http.ResponseWriter, r *http.Reques
 	response.WriteJson(w, res, nil)
 }
 
-// POST /questions/verify — admin only; verified_count + 1.
-func (h *Handler) HandleVerifyQuestion(w http.ResponseWriter, r *http.Request) {
-	var req dto.VerifyQuestionReq
+// POST /question-pools/verify — admin only; verified_count + 1.
+func (h *Handler) HandleVerifyQuestionPool(w http.ResponseWriter, r *http.Request) {
+	var req dto.VerifyQuestionPoolReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.VerifyQuestion(r.Context(), &req)
+	res, err := h.service.VerifyQuestionPool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -92,14 +92,14 @@ func (h *Handler) HandleVerifyQuestion(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
-// POST /questions/soft-delete — admin only; hides one question.
-func (h *Handler) HandleSoftDeleteQuestion(w http.ResponseWriter, r *http.Request) {
-	var req dto.DeleteQuestionReq
+// POST /question-pools/soft-delete — admin only; hides one question.
+func (h *Handler) HandleSoftDeleteQuestionPool(w http.ResponseWriter, r *http.Request) {
+	var req dto.DeleteQuestionPoolReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.SoftDeleteQuestion(r.Context(), &req)
+	res, err := h.service.SoftDeleteQuestionPool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -107,14 +107,14 @@ func (h *Handler) HandleSoftDeleteQuestion(w http.ResponseWriter, r *http.Reques
 	response.WriteJson(w, res, nil)
 }
 
-// POST /questions/force-delete — admin only; removes one question's row.
-func (h *Handler) HandleForceDeleteQuestion(w http.ResponseWriter, r *http.Request) {
-	var req dto.DeleteQuestionReq
+// POST /question-pools/force-delete — admin only; removes one question's row.
+func (h *Handler) HandleForceDeleteQuestionPool(w http.ResponseWriter, r *http.Request) {
+	var req dto.DeleteQuestionPoolReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
 	}
-	res, err := h.service.ForceDeleteQuestion(r.Context(), &req)
+	res, err := h.service.ForceDeleteQuestionPool(r.Context(), &req)
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -126,7 +126,7 @@ func (h *Handler) HandleForceDeleteQuestion(w http.ResponseWriter, r *http.Reque
 // form framing. Beyond it the read fails instead of buffering more.
 const maxUploadBody = MaxImageBytes + 1<<20
 
-// POST /questions/images/upload — admin only; multipart/form-data with one
+// POST /question-pools/images/upload — admin only; multipart/form-data with one
 // file part "image". Returns {image_key, image_url}.
 func (h *Handler) HandleUploadImage(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBody)

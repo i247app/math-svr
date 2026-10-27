@@ -1,12 +1,12 @@
-// Package question holds the request / response shapes of the question
-// bank's admin routes (/questions/*). The JSON shapes of options and
-// correct_answer are the ones stored in ma_questions (migration 036).
-package question
+// Package questionpool holds the request / response shapes of the question
+// bank's admin routes (/question-pools/*). The JSON shapes of options and
+// correct_answer are the ones stored in ma_question_pools (migration 036).
+package questionpool
 
 import (
 	"encoding/json"
 
-	domain "math-ai.com/math-ai/internal/domain/question"
+	domain "math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -32,7 +32,7 @@ type CorrectAnswerDto struct {
 // CreateQuestionItem is one question an admin sends. Pointer fields tell
 // "absent" from "zero" for the validator. Source, status, verified_count
 // and ids are set by the server; there is no field for them.
-type CreateQuestionItem struct {
+type CreateQuestionPoolItem struct {
 	QuestionKind     string            `json:"question_kind"`
 	QuestionText     string            `json:"question_text"`
 	QuestionImageKey *string           `json:"question_image_key,omitempty"`
@@ -46,20 +46,20 @@ type CreateQuestionItem struct {
 }
 
 // CreateQuestionsReq creates every question or none.
-type CreateQuestionsReq struct {
-	Questions []CreateQuestionItem `json:"questions"`
+type CreateQuestionPoolsReq struct {
+	QuestionPools []CreateQuestionPoolItem `json:"question_pools"`
 }
 
 // CreateQuestionsRes lists the created questions in request order.
-type CreateQuestionsRes struct {
-	Questions []*QuestionResponse `json:"questions"`
+type CreateQuestionPoolsRes struct {
+	QuestionPools []*QuestionPoolResponse `json:"question_pools"`
 }
 
 // ListQuestionsReq pages the bank, newest first (OFFSET: page, size).
 // Every filter is optional and set filters are ANDed. QuestionTags matches
 // a question holding at least one of them. IsVerified nil = both, true =
 // verified_count > 0, false = 0.
-type ListQuestionsReq struct {
+type ListQuestionPoolsReq struct {
 	QuestionGrade    *int     `json:"question_grade,omitempty"`
 	QuestionTopic    *string  `json:"question_topic,omitempty"`
 	QuestionTags     []string `json:"question_tags,omitempty"`
@@ -71,16 +71,16 @@ type ListQuestionsReq struct {
 	Size             int64    `json:"size,omitempty"`
 }
 
-type ListQuestionsRes struct {
-	Questions  []*QuestionResponse    `json:"questions"`
-	Pagination *pagination.Pagination `json:"pagination"`
+type ListQuestionPoolsRes struct {
+	QuestionPools []*QuestionPoolResponse `json:"question_pools"`
+	Pagination    *pagination.Pagination  `json:"pagination"`
 }
 
 // QuestionResponse is the admin view of one question: the key and the
 // explanation are included (these routes are admin-only). Image URLs are
 // filled by the module after mapping.
-type QuestionResponse struct {
-	QuestionID       int64            `json:"question_id"`
+type QuestionPoolResponse struct {
+	QuestionPoolID   int64            `json:"question_pool_id"`
 	QuestionKind     string           `json:"question_kind"`
 	QuestionText     string           `json:"question_text"`
 	QuestionImageKey *string          `json:"question_image_key"`
@@ -102,7 +102,7 @@ type QuestionResponse struct {
 	ModifyDt         string           `json:"modify_dt"`
 }
 
-func DomainToResponse(q *domain.Question) *QuestionResponse {
+func DomainToResponse(q *domain.QuestionPool) *QuestionPoolResponse {
 	if q == nil {
 		return nil
 	}
@@ -118,8 +118,8 @@ func DomainToResponse(q *domain.Question) *QuestionResponse {
 		tags = []string{}
 	}
 	a := q.CorrectAnswer()
-	return &QuestionResponse{
-		QuestionID:       q.QuestionId(),
+	return &QuestionPoolResponse{
+		QuestionPoolID:   q.QuestionPoolId(),
 		QuestionKind:     string(q.QuestionKind()),
 		QuestionText:     q.QuestionText(),
 		QuestionImageKey: q.QuestionImageKey(),
@@ -141,15 +141,15 @@ func DomainToResponse(q *domain.Question) *QuestionResponse {
 	}
 }
 
-func DomainListToResponse(qs []*domain.Question) []*QuestionResponse {
-	out := make([]*QuestionResponse, 0, len(qs))
+func DomainListToResponse(qs []*domain.QuestionPool) []*QuestionPoolResponse {
+	out := make([]*QuestionPoolResponse, 0, len(qs))
 	for _, q := range qs {
 		out = append(out, DomainToResponse(q))
 	}
 	return out
 }
 
-// UploadImageRes is what /questions/images/upload returns: the key to put
+// UploadImageRes is what /question-pools/images/upload returns: the key to put
 // in question_image_key / options[].image_key, and a presigned URL to
 // preview it (null when presigning failed).
 type UploadImageRes struct {
@@ -179,13 +179,13 @@ func (o *Opt[T]) UnmarshalJSON(raw []byte) error {
 	return nil
 }
 
-// UpdateQuestionReq changes one question. Every field but question_id is
+// UpdateQuestionReq changes one question. Every field but question_pool_id is
 // optional: an absent field keeps its stored value. The nullable ones (Opt)
 // are cleared with null; options is cleared with null or [] (TRUE_FALSE).
 // The merged question must pass every create rule. Source, status and
 // verified_count are not editable here.
-type UpdateQuestionReq struct {
-	QuestionID       int64             `json:"question_id"`
+type UpdateQuestionPoolReq struct {
+	QuestionPoolID   int64             `json:"question_pool_id"`
 	QuestionKind     *string           `json:"question_kind"`
 	QuestionText     *string           `json:"question_text"`
 	QuestionImageKey Opt[string]       `json:"question_image_key"`
@@ -199,25 +199,25 @@ type UpdateQuestionReq struct {
 }
 
 // MarkQuestionStatusReq sets one question's review state.
-type MarkQuestionStatusReq struct {
-	QuestionID     int64  `json:"question_id"`
+type MarkQuestionPoolStatusReq struct {
+	QuestionPoolID int64  `json:"question_pool_id"`
 	QuestionStatus string `json:"question_status"`
 }
 
 // VerifyQuestionReq records one more admin check of a question.
-type VerifyQuestionReq struct {
-	QuestionID int64 `json:"question_id"`
+type VerifyQuestionPoolReq struct {
+	QuestionPoolID int64 `json:"question_pool_id"`
 }
 
 // DeleteQuestionReq names the question to soft- or force-delete.
-type DeleteQuestionReq struct {
-	QuestionID int64 `json:"question_id"`
+type DeleteQuestionPoolReq struct {
+	QuestionPoolID int64 `json:"question_pool_id"`
 }
 
 // DeleteQuestionRes is empty: the question is gone.
-type DeleteQuestionRes struct{}
+type DeleteQuestionPoolRes struct{}
 
 // QuestionRes wraps one question.
-type QuestionRes struct {
-	Question *QuestionResponse `json:"question"`
+type QuestionPoolRes struct {
+	QuestionPool *QuestionPoolResponse `json:"question_pool"`
 }

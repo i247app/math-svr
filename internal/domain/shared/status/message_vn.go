@@ -772,37 +772,37 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case PROMPT_MISSING_JSON_KEY:
 		return "Prompt phải nêu đủ các khóa JSON của cấu trúc kết quả"
 
-	case QUESTION_EMPTY_LIST:
+	case QUESTION_POOL_EMPTY_LIST:
 		return "Cần ít nhất một câu hỏi"
-	case QUESTION_INVALID:
+	case QUESTION_POOL_INVALID:
 		return "Câu hỏi không hợp lệ"
-	case QUESTION_TOO_MANY:
+	case QUESTION_POOL_TOO_MANY:
 		return "Quá nhiều câu hỏi trong một lần gửi"
-	case QUESTION_INVALID_KIND:
+	case QUESTION_POOL_INVALID_KIND:
 		return "Dạng câu hỏi không hợp lệ"
-	case QUESTION_INVALID_OPTIONS:
+	case QUESTION_POOL_INVALID_OPTIONS:
 		return "Các lựa chọn của câu hỏi không hợp lệ"
-	case QUESTION_INVALID_ANSWER:
+	case QUESTION_POOL_INVALID_ANSWER:
 		return "Đáp án đúng của câu hỏi không hợp lệ"
-	case QUESTION_INVALID_IMAGE_KEY:
+	case QUESTION_POOL_INVALID_IMAGE_KEY:
 		return "Khóa ảnh không hợp lệ"
-	case QUESTION_DUPLICATE:
+	case QUESTION_POOL_DUPLICATE:
 		return "Câu hỏi đã có trong ngân hàng câu hỏi"
-	case QUESTION_INVALID_FILTER:
+	case QUESTION_POOL_INVALID_FILTER:
 		return "Bộ lọc câu hỏi không hợp lệ"
-	case QUESTION_IMAGE_MISSING:
+	case QUESTION_POOL_IMAGE_MISSING:
 		return "Cần gửi kèm tệp ảnh"
-	case QUESTION_IMAGE_INVALID_FILE:
+	case QUESTION_POOL_IMAGE_INVALID_FILE:
 		return "Ảnh phải là tệp JPEG, PNG, GIF hoặc WebP, tối đa 5 MB"
-	case QUESTION_IMAGE_UPLOAD_FAILED:
+	case QUESTION_POOL_IMAGE_UPLOAD_FAILED:
 		return "Không tải ảnh lên được"
-	case QUESTION_MISSING_ID:
-		return "Thiếu question_id"
-	case QUESTION_NOT_FOUND:
+	case QUESTION_POOL_MISSING_ID:
+		return "Thiếu question_pool_id"
+	case QUESTION_POOL_NOT_FOUND:
 		return "Câu hỏi không tồn tại"
-	case QUESTION_NOTHING_TO_UPDATE:
+	case QUESTION_POOL_NOTHING_TO_UPDATE:
 		return "Không có thông tin nào để cập nhật"
-	case QUESTION_INVALID_STATUS:
+	case QUESTION_POOL_INVALID_STATUS:
 		return "question_status phải là PENDING_REVIEW, APPROVED hoặc REJECTED"
 
 	default:

@@ -1,8 +1,15 @@
 -- migration up
--- ma_questions — the question bank: ONE row per question, written and
+-- ma_question_pools — the question pool (the admin bank, module
+-- questionpool, /question-pools/*): ONE row per question, written and
 -- reviewed by admins. Independent of the exam flow: no column points at
 -- ma_exam_pools, and none of the exam vocabulary (ARITHMETIC, COUNT, A/B/C/D
--- labels, question_number) is reused here.
+-- labels, question_number) is reused here. Not to be confused with
+-- ma_questions (up/039), which holds the questions an exam generation
+-- returned, one row each.
+--
+-- Was ma_questions with PK question_id until 2026-10-27; an existing database
+-- is moved by sql/prod/2026-10-27_rename_ma_questions_to_ma_question_pools.sql
+-- (CREATE … IF NOT EXISTS below cannot rename it).
 --
 -- ---- Shape -----------------------------------------------------------------
 -- question_kind says how the question is answered; options + correct_answer
@@ -72,7 +79,7 @@
 --     one or more.
 --   * TRUE_FALSE: options NULL, value is a JSON boolean.
 --   * NUMERIC_INPUT: options NULL, values 1..10 strings, each a number
---     (domain/question.ParseNumber), no two equal as numbers.
+--     (domain/questionpool.ParseNumber), no two equal as numbers.
 --   * question_text non-blank (an image-only stem still states the task).
 --   * image keys are keys the server uploaded (question-images/ prefix),
 --     never a URL from the client.
@@ -88,16 +95,16 @@
 -- trimmed, whitespace collapsed) | stem image key | the options as a set by
 -- content (text + image_key + correct or not) | the TRUE_FALSE value |
 -- the NUMERIC_INPUT values as a set of reduced numbers ("0.5" = "1/2"),
--- computed by the application (domain/question.Hash). Option ids, display
+-- computed by the application (domain/questionpool.Hash). Option ids, display
 -- order, topic, tags, level and explanation are NOT part of it: the same
 -- question reordered or filed under another topic is still the same
 -- question. uk_live_question_hash keeps one live row per hash.
 --
--- Ids are minted from seq.NameQuestion = "ma_questions" (row in
+-- Ids are minted from seq.NameQuestionPool = "ma_question_pools" (row in
 -- seed/001_ma_seqs.sql). Clear-data target.
 
-CREATE TABLE IF NOT EXISTS ma_questions (
-  question_id         BIGINT UNSIGNED NOT NULL PRIMARY KEY,   -- external id (minted via ma_seqs)
+CREATE TABLE IF NOT EXISTS ma_question_pools (
+  question_pool_id    BIGINT UNSIGNED NOT NULL PRIMARY KEY,   -- external id (minted via ma_seqs)
   question_kind       VARCHAR(32)   NOT NULL,                 -- how it is answered: SINGLE_CHOICE / MULTIPLE_CHOICE / TRUE_FALSE / NUMERIC_INPUT (more later); decides the JSON shapes
   question_text       TEXT          NOT NULL,                 -- the stem shown to the child
   question_image_key  VARCHAR(1000) DEFAULT NULL,             -- optional S3 key of the stem's image; presigned on read
@@ -138,20 +145,20 @@ CREATE TABLE IF NOT EXISTS ma_questions (
 -- drop one by hand.
 --
 -- Create:
---   ALTER TABLE ma_questions ADD PRIMARY KEY (question_id);
---   CREATE UNIQUE INDEX uk_live_question_hash ON ma_questions ((IF(deleted_dt IS NULL, question_hash, NULL)));
---   CREATE INDEX ix_status_grade_created ON ma_questions (question_status, question_grade, create_dt);
---   CREATE INDEX ix_grade_topic ON ma_questions (question_grade, question_topic);
+--   ALTER TABLE ma_question_pools ADD PRIMARY KEY (question_pool_id);
+--   CREATE UNIQUE INDEX uk_live_question_hash ON ma_question_pools ((IF(deleted_dt IS NULL, question_hash, NULL)));
+--   CREATE INDEX ix_status_grade_created ON ma_question_pools (question_status, question_grade, create_dt);
+--   CREATE INDEX ix_grade_topic ON ma_question_pools (question_grade, question_topic);
 --
 -- Not created yet — add it when the bank searches by tag
 -- (WHERE 'addition' MEMBER OF (question_tags), JSON_CONTAINS / JSON_OVERLAPS).
 -- A multi-valued index needs MySQL 8.0.17+, and an INSERT whose tag is
 -- longer than 64 characters fails once it exists:
---   CREATE INDEX ix_question_tags ON ma_questions ((CAST(question_tags AS CHAR(64) ARRAY)));
+--   CREATE INDEX ix_question_tags ON ma_question_pools ((CAST(question_tags AS CHAR(64) ARRAY)));
 --
 -- Drop:
---   ALTER TABLE ma_questions DROP PRIMARY KEY;   -- pair it with ADD PRIMARY KEY in the same statement
---   DROP INDEX uk_live_question_hash ON ma_questions;
---   DROP INDEX ix_status_grade_created ON ma_questions;
---   DROP INDEX ix_grade_topic ON ma_questions;
---   DROP INDEX ix_question_tags ON ma_questions;
+--   ALTER TABLE ma_question_pools DROP PRIMARY KEY;   -- pair it with ADD PRIMARY KEY in the same statement
+--   DROP INDEX uk_live_question_hash ON ma_question_pools;
+--   DROP INDEX ix_status_grade_created ON ma_question_pools;
+--   DROP INDEX ix_grade_topic ON ma_question_pools;
+--   DROP INDEX ix_question_tags ON ma_question_pools;

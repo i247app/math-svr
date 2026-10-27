@@ -1,9 +1,9 @@
-package question
+package questionpool
 
 import "slices"
 
 // Kind says how a question is answered; it decides the shape of Options
-// and CorrectAnswer (migrations/up/036_ma_questions.sql, header). A new
+// and CorrectAnswer (migrations/up/036_ma_question_pools.sql, header). A new
 // kind is a new constant + its shape rule, never a schema change.
 type Kind string
 

@@ -49,9 +49,9 @@ var clearDataTargets = []clearTarget{
 	{examLinkTable, seq.NameExamLink, "elink_id"},
 	{examSessionTable, seq.NameExamSession, "esess_id"},
 	{examSessionLineTable, seq.NameExamSessionLine, "esess_ln_id"},
-	// Question bank: admin data, independent of the pools. A full clear
+	// Question pool (admin bank): admin data, independent of the pools. A full clear
 	// wipes it; ClearDataKeepingUsers keeps it whole.
-	{questionTable, seq.NameQuestion, "question_id"},
+	{questionPoolTable, seq.NameQuestionPool, "question_pool_id"},
 }
 
 // clearDataTargetByTable indexes clearDataTargets for O(1) allow-list checks in
@@ -101,7 +101,7 @@ var clearDataSeqs = []string{
 	seq.NameExamLink,
 	seq.NameExamSession,
 	seq.NameExamSessionLine,
-	seq.NameQuestion,
+	seq.NameQuestionPool,
 }
 
 // keepCol names the column a table-scoped keep filters on when preserving
@@ -158,8 +158,8 @@ func init() {
 		examSessionLineTable: true,
 		examPoolTable:        true,
 		// Admin-managed, owned by no user: ClearDataKeepingUsers leaves it
-		// untouched (its seq resets to MAX(question_id), i.e. unchanged).
-		questionTable: true,
+		// untouched (its seq resets to MAX(question_pool_id), i.e. unchanged).
+		questionPoolTable: true,
 	}
 	for _, t := range clearKeepByUid {
 		covered[t.table] = true

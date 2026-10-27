@@ -1,4 +1,4 @@
-package question
+package questionpool
 
 import (
 	"context"
@@ -8,30 +8,30 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	dto "math-ai.com/math-ai/internal/application/dto/question"
-	domain "math-ai.com/math-ai/internal/domain/question"
+	dto "math-ai.com/math-ai/internal/application/dto/questionpool"
+	domain "math-ai.com/math-ai/internal/domain/questionpool"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
-// Limits of one /questions/create call and of the stored text.
+// Limits of one /question-pools/create call and of the stored text.
 const (
-	MaxQuestionsPerCreate = 100
-	MaxTextRunes          = 2000
-	MaxOptionTextRunes    = 500
-	MaxExplanationRunes   = 5000
-	MaxTopicRunes         = 255
-	MaxTags               = 20
-	MaxTagRunes           = 64 // what ix_question_tags (CHAR(64) ARRAY) accepts
-	MaxImageKeyLen        = 1000
-	MaxListSize           = 100 // one page; each question may carry 11 presigned URLs
+	MaxQuestionPoolsPerCreate = 100
+	MaxTextRunes              = 2000
+	MaxOptionTextRunes        = 500
+	MaxExplanationRunes       = 5000
+	MaxTopicRunes             = 255
+	MaxTags                   = 20
+	MaxTagRunes               = 64 // what ix_question_tags (CHAR(64) ARRAY) accepts
+	MaxImageKeyLen            = 1000
+	MaxListSize               = 100 // one page; each question may carry 11 presigned URLs
 
 	// ImageKeyPrefix is the S3 folder question images live under.
 	ImageKeyPrefix = "question-images/"
 )
 
 // issue is one broken rule of one question, at a path like
-// questions[3].options[1].id.
+// question_pools[3].options[1].id.
 type issue struct {
 	code status.StatusCode
 	msg  string
@@ -46,28 +46,28 @@ type issue struct {
 // It is all or nothing: every question is checked, and any broken rule
 // refuses the whole request with ONE error — the code of the first issue,
 // and every issue (by path) in debug, so the admin can fix all at once.
-func ValidateCreateQuestions(ctx context.Context, req *dto.CreateQuestionsReq) ([]*domain.Question, error) {
-	if len(req.Questions) == 0 {
-		return nil, errs.NewError(ctx, status.QUESTION_EMPTY_LIST, nil, errors.New("questions is required"))
+func ValidateCreateQuestionPools(ctx context.Context, req *dto.CreateQuestionPoolsReq) ([]*domain.QuestionPool, error) {
+	if len(req.QuestionPools) == 0 {
+		return nil, errs.NewError(ctx, status.QUESTION_POOL_EMPTY_LIST, nil, errors.New("question_pools is required"))
 	}
-	if len(req.Questions) > MaxQuestionsPerCreate {
-		return nil, errs.NewError(ctx, status.QUESTION_TOO_MANY, nil,
-			fmt.Errorf("at most %d questions per request, got %d", MaxQuestionsPerCreate, len(req.Questions)))
+	if len(req.QuestionPools) > MaxQuestionPoolsPerCreate {
+		return nil, errs.NewError(ctx, status.QUESTION_POOL_TOO_MANY, nil,
+			fmt.Errorf("at most %d questions per request, got %d", MaxQuestionPoolsPerCreate, len(req.QuestionPools)))
 	}
 
 	var issues []issue
-	out := make([]*domain.Question, 0, len(req.Questions))
+	out := make([]*domain.QuestionPool, 0, len(req.QuestionPools))
 	firstByHash := map[string]int{}
-	for i, item := range req.Questions {
-		q, found := buildQuestion(item)
+	for i, item := range req.QuestionPools {
+		q, found := buildQuestionPool(item)
 		for _, is := range found {
-			issues = append(issues, issue{is.code, fmt.Sprintf("questions[%d].%s", i, is.msg)})
+			issues = append(issues, issue{is.code, fmt.Sprintf("question_pools[%d].%s", i, is.msg)})
 		}
 		if len(found) > 0 {
 			continue
 		}
 		if first, ok := firstByHash[q.QuestionHash()]; ok {
-			issues = append(issues, issue{status.QUESTION_DUPLICATE, fmt.Sprintf("questions[%d] repeats questions[%d]", i, first)})
+			issues = append(issues, issue{status.QUESTION_POOL_DUPLICATE, fmt.Sprintf("question_pools[%d] repeats question_pools[%d]", i, first)})
 			continue
 		}
 		firstByHash[q.QuestionHash()] = i
@@ -90,25 +90,25 @@ func issuesError(ctx context.Context, issues []issue) error {
 }
 
 // ValidateUpdateQuestion checks what needs no stored row.
-func ValidateUpdateQuestion(ctx context.Context, req *dto.UpdateQuestionReq) error {
-	if req.QuestionID <= 0 {
-		return errs.NewError(ctx, status.QUESTION_MISSING_ID, nil, errors.New("question_id is required"))
+func ValidateUpdateQuestionPool(ctx context.Context, req *dto.UpdateQuestionPoolReq) error {
+	if req.QuestionPoolID <= 0 {
+		return errs.NewError(ctx, status.QUESTION_POOL_MISSING_ID, nil, errors.New("question_pool_id is required"))
 	}
 	if req.QuestionKind == nil && req.QuestionText == nil && !req.QuestionImageKey.Set && !req.Options.Set &&
 		req.CorrectAnswer == nil && !req.Explanation.Set && req.QuestionGrade == nil && !req.QuestionTopic.Set &&
 		!req.QuestionLevel.Set && req.QuestionTags == nil {
-		return errs.NewError(ctx, status.QUESTION_NOTHING_TO_UPDATE, nil, errors.New("no field to change"))
+		return errs.NewError(ctx, status.QUESTION_POOL_NOTHING_TO_UPDATE, nil, errors.New("no field to change"))
 	}
 	return nil
 }
 
-// ValidateMarkQuestionStatus needs a question_id and a known review state.
-func ValidateMarkQuestionStatus(ctx context.Context, req *dto.MarkQuestionStatusReq) error {
-	if req.QuestionID <= 0 {
-		return errs.NewError(ctx, status.QUESTION_MISSING_ID, nil, errors.New("question_id is required"))
+// ValidateMarkQuestionStatus needs a question_pool_id and a known review state.
+func ValidateMarkQuestionPoolStatus(ctx context.Context, req *dto.MarkQuestionPoolStatusReq) error {
+	if req.QuestionPoolID <= 0 {
+		return errs.NewError(ctx, status.QUESTION_POOL_MISSING_ID, nil, errors.New("question_pool_id is required"))
 	}
 	if !slices.Contains(domain.Statuses, req.QuestionStatus) {
-		return errs.NewError(ctx, status.QUESTION_INVALID_STATUS, nil,
+		return errs.NewError(ctx, status.QUESTION_POOL_INVALID_STATUS, nil,
 			fmt.Errorf("question_status %q is not one of %v", req.QuestionStatus, domain.Statuses))
 	}
 	return nil
@@ -117,8 +117,8 @@ func ValidateMarkQuestionStatus(ctx context.Context, req *dto.MarkQuestionStatus
 // MergeUpdate lays the request over the stored question and checks the
 // result with every create rule (so a kind change must bring options and a
 // key that fit it). Source, status and verified_count stay as stored; the
-// hash is recomputed. Issue paths start with "question.".
-func MergeUpdate(ctx context.Context, stored *domain.Question, req *dto.UpdateQuestionReq) (*domain.Question, error) {
+// hash is recomputed. Issue paths start with "question_pool.".
+func MergeUpdate(ctx context.Context, stored *domain.QuestionPool, req *dto.UpdateQuestionPoolReq) (*domain.QuestionPool, error) {
 	item := itemOf(stored)
 	if req.QuestionKind != nil {
 		item.QuestionKind = *req.QuestionKind
@@ -154,14 +154,14 @@ func MergeUpdate(ctx context.Context, stored *domain.Question, req *dto.UpdateQu
 		item.QuestionTags = *req.QuestionTags
 	}
 
-	q, found := buildQuestion(item)
+	q, found := buildQuestionPool(item)
 	if len(found) > 0 {
 		for i := range found {
-			found[i].msg = "question." + found[i].msg
+			found[i].msg = "question_pool." + found[i].msg
 		}
 		return nil, issuesError(ctx, found)
 	}
-	q.SetQuestionId(stored.QuestionId())
+	q.SetQuestionPoolId(stored.QuestionPoolId())
 	q.SetQuestionSource(stored.QuestionSource())
 	q.SetQuestionStatus(stored.QuestionStatus())
 	q.SetVerifiedCount(stored.VerifiedCount())
@@ -170,14 +170,14 @@ func MergeUpdate(ctx context.Context, stored *domain.Question, req *dto.UpdateQu
 
 // itemOf is the stored question in request form, the base an update is
 // laid over.
-func itemOf(q *domain.Question) dto.CreateQuestionItem {
+func itemOf(q *domain.QuestionPool) dto.CreateQuestionPoolItem {
 	var options []dto.OptionDto
 	for _, o := range q.Options() {
 		options = append(options, dto.OptionDto{Id: o.Id, Text: o.Text, ImageKey: o.ImageKey})
 	}
 	a := q.CorrectAnswer()
 	grade := q.QuestionGrade()
-	return dto.CreateQuestionItem{
+	return dto.CreateQuestionPoolItem{
 		QuestionKind:     string(q.QuestionKind()),
 		QuestionText:     q.QuestionText(),
 		QuestionImageKey: q.QuestionImageKey(),
@@ -193,7 +193,7 @@ func itemOf(q *domain.Question) dto.CreateQuestionItem {
 
 // buildQuestion checks one item and maps it; issues carry paths relative to
 // the item.
-func buildQuestion(item dto.CreateQuestionItem) (*domain.Question, []issue) {
+func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, []issue) {
 	var issues []issue
 	add := func(code status.StatusCode, format string, args ...any) {
 		issues = append(issues, issue{code, fmt.Sprintf(format, args...)})
@@ -203,12 +203,12 @@ func buildQuestion(item dto.CreateQuestionItem) (*domain.Question, []issue) {
 	text := strings.TrimSpace(item.QuestionText)
 	switch {
 	case text == "":
-		add(status.QUESTION_INVALID, "question_text: required")
+		add(status.QUESTION_POOL_INVALID, "question_text: required")
 	case utf8.RuneCountInString(text) > MaxTextRunes:
-		add(status.QUESTION_INVALID, "question_text: longer than %d characters", MaxTextRunes)
+		add(status.QUESTION_POOL_INVALID, "question_text: longer than %d characters", MaxTextRunes)
 	}
 	if msg := checkImageKey(item.QuestionImageKey); msg != "" {
-		add(status.QUESTION_INVALID_IMAGE_KEY, "question_image_key: %s", msg)
+		add(status.QUESTION_POOL_INVALID_IMAGE_KEY, "question_image_key: %s", msg)
 	}
 
 	// An empty list is "no options": a TRUE_FALSE sent with "options": []
@@ -219,10 +219,10 @@ func buildQuestion(item dto.CreateQuestionItem) (*domain.Question, []issue) {
 		for j, o := range item.Options {
 			optText := strings.TrimSpace(o.Text)
 			if utf8.RuneCountInString(optText) > MaxOptionTextRunes {
-				add(status.QUESTION_INVALID_OPTIONS, "options[%d].text: longer than %d characters", j, MaxOptionTextRunes)
+				add(status.QUESTION_POOL_INVALID_OPTIONS, "options[%d].text: longer than %d characters", j, MaxOptionTextRunes)
 			}
 			if msg := checkImageKey(o.ImageKey); msg != "" {
-				add(status.QUESTION_INVALID_IMAGE_KEY, "options[%d].image_key: %s", j, msg)
+				add(status.QUESTION_POOL_INVALID_IMAGE_KEY, "options[%d].image_key: %s", j, msg)
 			}
 			options = append(options, domain.Option{Id: strings.TrimSpace(o.Id), Text: optText, ImageKey: o.ImageKey})
 		}
@@ -230,7 +230,7 @@ func buildQuestion(item dto.CreateQuestionItem) (*domain.Question, []issue) {
 
 	var answer domain.CorrectAnswer
 	if item.CorrectAnswer == nil {
-		add(status.QUESTION_INVALID_ANSWER, "correct_answer: required")
+		add(status.QUESTION_POOL_INVALID_ANSWER, "correct_answer: required")
 	} else {
 		answer = domain.CorrectAnswer{OptionIds: item.CorrectAnswer.OptionIds, Value: item.CorrectAnswer.Value, Values: item.CorrectAnswer.Values}
 		if kind == domain.KindNumericInput {
@@ -247,30 +247,30 @@ func buildQuestion(item dto.CreateQuestionItem) (*domain.Question, []issue) {
 
 	switch g := item.QuestionGrade; {
 	case g == nil:
-		add(status.QUESTION_INVALID, "question_grade: required")
+		add(status.QUESTION_POOL_INVALID, "question_grade: required")
 	case *g < domain.GradeMin || *g > domain.GradeMax:
-		add(status.QUESTION_INVALID, "question_grade: %d is outside %d..%d", *g, domain.GradeMin, domain.GradeMax)
+		add(status.QUESTION_POOL_INVALID, "question_grade: %d is outside %d..%d", *g, domain.GradeMin, domain.GradeMax)
 	}
 	if l := item.QuestionLevel; l != nil && (*l < domain.LevelMin || *l > domain.LevelMax) {
-		add(status.QUESTION_INVALID, "question_level: %d is outside %d..%d", *l, domain.LevelMin, domain.LevelMax)
+		add(status.QUESTION_POOL_INVALID, "question_level: %d is outside %d..%d", *l, domain.LevelMin, domain.LevelMax)
 	}
 	explanation := trimmedOrNil(item.Explanation)
 	if explanation != nil && utf8.RuneCountInString(*explanation) > MaxExplanationRunes {
-		add(status.QUESTION_INVALID, "explanation: longer than %d characters", MaxExplanationRunes)
+		add(status.QUESTION_POOL_INVALID, "explanation: longer than %d characters", MaxExplanationRunes)
 	}
 	topic := trimmedOrNil(item.QuestionTopic)
 	if topic != nil && utf8.RuneCountInString(*topic) > MaxTopicRunes {
-		add(status.QUESTION_INVALID, "question_topic: longer than %d characters", MaxTopicRunes)
+		add(status.QUESTION_POOL_INVALID, "question_topic: longer than %d characters", MaxTopicRunes)
 	}
 	tags, msg := cleanTags(item.QuestionTags)
 	if msg != "" {
-		add(status.QUESTION_INVALID, "question_tags: %s", msg)
+		add(status.QUESTION_POOL_INVALID, "question_tags: %s", msg)
 	}
 	if len(issues) > 0 {
 		return nil, issues
 	}
 
-	q := domain.NewQuestion()
+	q := domain.NewQuestionPool()
 	q.SetQuestionKind(kind)
 	q.SetQuestionText(text)
 	q.SetQuestionImageKey(item.QuestionImageKey)
@@ -291,11 +291,11 @@ func buildQuestion(item dto.CreateQuestionItem) (*domain.Question, []issue) {
 func shapeCode(err error) status.StatusCode {
 	switch {
 	case errors.Is(err, domain.ErrInvalidKind):
-		return status.QUESTION_INVALID_KIND
+		return status.QUESTION_POOL_INVALID_KIND
 	case errors.Is(err, domain.ErrInvalidOptions):
-		return status.QUESTION_INVALID_OPTIONS
+		return status.QUESTION_POOL_INVALID_OPTIONS
 	default:
-		return status.QUESTION_INVALID_ANSWER
+		return status.QUESTION_POOL_INVALID_ANSWER
 	}
 }
 
@@ -352,11 +352,11 @@ func trimmedOrNil(s *string) *string {
 // ValidateListQuestions checks the filters and turns them into the repo
 // filter. A size above MaxListSize is lowered to it; page and size are
 // otherwise clamped by the repository.
-func ValidateListQuestions(ctx context.Context, req *dto.ListQuestionsReq) (domain.ListQuestionsFilter, error) {
-	var filter domain.ListQuestionsFilter
+func ValidateListQuestionPools(ctx context.Context, req *dto.ListQuestionPoolsReq) (domain.ListQuestionPoolsFilter, error) {
+	var filter domain.ListQuestionPoolsFilter
 	if g := req.QuestionGrade; g != nil {
 		if *g < domain.GradeMin || *g > domain.GradeMax {
-			return filter, errs.NewError(ctx, status.QUESTION_INVALID_FILTER, nil,
+			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil,
 				fmt.Errorf("question_grade: %d is outside %d..%d", *g, domain.GradeMin, domain.GradeMax))
 		}
 		filter.Grade = g
@@ -364,7 +364,7 @@ func ValidateListQuestions(ctx context.Context, req *dto.ListQuestionsReq) (doma
 	filter.Topic = trimmedOrNil(req.QuestionTopic)
 	tags, msg := cleanTags(req.QuestionTags)
 	if msg != "" {
-		return filter, errs.NewError(ctx, status.QUESTION_INVALID_FILTER, nil, errors.New("question_tags: "+msg))
+		return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil, errors.New("question_tags: "+msg))
 	}
 	if len(tags) > 0 {
 		filter.Tags = tags
@@ -372,7 +372,7 @@ func ValidateListQuestions(ctx context.Context, req *dto.ListQuestionsReq) (doma
 	for _, raw := range req.QuestionKinds {
 		k := domain.Kind(strings.TrimSpace(raw))
 		if !k.IsValid() {
-			return filter, errs.NewError(ctx, status.QUESTION_INVALID_KIND, nil, fmt.Errorf("question_kinds: unknown kind %q", raw))
+			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_KIND, nil, fmt.Errorf("question_kinds: unknown kind %q", raw))
 		}
 		if !slices.Contains(filter.Kinds, k) {
 			filter.Kinds = append(filter.Kinds, k)
@@ -381,7 +381,7 @@ func ValidateListQuestions(ctx context.Context, req *dto.ListQuestionsReq) (doma
 	for _, raw := range req.QuestionStatuses {
 		s := strings.TrimSpace(raw)
 		if !slices.Contains(domain.Statuses, s) {
-			return filter, errs.NewError(ctx, status.QUESTION_INVALID_FILTER, nil, fmt.Errorf("question_statuses: unknown status %q", raw))
+			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil, fmt.Errorf("question_statuses: unknown status %q", raw))
 		}
 		if !slices.Contains(filter.Statuses, s) {
 			filter.Statuses = append(filter.Statuses, s)
@@ -390,7 +390,7 @@ func ValidateListQuestions(ctx context.Context, req *dto.ListQuestionsReq) (doma
 	if req.QuestionSource != nil {
 		src := domain.Source(strings.TrimSpace(*req.QuestionSource))
 		if src != domain.SourceAI && src != domain.SourceAdmin {
-			return filter, errs.NewError(ctx, status.QUESTION_INVALID_FILTER, nil, fmt.Errorf("question_source: unknown source %q", *req.QuestionSource))
+			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil, fmt.Errorf("question_source: unknown source %q", *req.QuestionSource))
 		}
 		filter.Source = &src
 	}

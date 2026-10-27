@@ -27,7 +27,7 @@ import (
 	"math-ai.com/math-ai/internal/module/profile"
 	"math-ai.com/math-ai/internal/module/program"
 	"math-ai.com/math-ai/internal/module/prompt"
-	"math-ai.com/math-ai/internal/module/question"
+	"math-ai.com/math-ai/internal/module/questionpool"
 	"math-ai.com/math-ai/internal/module/school"
 	"math-ai.com/math-ai/internal/module/semester"
 	"math-ai.com/math-ai/internal/module/server"
@@ -283,18 +283,18 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /prompts/update", promptHandler.HandleUpdatePrompt, adminOrApiKeyMiddleware)
 	}
 
-	// question bank routes (ma_questions) — admin only and independent of
+	// question pool routes (ma_question_pools, the admin bank) — admin only and independent of
 	// /exams/*: every response carries the answer key. No model call.
 	{
-		questionHandler := question.NewHandler(services.QuestionSvc)
-		reg("POST /questions/create", questionHandler.HandleCreateQuestions, adminOrApiKeyMiddleware)
-		reg("POST /questions/list", questionHandler.HandleListQuestions, adminOrApiKeyMiddleware)
-		reg("POST /questions/update", questionHandler.HandleUpdateQuestion, adminOrApiKeyMiddleware)
-		reg("POST /questions/mark-status", questionHandler.HandleMarkQuestionStatus, adminOrApiKeyMiddleware)
-		reg("POST /questions/verify", questionHandler.HandleVerifyQuestion, adminOrApiKeyMiddleware)
-		reg("POST /questions/soft-delete", questionHandler.HandleSoftDeleteQuestion, adminOrApiKeyMiddleware)
-		reg("POST /questions/force-delete", questionHandler.HandleForceDeleteQuestion, adminOrApiKeyMiddleware)
-		reg("POST /questions/images/upload", questionHandler.HandleUploadImage, adminOrApiKeyMiddleware)
+		questionPoolHandler := questionpool.NewHandler(services.QuestionPoolSvc)
+		reg("POST /question-pools/create", questionPoolHandler.HandleCreateQuestionPools, adminOrApiKeyMiddleware)
+		reg("POST /question-pools/list", questionPoolHandler.HandleListQuestionPools, adminOrApiKeyMiddleware)
+		reg("POST /question-pools/update", questionPoolHandler.HandleUpdateQuestionPool, adminOrApiKeyMiddleware)
+		reg("POST /question-pools/mark-status", questionPoolHandler.HandleMarkQuestionPoolStatus, adminOrApiKeyMiddleware)
+		reg("POST /question-pools/verify", questionPoolHandler.HandleVerifyQuestionPool, adminOrApiKeyMiddleware)
+		reg("POST /question-pools/soft-delete", questionPoolHandler.HandleSoftDeleteQuestionPool, adminOrApiKeyMiddleware)
+		reg("POST /question-pools/force-delete", questionPoolHandler.HandleForceDeleteQuestionPool, adminOrApiKeyMiddleware)
+		reg("POST /question-pools/images/upload", questionPoolHandler.HandleUploadImage, adminOrApiKeyMiddleware)
 	}
 
 	// classroom routes
