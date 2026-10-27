@@ -2,11 +2,11 @@ package notification
 
 import (
 	"context"
-	"strconv"
 
 	notifAdapter "math-ai.com/math-ai/internal/adapter/notification"
 	domain "math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // pushService is the typed seam over the notification adapter — it keeps the
@@ -29,7 +29,7 @@ func (p *pushService) enabled() bool { return p.adapter != nil }
 func (p *pushService) send(ctx context.Context, tokens []string, n *domain.Notification) (*notifAdapter.SendResult, error) {
 	log := logger.From(ctx)
 	data := map[string]string{
-		"notification_id": strconv.FormatInt(n.NotificationId(), 10),
+		"notification_id": utils.Int64ToString(n.NotificationId()),
 	}
 	if n.ActionType() != nil {
 		data["action_type"] = *n.ActionType()

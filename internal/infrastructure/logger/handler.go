@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -88,7 +87,7 @@ func (h *prefixHandler) Handle(ctx context.Context, rec slog.Record) error {
 	if frame, ok := pcFrame(rec.PC); ok {
 		b.WriteString(filepath.Base(frame.File))
 		b.WriteByte(':')
-		b.WriteString(strconv.Itoa(frame.Line))
+		b.WriteString(utils.IntToString(frame.Line))
 		b.WriteByte(' ')
 	}
 
@@ -151,7 +150,7 @@ func (h *prefixHandler) requestLine() string {
 
 func requestIDOr(ctx context.Context) string {
 	if v := sctx.RequestID(ctx); v != 0 {
-		return strconv.FormatUint(v, 10)
+		return utils.Uint64ToString(v)
 	}
 	return noRequest
 }

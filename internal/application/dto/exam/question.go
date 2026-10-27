@@ -3,10 +3,10 @@ package exam
 import (
 	"encoding/json"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto/aiquestion"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // ExamQuestion is the exam flow's wire shape for one MCQ item.
@@ -77,7 +77,7 @@ func parseGrade(raw json.RawMessage) *int {
 		return &zero
 	}
 	if m := gradeLabelRe.FindStringSubmatch(label); m != nil {
-		if n, err := strconv.Atoi(m[1]); err == nil {
+		if n, err := utils.StringToIntErr(m[1]); err == nil {
 			return &n
 		}
 	}

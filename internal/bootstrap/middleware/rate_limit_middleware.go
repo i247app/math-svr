@@ -5,7 +5,6 @@ import (
 	"math"
 	"net"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/ratelimit"
 	sess "math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/response"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 var ErrRateLimited = errors.New("rate limit exceeded")
@@ -59,7 +59,7 @@ func RateLimitKeyIP(r *http.Request) string {
 func RateLimitKeyUID(r *http.Request) string {
 	if s := sess.GetRequestSession(r); s != nil {
 		if uid, ok := s.UID(); ok && uid > 0 {
-			return "uid:" + strconv.FormatInt(uid, 10)
+			return "uid:" + utils.Int64ToString(uid)
 		}
 	}
 	return RateLimitKeyIP(r)
@@ -113,8 +113,8 @@ func RateLimitMiddleware(policy string, lim ratelimit.Limiter, key RateLimitKeyF
 				m.ObserveRateLimit(policy, "limited")
 				logger.From(ctx).Warnf("ratelimit.limited policy=%s key=%s path=%s retry_after=%ds", policy, k, r.URL.Path, retry)
 				h := w.Header()
-				h.Set("Retry-After", strconv.Itoa(retry))
-				h.Set("X-RateLimit-Limit", strconv.Itoa(d.Limit))
+				h.Set("Retry-After", utils.IntToString(retry))
+				h.Set("X-RateLimit-Limit", utils.IntToString(d.Limit))
 				h.Set("X-RateLimit-Remaining", "0")
 				// retry_after (seconds) rides in the body too: the mobile client
 				// reads the JSON envelope, not headers.
@@ -126,8 +126,8 @@ func RateLimitMiddleware(policy string, lim ratelimit.Limiter, key RateLimitKeyF
 			m.ObserveRateLimit(policy, "allowed")
 			if mode == RateLimitEnforce {
 				h := w.Header()
-				h.Set("X-RateLimit-Limit", strconv.Itoa(d.Limit))
-				h.Set("X-RateLimit-Remaining", strconv.Itoa(d.Remaining))
+				h.Set("X-RateLimit-Limit", utils.IntToString(d.Limit))
+				h.Set("X-RateLimit-Remaining", utils.IntToString(d.Remaining))
 				if d.Delay > 0 { // leaky bucket: wait for this request's slot
 					t := time.NewTimer(d.Delay)
 					select {

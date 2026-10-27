@@ -7,11 +7,11 @@ import (
 	"log/slog"
 	"net/http"
 	"path/filepath"
-	"strconv"
 	"sync"
 	"time"
 
 	sctx "math-ai.com/math-ai/internal/shared/context"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // TraceContextFn, when set, extracts the active trace/span ids from ctx so
@@ -84,7 +84,7 @@ func (h *jsonHandler) Handle(ctx context.Context, rec slog.Record) error {
 		}
 	}
 	if frame, ok := pcFrame(rec.PC); ok {
-		m["caller"] = filepath.Base(frame.File) + ":" + strconv.Itoa(frame.Line)
+		m["caller"] = filepath.Base(frame.File) + ":" + utils.IntToString(frame.Line)
 	}
 
 	for _, a := range h.attrs {

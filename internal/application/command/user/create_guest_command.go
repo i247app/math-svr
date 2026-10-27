@@ -2,7 +2,6 @@ package command
 
 import (
 	"context"
-	"strconv"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -12,6 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // DefaultGuestChildName is what a guest profile is called until someone
@@ -93,7 +93,7 @@ func (h *CreateGuestCommandHandler) Handle(ctx context.Context, cmd CreateGuestC
 		if err != nil {
 			return err
 		}
-		userName := guestAccountNamePrefix + strconv.FormatInt(uid, 10)
+		userName := guestAccountNamePrefix + utils.Int64ToString(uid)
 
 		identity := enum.IdentityCodeGuest.String()
 
@@ -150,7 +150,7 @@ func (h *CreateGuestCommandHandler) Handle(ctx context.Context, cmd CreateGuestC
 
 func guestChildName(name string, uid int64) string {
 	if name == "" {
-		return DefaultGuestChildName + strconv.FormatInt(uid, 10)
+		return DefaultGuestChildName + utils.Int64ToString(uid)
 	}
 	return name
 }

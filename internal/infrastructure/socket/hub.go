@@ -3,12 +3,13 @@ package socket
 import (
 	"encoding/json"
 	"errors"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/coder/websocket"
+
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // ErrTooManyConnections is returned by NewConn when the user is already at the
@@ -69,7 +70,7 @@ const defaultMaxConnsPerUser = 5
 // NewConn registers a fresh connection for uid and returns it ready to
 // Serve. It enforces the per-user cap. ws may be nil in transport-only tests.
 func (h *Hub) NewConn(ws *websocket.Conn, uid int64) (*Conn, error) {
-	id := strconv.FormatUint(h.nextID.Add(1), 10)
+	id := utils.Uint64ToString(h.nextID.Add(1))
 	c := &Conn{
 		id:     id,
 		uid:    uid,

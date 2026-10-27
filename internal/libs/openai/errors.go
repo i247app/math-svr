@@ -3,9 +3,10 @@ package openai
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
+
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // Sentinel errors surfaced by the Client. Each maps to a distinct
@@ -275,7 +276,7 @@ func parseRetryAfter(v string) time.Duration {
 	if v == "" {
 		return 0
 	}
-	if secs, err := strconv.Atoi(v); err == nil {
+	if secs, err := utils.StringToIntErr(v); err == nil {
 		if secs <= 0 {
 			return 0
 		}

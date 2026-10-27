@@ -139,6 +139,11 @@ func UintToString(i uint) string {
 	return strconv.FormatUint(uint64(i), 10)
 }
 
+// Uint64ToString converts uint64 to string
+func Uint64ToString(i uint64) string {
+	return strconv.FormatUint(i, 10)
+}
+
 // Float32ToString converts float32 to string
 func Float32ToString(f float32) string {
 	return strconv.FormatFloat(float64(f), 'f', -1, 32)

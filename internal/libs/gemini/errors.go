@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // Sentinel errors surfaced by the Client. Each maps to a distinct
@@ -73,7 +75,7 @@ func (e *APIError) Error() string {
 	if e.Status != "" {
 		fmt.Fprintf(&b, " status %s", e.Status)
 	}
-	if e.Code != "" && e.Code != strconv.Itoa(e.HTTPStatus) {
+	if e.Code != "" && e.Code != utils.IntToString(e.HTTPStatus) {
 		fmt.Fprintf(&b, " code %s", e.Code)
 	}
 	if e.Message != "" {
@@ -192,9 +194,9 @@ func codeString(code any) string {
 		return v
 	case float64:
 		if v == math.Trunc(v) {
-			return strconv.FormatInt(int64(v), 10)
+			return utils.Int64ToString(int64(v))
 		}
-		return strconv.FormatFloat(v, 'f', -1, 64)
+		return utils.Float64ToStringPrec(v, -1)
 	default:
 		return fmt.Sprintf("%v", v)
 	}
@@ -280,7 +282,7 @@ func parseRetryAfter(v string) time.Duration {
 	if v == "" {
 		return 0
 	}
-	if secs, err := strconv.Atoi(v); err == nil {
+	if secs, err := utils.StringToIntErr(v); err == nil {
 		if secs <= 0 {
 			return 0
 		}

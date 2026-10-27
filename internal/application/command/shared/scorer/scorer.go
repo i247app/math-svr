@@ -30,6 +30,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto/aiquestion"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // ReviewSourceMarker is the deterministic-path identifier kept here for
@@ -375,11 +376,11 @@ func parseAsciiFraction(s string) (int64, int64, bool) {
 	if idx <= 0 || idx == len(s)-1 {
 		return 0, 0, false
 	}
-	num, err := strconv.ParseInt(strings.TrimSpace(s[:idx]), 10, 64)
+	num, err := utils.StringToInt64Err(strings.TrimSpace(s[:idx]))
 	if err != nil {
 		return 0, 0, false
 	}
-	den, err := strconv.ParseInt(strings.TrimSpace(s[idx+1:]), 10, 64)
+	den, err := utils.StringToInt64Err(strings.TrimSpace(s[idx+1:]))
 	if err != nil || den == 0 {
 		return 0, 0, false
 	}

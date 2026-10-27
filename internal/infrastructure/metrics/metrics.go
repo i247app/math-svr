@@ -7,11 +7,12 @@
 package metrics
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
+
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // Metrics bundles the registry (exposed at /metrics) and the HTTP collectors.
@@ -84,7 +85,7 @@ func (m *Metrics) ObserveHTTP(method, route string, status int, seconds float64,
 	if m == nil {
 		return
 	}
-	code := strconv.Itoa(status)
+	code := utils.IntToString(status)
 	m.httpRequests.WithLabelValues(method, route, code).Inc()
 
 	obs := m.httpDuration.WithLabelValues(method, route, code)
