@@ -21,6 +21,7 @@ type QuestionPool struct {
 	questionGrade    int
 	questionTopic    *string
 	questionLevel    *int // 0..9, nil = not rated
+	questionSubLevel *int // 0..9 inside questionLevel, nil = not rated
 	questionTags     []string
 	questionSource   Source
 	verifiedCount    int
@@ -59,6 +60,8 @@ func (q *QuestionPool) QuestionTopic() *string           { return q.questionTopi
 func (q *QuestionPool) SetQuestionTopic(s *string)       { q.questionTopic = s }
 func (q *QuestionPool) QuestionLevel() *int              { return q.questionLevel }
 func (q *QuestionPool) SetQuestionLevel(l *int)          { q.questionLevel = l }
+func (q *QuestionPool) QuestionSubLevel() *int           { return q.questionSubLevel }
+func (q *QuestionPool) SetQuestionSubLevel(l *int)       { q.questionSubLevel = l }
 func (q *QuestionPool) QuestionTags() []string           { return q.questionTags }
 func (q *QuestionPool) SetQuestionTags(t []string)       { q.questionTags = t }
 func (q *QuestionPool) QuestionSource() Source           { return q.questionSource }

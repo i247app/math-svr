@@ -22,7 +22,7 @@ const (
 
 	questionPoolColumns = `q.question_pool_id, q.question_kind, q.question_text, q.question_image_key,
 		q.options, q.correct_answer, q.explanation, q.question_grade, q.question_topic,
-		q.question_level, q.question_tags, q.question_source, q.verified_count, q.question_hash,
+		q.question_level, q.question_sub_level, q.question_tags, q.question_source, q.verified_count, q.question_hash,
 		q.question_status, q.rpt_flg, q.kwords, q.note, q.status,
 		q.create_id, q.create_dt, q.modify_id, q.modify_dt`
 
@@ -30,7 +30,7 @@ const (
 
 	// questionInsertRow is one VALUES tuple of CreateMany, in the column
 	// order of its INSERT list.
-	questionPoolInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	questionPoolInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func questionPoolActiveArgs() []any {
@@ -63,7 +63,7 @@ func scanQuestionPool(s database.RowScanner) (*models.QuestionPoolModel, error) 
 	var m models.QuestionPoolModel
 	if err := s.Scan(&m.QuestionPoolId, &m.QuestionKind, &m.QuestionText, &m.QuestionImageKey,
 		&m.Options, &m.CorrectAnswer, &m.Explanation, &m.QuestionGrade, &m.QuestionTopic,
-		&m.QuestionLevel, &m.QuestionTags, &m.QuestionSource, &m.VerifiedCount, &m.QuestionHash,
+		&m.QuestionLevel, &m.QuestionSubLevel, &m.QuestionTags, &m.QuestionSource, &m.VerifiedCount, &m.QuestionHash,
 		&m.QuestionStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -91,14 +91,14 @@ func (r *QuestionPoolRepository) CreateMany(ctx context.Context, questions []*qu
 		args = append(args,
 			q.QuestionPoolId(), string(q.QuestionKind()), q.QuestionText(), q.QuestionImageKey(),
 			options, answer, q.Explanation(), q.QuestionGrade(), q.QuestionTopic(),
-			q.QuestionLevel(), tags, string(q.QuestionSource()), q.VerifiedCount(), q.QuestionHash(),
+			q.QuestionLevel(), q.QuestionSubLevel(), tags, string(q.QuestionSource()), q.VerifiedCount(), q.QuestionHash(),
 			q.QuestionStatus(), q.RptFlg(), q.Kwords(), q.Note(),
 			createId, now, now)
 	}
 	query := `INSERT INTO ` + questionPoolTable + `
 			(question_pool_id, question_kind, question_text, question_image_key,
 			 options, correct_answer, explanation, question_grade, question_topic,
-			 question_level, question_tags, question_source, verified_count, question_hash,
+			 question_level, question_sub_level, question_tags, question_source, verified_count, question_hash,
 			 question_status, rpt_flg, kwords, note,
 			 create_id, create_dt, modify_dt)
 		VALUES ` + strings.Join(tuples, ", ")
@@ -133,11 +133,11 @@ func (r *QuestionPoolRepository) UpdateContent(ctx context.Context, q *questionp
 	}
 	query := `UPDATE ` + questionPoolTable + ` q SET q.question_kind = ?, q.question_text = ?, q.question_image_key = ?,
 			q.options = ?, q.correct_answer = ?, q.explanation = ?, q.question_grade = ?, q.question_topic = ?,
-			q.question_level = ?, q.question_tags = ?, q.question_hash = ?, q.modify_id = ?
+			q.question_level = ?, q.question_sub_level = ?, q.question_tags = ?, q.question_hash = ?, q.modify_id = ?
 		WHERE (q.question_pool_id = ?) AND ` + questionPoolActiveWhere
 	args := slices.Concat([]any{string(q.QuestionKind()), q.QuestionText(), q.QuestionImageKey(),
 		options, answer, q.Explanation(), q.QuestionGrade(), q.QuestionTopic(),
-		q.QuestionLevel(), tags, q.QuestionHash(), modifyId, q.QuestionPoolId()}, questionPoolActiveArgs())
+		q.QuestionLevel(), q.QuestionSubLevel(), tags, q.QuestionHash(), modifyId, q.QuestionPoolId()}, questionPoolActiveArgs())
 	if _, err := r.db.Exec(ctx, query, args...); err != nil {
 		if isDuplicateEntry(err) {
 			return fmt.Errorf("question pool repo update content: %w", questionpool.ErrDuplicate)
@@ -402,6 +402,7 @@ func ModelToDomainQuestionPool(m *models.QuestionPoolModel) (*questionpool.Quest
 	q.SetQuestionGrade(m.QuestionGrade)
 	q.SetQuestionTopic(m.QuestionTopic)
 	q.SetQuestionLevel(m.QuestionLevel)
+	q.SetQuestionSubLevel(m.QuestionSubLevel)
 	q.SetQuestionTags(tags)
 	q.SetQuestionSource(questionpool.Source(m.QuestionSource))
 	q.SetVerifiedCount(m.VerifiedCount)

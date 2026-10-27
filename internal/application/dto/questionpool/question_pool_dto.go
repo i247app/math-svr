@@ -42,6 +42,7 @@ type CreateQuestionPoolItem struct {
 	QuestionGrade    *int              `json:"question_grade"`
 	QuestionTopic    *string           `json:"question_topic,omitempty"`
 	QuestionLevel    *int              `json:"question_level,omitempty"`
+	QuestionSubLevel *int              `json:"question_sub_level,omitempty"`
 	QuestionTags     []string          `json:"question_tags,omitempty"`
 }
 
@@ -91,6 +92,7 @@ type QuestionPoolResponse struct {
 	QuestionGrade    int              `json:"question_grade"`
 	QuestionTopic    *string          `json:"question_topic"`
 	QuestionLevel    *int             `json:"question_level"`
+	QuestionSubLevel *int             `json:"question_sub_level"`
 	QuestionTags     []string         `json:"question_tags"`
 	QuestionSource   string           `json:"question_source"`
 	QuestionStatus   *string          `json:"question_status"`
@@ -129,6 +131,7 @@ func DomainToResponse(q *domain.QuestionPool) *QuestionPoolResponse {
 		QuestionGrade:    q.QuestionGrade(),
 		QuestionTopic:    q.QuestionTopic(),
 		QuestionLevel:    q.QuestionLevel(),
+		QuestionSubLevel: q.QuestionSubLevel(),
 		QuestionTags:     tags,
 		QuestionSource:   string(q.QuestionSource()),
 		QuestionStatus:   q.QuestionStatus(),
@@ -195,6 +198,7 @@ type UpdateQuestionPoolReq struct {
 	QuestionGrade    *int              `json:"question_grade"`
 	QuestionTopic    Opt[string]       `json:"question_topic"`
 	QuestionLevel    Opt[int]          `json:"question_level"`
+	QuestionSubLevel Opt[int]          `json:"question_sub_level"`
 	QuestionTags     *[]string         `json:"question_tags"`
 }
 

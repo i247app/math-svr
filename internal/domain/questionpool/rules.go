@@ -20,7 +20,7 @@ const (
 )
 
 // Ranges of question_grade (0 = Mẫu giáo, 1..5 = Lớp 1..5) and
-// question_level (0 = easiest .. 9 = hardest).
+// question_level / question_sub_level (0 = easiest .. 9 = hardest).
 const (
 	GradeMin = 0
 	GradeMax = 5
@@ -132,7 +132,7 @@ type hashOption struct {
 // grade, normalised text, stem image, its options as a set (normalised text
 // + image key + whether correct), for TRUE_FALSE its value and, for
 // NUMERIC_INPUT, its values as a set of numbers ("0.5" = "1/2"). Option ids
-// and display order, topic, tags, level and explanation do not count — the
+// and display order, topic, tags, level, sub level and explanation do not count — the
 // same question shown in another order or filed under another topic is
 // still the same question.
 func Hash(q *QuestionPool) string {

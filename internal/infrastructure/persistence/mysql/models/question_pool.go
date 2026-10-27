@@ -15,6 +15,7 @@ type QuestionPoolModel struct {
 	QuestionGrade    int
 	QuestionTopic    *string
 	QuestionLevel    *int
+	QuestionSubLevel *int
 	QuestionTags     string // JSON array of strings
 	QuestionSource   string
 	VerifiedCount    int

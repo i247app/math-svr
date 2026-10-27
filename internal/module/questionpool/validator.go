@@ -96,7 +96,7 @@ func ValidateUpdateQuestionPool(ctx context.Context, req *dto.UpdateQuestionPool
 	}
 	if req.QuestionKind == nil && req.QuestionText == nil && !req.QuestionImageKey.Set && !req.Options.Set &&
 		req.CorrectAnswer == nil && !req.Explanation.Set && req.QuestionGrade == nil && !req.QuestionTopic.Set &&
-		!req.QuestionLevel.Set && req.QuestionTags == nil {
+		!req.QuestionLevel.Set && !req.QuestionSubLevel.Set && req.QuestionTags == nil {
 		return errs.NewError(ctx, status.QUESTION_POOL_NOTHING_TO_UPDATE, nil, errors.New("no field to change"))
 	}
 	return nil
@@ -150,6 +150,9 @@ func MergeUpdate(ctx context.Context, stored *domain.QuestionPool, req *dto.Upda
 	if req.QuestionLevel.Set {
 		item.QuestionLevel = req.QuestionLevel.Value
 	}
+	if req.QuestionSubLevel.Set {
+		item.QuestionSubLevel = req.QuestionSubLevel.Value
+	}
 	if req.QuestionTags != nil {
 		item.QuestionTags = *req.QuestionTags
 	}
@@ -187,6 +190,7 @@ func itemOf(q *domain.QuestionPool) dto.CreateQuestionPoolItem {
 		QuestionGrade:    &grade,
 		QuestionTopic:    q.QuestionTopic(),
 		QuestionLevel:    q.QuestionLevel(),
+		QuestionSubLevel: q.QuestionSubLevel(),
 		QuestionTags:     q.QuestionTags(),
 	}
 }
@@ -254,6 +258,9 @@ func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, [
 	if l := item.QuestionLevel; l != nil && (*l < domain.LevelMin || *l > domain.LevelMax) {
 		add(status.QUESTION_POOL_INVALID, "question_level: %d is outside %d..%d", *l, domain.LevelMin, domain.LevelMax)
 	}
+	if l := item.QuestionSubLevel; l != nil && (*l < domain.LevelMin || *l > domain.LevelMax) {
+		add(status.QUESTION_POOL_INVALID, "question_sub_level: %d is outside %d..%d", *l, domain.LevelMin, domain.LevelMax)
+	}
 	explanation := trimmedOrNil(item.Explanation)
 	if explanation != nil && utf8.RuneCountInString(*explanation) > MaxExplanationRunes {
 		add(status.QUESTION_POOL_INVALID, "explanation: longer than %d characters", MaxExplanationRunes)
@@ -280,6 +287,7 @@ func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, [
 	q.SetQuestionGrade(*item.QuestionGrade)
 	q.SetQuestionTopic(topic)
 	q.SetQuestionLevel(item.QuestionLevel)
+	q.SetQuestionSubLevel(item.QuestionSubLevel)
 	q.SetQuestionTags(tags)
 	q.SetQuestionSource(domain.SourceAdmin)
 	initial := domain.SourceAdmin.InitialStatus()

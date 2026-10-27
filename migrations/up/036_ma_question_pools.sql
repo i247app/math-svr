@@ -9,7 +9,9 @@
 --
 -- Was ma_questions with PK question_id until 2026-10-27; an existing database
 -- is moved by sql/prod/2026-10-27_rename_ma_questions_to_ma_question_pools.sql
--- (CREATE … IF NOT EXISTS below cannot rename it).
+-- (CREATE … IF NOT EXISTS below cannot rename it). question_sub_level was
+-- added the same day; a database that already holds the table gets it from
+-- sql/prod/2026-10-27_add_question_sub_level_to_ma_question_pools.sql.
 --
 -- ---- Shape -----------------------------------------------------------------
 -- question_kind says how the question is answered; options + correct_answer
@@ -83,8 +85,8 @@
 --   * question_text non-blank (an image-only stem still states the task).
 --   * image keys are keys the server uploaded (question-images/ prefix),
 --     never a URL from the client.
---   * question_grade 0..5, question_level 0..9 or NULL,
---     question_source / question_status known values.
+--   * question_grade 0..5, question_level and question_sub_level 0..9 or
+--     NULL each, question_source / question_status known values.
 --   * question_tags always sent ('[]' when none): it has deliberately no
 --     DEFAULT (JSON_ARRAY()) — once ix_question_tags exists, an INSERT that
 --     falls back to that default fails with 3903 "Invalid JSON value for CAST
@@ -96,7 +98,7 @@
 -- content (text + image_key + correct or not) | the TRUE_FALSE value |
 -- the NUMERIC_INPUT values as a set of reduced numbers ("0.5" = "1/2"),
 -- computed by the application (domain/questionpool.Hash). Option ids, display
--- order, topic, tags, level and explanation are NOT part of it: the same
+-- order, topic, tags, level, sub level and explanation are NOT part of it: the same
 -- question reordered or filed under another topic is still the same
 -- question. uk_live_question_hash keeps one live row per hash.
 --
@@ -114,6 +116,7 @@ CREATE TABLE IF NOT EXISTS ma_question_pools (
   question_grade      TINYINT UNSIGNED NOT NULL,              -- 0 = Mẫu giáo, 1..5 = Lớp 1..5
   question_topic      VARCHAR(255)  DEFAULT NULL,             -- curriculum topic, free text (e.g. 'phép cộng')
   question_level      TINYINT UNSIGNED DEFAULT NULL,          -- 0 = easiest .. 9 = hardest; NULL = not rated yet
+  question_sub_level  TINYINT UNSIGNED DEFAULT NULL,          -- finer step inside question_level, 0 .. 9; NULL = not rated yet
   question_tags       JSON          NOT NULL,                 -- ["addition", "mental_math"]; always sent, '[]' when none (no DEFAULT: see header)
   question_source     VARCHAR(16)   NOT NULL,                 -- who wrote it: AI (generated, needs review) / ADMIN (typed in)
   verified_count      INT UNSIGNED  NOT NULL DEFAULT 0,       -- times an admin verified it; 0 = never verified
