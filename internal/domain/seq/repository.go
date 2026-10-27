@@ -22,6 +22,10 @@ var ErrNotFound = errors.New("seq: sequence not found")
 // Next, since that defeats the atomicity guarantee.
 type IRepository interface {
 	Next(ctx context.Context, name string) (int64, error)
+	// NextN reserves n ids in one step (one UPDATE of current_value by
+	// n * increment_by) and returns them in ascending order. Same rules as
+	// Next: inside a transaction only. n <= 0 returns nil.
+	NextN(ctx context.Context, name string, n int) ([]int64, error)
 	Find(ctx context.Context, name string) (*Sequence, error)
 	// Lock takes the row lock Next would take, without advancing the
 	// counter, and holds it until the transaction ends. A command that

@@ -30,7 +30,9 @@ type Service struct {
 	updateCmd *command.UpdateQuestionPoolCommandHandler
 	reviewCmd *command.ReviewQuestionPoolCommandHandler
 	deleteCmd *command.DeleteQuestionPoolCommandHandler
+	importCmd *command.ImportQuestionPoolsCommandHandler
 	listQuery *query.ListQuestionPoolsQueryHandler
+	repo      domain.IRepository // import's duplicate check, outside any transaction
 	storage   *storage.Adapter
 }
 
@@ -40,7 +42,9 @@ func NewService(uow transaction.UnitOfWork, repo domain.IRepository, storageProv
 		updateCmd: command.NewUpdateQuestionPoolCommandHandler(uow),
 		reviewCmd: command.NewReviewQuestionPoolCommandHandler(uow),
 		deleteCmd: command.NewDeleteQuestionPoolCommandHandler(uow),
+		importCmd: command.NewImportQuestionPoolsCommandHandler(uow),
 		listQuery: query.NewListQuestionPoolsQueryHandler(repo),
+		repo:      repo,
 		storage:   storageProvider,
 	}
 }

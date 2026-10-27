@@ -71,17 +71,32 @@ func scanQuestionPool(s database.RowScanner) (*models.QuestionPoolModel, error) 
 	return &m, nil
 }
 
+// questionPoolInsertChunk caps the rows of one INSERT: 200 rows x 22
+// columns stays far below MySQL's 65,535 placeholders and keeps one
+// statement's packet small.
+const questionPoolInsertChunk = 200
+
+// questionPoolHashChunk caps the hashes of one FindLiveHashes IN list.
+const questionPoolHashChunk = 500
+
 // CreateMany is a plain multi-row INSERT on purpose: ON DUPLICATE KEY
 // UPDATE would fold a duplicate (uk_live_question_hash) or a colliding
 // minted id into an unrelated row. Any collision fails the statement, so
-// the caller's transaction rolls the whole batch back.
+// the caller's transaction rolls the whole batch back. Rows go out
+// questionPoolInsertChunk per statement, all in the caller's transaction.
 func (r *QuestionPoolRepository) CreateMany(ctx context.Context, questions []*questionpool.QuestionPool, createId *int64) error {
-	if len(questions) == 0 {
-		return nil
+	for chunk := range slices.Chunk(questions, questionPoolInsertChunk) {
+		if err := r.insertChunk(ctx, chunk, createId); err != nil {
+			return err
+		}
 	}
+	return nil
+}
+
+func (r *QuestionPoolRepository) insertChunk(ctx context.Context, questions []*questionpool.QuestionPool, createId *int64) error {
 	now := mtime.Now().Time
 	tuples := make([]string, 0, len(questions))
-	args := make([]any, 0, len(questions)*21)
+	args := make([]any, 0, len(questions)*22)
 	for _, q := range questions {
 		options, answer, tags, err := marshalQuestionPoolJSON(q)
 		if err != nil {
@@ -206,9 +221,19 @@ func (r *QuestionPoolRepository) ListByIds(ctx context.Context, ids []int64) ([]
 }
 
 func (r *QuestionPoolRepository) FindLiveHashes(ctx context.Context, hashes []string) ([]string, error) {
-	if len(hashes) == 0 {
-		return nil, nil
+	var out []string
+	for chunk := range slices.Chunk(hashes, questionPoolHashChunk) {
+		found, err := r.findLiveHashes(ctx, chunk)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, found...)
 	}
+	return out, nil
+}
+
+// findLiveHashes looks up one chunk (at most questionPoolHashChunk hashes).
+func (r *QuestionPoolRepository) findLiveHashes(ctx context.Context, hashes []string) ([]string, error) {
 	args := make([]any, 0, len(hashes)+1)
 	for _, h := range hashes {
 		args = append(args, h)

@@ -804,6 +804,14 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Không có thông tin nào để cập nhật"
 	case QUESTION_POOL_INVALID_STATUS:
 		return "question_status phải là PENDING_REVIEW, APPROVED hoặc REJECTED"
+	case QUESTION_POOL_IMPORT_FILE_MISSING:
+		return "Vui lòng đính kèm file .json"
+	case QUESTION_POOL_IMPORT_FILE_INVALID:
+		return "File phải là file .json chứa một mảng câu hỏi"
+	case QUESTION_POOL_IMPORT_FILE_TOO_LARGE:
+		return "File quá lớn"
+	case QUESTION_POOL_IMPORT_INVALID:
+		return "File có câu hỏi không hợp lệ, chưa có câu nào được import"
 
 	default:
 		return ""

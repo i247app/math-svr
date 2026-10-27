@@ -535,4 +535,14 @@ const (
 	QUESTION_POOL_NOTHING_TO_UPDATE StatusCode = 14414
 	// QUESTION_POOL_INVALID_STATUS: mark-status named no question_status, or an unknown one.
 	QUESTION_POOL_INVALID_STATUS StatusCode = 14415
+	// QUESTION_POOL_IMPORT_FILE_MISSING: validate-file / import-file got no "file" part.
+	QUESTION_POOL_IMPORT_FILE_MISSING StatusCode = 14416
+	// QUESTION_POOL_IMPORT_FILE_INVALID: the file is not .json, cannot be read,
+	// is not valid JSON, or is not an array of objects.
+	QUESTION_POOL_IMPORT_FILE_INVALID StatusCode = 14417
+	// QUESTION_POOL_IMPORT_FILE_TOO_LARGE: the file is over the size limit.
+	QUESTION_POOL_IMPORT_FILE_TOO_LARGE StatusCode = 14418
+	// QUESTION_POOL_IMPORT_INVALID: import-file found at least one invalid
+	// question, so nothing was imported.
+	QUESTION_POOL_IMPORT_INVALID StatusCode = 14419
 )

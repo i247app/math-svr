@@ -804,6 +804,14 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "Nothing to update"
 	case QUESTION_POOL_INVALID_STATUS:
 		return "question_status must be PENDING_REVIEW, APPROVED or REJECTED"
+	case QUESTION_POOL_IMPORT_FILE_MISSING:
+		return "Please attach a .json file"
+	case QUESTION_POOL_IMPORT_FILE_INVALID:
+		return "The file must be a .json file holding an array of questions"
+	case QUESTION_POOL_IMPORT_FILE_TOO_LARGE:
+		return "The file is too large"
+	case QUESTION_POOL_IMPORT_INVALID:
+		return "The file has invalid questions; nothing was imported"
 
 	default:
 		return ""

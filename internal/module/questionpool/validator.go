@@ -55,28 +55,58 @@ func ValidateCreateQuestionPools(ctx context.Context, req *dto.CreateQuestionPoo
 			fmt.Errorf("at most %d questions per request, got %d", MaxQuestionPoolsPerCreate, len(req.QuestionPools)))
 	}
 
-	var issues []issue
-	out := make([]*domain.QuestionPool, 0, len(req.QuestionPools))
+	checked, found := checkItems(req.QuestionPools, func(i int) string { return fmt.Sprintf("question_pools[%d]", i) })
+	issues := make([]issue, 0, len(found))
+	for _, f := range found {
+		issues = append(issues, f.issue)
+	}
+	out := make([]*domain.QuestionPool, 0, len(checked))
 	firstByHash := map[string]int{}
-	for i, item := range req.QuestionPools {
-		q, found := buildQuestionPool(item)
-		for _, is := range found {
-			issues = append(issues, issue{is.code, fmt.Sprintf("question_pools[%d].%s", i, is.msg)})
-		}
-		if len(found) > 0 {
+	for _, c := range checked {
+		if first, ok := firstByHash[c.q.QuestionHash()]; ok {
+			issues = append(issues, issue{status.QUESTION_POOL_DUPLICATE, fmt.Sprintf("question_pools[%d] repeats question_pools[%d]", c.index, first)})
 			continue
 		}
-		if first, ok := firstByHash[q.QuestionHash()]; ok {
-			issues = append(issues, issue{status.QUESTION_POOL_DUPLICATE, fmt.Sprintf("question_pools[%d] repeats question_pools[%d]", i, first)})
-			continue
-		}
-		firstByHash[q.QuestionHash()] = i
-		out = append(out, q)
+		firstByHash[c.q.QuestionHash()] = c.index
+		out = append(out, c.q)
 	}
 	if len(issues) > 0 {
 		return nil, issuesError(ctx, issues)
 	}
 	return out, nil
+}
+
+// checkedItem is an item that passed every rule, with its place in the input.
+type checkedItem struct {
+	index int
+	q     *domain.QuestionPool
+}
+
+// itemIssue is a broken rule of the item at index; msg already carries the
+// item's path.
+type itemIssue struct {
+	index int
+	issue
+}
+
+// checkItems runs every create rule over items, in order: the ones that
+// pass, and every issue of the others with paths pathOf(i) + "." + field.
+// Duplicates are the caller's call (create refuses them, import skips them).
+func checkItems(items []dto.CreateQuestionPoolItem, pathOf func(int) string) ([]checkedItem, []itemIssue) {
+	var (
+		checked = make([]checkedItem, 0, len(items))
+		issues  []itemIssue
+	)
+	for i, item := range items {
+		q, found := buildQuestionPool(item)
+		for _, is := range found {
+			issues = append(issues, itemIssue{i, issue{is.code, pathOf(i) + "." + is.msg}})
+		}
+		if len(found) == 0 {
+			checked = append(checked, checkedItem{i, q})
+		}
+	}
+	return checked, issues
 }
 
 // issuesError is ONE refusal for every issue: the code of the first, every

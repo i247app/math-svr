@@ -33,6 +33,16 @@ func Next(ctx context.Context, repo seq.IRepository, name string) (int64, error)
 	return id, nil
 }
 
+// NextN mints n ids at once (seq.IRepository.NextN), with the same error
+// mapping as Next. For a batch insert that would otherwise call Next per row.
+func NextN(ctx context.Context, repo seq.IRepository, name string, n int) ([]int64, error) {
+	ids, err := repo.NextN(ctx, name, n)
+	if err != nil {
+		return nil, mapErr(ctx, name, err)
+	}
+	return ids, nil
+}
+
 // Lock holds the named sequence's row lock until the surrounding UoW ends,
 // without minting an id, with the same error mapping as Next. Use it as
 // the FIRST statement of a transaction that must be serialised.

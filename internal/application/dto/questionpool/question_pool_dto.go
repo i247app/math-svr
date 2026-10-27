@@ -225,3 +225,43 @@ type DeleteQuestionPoolRes struct{}
 type QuestionPoolRes struct {
 	QuestionPool *QuestionPoolResponse `json:"question_pool"`
 }
+
+// ImportQuestionPoolError is one broken rule of the file's question at
+// Index (0-based); Message starts with the path, e.g. "[3].options[0].id: …".
+type ImportQuestionPoolError struct {
+	Index   int    `json:"index"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+// ImportQuestionPoolDuplicate is a valid question that is not imported:
+// Reason IN_FILE (it repeats the question at DuplicateOf) or IN_POOL (a
+// live question of the pool already holds the content).
+type ImportQuestionPoolDuplicate struct {
+	Index       int    `json:"index"`
+	Reason      string `json:"reason"`
+	DuplicateOf *int   `json:"duplicate_of,omitempty"`
+}
+
+// ImportQuestionPoolsReport is what validate-file and import-file found in
+// the file. Errors holds at most the first 200 issues (ErrorsTruncated);
+// InvalidCount counts every invalid question. ImportedCount and
+// QuestionPoolIds (file order) are filled by import-file only.
+type ImportQuestionPoolsReport struct {
+	FileName             string                        `json:"file_name"`
+	Total                int                           `json:"total"`
+	ValidCount           int                           `json:"valid_count"`
+	InvalidCount         int                           `json:"invalid_count"`
+	DuplicateInFileCount int                           `json:"duplicate_in_file_count"`
+	DuplicateInPoolCount int                           `json:"duplicate_in_pool_count"`
+	ImportableCount      int                           `json:"importable_count"`
+	ImportedCount        int                           `json:"imported_count"`
+	Errors               []ImportQuestionPoolError     `json:"errors"`
+	ErrorsTruncated      bool                          `json:"errors_truncated"`
+	Duplicates           []ImportQuestionPoolDuplicate `json:"duplicates"`
+	QuestionPoolIds      []int64                       `json:"question_pool_ids"`
+}
+
+type ImportQuestionPoolsRes struct {
+	Report *ImportQuestionPoolsReport `json:"report"`
+}

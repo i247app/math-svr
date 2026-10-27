@@ -77,6 +77,45 @@ func (r *SeqRepository) Next(ctx context.Context, name string) (int64, error) {
 	return formatSeqID(prefix, padding, current), nil
 }
 
+// NextN is Next for n ids at once: one UPDATE advances current_value by
+// n * increment_by under the same row lock, and the ids are the n values
+// Next would have returned one by one. Must run inside a transaction.
+func (r *SeqRepository) NextN(ctx context.Context, name string, n int) ([]int64, error) {
+	if n <= 0 {
+		return nil, nil
+	}
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" {
+		return nil, fmt.Errorf("seq repo next n: name is required")
+	}
+
+	updateQuery := `UPDATE ` + seqTable + `
+		SET current_value = current_value + ? * increment_by
+		WHERE seq_name = ?`
+	result, err := r.db.Exec(ctx, updateQuery, n, trimmed)
+	if err != nil {
+		return nil, fmt.Errorf("seq repo next n update (%s): %w", trimmed, err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("seq repo next n rows affected (%s): %w", trimmed, err)
+	}
+	if affected == 0 {
+		return nil, fmt.Errorf("seq repo next n (%s): %w", trimmed, seq.ErrNotFound)
+	}
+
+	var current, increment uint64
+	if err := r.db.QueryRow(ctx, `SELECT current_value, increment_by FROM `+seqTable+` WHERE seq_name = ?`, trimmed).
+		Scan(&current, &increment); err != nil {
+		return nil, fmt.Errorf("seq repo next n select (%s): %w", trimmed, err)
+	}
+	ids := make([]int64, n)
+	for i := range n {
+		ids[i] = int64(current - uint64(n-1-i)*increment)
+	}
+	return ids, nil
+}
+
 // Find reads the row for inspection / admin use. It never advances the
 // counter; callers that need an ID must use Next.
 // Lock is a primary-key locking read: it X-locks exactly the named row
