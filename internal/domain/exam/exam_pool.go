@@ -15,7 +15,7 @@ import (
 // several variants can share a tag and a child is not handed the identical
 // exam twice.
 //
-// aiQuestionsJson is stored verbatim as the model returned it, after the
+// questionsJson is stored verbatim as the model returned it, after the
 // server has normalised question_grade. Parsing happens on read, in the
 // application layer.
 type ExamPool struct {
@@ -28,10 +28,13 @@ type ExamPool struct {
 	reqSemester *string
 	reqProgram  *string
 	reqExtras   *string
+	// examSource is enum.ExamSource: LLM, or POOL for a set drawn from the
+	// question bank.
+	examSource string
 
-	aiTitle         *string
-	aiShortText     *string
-	aiQuestionsJson string
+	title         *string
+	shortText     *string
+	questionsJson string
 	// verifiedCount: 0 = not verified by an admin, >0 = verified (see
 	// IExamPoolRepository.MarkVerified / ReplaceQuestions).
 	verifiedCount int
@@ -65,14 +68,16 @@ func (a *ExamPool) ReqSemester() *string         { return a.reqSemester }
 func (a *ExamPool) SetReqSemester(s *string)     { a.reqSemester = s }
 func (a *ExamPool) ReqProgram() *string          { return a.reqProgram }
 func (a *ExamPool) SetReqProgram(s *string)      { a.reqProgram = s }
+func (a *ExamPool) ExamSource() string           { return a.examSource }
+func (a *ExamPool) SetExamSource(s string)       { a.examSource = s }
 func (a *ExamPool) ReqExtras() *string           { return a.reqExtras }
 func (a *ExamPool) SetReqExtras(s *string)       { a.reqExtras = s }
-func (a *ExamPool) AiTitle() *string             { return a.aiTitle }
-func (a *ExamPool) SetAiTitle(s *string)         { a.aiTitle = s }
-func (a *ExamPool) AiShortText() *string         { return a.aiShortText }
-func (a *ExamPool) SetAiShortText(s *string)     { a.aiShortText = s }
-func (a *ExamPool) AiQuestionsJson() string      { return a.aiQuestionsJson }
-func (a *ExamPool) SetAiQuestionsJson(s string)  { a.aiQuestionsJson = s }
+func (a *ExamPool) Title() *string               { return a.title }
+func (a *ExamPool) SetTitle(s *string)           { a.title = s }
+func (a *ExamPool) ShortText() *string           { return a.shortText }
+func (a *ExamPool) SetShortText(s *string)       { a.shortText = s }
+func (a *ExamPool) QuestionsJson() string        { return a.questionsJson }
+func (a *ExamPool) SetQuestionsJson(s string)    { a.questionsJson = s }
 func (a *ExamPool) VerifiedCount() int           { return a.verifiedCount }
 func (a *ExamPool) SetVerifiedCount(n int)       { a.verifiedCount = n }
 func (a *ExamPool) Note() *string                { return a.note }

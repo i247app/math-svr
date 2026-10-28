@@ -15,13 +15,14 @@
 //   - persistence (no UoW, no repos);
 //   - request validation (the per-module validator catches duplicate
 //     question_numbers and missing labels before Score is called);
-//   - free-form / multi-select / ordering question types (none are
-//     emitted by the live prompts; the design note next to the v2
-//     endpoints documents the constraint).
+//   - ordering / free-text question types. Multi-select and typed-number
+//     questions exist only in exam sets built from the question bank and
+//     are graded by ScoreExamQuestions; exercises stay single-choice.
 package scorer
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"sort"
@@ -29,6 +30,7 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto/aiquestion"
+	"math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -89,12 +91,23 @@ const (
 // Outcome is one ANSWERED question and what the student did with it. It
 // carries the question itself so a caller can snapshot the stem, topic and
 // answer key into its own table without re-parsing the payload.
+//
+// ChildOptionIDs / ChildAnswerText are the strings a log row stores: the id
+// and text of the chosen option; for MULTIPLE_CHOICE the chosen ids joined
+// ("a,c") and their texts joined; for NUMERIC_INPUT no id and the typed
+// number as the text.
 type Outcome struct {
 	Question        aiquestion.Question
-	SelectedLabel   string
-	SelectedContent string
+	ChildOptionIDs  string
+	ChildAnswerText string
 	IsCorrect       bool
 }
+
+// ErrAnswerShape marks an answer that does not fit its question's kind: a
+// typed value for a choice question, two ids for a single-choice one, no
+// number for a numeric one. It is the client's mistake, not a grading
+// failure, so callers map it to their invalid-answers code.
+var ErrAnswerShape = errors.New("scorer: answer does not fit the question kind")
 
 // DetailedResult is Result plus the per-question breakdown, in question
 // order. Skipped questions produce no Outcome at all.
@@ -136,11 +149,23 @@ func ScoreDetailed(questionsJSON string, answers []aiquestion.StudentAnswer, lan
 // names, so it decodes with its own type and hands the questions over
 // rather than having this package parse a vocabulary it does not know.
 func ScoreQuestions(questions []aiquestion.Question, answers []aiquestion.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
+	exam := make([]aiquestion.ExamAnswer, 0, len(answers))
+	for _, a := range answers {
+		// One id per answer, blank included: a blank label is a wrong
+		// answer here, as it always was, not a shape error.
+		exam = append(exam, aiquestion.ExamAnswer{QuestionNumber: a.QuestionNumber, OptionIDs: []string{strings.TrimSpace(a.Label)}})
+	}
+	return ScoreExamQuestions(questions, exam, lang, denom)
+}
+
+// ScoreExamQuestions grades questions of any kind. An answer that does not
+// fit its question's kind fails the whole call with ErrAnswerShape.
+func ScoreExamQuestions(questions []aiquestion.Question, answers []aiquestion.ExamAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
 	if len(questions) == 0 {
 		return nil, fmt.Errorf("scorer: payload has no questions")
 	}
 
-	answerByNumber, err := indexStudentAnswers(answers)
+	answerByNumber, err := indexAnswers(answers)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +190,7 @@ func ScoreQuestions(questions []aiquestion.Question, answers []aiquestion.Studen
 			topics[topicKey] = b
 		}
 
-		studentLabel, present := answerByNumber[q.QuestionNumber]
+		ans, present := answerByNumber[q.QuestionNumber]
 		if !present {
 			// Skipped. Under the all-questions rule that is a wrong answer;
 			// under answered-only it leaves the fraction entirely.
@@ -174,18 +199,22 @@ func ScoreQuestions(questions []aiquestion.Question, answers []aiquestion.Studen
 			}
 			continue
 		}
+		if err := checkAnswerShape(q, ans); err != nil {
+			return nil, err
+		}
 
 		answered++
 		b.total++
-		isCorrect := questionIsCorrect(q, studentLabel)
+		isCorrect := answerIsCorrect(q, ans)
 		if isCorrect {
 			correct++
 			b.correct++
 		}
+		ids, content := selectedView(q, ans)
 		outcomes = append(outcomes, Outcome{
 			Question:        q,
-			SelectedLabel:   studentLabel,
-			SelectedContent: choiceContent(q, studentLabel),
+			ChildOptionIDs:  ids,
+			ChildAnswerText: content,
 			IsCorrect:       isCorrect,
 		})
 	}
@@ -220,6 +249,79 @@ func ScoreQuestions(questions []aiquestion.Question, answers []aiquestion.Studen
 	}, nil
 }
 
+// checkAnswerShape: single-choice and true/false take exactly one option
+// id, multiple-choice at least one (no repeats), numeric a value and no id.
+func checkAnswerShape(q aiquestion.Question, a aiquestion.ExamAnswer) error {
+	fail := func(why string) error {
+		return fmt.Errorf("%w: question %d (%s) %s", ErrAnswerShape, q.QuestionNumber, q.EffectiveKind(), why)
+	}
+	switch q.EffectiveKind() {
+	case aiquestion.KindNumericInput:
+		if len(a.OptionIDs) > 0 || strings.TrimSpace(a.Value) == "" {
+			return fail("takes a value and no option ids")
+		}
+	case aiquestion.KindMultipleChoice:
+		if a.Value != "" || len(a.OptionIDs) == 0 {
+			return fail("takes one or more option ids and no value")
+		}
+		seen := make(map[string]bool, len(a.OptionIDs))
+		for _, id := range a.OptionIDs {
+			id = normalizeID(id)
+			if seen[id] {
+				return fail("repeats an option id")
+			}
+			seen[id] = true
+		}
+	default:
+		if a.Value != "" || len(a.OptionIDs) != 1 {
+			return fail("takes exactly one option id and no value")
+		}
+	}
+	return nil
+}
+
+// answerIsCorrect grades one answer that already passed checkAnswerShape.
+func answerIsCorrect(q aiquestion.Question, a aiquestion.ExamAnswer) bool {
+	switch q.EffectiveKind() {
+	case aiquestion.KindNumericInput:
+		return questionpool.AcceptsNumber(q.RightValues, a.Value)
+	case aiquestion.KindMultipleChoice:
+		want := normalizedIDs(q.RightOptionIDs)
+		return len(want) > 0 && slices.Equal(want, normalizedIDs(a.OptionIDs))
+	}
+	return questionIsCorrect(q, strings.TrimSpace(a.OptionIDs[0]))
+}
+
+// normalizeID is an option id in comparable form: trimmed, lower-cased.
+func normalizeID(id string) string { return strings.ToLower(strings.TrimSpace(id)) }
+
+// normalizedIDs is a set of option ids in comparable form: normalized, sorted.
+func normalizedIDs(ids []string) []string {
+	out := make([]string, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, normalizeID(id))
+	}
+	slices.Sort(out)
+	return out
+}
+
+// selectedView is the option id(s) and text a log row stores for an answer.
+func selectedView(q aiquestion.Question, a aiquestion.ExamAnswer) (ids, content string) {
+	switch q.EffectiveKind() {
+	case aiquestion.KindNumericInput:
+		return "", strings.TrimSpace(a.Value)
+	case aiquestion.KindMultipleChoice:
+		norm := normalizedIDs(a.OptionIDs)
+		texts := make([]string, 0, len(norm))
+		for _, id := range norm {
+			texts = append(texts, choiceContent(q, id))
+		}
+		return aiquestion.JoinIDs(norm), strings.Join(texts, aiquestion.ContentSeparator)
+	}
+	id := normalizeID(a.OptionIDs[0])
+	return id, choiceContent(q, id)
+}
+
 // choiceContent returns the displayed text of the option the student
 // picked, or "" when the label matches nothing in the payload.
 func choiceContent(q aiquestion.Question, label string) string {
@@ -247,17 +349,17 @@ func parseQuestionsForScoring(raw string) ([]aiquestion.Question, error) {
 	return out, nil
 }
 
-// indexStudentAnswers folds the answer slice into a map keyed by
+// indexAnswers folds the answer slice into a map keyed by
 // question_number. Duplicate numbers fail loudly — the per-module
 // validator catches it earlier, but the scorer guards too so out-of-band
 // callers can't smuggle them past.
-func indexStudentAnswers(answers []aiquestion.StudentAnswer) (map[int]string, error) {
-	out := make(map[int]string, len(answers))
+func indexAnswers(answers []aiquestion.ExamAnswer) (map[int]aiquestion.ExamAnswer, error) {
+	out := make(map[int]aiquestion.ExamAnswer, len(answers))
 	for i, a := range answers {
 		if _, dup := out[a.QuestionNumber]; dup {
 			return nil, fmt.Errorf("scorer: duplicate answer for question_number %d at index %d", a.QuestionNumber, i)
 		}
-		out[a.QuestionNumber] = strings.TrimSpace(a.Label)
+		out[a.QuestionNumber] = a
 	}
 	return out, nil
 }
@@ -265,9 +367,9 @@ func indexStudentAnswers(answers []aiquestion.StudentAnswer) (map[int]string, er
 // questionIsCorrect: label match first (the v1-compatible path), value
 // compare as fallback only when right_answer is absent.
 func questionIsCorrect(q aiquestion.Question, studentLabel string) bool {
-	rightLabel := strings.ToUpper(strings.TrimSpace(q.RightAnswerLabel))
+	rightLabel := normalizeID(q.RightAnswerLabel)
 	if rightLabel != "" {
-		return strings.ToUpper(studentLabel) == rightLabel
+		return normalizeID(studentLabel) == rightLabel
 	}
 	if strings.TrimSpace(q.RightAnswerContent) == "" {
 		return false

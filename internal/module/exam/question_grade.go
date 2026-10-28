@@ -27,7 +27,7 @@ type GradeMismatch struct {
 // grade. The prompt still asks for the field, and the mismatches returned
 // here are how we find out whether it is being obeyed.
 //
-// It runs BEFORE the questions are persisted, so ma_exam_pools.ai_questions_json
+// It runs BEFORE the questions are persisted, so ma_exam_pools.questions_json
 // is authoritative and ma_exam_session_lines can copy it verbatim at submit
 // time without re-deriving anything.
 func NormalizeQuestionBands(questions []aiquestion.Question, examType enum.ExamType, grade int) ([]aiquestion.Question, []GradeMismatch) {

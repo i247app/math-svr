@@ -287,6 +287,47 @@ func (r *QuestionPoolRepository) ListPage(ctx context.Context, filter questionpo
 	return out, pagination.NewPagination(page, size, total), nil
 }
 
+// PickForExam draws random approved candidates for an exam paper.
+//
+// ponytail: ORDER BY RAND() sorts every candidate of the grade/level; fine
+// for a bank of thousands. Past ~100k rows, pick random ids from the
+// ix_status_grade_created range instead.
+func (r *QuestionPoolRepository) PickForExam(ctx context.Context, filter questionpool.PickFilter, limit int) ([]*questionpool.QuestionPool, error) {
+	if limit <= 0 {
+		return nil, nil
+	}
+	clause, args := buildQuestionPoolPickClause(filter)
+	where := whereActive(clause, questionPoolActiveWhere)
+	query := `SELECT ` + questionPoolColumns + ` FROM ` + questionPoolTable + ` q` + where +
+		` ORDER BY RAND() LIMIT ?`
+	// LIMIT binds after the active filter's args.
+	return r.list(ctx, "pick for exam", query, slices.Concat(args, questionPoolActiveArgs(), []any{limit}))
+}
+
+// buildQuestionPoolPickClause keeps placeholder order in lockstep with the
+// returned args slice.
+func buildQuestionPoolPickClause(filter questionpool.PickFilter) (string, []any) {
+	clause := ` AND q.question_status = ? AND q.question_grade = ?`
+	args := []any{questionpool.StatusApproved, filter.Grade}
+	if filter.Level != nil {
+		clause += ` AND q.question_level = ?`
+		args = append(args, *filter.Level)
+	}
+	if n := len(filter.ExcludeIds); n > 0 {
+		clause += ` AND q.question_pool_id NOT IN (?` + strings.Repeat(", ?", n-1) + `)`
+		for _, id := range filter.ExcludeIds {
+			args = append(args, id)
+		}
+	}
+	if n := len(filter.AvoidTexts); n > 0 {
+		clause += ` AND q.question_text NOT IN (?` + strings.Repeat(", ?", n-1) + `)`
+		for _, t := range filter.AvoidTexts {
+			args = append(args, t)
+		}
+	}
+	return clause, args
+}
+
 // buildQuestionFilterClause keeps placeholder order in lockstep with the
 // returned args slice.
 func buildQuestionPoolFilterClause(filter questionpool.ListQuestionPoolsFilter) (string, []any, error) {

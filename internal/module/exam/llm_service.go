@@ -116,8 +116,8 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 
 	log.Infof("LLM RESPONSE: %s", content)
 
-	// Parsed with the exam vocabulary (right_answer_label, question_topic,
-	// ...) and converted straight into the shared shape, which is what the
+	// Parsed with the exam vocabulary (question_text, options[{id, text}],
+	// correct_answer, ...) and converted straight into the shared shape, which is what the
 	// normalisers and the scorer operate on.
 	gen, err := aiquestion.ParseGenerationOf[dto.ExamQuestion](content)
 	if err != nil {
@@ -127,6 +127,28 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	}
 	if len(gen.Questions) == 0 {
 		return nil, errs.NewError(ctx, status.EXAM_NO_QUESTIONS, nil, ErrModelReturnedNothing)
+	}
+
+	// The model writes single-choice questions only: whatever question_kind
+	// it claims, the key it gave is one option id. Ids are normalised ("A",
+	// "a " and "a" are the same option) so the list and the key agree, and
+	// the key is moved to the option whose text the model gave as
+	// right_answer_text when the two disagree (its working wins). A round
+	// written under an older field vocabulary (a prompt not rewritten yet)
+	// parses as questions without a correct_answer, or options without ids
+	// — refused here, before anything is stored.
+	for i := range gen.Questions {
+		q := &gen.Questions[i]
+		q.QuestionKind = aiquestion.KindSingleChoice
+		q.NormalizeIDs()
+		if q.ReconcileKey() {
+			log.Warnf("exam.llm.key_moved_to_answer_text q=%d option=%s", q.QuestionNumber, q.CorrectAnswer.OptionIDs[0])
+		}
+	}
+	if err := dto.CheckSet(gen.Questions); err != nil {
+		log.Warnf("exam.llm.generate_unusable err=%v", err)
+		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED,
+			map[string]any{"reason": err.Error()}, err)
 	}
 
 	// Two normalisation passes, and they answer different questions.

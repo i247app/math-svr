@@ -67,7 +67,7 @@ func (s *Service) recentStems(ctx context.Context, profileID int64, grade int) (
 	seen := make(map[string]struct{}, len(lines))
 	var stems []string
 	for _, l := range lines {
-		stem := strings.TrimSpace(utils.DerefString(l.QuestionName()))
+		stem := strings.TrimSpace(utils.DerefString(l.QuestionText()))
 		if stem == "" {
 			continue
 		}
@@ -283,11 +283,14 @@ func (s *Service) getAttempt(ctx context.Context, elinkID int64, profile *profil
 	submitted := detail.Attempt.ElinkStatus() != nil &&
 		*detail.Attempt.ElinkStatus() == string(enum.ElinkStatusSubmitted)
 
-	return &dto.GetExamRes{
+	res := &dto.GetExamRes{
 		Exam: dto.AttemptToResponse(detail.Attempt, detail.ExamPool, submitted),
 		Details: dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempt),
 			map[int64]*examDomain.ExamPool{detail.ExamPool.ExamId(): detail.ExamPool}),
-	}, nil
+	}
+	s.signExam(ctx, res.Exam)
+	s.signDetails(ctx, res.Details)
+	return res, nil
 }
 
 // getJourney is the whole-journey review: running totals, every sitting
@@ -306,12 +309,14 @@ func (s *Service) getJourney(ctx context.Context, esessID int64, examType string
 		return nil, err
 	}
 
-	return &dto.GetExamRes{
+	res := &dto.GetExamRes{
 		ExamSession:     dto.ExamSessionToResponse(detail.Journey),
 		Exams:           dto.AttemptListToResponse(detail.Attempts, detail.ExamPools),
 		Details:         dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...), detail.ExamPools),
 		PracticePreview: dto.PracticePreviewFrom(detail.PracticeBase, detail.PracticeBrief),
-	}, nil
+	}
+	s.signDetails(ctx, res.Details)
+	return res, nil
 }
 
 // Guest ceilings. Everything a guest is handed is a paid model call made
@@ -385,11 +390,13 @@ func (s *Service) resumeOpenSitting(ctx context.Context, profile *profileDomain.
 	}
 
 	logger.From(ctx).Infof("exam.resumed attempt=%d journey=%d type=%s", open.ElinkId(), esessID, examType)
-	return &dto.GenerateExamRes{
+	res := &dto.GenerateExamRes{
 		Exam:        dto.AttemptToResponse(open, pool, true),
 		Resumed:     true,
 		ExamSession: dto.ExamSessionToResponse(journey),
-	}, nil
+	}
+	s.signExam(ctx, res.Exam)
+	return res, nil
 }
 
 // journeyReviewInput turns the stored answer lines (newest first, as
@@ -400,16 +407,10 @@ func journeyReviewInput(journey *examDomain.ExamSession, lines []*examDomain.Exa
 	answers := make([]input.ReviewAnswer, 0, len(lines))
 	for i := len(lines) - 1; i >= 0; i-- {
 		l := lines[i]
-		child := l.SelectedLabel()
-		if c := utils.DerefString(l.SelectedContent()); c != "" {
-			child += " (" + c + ")"
-		}
-		right := utils.DerefString(l.RightAnswerLabel())
-		if c := utils.DerefString(l.RightAnswerContent()); c != "" {
-			right += " (" + c + ")"
-		}
+		child := answerText(l.ChildOptionIDs(), utils.DerefString(l.ChildAnswerText()))
+		right := answerText(utils.DerefString(l.RightOptionIDs()), utils.DerefString(l.RightAnswerText()))
 		answers = append(answers, input.ReviewAnswer{
-			Question:    utils.DerefString(l.QuestionName()),
+			Question:    utils.DerefString(l.QuestionText()),
 			Topic:       utils.DerefString(l.QuestionTopic()),
 			Grade:       l.QuestionGrade(),
 			RightAnswer: right,
@@ -424,6 +425,17 @@ func journeyReviewInput(journey *examDomain.ExamSession, lines []*examDomain.Exa
 		ScorePercentage: journey.ResScorePercentage(),
 		Answers:         answers,
 	}
+}
+
+// answerText renders one side of a logged answer for the review prompt:
+// what was shown — the option's text, or the number typed — and only when
+// the log has no text the option id. (An id like "b" means nothing to the
+// reader of the prompt.)
+func answerText(ids, content string) string {
+	if content != "" {
+		return content
+	}
+	return ids
 }
 
 // requireReviewable refuses an AI review of a journey that is not

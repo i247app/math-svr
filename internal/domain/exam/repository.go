@@ -124,7 +124,7 @@ type IExamPoolRepository interface {
 	// MarkVerified sets verified_count to 1 when it is 0 (verified = true;
 	// an already verified set keeps its count) or back to 0 (false).
 	MarkVerified(ctx context.Context, examId int64, verified bool, modifyId *int64) error
-	// ReplaceQuestions overwrites ai_questions_json and adds 1 to
+	// ReplaceQuestions overwrites questions_json and adds 1 to
 	// verified_count in one statement.
 	ReplaceQuestions(ctx context.Context, examId int64, questionsJSON string, modifyId *int64) error
 	Create(ctx context.Context, e *ExamPool) (*ExamPool, error)
@@ -335,7 +335,7 @@ type IExamSessionRepository interface {
 	// on the OPEN row (esessId, examType); a nil value leaves that
 	// column untouched. ErrJourneyNotActive when the row is not open.
 	SetCurrent(ctx context.Context, esessId int64, examType string, grade, level *int) error
-	// SetExamTexts records the ai_title and ai_short_text of the exam just
+	// SetExamTexts records the last_title and last_short_text of the exam just
 	// handed out on the OPEN row (esessId, examType). Unlike SetCurrent it
 	// always writes both, nil included: the columns describe the latest
 	// exam, and a latest exam without a title or summary must not show

@@ -20,8 +20,8 @@ const (
 	examPoolTable = "ma_exam_pools"
 
 	examPoolColumns = `a.exam_id, a.req_exam_type, a.req_grade, a.req_level, a.req_num_ques,
-		a.req_semester, a.req_program, a.req_extras,
-		a.ai_title, a.ai_short_text, a.ai_questions_json, a.verified_count,
+		a.req_semester, a.req_program, a.req_extras, a.exam_source,
+		a.title, a.short_text, a.questions_json, a.verified_count,
 		a.rpt_flg, a.kwords, a.note, a.exam_status, a.status,
 		a.create_id, a.create_dt, a.modify_id, a.modify_dt`
 
@@ -43,8 +43,8 @@ func NewExamPoolRepository(db database.Executor) exam.IExamPoolRepository {
 func scanExamPool(s database.RowScanner) (*models.ExamPoolModel, error) {
 	var m models.ExamPoolModel
 	if err := s.Scan(&m.ExamId, &m.ReqExamType, &m.ReqGrade, &m.ReqLevel, &m.ReqNumQues,
-		&m.ReqSemester, &m.ReqProgram, &m.ReqExtras,
-		&m.AiTitle, &m.AiShortText, &m.AiQuestionsJson, &m.VerifiedCount,
+		&m.ReqSemester, &m.ReqProgram, &m.ReqExtras, &m.ExamSource,
+		&m.Title, &m.ShortText, &m.QuestionsJson, &m.VerifiedCount,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.ExamStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -164,7 +164,7 @@ func (r *ExamPoolRepository) ListByExamIds(ctx context.Context, examIds []int64)
 	return out, nil
 }
 
-// ListPage pages the pool newest first. It reads ai_questions_json too —
+// ListPage pages the pool newest first. It reads questions_json too —
 // one LONGTEXT per row, a page is small enough that a second column list
 // is not worth keeping in lockstep with scanExamPool.
 func (r *ExamPoolRepository) ListPage(ctx context.Context, filter exam.ListExamPoolsFilter, page, size int64) ([]*exam.ExamPool, *pagination.Pagination, error) {
@@ -234,16 +234,16 @@ func (r *ExamPoolRepository) Create(ctx context.Context, e *exam.ExamPool) (*exa
 	query := `
 		INSERT INTO ` + examPoolTable + `
 			(exam_id, req_exam_type, req_grade, req_level, req_num_ques,
-			 req_semester, req_program, req_extras,
-			 ai_title, ai_short_text, ai_questions_json,
+			 req_semester, req_program, req_extras, exam_source,
+			 title, short_text, questions_json,
 			 rpt_flg, kwords, note, exam_status, create_id, create_dt, modify_dt)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 	now := mtime.Now().Time
 	_, err := r.db.Exec(ctx, query,
 		e.ExamId(), e.ReqExamType(), e.ReqGrade(), e.ReqLevel(), e.ReqNumQues(),
-		e.ReqSemester(), e.ReqProgram(), e.ReqExtras(),
-		e.AiTitle(), e.AiShortText(), e.AiQuestionsJson(),
+		e.ReqSemester(), e.ReqProgram(), e.ReqExtras(), e.ExamSource(),
+		e.Title(), e.ShortText(), e.QuestionsJson(),
 		e.RptFlg(), e.Kwords(), e.Note(), e.ExamStatus(), e.CreateId(), now, now)
 	if err != nil {
 		return nil, fmt.Errorf("ai exam repo create: %w", err)
@@ -274,7 +274,7 @@ func (r *ExamPoolRepository) MarkVerified(ctx context.Context, examId int64, ver
 // verified_count in the same statement: every corrected version an admin
 // sends counts as one more verification.
 func (r *ExamPoolRepository) ReplaceQuestions(ctx context.Context, examId int64, questionsJSON string, modifyId *int64) error {
-	query := `UPDATE ` + examPoolTable + ` a SET a.ai_questions_json = ?, a.verified_count = a.verified_count + 1, a.modify_id = ?` +
+	query := `UPDATE ` + examPoolTable + ` a SET a.questions_json = ?, a.verified_count = a.verified_count + 1, a.modify_id = ?` +
 		` WHERE (a.exam_id = ?) AND ` + examPoolActiveWhere
 	if _, err := r.db.Exec(ctx, query, slices.Concat([]any{questionsJSON, modifyId, examId}, examPoolActiveArgs())...); err != nil {
 		return fmt.Errorf("exam pool repo replace questions: %w", err)
@@ -292,9 +292,10 @@ func ModelToDomainExamPool(m *models.ExamPoolModel) *exam.ExamPool {
 	e.SetReqSemester(m.ReqSemester)
 	e.SetReqProgram(m.ReqProgram)
 	e.SetReqExtras(m.ReqExtras)
-	e.SetAiTitle(m.AiTitle)
-	e.SetAiShortText(m.AiShortText)
-	e.SetAiQuestionsJson(m.AiQuestionsJson)
+	e.SetExamSource(m.ExamSource)
+	e.SetTitle(m.Title)
+	e.SetShortText(m.ShortText)
+	e.SetQuestionsJson(m.QuestionsJson)
 	e.SetVerifiedCount(m.VerifiedCount)
 	e.SetRptFlg(m.RptFlg)
 	e.SetKwords(m.Kwords)

@@ -196,3 +196,14 @@ const (
 	ExamLevelMin = 0
 	ExamLevelMax = 9
 )
+
+// ExamSource says where a stored question set came from: the model
+// (ma_exam_pools.exam_source, default LLM) or the question bank
+// (QUESTION_POOL_ENABLED). A POOL set belongs to the bank, not to the exam:
+// an admin cannot overwrite it through /exams/pools/verify.
+type ExamSource string
+
+const (
+	ExamSourceLLM  ExamSource = "LLM"
+	ExamSourcePool ExamSource = "POOL"
+)

@@ -53,10 +53,10 @@ func BuildBrief(details []*exam.ExamSessionLine) input.PracticeBrief {
 		}
 		wrongByTopic[topic]++
 		wrong = append(wrong, input.PracticeItem{
-			Stem:        utils.DerefString(d.QuestionName()),
+			Stem:        utils.DerefString(d.QuestionText()),
 			Topic:       topic,
-			RightAnswer: utils.DerefString(d.RightAnswerContent()),
-			ChildAnswer: utils.DerefString(d.SelectedContent()),
+			RightAnswer: utils.DerefString(d.RightAnswerText()),
+			ChildAnswer: utils.DerefString(d.ChildAnswerText()),
 		})
 	}
 

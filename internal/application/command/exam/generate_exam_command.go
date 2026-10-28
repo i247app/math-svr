@@ -28,6 +28,8 @@ type NewExamPoolContent struct {
 	Title         *string
 	ShortText     *string
 	QuestionsJSON string
+	// Source says who wrote the set; empty is LLM.
+	Source enum.ExamSource
 }
 
 // GenerateExamCommand hands one exam to one child.
@@ -131,7 +133,9 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		if err := h.recordCurrent(ctx, repos, cmd, journeyID, examPool); err != nil {
 			return err
 		}
-		if cmd.NewContent != nil {
+		// A set drawn from the bank made no model turn, so it must not touch
+		// the journey's chain: a nil RespID would clear it.
+		if cmd.NewContent != nil && cmd.NewContent.Source != enum.ExamSourcePool {
 			if err := repos.ExamSession.SetLastRespID(ctx, journeyID, cmd.RespID); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
@@ -293,7 +297,7 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 
 // recordCurrent writes what this hand-out says about the open journey:
 // the client's stated grade / level, and the title and summary
-// (ai_title / ai_short_text) of the exam being handed out. A PRACTICE round names a finished journey
+// (last_title / last_short_text) of the exam being handed out. A PRACTICE round names a finished journey
 // and states nothing about it; for any other round, only the grade /
 // level values actually sent move — a request naming just the grade
 // leaves the level as it was (a journey that was just opened already
@@ -314,7 +318,7 @@ func (h *GenerateExamCommandHandler) recordCurrent(ctx context.Context, repos tr
 	if err := repos.ExamSession.SetCurrent(ctx, journeyID, string(cmd.ExamType), grade, cmd.StatedLevel); err != nil {
 		return journeyWriteError(ctx, err)
 	}
-	if err := repos.ExamSession.SetExamTexts(ctx, journeyID, string(cmd.ExamType), examPool.AiTitle(), examPool.AiShortText()); err != nil {
+	if err := repos.ExamSession.SetExamTexts(ctx, journeyID, string(cmd.ExamType), examPool.Title(), examPool.ShortText()); err != nil {
 		return journeyWriteError(ctx, err)
 	}
 	return nil
@@ -369,9 +373,14 @@ func insertExamPool(ctx context.Context, repos transaction.Repositories, examTyp
 	e.SetReqSemester(content.Semester)
 	e.SetReqProgram(content.Program)
 	e.SetReqExtras(content.Extras)
-	e.SetAiTitle(content.Title)
-	e.SetAiShortText(content.ShortText)
-	e.SetAiQuestionsJson(content.QuestionsJSON)
+	source := content.Source
+	if source == "" {
+		source = enum.ExamSourceLLM
+	}
+	e.SetExamSource(string(source))
+	e.SetTitle(content.Title)
+	e.SetShortText(content.ShortText)
+	e.SetQuestionsJson(content.QuestionsJSON)
 	active := string(enum.ExamStatusActive)
 	e.SetExamStatus(&active)
 	e.SetCreateId(createdBy)

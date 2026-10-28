@@ -698,6 +698,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "is_verify is required"
 	case EXAM_POOL_INVALID_QUESTIONS:
 		return "The corrected questions must keep the exam's question numbers and answer labels"
+	case EXAM_QUESTION_BANK_INSUFFICIENT:
+		return "The question bank does not hold enough suitable questions for this exam. Please try again later"
+	case EXAM_POOL_BANK_READONLY:
+		return "This exam was built from the question bank; correct the questions in the bank instead"
 
 	case POW_CHALLENGE_FAILED:
 		return "Could not create a verification challenge. Please try again"

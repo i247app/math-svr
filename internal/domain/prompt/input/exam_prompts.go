@@ -172,7 +172,7 @@ var examTypeTitleVN = map[enum.ExamType]string{
 	enum.ExamTypePractice:   "Luyện Tập",
 }
 
-// ExamTitle is the stored ai_title of a round: "Toán <type> - <band>",
+// ExamTitle is the stored title of a round: "Toán <type> - <band>",
 // e.g. "Toán Đánh Giá - Lớp 2". It is a pure function of the type and the
 // grade, so the server stamps it and the model is not asked for one.
 func ExamTitle(examType enum.ExamType, grade int) string {

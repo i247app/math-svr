@@ -293,8 +293,8 @@ func ExamToCard(a *examDomain.ExamLink, examPool *examDomain.ExamPool) *ExamCard
 		card.SubmittedDt = a.SubmittedDt().String()
 	}
 	if examPool != nil {
-		card.Title = examPool.AiTitle()
-		card.ShortText = examPool.AiShortText()
+		card.Title = examPool.Title()
+		card.ShortText = examPool.ShortText()
 	}
 	return card
 }

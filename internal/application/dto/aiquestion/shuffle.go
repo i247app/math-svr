@@ -3,6 +3,7 @@ package aiquestion
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 )
 
@@ -15,13 +16,18 @@ import (
 // questions in, and the order of the options inside each. This type is
 // that variation, recorded per sitting so it can be undone at grading.
 //
-// Two lists describe it, both in CANONICAL terms:
+// Two lists describe it:
 //
 //   - Questions: the canonical question_number at each served position.
 //     Served question 1 is Questions[0].
-//   - Options: for each canonical question, the canonical labels in the
-//     order they were shown. Served label "B" on that question is
-//     Options[qn][1].
+//   - Options: for each canonical question, its option ids in the order
+//     they were shown.
+//
+// Only question NUMBERS are renamed between the set and the sitting
+// (served 1..N against canonical numbers). Option ids are not: an option
+// keeps its id wherever it is shown, and the client draws the letters
+// A, B, C by position. So an answer needs no translation back except for
+// its question number.
 //
 // Shuffling is done within difficulty groups only. An ASSESSMENT puts its
 // probe questions at fixed positions on purpose (a harder question must
@@ -39,7 +45,8 @@ type Shuffle struct {
 
 // shuffleVersion is bumped if the meaning of the stored shape changes, so
 // a sitting written under an old shape is never misread under a new one.
-const shuffleVersion = 1
+// 2: Options holds option ids (it held the letters "A".. renamed by position).
+const shuffleVersion = 2
 
 // Shuffler is the randomness source. *rand.Rand from math/rand/v2
 // satisfies it, and a test can pass something deterministic.
@@ -80,12 +87,15 @@ func NewShuffle(questions []Question, rng Shuffler) *Shuffle {
 	}
 
 	for _, q := range questions {
-		labels := make([]string, len(q.Answers))
+		ids := make([]string, len(q.Answers))
 		for i, a := range q.Answers {
-			labels[i] = a.Label
+			ids[i] = a.Label
 		}
-		rng.Shuffle(len(labels), func(a, b int) { labels[a], labels[b] = labels[b], labels[a] })
-		s.Options[q.QuestionNumber] = labels
+		// A true/false pair keeps its order: "true" first, always.
+		if q.EffectiveKind() != KindTrueFalse {
+			rng.Shuffle(len(ids), func(a, b int) { ids[a], ids[b] = ids[b], ids[a] })
+		}
+		s.Options[q.QuestionNumber] = ids
 	}
 	return s
 }
@@ -116,9 +126,8 @@ func (s *Shuffle) JSON() (string, error) {
 }
 
 // Apply returns the SERVED view of a canonical set: questions in served
-// order and renumbered 1..N, options in served order and relabelled
-// A..; right_answer_label is translated so it names the correct option
-// under the served labels. The input is not modified.
+// order and renumbered 1..N, options in served order. Option ids and the
+// answer key are untouched. The input is not modified.
 //
 // A nil receiver returns a copy in stored order.
 func (s *Shuffle) Apply(canonical []Question) []Question {
@@ -144,78 +153,64 @@ func (s *Shuffle) Apply(canonical []Question) []Question {
 			continue // the stored set no longer holds this question; skip rather than invent
 		}
 		q.QuestionNumber = pos + 1
-		q.Answers, q.RightAnswerLabel = s.servedOptions(qn, q)
+		q.Answers = s.ServedAnswers(qn, q)
 		served = append(served, q)
 	}
 	return served
 }
 
-// ServedAnswers is one question's options in the order — and under the
-// labels — this sitting showed them. The review screen uses it to lay out
-// every option beside the one the child picked; a nil receiver returns
-// the stored order.
+// ServedAnswers is one question's options in the order this sitting showed
+// them. The review screen uses it to lay out every option beside the one
+// the child picked; a nil receiver, or an ordering that no longer matches
+// the set, returns the stored order.
 func (s *Shuffle) ServedAnswers(canonicalQN int, q Question) []AnswerChoice {
-	answers, _ := s.servedOptions(canonicalQN, q)
-	return answers
-}
-
-// servedOptions reorders one question's options and translates the
-// answer key into served labels.
-func (s *Shuffle) servedOptions(canonicalQN int, q Question) ([]AnswerChoice, string) {
-	byLabel := make(map[string]AnswerChoice, len(q.Answers))
-	for _, a := range q.Answers {
-		byLabel[a.Label] = a
-	}
-
-	var canonicalOrder []string
+	var order []string
 	if s != nil {
-		canonicalOrder = s.Options[canonicalQN]
+		order = s.Options[canonicalQN]
 	}
-	if len(canonicalOrder) != len(q.Answers) {
-		// No usable ordering recorded — serve as stored.
-		return q.Answers, q.RightAnswerLabel
+	if len(order) != len(q.Answers) {
+		return q.Answers // no usable ordering recorded — serve as stored
 	}
-
-	out := make([]AnswerChoice, 0, len(canonicalOrder))
-	rightServed := q.RightAnswerLabel
-	for i, canonicalLabel := range canonicalOrder {
-		a, ok := byLabel[canonicalLabel]
+	byID := make(map[string]AnswerChoice, len(q.Answers))
+	for _, a := range q.Answers {
+		byID[a.Label] = a
+	}
+	out := make([]AnswerChoice, 0, len(order))
+	for _, id := range order {
+		a, ok := byID[id]
 		if !ok {
-			return q.Answers, q.RightAnswerLabel
+			return q.Answers
 		}
-		servedLabel := labelAt(i)
-		if canonicalLabel == q.RightAnswerLabel {
-			rightServed = servedLabel
-		}
-		out = append(out, AnswerChoice{Label: servedLabel, Content: a.Content})
+		out = append(out, a)
 	}
-	return out, rightServed
+	return out
 }
 
 // ToCanonical translates the answers a child gave under the served
 // numbering back into canonical terms, so grading runs against the
 // stored set. A nil receiver passes answers through unchanged.
 //
-// An answer naming a served position or label that does not exist is an
-// error, not a silent drop: the client is speaking a numbering the server
-// handed it moments ago, so a mismatch means a bug, not a skipped question.
-func (s *Shuffle) ToCanonical(served []StudentAnswer) ([]StudentAnswer, error) {
+// An answer naming a served question that does not exist, or an option id
+// that the question was not served with, is an error, not a silent drop:
+// the client is speaking about a sitting the server handed it moments ago,
+// so a mismatch means a bug, not a skipped question. A typed Value needs
+// no translation and passes through.
+func (s *Shuffle) ToCanonical(served []ExamAnswer) ([]ExamAnswer, error) {
 	if s == nil {
 		return served, nil
 	}
-	out := make([]StudentAnswer, 0, len(served))
+	out := make([]ExamAnswer, 0, len(served))
 	for _, a := range served {
 		if a.QuestionNumber < 1 || a.QuestionNumber > len(s.Questions) {
 			return nil, fmt.Errorf("question: served question %d is outside 1..%d", a.QuestionNumber, len(s.Questions))
 		}
 		canonicalQN := s.Questions[a.QuestionNumber-1]
-
-		idx, ok := labelIndex(a.Label)
-		labels := s.Options[canonicalQN]
-		if !ok || idx >= len(labels) {
-			return nil, fmt.Errorf("question: served label %q is not an option of question %d", a.Label, a.QuestionNumber)
+		for _, id := range a.OptionIDs {
+			if !slices.Contains(s.Options[canonicalQN], id) {
+				return nil, fmt.Errorf("question: option %q is not an option of question %d", id, a.QuestionNumber)
+			}
 		}
-		out = append(out, StudentAnswer{QuestionNumber: canonicalQN, Label: labels[idx]})
+		out = append(out, ExamAnswer{QuestionNumber: canonicalQN, OptionIDs: a.OptionIDs, Value: a.Value})
 	}
 	return out, nil
 }
@@ -232,30 +227,4 @@ func (s *Shuffle) ServedNumber(canonicalQN int) int {
 		}
 	}
 	return 0
-}
-
-// ServedLabel is the label a canonical option was shown under, or the
-// canonical label itself when no ordering applies.
-func (s *Shuffle) ServedLabel(canonicalQN int, canonicalLabel string) string {
-	if s == nil {
-		return canonicalLabel
-	}
-	for i, l := range s.Options[canonicalQN] {
-		if l == canonicalLabel {
-			return labelAt(i)
-		}
-	}
-	return canonicalLabel
-}
-
-// labelAt / labelIndex map option positions to the A.. alphabet the
-// product uses. Sets have four options today; the alphabet is not capped
-// so a longer set still labels cleanly.
-func labelAt(i int) string { return string(rune('A' + i)) }
-
-func labelIndex(label string) (int, bool) {
-	if len(label) != 1 || label[0] < 'A' || label[0] > 'Z' {
-		return 0, false
-	}
-	return int(label[0] - 'A'), true
 }

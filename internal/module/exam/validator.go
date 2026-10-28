@@ -158,9 +158,19 @@ func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {
 			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS,
 				map[string]any{"index": i}, ErrQuestionNumberInvalid)
 		}
-		if strings.TrimSpace(a.Label) == "" {
+		// Which of the two a question takes follows its kind, which only
+		// the stored set knows (SubmitExam checks it); here an answer just
+		// has to carry exactly one of them.
+		hasIDs, hasValue := len(a.OptionIDs) > 0, strings.TrimSpace(a.Value) != ""
+		if hasIDs == hasValue {
 			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS,
-				map[string]any{"index": i}, ErrAnswerLabelRequired)
+				map[string]any{"index": i}, ErrAnswerBodyInvalid)
+		}
+		for _, id := range a.OptionIDs {
+			if strings.TrimSpace(id) == "" {
+				return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS,
+					map[string]any{"index": i}, ErrAnswerOptionIDRequired)
+			}
 		}
 		if _, dup := seen[a.QuestionNumber]; dup {
 			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS,

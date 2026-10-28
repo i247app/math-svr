@@ -39,7 +39,7 @@ type SubmitExamCommand struct {
 	ElinkID   int64
 	UID       int64
 	ProfileID int64
-	Answers   []aiquestion.StudentAnswer
+	Answers   []aiquestion.ExamAnswer
 	Language  enum.LanguageType
 }
 
@@ -80,7 +80,7 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 		// The stored payload uses the exam vocabulary, so it is decoded
 		// here rather than inside the scorer, which only knows the shared
 		// one.
-		questions, err := decodeExamQuestions(examPool.AiQuestionsJson())
+		questions, err := decodeExamQuestions(examPool.QuestionsJson())
 		if err != nil {
 			return errs.NewError(ctx, status.EXAM_GRADING_FAILED, nil, err)
 		}
@@ -96,8 +96,13 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS, map[string]any{"reason": err.Error()}, err)
 		}
 
-		scored, err := scorer.ScoreQuestions(questions, canonicalAnswers, cmd.Language, scorer.DenominatorAnsweredOnly)
+		scored, err := scorer.ScoreExamQuestions(questions, canonicalAnswers, cmd.Language, scorer.DenominatorAnsweredOnly)
 		if err != nil {
+			// An answer that does not fit its question's kind is the
+			// client's mistake, not a grading failure.
+			if errors.Is(err, scorer.ErrAnswerShape) {
+				return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS, map[string]any{"reason": err.Error()}, err)
+			}
 			return errs.NewError(ctx, status.EXAM_GRADING_FAILED, nil, err)
 		}
 
@@ -214,14 +219,15 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 		d.SetExamId(attempt.ExamId())
 		d.SetReqExamType(attempt.ReqExamType())
 		d.SetQuestionNumber(o.Question.QuestionNumber)
-		d.SetQuestionType(utils.ToStringPtr(o.Question.QuestionType))
-		d.SetQuestionName(utils.ToStringPtr(o.Question.QuestionName))
+		d.SetRenderType(utils.ToStringPtr(o.Question.QuestionType))
+		d.SetQuestionKind(utils.ToStringPtr(o.Question.Kind))
+		d.SetQuestionText(utils.ToStringPtr(o.Question.QuestionName))
 		d.SetQuestionTopic(utils.ToStringPtr(o.Question.QuestionTopic))
 		d.SetQuestionGrade(o.Question.QuestionGrade)
-		d.SetRightAnswerLabel(utils.ToStringPtr(o.Question.RightAnswerLabel))
-		d.SetRightAnswerContent(utils.ToStringPtr(o.Question.RightAnswerContent))
-		d.SetSelectedLabel(o.SelectedLabel)
-		d.SetSelectedContent(utils.ToStringPtr(o.SelectedContent))
+		d.SetRightOptionIDs(utils.ToStringPtr(o.Question.KeyOptionIDs()))
+		d.SetRightAnswerText(utils.ToStringPtr(clip(o.Question.KeyText(), lineContentMax)))
+		d.SetChildOptionIDs(o.ChildOptionIDs)
+		d.SetChildAnswerText(utils.ToStringPtr(clip(o.ChildAnswerText, lineContentMax)))
 		d.SetIsCorrect(o.IsCorrect)
 		details = append(details, d)
 	}
@@ -420,12 +426,25 @@ func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *ex
 // canonicalAnswersFor undoes the sitting's shuffle on the submitted
 // answers. A sitting with no recorded ordering (NULL shuffle_map) was
 // served as stored, and its answers pass through unchanged.
-func canonicalAnswersFor(attempt *exam.ExamLink, served []aiquestion.StudentAnswer) ([]aiquestion.StudentAnswer, error) {
+func canonicalAnswersFor(attempt *exam.ExamLink, served []aiquestion.ExamAnswer) ([]aiquestion.ExamAnswer, error) {
 	shuffle, err := aiquestion.ParseShuffle(attempt.ShuffleMap())
 	if err != nil {
 		return nil, err
 	}
 	return shuffle.ToCanonical(served)
+}
+
+// lineContentMax is the width of ma_exam_session_lines.right_answer_text
+// and child_answer_text (VARCHAR(255)): the joined texts of a multiple-choice
+// answer can be longer.
+const lineContentMax = 255
+
+// clip cuts s to at most max characters.
+func clip(s string, max int) string {
+	if r := []rune(s); len(r) > max {
+		return string(r[:max])
+	}
+	return s
 }
 
 // decodeExamQuestions reads the stored round. An empty or malformed
@@ -439,6 +458,11 @@ func decodeExamQuestions(raw string) ([]aiquestion.Question, error) {
 	var wire []dto.ExamQuestion
 	if err := json.Unmarshal([]byte(raw), &wire); err != nil {
 		return nil, fmt.Errorf("exam: parse stored questions: %w", err)
+	}
+	// A set written under the older field names parses as empty questions;
+	// grading it would score every answer wrong without a word.
+	if err := dto.CheckSet(wire); err != nil {
+		return nil, err
 	}
 	return dto.ToSharedQuestions(wire), nil
 }

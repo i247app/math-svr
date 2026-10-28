@@ -9,6 +9,7 @@ import (
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/question"
+	"math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -16,11 +17,11 @@ import (
 )
 
 // QuestionRows converts the questions JSON an exam pool stores
-// (ai_questions_json, []dto.ExamQuestion) into its ma_questions rows, one
+// (questions_json, []dto.ExamQuestion) into its ma_questions rows, one
 // per element, in stored order. It reads the very string the pool row
-// holds, so every row matches its JSON element field for field; an empty
-// right_answer_content or question_topic is stored as NULL. Ids are left
-// to the caller.
+// holds, so every row matches its JSON element field for field (the key
+// is its correct_answer, in the bank's shape); an empty question_topic is
+// stored as NULL. Ids are left to the caller.
 func QuestionRows(examID int64, questionsJSON string) ([]*question.Question, error) {
 	var stored []dto.ExamQuestion
 	if err := json.Unmarshal([]byte(questionsJSON), &stored); err != nil {
@@ -29,18 +30,22 @@ func QuestionRows(examID int64, questionsJSON string) ([]*question.Question, err
 	active := string(enum.StatusActive)
 	rows := make([]*question.Question, 0, len(stored))
 	for _, s := range stored {
-		answers := make([]question.Answer, 0, len(s.Answers))
-		for _, a := range s.Answers {
-			answers = append(answers, question.Answer{Label: a.Label, Content: a.Content})
+		options := make([]question.Option, 0, len(s.Options))
+		for _, o := range s.Options {
+			options = append(options, question.Option{ID: o.ID, Text: o.Text})
+		}
+		var key questionpool.CorrectAnswer
+		if ca := s.CorrectAnswer; ca != nil {
+			key = questionpool.CorrectAnswer{OptionIds: ca.OptionIDs, Value: ca.Value, Values: ca.Values}
 		}
 		q := question.NewQuestion()
 		q.SetExamId(examID)
 		q.SetQuestionNumber(s.QuestionNumber)
-		q.SetQuestionType(s.QuestionType)
-		q.SetQuestionName(s.QuestionName)
-		q.SetAnswers(answers)
-		q.SetRightAnswerLabel(s.RightAnswerLabel)
-		q.SetRightAnswerContent(nonEmpty(s.RightAnswerContent))
+		q.SetRenderType(s.RenderType)
+		q.SetQuestionKind(nonEmpty(s.QuestionKind))
+		q.SetQuestionText(s.QuestionText)
+		q.SetOptions(options)
+		q.SetCorrectAnswer(key)
 		q.SetQuestionTopic(nonEmpty(s.QuestionTopic))
 		q.SetQuestionGrade(s.QuestionGrade)
 		q.SetQuestionStatus(&active)

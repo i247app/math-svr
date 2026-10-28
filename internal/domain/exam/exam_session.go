@@ -77,13 +77,13 @@ type ExamSession struct {
 	// the level), false below it, nil when no verdict was given — the
 	// journey is open, was cancelled, or is not a GRADE journey.
 	esessFlag *bool
-	// aiTitle / aiShortText are the title and one-line summary
-	// (ma_exam_pools.ai_title / ai_short_text) of the exam handed out last
+	// lastTitle / lastShortText are the title and one-line summary
+	// (ma_exam_pools.last_title / last_short_text) of the exam handed out last
 	// in this journey, copied at every hand-out of the journey's own type
 	// so a journey list can show what the child is working on without
 	// reading the pool.
-	aiTitle     *string
-	aiShortText *string
+	lastTitle     *string
+	lastShortText *string
 	// aiReviewShort / aiReviewLong are the AI's review of the answers given
 	// in this journey, in two lengths, written by /exams/sessions/review
 	// and overwritten by each later review. Nil until one is asked for.
@@ -133,10 +133,10 @@ func (u *ExamSession) ResReview() *string           { return u.resReview }
 func (u *ExamSession) SetResReview(s *string)       { u.resReview = s }
 func (u *ExamSession) EsessFlag() *bool             { return u.esessFlag }
 func (u *ExamSession) SetEsessFlag(v *bool)         { u.esessFlag = v }
-func (u *ExamSession) AiTitle() *string             { return u.aiTitle }
-func (u *ExamSession) SetAiTitle(s *string)         { u.aiTitle = s }
-func (u *ExamSession) AiShortText() *string         { return u.aiShortText }
-func (u *ExamSession) SetAiShortText(s *string)     { u.aiShortText = s }
+func (u *ExamSession) LastTitle() *string           { return u.lastTitle }
+func (u *ExamSession) SetLastTitle(s *string)       { u.lastTitle = s }
+func (u *ExamSession) LastShortText() *string       { return u.lastShortText }
+func (u *ExamSession) SetLastShortText(s *string)   { u.lastShortText = s }
 func (u *ExamSession) AiReviewShort() *string       { return u.aiReviewShort }
 func (u *ExamSession) SetAiReviewShort(s *string)   { u.aiReviewShort = s }
 func (u *ExamSession) AiReviewLong() *string        { return u.aiReviewLong }

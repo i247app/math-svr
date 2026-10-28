@@ -698,6 +698,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Thiếu trạng thái xác minh (is_verify)"
 	case EXAM_POOL_INVALID_QUESTIONS:
 		return "Bộ câu hỏi đã sửa phải giữ nguyên số câu và nhãn đáp án của đề"
+	case EXAM_QUESTION_BANK_INSUFFICIENT:
+		return "Ngân hàng câu hỏi chưa đủ câu hỏi phù hợp để tạo đề. Vui lòng thử lại sau"
+	case EXAM_POOL_BANK_READONLY:
+		return "Đề này lấy từ ngân hàng câu hỏi, hãy sửa câu hỏi trong ngân hàng"
 
 	case POW_CHALLENGE_FAILED:
 		return "Không tạo được thử thách xác minh. Vui lòng thử lại"

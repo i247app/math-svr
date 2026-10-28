@@ -17,9 +17,9 @@ const (
 	examSessionLineTable = "ma_exam_session_lines"
 
 	examSessionLineColumns = `d.esess_ln_id, d.elink_id, d.esess_id, d.exam_id, d.req_exam_type,
-		d.question_number, d.question_type, d.question_name, d.question_topic, d.question_grade, d.question_level,
-		d.right_answer_label, d.right_answer_content,
-		d.selected_label, d.selected_content, d.is_correct,
+		d.question_number, d.render_type, d.question_kind, d.question_text, d.question_topic, d.question_grade, d.question_level,
+		d.right_option_ids, d.right_answer_text,
+		d.child_option_ids, d.child_answer_text, d.is_correct,
 		d.rpt_flg, d.kwords, d.note, d.esess_ln_status, d.status,
 		d.create_id, d.create_dt, d.modify_id, d.modify_dt`
 
@@ -29,12 +29,12 @@ const (
 	// to each other: CreateBatch repeats the tuple once per row, so the
 	// two must be edited together or the batch insert misaligns.
 	examSessionLineInsertColumns = `(esess_ln_id, elink_id, esess_id, exam_id, req_exam_type,
-			question_number, question_type, question_name, question_topic, question_grade, question_level,
-			right_answer_label, right_answer_content,
-			selected_label, selected_content, is_correct,
+			question_number, render_type, question_kind, question_text, question_topic, question_grade, question_level,
+			right_option_ids, right_answer_text,
+			child_option_ids, child_answer_text, is_correct,
 			rpt_flg, kwords, note, esess_ln_status, create_id, create_dt, modify_dt)`
 
-	examSessionLineValueTuple = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	examSessionLineValueTuple = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func examSessionLineActiveArgs() []any {
@@ -52,9 +52,9 @@ func NewExamSessionLineRepository(db database.Executor) exam.IExamSessionLineRep
 func scanExamSessionLine(s database.RowScanner) (*models.ExamSessionLineModel, error) {
 	var m models.ExamSessionLineModel
 	if err := s.Scan(&m.EsessLnId, &m.ElinkId, &m.EsessId, &m.ExamId, &m.ReqExamType,
-		&m.QuestionNumber, &m.QuestionType, &m.QuestionName, &m.QuestionTopic, &m.QuestionGrade, &m.QuestionLevel,
-		&m.RightAnswerLabel, &m.RightAnswerContent,
-		&m.SelectedLabel, &m.SelectedContent, &m.IsCorrect,
+		&m.QuestionNumber, &m.RenderType, &m.QuestionKind, &m.QuestionText, &m.QuestionTopic, &m.QuestionGrade, &m.QuestionLevel,
+		&m.RightOptionIDs, &m.RightAnswerText,
+		&m.ChildOptionIDs, &m.ChildAnswerText, &m.IsCorrect,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.EsessLnStatus, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (r *ExamSessionLineRepository) CreateBatch(ctx context.Context, details []*
 
 	now := mtime.Now().Time
 	placeholders := make([]string, 0, len(details))
-	args := make([]any, 0, len(details)*21)
+	args := make([]any, 0, len(details)*24)
 
 	for _, d := range details {
 		esessLnStatus := d.EsessLnStatus()
@@ -87,9 +87,9 @@ func (r *ExamSessionLineRepository) CreateBatch(ctx context.Context, details []*
 		placeholders = append(placeholders, examSessionLineValueTuple)
 		args = append(args,
 			d.EsessLnId(), d.ElinkId(), d.EsessId(), d.ExamId(), d.ReqExamType(),
-			d.QuestionNumber(), d.QuestionType(), d.QuestionName(), d.QuestionTopic(), d.QuestionGrade(), d.QuestionLevel(),
-			d.RightAnswerLabel(), d.RightAnswerContent(),
-			d.SelectedLabel(), d.SelectedContent(), d.IsCorrect(),
+			d.QuestionNumber(), d.RenderType(), d.QuestionKind(), d.QuestionText(), d.QuestionTopic(), d.QuestionGrade(), d.QuestionLevel(),
+			d.RightOptionIDs(), d.RightAnswerText(),
+			d.ChildOptionIDs(), d.ChildAnswerText(), d.IsCorrect(),
 			d.RptFlg(), d.Kwords(), d.Note(), esessLnStatus, d.CreateId(), now, now)
 	}
 
@@ -181,15 +181,16 @@ func ModelToDomainExamSessionLine(m *models.ExamSessionLineModel) *exam.ExamSess
 	d.SetExamId(m.ExamId)
 	d.SetReqExamType(m.ReqExamType)
 	d.SetQuestionNumber(m.QuestionNumber)
-	d.SetQuestionType(m.QuestionType)
-	d.SetQuestionName(m.QuestionName)
+	d.SetRenderType(m.RenderType)
+	d.SetQuestionKind(m.QuestionKind)
+	d.SetQuestionText(m.QuestionText)
 	d.SetQuestionTopic(m.QuestionTopic)
 	d.SetQuestionGrade(m.QuestionGrade)
 	d.SetQuestionLevel(m.QuestionLevel)
-	d.SetRightAnswerLabel(m.RightAnswerLabel)
-	d.SetRightAnswerContent(m.RightAnswerContent)
-	d.SetSelectedLabel(m.SelectedLabel)
-	d.SetSelectedContent(m.SelectedContent)
+	d.SetRightOptionIDs(m.RightOptionIDs)
+	d.SetRightAnswerText(m.RightAnswerText)
+	d.SetChildOptionIDs(m.ChildOptionIDs)
+	d.SetChildAnswerText(m.ChildAnswerText)
 	d.SetIsCorrect(m.IsCorrect)
 	d.SetRptFlg(m.RptFlg)
 	d.SetKwords(m.Kwords)

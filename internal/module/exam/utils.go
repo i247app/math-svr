@@ -15,8 +15,8 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
-// maxExamTextLen mirrors the VARCHAR(255) limit on ma_exam_pools.ai_title
-// and ai_short_text. The prompt asks for far less; this is a backstop
+// maxExamTextLen mirrors the VARCHAR(255) limit on ma_exam_pools.title
+// and short_text. The prompt asks for far less; this is a backstop
 // against drift, not the primary enforcement.
 const maxExamTextLen = 255
 
@@ -34,7 +34,7 @@ func sanitizeExamText(text string) *string {
 }
 
 // marshalQuestions stores the round in the EXAM vocabulary, so what sits
-// in ai_questions_json is what the client reads and what
+// in questions_json is what the client reads and what
 // ma_exam_session_lines mirrors — one set of names end to end.
 func marshalQuestions(ctx context.Context, questions []aiquestion.Question) (string, error) {
 	raw, err := json.Marshal(dto.FromSharedQuestions(questions))
@@ -100,6 +100,9 @@ func decodeStoredQuestions(ctx context.Context, raw string) ([]aiquestion.Questi
 	if err := json.Unmarshal([]byte(raw), &stored); err != nil {
 		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil,
 			fmt.Errorf("exam: decode cached questions: %w", err))
+	}
+	if err := dto.CheckSet(stored); err != nil {
+		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)
 	}
 	return dto.ToSharedQuestions(stored), nil
 }

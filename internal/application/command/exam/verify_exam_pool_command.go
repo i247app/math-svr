@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"slices"
 
+	"math-ai.com/math-ai/internal/application/dto/aiquestion"
 	dto "math-ai.com/math-ai/internal/application/dto/exam"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/exam"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // MarkExamPoolVerifyCommand flags a question set as verified (0 -> 1; a
@@ -80,12 +82,29 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 		if err != nil {
 			return err
 		}
+		// A set drawn from the question bank is corrected in the bank.
+		if pool.ExamSource() == string(enum.ExamSourcePool) {
+			return errs.NewError(ctx, status.EXAM_POOL_BANK_READONLY, nil,
+				fmt.Errorf("exam: exam_pool %d was drawn from the question bank", cmd.ExamID))
+		}
 		var stored []dto.ExamQuestion
-		if err := json.Unmarshal([]byte(pool.AiQuestionsJson()), &stored); err != nil {
+		if err := json.Unmarshal([]byte(pool.QuestionsJson()), &stored); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("exam: decode exam_pool %d questions: %w", cmd.ExamID, err))
 		}
 		if err := SameQuestionShape(stored, cmd.Questions); err != nil {
 			return errs.NewError(ctx, status.EXAM_POOL_INVALID_QUESTIONS, nil, err)
+		}
+		// Only a set the model wrote reaches here (a bank set is refused
+		// above) and the model writes no images: whatever image a correction
+		// carries is dropped, so a typed-in key or URL is never stored.
+		for i := range cmd.Questions {
+			q := &cmd.Questions[i]
+			q.QuestionImageKey, q.QuestionImageURL = "", ""
+			q.RightAnswerText = "" // derived from the key, never stored
+			q.Options = slices.Clone(q.Options)
+			for j := range q.Options {
+				q.Options[j].ImageKey, q.Options[j].ImageURL = "", ""
+			}
 		}
 		raw, err := json.Marshal(cmd.Questions)
 		if err != nil {
@@ -112,45 +131,53 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 }
 
 // SameQuestionShape reports why fixed cannot replace stored, or nil: same
-// question_numbers (any order), the same answer labels per question (any
-// order), and a right_answer_label that names one of them.
+// question_numbers (any order), the same question_kind and option ids per
+// question (any order), and a usable question — a question_text and a
+// correct_answer that fits its kind and names its options (dto.Usable).
 func SameQuestionShape(stored, fixed []dto.ExamQuestion) error {
 	if len(fixed) != len(stored) {
 		return fmt.Errorf("%d questions sent, the exam has %d", len(fixed), len(stored))
 	}
-	want := make(map[int][]string, len(stored))
+	want := make(map[int]dto.ExamQuestion, len(stored))
 	for _, q := range stored {
-		want[q.QuestionNumber] = labelsOf(q)
+		want[q.QuestionNumber] = q
 	}
 	seen := make(map[int]bool, len(fixed))
 	for _, q := range fixed {
-		labels, ok := want[q.QuestionNumber]
+		old, ok := want[q.QuestionNumber]
 		if !ok || seen[q.QuestionNumber] {
 			return fmt.Errorf("question_number %d is not in the exam or is sent twice", q.QuestionNumber)
 		}
 		seen[q.QuestionNumber] = true
-		got := labelsOf(q)
-		if !slices.Equal(got, labels) {
-			return fmt.Errorf("question %d: answer labels %v, the exam has %v", q.QuestionNumber, got, labels)
+		if kindOf(q) != kindOf(old) {
+			return fmt.Errorf("question %d: question_kind %q, the exam has %q", q.QuestionNumber, q.QuestionKind, old.QuestionKind)
 		}
-		if !slices.Contains(got, q.RightAnswerLabel) {
-			return fmt.Errorf("question %d: right_answer_label %q is not one of its answers", q.QuestionNumber, q.RightAnswerLabel)
+		if got, labels := labelsOf(q), labelsOf(old); !slices.Equal(got, labels) {
+			return fmt.Errorf("question %d: option ids %v, the exam has %v", q.QuestionNumber, got, labels)
 		}
-		if q.QuestionName == "" {
-			return fmt.Errorf("question %d: question_name is empty", q.QuestionNumber)
+		if !q.Usable() {
+			return fmt.Errorf("question %d: needs a question_text and a correct_answer that fits its kind and names its options", q.QuestionNumber)
 		}
 	}
 	return nil
 }
 
-// labelsOf returns a question's answer labels, sorted.
-func labelsOf(q dto.ExamQuestion) []string {
-	labels := make([]string, 0, len(q.Answers))
-	for _, a := range q.Answers {
-		labels = append(labels, a.Label)
+// kindOf is a question's kind, SINGLE_CHOICE when it states none.
+func kindOf(q dto.ExamQuestion) string {
+	if q.QuestionKind == "" {
+		return aiquestion.KindSingleChoice
 	}
-	slices.Sort(labels)
-	return labels
+	return q.QuestionKind
+}
+
+// labelsOf returns a question's option ids, sorted.
+func labelsOf(q dto.ExamQuestion) []string {
+	ids := make([]string, 0, len(q.Options))
+	for _, o := range q.Options {
+		ids = append(ids, o.ID)
+	}
+	slices.Sort(ids)
+	return ids
 }
 
 func findLivePool(ctx context.Context, repos transaction.Repositories, examID int64) (*exam.ExamPool, error) {

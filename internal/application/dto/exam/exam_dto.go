@@ -48,10 +48,10 @@ type GenerateExamReq struct {
 // ma_exam_pools and is read from there, so a client cannot declare its own
 // correct answers and grade itself upward.
 type SubmitExamReq struct {
-	UID       *int64                     `json:"-"`
-	ProfileID int64                      `json:"profile_id"`
-	ElinkID   int64                      `json:"elink_id"`
-	Answers   []aiquestion.StudentAnswer `json:"answers"`
+	UID       *int64                  `json:"-"`
+	ProfileID int64                   `json:"profile_id"`
+	ElinkID   int64                   `json:"elink_id"`
+	Answers   []aiquestion.ExamAnswer `json:"answers"`
 }
 
 // GetExamReq reads either ONE sitting or ONE row of a journey:
@@ -144,9 +144,9 @@ type ExamResponse struct {
 	// sitting was handed out, or absent when none was.
 	Level *int `json:"level,omitempty"`
 
-	AiTitle     *string `json:"ai_title,omitempty"`
-	AIShortText *string `json:"ai_short_text,omitempty"`
-	NumQues     int     `json:"num_questions"`
+	Title     *string `json:"title,omitempty"`
+	ShortText *string `json:"short_text,omitempty"`
+	NumQues   int     `json:"num_questions"`
 
 	Questions []ExamQuestion `json:"questions,omitempty"`
 	Result    *ExamResult    `json:"result,omitempty"`
@@ -162,25 +162,36 @@ type ExamResponse struct {
 // sitting's review, load-bearing on a journey's, where the rows span
 // many.
 //
-// Answers is every option the question offered, in the order and under
-// the labels the child saw, so the screen can lay all of them out and
-// mark the right one and the chosen one among them. It is resolved at
-// read time from the question set the sitting was drawn from — the log
-// itself stores only the two labels that matter for grading — and is
-// omitted when that set can no longer be found.
+// Options is every option the question offered, in the order the child
+// saw them, so the screen can lay all of them out and mark the right one
+// and the chosen one among them (by id; the letters are drawn by position).
+// It is resolved at read time from the question set the sitting was drawn
+// from — the log itself stores only the ids and texts that matter for
+// grading — and is omitted when that set can no longer be found.
 type ExamAnswerDetail struct {
-	ElinkID            int64                     `json:"elink_id"`
-	QuestionNumber     int                       `json:"question_number"`
-	QuestionType       *string                   `json:"question_type,omitempty"`
-	QuestionName       *string                   `json:"question_name,omitempty"`
-	Answers            []aiquestion.AnswerChoice `json:"answers,omitempty"`
-	QuestionTopic      *string                   `json:"question_topic,omitempty"`
-	QuestionGrade      *int                      `json:"question_grade,omitempty"`
-	RightAnswerLabel   *string                   `json:"right_answer_label,omitempty"`
-	RightAnswerContent *string                   `json:"right_answer_content,omitempty"`
-	SelectedLabel      string                    `json:"selected_label"`
-	SelectedContent    *string                   `json:"selected_content,omitempty"`
-	IsCorrect          bool                      `json:"is_correct"`
+	ElinkID          int64        `json:"elink_id"`
+	QuestionNumber   int          `json:"question_number"`
+	RenderType       *string      `json:"render_type,omitempty"`
+	QuestionText     *string      `json:"question_text,omitempty"`
+	QuestionImageKey string       `json:"question_image_key,omitempty"`
+	QuestionImageURL string       `json:"question_image_url,omitempty"`
+	Options          []ExamOption `json:"options,omitempty"`
+	QuestionTopic    *string      `json:"question_topic,omitempty"`
+	QuestionGrade    *int         `json:"question_grade,omitempty"`
+
+	// The key and the child's answer, the same four fields for every kind of
+	// question, always present. The ids name entries of Options (empty for
+	// a numeric question, which has none); Text is what to show: the
+	// option's text, the chosen options' texts joined, or the number the
+	// child typed / the numbers accepted.
+	RightOptionIDs  []string `json:"right_option_ids"`
+	RightAnswerText string   `json:"right_answer_text"`
+	ChildOptionIDs  []string `json:"child_option_ids"`
+	ChildAnswerText string   `json:"child_answer_text"`
+	IsCorrect       bool     `json:"is_correct"`
+
+	// QuestionKind is absent for a single-choice question.
+	QuestionKind *string `json:"question_kind,omitempty"`
 }
 
 // ExamSessionResponse is one JOURNEY — a stretch of one exam type the child worked
@@ -200,11 +211,11 @@ type ExamSessionResponse struct {
 	// false = not passed. null when there is no verdict — the journey is
 	// still open, was cancelled, or is not a GRADE journey.
 	EsessFlag *bool `json:"esess_flag"`
-	// AITitle / AIShortText are the title and summary of the exam handed
-	// out last in this journey (its ai_title / ai_short_text) — the same
+	// Title / ShortText are the title and summary of the exam handed
+	// out last in this journey (its last_title / last_short_text) — the same
 	// fields the exam itself carries as title / short_text.
-	AITitle     *string `json:"ai_title,omitempty"`
-	AIShortText *string `json:"ai_short_text,omitempty"`
+	Title     *string `json:"title,omitempty"`
+	ShortText *string `json:"short_text,omitempty"`
 	// AIReviewShort / AIReviewLong are the AI's review of the answers in
 	// this journey (/exams/sessions/review), absent until one was asked for.
 	AIReviewShort *string `json:"ai_review_short,omitempty"`
@@ -349,12 +360,12 @@ func AttemptToResponse(a *domain.ExamLink, e *domain.ExamPool, includeAnswerKey 
 	}
 
 	if e != nil {
-		res.AiTitle = e.AiTitle()
-		res.AIShortText = e.AiShortText()
+		res.Title = e.Title()
+		res.ShortText = e.ShortText()
 		res.NumQues = e.ReqNumQues()
 		// The sitting's own ordering, not the stored one: two children
 		// served the same cached set each see their own arrangement.
-		res.Questions = servedQuestions(e.AiQuestionsJson(), shuffleOf(a), includeAnswerKey)
+		res.Questions = servedQuestions(e.QuestionsJson(), shuffleOf(a), includeAnswerKey)
 	}
 
 	if total := a.ResTotalQuestions(); total != nil {
@@ -402,25 +413,37 @@ func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*ai
 	for _, d := range details {
 		sh := shuffles[d.ElinkId()]
 
-		var answers []aiquestion.AnswerChoice
+		var (
+			answers  []aiquestion.AnswerChoice
+			imageKey string
+		)
 		if q, ok := questions.lookup(d.ExamId(), d.QuestionNumber()); ok {
 			answers = sh.ServedAnswers(d.QuestionNumber(), q)
+			imageKey = q.ImageKey
 		}
 
-		out = append(out, ExamAnswerDetail{
-			ElinkID:            d.ElinkId(),
-			QuestionNumber:     sh.ServedNumber(d.QuestionNumber()),
-			QuestionType:       d.QuestionType(),
-			QuestionName:       d.QuestionName(),
-			Answers:            answers,
-			QuestionTopic:      d.QuestionTopic(),
-			QuestionGrade:      d.QuestionGrade(),
-			RightAnswerLabel:   servedLabelPtr(sh, d.QuestionNumber(), d.RightAnswerLabel()),
-			RightAnswerContent: d.RightAnswerContent(),
-			SelectedLabel:      sh.ServedLabel(d.QuestionNumber(), d.SelectedLabel()),
-			SelectedContent:    d.SelectedContent(),
-			IsCorrect:          d.IsCorrect(),
-		})
+		// A stored id set ("a,c") is a list on the wire, never null.
+		right := []string{}
+		if d.RightOptionIDs() != nil {
+			right = idList(*d.RightOptionIDs())
+		}
+		detail := ExamAnswerDetail{
+			ElinkID:          d.ElinkId(),
+			QuestionNumber:   sh.ServedNumber(d.QuestionNumber()),
+			RenderType:       d.RenderType(),
+			QuestionText:     d.QuestionText(),
+			QuestionImageKey: imageKey,
+			Options:          OptionsFrom(answers),
+			QuestionTopic:    d.QuestionTopic(),
+			QuestionGrade:    d.QuestionGrade(),
+			RightOptionIDs:   right,
+			RightAnswerText:  utils.DerefString(d.RightAnswerText()),
+			ChildOptionIDs:   idList(d.ChildOptionIDs()),
+			ChildAnswerText:  utils.DerefString(d.ChildAnswerText()),
+			IsCorrect:        d.IsCorrect(),
+			QuestionKind:     d.QuestionKind(),
+		}
+		out = append(out, detail)
 	}
 
 	// Rows arrive in canonical order; the student saw them in served
@@ -467,7 +490,7 @@ func (x *questionIndex) parse(examID int64) map[int]aiquestion.Question {
 		return nil
 	}
 	var stored []ExamQuestion
-	if err := json.Unmarshal([]byte(set.AiQuestionsJson()), &stored); err != nil {
+	if err := json.Unmarshal([]byte(set.QuestionsJson()), &stored); err != nil || CheckSet(stored) != nil {
 		return nil
 	}
 	byNumber := make(map[int]aiquestion.Question, len(stored))
@@ -500,12 +523,13 @@ func shuffleOf(a *domain.ExamLink) *aiquestion.Shuffle {
 	return sh
 }
 
-func servedLabelPtr(sh *aiquestion.Shuffle, canonicalQN int, label *string) *string {
-	if label == nil {
-		return nil
+// idList splits a stored id set ("a,c") into a list that is never nil.
+func idList(joined string) []string {
+	ids := aiquestion.SplitIDs(joined)
+	if ids == nil {
+		return []string{}
 	}
-	served := sh.ServedLabel(canonicalQN, *label)
-	return &served
+	return ids
 }
 
 func ExamSessionsToResponse(rows []*domain.ExamSession) []ExamSessionResponse {
@@ -521,8 +545,8 @@ func ExamSessionsToResponse(rows []*domain.ExamSession) []ExamSessionResponse {
 			ScorePercentage: r.ResScorePercentage(),
 			Review:          r.ResReview(),
 			EsessFlag:       r.EsessFlag(),
-			AITitle:         r.AiTitle(),
-			AIShortText:     r.AiShortText(),
+			Title:           r.LastTitle(),
+			ShortText:       r.LastShortText(),
 			AIReviewShort:   r.AiReviewShort(),
 			AIReviewLong:    r.AiReviewLong(),
 			Grade:           r.CurrentGrade(),
@@ -585,14 +609,13 @@ func servedQuestions(raw string, sh *aiquestion.Shuffle, includeAnswerKey bool) 
 		return nil
 	}
 	var stored []ExamQuestion
-	if err := json.Unmarshal([]byte(raw), &stored); err != nil {
+	if err := json.Unmarshal([]byte(raw), &stored); err != nil || CheckSet(stored) != nil {
 		return nil
 	}
 	out := FromSharedQuestions(sh.Apply(ToSharedQuestions(stored)))
 	if !includeAnswerKey {
 		for i := range out {
-			out[i].RightAnswerLabel = ""
-			out[i].RightAnswerContent = ""
+			out[i].CorrectAnswer = nil
 		}
 	}
 	return out
@@ -839,17 +862,19 @@ type VerifyExamPoolReq struct {
 // order, answer key included — is filled on generate and detail only;
 // the list leaves it out.
 type ExamPoolResponse struct {
-	ExamID      int64          `json:"exam_id"`
-	ExamType    string         `json:"exam_type"`
-	Grade       int            `json:"grade"`
-	Level       *int           `json:"level,omitempty"`
-	NumQues     int            `json:"num_questions"`
-	Semester    *string        `json:"semester,omitempty"`
-	Program     *string        `json:"program,omitempty"`
-	Extras      *string        `json:"req_extras,omitempty"`
-	AiTitle     *string        `json:"ai_title,omitempty"`
-	AIShortText *string        `json:"ai_short_text,omitempty"`
-	Questions   []ExamQuestion `json:"questions,omitempty"`
+	ExamID   int64   `json:"exam_id"`
+	ExamType string  `json:"exam_type"`
+	Grade    int     `json:"grade"`
+	Level    *int    `json:"level,omitempty"`
+	NumQues  int     `json:"num_questions"`
+	Semester *string `json:"semester,omitempty"`
+	Program  *string `json:"program,omitempty"`
+	Extras   *string `json:"req_extras,omitempty"`
+	// ExamSource: LLM, or POOL (drawn from the question bank).
+	ExamSource string         `json:"exam_source"`
+	Title      *string        `json:"title,omitempty"`
+	ShortText  *string        `json:"short_text,omitempty"`
+	Questions  []ExamQuestion `json:"questions,omitempty"`
 	// VerifiedCount: 0 = not verified, >0 = verified.
 	VerifiedCount int     `json:"verified_count"`
 	Status        *string `json:"status,omitempty"`
@@ -878,14 +903,15 @@ func ExamPoolToResponse(e *domain.ExamPool, withQuestions bool) *ExamPoolRespons
 		Semester:      e.ReqSemester(),
 		Program:       e.ReqProgram(),
 		Extras:        e.ReqExtras(),
-		AiTitle:       e.AiTitle(),
-		AIShortText:   e.AiShortText(),
+		ExamSource:    e.ExamSource(),
+		Title:         e.Title(),
+		ShortText:     e.ShortText(),
 		VerifiedCount: e.VerifiedCount(),
 		Status:        e.ExamStatus(),
 		CreateDt:      e.CreateDt().String(),
 	}
 	if withQuestions {
-		res.Questions = servedQuestions(e.AiQuestionsJson(), nil, true)
+		res.Questions = servedQuestions(e.QuestionsJson(), nil, true)
 	}
 	return res
 }

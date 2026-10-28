@@ -174,7 +174,10 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ProfileRepository,
 		repos.GradeRepository,
 		repos.UserRepository,
+		repos.QuestionPoolRepository,
 		res.Env.ExamShuffleEnabled,
+		res.Env.QuestionPoolEnabled,
+		res.StorageProvider,
 	)
 
 	log.Info("> Setup PromptSvc...")

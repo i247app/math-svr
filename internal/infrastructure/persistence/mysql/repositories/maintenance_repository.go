@@ -45,13 +45,14 @@ var clearDataTargets = []clearTarget{
 	{chatConversationTable, seq.NameChatConversation, "conversation_id"},
 	{chatParticipantTable, seq.NameChatParticipant, "participant_id"},
 	{chatMessageTable, seq.NameChatMessage, "message_id"},
-	{examPoolTable, seq.NameExamPool, "exam_id"}, // -- keep this table
+	{examPoolTable, seq.NameExamPool, "exam_id"},
+	{questionTable, seq.NameQuestion, "question_id"},
 	{examLinkTable, seq.NameExamLink, "elink_id"},
 	{examSessionTable, seq.NameExamSession, "esess_id"},
 	{examSessionLineTable, seq.NameExamSessionLine, "esess_ln_id"},
 	// Question pool (admin bank): admin data, independent of the pools. A full clear
 	// wipes it; ClearDataKeepingUsers keeps it whole.
-	{questionPoolTable, seq.NameQuestionPool, "question_pool_id"},
+	// {questionPoolTable, seq.NameQuestionPool, "question_pool_id"},
 }
 
 // clearDataTargetByTable indexes clearDataTargets for O(1) allow-list checks in
@@ -97,11 +98,13 @@ var clearDataSeqs = []string{
 	seq.NameChatConversation,
 	seq.NameChatParticipant,
 	seq.NameChatMessage,
+	seq.NameQuestion,
 	seq.NameExamPool,
 	seq.NameExamLink,
 	seq.NameExamSession,
 	seq.NameExamSessionLine,
-	seq.NameQuestionPool,
+	//TODO: Temporarily not deleted ma_question_pools
+	// seq.NameQuestionPool,
 }
 
 // keepCol names the column a table-scoped keep filters on when preserving
@@ -157,6 +160,7 @@ func init() {
 		// Handled specially in ClearDataKeepingUsers (parent-id linkage).
 		examSessionLineTable: true,
 		examPoolTable:        true,
+		questionTable:        true, // follows the kept exam pools (exam_id)
 		// Admin-managed, owned by no user: ClearDataKeepingUsers leaves it
 		// untouched (its seq resets to MAX(question_pool_id), i.e. unchanged).
 		questionPoolTable: true,
@@ -415,6 +419,12 @@ func (r *MaintenanceRepository) ClearDataKeepingUsers(ctx context.Context, keepU
 		return nil, nil, err
 	}
 	processed = append(processed, examPoolTable)
+
+	// Question rows follow the exam pools they were written from.
+	if err := r.deleteExcept(ctx, questionTable, "exam_id", keepExamIds); err != nil {
+		return nil, nil, err
+	}
+	processed = append(processed, questionTable)
 
 	// Shared parents with no per-user owner: emptied whole.
 	for _, table := range clearFullWipe {

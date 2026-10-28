@@ -52,6 +52,14 @@ type Env struct {
 	// it was served with, so attempts already in flight keep rendering and
 	// grading exactly as they were handed out.
 	ExamShuffleEnabled bool
+	// QuestionPoolEnabled — env QUESTION_POOL_ENABLED, default false —
+	// makes ASSESSMENT and GRADE hand-outs draw their 10 questions from the
+	// approved questions of the bank (ma_question_pools) instead of asking
+	// the model; PRACTICE still calls the model. With it on and too few
+	// bank questions the hand-out fails (EXAM_QUESTION_BANK_INSUFFICIENT),
+	// it does not fall back to the model. Like the shuffle switch it only
+	// affects exams handed out from then on.
+	QuestionPoolEnabled bool
 	// RateLimitMode is env RATE_LIMIT_MODE: "off" | "shadow" | "enforce",
 	// default "shadow" (log + count would-be rejections, block nothing).
 	// See bootstrap/middleware/rate_limit_middleware.go.

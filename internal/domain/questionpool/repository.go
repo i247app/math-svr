@@ -24,6 +24,19 @@ type ListQuestionPoolsFilter struct {
 	IsVerified *bool
 }
 
+// PickFilter says which questions an exam may draw (PickForExam). Only
+// approved, live questions are ever candidates.
+type PickFilter struct {
+	Grade int
+	// Level narrows to one question_level; nil = any level, rated or not.
+	Level *int
+	// ExcludeIds are questions already chosen for this paper.
+	ExcludeIds []int64
+	// AvoidTexts are stems the child met recently; a matching question is
+	// not a candidate.
+	AvoidTexts []string
+}
+
 // IRepository owns ma_question_pools.
 type IRepository interface {
 	// CreateMany inserts new rows in one plain INSERT. A live row with the
@@ -56,4 +69,6 @@ type IRepository interface {
 	// ListPage pages the live rows matching filter, newest first
 	// (create_dt DESC, question_pool_id DESC).
 	ListPage(ctx context.Context, filter ListQuestionPoolsFilter, page, size int64) ([]*QuestionPool, *pagination.Pagination, error)
+	// PickForExam returns up to limit candidates of filter in random order.
+	PickForExam(ctx context.Context, filter PickFilter, limit int) ([]*QuestionPool, error)
 }

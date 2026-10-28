@@ -436,6 +436,13 @@ const (
 	EXAM_POOL_INVALID_QUESTIONS StatusCode = 13742
 	// 13743–13746 are RETIRED (EXAM_PROMPT_* of /exams/prompts/*, replaced by
 	// PROMPT_* 14300+ when the prompts left the exam aggregate). Do not reuse.
+	// EXAM_QUESTION_BANK_INSUFFICIENT: QUESTION_POOL_ENABLED is on and the
+	// bank holds too few approved questions for the paper (the debug field
+	// names the group and the shortfall). The model is never called instead.
+	EXAM_QUESTION_BANK_INSUFFICIENT StatusCode = 13747
+	// EXAM_POOL_BANK_READONLY: /exams/pools/verify on a set built from the
+	// question bank — correct the question in the bank instead.
+	EXAM_POOL_BANK_READONLY StatusCode = 13748
 
 	// Proof of work — 13800-13899. Gates /exams/generate against bots.
 	POW_CHALLENGE_FAILED    StatusCode = 13800 // could not mint a challenge

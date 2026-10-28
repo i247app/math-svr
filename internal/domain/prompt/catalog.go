@@ -38,9 +38,9 @@ type Spec struct {
 // examGenerationKeys are the keys aiquestion.ParseGenerationOf reads over
 // dto.ExamQuestion / aiquestion.AnswerChoice.
 var examGenerationKeys = []string{
-	`"short_text"`, `"questions"`, `"question_number"`, `"question_type"`,
-	`"question_name"`, `"answers"`, `"label"`, `"content"`,
-	`"right_answer_label"`, `"right_answer_content"`, `"question_topic"`, `"question_grade"`,
+	`"short_text"`, `"questions"`, `"question_number"`, `"question_kind"`, `"render_type"`,
+	`"question_text"`, `"options"`, `"id"`, `"text"`,
+	`"correct_answer"`, `"option_ids"`, `"right_answer_text"`, `"question_topic"`, `"question_grade"`,
 }
 
 var specs = map[Code]Spec{
