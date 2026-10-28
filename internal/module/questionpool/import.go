@@ -80,7 +80,12 @@ func (s *Service) ValidateFile(ctx context.Context, file ImportFile) (*dto.Impor
 		return nil, err
 	}
 	logSummary(ctx, "question_pool.import.validated", a.report)
-	return &dto.ImportQuestionPoolsRes{Report: a.report}, nil
+
+	res := &dto.ImportQuestionPoolsRes{
+		Report: a.report,
+	}
+
+	return res, nil
 }
 
 // ImportFile stores every valid, new question of the file in one
@@ -134,7 +139,12 @@ func (s *Service) ImportFile(ctx context.Context, file ImportFile) (*dto.ImportQ
 		log.Infof("question_pool.import.duplicate_skipped file=%s index=%d reason=%s duplicate_of=%d", r.FileName, d.Index, d.Reason, dupOf)
 	}
 	logSummary(ctx, "question_pool.imported", r)
-	return &dto.ImportQuestionPoolsRes{Report: r}, nil
+
+	res := &dto.ImportQuestionPoolsRes{
+		Report: r,
+	}
+
+	return res, nil
 }
 
 func logSummary(ctx context.Context, event string, r *dto.ImportQuestionPoolsReport) {
@@ -231,7 +241,13 @@ func (s *Service) analyzeImport(ctx context.Context, file ImportFile) (*importAn
 	}
 	sortDuplicates(r.Duplicates)
 	r.ImportableCount = len(toImport)
-	return &importAnalysis{report: r, toImport: toImport}, nil
+
+	res := &importAnalysis{
+		report:   r,
+		toImport: toImport,
+	}
+
+	return res, nil
 }
 
 // fileError is a problem with the file as a whole, mapped to its code.

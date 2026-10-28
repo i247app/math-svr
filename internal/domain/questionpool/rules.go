@@ -19,11 +19,13 @@ const (
 	MaxOptions = 10
 )
 
-// Ranges of question_grade (0 = Mẫu giáo, 1..5 = Lớp 1..5) and
-// question_level / question_sub_level (0 = easiest .. 9 = hardest).
+// Ranges of question_grade (0 = Mẫu giáo, 1..5 = Lớp 1..5, 6 = Lớp 6 — the
+// product stops at grade 5, but a grade-5 exam's probe questions sit one
+// grade above) and question_level / question_sub_level (0 = easiest .. 9 =
+// hardest).
 const (
 	GradeMin = 0
-	GradeMax = 5
+	GradeMax = 6
 	LevelMin = 0
 	LevelMax = 9
 )
