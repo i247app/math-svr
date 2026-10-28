@@ -1,14 +1,11 @@
 package questionpool
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"path"
-	"slices"
 	"strings"
 
 	command "math-ai.com/math-ai/internal/application/command/questionpool"
@@ -147,12 +144,6 @@ func (s *Service) ImportFile(ctx context.Context, file ImportFile) (*dto.ImportQ
 	return res, nil
 }
 
-func logSummary(ctx context.Context, event string, r *dto.ImportQuestionPoolsReport) {
-	logger.From(ctx).Infof("%s file=%s total=%d valid=%d invalid=%d dup_in_file=%d dup_in_pool=%d imported=%d admin_uid=%v via=%s",
-		event, r.FileName, r.Total, r.ValidCount, r.InvalidCount, r.DuplicateInFileCount, r.DuplicateInPoolCount,
-		r.ImportedCount, sctx.UID(ctx), sctx.GetAdminVia(ctx))
-}
-
 // analyzeImport reads the file, checks every question with the create
 // rules, then sets duplicates aside: a repeat inside the file keeps its
 // first occurrence, and content a live row holds is skipped. File-level
@@ -250,6 +241,12 @@ func (s *Service) analyzeImport(ctx context.Context, file ImportFile) (*importAn
 	return res, nil
 }
 
+func logSummary(ctx context.Context, event string, r *dto.ImportQuestionPoolsReport) {
+	logger.From(ctx).Infof("%s file=%s total=%d valid=%d invalid=%d dup_in_file=%d dup_in_pool=%d imported=%d admin_uid=%v via=%s",
+		event, r.FileName, r.Total, r.ValidCount, r.InvalidCount, r.DuplicateInFileCount, r.DuplicateInPoolCount,
+		r.ImportedCount, sctx.UID(ctx), sctx.GetAdminVia(ctx))
+}
+
 // fileError is a problem with the file as a whole, mapped to its code.
 type fileError struct {
 	code status.StatusCode
@@ -258,63 +255,4 @@ type fileError struct {
 
 func (e *fileError) toMathError(ctx context.Context) error {
 	return errs.NewError(ctx, e.code, nil, e.err)
-}
-
-// readImportFile returns the file's bytes: present, named .json, at most
-// MaxImportFileBytes.
-func readImportFile(file ImportFile) ([]byte, *fileError) {
-	if file.Reader == nil {
-		return nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_MISSING, ErrImportFileMissing}
-	}
-	if !strings.EqualFold(path.Ext(file.Filename), ".json") {
-		return nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_INVALID, fmt.Errorf("file %q is not a .json file", path.Base(file.Filename))}
-	}
-	if file.Size > MaxImportFileBytes {
-		return nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_TOO_LARGE, fmt.Errorf("file is %d bytes, at most %d", file.Size, MaxImportFileBytes)}
-	}
-	data, err := io.ReadAll(io.LimitReader(file.Reader, MaxImportFileBytes+1))
-	if err != nil {
-		return nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_INVALID, fmt.Errorf("read file: %w", err)}
-	}
-	if len(data) > MaxImportFileBytes {
-		return nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_TOO_LARGE, fmt.Errorf("file is over %d bytes", MaxImportFileBytes)}
-	}
-	return data, nil
-}
-
-// parseImportItems decodes the file: a JSON array (else a file error),
-// each element one question. An element that does not decode — not an
-// object, a field of the wrong type, a field the request has no place for
-// (question_source, id…) — is an issue of that index, not a file error, so
-// one bad element does not hide the others. items[i] is the element at
-// file index positions[i]; total counts every element, decoded or not.
-func parseImportItems(raw []byte) (items []dto.CreateQuestionPoolItem, positions []int, total int, issues []itemIssue, ferr *fileError) {
-	var elems []json.RawMessage
-	if err := json.Unmarshal(raw, &elems); err != nil {
-		return nil, nil, 0, nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_INVALID,
-			fmt.Errorf("the file must be a JSON array of questions: %w", err)}
-	}
-	items = make([]dto.CreateQuestionPoolItem, 0, len(elems))
-	positions = make([]int, 0, len(elems))
-	for i, e := range elems {
-		var item dto.CreateQuestionPoolItem
-		dec := json.NewDecoder(bytes.NewReader(e))
-		dec.DisallowUnknownFields()
-		if err := dec.Decode(&item); err != nil {
-			issues = append(issues, itemIssue{i, issue{status.QUESTION_POOL_INVALID, fmt.Sprintf("[%d]: %v", i, err)}})
-			continue
-		}
-		items = append(items, item)
-		positions = append(positions, i)
-	}
-	return items, positions, len(elems), issues, nil
-}
-
-// sortIssues orders issues by file index, keeping each question's own order.
-func sortIssues(issues []itemIssue) {
-	slices.SortStableFunc(issues, func(a, b itemIssue) int { return a.index - b.index })
-}
-
-func sortDuplicates(d []dto.ImportQuestionPoolDuplicate) {
-	slices.SortStableFunc(d, func(a, b dto.ImportQuestionPoolDuplicate) int { return a.Index - b.Index })
 }
