@@ -399,6 +399,13 @@ func ValidateListQuestionPools(ctx context.Context, req *dto.ListQuestionPoolsRe
 		}
 		filter.Grade = g
 	}
+	if l := req.QuestionLevel; l != nil {
+		if *l < domain.LevelMin || *l > domain.LevelMax {
+			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil,
+				fmt.Errorf("question_level: %d is outside %d..%d", *l, domain.LevelMin, domain.LevelMax))
+		}
+		filter.Level = l
+	}
 	filter.Topic = trimmedOrNil(req.QuestionTopic)
 	tags, msg := cleanTags(req.QuestionTags)
 	if msg != "" {

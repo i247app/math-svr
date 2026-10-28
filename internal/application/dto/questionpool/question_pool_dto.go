@@ -62,6 +62,7 @@ type CreateQuestionPoolsRes struct {
 // verified_count > 0, false = 0.
 type ListQuestionPoolsReq struct {
 	QuestionGrade    *int     `json:"question_grade,omitempty"`
+	QuestionLevel    *int     `json:"question_level,omitempty"`
 	QuestionTopic    *string  `json:"question_topic,omitempty"`
 	QuestionTags     []string `json:"question_tags,omitempty"`
 	QuestionKinds    []string `json:"question_kinds,omitempty"`

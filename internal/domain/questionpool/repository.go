@@ -16,6 +16,7 @@ var ErrDuplicate = errors.New("question_pool: duplicate content")
 // IsVerified true = verified_count > 0, false = 0, nil = both.
 type ListQuestionPoolsFilter struct {
 	Grade      *int
+	Level      *int
 	Topic      *string
 	Tags       []string
 	Kinds      []Kind
