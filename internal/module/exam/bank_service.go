@@ -86,7 +86,9 @@ func (s *Service) generateFromBank(ctx context.Context, req *dto.GenerateExamReq
 	if err != nil {
 		return nil, err
 	}
-	questions, err := s.pickFromBank(ctx, cmd.ExamType, cmd.Grade, level, avoid)
+
+	//TODO: may be turn on avoid question later
+	questions, err := s.pickFromBank(ctx, cmd.ExamType, cmd.Grade, level, []string{})
 	if err != nil {
 		return nil, err
 	}
