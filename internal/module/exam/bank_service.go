@@ -31,49 +31,6 @@ const (
 	falseOptionText = "Sai"
 )
 
-// bankGroup is the part of a paper drawn under one filter, filling slots
-// (1-based question positions) in ascending difficulty.
-type bankGroup struct {
-	name   string
-	filter questionpool.PickFilter
-	slots  []int
-}
-
-// bankGroups plans a paper of DefaultNumQuestions questions.
-//
-//   - ASSESSMENT: the challenge slots come from grade + 1, the rest from the grade.
-//   - GRADE with a level: the challenge slots come from level + 1 (level 9 has
-//     none above it and draws level 9 again), the rest from the level.
-//   - GRADE without a level: the whole paper from the grade.
-func bankGroups(examType enum.ExamType, grade int, level *int) []bankGroup {
-	var all, challenge []int
-	for slot := 1; slot <= DefaultNumQuestions; slot++ {
-		if slices.Contains(bankChallengeSlots, slot) {
-			challenge = append(challenge, slot)
-		} else {
-			all = append(all, slot)
-		}
-	}
-
-	switch {
-	case examType == enum.ExamTypeGrade && level != nil:
-		up := min(*level+1, enum.ExamLevelMax)
-		return []bankGroup{
-			{name: fmt.Sprintf("grade %d level %d", grade, *level), filter: questionpool.PickFilter{Grade: grade, Level: level}, slots: all},
-			{name: fmt.Sprintf("grade %d level %d (challenge)", grade, up), filter: questionpool.PickFilter{Grade: grade, Level: &up}, slots: challenge},
-		}
-	case examType == enum.ExamTypeAssessment:
-		up := input.ProbeGrade(grade)
-		return []bankGroup{
-			{name: fmt.Sprintf("grade %d", grade), filter: questionpool.PickFilter{Grade: grade}, slots: all},
-			{name: fmt.Sprintf("grade %d (probe)", up), filter: questionpool.PickFilter{Grade: up}, slots: challenge},
-		}
-	}
-	every := slices.Concat(all, challenge)
-	slices.Sort(every)
-	return []bankGroup{{name: fmt.Sprintf("grade %d", grade), filter: questionpool.PickFilter{Grade: grade}, slots: every}}
-}
-
 // generateFromBank hands out an ASSESSMENT / GRADE paper drawn from the
 // question bank instead of asking the model (QUESTION_POOL_ENABLED). The
 // drawn questions are stored as a new ma_exam_pools row of source POOL,
@@ -170,6 +127,72 @@ func (s *Service) drawGroup(ctx context.Context, g bankGroup, chosen []int64, av
 			fmt.Errorf("exam: the question bank holds %d approved questions for %s, the paper needs %d", len(got), g.name, need))
 	}
 	return got, nil
+}
+
+// bankGroup is the part of a paper drawn under one filter, filling slots
+// (1-based question positions) in ascending difficulty.
+type bankGroup struct {
+	name   string
+	filter questionpool.PickFilter
+	slots  []int
+}
+
+// bankGroups plans a paper of DefaultNumQuestions questions.
+//
+//   - ASSESSMENT: the challenge slots come from grade + 1, the rest from the grade.
+//   - GRADE with a level: the challenge slots come from level + 1 (level 9 has
+//     none above it and draws level 9 again), the rest from the level.
+//   - GRADE without a level: the whole paper from the grade.
+func bankGroups(examType enum.ExamType, grade int, level *int) []bankGroup {
+	var all, challenge []int
+	for slot := 1; slot <= DefaultNumQuestions; slot++ {
+		if slices.Contains(bankChallengeSlots, slot) {
+			challenge = append(challenge, slot)
+		} else {
+			all = append(all, slot)
+		}
+	}
+
+	switch {
+	case examType == enum.ExamTypeGrade && level != nil:
+		up := min(*level+1, enum.ExamLevelMax)
+		return []bankGroup{
+			{
+				name:   fmt.Sprintf("grade %d level %d", grade, *level),
+				filter: questionpool.PickFilter{Grade: grade, Level: level},
+				slots:  all,
+			},
+			{
+				name:   fmt.Sprintf("grade %d level %d (challenge)", grade, up),
+				filter: questionpool.PickFilter{Grade: grade, Level: &up},
+				slots:  challenge,
+			},
+		}
+	case examType == enum.ExamTypeAssessment:
+		up := input.ProbeGrade(grade)
+		return []bankGroup{
+			{
+				name:   fmt.Sprintf("grade %d", grade),
+				filter: questionpool.PickFilter{Grade: grade},
+				slots:  all,
+			},
+			{
+				name:   fmt.Sprintf("grade %d (probe)", up),
+				filter: questionpool.PickFilter{Grade: up},
+				slots:  challenge,
+			},
+		}
+	}
+	every := slices.Concat(all, challenge)
+	slices.Sort(every)
+
+	return []bankGroup{
+		{
+			name:   fmt.Sprintf("grade %d", grade),
+			filter: questionpool.PickFilter{Grade: grade},
+			slots:  every,
+		},
+	}
 }
 
 // difficulty orders questions within a group: level, then sub-level. A

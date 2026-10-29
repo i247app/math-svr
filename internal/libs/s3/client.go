@@ -15,6 +15,10 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
+// immutableCacheControl is stored on every uploaded object: one year, shared
+// caches allowed, no revalidation (keys are unique per upload).
+const immutableCacheControl = "public, max-age=31536000, immutable"
+
 type Config struct {
 	AccessKey string
 	SecretKey string
@@ -97,6 +101,10 @@ func (s *Client) Upload(ctx context.Context, file io.Reader, filename, contentTy
 		Key:         aws.String(key),
 		Body:        strings.NewReader(string(fileBytes)),
 		ContentType: aws.String(contentType),
+		// Every upload gets a fresh key (generateKey), so the bytes behind a
+		// key never change and clients/CDNs may keep them for a year. Never
+		// overwrite an existing key, or clients keep serving the old bytes.
+		CacheControl: aws.String(immutableCacheControl),
 	})
 
 	if err != nil {
