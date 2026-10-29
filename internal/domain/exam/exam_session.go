@@ -31,7 +31,12 @@ type JourneyKey struct {
 // kept only for GRADE — for every other type the child has one open
 // journey whatever the grade, and passing it is harmless.
 func JourneyKeyOf(uid, profileId int64, examType string, grade *int) JourneyKey {
-	k := JourneyKey{Uid: uid, ProfileId: profileId, ExamType: examType}
+	k := JourneyKey{
+		Uid:       uid,
+		ProfileId: profileId,
+		ExamType:  examType,
+	}
+
 	if examType == string(enum.ExamTypeGrade) && grade != nil {
 		g := *grade
 		k.Grade = &g

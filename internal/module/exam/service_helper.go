@@ -368,7 +368,9 @@ func (s *Service) guardGuest(ctx context.Context, p *profileDomain.Profile, exam
 // plain read that saves the model call in the ordinary case; the
 // generate command repeats the check under a lock for the concurrent one.
 func (s *Service) resumeOpenSitting(ctx context.Context, profile *profileDomain.Profile, esessID int64, examType enum.ExamType) (*dto.GenerateExamRes, error) {
-	open, err := s.attemptRepo.FindInProgressInJourney(ctx, profile.ProfileId(), esessID, string(examType))
+	log := logger.From(ctx)
+
+	open, err := s.attemptRepo.FindInProgressInJourney(ctx, profile.ProfileId(), esessID, examType.String())
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -389,7 +391,7 @@ func (s *Service) resumeOpenSitting(ctx context.Context, profile *profileDomain.
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	logger.From(ctx).Infof("exam.resumed attempt=%d journey=%d type=%s", open.ElinkId(), esessID, examType)
+	log.Infof("exam.resumed attempt=%d journey=%d type=%s", open.ElinkId(), esessID, examType)
 	res := &dto.GenerateExamRes{
 		Exam:        dto.AttemptToResponse(open, pool, true),
 		Resumed:     true,

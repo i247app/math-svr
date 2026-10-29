@@ -376,6 +376,8 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 // stops two children (or one child twice) meeting an identical paper,
 // and it is what EXAM_SHUFFLE_ENABLED turns off.
 func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, canonical []aiquestion.Question, profile *profileDomain.Profile) (*dto.GenerateExamRes, error) {
+	log := logger.From(ctx)
+
 	shuffleJSON, err := s.drawShuffle(ctx, canonical)
 	if err != nil {
 		return nil, err
@@ -390,7 +392,7 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 		// Another hand-out on this journey committed between our check
 		// and our transaction; its sitting wins and this one's content
 		// (a model call, on a cache miss) is dropped.
-		logger.From(ctx).Infof("exam.resumed.in_tx attempt=%d journey=%d type=%s discarded_new_content=%t",
+		log.Infof("exam.resumed.in_tx attempt=%d journey=%d type=%s discarded_new_content=%t",
 			created.Attempt.ElinkId(), utils.DerefInt64(cmd.EsessID), cmd.ExamType, cmd.NewContent != nil)
 		res := &dto.GenerateExamRes{
 			Exam:        dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
@@ -401,7 +403,7 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 		return res, nil
 	}
 
-	logger.From(ctx).Infof("exam.generated attempt=%d exam_pool=%d profile=%d type=%s grade=%d",
+	log.Infof("exam.generated attempt=%d exam_pool=%d profile=%d type=%s grade=%d",
 		created.Attempt.ElinkId(), created.ExamPool.ExamId(),
 		profile.ProfileId(), cmd.ExamType, cmd.Grade)
 
