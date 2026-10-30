@@ -307,8 +307,8 @@ func (r *QuestionPoolRepository) PickForExam(ctx context.Context, filter questio
 // buildQuestionPoolPickClause keeps placeholder order in lockstep with the
 // returned args slice.
 func buildQuestionPoolPickClause(filter questionpool.PickFilter) (string, []any) {
-	clause := ` AND q.question_status = ? AND q.question_grade = ?`
-	args := []any{questionpool.StatusApproved, filter.Grade}
+	clause := ` AND q.question_grade = ?`
+	args := []any{filter.Grade}
 	if filter.Level != nil {
 		clause += ` AND q.question_level = ?`
 		args = append(args, *filter.Level)
@@ -325,6 +325,10 @@ func buildQuestionPoolPickClause(filter questionpool.PickFilter) (string, []any)
 			args = append(args, t)
 		}
 	}
+
+	clause += ` AND q.question_status = ?`
+	args = append(args, questionpool.StatusApproved)
+
 	return clause, args
 }
 
