@@ -1,6 +1,6 @@
 -- migration up
 -- ma_questions — the questions an exam generation returned, ONE row per
--- question: each row is one element of ma_exam_pools.ai_questions_json,
+-- question: each row is one element of ma_exam_pools.questions_json,
 -- keyed by (exam_id, question_number). It belongs to the exam flow, not to
 -- the admin bank (that is ma_question_pools, up/036 — the two tables share no
 -- column and no code).
@@ -13,29 +13,35 @@
 -- QUESTION_POOL_*).
 --
 -- ---- Shape ---------------------------------------------------------------
--- The columns mirror the JSON the model is prompted to emit
--- (application/dto/aiquestion/question.go, type Question) under the same
--- names, so a row and a JSON element convert field for field:
---   question_number       1..10, the question's place in the generated set;
---                         every sitting's shuffle_map and every answer line
---                         (ma_exam_session_lines) is written in these
---                         canonical numbers
---   question_type         render hint: ARITHMETIC / COUNT / PICK_BY_ICON /
---                         IDENTIFY_SHAPE / FRACTION; stored as normalised
---                         (aiquestion.normalize — unknown → ARITHMETIC)
---   question_name         the stem
---   answers               JSON [{"label":"A","content":"12"}, …] in canonical
---                         order (A..D); grading is by label
---   right_answer_label    the correct label ("B")
---   right_answer_content  its text; NULL on sets generated before the field
---   question_topic        curriculum topic as the model wrote it
---   question_grade        the band this one question targets: the round's
---                         grade, or grade + 1 at an ASSESSMENT / PRACTICE probe
---                         slot (Q3, Q6 — exam.NormalizeQuestionBands)
--- No question_level: aiquestion.Question carries none the prompt asks for.
+-- The columns mirror one element of the pool JSON (application/dto/exam,
+-- ExamQuestion) under the same names, so a row and a JSON element convert
+-- field for field — and the vocabulary of ma_question_pools:
+--   question_number   1..10, the question's place in the generated set;
+--                     every sitting's shuffle_map and every answer line
+--                     (ma_exam_session_lines) is written in these canonical
+--                     numbers
+--   render_type       drawing hint: ARITHMETIC / COUNT / PICK_BY_ICON /
+--                     IDENTIFY_SHAPE / FRACTION; stored as normalised
+--                     (unknown → ARITHMETIC). Not question_kind.
+--   question_kind     how the question is ANSWERED: NULL = single-choice,
+--                     else SINGLE_CHOICE / MULTIPLE_CHOICE / TRUE_FALSE /
+--                     NUMERIC_INPUT
+--   question_text     the stem
+--   options           JSON [{"id":"a","text":"12"}, …] in canonical order
+--   correct_answer    JSON key in the shape of ma_question_pools.correct_answer:
+--                       SINGLE / MULTIPLE_CHOICE  {"option_ids": ["a","c"]}
+--                       TRUE_FALSE                {"value": true}
+--                       NUMERIC_INPUT             {"values": ["0.5", "1/2"]}
+--                     A new kind is a new part of the JSON, not a new column;
+--                     the key's display text is derived from the options.
+--   question_topic    curriculum topic as the model wrote it
+--   question_grade    the band this one question targets: the round's grade,
+--                     or grade + 1 at an ASSESSMENT / PRACTICE probe slot
+--                     (Q3, Q6 — exam.NormalizeQuestionBands)
+-- No question_level, and no image keys: questions_json is their source.
 --
 -- ---- Kept in step with the pool -------------------------------------------
--- ai_questions_json stays the source a sitting is served and graded from.
+-- questions_json stays the source a sitting is served and graded from.
 -- /exams/pools/verify overwrites that JSON and rewrites the exam's rows in
 -- the same transaction: the live rows are soft-deleted and the corrected
 -- set inserted with new ids (uk_live_exam_question counts live rows only).
@@ -48,11 +54,11 @@ CREATE TABLE IF NOT EXISTS ma_questions (
   question_id           BIGINT UNSIGNED NOT NULL PRIMARY KEY,   -- external id (minted via ma_seqs)
   exam_id               BIGINT UNSIGNED NOT NULL,               -- ma_exam_pools.exam_id the question came from (no FK)
   question_number       TINYINT UNSIGNED NOT NULL,              -- 1..10, place in the generated set (canonical, before any shuffle)
-  question_type         VARCHAR(32)   NOT NULL,                 -- ARITHMETIC / COUNT / PICK_BY_ICON / IDENTIFY_SHAPE / FRACTION (normalised)
-  question_name         TEXT          NOT NULL,                 -- the stem shown to the child
-  answers               JSON          NOT NULL,                 -- [{"label","content"}] in canonical order
-  right_answer_label    VARCHAR(8)    NOT NULL,                 -- label of the correct answer, one of answers[].label
-  right_answer_content  TEXT          DEFAULT NULL,             -- text of the correct answer; NULL on older sets
+  render_type           VARCHAR(32)   NOT NULL,                 -- ARITHMETIC / COUNT / PICK_BY_ICON / IDENTIFY_SHAPE / FRACTION (normalised)
+  question_kind         VARCHAR(32)   DEFAULT NULL,             -- NULL = single-choice; else SINGLE_CHOICE / MULTIPLE_CHOICE / TRUE_FALSE / NUMERIC_INPUT
+  question_text         TEXT          NOT NULL,                 -- the stem shown to the child
+  options               JSON          NOT NULL,                 -- [{"id","text"}] in canonical order
+  correct_answer        JSON          NOT NULL,                 -- {"option_ids"} / {"value"} / {"values"}, as ma_question_pools.correct_answer
   question_topic        VARCHAR(255)  DEFAULT NULL,             -- curriculum topic as written by the model
   question_grade        TINYINT UNSIGNED DEFAULT NULL,          -- 0 = Mẫu giáo, 1..5 = Lớp 1..5; the band of this question (probes: grade + 1)
 

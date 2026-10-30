@@ -1,8 +1,9 @@
 -- migration up
 --
--- AI-generated exam content. One row = one successful LLM generation.
--- The row belongs to NO user: it records what was asked of the model
--- (req_*) and what the model produced (ai_*), nothing a student did.
+-- Exam content. One row = one question set: a successful LLM generation
+-- (exam_source = 'LLM') or a set drawn from the question bank
+-- (exam_source = 'POOL'). The row belongs to NO user: it records what was
+-- asked (req_*) and the set that was produced, nothing a student did.
 -- That is what makes it cacheable — when user B asks for the same thing
 -- user A already asked for, the stored row is served instead of spending
 -- tokens on a fresh generation.
@@ -32,30 +33,44 @@
 
 CREATE TABLE IF NOT EXISTS ma_exam_pools (
   exam_id           BIGINT UNSIGNED NOT NULL PRIMARY KEY,       -- external id (minted via ma_seqs)
+  -- Where the set came from:
+  --   LLM  — written by the model
+  --   POOL — drawn from the question bank (ma_question_pools) by an
+  --          ASSESSMENT / GRADE hand-out while QUESTION_POOL_ENABLED is on.
+  --          Such a row has no req_extras (never a cache hit) and cannot be
+  --          overwritten by /exams/pools/verify: the bank owns its questions.
+  exam_source       VARCHAR(16)  NOT NULL DEFAULT 'LLM',
 
   -- ---- What the client asked for (also the cache key material) ----------
-  req_exam_type     VARCHAR(32)  NOT NULL DEFAULT 'PRACTICE', -- ASSESSMENT, PRACTICE, EXAM
+  req_exam_type     VARCHAR(32)  NOT NULL DEFAULT 'PRACTICE', -- ASSESSMENT, PRACTICE, GRADE
   req_grade         TINYINT UNSIGNED NOT NULL DEFAULT 0,      -- 0..5 (0 = Mau giao / kindergarten)
-  req_level         TINYINT UNSIGNED DEFAULT NULL,            -- 1..10 difficulty scale; NULL = not supplied
+  req_level         TINYINT UNSIGNED DEFAULT NULL,            -- 0..9 difficulty scale; NULL = not supplied
   req_num_ques      SMALLINT UNSIGNED NOT NULL DEFAULT 10,    -- questions REQUESTED
   req_semester      VARCHAR(128) DEFAULT NULL,                -- e.g. "Semester 1"
   req_program       VARCHAR(255) DEFAULT NULL,                -- textbook set, e.g. "Canh dieu"
   req_extras        VARCHAR(255) DEFAULT NULL,                -- cache tag; see header
 
-  -- ---- What the model returned ------------------------------------------
-  ai_title          VARCHAR(255) DEFAULT NULL,
-  ai_short_text     VARCHAR(255) DEFAULT NULL,
-  -- JSON array. Each element carries question_number, question_type,
-  -- question_name, answers[{label,content}], right_answer_label, right_answer_content,
-  -- question_topic and question_grade. question_grade is NORMALISED
-  -- server-side before this row is written (ASSESSMENT: Q3/Q6 =
-  -- req_grade + 1, every other question = req_grade; PRACTICE/EXAM: all =
-  -- req_grade), so the stored JSON is authoritative and
-  -- ma_exam_session_lines can copy it verbatim.
+  -- ---- The question set ------------------------------------------------
+  title             VARCHAR(255) DEFAULT NULL,
+  short_text        VARCHAR(255) DEFAULT NULL,
+  -- JSON array, one element per question (application/dto/exam,
+  -- ExamQuestion): question_number, question_kind, render_type,
+  -- question_text, options[{id, text, image_key?}], correct_answer
+  -- ({option_ids} / {value} / {values}, the shape of
+  -- ma_question_pools.correct_answer), question_topic and question_grade.
+  -- question_grade is NORMALISED server-side before this row is written
+  -- (ASSESSMENT / PRACTICE: Q3/Q6 = req_grade + 1, every other question =
+  -- req_grade; GRADE: all = req_grade), so the stored JSON is authoritative
+  -- and ma_exam_session_lines can copy it verbatim.
   -- The array may hold FEWER than req_num_ques: the generation parser
   -- salvages a truncated payload, so a short exam is a real outcome. Count
   -- the array when the exam's actual size is needed.
-  ai_questions_json LONGTEXT     NOT NULL,
+  questions_json    LONGTEXT     NOT NULL,
+  -- How many times an admin has verified this set. 0 = not verified, >0 =
+  -- verified. POST /exams/pools/mark-verify moves it 0 -> 1 (or resets it to
+  -- 0); every POST /exams/pools/verify (questions corrected and re-sent)
+  -- adds 1, so it can exceed 1.
+  verified_count    INT UNSIGNED NOT NULL DEFAULT 0,
 
   note              VARCHAR(500) DEFAULT NULL,
   exam_status       VARCHAR(32)  DEFAULT NULL,            -- ACTIVE, DELETED

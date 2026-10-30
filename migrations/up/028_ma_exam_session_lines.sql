@@ -19,14 +19,18 @@
 --               back to the generation that produced it.
 --
 -- WHY THE QUESTION IS SNAPSHOT HERE
---   The question fields are copied out of ma_exam_pools.ai_questions_json
+--   The question fields are copied out of ma_exam_pools.questions_json
 --   at submit time. That freezes what the child was actually shown — the
 --   pool row is shared cache and may be superseded later — and keeps a
 --   review screen from having to parse a LONGTEXT blob per row.
 --
---   The full option list (A-D) is NOT copied; it stays in the JSON. Only
---   the correct option and the chosen option are kept, which is what a
---   review row renders.
+--   The full option list is NOT copied; it stays in the JSON. Only the
+--   correct and the chosen answer are kept, which is what a review row
+--   renders. An option is named by its id (the bank's id, or a..d for a
+--   model-written set); one string holds a SET of ids, joined and sorted
+--   ("a,c" — up to 10 ids of up to 16 characters, hence 255). A numeric
+--   question has no id: the typed number is child_answer_text and the
+--   accepted numbers, joined with ' | ', are right_answer_text.
 --
 -- question_grade is the grade the QUESTION targets, copied verbatim from
 -- the normalised JSON. It is usually req_grade, but for an ASSESSMENT the
@@ -44,19 +48,20 @@ CREATE TABLE IF NOT EXISTS ma_exam_session_lines (
   exam_id              BIGINT UNSIGNED NOT NULL,             -- the pooled exam (ma_exam_pools)
   req_exam_type        VARCHAR(32) NOT NULL DEFAULT '',      -- ASSESSMENT, PRACTICE, GRADE
 
-  -- ---- Question snapshot (copied from ai_questions_json at submit) -------
+  -- ---- Question snapshot (copied from questions_json at submit) ----------
   question_number      SMALLINT UNSIGNED NOT NULL,           -- 1-based, matches the JSON
-  question_type        VARCHAR(32)  DEFAULT 'ARITHMETIC',    -- ARITHMETIC, COUNT, PICK_BY_ICON, IDENTIFY_SHAPE
-  question_name        TEXT         DEFAULT NULL,            -- the stem; may carry emoji or [icon:NAME] tokens
+  render_type          VARCHAR(32)  DEFAULT 'ARITHMETIC',    -- drawing hint: ARITHMETIC, COUNT, PICK_BY_ICON, IDENTIFY_SHAPE, FRACTION
+  question_kind        VARCHAR(32)  DEFAULT NULL,            -- NULL = single-choice; else SINGLE_CHOICE / MULTIPLE_CHOICE / TRUE_FALSE / NUMERIC_INPUT
+  question_text        TEXT         DEFAULT NULL,            -- the stem; may carry emoji or [icon:NAME] tokens
   question_topic       VARCHAR(64)  DEFAULT NULL,            -- skill tag, drives weak-topic mining
   question_grade       TINYINT UNSIGNED DEFAULT NULL,        -- 0..6 (6 only on an ASSESSMENT probe at req_grade 5)
   question_level       TINYINT UNSIGNED DEFAULT NULL,
-  right_answer_label   VARCHAR(8)   DEFAULT NULL,            -- correct label (A/B/C/D)
-  right_answer_content VARCHAR(255) DEFAULT NULL,            -- correct value, e.g. "8", "1/2"
+  right_option_ids     VARCHAR(255) DEFAULT NULL,            -- correct option ids, joined and sorted ("a,c"); NULL for a numeric question
+  right_answer_text    VARCHAR(255) DEFAULT NULL,            -- correct text, or the accepted numbers joined with ' | '
 
-  -- ---- What the student picked -------------------------------------------
-  selected_label       VARCHAR(8)   NOT NULL,
-  selected_content     VARCHAR(255) DEFAULT NULL,            -- that option's content, snapshot for review
+  -- ---- What the child answered -------------------------------------------
+  child_option_ids     VARCHAR(255) NOT NULL,                -- chosen option ids, joined and sorted; '' for a numeric question
+  child_answer_text    VARCHAR(255) DEFAULT NULL,            -- the chosen options' text, or the number the child typed
   is_correct           TINYINT(1)   NOT NULL DEFAULT 0,
 
   note                 VARCHAR(500) DEFAULT NULL,
