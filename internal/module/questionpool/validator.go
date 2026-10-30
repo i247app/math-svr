@@ -406,6 +406,13 @@ func ValidateListQuestionPools(ctx context.Context, req *dto.ListQuestionPoolsRe
 		}
 		filter.Level = l
 	}
+	if l := req.QuestionSubLevel; l != nil {
+		if *l < domain.SubLevelMin || *l > domain.SubLevelMax {
+			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil,
+				fmt.Errorf("question_sub_level: %d is outside %d..%d", *l, domain.SubLevelMin, domain.SubLevelMax))
+		}
+		filter.SubLevel = l
+	}
 	filter.Topic = trimmedOrNil(req.QuestionTopic)
 	tags, msg := cleanTags(req.QuestionTags)
 	if msg != "" {
@@ -434,7 +441,7 @@ func ValidateListQuestionPools(ctx context.Context, req *dto.ListQuestionPoolsRe
 	}
 	if req.QuestionSource != nil {
 		src := domain.Source(strings.TrimSpace(*req.QuestionSource))
-		if src != domain.SourceAI && src != domain.SourceAdmin {
+		if !src.IsValid() {
 			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil, fmt.Errorf("question_source: unknown source %q", *req.QuestionSource))
 		}
 		filter.Source = &src

@@ -193,7 +193,13 @@ func (s *Service) ListQuestionPools(ctx context.Context, req *dto.ListQuestionPo
 	if err != nil {
 		return nil, err
 	}
-	rows, page, err := s.listQuery.Handle(ctx, query.ListQuestionPoolsQuery{Filter: filter, Page: req.Page, Size: req.Size})
+
+	filterQry := query.ListQuestionPoolsQuery{
+		Filter: filter,
+		Page:   req.Page,
+		Size:   req.Size,
+	}
+	rows, page, err := s.listQuery.Handle(ctx, filterQry)
 	if err != nil {
 		return nil, err
 	}

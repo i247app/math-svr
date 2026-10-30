@@ -17,6 +17,7 @@ var ErrDuplicate = errors.New("question_pool: duplicate content")
 type ListQuestionPoolsFilter struct {
 	Grade      *int
 	Level      *int
+	SubLevel   *int
 	Topic      *string
 	Tags       []string
 	Kinds      []Kind

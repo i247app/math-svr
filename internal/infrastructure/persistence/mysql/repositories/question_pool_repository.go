@@ -343,6 +343,10 @@ func buildQuestionPoolFilterClause(filter questionpool.ListQuestionPoolsFilter) 
 		clause += ` AND q.question_level = ?`
 		args = append(args, *filter.Level)
 	}
+	if filter.SubLevel != nil {
+		clause += ` AND q.question_sub_level = ?`
+		args = append(args, *filter.SubLevel)
+	}
 	if filter.Topic != nil {
 		clause += ` AND q.question_topic = ?`
 		args = append(args, *filter.Topic)

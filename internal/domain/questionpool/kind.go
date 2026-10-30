@@ -51,6 +51,10 @@ func (s Source) InitialStatus() string {
 	return StatusPendingReview
 }
 
+func (s Source) IsValid() bool {
+	return s == SourceAI || s == SourceAdmin
+}
+
 // Option is one choice of a choice question, in display order. Id is short,
 // unique within the question and never changes once written: CorrectAnswer
 // names options by id, so reordering or rewording never moves the key.

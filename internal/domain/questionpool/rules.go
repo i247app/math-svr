@@ -24,10 +24,12 @@ const (
 // grade above) and question_level / question_sub_level (0 = easiest .. 9 =
 // hardest).
 const (
-	GradeMin = 0
-	GradeMax = 6
-	LevelMin = 0
-	LevelMax = 9
+	GradeMin    = 0
+	GradeMax    = 6
+	LevelMin    = 0
+	LevelMax    = 9
+	SubLevelMin = 0
+	SubLevelMax = 9
 )
 
 // The three ways a question's answer shape can be wrong. CheckShape wraps

@@ -63,6 +63,7 @@ type CreateQuestionPoolsRes struct {
 type ListQuestionPoolsReq struct {
 	QuestionGrade    *int     `json:"question_grade,omitempty"`
 	QuestionLevel    *int     `json:"question_level,omitempty"`
+	QuestionSubLevel *int     `json:"question_sub_level,omitempty"`
 	QuestionTopic    *string  `json:"question_topic,omitempty"`
 	QuestionTags     []string `json:"question_tags,omitempty"`
 	QuestionKinds    []string `json:"question_kinds,omitempty"`
