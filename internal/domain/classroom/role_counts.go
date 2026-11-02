@@ -9,11 +9,11 @@ import "math-ai.com/math-ai/internal/shared/enum"
 // "manager" roles that get to act as teachers in the classroom.
 func RoleCountDeltas(role string, delta int64) (studentDelta, teacherDelta int64) {
 	switch role {
-	case string(enum.ClassroomMemberRoleTypeStudent):
+	case enum.ClassroomMemberRoleTypeStudent.String():
 		return delta, 0
-	case string(enum.ClassroomMemberRoleTypeCoTeacher),
-		string(enum.ClassroomMemberRoleTypeOwner),
-		string(enum.ClassroomMemberRoleTypeTeacher):
+	case enum.ClassroomMemberRoleTypeCoTeacher.String(),
+		enum.ClassroomMemberRoleTypeOwner.String(),
+		enum.ClassroomMemberRoleTypeTeacher.String():
 		return 0, delta
 	default:
 		return 0, 0
