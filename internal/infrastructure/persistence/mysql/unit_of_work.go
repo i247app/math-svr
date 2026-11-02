@@ -25,6 +25,7 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 			UserOwnedData:      repositories.NewUserOwnedDataRepository(loggedTx),
 			Alias:              repositories.NewAliasRepository(loggedTx),
 			Profile:            repositories.NewProfileRepository(loggedTx),
+			ProfileOwnedData:   repositories.NewProfileOwnedDataRepository(loggedTx),
 			Login:              repositories.NewLoginRepository(loggedTx),
 			LoginLog:           repositories.NewLoginLogRepository(loggedTx),
 			Device:             repositories.NewDeviceRepository(loggedTx),

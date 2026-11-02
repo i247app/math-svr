@@ -39,6 +39,7 @@ type Repositories struct {
 	UserOwnedData      user.IOwnedDataRepository // every other uid-keyed table, for user deletion
 	Alias              alias.IRepository
 	Profile            profile.IRepository
+	ProfileOwnedData   profile.IOwnedDataRepository // every other profile_id-keyed table, for profile deletion
 	Login              login.IRepository
 	LoginLog           loginlog.IRepository
 	Device             device.IRepository

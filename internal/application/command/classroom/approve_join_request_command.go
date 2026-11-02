@@ -73,7 +73,7 @@ func (h *ApproveJoinRequestCommandHandler) Handle(ctx context.Context, cmd Appro
 		if err := repos.ClassroomMember.Activate(ctx, existing.MemberId()); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		studentDelta, teacherDelta := roleCountDeltas(existing.MemberRole(), 1)
+		studentDelta, teacherDelta := classroom.RoleCountDeltas(existing.MemberRole(), 1)
 		if err := repos.Classroom.IncCounts(ctx, cmd.ClassroomID, 1, studentDelta, teacherDelta); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}

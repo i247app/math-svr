@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
+	"math-ai.com/math-ai/internal/domain/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -50,7 +51,7 @@ func (h *LeaveClassroomCommandHandler) Handle(ctx context.Context, cmd LeaveClas
 		// Decrement the role-specific bucket the departing member
 		// occupied. OWNER cannot reach here (guarded above), so the
 		// only roles in play are STUDENT and CO_TEACHER.
-		studentDelta, teacherDelta := roleCountDeltas(m.MemberRole(), -1)
+		studentDelta, teacherDelta := classroom.RoleCountDeltas(m.MemberRole(), -1)
 		if err := repos.Classroom.IncCounts(ctx, cmd.ClassroomID, -1, studentDelta, teacherDelta); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}

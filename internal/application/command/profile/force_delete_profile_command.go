@@ -21,18 +21,26 @@ func NewForceDeleteProfileCommandHandler(uow transaction.UnitOfWork) *ForceDelet
 	return &ForceDeleteProfileCommandHandler{uow: uow}
 }
 
+// Handle erases every row keyed by the profile_id (ProfileOwnedData, answer
+// lines included), then the profile itself, in one transaction.
 func (h *ForceDeleteProfileCommandHandler) Handle(ctx context.Context, cmd ForceDeleteProfileCommand) error {
 	log := logger.From(ctx)
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
+		if err := releaseMemberships(ctx, repos, cmd.ProfileID); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if err := repos.ProfileOwnedData.ForceDeleteByProfileId(ctx, cmd.ProfileID); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
 		if err := repos.Profile.ForceDelete(ctx, cmd.ProfileID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		return nil
 	})
 	if err != nil {
-		log.Warnf("profile.soft_delete profile_id=%d outcome=error err=%v", cmd.ProfileID, err)
+		log.Warnf("profile.force_delete profile_id=%d outcome=error err=%v", cmd.ProfileID, err)
 		return err
 	}
-	log.Info("profile.soft_delete", "profile_id", cmd.ProfileID, "outcome", "success")
+	log.Info("profile.force_delete", "profile_id", cmd.ProfileID, "outcome", "success")
 	return nil
 }

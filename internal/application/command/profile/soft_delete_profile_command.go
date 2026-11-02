@@ -21,10 +21,18 @@ func NewSoftDeleteProfileCommandHandler(uow transaction.UnitOfWork) *SoftDeleteP
 	return &SoftDeleteProfileCommandHandler{uow: uow}
 }
 
+// Handle soft-deletes the profile and every row keyed by its profile_id
+// (ProfileOwnedData) in one transaction.
 func (h *SoftDeleteProfileCommandHandler) Handle(ctx context.Context, cmd SoftDeleteProfileCommand) error {
 	log := logger.From(ctx)
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		if err := repos.Profile.SoftDelete(ctx, cmd.ProfileID); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if err := releaseMemberships(ctx, repos, cmd.ProfileID); err != nil {
+			return errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		if err := repos.ProfileOwnedData.SoftDeleteByProfileId(ctx, cmd.ProfileID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		return nil

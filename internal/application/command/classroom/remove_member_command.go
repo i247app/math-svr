@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
+	"math-ai.com/math-ai/internal/domain/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -50,8 +51,8 @@ func (h *RemoveMemberCommandHandler) Handle(ctx context.Context, cmd RemoveMembe
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		// OWNER is rejected above, so target.MemberRole() is either
-		// STUDENT or CO_TEACHER — both buckets are covered by the helper.
-		studentDelta, teacherDelta := roleCountDeltas(target.MemberRole(), -1)
+		// STUDENT or CO_TEACHER — both buckets are covered by classroom.RoleCountDeltas.
+		studentDelta, teacherDelta := classroom.RoleCountDeltas(target.MemberRole(), -1)
 		if err := repos.Classroom.IncCounts(ctx, cmd.ClassroomID, -1, studentDelta, teacherDelta); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}

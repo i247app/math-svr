@@ -64,3 +64,15 @@ type IRepository interface {
 	SoftDeleteByUid(ctx context.Context, uid int64) error
 	ForceDeleteByUid(ctx context.Context, uid int64) error
 }
+
+// IOwnedDataRepository erases a profile's rows in every OTHER table keyed by
+// profile_id (classroom members, exercise submissions, chat participants,
+// exam links + their answer lines, exam sessions). ma_profiles keeps its own
+// SoftDelete / ForceDelete, which also set profile_status. Both calls are
+// idempotent.
+type IOwnedDataRepository interface {
+	// SoftDeleteByProfileId stamps status INACTIVE + deleted_dt on live rows.
+	SoftDeleteByProfileId(ctx context.Context, profileId int64) error
+	// ForceDeleteByProfileId physically deletes the rows, live or soft-deleted.
+	ForceDeleteByProfileId(ctx context.Context, profileId int64) error
+}
