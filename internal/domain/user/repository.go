@@ -37,6 +37,18 @@ type IRepository interface {
 	SoftDeleteByUid(ctx context.Context, uid int64) error
 }
 
+// IOwnedDataRepository erases a user's rows in every OTHER table keyed by
+// uid (logins, devices, login logs, otps, notifications, presence, chat
+// participants, exam links, exam sessions). ma_users, ma_aliases and
+// ma_profiles keep their own SoftDeleteByUid / DeleteByUid, which also set
+// the business status. Both calls are idempotent.
+type IOwnedDataRepository interface {
+	// SoftDeleteByUid stamps status INACTIVE + deleted_dt on live rows.
+	SoftDeleteByUid(ctx context.Context, uid int64) error
+	// ForceDeleteByUid physically deletes the rows, live or soft-deleted.
+	ForceDeleteByUid(ctx context.Context, uid int64) error
+}
+
 // type IAliasRepository interface {
 // 	Create(ctx context.Context, alias *Alias) (*Alias, error)
 // 	FindByAid(ctx context.Context, aid int64) (*Alias, error)

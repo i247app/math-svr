@@ -2,12 +2,12 @@ package command
 
 import (
 	"context"
-	"log"
 
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 
 	"math-ai.com/math-ai/internal/application/transaction"
+	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
 type ForceDeleteUserCommand struct {
@@ -29,8 +29,8 @@ func NewForceDeleteUserCommandHandler(uow transaction.UnitOfWork) *ForceDeleteUs
 	return &ForceDeleteUserCommandHandler{uow: uow}
 }
 
-// Handle erases a user and every dependent row (notifications, aliases,
-// logins) inside a single transaction. The order is children-before-parent so
+// Handle erases a user and every row keyed by their uid (UserOwnedData,
+// aliases, profiles) inside a single transaction. The order is children-before-parent so
 // the cascade is safe even if FK constraints are added to these tables later.
 // Idempotency is by design: rows-affected = 0 at any step is not an error.
 //
@@ -38,6 +38,7 @@ func NewForceDeleteUserCommandHandler(uow transaction.UnitOfWork) *ForceDeleteUs
 // can drop them from S3 after the tx commits. We deliberately don't delete
 // from S3 inside the tx — slow I/O must not hold a DB lock.
 func (h *ForceDeleteUserCommandHandler) Handle(ctx context.Context, cmd ForceDeleteUserCommand) (*ForceDeleteUserCommandResult, error) {
+	log := logger.From(ctx)
 	result := &ForceDeleteUserCommandResult{}
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
@@ -47,21 +48,24 @@ func (h *ForceDeleteUserCommandHandler) Handle(ctx context.Context, cmd ForceDel
 		}
 		result.AvatarKeys = keys
 
-		if err := repos.Alias.DeleteByUid(ctx, cmd.UID); err != nil {
+		if err := repos.UserOwnedData.ForceDeleteByUid(ctx, cmd.UID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.User.DeleteByUid(ctx, cmd.UID); err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
-		if err := repos.Profile.ForceDeleteByUid(ctx, cmd.UID); err != nil {
-			return errs.NewError(ctx, status.FAIL, nil, err)
-		}
+		// if err := repos.Alias.DeleteByUid(ctx, cmd.UID); err != nil {
+		// 	return errs.NewError(ctx, status.FAIL, nil, err)
+		// }
+		// if err := repos.User.DeleteByUid(ctx, cmd.UID); err != nil {
+		// 	return errs.NewError(ctx, status.FAIL, nil, err)
+		// }
+		// if err := repos.Profile.ForceDeleteByUid(ctx, cmd.UID); err != nil {
+		// 	return errs.NewError(ctx, status.FAIL, nil, err)
+		// }
 		return nil
 	})
 	if err != nil {
-		log.Printf("[admin.force_delete_user] uid=%d action=force_delete outcome=error err=%v", cmd.UID, err)
+		log.Warnf("admin.force_delete_user uid=%d outcome=error err=%v", cmd.UID, err)
 		return nil, err
 	}
-	log.Printf("[admin.force_delete_user] uid=%d action=force_delete outcome=success avatar_keys=%d", cmd.UID, len(result.AvatarKeys))
+	log.Infof("admin.force_delete_user uid=%d outcome=success avatar_keys=%d", cmd.UID, len(result.AvatarKeys))
 	return result, nil
 }

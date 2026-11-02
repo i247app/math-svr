@@ -36,6 +36,7 @@ import (
 // of generating a UUID, so concurrent inserts share one atomic counter.
 type Repositories struct {
 	User               user.IRepository
+	UserOwnedData      user.IOwnedDataRepository // every other uid-keyed table, for user deletion
 	Alias              alias.IRepository
 	Profile            profile.IRepository
 	Login              login.IRepository

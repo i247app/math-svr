@@ -22,6 +22,7 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 		loggedTx := database.NewTxWithLogs(txCtx, tx)
 		repos := transaction.Repositories{
 			User:               repositories.NewUserRepository(loggedTx),
+			UserOwnedData:      repositories.NewUserOwnedDataRepository(loggedTx),
 			Alias:              repositories.NewAliasRepository(loggedTx),
 			Profile:            repositories.NewProfileRepository(loggedTx),
 			Login:              repositories.NewLoginRepository(loggedTx),
