@@ -67,7 +67,6 @@ func (j *GuestCleanupJob) Run(ctx context.Context) error {
 
 	// Always log, including the zero case: "the sweep ran and found
 	// nothing" and "the sweep did not run" look identical otherwise.
-	log.Infof("guest_cleanup.swept retired=%d idle_days=%d",
-		len(res.Retired), int(GuestIdleRetention.Hours()/24))
+	log.Infof("guest_cleanup.swept retired=%d idle_days=%d", len(res.Retired), int(GuestIdleRetention.Hours()/24))
 	return nil
 }
