@@ -62,6 +62,7 @@ type ExamQuestion struct {
 	RightAnswerText  string             `json:"right_answer_text,omitempty"`
 	QuestionTopic    string             `json:"question_topic,omitempty"`
 	QuestionGrade    *int               `json:"question_grade,omitempty"`
+	QuestionTags     []string           `json:"question_tags,omitempty"`
 }
 
 // ExamCorrectAnswer is the key of one question, the shape of
@@ -134,6 +135,7 @@ func (q ExamQuestion) ToShared() aiquestion.Question {
 		QuestionTopic:  q.QuestionTopic,
 		QuestionGrade:  q.QuestionGrade,
 		Kind:           q.QuestionKind,
+		QuestionTags:   q.QuestionTags,
 		ImageKey:       q.QuestionImageKey,
 	}
 	ca := q.CorrectAnswer
@@ -184,6 +186,7 @@ func ExamQuestionFrom(q aiquestion.Question) ExamQuestion {
 		Options:          choicesToOptions(q.Answers),
 		QuestionTopic:    q.QuestionTopic,
 		QuestionGrade:    q.QuestionGrade,
+		QuestionTags:     q.QuestionTags,
 	}
 	switch q.EffectiveKind() {
 	case aiquestion.KindMultipleChoice:

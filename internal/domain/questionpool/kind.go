@@ -17,6 +17,10 @@ const (
 // Kinds lists every kind the bank accepts.
 var Kinds = []Kind{KindSingleChoice, KindMultipleChoice, KindTrueFalse, KindNumericInput}
 
+func (k Kind) String() string {
+	return string(k)
+}
+
 func (k Kind) IsValid() bool { return slices.Contains(Kinds, k) }
 
 // HasOptions reports whether the kind carries an options list.

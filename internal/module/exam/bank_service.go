@@ -222,7 +222,8 @@ func toExamQuestion(q *questionpool.QuestionPool, number int) (aiquestion.Questi
 		QuestionType:  aiquestion.TypeArithmetic,
 		QuestionName:  q.QuestionText(),
 		QuestionTopic: utils.DerefString(q.QuestionTopic()),
-		Kind:          string(q.QuestionKind()),
+		QuestionTags:  q.QuestionTags(),
+		Kind:          q.QuestionKind().String(),
 	}
 	grade := q.QuestionGrade()
 	out.QuestionGrade = &grade
