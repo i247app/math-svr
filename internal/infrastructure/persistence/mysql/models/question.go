@@ -8,7 +8,6 @@ type QuestionModel struct {
 	QuestionId     int64
 	ExamId         int64
 	QuestionNumber int
-	RenderType     string
 	QuestionKind   *string
 	QuestionText   string
 	Options        string // JSON [{"id","text"}]

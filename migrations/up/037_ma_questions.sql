@@ -20,9 +20,6 @@
 --                     every sitting's shuffle_map and every answer line
 --                     (ma_exam_session_lines) is written in these canonical
 --                     numbers
---   render_type       drawing hint: ARITHMETIC / COUNT / PICK_BY_ICON /
---                     IDENTIFY_SHAPE / FRACTION; stored as normalised
---                     (unknown → ARITHMETIC). Not question_kind.
 --   question_kind     how the question is ANSWERED: NULL = single-choice,
 --                     else SINGLE_CHOICE / MULTIPLE_CHOICE / TRUE_FALSE /
 --                     NUMERIC_INPUT
@@ -38,7 +35,8 @@
 --   question_grade    the band this one question targets: the round's grade,
 --                     or grade + 1 at an ASSESSMENT / PRACTICE probe slot
 --                     (Q3, Q6 — exam.NormalizeQuestionBands)
--- No question_level, and no image keys: questions_json is their source.
+-- No question_level, no render_type (the drawing hint) and no image keys:
+-- questions_json is their source.
 --
 -- ---- Kept in step with the pool -------------------------------------------
 -- questions_json stays the source a sitting is served and graded from.
@@ -54,7 +52,6 @@ CREATE TABLE IF NOT EXISTS ma_questions (
   question_id           BIGINT UNSIGNED NOT NULL PRIMARY KEY,   -- external id (minted via ma_seqs)
   exam_id               BIGINT UNSIGNED NOT NULL,               -- ma_exam_pools.exam_id the question came from (no FK)
   question_number       TINYINT UNSIGNED NOT NULL,              -- 1..10, place in the generated set (canonical, before any shuffle)
-  render_type           VARCHAR(32)   NOT NULL,                 -- ARITHMETIC / COUNT / PICK_BY_ICON / IDENTIFY_SHAPE / FRACTION (normalised)
   question_kind         VARCHAR(32)   DEFAULT NULL,             -- NULL = single-choice; else SINGLE_CHOICE / MULTIPLE_CHOICE / TRUE_FALSE / NUMERIC_INPUT
   question_text         TEXT          NOT NULL,                 -- the stem shown to the child
   options               JSON          NOT NULL,                 -- [{"id","text"}] in canonical order

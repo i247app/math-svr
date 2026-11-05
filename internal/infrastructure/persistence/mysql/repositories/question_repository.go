@@ -18,7 +18,7 @@ import (
 const (
 	questionTable = "ma_questions"
 
-	questionColumns = `q.question_id, q.exam_id, q.question_number, q.render_type, q.question_kind, q.question_text,
+	questionColumns = `q.question_id, q.exam_id, q.question_number, q.question_kind, q.question_text,
 		q.options, q.correct_answer, q.question_topic, q.question_grade,
 		q.question_status, q.rpt_flg, q.kwords, q.note, q.status,
 		q.create_id, q.create_dt, q.modify_id, q.modify_dt`
@@ -27,14 +27,14 @@ const (
 
 	// questionInsertRow is one VALUES tuple of CreateMany, in the column
 	// order of its INSERT list.
-	questionInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	questionInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func questionActiveArgs() []any {
 	return []any{enum.StatusActive}
 }
 
-// questionOptionJSON is the stored shape of options (migration 039 header) — the
+// questionOptionJSON is the stored shape of options (migration 037 header) — the
 // same keys as the pool's questions JSON. correct_answer is stored as
 // correctAnswerJSON, the bank's shape (question_pool_repository.go).
 type questionOptionJSON struct {
@@ -52,7 +52,7 @@ func NewQuestionRepository(db database.Executor) question.IRepository {
 
 func scanQuestion(s database.RowScanner) (*models.QuestionModel, error) {
 	var m models.QuestionModel
-	if err := s.Scan(&m.QuestionId, &m.ExamId, &m.QuestionNumber, &m.RenderType, &m.QuestionKind, &m.QuestionText,
+	if err := s.Scan(&m.QuestionId, &m.ExamId, &m.QuestionNumber, &m.QuestionKind, &m.QuestionText,
 		&m.Options, &m.CorrectAnswer, &m.QuestionTopic, &m.QuestionGrade,
 		&m.QuestionStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -70,7 +70,7 @@ func (r *QuestionRepository) CreateMany(ctx context.Context, questions []*questi
 	}
 	now := mtime.Now().Time
 	tuples := make([]string, 0, len(questions))
-	args := make([]any, 0, len(questions)*17)
+	args := make([]any, 0, len(questions)*16)
 	for _, q := range questions {
 		options, err := marshalOptions(q.Options())
 		if err != nil {
@@ -83,13 +83,13 @@ func (r *QuestionRepository) CreateMany(ctx context.Context, questions []*questi
 		}
 		tuples = append(tuples, questionInsertRow)
 		args = append(args,
-			q.QuestionId(), q.ExamId(), q.QuestionNumber(), q.RenderType(), q.QuestionKind(), q.QuestionText(),
+			q.QuestionId(), q.ExamId(), q.QuestionNumber(), q.QuestionKind(), q.QuestionText(),
 			options, string(answer), q.QuestionTopic(), q.QuestionGrade(),
 			q.QuestionStatus(), q.RptFlg(), q.Kwords(), q.Note(),
 			createId, now, now)
 	}
 	query := `INSERT INTO ` + questionTable + `
-			(question_id, exam_id, question_number, render_type, question_kind, question_text,
+			(question_id, exam_id, question_number, question_kind, question_text,
 			 options, correct_answer, question_topic, question_grade,
 			 question_status, rpt_flg, kwords, note,
 			 create_id, create_dt, modify_dt)
@@ -172,7 +172,6 @@ func ModelToDomainQuestion(m *models.QuestionModel) (*question.Question, error) 
 	q.SetQuestionId(m.QuestionId)
 	q.SetExamId(m.ExamId)
 	q.SetQuestionNumber(m.QuestionNumber)
-	q.SetRenderType(m.RenderType)
 	q.SetQuestionKind(m.QuestionKind)
 	q.SetQuestionText(m.QuestionText)
 	q.SetOptions(options)

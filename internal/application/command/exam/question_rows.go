@@ -41,7 +41,6 @@ func QuestionRows(examID int64, questionsJSON string) ([]*question.Question, err
 		q := question.NewQuestion()
 		q.SetExamId(examID)
 		q.SetQuestionNumber(s.QuestionNumber)
-		q.SetRenderType(s.RenderType)
 		q.SetQuestionKind(nonEmpty(s.QuestionKind))
 		q.SetQuestionText(s.QuestionText)
 		q.SetOptions(options)

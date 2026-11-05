@@ -29,7 +29,6 @@ type Question struct {
 	questionId     int64
 	examId         int64
 	questionNumber int
-	renderType     string
 	questionKind   *string
 	questionText   string
 	options        []Option
@@ -56,8 +55,6 @@ func (q *Question) ExamId() int64                                 { return q.exa
 func (q *Question) SetExamId(id int64)                            { q.examId = id }
 func (q *Question) QuestionNumber() int                           { return q.questionNumber }
 func (q *Question) SetQuestionNumber(n int)                       { q.questionNumber = n }
-func (q *Question) RenderType() string                            { return q.renderType }
-func (q *Question) SetRenderType(s string)                        { q.renderType = s }
 func (q *Question) QuestionKind() *string                         { return q.questionKind }
 func (q *Question) SetQuestionKind(k *string)                     { q.questionKind = k }
 func (q *Question) QuestionText() string                          { return q.questionText }
