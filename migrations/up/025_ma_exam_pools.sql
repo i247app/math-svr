@@ -54,8 +54,7 @@ CREATE TABLE IF NOT EXISTS ma_exam_pools (
   title             VARCHAR(255) DEFAULT NULL,
   short_text        VARCHAR(255) DEFAULT NULL,
   -- JSON array, one element per question (application/dto/exam,
-  -- ExamQuestion): question_number, question_kind, render_type,
-  -- question_text, options[{id, text, image_key?}], correct_answer
+  -- ExamQuestion): question_number, question_kind, question_text, options[{id, text, image_key?}], correct_answer
   -- ({option_ids} / {value} / {values}, the shape of
   -- ma_question_pools.correct_answer), question_topic and question_grade.
   -- question_grade is NORMALISED server-side before this row is written

@@ -50,7 +50,6 @@ CREATE TABLE IF NOT EXISTS ma_exam_session_lines (
 
   -- ---- Question snapshot (copied from questions_json at submit) ----------
   question_number      SMALLINT UNSIGNED NOT NULL,           -- 1-based, matches the JSON
-  render_type          VARCHAR(32)  DEFAULT 'ARITHMETIC',    -- drawing hint: ARITHMETIC, COUNT, PICK_BY_ICON, IDENTIFY_SHAPE, FRACTION
   question_kind        VARCHAR(32)  DEFAULT NULL,            -- NULL = single-choice; else SINGLE_CHOICE / MULTIPLE_CHOICE / TRUE_FALSE / NUMERIC_INPUT
   question_text        TEXT         DEFAULT NULL,            -- the stem; may carry emoji or [icon:NAME] tokens
   question_topic       VARCHAR(64)  DEFAULT NULL,            -- skill tag, drives weak-topic mining

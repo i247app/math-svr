@@ -35,8 +35,7 @@
 --   question_grade    the band this one question targets: the round's grade,
 --                     or grade + 1 at an ASSESSMENT / PRACTICE probe slot
 --                     (Q3, Q6 — exam.NormalizeQuestionBands)
--- No question_level, no render_type (the drawing hint) and no image keys:
--- questions_json is their source.
+-- No question_level, and no image keys: questions_json is their source.
 --
 -- ---- Kept in step with the pool -------------------------------------------
 -- questions_json stays the source a sitting is served and graded from.

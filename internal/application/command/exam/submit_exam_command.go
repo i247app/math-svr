@@ -219,7 +219,6 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 		d.SetExamId(attempt.ExamId())
 		d.SetReqExamType(attempt.ReqExamType())
 		d.SetQuestionNumber(o.Question.QuestionNumber)
-		d.SetRenderType(utils.ToStringPtr(o.Question.QuestionType))
 		d.SetQuestionKind(utils.ToStringPtr(o.Question.Kind))
 		d.SetQuestionText(utils.ToStringPtr(o.Question.QuestionName))
 		d.SetQuestionTopic(utils.ToStringPtr(o.Question.QuestionTopic))

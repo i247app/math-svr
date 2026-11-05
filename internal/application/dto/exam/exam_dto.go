@@ -171,7 +171,6 @@ type ExamResponse struct {
 type ExamAnswerDetail struct {
 	ElinkID          int64        `json:"elink_id"`
 	QuestionNumber   int          `json:"question_number"`
-	RenderType       *string      `json:"render_type,omitempty"`
 	QuestionText     *string      `json:"question_text,omitempty"`
 	QuestionImageKey string       `json:"question_image_key,omitempty"`
 	QuestionImageURL string       `json:"question_image_url,omitempty"`
@@ -430,7 +429,6 @@ func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*ai
 		detail := ExamAnswerDetail{
 			ElinkID:          d.ElinkId(),
 			QuestionNumber:   sh.ServedNumber(d.QuestionNumber()),
-			RenderType:       d.RenderType(),
 			QuestionText:     d.QuestionText(),
 			QuestionImageKey: imageKey,
 			Options:          OptionsFrom(answers),

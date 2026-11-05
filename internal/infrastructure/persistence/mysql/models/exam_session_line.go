@@ -11,7 +11,6 @@ type ExamSessionLineModel struct {
 	ExamId          int64
 	ReqExamType     string
 	QuestionNumber  int
-	RenderType      *string
 	QuestionKind    *string
 	QuestionText    *string
 	QuestionTopic   *string

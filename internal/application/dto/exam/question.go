@@ -28,7 +28,7 @@ type ExamOption struct {
 // ma_exam_pools.questions_json stores, and what the client is served.
 //
 // Its field names are the vocabulary of the columns they end up in
-// (render_type, question_text, options, correct_answer, ...) and of the
+// (question_text, options, correct_answer, ...) and of the
 // question bank, so a question can be read from the JSON, written to
 // ma_questions / ma_exam_session_lines and rendered by the client without
 // anybody renaming anything on the way.
@@ -53,7 +53,6 @@ type ExamOption struct {
 type ExamQuestion struct {
 	QuestionNumber   int                `json:"question_number"`
 	QuestionKind     string             `json:"question_kind,omitempty"`
-	RenderType       string             `json:"render_type,omitempty"`
 	QuestionText     string             `json:"question_text"`
 	QuestionImageKey string             `json:"question_image_key,omitempty"`
 	QuestionImageURL string             `json:"question_image_url,omitempty"`
@@ -129,7 +128,6 @@ func parseGrade(raw json.RawMessage) *int {
 func (q ExamQuestion) ToShared() aiquestion.Question {
 	out := aiquestion.Question{
 		QuestionNumber: q.QuestionNumber,
-		QuestionType:   q.RenderType,
 		QuestionName:   q.QuestionText,
 		Answers:        optionsToChoices(q.Options),
 		QuestionTopic:  q.QuestionTopic,
@@ -180,7 +178,6 @@ func ExamQuestionFrom(q aiquestion.Question) ExamQuestion {
 	out := ExamQuestion{
 		QuestionNumber:   q.QuestionNumber,
 		QuestionKind:     q.Kind,
-		RenderType:       q.QuestionType,
 		QuestionText:     q.QuestionName,
 		QuestionImageKey: q.ImageKey,
 		Options:          choicesToOptions(q.Answers),

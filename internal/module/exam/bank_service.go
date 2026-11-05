@@ -217,13 +217,10 @@ func difficulty(q *questionpool.QuestionPool) int {
 func toExamQuestion(q *questionpool.QuestionPool, number int) (aiquestion.Question, error) {
 	out := aiquestion.Question{
 		QuestionNumber: number,
-		// The bank carries no render hint; the client draws a bank question
-		// from its kind.
-		QuestionType:  aiquestion.TypeArithmetic,
-		QuestionName:  q.QuestionText(),
-		QuestionTopic: utils.DerefString(q.QuestionTopic()),
-		QuestionTags:  q.QuestionTags(),
-		Kind:          q.QuestionKind().String(),
+		QuestionName:   q.QuestionText(),
+		QuestionTopic:  utils.DerefString(q.QuestionTopic()),
+		QuestionTags:   q.QuestionTags(),
+		Kind:           q.QuestionKind().String(),
 	}
 	grade := q.QuestionGrade()
 	out.QuestionGrade = &grade

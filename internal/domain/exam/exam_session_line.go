@@ -42,7 +42,6 @@ type ExamSessionLine struct {
 	reqExamType string
 
 	questionNumber  int
-	renderType      *string
 	questionKind    *string
 	questionText    *string
 	questionTopic   *string
@@ -82,8 +81,6 @@ func (d *ExamSessionLine) SetReqExamType(t string)      { d.reqExamType = t }
 func (d *ExamSessionLine) SetExamId(id int64)           { d.examId = id }
 func (d *ExamSessionLine) QuestionNumber() int          { return d.questionNumber }
 func (d *ExamSessionLine) SetQuestionNumber(n int)      { d.questionNumber = n }
-func (d *ExamSessionLine) RenderType() *string          { return d.renderType }
-func (d *ExamSessionLine) SetRenderType(s *string)      { d.renderType = s }
 func (d *ExamSessionLine) QuestionKind() *string        { return d.questionKind }
 func (d *ExamSessionLine) SetQuestionKind(s *string)    { d.questionKind = s }
 func (d *ExamSessionLine) QuestionText() *string        { return d.questionText }
