@@ -39,6 +39,16 @@
 -- 0..5. That column is the signal a promotion rule wants: "did the child
 -- get the harder questions right?"
 --
+-- question_tags is the question's tags copied from the JSON, with the rules
+-- of ma_question_pools.question_tags (at most 20 of at most 64 characters,
+-- already cleaned when the set was stored). NOT NULL with no DEFAULT, like
+-- the bank's column: every INSERT sends it, '[]' when none.
+--
+-- explanation is the question's worked solution copied from the JSON, with
+-- the rules of ma_question_pools.explanation (trimmed, NULL when blank, at
+-- most 5000 characters — already applied when the set was stored). A line
+-- exists only once the sitting is submitted, so it is always shown.
+--
 -- Rows are written once at submit and never updated.
 
 CREATE TABLE IF NOT EXISTS ma_exam_session_lines (
@@ -53,6 +63,8 @@ CREATE TABLE IF NOT EXISTS ma_exam_session_lines (
   question_kind        VARCHAR(32)  DEFAULT NULL,            -- NULL = single-choice; else SINGLE_CHOICE / MULTIPLE_CHOICE / TRUE_FALSE / NUMERIC_INPUT
   question_text        TEXT         DEFAULT NULL,            -- the stem; may carry emoji or [icon:NAME] tokens
   question_topic       VARCHAR(64)  DEFAULT NULL,            -- skill tag, drives weak-topic mining
+  question_tags        JSON         NOT NULL,                -- ["addition", "mental_math"]; always sent, '[]' when none (no DEFAULT, as ma_question_pools)
+  explanation          TEXT         DEFAULT NULL,            -- worked solution / why the answer is right, shown after answering
   question_grade       TINYINT UNSIGNED DEFAULT NULL,        -- 0..6 (6 only on an ASSESSMENT probe at req_grade 5)
   question_level       TINYINT UNSIGNED DEFAULT NULL,
   right_option_ids     VARCHAR(255) DEFAULT NULL,            -- correct option ids, joined and sorted ("a,c"); NULL for a numeric question

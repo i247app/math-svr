@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"math-ai.com/math-ai/internal/application/dto/aiquestion"
+	"math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -50,6 +53,10 @@ type ExamOption struct {
 //     agree). It is never stored — the displayed key text is derived from
 //     the options — and never served.
 //   - QuestionImageKey / QuestionImageURL: the stem's image, as for options.
+//   - Explanation is the worked solution (why the key is right): it gives
+//     the answer away, so it is blanked with the key on a live exam.
+//     QuestionTags are short English labels ("addition"). Both follow the
+//     rules of ma_question_pools (NormalizeExtras).
 type ExamQuestion struct {
 	QuestionNumber   int                `json:"question_number"`
 	QuestionKind     string             `json:"question_kind,omitempty"`
@@ -59,6 +66,7 @@ type ExamQuestion struct {
 	Options          []ExamOption       `json:"options"`
 	CorrectAnswer    *ExamCorrectAnswer `json:"correct_answer,omitempty"`
 	RightAnswerText  string             `json:"right_answer_text,omitempty"`
+	Explanation      string             `json:"explanation,omitempty"`
 	QuestionTopic    string             `json:"question_topic,omitempty"`
 	QuestionGrade    *int               `json:"question_grade,omitempty"`
 	QuestionTags     []string           `json:"question_tags,omitempty"`
@@ -134,6 +142,7 @@ func (q ExamQuestion) ToShared() aiquestion.Question {
 		QuestionGrade:  q.QuestionGrade,
 		Kind:           q.QuestionKind,
 		QuestionTags:   q.QuestionTags,
+		Explanation:    q.Explanation,
 		ImageKey:       q.QuestionImageKey,
 	}
 	ca := q.CorrectAnswer
@@ -184,6 +193,7 @@ func ExamQuestionFrom(q aiquestion.Question) ExamQuestion {
 		QuestionTopic:    q.QuestionTopic,
 		QuestionGrade:    q.QuestionGrade,
 		QuestionTags:     q.QuestionTags,
+		Explanation:      q.Explanation,
 	}
 	switch q.EffectiveKind() {
 	case aiquestion.KindMultipleChoice:
@@ -302,6 +312,30 @@ func (q *ExamQuestion) NormalizeIDs() {
 			q.CorrectAnswer.OptionIDs[i] = clean(q.CorrectAnswer.OptionIDs[i])
 		}
 	}
+}
+
+// NormalizeExtras applies the rules of ma_question_pools to the
+// explanation and the tags, leniently: a model's slip must not fail the
+// round, so the explanation is trimmed and cut at MaxExplanationRunes, and
+// tags are trimmed, blanks and repeats dropped, over-long ones dropped and
+// the list cut at MaxTags — where the bank would refuse the question.
+func (q *ExamQuestion) NormalizeExtras() {
+	q.Explanation = strings.TrimSpace(q.Explanation)
+	if r := []rune(q.Explanation); len(r) > questionpool.MaxExplanationRunes {
+		q.Explanation = strings.TrimSpace(string(r[:questionpool.MaxExplanationRunes]))
+	}
+	tags := make([]string, 0, len(q.QuestionTags))
+	for _, t := range q.QuestionTags {
+		t = strings.TrimSpace(t)
+		if t == "" || utf8.RuneCountInString(t) > questionpool.MaxTagRunes || slices.Contains(tags, t) {
+			continue
+		}
+		tags = append(tags, t)
+	}
+	if len(tags) > questionpool.MaxTags {
+		tags = tags[:questionpool.MaxTags]
+	}
+	q.QuestionTags = tags
 }
 
 // ReconcileKey makes a model-written single-choice key agree with the

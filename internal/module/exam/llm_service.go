@@ -136,11 +136,13 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	// right_answer_text when the two disagree (its working wins). A round
 	// written under an older field vocabulary (a prompt not rewritten yet)
 	// parses as questions without a correct_answer, or options without ids
-	// — refused here, before anything is stored.
+	// — refused here, before anything is stored. The explanation and tags
+	// are cleaned to the bank's rules (NormalizeExtras), never refused.
 	for i := range gen.Questions {
 		q := &gen.Questions[i]
 		q.QuestionKind = aiquestion.KindSingleChoice
 		q.NormalizeIDs()
+		q.NormalizeExtras()
 		if q.ReconcileKey() {
 			log.Warnf("exam.llm.key_moved_to_answer_text q=%d option=%s", q.QuestionNumber, q.CorrectAnswer.OptionIDs[0])
 		}

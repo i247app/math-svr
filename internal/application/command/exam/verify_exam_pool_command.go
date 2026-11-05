@@ -101,6 +101,7 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 			q := &cmd.Questions[i]
 			q.QuestionImageKey, q.QuestionImageURL = "", ""
 			q.RightAnswerText = "" // derived from the key, never stored
+			q.NormalizeExtras()
 			q.Options = slices.Clone(q.Options)
 			for j := range q.Options {
 				q.Options[j].ImageKey, q.Options[j].ImageURL = "", ""

@@ -19,10 +19,7 @@ const (
 	MaxQuestionPoolsPerCreate = 100
 	MaxTextRunes              = 2000
 	MaxOptionTextRunes        = 500
-	MaxExplanationRunes       = 5000
 	MaxTopicRunes             = 255
-	MaxTags                   = 20
-	MaxTagRunes               = 64 // what ix_question_tags (CHAR(64) ARRAY) accepts
 	MaxImageKeyLen            = 1000
 	MaxListSize               = 100 // one page; each question may carry 11 presigned URLs
 
@@ -292,14 +289,14 @@ func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, [
 		add(status.QUESTION_POOL_INVALID, "question_sub_level: %d is outside %d..%d", *l, domain.LevelMin, domain.LevelMax)
 	}
 	explanation := trimmedOrNil(item.Explanation)
-	if explanation != nil && utf8.RuneCountInString(*explanation) > MaxExplanationRunes {
-		add(status.QUESTION_POOL_INVALID, "explanation: longer than %d characters", MaxExplanationRunes)
+	if explanation != nil && utf8.RuneCountInString(*explanation) > domain.MaxExplanationRunes {
+		add(status.QUESTION_POOL_INVALID, "explanation: longer than %d characters", domain.MaxExplanationRunes)
 	}
 	topic := trimmedOrNil(item.QuestionTopic)
 	if topic != nil && utf8.RuneCountInString(*topic) > MaxTopicRunes {
 		add(status.QUESTION_POOL_INVALID, "question_topic: longer than %d characters", MaxTopicRunes)
 	}
-	tags, msg := cleanTags(item.QuestionTags)
+	tags, msg := domain.CleanTags(item.QuestionTags)
 	if msg != "" {
 		add(status.QUESTION_POOL_INVALID, "question_tags: %s", msg)
 	}
@@ -356,26 +353,6 @@ func checkImageKey(key *string) string {
 	return ""
 }
 
-// cleanTags trims, drops blanks and repeats; it returns why the list is
-// refused, or "".
-func cleanTags(raw []string) ([]string, string) {
-	tags := make([]string, 0, len(raw))
-	for _, t := range raw {
-		t = strings.TrimSpace(t)
-		if t == "" || slices.Contains(tags, t) {
-			continue
-		}
-		if utf8.RuneCountInString(t) > MaxTagRunes {
-			return nil, fmt.Sprintf("%q is longer than %d characters", t, MaxTagRunes)
-		}
-		tags = append(tags, t)
-	}
-	if len(tags) > MaxTags {
-		return nil, fmt.Sprintf("at most %d tags, got %d", MaxTags, len(tags))
-	}
-	return tags, ""
-}
-
 func trimmedOrNil(s *string) *string {
 	if s == nil {
 		return nil
@@ -414,7 +391,7 @@ func ValidateListQuestionPools(ctx context.Context, req *dto.ListQuestionPoolsRe
 		filter.SubLevel = l
 	}
 	filter.Topic = trimmedOrNil(req.QuestionTopic)
-	tags, msg := cleanTags(req.QuestionTags)
+	tags, msg := domain.CleanTags(req.QuestionTags)
 	if msg != "" {
 		return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil, errors.New("question_tags: "+msg))
 	}

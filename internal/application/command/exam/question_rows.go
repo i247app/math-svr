@@ -20,8 +20,8 @@ import (
 // (questions_json, []dto.ExamQuestion) into its ma_questions rows, one
 // per element, in stored order. It reads the very string the pool row
 // holds, so every row matches its JSON element field for field (the key
-// is its correct_answer, in the bank's shape); an empty question_topic is
-// stored as NULL. Ids are left to the caller.
+// is its correct_answer, in the bank's shape); an empty question_topic or
+// explanation is stored as NULL, no tags as '[]'. Ids are left to the caller.
 func QuestionRows(examID int64, questionsJSON string) ([]*question.Question, error) {
 	var stored []dto.ExamQuestion
 	if err := json.Unmarshal([]byte(questionsJSON), &stored); err != nil {
@@ -45,6 +45,8 @@ func QuestionRows(examID int64, questionsJSON string) ([]*question.Question, err
 		q.SetQuestionText(s.QuestionText)
 		q.SetOptions(options)
 		q.SetCorrectAnswer(key)
+		q.SetExplanation(nonEmpty(s.Explanation))
+		q.SetQuestionTags(s.QuestionTags)
 		q.SetQuestionTopic(nonEmpty(s.QuestionTopic))
 		q.SetQuestionGrade(s.QuestionGrade)
 		q.SetQuestionStatus(&active)

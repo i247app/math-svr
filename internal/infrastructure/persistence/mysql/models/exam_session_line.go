@@ -14,6 +14,8 @@ type ExamSessionLineModel struct {
 	QuestionKind    *string
 	QuestionText    *string
 	QuestionTopic   *string
+	QuestionTags    string // JSON ["addition", …], never NULL
+	Explanation     *string
 	QuestionGrade   *int
 	QuestionLevel   *int
 	RightOptionIDs  *string

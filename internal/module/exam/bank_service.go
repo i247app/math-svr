@@ -220,6 +220,7 @@ func toExamQuestion(q *questionpool.QuestionPool, number int) (aiquestion.Questi
 		QuestionName:   q.QuestionText(),
 		QuestionTopic:  utils.DerefString(q.QuestionTopic()),
 		QuestionTags:   q.QuestionTags(),
+		Explanation:    utils.DerefString(q.Explanation()),
 		Kind:           q.QuestionKind().String(),
 	}
 	grade := q.QuestionGrade()

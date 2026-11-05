@@ -89,6 +89,7 @@ type Question struct {
 	QuestionGrade      *int           `json:"question_grade,omitempty"`
 	QuestionLevel      *int           `json:"question_level,omitempty"`
 	QuestionTags       []string       `json:"question_tags,omitempty"`
+	Explanation        string         `json:"explanation,omitempty"`
 
 	// ImageKey is the S3 key of an image shown with the stem (question bank
 	// sets only).

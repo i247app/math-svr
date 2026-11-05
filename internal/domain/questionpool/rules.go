@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+	"unicode/utf8"
 
 	"golang.org/x/text/unicode/norm"
 )
@@ -18,6 +19,34 @@ const (
 	MinOptions = 2
 	MaxOptions = 10
 )
+
+// Limits of a question's explanation and tags, shared by the bank
+// (ma_question_pools) and the exam flow's question rows (ma_questions).
+const (
+	MaxExplanationRunes = 5000
+	MaxTags             = 20
+	MaxTagRunes         = 64 // what ix_question_tags (CHAR(64) ARRAY) accepts
+)
+
+// CleanTags trims, drops blanks and repeats; it returns why the list is
+// refused, or "".
+func CleanTags(raw []string) ([]string, string) {
+	tags := make([]string, 0, len(raw))
+	for _, t := range raw {
+		t = strings.TrimSpace(t)
+		if t == "" || slices.Contains(tags, t) {
+			continue
+		}
+		if utf8.RuneCountInString(t) > MaxTagRunes {
+			return nil, fmt.Sprintf("%q is longer than %d characters", t, MaxTagRunes)
+		}
+		tags = append(tags, t)
+	}
+	if len(tags) > MaxTags {
+		return nil, fmt.Sprintf("at most %d tags, got %d", MaxTags, len(tags))
+	}
+	return tags, ""
+}
 
 // Ranges of question_grade (0 = Mẫu giáo, 1..5 = Lớp 1..5, 6 = Lớp 6 — the
 // product stops at grade 5, but a grade-5 exam's probe questions sit one

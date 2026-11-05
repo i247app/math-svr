@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strings"
@@ -17,7 +18,7 @@ const (
 	examSessionLineTable = "ma_exam_session_lines"
 
 	examSessionLineColumns = `d.esess_ln_id, d.elink_id, d.esess_id, d.exam_id, d.req_exam_type,
-		d.question_number, d.question_kind, d.question_text, d.question_topic, d.question_grade, d.question_level,
+		d.question_number, d.question_kind, d.question_text, d.question_topic, d.question_tags, d.explanation, d.question_grade, d.question_level,
 		d.right_option_ids, d.right_answer_text,
 		d.child_option_ids, d.child_answer_text, d.is_correct,
 		d.rpt_flg, d.kwords, d.note, d.esess_ln_status, d.status,
@@ -29,12 +30,12 @@ const (
 	// to each other: CreateBatch repeats the tuple once per row, so the
 	// two must be edited together or the batch insert misaligns.
 	examSessionLineInsertColumns = `(esess_ln_id, elink_id, esess_id, exam_id, req_exam_type,
-			question_number, question_kind, question_text, question_topic, question_grade, question_level,
+			question_number, question_kind, question_text, question_topic, question_tags, explanation, question_grade, question_level,
 			right_option_ids, right_answer_text,
 			child_option_ids, child_answer_text, is_correct,
 			rpt_flg, kwords, note, esess_ln_status, create_id, create_dt, modify_dt)`
 
-	examSessionLineValueTuple = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	examSessionLineValueTuple = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func examSessionLineActiveArgs() []any {
@@ -52,7 +53,7 @@ func NewExamSessionLineRepository(db database.Executor) exam.IExamSessionLineRep
 func scanExamSessionLine(s database.RowScanner) (*models.ExamSessionLineModel, error) {
 	var m models.ExamSessionLineModel
 	if err := s.Scan(&m.EsessLnId, &m.ElinkId, &m.EsessId, &m.ExamId, &m.ReqExamType,
-		&m.QuestionNumber, &m.QuestionKind, &m.QuestionText, &m.QuestionTopic, &m.QuestionGrade, &m.QuestionLevel,
+		&m.QuestionNumber, &m.QuestionKind, &m.QuestionText, &m.QuestionTopic, &m.QuestionTags, &m.Explanation, &m.QuestionGrade, &m.QuestionLevel,
 		&m.RightOptionIDs, &m.RightAnswerText,
 		&m.ChildOptionIDs, &m.ChildAnswerText, &m.IsCorrect,
 		&m.RptFlg, &m.Kwords, &m.Note, &m.EsessLnStatus, &m.Status,
@@ -76,7 +77,7 @@ func (r *ExamSessionLineRepository) CreateBatch(ctx context.Context, details []*
 
 	now := mtime.Now().Time
 	placeholders := make([]string, 0, len(details))
-	args := make([]any, 0, len(details)*23)
+	args := make([]any, 0, len(details)*25)
 
 	for _, d := range details {
 		esessLnStatus := d.EsessLnStatus()
@@ -84,10 +85,14 @@ func (r *ExamSessionLineRepository) CreateBatch(ctx context.Context, details []*
 			s := string(enum.EsessLnStatusActive)
 			esessLnStatus = &s
 		}
+		tags, err := marshalQuestionTags(d.QuestionTags())
+		if err != nil {
+			return err
+		}
 		placeholders = append(placeholders, examSessionLineValueTuple)
 		args = append(args,
 			d.EsessLnId(), d.ElinkId(), d.EsessId(), d.ExamId(), d.ReqExamType(),
-			d.QuestionNumber(), d.QuestionKind(), d.QuestionText(), d.QuestionTopic(), d.QuestionGrade(), d.QuestionLevel(),
+			d.QuestionNumber(), d.QuestionKind(), d.QuestionText(), d.QuestionTopic(), tags, d.Explanation(), d.QuestionGrade(), d.QuestionLevel(),
 			d.RightOptionIDs(), d.RightAnswerText(),
 			d.ChildOptionIDs(), d.ChildAnswerText(), d.IsCorrect(),
 			d.RptFlg(), d.Kwords(), d.Note(), esessLnStatus, d.CreateId(), now, now)
@@ -123,7 +128,11 @@ func (r *ExamSessionLineRepository) list(ctx context.Context, where string, args
 		if err != nil {
 			return nil, fmt.Errorf("user exam detail repo scan row: %w", err)
 		}
-		details = append(details, ModelToDomainExamSessionLine(m))
+		d, err := ModelToDomainExamSessionLine(m)
+		if err != nil {
+			return nil, err
+		}
+		details = append(details, d)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("user exam detail repo rows iteration: %w", err)
@@ -173,7 +182,11 @@ func (r *ExamSessionLineRepository) ListRecentByEsessId(ctx context.Context, ese
 		"ORDER BY d.esess_ln_id DESC LIMIT ?", limit)
 }
 
-func ModelToDomainExamSessionLine(m *models.ExamSessionLineModel) *exam.ExamSessionLine {
+func ModelToDomainExamSessionLine(m *models.ExamSessionLineModel) (*exam.ExamSessionLine, error) {
+	var tags []string
+	if err := json.Unmarshal([]byte(m.QuestionTags), &tags); err != nil {
+		return nil, fmt.Errorf("user exam detail repo decode question_tags of %d: %w", m.EsessLnId, err)
+	}
 	d := exam.NewExamSessionLine()
 	d.SetEsessLnId(m.EsessLnId)
 	d.SetElinkId(m.ElinkId)
@@ -184,6 +197,8 @@ func ModelToDomainExamSessionLine(m *models.ExamSessionLineModel) *exam.ExamSess
 	d.SetQuestionKind(m.QuestionKind)
 	d.SetQuestionText(m.QuestionText)
 	d.SetQuestionTopic(m.QuestionTopic)
+	d.SetQuestionTags(tags)
+	d.SetExplanation(m.Explanation)
 	d.SetQuestionGrade(m.QuestionGrade)
 	d.SetQuestionLevel(m.QuestionLevel)
 	d.SetRightOptionIDs(m.RightOptionIDs)
@@ -200,5 +215,5 @@ func ModelToDomainExamSessionLine(m *models.ExamSessionLineModel) *exam.ExamSess
 	d.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
 	d.SetModifyId(m.ModifyId)
 	d.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
-	return d
+	return d, nil
 }

@@ -40,7 +40,8 @@ type Spec struct {
 var examGenerationKeys = []string{
 	`"short_text"`, `"questions"`, `"question_number"`, `"question_kind"`,
 	`"question_text"`, `"options"`, `"id"`, `"text"`,
-	`"correct_answer"`, `"option_ids"`, `"right_answer_text"`, `"question_topic"`, `"question_grade"`,
+	`"correct_answer"`, `"option_ids"`, `"right_answer_text"`, `"explanation"`, `"question_topic"`,
+	`"question_tags"`, `"question_grade"`,
 }
 
 var specs = map[Code]Spec{

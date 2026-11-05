@@ -176,6 +176,8 @@ type ExamAnswerDetail struct {
 	QuestionImageURL string       `json:"question_image_url,omitempty"`
 	Options          []ExamOption `json:"options,omitempty"`
 	QuestionTopic    *string      `json:"question_topic,omitempty"`
+	QuestionTags     []string     `json:"question_tags,omitempty"`
+	Explanation      *string      `json:"explanation,omitempty"`
 	QuestionGrade    *int         `json:"question_grade,omitempty"`
 
 	// The key and the child's answer, the same four fields for every kind of
@@ -433,6 +435,8 @@ func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*ai
 			QuestionImageKey: imageKey,
 			Options:          OptionsFrom(answers),
 			QuestionTopic:    d.QuestionTopic(),
+			QuestionTags:     d.QuestionTags(),
+			Explanation:      d.Explanation(),
 			QuestionGrade:    d.QuestionGrade(),
 			RightOptionIDs:   right,
 			RightAnswerText:  utils.DerefString(d.RightAnswerText()),
@@ -614,6 +618,7 @@ func servedQuestions(raw string, sh *aiquestion.Shuffle, includeAnswerKey bool) 
 	if !includeAnswerKey {
 		for i := range out {
 			out[i].CorrectAnswer = nil
+			out[i].Explanation = ""
 		}
 	}
 	return out

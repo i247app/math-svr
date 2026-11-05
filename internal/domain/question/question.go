@@ -33,6 +33,8 @@ type Question struct {
 	questionText   string
 	options        []Option
 	correctAnswer  questionpool.CorrectAnswer
+	explanation    *string
+	questionTags   []string
 	questionTopic  *string
 	questionGrade  *int
 
@@ -63,6 +65,10 @@ func (q *Question) Options() []Option                             { return q.opt
 func (q *Question) SetOptions(a []Option)                         { q.options = a }
 func (q *Question) CorrectAnswer() questionpool.CorrectAnswer     { return q.correctAnswer }
 func (q *Question) SetCorrectAnswer(a questionpool.CorrectAnswer) { q.correctAnswer = a }
+func (q *Question) Explanation() *string                          { return q.explanation }
+func (q *Question) SetExplanation(s *string)                      { q.explanation = s }
+func (q *Question) QuestionTags() []string                        { return q.questionTags }
+func (q *Question) SetQuestionTags(t []string)                    { q.questionTags = t }
 func (q *Question) QuestionTopic() *string                        { return q.questionTopic }
 func (q *Question) SetQuestionTopic(s *string)                    { q.questionTopic = s }
 func (q *Question) QuestionGrade() *int                           { return q.questionGrade }

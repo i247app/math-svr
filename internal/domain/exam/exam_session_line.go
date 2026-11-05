@@ -45,6 +45,8 @@ type ExamSessionLine struct {
 	questionKind    *string
 	questionText    *string
 	questionTopic   *string
+	questionTags    []string
+	explanation     *string
 	questionGrade   *int
 	questionLevel   *int
 	rightOptionIDs  *string
@@ -87,6 +89,10 @@ func (d *ExamSessionLine) QuestionText() *string        { return d.questionText 
 func (d *ExamSessionLine) SetQuestionText(s *string)    { d.questionText = s }
 func (d *ExamSessionLine) QuestionTopic() *string       { return d.questionTopic }
 func (d *ExamSessionLine) SetQuestionTopic(s *string)   { d.questionTopic = s }
+func (d *ExamSessionLine) QuestionTags() []string       { return d.questionTags }
+func (d *ExamSessionLine) SetQuestionTags(t []string)   { d.questionTags = t }
+func (d *ExamSessionLine) Explanation() *string         { return d.explanation }
+func (d *ExamSessionLine) SetExplanation(s *string)     { d.explanation = s }
 func (d *ExamSessionLine) QuestionGrade() *int          { return d.questionGrade }
 func (d *ExamSessionLine) SetQuestionGrade(g *int)      { d.questionGrade = g }
 func (d *ExamSessionLine) QuestionLevel() *int          { return d.questionLevel }

@@ -31,6 +31,15 @@
 --                       NUMERIC_INPUT             {"values": ["0.5", "1/2"]}
 --                     A new kind is a new part of the JSON, not a new column;
 --                     the key's display text is derived from the options.
+--   explanation       worked solution / why the answer is right, as the model
+--                     (or the bank) wrote it; trimmed, NULL when blank, at
+--                     most 5000 characters — the rule of
+--                     ma_question_pools.explanation
+--   question_tags     JSON ["addition", "mental_math"]: trimmed, blanks and
+--                     repeats dropped, at most 20 of at most 64 characters
+--                     (ma_question_pools.question_tags). NOT NULL with no
+--                     DEFAULT, like the bank's column: every INSERT sends it,
+--                     '[]' when none
 --   question_topic    curriculum topic as the model wrote it
 --   question_grade    the band this one question targets: the round's grade,
 --                     or grade + 1 at an ASSESSMENT / PRACTICE probe slot
@@ -55,6 +64,8 @@ CREATE TABLE IF NOT EXISTS ma_questions (
   question_text         TEXT          NOT NULL,                 -- the stem shown to the child
   options               JSON          NOT NULL,                 -- [{"id","text"}] in canonical order
   correct_answer        JSON          NOT NULL,                 -- {"option_ids"} / {"value"} / {"values"}, as ma_question_pools.correct_answer
+  explanation           TEXT          DEFAULT NULL,             -- worked solution / why the answer is right, shown after answering
+  question_tags         JSON          NOT NULL,                 -- ["addition", "mental_math"]; always sent, '[]' when none (no DEFAULT, as ma_question_pools)
   question_topic        VARCHAR(255)  DEFAULT NULL,             -- curriculum topic as written by the model
   question_grade        TINYINT UNSIGNED DEFAULT NULL,          -- 0 = Mẫu giáo, 1..5 = Lớp 1..5; the band of this question (probes: grade + 1)
 

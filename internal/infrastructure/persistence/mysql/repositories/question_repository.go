@@ -19,7 +19,7 @@ const (
 	questionTable = "ma_questions"
 
 	questionColumns = `q.question_id, q.exam_id, q.question_number, q.question_kind, q.question_text,
-		q.options, q.correct_answer, q.question_topic, q.question_grade,
+		q.options, q.correct_answer, q.explanation, q.question_tags, q.question_topic, q.question_grade,
 		q.question_status, q.rpt_flg, q.kwords, q.note, q.status,
 		q.create_id, q.create_dt, q.modify_id, q.modify_dt`
 
@@ -27,7 +27,7 @@ const (
 
 	// questionInsertRow is one VALUES tuple of CreateMany, in the column
 	// order of its INSERT list.
-	questionInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	questionInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func questionActiveArgs() []any {
@@ -53,7 +53,7 @@ func NewQuestionRepository(db database.Executor) question.IRepository {
 func scanQuestion(s database.RowScanner) (*models.QuestionModel, error) {
 	var m models.QuestionModel
 	if err := s.Scan(&m.QuestionId, &m.ExamId, &m.QuestionNumber, &m.QuestionKind, &m.QuestionText,
-		&m.Options, &m.CorrectAnswer, &m.QuestionTopic, &m.QuestionGrade,
+		&m.Options, &m.CorrectAnswer, &m.Explanation, &m.QuestionTags, &m.QuestionTopic, &m.QuestionGrade,
 		&m.QuestionStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (r *QuestionRepository) CreateMany(ctx context.Context, questions []*questi
 	}
 	now := mtime.Now().Time
 	tuples := make([]string, 0, len(questions))
-	args := make([]any, 0, len(questions)*16)
+	args := make([]any, 0, len(questions)*18)
 	for _, q := range questions {
 		options, err := marshalOptions(q.Options())
 		if err != nil {
@@ -81,16 +81,20 @@ func (r *QuestionRepository) CreateMany(ctx context.Context, questions []*questi
 		if err != nil {
 			return fmt.Errorf("question repo marshal correct_answer: %w", err)
 		}
+		tags, err := marshalQuestionTags(q.QuestionTags())
+		if err != nil {
+			return err
+		}
 		tuples = append(tuples, questionInsertRow)
 		args = append(args,
 			q.QuestionId(), q.ExamId(), q.QuestionNumber(), q.QuestionKind(), q.QuestionText(),
-			options, string(answer), q.QuestionTopic(), q.QuestionGrade(),
+			options, string(answer), q.Explanation(), tags, q.QuestionTopic(), q.QuestionGrade(),
 			q.QuestionStatus(), q.RptFlg(), q.Kwords(), q.Note(),
 			createId, now, now)
 	}
 	query := `INSERT INTO ` + questionTable + `
 			(question_id, exam_id, question_number, question_kind, question_text,
-			 options, correct_answer, question_topic, question_grade,
+			 options, correct_answer, explanation, question_tags, question_topic, question_grade,
 			 question_status, rpt_flg, kwords, note,
 			 create_id, create_dt, modify_dt)
 		VALUES ` + strings.Join(tuples, ", ")
@@ -154,6 +158,19 @@ func marshalOptions(in []question.Option) (string, error) {
 	return string(raw), nil
 }
 
+// marshalQuestionTags never renders null: question_tags is NOT NULL with
+// no DEFAULT (as on ma_question_pools), so no tags is '[]'.
+func marshalQuestionTags(tags []string) (string, error) {
+	if tags == nil {
+		tags = []string{}
+	}
+	raw, err := json.Marshal(tags)
+	if err != nil {
+		return "", fmt.Errorf("question repo marshal question_tags: %w", err)
+	}
+	return string(raw), nil
+}
+
 func ModelToDomainQuestion(m *models.QuestionModel) (*question.Question, error) {
 	var stored []questionOptionJSON
 	if err := json.Unmarshal([]byte(m.Options), &stored); err != nil {
@@ -167,6 +184,10 @@ func ModelToDomainQuestion(m *models.QuestionModel) (*question.Question, error) 
 	if err := json.Unmarshal([]byte(m.CorrectAnswer), &answer); err != nil {
 		return nil, fmt.Errorf("question repo decode correct_answer of %d: %w", m.QuestionId, err)
 	}
+	var tags []string
+	if err := json.Unmarshal([]byte(m.QuestionTags), &tags); err != nil {
+		return nil, fmt.Errorf("question repo decode question_tags of %d: %w", m.QuestionId, err)
+	}
 
 	q := question.NewQuestion()
 	q.SetQuestionId(m.QuestionId)
@@ -176,6 +197,8 @@ func ModelToDomainQuestion(m *models.QuestionModel) (*question.Question, error) 
 	q.SetQuestionText(m.QuestionText)
 	q.SetOptions(options)
 	q.SetCorrectAnswer(questionpool.CorrectAnswer{OptionIds: answer.OptionIds, Value: answer.Value, Values: answer.Values})
+	q.SetExplanation(m.Explanation)
+	q.SetQuestionTags(tags)
 	q.SetQuestionTopic(m.QuestionTopic)
 	q.SetQuestionGrade(m.QuestionGrade)
 	q.SetQuestionStatus(m.QuestionStatus)
