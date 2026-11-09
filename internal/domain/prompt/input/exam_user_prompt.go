@@ -12,7 +12,7 @@ import (
 // The system prompt is not here. It lives in ma_prompts, one row per exam
 // type (and grade), written and rewritten by admins (/prompts/*), and is sent
 // verbatim. This file builds what goes beside it: current_grade, the LEVEL
-// PROFILE of a GRADE review, the brief of a PRACTICE round, and the
+// PROFILE of a GRADE review, the QUESTION LEVELS of every round, the brief of a PRACTICE round, and the
 // curriculum context. The instructions are English; the child's own stems,
 // answers and topics are quoted as stored (Vietnamese).
 //
@@ -99,6 +99,12 @@ func buildUserExamEN(in ExamPromptInput, n int) string {
 			out.WriteString("\n")
 		}
 	}
+
+	// Every round states the level pair of each question, so the block does
+	// not depend on how the stored system prompt phrases it.
+	out.WriteString("\n")
+	out.WriteString(questionLevelsBlock(in.ExamType, n, in.Level, in.SubLevel))
+	out.WriteString("\n")
 
 	if in.ExamType == enum.ExamTypePractice && in.Practice != nil {
 		out.WriteString("\n")

@@ -32,11 +32,16 @@ type GenerateExamReq struct {
 	ProfileID int64 `json:"profile_id"`
 	// ChildName is read only on the guest path, to name the profile being
 	// opened. Ignored once a profile exists — renaming is /profiles/update.
-	ChildName    string `json:"child_name,omitempty"`
-	ExamType     string `json:"exam_type"`
-	EsessID      *int64 `json:"esess_id,omitempty"`
-	Grade        *int   `json:"grade,omitempty"`
-	Level        *int   `json:"level,omitempty"`
+	ChildName string `json:"child_name,omitempty"`
+	ExamType  string `json:"exam_type"`
+	EsessID   *int64 `json:"esess_id,omitempty"`
+	Grade     *int   `json:"grade,omitempty"`
+	Level     *int   `json:"level,omitempty"`
+	// Level / SubLevel (0..9 each; SubLevel is a finer step inside Level)
+	// set question_level / question_sub_level of every question of a
+	// model-written set, any type, and are part of the cache tag; a GRADE
+	// paper is also written at Level. Not stated = ramps Q1 = 0 .. Q10 = 9.
+	SubLevel     *int   `json:"sub_level,omitempty"`
 	NumQuestions int    `json:"num_questions,omitempty"` // ignored: every exam is 10 questions (module/exam DefaultNumQuestions)
 	Semester     string `json:"semester,omitempty"`
 	Program      string `json:"program,omitempty"`
@@ -823,9 +828,14 @@ type JourneyProgressRes struct {
 // grade from, grade is required. PRACTICE is refused: a practice round is
 // built from one child's mistakes.
 type GenerateExamPoolReq struct {
-	ExamType     string `json:"exam_type"`
-	Grade        *int   `json:"grade"`
-	Level        *int   `json:"level,omitempty"`
+	ExamType string `json:"exam_type"`
+	Grade    *int   `json:"grade"`
+	Level    *int   `json:"level,omitempty"`
+	// Level / SubLevel (0..9 each; SubLevel is a finer step inside Level)
+	// set question_level / question_sub_level of every question of a
+	// model-written set, any type, and are part of the cache tag; a GRADE
+	// paper is also written at Level. Not stated = ramps Q1 = 0 .. Q10 = 9.
+	SubLevel     *int   `json:"sub_level,omitempty"`
 	NumQuestions int    `json:"num_questions,omitempty"` // ignored: every exam is 10 questions (module/exam DefaultNumQuestions)
 	Semester     string `json:"semester,omitempty"`
 	Program      string `json:"program,omitempty"`

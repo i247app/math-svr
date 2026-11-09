@@ -96,9 +96,21 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 		}
 		// Only a set the model wrote reaches here (a bank set is refused
 		// above) and the model writes no images: whatever image a correction
-		// carries is dropped, so a typed-in key or URL is never stored.
+		// carries is dropped, so a typed-in key or URL is never stored. A
+		// correction that omits the level pair keeps the stored one, so a
+		// client that does not know the fields cannot wipe them.
+		levelOf := make(map[int]dto.ExamQuestion, len(stored))
+		for _, q := range stored {
+			levelOf[q.QuestionNumber] = q
+		}
 		for i := range cmd.Questions {
 			q := &cmd.Questions[i]
+			if q.QuestionLevel == nil {
+				q.QuestionLevel = levelOf[q.QuestionNumber].QuestionLevel
+			}
+			if q.QuestionSubLevel == nil {
+				q.QuestionSubLevel = levelOf[q.QuestionNumber].QuestionSubLevel
+			}
 			q.QuestionImageKey, q.QuestionImageURL = "", ""
 			q.RightAnswerText = "" // derived from the key, never stored
 			q.NormalizeExtras()
@@ -134,7 +146,8 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 // SameQuestionShape reports why fixed cannot replace stored, or nil: same
 // question_numbers (any order), the same question_kind and option ids per
 // question (any order), and a usable question — a question_text and a
-// correct_answer that fits its kind and names its options (dto.Usable).
+// correct_answer that fits its kind and names its options (dto.Usable),
+// and a question_level / question_sub_level, when sent, inside 0..9.
 func SameQuestionShape(stored, fixed []dto.ExamQuestion) error {
 	if len(fixed) != len(stored) {
 		return fmt.Errorf("%d questions sent, the exam has %d", len(fixed), len(stored))
@@ -156,11 +169,19 @@ func SameQuestionShape(stored, fixed []dto.ExamQuestion) error {
 		if got, labels := labelsOf(q), labelsOf(old); !slices.Equal(got, labels) {
 			return fmt.Errorf("question %d: option ids %v, the exam has %v", q.QuestionNumber, got, labels)
 		}
+		if !inLevelScale(q.QuestionLevel) || !inLevelScale(q.QuestionSubLevel) {
+			return fmt.Errorf("question %d: question_level and question_sub_level must be between %d and %d", q.QuestionNumber, enum.ExamLevelMin, enum.ExamLevelMax)
+		}
 		if !q.Usable() {
 			return fmt.Errorf("question %d: needs a question_text and a correct_answer that fits its kind and names its options", q.QuestionNumber)
 		}
 	}
 	return nil
+}
+
+// inLevelScale: absent, or inside the 0..9 level scale.
+func inLevelScale(l *int) bool {
+	return l == nil || (*l >= enum.ExamLevelMin && *l <= enum.ExamLevelMax)
 }
 
 // kindOf is a question's kind, SINGLE_CHOICE when it states none.

@@ -37,6 +37,10 @@ type Question struct {
 	questionTags   []string
 	questionTopic  *string
 	questionGrade  *int
+	// questionLevel / questionSubLevel use the scale of ma_question_pools
+	// (0..9 each); nil on rows written before they were stamped.
+	questionLevel    *int
+	questionSubLevel *int
 
 	questionStatus *string
 	rptFlg         *string
@@ -73,6 +77,10 @@ func (q *Question) QuestionTopic() *string                        { return q.que
 func (q *Question) SetQuestionTopic(s *string)                    { q.questionTopic = s }
 func (q *Question) QuestionGrade() *int                           { return q.questionGrade }
 func (q *Question) SetQuestionGrade(g *int)                       { q.questionGrade = g }
+func (q *Question) QuestionLevel() *int                           { return q.questionLevel }
+func (q *Question) SetQuestionLevel(l *int)                       { q.questionLevel = l }
+func (q *Question) QuestionSubLevel() *int                        { return q.questionSubLevel }
+func (q *Question) SetQuestionSubLevel(l *int)                    { q.questionSubLevel = l }
 func (q *Question) QuestionStatus() *string                       { return q.questionStatus }
 func (q *Question) SetQuestionStatus(s *string)                   { q.questionStatus = s }
 func (q *Question) RptFlg() *string                               { return q.rptFlg }

@@ -30,10 +30,9 @@ import (
 // ("A,C"), a numeric one has no label and keeps the typed number as
 // childAnswerText.
 //
-// questionLevel mirrors the nullable question_level column and is always
-// NULL today: no rule defines a level, so neither the prompt nor the
-// submit path produces one. The field stays so the entity keeps matching
-// the table 1:1 and the column is ready the day a rule lands.
+// questionLevel mirrors the nullable question_level column: the
+// question's question_level as stored in questions_json, copied at submit
+// (NULL for a set stored before 2026-11-09, or an unrated bank question).
 type ExamSessionLine struct {
 	esessLnId   int64
 	elinkId     int64

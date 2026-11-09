@@ -5,24 +5,26 @@ import (
 )
 
 type QuestionModel struct {
-	QuestionId     int64
-	ExamId         int64
-	QuestionNumber int
-	QuestionKind   *string
-	QuestionText   string
-	Options        string // JSON [{"id","text"}]
-	CorrectAnswer  string // JSON {"option_ids"} / {"value"} / {"values"}
-	Explanation    *string
-	QuestionTags   string // JSON ["addition", …], never NULL
-	QuestionTopic  *string
-	QuestionGrade  *int
-	QuestionStatus *string
-	RptFlg         *string
-	Kwords         *string
-	Note           *string
-	Status         string
-	CreateId       *int64
-	CreateDt       time.Time
-	ModifyId       *int64
-	ModifyDt       time.Time
+	QuestionId       int64
+	ExamId           int64
+	QuestionNumber   int
+	QuestionKind     *string
+	QuestionText     string
+	Options          string // JSON [{"id","text"}]
+	CorrectAnswer    string // JSON {"option_ids"} / {"value"} / {"values"}
+	Explanation      *string
+	QuestionTags     string // JSON ["addition", …], never NULL
+	QuestionTopic    *string
+	QuestionGrade    *int
+	QuestionLevel    *int
+	QuestionSubLevel *int
+	QuestionStatus   *string
+	RptFlg           *string
+	Kwords           *string
+	Note             *string
+	Status           string
+	CreateId         *int64
+	CreateDt         time.Time
+	ModifyId         *int64
+	ModifyDt         time.Time
 }

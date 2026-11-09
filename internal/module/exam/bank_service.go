@@ -222,6 +222,10 @@ func toExamQuestion(q *questionpool.QuestionPool, number int) (aiquestion.Questi
 		QuestionTags:   q.QuestionTags(),
 		Explanation:    utils.DerefString(q.Explanation()),
 		Kind:           q.QuestionKind().String(),
+		// The bank row's own rating (nil = not rated): a bank set is not
+		// ramped like a model-written one.
+		QuestionLevel:    q.QuestionLevel(),
+		QuestionSubLevel: q.QuestionSubLevel(),
 	}
 	grade := q.QuestionGrade()
 	out.QuestionGrade = &grade

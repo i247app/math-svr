@@ -69,11 +69,10 @@ const (
 // value lives per question rather than on the round. Quizzes and exercises
 // never populate it, so their payloads are unaffected.
 //
-// There is no per-question level: the exam schema reserves a nullable
-// question_level column, but no rule defines it yet, so the prompt does
-// not ask for it and nothing stores it. A stored blob that still carries a
-// "question_level" key (written before the axis was removed) decodes fine —
-// unknown keys are dropped.
+// QuestionLevel / QuestionSubLevel are the question's level pair on the
+// scale of ma_question_pools (0..9 each): server-stamped on a model-written
+// exam set (input.QuestionLevels), the bank row's own on a bank set, nil on
+// sets stored before 2026-11-09 and on exercises.
 //
 // Kind, RightAnswerLabels and RightValues are only set by exam sets built
 // from the question bank; a question without a Kind is a single-choice one,
@@ -88,6 +87,7 @@ type Question struct {
 	QuestionTopic      string         `json:"question_topic,omitempty"`
 	QuestionGrade      *int           `json:"question_grade,omitempty"`
 	QuestionLevel      *int           `json:"question_level,omitempty"`
+	QuestionSubLevel   *int           `json:"question_sub_level,omitempty"`
 	QuestionTags       []string       `json:"question_tags,omitempty"`
 	Explanation        string         `json:"explanation,omitempty"`
 

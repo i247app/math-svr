@@ -73,19 +73,39 @@ func NormalizeQuestionBands(questions []aiquestion.Question, examType enum.ExamT
 	return questions, mismatches
 }
 
-// StampQuestionLevel writes the round's level onto every question — the
-// same intensity was asked of all of them — or clears it when the round
-// had none. Server-stamped for the same reason question_grade is: the
-// column feeds analytics, and a value the model invented would be a
-// difficulty nobody asked for.
-func StampQuestionLevel(questions []aiquestion.Question, level *int) []aiquestion.Question {
+// LevelMismatch records that the model's question_level or
+// question_sub_level disagreed with the stamped one; logged, never fatal.
+type LevelMismatch struct {
+	QuestionNumber                int
+	ModelLevel, ModelSubLevel     *int
+	AppliedLevel, AppliedSubLevel int
+}
+
+// StampQuestionLevels writes question_level and question_sub_level on every
+// question of a model-written round, by position, from the request's level
+// and sub-level (input.QuestionLevels — the very values the user message
+// asked for), and reports where the model disagreed. Server-stamped for the
+// same reason question_grade is: the columns feed analytics, and a value
+// the model invented would be a difficulty nobody asked for.
+func StampQuestionLevels(questions []aiquestion.Question, examType enum.ExamType, level, subLevel *int) ([]aiquestion.Question, []LevelMismatch) {
+	levels, subLevels := input.QuestionLevels(examType, len(questions), level, subLevel)
+	var mismatches []LevelMismatch
 	for i := range questions {
-		if level == nil {
-			questions[i].QuestionLevel = nil
-			continue
+		q := &questions[i]
+		// Same position rule as NormalizeQuestionBands.
+		number := q.QuestionNumber
+		if number <= 0 || number > len(questions) {
+			number = i + 1
 		}
-		stamped := *level
-		questions[i].QuestionLevel = &stamped
+		l, s := levels[number-1], subLevels[number-1]
+		if (q.QuestionLevel != nil && *q.QuestionLevel != l) || (q.QuestionSubLevel != nil && *q.QuestionSubLevel != s) {
+			mismatches = append(mismatches, LevelMismatch{
+				QuestionNumber: number,
+				ModelLevel:     q.QuestionLevel, ModelSubLevel: q.QuestionSubLevel,
+				AppliedLevel: l, AppliedSubLevel: s,
+			})
+		}
+		q.QuestionLevel, q.QuestionSubLevel = &l, &s
 	}
-	return questions
+	return questions, mismatches
 }

@@ -24,6 +24,7 @@ var (
 	ErrIsVerifyRequired         = errors.New("is_verify is required")
 	ErrQuestionsRequired        = errors.New("questions is required")
 	ErrLevelOutOfRange          = errors.New("level must be between 0 and 9")
+	ErrSubLevelOutOfRange       = errors.New("sub_level must be between 0 and 9")
 	ErrGradeOutOfRange          = errors.New("grade must be between 0 and 5")
 	ErrGradeRequired            = errors.New("grade is required")
 	ErrReviewEmpty              = errors.New("model returned an empty review")

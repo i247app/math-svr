@@ -58,6 +58,9 @@ func ValidateGenerateExam(ctx context.Context, req *dto.GenerateExamReq) (Valida
 	if req.Level != nil && (*req.Level < enum.ExamLevelMin || *req.Level > enum.ExamLevelMax) {
 		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrLevelOutOfRange)
 	}
+	if req.SubLevel != nil && (*req.SubLevel < enum.ExamLevelMin || *req.SubLevel > enum.ExamLevelMax) {
+		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrSubLevelOutOfRange)
+	}
 
 	req.NumQuestions = DefaultNumQuestions
 
@@ -87,6 +90,9 @@ func ValidateGenerateExamPool(ctx context.Context, req *dto.GenerateExamPoolReq)
 	}
 	if req.Level != nil && (*req.Level < enum.ExamLevelMin || *req.Level > enum.ExamLevelMax) {
 		return "", errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrLevelOutOfRange)
+	}
+	if req.SubLevel != nil && (*req.SubLevel < enum.ExamLevelMin || *req.SubLevel > enum.ExamLevelMax) {
+		return "", errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrSubLevelOutOfRange)
 	}
 	req.NumQuestions = DefaultNumQuestions
 	return examType, nil

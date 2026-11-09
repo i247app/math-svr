@@ -51,9 +51,12 @@ type generateExamInput struct {
 	NumQuestions int
 	Semester     string
 	Program      string
-	// Level is the clamped level of a GRADE paper; nil otherwise. It fills
-	// the prompt's {{LEVEL}} and is stamped on every question.
+	// Level is the stated level (clamped for GRADE); nil = not stated. With
+	// SubLevel it decides the level pair of every question
+	// (input.QuestionLevels); a GRADE prompt also reads it as {{LEVEL}}.
 	Level *int
+	// SubLevel is the stated sub-level; nil = not stated.
+	SubLevel *int
 	// Practice aims a PRACTICE round; nil for every other type.
 	Practice *input.PracticeBrief
 	// Avoid is the stems of the child's recent sittings at this grade.
@@ -84,6 +87,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		Semester:     in.Semester,
 		Program:      in.Program,
 		Level:        in.Level,
+		SubLevel:     in.SubLevel,
 		Practice:     in.Practice,
 		// Read from the stored text before rendering fills it in.
 		SystemDefinesLevels: in.Prompt != nil && strings.Contains(in.Prompt.SystemPrompt(), input.PlaceholderLevel),
@@ -171,7 +175,11 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		log.Warnf("exam.question_grade.mismatch q=%d model=%v applied=%d",
 			m.QuestionNumber, utils.DerefInt(m.ModelGrade), m.Applied)
 	}
-	questions = StampQuestionLevel(questions, in.Level)
+	questions, levelMismatches := StampQuestionLevels(questions, in.ExamType, in.Level, in.SubLevel)
+	for _, m := range levelMismatches {
+		log.Warnf("exam.question_level.mismatch q=%d model=%v/%v applied=%d/%d", m.QuestionNumber,
+			utils.DerefInt(m.ModelLevel), utils.DerefInt(m.ModelSubLevel), m.AppliedLevel, m.AppliedSubLevel)
+	}
 
 	// The title is a pure function of the type and the grade, so the server
 	// stamps it (the prompt does not ask for one); the short_text is the

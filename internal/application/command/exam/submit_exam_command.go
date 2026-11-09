@@ -225,6 +225,7 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 		d.SetQuestionTags(o.Question.QuestionTags)
 		d.SetExplanation(utils.ToStringPtr(o.Question.Explanation))
 		d.SetQuestionGrade(o.Question.QuestionGrade)
+		d.SetQuestionLevel(o.Question.QuestionLevel)
 		d.SetRightOptionIDs(utils.ToStringPtr(o.Question.KeyOptionIDs()))
 		d.SetRightAnswerText(utils.ToStringPtr(clip(o.Question.KeyText(), lineContentMax)))
 		d.SetChildOptionIDs(o.ChildOptionIDs)

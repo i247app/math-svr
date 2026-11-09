@@ -57,6 +57,9 @@ type ExamOption struct {
 //     the answer away, so it is blanked with the key on a live exam.
 //     QuestionTags are short English labels ("addition"). Both follow the
 //     rules of ma_question_pools (NormalizeExtras).
+//   - QuestionLevel / QuestionSubLevel: the level pair, 0..9 each, on the
+//     scale of ma_question_pools. The prompt asks for them; the server
+//     stamps them (exam.StampQuestionLevels) like question_grade.
 type ExamQuestion struct {
 	QuestionNumber   int                `json:"question_number"`
 	QuestionKind     string             `json:"question_kind,omitempty"`
@@ -69,6 +72,8 @@ type ExamQuestion struct {
 	Explanation      string             `json:"explanation,omitempty"`
 	QuestionTopic    string             `json:"question_topic,omitempty"`
 	QuestionGrade    *int               `json:"question_grade,omitempty"`
+	QuestionLevel    *int               `json:"question_level,omitempty"`
+	QuestionSubLevel *int               `json:"question_sub_level,omitempty"`
 	QuestionTags     []string           `json:"question_tags,omitempty"`
 }
 
@@ -83,7 +88,9 @@ type ExamCorrectAnswer struct {
 	Values    []string `json:"values,omitempty"`
 }
 
-// UnmarshalJSON reads question_grade as either a number or a band label.
+// UnmarshalJSON reads question_grade as either a number or a band label,
+// and question_level / question_sub_level as integers — anything else is
+// read as absent, since the server stamps all three afterwards.
 // The prompt asks the model for the label ("Mẫu giáo", "Lớp 3") because
 // that is the vocabulary the rules are written in; the column is an int.
 // A label that is neither is read as absent rather than failing the whole
@@ -93,13 +100,26 @@ func (q *ExamQuestion) UnmarshalJSON(data []byte) error {
 	type plain ExamQuestion
 	aux := struct {
 		*plain
-		QuestionGrade json.RawMessage `json:"question_grade,omitempty"`
+		QuestionGrade    json.RawMessage `json:"question_grade,omitempty"`
+		QuestionLevel    json.RawMessage `json:"question_level,omitempty"`
+		QuestionSubLevel json.RawMessage `json:"question_sub_level,omitempty"`
 	}{plain: (*plain)(q)}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 	q.QuestionGrade = parseGrade(aux.QuestionGrade)
+	q.QuestionLevel = parseInt(aux.QuestionLevel)
+	q.QuestionSubLevel = parseInt(aux.QuestionSubLevel)
 	return nil
+}
+
+// parseInt reads an integer, or nil for anything else.
+func parseInt(raw json.RawMessage) *int {
+	var n int
+	if len(raw) == 0 || json.Unmarshal(raw, &n) != nil {
+		return nil
+	}
+	return &n
 }
 
 var gradeLabelRe = regexp.MustCompile(`(?i)^\s*(?:lớp|grade)\s*(\d+)\s*$`)
@@ -135,15 +155,17 @@ func parseGrade(raw json.RawMessage) *int {
 // the key names, never the model's right_answer_text.
 func (q ExamQuestion) ToShared() aiquestion.Question {
 	out := aiquestion.Question{
-		QuestionNumber: q.QuestionNumber,
-		QuestionName:   q.QuestionText,
-		Answers:        optionsToChoices(q.Options),
-		QuestionTopic:  q.QuestionTopic,
-		QuestionGrade:  q.QuestionGrade,
-		Kind:           q.QuestionKind,
-		QuestionTags:   q.QuestionTags,
-		Explanation:    q.Explanation,
-		ImageKey:       q.QuestionImageKey,
+		QuestionNumber:   q.QuestionNumber,
+		QuestionName:     q.QuestionText,
+		Answers:          optionsToChoices(q.Options),
+		QuestionTopic:    q.QuestionTopic,
+		QuestionGrade:    q.QuestionGrade,
+		QuestionLevel:    q.QuestionLevel,
+		QuestionSubLevel: q.QuestionSubLevel,
+		Kind:             q.QuestionKind,
+		QuestionTags:     q.QuestionTags,
+		Explanation:      q.Explanation,
+		ImageKey:         q.QuestionImageKey,
 	}
 	ca := q.CorrectAnswer
 	if ca == nil {
@@ -192,6 +214,8 @@ func ExamQuestionFrom(q aiquestion.Question) ExamQuestion {
 		Options:          choicesToOptions(q.Answers),
 		QuestionTopic:    q.QuestionTopic,
 		QuestionGrade:    q.QuestionGrade,
+		QuestionLevel:    q.QuestionLevel,
+		QuestionSubLevel: q.QuestionSubLevel,
 		QuestionTags:     q.QuestionTags,
 		Explanation:      q.Explanation,
 	}

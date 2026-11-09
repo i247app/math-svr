@@ -2,6 +2,7 @@ package input
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -37,10 +38,14 @@ type ExamPromptInput struct {
 	NumQuestions int
 	Semester     string
 	Program      string
-	// Level is the client-stated intensity, 0..9, already clamped to the
-	// grade's ceiling by the caller. Rendered for a GRADE review only;
-	// nil, or any other type, means no LEVEL PROFILE block.
+	// Level is the client-stated level, 0..9 (clamped to the grade's ceiling
+	// by the caller for GRADE). It decides the QUESTION LEVELS block of
+	// every type; the level line / LEVEL PROFILE block is GRADE only.
 	Level *int
+	// SubLevel is the client-stated sub-level, 0..9, of any type; nil = not
+	// stated. With Level it decides the QUESTION LEVELS block
+	// (QuestionLevels).
+	SubLevel *int
 	// SystemDefinesLevels: the stored system prompt names {{LEVEL}}, i.e. it
 	// carries its own level table, so a GRADE user message states the bare
 	// level instead of the generic LEVEL PROFILE.
@@ -143,6 +148,48 @@ func ProbeGrade(grade int) int {
 		return int(GradeProbeCeiling)
 	}
 	return probe
+}
+
+// QuestionLevels returns question_level and question_sub_level of each of
+// the n questions of a model-written round, by position (index 0 = Q1). The
+// user message states them and the server stamps them afterwards, so both
+// read this one rule:
+//   - level stated: every question is at it; on a GRADE paper the probe
+//     slots (Q3, Q6) one higher, capped at ExamLevelMax — the GRADE prompts
+//     write those two from LEVEL + 1. ASSESSMENT / PRACTICE probe by grade
+//     instead (question_grade + 1), so their level stays flat;
+//   - level not stated: it ramps with the position, Q1 = 0 .. Q10 = 9;
+//   - sub-level stated: every question is at it; not stated: the same ramp.
+func QuestionLevels(examType enum.ExamType, n int, level, subLevel *int) (levels, subLevels []int) {
+	ramp := func(i int) int { return min(i, enum.ExamLevelMax) }
+	levels = make([]int, n)
+	subLevels = make([]int, n)
+	for i := range n {
+		levels[i], subLevels[i] = ramp(i), ramp(i)
+		if level != nil {
+			levels[i] = *level
+			if examType == enum.ExamTypeGrade && slices.Contains(probeSlots, i+1) {
+				levels[i] = min(*level+1, enum.ExamLevelMax)
+			}
+		}
+		if subLevel != nil {
+			subLevels[i] = *subLevel
+		}
+	}
+	return levels, subLevels
+}
+
+// questionLevelsBlock tells the model the question_level and
+// question_sub_level to write on each question (QuestionLevels).
+func questionLevelsBlock(examType enum.ExamType, n int, level, subLevel *int) string {
+	levels, subLevels := QuestionLevels(examType, n, level, subLevel)
+	pairs := make([]string, 0, n)
+	for i := range n {
+		pairs = append(pairs, fmt.Sprintf("Q%d=%d/%d", i+1, levels[i], subLevels[i]))
+	}
+	return fmt.Sprintf("QUESTION LEVELS (question_level/question_sub_level, scale %d–%d; write these exact integers, "+
+		"and make each question's difficulty fit them — sub-level is a finer step inside the level, 0 = easiest): %s",
+		enum.ExamLevelMin, enum.ExamLevelMax, strings.Join(pairs, ", "))
 }
 
 // BuildExamUserPrompt returns the user message of one generation call: the

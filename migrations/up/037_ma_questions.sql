@@ -44,7 +44,17 @@
 --   question_grade    the band this one question targets: the round's grade,
 --                     or grade + 1 at an ASSESSMENT / PRACTICE probe slot
 --                     (Q3, Q6 — exam.NormalizeQuestionBands)
--- No question_level, and no image keys: questions_json is their source.
+--   question_level    0..9, the scale of ma_question_pools.question_level;
+--   question_sub_level  0..9, a finer step inside it (ma_question_pools
+--                     .question_sub_level). Server-stamped like question_grade
+--                     (input.QuestionLevels): the request's `level` on
+--                     every question (a GRADE paper: level + 1, max 9, at
+--                     Q3/Q6), its `sub_level` on every question, any exam
+--                     type; a value not requested
+--                     ramps with the position, Q1 = 0 .. Q10 = 9. A bank set
+--                     copies the bank row's own values (NULL = not rated).
+--                     NULL on rows written before 2026-11-09.
+-- No image keys: questions_json is their source.
 --
 -- ---- Kept in step with the pool -------------------------------------------
 -- questions_json stays the source a sitting is served and graded from.
@@ -68,6 +78,8 @@ CREATE TABLE IF NOT EXISTS ma_questions (
   question_tags         JSON          NOT NULL,                 -- ["addition", "mental_math"]; always sent, '[]' when none (no DEFAULT, as ma_question_pools)
   question_topic        VARCHAR(255)  DEFAULT NULL,             -- curriculum topic as written by the model
   question_grade        TINYINT UNSIGNED DEFAULT NULL,          -- 0 = Mẫu giáo, 1..5 = Lớp 1..5; the band of this question (probes: grade + 1)
+  question_level        TINYINT UNSIGNED DEFAULT NULL,          -- 0 = easiest .. 9 = hardest, as ma_question_pools.question_level
+  question_sub_level    TINYINT UNSIGNED DEFAULT NULL,          -- finer step inside question_level, 0 .. 9, as ma_question_pools.question_sub_level
 
   question_status       VARCHAR(32)   DEFAULT NULL,             -- business lifecycle, no meaning yet (no default: every INSERT sets it)
   rpt_flg               VARCHAR(16)   DEFAULT NULL,             -- client-side report flag

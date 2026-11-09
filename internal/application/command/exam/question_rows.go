@@ -49,6 +49,8 @@ func QuestionRows(examID int64, questionsJSON string) ([]*question.Question, err
 		q.SetQuestionTags(s.QuestionTags)
 		q.SetQuestionTopic(nonEmpty(s.QuestionTopic))
 		q.SetQuestionGrade(s.QuestionGrade)
+		q.SetQuestionLevel(s.QuestionLevel)
+		q.SetQuestionSubLevel(s.QuestionSubLevel)
 		q.SetQuestionStatus(&active)
 		rows = append(rows, q)
 	}

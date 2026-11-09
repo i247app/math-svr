@@ -20,6 +20,7 @@ const (
 
 	questionColumns = `q.question_id, q.exam_id, q.question_number, q.question_kind, q.question_text,
 		q.options, q.correct_answer, q.explanation, q.question_tags, q.question_topic, q.question_grade,
+		q.question_level, q.question_sub_level,
 		q.question_status, q.rpt_flg, q.kwords, q.note, q.status,
 		q.create_id, q.create_dt, q.modify_id, q.modify_dt`
 
@@ -27,7 +28,7 @@ const (
 
 	// questionInsertRow is one VALUES tuple of CreateMany, in the column
 	// order of its INSERT list.
-	questionInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	questionInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func questionActiveArgs() []any {
@@ -54,6 +55,7 @@ func scanQuestion(s database.RowScanner) (*models.QuestionModel, error) {
 	var m models.QuestionModel
 	if err := s.Scan(&m.QuestionId, &m.ExamId, &m.QuestionNumber, &m.QuestionKind, &m.QuestionText,
 		&m.Options, &m.CorrectAnswer, &m.Explanation, &m.QuestionTags, &m.QuestionTopic, &m.QuestionGrade,
+		&m.QuestionLevel, &m.QuestionSubLevel,
 		&m.QuestionStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
 		return nil, err
@@ -70,7 +72,7 @@ func (r *QuestionRepository) CreateMany(ctx context.Context, questions []*questi
 	}
 	now := mtime.Now().Time
 	tuples := make([]string, 0, len(questions))
-	args := make([]any, 0, len(questions)*18)
+	args := make([]any, 0, len(questions)*20)
 	for _, q := range questions {
 		options, err := marshalOptions(q.Options())
 		if err != nil {
@@ -89,12 +91,14 @@ func (r *QuestionRepository) CreateMany(ctx context.Context, questions []*questi
 		args = append(args,
 			q.QuestionId(), q.ExamId(), q.QuestionNumber(), q.QuestionKind(), q.QuestionText(),
 			options, string(answer), q.Explanation(), tags, q.QuestionTopic(), q.QuestionGrade(),
+			q.QuestionLevel(), q.QuestionSubLevel(),
 			q.QuestionStatus(), q.RptFlg(), q.Kwords(), q.Note(),
 			createId, now, now)
 	}
 	query := `INSERT INTO ` + questionTable + `
 			(question_id, exam_id, question_number, question_kind, question_text,
 			 options, correct_answer, explanation, question_tags, question_topic, question_grade,
+			 question_level, question_sub_level,
 			 question_status, rpt_flg, kwords, note,
 			 create_id, create_dt, modify_dt)
 		VALUES ` + strings.Join(tuples, ", ")
@@ -201,6 +205,8 @@ func ModelToDomainQuestion(m *models.QuestionModel) (*question.Question, error) 
 	q.SetQuestionTags(tags)
 	q.SetQuestionTopic(m.QuestionTopic)
 	q.SetQuestionGrade(m.QuestionGrade)
+	q.SetQuestionLevel(m.QuestionLevel)
+	q.SetQuestionSubLevel(m.QuestionSubLevel)
 	q.SetQuestionStatus(m.QuestionStatus)
 	q.SetRptFlg(m.RptFlg)
 	q.SetKwords(m.Kwords)

@@ -175,12 +175,13 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	}
 	level := resolveLevel(ctx, validated.ExamType, grade, req.Level)
 
-	// promptLevel is the intensity the paper is written at. Only a GRADE
-	// review reads it; for anything else the level is recorded and no
-	// more, so it must not fork the cache pool either.
-	var promptLevel *int
+	// level and sub_level set the question_level pair of every type
+	// (input.QuestionLevels), so they reach the model and fork the cache
+	// whatever the type. Only a GRADE paper is also WRITTEN at the level
+	// (its prompt's {{LEVEL}}) and draws its bank groups by it.
+	var bankLevel *int
 	if validated.ExamType == enum.ExamTypeGrade {
-		promptLevel = level
+		bankLevel = level
 	}
 
 	cmd := command.GenerateExamCommand{
@@ -197,14 +198,14 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	// With the switch on the model is not asked at all: the paper is drawn
 	// from the bank, and the cache below (sets the model wrote) is not read.
 	if s.questionPoolEnabled {
-		return s.generateFromBank(ctx, req, profile, cmd, promptLevel)
+		return s.generateFromBank(ctx, req, profile, cmd, bankLevel)
 	}
 
 	prompt, err := s.loadExamPrompt(ctx, validated.ExamType, grade)
 	if err != nil {
 		return nil, err
 	}
-	tag := BuildCacheTag(validated.ExamType, grade, promptLevel, req.NumQuestions, req.Semester, req.Program, prompt.PromptVersion())
+	tag := BuildCacheTag(validated.ExamType, grade, level, req.SubLevel, req.NumQuestions, req.Semester, req.Program, prompt.PromptVersion())
 
 	cached, err := s.findReusableExam(ctx, tag, profile.ProfileId())
 	if err != nil {
@@ -240,7 +241,8 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 			NumQuestions: req.NumQuestions,
 			Semester:     req.Semester,
 			Program:      req.Program,
-			Level:        promptLevel,
+			Level:        level,
+			SubLevel:     req.SubLevel,
 			Avoid:        avoid,
 			Chain:        &chain,
 		}
@@ -339,6 +341,8 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		NumQuestions: req.NumQuestions,
 		Semester:     req.Semester,
 		Program:      req.Program,
+		Level:        req.Level,
+		SubLevel:     req.SubLevel,
 		Practice:     &brief,
 		Avoid:        avoid,
 		Chain:        utils.ToAnyPtr(utils.DerefString(journey.LastRespId())),
@@ -809,17 +813,14 @@ func (s *Service) GenerateExamPool(ctx context.Context, req *dto.GenerateExamPoo
 	}
 	grade := *req.Grade
 
-	// Same rule as GenerateExam: only a GRADE paper is written at a level,
-	// so only it carries one into the prompt and the tag.
-	var promptLevel *int
-	if examType == enum.ExamTypeGrade {
-		promptLevel = resolveLevel(ctx, examType, grade, req.Level)
-	}
+	// Same rule as GenerateExam: the level pair forks the tag for every
+	// type; resolveLevel clamps it for GRADE only.
+	promptLevel, promptSubLevel := resolveLevel(ctx, examType, grade, req.Level), req.SubLevel
 	prompt, err := s.loadExamPrompt(ctx, examType, grade)
 	if err != nil {
 		return nil, err
 	}
-	tag := BuildCacheTag(examType, grade, promptLevel, req.NumQuestions, req.Semester, req.Program, prompt.PromptVersion())
+	tag := BuildCacheTag(examType, grade, promptLevel, promptSubLevel, req.NumQuestions, req.Semester, req.Program, prompt.PromptVersion())
 
 	in := generateExamInput{
 		Prompt:       prompt,
@@ -829,6 +830,7 @@ func (s *Service) GenerateExamPool(ctx context.Context, req *dto.GenerateExamPoo
 		Semester:     req.Semester,
 		Program:      req.Program,
 		Level:        promptLevel,
+		SubLevel:     promptSubLevel,
 	}
 	generated, err := s.llm.GenerateExam(ctx, in)
 	if err != nil {
