@@ -20,6 +20,7 @@ const (
 	MaxTextRunes              = 2000
 	MaxOptionTextRunes        = 500
 	MaxTopicRunes             = 255
+	MaxTextSearchRunes        = 255 // question_text filter of /question-pools/list
 	MaxImageKeyLen            = 1000
 	MaxListSize               = 100 // one page; each question may carry 11 presigned URLs
 
@@ -389,6 +390,13 @@ func ValidateListQuestionPools(ctx context.Context, req *dto.ListQuestionPoolsRe
 				fmt.Errorf("question_sub_level: %d is outside %d..%d", *l, domain.SubLevelMin, domain.SubLevelMax))
 		}
 		filter.SubLevel = l
+	}
+	if text := trimmedOrNil(req.QuestionText); text != nil {
+		if utf8.RuneCountInString(*text) > MaxTextSearchRunes {
+			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil,
+				fmt.Errorf("question_text: longer than %d characters", MaxTextSearchRunes))
+		}
+		filter.Text = text
 	}
 	filter.Topic = trimmedOrNil(req.QuestionTopic)
 	tags, msg := domain.CleanTags(req.QuestionTags)

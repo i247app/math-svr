@@ -339,6 +339,12 @@ func buildQuestionPoolFilterClause(filter questionpool.ListQuestionPoolsFilter) 
 		clause string
 		args   []any
 	)
+	// ponytail: a leading-wildcard LIKE scans every row (~70 ms per pass at
+	// 61k rows, run twice: COUNT + page). Past ~500k, a FULLTEXT ngram index.
+	if filter.Text != nil {
+		clause += ` AND q.question_text LIKE ? ESCAPE '\\'`
+		args = append(args, "%"+escapeLikePattern(*filter.Text)+"%")
+	}
 	if filter.Grade != nil {
 		clause += ` AND q.question_grade = ?`
 		args = append(args, *filter.Grade)

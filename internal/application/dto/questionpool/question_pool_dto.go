@@ -59,8 +59,10 @@ type CreateQuestionPoolsRes struct {
 // ListQuestionsReq pages the bank, newest first (OFFSET: page, size).
 // Every filter is optional and set filters are ANDed. QuestionTags matches
 // a question holding at least one of them. IsVerified nil = both, true =
-// verified_count > 0, false = 0.
+// verified_count > 0, false = 0. QuestionText matches a stem containing it
+// (case- and accent-insensitive, the column's collation).
 type ListQuestionPoolsReq struct {
+	QuestionText     *string  `json:"question_text,omitempty"`
 	QuestionGrade    *int     `json:"question_grade,omitempty"`
 	QuestionLevel    *int     `json:"question_level,omitempty"`
 	QuestionSubLevel *int     `json:"question_sub_level,omitempty"`

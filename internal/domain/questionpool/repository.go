@@ -15,6 +15,8 @@ var ErrDuplicate = errors.New("question_pool: duplicate content")
 // set fields are ANDed. Tags matches a row holding at least one of them.
 // IsVerified true = verified_count > 0, false = 0, nil = both.
 type ListQuestionPoolsFilter struct {
+	// Text is a substring of question_text, matched literally.
+	Text       *string
 	Grade      *int
 	Level      *int
 	SubLevel   *int
