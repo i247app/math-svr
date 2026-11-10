@@ -29,6 +29,18 @@ var bankChallengeSlots = []int{3, 6}
 // from the bank must carry, all of them, probes included.
 var assessmentBankTags = []string{questionpool.TagOnlyNumber}
 
+// kindergartenGrade (Mẫu giáo) is exempt from assessmentBankTags: its
+// ASSESSMENT draws untagged questions, probes at grade 1 included.
+const kindergartenGrade = enum.ExamGradeMin
+
+// assessmentTags returns the tags an ASSESSMENT paper at grade must draw.
+func assessmentTags(grade int) []string {
+	if grade == kindergartenGrade {
+		return nil
+	}
+	return assessmentBankTags
+}
+
 // Texts of the two options a TRUE_FALSE bank question is served with.
 const (
 	trueOptionText  = "Đúng"
@@ -144,7 +156,8 @@ type bankGroup struct {
 // bankGroups plans a paper of DefaultNumQuestions questions.
 //
 //   - ASSESSMENT: the challenge slots come from grade + 1, the rest from the
-//     grade; every question must carry every assessmentBankTags tag.
+//     grade; every question must carry every assessmentBankTags tag, except
+//     on a kindergarten (grade 0) paper.
 //   - GRADE with a level: the challenge slots come from level + 1 (level 9 has
 //     none above it and draws level 9 again), the rest from the level.
 //   - GRADE without a level: the whole paper from the grade.
@@ -174,9 +187,10 @@ func bankGroups(examType enum.ExamType, grade int, level *int) []bankGroup {
 			},
 		}
 	case examType == enum.ExamTypeAssessment:
-		// Every ASSESSMENT question, probes included, is a bare calculation.
+		// Every ASSESSMENT question, probes included, is a bare calculation —
+		// except on a kindergarten paper.
 		up := input.ProbeGrade(grade)
-		tags := assessmentBankTags
+		tags := assessmentTags(grade)
 		return []bankGroup{
 			{
 				name:   fmt.Sprintf("grade %d %v", grade, tags),
