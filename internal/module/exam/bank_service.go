@@ -157,10 +157,11 @@ type bankGroup struct {
 
 // bankGroups plans a paper of DefaultNumQuestions questions.
 //
-//   - ASSESSMENT: the challenge slots come from grade + 1, the rest from the
-//     grade; every question must carry every assessmentBankTags tag, except
-//     a kindergarten (grade 0) question — the probes of a grade-0 paper
-//     (grade 1) still carry them.
+//   - ASSESSMENT: one group per position, at that position's allowed levels
+//     (input.AllowedLevels); the challenge slots come from grade + 1, the
+//     rest from the grade; every question must carry every
+//     assessmentBankTags tag, except a kindergarten (grade 0) question — the
+//     probes of a grade-0 paper (grade 1) still carry them.
 //   - GRADE with a level: the challenge slots come from level + 1 (level 9 has
 //     none above it and draws level 9 again), the rest from the level.
 //   - GRADE without a level: the whole paper from the grade.
@@ -180,32 +181,38 @@ func bankGroups(examType enum.ExamType, grade int, level *int) []bankGroup {
 		return []bankGroup{
 			{
 				name:   fmt.Sprintf("grade %d level %d", grade, *level),
-				filter: questionpool.PickFilter{Grade: grade, Level: level},
+				filter: questionpool.PickFilter{Grade: grade, Levels: []int{*level}},
 				slots:  all,
 			},
 			{
 				name:   fmt.Sprintf("grade %d level %d (challenge)", grade, up),
-				filter: questionpool.PickFilter{Grade: grade, Level: &up},
+				filter: questionpool.PickFilter{Grade: grade, Levels: []int{up}},
 				slots:  challenge,
 			},
 		}
 	case examType == enum.ExamTypeAssessment:
-		// Every ASSESSMENT question, probes included, is a bare calculation —
-		// except a kindergarten question (assessmentTags).
+		// One group per position: each has its own allowed levels
+		// (input.AllowedLevels). Every question, probes included, is a bare
+		// calculation — except a kindergarten question (assessmentTags).
+		// ponytail: one ORDER BY RAND() query per slot (10 per paper), each
+		// over one grade's approved rows at those levels; one windowed query
+		// (ROW_NUMBER() OVER (PARTITION BY question_level)) if it shows.
 		up := input.ProbeGrade(grade)
-		tags, upTags := assessmentTags(grade), assessmentTags(up)
-		return []bankGroup{
-			{
-				name:   fmt.Sprintf("grade %d %v", grade, tags),
-				filter: questionpool.PickFilter{Grade: grade, Tags: tags},
-				slots:  all,
-			},
-			{
-				name:   fmt.Sprintf("grade %d (probe) %v", up, upTags),
-				filter: questionpool.PickFilter{Grade: up, Tags: upTags},
-				slots:  challenge,
-			},
+		allowed := input.AllowedLevels(examType, DefaultNumQuestions, nil)
+		groups := make([]bankGroup, 0, DefaultNumQuestions)
+		for slot := 1; slot <= DefaultNumQuestions; slot++ {
+			g, probe := grade, ""
+			if slices.Contains(bankChallengeSlots, slot) {
+				g, probe = up, " (probe)"
+			}
+			tags, levels := assessmentTags(g), allowed[slot-1]
+			groups = append(groups, bankGroup{
+				name:   fmt.Sprintf("Q%d grade %d%s levels %v %v", slot, g, probe, levels, tags),
+				filter: questionpool.PickFilter{Grade: g, Levels: levels, Tags: tags},
+				slots:  []int{slot},
+			})
 		}
+		return groups
 	}
 	every := slices.Concat(all, challenge)
 	slices.Sort(every)

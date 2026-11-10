@@ -2,6 +2,7 @@ package input
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"slices"
 	"strings"
 
@@ -46,6 +47,10 @@ type ExamPromptInput struct {
 	// stated. With Level it decides the QUESTION LEVELS block
 	// (QuestionLevels).
 	SubLevel *int
+	// QuestionLevels / QuestionSubLevels are the pairs drawn for this round
+	// (QuestionLevels), stated in the QUESTION LEVELS block and stamped by
+	// the server afterwards. nil = drawn while building the message.
+	QuestionLevels, QuestionSubLevels []int
 	// SystemDefinesLevels: the stored system prompt names {{LEVEL}}, i.e. it
 	// carries its own level table, so a GRADE user message states the bare
 	// level instead of the generic LEVEL PROFILE.
@@ -150,28 +155,54 @@ func ProbeGrade(grade int) int {
 	return probe
 }
 
+// assessmentSlotLevels are the question_levels each ASSESSMENT position may
+// take, Q1 first (boss's rule 2026-11-10). Each entry is a set so a position
+// can later allow more levels; a position past the table takes the last
+// entry. The probes (Q3, Q6) are at grade + 1, so their wide sets are levels
+// of that grade.
+var assessmentSlotLevels = [][]int{
+	{0, 1}, {2}, {0, 1, 2, 3, 4}, {3}, {4}, {5, 6, 7, 8, 9}, {5}, {6}, {7}, {8, 9},
+}
+
+// AllowedLevels returns, by position (index 0 = Q1), the question_levels
+// each of the n questions may take. The model-written round draws one of
+// them per question (QuestionLevels); a bank draw takes any of them.
+//   - ASSESSMENT: assessmentSlotLevels, whatever level the request states;
+//   - otherwise one level each: the stated level on every question (on a
+//     GRADE paper the probe slots Q3, Q6 one higher, capped at
+//     ExamLevelMax — the GRADE prompts write those from LEVEL + 1;
+//     PRACTICE probes by grade, so its level stays flat), or with no level
+//     a ramp by position, Q1 = 0 .. Q10 = 9.
+func AllowedLevels(examType enum.ExamType, n int, level *int) [][]int {
+	out := make([][]int, n)
+	for i := range n {
+		switch {
+		case examType == enum.ExamTypeAssessment:
+			out[i] = assessmentSlotLevels[min(i, len(assessmentSlotLevels)-1)]
+		case level == nil:
+			out[i] = []int{min(i, enum.ExamLevelMax)}
+		case examType == enum.ExamTypeGrade && slices.Contains(probeSlots, i+1):
+			out[i] = []int{min(*level+1, enum.ExamLevelMax)}
+		default:
+			out[i] = []int{*level}
+		}
+	}
+	return out
+}
+
 // QuestionLevels returns question_level and question_sub_level of each of
-// the n questions of a model-written round, by position (index 0 = Q1). The
-// user message states them and the server stamps them afterwards, so both
-// read this one rule:
-//   - level stated: every question is at it; on a GRADE paper the probe
-//     slots (Q3, Q6) one higher, capped at ExamLevelMax — the GRADE prompts
-//     write those two from LEVEL + 1. ASSESSMENT / PRACTICE probe by grade
-//     instead (question_grade + 1), so their level stays flat;
-//   - level not stated: it ramps with the position, Q1 = 0 .. Q10 = 9;
-//   - sub-level stated: every question is at it; not stated: the same ramp.
+// the n questions of a model-written round, by position (index 0 = Q1):
+// the level drawn at random from AllowedLevels, the sub-level the stated
+// one on every question or, not stated, a ramp Q1 = 0 .. Q10 = 9. The draw
+// is random, so call it ONCE per round: the user message states the pairs
+// (ExamPromptInput.QuestionLevels) and the server stamps the same ones.
 func QuestionLevels(examType enum.ExamType, n int, level, subLevel *int) (levels, subLevels []int) {
-	ramp := func(i int) int { return min(i, enum.ExamLevelMax) }
+	allowed := AllowedLevels(examType, n, level)
 	levels = make([]int, n)
 	subLevels = make([]int, n)
 	for i := range n {
-		levels[i], subLevels[i] = ramp(i), ramp(i)
-		if level != nil {
-			levels[i] = *level
-			if examType == enum.ExamTypeGrade && slices.Contains(probeSlots, i+1) {
-				levels[i] = min(*level+1, enum.ExamLevelMax)
-			}
-		}
+		levels[i] = allowed[i][rand.IntN(len(allowed[i]))]
+		subLevels[i] = min(i, enum.ExamLevelMax)
 		if subLevel != nil {
 			subLevels[i] = *subLevel
 		}
@@ -180,11 +211,10 @@ func QuestionLevels(examType enum.ExamType, n int, level, subLevel *int) (levels
 }
 
 // questionLevelsBlock tells the model the question_level and
-// question_sub_level to write on each question (QuestionLevels).
-func questionLevelsBlock(examType enum.ExamType, n int, level, subLevel *int) string {
-	levels, subLevels := QuestionLevels(examType, n, level, subLevel)
-	pairs := make([]string, 0, n)
-	for i := range n {
+// question_sub_level to write on each question.
+func questionLevelsBlock(levels, subLevels []int) string {
+	pairs := make([]string, 0, len(levels))
+	for i := range levels {
 		pairs = append(pairs, fmt.Sprintf("Q%d=%d/%d", i+1, levels[i], subLevels[i]))
 	}
 	return fmt.Sprintf("QUESTION LEVELS (question_level/question_sub_level, scale %d–%d; write these exact integers, "+

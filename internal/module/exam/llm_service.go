@@ -80,6 +80,14 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil, ErrLLMAdapterNotConfigured)
 	}
 
+	// Drawn once: the user message states these pairs and the server stamps
+	// the same ones (an ASSESSMENT level is a random pick from its set).
+	n := in.NumQuestions
+	if n <= 0 {
+		n = DefaultNumQuestions
+	}
+	levels, subLevels := input.QuestionLevels(in.ExamType, n, in.Level, in.SubLevel)
+
 	promptIn := input.ExamPromptInput{
 		ExamType:     in.ExamType,
 		Grade:        in.Grade,
@@ -89,6 +97,8 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		Level:        in.Level,
 		SubLevel:     in.SubLevel,
 		Practice:     in.Practice,
+		QuestionLevels:    levels,
+		QuestionSubLevels: subLevels,
 		// Read from the stored text before rendering fills it in.
 		SystemDefinesLevels: in.Prompt != nil && strings.Contains(in.Prompt.SystemPrompt(), input.PlaceholderLevel),
 		Avoid:               in.Avoid,
@@ -175,7 +185,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		log.Warnf("exam.question_grade.mismatch q=%d model=%v applied=%d",
 			m.QuestionNumber, utils.DerefInt(m.ModelGrade), m.Applied)
 	}
-	questions, levelMismatches := StampQuestionLevels(questions, in.ExamType, in.Level, in.SubLevel)
+	questions, levelMismatches := StampQuestionLevels(questions, levels, subLevels)
 	for _, m := range levelMismatches {
 		log.Warnf("exam.question_level.mismatch q=%d model=%v/%v applied=%d/%d", m.QuestionNumber,
 			utils.DerefInt(m.ModelLevel), utils.DerefInt(m.ModelSubLevel), m.AppliedLevel, m.AppliedSubLevel)

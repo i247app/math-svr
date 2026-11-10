@@ -32,8 +32,9 @@ type ListQuestionPoolsFilter struct {
 // approved, live questions are ever candidates.
 type PickFilter struct {
 	Grade int
-	// Level narrows to one question_level; nil = any level, rated or not.
-	Level *int
+	// Levels keeps only questions whose question_level is one of them;
+	// empty = any level, rated or not.
+	Levels []int
 	// ExcludeIds are questions already chosen for this paper.
 	ExcludeIds []int64
 	// AvoidTexts are stems the child met recently; a matching question is

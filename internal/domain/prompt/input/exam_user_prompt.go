@@ -103,7 +103,11 @@ func buildUserExamEN(in ExamPromptInput, n int) string {
 	// Every round states the level pair of each question, so the block does
 	// not depend on how the stored system prompt phrases it.
 	out.WriteString("\n")
-	out.WriteString(questionLevelsBlock(in.ExamType, n, in.Level, in.SubLevel))
+	levels, subLevels := in.QuestionLevels, in.QuestionSubLevels
+	if levels == nil {
+		levels, subLevels = QuestionLevels(in.ExamType, n, in.Level, in.SubLevel)
+	}
+	out.WriteString(questionLevelsBlock(levels, subLevels))
 	out.WriteString("\n")
 
 	if in.ExamType == enum.ExamTypePractice && in.Practice != nil {

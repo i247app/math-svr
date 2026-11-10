@@ -82,13 +82,12 @@ type LevelMismatch struct {
 }
 
 // StampQuestionLevels writes question_level and question_sub_level on every
-// question of a model-written round, by position, from the request's level
-// and sub-level (input.QuestionLevels — the very values the user message
-// asked for), and reports where the model disagreed. Server-stamped for the
+// question of a model-written round, by position, from the pairs drawn for
+// the round (input.QuestionLevels — the very values the user message asked
+// for), and reports where the model disagreed. Server-stamped for the
 // same reason question_grade is: the columns feed analytics, and a value
 // the model invented would be a difficulty nobody asked for.
-func StampQuestionLevels(questions []aiquestion.Question, examType enum.ExamType, level, subLevel *int) ([]aiquestion.Question, []LevelMismatch) {
-	levels, subLevels := input.QuestionLevels(examType, len(questions), level, subLevel)
+func StampQuestionLevels(questions []aiquestion.Question, levels, subLevels []int) ([]aiquestion.Question, []LevelMismatch) {
 	var mismatches []LevelMismatch
 	for i := range questions {
 		q := &questions[i]
@@ -97,7 +96,12 @@ func StampQuestionLevels(questions []aiquestion.Question, examType enum.ExamType
 		if number <= 0 || number > len(questions) {
 			number = i + 1
 		}
-		l, s := levels[number-1], subLevels[number-1]
+		// A model that wrote more questions than asked gets the last pair.
+		idx := min(number, len(levels)) - 1
+		if idx < 0 {
+			continue
+		}
+		l, s := levels[idx], subLevels[idx]
 		if (q.QuestionLevel != nil && *q.QuestionLevel != l) || (q.QuestionSubLevel != nil && *q.QuestionSubLevel != s) {
 			mismatches = append(mismatches, LevelMismatch{
 				QuestionNumber: number,

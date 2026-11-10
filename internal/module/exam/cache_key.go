@@ -22,8 +22,11 @@ import (
 //	ASSESSMENT-G2-LNA-Q10-SNA-PNA-V4
 //
 // L is the stated level, LNA when none: a GRADE paper is written at it, and
-// every type stamps it as question_level (input.QuestionLevels), so a set
-// at one level must never be served for another. V is ma_prompts.prompt_version of
+// GRADE / PRACTICE stamp it as question_level (input.AllowedLevels), so a
+// set at one level must never be served for another. An ASSESSMENT ignores
+// the stated level — its levels come from a fixed per-position table — so
+// its part is assessmentLevelPart whatever the request says; bump it when
+// that table changes, so sets stamped under the old one are not served. V is ma_prompts.prompt_version of
 // the row the set was generated from (per type, and per grade for ASSESSMENT
 // and GRADE): it moves on every admin rewrite of that prompt, so
 // a set generated from the old text is never served again — the next
@@ -34,9 +37,16 @@ import (
 // SL<sub_level> follows L only when a request states a sub-level
 // (GRADE-G1-L3-SL2-Q10-…): the part is absent otherwise, so every tag
 // written before sub_level existed still matches its request.
+// assessmentLevelPart names the ASSESSMENT level table a set was stamped
+// under (input.assessmentSlotLevels); T1 = the table of 2026-11-10.
+const assessmentLevelPart = "LT1"
+
 func BuildCacheTag(examType enum.ExamType, grade int, level, subLevel *int, numQues int, semester, program string, promptVersion int) string {
 	levelPart := "LNA"
-	if level != nil {
+	switch {
+	case examType == enum.ExamTypeAssessment:
+		levelPart = assessmentLevelPart
+	case level != nil:
 		levelPart = fmt.Sprintf("L%d", *level)
 	}
 	parts := []string{

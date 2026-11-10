@@ -309,9 +309,11 @@ func (r *QuestionPoolRepository) PickForExam(ctx context.Context, filter questio
 func buildQuestionPoolPickClause(filter questionpool.PickFilter) (string, []any) {
 	clause := ` AND q.question_grade = ?`
 	args := []any{filter.Grade}
-	if filter.Level != nil {
-		clause += ` AND q.question_level = ?`
-		args = append(args, *filter.Level)
+	if n := len(filter.Levels); n > 0 {
+		clause += ` AND q.question_level IN (?` + strings.Repeat(", ?", n-1) + `)`
+		for _, l := range filter.Levels {
+			args = append(args, l)
+		}
 	}
 	if n := len(filter.ExcludeIds); n > 0 {
 		clause += ` AND q.question_pool_id NOT IN (?` + strings.Repeat(", ?", n-1) + `)`
