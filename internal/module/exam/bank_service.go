@@ -25,6 +25,10 @@ import (
 // Q6 too; the rest of the paper is the child's own grade / level.
 var bankChallengeSlots = []int{3, 6}
 
+// assessmentBankTags are the tags every question of an ASSESSMENT drawn
+// from the bank must carry, all of them, probes included.
+var assessmentBankTags = []string{questionpool.TagOnlyNumber}
+
 // Texts of the two options a TRUE_FALSE bank question is served with.
 const (
 	trueOptionText  = "Đúng"
@@ -139,7 +143,8 @@ type bankGroup struct {
 
 // bankGroups plans a paper of DefaultNumQuestions questions.
 //
-//   - ASSESSMENT: the challenge slots come from grade + 1, the rest from the grade.
+//   - ASSESSMENT: the challenge slots come from grade + 1, the rest from the
+//     grade; every question must carry every assessmentBankTags tag.
 //   - GRADE with a level: the challenge slots come from level + 1 (level 9 has
 //     none above it and draws level 9 again), the rest from the level.
 //   - GRADE without a level: the whole paper from the grade.
@@ -169,16 +174,18 @@ func bankGroups(examType enum.ExamType, grade int, level *int) []bankGroup {
 			},
 		}
 	case examType == enum.ExamTypeAssessment:
+		// Every ASSESSMENT question, probes included, is a bare calculation.
 		up := input.ProbeGrade(grade)
+		tags := assessmentBankTags
 		return []bankGroup{
 			{
-				name:   fmt.Sprintf("grade %d", grade),
-				filter: questionpool.PickFilter{Grade: grade},
+				name:   fmt.Sprintf("grade %d %v", grade, tags),
+				filter: questionpool.PickFilter{Grade: grade, Tags: tags},
 				slots:  all,
 			},
 			{
-				name:   fmt.Sprintf("grade %d (probe)", up),
-				filter: questionpool.PickFilter{Grade: up},
+				name:   fmt.Sprintf("grade %d (probe) %v", up, tags),
+				filter: questionpool.PickFilter{Grade: up, Tags: tags},
 				slots:  challenge,
 			},
 		}

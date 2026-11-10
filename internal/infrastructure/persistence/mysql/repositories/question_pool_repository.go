@@ -325,6 +325,13 @@ func buildQuestionPoolPickClause(filter questionpool.PickFilter) (string, []any)
 			args = append(args, t)
 		}
 	}
+	// ponytail: no index — evaluated on the grade's approved rows, which
+	// ORDER BY RAND() sorts anyway. Create ix_question_tags (036) if it shows.
+	if len(filter.Tags) > 0 {
+		raw, _ := json.Marshal(filter.Tags) // a []string always marshals
+		clause += ` AND JSON_CONTAINS(q.question_tags, CAST(? AS JSON))`
+		args = append(args, string(raw))
+	}
 
 	clause += ` AND q.question_status = ?`
 	args = append(args, questionpool.StatusApproved)

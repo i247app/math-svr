@@ -39,7 +39,14 @@ type PickFilter struct {
 	// AvoidTexts are stems the child met recently; a matching question is
 	// not a candidate.
 	AvoidTexts []string
+	// Tags keeps only questions whose question_tags hold EVERY one of them
+	// (exact, case-sensitive match); empty = no tag condition.
+	Tags []string
 }
+
+// TagOnlyNumber marks a bare-calculation stem (no words, units or images);
+// an ASSESSMENT drawn from the bank uses only these.
+const TagOnlyNumber = "only_number"
 
 // IRepository owns ma_question_pools.
 type IRepository interface {
