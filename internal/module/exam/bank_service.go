@@ -29,13 +29,15 @@ var bankChallengeSlots = []int{3, 6}
 // from the bank must carry, all of them, probes included.
 var assessmentBankTags = []string{questionpool.TagOnlyNumber}
 
-// kindergartenGrade (Mẫu giáo) is exempt from assessmentBankTags: its
-// ASSESSMENT draws untagged questions, probes at grade 1 included.
+// kindergartenGrade (Mẫu giáo) questions are exempt from
+// assessmentBankTags. The rule follows the QUESTION's grade, so the grade-1
+// probes of a kindergarten paper still carry the tags.
 const kindergartenGrade = enum.ExamGradeMin
 
-// assessmentTags returns the tags an ASSESSMENT paper at grade must draw.
-func assessmentTags(grade int) []string {
-	if grade == kindergartenGrade {
+// assessmentTags returns the tags an ASSESSMENT draws questions of
+// questionGrade with.
+func assessmentTags(questionGrade int) []string {
+	if questionGrade == kindergartenGrade {
 		return nil
 	}
 	return assessmentBankTags
@@ -157,7 +159,8 @@ type bankGroup struct {
 //
 //   - ASSESSMENT: the challenge slots come from grade + 1, the rest from the
 //     grade; every question must carry every assessmentBankTags tag, except
-//     on a kindergarten (grade 0) paper.
+//     a kindergarten (grade 0) question — the probes of a grade-0 paper
+//     (grade 1) still carry them.
 //   - GRADE with a level: the challenge slots come from level + 1 (level 9 has
 //     none above it and draws level 9 again), the rest from the level.
 //   - GRADE without a level: the whole paper from the grade.
@@ -188,9 +191,9 @@ func bankGroups(examType enum.ExamType, grade int, level *int) []bankGroup {
 		}
 	case examType == enum.ExamTypeAssessment:
 		// Every ASSESSMENT question, probes included, is a bare calculation —
-		// except on a kindergarten paper.
+		// except a kindergarten question (assessmentTags).
 		up := input.ProbeGrade(grade)
-		tags := assessmentTags(grade)
+		tags, upTags := assessmentTags(grade), assessmentTags(up)
 		return []bankGroup{
 			{
 				name:   fmt.Sprintf("grade %d %v", grade, tags),
@@ -198,8 +201,8 @@ func bankGroups(examType enum.ExamType, grade int, level *int) []bankGroup {
 				slots:  all,
 			},
 			{
-				name:   fmt.Sprintf("grade %d (probe) %v", up, tags),
-				filter: questionpool.PickFilter{Grade: up, Tags: tags},
+				name:   fmt.Sprintf("grade %d (probe) %v", up, upTags),
+				filter: questionpool.PickFilter{Grade: up, Tags: upTags},
 				slots:  challenge,
 			},
 		}
