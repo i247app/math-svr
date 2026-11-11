@@ -816,6 +816,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "The file is too large"
 	case QUESTION_POOL_IMPORT_INVALID:
 		return "The file has invalid questions; nothing was imported"
+	case QUESTION_POOL_DELETE_FILTER_REQUIRED:
+		return "Please choose at least one filter for the questions to delete"
 
 	default:
 		return ""

@@ -816,6 +816,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "File quá lớn"
 	case QUESTION_POOL_IMPORT_INVALID:
 		return "File có câu hỏi không hợp lệ, chưa có câu nào được import"
+	case QUESTION_POOL_DELETE_FILTER_REQUIRED:
+		return "Vui lòng chọn ít nhất một bộ lọc cho các câu hỏi cần xoá"
 
 	default:
 		return ""

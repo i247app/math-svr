@@ -5,6 +5,7 @@ package questionpool
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
@@ -30,6 +31,7 @@ type Service struct {
 	updateCmd *command.UpdateQuestionPoolCommandHandler
 	reviewCmd *command.ReviewQuestionPoolCommandHandler
 	deleteCmd *command.DeleteQuestionPoolCommandHandler
+	bulkDel   *command.ForceDeleteQuestionPoolsCommandHandler
 	importCmd *command.ImportQuestionPoolsCommandHandler
 	listQuery *query.ListQuestionPoolsQueryHandler
 	repo      domain.IRepository // import's duplicate check, outside any transaction
@@ -42,6 +44,7 @@ func NewService(uow transaction.UnitOfWork, repo domain.IRepository, storageProv
 		updateCmd: command.NewUpdateQuestionPoolCommandHandler(uow),
 		reviewCmd: command.NewReviewQuestionPoolCommandHandler(uow),
 		deleteCmd: command.NewDeleteQuestionPoolCommandHandler(uow),
+		bulkDel:   command.NewForceDeleteQuestionPoolsCommandHandler(uow),
 		importCmd: command.NewImportQuestionPoolsCommandHandler(uow),
 		listQuery: query.NewListQuestionPoolsQueryHandler(repo),
 		repo:      repo,
@@ -182,6 +185,32 @@ func (s *Service) deleteQuestionPool(ctx context.Context, req *dto.DeleteQuestio
 		sctx.UID(ctx), sctx.GetAdminVia(ctx), req.QuestionPoolID, force)
 	res := &dto.DeleteQuestionPoolRes{}
 	return res, nil
+}
+
+// ForceDeleteQuestionPools removes for good every question matching the
+// request's filters (ANDed, at least one), live or soft-deleted.
+func (s *Service) ForceDeleteQuestionPools(ctx context.Context, req *dto.ForceDeleteQuestionPoolsReq) (*dto.ForceDeleteQuestionPoolsRes, error) {
+	if err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	filter, err := ValidateForceDeleteQuestionPools(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	n, err := s.bulkDel.Handle(ctx, command.ForceDeleteQuestionPoolsCommand{Filter: filter})
+	if err != nil {
+		return nil, err
+	}
+	logger.From(ctx).Infof("question_pool.bulk_force_deleted admin_uid=%d via=%s grade=%s level=%s sub_level=%s deleted=%d",
+		sctx.UID(ctx), sctx.GetAdminVia(ctx), intOrNil(filter.Grade), intOrNil(filter.Level), intOrNil(filter.SubLevel), n)
+	return &dto.ForceDeleteQuestionPoolsRes{DeletedCount: n}, nil
+}
+
+func intOrNil(p *int) string {
+	if p == nil {
+		return "nil"
+	}
+	return strconv.Itoa(*p)
 }
 
 // ListQuestions pages the bank, newest first, key and explanation included.

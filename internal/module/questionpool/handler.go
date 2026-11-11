@@ -123,6 +123,22 @@ func (h *Handler) HandleForceDeleteQuestionPool(w http.ResponseWriter, r *http.R
 	response.WriteJson(w, res, nil)
 }
 
+// POST /question-pools/force-delete-by-filter — admin only; removes every
+// question matching the filters (ANDed, at least one).
+func (h *Handler) HandleForceDeleteQuestionPools(w http.ResponseWriter, r *http.Request) {
+	var req dto.ForceDeleteQuestionPoolsReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.ForceDeleteQuestionPools(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // maxUploadBody caps the whole multipart body of an image upload: the
 // image plus room for the form framing. Beyond it the read fails instead of
 // buffering more.

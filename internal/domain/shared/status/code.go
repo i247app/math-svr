@@ -552,4 +552,7 @@ const (
 	// QUESTION_POOL_IMPORT_INVALID: import-file found at least one invalid
 	// question, so nothing was imported.
 	QUESTION_POOL_IMPORT_INVALID StatusCode = 14419
+	// QUESTION_POOL_DELETE_FILTER_REQUIRED: a delete by filter named no
+	// filter; refused so one call cannot wipe the whole bank.
+	QUESTION_POOL_DELETE_FILTER_REQUIRED StatusCode = 14420
 )

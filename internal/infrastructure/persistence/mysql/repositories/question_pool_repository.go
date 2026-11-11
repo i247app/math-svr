@@ -207,6 +207,32 @@ func (r *QuestionPoolRepository) ForceDeleteById(ctx context.Context, id int64) 
 	return affected > 0, nil
 }
 
+// ForceDeleteByFilter uses the list's filter clause, without the active
+// filter: like ForceDeleteById it also removes soft-deleted rows.
+//
+// ponytail: one DELETE locks every matched row (and, for unindexed
+// filters, scans the table) until commit; fine for a few thousand rows.
+// Past that, delete in LIMIT-ed chunks.
+func (r *QuestionPoolRepository) ForceDeleteByFilter(ctx context.Context, filter questionpool.ListQuestionPoolsFilter) (int64, error) {
+	if filter.IsEmpty() {
+		return 0, questionpool.ErrEmptyFilter
+	}
+	clause, args, err := buildQuestionPoolFilterClause(filter)
+	if err != nil {
+		return 0, err
+	}
+	query := `DELETE q FROM ` + questionPoolTable + ` q WHERE ` + strings.TrimPrefix(clause, " AND ")
+	res, err := r.db.Exec(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("question pool repo force delete by filter: %w", err)
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return 0, fmt.Errorf("question pool repo force delete by filter: %w", err)
+	}
+	return affected, nil
+}
+
 func (r *QuestionPoolRepository) ListByIds(ctx context.Context, ids []int64) ([]*questionpool.QuestionPool, error) {
 	if len(ids) == 0 {
 		return nil, nil

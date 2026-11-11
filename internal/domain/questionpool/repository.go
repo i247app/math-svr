@@ -28,6 +28,17 @@ type ListQuestionPoolsFilter struct {
 	IsVerified *bool
 }
 
+// IsEmpty reports that no field is set, i.e. the filter matches every row.
+func (f ListQuestionPoolsFilter) IsEmpty() bool {
+	return f.Text == nil && f.Grade == nil && f.Level == nil && f.SubLevel == nil &&
+		f.Topic == nil && len(f.Tags) == 0 && len(f.Kinds) == 0 && len(f.Statuses) == 0 &&
+		f.Source == nil && f.IsVerified == nil
+}
+
+// ErrEmptyFilter is returned by ForceDeleteByFilter for a filter that sets
+// nothing: it would delete the whole bank.
+var ErrEmptyFilter = errors.New("question_pool: delete filter is empty")
+
 // PickFilter says which questions an exam may draw (PickForExam). Only
 // approved, live questions are ever candidates.
 type PickFilter struct {
@@ -73,6 +84,10 @@ type IRepository interface {
 	SoftDeleteById(ctx context.Context, id int64, modifyId *int64) (bool, error)
 	// ForceDeleteById removes the row, live or soft-deleted. false = no row.
 	ForceDeleteById(ctx context.Context, id int64) (bool, error)
+	// ForceDeleteByFilter removes every row matching filter, live or
+	// soft-deleted, in one DELETE, and returns how many. An empty filter
+	// fails with ErrEmptyFilter and deletes nothing.
+	ForceDeleteByFilter(ctx context.Context, filter ListQuestionPoolsFilter) (int64, error)
 	// ListByIds returns the live rows among ids, in no particular order.
 	ListByIds(ctx context.Context, ids []int64) ([]*QuestionPool, error)
 	// FindLiveHashes returns which of hashes a live row already holds, so a

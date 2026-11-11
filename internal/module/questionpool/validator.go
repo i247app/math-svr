@@ -365,6 +365,23 @@ func trimmedOrNil(s *string) *string {
 	return &t
 }
 
+// ValidateForceDeleteQuestionPools checks the filters with the list's rules
+// and refuses a request that sets none.
+func ValidateForceDeleteQuestionPools(ctx context.Context, req *dto.ForceDeleteQuestionPoolsReq) (domain.ListQuestionPoolsFilter, error) {
+	filter, err := ValidateListQuestionPools(ctx, &dto.ListQuestionPoolsReq{
+		QuestionGrade:    req.QuestionGrade,
+		QuestionLevel:    req.QuestionLevel,
+		QuestionSubLevel: req.QuestionSubLevel,
+	})
+	if err != nil {
+		return filter, err
+	}
+	if filter.IsEmpty() {
+		return filter, errs.NewError(ctx, status.QUESTION_POOL_DELETE_FILTER_REQUIRED, nil, domain.ErrEmptyFilter)
+	}
+	return filter, nil
+}
+
 // ValidateListQuestions checks the filters and turns them into the repo
 // filter. A size above MaxListSize is lowered to it; page and size are
 // otherwise clamped by the repository.

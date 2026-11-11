@@ -225,6 +225,21 @@ type DeleteQuestionPoolReq struct {
 // DeleteQuestionRes is empty: the question is gone.
 type DeleteQuestionPoolRes struct{}
 
+// ForceDeleteQuestionPoolsReq picks the questions to delete for good. Every
+// filter is optional, set filters are ANDed, and at least one is required.
+// To add a filter: a field here, copied in ValidateForceDeleteQuestionPools
+// (it reuses the list's checks and SQL).
+type ForceDeleteQuestionPoolsReq struct {
+	QuestionGrade    *int `json:"question_grade,omitempty"`
+	QuestionLevel    *int `json:"question_level,omitempty"`
+	QuestionSubLevel *int `json:"question_sub_level,omitempty"`
+}
+
+// ForceDeleteQuestionPoolsRes says how many rows were removed.
+type ForceDeleteQuestionPoolsRes struct {
+	DeletedCount int64 `json:"deleted_count"`
+}
+
 // QuestionRes wraps one question.
 type QuestionPoolRes struct {
 	QuestionPool *QuestionPoolResponse `json:"question_pool"`
