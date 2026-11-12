@@ -7,7 +7,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/config"
-	"math-ai.com/math-ai/internal/libs/firebase"
+	"math-ai.com/math-ai/internal/pkg/firebase"
 )
 
 // NewFromConfig builds a fully-wired *Adapter from cfg, or returns

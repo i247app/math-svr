@@ -9,16 +9,16 @@ import (
 	"net/textproto"
 	"strings"
 
-	lib_email "math-ai.com/math-ai/internal/libs/email"
+	pkg_email "math-ai.com/math-ai/internal/pkg/email"
 )
 
 // EmailGoogleProvider adapts the Gmail-API-backed libs/email client to the
 // EmailProvider contract.
 type EmailGoogleProvider struct {
-	client *lib_email.GoogleEmailClient
+	client *pkg_email.GoogleEmailClient
 }
 
-func NewEmailGoogleProvider(client *lib_email.GoogleEmailClient) *EmailGoogleProvider {
+func NewEmailGoogleProvider(client *pkg_email.GoogleEmailClient) *EmailGoogleProvider {
 	return &EmailGoogleProvider{client: client}
 }
 

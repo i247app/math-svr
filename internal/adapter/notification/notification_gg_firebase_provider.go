@@ -3,7 +3,7 @@ package notification
 import (
 	"context"
 
-	"math-ai.com/math-ai/internal/libs/firebase"
+	"math-ai.com/math-ai/internal/pkg/firebase"
 )
 
 // FirebaseProvider sends push notifications through Firebase Cloud Messaging.

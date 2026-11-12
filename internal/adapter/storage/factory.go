@@ -5,7 +5,7 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/config"
-	"math-ai.com/math-ai/internal/libs/s3"
+	"math-ai.com/math-ai/internal/pkg/s3"
 
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 )

@@ -6,10 +6,10 @@ import (
 
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	"math-ai.com/math-ai/internal/libs/deepseek"
-	"math-ai.com/math-ai/internal/libs/gemini"
-	"math-ai.com/math-ai/internal/libs/openai"
-	"math-ai.com/math-ai/internal/libs/openrouter"
+	"math-ai.com/math-ai/internal/pkg/deepseek"
+	"math-ai.com/math-ai/internal/pkg/gemini"
+	"math-ai.com/math-ai/internal/pkg/openai"
+	"math-ai.com/math-ai/internal/pkg/openrouter"
 )
 
 // mapOpenRouterError translates a libs/openrouter error into a

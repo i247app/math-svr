@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/libs/s3"
+	"math-ai.com/math-ai/internal/pkg/s3"
 )
 
 type S3Provider struct {

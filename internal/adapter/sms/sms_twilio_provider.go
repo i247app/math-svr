@@ -3,7 +3,7 @@ package sms
 import (
 	"context"
 
-	"math-ai.com/math-ai/internal/libs/twilio"
+	"math-ai.com/math-ai/internal/pkg/twilio"
 )
 
 // TwilioProvider is the SMSProvider implementation backed by

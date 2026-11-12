@@ -3,7 +3,7 @@ package llm
 import (
 	"context"
 
-	"math-ai.com/math-ai/internal/libs/gemini"
+	"math-ai.com/math-ai/internal/pkg/gemini"
 )
 
 // GeminiProvider is the LLMProvider implementation backed by libs/gemini,

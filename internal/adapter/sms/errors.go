@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	"math-ai.com/math-ai/internal/libs/twilio"
+	"math-ai.com/math-ai/internal/pkg/twilio"
 
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 )

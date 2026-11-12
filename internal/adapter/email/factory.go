@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	lib_email "math-ai.com/math-ai/internal/libs/email"
+	pkg_email "math-ai.com/math-ai/internal/pkg/email"
 
 	"math-ai.com/math-ai/internal/infrastructure/config"
 )
@@ -16,7 +16,7 @@ func NewFromConfig(ctx context.Context, cfg config.EmailConfig) (*Adapter, error
 
 	switch cfg.EmailProvider {
 	case string(ProviderGoogle):
-		client, err := lib_email.NewGoogleEmailClient(ctx, lib_email.GoogleEmailConfig{
+		client, err := pkg_email.NewGoogleEmailClient(ctx, pkg_email.GoogleEmailConfig{
 			CredentialsFile: cfg.GmailCredentialsFile,
 			SenderEmail:     cfg.GmailSenderEmail,
 		})

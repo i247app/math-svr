@@ -8,10 +8,10 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/libs/deepseek"
-	"math-ai.com/math-ai/internal/libs/gemini"
-	"math-ai.com/math-ai/internal/libs/openai"
-	"math-ai.com/math-ai/internal/libs/openrouter"
+	"math-ai.com/math-ai/internal/pkg/deepseek"
+	"math-ai.com/math-ai/internal/pkg/gemini"
+	"math-ai.com/math-ai/internal/pkg/openai"
+	"math-ai.com/math-ai/internal/pkg/openrouter"
 )
 
 // NewFromConfig builds a fully-wired *Adapter from cfg, or returns

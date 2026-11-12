@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/libs/twilio"
+	"math-ai.com/math-ai/internal/pkg/twilio"
 )
 
 // Adapter is the entry point the OTP application layer uses to dispatch

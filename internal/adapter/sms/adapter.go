@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	"math-ai.com/math-ai/internal/libs/twilio"
+	"math-ai.com/math-ai/internal/pkg/twilio"
 
 	"math-ai.com/math-ai/internal/domain/shared/status"
 

@@ -3,7 +3,7 @@ package llm
 import (
 	"context"
 
-	"math-ai.com/math-ai/internal/libs/openai"
+	"math-ai.com/math-ai/internal/pkg/openai"
 )
 
 // OpenAIProvider is the LLMProvider implementation backed by libs/openai,
