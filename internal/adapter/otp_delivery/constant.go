@@ -9,3 +9,7 @@ const (
 	ChannelSMS   ChannelName = "sms"
 	ChannelEmail ChannelName = "email"
 )
+
+func (c ChannelName) String() string {
+	return string(c)
+}

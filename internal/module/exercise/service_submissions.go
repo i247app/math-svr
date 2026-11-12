@@ -636,7 +636,7 @@ func exerciseAvailableForSubmission(e *exerciseDomain.Exercise) bool {
 	if e.ExerciseStatus() == nil {
 		return true
 	}
-	return *e.ExerciseStatus() == string(enum.ClassroomExerciseStatusTypeActive)
+	return *e.ExerciseStatus() == enum.ClassroomExerciseStatusTypeActive.String()
 }
 
 // enforceExerciseAccess re-applies the visibility access gate from the
@@ -645,7 +645,7 @@ func enforceExerciseAccess(ctx context.Context, e *exerciseDomain.Exercise, call
 	if e == nil {
 		return nil
 	}
-	if e.Visibility() != string(enum.ClassroomExerciseVisibilityPrivate) {
+	if e.Visibility() != enum.ClassroomExerciseVisibilityPrivate.String() {
 		return nil
 	}
 	if e.CreatorProfileId() == callerProfileID {

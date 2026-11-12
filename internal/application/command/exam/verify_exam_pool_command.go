@@ -83,7 +83,7 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 			return err
 		}
 		// A set drawn from the question bank is corrected in the bank.
-		if pool.ExamSource() == string(enum.ExamSourcePool) {
+		if pool.ExamSource() == enum.ExamSourcePool.String() {
 			return errs.NewError(ctx, status.EXAM_POOL_BANK_READONLY, nil,
 				fmt.Errorf("exam: exam_pool %d was drawn from the question bank", cmd.ExamID))
 		}

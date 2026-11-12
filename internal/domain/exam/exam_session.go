@@ -37,7 +37,7 @@ func JourneyKeyOf(uid, profileId int64, examType string, grade *int) JourneyKey 
 		ExamType:  examType,
 	}
 
-	if examType == string(enum.ExamTypeGrade) && grade != nil {
+	if examType == enum.ExamTypeGrade.String() && grade != nil {
 		g := *grade
 		k.Grade = &g
 	}
@@ -194,7 +194,7 @@ const GradePassScorePercentage = 50
 // they passed (the client completes a journey whatever the score).
 // Cancelling, reopening and every other type leave the verdict empty.
 func PassMarkFor(examType string, newStatus enum.EsessStatusType) *int {
-	if examType != string(enum.ExamTypeGrade) || newStatus != enum.EsessStatusComplete {
+	if examType != enum.ExamTypeGrade.String() || newStatus != enum.EsessStatusComplete {
 		return nil
 	}
 	mark := GradePassScorePercentage

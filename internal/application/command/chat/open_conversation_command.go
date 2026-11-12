@@ -101,16 +101,16 @@ func (h *OpenConversationCommandHandler) create(ctx context.Context, cmd *OpenCo
 			return err
 		}
 
-		active := string(enum.ChatConversationStatusActive)
+		active := enum.ChatConversationStatusActive.String()
 		c := domain.NewConversation()
 		c.SetConversationId(conversationID)
-		c.SetConversationType(string(enum.ChatConversationTypeDirect))
+		c.SetConversationType(enum.ChatConversationTypeDirect.String())
 		c.SetDmKey(&dmKey)
 		// classroom_id stays NULL: a direct thread is global (decision D2), so
 		// the same conversation is reached from every classroom the pair share.
 		c.SetParticipantCount(2)
 		c.SetConversationStatus(&active)
-		c.SetStatus(string(enum.StatusActive))
+		c.SetStatus(enum.StatusActive.String())
 		c.SetCreateId(&cmd.ActorUID)
 
 		created, err := repos.ChatConversation.Create(ctx, c)
@@ -134,16 +134,16 @@ func (h *OpenConversationCommandHandler) create(ctx context.Context, cmd *OpenCo
 				return err
 			}
 
-			activeParticipant := string(enum.ChatParticipantStatusActive)
+			activeParticipant := enum.ChatParticipantStatusActive.String()
 			p := domain.NewParticipant()
 			p.SetParticipantId(participantID)
 			p.SetConversationId(conversationID)
 			p.SetProfileId(side.profileID)
 			p.SetUid(side.uid)
-			p.SetParticipantRole(string(enum.ChatParticipantRoleMember))
+			p.SetParticipantRole(enum.ChatParticipantRoleMember.String())
 			p.SetJoinedDt(mtime.Now())
 			p.SetParticipantStatus(&activeParticipant)
-			p.SetStatus(string(enum.StatusActive))
+			p.SetStatus(enum.StatusActive.String())
 			p.SetCreateId(&cmd.ActorUID)
 
 			if _, err := repos.ChatParticipant.Create(ctx, p); err != nil {

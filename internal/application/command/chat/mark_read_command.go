@@ -40,7 +40,7 @@ func (h *MarkReadCommandHandler) Handle(ctx context.Context, cmd *MarkReadComman
 			return errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, err)
 		}
 		if participant == nil || participant.ParticipantStatus() == nil ||
-			*participant.ParticipantStatus() != string(enum.ChatParticipantStatusActive) {
+			*participant.ParticipantStatus() != enum.ChatParticipantStatusActive.String() {
 			return errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, errNotParticipant)
 		}
 

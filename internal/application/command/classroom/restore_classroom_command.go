@@ -35,7 +35,7 @@ func (h *RestoreClassroomCommandHandler) Handle(ctx context.Context, cmd Restore
 			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
 				ErrClassroomNotFound)
 		}
-		if existing.ClassroomStatus() == nil || *existing.ClassroomStatus() != string(enum.ClassroomStatusTypeArchived) {
+		if existing.ClassroomStatus() == nil || *existing.ClassroomStatus() != enum.ClassroomStatusTypeArchived.String() {
 			return errs.NewError(ctx, status.CLASSROOM_NOT_ARCHIVED, nil,
 				ErrClassroomNotArchived)
 		}

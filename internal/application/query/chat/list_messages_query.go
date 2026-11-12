@@ -38,7 +38,7 @@ func (h *ListMessagesQueryHandler) Handle(ctx context.Context, q *ListMessagesQu
 		return nil, errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, err)
 	}
 	if participant == nil || participant.ParticipantStatus() == nil ||
-		*participant.ParticipantStatus() != string(enum.ChatParticipantStatusActive) {
+		*participant.ParticipantStatus() != enum.ChatParticipantStatusActive.String() {
 		return nil, errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, ErrNotParticipant)
 	}
 

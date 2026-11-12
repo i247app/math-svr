@@ -109,7 +109,7 @@ func (h *SubmitExerciseAnswersV2CommandHandler) Handle(ctx context.Context, cmd 
 		// Deterministic scoring always produces a review, so we always
 		// land on GRADED with graded_dt set — matching v1's success
 		// branch (which writes GRADED when Review != "").
-		statusVal := string(enum.ClassroomExerciseSubmissionStatusGraded)
+		statusVal := enum.ClassroomExerciseSubmissionStatusGraded.String()
 		sub.SetSubmissionStatus(&statusVal)
 		sub.SetGradedDt(now)
 

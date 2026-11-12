@@ -55,14 +55,14 @@ func (h *CreateNotificationCommandHandler) Handle(ctx context.Context, cmd Creat
 		n.SetActionType(cmd.ActionType)
 		n.SetActionData(cmd.ActionData)
 
-		priority := string(enum.NotificationPriorityTypeNormal)
+		priority := enum.NotificationPriorityTypeNormal.String()
 		if cmd.Priority != nil && *cmd.Priority != "" {
 			priority = *cmd.Priority
 		}
 		n.SetPriority(&priority)
 
 		n.SetNote(cmd.Note)
-		active := string(enum.NotificationStatusTypeActive)
+		active := enum.NotificationStatusTypeActive.String()
 		n.SetNotificationStatus(&active)
 		n.SetCreateId(cmd.CreatorUID)
 

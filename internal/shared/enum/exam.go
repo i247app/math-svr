@@ -209,3 +209,7 @@ const (
 	ExamSourceLLM  ExamSource = "LLM"
 	ExamSourcePool ExamSource = "POOL"
 )
+
+func (e ExamSource) String() string {
+	return string(e)
+}

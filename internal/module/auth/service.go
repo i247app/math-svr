@@ -5,9 +5,6 @@ import (
 
 	command "math-ai.com/math-ai/internal/application/command/auth"
 	"math-ai.com/math-ai/internal/application/dto"
-
-	// dtoDevice "math-ai.com/math-ai/internal/application/dto/device"
-
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/login"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"

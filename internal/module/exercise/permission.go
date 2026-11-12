@@ -40,7 +40,7 @@ func (s *Service) requireMember(ctx context.Context, classroomID, profileID int6
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
 			ErrNotClassroomMember)
 	}
-	if m.MemberStatus() == nil || *m.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
+	if m.MemberStatus() == nil || *m.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
 			ErrMembershipNotActive)
 	}
@@ -55,8 +55,8 @@ func (s *Service) requireManager(ctx context.Context, classroomID, profileID int
 		return nil, err
 	}
 	switch m.MemberRole() {
-	case string(enum.ClassroomMemberRoleTypeOwner),
-		string(enum.ClassroomMemberRoleTypeCoTeacher):
+	case enum.ClassroomMemberRoleTypeOwner.String(),
+		enum.ClassroomMemberRoleTypeCoTeacher.String():
 		return m, nil
 	default:
 		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
@@ -74,7 +74,7 @@ func requirePrivateAccess(ctx context.Context, e *exerciseDomain.Exercise, calle
 	if e == nil {
 		return nil
 	}
-	if e.Visibility() != string(enum.ClassroomExerciseVisibilityPrivate) {
+	if e.Visibility() != enum.ClassroomExerciseVisibilityPrivate.String() {
 		return nil
 	}
 	if e.CreatorProfileId() == callerProfileID {
@@ -91,8 +91,8 @@ func isManagerRole(m *classroomDomain.Member) bool {
 		return false
 	}
 	switch m.MemberRole() {
-	case string(enum.ClassroomMemberRoleTypeOwner),
-		string(enum.ClassroomMemberRoleTypeCoTeacher):
+	case enum.ClassroomMemberRoleTypeOwner.String(),
+		enum.ClassroomMemberRoleTypeCoTeacher.String():
 		return true
 	default:
 		return false

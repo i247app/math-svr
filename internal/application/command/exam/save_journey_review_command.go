@@ -66,7 +66,7 @@ func (h *SaveJourneyReviewCommandHandler) Handle(ctx context.Context, cmd SaveJo
 			return errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 				fmt.Errorf("exam: journey %d belongs to another profile", cmd.EsessID))
 		}
-		if st := utils.DerefString(journey.EsessStatus()); st != string(enum.EsessStatusComplete) {
+		if st := utils.DerefString(journey.EsessStatus()); st != enum.EsessStatusComplete.String() {
 			return errs.NewError(ctx, status.EXAM_REVIEW_JOURNEY_NOT_COMPLETE, nil,
 				fmt.Errorf("exam: journey %d is %s; only a COMPLETE journey is reviewed", cmd.EsessID, st))
 		}

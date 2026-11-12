@@ -11,7 +11,7 @@ import (
 func normalizeLanguage(lang enum.LanguageType) string {
 	s := strings.ToLower(strings.TrimSpace(string(lang)))
 	if s == "" {
-		return string(enum.LanguageTypeVietnamese)
+		return enum.LanguageTypeVietnamese.String()
 	}
 	return s
 }

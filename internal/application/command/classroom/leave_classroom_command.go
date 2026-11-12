@@ -37,11 +37,11 @@ func (h *LeaveClassroomCommandHandler) Handle(ctx context.Context, cmd LeaveClas
 			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_MEMBER, nil,
 				ErrNotClassroomMember)
 		}
-		if m.MemberStatus() == nil || *m.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
+		if m.MemberStatus() == nil || *m.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
 			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_MEMBER, nil,
 				ErrMembershipNotActive)
 		}
-		if m.MemberRole() == string(enum.ClassroomMemberRoleTypeOwner) {
+		if m.MemberRole() == enum.ClassroomMemberRoleTypeOwner.String() {
 			return errs.NewError(ctx, status.CLASSROOM_OWNER_CANNOT_LEAVE, nil,
 				ErrOwnerMustTransferBeforeLeave)
 		}

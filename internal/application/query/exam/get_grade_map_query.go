@@ -56,7 +56,7 @@ func (h *GetGradeMapQueryHandler) Handle(ctx context.Context, q GetGradeMapQuery
 		return nil, err
 	}
 
-	gradeType := string(enum.ExamTypeGrade)
+	gradeType := enum.ExamTypeGrade.String()
 	grade := q.Grade
 	latest, err := h.reader.FindLatestJourney(ctx, exam.LatestJourneyFilter{
 		Uid: q.UID, ProfileId: q.ProfileID, ExamType: &gradeType, Grade: &grade,

@@ -24,7 +24,7 @@ func summarizeScores(points []scorePoint, priorAvg10 *float64) (dto.ExamScoreSum
 	count := int64(len(points))
 	summary := dto.ExamScoreSummary{Count: count}
 	if count == 0 {
-		summary.Trend = string(enum.ProgressCommentNoData)
+		summary.Trend = enum.ProgressCommentNoData.String()
 		return summary, nil
 	}
 

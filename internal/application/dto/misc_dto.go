@@ -1,6 +1,6 @@
 package dto
 
-import "time"
+import "math-ai.com/math-ai/internal/domain/shared/mtime"
 
 type LogTimeFormatReq struct {
 	Time string `json:"time"`
@@ -36,7 +36,7 @@ type ClearDataRes struct {
 // *_closed fields are cumulative since process start — diff two snapshots
 // taken captured_at apart to get a rate.
 type DBPoolStatsRes struct {
-	CapturedAt time.Time `json:"captured_at"`
+	CapturedAt mtime.MathTime `json:"captured_at"`
 
 	// Session settings of the app's connections (the DSN overrides neither, so
 	// they equal the server's global defaults).

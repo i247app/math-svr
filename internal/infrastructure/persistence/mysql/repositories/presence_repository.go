@@ -121,7 +121,7 @@ func (r *PresenceRepository) IncrementConnection(ctx context.Context, uid int64,
 		  last_device_uuid = ?,
 		  last_platform    = ?`
 
-	online := string(enum.PresenceStateOnline)
+	online := enum.PresenceStateOnline.String()
 	if _, err := r.db.Exec(ctx, query,
 		uid, online, now.Time, now.Time, deviceUuid, platform, enum.StatusActive,
 		online, now.Time, now.Time, deviceUuid, platform,
@@ -147,7 +147,7 @@ func (r *PresenceRepository) DecrementConnection(ctx context.Context, uid int64,
 		  last_seen_dt     = ?
 		WHERE uid = ?`
 
-	if _, err := r.db.Exec(ctx, query, string(enum.PresenceStateOffline), now.Time, uid); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.PresenceStateOffline.String(), now.Time, uid); err != nil {
 		return nil, fmt.Errorf("presence repo decrement connection: %w", err)
 	}
 
@@ -162,7 +162,7 @@ func (r *PresenceRepository) ResetAll(ctx context.Context) error {
 		SET connection_count = 0, presence_state = ?
 		WHERE connection_count <> 0 OR presence_state <> ?`
 
-	offline := string(enum.PresenceStateOffline)
+	offline := enum.PresenceStateOffline.String()
 	if _, err := r.db.Exec(ctx, query, offline, offline); err != nil {
 		return fmt.Errorf("presence repo reset all: %w", err)
 	}

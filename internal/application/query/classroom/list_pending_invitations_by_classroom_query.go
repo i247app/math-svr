@@ -28,7 +28,7 @@ func NewListPendingInvitationsByClassroomQueryHandler(memberRepo classroom.IMemb
 
 func (h *ListPendingInvitationsByClassroomQueryHandler) Handle(ctx context.Context, q ListPendingInvitationsByClassroomQuery) ([]*classroom.Member, *pagination.Pagination, error) {
 	cid := q.ClassroomID
-	pendingStatus := string(enum.ClassroomMemberStatusTypePendingInvitation)
+	pendingStatus := enum.ClassroomMemberStatusTypePendingInvitation.String()
 	return h.memberRepo.ListMembers(ctx, &classroom.ListMembersParams{
 		ClassroomId: &cid,
 		Status:      &pendingStatus,

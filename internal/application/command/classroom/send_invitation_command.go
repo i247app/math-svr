@@ -84,12 +84,12 @@ func (h *SendInvitationCommandHandler) Handle(ctx context.Context, cmd SendInvit
 				ErrClassroomNotFound)
 		}
 		if c.ClassroomStatus() != nil &&
-			*c.ClassroomStatus() == string(enum.ClassroomStatusTypeArchived) {
+			*c.ClassroomStatus() == enum.ClassroomStatusTypeArchived.String() {
 			return errs.NewError(ctx, status.CLASSROOM_ALREADY_ARCHIVED, nil,
 				ErrClassroomArchived)
 		}
 
-		pendingStatus := string(enum.ClassroomMemberStatusTypePendingInvitation)
+		pendingStatus := enum.ClassroomMemberStatusTypePendingInvitation.String()
 		inviter := cmd.CallerProfileID
 
 		for _, t := range cmd.Targets {
@@ -118,14 +118,14 @@ func (h *SendInvitationCommandHandler) Handle(ctx context.Context, cmd SendInvit
 					currentStatus = *existing.MemberStatus()
 				}
 				switch currentStatus {
-				case string(enum.ClassroomMemberStatusTypeActive):
+				case enum.ClassroomMemberStatusTypeActive.String():
 					result.Skipped = append(result.Skipped, SendInvitationSkipReason{
 						Target:  t,
 						Reason:  status.CLASSROOM_MEMBER_ALREADY_MEMBER,
 						Message: "target is already an active member",
 					})
 					continue
-				case string(enum.ClassroomMemberStatusTypePendingInvitation):
+				case enum.ClassroomMemberStatusTypePendingInvitation.String():
 					result.Skipped = append(result.Skipped, SendInvitationSkipReason{
 						Target:  t,
 						Reason:  status.CLASSROOM_INVITATION_ALREADY_INVITED,

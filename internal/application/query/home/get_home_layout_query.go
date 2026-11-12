@@ -344,7 +344,7 @@ func (h *GetHomeLayoutQueryHandler) buildParent(ctx context.Context, p *profileD
 		if c.ProfileId() == p.ProfileId() {
 			continue
 		}
-		if utils.DerefString(c.Role()) != string(enum.RoleTypeStudent) {
+		if utils.DerefString(c.Role()) != enum.RoleTypeStudent.String() {
 			continue
 		}
 		data.Children = append(data.Children, c)
@@ -573,13 +573,13 @@ func (h *GetHomeLayoutQueryHandler) hydrateProfiles(ctx context.Context, idSet m
 }
 
 func isManagerRole(role string) bool {
-	return role == string(enum.ClassroomMemberRoleTypeOwner) ||
-		role == string(enum.ClassroomMemberRoleTypeCoTeacher)
+	return role == enum.ClassroomMemberRoleTypeOwner.String() ||
+		role == enum.ClassroomMemberRoleTypeCoTeacher.String()
 }
 
 func isArchived(c *classroomDomain.Classroom) bool {
 	return c.ClassroomStatus() != nil &&
-		*c.ClassroomStatus() == string(enum.ClassroomStatusTypeArchived)
+		*c.ClassroomStatus() == enum.ClassroomStatusTypeArchived.String()
 }
 
 // activeClassroomIDs returns the ids of the (already ARCHIVED-filtered)

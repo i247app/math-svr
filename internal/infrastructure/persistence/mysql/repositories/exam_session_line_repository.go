@@ -82,7 +82,7 @@ func (r *ExamSessionLineRepository) CreateBatch(ctx context.Context, details []*
 	for _, d := range details {
 		esessLnStatus := d.EsessLnStatus()
 		if esessLnStatus == nil {
-			s := string(enum.EsessLnStatusActive)
+			s := enum.EsessLnStatusActive.String()
 			esessLnStatus = &s
 		}
 		tags, err := marshalQuestionTags(d.QuestionTags())

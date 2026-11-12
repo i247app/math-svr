@@ -362,10 +362,9 @@ func ValidateUpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRoleReq)
 	}
 	// OWNER is intentionally not allowed here — transfer-ownership is
 	// the only way to mint a new owner.
-	if role != string(enum.ClassroomMemberRoleTypeCoTeacher) &&
-		role != string(enum.ClassroomMemberRoleTypeStudent) {
-		return errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
-			ErrNewRoleInvalid)
+	if role != enum.ClassroomMemberRoleTypeCoTeacher.String() &&
+		role != enum.ClassroomMemberRoleTypeStudent.String() {
+		return errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil, ErrNewRoleInvalid)
 	}
 	req.NewRole = role
 	return nil

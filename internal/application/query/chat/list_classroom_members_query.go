@@ -68,7 +68,7 @@ func NewListClassroomMembersQueryHandler(
 // per member. A 40-person class would otherwise cost over a hundred queries
 // every time someone opens the tab.
 func (h *ListClassroomMembersQueryHandler) Handle(ctx context.Context, q *ListClassroomMembersQuery) (*ListClassroomMembersResult, error) {
-	activeStatus := string(enum.ClassroomMemberStatusTypeActive)
+	activeStatus := enum.ClassroomMemberStatusTypeActive.String()
 	members, pg, err := h.memberRepo.ListMembers(ctx, &classroomDomain.ListMembersParams{
 		ClassroomId: &q.ClassroomID,
 		Status:      &activeStatus,

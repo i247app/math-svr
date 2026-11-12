@@ -36,7 +36,7 @@ func (h *SoftDeleteClassroomExerciseCommandHandler) Handle(ctx context.Context, 
 				ErrExerciseNotFound)
 		}
 		if existing.ExerciseStatus() != nil &&
-			*existing.ExerciseStatus() == string(enum.ClassroomExerciseStatusTypeDeleted) {
+			*existing.ExerciseStatus() == enum.ClassroomExerciseStatusTypeDeleted.String() {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_ALREADY_DELETED, nil, ErrExerciseAlreadyDeleted)
 		}
 		if err := repos.Exercise.SoftDelete(ctx, cmd.ClassroomExerciseID, cmd.ActorID); err != nil {

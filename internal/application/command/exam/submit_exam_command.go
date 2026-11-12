@@ -183,7 +183,7 @@ func (h *SubmitExamCommandHandler) loadOpenAttempt(ctx context.Context, repos tr
 		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_OWNED, nil,
 			fmt.Errorf("exam: attempt %d belongs to another profile", cmd.ElinkID))
 	}
-	if s := attempt.ElinkStatus(); s == nil || *s != string(enum.ElinkStatusInProgress) {
+	if s := attempt.ElinkStatus(); s == nil || *s != enum.ElinkStatusInProgress.String() {
 		return nil, errs.NewError(ctx, status.EXAM_ALREADY_SUBMITTED, nil,
 			fmt.Errorf("exam: attempt %d is not in progress", cmd.ElinkID))
 	}
@@ -291,7 +291,7 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 		owner *exam.ExamSession
 		err   error
 	)
-	if attempt.ReqExamType() == string(enum.ExamTypePractice) {
+	if attempt.ReqExamType() == enum.ExamTypePractice.String() {
 		owner, err = repos.ExamSession.FindByEsessId(ctx, journeyID)
 	} else {
 		owner, err = repos.ExamSession.FindByEsessIdAndType(ctx, journeyID, attempt.ReqExamType())
@@ -307,13 +307,13 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
 	}
-	if attempt.ReqExamType() != string(enum.ExamTypePractice) {
+	if attempt.ReqExamType() != enum.ExamTypePractice.String() {
 		if !hasStatus(owner, enum.EsessStatusActive) {
 			return 0, errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil,
 				fmt.Errorf("exam: journey %d has ended; attempt %d cannot fold into it", journeyID, attempt.ElinkId()))
 		}
 		row := h.journeyRow(cmd, attempt, owner, delta, journeyID)
-		return journeyID, h.accumulate(ctx, repos, journeyID, attempt.ReqExamType(), string(enum.EsessStatusActive), row, delta)
+		return journeyID, h.accumulate(ctx, repos, journeyID, attempt.ReqExamType(), enum.EsessStatusActive.String(), row, delta)
 	}
 
 	// Practice belongs to a finished journey. A round handed out while the
@@ -324,7 +324,7 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 			fmt.Errorf("exam: journey %d is %s; practice attempt %d needs it COMPLETE", journeyID, utils.DerefString(owner.EsessStatus()), attempt.ElinkId()))
 	}
 
-	practiceType := string(enum.ExamTypePractice)
+	practiceType := enum.ExamTypePractice.String()
 	existing, err := repos.ExamSession.FindByEsessIdAndType(ctx, journeyID, practiceType)
 	if err != nil {
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
@@ -346,7 +346,7 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 				fmt.Errorf("exam: opening the practice row of journey %d collided with a row that cannot be read back — check the (esess_id, req_exam_type) primary key", journeyID))
 		}
 	}
-	return journeyID, h.accumulate(ctx, repos, journeyID, practiceType, string(enum.EsessStatusComplete), h.practiceRow(cmd, existing, delta, journeyID), delta)
+	return journeyID, h.accumulate(ctx, repos, journeyID, practiceType, enum.EsessStatusComplete.String(), h.practiceRow(cmd, existing, delta, journeyID), delta)
 }
 
 // accumulate folds delta into one row while it is in expectedStatus,
@@ -356,7 +356,7 @@ func (h *SubmitExamCommandHandler) accumulate(ctx context.Context, repos transac
 	journeyID int64, examType, expectedStatus string, row *exam.ExamSession, delta exam.StatsDelta) error {
 	if err := repos.ExamSession.Accumulate(ctx, journeyID, examType, expectedStatus, row, delta); err != nil {
 		if errors.Is(err, exam.ErrJourneyNotActive) {
-			if examType == string(enum.ExamTypePractice) {
+			if examType == enum.ExamTypePractice.String() {
 				return errs.NewError(ctx, status.EXAM_JOURNEY_NOT_COMPLETE, nil, err)
 			}
 			return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
@@ -388,8 +388,8 @@ func (h *SubmitExamCommandHandler) practiceRow(cmd SubmitExamCommand, existing *
 	row.SetEsessId(journeyID)
 	row.SetUid(cmd.UID)
 	row.SetProfileId(cmd.ProfileID)
-	row.SetReqExamType(string(enum.ExamTypePractice))
-	complete := string(enum.EsessStatusComplete)
+	row.SetReqExamType(enum.ExamTypePractice.String())
+	complete := enum.EsessStatusComplete.String()
 	row.SetEsessStatus(&complete)
 	row.SetResReview(&derived.Review)
 	row.SetLastSubmittedDt(mtime.Now())

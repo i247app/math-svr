@@ -93,13 +93,13 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 
 	var uid *int64
 	switch req.OtpType {
-	case string(enum.OtpTypeLogin2FA):
+	case enum.OtpTypeLogin2FA.String():
 		if user == nil {
 			return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil, ErrUserNotFound)
 		}
 
 		uid = &user.UID
-	case string(enum.OtpTypeRegister):
+	case enum.OtpTypeRegister.String():
 		if user != nil {
 			return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, ErrUserAlreadyExists)
 		}
@@ -152,7 +152,7 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 
 	res := &dto.SendOtpRes{
 		ExpiresAt: result.ExpiresAt.String(),
-		Channel:   string(result.Channel),
+		Channel:   result.Channel.String(),
 		OTPCode:   result.OTPCode,
 		OtpType:   result.OTPType,
 	}
@@ -200,7 +200,7 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 
 		// Update session
 		switch req.OtpType {
-		case string(enum.OtpTypeLogin2FA):
+		case enum.OtpTypeLogin2FA.String():
 			deviceUUID := metadata.GetDeviceUUID(ctx)
 			log.Info("Mark device as trusted")
 			_, err := s.deviceSvc.VerifyDevice(ctx, &dto.VerifyDeviceReq{

@@ -88,10 +88,9 @@ func (s *Service) RemoveMember(ctx context.Context, req *dto.RemoveMemberReq, se
 	}
 	// CO_TEACHER can only remove STUDENT targets; OWNER can remove
 	// CO_TEACHER and STUDENT.
-	if callerMember.MemberRole() == string(enum.ClassroomMemberRoleTypeCoTeacher) &&
-		target.MemberRole() != string(enum.ClassroomMemberRoleTypeStudent) {
-		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
-			ErrCoTeacherCanOnlyRemoveStudent)
+	if callerMember.MemberRole() == enum.ClassroomMemberRoleTypeCoTeacher.String() &&
+		target.MemberRole() != enum.ClassroomMemberRoleTypeStudent.String() {
+		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil, ErrCoTeacherCanOnlyRemoveStudent)
 	}
 	if err := s.removeMemberCmd.Handle(ctx, command.RemoveMemberCommand{
 		ClassroomID:     req.ClassroomID,
@@ -118,7 +117,7 @@ func (s *Service) UpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRol
 	if _, err := s.requireOwner(ctx, req.ClassroomID, caller.ProfileId()); err != nil {
 		return nil, err
 	}
-	if req.NewRole == string(enum.ClassroomMemberRoleTypeCoTeacher) {
+	if req.NewRole == enum.ClassroomMemberRoleTypeCoTeacher.String() {
 		targetProfile, err := s.profileRepo.FindByProfileId(ctx, req.TargetProfileID)
 		if err != nil {
 			return nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -127,7 +126,7 @@ func (s *Service) UpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRol
 			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 				ErrTargetProfileNotFound)
 		}
-		if utils.DerefString(targetProfile.Role()) != string(enum.RoleTypeTeacher) {
+		if utils.DerefString(targetProfile.Role()) != enum.RoleTypeTeacher.String() {
 			return nil, errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
 				ErrTeacherCoTeacherOnly)
 		}

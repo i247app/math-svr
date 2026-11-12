@@ -157,7 +157,7 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		a.SetReqGrade(cmd.Grade)
 		a.SetReqLevel(cmd.Level)
 		a.SetStartedDt(mtime.Now())
-		inProgress := string(enum.ElinkStatusInProgress)
+		inProgress := enum.ElinkStatusInProgress.String()
 		a.SetElinkStatus(&inProgress)
 
 		saved, err := repos.ExamLink.Create(ctx, a)
@@ -381,7 +381,7 @@ func insertExamPool(ctx context.Context, repos transaction.Repositories, examTyp
 	e.SetTitle(content.Title)
 	e.SetShortText(content.ShortText)
 	e.SetQuestionsJson(content.QuestionsJSON)
-	active := string(enum.ExamStatusActive)
+	active := enum.ExamStatusActive.String()
 	e.SetExamStatus(&active)
 	e.SetCreateId(createdBy)
 

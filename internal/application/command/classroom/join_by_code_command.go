@@ -52,7 +52,7 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 			return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
 				ErrClassroomCodeNotFound)
 		}
-		if c.ClassroomStatus() != nil && *c.ClassroomStatus() == string(enum.ClassroomStatusTypeArchived) {
+		if c.ClassroomStatus() != nil && *c.ClassroomStatus() == enum.ClassroomStatusTypeArchived.String() {
 			return errs.NewError(ctx, status.CLASSROOM_CODE_DISABLED, nil,
 				ErrClassroomArchived)
 		}
@@ -73,16 +73,16 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 				currentStatus = *existing.MemberStatus()
 			}
 			switch currentStatus {
-			case string(enum.ClassroomMemberStatusTypeActive):
+			case enum.ClassroomMemberStatusTypeActive.String():
 				return errs.NewError(ctx, status.CLASSROOM_MEMBER_ALREADY_MEMBER, nil,
 					ErrAlreadyActiveMember)
-			case string(enum.ClassroomMemberStatusTypePendingInvitation):
+			case enum.ClassroomMemberStatusTypePendingInvitation.String():
 				// A teacher has already reached out — the user should
 				// accept that invitation rather than open a separate
 				// request thread.
 				return errs.NewError(ctx, status.CLASSROOM_INVITATION_ALREADY_INVITED, nil,
 					ErrPendingInvitationExists)
-			case string(enum.ClassroomMemberStatusTypePendingRequest):
+			case enum.ClassroomMemberStatusTypePendingRequest.String():
 				return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_ALREADY_PENDING, nil,
 					ErrPendingJoinRequestExists)
 			}
@@ -107,7 +107,7 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 		}
 
 		now := mtime.Now()
-		pendingRequest := string(enum.ClassroomMemberStatusTypePendingRequest)
+		pendingRequest := enum.ClassroomMemberStatusTypePendingRequest.String()
 
 		m := classroom.NewMember()
 		m.SetMemberId(memberID)

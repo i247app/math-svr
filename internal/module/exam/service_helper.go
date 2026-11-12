@@ -281,7 +281,7 @@ func (s *Service) getAttempt(ctx context.Context, elinkID int64, profile *profil
 	}
 
 	submitted := detail.Attempt.ElinkStatus() != nil &&
-		*detail.Attempt.ElinkStatus() == string(enum.ElinkStatusSubmitted)
+		*detail.Attempt.ElinkStatus() == enum.ElinkStatusSubmitted.String()
 
 	res := &dto.GetExamRes{
 		Exam: dto.AttemptToResponse(detail.Attempt, detail.ExamPool, submitted),
@@ -444,7 +444,7 @@ func answerText(ids, content string) string {
 // COMPLETE (still ACTIVE, or CANCELLED), or that already holds both
 // versions of its review.
 func requireReviewable(ctx context.Context, journey *examDomain.ExamSession) error {
-	if st := utils.DerefString(journey.EsessStatus()); st != string(enum.EsessStatusComplete) {
+	if st := utils.DerefString(journey.EsessStatus()); st != enum.EsessStatusComplete.String() {
 		return errs.NewError(ctx, status.EXAM_REVIEW_JOURNEY_NOT_COMPLETE, nil,
 			fmt.Errorf("exam: journey %d is %s; only a COMPLETE journey is reviewed", journey.EsessId(), st))
 	}

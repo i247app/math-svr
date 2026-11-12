@@ -80,7 +80,7 @@ func (h *SendMessageCommandHandler) Handle(ctx context.Context, cmd *SendMessage
 			return errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, err)
 		}
 		if participant == nil || participant.ParticipantStatus() == nil ||
-			*participant.ParticipantStatus() != string(enum.ChatParticipantStatusActive) {
+			*participant.ParticipantStatus() != enum.ChatParticipantStatusActive.String() {
 			return errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, errNotParticipant)
 		}
 
@@ -96,10 +96,10 @@ func (h *SendMessageCommandHandler) Handle(ctx context.Context, cmd *SendMessage
 
 		messageType := cmd.MessageType
 		if messageType == "" {
-			messageType = string(enum.ChatMessageTypeText)
+			messageType = enum.ChatMessageTypeText.String()
 		}
 		content := cmd.Content
-		sentStatus := string(enum.ChatMessageStatusSent)
+		sentStatus := enum.ChatMessageStatusSent.String()
 
 		m := domain.NewMessage()
 		m.SetMessageId(messageID)
@@ -113,7 +113,7 @@ func (h *SendMessageCommandHandler) Handle(ctx context.Context, cmd *SendMessage
 		m.SetClientMsgId(cmd.ClientMsgID)
 		m.SetSentDt(mtime.Now())
 		m.SetMessageStatus(&sentStatus)
-		m.SetStatus(string(enum.StatusActive))
+		m.SetStatus(enum.StatusActive.String())
 		m.SetCreateId(&cmd.SenderUID)
 
 		created, err := repos.ChatMessage.Create(ctx, m)

@@ -27,7 +27,7 @@ func QuestionRows(examID int64, questionsJSON string) ([]*question.Question, err
 	if err := json.Unmarshal([]byte(questionsJSON), &stored); err != nil {
 		return nil, fmt.Errorf("exam: decode exam_pool %d questions: %w", examID, err)
 	}
-	active := string(enum.StatusActive)
+	active := enum.StatusActive.String()
 	rows := make([]*question.Question, 0, len(stored))
 	for _, s := range stored {
 		options := make([]question.Option, 0, len(s.Options))

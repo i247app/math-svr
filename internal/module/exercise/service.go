@@ -160,11 +160,11 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 	actor := caller.ProfileId()
 	questionsStr := string(questionsJSON)
 	answersStr := string(answersJSON)
-	visibility := string(enum.ClassroomExerciseVisibilityPublic)
+	visibility := enum.ClassroomExerciseVisibilityPublic.String()
 	if req.Visibility != nil && *req.Visibility != "" {
 		visibility = *req.Visibility
 	}
-	purpose := string(enum.ClassroomExercisePurposeHomework)
+	purpose := enum.ClassroomExercisePurposeHomework.String()
 	if req.Purpose != nil && *req.Purpose != "" {
 		purpose = *req.Purpose
 	}

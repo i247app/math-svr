@@ -44,7 +44,7 @@ func (h *AcceptInvitationCommandHandler) Handle(ctx context.Context, cmd AcceptI
 				ErrClassroomNotFound)
 		}
 		if c.ClassroomStatus() != nil &&
-			*c.ClassroomStatus() == string(enum.ClassroomStatusTypeArchived) {
+			*c.ClassroomStatus() == enum.ClassroomStatusTypeArchived.String() {
 			return errs.NewError(ctx, status.CLASSROOM_ALREADY_ARCHIVED, nil,
 				ErrClassroomArchived)
 		}
@@ -65,7 +65,7 @@ func (h *AcceptInvitationCommandHandler) Handle(ctx context.Context, cmd AcceptI
 		if existing.MemberStatus() != nil {
 			currentStatus = *existing.MemberStatus()
 		}
-		if currentStatus != string(enum.ClassroomMemberStatusTypePendingInvitation) {
+		if currentStatus != enum.ClassroomMemberStatusTypePendingInvitation.String() {
 			return errs.NewError(ctx, status.CLASSROOM_INVITATION_NOT_PENDING, nil,
 				ErrInvitationNotPending)
 		}

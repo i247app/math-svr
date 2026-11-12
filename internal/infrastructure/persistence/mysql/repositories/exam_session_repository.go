@@ -74,7 +74,7 @@ func (r *ExamSessionRepository) findOneBy(ctx context.Context, where string, arg
 // Without the type filter a journey that has been practised could come
 // back as its COMPLETE PRACTICE row even while the journey itself is open.
 func (r *ExamSessionRepository) FindByEsessId(ctx context.Context, esessId int64) (*exam.ExamSession, error) {
-	return r.findOneBy(ctx, "e.esess_id = ? AND e.req_exam_type <> ?", esessId, string(enum.ExamTypePractice))
+	return r.findOneBy(ctx, "e.esess_id = ? AND e.req_exam_type <> ?", esessId, enum.ExamTypePractice.String())
 }
 
 // FindByEsessIdAndType reads one row of a journey. esess_id alone
@@ -91,7 +91,7 @@ func (r *ExamSessionRepository) FindByEsessIdAndType(ctx context.Context, esessI
 // both stamp modify_dt) is the one the child is working.
 func (r *ExamSessionRepository) FindActiveJourney(ctx context.Context, key exam.JourneyKey) (*exam.ExamSession, error) {
 	where := `e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.esess_status = ?`
-	args := []any{key.Uid, key.ProfileId, key.ExamType, string(enum.EsessStatusActive)}
+	args := []any{key.Uid, key.ProfileId, key.ExamType, enum.EsessStatusActive.String()}
 	if key.Grade != nil {
 		where += ` AND e.current_grade = ?`
 		args = append(args, *key.Grade)
@@ -115,7 +115,7 @@ func (r *ExamSessionRepository) FindActiveJourney(ctx context.Context, key exam.
 // inherits from. Ordered by ended_dt, not create_dt: the row that closed
 // most recently is the freshest measurement, whichever opened first.
 func (r *ExamSessionRepository) FindLatestCompletedByUserProfileType(ctx context.Context, uid, profileId int64, examType string) (*exam.ExamSession, error) {
-	args := slices.Concat([]any{uid, profileId, examType, string(enum.EsessStatusComplete)}, examSessionActiveArgs())
+	args := slices.Concat([]any{uid, profileId, examType, enum.EsessStatusComplete.String()}, examSessionActiveArgs())
 	query := `SELECT ` + examSessionColumns + ` FROM ` + examSessionTable + ` e WHERE ` +
 		`(e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.esess_status = ?)` +
 		` AND ` + examSessionActiveWhere +
@@ -137,7 +137,7 @@ func (r *ExamSessionRepository) FindLatestCompletedByUserProfileType(ctx context
 // ix_profile_type_status serves it when a type is given.
 func (r *ExamSessionRepository) FindLatestJourney(ctx context.Context, filter exam.LatestJourneyFilter) (*exam.ExamSession, error) {
 	where := `e.uid = ? AND e.profile_id = ? AND e.req_exam_type <> ? AND e.esess_status IN (?)`
-	args := []any{filter.Uid, filter.ProfileId, string(enum.ExamTypePractice), string(enum.EsessStatusComplete)}
+	args := []any{filter.Uid, filter.ProfileId, enum.ExamTypePractice.String(), enum.EsessStatusComplete.String()}
 	if filter.ExamType != nil {
 		where += ` AND e.req_exam_type = ?`
 		args = append(args, *filter.ExamType)
@@ -168,7 +168,7 @@ func (r *ExamSessionRepository) FindLatestJourney(ctx context.Context, filter ex
 // examSessionColumns and scanExamSession unchanged.
 func (r *ExamSessionRepository) ListLatestCompletedByLevel(ctx context.Context, uid, profileId int64, grade int) ([]*exam.ExamSession, error) {
 	args := slices.Concat(
-		[]any{uid, profileId, string(enum.ExamTypeGrade), grade, string(enum.EsessStatusComplete)},
+		[]any{uid, profileId, enum.ExamTypeGrade.String(), grade, enum.EsessStatusComplete.String()},
 		examSessionActiveArgs())
 	query := `SELECT ` + examSessionColumns + ` 
 			  	FROM (
@@ -221,8 +221,8 @@ func (r *ExamSessionRepository) FindGradeLevels(ctx context.Context, uid, profil
 		(SELECT MAX(e.current_level) FROM ` + examSessionTable + ` e WHERE ` + ladder + `)`
 
 	ladderArgs := slices.Concat(
-		[]any{uid, profileId, string(enum.ExamTypeGrade), grade,
-			string(enum.EsessStatusActive), string(enum.EsessStatusComplete), string(enum.EsessStatusCancel)},
+		[]any{uid, profileId, enum.ExamTypeGrade.String(), grade,
+			enum.EsessStatusActive.String(), enum.EsessStatusComplete.String(), enum.EsessStatusCancel.String()},
 		examSessionActiveArgs(),
 	)
 	args := slices.Concat(ladderArgs, ladderArgs)
@@ -330,7 +330,7 @@ func journeyListWhere(uid, profileId int64, filter exam.ListJourneysFilter) (str
 		}
 	} else {
 		where += ` AND e.req_exam_type <> ?`
-		args = append(args, string(enum.ExamTypePractice))
+		args = append(args, enum.ExamTypePractice.String())
 	}
 	if filter.Status != nil && *filter.Status != "" {
 		where += ` AND e.esess_status = ?`
@@ -345,7 +345,7 @@ func (r *ExamSessionRepository) ListPracticeByEsessIds(ctx context.Context, uid,
 	}
 	where := `e.uid = ? AND e.profile_id = ? AND e.req_exam_type = ? AND e.esess_id IN (` +
 		strings.Repeat("?,", len(esessIds)-1) + `?)`
-	args := []any{uid, profileId, string(enum.ExamTypePractice)}
+	args := []any{uid, profileId, enum.ExamTypePractice.String()}
 	for _, id := range esessIds {
 		args = append(args, id)
 	}
@@ -405,7 +405,7 @@ func (r *ExamSessionRepository) ListProgressPoints(ctx context.Context, params e
 		args = append(args, *params.ExamType)
 	} else {
 		where += ` AND e.req_exam_type <> ?`
-		args = append(args, string(enum.ExamTypePractice))
+		args = append(args, enum.ExamTypePractice.String())
 	}
 	if params.From != nil && !params.From.IsZero() {
 		where += ` AND e.last_submitted_dt >= ?`
@@ -481,7 +481,7 @@ func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, n
 
 	result, err := r.db.Exec(ctx, query,
 		newStatus, passMark, passMark, ended, mtime.Now().Time,
-		esessId, string(enum.EsessStatusActive))
+		esessId, enum.EsessStatusActive.String())
 	if err != nil {
 		return fmt.Errorf("user exam repo mark status: %w", err)
 	}
@@ -503,7 +503,7 @@ func (r *ExamSessionRepository) LockJourney(ctx context.Context, esessId int64) 
 	var id int64
 	err := r.db.QueryRow(ctx,
 		`SELECT esess_id FROM `+examSessionTable+` WHERE esess_id = ? AND req_exam_type <> ? FOR UPDATE`,
-		esessId, string(enum.ExamTypePractice)).Scan(&id)
+		esessId, enum.ExamTypePractice.String()).Scan(&id)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("user exam repo lock journey: %w", err)
 	}
@@ -533,8 +533,8 @@ func (r *ExamSessionRepository) Reopen(ctx context.Context, esessId int64) error
 		WHERE esess_id = ? AND req_exam_type <> ? AND esess_status IN (?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
-		string(enum.EsessStatusActive), mtime.Now().Time,
-		esessId, string(enum.ExamTypePractice), string(enum.EsessStatusComplete), string(enum.EsessStatusCancel))
+		enum.EsessStatusActive.String(), mtime.Now().Time,
+		esessId, enum.ExamTypePractice.String(), enum.EsessStatusComplete.String(), enum.EsessStatusCancel.String())
 	if err != nil {
 		if isDuplicateEntry(err) {
 			return exam.ErrJourneyConflict
@@ -573,7 +573,7 @@ func (r *ExamSessionRepository) SetCurrent(ctx context.Context, esessId int64, e
 		WHERE esess_id = ? AND req_exam_type = ? AND esess_status = ?
 	`
 	result, err := r.db.Exec(ctx, query, grade, level, mtime.Now().Time,
-		esessId, examType, string(enum.EsessStatusActive))
+		esessId, examType, enum.EsessStatusActive.String())
 	if err != nil {
 		return fmt.Errorf("user exam repo set current: %w", err)
 	}
@@ -599,7 +599,7 @@ func (r *ExamSessionRepository) SetExamTexts(ctx context.Context, esessId int64,
 		WHERE esess_id = ? AND req_exam_type = ? AND esess_status = ?
 	`
 	result, err := r.db.Exec(ctx, query, title, shortText, mtime.Now().Time,
-		esessId, examType, string(enum.EsessStatusActive))
+		esessId, examType, enum.EsessStatusActive.String())
 	if err != nil {
 		return fmt.Errorf("user exam repo set exam texts: %w", err)
 	}
@@ -656,7 +656,7 @@ func (r *ExamSessionRepository) SetLastRespID(ctx context.Context, esessId int64
 			modify_dt    = modify_dt
 		WHERE esess_id = ? AND req_exam_type <> ?
 	`
-	if _, err := r.db.Exec(ctx, query, respID, esessId, string(enum.ExamTypePractice)); err != nil {
+	if _, err := r.db.Exec(ctx, query, respID, esessId, enum.ExamTypePractice.String()); err != nil {
 		return fmt.Errorf("user exam repo set last resp id: %w", err)
 	}
 	return nil
@@ -700,7 +700,7 @@ func (r *ExamSessionRepository) Create(ctx context.Context, e *exam.ExamSession,
 
 	// A journey's own row opens ACTIVE; a PRACTICE row is born in its
 	// journey's state — COMPLETE — and the caller says which by setting it.
-	rowStatus := string(enum.EsessStatusActive)
+	rowStatus := enum.EsessStatusActive.String()
 	if s := e.EsessStatus(); s != nil && *s != "" {
 		rowStatus = *s
 	}

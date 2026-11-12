@@ -39,11 +39,11 @@ func (h *RemoveMemberCommandHandler) Handle(ctx context.Context, cmd RemoveMembe
 			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_FOUND, nil,
 				ErrTargetMemberNotFound)
 		}
-		if target.MemberStatus() == nil || *target.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
+		if target.MemberStatus() == nil || *target.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
 			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_MEMBER, nil,
 				ErrTargetMemberNotActive)
 		}
-		if target.MemberRole() == string(enum.ClassroomMemberRoleTypeOwner) {
+		if target.MemberRole() == enum.ClassroomMemberRoleTypeOwner.String() {
 			return errs.NewError(ctx, status.CLASSROOM_MEMBER_CANNOT_REMOVE_OWNER, nil,
 				ErrOwnerCannotBeRemoved)
 		}

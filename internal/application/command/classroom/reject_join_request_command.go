@@ -41,7 +41,7 @@ func (h *RejectJoinRequestCommandHandler) Handle(ctx context.Context, cmd Reject
 		if existing.MemberStatus() != nil {
 			currentStatus = *existing.MemberStatus()
 		}
-		if currentStatus != string(enum.ClassroomMemberStatusTypePendingRequest) {
+		if currentStatus != enum.ClassroomMemberStatusTypePendingRequest.String() {
 			return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_NOT_PENDING, nil,
 				ErrJoinRequestNotPending)
 		}

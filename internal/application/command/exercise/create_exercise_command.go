@@ -64,12 +64,12 @@ func (h *CreateClassroomExerciseCommandHandler) Handle(ctx context.Context, cmd 
 		e.SetCreatorProfileId(cmd.CreatorProfileID)
 		visibility := cmd.Visibility
 		if visibility == "" {
-			visibility = string(enum.ClassroomExerciseVisibilityPublic)
+			visibility = enum.ClassroomExerciseVisibilityPublic.String()
 		}
 		e.SetVisibility(visibility)
 		purpose := cmd.Purpose
 		if purpose == "" {
-			purpose = string(enum.ClassroomExercisePurposeHomework)
+			purpose = enum.ClassroomExercisePurposeHomework.String()
 		}
 		e.SetPurpose(purpose)
 		e.SetProgramId(cmd.ProgramID)
@@ -96,7 +96,7 @@ func (h *CreateClassroomExerciseCommandHandler) Handle(ctx context.Context, cmd 
 			e.SetEndDate(parseEndDate)
 		}
 		e.SetNote(cmd.Note)
-		active := string(enum.ClassroomExerciseStatusTypeActive)
+		active := enum.ClassroomExerciseStatusTypeActive.String()
 		e.SetExerciseStatus(&active)
 		e.SetCreateId(cmd.ActorID)
 

@@ -28,7 +28,7 @@ func NewListJoinRequestsByClassroomQueryHandler(memberRepo classroom.IMemberRepo
 
 func (h *ListJoinRequestsByClassroomQueryHandler) Handle(ctx context.Context, q ListJoinRequestsByClassroomQuery) ([]*classroom.Member, *pagination.Pagination, error) {
 	cid := q.ClassroomID
-	pendingStatus := string(enum.ClassroomMemberStatusTypePendingRequest)
+	pendingStatus := enum.ClassroomMemberStatusTypePendingRequest.String()
 	return h.memberRepo.ListMembers(ctx, &classroom.ListMembersParams{
 		ClassroomId: &cid,
 		Status:      &pendingStatus,

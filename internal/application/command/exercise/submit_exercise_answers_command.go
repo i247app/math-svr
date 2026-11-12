@@ -72,9 +72,9 @@ func (h *SubmitExerciseAnswersCommandHandler) Handle(ctx context.Context, cmd Su
 		// at submit time. The row goes straight to GRADED so the student
 		// sees the result on the same response; a regrade flow can roll
 		// it back later if needed.
-		statusVal := string(enum.ClassroomExerciseSubmissionStatusSubmitted)
+		statusVal := enum.ClassroomExerciseSubmissionStatusSubmitted.String()
 		if cmd.Review != nil && strings.TrimSpace(*cmd.Review) != "" {
-			statusVal = string(enum.ClassroomExerciseSubmissionStatusGraded)
+			statusVal = enum.ClassroomExerciseSubmissionStatusGraded.String()
 			sub.SetGradedDt(now)
 		}
 		sub.SetSubmissionStatus(&statusVal)

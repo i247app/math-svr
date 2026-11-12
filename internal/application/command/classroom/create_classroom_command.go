@@ -123,13 +123,13 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 		}
 
 		now := mtime.Now()
-		ownerStatus := string(enum.ClassroomMemberStatusTypeActive)
+		ownerStatus := enum.ClassroomMemberStatusTypeActive.String()
 
 		m := classroom.NewMember()
 		m.SetMemberId(memberID)
 		m.SetClassroomId(saved.ClassroomId())
 		m.SetProfileId(cmd.OwnerProfileID)
-		m.SetMemberRole(string(enum.ClassroomMemberRoleTypeOwner))
+		m.SetMemberRole(enum.ClassroomMemberRoleTypeOwner.String())
 		m.SetJoinedDt(now)
 		m.SetMemberStatus(&ownerStatus)
 		m.SetCreateId(cmd.ActorID)

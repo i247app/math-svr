@@ -36,7 +36,7 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 	}
 
 	switch identifierType {
-	case string(enum.ClassroomInviteeIdentifierTypeProfileId):
+	case enum.ClassroomInviteeIdentifierTypeProfileId.String():
 		// PROFILE_ID arrives as a string for transport but is always an
 		// int64 in storage. Reject malformed input so the caller gets a
 		// precise INVALID_IDENTIFIER instead of a silent miss.
@@ -57,8 +57,8 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 		out.invitedProfileID = &id
 		return out, nil
 
-	case string(enum.ClassroomInviteeIdentifierTypeEmail),
-		string(enum.ClassroomInviteeIdentifierTypePhone):
+	case enum.ClassroomInviteeIdentifierTypeEmail.String(),
+		enum.ClassroomInviteeIdentifierTypePhone.String():
 		// Look up the alias row; missing alias means the identifier
 		// belongs to nobody on the platform yet → per-target skip. A
 		// matching alias points at a user; the user may carry several

@@ -219,7 +219,7 @@ func buildSummary(points []dto.ExercisePoint, priorAvg10 *float64) dto.ProgressS
 		GradedCount:    graded,
 	}
 	if graded == 0 {
-		summary.Trend = string(enum.ProgressCommentNoData)
+		summary.Trend = enum.ProgressCommentNoData.String()
 		return summary
 	}
 

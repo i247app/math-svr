@@ -350,7 +350,7 @@ func (r *ExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*d
 
 	visibility := e.Visibility()
 	if visibility == "" {
-		visibility = string(enum.ClassroomExerciseVisibilityPublic)
+		visibility = enum.ClassroomExerciseVisibilityPublic.String()
 	}
 
 	// Purpose is NOT NULL with a HOMEWORK default in schema; fall back
@@ -358,7 +358,7 @@ func (r *ExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*d
 	// valid row instead of an SQL constraint error.
 	purpose := e.Purpose()
 	if purpose == "" {
-		purpose = string(enum.ClassroomExercisePurposeHomework)
+		purpose = enum.ClassroomExercisePurposeHomework.String()
 	}
 
 	query := `

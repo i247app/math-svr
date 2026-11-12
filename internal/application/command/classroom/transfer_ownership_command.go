@@ -32,37 +32,34 @@ func NewTransferOwnershipCommandHandler(uow transaction.UnitOfWork) *TransferOwn
 func (h *TransferOwnershipCommandHandler) Handle(ctx context.Context, cmd TransferOwnershipCommand) error {
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		if cmd.CurrentOwnerID == cmd.NewOwnerProfileID {
-			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil,
-				ErrTransferSameOwner)
+			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil, ErrTransferSameOwner)
 		}
 		currentOwner, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, cmd.ClassroomID, cmd.CurrentOwnerID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if currentOwner == nil || currentOwner.MemberRole() != string(enum.ClassroomMemberRoleTypeOwner) {
-			return errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
-				ErrCallerNotCurrentOwner)
+
+		if currentOwner == nil || currentOwner.MemberRole() != enum.ClassroomMemberRoleTypeOwner.String() {
+			return errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil, ErrCallerNotCurrentOwner)
 		}
 
 		newOwner, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, cmd.ClassroomID, cmd.NewOwnerProfileID)
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
+
 		if newOwner == nil {
-			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil,
-				ErrNewOwnerNotMember)
-		}
-		if newOwner.MemberStatus() == nil || *newOwner.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
-			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil,
-				ErrNewOwnerNotActiveMember)
+			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil, ErrNewOwnerNotMember)
 		}
 
-		if err := repos.ClassroomMember.SetRole(ctx, currentOwner.MemberId(),
-			string(enum.ClassroomMemberRoleTypeCoTeacher)); err != nil {
+		if newOwner.MemberStatus() == nil || *newOwner.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
+			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil, ErrNewOwnerNotActiveMember)
+		}
+
+		if err := repos.ClassroomMember.SetRole(ctx, currentOwner.MemberId(), enum.ClassroomMemberRoleTypeCoTeacher.String()); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
-		if err := repos.ClassroomMember.SetRole(ctx, newOwner.MemberId(),
-			string(enum.ClassroomMemberRoleTypeOwner)); err != nil {
+		if err := repos.ClassroomMember.SetRole(ctx, newOwner.MemberId(), enum.ClassroomMemberRoleTypeOwner.String()); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if err := repos.Classroom.SetOwnerProfileId(ctx, cmd.ClassroomID, cmd.NewOwnerProfileID); err != nil {

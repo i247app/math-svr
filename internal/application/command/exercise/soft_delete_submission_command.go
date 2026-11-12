@@ -36,7 +36,7 @@ func (h *SoftDeleteSubmissionCommandHandler) Handle(ctx context.Context, cmd Sof
 				ErrSubmissionNotFound)
 		}
 		if existing.SubmissionStatus() != nil &&
-			*existing.SubmissionStatus() == string(enum.ClassroomExerciseSubmissionStatusDeleted) {
+			*existing.SubmissionStatus() == enum.ClassroomExerciseSubmissionStatusDeleted.String() {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_ALREADY_DELETED, nil,
 				ErrSubmissionAlreadyDeleted)
 		}

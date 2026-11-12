@@ -72,7 +72,7 @@ func (s *Service) DBPoolStats(ctx context.Context) (*dto.DBPoolStatsRes, error) 
 	waitMs := float64(st.WaitDuration) / float64(time.Millisecond)
 
 	res := &dto.DBPoolStatsRes{
-		CapturedAt:         time.Now().UTC(),
+		CapturedAt:         mtime.Now(),
 		Autocommit:         autocommit,
 		IsolationLevel:     isolation,
 		MaxOpenConnections: st.MaxOpenConnections,

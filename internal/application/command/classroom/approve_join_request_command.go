@@ -44,7 +44,7 @@ func (h *ApproveJoinRequestCommandHandler) Handle(ctx context.Context, cmd Appro
 				ErrClassroomNotFound)
 		}
 		if c.ClassroomStatus() != nil &&
-			*c.ClassroomStatus() == string(enum.ClassroomStatusTypeArchived) {
+			*c.ClassroomStatus() == enum.ClassroomStatusTypeArchived.String() {
 			return errs.NewError(ctx, status.CLASSROOM_ALREADY_ARCHIVED, nil,
 				ErrClassroomArchived)
 		}
@@ -65,7 +65,7 @@ func (h *ApproveJoinRequestCommandHandler) Handle(ctx context.Context, cmd Appro
 		if existing.MemberStatus() != nil {
 			currentStatus = *existing.MemberStatus()
 		}
-		if currentStatus != string(enum.ClassroomMemberStatusTypePendingRequest) {
+		if currentStatus != enum.ClassroomMemberStatusTypePendingRequest.String() {
 			return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_NOT_PENDING, nil,
 				ErrJoinRequestNotPending)
 		}

@@ -40,7 +40,7 @@ func (s *Service) requireActiveMember(ctx context.Context, classroomID, profileI
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if m == nil || m.MemberStatus() == nil ||
-		*m.MemberStatus() != string(enum.ClassroomMemberStatusTypeActive) {
+		*m.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
 		return nil, errs.NewError(ctx, status.CHAT_TARGET_NOT_IN_CLASSROOM, nil, notMemberErr)
 	}
 	return m, nil

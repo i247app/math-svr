@@ -42,7 +42,7 @@ func (h *CancelJoinRequestCommandHandler) Handle(ctx context.Context, cmd Cancel
 		if existing.MemberStatus() != nil {
 			currentStatus = *existing.MemberStatus()
 		}
-		if currentStatus != string(enum.ClassroomMemberStatusTypePendingRequest) {
+		if currentStatus != enum.ClassroomMemberStatusTypePendingRequest.String() {
 			return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_NOT_PENDING, nil,
 				ErrJoinRequestNotPending)
 		}

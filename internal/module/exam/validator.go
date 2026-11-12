@@ -239,7 +239,7 @@ func normalizeExamType(ctx context.Context, raw *string) (*string, error) {
 // PRACTICE round only exists inside a journey, so listing "the practice
 // rounds" is only a question about one.
 func requireJourneyForPractice(ctx context.Context, examType *string, esessID *int64) error {
-	if examType != nil && *examType == string(enum.ExamTypePractice) && (esessID == nil || *esessID <= 0) {
+	if examType != nil && *examType == enum.ExamTypePractice.String() && (esessID == nil || *esessID <= 0) {
 		return errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrPracticeJourneyRequired)
 	}
 	return nil
@@ -297,7 +297,7 @@ func ValidateListExamSessions(ctx context.Context, req *dto.ListExamSessionsReq)
 		// PRACTICE is not a journey: its totals are read inside the
 		// journey they belong to. Answering with bare practice rows would
 		// hand the client two entries per id.
-		if *examType == string(enum.ExamTypePractice) {
+		if *examType == enum.ExamTypePractice.String() {
 			return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrStatsPracticeNotAJourney)
 		}
 		examTypes = append(examTypes, *examType)
@@ -348,7 +348,7 @@ func ValidateJourneyProgress(ctx context.Context, req *dto.JourneyProgressReq) e
 	if err != nil {
 		return err
 	}
-	if examType != nil && *examType == string(enum.ExamTypePractice) {
+	if examType != nil && *examType == enum.ExamTypePractice.String() {
 		return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrStatsPracticeNotAJourney)
 	}
 	req.ExamType = examType
@@ -378,7 +378,7 @@ func ValidateLatestJourney(ctx context.Context, req *dto.LatestJourneyReq) error
 	}
 	// A PRACTICE row lives inside its journey (under "practice"); it is
 	// never a journey of its own, so it cannot be the latest one.
-	if examType != nil && *examType == string(enum.ExamTypePractice) {
+	if examType != nil && *examType == enum.ExamTypePractice.String() {
 		return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrStatsPracticeNotAJourney)
 	}
 	req.ExamType = examType

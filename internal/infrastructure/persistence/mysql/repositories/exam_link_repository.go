@@ -176,7 +176,7 @@ func (r *ExamLinkRepository) CountHandedOutSince(ctx context.Context, profileId 
 }
 
 func (r *ExamLinkRepository) ListInProgressByProfile(ctx context.Context, profileId int64) ([]*exam.ExamLink, error) {
-	args := slices.Concat([]any{profileId, string(enum.ElinkStatusInProgress)}, examLinkActiveArgs())
+	args := slices.Concat([]any{profileId, enum.ElinkStatusInProgress.String()}, examLinkActiveArgs())
 	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u WHERE ` +
 		`(u.profile_id = ? AND u.elink_status = ?) AND ` + examLinkActiveWhere +
 		` ORDER BY u.started_dt ASC, u.elink_id ASC`
@@ -205,7 +205,7 @@ func (r *ExamLinkRepository) ListInProgressByProfile(ctx context.Context, profil
 // the newest submitted_dt of the journey, id as the tie-break so two
 // sittings submitted in the same microsecond still order deterministically.
 func (r *ExamLinkRepository) FindLatestSubmittedByEsessId(ctx context.Context, esessId int64) (*exam.ExamLink, error) {
-	args := slices.Concat([]any{esessId, string(enum.ElinkStatusSubmitted)}, examLinkActiveArgs())
+	args := slices.Concat([]any{esessId, enum.ElinkStatusSubmitted.String()}, examLinkActiveArgs())
 	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u WHERE ` +
 		`(u.esess_id = ? AND u.elink_status = ?) AND ` + examLinkActiveWhere +
 		` ORDER BY u.submitted_dt DESC, u.elink_id DESC LIMIT 1`
@@ -225,7 +225,7 @@ func (r *ExamLinkRepository) FindLatestSubmittedByEsessId(ctx context.Context, e
 // filters on the journey and type.
 func (r *ExamLinkRepository) FindInProgressInJourney(ctx context.Context, profileId, esessId int64, examType string) (*exam.ExamLink, error) {
 	args := slices.Concat(
-		[]any{profileId, string(enum.ElinkStatusInProgress), esessId, examType},
+		[]any{profileId, enum.ElinkStatusInProgress.String(), esessId, examType},
 		examLinkActiveArgs())
 	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u WHERE ` +
 		`(u.profile_id = ? AND u.elink_status = ? AND u.esess_id = ? AND u.req_exam_type = ?) AND ` +
@@ -250,7 +250,7 @@ func (r *ExamLinkRepository) ListRecentSubmittedByProfileGrade(ctx context.Conte
 	if limit <= 0 {
 		return nil, nil
 	}
-	args := slices.Concat([]any{profileId, string(enum.ElinkStatusSubmitted), grade}, examLinkActiveArgs(), []any{limit})
+	args := slices.Concat([]any{profileId, enum.ElinkStatusSubmitted.String(), grade}, examLinkActiveArgs(), []any{limit})
 	query := `SELECT ` + examLinkColumns + ` FROM ` + examLinkTable + ` u WHERE ` +
 		`(u.profile_id = ? AND u.elink_status = ? AND u.req_grade = ?) AND ` + examLinkActiveWhere +
 		` ORDER BY u.started_dt DESC, u.elink_id DESC LIMIT ?`
@@ -367,8 +367,8 @@ func (r *ExamLinkRepository) MarkSubmitted(ctx context.Context, elinkId int64, r
 
 	result, err := r.db.Exec(ctx, query,
 		res.TotalQuestions, res.CorrectNumber, res.SkippedNumber, res.ScorePercentage,
-		submittedDt, res.EsessId, string(enum.ElinkStatusSubmitted), mtime.Now().Time,
-		elinkId, string(enum.ElinkStatusInProgress))
+		submittedDt, res.EsessId, enum.ElinkStatusSubmitted.String(), mtime.Now().Time,
+		elinkId, enum.ElinkStatusInProgress.String())
 	if err != nil {
 		return fmt.Errorf("user ai exam repo mark submitted: %w", err)
 	}
@@ -410,7 +410,7 @@ func scanExamProgressPoint(s database.RowScanner) (*exam.ProgressPoint, error) {
 // chronological order.
 func (r *ExamLinkRepository) ListProgressPoints(ctx context.Context, params exam.ProgressPointsParams) ([]*exam.ProgressPoint, error) {
 	where := `u.elink_status = ? AND u.profile_id = ? AND u.res_score_percentage IS NOT NULL`
-	args := []any{string(enum.ElinkStatusSubmitted), params.ProfileID}
+	args := []any{enum.ElinkStatusSubmitted.String(), params.ProfileID}
 
 	if params.ExamType != nil && *params.ExamType != "" {
 		where += ` AND u.req_exam_type = ?`

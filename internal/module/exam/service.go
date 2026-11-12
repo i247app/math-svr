@@ -294,7 +294,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
 	}
-	if st := journey.EsessStatus(); st == nil || *st != string(enum.EsessStatusComplete) {
+	if st := journey.EsessStatus(); st == nil || *st != enum.EsessStatusComplete.String() {
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_COMPLETE, nil,
 			fmt.Errorf("exam: journey %d is %s; practice needs it COMPLETE", journeyID, utils.DerefString(st)))
 	}

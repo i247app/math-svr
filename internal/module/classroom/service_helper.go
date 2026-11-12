@@ -272,7 +272,7 @@ func (s *Service) resolveMemberProfileForUser(ctx context.Context, sessionUID, c
 		if m == nil || m.MemberStatus() == nil {
 			continue
 		}
-		if *m.MemberStatus() == string(enum.ClassroomMemberStatusTypeActive) {
+		if *m.MemberStatus() == enum.ClassroomMemberStatusTypeActive.String() {
 			return p.ProfileId(), nil
 		}
 	}
