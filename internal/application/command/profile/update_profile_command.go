@@ -2,11 +2,11 @@ package command
 
 import (
 	"context"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -18,7 +18,7 @@ type UpdateProfileCommand struct {
 	Email      *string
 	Role       *string
 	IsDefault  *bool
-	Dob        *mtime.MathTime
+	Dob        *time.Time
 	SchoolID   *int64
 	ProgramID  *int64
 	GradeID    *int64

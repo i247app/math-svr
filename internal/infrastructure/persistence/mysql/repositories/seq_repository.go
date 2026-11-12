@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/seq"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 )
@@ -178,6 +177,6 @@ func ModelToDomainSeq(m *models.SeqModel) *seq.Sequence {
 	s.SetPrefix(m.Prefix)
 	s.SetPadding(m.Padding)
 	s.SetIncrementBy(m.IncrementBy)
-	s.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	s.SetModifyDt(m.ModifyDt)
 	return s
 }

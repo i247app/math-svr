@@ -4,7 +4,7 @@ package dto
 
 import (
 	domain "math-ai.com/math-ai/internal/domain/chat"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -188,7 +188,7 @@ func DomainToConversationResponse(c *domain.Conversation) *ConversationResponse 
 		LastMessageSeqNo:   c.LastMessageSeqNo(),
 		LastMessageType:    c.LastMessageType(),
 		LastMessagePreview: c.LastMessagePreview(),
-		LastMessageDt:      c.LastMessageDt(),
+		LastMessageDt:      mtime.NewTime(c.LastMessageDt()),
 	}
 }
 
@@ -206,8 +206,8 @@ func DomainToMessageResponse(m *domain.Message) *MessageResponse {
 		AttachmentCount:  m.AttachmentCount(),
 		ReplyToMessageID: m.ReplyToMessageId(),
 		ClientMsgID:      m.ClientMsgId(),
-		SentDt:           m.SentDt(),
-		IsRevoked:        !m.RevokedDt().Time.IsZero(),
+		SentDt:           mtime.NewTime(m.SentDt()),
+		IsRevoked:        !m.RevokedDt().IsZero(),
 	}
 }
 

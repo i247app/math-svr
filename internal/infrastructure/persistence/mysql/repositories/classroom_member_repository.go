@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/classroom"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -474,20 +474,20 @@ func (r *ClassroomMemberRepository) CountPendingRequestsByClassroomIds(ctx conte
 
 func (r *ClassroomMemberRepository) Create(ctx context.Context, m *classroom.Member) (*classroom.Member, error) {
 	var joinedArg, leftArg, removedArg, lastSeenArg, inviteDtArg any
-	if m.JoinedDt().IsValid() {
-		joinedArg = m.JoinedDt().Time
+	if !m.JoinedDt().IsZero() {
+		joinedArg = m.JoinedDt()
 	}
-	if m.LeftDt().IsValid() {
-		leftArg = m.LeftDt().Time
+	if !m.LeftDt().IsZero() {
+		leftArg = m.LeftDt()
 	}
-	if m.RemovedDt().IsValid() {
-		removedArg = m.RemovedDt().Time
+	if !m.RemovedDt().IsZero() {
+		removedArg = m.RemovedDt()
 	}
-	if m.LastSeenDt().IsValid() {
-		lastSeenArg = m.LastSeenDt().Time
+	if !m.LastSeenDt().IsZero() {
+		lastSeenArg = m.LastSeenDt()
 	}
-	if m.InviteDt().IsValid() {
-		inviteDtArg = m.InviteDt().Time
+	if !m.InviteDt().IsZero() {
+		inviteDtArg = m.InviteDt()
 	}
 
 	query := `
@@ -501,7 +501,7 @@ func (r *ClassroomMemberRepository) Create(ctx context.Context, m *classroom.Mem
 		m.MemberId(), m.ClassroomId(), m.ProfileId(), m.MemberRole(),
 		m.InvitationId(), joinedArg, leftArg, m.RemovedByProfileId(), removedArg,
 		lastSeenArg, m.RptFlg(), m.Kwords(), m.Note(), m.InviteBy(), inviteDtArg, m.MemberStatus(), m.CreateId(),
-		mtime.Now().Time, mtime.Now().Time)
+		time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("classroom_member repo create: %w", err)
 	}
@@ -516,20 +516,20 @@ func (r *ClassroomMemberRepository) Update(ctx context.Context, m *classroom.Mem
 		roleArg = m.MemberRole()
 	}
 	var joinedArg, leftArg, removedArg, lastSeenArg, inviteDtArg any
-	if m.JoinedDt().IsValid() {
-		joinedArg = m.JoinedDt().Time
+	if !m.JoinedDt().IsZero() {
+		joinedArg = m.JoinedDt()
 	}
-	if m.LeftDt().IsValid() {
-		leftArg = m.LeftDt().Time
+	if !m.LeftDt().IsZero() {
+		leftArg = m.LeftDt()
 	}
-	if m.RemovedDt().IsValid() {
-		removedArg = m.RemovedDt().Time
+	if !m.RemovedDt().IsZero() {
+		removedArg = m.RemovedDt()
 	}
-	if m.LastSeenDt().IsValid() {
-		lastSeenArg = m.LastSeenDt().Time
+	if !m.LastSeenDt().IsZero() {
+		lastSeenArg = m.LastSeenDt()
 	}
-	if m.InviteDt().IsValid() {
-		inviteDtArg = m.InviteDt().Time
+	if !m.InviteDt().IsZero() {
+		inviteDtArg = m.InviteDt()
 	}
 
 	query := `
@@ -555,7 +555,7 @@ func (r *ClassroomMemberRepository) Update(ctx context.Context, m *classroom.Mem
 		roleArg, m.InvitationId(), joinedArg, leftArg,
 		m.RemovedByProfileId(), removedArg, lastSeenArg,
 		m.RptFlg(), m.Kwords(), m.Note(), m.InviteBy(), inviteDtArg, m.MemberStatus(), m.ModifyId(),
-		mtime.Now().Time, m.MemberId()); err != nil {
+		time.Now().UTC(), m.MemberId()); err != nil {
 		return fmt.Errorf("classroom_member repo update: %w", err)
 	}
 	return nil
@@ -568,7 +568,7 @@ func (r *ClassroomMemberRepository) SetRole(ctx context.Context, memberId int64,
 			modify_dt   = ?
 		WHERE member_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, role, mtime.Now().Time, memberId); err != nil {
+	if _, err := r.db.Exec(ctx, query, role, time.Now().UTC(), memberId); err != nil {
 		return fmt.Errorf("classroom_member repo set role: %w", err)
 	}
 	return nil
@@ -582,7 +582,7 @@ func (r *ClassroomMemberRepository) MarkLeft(ctx context.Context, memberId int64
 			modify_dt     = ?
 		WHERE member_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query, enum.ClassroomMemberStatusTypeLeft, now, now, memberId); err != nil {
 		return fmt.Errorf("classroom_member repo mark left: %w", err)
 	}
@@ -598,7 +598,7 @@ func (r *ClassroomMemberRepository) MarkRemoved(ctx context.Context, memberId, r
 			modify_dt             = ?
 		WHERE member_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.ClassroomMemberStatusTypeRemoved, removedByProfileId, now, now, memberId); err != nil {
 		return fmt.Errorf("classroom_member repo mark removed: %w", err)
@@ -623,7 +623,7 @@ func (r *ClassroomMemberRepository) Reactivate(ctx context.Context, memberId int
 			modify_dt             = ?
 		WHERE member_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		role, enum.ClassroomMemberStatusTypeActive, invitationId, now, now, memberId); err != nil {
 		return fmt.Errorf("classroom_member repo reactivate: %w", err)
@@ -636,12 +636,12 @@ func (r *ClassroomMemberRepository) Reactivate(ctx context.Context, memberId int
 // state (REJECTED/LEFT/REMOVED) for the (classroom, profile) pair.
 // The member_role and inviter metadata are rewritten so the new
 // invitation is indistinguishable from one inserted fresh.
-func (r *ClassroomMemberRepository) Invite(ctx context.Context, memberId int64, role string, inviteBy *int64, inviteDt mtime.MathTime, note *string) error {
+func (r *ClassroomMemberRepository) Invite(ctx context.Context, memberId int64, role string, inviteBy *int64, inviteDt time.Time, note *string) error {
 	var inviteDtArg any
-	if inviteDt.IsValid() {
-		inviteDtArg = inviteDt.Time
+	if !inviteDt.IsZero() {
+		inviteDtArg = inviteDt
 	} else {
-		inviteDtArg = mtime.Now().Time
+		inviteDtArg = time.Now().UTC()
 	}
 	query := `
 		UPDATE ` + classroomMemberTable + `
@@ -660,7 +660,7 @@ func (r *ClassroomMemberRepository) Invite(ctx context.Context, memberId int64, 
 	if _, err := r.db.Exec(ctx, query,
 		role, enum.ClassroomMemberStatusTypePendingInvitation,
 		inviteBy, inviteDtArg, note,
-		mtime.Now().Time, memberId); err != nil {
+		time.Now().UTC(), memberId); err != nil {
 		return fmt.Errorf("classroom_member repo invite: %w", err)
 	}
 	return nil
@@ -671,12 +671,12 @@ func (r *ClassroomMemberRepository) Invite(ctx context.Context, memberId int64, 
 // nulled (no manager is sponsoring) and invite_dt carries the
 // "requested at" timestamp. Used by the join-by-code path when an
 // existing terminal-state row is reactivated.
-func (r *ClassroomMemberRepository) RequestToJoin(ctx context.Context, memberId int64, role string, requestedDt mtime.MathTime, note *string) error {
+func (r *ClassroomMemberRepository) RequestToJoin(ctx context.Context, memberId int64, role string, requestedDt time.Time, note *string) error {
 	var requestedDtArg any
-	if requestedDt.IsValid() {
-		requestedDtArg = requestedDt.Time
+	if !requestedDt.IsZero() {
+		requestedDtArg = requestedDt
 	} else {
-		requestedDtArg = mtime.Now().Time
+		requestedDtArg = time.Now().UTC()
 	}
 	query := `
 		UPDATE ` + classroomMemberTable + `
@@ -695,7 +695,7 @@ func (r *ClassroomMemberRepository) RequestToJoin(ctx context.Context, memberId 
 	if _, err := r.db.Exec(ctx, query,
 		role, enum.ClassroomMemberStatusTypePendingRequest,
 		requestedDtArg, note,
-		mtime.Now().Time, memberId); err != nil {
+		time.Now().UTC(), memberId); err != nil {
 		return fmt.Errorf("classroom_member repo request to join: %w", err)
 	}
 	return nil
@@ -717,7 +717,7 @@ func (r *ClassroomMemberRepository) Activate(ctx context.Context, memberId int64
 			modify_dt             = ?
 		WHERE member_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.ClassroomMemberStatusTypeActive, now, now, memberId); err != nil {
 		return fmt.Errorf("classroom_member repo activate: %w", err)
@@ -735,7 +735,7 @@ func (r *ClassroomMemberRepository) Reject(ctx context.Context, memberId int64) 
 			modify_dt     = ?
 		WHERE member_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.ClassroomMemberStatusTypeRejected, now, now, memberId); err != nil {
 		return fmt.Errorf("classroom_member repo reject: %w", err)
@@ -756,7 +756,7 @@ func (r *ClassroomMemberRepository) Cancel(ctx context.Context, memberId, cancel
 			modify_dt             = ?
 		WHERE member_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.ClassroomMemberStatusTypeRemoved, cancelledByProfileId, now, now, memberId); err != nil {
 		return fmt.Errorf("classroom_member repo cancel: %w", err)
@@ -773,7 +773,7 @@ func (r *ClassroomMemberRepository) SoftDeleteByClassroomId(ctx context.Context,
 			modify_dt     = ?
 		WHERE classroom_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.ClassroomMemberStatusTypeDeleted, enum.StatusInactive, now, now, classroomId); err != nil {
 		return fmt.Errorf("classroom_member repo soft delete by classroom: %w", err)
@@ -797,30 +797,30 @@ func ModelToDomainClassroomMember(m *models.ClassroomMemberModel) *classroom.Mem
 	d.SetMemberRole(m.MemberRole)
 	d.SetInvitationId(m.InvitationId)
 	if m.JoinedDt != nil {
-		d.SetJoinedDt(mtime.MathTime{Time: *m.JoinedDt})
+		d.SetJoinedDt(*m.JoinedDt)
 	}
 	if m.LeftDt != nil {
-		d.SetLeftDt(mtime.MathTime{Time: *m.LeftDt})
+		d.SetLeftDt(*m.LeftDt)
 	}
 	d.SetRemovedByProfileId(m.RemovedByProfileId)
 	if m.RemovedDt != nil {
-		d.SetRemovedDt(mtime.MathTime{Time: *m.RemovedDt})
+		d.SetRemovedDt(*m.RemovedDt)
 	}
 	if m.LastSeenDt != nil {
-		d.SetLastSeenDt(mtime.MathTime{Time: *m.LastSeenDt})
+		d.SetLastSeenDt(*m.LastSeenDt)
 	}
 	d.SetRptFlg(m.RptFlg)
 	d.SetKwords(m.Kwords)
 	d.SetNote(m.Note)
 	d.SetInviteBy(m.InviteBy)
 	if m.InviteDt != nil {
-		d.SetInviteDt(mtime.MathTime{Time: *m.InviteDt})
+		d.SetInviteDt(*m.InviteDt)
 	}
 	d.SetMemberStatus(m.MemberStatus)
 	d.SetStatus(m.Status)
 	d.SetCreateId(m.CreateId)
-	d.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	d.SetCreateDt(m.CreateDt)
 	d.SetModifyId(m.ModifyId)
-	d.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	d.SetModifyDt(m.ModifyDt)
 	return d
 }

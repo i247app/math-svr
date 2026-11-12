@@ -2,22 +2,23 @@ package dto
 
 import (
 	"math-ai.com/math-ai/internal/domain/device"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // DeviceResponse is the wire shape of a device row. device_uuid is included so
 // the client can correlate the response with the local identifier it
 // originally sent; we never echo back the push token (treated like a secret).
 type DeviceResponse struct {
-	DeviceID   int64   `json:"device_id"`
-	UID        *int64  `json:"uid,omitempty"`
-	DeviceUUID string  `json:"device_uuid"`
-	DeviceName string  `json:"device_name"`
-	Platform   string  `json:"platform"`
-	IsVerified bool    `json:"is_verified"`
-	Note       *string `json:"note,omitempty"`
-	Status     string  `json:"status"`
-	CreateDt   string  `json:"create_dt"`
-	ModifyDt   string  `json:"modify_dt"`
+	DeviceID   int64          `json:"device_id"`
+	UID        *int64         `json:"uid,omitempty"`
+	DeviceUUID string         `json:"device_uuid"`
+	DeviceName string         `json:"device_name"`
+	Platform   string         `json:"platform"`
+	IsVerified bool           `json:"is_verified"`
+	Note       *string        `json:"note,omitempty"`
+	Status     string         `json:"status"`
+	CreateDt   mtime.MathTime `json:"create_dt"`
+	ModifyDt   mtime.MathTime `json:"modify_dt"`
 }
 
 func DeviceDomainToResponse(d *device.Device) *DeviceResponse {
@@ -34,8 +35,8 @@ func DeviceDomainToResponse(d *device.Device) *DeviceResponse {
 		IsVerified: d.IsVerified(),
 		Note:       d.Note(),
 		Status:     d.Status(),
-		CreateDt:   d.CreateDt().String(),
-		ModifyDt:   d.ModifyDt().String(),
+		CreateDt:   mtime.NewTime(d.CreateDt()),
+		ModifyDt:   mtime.NewTime(d.ModifyDt()),
 	}
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -24,7 +23,7 @@ type AttemptResult struct {
 	CorrectNumber   int
 	SkippedNumber   int
 	ScorePercentage int
-	SubmittedDt     mtime.MathTime
+	SubmittedDt     time.Time
 	EsessId         *int64
 }
 
@@ -61,7 +60,7 @@ type ProgressPoint struct {
 	ScorePercentage int64
 	CorrectNumber   *int64
 	TotalQuestions  *int64
-	CompletedDt     mtime.MathTime
+	CompletedDt     time.Time
 }
 
 // JourneyStats is one journey as a dashboard reads it: the row that owns
@@ -85,9 +84,9 @@ type ProgressPointsParams struct {
 	ProfileID       int64
 	ExamType        *string
 	EsessID         *int64
-	From            *mtime.MathTime
-	To              *mtime.MathTime
-	CompletedBefore *mtime.MathTime
+	From            *time.Time
+	To              *time.Time
+	CompletedBefore *time.Time
 	Limit           int64
 }
 
@@ -150,7 +149,7 @@ type IExamLinkRepository interface {
 	// CountHandedOutSince counts the sittings a child was handed since a
 	// moment — submitted or not, because an abandoned exam still cost a
 	// model call. It backs the guest daily ceiling.
-	CountHandedOutSince(ctx context.Context, profileId int64, since mtime.MathTime) (int64, error)
+	CountHandedOutSince(ctx context.Context, profileId int64, since time.Time) (int64, error)
 	// ReassignOwnerByProfile re-points every sitting of one child at
 	// another account. The child does not change — only who owns them —
 	// so the rows are addressed by profile_id.
@@ -210,9 +209,9 @@ type JourneyProgressParams struct {
 	UID             int64
 	ProfileID       int64
 	ExamType        *string
-	From            *mtime.MathTime
-	To              *mtime.MathTime
-	SubmittedBefore *mtime.MathTime
+	From            *time.Time
+	To              *time.Time
+	SubmittedBefore *time.Time
 	Limit           int64
 }
 
@@ -355,7 +354,7 @@ type IExamSessionRepository interface {
 	// esess_flag NULL; otherwise esess_flag is whether the row's score, as
 	// it stands in the same UPDATE, reaches passMark — a journey with no
 	// score has not passed.
-	MarkStatus(ctx context.Context, esessId int64, newStatus string, endedDt mtime.MathTime, passMark *int) error
+	MarkStatus(ctx context.Context, esessId int64, newStatus string, endedDt time.Time, passMark *int) error
 	// LockJourney takes a row lock on the journey's owning row (never its
 	// PRACTICE row) until the transaction ends, so hand-outs on one
 	// journey run one at a time. Call it FIRST in the transaction: under

@@ -2,6 +2,7 @@ package device
 
 import (
 	"context"
+	"time"
 
 	command "math-ai.com/math-ai/internal/application/command/device"
 	"math-ai.com/math-ai/internal/application/dto"
@@ -9,7 +10,6 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/device"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -107,8 +107,8 @@ func (s *Service) ListDevicesByUid(ctx context.Context, req *dto.ListDevicesReq)
 			device.SetDeviceName(utils.MaskIndentifier(name))
 			device.SetPlatform(metadata.GetPlatform(ctx))
 			device.SetIsVerified(true)
-			device.SetCreateDt(mtime.Now())
-			device.SetModifyDt(mtime.Now())
+			device.SetCreateDt(time.Now().UTC())
+			device.SetModifyDt(time.Now().UTC())
 			device.SetStatus("ACTIVE")
 
 			demoDevices[i] = device

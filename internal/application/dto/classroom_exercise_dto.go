@@ -5,6 +5,7 @@ import (
 
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -65,18 +66,18 @@ type ExerciseResponse struct {
 	LessonName          string                    `json:"lesson_name"`
 	TotalQuestions      int                       `json:"total_questions"`
 	Questions           []Question                `json:"questions,omitempty"`
-	StartDate           *string                   `json:"start_date,omitempty"`
-	EndDate             *string                   `json:"end_date,omitempty"`
+	StartDate           *mtime.MathTime           `json:"start_date,omitempty"`
+	EndDate             *mtime.MathTime           `json:"end_date,omitempty"`
 	Note                *string                   `json:"note,omitempty"`
 	ExerciseStatus      *string                   `json:"exercise_status,omitempty"`
 	// SubmissionStatus is NONE by default; the service flips it to
 	// SUBMITTED for the rows the caller's profile has already submitted.
 	// When no caller profile is known (anonymous / no profile_id) the
 	// field stays NONE so the wire shape is stable.
-	SubmissionStatus string `json:"submission_status"`
-	CreateID         *int64 `json:"create_id,omitempty"`
-	CreateDt         string `json:"create_dt"`
-	ModifyDt         string `json:"modify_dt"`
+	SubmissionStatus string         `json:"submission_status"`
+	CreateID         *int64         `json:"create_id,omitempty"`
+	CreateDt         mtime.MathTime `json:"create_dt"`
+	ModifyDt         mtime.MathTime `json:"modify_dt"`
 }
 
 // CreateExerciseReq is the teacher-side create payload. ProgramID is
@@ -216,16 +217,14 @@ func ExerciseDomainToResponse(e *domain.Exercise, includeRightAnswers bool) *Exe
 		ExerciseStatus:      e.ExerciseStatus(),
 		SubmissionStatus:    ExerciseSubmissionStatusNone,
 		CreateID:            e.CreateId(),
-		CreateDt:            e.CreateDt().String(),
-		ModifyDt:            e.ModifyDt().String(),
+		CreateDt:            mtime.NewTime(e.CreateDt()),
+		ModifyDt:            mtime.NewTime(e.ModifyDt()),
 	}
-	if e.StartDate().IsValid() {
-		t := e.StartDate().String()
-		res.StartDate = &t
+	if !e.StartDate().IsZero() {
+		res.StartDate = mtime.NewMathTimePtr(e.StartDate())
 	}
-	if e.EndDate().IsValid() {
-		t := e.EndDate().String()
-		res.EndDate = &t
+	if !e.EndDate().IsZero() {
+		res.EndDate = mtime.NewMathTimePtr(e.EndDate())
 	}
 	if questions := parseQuestions(e.Questions()); len(questions) > 0 {
 		if !includeRightAnswers {

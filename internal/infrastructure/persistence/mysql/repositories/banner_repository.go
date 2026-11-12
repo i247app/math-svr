@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/banner"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -179,7 +179,7 @@ func (r *BannerRepository) Create(ctx context.Context, b *banner.Banner) (*banne
 	_, err := r.db.Exec(ctx, query,
 		b.BannerId(), b.Title(), b.ShortText(), b.MediaType(), b.MediaURLKey(),
 		b.ButtonText(), b.ButtonLinkURL(), b.RptFlg(), b.Kwords(), b.Note(), b.BannerStatus(),
-		b.CreateId(), mtime.Now().Time, mtime.Now().Time)
+		b.CreateId(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("banner repo create: %w", err)
 	}
@@ -219,7 +219,7 @@ func (r *BannerRepository) Update(ctx context.Context, b *banner.Banner) error {
 	if _, err := r.db.Exec(ctx, query,
 		b.Title(), b.ShortText(), mediaTypeArg, mediaURLKeyArg,
 		b.ButtonText(), b.ButtonLinkURL(), b.RptFlg(), b.Kwords(), b.Note(), b.BannerStatus(),
-		b.ModifyId(), mtime.Now().Time, b.BannerId()); err != nil {
+		b.ModifyId(), time.Now().UTC(), b.BannerId()); err != nil {
 		return fmt.Errorf("banner repo update: %w", err)
 	}
 	return nil
@@ -234,7 +234,7 @@ func (r *BannerRepository) SoftDeleteByBannerId(ctx context.Context, bannerId in
 			modify_dt     = ?
 		WHERE banner_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.BannerStatusTypeDeleted, enum.StatusInactive, now, now, bannerId); err != nil {
 		return fmt.Errorf("banner repo soft delete: %w", err)
@@ -268,8 +268,8 @@ func ModelToDomainBanner(m *models.BannerModel) *banner.Banner {
 	b.SetBannerStatus(m.BannerStatus)
 	b.SetStatus(m.Status)
 	b.SetCreateId(m.CreateId)
-	b.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	b.SetCreateDt(m.CreateDt)
 	b.SetModifyId(m.ModifyId)
-	b.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	b.SetModifyDt(m.ModifyDt)
 	return b
 }

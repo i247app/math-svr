@@ -1,8 +1,8 @@
 package exam
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"time"
 )
 
 // JourneyKey names the slot an open journey occupies: a submission folds
@@ -100,8 +100,8 @@ type ExamSession struct {
 	// no live chain. Internal: never on a DTO.
 	lastRespId *string
 
-	lastSubmittedDt mtime.MathTime
-	endedDt         mtime.MathTime
+	lastSubmittedDt time.Time
+	endedDt         time.Time
 
 	rptFlg *string
 
@@ -111,9 +111,9 @@ type ExamSession struct {
 	esessStatus *string
 	status      string
 	createId    *int64
-	createDt    mtime.MathTime
+	createDt    time.Time
 	modifyId    *int64
-	modifyDt    mtime.MathTime
+	modifyDt    time.Time
 }
 
 func NewExamSession() *ExamSession { return &ExamSession{} }
@@ -155,32 +155,32 @@ func (u *ExamSession) HasAiReview() bool {
 	return u.aiReviewShort != nil && *u.aiReviewShort != "" &&
 		u.aiReviewLong != nil && *u.aiReviewLong != ""
 }
-func (u *ExamSession) CurrentGrade() *int                  { return u.currentGrade }
-func (u *ExamSession) SetCurrentGrade(g *int)              { u.currentGrade = g }
-func (u *ExamSession) CurrentLevel() *int                  { return u.currentLevel }
-func (u *ExamSession) SetCurrentLevel(l *int)              { u.currentLevel = l }
-func (u *ExamSession) LastSubmittedDt() mtime.MathTime     { return u.lastSubmittedDt }
-func (u *ExamSession) SetLastSubmittedDt(t mtime.MathTime) { u.lastSubmittedDt = t }
-func (u *ExamSession) EndedDt() mtime.MathTime             { return u.endedDt }
-func (u *ExamSession) SetEndedDt(t mtime.MathTime)         { u.endedDt = t }
-func (u *ExamSession) Note() *string                       { return u.note }
-func (u *ExamSession) SetNote(s *string)                   { u.note = s }
-func (u *ExamSession) RptFlg() *string                     { return u.rptFlg }
-func (u *ExamSession) SetRptFlg(v *string)                 { u.rptFlg = v }
-func (u *ExamSession) Kwords() *string                     { return u.kwords }
-func (u *ExamSession) SetKwords(v *string)                 { u.kwords = v }
-func (u *ExamSession) EsessStatus() *string                { return u.esessStatus }
-func (u *ExamSession) SetEsessStatus(s *string)            { u.esessStatus = s }
-func (u *ExamSession) Status() string                      { return u.status }
-func (u *ExamSession) SetStatus(s string)                  { u.status = s }
-func (u *ExamSession) CreateId() *int64                    { return u.createId }
-func (u *ExamSession) SetCreateId(id *int64)               { u.createId = id }
-func (u *ExamSession) CreateDt() mtime.MathTime            { return u.createDt }
-func (u *ExamSession) SetCreateDt(t mtime.MathTime)        { u.createDt = t }
-func (u *ExamSession) ModifyId() *int64                    { return u.modifyId }
-func (u *ExamSession) SetModifyId(id *int64)               { u.modifyId = id }
-func (u *ExamSession) ModifyDt() mtime.MathTime            { return u.modifyDt }
-func (u *ExamSession) SetModifyDt(t mtime.MathTime)        { u.modifyDt = t }
+func (u *ExamSession) CurrentGrade() *int             { return u.currentGrade }
+func (u *ExamSession) SetCurrentGrade(g *int)         { u.currentGrade = g }
+func (u *ExamSession) CurrentLevel() *int             { return u.currentLevel }
+func (u *ExamSession) SetCurrentLevel(l *int)         { u.currentLevel = l }
+func (u *ExamSession) LastSubmittedDt() time.Time     { return u.lastSubmittedDt }
+func (u *ExamSession) SetLastSubmittedDt(t time.Time) { u.lastSubmittedDt = t }
+func (u *ExamSession) EndedDt() time.Time             { return u.endedDt }
+func (u *ExamSession) SetEndedDt(t time.Time)         { u.endedDt = t }
+func (u *ExamSession) Note() *string                  { return u.note }
+func (u *ExamSession) SetNote(s *string)              { u.note = s }
+func (u *ExamSession) RptFlg() *string                { return u.rptFlg }
+func (u *ExamSession) SetRptFlg(v *string)            { u.rptFlg = v }
+func (u *ExamSession) Kwords() *string                { return u.kwords }
+func (u *ExamSession) SetKwords(v *string)            { u.kwords = v }
+func (u *ExamSession) EsessStatus() *string           { return u.esessStatus }
+func (u *ExamSession) SetEsessStatus(s *string)       { u.esessStatus = s }
+func (u *ExamSession) Status() string                 { return u.status }
+func (u *ExamSession) SetStatus(s string)             { u.status = s }
+func (u *ExamSession) CreateId() *int64               { return u.createId }
+func (u *ExamSession) SetCreateId(id *int64)          { u.createId = id }
+func (u *ExamSession) CreateDt() time.Time            { return u.createDt }
+func (u *ExamSession) SetCreateDt(t time.Time)        { u.createDt = t }
+func (u *ExamSession) ModifyId() *int64               { return u.modifyId }
+func (u *ExamSession) SetModifyId(id *int64)          { u.modifyId = id }
+func (u *ExamSession) ModifyDt() time.Time            { return u.modifyDt }
+func (u *ExamSession) SetModifyDt(t time.Time)        { u.modifyDt = t }
 
 // GradePassScorePercentage is the pass mark of a GRADE journey: one
 // completed with res_score_percentage at or above it has passed its level,

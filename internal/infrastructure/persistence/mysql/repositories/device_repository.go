@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/device"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"time"
 )
 
 const (
@@ -132,8 +132,8 @@ func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) (*devic
 
 	_, err := r.db.Exec(ctx, query,
 		d.DeviceId(), d.Uid(), d.DeviceUUID(), d.DeviceName(), d.Platform(), d.DevicePushToken(),
-		d.IsVerified(), d.TrustDt(), d.RptFlg(), d.Kwords(), d.Note(), d.DeviceStatus(),
-		mtime.Now().Time, mtime.Now().Time)
+		d.IsVerified(), nullableTime(d.TrustDt()), d.RptFlg(), d.Kwords(), d.Note(), d.DeviceStatus(),
+		time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("device repo create: %w", err)
 	}
@@ -180,7 +180,7 @@ func (r *DeviceRepository) MarkVerifiedByUserDevice(ctx context.Context, uid int
 			modify_dt   = ?
 		WHERE uid = ? AND device_uuid = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query, isVerified, isVerified, now, now, uid, deviceUUID); err != nil {
 		return fmt.Errorf("device repo mark verified by user device: %w", err)
 	}
@@ -194,7 +194,7 @@ func (r *DeviceRepository) MarkStatusByDeviceId(ctx context.Context, deviceId in
 			modify_dt     = ?
 		WHERE device_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, st, mtime.Now().Time, deviceId); err != nil {
+	if _, err := r.db.Exec(ctx, query, st, time.Now().UTC(), deviceId); err != nil {
 		return fmt.Errorf("device repo mark status: %w", err)
 	}
 	return nil
@@ -209,7 +209,7 @@ func (r *DeviceRepository) SoftDeleteByDeviceId(ctx context.Context, deviceId in
 		WHERE device_id = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
-		enum.DeviceStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, deviceId); err != nil {
+		enum.DeviceStatusTypeDeleted, enum.StatusInactive, time.Now().UTC(), deviceId); err != nil {
 		return fmt.Errorf("device repo soft delete: %w", err)
 	}
 	return nil
@@ -236,7 +236,7 @@ func (r *DeviceRepository) ClearPushTokens(ctx context.Context, tokens []string)
 
 	placeholders := make([]string, len(tokens))
 	args := make([]any, 0, len(tokens)+1)
-	args = append(args, mtime.Now().Time)
+	args = append(args, time.Now().UTC())
 	for i, t := range tokens {
 		placeholders[i] = "?"
 		args = append(args, t)
@@ -264,7 +264,7 @@ func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
 	d.SetDevicePushToken(m.DevicePushToken)
 	d.SetIsVerified(m.IsVerified)
 	if m.TrustDt != nil {
-		d.SetTrustDt(mtime.MathTime{Time: *m.TrustDt})
+		d.SetTrustDt(*m.TrustDt)
 	}
 	d.SetRptFlg(m.RptFlg)
 	d.SetKwords(m.Kwords)
@@ -272,8 +272,8 @@ func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
 	d.SetDeviceStatus(m.DeviceStatus)
 	d.SetStatus(m.Status)
 	d.SetCreateId(m.CreateId)
-	d.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	d.SetCreateDt(m.CreateDt)
 	d.SetModifyId(m.ModifyId)
-	d.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	d.SetModifyDt(m.ModifyDt)
 	return d
 }

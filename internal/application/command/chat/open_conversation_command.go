@@ -4,13 +4,13 @@ package chat
 import (
 	"context"
 	"errors"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -141,7 +141,7 @@ func (h *OpenConversationCommandHandler) create(ctx context.Context, cmd *OpenCo
 			p.SetProfileId(side.profileID)
 			p.SetUid(side.uid)
 			p.SetParticipantRole(enum.ChatParticipantRoleMember.String())
-			p.SetJoinedDt(mtime.Now())
+			p.SetJoinedDt(time.Now().UTC())
 			p.SetParticipantStatus(&activeParticipant)
 			p.SetStatus(enum.StatusActive.String())
 			p.SetCreateId(&cmd.ActorUID)

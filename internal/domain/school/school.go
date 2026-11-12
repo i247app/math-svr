@@ -1,7 +1,7 @@
 package school
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // School models ma_schools. Address fields (district, province) are
@@ -21,9 +21,9 @@ type School struct {
 	schoolStatus *string
 	status       string
 	createId     *int64
-	createDt     mtime.MathTime
+	createDt     time.Time
 	modifyId     *int64
-	modifyDt     mtime.MathTime
+	modifyDt     time.Time
 }
 
 func NewSchool() *School {
@@ -54,13 +54,13 @@ func (s *School) Status() string            { return s.status }
 func (s *School) SetStatus(v string)        { s.status = v }
 func (s *School) CreateId() *int64          { return s.createId }
 func (s *School) SetCreateId(id *int64)     { s.createId = id }
-func (s *School) CreateDt() mtime.MathTime  { return s.createDt }
-func (s *School) SetCreateDt(t mtime.MathTime) {
+func (s *School) CreateDt() time.Time       { return s.createDt }
+func (s *School) SetCreateDt(t time.Time) {
 	s.createDt = t
 }
-func (s *School) ModifyId() *int64         { return s.modifyId }
-func (s *School) SetModifyId(id *int64)    { s.modifyId = id }
-func (s *School) ModifyDt() mtime.MathTime { return s.modifyDt }
-func (s *School) SetModifyDt(t mtime.MathTime) {
+func (s *School) ModifyId() *int64      { return s.modifyId }
+func (s *School) SetModifyId(id *int64) { s.modifyId = id }
+func (s *School) ModifyDt() time.Time   { return s.modifyDt }
+func (s *School) SetModifyDt(t time.Time) {
 	s.modifyDt = t
 }

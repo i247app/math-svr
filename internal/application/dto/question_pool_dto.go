@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 
 	domain "math-ai.com/math-ai/internal/domain/questionpool"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -103,9 +104,9 @@ type QuestionPoolResponse struct {
 	VerifiedCount    int              `json:"verified_count"`
 	Note             *string          `json:"note,omitempty"`
 	CreateID         *int64           `json:"create_id"`
-	CreateDt         string           `json:"create_dt"`
+	CreateDt         mtime.MathTime   `json:"create_dt"`
 	ModifyID         *int64           `json:"modify_id"`
-	ModifyDt         string           `json:"modify_dt"`
+	ModifyDt         mtime.MathTime   `json:"modify_dt"`
 }
 
 func QuestionPoolDomainToResponse(q *domain.QuestionPool) *QuestionPoolResponse {
@@ -142,9 +143,9 @@ func QuestionPoolDomainToResponse(q *domain.QuestionPool) *QuestionPoolResponse 
 		VerifiedCount:    q.VerifiedCount(),
 		Note:             q.Note(),
 		CreateID:         q.CreateId(),
-		CreateDt:         q.CreateDt().String(),
+		CreateDt:         mtime.NewTime(q.CreateDt()),
 		ModifyID:         q.ModifyId(),
-		ModifyDt:         q.ModifyDt().String(),
+		ModifyDt:         mtime.NewTime(q.ModifyDt()),
 	}
 }
 

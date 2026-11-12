@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 // ErrDuplicateConversation and ErrDuplicateMessage are returned by the
@@ -100,13 +100,13 @@ type IParticipantRepository interface {
 	// can only move forward. Without that, a delayed or out-of-order client
 	// call would drag it backwards and resurrect already-read messages as
 	// unread.
-	MarkRead(ctx context.Context, conversationId, profileId, seqNo int64, messageId *int64, readDt mtime.MathTime) error
+	MarkRead(ctx context.Context, conversationId, profileId, seqNo int64, messageId *int64, readDt time.Time) error
 
 	// SumUnreadByProfileId is the badge on the message tab: the total across
 	// every thread the profile participates in.
 	SumUnreadByProfileId(ctx context.Context, profileId int64) (int64, error)
 
-	MarkLeft(ctx context.Context, participantId int64, leftDt mtime.MathTime) error
+	MarkLeft(ctx context.Context, participantId int64, leftDt time.Time) error
 }
 
 // ListMessagesParams drives thread paging. Exactly one direction should be

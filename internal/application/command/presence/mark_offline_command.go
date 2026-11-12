@@ -2,11 +2,11 @@ package presence
 
 import (
 	"context"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/presence"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
@@ -29,7 +29,7 @@ func (h *MarkOfflineCommandHandler) Handle(ctx context.Context, cmd *MarkOffline
 	var result *domain.Presence
 
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
-		p, err := repos.Presence.DecrementConnection(ctx, cmd.Uid, mtime.Now())
+		p, err := repos.Presence.DecrementConnection(ctx, cmd.Uid, time.Now().UTC())
 		if err != nil {
 			return errs.NewError(ctx, status.PRESENCE_UPDATE_FAILED, nil, err)
 		}

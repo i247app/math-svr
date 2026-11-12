@@ -7,9 +7,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // Column-width mirrors for migration 014. Keeping the bounds here lets
@@ -75,7 +75,7 @@ func ValidateCreateClassroom(ctx context.Context, req *dto.CreateClassroomReq) e
 		if err != nil {
 			return err
 		}
-		if parseTime.IsValid() && parseTime.Time.Before(time.Now()) {
+		if !parseTime.IsZero() && parseTime.Before(time.Now()) {
 			return errs.NewError(ctx, status.CLASSROOM_CODE_EXPIRED, nil, ErrClassroomCodeExpiresMustBeFuture)
 		}
 	}

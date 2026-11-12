@@ -5,6 +5,7 @@ import (
 
 	domain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -24,7 +25,7 @@ type ProfileResponse struct {
 	IdentityCode  *string           `json:"identity_code"`
 	AvatarKey     *string           `json:"avatar_key,omitempty"`
 	AvatarUrl     *string           `json:"avatar_url"` // pre-signed url from avatar_key
-	Dob           string            `json:"dob,omitempty"`
+	Dob           *mtime.MathTime   `json:"dob,omitempty"`
 	SchoolID      *int64            `json:"school_id,omitempty"`
 	School        *SchoolResponse   `json:"school,omitempty"`
 	ProgramID     *int64            `json:"program_id,omitempty"`
@@ -38,8 +39,8 @@ type ProfileResponse struct {
 	TeacherID     *string           `json:"teacher_id,omitempty"`
 	StudentID     *string           `json:"student_id,omitempty"`
 	ProfileStatus *string           `json:"profile_status,omitempty"`
-	CreateDt      string            `json:"create_dt"`
-	ModifyDt      string            `json:"modify_dt"`
+	CreateDt      mtime.MathTime    `json:"create_dt"`
+	ModifyDt      mtime.MathTime    `json:"modify_dt"`
 }
 
 type CreateProfileReq struct {
@@ -211,7 +212,7 @@ func ProfileDomainToResponse(p *domain.Profile) *ProfileResponse {
 		Role:          p.Role(),
 		IdentityCode:  p.IdentityCode(),
 		AvatarKey:     p.AvatarKey(),
-		Dob:           p.Dob().String(),
+		Dob:           mtime.NewMathTimePtr(p.Dob()),
 		SchoolID:      p.SchoolId(),
 		ProgramID:     p.ProgramId(),
 		GradeID:       p.GradeId(),
@@ -221,8 +222,8 @@ func ProfileDomainToResponse(p *domain.Profile) *ProfileResponse {
 		TeacherID:     p.TeacherId(),
 		StudentID:     p.StudentId(),
 		ProfileStatus: p.ProfileStatus(),
-		CreateDt:      p.CreateDt().String(),
-		ModifyDt:      p.ModifyDt().String(),
+		CreateDt:      mtime.NewTime(p.CreateDt()),
+		ModifyDt:      mtime.NewTime(p.ModifyDt()),
 	}
 }
 

@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/chat"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"time"
 )
 
 const (
@@ -63,21 +63,21 @@ func ModelToDomainChatParticipant(m *models.ChatParticipantModel) *chat.Particip
 	p.SetLastReadSeqNo(m.LastReadSeqNo)
 	p.SetLastReadMessageId(m.LastReadMessageId)
 	if m.LastReadDt != nil {
-		p.SetLastReadDt(mtime.MathTime{Time: *m.LastReadDt})
+		p.SetLastReadDt(*m.LastReadDt)
 	}
 	p.SetLastDeliveredSeqNo(m.LastDeliveredSeqNo)
 	p.SetUnreadCount(m.UnreadCount)
 	p.SetIsMuted(m.IsMuted)
 	if m.MutedUntilDt != nil {
-		p.SetMutedUntilDt(mtime.MathTime{Time: *m.MutedUntilDt})
+		p.SetMutedUntilDt(*m.MutedUntilDt)
 	}
 	p.SetIsPinned(m.IsPinned)
 	p.SetClearedBeforeSeqNo(m.ClearedBeforeSeqNo)
 	if m.JoinedDt != nil {
-		p.SetJoinedDt(mtime.MathTime{Time: *m.JoinedDt})
+		p.SetJoinedDt(*m.JoinedDt)
 	}
 	if m.LeftDt != nil {
-		p.SetLeftDt(mtime.MathTime{Time: *m.LeftDt})
+		p.SetLeftDt(*m.LeftDt)
 	}
 	p.SetInvitedByProfileId(m.InvitedByProfileId)
 	p.SetRptFlg(m.RptFlg)
@@ -86,9 +86,9 @@ func ModelToDomainChatParticipant(m *models.ChatParticipantModel) *chat.Particip
 	p.SetParticipantStatus(m.ParticipantStatus)
 	p.SetStatus(m.Status)
 	p.SetCreateId(m.CreateId)
-	p.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	p.SetCreateDt(m.CreateDt)
 	p.SetModifyId(m.ModifyId)
-	p.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	p.SetModifyDt(m.ModifyDt)
 	return p
 }
 
@@ -190,15 +190,15 @@ func (r *ChatParticipantRepository) Create(ctx context.Context, p *chat.Particip
 		   participant_status, status, create_id, create_dt)
 		VALUES (?, ?, ?, ?, ?, 0, 0, 0, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	joinedDt := p.JoinedDt()
-	if joinedDt.Time.IsZero() {
-		joinedDt = mtime.Now()
+	if joinedDt.IsZero() {
+		joinedDt = time.Now().UTC()
 	}
 
 	_, err := r.db.Exec(ctx, query,
 		p.ParticipantId(), p.ConversationId(), p.ProfileId(), p.Uid(), p.ParticipantRole(),
-		p.IsMuted(), p.IsPinned(), joinedDt.Time, p.InvitedByProfileId(), p.RptFlg(), p.Kwords(), p.Note(),
+		p.IsMuted(), p.IsPinned(), joinedDt, p.InvitedByProfileId(), p.RptFlg(), p.Kwords(), p.Note(),
 		p.ParticipantStatus(), p.Status(), p.CreateId(), now,
 	)
 	if err != nil {
@@ -231,7 +231,7 @@ func (r *ChatParticipantRepository) IncUnreadExcept(ctx context.Context, convers
 // moves forward. A delayed client call for an older message would otherwise
 // drag it backwards and make already-read messages unread again. A no-op
 // update (the guard not matching) is success, not an error.
-func (r *ChatParticipantRepository) MarkRead(ctx context.Context, conversationId, profileId, seqNo int64, messageId *int64, readDt mtime.MathTime) error {
+func (r *ChatParticipantRepository) MarkRead(ctx context.Context, conversationId, profileId, seqNo int64, messageId *int64, readDt time.Time) error {
 	query := `UPDATE ` + chatParticipantTable + ` SET
 		  last_read_seq_no     = ?,
 		  last_read_message_id = ?,
@@ -239,7 +239,7 @@ func (r *ChatParticipantRepository) MarkRead(ctx context.Context, conversationId
 		  unread_count         = 0
 		WHERE conversation_id = ? AND profile_id = ? AND last_read_seq_no < ?`
 
-	if _, err := r.db.Exec(ctx, query, seqNo, messageId, readDt.Time,
+	if _, err := r.db.Exec(ctx, query, seqNo, messageId, readDt,
 		conversationId, profileId, seqNo); err != nil {
 		return fmt.Errorf("chat participant repo mark read: %w", err)
 	}
@@ -261,11 +261,11 @@ func (r *ChatParticipantRepository) SumUnreadByProfileId(ctx context.Context, pr
 	return total, nil
 }
 
-func (r *ChatParticipantRepository) MarkLeft(ctx context.Context, participantId int64, leftDt mtime.MathTime) error {
+func (r *ChatParticipantRepository) MarkLeft(ctx context.Context, participantId int64, leftDt time.Time) error {
 	query := `UPDATE ` + chatParticipantTable + `
 		SET participant_status = ?, left_dt = ? WHERE participant_id = ?`
 
-	if _, err := r.db.Exec(ctx, query, enum.ChatParticipantStatusLeft, leftDt.Time, participantId); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.ChatParticipantStatusLeft, leftDt, participantId); err != nil {
 		return fmt.Errorf("chat participant repo mark left: %w", err)
 	}
 	return nil

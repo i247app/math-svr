@@ -2,6 +2,7 @@ package dto
 
 import (
 	domain "math-ai.com/math-ai/internal/domain/prompt"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // ListPromptsReq narrows /prompts/list; every field is optional.
@@ -28,15 +29,15 @@ type UpdatePromptReq struct {
 // prompt_version grows by one per rewrite; for exam generation it is part
 // of the cache tag, so sets generated before a rewrite are not served after.
 type PromptResponse struct {
-	PromptID      int64   `json:"prompt_id"`
-	PromptCode    string  `json:"prompt_code"`
-	Grade         *int    `json:"grade"`
-	Language      *string `json:"language"`
-	Description   *string `json:"description"`
-	SystemPrompt  string  `json:"system_prompt"`
-	PromptVersion int     `json:"prompt_version"`
-	ModifyID      *int64  `json:"modify_id,omitempty"`
-	ModifyDt      string  `json:"modify_dt"`
+	PromptID      int64          `json:"prompt_id"`
+	PromptCode    string         `json:"prompt_code"`
+	Grade         *int           `json:"grade"`
+	Language      *string        `json:"language"`
+	Description   *string        `json:"description"`
+	SystemPrompt  string         `json:"system_prompt"`
+	PromptVersion int            `json:"prompt_version"`
+	ModifyID      *int64         `json:"modify_id,omitempty"`
+	ModifyDt      mtime.MathTime `json:"modify_dt"`
 }
 
 type PromptRes struct {
@@ -60,7 +61,7 @@ func PromptToResponse(p *domain.Prompt) *PromptResponse {
 		SystemPrompt:  p.SystemPrompt(),
 		PromptVersion: p.PromptVersion(),
 		ModifyID:      p.ModifyId(),
-		ModifyDt:      p.ModifyDt().String(),
+		ModifyDt:      mtime.NewTime(p.ModifyDt()),
 	}
 }
 

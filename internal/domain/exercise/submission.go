@@ -1,7 +1,7 @@
 package exercise
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // Submission is a single student's attempt at a classroom exercise. The
@@ -28,17 +28,17 @@ type Submission struct {
 	totalQuestions                *int64
 	correctNumber                 *int64
 	scorePercentage               *int64
-	submittedDt                   mtime.MathTime
-	gradedDt                      mtime.MathTime
+	submittedDt                   time.Time
+	gradedDt                      time.Time
 	rptFlg                        *string
 	kwords                        *string
 	note                          *string
 	submissionStatus              *string
 	status                        string
 	createId                      *int64
-	createDt                      mtime.MathTime
+	createDt                      time.Time
 	modifyId                      *int64
-	modifyDt                      mtime.MathTime
+	modifyDt                      time.Time
 }
 
 func NewSubmission() *Submission { return &Submission{} }
@@ -61,10 +61,10 @@ func (s *Submission) CorrectNumber() *int64                     { return s.corre
 func (s *Submission) SetCorrectNumber(v *int64)                 { s.correctNumber = v }
 func (s *Submission) ScorePercentage() *int64                   { return s.scorePercentage }
 func (s *Submission) SetScorePercentage(v *int64)               { s.scorePercentage = v }
-func (s *Submission) SubmittedDt() mtime.MathTime               { return s.submittedDt }
-func (s *Submission) SetSubmittedDt(t mtime.MathTime)           { s.submittedDt = t }
-func (s *Submission) GradedDt() mtime.MathTime                  { return s.gradedDt }
-func (s *Submission) SetGradedDt(t mtime.MathTime)              { s.gradedDt = t }
+func (s *Submission) SubmittedDt() time.Time                    { return s.submittedDt }
+func (s *Submission) SetSubmittedDt(t time.Time)                { s.submittedDt = t }
+func (s *Submission) GradedDt() time.Time                       { return s.gradedDt }
+func (s *Submission) SetGradedDt(t time.Time)                   { s.gradedDt = t }
 func (s *Submission) Note() *string                             { return s.note }
 func (s *Submission) SetNote(v *string)                         { s.note = v }
 func (s *Submission) RptFlg() *string                           { return s.rptFlg }
@@ -77,9 +77,9 @@ func (s *Submission) Status() string                            { return s.statu
 func (s *Submission) SetStatus(v string)                        { s.status = v }
 func (s *Submission) CreateId() *int64                          { return s.createId }
 func (s *Submission) SetCreateId(v *int64)                      { s.createId = v }
-func (s *Submission) CreateDt() mtime.MathTime                  { return s.createDt }
-func (s *Submission) SetCreateDt(t mtime.MathTime)              { s.createDt = t }
+func (s *Submission) CreateDt() time.Time                       { return s.createDt }
+func (s *Submission) SetCreateDt(t time.Time)                   { s.createDt = t }
 func (s *Submission) ModifyId() *int64                          { return s.modifyId }
 func (s *Submission) SetModifyId(v *int64)                      { s.modifyId = v }
-func (s *Submission) ModifyDt() mtime.MathTime                  { return s.modifyDt }
-func (s *Submission) SetModifyDt(t mtime.MathTime)              { s.modifyDt = t }
+func (s *Submission) ModifyDt() time.Time                       { return s.modifyDt }
+func (s *Submission) SetModifyDt(t time.Time)                   { s.modifyDt = t }

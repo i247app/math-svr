@@ -9,7 +9,6 @@ import (
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -56,7 +55,7 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 			return errs.NewError(ctx, status.CLASSROOM_CODE_DISABLED, nil,
 				ErrClassroomArchived)
 		}
-		if c.ClassroomCodeExpiresDt().IsValid() && c.ClassroomCodeExpiresDt().Time.Before(time.Now()) {
+		if !c.ClassroomCodeExpiresDt().IsZero() && c.ClassroomCodeExpiresDt().Before(time.Now()) {
 			return errs.NewError(ctx, status.CLASSROOM_CODE_EXPIRED, nil,
 				ErrClassroomCodeExpired)
 		}
@@ -90,7 +89,7 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 			// as a fresh PENDING_REQUEST so the UNIQUE
 			// (classroom_id, profile_id) constraint stays meaningful.
 			if err := repos.ClassroomMember.RequestToJoin(ctx, existing.MemberId(),
-				memberRole, mtime.Now(), nil); err != nil {
+				memberRole, time.Now().UTC(), nil); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			refreshed, err := repos.ClassroomMember.FindByMemberId(ctx, existing.MemberId())
@@ -106,7 +105,7 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 			return err
 		}
 
-		now := mtime.Now()
+		now := time.Now().UTC()
 		pendingRequest := enum.ClassroomMemberStatusTypePendingRequest.String()
 
 		m := classroom.NewMember()

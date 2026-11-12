@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/domain/exam"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -390,7 +389,7 @@ func (r *ExamSessionRepository) listSessions(ctx context.Context, op, where stri
 // rows themselves are unchanged apart from who owns them.
 func (r *ExamSessionRepository) ReassignOwnerByProfile(ctx context.Context, profileId int64, newUid int64) error {
 	query := `UPDATE ` + examSessionTable + ` SET uid = ?, modify_dt = ? WHERE profile_id = ?`
-	if _, err := r.db.Exec(ctx, query, newUid, mtime.Now().Time, profileId); err != nil {
+	if _, err := r.db.Exec(ctx, query, newUid, time.Now().UTC(), profileId); err != nil {
 		return fmt.Errorf("user exam repo reassign owner: %w", err)
 	}
 	return nil
@@ -409,15 +408,15 @@ func (r *ExamSessionRepository) ListProgressPoints(ctx context.Context, params e
 	}
 	if params.From != nil && !params.From.IsZero() {
 		where += ` AND e.last_submitted_dt >= ?`
-		args = append(args, params.From.Time)
+		args = append(args, params.From)
 	}
 	if params.To != nil && !params.To.IsZero() {
 		where += ` AND e.last_submitted_dt <= ?`
-		args = append(args, params.To.Time)
+		args = append(args, params.To)
 	}
 	if params.SubmittedBefore != nil && !params.SubmittedBefore.IsZero() {
 		where += ` AND e.last_submitted_dt < ?`
-		args = append(args, params.SubmittedBefore.Time)
+		args = append(args, params.SubmittedBefore)
 	}
 
 	limit := params.Limit
@@ -465,7 +464,7 @@ func (r *ExamSessionRepository) ListProgressPoints(ctx context.Context, params e
 // after would judge a journey on a score a concurrent submit had already
 // moved. The caller decides whether there is a verdict and at what mark;
 // the database only compares.
-func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, newStatus string, endedDt mtime.MathTime, passMark *int) error {
+func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, newStatus string, endedDt time.Time, passMark *int) error {
 	query := `
 		UPDATE ` + examSessionTable + `
 		SET esess_status = ?,
@@ -474,13 +473,13 @@ func (r *ExamSessionRepository) MarkStatus(ctx context.Context, esessId int64, n
 			modify_dt        = ?
 		WHERE esess_id = ? AND esess_status = ?
 	`
-	ended := endedDt.Time
+	ended := endedDt
 	if endedDt.IsZero() {
-		ended = mtime.Now().Time
+		ended = time.Now().UTC()
 	}
 
 	result, err := r.db.Exec(ctx, query,
-		newStatus, passMark, passMark, ended, mtime.Now().Time,
+		newStatus, passMark, passMark, ended, time.Now().UTC(),
 		esessId, enum.EsessStatusActive.String())
 	if err != nil {
 		return fmt.Errorf("user exam repo mark status: %w", err)
@@ -533,7 +532,7 @@ func (r *ExamSessionRepository) Reopen(ctx context.Context, esessId int64) error
 		WHERE esess_id = ? AND req_exam_type <> ? AND esess_status IN (?, ?)
 	`
 	result, err := r.db.Exec(ctx, query,
-		enum.EsessStatusActive.String(), mtime.Now().Time,
+		enum.EsessStatusActive.String(), time.Now().UTC(),
 		esessId, enum.ExamTypePractice.String(), enum.EsessStatusComplete.String(), enum.EsessStatusCancel.String())
 	if err != nil {
 		if isDuplicateEntry(err) {
@@ -572,7 +571,7 @@ func (r *ExamSessionRepository) SetCurrent(ctx context.Context, esessId int64, e
 			modify_dt     = ?
 		WHERE esess_id = ? AND req_exam_type = ? AND esess_status = ?
 	`
-	result, err := r.db.Exec(ctx, query, grade, level, mtime.Now().Time,
+	result, err := r.db.Exec(ctx, query, grade, level, time.Now().UTC(),
 		esessId, examType, enum.EsessStatusActive.String())
 	if err != nil {
 		return fmt.Errorf("user exam repo set current: %w", err)
@@ -598,7 +597,7 @@ func (r *ExamSessionRepository) SetExamTexts(ctx context.Context, esessId int64,
 			modify_dt     = ?
 		WHERE esess_id = ? AND req_exam_type = ? AND esess_status = ?
 	`
-	result, err := r.db.Exec(ctx, query, title, shortText, mtime.Now().Time,
+	result, err := r.db.Exec(ctx, query, title, shortText, time.Now().UTC(),
 		esessId, examType, enum.EsessStatusActive.String())
 	if err != nil {
 		return fmt.Errorf("user exam repo set exam texts: %w", err)
@@ -695,7 +694,7 @@ func (r *ExamSessionRepository) Create(ctx context.Context, e *exam.ExamSession,
 		percentage = &p
 	}
 
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	lastSubmitted := nullableTime(e.LastSubmittedDt())
 
 	// A journey's own row opens ACTIVE; a PRACTICE row is born in its
@@ -750,7 +749,7 @@ func (r *ExamSessionRepository) Accumulate(ctx context.Context, esessId int64, e
 
 	result, err := r.db.Exec(ctx, query,
 		delta.TotalQuestions, delta.CorrectNumber, delta.SkippedNumber,
-		e.ResReview(), lastSubmitted, mtime.Now().Time,
+		e.ResReview(), lastSubmitted, time.Now().UTC(),
 		esessId, examType, expectedStatus)
 	if err != nil {
 		return fmt.Errorf("user exam repo accumulate: %w", err)
@@ -763,16 +762,6 @@ func (r *ExamSessionRepository) Accumulate(ctx context.Context, esessId int64, e
 		return exam.ErrJourneyNotActive
 	}
 	return nil
-}
-
-// nullableTime maps the zero MathTime to SQL NULL. A journey opened at
-// hand-out has never been submitted to, and its last_submitted_dt must
-// read as "never", not as year one.
-func nullableTime(mt mtime.MathTime) *time.Time {
-	if mt.IsZero() {
-		return nil
-	}
-	return &mt.Time
 }
 
 func ModelToDomainExamSession(m *models.ExamSessionModel) *exam.ExamSession {
@@ -794,16 +783,16 @@ func ModelToDomainExamSession(m *models.ExamSessionModel) *exam.ExamSession {
 	e.SetLastRespId(m.LastRespId)
 	e.SetCurrentGrade(m.CurrentGrade)
 	e.SetCurrentLevel(m.CurrentLevel)
-	e.SetLastSubmittedDt(mtime.MathTimeFromPtr(m.LastSubmittedDt))
-	e.SetEndedDt(mtime.MathTimeFromPtr(m.EndedDt))
+	e.SetLastSubmittedDt(timeOrZero(m.LastSubmittedDt))
+	e.SetEndedDt(timeOrZero(m.EndedDt))
 	e.SetRptFlg(m.RptFlg)
 	e.SetKwords(m.Kwords)
 	e.SetNote(m.Note)
 	e.SetEsessStatus(m.EsessStatus)
 	e.SetStatus(m.Status)
 	e.SetCreateId(m.CreateId)
-	e.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	e.SetCreateDt(m.CreateDt)
 	e.SetModifyId(m.ModifyId)
-	e.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	e.SetModifyDt(m.ModifyDt)
 	return e
 }

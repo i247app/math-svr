@@ -1,7 +1,7 @@
 package login
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // Login is an account's password credential (ma_logins). It is optional:
@@ -17,9 +17,9 @@ type Login struct {
 	note         *string
 	status       string
 	createId     *int64
-	createDt     mtime.MathTime
+	createDt     time.Time
 	modifyId     *int64
-	modifyDt     mtime.MathTime
+	modifyDt     time.Time
 }
 
 func NewLogin() *Login {
@@ -63,14 +63,14 @@ func (l *Login) CreateId() *int64 { return l.createId }
 
 func (l *Login) SetCreateId(createId *int64) { l.createId = createId }
 
-func (l *Login) CreateDt() mtime.MathTime { return l.createDt }
+func (l *Login) CreateDt() time.Time { return l.createDt }
 
-func (l *Login) SetCreateDt(createDt mtime.MathTime) { l.createDt = createDt }
+func (l *Login) SetCreateDt(createDt time.Time) { l.createDt = createDt }
 
 func (l *Login) ModifyId() *int64 { return l.modifyId }
 
 func (l *Login) SetModifyId(modifyId *int64) { l.modifyId = modifyId }
 
-func (l *Login) ModifyDt() mtime.MathTime { return l.modifyDt }
+func (l *Login) ModifyDt() time.Time { return l.modifyDt }
 
-func (l *Login) SetModifyDt(modifyDt mtime.MathTime) { l.modifyDt = modifyDt }
+func (l *Login) SetModifyDt(modifyDt time.Time) { l.modifyDt = modifyDt }

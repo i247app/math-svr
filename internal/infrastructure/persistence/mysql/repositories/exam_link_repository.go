@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/domain/exam"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -157,14 +156,14 @@ func buildExamLinkFilterClause(filter exam.ListAttemptsFilter) (string, []any) {
 // rows themselves are unchanged apart from who owns them.
 func (r *ExamLinkRepository) ReassignOwnerByProfile(ctx context.Context, profileId int64, newUid int64) error {
 	query := `UPDATE ` + examLinkTable + ` SET uid = ?, modify_dt = ? WHERE profile_id = ?`
-	if _, err := r.db.Exec(ctx, query, newUid, mtime.Now().Time, profileId); err != nil {
+	if _, err := r.db.Exec(ctx, query, newUid, time.Now().UTC(), profileId); err != nil {
 		return fmt.Errorf("user ai exam repo reassign owner: %w", err)
 	}
 	return nil
 }
 
-func (r *ExamLinkRepository) CountHandedOutSince(ctx context.Context, profileId int64, since mtime.MathTime) (int64, error) {
-	args := slices.Concat([]any{profileId, since.Time}, examLinkActiveArgs())
+func (r *ExamLinkRepository) CountHandedOutSince(ctx context.Context, profileId int64, since time.Time) (int64, error) {
+	args := slices.Concat([]any{profileId, since}, examLinkActiveArgs())
 	query := `SELECT COUNT(*) FROM ` + examLinkTable + ` u WHERE ` +
 		`(u.profile_id = ? AND u.started_dt >= ?) AND ` + examLinkActiveWhere
 
@@ -322,8 +321,8 @@ func (r *ExamLinkRepository) Create(ctx context.Context, a *exam.ExamLink) (*exa
 			 started_dt, rpt_flg, kwords, note, elink_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	now := mtime.Now().Time
-	startedDt := mtime.MathTimePtrToTime(a.StartedDt().Ptr())
+	now := time.Now().UTC()
+	startedDt := a.StartedDt()
 
 	_, err := r.db.Exec(ctx, query,
 		a.ElinkId(), a.Uid(), a.ProfileId(), a.ExamId(), a.EsessId(), a.ShuffleMap(),
@@ -360,14 +359,14 @@ func (r *ExamLinkRepository) MarkSubmitted(ctx context.Context, elinkId int64, r
 			modify_dt            = ?
 		WHERE elink_id = ? AND elink_status = ?
 	`
-	submittedDt := res.SubmittedDt.Time
+	submittedDt := res.SubmittedDt
 	if res.SubmittedDt.IsZero() {
-		submittedDt = mtime.Now().Time
+		submittedDt = time.Now().UTC()
 	}
 
 	result, err := r.db.Exec(ctx, query,
 		res.TotalQuestions, res.CorrectNumber, res.SkippedNumber, res.ScorePercentage,
-		submittedDt, res.EsessId, enum.ElinkStatusSubmitted.String(), mtime.Now().Time,
+		submittedDt, res.EsessId, enum.ElinkStatusSubmitted.String(), time.Now().UTC(),
 		elinkId, enum.ElinkStatusInProgress.String())
 	if err != nil {
 		return fmt.Errorf("user ai exam repo mark submitted: %w", err)
@@ -401,7 +400,7 @@ func scanExamProgressPoint(s database.RowScanner) (*exam.ProgressPoint, error) {
 	}
 	p.CorrectNumber = correct
 	p.TotalQuestions = total
-	p.CompletedDt = mtime.MathTimeFromPtr(submittedDt)
+	p.CompletedDt = timeOrZero(submittedDt)
 	return &p, nil
 }
 
@@ -422,15 +421,15 @@ func (r *ExamLinkRepository) ListProgressPoints(ctx context.Context, params exam
 	}
 	if params.From != nil && !params.From.IsZero() {
 		where += ` AND u.submitted_dt >= ?`
-		args = append(args, params.From.Time)
+		args = append(args, params.From)
 	}
 	if params.To != nil && !params.To.IsZero() {
 		where += ` AND u.submitted_dt <= ?`
-		args = append(args, params.To.Time)
+		args = append(args, params.To)
 	}
 	if params.CompletedBefore != nil && !params.CompletedBefore.IsZero() {
 		where += ` AND u.submitted_dt < ?`
-		args = append(args, params.CompletedBefore.Time)
+		args = append(args, params.CompletedBefore)
 	}
 
 	limit := params.Limit
@@ -478,16 +477,16 @@ func ModelToDomainExamLink(m *models.ExamLinkModel) *exam.ExamLink {
 	a.SetResCorrectNumber(m.ResCorrectNumber)
 	a.SetResSkippedNumber(m.ResSkippedNumber)
 	a.SetResScorePercentage(m.ResScorePercentage)
-	a.SetStartedDt(mtime.MathTimeFromPtr(m.StartedDt))
-	a.SetSubmittedDt(mtime.MathTimeFromPtr(m.SubmittedDt))
+	a.SetStartedDt(timeOrZero(m.StartedDt))
+	a.SetSubmittedDt(timeOrZero(m.SubmittedDt))
 	a.SetRptFlg(m.RptFlg)
 	a.SetKwords(m.Kwords)
 	a.SetNote(m.Note)
 	a.SetElinkStatus(m.ElinkStatus)
 	a.SetStatus(m.Status)
 	a.SetCreateId(m.CreateId)
-	a.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	a.SetCreateDt(m.CreateDt)
 	a.SetModifyId(m.ModifyId)
-	a.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	a.SetModifyDt(m.ModifyDt)
 	return a
 }

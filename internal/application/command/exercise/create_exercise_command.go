@@ -8,9 +8,9 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // CreateClassroomExerciseCommand persists a teacher-created exercise.

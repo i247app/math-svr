@@ -2,6 +2,7 @@ package dto
 
 import (
 	domain "math-ai.com/math-ai/internal/domain/classroom"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -39,13 +40,13 @@ type InvitationResponse struct {
 	MemberStatus *string                     `json:"member_status,omitempty"`
 	InviteBy     *int64                      `json:"invite_by,omitempty"`
 	Inviter      *ProfileResponse            `json:"inviter,omitempty"`
-	InviteDt     string                      `json:"invite_dt,omitempty"`
-	JoinedDt     string                      `json:"joined_dt,omitempty"`
-	LeftDt       string                      `json:"left_dt,omitempty"`
-	RemovedDt    string                      `json:"removed_dt,omitempty"`
+	InviteDt     *mtime.MathTime             `json:"invite_dt,omitempty"`
+	JoinedDt     *mtime.MathTime             `json:"joined_dt,omitempty"`
+	LeftDt       *mtime.MathTime             `json:"left_dt,omitempty"`
+	RemovedDt    *mtime.MathTime             `json:"removed_dt,omitempty"`
 	Note         *string                     `json:"note,omitempty"`
-	CreateDt     string                      `json:"create_dt"`
-	ModifyDt     string                      `json:"modify_dt"`
+	CreateDt     mtime.MathTime              `json:"create_dt"`
+	ModifyDt     mtime.MathTime              `json:"modify_dt"`
 }
 
 // InvitationTarget is the per-recipient payload accepted by Send.
@@ -148,20 +149,20 @@ func InvitationDomainToResponse(m *domain.Member, inviter *ProfileResponse) *Inv
 		MemberStatus: m.MemberStatus(),
 		InviteBy:     m.InviteBy(),
 		Note:         m.Note(),
-		CreateDt:     m.CreateDt().String(),
-		ModifyDt:     m.ModifyDt().String(),
+		CreateDt:     mtime.NewTime(m.CreateDt()),
+		ModifyDt:     mtime.NewTime(m.ModifyDt()),
 	}
-	if m.InviteDt().IsValid() {
-		resp.InviteDt = m.InviteDt().String()
+	if !m.InviteDt().IsZero() {
+		resp.InviteDt = mtime.NewMathTimePtr(m.InviteDt())
 	}
-	if m.JoinedDt().IsValid() {
-		resp.JoinedDt = m.JoinedDt().String()
+	if !m.JoinedDt().IsZero() {
+		resp.JoinedDt = mtime.NewMathTimePtr(m.JoinedDt())
 	}
-	if m.LeftDt().IsValid() {
-		resp.LeftDt = m.LeftDt().String()
+	if !m.LeftDt().IsZero() {
+		resp.LeftDt = mtime.NewMathTimePtr(m.LeftDt())
 	}
-	if m.RemovedDt().IsValid() {
-		resp.RemovedDt = m.RemovedDt().String()
+	if !m.RemovedDt().IsZero() {
+		resp.RemovedDt = mtime.NewMathTimePtr(m.RemovedDt())
 	}
 
 	if inviter != nil {

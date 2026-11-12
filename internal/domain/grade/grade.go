@@ -1,7 +1,7 @@
 package grade
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 type Grade struct {
@@ -16,9 +16,9 @@ type Grade struct {
 	gradeStatus  *string
 	status       string
 	createId     *int64
-	createDt     mtime.MathTime
+	createDt     time.Time
 	modifyId     *int64
-	modifyDt     mtime.MathTime
+	modifyDt     time.Time
 }
 
 func NewGrade() *Grade {
@@ -115,11 +115,11 @@ func (g *Grade) SetCreateId(createId *int64) {
 	g.createId = createId
 }
 
-func (g *Grade) CreateDt() mtime.MathTime {
+func (g *Grade) CreateDt() time.Time {
 	return g.createDt
 }
 
-func (g *Grade) SetCreateDt(createDt mtime.MathTime) {
+func (g *Grade) SetCreateDt(createDt time.Time) {
 	g.createDt = createDt
 }
 
@@ -131,10 +131,10 @@ func (g *Grade) SetModifyId(modifyId *int64) {
 	g.modifyId = modifyId
 }
 
-func (g *Grade) ModifyDt() mtime.MathTime {
+func (g *Grade) ModifyDt() time.Time {
 	return g.modifyDt
 }
 
-func (g *Grade) SetModifyDt(modifyDt mtime.MathTime) {
+func (g *Grade) SetModifyDt(modifyDt time.Time) {
 	g.modifyDt = modifyDt
 }

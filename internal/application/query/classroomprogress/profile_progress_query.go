@@ -9,9 +9,9 @@ import (
 	"math-ai.com/math-ai/internal/application/query/progress"
 	exercise "math-ai.com/math-ai/internal/domain/exercise"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // PassScorePctThreshold is the minimum score_percentage (0–100) a graded
@@ -110,18 +110,18 @@ func (h *ProfileProgressQueryHandler) priorPeriodAvg10(ctx context.Context, q Pr
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	dur := parseToDate.Sub(parseFromDate.Time)
+	dur := parseToDate.Sub(parseFromDate)
 	if dur <= 0 {
 		return nil, nil
 	}
-	priorTo := parseFromDate.Time.Add(-time.Microsecond)
-	priorFrom := parseFromDate.Time.Add(-dur)
+	priorTo := parseFromDate.Add(-time.Microsecond)
+	priorFrom := parseFromDate.Add(-dur)
 
 	subs, err := h.submissionRepo.ListProfileSubmissionsInRange(ctx, exercise.ProfileSubmissionsRangeParams{
 		ClassroomID: q.ClassroomID,
 		ProfileID:   q.TargetProfileID,
-		From:        mtime.NewTime(priorFrom),
-		To:          mtime.NewTime(priorTo),
+		From:        priorFrom,
+		To:          priorTo,
 	})
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func buildPoints(subs []*exercise.Submission, exMap map[int64]*exercise.Exercise
 		out = append(out, dto.ExercisePoint{
 			ExerciseID:     exID,
 			Title:          title,
-			SubmittedDt:    s.SubmittedDt().String(),
+			SubmittedDt:    mtime.NewMathTimePtr(s.SubmittedDt()),
 			Score:          progress.PctTo10Pt(float64(pct)),
 			ScorePct:       pct,
 			CorrectNumber:  s.CorrectNumber(),

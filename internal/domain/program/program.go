@@ -1,7 +1,7 @@
 package program
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 type Program struct {
@@ -16,9 +16,9 @@ type Program struct {
 	programStatus *string
 	status        string
 	createId      *int64
-	createDt      mtime.MathTime
+	createDt      time.Time
 	modifyId      *int64
-	modifyDt      mtime.MathTime
+	modifyDt      time.Time
 }
 
 func NewProgram() *Program {
@@ -115,11 +115,11 @@ func (p *Program) SetCreateId(createId *int64) {
 	p.createId = createId
 }
 
-func (p *Program) CreateDt() mtime.MathTime {
+func (p *Program) CreateDt() time.Time {
 	return p.createDt
 }
 
-func (p *Program) SetCreateDt(createDt mtime.MathTime) {
+func (p *Program) SetCreateDt(createDt time.Time) {
 	p.createDt = createDt
 }
 
@@ -131,10 +131,10 @@ func (p *Program) SetModifyId(modifyId *int64) {
 	p.modifyId = modifyId
 }
 
-func (p *Program) ModifyDt() mtime.MathTime {
+func (p *Program) ModifyDt() time.Time {
 	return p.modifyDt
 }
 
-func (p *Program) SetModifyDt(modifyDt mtime.MathTime) {
+func (p *Program) SetModifyDt(modifyDt time.Time) {
 	p.modifyDt = modifyDt
 }

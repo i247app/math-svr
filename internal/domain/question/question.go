@@ -2,7 +2,7 @@ package question
 
 import (
 	"math-ai.com/math-ai/internal/domain/questionpool"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // Option is one option of a generated question, in canonical order.
@@ -48,9 +48,9 @@ type Question struct {
 	note           *string
 	status         string
 	createId       *int64
-	createDt       mtime.MathTime
+	createDt       time.Time
 	modifyId       *int64
-	modifyDt       mtime.MathTime
+	modifyDt       time.Time
 }
 
 func NewQuestion() *Question { return &Question{} }
@@ -93,9 +93,9 @@ func (q *Question) Status() string                                { return q.sta
 func (q *Question) SetStatus(s string)                            { q.status = s }
 func (q *Question) CreateId() *int64                              { return q.createId }
 func (q *Question) SetCreateId(id *int64)                         { q.createId = id }
-func (q *Question) CreateDt() mtime.MathTime                      { return q.createDt }
-func (q *Question) SetCreateDt(t mtime.MathTime)                  { q.createDt = t }
+func (q *Question) CreateDt() time.Time                           { return q.createDt }
+func (q *Question) SetCreateDt(t time.Time)                       { q.createDt = t }
 func (q *Question) ModifyId() *int64                              { return q.modifyId }
 func (q *Question) SetModifyId(id *int64)                         { q.modifyId = id }
-func (q *Question) ModifyDt() mtime.MathTime                      { return q.modifyDt }
-func (q *Question) SetModifyDt(t mtime.MathTime)                  { q.modifyDt = t }
+func (q *Question) ModifyDt() time.Time                           { return q.modifyDt }
+func (q *Question) SetModifyDt(t time.Time)                       { q.modifyDt = t }

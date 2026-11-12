@@ -2,10 +2,10 @@ package command
 
 import (
 	"context"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -80,7 +80,7 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 			case utils.ValidateEmail(alias.Aka()):
 				if cmd.Email != nil && alias.Aka() != *cmd.Email {
 					alias.SetAka(*cmd.Email)
-					alias.SetModifyDt(mtime.Now())
+					alias.SetModifyDt(time.Now().UTC())
 					u.SetEmail(cmd.Email)
 
 					// The address changed, so whatever was true of the old
@@ -98,7 +98,7 @@ func (h *UpdateUserCommandHandler) Handle(ctx context.Context, cmd UpdateUserCom
 			case utils.ValidatePhone(alias.Aka()):
 				if cmd.Phone != nil && alias.Aka() != *cmd.Phone {
 					alias.SetAka(*cmd.Phone)
-					alias.SetModifyDt(mtime.Now())
+					alias.SetModifyDt(time.Now().UTC())
 					u.SetPhone(cmd.Phone)
 				}
 			}

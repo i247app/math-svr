@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/domain/otp"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -128,16 +127,16 @@ func (r *OtpRepository) Create(ctx context.Context, o *otp.Otp) (*otp.Otp, error
 	`
 
 	var createDtArg, expireDtArg any
-	if o.OtpCreateDt().IsValid() {
+	if !o.OtpCreateDt().IsZero() {
 		createDtArg = o.OtpCreateDt()
 	}
-	if o.OtpExpireDt().IsValid() {
+	if !o.OtpExpireDt().IsZero() {
 		expireDtArg = o.OtpExpireDt()
 	}
 
 	_, err := r.db.Exec(ctx, query,
 		o.OtpId(), o.OtpType(), o.Uid(), o.Identifier(), o.DeviceUUID(), o.DeviceName(),
-		o.OtpCode(), createDtArg, expireDtArg, o.AttemptCount(), o.RptFlg(), o.Kwords(), o.Note(), o.OtpStatus(), mtime.Now().Time, mtime.Now().Time)
+		o.OtpCode(), createDtArg, expireDtArg, o.AttemptCount(), o.RptFlg(), o.Kwords(), o.Note(), o.OtpStatus(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("otp repo create: %w", err)
 	}
@@ -158,7 +157,7 @@ func (r *OtpRepository) MarkStatusByOtpId(ctx context.Context, otpId int64, st e
 			modify_dt       = ?
 		WHERE otp_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	isVerified := st == enum.OtpStatusTypeVerified
 	if _, err := r.db.Exec(ctx, query, st, isVerified, now, now, otpId); err != nil {
 		return fmt.Errorf("otp repo mark status: %w", err)
@@ -179,7 +178,7 @@ func (r *OtpRepository) RevokePendingByTypeIdentifier(ctx context.Context, otpTy
 		  AND otp_status = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
-		enum.OtpStatusTypeRevoked, mtime.Now().Time,
+		enum.OtpStatusTypeRevoked, time.Now().UTC(),
 		otpType, identifier, enum.OtpStatusTypePending,
 	); err != nil {
 		return fmt.Errorf("otp repo revoke pending: %w", err)
@@ -198,7 +197,7 @@ func (r *OtpRepository) IncrementAttemptCount(ctx context.Context, otpId int64) 
 			modify_dt     = ?
 		WHERE otp_id = ?
 	`
-	if _, err := r.db.Exec(ctx, update, mtime.Now().Time, otpId); err != nil {
+	if _, err := r.db.Exec(ctx, update, time.Now().UTC(), otpId); err != nil {
 		return 0, fmt.Errorf("otp repo increment attempt count: %w", err)
 	}
 
@@ -219,13 +218,13 @@ func ModelToDomainOtp(m *models.OtpModel) *otp.Otp {
 	o.SetDeviceName(m.DeviceName)
 	o.SetOtpCode(m.OtpCode)
 	if m.OtpCreateDt != nil {
-		o.SetOtpCreateDt(mtime.MathTime{Time: *m.OtpCreateDt})
+		o.SetOtpCreateDt(*m.OtpCreateDt)
 	}
 	if m.OtpExpireDt != nil {
-		o.SetOtpExpireDt(mtime.MathTime{Time: *m.OtpExpireDt})
+		o.SetOtpExpireDt(*m.OtpExpireDt)
 	}
 	if m.OtpVerifiedDt != nil {
-		o.SetOtpVerifiedDt(mtime.MathTime{Time: *m.OtpVerifiedDt})
+		o.SetOtpVerifiedDt(*m.OtpVerifiedDt)
 	}
 	o.SetAttemptCount(m.AttemptCount)
 	o.SetRptFlg(m.RptFlg)
@@ -234,8 +233,8 @@ func ModelToDomainOtp(m *models.OtpModel) *otp.Otp {
 	o.SetOtpStatus(m.OtpStatus)
 	o.SetStatus(m.Status)
 	o.SetCreateId(m.CreateId)
-	o.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	o.SetCreateDt(m.CreateDt)
 	o.SetModifyId(m.ModifyId)
-	o.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	o.SetModifyDt(m.ModifyDt)
 	return o
 }

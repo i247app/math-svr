@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/program"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -163,7 +163,7 @@ func (r *ProgramRepository) Create(ctx context.Context, p *program.Program) (*pr
 	`
 	_, err := r.db.Exec(ctx, query,
 		p.ProgramId(), p.Label(), p.Description(), p.ImageKey(),
-		p.DisplayOrder(), p.RptFlg(), p.Kwords(), p.Note(), p.ProgramStatus(), mtime.Now().Time, mtime.Now().Time)
+		p.DisplayOrder(), p.RptFlg(), p.Kwords(), p.Note(), p.ProgramStatus(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("program repo create: %w", err)
 	}
@@ -199,7 +199,7 @@ func (r *ProgramRepository) Update(ctx context.Context, p *program.Program) erro
 	`
 	if _, err := r.db.Exec(ctx, query,
 		label, description, imageKey,
-		p.DisplayOrder(), p.RptFlg(), p.Kwords(), p.Note(), mtime.Now().Time, p.ProgramId()); err != nil {
+		p.DisplayOrder(), p.RptFlg(), p.Kwords(), p.Note(), time.Now().UTC(), p.ProgramId()); err != nil {
 		return fmt.Errorf("program repo update: %w", err)
 	}
 	return nil
@@ -214,7 +214,7 @@ func (r *ProgramRepository) SoftDeleteByProgramId(ctx context.Context, programId
 			modify_dt      = ?
 		WHERE program_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.StatusInactive, enum.StatusInactive, now, now, programId); err != nil {
 		return fmt.Errorf("program repo soft delete: %w", err)
@@ -246,8 +246,8 @@ func ModelToDomainProgram(m *models.ProgramModel) *program.Program {
 	p.SetProgramStatus(m.ProgramStatus)
 	p.SetStatus(m.Status)
 	p.SetCreateId(m.CreateId)
-	p.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	p.SetCreateDt(m.CreateDt)
 	p.SetModifyId(m.ModifyId)
-	p.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	p.SetModifyDt(m.ModifyDt)
 	return p
 }

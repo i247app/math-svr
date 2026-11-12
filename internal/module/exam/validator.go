@@ -8,9 +8,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // DefaultNumQuestions is the size of every exam. It is fixed, not a
@@ -439,7 +439,7 @@ func validateProgressWindow(ctx context.Context, w *dto.ProgressWindow) error {
 		if err != nil {
 			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, err)
 		}
-		if !from.Time.Before(to.Time) || to.Time.Sub(from.Time) > progressMaxRange {
+		if !from.Before(to) || to.Sub(from) > progressMaxRange {
 			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, ErrInvalidDateRange)
 		}
 	}

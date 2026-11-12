@@ -6,7 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/query/progress"
 	"math-ai.com/math-ai/internal/domain/exam"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // journeyProgressReader is the slice of the journey repository this
@@ -136,7 +136,7 @@ func toJourneySeriesAsc(desc []*exam.ExamSession) []dto.JourneyPoint {
 			p.Status = *st
 		}
 		if !j.LastSubmittedDt().IsZero() {
-			p.LastSubmittedDt = j.LastSubmittedDt().String()
+			p.LastSubmittedDt = mtime.NewMathTimePtr(j.LastSubmittedDt())
 		}
 		out = append(out, p)
 	}

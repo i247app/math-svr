@@ -1,7 +1,7 @@
 package user
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 type User struct {
@@ -19,9 +19,9 @@ type User struct {
 	kwords          *string
 	note            *string
 	createId        *int64
-	createDt        mtime.MathTime
+	createDt        time.Time
 	modifyId        *int64
-	modifyDt        mtime.MathTime
+	modifyDt        time.Time
 }
 
 func NewUser() *User {
@@ -151,11 +151,11 @@ func (u *User) SetCreateId(createId *int64) {
 	u.createId = createId
 }
 
-func (u *User) CreateDt() mtime.MathTime {
+func (u *User) CreateDt() time.Time {
 	return u.createDt
 }
 
-func (u *User) SetCreateDt(createDt mtime.MathTime) {
+func (u *User) SetCreateDt(createDt time.Time) {
 	u.createDt = createDt
 }
 
@@ -167,10 +167,10 @@ func (u *User) SetModifyId(modifyId *int64) {
 	u.modifyId = modifyId
 }
 
-func (u *User) ModifyDt() mtime.MathTime {
+func (u *User) ModifyDt() time.Time {
 	return u.modifyDt
 }
 
-func (u *User) SetModifyDt(modifyDt mtime.MathTime) {
+func (u *User) SetModifyDt(modifyDt time.Time) {
 	u.modifyDt = modifyDt
 }

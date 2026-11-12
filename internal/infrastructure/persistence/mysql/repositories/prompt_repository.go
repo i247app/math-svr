@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/prompt"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -154,8 +153,8 @@ func ModelToDomainPrompt(m *models.PromptModel) *prompt.Prompt {
 	p.SetNote(m.Note)
 	p.SetStatus(m.Status)
 	p.SetCreateId(m.CreateId)
-	p.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	p.SetCreateDt(m.CreateDt)
 	p.SetModifyId(m.ModifyId)
-	p.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	p.SetModifyDt(m.ModifyDt)
 	return p
 }

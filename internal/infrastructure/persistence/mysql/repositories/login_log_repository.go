@@ -8,10 +8,10 @@ import (
 	"slices"
 
 	"math-ai.com/math-ai/internal/domain/loginlog"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"time"
 )
 
 const (
@@ -112,7 +112,7 @@ func (r *LoginLogRepository) Create(ctx context.Context, l *loginlog.LoginLog) (
 
 	_, err := r.db.Exec(ctx, query,
 		l.LoginLogId(), l.Uid(), l.IpAddress(), l.DeviceUUID(),
-		l.Token(), l.RptFlg(), l.Kwords(), l.Note(), l.LoginLogStatus(), mtime.Now().Time, mtime.Now().Time)
+		l.Token(), l.RptFlg(), l.Kwords(), l.Note(), l.LoginLogStatus(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("login_log repo create: %w", err)
 	}
@@ -127,7 +127,7 @@ func (r *LoginLogRepository) MarkStatusByLoginLogId(ctx context.Context, loginLo
 			modify_dt        = ?
 		WHERE login_log_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, st, mtime.Now().Time, loginLogId); err != nil {
+	if _, err := r.db.Exec(ctx, query, st, time.Now().UTC(), loginLogId); err != nil {
 		return fmt.Errorf("login_log repo mark status: %w", err)
 	}
 	return nil
@@ -145,7 +145,7 @@ func (r *LoginLogRepository) MarkStatusByUserDevice(ctx context.Context, uid int
 		  AND device_uuid = ?
 		  AND login_log_status = ?
 	`
-	if _, err := r.db.Exec(ctx, query, st, mtime.Now().Time, uid, deviceUUID, enum.LoginLogStatusTypeActive); err != nil {
+	if _, err := r.db.Exec(ctx, query, st, time.Now().UTC(), uid, deviceUUID, enum.LoginLogStatusTypeActive); err != nil {
 		return fmt.Errorf("login_log repo mark status by user device: %w", err)
 	}
 	return nil
@@ -160,7 +160,7 @@ func (r *LoginLogRepository) SoftDeleteByLoginLogId(ctx context.Context, loginLo
 		WHERE login_log_id = ?
 	`
 	if _, err := r.db.Exec(ctx, query,
-		enum.LoginLogStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, loginLogId); err != nil {
+		enum.LoginLogStatusTypeDeleted, enum.StatusInactive, time.Now().UTC(), loginLogId); err != nil {
 		return fmt.Errorf("login_log repo soft delete: %w", err)
 	}
 	return nil
@@ -179,8 +179,8 @@ func ModelToDomainLoginLog(m *models.LoginLogModel) *loginlog.LoginLog {
 	l.SetLoginLogStatus(m.LoginLogStatus)
 	l.SetStatus(m.Status)
 	l.SetCreateId(m.CreateId)
-	l.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	l.SetCreateDt(m.CreateDt)
 	l.SetModifyId(m.ModifyId)
-	l.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	l.SetModifyDt(m.ModifyDt)
 	return l
 }

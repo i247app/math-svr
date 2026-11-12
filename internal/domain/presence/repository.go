@@ -3,7 +3,7 @@ package presence
 import (
 	"context"
 
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // IRepository owns ma_user_presence.
@@ -24,11 +24,11 @@ type IRepository interface {
 
 	// IncrementConnection upserts the row, adds one connection and marks the
 	// user ONLINE.
-	IncrementConnection(ctx context.Context, uid int64, deviceUuid, platform *string, now mtime.MathTime) (*Presence, error)
+	IncrementConnection(ctx context.Context, uid int64, deviceUuid, platform *string, now time.Time) (*Presence, error)
 
 	// DecrementConnection removes one connection, clamped at zero, and flips
 	// the row to OFFLINE when the last one goes away.
-	DecrementConnection(ctx context.Context, uid int64, now mtime.MathTime) (*Presence, error)
+	DecrementConnection(ctx context.Context, uid int64, now time.Time) (*Presence, error)
 
 	// ResetAll zeroes every counter and marks everyone OFFLINE. Called once at
 	// boot: the Hub's registry is process memory, so after a restart or crash

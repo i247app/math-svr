@@ -6,7 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/query/progress"
 	"math-ai.com/math-ai/internal/domain/exam"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // examProgressReader is the narrow slice of the attempt repository this
@@ -110,7 +110,7 @@ func toSeriesAsc(desc []*exam.ProgressPoint) []dto.ExamPoint {
 			ElinkID:        p.ElinkId,
 			ExamType:       p.ExamType,
 			Grade:          p.Grade,
-			CompletedDt:    p.CompletedDt.String(),
+			CompletedDt:    mtime.NewMathTimePtr(p.CompletedDt),
 			Score:          progress.PctTo10Pt(float64(p.ScorePercentage)),
 			ScorePct:       p.ScorePercentage,
 			CorrectNumber:  p.CorrectNumber,

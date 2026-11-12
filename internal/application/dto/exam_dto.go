@@ -6,6 +6,7 @@ import (
 
 	domain "math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -155,10 +156,10 @@ type ExamResponse struct {
 	Questions []ExamQuestion `json:"questions,omitempty"`
 	Result    *ExamResult    `json:"result,omitempty"`
 
-	Status      string `json:"status"`
-	StartedDt   string `json:"started_dt,omitempty"`
-	SubmittedDt string `json:"submitted_dt,omitempty"`
-	CreateDt    string `json:"create_dt"`
+	Status      string          `json:"status"`
+	StartedDt   *mtime.MathTime `json:"started_dt,omitempty"`
+	SubmittedDt *mtime.MathTime `json:"submitted_dt,omitempty"`
+	CreateDt    mtime.MathTime  `json:"create_dt"`
 }
 
 // ExamAnswerDetail is one answered question on the review screen.
@@ -228,11 +229,11 @@ type ExamSessionResponse struct {
 	// Grade and Level are where the child is working, as the client last
 	// stated on a hand-out (current_grade / current_level). The server
 	// records them; it does not derive them from results.
-	Grade           *int   `json:"grade,omitempty"`
-	Level           *int   `json:"level,omitempty"`
-	LastSubmittedDt string `json:"last_submitted_dt,omitempty"`
-	EndedDt         string `json:"ended_dt,omitempty"`
-	CreateDt        string `json:"create_dt"`
+	Grade           *int            `json:"grade,omitempty"`
+	Level           *int            `json:"level,omitempty"`
+	LastSubmittedDt *mtime.MathTime `json:"last_submitted_dt,omitempty"`
+	EndedDt         *mtime.MathTime `json:"ended_dt,omitempty"`
+	CreateDt        mtime.MathTime  `json:"create_dt"`
 	// Practice is the journey's PRACTICE row, present once the child has
 	// submitted a practice round in it. Either kind of journey — ASSESSMENT
 	// or GRADE — may carry one; it shares esess_id and never has a grade.
@@ -352,16 +353,16 @@ func AttemptToResponse(a *domain.ExamLink, e *domain.ExamPool, includeAnswerKey 
 		ExamType:  a.ReqExamType(),
 		Grade:     a.ReqGrade(),
 		Level:     a.ReqLevel(),
-		CreateDt:  a.CreateDt().String(),
+		CreateDt:  mtime.NewTime(a.CreateDt()),
 	}
 	if s := a.ElinkStatus(); s != nil {
 		res.Status = *s
 	}
 	if !a.StartedDt().IsZero() {
-		res.StartedDt = a.StartedDt().String()
+		res.StartedDt = mtime.NewMathTimePtr(a.StartedDt())
 	}
 	if !a.SubmittedDt().IsZero() {
-		res.SubmittedDt = a.SubmittedDt().String()
+		res.SubmittedDt = mtime.NewMathTimePtr(a.SubmittedDt())
 	}
 
 	if e != nil {
@@ -544,7 +545,7 @@ func ExamSessionsToResponse(rows []*domain.ExamSession) []ExamSessionResponse {
 		s := ExamSessionResponse{
 			EsessID:         r.EsessId(),
 			ExamType:        r.ReqExamType(),
-			CreateDt:        r.CreateDt().String(),
+			CreateDt:        mtime.NewTime(r.CreateDt()),
 			TotalQuestions:  r.ResTotalQuestions(),
 			CorrectNumber:   r.ResCorrectNumber(),
 			SkippedNumber:   r.ResSkippedNumber(),
@@ -562,10 +563,10 @@ func ExamSessionsToResponse(rows []*domain.ExamSession) []ExamSessionResponse {
 			s.Status = *st
 		}
 		if !r.LastSubmittedDt().IsZero() {
-			s.LastSubmittedDt = r.LastSubmittedDt().String()
+			s.LastSubmittedDt = mtime.NewMathTimePtr(r.LastSubmittedDt())
 		}
 		if !r.EndedDt().IsZero() {
-			s.EndedDt = r.EndedDt().String()
+			s.EndedDt = mtime.NewMathTimePtr(r.EndedDt())
 		}
 		out = append(out, s)
 	}
@@ -741,15 +742,15 @@ type JourneyProgressReq struct {
 // the 1..N positional label. Score is on the 10-point scale the product
 // displays; ScorePct is the raw 0-100 value it was derived from.
 type ExamPoint struct {
-	Sequence       int64   `json:"sequence"`
-	ElinkID        int64   `json:"elink_id"`
-	ExamType       string  `json:"exam_type"`
-	Grade          int     `json:"grade"`
-	CompletedDt    string  `json:"completed_dt"`
-	Score          float64 `json:"score"`
-	ScorePct       int64   `json:"score_pct"`
-	CorrectNumber  *int64  `json:"correct_number"`
-	TotalQuestions *int64  `json:"total_questions"`
+	Sequence       int64           `json:"sequence"`
+	ElinkID        int64           `json:"elink_id"`
+	ExamType       string          `json:"exam_type"`
+	Grade          int             `json:"grade"`
+	CompletedDt    *mtime.MathTime `json:"completed_dt"`
+	Score          float64         `json:"score"`
+	ScorePct       int64           `json:"score_pct"`
+	CorrectNumber  *int64          `json:"correct_number"`
+	TotalQuestions *int64          `json:"total_questions"`
 }
 
 // ExamScoreSummary is the banner both progress charts share — over
@@ -798,16 +799,16 @@ type ExamProgressRes struct {
 // LastSubmittedDt is the point's moment in time, when that score last
 // moved. Score is on the 10-point scale; ScorePct the raw 0-100 value.
 type JourneyPoint struct {
-	Sequence        int64   `json:"sequence"`
-	EsessID         int64   `json:"esess_id"`
-	ExamType        string  `json:"exam_type"`
-	Status          string  `json:"status"`
-	Grade           *int    `json:"grade"`
-	LastSubmittedDt string  `json:"last_submitted_dt"`
-	Score           float64 `json:"score"`
-	ScorePct        int64   `json:"score_pct"`
-	CorrectNumber   int     `json:"correct_number"`
-	TotalQuestions  int     `json:"total_questions"`
+	Sequence        int64           `json:"sequence"`
+	EsessID         int64           `json:"esess_id"`
+	ExamType        string          `json:"exam_type"`
+	Status          string          `json:"status"`
+	Grade           *int            `json:"grade"`
+	LastSubmittedDt *mtime.MathTime `json:"last_submitted_dt"`
+	Score           float64         `json:"score"`
+	ScorePct        int64           `json:"score_pct"`
+	CorrectNumber   int             `json:"correct_number"`
+	TotalQuestions  int             `json:"total_questions"`
 }
 
 type JourneyProgressRes struct {
@@ -888,9 +889,9 @@ type ExamPoolResponse struct {
 	ShortText  *string        `json:"short_text,omitempty"`
 	Questions  []ExamQuestion `json:"questions,omitempty"`
 	// VerifiedCount: 0 = not verified, >0 = verified.
-	VerifiedCount int     `json:"verified_count"`
-	Status        *string `json:"status,omitempty"`
-	CreateDt      string  `json:"create_dt"`
+	VerifiedCount int            `json:"verified_count"`
+	Status        *string        `json:"status,omitempty"`
+	CreateDt      mtime.MathTime `json:"create_dt"`
 }
 
 type ExamPoolRes struct {
@@ -920,7 +921,7 @@ func ExamPoolToResponse(e *domain.ExamPool, withQuestions bool) *ExamPoolRespons
 		ShortText:     e.ShortText(),
 		VerifiedCount: e.VerifiedCount(),
 		Status:        e.ExamStatus(),
-		CreateDt:      e.CreateDt().String(),
+		CreateDt:      mtime.NewTime(e.CreateDt()),
 	}
 	if withQuestions {
 		res.Questions = servedQuestions(e.QuestionsJson(), nil, true)

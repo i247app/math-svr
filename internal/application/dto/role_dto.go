@@ -4,6 +4,7 @@ import (
 	"io"
 
 	domain "math-ai.com/math-ai/internal/domain/role"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -11,16 +12,16 @@ import (
 // RoleImageKey at the service edge; nil when there is no image or storage
 // is disabled.
 type RoleResponse struct {
-	RoleID       int64   `json:"role_id"`
-	RoleCode     string  `json:"role_code"`
-	RoleName     string  `json:"role_name"`
-	Description  *string `json:"description,omitempty"`
-	RoleImageKey *string `json:"role_image_key,omitempty"`
-	RoleImageUrl *string `json:"role_image_url"`
-	Note         *string `json:"note,omitempty"`
-	RoleStatus   *string `json:"role_status,omitempty"`
-	CreateDt     string  `json:"create_dt"`
-	ModifyDt     string  `json:"modify_dt"`
+	RoleID       int64          `json:"role_id"`
+	RoleCode     string         `json:"role_code"`
+	RoleName     string         `json:"role_name"`
+	Description  *string        `json:"description,omitempty"`
+	RoleImageKey *string        `json:"role_image_key,omitempty"`
+	RoleImageUrl *string        `json:"role_image_url"`
+	Note         *string        `json:"note,omitempty"`
+	RoleStatus   *string        `json:"role_status,omitempty"`
+	CreateDt     mtime.MathTime `json:"create_dt"`
+	ModifyDt     mtime.MathTime `json:"modify_dt"`
 }
 
 type CreateRoleReq struct {
@@ -102,8 +103,8 @@ func RoleDomainToResponse(r *domain.Role) *RoleResponse {
 		RoleImageKey: r.RoleImageKey(),
 		Note:         r.Note(),
 		RoleStatus:   r.RoleStatus(),
-		CreateDt:     r.CreateDt().String(),
-		ModifyDt:     r.ModifyDt().String(),
+		CreateDt:     mtime.NewTime(r.CreateDt()),
+		ModifyDt:     mtime.NewTime(r.ModifyDt()),
 	}
 }
 

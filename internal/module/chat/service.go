@@ -17,6 +17,7 @@ import (
 	presenceDomain "math-ai.com/math-ai/internal/domain/presence"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // presignTTL bounds avatar URL validity. Mirrors the classroom and home
@@ -115,13 +116,13 @@ func (s *Service) ListClassroomMembers(ctx context.Context, req *dto.ListClassro
 		}
 		if row.Presence != nil {
 			item.IsOnline = row.Presence.IsOnline()
-			item.LastSeenDt = row.Presence.LastSeenDt()
+			item.LastSeenDt = mtime.NewTime(row.Presence.LastSeenDt())
 		}
 		if row.Conversation != nil {
 			id := row.Conversation.ConversationId()
 			item.ConversationID = &id
 			item.LastMessagePreview = row.Conversation.LastMessagePreview()
-			item.LastMessageDt = row.Conversation.LastMessageDt()
+			item.LastMessageDt = mtime.NewTime(row.Conversation.LastMessageDt())
 		}
 		if row.Participant != nil {
 			item.UnreadCount = row.Participant.UnreadCount()
@@ -330,7 +331,7 @@ func (s *Service) attachCounterpart(ctx context.Context, res *dto.ConversationRe
 	}
 	if pr, err := s.presenceRepo.FindByUid(ctx, peer.Uid()); err == nil && pr != nil {
 		item.IsOnline = pr.IsOnline()
-		item.LastSeenDt = pr.LastSeenDt()
+		item.LastSeenDt = mtime.NewTime(pr.LastSeenDt())
 	}
 	res.Counterpart = item
 }

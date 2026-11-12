@@ -4,6 +4,7 @@ import (
 	"io"
 
 	"math-ai.com/math-ai/internal/domain/user"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -23,10 +24,10 @@ type UserResponse struct {
 	// AvatarUrl is a short-lived presigned URL the module layer fills
 	// in on the way out (see populateImageUrl in module/user). Clients
 	// should display AvatarUrl and ignore AvatarKey.
-	AvatarKey *string `json:"avatar_key,omitempty"`
-	AvatarUrl *string `json:"avatar_url,omitempty"`
-	CreateDt  string  `json:"create_dt"`
-	ModifyDt  string  `json:"modify_dt"`
+	AvatarKey *string        `json:"avatar_key,omitempty"`
+	AvatarUrl *string        `json:"avatar_url,omitempty"`
+	CreateDt  mtime.MathTime `json:"create_dt"`
+	ModifyDt  mtime.MathTime `json:"modify_dt"`
 }
 
 type GetUserByPhoneReq struct {
@@ -202,8 +203,8 @@ func UserDomainToResponse(u *user.User) *UserResponse {
 		Role:            u.Role(),
 		IdentityCode:    u.IdentityCode(),
 		AvatarKey:       u.AvatarKey(),
-		CreateDt:        u.CreateDt().String(),
-		ModifyDt:        u.ModifyDt().String(),
+		CreateDt:        mtime.NewTime(u.CreateDt()),
+		ModifyDt:        mtime.NewTime(u.ModifyDt()),
 	}
 }
 

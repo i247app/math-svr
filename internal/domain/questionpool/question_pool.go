@@ -1,7 +1,7 @@
 package questionpool
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // Question is one row of the question bank (ma_question_pools), written and
@@ -33,9 +33,9 @@ type QuestionPool struct {
 	note           *string
 	status         string
 	createId       *int64
-	createDt       mtime.MathTime
+	createDt       time.Time
 	modifyId       *int64
-	modifyDt       mtime.MathTime
+	modifyDt       time.Time
 }
 
 func NewQuestionPool() *QuestionPool { return &QuestionPool{} }
@@ -82,9 +82,9 @@ func (q *QuestionPool) Status() string                   { return q.status }
 func (q *QuestionPool) SetStatus(s string)               { q.status = s }
 func (q *QuestionPool) CreateId() *int64                 { return q.createId }
 func (q *QuestionPool) SetCreateId(id *int64)            { q.createId = id }
-func (q *QuestionPool) CreateDt() mtime.MathTime         { return q.createDt }
-func (q *QuestionPool) SetCreateDt(t mtime.MathTime)     { q.createDt = t }
+func (q *QuestionPool) CreateDt() time.Time              { return q.createDt }
+func (q *QuestionPool) SetCreateDt(t time.Time)          { q.createDt = t }
 func (q *QuestionPool) ModifyId() *int64                 { return q.modifyId }
 func (q *QuestionPool) SetModifyId(id *int64)            { q.modifyId = id }
-func (q *QuestionPool) ModifyDt() mtime.MathTime         { return q.modifyDt }
-func (q *QuestionPool) SetModifyDt(t mtime.MathTime)     { q.modifyDt = t }
+func (q *QuestionPool) ModifyDt() time.Time              { return q.modifyDt }
+func (q *QuestionPool) SetModifyDt(t time.Time)          { q.modifyDt = t }

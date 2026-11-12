@@ -2,8 +2,6 @@ package device
 
 import (
 	"time"
-
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 )
 
 // Device is a (user, device_uuid) registration. The is_verified flag is the
@@ -21,16 +19,16 @@ type Device struct {
 	platform        string
 	devicePushToken *string
 	isVerified      bool
-	trustDt         mtime.MathTime
+	trustDt         time.Time
 	rptFlg          *string
 	kwords          *string
 	note            *string
 	deviceStatus    *string
 	status          string
 	createId        *int64
-	createDt        mtime.MathTime
+	createDt        time.Time
 	modifyId        *int64
-	modifyDt        mtime.MathTime
+	modifyDt        time.Time
 }
 
 func NewDevice() *Device {
@@ -67,11 +65,11 @@ func (d *Device) SetIsVerified(isVerified bool) {
 	d.isVerified = isVerified
 }
 
-func (d *Device) TrustDt() mtime.MathTime {
+func (d *Device) TrustDt() time.Time {
 	return d.trustDt
 }
 
-func (d *Device) SetTrustDt(trustDt mtime.MathTime) {
+func (d *Device) SetTrustDt(trustDt time.Time) {
 	d.trustDt = trustDt
 }
 
@@ -84,10 +82,10 @@ func (d *Device) IsTrustExpired(ttlDays int, now time.Time) bool {
 	if ttlDays <= 0 {
 		return false
 	}
-	if !d.trustDt.IsValid() {
+	if d.trustDt.IsZero() {
 		return true
 	}
-	return now.After(d.trustDt.Time.AddDate(0, 0, ttlDays))
+	return now.After(d.trustDt.AddDate(0, 0, ttlDays))
 }
 
 func (d *Device) Note() *string {
@@ -140,11 +138,11 @@ func (d *Device) SetCreateId(createId *int64) {
 	d.createId = createId
 }
 
-func (d *Device) CreateDt() mtime.MathTime {
+func (d *Device) CreateDt() time.Time {
 	return d.createDt
 }
 
-func (d *Device) SetCreateDt(createDt mtime.MathTime) {
+func (d *Device) SetCreateDt(createDt time.Time) {
 	d.createDt = createDt
 }
 
@@ -156,10 +154,10 @@ func (d *Device) SetModifyId(modifyId *int64) {
 	d.modifyId = modifyId
 }
 
-func (d *Device) ModifyDt() mtime.MathTime {
+func (d *Device) ModifyDt() time.Time {
 	return d.modifyDt
 }
 
-func (d *Device) SetModifyDt(modifyDt mtime.MathTime) {
+func (d *Device) SetModifyDt(modifyDt time.Time) {
 	d.modifyDt = modifyDt
 }

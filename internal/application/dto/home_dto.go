@@ -6,6 +6,7 @@ import (
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -71,13 +72,13 @@ type TaskCard struct {
 // recent_completion task. The score fields are nil until the submission is
 // graded.
 type TaskSubmission struct {
-	ClassroomExerciseSubmissionID int64   `json:"classroom_exercise_submission_id"`
-	SubmissionStatus              *string `json:"submission_status,omitempty"`
-	SubmittedDt                   string  `json:"submitted_dt,omitempty"`
-	GradedDt                      string  `json:"graded_dt,omitempty"`
-	TotalQuestions                *int64  `json:"total_questions,omitempty"`
-	CorrectNumber                 *int64  `json:"correct_number,omitempty"`
-	ScorePercentage               *int64  `json:"score_percentage,omitempty"`
+	ClassroomExerciseSubmissionID int64           `json:"classroom_exercise_submission_id"`
+	SubmissionStatus              *string         `json:"submission_status,omitempty"`
+	SubmittedDt                   *mtime.MathTime `json:"submitted_dt,omitempty"`
+	GradedDt                      *mtime.MathTime `json:"graded_dt,omitempty"`
+	TotalQuestions                *int64          `json:"total_questions,omitempty"`
+	CorrectNumber                 *int64          `json:"correct_number,omitempty"`
+	ScorePercentage               *int64          `json:"score_percentage,omitempty"`
 }
 
 // ProfileSummary is the slim profile shape shared across the home cards.
@@ -135,20 +136,20 @@ type ClassroomRef struct {
 // intentionally excluded — the home screen only needs enough to render a
 // tile and deep-link into the exercise detail endpoint.
 type ExerciseCard struct {
-	ClassroomExerciseID int64         `json:"classroom_exercise_id"`
-	ClassroomID         int64         `json:"classroom_id"`
-	Classroom           *ClassroomRef `json:"classroom,omitempty"`
-	CreatorProfileID    int64         `json:"creator_profile_id"`
-	Title               string        `json:"title"`
-	ShortText           *string       `json:"short_text,omitempty"`
-	ChapterName         string        `json:"chapter_name"`
-	LessonName          string        `json:"lesson_name"`
-	Purpose             string        `json:"purpose"`
-	TotalQuestions      int           `json:"total_questions"`
-	StartDate           *string       `json:"start_date,omitempty"`
-	EndDate             *string       `json:"end_date,omitempty"`
-	ExerciseStatus      *string       `json:"exercise_status,omitempty"`
-	CreateDt            string        `json:"create_dt"`
+	ClassroomExerciseID int64           `json:"classroom_exercise_id"`
+	ClassroomID         int64           `json:"classroom_id"`
+	Classroom           *ClassroomRef   `json:"classroom,omitempty"`
+	CreatorProfileID    int64           `json:"creator_profile_id"`
+	Title               string          `json:"title"`
+	ShortText           *string         `json:"short_text,omitempty"`
+	ChapterName         string          `json:"chapter_name"`
+	LessonName          string          `json:"lesson_name"`
+	Purpose             string          `json:"purpose"`
+	TotalQuestions      int             `json:"total_questions"`
+	StartDate           *mtime.MathTime `json:"start_date,omitempty"`
+	EndDate             *mtime.MathTime `json:"end_date,omitempty"`
+	ExerciseStatus      *string         `json:"exercise_status,omitempty"`
+	CreateDt            mtime.MathTime  `json:"create_dt"`
 }
 
 // ProfileToSummary maps a profile domain entity to the slim card shape.
@@ -216,15 +217,13 @@ func ExerciseToCard(e *exerciseDomain.Exercise) *ExerciseCard {
 		Purpose:             e.Purpose(),
 		TotalQuestions:      e.TotalQuestions(),
 		ExerciseStatus:      e.ExerciseStatus(),
-		CreateDt:            e.CreateDt().String(),
+		CreateDt:            mtime.NewTime(e.CreateDt()),
 	}
-	if e.StartDate().IsValid() {
-		s := e.StartDate().String()
-		card.StartDate = &s
+	if !e.StartDate().IsZero() {
+		card.StartDate = mtime.NewMathTimePtr(e.StartDate())
 	}
-	if e.EndDate().IsValid() {
-		s := e.EndDate().String()
-		card.EndDate = &s
+	if !e.EndDate().IsZero() {
+		card.EndDate = mtime.NewMathTimePtr(e.EndDate())
 	}
 	return card
 }
@@ -243,11 +242,11 @@ func SubmissionToTaskSubmission(s *exerciseDomain.Submission) *TaskSubmission {
 		CorrectNumber:                 s.CorrectNumber(),
 		ScorePercentage:               s.ScorePercentage(),
 	}
-	if s.SubmittedDt().IsValid() {
-		ts.SubmittedDt = s.SubmittedDt().String()
+	if !s.SubmittedDt().IsZero() {
+		ts.SubmittedDt = mtime.NewMathTimePtr(s.SubmittedDt())
 	}
-	if s.GradedDt().IsValid() {
-		ts.GradedDt = s.GradedDt().String()
+	if !s.GradedDt().IsZero() {
+		ts.GradedDt = mtime.NewMathTimePtr(s.GradedDt())
 	}
 	return ts
 }
@@ -257,18 +256,18 @@ func SubmissionToTaskSubmission(s *exerciseDomain.Submission) *TaskSubmission {
 // Result fields stay nil until the exam is submitted, which is exactly how
 // an unfinished one renders as 0 answered.
 type ExamCard struct {
-	ElinkID         int64   `json:"elink_id"`
-	ExamID          int64   `json:"exam_id"`
-	ExamType        string  `json:"exam_type"`
-	Grade           int     `json:"grade"`
-	Title           *string `json:"title,omitempty"`
-	ShortText       *string `json:"short_text,omitempty"`
-	Status          *string `json:"status,omitempty"`
-	TotalQuestions  *int    `json:"total_questions,omitempty"`
-	CorrectNumber   *int    `json:"correct_number,omitempty"`
-	ScorePercentage *int    `json:"score_percentage,omitempty"`
-	SubmittedDt     string  `json:"submitted_dt,omitempty"`
-	CreateDt        string  `json:"create_dt"`
+	ElinkID         int64           `json:"elink_id"`
+	ExamID          int64           `json:"exam_id"`
+	ExamType        string          `json:"exam_type"`
+	Grade           int             `json:"grade"`
+	Title           *string         `json:"title,omitempty"`
+	ShortText       *string         `json:"short_text,omitempty"`
+	Status          *string         `json:"status,omitempty"`
+	TotalQuestions  *int            `json:"total_questions,omitempty"`
+	CorrectNumber   *int            `json:"correct_number,omitempty"`
+	ScorePercentage *int            `json:"score_percentage,omitempty"`
+	SubmittedDt     *mtime.MathTime `json:"submitted_dt,omitempty"`
+	CreateDt        mtime.MathTime  `json:"create_dt"`
 }
 
 // ExamToCard maps one sitting plus its question set into a card. examPool
@@ -287,10 +286,10 @@ func ExamToCard(a *examDomain.ExamLink, examPool *examDomain.ExamPool) *ExamCard
 		TotalQuestions:  a.ResTotalQuestions(),
 		CorrectNumber:   a.ResCorrectNumber(),
 		ScorePercentage: a.ResScorePercentage(),
-		CreateDt:        a.CreateDt().String(),
+		CreateDt:        mtime.NewTime(a.CreateDt()),
 	}
 	if !a.SubmittedDt().IsZero() {
-		card.SubmittedDt = a.SubmittedDt().String()
+		card.SubmittedDt = mtime.NewMathTimePtr(a.SubmittedDt())
 	}
 	if examPool != nil {
 		card.Title = examPool.Title()

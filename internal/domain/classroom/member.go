@@ -1,7 +1,7 @@
 package classroom
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // Member models ma_classroom_members — the (classroom, profile) join
@@ -21,22 +21,22 @@ type Member struct {
 	profileId          int64
 	memberRole         string
 	invitationId       *int64
-	joinedDt           mtime.MathTime
-	leftDt             mtime.MathTime
+	joinedDt           time.Time
+	leftDt             time.Time
 	removedByProfileId *int64
-	removedDt          mtime.MathTime
-	lastSeenDt         mtime.MathTime
+	removedDt          time.Time
+	lastSeenDt         time.Time
 	rptFlg             *string
 	kwords             *string
 	note               *string
 	inviteBy           *int64
-	inviteDt           mtime.MathTime
+	inviteDt           time.Time
 	memberStatus       *string
 	status             string
 	createId           *int64
-	createDt           mtime.MathTime
+	createDt           time.Time
 	modifyId           *int64
-	modifyDt           mtime.MathTime
+	modifyDt           time.Time
 }
 
 func NewMember() *Member {
@@ -53,16 +53,16 @@ func (m *Member) MemberRole() string             { return m.memberRole }
 func (m *Member) SetMemberRole(v string)         { m.memberRole = v }
 func (m *Member) InvitationId() *int64           { return m.invitationId }
 func (m *Member) SetInvitationId(v *int64)       { m.invitationId = v }
-func (m *Member) JoinedDt() mtime.MathTime       { return m.joinedDt }
-func (m *Member) SetJoinedDt(t mtime.MathTime)   { m.joinedDt = t }
-func (m *Member) LeftDt() mtime.MathTime         { return m.leftDt }
-func (m *Member) SetLeftDt(t mtime.MathTime)     { m.leftDt = t }
+func (m *Member) JoinedDt() time.Time            { return m.joinedDt }
+func (m *Member) SetJoinedDt(t time.Time)        { m.joinedDt = t }
+func (m *Member) LeftDt() time.Time              { return m.leftDt }
+func (m *Member) SetLeftDt(t time.Time)          { m.leftDt = t }
 func (m *Member) RemovedByProfileId() *int64     { return m.removedByProfileId }
 func (m *Member) SetRemovedByProfileId(v *int64) { m.removedByProfileId = v }
-func (m *Member) RemovedDt() mtime.MathTime      { return m.removedDt }
-func (m *Member) SetRemovedDt(t mtime.MathTime)  { m.removedDt = t }
-func (m *Member) LastSeenDt() mtime.MathTime     { return m.lastSeenDt }
-func (m *Member) SetLastSeenDt(t mtime.MathTime) { m.lastSeenDt = t }
+func (m *Member) RemovedDt() time.Time           { return m.removedDt }
+func (m *Member) SetRemovedDt(t time.Time)       { m.removedDt = t }
+func (m *Member) LastSeenDt() time.Time          { return m.lastSeenDt }
+func (m *Member) SetLastSeenDt(t time.Time)      { m.lastSeenDt = t }
 func (m *Member) Note() *string                  { return m.note }
 func (m *Member) SetNote(n *string)              { m.note = n }
 func (m *Member) RptFlg() *string                { return m.rptFlg }
@@ -71,17 +71,17 @@ func (m *Member) Kwords() *string                { return m.kwords }
 func (m *Member) SetKwords(v *string)            { m.kwords = v }
 func (m *Member) InviteBy() *int64               { return m.inviteBy }
 func (m *Member) SetInviteBy(v *int64)           { m.inviteBy = v }
-func (m *Member) InviteDt() mtime.MathTime       { return m.inviteDt }
-func (m *Member) SetInviteDt(t mtime.MathTime)   { m.inviteDt = t }
+func (m *Member) InviteDt() time.Time            { return m.inviteDt }
+func (m *Member) SetInviteDt(t time.Time)        { m.inviteDt = t }
 func (m *Member) MemberStatus() *string          { return m.memberStatus }
 func (m *Member) SetMemberStatus(v *string)      { m.memberStatus = v }
 func (m *Member) Status() string                 { return m.status }
 func (m *Member) SetStatus(v string)             { m.status = v }
 func (m *Member) CreateId() *int64               { return m.createId }
 func (m *Member) SetCreateId(id *int64)          { m.createId = id }
-func (m *Member) CreateDt() mtime.MathTime       { return m.createDt }
-func (m *Member) SetCreateDt(t mtime.MathTime)   { m.createDt = t }
+func (m *Member) CreateDt() time.Time            { return m.createDt }
+func (m *Member) SetCreateDt(t time.Time)        { m.createDt = t }
 func (m *Member) ModifyId() *int64               { return m.modifyId }
 func (m *Member) SetModifyId(id *int64)          { m.modifyId = id }
-func (m *Member) ModifyDt() mtime.MathTime       { return m.modifyDt }
-func (m *Member) SetModifyDt(t mtime.MathTime)   { m.modifyDt = t }
+func (m *Member) ModifyDt() time.Time            { return m.modifyDt }
+func (m *Member) SetModifyDt(t time.Time)        { m.modifyDt = t }

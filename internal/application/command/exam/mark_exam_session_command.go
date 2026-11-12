@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/exam"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -119,7 +119,7 @@ func (h *MarkExamSessionCommandHandler) end(ctx context.Context, repos transacti
 	// (exam.PassMarkFor); the repository compares against the score in the
 	// same UPDATE that ends the journey.
 	passMark := exam.PassMarkFor(journey.ReqExamType(), cmd.Status)
-	if err := repos.ExamSession.MarkStatus(ctx, journey.EsessId(), string(cmd.Status), mtime.Now(), passMark); err != nil {
+	if err := repos.ExamSession.MarkStatus(ctx, journey.EsessId(), string(cmd.Status), time.Now().UTC(), passMark); err != nil {
 		// The read above and this write are not atomic with respect to
 		// another mark; the WHERE clause in MarkStatus is. This is how
 		// the loser of that race finds out.

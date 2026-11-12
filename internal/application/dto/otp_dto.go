@@ -1,6 +1,6 @@
 package dto
 
-import ()
+import "math-ai.com/math-ai/internal/shared/mtime"
 
 // SendOtpReq is the public payload for POST /otps/send and /otps/resend.
 // device_uuid + device_name are optional and only meaningful for LOGIN2FA —
@@ -30,11 +30,11 @@ type SendOtpReq struct {
 // SendOtpRes never echoes the code. Clients use otp_id + expires_at to drive
 // the verify request and the countdown timer.
 type SendOtpRes struct {
-	ExpiresAt string        `json:"expires_at"`
-	Channel   string        `json:"-"`
-	OTPCode   string        `json:"otp_code"`
-	OtpType   string        `json:"otp_type"`
-	User      *UserResponse `json:"user,omitempty"`
+	ExpiresAt mtime.MathTime `json:"expires_at"`
+	Channel   string         `json:"-"`
+	OTPCode   string         `json:"otp_code"`
+	OtpType   string         `json:"otp_type"`
+	User      *UserResponse  `json:"user,omitempty"`
 }
 
 type VerifyOtpReq struct {

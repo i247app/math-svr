@@ -10,9 +10,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // ClearDataRepository wipes user-generated data and resets the matching
@@ -101,12 +101,12 @@ func (s *Service) LogsTimeFormat(ctx context.Context, req *dto.LogTimeFormatReq)
 	}
 
 	res := &dto.LogTimeFormatRes{
-		DefaultFormat:       apptime.Time.Format(mtime.DefaultFormat),
-		DateOnlyFormat:      apptime.Time.Format(mtime.DateOnly),
-		CoreDateTimeFormat:  apptime.Time.Format(mtime.CoreDateTimeFormat),
-		DateTimeFormat20FSP: apptime.Time.Format(mtime.DateTimeFormat20FSP),
-		Format17FSP:         apptime.Time.Format(mtime.Format17FSP),
-		Format20FSP:         apptime.Time.Format(mtime.Format20FSP),
+		DefaultFormat:       apptime.Format(mtime.DefaultFormat),
+		DateOnlyFormat:      apptime.Format(mtime.DateOnly),
+		CoreDateTimeFormat:  apptime.Format(mtime.CoreDateTimeFormat),
+		DateTimeFormat20FSP: apptime.Format(mtime.DateTimeFormat20FSP),
+		Format17FSP:         apptime.Format(mtime.Format17FSP),
+		Format20FSP:         apptime.Format(mtime.Format20FSP),
 	}
 
 	return res, nil

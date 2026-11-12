@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/grade"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -180,7 +180,7 @@ func (r *GradeRepository) Create(ctx context.Context, g *grade.Grade) (*grade.Gr
 	`
 	_, err := r.db.Exec(ctx, query,
 		g.GradeId(), g.Label(), g.Description(), g.ImageKey(),
-		g.DisplayOrder(), g.RptFlg(), g.Kwords(), g.Note(), g.GradeStatus(), mtime.Now().Time, mtime.Now().Time)
+		g.DisplayOrder(), g.RptFlg(), g.Kwords(), g.Note(), g.GradeStatus(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("grade repo create: %w", err)
 	}
@@ -216,7 +216,7 @@ func (r *GradeRepository) Update(ctx context.Context, g *grade.Grade) error {
 	`
 	if _, err := r.db.Exec(ctx, query,
 		label, description, imageKey,
-		g.DisplayOrder(), g.RptFlg(), g.Kwords(), g.Note(), mtime.Now().Time, g.GradeId()); err != nil {
+		g.DisplayOrder(), g.RptFlg(), g.Kwords(), g.Note(), time.Now().UTC(), g.GradeId()); err != nil {
 		return fmt.Errorf("grade repo update: %w", err)
 	}
 	return nil
@@ -231,7 +231,7 @@ func (r *GradeRepository) SoftDeleteByGradeId(ctx context.Context, gradeId int64
 			modify_dt    = ?
 		WHERE grade_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.StatusInactive, enum.StatusInactive, now, now, gradeId); err != nil {
 		return fmt.Errorf("grade repo soft delete: %w", err)
@@ -263,8 +263,8 @@ func ModelToDomainGrade(m *models.GradeModel) *grade.Grade {
 	g.SetGradeStatus(m.GradeStatus)
 	g.SetStatus(m.Status)
 	g.SetCreateId(m.CreateId)
-	g.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	g.SetCreateDt(m.CreateDt)
 	g.SetModifyId(m.ModifyId)
-	g.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	g.SetModifyDt(m.ModifyDt)
 	return g
 }

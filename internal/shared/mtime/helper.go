@@ -17,15 +17,16 @@ var allowedLayouts = []string{
 
 // ParseWithFormat parses a time string using a custom format.
 // If the provided layout fails, it tries all allowed layouts as fallbacks.
-func ParseWithFormat(layout, value string) (MathTime, error) {
+// An empty value yields the zero time.
+func ParseWithFormat(layout, value string) (time.Time, error) {
 	if value == "" {
-		return MathTime{}, nil
+		return time.Time{}, nil
 	}
 
 	// Try the provided layout first
 	t, err := time.Parse(layout, value)
 	if err == nil {
-		return MathTime{Time: t}, nil
+		return t, nil
 	}
 
 	// Try all allowed layouts as fallbacks
@@ -35,45 +36,39 @@ func ParseWithFormat(layout, value string) (MathTime, error) {
 		}
 		t, err := time.Parse(l, value)
 		if err == nil {
-			return MathTime{Time: t}, nil
+			return t, nil
 		}
 	}
 
-	return MathTime{}, err
+	return time.Time{}, err
 }
 
-func ParseFromString(value string) (MathTime, error) {
+// ParseFromString parses value with any allowed layout. An empty value
+// yields the zero time.
+func ParseFromString(value string) (time.Time, error) {
 	if value == "" {
-		return MathTime{}, nil
+		return time.Time{}, nil
 	}
 
 	// Try all allowed layouts as fallbacks
 	for _, l := range allowedLayouts {
 		t, err := time.Parse(l, value)
 		if err == nil {
-			return MathTime{Time: t}, nil
+			return t, nil
 		}
 	}
 
-	return MathTime{}, fmt.Errorf("failed to parse time: wrong format with %s or not in supported format", value)
+	return time.Time{}, fmt.Errorf("failed to parse time: wrong format with %s or not in supported format", value)
 }
 
 // ParseInLocation parses a time string in the given location using the default format
-func ParseInLocation(value string, loc *time.Location) (MathTime, error) {
-	t, err := time.ParseInLocation(DefaultFormat, value, loc)
-	if err != nil {
-		return MathTime{}, err
-	}
-	return MathTime{Time: t}, nil
+func ParseInLocation(value string, loc *time.Location) (time.Time, error) {
+	return time.ParseInLocation(DefaultFormat, value, loc)
 }
 
 // ParseDate parses a date-only string (YYYY-MM-DD)
-func ParseDate(value string) (MathTime, error) {
-	t, err := time.Parse(time.DateOnly, value)
-	if err != nil {
-		return MathTime{}, err
-	}
-	return MathTime{Time: t}, nil
+func ParseDate(value string) (time.Time, error) {
+	return time.Parse(time.DateOnly, value)
 }
 
 // NewMathTimePtr creates a new *MathTime from a standard time.Time
@@ -86,17 +81,8 @@ func NewMathTimePtr(t time.Time) *MathTime {
 	return &mt
 }
 
-// MathTimeFromPtr converts *time.Time to MathTime
-// Returns zero MathTime if pointer is nil
-func MathTimeFromPtr(t *time.Time) MathTime {
-	if t == nil {
-		return MathTime{}
-	}
-	return MathTime{Time: *t}
-}
-
-// TimeTobinbaseTimePtr converts *time.Time to *binbaseTime
-// Returns nil if pointer is nil
+// TimeToMathTimePtr converts *time.Time to *MathTime
+// Returns nil if the pointer is nil or the time is zero
 func TimeToMathTimePtr(t *time.Time) *MathTime {
 	if t == nil {
 		return nil

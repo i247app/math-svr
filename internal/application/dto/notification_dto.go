@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	domain "math-ai.com/math-ai/internal/domain/notification"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -93,8 +94,8 @@ type NotificationResponse struct {
 	ActionType     *string         `json:"action_type,omitempty"`
 	ActionData     json.RawMessage `json:"action_data,omitempty"`
 	Priority       *string         `json:"priority,omitempty"`
-	CreateDt       string          `json:"create_dt,omitempty"`
-	ModifyDt       string          `json:"modify_dt,omitempty"`
+	CreateDt       mtime.MathTime  `json:"create_dt,omitempty"`
+	ModifyDt       mtime.MathTime  `json:"modify_dt,omitempty"`
 }
 
 func NotificationDomainToResponse(n *domain.Notification) NotificationResponse {
@@ -112,8 +113,8 @@ func NotificationDomainToResponse(n *domain.Notification) NotificationResponse {
 		ActionType:     n.ActionType(),
 		ActionData:     actionData,
 		Priority:       n.Priority(),
-		CreateDt:       n.CreateDt().String(),
-		ModifyDt:       n.ModifyDt().String(),
+		CreateDt:       mtime.NewTime(n.CreateDt()),
+		ModifyDt:       mtime.NewTime(n.ModifyDt()),
 	}
 }
 

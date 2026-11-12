@@ -1,6 +1,6 @@
 package dto
 
-import "math-ai.com/math-ai/internal/domain/shared/mtime"
+import "math-ai.com/math-ai/internal/shared/mtime"
 
 type LogTimeFormatReq struct {
 	Time string `json:"time"`

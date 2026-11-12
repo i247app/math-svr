@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/exam"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -239,7 +239,7 @@ func (r *ExamPoolRepository) Create(ctx context.Context, e *exam.ExamPool) (*exa
 			 rpt_flg, kwords, note, exam_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	_, err := r.db.Exec(ctx, query,
 		e.ExamId(), e.ReqExamType(), e.ReqGrade(), e.ReqLevel(), e.ReqNumQues(),
 		e.ReqSemester(), e.ReqProgram(), e.ReqExtras(), e.ExamSource(),
@@ -303,8 +303,8 @@ func ModelToDomainExamPool(m *models.ExamPoolModel) *exam.ExamPool {
 	e.SetExamStatus(m.ExamStatus)
 	e.SetStatus(m.Status)
 	e.SetCreateId(m.CreateId)
-	e.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	e.SetCreateDt(m.CreateDt)
 	e.SetModifyId(m.ModifyId)
-	e.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	e.SetModifyDt(m.ModifyDt)
 	return e
 }

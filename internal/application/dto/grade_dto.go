@@ -4,19 +4,20 @@ import (
 	"io"
 
 	domain "math-ai.com/math-ai/internal/domain/grade"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
 type GradeResponse struct {
-	GradeID      int64   `json:"grade_id"`
-	Label        string  `json:"label"`
-	Description  string  `json:"description"`
-	ImageKey     *string `json:"-"`
-	ImageUrl     *string `json:"image_url"` // pre-signed url from image_key
-	DisplayOrder int8    `json:"display_order"`
-	Note         *string `json:"note,omitempty"`
-	CreateDt     string  `json:"create_dt"`
-	ModifyDt     string  `json:"modify_dt"`
+	GradeID      int64          `json:"grade_id"`
+	Label        string         `json:"label"`
+	Description  string         `json:"description"`
+	ImageKey     *string        `json:"-"`
+	ImageUrl     *string        `json:"image_url"` // pre-signed url from image_key
+	DisplayOrder int8           `json:"display_order"`
+	Note         *string        `json:"note,omitempty"`
+	CreateDt     mtime.MathTime `json:"create_dt"`
+	ModifyDt     mtime.MathTime `json:"modify_dt"`
 }
 
 type CreateGradeReq struct {
@@ -86,8 +87,8 @@ func GradeDomainToResponse(g *domain.Grade) *GradeResponse {
 		ImageKey:     g.ImageKey(),
 		DisplayOrder: g.DisplayOrder(),
 		Note:         g.Note(),
-		CreateDt:     g.CreateDt().String(),
-		ModifyDt:     g.ModifyDt().String(),
+		CreateDt:     mtime.NewTime(g.CreateDt()),
+		ModifyDt:     mtime.NewTime(g.ModifyDt()),
 	}
 }
 

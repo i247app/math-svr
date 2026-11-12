@@ -13,7 +13,6 @@ import (
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	sctx "math-ai.com/math-ai/internal/shared/context"
@@ -349,7 +348,7 @@ func (s *Service) guardGuest(ctx context.Context, p *profileDomain.Profile, exam
 		return errs.NewError(ctx, status.EXAM_GUEST_TYPE_NOT_ALLOWED, nil, ErrGuestAssessmentOnly)
 	}
 
-	since := mtime.MathTime{Time: time.Now().UTC().Add(-guestExamWindow)}
+	since := time.Now().UTC().Add(-guestExamWindow)
 	handed, err := s.attemptRepo.CountHandedOutSince(ctx, p.ProfileId(), since)
 	if err != nil {
 		return errs.NewError(ctx, status.FAIL, nil, err)

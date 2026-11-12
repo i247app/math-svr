@@ -8,10 +8,10 @@ import (
 	"slices"
 
 	"math-ai.com/math-ai/internal/domain/login"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"time"
 )
 
 const (
@@ -76,7 +76,7 @@ func (r *LoginRepository) Create(ctx context.Context, l *login.Login) (*login.Lo
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	_, err := r.db.Exec(ctx, query,
 		l.LoginId(), l.Uid(), l.Upw(), l.LoginsStatus(), l.RptFlg(), l.Kwords(),
 		l.Note(), l.Status(), l.CreateId(), now, now)
@@ -98,8 +98,8 @@ func ModelToDomainLogin(m *models.LoginModel) *login.Login {
 	l.SetNote(m.Note)
 	l.SetStatus(m.Status)
 	l.SetCreateId(m.CreateId)
-	l.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	l.SetCreateDt(m.CreateDt)
 	l.SetModifyId(m.ModifyId)
-	l.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	l.SetModifyDt(m.ModifyDt)
 	return l
 }

@@ -12,7 +12,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 const (
@@ -70,7 +70,7 @@ func (r *AliasRepository) Create(ctx context.Context, alias *alias.Alias) (*alia
 	`
 
 	_, err := r.db.Exec(ctx, query, alias.Aid(), alias.Uid(),
-		alias.Aka(), alias.AliasStatus(), alias.RptFlg(), alias.Kwords(), alias.Note(), mtime.Now().Time, mtime.Now().Time)
+		alias.Aka(), alias.AliasStatus(), alias.RptFlg(), alias.Kwords(), alias.Note(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("alias repo create: %w", err)
 	}
@@ -123,7 +123,7 @@ func (r *AliasRepository) UpdateByAid(ctx context.Context, alias *alias.Alias) e
 		WHERE aid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, alias.Aka(), alias.AliasStatus(), alias.RptFlg(), alias.Kwords(), alias.Note(), alias.ModifyId(), alias.ModifyDt(), alias.Aid()); err != nil {
+	if _, err := r.db.Exec(ctx, query, alias.Aka(), alias.AliasStatus(), alias.RptFlg(), alias.Kwords(), alias.Note(), alias.ModifyId(), nullableTime(alias.ModifyDt()), alias.Aid()); err != nil {
 		return fmt.Errorf("alias repo update by alias id: %w", err)
 	}
 	return nil
@@ -144,7 +144,7 @@ func (r *AliasRepository) MarkStatusByUid(ctx context.Context, uid int64, status
 		WHERE uid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, status, mtime.Now().Time, uid); err != nil {
+	if _, err := r.db.Exec(ctx, query, status, time.Now().UTC(), uid); err != nil {
 		return fmt.Errorf("alias repo mark status by uid: %w", err)
 	}
 	return nil
@@ -159,7 +159,7 @@ func (r *AliasRepository) SoftDeleteByUid(ctx context.Context, uid int64) error 
 		WHERE uid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, enum.UserAliasStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, uid); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.UserAliasStatusTypeDeleted, enum.StatusInactive, time.Now().UTC(), uid); err != nil {
 		return fmt.Errorf("alias repo soft delete by user id: %w", err)
 	}
 	return nil
@@ -177,7 +177,7 @@ func (r *AliasRepository) SoftDeleteByAid(ctx context.Context, aid int64) error 
 		WHERE aid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, enum.UserAliasStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, aid); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.UserAliasStatusTypeDeleted, enum.StatusInactive, time.Now().UTC(), aid); err != nil {
 		return fmt.Errorf("alias repo soft delete by alias id: %w", err)
 	}
 	return nil
@@ -193,8 +193,8 @@ func ModelToDomainAlias(m *models.AliasModel) *alias.Alias {
 	a.SetKwords(m.Kwords)
 	a.SetNote(m.Note)
 	a.SetCreateId(m.CreateId)
-	a.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	a.SetCreateDt(m.CreateDt)
 	a.SetModifyId(m.ModifyId)
-	a.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	a.SetModifyDt(m.ModifyDt)
 	return a
 }

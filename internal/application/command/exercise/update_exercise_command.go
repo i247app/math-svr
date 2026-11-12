@@ -6,17 +6,17 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // UpdateClassroomExerciseCommand patches metadata only — title, chapter,
 // lesson, dates, note. The AI-generated questions/answers columns are
 // out of scope here; a regeneration would be a separate command.
 //
-// StartDate / EndDate use pointers to MathTime so the caller can
+// StartDate / EndDate use pointers to time.Time so the caller can
 // distinguish "leave unchanged" (nil) from "clear the column" (a
-// pointer to zero MathTime). The repo translates the latter into a
+// pointer to the zero time). The repo translates the latter into a
 // typed SQL NULL.
 type UpdateClassroomExerciseCommand struct {
 	ActorID             *int64

@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/semester"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 // Reference-data aggregate. Like program/grade, but the base table uses
@@ -171,7 +171,7 @@ func (r *SemesterRepository) Create(ctx context.Context, s *semester.Semester) (
 
 	_, err := r.db.Exec(ctx, query,
 		s.SemesterId(), s.Name(), description, s.ImageKey(),
-		s.DisplayOrder(), s.RptFlg(), s.Kwords(), s.Note(), s.SemesterStatus(), mtime.Now().Time, mtime.Now().Time)
+		s.DisplayOrder(), s.RptFlg(), s.Kwords(), s.Note(), s.SemesterStatus(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("semester repo create: %w", err)
 	}
@@ -207,7 +207,7 @@ func (r *SemesterRepository) Update(ctx context.Context, s *semester.Semester) e
 	`
 	if _, err := r.db.Exec(ctx, query,
 		name, description, imageKey,
-		s.DisplayOrder(), s.RptFlg(), s.Kwords(), s.Note(), mtime.Now().Time, s.SemesterId()); err != nil {
+		s.DisplayOrder(), s.RptFlg(), s.Kwords(), s.Note(), time.Now().UTC(), s.SemesterId()); err != nil {
 		return fmt.Errorf("semester repo update: %w", err)
 	}
 	return nil
@@ -222,7 +222,7 @@ func (r *SemesterRepository) SoftDeleteBySemesterId(ctx context.Context, semeste
 			modify_dt       = ?
 		WHERE semester_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.StatusInactive, enum.StatusInactive, now, now, semesterId); err != nil {
 		return fmt.Errorf("semester repo soft delete: %w", err)
@@ -254,8 +254,8 @@ func ModelToDomainSemester(m *models.SemesterModel) *semester.Semester {
 	s.SetSemesterStatus(m.SemesterStatus)
 	s.SetStatus(m.Status)
 	s.SetCreateId(m.CreateId)
-	s.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	s.SetCreateDt(m.CreateDt)
 	s.SetModifyId(m.ModifyId)
-	s.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	s.SetModifyDt(m.ModifyDt)
 	return s
 }

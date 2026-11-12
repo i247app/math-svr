@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/role"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -156,7 +156,7 @@ func (r *RoleRepository) Create(ctx context.Context, ro *role.Role) (*role.Role,
 			 rpt_flg, kwords, note, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	_, err := r.db.Exec(ctx, query,
 		ro.RoleId(), ro.RoleCode(), ro.RoleName(), ro.Description(), ro.RoleImageKey(), ro.RoleStatus(),
 		ro.RptFlg(), ro.Kwords(), ro.Note(), ro.CreateId(), now, now)
@@ -195,7 +195,7 @@ func (r *RoleRepository) Update(ctx context.Context, ro *role.Role) error {
 	if _, err := r.db.Exec(ctx, query,
 		roleNameArg, ro.Description(), ro.RoleImageKey(), ro.RoleStatus(),
 		ro.RptFlg(), ro.Kwords(), ro.Note(),
-		ro.ModifyId(), mtime.Now().Time, ro.RoleId()); err != nil {
+		ro.ModifyId(), time.Now().UTC(), ro.RoleId()); err != nil {
 		return fmt.Errorf("role repo update: %w", err)
 	}
 	return nil
@@ -208,7 +208,7 @@ func (r *RoleRepository) ClearRoleImageKey(ctx context.Context, roleId int64) er
 			modify_dt      = ?
 		WHERE role_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, mtime.Now().Time, roleId); err != nil {
+	if _, err := r.db.Exec(ctx, query, time.Now().UTC(), roleId); err != nil {
 		return fmt.Errorf("role repo clear image key: %w", err)
 	}
 	return nil
@@ -225,7 +225,7 @@ func (r *RoleRepository) SoftDeleteByRoleId(ctx context.Context, roleId int64) e
 			modify_dt   = ?
 		WHERE role_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.RoleRecordStatusDeleted, enum.StatusInactive, now, now, roleId); err != nil {
 		return fmt.Errorf("role repo soft delete: %w", err)
@@ -254,8 +254,8 @@ func ModelToDomainRole(m *models.RoleModel) *role.Role {
 	ro.SetNote(m.Note)
 	ro.SetStatus(m.Status)
 	ro.SetCreateId(m.CreateId)
-	ro.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	ro.SetCreateDt(m.CreateDt)
 	ro.SetModifyId(m.ModifyId)
-	ro.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	ro.SetModifyDt(m.ModifyDt)
 	return ro
 }

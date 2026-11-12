@@ -4,6 +4,7 @@ import (
 	"io"
 
 	domain "math-ai.com/math-ai/internal/domain/classroom"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -22,8 +23,7 @@ type ClassroomOwnerSummary struct {
 }
 
 // ClassroomResponse is the surface returned to API consumers. Time fields
-// render via mtime.MathTime.String() so the wire format stays consistent
-// with the rest of the project.
+// are mtime.MathTime (Format20FSP), like the rest of the project.
 //
 // Owner is hydrated by the service from ma_profiles using a batched
 // IN-lookup so a page of classrooms costs one extra round trip
@@ -40,7 +40,7 @@ type ClassroomResponse struct {
 	ProgramIDs             []int64                `json:"program_ids"`
 	GradeID                *int64                 `json:"grade_id,omitempty"`
 	ClassroomCode          *string                `json:"classroom_code,omitempty"`
-	ClassroomCodeExpiresDt string                 `json:"classroom_code_expires_dt,omitempty"`
+	ClassroomCodeExpiresDt *mtime.MathTime        `json:"classroom_code_expires_dt,omitempty"`
 	MaxMembers             *int64                 `json:"max_members,omitempty"`
 	MemberCount            int64                  `json:"member_count"`
 	StudentCount           int64                  `json:"student_count"`
@@ -52,8 +52,8 @@ type ClassroomResponse struct {
 	ClassroomStatus        *string                `json:"classroom_status,omitempty"`
 	Relationship           string                 `json:"relationship"`
 	MyRole                 *string                `json:"my_role,omitempty"`
-	CreateDt               string                 `json:"create_dt"`
-	ModifyDt               string                 `json:"modify_dt"`
+	CreateDt               mtime.MathTime         `json:"create_dt"`
+	ModifyDt               mtime.MathTime         `json:"modify_dt"`
 }
 
 // CreateClassroomReq carries the caller's acting profile_id — see
@@ -248,11 +248,11 @@ func ClassroomDomainToResponse(c *domain.Classroom) *ClassroomResponse {
 		CoverKey:        c.CoverKey(),
 		Note:            c.Note(),
 		ClassroomStatus: c.ClassroomStatus(),
-		CreateDt:        c.CreateDt().String(),
-		ModifyDt:        c.ModifyDt().String(),
+		CreateDt:        mtime.NewTime(c.CreateDt()),
+		ModifyDt:        mtime.NewTime(c.ModifyDt()),
 	}
-	if c.ClassroomCodeExpiresDt().IsValid() {
-		resp.ClassroomCodeExpiresDt = c.ClassroomCodeExpiresDt().String()
+	if !c.ClassroomCodeExpiresDt().IsZero() {
+		resp.ClassroomCodeExpiresDt = mtime.NewMathTimePtr(c.ClassroomCodeExpiresDt())
 	}
 	return resp
 }

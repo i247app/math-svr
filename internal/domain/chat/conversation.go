@@ -1,6 +1,6 @@
 package chat
 
-import "math-ai.com/math-ai/internal/domain/shared/mtime"
+import "time"
 
 // Conversation models one ma_chat_conversations row — a thread of any shape.
 //
@@ -27,16 +27,16 @@ type Conversation struct {
 	lastMessageType            *string
 	lastMessagePreview         *string
 	lastMessageSenderProfileId *int64
-	lastMessageDt              mtime.MathTime
+	lastMessageDt              time.Time
 	rptFlg                     *string
 	kwords                     *string
 	note                       *string
 	conversationStatus         *string
 	status                     string
 	createId                   *int64
-	createDt                   mtime.MathTime
+	createDt                   time.Time
 	modifyId                   *int64
-	modifyDt                   mtime.MathTime
+	modifyDt                   time.Time
 }
 
 func NewConversation() *Conversation { return &Conversation{} }
@@ -71,8 +71,8 @@ func (c *Conversation) LastMessagePreview() *string             { return c.lastM
 func (c *Conversation) SetLastMessagePreview(p *string)         { c.lastMessagePreview = p }
 func (c *Conversation) LastMessageSenderProfileId() *int64      { return c.lastMessageSenderProfileId }
 func (c *Conversation) SetLastMessageSenderProfileId(id *int64) { c.lastMessageSenderProfileId = id }
-func (c *Conversation) LastMessageDt() mtime.MathTime           { return c.lastMessageDt }
-func (c *Conversation) SetLastMessageDt(t mtime.MathTime)       { c.lastMessageDt = t }
+func (c *Conversation) LastMessageDt() time.Time                { return c.lastMessageDt }
+func (c *Conversation) SetLastMessageDt(t time.Time)            { c.lastMessageDt = t }
 func (c *Conversation) Note() *string                           { return c.note }
 func (c *Conversation) SetNote(n *string)                       { c.note = n }
 func (c *Conversation) RptFlg() *string                         { return c.rptFlg }
@@ -85,9 +85,9 @@ func (c *Conversation) Status() string                          { return c.statu
 func (c *Conversation) SetStatus(s string)                      { c.status = s }
 func (c *Conversation) CreateId() *int64                        { return c.createId }
 func (c *Conversation) SetCreateId(id *int64)                   { c.createId = id }
-func (c *Conversation) CreateDt() mtime.MathTime                { return c.createDt }
-func (c *Conversation) SetCreateDt(t mtime.MathTime)            { c.createDt = t }
+func (c *Conversation) CreateDt() time.Time                     { return c.createDt }
+func (c *Conversation) SetCreateDt(t time.Time)                 { c.createDt = t }
 func (c *Conversation) ModifyId() *int64                        { return c.modifyId }
 func (c *Conversation) SetModifyId(id *int64)                   { c.modifyId = id }
-func (c *Conversation) ModifyDt() mtime.MathTime                { return c.modifyDt }
-func (c *Conversation) SetModifyDt(t mtime.MathTime)            { c.modifyDt = t }
+func (c *Conversation) ModifyDt() time.Time                     { return c.modifyDt }
+func (c *Conversation) SetModifyDt(t time.Time)                 { c.modifyDt = t }

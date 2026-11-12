@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/classroom"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -277,8 +277,8 @@ func (r *ClassroomRepository) ListClassroomsByIds(ctx context.Context, ids []int
 
 func (r *ClassroomRepository) Create(ctx context.Context, c *classroom.Classroom) (*classroom.Classroom, error) {
 	var expiresArg any
-	if c.ClassroomCodeExpiresDt().IsValid() {
-		expiresArg = c.ClassroomCodeExpiresDt().Time
+	if !c.ClassroomCodeExpiresDt().IsZero() {
+		expiresArg = c.ClassroomCodeExpiresDt()
 	}
 
 	query := `
@@ -297,7 +297,7 @@ func (r *ClassroomRepository) Create(ctx context.Context, c *classroom.Classroom
 		c.ClassroomCode(), expiresArg,
 		c.MaxMembers(), c.MemberCount(), c.StudentCount(), c.TeacherCount(),
 		c.CoverKey(), c.RptFlg(), c.Kwords(), c.Note(),
-		c.ClassroomStatus(), c.CreateId(), mtime.Now().Time, mtime.Now().Time)
+		c.ClassroomStatus(), c.CreateId(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("classroom repo create: %w", err)
 	}
@@ -331,7 +331,7 @@ func (r *ClassroomRepository) Update(ctx context.Context, c *classroom.Classroom
 	if _, err := r.db.Exec(ctx, query,
 		nameArg, c.Description(), c.SchoolId(), c.GradeId(),
 		c.MaxMembers(), c.CoverKey(), c.RptFlg(), c.Kwords(), c.Note(), c.ModifyId(),
-		mtime.Now().Time, c.ClassroomId()); err != nil {
+		time.Now().UTC(), c.ClassroomId()); err != nil {
 		return fmt.Errorf("classroom repo update: %w", err)
 	}
 	return nil
@@ -351,16 +351,16 @@ func (r *ClassroomRepository) IncCounts(ctx context.Context, classroomId int64, 
 	`
 	if _, err := r.db.Exec(ctx, query,
 		memberDelta, studentDelta, teacherDelta,
-		mtime.Now().Time, classroomId); err != nil {
+		time.Now().UTC(), classroomId); err != nil {
 		return fmt.Errorf("classroom repo inc counts: %w", err)
 	}
 	return nil
 }
 
-func (r *ClassroomRepository) UpdateClassroomCode(ctx context.Context, classroomId int64, code *string, expiresDt mtime.MathTime) error {
+func (r *ClassroomRepository) UpdateClassroomCode(ctx context.Context, classroomId int64, code *string, expiresDt time.Time) error {
 	var expiresArg any
-	if expiresDt.IsValid() {
-		expiresArg = expiresDt.Time
+	if !expiresDt.IsZero() {
+		expiresArg = expiresDt
 	}
 	query := `
 		UPDATE ` + classroomTable + `
@@ -369,7 +369,7 @@ func (r *ClassroomRepository) UpdateClassroomCode(ctx context.Context, classroom
 			modify_dt               = ?
 		WHERE classroom_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, code, expiresArg, mtime.Now().Time, classroomId); err != nil {
+	if _, err := r.db.Exec(ctx, query, code, expiresArg, time.Now().UTC(), classroomId); err != nil {
 		return fmt.Errorf("classroom repo update invite code: %w", err)
 	}
 	return nil
@@ -382,7 +382,7 @@ func (r *ClassroomRepository) SetOwnerProfileId(ctx context.Context, classroomId
 			modify_dt        = ?
 		WHERE classroom_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, newOwnerProfileId, mtime.Now().Time, classroomId); err != nil {
+	if _, err := r.db.Exec(ctx, query, newOwnerProfileId, time.Now().UTC(), classroomId); err != nil {
 		return fmt.Errorf("classroom repo set owner: %w", err)
 	}
 	return nil
@@ -395,7 +395,7 @@ func (r *ClassroomRepository) ArchiveByClassroomId(ctx context.Context, classroo
 			modify_dt        = ?
 		WHERE classroom_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query, enum.ClassroomStatusTypeArchived, now, classroomId); err != nil {
 		return fmt.Errorf("classroom repo archive: %w", err)
 	}
@@ -409,7 +409,7 @@ func (r *ClassroomRepository) RestoreByClassroomId(ctx context.Context, classroo
 			modify_dt        = ?
 		WHERE classroom_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query, enum.ClassroomStatusTypeActive, now, classroomId); err != nil {
 		return fmt.Errorf("classroom repo restore: %w", err)
 	}
@@ -425,7 +425,7 @@ func (r *ClassroomRepository) SoftDeleteByClassroomId(ctx context.Context, class
 			modify_dt        = ?
 		WHERE classroom_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.ClassroomStatusTypeDeleted, enum.StatusInactive, now, now, classroomId); err != nil {
 		return fmt.Errorf("classroom repo soft delete: %w", err)
@@ -451,7 +451,7 @@ func ModelToDomainClassroom(m *models.ClassroomModel) *classroom.Classroom {
 	c.SetGradeId(m.GradeId)
 	c.SetClassroomCode(m.ClassroomCode)
 	if m.ClassroomCodeExpiresDt != nil {
-		c.SetClassroomCodeExpiresDt(mtime.MathTime{Time: *m.ClassroomCodeExpiresDt})
+		c.SetClassroomCodeExpiresDt(*m.ClassroomCodeExpiresDt)
 	}
 	c.SetMaxMembers(m.MaxMembers)
 	c.SetMemberCount(m.MemberCount)
@@ -464,8 +464,8 @@ func ModelToDomainClassroom(m *models.ClassroomModel) *classroom.Classroom {
 	c.SetClassroomStatus(m.ClassroomStatus)
 	c.SetStatus(m.Status)
 	c.SetCreateId(m.CreateId)
-	c.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	c.SetCreateDt(m.CreateDt)
 	c.SetModifyId(m.ModifyId)
-	c.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	c.SetModifyDt(m.ModifyDt)
 	return c
 }

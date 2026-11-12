@@ -3,8 +3,8 @@ package exercise
 import (
 	"context"
 
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 // ListExercisesParams narrows the listing query. ClassroomID is required
@@ -47,8 +47,8 @@ type ListExercisesParams struct {
 // skipped server-side so the caller can mutate metadata (title, dates,
 // note) without re-supplying the AI-generated questions/answers.
 //
-// StartDate / EndDate are pointers to MathTime so a zero-value (clear)
-// can be expressed by passing a zero MathTime, distinct from "leave
+// StartDate / EndDate are pointers to time.Time so a zero value (clear)
+// can be expressed by passing the zero time, distinct from "leave
 // unchanged" (nil). Visibility is patchable so a creator can flip an
 // exercise between PUBLIC and PRIVATE without re-supplying the rest of
 // the row; creator_profile_id is intentionally absent — ownership is
@@ -58,8 +58,8 @@ type UpdatePatch struct {
 	Description    *string
 	ChapterName    *string
 	LessonName     *string
-	StartDate      *mtime.MathTime
-	EndDate        *mtime.MathTime
+	StartDate      *time.Time
+	EndDate        *time.Time
 	RptFlg         *string
 	Kwords         *string
 	Note           *string
@@ -89,12 +89,12 @@ type ListByClassroomIdsParams struct {
 	CallerProfileID  int64
 	CreatorProfileID *int64
 	OnlyActive       bool
-	NotExpiredAsOf   *mtime.MathTime
+	NotExpiredAsOf   *time.Time
 	// ExpiredAsOf is the inverse of NotExpiredAsOf — end_date IS NOT NULL
 	// AND end_date < asOf ("past the submission deadline"). Exercises with
 	// no end_date never expire and are excluded. Set at most one of
 	// NotExpiredAsOf / ExpiredAsOf per call.
-	ExpiredAsOf *mtime.MathTime
+	ExpiredAsOf *time.Time
 	Limit       int64
 }
 
@@ -152,7 +152,7 @@ type GradingPatch struct {
 	ScorePercentage *int64
 	// GradedDt is the timestamp the row should record as the grading
 	// time. A zero value leaves graded_dt untouched.
-	GradedDt mtime.MathTime
+	GradedDt time.Time
 	// SubmissionStatus is typically advanced to GRADED here. nil leaves
 	// the row's status untouched.
 	SubmissionStatus *string
@@ -201,8 +201,8 @@ type ISubmissionRepository interface {
 type ProfileSubmissionsRangeParams struct {
 	ClassroomID int64
 	ProfileID   int64
-	From        mtime.MathTime
-	To          mtime.MathTime
+	From        time.Time
+	To          time.Time
 }
 
 // BucketedScoresParams drives ListBucketedScores. Bucket is one of
@@ -215,8 +215,8 @@ type BucketedScoresParams struct {
 	ClassroomID     int64
 	Bucket          string
 	TzOffset        string
-	From            mtime.MathTime
-	To              mtime.MathTime
+	From            time.Time
+	To              time.Time
 	FilterProfileID *int64
 }
 
@@ -238,8 +238,8 @@ type BucketedScoreRow struct {
 // student when non-nil (the §15 self-exception path).
 type ProgressRangeParams struct {
 	ClassroomID     int64
-	From            mtime.MathTime
-	To              mtime.MathTime
+	From            time.Time
+	To              time.Time
 	FilterProfileID *int64
 }
 
@@ -255,5 +255,5 @@ type ProgressRow struct {
 	ProfileID           int64
 	ClassroomExerciseID int64
 	ScorePercentage     int64
-	SubmittedDt         mtime.MathTime
+	SubmittedDt         time.Time
 }

@@ -2,13 +2,13 @@ package command
 
 import (
 	"context"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -135,11 +135,11 @@ func (h *SendInvitationCommandHandler) Handle(ctx context.Context, cmd SendInvit
 				}
 				// REJECTED / LEFT / REMOVED → reactivate in place as PENDING.
 				// if err := repos.ClassroomMember.Invite(ctx, existing.MemberId(),
-				// 	t.ProposedRole, &inviter, mtime.Now(), cmd.Note); err != nil {
+				// 	t.ProposedRole, &inviter, time.Now().UTC(), cmd.Note); err != nil {
 				// 	return errs.NewError(ctx, status.FAIL, nil, err)
 				// }
 				if err := repos.ClassroomMember.Invite(ctx, existing.MemberId(),
-					t.Role, &inviter, mtime.Now(), cmd.Note); err != nil {
+					t.Role, &inviter, time.Now().UTC(), cmd.Note); err != nil {
 					return errs.NewError(ctx, status.FAIL, nil, err)
 				}
 				refreshed, err := repos.ClassroomMember.FindByMemberId(ctx, existing.MemberId())
@@ -154,7 +154,7 @@ func (h *SendInvitationCommandHandler) Handle(ctx context.Context, cmd SendInvit
 			if err != nil {
 				return err
 			}
-			now := mtime.Now()
+			now := time.Now().UTC()
 
 			m := classroom.NewMember()
 			m.SetMemberId(memberID)

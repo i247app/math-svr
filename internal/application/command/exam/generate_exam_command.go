@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
@@ -156,7 +156,7 @@ func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExa
 		a.SetReqExamType(string(cmd.ExamType))
 		a.SetReqGrade(cmd.Grade)
 		a.SetReqLevel(cmd.Level)
-		a.SetStartedDt(mtime.Now())
+		a.SetStartedDt(time.Now().UTC())
 		inProgress := enum.ElinkStatusInProgress.String()
 		a.SetElinkStatus(&inProgress)
 

@@ -18,6 +18,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -468,8 +469,8 @@ func (s *Service) listAudienceMembers(ctx context.Context, req *dto.ListAudience
 			MemberRole:   m.MemberRole(),
 			MemberStatus: m.MemberStatus(),
 		}
-		if m.JoinedDt().IsValid() {
-			resp.JoinedDt = m.JoinedDt().String()
+		if !m.JoinedDt().IsZero() {
+			resp.JoinedDt = mtime.NewMathTimePtr(m.JoinedDt())
 		}
 		responses = append(responses, resp)
 		profileIDs = append(profileIDs, m.ProfileId())
@@ -545,11 +546,11 @@ func (s *Service) hydrateAudienceSubmissions(ctx context.Context, classroomExerc
 			ScorePercentage:               sub.ScorePercentage(),
 			Note:                          sub.Note(),
 		}
-		if sub.SubmittedDt().IsValid() {
-			summary.SubmittedDt = sub.SubmittedDt().String()
+		if !sub.SubmittedDt().IsZero() {
+			summary.SubmittedDt = mtime.NewMathTimePtr(sub.SubmittedDt())
 		}
-		if sub.GradedDt().IsValid() {
-			summary.GradedDt = sub.GradedDt().String()
+		if !sub.GradedDt().IsZero() {
+			summary.GradedDt = mtime.NewMathTimePtr(sub.GradedDt())
 		}
 		byProfile[sub.ProfileId()] = summary
 	}
@@ -660,11 +661,11 @@ func enforceExerciseAccess(ctx context.Context, e *exerciseDomain.Exercise, call
 // lower / upper bound".
 func enforceSubmissionWindow(ctx context.Context, e *exerciseDomain.Exercise) error {
 	now := time.Now().UTC()
-	if e.StartDate().IsValid() && now.Before(e.StartDate().Time) {
+	if !e.StartDate().IsZero() && now.Before(e.StartDate()) {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_WINDOW_NOT_OPEN, nil,
 			ErrYouCanNotSubmitBeforeStartTime)
 	}
-	if e.EndDate().IsValid() && now.After(e.EndDate().Time) {
+	if !e.EndDate().IsZero() && now.After(e.EndDate()) {
 		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_WINDOW_CLOSED, nil,
 			ErrYouCanNotSubmitAfterEndTime)
 	}
@@ -721,11 +722,11 @@ func (s *Service) hydrateSubmissions(
 				TotalQuestions:      e.TotalQuestions(),
 				ExerciseStatus:      e.ExerciseStatus(),
 			}
-			if e.StartDate().IsValid() {
-				summary.StartDate = e.StartDate().String()
+			if !e.StartDate().IsZero() {
+				summary.StartDate = mtime.NewMathTimePtr(e.StartDate())
 			}
-			if e.EndDate().IsValid() {
-				summary.EndDate = e.EndDate().String()
+			if !e.EndDate().IsZero() {
+				summary.EndDate = mtime.NewMathTimePtr(e.EndDate())
 			}
 			exerciseSummaries[e.ClassroomExerciseId()] = summary
 		}

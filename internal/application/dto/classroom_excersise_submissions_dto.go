@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	domain "math-ai.com/math-ai/internal/domain/exercise"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -14,19 +15,19 @@ import (
 // and the right-answer key stays on the dedicated exercise endpoint
 // where the manager-only gate decides whether to expose it.
 type SubmissionExerciseSummary struct {
-	ClassroomExerciseID int64   `json:"classroom_exercise_id"`
-	ClassroomID         int64   `json:"classroom_id"`
-	CreatorProfileID    int64   `json:"creator_profile_id"`
-	Visibility          string  `json:"visibility"`
-	Title               string  `json:"title"`
-	ShortText           *string `json:"short_text,omitempty"`
-	Description         *string `json:"description,omitempty"`
-	ChapterName         string  `json:"chapter_name"`
-	LessonName          string  `json:"lesson_name"`
-	TotalQuestions      int     `json:"total_questions"`
-	StartDate           string  `json:"start_date,omitempty"`
-	EndDate             string  `json:"end_date,omitempty"`
-	ExerciseStatus      *string `json:"exercise_status,omitempty"`
+	ClassroomExerciseID int64           `json:"classroom_exercise_id"`
+	ClassroomID         int64           `json:"classroom_id"`
+	CreatorProfileID    int64           `json:"creator_profile_id"`
+	Visibility          string          `json:"visibility"`
+	Title               string          `json:"title"`
+	ShortText           *string         `json:"short_text,omitempty"`
+	Description         *string         `json:"description,omitempty"`
+	ChapterName         string          `json:"chapter_name"`
+	LessonName          string          `json:"lesson_name"`
+	TotalQuestions      int             `json:"total_questions"`
+	StartDate           *mtime.MathTime `json:"start_date,omitempty"`
+	EndDate             *mtime.MathTime `json:"end_date,omitempty"`
+	ExerciseStatus      *string         `json:"exercise_status,omitempty"`
 }
 
 // SubmissionProfileSummary is the slim profile shape for the row's
@@ -63,13 +64,13 @@ type SubmissionResponse struct {
 	Profile                       *SubmissionProfileSummary  `json:"profile,omitempty"`
 	Answers                       []StudentAnswer            `json:"answers,omitempty"`
 	Grading                       *GradingResult             `json:"grading,omitempty"`
-	SubmittedDt                   string                     `json:"submitted_dt,omitempty"`
-	GradedDt                      string                     `json:"graded_dt,omitempty"`
+	SubmittedDt                   *mtime.MathTime            `json:"submitted_dt,omitempty"`
+	GradedDt                      *mtime.MathTime            `json:"graded_dt,omitempty"`
 	Note                          *string                    `json:"note,omitempty"`
 	SubmissionStatus              *string                    `json:"submission_status,omitempty"`
 	CreateID                      *int64                     `json:"create_id,omitempty"`
-	CreateDt                      string                     `json:"create_dt"`
-	ModifyDt                      string                     `json:"modify_dt"`
+	CreateDt                      mtime.MathTime             `json:"create_dt"`
+	ModifyDt                      mtime.MathTime             `json:"modify_dt"`
 }
 
 // SubmitExerciseAnswersReq is the student-side submit payload. ProfileID
@@ -174,14 +175,14 @@ type AudienceProfileDetail struct {
 // AudienceSubmissionSummary carries the submission-side metadata on
 // each submitted-members row. Nil on the non-submitted endpoint.
 type AudienceSubmissionSummary struct {
-	ClassroomExerciseSubmissionID int64   `json:"classroom_exercise_submission_id"`
-	SubmissionStatus              *string `json:"submission_status,omitempty"`
-	SubmittedDt                   string  `json:"submitted_dt,omitempty"`
-	GradedDt                      string  `json:"graded_dt,omitempty"`
-	TotalQuestions                *int64  `json:"total_questions,omitempty"`
-	CorrectNumber                 *int64  `json:"correct_number,omitempty"`
-	ScorePercentage               *int64  `json:"score_percentage,omitempty"`
-	Note                          *string `json:"note,omitempty"`
+	ClassroomExerciseSubmissionID int64           `json:"classroom_exercise_submission_id"`
+	SubmissionStatus              *string         `json:"submission_status,omitempty"`
+	SubmittedDt                   *mtime.MathTime `json:"submitted_dt,omitempty"`
+	GradedDt                      *mtime.MathTime `json:"graded_dt,omitempty"`
+	TotalQuestions                *int64          `json:"total_questions,omitempty"`
+	CorrectNumber                 *int64          `json:"correct_number,omitempty"`
+	ScorePercentage               *int64          `json:"score_percentage,omitempty"`
+	Note                          *string         `json:"note,omitempty"`
 }
 
 // AudienceMemberResponse is the shared row shape for both audience
@@ -193,7 +194,7 @@ type AudienceMemberResponse struct {
 	ProfileID    int64                      `json:"profile_id"`
 	MemberRole   string                     `json:"member_role"`
 	MemberStatus *string                    `json:"member_status,omitempty"`
-	JoinedDt     string                     `json:"joined_dt,omitempty"`
+	JoinedDt     *mtime.MathTime            `json:"joined_dt,omitempty"`
 	Profile      *AudienceProfileDetail     `json:"profile,omitempty"`
 	Submission   *AudienceSubmissionSummary `json:"submission,omitempty"`
 }
@@ -230,14 +231,14 @@ func DomainSubmissionToResponse(s *domain.Submission) *SubmissionResponse {
 		Note:                          s.Note(),
 		SubmissionStatus:              s.SubmissionStatus(),
 		CreateID:                      s.CreateId(),
-		CreateDt:                      s.CreateDt().String(),
-		ModifyDt:                      s.ModifyDt().String(),
+		CreateDt:                      mtime.NewTime(s.CreateDt()),
+		ModifyDt:                      mtime.NewTime(s.ModifyDt()),
 	}
-	if s.SubmittedDt().IsValid() {
-		res.SubmittedDt = s.SubmittedDt().String()
+	if !s.SubmittedDt().IsZero() {
+		res.SubmittedDt = mtime.NewMathTimePtr(s.SubmittedDt())
 	}
-	if s.GradedDt().IsValid() {
-		res.GradedDt = s.GradedDt().String()
+	if !s.GradedDt().IsZero() {
+		res.GradedDt = mtime.NewMathTimePtr(s.GradedDt())
 	}
 	if answers := parseAnswers(s.Answers()); len(answers) > 0 {
 		res.Answers = answers

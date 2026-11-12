@@ -8,8 +8,8 @@ import (
 	"slices"
 	"strings"
 
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/user"
+	"time"
 
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
@@ -100,7 +100,7 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, 
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err := r.db.Exec(ctx, query, u.Uid(), u.UserName(), u.Phone(), u.Email(), u.IsEmailVerified(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.UserStatus(), u.RptFlg(), u.Kwords(), u.Note(), mtime.Now().Time, mtime.Now().Time)
+	_, err := r.db.Exec(ctx, query, u.Uid(), u.UserName(), u.Phone(), u.Email(), u.IsEmailVerified(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.UserStatus(), u.RptFlg(), u.Kwords(), u.Note(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("user repo create: %w", err)
 	}
@@ -295,7 +295,7 @@ func (r *UserRepository) MarkStatusByUid(ctx context.Context, uid int64, status 
 		WHERE uid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, status, mtime.Now().Time, uid); err != nil {
+	if _, err := r.db.Exec(ctx, query, status, time.Now().UTC(), uid); err != nil {
 		return fmt.Errorf("user repo mark status by user id: %w", err)
 	}
 	return nil
@@ -310,7 +310,7 @@ func (r *UserRepository) SoftDeleteByUid(ctx context.Context, uid int64) error {
 		WHERE uid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, enum.UserStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, uid); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.UserStatusTypeDeleted, enum.StatusInactive, time.Now().UTC(), uid); err != nil {
 		return fmt.Errorf("user repo soft delete by user id: %w", err)
 	}
 	return nil
@@ -330,9 +330,9 @@ func DomainToModel(u *user.User) *models.UserModel {
 		Kwords:     u.Kwords(),
 		Note:       u.Note(),
 		CreateId:   u.CreateId(),
-		CreateDt:   u.CreateDt().ToTime(),
+		CreateDt:   u.CreateDt(),
 		ModifyId:   u.ModifyId(),
-		ModifyDt:   u.ModifyDt().ToTime(),
+		ModifyDt:   u.ModifyDt(),
 	}
 }
 
@@ -352,9 +352,9 @@ func ModelToDomain(m *models.UserModel) *user.User {
 	u.SetKwords(m.Kwords)
 	u.SetNote(m.Note)
 	u.SetCreateId(m.CreateId)
-	u.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	u.SetCreateDt(m.CreateDt)
 	u.SetModifyId(m.ModifyId)
-	u.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	u.SetModifyDt(m.ModifyDt)
 
 	return u
 }

@@ -2,13 +2,13 @@ package command
 
 import (
 	"context"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -59,7 +59,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			d.SetPlatform(enum.ParsePlatformType(cmd.Platform).String())
 			d.SetDevicePushToken(cmd.DevicePushToken)
 			d.SetIsVerified(true)
-			d.SetTrustDt(mtime.Now())
+			d.SetTrustDt(time.Now().UTC())
 			active := enum.DeviceStatusTypeActive.String()
 			d.SetDeviceStatus(&active)
 			d.SetStatus(enum.StatusActive.String())

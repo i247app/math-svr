@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	domain "math-ai.com/math-ai/internal/domain/exercise"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -333,11 +333,11 @@ func buildClassroomExerciseSubmissionOrderBy(params domain.ListSubmissionsParams
 
 func (r *ExerciseSubmissionRepository) Create(ctx context.Context, sub *domain.Submission) (*domain.Submission, error) {
 	var submittedArg, gradedArg any
-	if sub.SubmittedDt().IsValid() {
-		submittedArg = sub.SubmittedDt().Time
+	if !sub.SubmittedDt().IsZero() {
+		submittedArg = sub.SubmittedDt()
 	}
-	if sub.GradedDt().IsValid() {
-		gradedArg = sub.GradedDt().Time
+	if !sub.GradedDt().IsZero() {
+		gradedArg = sub.GradedDt()
 	}
 
 	query := `
@@ -355,7 +355,7 @@ func (r *ExerciseSubmissionRepository) Create(ctx context.Context, sub *domain.S
 		sub.TotalQuestions(), sub.CorrectNumber(), sub.ScorePercentage(),
 		submittedArg, gradedArg,
 		sub.RptFlg(), sub.Kwords(), sub.Note(), sub.SubmissionStatus(), sub.CreateId(),
-		mtime.Now().Time, mtime.Now().Time)
+		time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("classroom exercise submission repo create: %w", err)
 	}
@@ -368,8 +368,8 @@ func (r *ExerciseSubmissionRepository) Create(ctx context.Context, sub *domain.S
 // row is typically transitioning from un-graded to graded in one shot.
 func (r *ExerciseSubmissionRepository) UpdateGrading(ctx context.Context, submissionId int64, patch domain.GradingPatch) error {
 	var gradedArg any
-	if patch.GradedDt.IsValid() {
-		gradedArg = patch.GradedDt.Time
+	if !patch.GradedDt.IsZero() {
+		gradedArg = patch.GradedDt
 	}
 
 	query := `
@@ -387,7 +387,7 @@ func (r *ExerciseSubmissionRepository) UpdateGrading(ctx context.Context, submis
 	if _, err := r.db.Exec(ctx, query,
 		patch.Review, patch.TotalQuestions, patch.CorrectNumber, patch.ScorePercentage,
 		gradedArg, patch.SubmissionStatus, patch.ModifyID,
-		mtime.Now().Time, submissionId); err != nil {
+		time.Now().UTC(), submissionId); err != nil {
 		return fmt.Errorf("classroom exercise submission repo update grading: %w", err)
 	}
 	return nil
@@ -403,7 +403,7 @@ func (r *ExerciseSubmissionRepository) SoftDelete(ctx context.Context, submissio
 			modify_dt         = ?
 		WHERE classroom_exercise_submission_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.ClassroomExerciseSubmissionStatusDeleted, enum.StatusInactive,
 		now, actorID, now, submissionId); err != nil {
@@ -424,10 +424,10 @@ func modelToDomainClassroomExerciseSubmission(m *models.ExerciseSubmissionModel)
 	s.SetCorrectNumber(m.CorrectNumber)
 	s.SetScorePercentage(m.ScorePercentage)
 	if m.SubmittedDt != nil {
-		s.SetSubmittedDt(mtime.MathTime{Time: *m.SubmittedDt})
+		s.SetSubmittedDt(*m.SubmittedDt)
 	}
 	if m.GradedDt != nil {
-		s.SetGradedDt(mtime.MathTime{Time: *m.GradedDt})
+		s.SetGradedDt(*m.GradedDt)
 	}
 	s.SetRptFlg(m.RptFlg)
 	s.SetKwords(m.Kwords)
@@ -435,8 +435,8 @@ func modelToDomainClassroomExerciseSubmission(m *models.ExerciseSubmissionModel)
 	s.SetSubmissionStatus(m.SubmissionStatus)
 	s.SetStatus(m.Status)
 	s.SetCreateId(m.CreateId)
-	s.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	s.SetCreateDt(m.CreateDt)
 	s.SetModifyId(m.ModifyId)
-	s.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	s.SetModifyDt(m.ModifyDt)
 	return s
 }

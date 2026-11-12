@@ -2,6 +2,7 @@ package dto
 
 import (
 	domain "math-ai.com/math-ai/internal/domain/classroom"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -19,9 +20,8 @@ type MemberProfileSummary struct {
 }
 
 // MemberResponse is the wire shape for ma_classroom_members rows.
-// joined / left / removed / last_seen timestamps are rendered as
-// strings via mtime.MathTime.String() so the client gets a consistent
-// time format across the project. MemberProfile is hydrated by the
+// joined / left / removed / last_seen timestamps are *mtime.MathTime
+// (Format20FSP, omitted when unset) like every other time field. MemberProfile is hydrated by the
 // service from ma_profiles using a batched IN-lookup so a page costs
 // one extra round trip regardless of size; nil when the profile lookup
 // is skipped or the profile row no longer exists.
@@ -32,15 +32,15 @@ type MemberResponse struct {
 	MemberProfile      *MemberProfileSummary `json:"member_profile,omitempty"`
 	MemberRole         string                `json:"member_role"`
 	InvitationID       *int64                `json:"invitation_id,omitempty"`
-	JoinedDt           string                `json:"joined_dt,omitempty"`
-	LeftDt             string                `json:"left_dt,omitempty"`
+	JoinedDt           *mtime.MathTime       `json:"joined_dt,omitempty"`
+	LeftDt             *mtime.MathTime       `json:"left_dt,omitempty"`
 	RemovedByProfileID *int64                `json:"removed_by_profile_id,omitempty"`
-	RemovedDt          string                `json:"removed_dt,omitempty"`
-	LastSeenDt         string                `json:"last_seen_dt,omitempty"`
+	RemovedDt          *mtime.MathTime       `json:"removed_dt,omitempty"`
+	LastSeenDt         *mtime.MathTime       `json:"last_seen_dt,omitempty"`
 	Note               *string               `json:"note,omitempty"`
 	MemberStatus       *string               `json:"member_status,omitempty"`
-	CreateDt           string                `json:"create_dt"`
-	ModifyDt           string                `json:"modify_dt"`
+	CreateDt           mtime.MathTime        `json:"create_dt"`
+	ModifyDt           mtime.MathTime        `json:"modify_dt"`
 }
 
 // JoinByCodeReq lets any profile submit a join request to a
@@ -131,20 +131,20 @@ func MemberDomainToResponse(m *domain.Member) *MemberResponse {
 		RemovedByProfileID: m.RemovedByProfileId(),
 		Note:               m.Note(),
 		MemberStatus:       m.MemberStatus(),
-		CreateDt:           m.CreateDt().String(),
-		ModifyDt:           m.ModifyDt().String(),
+		CreateDt:           mtime.NewTime(m.CreateDt()),
+		ModifyDt:           mtime.NewTime(m.ModifyDt()),
 	}
-	if m.JoinedDt().IsValid() {
-		resp.JoinedDt = m.JoinedDt().String()
+	if !m.JoinedDt().IsZero() {
+		resp.JoinedDt = mtime.NewMathTimePtr(m.JoinedDt())
 	}
-	if m.LeftDt().IsValid() {
-		resp.LeftDt = m.LeftDt().String()
+	if !m.LeftDt().IsZero() {
+		resp.LeftDt = mtime.NewMathTimePtr(m.LeftDt())
 	}
-	if m.RemovedDt().IsValid() {
-		resp.RemovedDt = m.RemovedDt().String()
+	if !m.RemovedDt().IsZero() {
+		resp.RemovedDt = mtime.NewMathTimePtr(m.RemovedDt())
 	}
-	if m.LastSeenDt().IsValid() {
-		resp.LastSeenDt = m.LastSeenDt().String()
+	if !m.LastSeenDt().IsZero() {
+		resp.LastSeenDt = mtime.NewMathTimePtr(m.LastSeenDt())
 	}
 	return resp
 }

@@ -1,7 +1,7 @@
 package semester
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 type Semester struct {
@@ -16,9 +16,9 @@ type Semester struct {
 	semesterStatus *string
 	status         string
 	createId       *int64
-	createDt       mtime.MathTime
+	createDt       time.Time
 	modifyId       *int64
-	modifyDt       mtime.MathTime
+	modifyDt       time.Time
 }
 
 func NewSemester() *Semester {
@@ -115,11 +115,11 @@ func (s *Semester) SetCreateId(createId *int64) {
 	s.createId = createId
 }
 
-func (s *Semester) CreateDt() mtime.MathTime {
+func (s *Semester) CreateDt() time.Time {
 	return s.createDt
 }
 
-func (s *Semester) SetCreateDt(createDt mtime.MathTime) {
+func (s *Semester) SetCreateDt(createDt time.Time) {
 	s.createDt = createDt
 }
 
@@ -131,10 +131,10 @@ func (s *Semester) SetModifyId(modifyId *int64) {
 	s.modifyId = modifyId
 }
 
-func (s *Semester) ModifyDt() mtime.MathTime {
+func (s *Semester) ModifyDt() time.Time {
 	return s.modifyDt
 }
 
-func (s *Semester) SetModifyDt(modifyDt mtime.MathTime) {
+func (s *Semester) SetModifyDt(modifyDt time.Time) {
 	s.modifyDt = modifyDt
 }

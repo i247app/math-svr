@@ -1,7 +1,7 @@
 package user
 
 // import (
-// 	"math-ai.com/math-ai/internal/domain/shared/mtime"
+// 	"time"
 // )
 
 // type Alias struct {
@@ -14,9 +14,9 @@ package user
 // 	note        *string
 // 	status      string
 // 	createId    *int64
-// 	createDt    mtime.MathTime
+// 	createDt    time.Time
 // 	modifyId    *int64
-// 	modifyDt    mtime.MathTime
+// 	modifyDt    time.Time
 // }
 
 // func NewAlias() *Alias {
@@ -97,11 +97,11 @@ package user
 // 	a.createId = createId
 // }
 
-// func (a *Alias) CreateDt() mtime.MathTime {
+// func (a *Alias) CreateDt() time.Time {
 // 	return a.createDt
 // }
 
-// func (a *Alias) SetCreateDt(createDt mtime.MathTime) {
+// func (a *Alias) SetCreateDt(createDt time.Time) {
 // 	a.createDt = createDt
 // }
 
@@ -113,10 +113,10 @@ package user
 // 	a.modifyId = modifyId
 // }
 
-// func (a *Alias) ModifyDt() mtime.MathTime {
+// func (a *Alias) ModifyDt() time.Time {
 // 	return a.modifyDt
 // }
 
-// func (a *Alias) SetModifyDt(modifyDt mtime.MathTime) {
+// func (a *Alias) SetModifyDt(modifyDt time.Time) {
 // 	a.modifyDt = modifyDt
 // }

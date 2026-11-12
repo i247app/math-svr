@@ -1,7 +1,7 @@
 package classroom
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // ClassroomProgram models a row in ma_classroom_programs — the junction
@@ -23,9 +23,9 @@ type ClassroomProgram struct {
 	note               *string
 	status             string
 	createId           *int64
-	createDt           mtime.MathTime
+	createDt           time.Time
 	modifyId           *int64
-	modifyDt           mtime.MathTime
+	modifyDt           time.Time
 }
 
 func NewClassroomProgram() *ClassroomProgram {
@@ -48,9 +48,9 @@ func (cp *ClassroomProgram) Status() string                { return cp.status }
 func (cp *ClassroomProgram) SetStatus(v string)            { cp.status = v }
 func (cp *ClassroomProgram) CreateId() *int64              { return cp.createId }
 func (cp *ClassroomProgram) SetCreateId(v *int64)          { cp.createId = v }
-func (cp *ClassroomProgram) CreateDt() mtime.MathTime      { return cp.createDt }
-func (cp *ClassroomProgram) SetCreateDt(t mtime.MathTime)  { cp.createDt = t }
+func (cp *ClassroomProgram) CreateDt() time.Time           { return cp.createDt }
+func (cp *ClassroomProgram) SetCreateDt(t time.Time)       { cp.createDt = t }
 func (cp *ClassroomProgram) ModifyId() *int64              { return cp.modifyId }
 func (cp *ClassroomProgram) SetModifyId(v *int64)          { cp.modifyId = v }
-func (cp *ClassroomProgram) ModifyDt() mtime.MathTime      { return cp.modifyDt }
-func (cp *ClassroomProgram) SetModifyDt(t mtime.MathTime)  { cp.modifyDt = t }
+func (cp *ClassroomProgram) ModifyDt() time.Time           { return cp.modifyDt }
+func (cp *ClassroomProgram) SetModifyDt(t time.Time)       { cp.modifyDt = t }

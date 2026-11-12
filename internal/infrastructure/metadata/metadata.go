@@ -1,8 +1,10 @@
 package metadata
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
+
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 type ClientLanguage string
@@ -88,7 +90,7 @@ type UserContext struct {
 // NewRequestMetadata creates a new RequestMetadata instance with default values
 func NewRequestMetadata() *RequestMetadata {
 	return &RequestMetadata{
-		Timestamp:   mtime.Now().String(),
+		Timestamp:   time.Now().UTC().Format(mtime.Format20FSP),
 		UserContext: UserContext{},
 	}
 }

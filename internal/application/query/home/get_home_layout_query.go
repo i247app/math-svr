@@ -2,12 +2,12 @@ package query
 
 import (
 	"context"
+	"time"
 
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/enum"
 
 	"math-ai.com/math-ai/internal/shared/utils"
@@ -214,7 +214,7 @@ func (h *GetHomeLayoutQueryHandler) buildTeacher(ctx context.Context, p *profile
 		return data, nil
 	}
 
-	now := mtime.Now()
+	now := time.Now().UTC()
 	creator := p.ProfileId()
 	classroomIDsForExercises := activeClassroomIDs(data.Classrooms)
 	exercises, err := h.exerciseRepo.ListByClassroomIds(ctx, exerciseDomain.ListByClassroomIdsParams{
@@ -288,7 +288,7 @@ func (h *GetHomeLayoutQueryHandler) buildStudent(ctx context.Context, p *profile
 // profile has NOT submitted, capped at homeExerciseRenderCap. Shared by
 // the student layout's pending and expired buckets.
 func (h *GetHomeLayoutQueryHandler) listUnsubmittedExercises(ctx context.Context, profileID int64, classroomIDs []int64, expired bool) ([]*exerciseDomain.Exercise, error) {
-	now := mtime.Now()
+	now := time.Now().UTC()
 	params := exerciseDomain.ListByClassroomIdsParams{
 		ClassroomIDs:    classroomIDs,
 		CallerProfileID: profileID,
@@ -457,7 +457,7 @@ func (h *GetHomeLayoutQueryHandler) collectParentChildExercises(
 
 	// CallerProfileID stays zero so only PUBLIC exercises surface, matching
 	// the student-side view (children cannot see PRIVATE rows).
-	now := mtime.Now()
+	now := time.Now().UTC()
 	params := exerciseDomain.ListByClassroomIdsParams{
 		ClassroomIDs: activeClassroomIDs(data.Classrooms),
 		OnlyActive:   true,

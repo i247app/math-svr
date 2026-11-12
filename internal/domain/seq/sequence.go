@@ -1,7 +1,7 @@
 package seq
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // Sequence is one row of ma_seqs — the central registry that drives
@@ -13,20 +13,20 @@ type Sequence struct {
 	prefix       string
 	padding      uint8
 	incrementBy  uint32
-	modifyDt     mtime.MathTime
+	modifyDt     time.Time
 }
 
 func NewSequence() *Sequence { return &Sequence{} }
 
-func (s *Sequence) Name() string                 { return s.name }
-func (s *Sequence) SetName(n string)             { s.name = n }
-func (s *Sequence) CurrentValue() uint64         { return s.currentValue }
-func (s *Sequence) SetCurrentValue(v uint64)     { s.currentValue = v }
-func (s *Sequence) Prefix() string               { return s.prefix }
-func (s *Sequence) SetPrefix(p string)           { s.prefix = p }
-func (s *Sequence) Padding() uint8               { return s.padding }
-func (s *Sequence) SetPadding(p uint8)           { s.padding = p }
-func (s *Sequence) IncrementBy() uint32          { return s.incrementBy }
-func (s *Sequence) SetIncrementBy(i uint32)      { s.incrementBy = i }
-func (s *Sequence) ModifyDt() mtime.MathTime     { return s.modifyDt }
-func (s *Sequence) SetModifyDt(t mtime.MathTime) { s.modifyDt = t }
+func (s *Sequence) Name() string             { return s.name }
+func (s *Sequence) SetName(n string)         { s.name = n }
+func (s *Sequence) CurrentValue() uint64     { return s.currentValue }
+func (s *Sequence) SetCurrentValue(v uint64) { s.currentValue = v }
+func (s *Sequence) Prefix() string           { return s.prefix }
+func (s *Sequence) SetPrefix(p string)       { s.prefix = p }
+func (s *Sequence) Padding() uint8           { return s.padding }
+func (s *Sequence) SetPadding(p uint8)       { s.padding = p }
+func (s *Sequence) IncrementBy() uint32      { return s.incrementBy }
+func (s *Sequence) SetIncrementBy(i uint32)  { s.incrementBy = i }
+func (s *Sequence) ModifyDt() time.Time      { return s.modifyDt }
+func (s *Sequence) SetModifyDt(t time.Time)  { s.modifyDt = t }

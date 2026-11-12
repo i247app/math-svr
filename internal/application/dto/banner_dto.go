@@ -4,6 +4,7 @@ import (
 	"io"
 
 	domain "math-ai.com/math-ai/internal/domain/banner"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -13,18 +14,18 @@ import (
 // display and MediaURLKey only when they need to re-sign later.
 // ButtonLinkURL is an absolute link and is returned verbatim.
 type BannerResponse struct {
-	BannerID      int64   `json:"banner_id"`
-	Title         *string `json:"title,omitempty"`
-	ShortText     *string `json:"short_text,omitempty"`
-	MediaType     string  `json:"media_type"`
-	MediaURLKey   string  `json:"media_url_key"`
-	MediaUrl      *string `json:"media_url"`
-	ButtonText    *string `json:"button_text,omitempty"`
-	ButtonLinkURL *string `json:"button_link_url,omitempty"`
-	Note          *string `json:"note,omitempty"`
-	BannerStatus  *string `json:"banner_status,omitempty"`
-	CreateDt      string  `json:"create_dt"`
-	ModifyDt      string  `json:"modify_dt"`
+	BannerID      int64          `json:"banner_id"`
+	Title         *string        `json:"title,omitempty"`
+	ShortText     *string        `json:"short_text,omitempty"`
+	MediaType     string         `json:"media_type"`
+	MediaURLKey   string         `json:"media_url_key"`
+	MediaUrl      *string        `json:"media_url"`
+	ButtonText    *string        `json:"button_text,omitempty"`
+	ButtonLinkURL *string        `json:"button_link_url,omitempty"`
+	Note          *string        `json:"note,omitempty"`
+	BannerStatus  *string        `json:"banner_status,omitempty"`
+	CreateDt      mtime.MathTime `json:"create_dt"`
+	ModifyDt      mtime.MathTime `json:"modify_dt"`
 }
 
 type CreateBannerReq struct {
@@ -121,8 +122,8 @@ func BannerDomainToResponse(b *domain.Banner) *BannerResponse {
 		ButtonLinkURL: b.ButtonLinkURL(),
 		Note:          b.Note(),
 		BannerStatus:  b.BannerStatus(),
-		CreateDt:      b.CreateDt().String(),
-		ModifyDt:      b.ModifyDt().String(),
+		CreateDt:      mtime.NewTime(b.CreateDt()),
+		ModifyDt:      mtime.NewTime(b.ModifyDt()),
 	}
 }
 

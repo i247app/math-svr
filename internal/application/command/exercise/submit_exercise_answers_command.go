@@ -3,13 +3,13 @@ package command
 import (
 	"context"
 	"strings"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -66,7 +66,7 @@ func (h *SubmitExerciseAnswersCommandHandler) Handle(ctx context.Context, cmd Su
 		sub.SetCorrectNumber(cmd.CorrectNumber)
 		sub.SetScorePercentage(cmd.ScorePercentage)
 
-		now := mtime.Now()
+		now := time.Now().UTC()
 		sub.SetSubmittedDt(now)
 		// Treat a non-nil Review as the marker that grading happened
 		// at submit time. The row goes straight to GRADED so the student

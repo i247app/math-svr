@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/placement"
 	"math-ai.com/math-ai/internal/application/command/shared/scorer"
@@ -16,7 +17,6 @@ import (
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -126,7 +126,7 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			CorrectNumber:   scored.CorrectNumber,
 			SkippedNumber:   scored.SkippedNumber,
 			ScorePercentage: scored.ScorePercentage,
-			SubmittedDt:     mtime.Now(),
+			SubmittedDt:     time.Now().UTC(),
 			EsessId:         &journeyID,
 		}); err != nil {
 			if errors.Is(err, exam.ErrAttemptNotInProgress) {
@@ -392,7 +392,7 @@ func (h *SubmitExamCommandHandler) practiceRow(cmd SubmitExamCommand, existing *
 	complete := enum.EsessStatusComplete.String()
 	row.SetEsessStatus(&complete)
 	row.SetResReview(&derived.Review)
-	row.SetLastSubmittedDt(mtime.Now())
+	row.SetLastSubmittedDt(time.Now().UTC())
 	return row
 }
 
@@ -421,7 +421,7 @@ func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *ex
 	row.SetProfileId(cmd.ProfileID)
 	row.SetReqExamType(attempt.ReqExamType())
 	row.SetResReview(&derived.Review)
-	row.SetLastSubmittedDt(mtime.Now())
+	row.SetLastSubmittedDt(time.Now().UTC())
 	return row
 }
 

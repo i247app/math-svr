@@ -1,13 +1,13 @@
 package profile
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // Profile is a child managed by a parent (User). One row per child; the
 // grade/semester pair is mutated as the school year advances (never inserted
-// as a new row). MathTime carries the dob — zero value scans/marshals as
-// NULL/null without needing a pointer.
+// as a new row). A zero dob means "not set"; the repository writes it as
+// NULL and the API renders it as "" (empty).
 type Profile struct {
 	profileId     int64
 	profileCode   string
@@ -18,7 +18,7 @@ type Profile struct {
 	role          *string
 	identityCode  *string
 	avatarKey     *string
-	dob           mtime.MathTime
+	dob           time.Time
 	schoolId      *int64
 	programId     *int64
 	gradeId       *int64
@@ -33,9 +33,9 @@ type Profile struct {
 	profileStatus *string
 	status        string
 	createId      *int64
-	createDt      mtime.MathTime
+	createDt      time.Time
 	modifyId      *int64
-	modifyDt      mtime.MathTime
+	modifyDt      time.Time
 }
 
 func NewProfile() *Profile {
@@ -122,11 +122,11 @@ func (p *Profile) SetAvatarKey(avatarKey *string) {
 	p.avatarKey = avatarKey
 }
 
-func (p *Profile) Dob() mtime.MathTime {
+func (p *Profile) Dob() time.Time {
 	return p.dob
 }
 
-func (p *Profile) SetDob(dob mtime.MathTime) {
+func (p *Profile) SetDob(dob time.Time) {
 	p.dob = dob
 }
 
@@ -265,11 +265,11 @@ func (p *Profile) SetCreateId(createId *int64) {
 	p.createId = createId
 }
 
-func (p *Profile) CreateDt() mtime.MathTime {
+func (p *Profile) CreateDt() time.Time {
 	return p.createDt
 }
 
-func (p *Profile) SetCreateDt(createDt mtime.MathTime) {
+func (p *Profile) SetCreateDt(createDt time.Time) {
 	p.createDt = createDt
 }
 
@@ -281,10 +281,10 @@ func (p *Profile) SetModifyId(modifyId *int64) {
 	p.modifyId = modifyId
 }
 
-func (p *Profile) ModifyDt() mtime.MathTime {
+func (p *Profile) ModifyDt() time.Time {
 	return p.modifyDt
 }
 
-func (p *Profile) SetModifyDt(modifyDt mtime.MathTime) {
+func (p *Profile) SetModifyDt(modifyDt time.Time) {
 	p.modifyDt = modifyDt
 }

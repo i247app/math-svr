@@ -6,9 +6,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // maxProgressRange caps the queryable window at ~2 years to keep the
@@ -38,10 +38,10 @@ func (s *Service) ValidateProfileProgress(ctx context.Context, req *dto.ProfileP
 		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
 	}
 
-	if !from.Time.Before(to.Time) {
+	if !from.Before(to) {
 		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
 	}
-	if to.Time.Sub(from.Time).Hours() > maxProgressRangeHours {
+	if to.Sub(from).Hours() > maxProgressRangeHours {
 		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressRangeTooLong)
 	}
 

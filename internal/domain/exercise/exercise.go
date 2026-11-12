@@ -1,7 +1,7 @@
 package exercise
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // Exercise is a teacher-issued, AI-generated assignment scoped to a
@@ -34,17 +34,17 @@ type Exercise struct {
 	totalQuestions      int
 	questions           *string
 	answers             *string
-	startDate           mtime.MathTime
-	endDate             mtime.MathTime
+	startDate           time.Time
+	endDate             time.Time
 	rptFlg              *string
 	kwords              *string
 	note                *string
 	exerciseStatus      *string
 	status              string
 	createId            *int64
-	createDt            mtime.MathTime
+	createDt            time.Time
 	modifyId            *int64
-	modifyDt            mtime.MathTime
+	modifyDt            time.Time
 }
 
 func NewExercise() *Exercise { return &Exercise{} }
@@ -77,10 +77,10 @@ func (e *Exercise) Questions() *string              { return e.questions }
 func (e *Exercise) SetQuestions(s *string)          { e.questions = s }
 func (e *Exercise) Answers() *string                { return e.answers }
 func (e *Exercise) SetAnswers(s *string)            { e.answers = s }
-func (e *Exercise) StartDate() mtime.MathTime       { return e.startDate }
-func (e *Exercise) SetStartDate(t mtime.MathTime)   { e.startDate = t }
-func (e *Exercise) EndDate() mtime.MathTime         { return e.endDate }
-func (e *Exercise) SetEndDate(t mtime.MathTime)     { e.endDate = t }
+func (e *Exercise) StartDate() time.Time            { return e.startDate }
+func (e *Exercise) SetStartDate(t time.Time)        { e.startDate = t }
+func (e *Exercise) EndDate() time.Time              { return e.endDate }
+func (e *Exercise) SetEndDate(t time.Time)          { e.endDate = t }
 func (e *Exercise) Note() *string                   { return e.note }
 func (e *Exercise) SetNote(s *string)               { e.note = s }
 func (e *Exercise) RptFlg() *string                 { return e.rptFlg }
@@ -93,9 +93,9 @@ func (e *Exercise) Status() string                  { return e.status }
 func (e *Exercise) SetStatus(s string)              { e.status = s }
 func (e *Exercise) CreateId() *int64                { return e.createId }
 func (e *Exercise) SetCreateId(id *int64)           { e.createId = id }
-func (e *Exercise) CreateDt() mtime.MathTime        { return e.createDt }
-func (e *Exercise) SetCreateDt(t mtime.MathTime)    { e.createDt = t }
+func (e *Exercise) CreateDt() time.Time             { return e.createDt }
+func (e *Exercise) SetCreateDt(t time.Time)         { e.createDt = t }
 func (e *Exercise) ModifyId() *int64                { return e.modifyId }
 func (e *Exercise) SetModifyId(id *int64)           { e.modifyId = id }
-func (e *Exercise) ModifyDt() mtime.MathTime        { return e.modifyDt }
-func (e *Exercise) SetModifyDt(t mtime.MathTime)    { e.modifyDt = t }
+func (e *Exercise) ModifyDt() time.Time             { return e.modifyDt }
+func (e *Exercise) SetModifyDt(t time.Time)         { e.modifyDt = t }

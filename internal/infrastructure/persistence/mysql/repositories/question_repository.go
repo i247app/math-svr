@@ -9,10 +9,10 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/question"
 	"math-ai.com/math-ai/internal/domain/questionpool"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"time"
 )
 
 const (
@@ -70,7 +70,7 @@ func (r *QuestionRepository) CreateMany(ctx context.Context, questions []*questi
 	if len(questions) == 0 {
 		return nil
 	}
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	tuples := make([]string, 0, len(questions))
 	args := make([]any, 0, len(questions)*20)
 	for _, q := range questions {
@@ -142,7 +142,7 @@ func (r *QuestionRepository) ListByExamId(ctx context.Context, examId int64) ([]
 func (r *QuestionRepository) ReplaceByExamId(ctx context.Context, examId int64, questions []*question.Question, actorId *int64) error {
 	query := `UPDATE ` + questionTable + ` q SET q.status = ?, q.deleted_dt = ?, q.modify_id = ?
 		WHERE (q.exam_id = ?) AND ` + questionActiveWhere
-	args := slices.Concat([]any{enum.StatusInactive, mtime.Now().Time, actorId, examId}, questionActiveArgs())
+	args := slices.Concat([]any{enum.StatusInactive, time.Now().UTC(), actorId, examId}, questionActiveArgs())
 	if _, err := r.db.Exec(ctx, query, args...); err != nil {
 		return fmt.Errorf("question repo replace by exam id: %w", err)
 	}
@@ -213,8 +213,8 @@ func ModelToDomainQuestion(m *models.QuestionModel) (*question.Question, error) 
 	q.SetNote(m.Note)
 	q.SetStatus(m.Status)
 	q.SetCreateId(m.CreateId)
-	q.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	q.SetCreateDt(m.CreateDt)
 	q.SetModifyId(m.ModifyId)
-	q.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	q.SetModifyDt(m.ModifyDt)
 	return q, nil
 }

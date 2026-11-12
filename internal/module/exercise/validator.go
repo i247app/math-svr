@@ -6,9 +6,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 const (
@@ -109,7 +109,7 @@ func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) err
 			ErrNumQuestionsOutOfRange)
 	}
 	// if req.StartDate.IsValid() && req.EndDate.IsValid() &&
-	// 	req.EndDate.Time.Before(req.StartDate.Time) {
+	// 	req.EndDate.Before(req.StartDate) {
 	// 	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil,
 	// 		ErrEndDateBeforeStart)
 	// }
@@ -123,7 +123,7 @@ func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) err
 		if err != nil {
 			return err
 		}
-		if parseEndDate.IsValid() && parseEndDate.Time.Before(parseStartDate.Time) {
+		if !parseEndDate.IsZero() && parseEndDate.Before(parseStartDate) {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil, ErrEndDateBeforeStart)
 		}
 	}
@@ -212,7 +212,7 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 	}
 	// if req.StartDate != nil && req.EndDate != nil &&
 	// 	req.StartDate.IsValid() && req.EndDate.IsValid() &&
-	// 	req.EndDate.Time.Before(req.StartDate.Time) {
+	// 	req.EndDate.Before(req.StartDate) {
 	// 	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil,
 	// 		ErrEndDateBeforeStart)
 	// }
@@ -226,7 +226,7 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 		if err != nil {
 			return err
 		}
-		if parseEndDate.IsValid() && parseEndDate.Time.Before(parseStartDate.Time) {
+		if !parseEndDate.IsZero() && parseEndDate.Before(parseStartDate) {
 			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil, ErrEndDateBeforeStart)
 		}
 	}

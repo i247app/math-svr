@@ -22,6 +22,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -151,7 +152,7 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	}
 
 	res := &dto.SendOtpRes{
-		ExpiresAt: result.ExpiresAt.String(),
+		ExpiresAt: mtime.NewTime(result.ExpiresAt),
 		Channel:   result.Channel.String(),
 		OTPCode:   result.OTPCode,
 		OtpType:   result.OTPType,

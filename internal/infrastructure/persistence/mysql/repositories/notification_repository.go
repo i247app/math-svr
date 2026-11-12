@@ -8,11 +8,11 @@ import (
 	"slices"
 
 	"math-ai.com/math-ai/internal/domain/notification"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -138,7 +138,7 @@ func (r *NotificationRepository) Create(ctx context.Context, n *notification.Not
 			 action_data, priority, rpt_flg, kwords, note, notification_status, create_id, create_dt, modify_dt)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	_, err := r.db.Exec(ctx, query,
 		n.NotificationId(), n.Uid(), n.Title(), n.ShortText(), n.Category(),
 		n.IsRead(), n.ActionType(), n.ActionData(), n.Priority(), n.RptFlg(), n.Kwords(), n.Note(),
@@ -156,7 +156,7 @@ func (r *NotificationRepository) MarkReadByNotificationId(ctx context.Context, n
 			modify_dt = ?
 		WHERE notification_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, mtime.Now().Time, notificationId); err != nil {
+	if _, err := r.db.Exec(ctx, query, time.Now().UTC(), notificationId); err != nil {
 		return fmt.Errorf("notification repo mark read: %w", err)
 	}
 	return nil
@@ -169,7 +169,7 @@ func (r *NotificationRepository) MarkAllReadByUid(ctx context.Context, uid int64
 			modify_dt = ?
 		WHERE uid = ? AND is_read = FALSE
 	`
-	if _, err := r.db.Exec(ctx, query, mtime.Now().Time, uid); err != nil {
+	if _, err := r.db.Exec(ctx, query, time.Now().UTC(), uid); err != nil {
 		return fmt.Errorf("notification repo mark all read: %w", err)
 	}
 	return nil
@@ -184,7 +184,7 @@ func (r *NotificationRepository) SoftDeleteByNotificationId(ctx context.Context,
 			modify_dt           = ?
 		WHERE notification_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.NotificationStatusTypeDeleted, enum.StatusInactive, now, now, notificationId); err != nil {
 		return fmt.Errorf("notification repo soft delete: %w", err)
@@ -209,8 +209,8 @@ func ModelToDomainNotification(m *models.NotificationModel) *notification.Notifi
 	n.SetNotificationStatus(m.NotificationStatus)
 	n.SetStatus(m.Status)
 	n.SetCreateId(m.CreateId)
-	n.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	n.SetCreateDt(m.CreateDt)
 	n.SetModifyId(m.ModifyId)
-	n.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	n.SetModifyDt(m.ModifyDt)
 	return n
 }

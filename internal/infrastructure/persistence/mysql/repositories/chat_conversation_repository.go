@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/chat"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -72,7 +72,7 @@ func ModelToDomainChatConversation(m *models.ChatConversationModel) *chat.Conver
 	c.SetLastMessagePreview(m.LastMessagePreview)
 	c.SetLastMessageSenderProfileId(m.LastMessageSenderProfileId)
 	if m.LastMessageDt != nil {
-		c.SetLastMessageDt(mtime.MathTime{Time: *m.LastMessageDt})
+		c.SetLastMessageDt(*m.LastMessageDt)
 	}
 	c.SetRptFlg(m.RptFlg)
 	c.SetKwords(m.Kwords)
@@ -80,9 +80,9 @@ func ModelToDomainChatConversation(m *models.ChatConversationModel) *chat.Conver
 	c.SetConversationStatus(m.ConversationStatus)
 	c.SetStatus(m.Status)
 	c.SetCreateId(m.CreateId)
-	c.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	c.SetCreateDt(m.CreateDt)
 	c.SetModifyId(m.ModifyId)
-	c.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	c.SetModifyDt(m.ModifyDt)
 	return c
 }
 
@@ -227,7 +227,7 @@ func (r *ChatConversationRepository) Create(ctx context.Context, c *chat.Convers
 	_, err := r.db.Exec(ctx, query,
 		c.ConversationId(), c.ConversationType(), c.ClassroomId(), c.DmKey(),
 		c.Title(), c.AvatarKey(), c.OwnerProfileId(), c.ParticipantCount(),
-		c.RptFlg(), c.Kwords(), c.Note(), c.ConversationStatus(), c.Status(), c.CreateId(), mtime.Now().Time,
+		c.RptFlg(), c.Kwords(), c.Note(), c.ConversationStatus(), c.Status(), c.CreateId(), time.Now().UTC(),
 	)
 	if err != nil {
 		// Translated to a domain sentinel so the command layer can recognise
@@ -282,7 +282,7 @@ func (r *ChatConversationRepository) UpdateLastMessage(ctx context.Context, conv
 
 	if _, err := r.db.Exec(ctx, query,
 		m.MessageId(), m.SeqNo(), m.MessageType(), preview,
-		m.SenderProfileId(), m.SentDt().Time, conversationId,
+		m.SenderProfileId(), m.SentDt(), conversationId,
 	); err != nil {
 		return fmt.Errorf("chat conversation repo update last message: %w", err)
 	}
@@ -293,7 +293,7 @@ func (r *ChatConversationRepository) SoftDeleteByConversationId(ctx context.Cont
 	query := `UPDATE ` + chatConversationTable + `
 		SET conversation_status = ?, deleted_dt = ? WHERE conversation_id = ?`
 
-	if _, err := r.db.Exec(ctx, query, enum.ChatConversationStatusDeleted, mtime.Now().Time, conversationId); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.ChatConversationStatusDeleted, time.Now().UTC(), conversationId); err != nil {
 		return fmt.Errorf("chat conversation repo soft delete: %w", err)
 	}
 	return nil

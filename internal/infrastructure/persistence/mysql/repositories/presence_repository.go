@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/presence"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"time"
 )
 
 const (
@@ -108,7 +108,7 @@ func (r *PresenceRepository) ListByUids(ctx context.Context, uids []int64) (map[
 //
 // The update clause repeats the placeholders rather than using VALUES(col),
 // which MySQL 8.0.20 deprecated.
-func (r *PresenceRepository) IncrementConnection(ctx context.Context, uid int64, deviceUuid, platform *string, now mtime.MathTime) (*presence.Presence, error) {
+func (r *PresenceRepository) IncrementConnection(ctx context.Context, uid int64, deviceUuid, platform *string, now time.Time) (*presence.Presence, error) {
 	query := `INSERT INTO ` + presenceTable + `
 		  (uid, presence_state, connection_count, last_online_dt, last_seen_dt,
 		   last_device_uuid, last_platform, status)
@@ -123,8 +123,8 @@ func (r *PresenceRepository) IncrementConnection(ctx context.Context, uid int64,
 
 	online := enum.PresenceStateOnline.String()
 	if _, err := r.db.Exec(ctx, query,
-		uid, online, now.Time, now.Time, deviceUuid, platform, enum.StatusActive,
-		online, now.Time, now.Time, deviceUuid, platform,
+		uid, online, now, now, deviceUuid, platform, enum.StatusActive,
+		online, now, now, deviceUuid, platform,
 	); err != nil {
 		return nil, fmt.Errorf("presence repo increment connection: %w", err)
 	}
@@ -140,14 +140,14 @@ func (r *PresenceRepository) IncrementConnection(ctx context.Context, uid int64,
 // presence_state must therefore be decided BEFORE connection_count is
 // decremented, or the CASE would read the new count and never fire. Do not
 // reorder these two lines.
-func (r *PresenceRepository) DecrementConnection(ctx context.Context, uid int64, now mtime.MathTime) (*presence.Presence, error) {
+func (r *PresenceRepository) DecrementConnection(ctx context.Context, uid int64, now time.Time) (*presence.Presence, error) {
 	query := `UPDATE ` + presenceTable + ` SET
 		  presence_state   = CASE WHEN connection_count <= 1 THEN ? ELSE presence_state END,
 		  connection_count = GREATEST(0, connection_count - 1),
 		  last_seen_dt     = ?
 		WHERE uid = ?`
 
-	if _, err := r.db.Exec(ctx, query, enum.PresenceStateOffline.String(), now.Time, uid); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.PresenceStateOffline.String(), now, uid); err != nil {
 		return nil, fmt.Errorf("presence repo decrement connection: %w", err)
 	}
 
@@ -175,10 +175,10 @@ func ModelToDomainPresence(m *models.PresenceModel) *presence.Presence {
 	p.SetPresenceState(m.PresenceState)
 	p.SetConnectionCount(m.ConnectionCount)
 	if m.LastOnlineDt != nil {
-		p.SetLastOnlineDt(mtime.MathTime{Time: *m.LastOnlineDt})
+		p.SetLastOnlineDt(*m.LastOnlineDt)
 	}
 	if m.LastSeenDt != nil {
-		p.SetLastSeenDt(mtime.MathTime{Time: *m.LastSeenDt})
+		p.SetLastSeenDt(*m.LastSeenDt)
 	}
 	p.SetLastDeviceUuid(m.LastDeviceUuid)
 	p.SetLastPlatform(m.LastPlatform)
@@ -187,8 +187,8 @@ func ModelToDomainPresence(m *models.PresenceModel) *presence.Presence {
 	p.SetNote(m.Note)
 	p.SetStatus(m.Status)
 	p.SetCreateId(m.CreateId)
-	p.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	p.SetCreateDt(m.CreateDt)
 	p.SetModifyId(m.ModifyId)
-	p.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	p.SetModifyDt(m.ModifyDt)
 	return p
 }

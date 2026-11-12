@@ -1,7 +1,7 @@
 package exam
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // ExamSessionLine is one question the child ACTUALLY ANSWERED. A skipped
@@ -63,9 +63,9 @@ type ExamSessionLine struct {
 	esessLnStatus *string
 	status        string
 	createId      *int64
-	createDt      mtime.MathTime
+	createDt      time.Time
 	modifyId      *int64
-	modifyDt      mtime.MathTime
+	modifyDt      time.Time
 }
 
 func NewExamSessionLine() *ExamSessionLine { return &ExamSessionLine{} }
@@ -118,9 +118,9 @@ func (d *ExamSessionLine) Status() string               { return d.status }
 func (d *ExamSessionLine) SetStatus(s string)           { d.status = s }
 func (d *ExamSessionLine) CreateId() *int64             { return d.createId }
 func (d *ExamSessionLine) SetCreateId(id *int64)        { d.createId = id }
-func (d *ExamSessionLine) CreateDt() mtime.MathTime     { return d.createDt }
-func (d *ExamSessionLine) SetCreateDt(t mtime.MathTime) { d.createDt = t }
+func (d *ExamSessionLine) CreateDt() time.Time          { return d.createDt }
+func (d *ExamSessionLine) SetCreateDt(t time.Time)      { d.createDt = t }
 func (d *ExamSessionLine) ModifyId() *int64             { return d.modifyId }
 func (d *ExamSessionLine) SetModifyId(id *int64)        { d.modifyId = id }
-func (d *ExamSessionLine) ModifyDt() mtime.MathTime     { return d.modifyDt }
-func (d *ExamSessionLine) SetModifyDt(t mtime.MathTime) { d.modifyDt = t }
+func (d *ExamSessionLine) ModifyDt() time.Time          { return d.modifyDt }
+func (d *ExamSessionLine) SetModifyDt(t time.Time)      { d.modifyDt = t }

@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	domain "math-ai.com/math-ai/internal/domain/exercise"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -156,13 +156,13 @@ func (r *ExerciseRepository) ListByClassroomIds(ctx context.Context, params doma
 		clause.WriteString(` AND (e.exercise_status IS NULL OR e.exercise_status = ?)`)
 		args = append(args, enum.ClassroomExerciseStatusTypeActive)
 	}
-	if params.NotExpiredAsOf != nil && params.NotExpiredAsOf.IsValid() {
+	if params.NotExpiredAsOf != nil && !params.NotExpiredAsOf.IsZero() {
 		clause.WriteString(` AND (e.end_date IS NULL OR e.end_date >= ?)`)
-		args = append(args, params.NotExpiredAsOf.Time)
+		args = append(args, params.NotExpiredAsOf)
 	}
-	if params.ExpiredAsOf != nil && params.ExpiredAsOf.IsValid() {
+	if params.ExpiredAsOf != nil && !params.ExpiredAsOf.IsZero() {
 		clause.WriteString(` AND e.end_date IS NOT NULL AND e.end_date < ?`)
-		args = append(args, params.ExpiredAsOf.Time)
+		args = append(args, params.ExpiredAsOf)
 	}
 
 	args = append(args, exerciseActiveArgs()...)
@@ -341,11 +341,11 @@ func escapeLikePattern(s string) string {
 
 func (r *ExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*domain.Exercise, error) {
 	var startArg, endArg any
-	if e.StartDate().IsValid() {
-		startArg = e.StartDate().Time
+	if !e.StartDate().IsZero() {
+		startArg = e.StartDate()
 	}
-	if e.EndDate().IsValid() {
-		endArg = e.EndDate().Time
+	if !e.EndDate().IsZero() {
+		endArg = e.EndDate()
 	}
 
 	visibility := e.Visibility()
@@ -375,7 +375,7 @@ func (r *ExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*d
 		e.ProgramId(),
 		e.Title(), e.ShortText(), e.Description(), e.ChapterName(), e.LessonName(), e.TotalQuestions(),
 		e.Questions(), e.Answers(), startArg, endArg,
-		e.RptFlg(), e.Kwords(), e.Note(), e.ExerciseStatus(), e.CreateId(), mtime.Now().Time, mtime.Now().Time)
+		e.RptFlg(), e.Kwords(), e.Note(), e.ExerciseStatus(), e.CreateId(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("classroom exercise repo create: %w", err)
 	}
@@ -389,8 +389,8 @@ func (r *ExerciseRepository) Create(ctx context.Context, e *domain.Exercise) (*d
 func (r *ExerciseRepository) Update(ctx context.Context, classroomExerciseId int64, patch domain.UpdatePatch) error {
 	var startArg, endArg any
 	if patch.StartDate != nil {
-		if patch.StartDate.IsValid() {
-			startArg = patch.StartDate.Time
+		if !patch.StartDate.IsZero() {
+			startArg = *patch.StartDate
 		} else {
 			// explicit clear — pass typed NULL via sql.NullTime so the
 			// COALESCE doesn't see a Go nil and short-circuit.
@@ -398,8 +398,8 @@ func (r *ExerciseRepository) Update(ctx context.Context, classroomExerciseId int
 		}
 	}
 	if patch.EndDate != nil {
-		if patch.EndDate.IsValid() {
-			endArg = patch.EndDate.Time
+		if !patch.EndDate.IsZero() {
+			endArg = *patch.EndDate
 		} else {
 			endArg = sql.NullTime{}
 		}
@@ -427,7 +427,7 @@ func (r *ExerciseRepository) Update(ctx context.Context, classroomExerciseId int
 		patch.Title, patch.Description, patch.ChapterName, patch.LessonName,
 		startArg, endArg,
 		patch.RptFlg, patch.Kwords, patch.Note, patch.ExerciseStatus, patch.Visibility, patch.Purpose, patch.ModifyID,
-		mtime.Now().Time, classroomExerciseId); err != nil {
+		time.Now().UTC(), classroomExerciseId); err != nil {
 		return fmt.Errorf("classroom exercise repo update: %w", err)
 	}
 	return nil
@@ -443,7 +443,7 @@ func (r *ExerciseRepository) SoftDelete(ctx context.Context, classroomExerciseId
 			modify_dt       = ?
 		WHERE classroom_exercise_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.ClassroomExerciseStatusTypeDeleted, enum.StatusInactive,
 		now, actorID, now, classroomExerciseId); err != nil {
@@ -471,10 +471,10 @@ func modelToDomainClassroomExercise(m *models.ExerciseModel) *domain.Exercise {
 	e.SetQuestions(m.Questions)
 	e.SetAnswers(m.Answers)
 	if m.StartDate != nil {
-		e.SetStartDate(mtime.MathTime{Time: *m.StartDate})
+		e.SetStartDate(*m.StartDate)
 	}
 	if m.EndDate != nil {
-		e.SetEndDate(mtime.MathTime{Time: *m.EndDate})
+		e.SetEndDate(*m.EndDate)
 	}
 	e.SetRptFlg(m.RptFlg)
 	e.SetKwords(m.Kwords)
@@ -482,8 +482,8 @@ func modelToDomainClassroomExercise(m *models.ExerciseModel) *domain.Exercise {
 	e.SetExerciseStatus(m.ExerciseStatus)
 	e.SetStatus(m.Status)
 	e.SetCreateId(m.CreateId)
-	e.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	e.SetCreateDt(m.CreateDt)
 	e.SetModifyId(m.ModifyId)
-	e.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	e.SetModifyDt(m.ModifyDt)
 	return e
 }

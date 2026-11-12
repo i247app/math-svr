@@ -150,7 +150,7 @@ func (h *GetExamStatsQueryHandler) journeyKeyset(uid, profileId int64, filter ex
 			return h.examSessionRepo.ExistsJourneyAtOrOlder(ctx, uid, profileId, filter, c.key())
 		},
 		Key: func(j *exam.ExamSession) journeyCursor {
-			return journeyCursor{CreateDt: j.CreateDt().ToTime().UTC(), EsessId: j.EsessId()}
+			return journeyCursor{CreateDt: j.CreateDt().UTC(), EsessId: j.EsessId()}
 		},
 		Valid: func(c journeyCursor) bool { return c.EsessId > 0 && !c.CreateDt.IsZero() },
 	}

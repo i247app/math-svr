@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/classroom"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"time"
 )
 
 const (
@@ -138,7 +138,7 @@ func (r *ClassroomProgramRepository) Create(ctx context.Context, cp *classroom.C
 	`
 	_, err := r.db.Exec(ctx, query,
 		cp.ClassroomProgramId(), cp.ClassroomId(), cp.ProgramId(),
-		cp.RptFlg(), cp.Kwords(), cp.Note(), cp.CreateId(), mtime.Now().Time, mtime.Now().Time)
+		cp.RptFlg(), cp.Kwords(), cp.Note(), cp.CreateId(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("classroom_program repo create: %w", err)
 	}
@@ -172,8 +172,8 @@ func ModelToDomainClassroomProgram(m *models.ClassroomProgramModel) *classroom.C
 	cp.SetNote(m.Note)
 	cp.SetStatus(m.Status)
 	cp.SetCreateId(m.CreateId)
-	cp.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	cp.SetCreateDt(m.CreateDt)
 	cp.SetModifyId(m.ModifyId)
-	cp.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	cp.SetModifyDt(m.ModifyDt)
 	return cp
 }

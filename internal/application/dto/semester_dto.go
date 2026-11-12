@@ -2,19 +2,20 @@ package dto
 
 import (
 	domain "math-ai.com/math-ai/internal/domain/semester"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
 type SemesterResponse struct {
-	SemesterID   int64   `json:"semester_id"`
-	Name         string  `json:"name"`
-	Description  string  `json:"description"`
-	ImageKey     *string `json:"image_key,omitempty"`
-	ImageUrl     *string `json:"image_url"` // pre-signed url from image_key
-	DisplayOrder int8    `json:"display_order"`
-	Note         *string `json:"note,omitempty"`
-	CreateDt     string  `json:"create_dt"`
-	ModifyDt     string  `json:"modify_dt"`
+	SemesterID   int64          `json:"semester_id"`
+	Name         string         `json:"name"`
+	Description  string         `json:"description"`
+	ImageKey     *string        `json:"image_key,omitempty"`
+	ImageUrl     *string        `json:"image_url"` // pre-signed url from image_key
+	DisplayOrder int8           `json:"display_order"`
+	Note         *string        `json:"note,omitempty"`
+	CreateDt     mtime.MathTime `json:"create_dt"`
+	ModifyDt     mtime.MathTime `json:"modify_dt"`
 }
 
 type CreateSemesterReq struct {
@@ -79,8 +80,8 @@ func SemesterDomainToResponse(s *domain.Semester) *SemesterResponse {
 		ImageKey:     s.ImageKey(),
 		DisplayOrder: s.DisplayOrder(),
 		Note:         s.Note(),
-		CreateDt:     s.CreateDt().String(),
-		ModifyDt:     s.ModifyDt().String(),
+		CreateDt:     mtime.NewTime(s.CreateDt()),
+		ModifyDt:     mtime.NewTime(s.ModifyDt()),
 	}
 }
 

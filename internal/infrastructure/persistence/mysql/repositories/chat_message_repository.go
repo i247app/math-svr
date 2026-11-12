@@ -8,10 +8,10 @@ import (
 	"slices"
 
 	"math-ai.com/math-ai/internal/domain/chat"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"time"
 )
 
 const (
@@ -74,12 +74,12 @@ func ModelToDomainChatMessage(m *models.ChatMessageModel) *chat.Message {
 	msg.SetSystemPayload(m.SystemPayload)
 	msg.SetMetadata(m.Metadata)
 	msg.SetClientMsgId(m.ClientMsgId)
-	msg.SetSentDt(mtime.MathTime{Time: m.SentDt})
+	msg.SetSentDt(m.SentDt)
 	if m.EditedDt != nil {
-		msg.SetEditedDt(mtime.MathTime{Time: *m.EditedDt})
+		msg.SetEditedDt(*m.EditedDt)
 	}
 	if m.RevokedDt != nil {
-		msg.SetRevokedDt(mtime.MathTime{Time: *m.RevokedDt})
+		msg.SetRevokedDt(*m.RevokedDt)
 	}
 	msg.SetRptFlg(m.RptFlg)
 	msg.SetKwords(m.Kwords)
@@ -87,9 +87,9 @@ func ModelToDomainChatMessage(m *models.ChatMessageModel) *chat.Message {
 	msg.SetMessageStatus(m.MessageStatus)
 	msg.SetStatus(m.Status)
 	msg.SetCreateId(m.CreateId)
-	msg.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	msg.SetCreateDt(m.CreateDt)
 	msg.SetModifyId(m.ModifyId)
-	msg.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	msg.SetModifyDt(m.ModifyDt)
 	return msg
 }
 
@@ -205,8 +205,8 @@ func (r *ChatMessageRepository) Create(ctx context.Context, m *chat.Message) (*c
 	_, err := r.db.Exec(ctx, query,
 		m.MessageId(), m.ConversationId(), m.SeqNo(), m.SenderProfileId(), m.SenderUid(),
 		m.MessageType(), m.Content(), m.AttachmentCount(), m.ReplyToMessageId(),
-		m.SystemEvent(), m.SystemPayload(), m.Metadata(), m.ClientMsgId(), m.SentDt().Time,
-		m.RptFlg(), m.Kwords(), m.Note(), m.MessageStatus(), m.Status(), m.CreateId(), mtime.Now().Time,
+		m.SystemEvent(), m.SystemPayload(), m.Metadata(), m.ClientMsgId(), m.SentDt(),
+		m.RptFlg(), m.Kwords(), m.Note(), m.MessageStatus(), m.Status(), m.CreateId(), time.Now().UTC(),
 	)
 	if err != nil {
 		// Translated to a domain sentinel so the command layer can recognise a
@@ -224,7 +224,7 @@ func (r *ChatMessageRepository) SoftDeleteByMessageId(ctx context.Context, messa
 	query := `UPDATE ` + chatMessageTable + `
 		SET message_status = ?, deleted_dt = ? WHERE message_id = ?`
 
-	if _, err := r.db.Exec(ctx, query, enum.ChatMessageStatusDeleted, mtime.Now().Time, messageId); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.ChatMessageStatusDeleted, time.Now().UTC(), messageId); err != nil {
 		return fmt.Errorf("chat message repo soft delete: %w", err)
 	}
 	return nil

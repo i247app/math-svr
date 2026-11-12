@@ -320,10 +320,10 @@ func emailOtpMatches(verified *otp.Otp, deviceUUID string) bool {
 	if *verified.DeviceUUID() != deviceUUID {
 		return false
 	}
-	if !verified.OtpVerifiedDt().IsValid() {
+	if verified.OtpVerifiedDt().IsZero() {
 		return false
 	}
-	return time.Now().UTC().Sub(verified.OtpVerifiedDt().Time) <= emailVerificationWindow
+	return time.Now().UTC().Sub(verified.OtpVerifiedDt()) <= emailVerificationWindow
 }
 
 func BuildUser(cmd CreateUserCommand) *user.User {

@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"errors"
+	"time"
 	"unicode/utf8"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
@@ -10,7 +11,6 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -111,7 +111,7 @@ func (h *SendMessageCommandHandler) Handle(ctx context.Context, cmd *SendMessage
 		m.SetContent(&content)
 		m.SetReplyToMessageId(cmd.ReplyToMessageID)
 		m.SetClientMsgId(cmd.ClientMsgID)
-		m.SetSentDt(mtime.Now())
+		m.SetSentDt(time.Now().UTC())
 		m.SetMessageStatus(&sentStatus)
 		m.SetStatus(enum.StatusActive.String())
 		m.SetCreateId(&cmd.SenderUID)

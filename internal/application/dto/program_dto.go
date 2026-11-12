@@ -2,19 +2,20 @@ package dto
 
 import (
 	domain "math-ai.com/math-ai/internal/domain/program"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
 type ProgramResponse struct {
-	ProgramID    int64   `json:"program_id"`
-	Label        string  `json:"label"`
-	Description  string  `json:"description"`
-	ImageKey     *string `json:"image_key,omitempty"`
-	ImageUrl     *string `json:"image_url"` // pre-signed url from image_key
-	DisplayOrder int8    `json:"display_order"`
-	Note         *string `json:"note,omitempty"`
-	CreateDt     string  `json:"create_dt"`
-	ModifyDt     string  `json:"modify_dt"`
+	ProgramID    int64          `json:"program_id"`
+	Label        string         `json:"label"`
+	Description  string         `json:"description"`
+	ImageKey     *string        `json:"image_key,omitempty"`
+	ImageUrl     *string        `json:"image_url"` // pre-signed url from image_key
+	DisplayOrder int8           `json:"display_order"`
+	Note         *string        `json:"note,omitempty"`
+	CreateDt     mtime.MathTime `json:"create_dt"`
+	ModifyDt     mtime.MathTime `json:"modify_dt"`
 }
 
 type CreateProgramReq struct {
@@ -79,8 +80,8 @@ func ProgramDomainToResponse(p *domain.Program) *ProgramResponse {
 		ImageKey:     p.ImageKey(),
 		DisplayOrder: p.DisplayOrder(),
 		Note:         p.Note(),
-		CreateDt:     p.CreateDt().String(),
-		ModifyDt:     p.ModifyDt().String(),
+		CreateDt:     mtime.NewTime(p.CreateDt()),
+		ModifyDt:     mtime.NewTime(p.ModifyDt()),
 	}
 }
 

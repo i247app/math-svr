@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/school"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -212,7 +212,7 @@ func (r *SchoolRepository) Create(ctx context.Context, s *school.School) (*schoo
 	`
 	_, err := r.db.Exec(ctx, query,
 		s.SchoolId(), s.Name(), s.Description(), s.ImageKey(),
-		s.District(), s.Province(), s.RptFlg(), s.Kwords(), s.Note(), s.SchoolStatus(), s.CreateId(), mtime.Now().Time, mtime.Now().Time)
+		s.District(), s.Province(), s.RptFlg(), s.Kwords(), s.Note(), s.SchoolStatus(), s.CreateId(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("school repo create: %w", err)
 	}
@@ -246,7 +246,7 @@ func (r *SchoolRepository) Update(ctx context.Context, s *school.School) error {
 	if _, err := r.db.Exec(ctx, query,
 		nameArg, s.Description(), s.ImageKey(),
 		s.District(), s.Province(), s.RptFlg(), s.Kwords(), s.Note(), s.ModifyId(),
-		mtime.Now().Time, s.SchoolId()); err != nil {
+		time.Now().UTC(), s.SchoolId()); err != nil {
 		return fmt.Errorf("school repo update: %w", err)
 	}
 	return nil
@@ -261,7 +261,7 @@ func (r *SchoolRepository) SoftDeleteBySchoolId(ctx context.Context, schoolId in
 			modify_dt     = ?
 		WHERE school_id = ?
 	`
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	if _, err := r.db.Exec(ctx, query,
 		enum.SchoolStatusTypeDeleted, enum.StatusInactive, now, now, schoolId); err != nil {
 		return fmt.Errorf("school repo soft delete: %w", err)
@@ -294,8 +294,8 @@ func ModelToDomainSchool(m *models.SchoolModel) *school.School {
 	s.SetSchoolStatus(m.SchoolStatus)
 	s.SetStatus(m.Status)
 	s.SetCreateId(m.CreateId)
-	s.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	s.SetCreateDt(m.CreateDt)
 	s.SetModifyId(m.ModifyId)
-	s.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	s.SetModifyDt(m.ModifyDt)
 	return s
 }

@@ -2,13 +2,13 @@ package command
 
 import (
 	"context"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
 
@@ -19,7 +19,7 @@ type CreateProfileCommand struct {
 	Email      *string
 	Role       string
 	IsDefault  bool
-	Dob        *mtime.MathTime
+	Dob        *time.Time
 	SchoolID   *int64
 	ProgramID  *int64
 	GradeID    *int64

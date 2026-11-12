@@ -1,7 +1,7 @@
 package notification
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // Notification models ma_notifications — one persisted in-app notification
@@ -28,9 +28,9 @@ type Notification struct {
 	notificationStatus *string // ACTIVE, ARCHIVED, DELETED
 	status             string
 	createId           *int64
-	createDt           mtime.MathTime
+	createDt           time.Time
 	modifyId           *int64
-	modifyDt           mtime.MathTime
+	modifyDt           time.Time
 }
 
 func NewNotification() *Notification { return &Notification{} }
@@ -65,9 +65,9 @@ func (n *Notification) Status() string                  { return n.status }
 func (n *Notification) SetStatus(s string)              { n.status = s }
 func (n *Notification) CreateId() *int64                { return n.createId }
 func (n *Notification) SetCreateId(id *int64)           { n.createId = id }
-func (n *Notification) CreateDt() mtime.MathTime        { return n.createDt }
-func (n *Notification) SetCreateDt(t mtime.MathTime)    { n.createDt = t }
+func (n *Notification) CreateDt() time.Time             { return n.createDt }
+func (n *Notification) SetCreateDt(t time.Time)         { n.createDt = t }
 func (n *Notification) ModifyId() *int64                { return n.modifyId }
 func (n *Notification) SetModifyId(id *int64)           { n.modifyId = id }
-func (n *Notification) ModifyDt() mtime.MathTime        { return n.modifyDt }
-func (n *Notification) SetModifyDt(t mtime.MathTime)    { n.modifyDt = t }
+func (n *Notification) ModifyDt() time.Time             { return n.modifyDt }
+func (n *Notification) SetModifyDt(t time.Time)         { n.modifyDt = t }

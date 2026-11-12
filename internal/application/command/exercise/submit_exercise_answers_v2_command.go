@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/scorer"
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
@@ -13,7 +14,6 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -104,7 +104,7 @@ func (h *SubmitExerciseAnswersV2CommandHandler) Handle(ctx context.Context, cmd 
 		sub.SetCorrectNumber(&correct)
 		sub.SetScorePercentage(&percentage)
 
-		now := mtime.Now()
+		now := time.Now().UTC()
 		sub.SetSubmittedDt(now)
 		// Deterministic scoring always produces a review, so we always
 		// land on GRADED with graded_dt set — matching v1's success

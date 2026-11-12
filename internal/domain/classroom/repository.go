@@ -3,8 +3,8 @@ package classroom
 import (
 	"context"
 
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 // ListClassroomsParams narrows the listing query. ProfileId filters to
@@ -47,7 +47,7 @@ type IRepository interface {
 	// Always called in the same UoW as the member row mutation so the
 	// counters and the underlying member rows stay consistent.
 	IncCounts(ctx context.Context, classroomId int64, memberDelta, studentDelta, teacherDelta int64) error
-	UpdateClassroomCode(ctx context.Context, classroomId int64, code *string, expiresDt mtime.MathTime) error
+	UpdateClassroomCode(ctx context.Context, classroomId int64, code *string, expiresDt time.Time) error
 	SetOwnerProfileId(ctx context.Context, classroomId int64, newOwnerProfileId int64) error
 	ArchiveByClassroomId(ctx context.Context, classroomId int64) error
 	RestoreByClassroomId(ctx context.Context, classroomId int64) error
@@ -187,12 +187,12 @@ type IMemberRepository interface {
 	// timestamps cleared). Used by the send-invitation path when the
 	// target previously REJECTED/LEFT/REMOVED so the UNIQUE
 	// (classroom_id, profile_id) constraint stays meaningful.
-	Invite(ctx context.Context, memberId int64, role string, inviteBy *int64, inviteDt mtime.MathTime, note *string) error
+	Invite(ctx context.Context, memberId int64, role string, inviteBy *int64, inviteDt time.Time, note *string) error
 	// RequestToJoin is Invite's user-initiated twin: flips an existing
 	// terminal-state row into PENDING_REQUEST, with invite_by NULL
 	// (no manager initiated it) and invite_dt = requestedDt as the
 	// "requested at" timestamp.
-	RequestToJoin(ctx context.Context, memberId int64, role string, requestedDt mtime.MathTime, note *string) error
+	RequestToJoin(ctx context.Context, memberId int64, role string, requestedDt time.Time, note *string) error
 	// Activate flips a PENDING_INVITATION OR PENDING_REQUEST row to
 	// ACTIVE, refreshing joined_dt and clearing terminal-state
 	// timestamps. Used by both accept-invitation and approve-request

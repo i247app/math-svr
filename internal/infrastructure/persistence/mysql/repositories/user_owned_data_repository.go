@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"time"
 )
 
 // userOwnedTables are the tables whose rows belong to a user through their
@@ -40,7 +40,7 @@ func NewUserOwnedDataRepository(db database.Executor) *UserOwnedDataRepository {
 // SoftDeleteByUid keeps modify_dt as it is (deleted_dt records the delete):
 // bulk UPDATEs on ma_exam_sessions must not move its "latest journey" order.
 func (r *UserOwnedDataRepository) SoftDeleteByUid(ctx context.Context, uid int64) error {
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	for _, table := range userOwnedTables {
 		query := `UPDATE ` + table + ` SET status = ?, deleted_dt = ?, modify_dt = modify_dt
 			WHERE uid = ? AND deleted_dt IS NULL`

@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/profile"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -293,9 +293,9 @@ func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*pr
 	`
 
 	_, err := r.db.Exec(ctx, query,
-		p.ProfileId(), p.ProfileCode(), p.Uid(), p.Name(), p.Phone(), p.Email(), p.Role(), p.IdentityCode(), p.AvatarKey(), p.Dob(),
+		p.ProfileId(), p.ProfileCode(), p.Uid(), p.Name(), p.Phone(), p.Email(), p.Role(), p.IdentityCode(), p.AvatarKey(), nullableTime(p.Dob()),
 		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(),
-		p.IdType(), p.TeacherId(), p.StudentId(), p.RptFlg(), p.Kwords(), p.Note(), p.ProfileStatus(), mtime.Now().Time, mtime.Now().Time)
+		p.IdType(), p.TeacherId(), p.StudentId(), p.RptFlg(), p.Kwords(), p.Note(), p.ProfileStatus(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("profile repo create: %w", err)
 	}
@@ -329,7 +329,7 @@ func (r *ProfileRepository) Update(ctx context.Context, p *profile.Profile) erro
 	`
 
 	var dobArg any
-	if p.Dob().IsValid() {
+	if !p.Dob().IsZero() {
 		dobArg = p.Dob()
 	}
 
@@ -364,7 +364,7 @@ func (r *ProfileRepository) SetSchoolId(ctx context.Context, profileId int64, sc
 			modify_dt = ?
 		WHERE profile_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, schoolId, mtime.Now().Time, profileId); err != nil {
+	if _, err := r.db.Exec(ctx, query, schoolId, time.Now().UTC(), profileId); err != nil {
 		return fmt.Errorf("profile repo set school id: %w", err)
 	}
 	return nil
@@ -385,7 +385,7 @@ func (r *ProfileRepository) MarkStatusByProfileId(ctx context.Context, profileId
 			modify_dt      = ?
 		WHERE profile_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, profileStatus, mtime.Now().Time, profileId); err != nil {
+	if _, err := r.db.Exec(ctx, query, profileStatus, time.Now().UTC(), profileId); err != nil {
 		return fmt.Errorf("profile repo mark status: %w", err)
 	}
 	return nil
@@ -398,7 +398,7 @@ func (r *ProfileRepository) MarkDefaultByProfileId(ctx context.Context, uid int6
 			modify_dt    = ?
 		WHERE uid = ?
 	`
-	if _, err := r.db.Exec(ctx, query, profileId, mtime.Now().Time, uid); err != nil {
+	if _, err := r.db.Exec(ctx, query, profileId, time.Now().UTC(), uid); err != nil {
 		return fmt.Errorf("profile repo mark is default: %w", err)
 	}
 	return nil
@@ -412,7 +412,7 @@ func (r *ProfileRepository) SoftDelete(ctx context.Context, profileId int64) err
 			deleted_dt = ?
 		WHERE profile_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, enum.ProfileStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, profileId); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.ProfileStatusTypeDeleted, enum.StatusInactive, time.Now().UTC(), profileId); err != nil {
 		return fmt.Errorf("profile repo soft delete: %w", err)
 	}
 	return nil
@@ -452,7 +452,7 @@ func (r *ProfileRepository) ReassignOwner(ctx context.Context, profileId int64, 
 			modify_dt     = ?
 		WHERE profile_id = ?
 	`
-	if _, err := r.db.Exec(ctx, query, newUid, enum.IdentityCodeUser, mtime.Now().Time, profileId); err != nil {
+	if _, err := r.db.Exec(ctx, query, newUid, enum.IdentityCodeUser, time.Now().UTC(), profileId); err != nil {
 		return fmt.Errorf("profile repo reassign owner: %w", err)
 	}
 	return nil
@@ -466,7 +466,7 @@ func (r *ProfileRepository) SoftDeleteByUid(ctx context.Context, uid int64) erro
 			deleted_dt = ?
 		WHERE uid = ?
 	`
-	if _, err := r.db.Exec(ctx, query, enum.ProfileStatusTypeDeleted, enum.StatusInactive, mtime.Now().Time, uid); err != nil {
+	if _, err := r.db.Exec(ctx, query, enum.ProfileStatusTypeDeleted, enum.StatusInactive, time.Now().UTC(), uid); err != nil {
 		return fmt.Errorf("profile repo soft delete by user id: %w", err)
 	}
 	return nil
@@ -495,7 +495,7 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p.SetIdentityCode(m.IdentityCode)
 	p.SetAvatarKey(m.AvatarKey)
 	if m.Dob != nil {
-		p.SetDob(mtime.MathTime{Time: *m.Dob})
+		p.SetDob(*m.Dob)
 	}
 	p.SetSchoolId(m.SchoolId)
 	p.SetProgramId(m.ProgramId)
@@ -511,8 +511,8 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p.SetProfileStatus(m.ProfileStatus)
 	p.SetStatus(m.Status)
 	p.SetCreateId(m.CreateId)
-	p.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	p.SetCreateDt(m.CreateDt)
 	p.SetModifyId(m.ModifyId)
-	p.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	p.SetModifyDt(m.ModifyDt)
 	return p
 }

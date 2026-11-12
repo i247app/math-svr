@@ -2,6 +2,7 @@ package dto
 
 import (
 	domain "math-ai.com/math-ai/internal/domain/school"
+	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 )
 
@@ -10,17 +11,17 @@ import (
 // edge; clients should prefer ImageUrl for display and ImageKey only
 // when they need to re-sign later.
 type SchoolResponse struct {
-	SchoolID     int64   `json:"school_id"`
-	Name         string  `json:"name"`
-	Description  *string `json:"description,omitempty"`
-	ImageKey     *string `json:"image_key,omitempty"`
-	ImageUrl     *string `json:"image_url"`
-	District     *string `json:"district,omitempty"`
-	Province     *string `json:"province,omitempty"`
-	Note         *string `json:"note,omitempty"`
-	SchoolStatus *string `json:"school_status,omitempty"`
-	CreateDt     string  `json:"create_dt"`
-	ModifyDt     string  `json:"modify_dt"`
+	SchoolID     int64          `json:"school_id"`
+	Name         string         `json:"name"`
+	Description  *string        `json:"description,omitempty"`
+	ImageKey     *string        `json:"image_key,omitempty"`
+	ImageUrl     *string        `json:"image_url"`
+	District     *string        `json:"district,omitempty"`
+	Province     *string        `json:"province,omitempty"`
+	Note         *string        `json:"note,omitempty"`
+	SchoolStatus *string        `json:"school_status,omitempty"`
+	CreateDt     mtime.MathTime `json:"create_dt"`
+	ModifyDt     mtime.MathTime `json:"modify_dt"`
 }
 
 type CreateSchoolReq struct {
@@ -95,8 +96,8 @@ func SchoolDomainToResponse(s *domain.School) *SchoolResponse {
 		Province:     s.Province(),
 		Note:         s.Note(),
 		SchoolStatus: s.SchoolStatus(),
-		CreateDt:     s.CreateDt().String(),
-		ModifyDt:     s.ModifyDt().String(),
+		CreateDt:     mtime.NewTime(s.CreateDt()),
+		ModifyDt:     mtime.NewTime(s.ModifyDt()),
 	}
 }
 

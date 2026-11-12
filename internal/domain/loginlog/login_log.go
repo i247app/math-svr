@@ -1,7 +1,7 @@
 package loginlog
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 type LoginLog struct {
@@ -16,9 +16,9 @@ type LoginLog struct {
 	loginLogStatus *string
 	status         string
 	createId       *int64
-	createDt       mtime.MathTime
+	createDt       time.Time
 	modifyId       *int64
-	modifyDt       mtime.MathTime
+	modifyDt       time.Time
 }
 
 func NewLoginLog() *LoginLog {
@@ -115,11 +115,11 @@ func (l *LoginLog) SetCreateId(createId *int64) {
 	l.createId = createId
 }
 
-func (l *LoginLog) CreateDt() mtime.MathTime {
+func (l *LoginLog) CreateDt() time.Time {
 	return l.createDt
 }
 
-func (l *LoginLog) SetCreateDt(createDt mtime.MathTime) {
+func (l *LoginLog) SetCreateDt(createDt time.Time) {
 	l.createDt = createDt
 }
 
@@ -131,10 +131,10 @@ func (l *LoginLog) SetModifyId(modifyId *int64) {
 	l.modifyId = modifyId
 }
 
-func (l *LoginLog) ModifyDt() mtime.MathTime {
+func (l *LoginLog) ModifyDt() time.Time {
 	return l.modifyDt
 }
 
-func (l *LoginLog) SetModifyDt(modifyDt mtime.MathTime) {
+func (l *LoginLog) SetModifyDt(modifyDt time.Time) {
 	l.modifyDt = modifyDt
 }

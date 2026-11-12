@@ -59,8 +59,8 @@ func (s *Service) announceOffline(ctx context.Context, uid int64) {
 			return // came back during the window
 		}
 		lastSeen := ""
-		if !p.LastSeenDt().Time.IsZero() {
-			lastSeen = p.LastSeenDt().Time.UTC().Format(time.RFC3339)
+		if !p.LastSeenDt().IsZero() {
+			lastSeen = p.LastSeenDt().UTC().Format(time.RFC3339)
 		}
 		s.broadcast(detached, uid, false, lastSeen)
 	})

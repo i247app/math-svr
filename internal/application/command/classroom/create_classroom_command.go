@@ -3,15 +3,16 @@ package command
 import (
 	"context"
 	"strings"
+	"time"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 // CreateClassroomCommand creates the classroom row, the OWNER member
@@ -122,7 +123,7 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 			return err
 		}
 
-		now := mtime.Now()
+		now := time.Now().UTC()
 		ownerStatus := enum.ClassroomMemberStatusTypeActive.String()
 
 		m := classroom.NewMember()

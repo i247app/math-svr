@@ -13,7 +13,6 @@ import (
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/seq"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -64,7 +63,7 @@ type SendOtpCommand struct {
 
 type SendOtpCommandResult struct {
 	OtpID     int64
-	ExpiresAt mtime.MathTime
+	ExpiresAt time.Time
 	Channel   otp_delivery.ChannelName
 	// OTPCode is the code the caller may echo back to the requesting
 	// client. Empty when it was pushed to a trusted device instead.
@@ -192,10 +191,10 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		if err != nil {
 			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
 		}
-		if latest != nil && latest.OtpExpireDt().IsValid() && now.Before(latest.OtpExpireDt().Time) {
+		if latest != nil && !latest.OtpExpireDt().IsZero() && now.Before(latest.OtpExpireDt()) {
 			createdOtpID = latest.OtpId()
 			plainCode = latest.OtpCode()
-			expiresAt = latest.OtpExpireDt().Time
+			expiresAt = latest.OtpExpireDt()
 			reused = true
 			return nil
 		}
@@ -233,8 +232,8 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		o.SetDeviceName(cmd.DeviceName)
 		// o.SetOtpCode(hashCode(plainCode))
 		o.SetOtpCode(plainCode)
-		o.SetOtpCreateDt(mtime.MathTime{Time: now})
-		o.SetOtpExpireDt(mtime.MathTime{Time: expiresAt})
+		o.SetOtpCreateDt(now)
+		o.SetOtpExpireDt(expiresAt)
 		o.SetAttemptCount(0)
 		pending := enum.OtpStatusTypePending.String()
 		o.SetOtpStatus(&pending)
@@ -308,7 +307,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 
 	return &SendOtpCommandResult{
 		OtpID:      createdOtpID,
-		ExpiresAt:  mtime.MathTime{Time: expiresAt},
+		ExpiresAt:  expiresAt,
 		Channel:    channel,
 		OTPCode:    responseCode,
 		PushedCode: pushedCode,

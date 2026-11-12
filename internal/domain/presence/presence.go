@@ -7,7 +7,7 @@
 // ma_profiles.uid before looking presence up.
 package presence
 
-import "math-ai.com/math-ai/internal/domain/shared/mtime"
+import "time"
 
 // Presence models one ma_user_presence row.
 //
@@ -18,8 +18,8 @@ type Presence struct {
 	uid             int64
 	presenceState   string
 	connectionCount int64
-	lastOnlineDt    mtime.MathTime
-	lastSeenDt      mtime.MathTime
+	lastOnlineDt    time.Time
+	lastSeenDt      time.Time
 	lastDeviceUuid  *string
 	lastPlatform    *string
 	rptFlg          *string
@@ -27,25 +27,25 @@ type Presence struct {
 	note            *string
 	status          string
 	createId        *int64
-	createDt        mtime.MathTime
+	createDt        time.Time
 	modifyId        *int64
-	modifyDt        mtime.MathTime
+	modifyDt        time.Time
 }
 
 func NewPresence() *Presence { return &Presence{} }
 
-func (p *Presence) Uid() int64                   { return p.uid }
-func (p *Presence) SetUid(id int64)              { p.uid = id }
-func (p *Presence) PresenceState() string        { return p.presenceState }
-func (p *Presence) SetPresenceState(s string)    { p.presenceState = s }
-func (p *Presence) ConnectionCount() int64       { return p.connectionCount }
-func (p *Presence) SetConnectionCount(c int64)   { p.connectionCount = c }
-func (p *Presence) LastOnlineDt() mtime.MathTime { return p.lastOnlineDt }
-func (p *Presence) SetLastOnlineDt(t mtime.MathTime) {
+func (p *Presence) Uid() int64                 { return p.uid }
+func (p *Presence) SetUid(id int64)            { p.uid = id }
+func (p *Presence) PresenceState() string      { return p.presenceState }
+func (p *Presence) SetPresenceState(s string)  { p.presenceState = s }
+func (p *Presence) ConnectionCount() int64     { return p.connectionCount }
+func (p *Presence) SetConnectionCount(c int64) { p.connectionCount = c }
+func (p *Presence) LastOnlineDt() time.Time    { return p.lastOnlineDt }
+func (p *Presence) SetLastOnlineDt(t time.Time) {
 	p.lastOnlineDt = t
 }
-func (p *Presence) LastSeenDt() mtime.MathTime { return p.lastSeenDt }
-func (p *Presence) SetLastSeenDt(t mtime.MathTime) {
+func (p *Presence) LastSeenDt() time.Time { return p.lastSeenDt }
+func (p *Presence) SetLastSeenDt(t time.Time) {
 	p.lastSeenDt = t
 }
 func (p *Presence) LastDeviceUuid() *string     { return p.lastDeviceUuid }
@@ -62,16 +62,16 @@ func (p *Presence) Status() string              { return p.status }
 func (p *Presence) SetStatus(v string)          { p.status = v }
 func (p *Presence) CreateId() *int64            { return p.createId }
 func (p *Presence) SetCreateId(id *int64)       { p.createId = id }
-func (p *Presence) CreateDt() mtime.MathTime    { return p.createDt }
-func (p *Presence) SetCreateDt(t mtime.MathTime) {
+func (p *Presence) CreateDt() time.Time         { return p.createDt }
+func (p *Presence) SetCreateDt(t time.Time) {
 	p.createDt = t
 }
 func (p *Presence) ModifyId() *int64      { return p.modifyId }
 func (p *Presence) SetModifyId(id *int64) { p.modifyId = id }
-func (p *Presence) ModifyDt() mtime.MathTime {
+func (p *Presence) ModifyDt() time.Time {
 	return p.modifyDt
 }
-func (p *Presence) SetModifyDt(t mtime.MathTime) { p.modifyDt = t }
+func (p *Presence) SetModifyDt(t time.Time) { p.modifyDt = t }
 
 // IsOnline reports whether the account currently holds a live connection.
 // Read paths should call this rather than comparing presenceState strings,

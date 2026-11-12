@@ -17,9 +17,9 @@ import (
 	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
 const (
@@ -177,7 +177,7 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 		uploadedOnThis = key != nil
 	}
 
-	var dob mtime.MathTime
+	var dob time.Time
 	if req.Dob != nil && *req.Dob != "" {
 		parsed, err := mtime.ParseDate(*req.Dob)
 		if err != nil {
@@ -261,7 +261,7 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 		avatarKey = key
 	}
 
-	var dob mtime.MathTime
+	var dob time.Time
 	if req.Dob != nil && *req.Dob != "" {
 		parsed, err := mtime.ParseDate(*req.Dob)
 		if err != nil {

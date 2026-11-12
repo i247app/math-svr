@@ -1,7 +1,7 @@
 package otp
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 // Otp is a one-time password issuance. The plaintext code never lives in the
@@ -19,9 +19,9 @@ type Otp struct {
 	deviceUUID    *string
 	deviceName    *string
 	otpCode       string
-	otpCreateDt   mtime.MathTime
-	otpExpireDt   mtime.MathTime
-	otpVerifiedDt mtime.MathTime
+	otpCreateDt   time.Time
+	otpExpireDt   time.Time
+	otpVerifiedDt time.Time
 	attemptCount  int
 	rptFlg        *string
 	kwords        *string
@@ -29,50 +29,50 @@ type Otp struct {
 	otpStatus     *string
 	status        string
 	createId      *int64
-	createDt      mtime.MathTime
+	createDt      time.Time
 	modifyId      *int64
-	modifyDt      mtime.MathTime
+	modifyDt      time.Time
 }
 
 func NewOtp() *Otp { return &Otp{} }
 
-func (o *Otp) OtpId() int64                      { return o.otpId }
-func (o *Otp) SetOtpId(v int64)                  { o.otpId = v }
-func (o *Otp) OtpType() string                   { return o.otpType }
-func (o *Otp) SetOtpType(v string)               { o.otpType = v }
-func (o *Otp) Uid() *int64                       { return o.uid }
-func (o *Otp) SetUid(v *int64)                   { o.uid = v }
-func (o *Otp) Identifier() string                { return o.identifier }
-func (o *Otp) SetIdentifier(v string)            { o.identifier = v }
-func (o *Otp) DeviceUUID() *string               { return o.deviceUUID }
-func (o *Otp) SetDeviceUUID(v *string)           { o.deviceUUID = v }
-func (o *Otp) DeviceName() *string               { return o.deviceName }
-func (o *Otp) SetDeviceName(v *string)           { o.deviceName = v }
-func (o *Otp) OtpCode() string                   { return o.otpCode }
-func (o *Otp) SetOtpCode(v string)               { o.otpCode = v }
-func (o *Otp) OtpCreateDt() mtime.MathTime       { return o.otpCreateDt }
-func (o *Otp) SetOtpCreateDt(v mtime.MathTime)   { o.otpCreateDt = v }
-func (o *Otp) OtpExpireDt() mtime.MathTime       { return o.otpExpireDt }
-func (o *Otp) SetOtpExpireDt(v mtime.MathTime)   { o.otpExpireDt = v }
-func (o *Otp) OtpVerifiedDt() mtime.MathTime     { return o.otpVerifiedDt }
-func (o *Otp) SetOtpVerifiedDt(v mtime.MathTime) { o.otpVerifiedDt = v }
-func (o *Otp) AttemptCount() int                 { return o.attemptCount }
-func (o *Otp) SetAttemptCount(v int)             { o.attemptCount = v }
-func (o *Otp) Note() *string                     { return o.note }
-func (o *Otp) SetNote(v *string)                 { o.note = v }
-func (o *Otp) RptFlg() *string                   { return o.rptFlg }
-func (o *Otp) SetRptFlg(v *string)               { o.rptFlg = v }
-func (o *Otp) Kwords() *string                   { return o.kwords }
-func (o *Otp) SetKwords(v *string)               { o.kwords = v }
-func (o *Otp) OtpStatus() *string                { return o.otpStatus }
-func (o *Otp) SetOtpStatus(v *string)            { o.otpStatus = v }
-func (o *Otp) Status() string                    { return o.status }
-func (o *Otp) SetStatus(v string)                { o.status = v }
-func (o *Otp) CreateId() *int64                  { return o.createId }
-func (o *Otp) SetCreateId(v *int64)              { o.createId = v }
-func (o *Otp) CreateDt() mtime.MathTime          { return o.createDt }
-func (o *Otp) SetCreateDt(v mtime.MathTime)      { o.createDt = v }
-func (o *Otp) ModifyId() *int64                  { return o.modifyId }
-func (o *Otp) SetModifyId(v *int64)              { o.modifyId = v }
-func (o *Otp) ModifyDt() mtime.MathTime          { return o.modifyDt }
-func (o *Otp) SetModifyDt(v mtime.MathTime)      { o.modifyDt = v }
+func (o *Otp) OtpId() int64                 { return o.otpId }
+func (o *Otp) SetOtpId(v int64)             { o.otpId = v }
+func (o *Otp) OtpType() string              { return o.otpType }
+func (o *Otp) SetOtpType(v string)          { o.otpType = v }
+func (o *Otp) Uid() *int64                  { return o.uid }
+func (o *Otp) SetUid(v *int64)              { o.uid = v }
+func (o *Otp) Identifier() string           { return o.identifier }
+func (o *Otp) SetIdentifier(v string)       { o.identifier = v }
+func (o *Otp) DeviceUUID() *string          { return o.deviceUUID }
+func (o *Otp) SetDeviceUUID(v *string)      { o.deviceUUID = v }
+func (o *Otp) DeviceName() *string          { return o.deviceName }
+func (o *Otp) SetDeviceName(v *string)      { o.deviceName = v }
+func (o *Otp) OtpCode() string              { return o.otpCode }
+func (o *Otp) SetOtpCode(v string)          { o.otpCode = v }
+func (o *Otp) OtpCreateDt() time.Time       { return o.otpCreateDt }
+func (o *Otp) SetOtpCreateDt(v time.Time)   { o.otpCreateDt = v }
+func (o *Otp) OtpExpireDt() time.Time       { return o.otpExpireDt }
+func (o *Otp) SetOtpExpireDt(v time.Time)   { o.otpExpireDt = v }
+func (o *Otp) OtpVerifiedDt() time.Time     { return o.otpVerifiedDt }
+func (o *Otp) SetOtpVerifiedDt(v time.Time) { o.otpVerifiedDt = v }
+func (o *Otp) AttemptCount() int            { return o.attemptCount }
+func (o *Otp) SetAttemptCount(v int)        { o.attemptCount = v }
+func (o *Otp) Note() *string                { return o.note }
+func (o *Otp) SetNote(v *string)            { o.note = v }
+func (o *Otp) RptFlg() *string              { return o.rptFlg }
+func (o *Otp) SetRptFlg(v *string)          { o.rptFlg = v }
+func (o *Otp) Kwords() *string              { return o.kwords }
+func (o *Otp) SetKwords(v *string)          { o.kwords = v }
+func (o *Otp) OtpStatus() *string           { return o.otpStatus }
+func (o *Otp) SetOtpStatus(v *string)       { o.otpStatus = v }
+func (o *Otp) Status() string               { return o.status }
+func (o *Otp) SetStatus(v string)           { o.status = v }
+func (o *Otp) CreateId() *int64             { return o.createId }
+func (o *Otp) SetCreateId(v *int64)         { o.createId = v }
+func (o *Otp) CreateDt() time.Time          { return o.createDt }
+func (o *Otp) SetCreateDt(v time.Time)      { o.createDt = v }
+func (o *Otp) ModifyId() *int64             { return o.modifyId }
+func (o *Otp) SetModifyId(v *int64)         { o.modifyId = v }
+func (o *Otp) ModifyDt() time.Time          { return o.modifyDt }
+func (o *Otp) SetModifyDt(v time.Time)      { o.modifyDt = v }

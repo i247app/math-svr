@@ -1,6 +1,6 @@
 package chat
 
-import "math-ai.com/math-ai/internal/domain/shared/mtime"
+import "time"
 
 // Message models one ma_chat_messages row.
 //
@@ -29,18 +29,18 @@ type Message struct {
 	systemPayload    *string
 	metadata         *string
 	clientMsgId      *string
-	sentDt           mtime.MathTime
-	editedDt         mtime.MathTime
-	revokedDt        mtime.MathTime
+	sentDt           time.Time
+	editedDt         time.Time
+	revokedDt        time.Time
 	rptFlg           *string
 	kwords           *string
 	note             *string
 	messageStatus    *string
 	status           string
 	createId         *int64
-	createDt         mtime.MathTime
+	createDt         time.Time
 	modifyId         *int64
-	modifyDt         mtime.MathTime
+	modifyDt         time.Time
 }
 
 func NewMessage() *Message { return &Message{} }
@@ -71,12 +71,12 @@ func (m *Message) Metadata() *string             { return m.metadata }
 func (m *Message) SetMetadata(v *string)         { m.metadata = v }
 func (m *Message) ClientMsgId() *string          { return m.clientMsgId }
 func (m *Message) SetClientMsgId(v *string)      { m.clientMsgId = v }
-func (m *Message) SentDt() mtime.MathTime        { return m.sentDt }
-func (m *Message) SetSentDt(t mtime.MathTime)    { m.sentDt = t }
-func (m *Message) EditedDt() mtime.MathTime      { return m.editedDt }
-func (m *Message) SetEditedDt(t mtime.MathTime)  { m.editedDt = t }
-func (m *Message) RevokedDt() mtime.MathTime     { return m.revokedDt }
-func (m *Message) SetRevokedDt(t mtime.MathTime) { m.revokedDt = t }
+func (m *Message) SentDt() time.Time             { return m.sentDt }
+func (m *Message) SetSentDt(t time.Time)         { m.sentDt = t }
+func (m *Message) EditedDt() time.Time           { return m.editedDt }
+func (m *Message) SetEditedDt(t time.Time)       { m.editedDt = t }
+func (m *Message) RevokedDt() time.Time          { return m.revokedDt }
+func (m *Message) SetRevokedDt(t time.Time)      { m.revokedDt = t }
 func (m *Message) Note() *string                 { return m.note }
 func (m *Message) SetNote(n *string)             { m.note = n }
 func (m *Message) RptFlg() *string               { return m.rptFlg }
@@ -89,9 +89,9 @@ func (m *Message) Status() string                { return m.status }
 func (m *Message) SetStatus(s string)            { m.status = s }
 func (m *Message) CreateId() *int64              { return m.createId }
 func (m *Message) SetCreateId(id *int64)         { m.createId = id }
-func (m *Message) CreateDt() mtime.MathTime      { return m.createDt }
-func (m *Message) SetCreateDt(t mtime.MathTime)  { m.createDt = t }
+func (m *Message) CreateDt() time.Time           { return m.createDt }
+func (m *Message) SetCreateDt(t time.Time)       { m.createDt = t }
 func (m *Message) ModifyId() *int64              { return m.modifyId }
 func (m *Message) SetModifyId(id *int64)         { m.modifyId = id }
-func (m *Message) ModifyDt() mtime.MathTime      { return m.modifyDt }
-func (m *Message) SetModifyDt(t mtime.MathTime)  { m.modifyDt = t }
+func (m *Message) ModifyDt() time.Time           { return m.modifyDt }
+func (m *Message) SetModifyDt(t time.Time)       { m.modifyDt = t }

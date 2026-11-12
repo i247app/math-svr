@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/exam"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
+	"time"
 )
 
 const (
@@ -75,7 +75,7 @@ func (r *ExamSessionLineRepository) CreateBatch(ctx context.Context, details []*
 		return nil
 	}
 
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	placeholders := make([]string, 0, len(details))
 	args := make([]any, 0, len(details)*25)
 
@@ -212,8 +212,8 @@ func ModelToDomainExamSessionLine(m *models.ExamSessionLineModel) (*exam.ExamSes
 	d.SetEsessLnStatus(m.EsessLnStatus)
 	d.SetStatus(m.Status)
 	d.SetCreateId(m.CreateId)
-	d.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	d.SetCreateDt(m.CreateDt)
 	d.SetModifyId(m.ModifyId)
-	d.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	d.SetModifyDt(m.ModifyDt)
 	return d, nil
 }

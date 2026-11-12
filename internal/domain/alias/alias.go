@@ -1,7 +1,7 @@
 package alias
 
 import (
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
+	"time"
 )
 
 type Alias struct {
@@ -14,9 +14,9 @@ type Alias struct {
 	note        *string
 	status      string
 	createId    *int64
-	createDt    mtime.MathTime
+	createDt    time.Time
 	modifyId    *int64
-	modifyDt    mtime.MathTime
+	modifyDt    time.Time
 }
 
 func NewAlias() *Alias {
@@ -39,15 +39,15 @@ func (a *Alias) RptFlg() *string          { return a.rptFlg }
 func (a *Alias) SetRptFlg(rptFlg *string) { a.rptFlg = rptFlg }
 
 // Kwords holds search keywords (kwords) for a future text-search index.
-func (a *Alias) Kwords() *string                     { return a.kwords }
-func (a *Alias) SetKwords(kwords *string)            { a.kwords = kwords }
-func (a *Alias) Status() string                      { return a.status }
-func (a *Alias) SetStatus(status string)             { a.status = status }
-func (a *Alias) CreateId() *int64                    { return a.createId }
-func (a *Alias) SetCreateId(createId *int64)         { a.createId = createId }
-func (a *Alias) CreateDt() mtime.MathTime            { return a.createDt }
-func (a *Alias) SetCreateDt(createDt mtime.MathTime) { a.createDt = createDt }
-func (a *Alias) ModifyId() *int64                    { return a.modifyId }
-func (a *Alias) SetModifyId(modifyId *int64)         { a.modifyId = modifyId }
-func (a *Alias) ModifyDt() mtime.MathTime            { return a.modifyDt }
-func (a *Alias) SetModifyDt(modifyDt mtime.MathTime) { a.modifyDt = modifyDt }
+func (a *Alias) Kwords() *string                { return a.kwords }
+func (a *Alias) SetKwords(kwords *string)       { a.kwords = kwords }
+func (a *Alias) Status() string                 { return a.status }
+func (a *Alias) SetStatus(status string)        { a.status = status }
+func (a *Alias) CreateId() *int64               { return a.createId }
+func (a *Alias) SetCreateId(createId *int64)    { a.createId = createId }
+func (a *Alias) CreateDt() time.Time            { return a.createDt }
+func (a *Alias) SetCreateDt(createDt time.Time) { a.createDt = createDt }
+func (a *Alias) ModifyId() *int64               { return a.modifyId }
+func (a *Alias) SetModifyId(modifyId *int64)    { a.modifyId = modifyId }
+func (a *Alias) ModifyDt() time.Time            { return a.modifyDt }
+func (a *Alias) SetModifyDt(modifyDt time.Time) { a.modifyDt = modifyDt }

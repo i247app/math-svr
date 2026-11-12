@@ -10,11 +10,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/domain/questionpool"
-	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
+	"time"
 )
 
 const (
@@ -94,7 +94,7 @@ func (r *QuestionPoolRepository) CreateMany(ctx context.Context, questions []*qu
 }
 
 func (r *QuestionPoolRepository) insertChunk(ctx context.Context, questions []*questionpool.QuestionPool, createId *int64) error {
-	now := mtime.Now().Time
+	now := time.Now().UTC()
 	tuples := make([]string, 0, len(questions))
 	args := make([]any, 0, len(questions)*22)
 	for _, q := range questions {
@@ -184,7 +184,7 @@ func (r *QuestionPoolRepository) IncVerified(ctx context.Context, id int64, modi
 func (r *QuestionPoolRepository) SoftDeleteById(ctx context.Context, id int64, modifyId *int64) (bool, error) {
 	query := `UPDATE ` + questionPoolTable + ` q SET q.status = ?, q.deleted_dt = ?, q.modify_id = ?
 		WHERE (q.question_pool_id = ?) AND ` + questionPoolActiveWhere
-	res, err := r.db.Exec(ctx, query, slices.Concat([]any{enum.StatusInactive, mtime.Now().Time, modifyId, id}, questionPoolActiveArgs())...)
+	res, err := r.db.Exec(ctx, query, slices.Concat([]any{enum.StatusInactive, time.Now().UTC(), modifyId, id}, questionPoolActiveArgs())...)
 	if err != nil {
 		return false, fmt.Errorf("question pool repo soft delete: %w", err)
 	}
@@ -532,8 +532,8 @@ func ModelToDomainQuestionPool(m *models.QuestionPoolModel) (*questionpool.Quest
 	q.SetNote(m.Note)
 	q.SetStatus(m.Status)
 	q.SetCreateId(m.CreateId)
-	q.SetCreateDt(mtime.MathTime{Time: m.CreateDt})
+	q.SetCreateDt(m.CreateDt)
 	q.SetModifyId(m.ModifyId)
-	q.SetModifyDt(mtime.MathTime{Time: m.ModifyDt})
+	q.SetModifyDt(m.ModifyDt)
 	return q, nil
 }
