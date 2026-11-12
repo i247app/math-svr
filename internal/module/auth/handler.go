@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	dto "math-ai.com/math-ai/internal/application/dto/auth"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/resource"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"

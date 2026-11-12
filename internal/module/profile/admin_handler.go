@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	dto "math-ai.com/math-ai/internal/application/dto/profile"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 

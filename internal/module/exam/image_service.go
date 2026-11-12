@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
-	dto "math-ai.com/math-ai/internal/application/dto/exam"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 

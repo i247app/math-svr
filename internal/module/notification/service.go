@@ -6,7 +6,7 @@ import (
 
 	notifAdapter "math-ai.com/math-ai/internal/adapter/notification"
 	command "math-ai.com/math-ai/internal/application/command/notification"
-	dto "math-ai.com/math-ai/internal/application/dto/notification"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/notification"
 	appsocket "math-ai.com/math-ai/internal/application/socket"
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -120,7 +120,7 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 	}
 
 	res := &dto.PingNotificationRes{
-		Notification: dto.DomainToResponse(notiDomain),
+		Notification: dto.NotificationDomainToResponse(notiDomain),
 	}
 
 	return res, nil
@@ -155,7 +155,7 @@ func (s *Service) SendNotification(ctx context.Context, req *dto.SendNotificatio
 		return nil, err
 	}
 
-	res := &dto.SendNotificationRes{Notification: dto.DomainToResponse(created)}
+	res := &dto.SendNotificationRes{Notification: dto.NotificationDomainToResponse(created)}
 
 	// // Push delivery — out of any tx, best-effort.
 	// if s.push.enabled() {
@@ -256,13 +256,13 @@ func (s *Service) ListNotifications(ctx context.Context, req *dto.ListNotificati
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	res := &dto.ListNotificationsRes{
-		Notifications: dto.DomainListToResponse(notifications),
+		Notifications: dto.NotificationDomainListToResponse(notifications),
 		Pagination:    pg,
 	}
 	return res, nil
 }
 
-func (s *Service) UnreadCount(ctx context.Context, req *dto.UnreadCountReq) (*dto.UnreadCountRes, error) {
+func (s *Service) UnreadCount(ctx context.Context, req *dto.NotificationUnreadCountReq) (*dto.NotificationUnreadCountRes, error) {
 	if req.UID == nil {
 		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession)
 	}
@@ -270,11 +270,11 @@ func (s *Service) UnreadCount(ctx context.Context, req *dto.UnreadCountReq) (*dt
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	res := &dto.UnreadCountRes{Count: count}
+	res := &dto.NotificationUnreadCountRes{Count: count}
 	return res, nil
 }
 
-func (s *Service) MarkRead(ctx context.Context, req *dto.MarkReadReq) error {
+func (s *Service) MarkRead(ctx context.Context, req *dto.NotificationMarkReadReq) error {
 	if req.UID == nil {
 		return errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession)
 	}

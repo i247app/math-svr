@@ -7,10 +7,8 @@ import (
 	notifAdapter "math-ai.com/math-ai/internal/adapter/notification"
 	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	command "math-ai.com/math-ai/internal/application/command/otp"
-	deviceDTO "math-ai.com/math-ai/internal/application/dto/device"
-	notifDto "math-ai.com/math-ai/internal/application/dto/notification"
-	dto "math-ai.com/math-ai/internal/application/dto/otp"
-	userDto "math-ai.com/math-ai/internal/application/dto/user"
+	"math-ai.com/math-ai/internal/application/dto"
+
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/user"
@@ -73,11 +71,11 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 		return nil, err
 	}
 
-	var user *userDto.UserResponse
+	var user *dto.UserResponse
 	var channel enum.OtpChannel
 	if utils.ValidateEmail(req.Identifier) {
 		channel = enum.OtpChannelEmail
-		userResp, _ := s.userSvc.GetUserByEmail(ctx, &userDto.GetUserByEmailReq{
+		userResp, _ := s.userSvc.GetUserByEmail(ctx, &dto.GetUserByEmailReq{
 			Email: req.Identifier,
 		})
 		user = userResp.User
@@ -87,7 +85,7 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 			return nil, errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("failed to normalize phone: %w", err))
 		}
 		channel = enum.OtpChannelSMS
-		userResp, _ := s.userSvc.GetUserByPhone(ctx, &userDto.GetUserByPhoneReq{
+		userResp, _ := s.userSvc.GetUserByPhone(ctx, &dto.GetUserByPhoneReq{
 			Phone: normalizePhone,
 		})
 		user = userResp.User
@@ -141,7 +139,7 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 			requestingDevice = "một thiết bị"
 		}
 		category := enum.NotificationCategoryTypeWarning.String()
-		_, nerr := s.notificationSvc.SendNotification(ctx, &notifDto.SendNotificationReq{
+		_, nerr := s.notificationSvc.SendNotification(ctx, &dto.SendNotificationReq{
 			UID:       *uid,
 			Title:     "Cảnh báo đăng nhập",
 			ShortText: fmt.Sprintf("Có yêu cầu đăng nhập mới từ %s.Mã OTP của bạn là %s. Nếu không phải bạn, vui lòng đổi không được để lộ mã otp.", requestingDevice, result.PushedCode),
@@ -185,9 +183,9 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 		return nil, err
 	}
 
-	var user *userDto.UserResponse
+	var user *dto.UserResponse
 	if result != nil && result.UID != nil {
-		userRes, err := s.userSvc.GetUserById(ctx, &userDto.GetUserByUidReq{UID: *result.UID})
+		userRes, err := s.userSvc.GetUserById(ctx, &dto.GetUserByUidReq{UID: *result.UID})
 		if err != nil {
 			return nil, err
 		}
@@ -205,7 +203,7 @@ func (s *Service) Verify(ctx context.Context, sess *session.AppSession, req *dto
 		case string(enum.OtpTypeLogin2FA):
 			deviceUUID := metadata.GetDeviceUUID(ctx)
 			log.Info("Mark device as trusted")
-			_, err := s.deviceSvc.VerifyDevice(ctx, &deviceDTO.VerifyDeviceReq{
+			_, err := s.deviceSvc.VerifyDevice(ctx, &dto.VerifyDeviceReq{
 				UID:             *result.UID,
 				DeviceUUID:      deviceUUID,
 				DeviceName:      metadata.GetDeviceName(ctx),

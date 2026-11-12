@@ -3,7 +3,7 @@ package pow
 import (
 	"context"
 
-	dto "math-ai.com/math-ai/internal/application/dto/pow"
+	"math-ai.com/math-ai/internal/application/dto"
 	err "math-ai.com/math-ai/internal/domain/shared/error"
 	status "math-ai.com/math-ai/internal/domain/shared/status"
 )

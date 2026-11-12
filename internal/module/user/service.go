@@ -8,8 +8,8 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/user"
-	deviceDTO "math-ai.com/math-ai/internal/application/dto/device"
-	dto "math-ai.com/math-ai/internal/application/dto/user"
+	"math-ai.com/math-ai/internal/application/dto"
+
 	aliasQuery "math-ai.com/math-ai/internal/application/query/alias"
 	query "math-ai.com/math-ai/internal/application/query/user"
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -85,7 +85,7 @@ func (s *Service) GetUserById(ctx context.Context, req *dto.GetUserByUidReq) (*d
 		return nil, err
 	}
 
-	userRes := dto.DomainToResponse(user)
+	userRes := dto.UserDomainToResponse(user)
 	s.populateImageUrl(ctx, userRes)
 
 	res := &dto.GetUserByUidRes{User: userRes}
@@ -137,7 +137,7 @@ func (s *Service) ListUsers(ctx context.Context, req *dto.ListUsersReq) (*dto.Li
 		return nil, err
 	}
 
-	res.Users = dto.DomainListToResponse(users)
+	res.Users = dto.UserDomainListToResponse(users)
 	for _, r := range res.Users {
 		s.populateImageUrl(ctx, r)
 	}
@@ -150,7 +150,7 @@ func (s *Service) GetUserByPhone(ctx context.Context, req *dto.GetUserByPhoneReq
 		return nil, err
 	}
 
-	userRes := dto.DomainToResponse(user)
+	userRes := dto.UserDomainToResponse(user)
 	s.populateImageUrl(ctx, userRes)
 
 	res := &dto.GetUserByPhoneRes{User: userRes}
@@ -163,7 +163,7 @@ func (s *Service) GetUserByEmail(ctx context.Context, req *dto.GetUserByEmailReq
 		return nil, err
 	}
 
-	userRes := dto.DomainToResponse(user)
+	userRes := dto.UserDomainToResponse(user)
 	s.populateImageUrl(ctx, userRes)
 
 	res := &dto.GetUserByEmailRes{User: userRes}
@@ -250,7 +250,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 	}
 
 	log.Info("Mark device as trusted")
-	_, err = s.deviceSvc.VerifyDevice(ctx, &deviceDTO.VerifyDeviceReq{
+	_, err = s.deviceSvc.VerifyDevice(ctx, &dto.VerifyDeviceReq{
 		UID:             created.User.Uid(),
 		DeviceUUID:      metadata.GetDeviceUUID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
@@ -261,7 +261,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 		return nil, err
 	}
 
-	userRes := dto.DomainToResponse(created.User)
+	userRes := dto.UserDomainToResponse(created.User)
 	s.populateImageUrl(ctx, userRes)
 
 	log.Info("Login successful, updating session data...")
@@ -331,7 +331,7 @@ func (s *Service) AdminCreateUser(ctx context.Context, adminUID *int64, req *dto
 		log.Info("user.admin_created", "uid", created.User.Uid(), "via", "api_key", "role", role)
 	}
 
-	userRes := dto.DomainToResponse(created.User)
+	userRes := dto.UserDomainToResponse(created.User)
 	s.populateImageUrl(ctx, userRes)
 	res := &dto.CreateUserRes{User: userRes}
 	return res, nil
@@ -458,7 +458,7 @@ func (s *Service) CreateGuest(ctx context.Context, sess *session.AppSession, req
 		"uid", created.User.Uid(), "profile_id", created.Profile.ProfileId())
 
 	res := &dto.CreateGuestRes{
-		User: dto.DomainToResponse(created.User),
+		User: dto.UserDomainToResponse(created.User),
 	}
 	return res, nil
 }
@@ -580,7 +580,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 		}
 	}
 
-	userRes := dto.DomainToResponse(user)
+	userRes := dto.UserDomainToResponse(user)
 	s.populateImageUrl(ctx, userRes)
 
 	res := &dto.UpdateUserRes{User: userRes}
@@ -592,7 +592,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 // plus a short-lived presigned URL for immediate display. Mirrors the
 // profile module's UploadAvatar so the mobile client can reuse its
 // uploader for both endpoints.
-func (s *Service) UploadAvatar(ctx context.Context, uid int64, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
+func (s *Service) UploadAvatar(ctx context.Context, uid int64, filename, contentType string, file io.Reader) (*dto.UserUploadAvatarRes, error) {
 	if uid == 0 {
 		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil,
 			ErrUIDRequired)
@@ -666,7 +666,7 @@ func (s *Service) UploadAvatar(ctx context.Context, uid int64, filename, content
 		"avatar_key", uploaded.Key,
 	)
 
-	res := &dto.UploadAvatarRes{
+	res := &dto.UserUploadAvatarRes{
 		UID:       uid,
 		AvatarKey: uploaded.Key,
 		AvatarUrl: signed,

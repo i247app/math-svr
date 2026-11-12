@@ -9,7 +9,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/chat"
-	dto "math-ai.com/math-ai/internal/application/dto/chat"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/chat"
 	"math-ai.com/math-ai/internal/application/transaction"
 	chatDomain "math-ai.com/math-ai/internal/domain/chat"
@@ -261,7 +261,7 @@ func (s *Service) SendMessage(ctx context.Context, req *dto.SendMessageReq, sess
 }
 
 // MarkRead advances the caller's read watermark.
-func (s *Service) MarkRead(ctx context.Context, req *dto.MarkReadReq, sessionUID int64) (*dto.MarkReadRes, error) {
+func (s *Service) MarkRead(ctx context.Context, req *dto.ChatMarkReadReq, sessionUID int64) (*dto.MarkReadRes, error) {
 	if err := ValidateMarkRead(ctx, req); err != nil {
 		return nil, err
 	}
@@ -282,7 +282,7 @@ func (s *Service) MarkRead(ctx context.Context, req *dto.MarkReadReq, sessionUID
 }
 
 // UnreadCount is the badge on the message tab.
-func (s *Service) UnreadCount(ctx context.Context, req *dto.UnreadCountReq, sessionUID int64) (*dto.UnreadCountRes, error) {
+func (s *Service) UnreadCount(ctx context.Context, req *dto.ChatUnreadCountReq, sessionUID int64) (*dto.ChatUnreadCountRes, error) {
 	if err := ValidateProfileOnly(ctx, req.ProfileID); err != nil {
 		return nil, err
 	}
@@ -294,7 +294,7 @@ func (s *Service) UnreadCount(ctx context.Context, req *dto.UnreadCountReq, sess
 	if err != nil {
 		return nil, err
 	}
-	res := &dto.UnreadCountRes{UnreadCount: total}
+	res := &dto.ChatUnreadCountRes{UnreadCount: total}
 	return res, nil
 }
 

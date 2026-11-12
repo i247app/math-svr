@@ -3,7 +3,7 @@ package device
 import (
 	"context"
 
-	dto "math-ai.com/math-ai/internal/application/dto/device"
+	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )

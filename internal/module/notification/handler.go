@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	dto "math-ai.com/math-ai/internal/application/dto/notification"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/resource"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -106,7 +106,7 @@ func (h *Handler) HandleUnreadCount(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	res, err := h.service.UnreadCount(r.Context(), &dto.UnreadCountReq{UID: &uid})
+	res, err := h.service.UnreadCount(r.Context(), &dto.NotificationUnreadCountReq{UID: &uid})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -116,7 +116,7 @@ func (h *Handler) HandleUnreadCount(w http.ResponseWriter, r *http.Request) {
 
 // POST /notifications/mark-read — mark one owned notification read.
 func (h *Handler) HandleMarkRead(w http.ResponseWriter, r *http.Request) {
-	var req dto.MarkReadReq
+	var req dto.NotificationMarkReadReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return

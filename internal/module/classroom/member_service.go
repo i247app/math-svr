@@ -4,7 +4,7 @@ import (
 	"context"
 
 	command "math-ai.com/math-ai/internal/application/command/classroom"
-	dto "math-ai.com/math-ai/internal/application/dto/classroom"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"

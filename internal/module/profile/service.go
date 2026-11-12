@@ -8,7 +8,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/profile"
-	dto "math-ai.com/math-ai/internal/application/dto/profile"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/profile"
 	"math-ai.com/math-ai/internal/application/transaction"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
@@ -378,7 +378,7 @@ func (s *Service) ForceDeleteProfile(ctx context.Context, req *dto.DeleteProfile
 // UploadAvatar streams the request body to S3 then persists the resulting
 // key against the profile in a single transaction. Returns the key plus a
 // short-lived presigned URL for immediate display.
-func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, contentType string, file io.Reader) (*dto.UploadAvatarRes, error) {
+func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, contentType string, file io.Reader) (*dto.ProfileUploadAvatarRes, error) {
 	if profileID == 0 {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			ErrProfileIDRequired)
@@ -451,7 +451,7 @@ func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, c
 		"avatar_key", uploaded.Key,
 	)
 
-	res := &dto.UploadAvatarRes{
+	res := &dto.ProfileUploadAvatarRes{
 		ProfileID: profileID,
 		AvatarKey: uploaded.Key,
 		AvatarUrl: signed,

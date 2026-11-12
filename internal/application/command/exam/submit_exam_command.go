@@ -10,8 +10,8 @@ import (
 	"math-ai.com/math-ai/internal/application/command/shared/placement"
 	"math-ai.com/math-ai/internal/application/command/shared/scorer"
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
-	"math-ai.com/math-ai/internal/application/dto/aiquestion"
-	dto "math-ai.com/math-ai/internal/application/dto/exam"
+	"math-ai.com/math-ai/internal/application/dto"
+
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/seq"
@@ -39,7 +39,7 @@ type SubmitExamCommand struct {
 	ElinkID   int64
 	UID       int64
 	ProfileID int64
-	Answers   []aiquestion.ExamAnswer
+	Answers   []dto.ExamAnswer
 	Language  enum.LanguageType
 }
 
@@ -428,8 +428,8 @@ func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *ex
 // canonicalAnswersFor undoes the sitting's shuffle on the submitted
 // answers. A sitting with no recorded ordering (NULL shuffle_map) was
 // served as stored, and its answers pass through unchanged.
-func canonicalAnswersFor(attempt *exam.ExamLink, served []aiquestion.ExamAnswer) ([]aiquestion.ExamAnswer, error) {
-	shuffle, err := aiquestion.ParseShuffle(attempt.ShuffleMap())
+func canonicalAnswersFor(attempt *exam.ExamLink, served []dto.ExamAnswer) ([]dto.ExamAnswer, error) {
+	shuffle, err := dto.ParseShuffle(attempt.ShuffleMap())
 	if err != nil {
 		return nil, err
 	}
@@ -453,7 +453,7 @@ func clip(s string, max int) string {
 // payload is an error rather than an empty exam: the attempt exists, so
 // something was served, and scoring nothing against it would silently
 // record a perfect zero.
-func decodeExamQuestions(raw string) ([]aiquestion.Question, error) {
+func decodeExamQuestions(raw string) ([]dto.Question, error) {
 	if strings.TrimSpace(raw) == "" {
 		return nil, fmt.Errorf("exam: stored questions payload is empty")
 	}

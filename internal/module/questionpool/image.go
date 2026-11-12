@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
-	dto "math-ai.com/math-ai/internal/application/dto/questionpool"
+	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"

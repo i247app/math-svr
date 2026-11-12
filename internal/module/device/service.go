@@ -4,7 +4,7 @@ import (
 	"context"
 
 	command "math-ai.com/math-ai/internal/application/command/device"
-	dto "math-ai.com/math-ai/internal/application/dto/device"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/device"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/device"
@@ -73,7 +73,7 @@ func (s *Service) GetDeviceById(ctx context.Context, req *dto.GetDeviceByIdReq) 
 	if d == nil {
 		return nil, errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
 	}
-	res := &dto.GetDeviceByIdRes{Device: dto.DomainToResponse(d)}
+	res := &dto.GetDeviceByIdRes{Device: dto.DeviceDomainToResponse(d)}
 	return res, nil
 }
 
@@ -115,11 +115,11 @@ func (s *Service) ListDevicesByUid(ctx context.Context, req *dto.ListDevicesReq)
 		}
 
 		demoDevices = append(demoDevices, devices...)
-		res := &dto.ListDevicesRes{Devices: dto.DomainListToResponse(demoDevices)}
+		res := &dto.ListDevicesRes{Devices: dto.DeviceDomainListToResponse(demoDevices)}
 		return res, nil
 	}
 
-	res := &dto.ListDevicesRes{Devices: dto.DomainListToResponse(devices)}
+	res := &dto.ListDevicesRes{Devices: dto.DeviceDomainListToResponse(devices)}
 	return res, nil
 }
 
@@ -138,7 +138,7 @@ func (s *Service) UpdateDevice(ctx context.Context, req *dto.UpdateDeviceReq) (*
 		return nil, err
 	}
 	logger.From(ctx).Info("device.updated", "device_id", req.DeviceID, "uid", req.UID)
-	res := &dto.UpdateDeviceRes{Device: dto.DomainToResponse(updated)}
+	res := &dto.UpdateDeviceRes{Device: dto.DeviceDomainToResponse(updated)}
 	return res, nil
 }
 
@@ -212,6 +212,6 @@ func (s *Service) VerifyDevice(ctx context.Context, req *dto.VerifyDeviceReq) (*
 	}
 
 	logger.From(ctx).Info("device.verified", "device_id", req.DeviceUUID, "uid", req.UID)
-	res := &dto.VerifyDeviceRes{Device: dto.DomainToResponse(d)}
+	res := &dto.VerifyDeviceRes{Device: dto.DeviceDomainToResponse(d)}
 	return res, nil
 }

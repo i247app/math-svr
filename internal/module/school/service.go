@@ -6,7 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/school"
-	dto "math-ai.com/math-ai/internal/application/dto/school"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/school"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/school"
@@ -67,7 +67,7 @@ func (s *Service) CreateSchool(ctx context.Context, req *dto.CreateSchoolReq) (*
 		return nil, err
 	}
 
-	resp := dto.DomainToResponse(created)
+	resp := dto.SchoolDomainToResponse(created)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.CreateSchoolRes{School: resp}
 	return res, nil
@@ -91,7 +91,7 @@ func (s *Service) UpdateSchool(ctx context.Context, req *dto.UpdateSchoolReq) (*
 		return nil, err
 	}
 
-	resp := dto.DomainToResponse(updated)
+	resp := dto.SchoolDomainToResponse(updated)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.UpdateSchoolRes{School: resp}
 	return res, nil
@@ -132,7 +132,7 @@ func (s *Service) GetSchool(ctx context.Context, req *dto.GetSchoolReq) (*dto.Ge
 		return nil, errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil, ErrSchoolNotFound)
 	}
 
-	resp := dto.DomainToResponse(found)
+	resp := dto.SchoolDomainToResponse(found)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.GetSchoolRes{School: resp}
 	return res, nil
@@ -155,7 +155,7 @@ func (s *Service) ListSchools(ctx context.Context, req *dto.ListSchoolsReq) (*dt
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	responses := dto.DomainListToResponse(schools)
+	responses := dto.SchoolDomainListToResponse(schools)
 	for _, r := range responses {
 		s.populateImageUrl(ctx, r)
 	}

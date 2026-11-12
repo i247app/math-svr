@@ -10,7 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
 
-	dto "math-ai.com/math-ai/internal/application/dto/user"
+	"math-ai.com/math-ai/internal/application/dto"
 )
 
 // ValidateCreateUser checks a self-registration (/users/create): the role,

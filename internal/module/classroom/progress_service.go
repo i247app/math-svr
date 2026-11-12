@@ -3,7 +3,7 @@ package classroom
 import (
 	"context"
 
-	dto "math-ai.com/math-ai/internal/application/dto/classroomprogress"
+	"math-ai.com/math-ai/internal/application/dto"
 	progressQuery "math-ai.com/math-ai/internal/application/query/classroomprogress"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"

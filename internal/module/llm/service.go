@@ -7,7 +7,7 @@ import (
 	"time"
 
 	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
-	dto "math-ai.com/math-ai/internal/application/dto/llm"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 

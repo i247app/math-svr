@@ -7,7 +7,7 @@ import (
 	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/exercise"
-	dto "math-ai.com/math-ai/internal/application/dto/exercise"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/exercise"
 	"math-ai.com/math-ai/internal/application/transaction"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
@@ -199,7 +199,7 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 
 	// Manager-only path — include right-answer key in the response so
 	// the teacher can preview the correct labels.
-	res := &dto.CreateExerciseRes{Exercise: dto.DomainToResponse(saved, true)}
+	res := &dto.CreateExerciseRes{Exercise: dto.ExerciseDomainToResponse(saved, true)}
 	return res, nil
 }
 
@@ -244,7 +244,7 @@ func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq
 	if err != nil {
 		return nil, err
 	}
-	res := &dto.UpdateExerciseRes{Exercise: dto.DomainToResponse(updated, true)}
+	res := &dto.UpdateExerciseRes{Exercise: dto.ExerciseDomainToResponse(updated, true)}
 	return res, nil
 }
 
@@ -275,7 +275,7 @@ func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sess
 	// 	return nil, err
 	// }
 
-	resp := dto.DomainToResponse(exercise, true)
+	resp := dto.ExerciseDomainToResponse(exercise, true)
 	exercises := []*domain.Exercise{exercise}
 	responses := []*dto.ExerciseResponse{resp}
 	if err := s.hydrateSubmissionStatus(ctx, req.ProfileID, exercises, responses); err != nil {
@@ -329,7 +329,7 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	responses := dto.DomainListToResponse(exercises, isManagerRole(callerMember))
+	responses := dto.ExerciseDomainListToResponse(exercises, isManagerRole(callerMember))
 	// Hydrate from the resolved caller's profile id, not from the raw
 	// req.ProfileID. Even when the caller omits it, resolveCaller has
 	// inferred the acting profile, so the field reflects the student's

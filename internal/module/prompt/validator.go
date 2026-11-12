@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	dto "math-ai.com/math-ai/internal/application/dto/prompt"
+	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/prompt"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"

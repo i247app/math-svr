@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"slices"
 
-	"math-ai.com/math-ai/internal/application/dto/aiquestion"
-	dto "math-ai.com/math-ai/internal/application/dto/exam"
+	"math-ai.com/math-ai/internal/application/dto"
+
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/exam"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -187,7 +187,7 @@ func inLevelScale(l *int) bool {
 // kindOf is a question's kind, SINGLE_CHOICE when it states none.
 func kindOf(q dto.ExamQuestion) string {
 	if q.QuestionKind == "" {
-		return aiquestion.KindSingleChoice
+		return dto.KindSingleChoice
 	}
 	return q.QuestionKind
 }

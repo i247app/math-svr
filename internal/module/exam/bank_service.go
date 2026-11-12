@@ -7,8 +7,8 @@ import (
 	"slices"
 
 	command "math-ai.com/math-ai/internal/application/command/exam"
-	"math-ai.com/math-ai/internal/application/dto/aiquestion"
-	dto "math-ai.com/math-ai/internal/application/dto/exam"
+	"math-ai.com/math-ai/internal/application/dto"
+
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
 	"math-ai.com/math-ai/internal/domain/questionpool"
@@ -88,8 +88,8 @@ func (s *Service) generateFromBank(ctx context.Context, req *dto.GenerateExamReq
 
 // pickFromBank draws a whole paper, numbered 1..N, or fails with
 // EXAM_QUESTION_BANK_INSUFFICIENT naming the group that came up short.
-func (s *Service) pickFromBank(ctx context.Context, examType enum.ExamType, grade int, level *int, avoid []string) ([]aiquestion.Question, error) {
-	paper := make([]aiquestion.Question, DefaultNumQuestions)
+func (s *Service) pickFromBank(ctx context.Context, examType enum.ExamType, grade int, level *int, avoid []string) ([]dto.Question, error) {
+	paper := make([]dto.Question, DefaultNumQuestions)
 	var chosen []int64
 
 	for _, g := range bankGroups(examType, grade, level) {
@@ -245,8 +245,8 @@ func difficulty(q *questionpool.QuestionPool) int {
 // follows from the kind (aiquestion.Question documents the four shapes).
 // Image keys travel with the question and are presigned when a response is
 // built (image_service.go).
-func toExamQuestion(q *questionpool.QuestionPool, number int) (aiquestion.Question, error) {
-	out := aiquestion.Question{
+func toExamQuestion(q *questionpool.QuestionPool, number int) (dto.Question, error) {
+	out := dto.Question{
 		QuestionNumber: number,
 		QuestionName:   q.QuestionText(),
 		QuestionTopic:  utils.DerefString(q.QuestionTopic()),
@@ -265,7 +265,7 @@ func toExamQuestion(q *questionpool.QuestionPool, number int) (aiquestion.Questi
 	textOf := make(map[string]string, len(q.Options()))
 	for _, o := range q.Options() {
 		textOf[o.Id] = o.Text
-		out.Answers = append(out.Answers, aiquestion.AnswerChoice{Label: o.Id, Content: o.Text, ImageKey: utils.DerefString(o.ImageKey)})
+		out.Answers = append(out.Answers, dto.AnswerChoice{Label: o.Id, Content: o.Text, ImageKey: utils.DerefString(o.ImageKey)})
 	}
 	correct := q.CorrectAnswer()
 
@@ -295,13 +295,13 @@ func toExamQuestion(q *questionpool.QuestionPool, number int) (aiquestion.Questi
 		if correct.Value == nil {
 			return out, fmt.Errorf("question %d: true/false key has no value", q.QuestionPoolId())
 		}
-		out.Answers = []aiquestion.AnswerChoice{
-			{Label: aiquestion.TrueOptionID, Content: trueOptionText},
-			{Label: aiquestion.FalseOptionID, Content: falseOptionText},
+		out.Answers = []dto.AnswerChoice{
+			{Label: dto.TrueOptionID, Content: trueOptionText},
+			{Label: dto.FalseOptionID, Content: falseOptionText},
 		}
-		out.RightAnswerLabel = aiquestion.FalseOptionID
+		out.RightAnswerLabel = dto.FalseOptionID
 		if *correct.Value {
-			out.RightAnswerLabel = aiquestion.TrueOptionID
+			out.RightAnswerLabel = dto.TrueOptionID
 		}
 	case questionpool.KindNumericInput:
 		if len(correct.Values) == 0 {

@@ -4,10 +4,10 @@ import (
 	"context"
 
 	command "math-ai.com/math-ai/internal/application/command/auth"
-	dto "math-ai.com/math-ai/internal/application/dto/auth"
+	"math-ai.com/math-ai/internal/application/dto"
 
 	// dtoDevice "math-ai.com/math-ai/internal/application/dto/device"
-	dtoUser "math-ai.com/math-ai/internal/application/dto/user"
+
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/login"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
@@ -78,7 +78,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		}, errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, ErrUserNotFound)
 	}
 
-	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUidReq{UID: result.UID})
+	userRes, err := s.userSvc.GetUserById(ctx, &dto.GetUserByUidReq{UID: result.UID})
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (
 		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUIDNotFoundInSession)
 	}
 
-	userRes, err := s.userSvc.GetUserById(ctx, &dtoUser.GetUserByUidReq{UID: uid})
+	userRes, err := s.userSvc.GetUserById(ctx, &dto.GetUserByUidReq{UID: uid})
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (
 		Source:    "login",
 		IsSecure:  true,
 		UID:       userRes.User.UID,
-		LoginName: dtoUser.LoginNameOf(userRes.User),
+		LoginName: dto.LoginNameOf(userRes.User),
 	}
 
 	if userRes.User.Email != nil {

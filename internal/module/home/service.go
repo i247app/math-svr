@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
-	dto "math-ai.com/math-ai/internal/application/dto/home"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/home"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	examDomain "math-ai.com/math-ai/internal/domain/exam"

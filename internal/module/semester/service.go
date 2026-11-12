@@ -6,7 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/semester"
-	dto "math-ai.com/math-ai/internal/application/dto/semester"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/semester"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/semester"
@@ -62,7 +62,7 @@ func (s *Service) CreateSemester(ctx context.Context, req *dto.CreateSemesterReq
 	if err != nil {
 		return nil, err
 	}
-	resp := dto.DomainToResponse(created)
+	resp := dto.SemesterDomainToResponse(created)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.CreateSemesterRes{Semester: resp}
 	return res, nil
@@ -84,7 +84,7 @@ func (s *Service) UpdateSemester(ctx context.Context, req *dto.UpdateSemesterReq
 	if err != nil {
 		return nil, err
 	}
-	resp := dto.DomainToResponse(updated)
+	resp := dto.SemesterDomainToResponse(updated)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.UpdateSemesterRes{Semester: resp}
 	return res, nil
@@ -125,7 +125,7 @@ func (s *Service) GetSemester(ctx context.Context, req *dto.GetSemesterReq) (*dt
 	if sm == nil {
 		return nil, errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil, ErrSemesterNotFound)
 	}
-	resp := dto.DomainToResponse(sm)
+	resp := dto.SemesterDomainToResponse(sm)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.GetSemesterRes{Semester: resp}
 	return res, nil
@@ -144,7 +144,7 @@ func (s *Service) ListSemesters(ctx context.Context, req *dto.ListSemestersReq) 
 		return nil, err
 	}
 
-	responses := dto.DomainListToResponse(semesters)
+	responses := dto.SemesterDomainListToResponse(semesters)
 	for _, r := range responses {
 		s.populateImageUrl(ctx, r)
 	}

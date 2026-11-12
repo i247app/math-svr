@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
-	dto "math-ai.com/math-ai/internal/application/dto/user"
-	userDTO "math-ai.com/math-ai/internal/application/dto/user"
+	"math-ai.com/math-ai/internal/application/dto"
+
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -108,7 +108,7 @@ func (s *Service) normalizeAvatarKey(ctx context.Context, raw string, invalidSta
 	return key, nil
 }
 
-func (s *Service) populateImageUrl(ctx context.Context, resp *userDTO.UserResponse) {
+func (s *Service) populateImageUrl(ctx context.Context, resp *dto.UserResponse) {
 	if resp == nil || s.storageProvider == nil || resp.AvatarKey == nil || *resp.AvatarKey == "" {
 		return
 	}

@@ -6,7 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/program"
-	dto "math-ai.com/math-ai/internal/application/dto/program"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/program"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/program"
@@ -64,7 +64,7 @@ func (s *Service) CreateProgram(ctx context.Context, req *dto.CreateProgramReq) 
 	if err != nil {
 		return nil, err
 	}
-	resp := dto.DomainToResponse(created)
+	resp := dto.ProgramDomainToResponse(created)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.CreateProgramRes{Program: resp}
 	return res, nil
@@ -86,7 +86,7 @@ func (s *Service) UpdateProgram(ctx context.Context, req *dto.UpdateProgramReq) 
 	if err != nil {
 		return nil, err
 	}
-	resp := dto.DomainToResponse(updated)
+	resp := dto.ProgramDomainToResponse(updated)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.UpdateProgramRes{Program: resp}
 	return res, nil
@@ -128,7 +128,7 @@ func (s *Service) GetProgram(ctx context.Context, req *dto.GetProgramReq) (*dto.
 		return nil, errs.NewError(ctx, status.PROGRAM_NOT_FOUND, nil,
 			ErrProgramNotFound)
 	}
-	resp := dto.DomainToResponse(p)
+	resp := dto.ProgramDomainToResponse(p)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.GetProgramRes{Program: resp}
 	return res, nil
@@ -147,7 +147,7 @@ func (s *Service) ListPrograms(ctx context.Context, req *dto.ListProgramsReq) (*
 		return nil, err
 	}
 
-	responses := dto.DomainListToResponse(programs)
+	responses := dto.ProgramDomainListToResponse(programs)
 	for _, r := range responses {
 		s.populateImageUrl(ctx, r)
 	}

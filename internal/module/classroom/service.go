@@ -7,7 +7,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/classroom"
-	dto "math-ai.com/math-ai/internal/application/dto/classroom"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/classroom"
 	progressQuery "math-ai.com/math-ai/internal/application/query/classroomprogress"
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -158,7 +158,7 @@ func (s *Service) CreateClassroom(ctx context.Context, req *dto.CreateClassroomR
 		return nil, err
 	}
 
-	resp := dto.DomainToResponse(created)
+	resp := dto.ClassroomDomainToResponse(created)
 	s.populateCoverUrl(ctx, resp)
 	res := &dto.CreateClassroomRes{Classroom: resp}
 	return res, nil
@@ -208,7 +208,7 @@ func (s *Service) UpdateClassroom(ctx context.Context, req *dto.UpdateClassroomR
 		return nil, err
 	}
 
-	resp := dto.DomainToResponse(updated)
+	resp := dto.ClassroomDomainToResponse(updated)
 	s.populateCoverUrl(ctx, resp)
 	res := &dto.UpdateClassroomRes{Classroom: resp}
 	return res, nil
@@ -246,7 +246,7 @@ func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, se
 			ErrClassroomNotFound)
 	}
 
-	resp := dto.DomainToResponse(found)
+	resp := dto.ClassroomDomainToResponse(found)
 	s.populateCoverUrl(ctx, resp)
 	// hydrateOwnersAndRelationships handles callerProfileID == 0 — it
 	// skips the membership lookup and leaves Relationship=NONE, but
@@ -286,7 +286,7 @@ func (s *Service) FindClassroomByCode(ctx context.Context, req *dto.FindClassroo
 		return nil, errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil, ErrClassroomNotFound)
 	}
 
-	resp := dto.DomainToResponse(found)
+	resp := dto.ClassroomDomainToResponse(found)
 	s.populateCoverUrl(ctx, resp)
 	if err := s.hydrateOwnersAndRelationships(
 		ctx,
@@ -329,7 +329,7 @@ func (s *Service) ListClassrooms(ctx context.Context, req *dto.ListClassroomsReq
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	responses := dto.DomainListToResponse(classrooms)
+	responses := dto.ClassroomDomainListToResponse(classrooms)
 	for _, r := range responses {
 		s.populateCoverUrl(ctx, r)
 	}
@@ -372,7 +372,7 @@ func (s *Service) ListMyJoinedClassrooms(ctx context.Context, req *dto.ListMyJoi
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	responses := dto.DomainListToResponse(classrooms)
+	responses := dto.ClassroomDomainListToResponse(classrooms)
 	for _, r := range responses {
 		s.populateCoverUrl(ctx, r)
 	}

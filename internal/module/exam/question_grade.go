@@ -1,7 +1,7 @@
 package exam
 
 import (
-	"math-ai.com/math-ai/internal/application/dto/aiquestion"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
@@ -30,7 +30,7 @@ type GradeMismatch struct {
 // It runs BEFORE the questions are persisted, so ma_exam_pools.questions_json
 // is authoritative and ma_exam_session_lines can copy it verbatim at submit
 // time without re-deriving anything.
-func NormalizeQuestionBands(questions []aiquestion.Question, examType enum.ExamType, grade int) ([]aiquestion.Question, []GradeMismatch) {
+func NormalizeQuestionBands(questions []dto.Question, examType enum.ExamType, grade int) ([]dto.Question, []GradeMismatch) {
 	if len(questions) == 0 {
 		return questions, nil
 	}
@@ -87,7 +87,7 @@ type LevelMismatch struct {
 // for), and reports where the model disagreed. Server-stamped for the
 // same reason question_grade is: the columns feed analytics, and a value
 // the model invented would be a difficulty nobody asked for.
-func StampQuestionLevels(questions []aiquestion.Question, levels, subLevels []int) ([]aiquestion.Question, []LevelMismatch) {
+func StampQuestionLevels(questions []dto.Question, levels, subLevels []int) ([]dto.Question, []LevelMismatch) {
 	var mismatches []LevelMismatch
 	for i := range questions {
 		q := &questions[i]

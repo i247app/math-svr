@@ -1,7 +1,7 @@
 package home
 
 import (
-	dto "math-ai.com/math-ai/internal/application/dto/home"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/home"
 	"math-ai.com/math-ai/internal/shared/enum"
 )

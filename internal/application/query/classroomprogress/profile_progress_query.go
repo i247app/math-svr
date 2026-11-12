@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	dto "math-ai.com/math-ai/internal/application/dto/classroomprogress"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/query/progress"
 	exercise "math-ai.com/math-ai/internal/domain/exercise"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"

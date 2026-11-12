@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	dto "math-ai.com/math-ai/internal/application/dto/home"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/resource"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"

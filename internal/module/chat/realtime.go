@@ -3,7 +3,7 @@ package chat
 import (
 	"context"
 
-	dto "math-ai.com/math-ai/internal/application/dto/chat"
+	"math-ai.com/math-ai/internal/application/dto"
 	chatDomain "math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	dto "math-ai.com/math-ai/internal/application/dto/exam"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/exam"
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"

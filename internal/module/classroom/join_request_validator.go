@@ -3,7 +3,7 @@ package classroom
 import (
 	"context"
 
-	dto "math-ai.com/math-ai/internal/application/dto/classroom"
+	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )

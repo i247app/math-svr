@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	dto "math-ai.com/math-ai/internal/application/dto/school"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/shared/response"
 )

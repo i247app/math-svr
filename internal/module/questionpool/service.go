@@ -10,7 +10,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/questionpool"
-	dto "math-ai.com/math-ai/internal/application/dto/questionpool"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/questionpool"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/questionpool"
@@ -237,7 +237,7 @@ func (s *Service) ListQuestionPools(ctx context.Context, req *dto.ListQuestionPo
 }
 
 func (s *Service) toResponses(ctx context.Context, qs []*domain.QuestionPool) []*dto.QuestionPoolResponse {
-	out := dto.DomainListToResponse(qs)
+	out := dto.QuestionPoolDomainListToResponse(qs)
 	for _, r := range out {
 		r.QuestionImageUrl = s.presign(ctx, r.QuestionPoolID, r.QuestionImageKey)
 		for i := range r.Options {

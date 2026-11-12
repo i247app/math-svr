@@ -6,7 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/grade"
-	dto "math-ai.com/math-ai/internal/application/dto/grade"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/grade"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/grade"
@@ -62,7 +62,7 @@ func (s *Service) CreateGrade(ctx context.Context, req *dto.CreateGradeReq) (*dt
 	if err != nil {
 		return nil, err
 	}
-	resp := dto.DomainToResponse(created)
+	resp := dto.GradeDomainToResponse(created)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.CreateGradeRes{Grade: resp}
 	return res, nil
@@ -93,7 +93,7 @@ func (s *Service) UpdateGrade(ctx context.Context, req *dto.UpdateGradeReq) (*dt
 	if err != nil {
 		return nil, err
 	}
-	resp := dto.DomainToResponse(updated)
+	resp := dto.GradeDomainToResponse(updated)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.UpdateGradeRes{Grade: resp}
 	return res, nil
@@ -135,7 +135,7 @@ func (s *Service) GetGrade(ctx context.Context, req *dto.GetGradeReq) (*dto.GetG
 		return nil, errs.NewError(ctx, status.GRADE_NOT_FOUND, nil,
 			ErrGradeNotFound)
 	}
-	resp := dto.DomainToResponse(g)
+	resp := dto.GradeDomainToResponse(g)
 	s.populateImageUrl(ctx, resp)
 	res := &dto.GetGradeRes{Grade: resp}
 	return res, nil
@@ -155,7 +155,7 @@ func (s *Service) ListGrades(ctx context.Context, req *dto.ListGradesReq) (*dto.
 		return nil, err
 	}
 
-	responses := dto.DomainListToResponse(grades)
+	responses := dto.GradeDomainListToResponse(grades)
 	for _, r := range responses {
 		s.populateImageUrl(ctx, r)
 	}

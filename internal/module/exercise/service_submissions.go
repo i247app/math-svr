@@ -8,7 +8,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/exercise"
-	dto "math-ai.com/math-ai/internal/application/dto/exercise"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/exercise"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	domain "math-ai.com/math-ai/internal/domain/exercise"

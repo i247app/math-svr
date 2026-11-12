@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
-	dto "math-ai.com/math-ai/internal/application/dto/exam"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/question"
 	"math-ai.com/math-ai/internal/domain/questionpool"

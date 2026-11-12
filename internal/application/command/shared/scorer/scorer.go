@@ -29,7 +29,7 @@ import (
 	"strconv"
 	"strings"
 
-	"math-ai.com/math-ai/internal/application/dto/aiquestion"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
@@ -97,7 +97,7 @@ const (
 // ("a,c") and their texts joined; for NUMERIC_INPUT no id and the typed
 // number as the text.
 type Outcome struct {
-	Question        aiquestion.Question
+	Question        dto.Question
 	ChildOptionIDs  string
 	ChildAnswerText string
 	IsCorrect       bool
@@ -126,7 +126,7 @@ type DetailedResult struct {
 // It keeps the original denominator (a skipped question counts as wrong)
 // so exercise submissions score exactly as they did before the exam flow
 // introduced the second rule.
-func Score(questionsJSON string, answers []aiquestion.StudentAnswer, lang enum.LanguageType) (*Result, error) {
+func Score(questionsJSON string, answers []dto.StudentAnswer, lang enum.LanguageType) (*Result, error) {
 	detailed, err := ScoreDetailed(questionsJSON, answers, lang, DenominatorAllQuestions)
 	if err != nil {
 		return nil, err
@@ -136,7 +136,7 @@ func Score(questionsJSON string, answers []aiquestion.StudentAnswer, lang enum.L
 
 // ScoreDetailed is the full engine: the same comparison logic, plus the
 // per-question breakdown and an explicit denominator.
-func ScoreDetailed(questionsJSON string, answers []aiquestion.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
+func ScoreDetailed(questionsJSON string, answers []dto.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
 	questions, err := parseQuestionsForScoring(questionsJSON)
 	if err != nil {
 		return nil, err
@@ -148,19 +148,19 @@ func ScoreDetailed(questionsJSON string, answers []aiquestion.StudentAnswer, lan
 // its payload. The exam flow needs it: its stored JSON uses its own field
 // names, so it decodes with its own type and hands the questions over
 // rather than having this package parse a vocabulary it does not know.
-func ScoreQuestions(questions []aiquestion.Question, answers []aiquestion.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
-	exam := make([]aiquestion.ExamAnswer, 0, len(answers))
+func ScoreQuestions(questions []dto.Question, answers []dto.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
+	exam := make([]dto.ExamAnswer, 0, len(answers))
 	for _, a := range answers {
 		// One id per answer, blank included: a blank label is a wrong
 		// answer here, as it always was, not a shape error.
-		exam = append(exam, aiquestion.ExamAnswer{QuestionNumber: a.QuestionNumber, OptionIDs: []string{strings.TrimSpace(a.Label)}})
+		exam = append(exam, dto.ExamAnswer{QuestionNumber: a.QuestionNumber, OptionIDs: []string{strings.TrimSpace(a.Label)}})
 	}
 	return ScoreExamQuestions(questions, exam, lang, denom)
 }
 
 // ScoreExamQuestions grades questions of any kind. An answer that does not
 // fit its question's kind fails the whole call with ErrAnswerShape.
-func ScoreExamQuestions(questions []aiquestion.Question, answers []aiquestion.ExamAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
+func ScoreExamQuestions(questions []dto.Question, answers []dto.ExamAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
 	if len(questions) == 0 {
 		return nil, fmt.Errorf("scorer: payload has no questions")
 	}
@@ -251,16 +251,16 @@ func ScoreExamQuestions(questions []aiquestion.Question, answers []aiquestion.Ex
 
 // checkAnswerShape: single-choice and true/false take exactly one option
 // id, multiple-choice at least one (no repeats), numeric a value and no id.
-func checkAnswerShape(q aiquestion.Question, a aiquestion.ExamAnswer) error {
+func checkAnswerShape(q dto.Question, a dto.ExamAnswer) error {
 	fail := func(why string) error {
 		return fmt.Errorf("%w: question %d (%s) %s", ErrAnswerShape, q.QuestionNumber, q.EffectiveKind(), why)
 	}
 	switch q.EffectiveKind() {
-	case aiquestion.KindNumericInput:
+	case dto.KindNumericInput:
 		if len(a.OptionIDs) > 0 || strings.TrimSpace(a.Value) == "" {
 			return fail("takes a value and no option ids")
 		}
-	case aiquestion.KindMultipleChoice:
+	case dto.KindMultipleChoice:
 		if a.Value != "" || len(a.OptionIDs) == 0 {
 			return fail("takes one or more option ids and no value")
 		}
@@ -281,11 +281,11 @@ func checkAnswerShape(q aiquestion.Question, a aiquestion.ExamAnswer) error {
 }
 
 // answerIsCorrect grades one answer that already passed checkAnswerShape.
-func answerIsCorrect(q aiquestion.Question, a aiquestion.ExamAnswer) bool {
+func answerIsCorrect(q dto.Question, a dto.ExamAnswer) bool {
 	switch q.EffectiveKind() {
-	case aiquestion.KindNumericInput:
+	case dto.KindNumericInput:
 		return questionpool.AcceptsNumber(q.RightValues, a.Value)
-	case aiquestion.KindMultipleChoice:
+	case dto.KindMultipleChoice:
 		want := normalizedIDs(q.RightOptionIDs)
 		return len(want) > 0 && slices.Equal(want, normalizedIDs(a.OptionIDs))
 	}
@@ -306,17 +306,17 @@ func normalizedIDs(ids []string) []string {
 }
 
 // selectedView is the option id(s) and text a log row stores for an answer.
-func selectedView(q aiquestion.Question, a aiquestion.ExamAnswer) (ids, content string) {
+func selectedView(q dto.Question, a dto.ExamAnswer) (ids, content string) {
 	switch q.EffectiveKind() {
-	case aiquestion.KindNumericInput:
+	case dto.KindNumericInput:
 		return "", strings.TrimSpace(a.Value)
-	case aiquestion.KindMultipleChoice:
+	case dto.KindMultipleChoice:
 		norm := normalizedIDs(a.OptionIDs)
 		texts := make([]string, 0, len(norm))
 		for _, id := range norm {
 			texts = append(texts, choiceContent(q, id))
 		}
-		return aiquestion.JoinIDs(norm), strings.Join(texts, aiquestion.ContentSeparator)
+		return dto.JoinIDs(norm), strings.Join(texts, dto.ContentSeparator)
 	}
 	id := normalizeID(a.OptionIDs[0])
 	return id, choiceContent(q, id)
@@ -324,7 +324,7 @@ func selectedView(q aiquestion.Question, a aiquestion.ExamAnswer) (ids, content 
 
 // choiceContent returns the displayed text of the option the student
 // picked, or "" when the label matches nothing in the payload.
-func choiceContent(q aiquestion.Question, label string) string {
+func choiceContent(q dto.Question, label string) string {
 	for _, c := range q.Answers {
 		if strings.EqualFold(strings.TrimSpace(c.Label), strings.TrimSpace(label)) {
 			return c.Content
@@ -337,12 +337,12 @@ func choiceContent(q aiquestion.Question, label string) string {
 // the DTO shape. Returns an error on empty / malformed input so the
 // caller can surface the right status code (EXAM_GRADING_FAILED /
 // CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED).
-func parseQuestionsForScoring(raw string) ([]aiquestion.Question, error) {
+func parseQuestionsForScoring(raw string) ([]dto.Question, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return nil, fmt.Errorf("scorer: questions payload is empty")
 	}
-	var out []aiquestion.Question
+	var out []dto.Question
 	if err := json.Unmarshal([]byte(raw), &out); err != nil {
 		return nil, fmt.Errorf("scorer: parse questions: %w", err)
 	}
@@ -353,8 +353,8 @@ func parseQuestionsForScoring(raw string) ([]aiquestion.Question, error) {
 // question_number. Duplicate numbers fail loudly — the per-module
 // validator catches it earlier, but the scorer guards too so out-of-band
 // callers can't smuggle them past.
-func indexAnswers(answers []aiquestion.ExamAnswer) (map[int]aiquestion.ExamAnswer, error) {
-	out := make(map[int]aiquestion.ExamAnswer, len(answers))
+func indexAnswers(answers []dto.ExamAnswer) (map[int]dto.ExamAnswer, error) {
+	out := make(map[int]dto.ExamAnswer, len(answers))
 	for i, a := range answers {
 		if _, dup := out[a.QuestionNumber]; dup {
 			return nil, fmt.Errorf("scorer: duplicate answer for question_number %d at index %d", a.QuestionNumber, i)
@@ -366,7 +366,7 @@ func indexAnswers(answers []aiquestion.ExamAnswer) (map[int]aiquestion.ExamAnswe
 
 // questionIsCorrect: label match first (the v1-compatible path), value
 // compare as fallback only when right_answer is absent.
-func questionIsCorrect(q aiquestion.Question, studentLabel string) bool {
+func questionIsCorrect(q dto.Question, studentLabel string) bool {
 	rightLabel := normalizeID(q.RightAnswerLabel)
 	if rightLabel != "" {
 		return normalizeID(studentLabel) == rightLabel

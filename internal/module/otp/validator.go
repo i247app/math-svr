@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	dto "math-ai.com/math-ai/internal/application/dto/otp"
+	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"

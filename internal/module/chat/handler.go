@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	dto "math-ai.com/math-ai/internal/application/dto/chat"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/shared/response"
 )
@@ -98,7 +98,7 @@ func (h *Handler) HandleSendMessage(w http.ResponseWriter, r *http.Request) {
 
 // POST /chats/messages/mark-read
 func (h *Handler) HandleMarkRead(w http.ResponseWriter, r *http.Request) {
-	var req dto.MarkReadReq
+	var req dto.ChatMarkReadReq
 	if err := decode(r, &req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -109,7 +109,7 @@ func (h *Handler) HandleMarkRead(w http.ResponseWriter, r *http.Request) {
 
 // POST /chats/unread-count
 func (h *Handler) HandleUnreadCount(w http.ResponseWriter, r *http.Request) {
-	var req dto.UnreadCountReq
+	var req dto.ChatUnreadCountReq
 	if err := decode(r, &req); err != nil {
 		response.WriteJson(w, nil, err)
 		return

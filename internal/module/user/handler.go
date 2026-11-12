@@ -6,7 +6,7 @@ import (
 	"io"
 	"net/http"
 
-	"math-ai.com/math-ai/internal/application/dto/user"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/resource"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -92,7 +92,7 @@ func (h *UserHandler) HandleAdminCreateUser(w http.ResponseWriter, r *http.Reque
 }
 
 // closeAvatarFile closes the multipart avatar decodeCreateUserReq opened.
-func closeAvatarFile(req *user.CreateUserReq) {
+func closeAvatarFile(req *dto.CreateUserReq) {
 	if c, ok := req.AvatarFile.(io.Closer); ok {
 		_ = c.Close()
 	}
@@ -100,8 +100,8 @@ func closeAvatarFile(req *user.CreateUserReq) {
 
 // decodeCreateUserReq reads a create-user body: JSON, or multipart when
 // it carries an avatar file.
-func decodeCreateUserReq(r *http.Request) (*user.CreateUserReq, error) {
-	var req user.CreateUserReq
+func decodeCreateUserReq(r *http.Request) (*dto.CreateUserReq, error) {
+	var req dto.CreateUserReq
 	if r.Header.Get("Content-Type") == "application/json" {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			return nil, fmt.Errorf("invalid parameters")
@@ -143,7 +143,7 @@ func decodeCreateUserReq(r *http.Request) (*user.CreateUserReq, error) {
 // it the server needs, so an undecodable body is treated as an empty one
 // rather than refused.
 func (h *UserHandler) HandleCreateGuest(w http.ResponseWriter, r *http.Request) {
-	var req user.CreateGuestReq
+	var req dto.CreateGuestReq
 	_ = json.NewDecoder(r.Body).Decode(&req)
 
 	sess, err := h.appResource.GetRequestSession(r)
@@ -163,7 +163,7 @@ func (h *UserHandler) HandleCreateGuest(w http.ResponseWriter, r *http.Request) 
 
 // POST /users/detail
 func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) {
-	var req user.GetUserByUidReq
+	var req dto.GetUserByUidReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -197,7 +197,7 @@ func (h *UserHandler) HandleGetUserById(w http.ResponseWriter, r *http.Request) 
 func (h *UserHandler) HandleIdentifierAvailable(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var req user.CheckIdentifierReq
+	var req dto.CheckIdentifierReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -231,7 +231,7 @@ func (h *UserHandler) HandleGetUserMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := h.service.GetUserById(r.Context(), &user.GetUserByUidReq{UID: uid})
+	res, err := h.service.GetUserById(r.Context(), &dto.GetUserByUidReq{UID: uid})
 	if err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -242,7 +242,7 @@ func (h *UserHandler) HandleGetUserMe(w http.ResponseWriter, r *http.Request) {
 
 // POST /users/list
 func (h *UserHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
-	var req user.ListUsersReq
+	var req dto.ListUsersReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		response.WriteJson(w, nil, err)
 		return
@@ -259,7 +259,7 @@ func (h *UserHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
 
 // POST /users/update
 func (h *UserHandler) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
-	var req user.UpdateUserReq
+	var req dto.UpdateUserReq
 
 	contentType := r.Header.Get("Content-Type")
 

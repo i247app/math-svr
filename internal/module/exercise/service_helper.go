@@ -3,7 +3,7 @@ package exercise
 import (
 	"context"
 
-	dto "math-ai.com/math-ai/internal/application/dto/exercise"
+	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"

@@ -7,7 +7,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/banner"
-	dto "math-ai.com/math-ai/internal/application/dto/banner"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/banner"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/banner"
@@ -105,7 +105,7 @@ func (s *Service) CreateBanner(ctx context.Context, req *dto.CreateBannerReq, ac
 		return nil, err
 	}
 
-	resp := dto.DomainToResponse(created)
+	resp := dto.BannerDomainToResponse(created)
 	s.populateMediaUrl(ctx, resp)
 	res := &dto.CreateBannerRes{Banner: resp}
 	return res, nil
@@ -179,7 +179,7 @@ func (s *Service) UpdateBanner(ctx context.Context, req *dto.UpdateBannerReq, ac
 		}
 	}
 
-	resp := dto.DomainToResponse(updated)
+	resp := dto.BannerDomainToResponse(updated)
 	s.populateMediaUrl(ctx, resp)
 	res := &dto.UpdateBannerRes{Banner: resp}
 	return res, nil
@@ -220,7 +220,7 @@ func (s *Service) GetBanner(ctx context.Context, req *dto.GetBannerReq) (*dto.Ge
 		return nil, errs.NewError(ctx, status.BANNER_NOT_FOUND, nil, ErrBannerNotFound)
 	}
 
-	resp := dto.DomainToResponse(found)
+	resp := dto.BannerDomainToResponse(found)
 	s.populateMediaUrl(ctx, resp)
 	res := &dto.GetBannerRes{Banner: resp}
 	return res, nil
@@ -243,7 +243,7 @@ func (s *Service) ListBanners(ctx context.Context, req *dto.ListBannersReq) (*dt
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	responses := dto.DomainListToResponse(banners)
+	responses := dto.BannerDomainListToResponse(banners)
 	for _, r := range responses {
 		s.populateMediaUrl(ctx, r)
 	}

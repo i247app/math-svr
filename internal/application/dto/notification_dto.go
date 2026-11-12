@@ -1,0 +1,126 @@
+package dto
+
+import (
+	"encoding/json"
+
+	domain "math-ai.com/math-ai/internal/domain/notification"
+	"math-ai.com/math-ai/internal/shared/pagination"
+)
+
+type PingNotificationReq struct {
+	UID int64 `json:"-"`
+}
+
+type PingNotificationRes struct {
+	Notification NotificationResponse `json:"notification"`
+}
+
+// SendNotificationReq creates a notification for a recipient (UID) and
+// pushes it to that user's devices. Used by the admin/test endpoint and as the
+// wire shape other modules can map onto when calling the service in-process.
+type SendNotificationReq struct {
+	UID        int64           `json:"uid"`
+	Title      string          `json:"title"`
+	ShortText  string          `json:"short_text"`
+	Category   *string         `json:"category"`
+	ActionType *string         `json:"action_type"`
+	ActionData json.RawMessage `json:"action_data"`
+	Priority   *string         `json:"priority"`
+	Note       *string         `json:"note"`
+
+	// CreatorUID is the acting user from the session (audit create_id). Never
+	// read from the request body.
+	CreatorUID *int64 `json:"-"`
+}
+
+// SendNotificationRes returns the persisted notification plus a summary of
+// the push fan-out (zeroed when the recipient has no device tokens or the
+// adapter is disabled).
+type SendNotificationRes struct {
+	Notification NotificationResponse `json:"notification"`
+	PushSuccess  int                  `json:"push_success"`
+	PushFailure  int                  `json:"push_failure"`
+}
+
+// ListNotificationsReq lists the caller's notifications. UID is
+// session-injected.
+type ListNotificationsReq struct {
+	Page       int64  `json:"page"`
+	Size       int64  `json:"size"`
+	OnlyUnread bool   `json:"only_unread"`
+	UID        *int64 `json:"-"`
+}
+
+type ListNotificationsRes struct {
+	Notifications []NotificationResponse `json:"notifications"`
+	Pagination    *pagination.Pagination `json:"pagination"`
+}
+
+// NotificationUnreadCountReq / Res report the caller's unread notification count.
+type NotificationUnreadCountReq struct {
+	UID *int64 `json:"-"`
+}
+
+type NotificationUnreadCountRes struct {
+	Count int64 `json:"count"`
+}
+
+// NotificationMarkReadReq marks a single owned notification read.
+type NotificationMarkReadReq struct {
+	NotificationID int64  `json:"notification_id"`
+	UID            *int64 `json:"-"`
+}
+
+// MarkAllReadReq marks every unread notification of the caller read.
+type MarkAllReadReq struct {
+	UID *int64 `json:"-"`
+}
+
+// DeleteNotificationReq soft-deletes an owned notification.
+type DeleteNotificationReq struct {
+	NotificationID int64  `json:"notification_id"`
+	UID            *int64 `json:"-"`
+}
+
+// NotificationResponse is the wire shape for one notification row.
+type NotificationResponse struct {
+	NotificationID int64           `json:"notification_id"`
+	UID            int64           `json:"uid"`
+	Title          string          `json:"title"`
+	ShortText      string          `json:"short_text"`
+	Category       *string         `json:"category,omitempty"`
+	IsRead         bool            `json:"is_read"`
+	ActionType     *string         `json:"action_type,omitempty"`
+	ActionData     json.RawMessage `json:"action_data,omitempty"`
+	Priority       *string         `json:"priority,omitempty"`
+	CreateDt       string          `json:"create_dt,omitempty"`
+	ModifyDt       string          `json:"modify_dt,omitempty"`
+}
+
+func NotificationDomainToResponse(n *domain.Notification) NotificationResponse {
+	var actionData json.RawMessage
+	if n.ActionData() != nil {
+		actionData = json.RawMessage(*n.ActionData())
+	}
+	return NotificationResponse{
+		NotificationID: n.NotificationId(),
+		UID:            n.Uid(),
+		Title:          n.Title(),
+		ShortText:      n.ShortText(),
+		Category:       n.Category(),
+		IsRead:         n.IsRead(),
+		ActionType:     n.ActionType(),
+		ActionData:     actionData,
+		Priority:       n.Priority(),
+		CreateDt:       n.CreateDt().String(),
+		ModifyDt:       n.ModifyDt().String(),
+	}
+}
+
+func NotificationDomainListToResponse(ns []*domain.Notification) []NotificationResponse {
+	out := make([]NotificationResponse, 0, len(ns))
+	for _, n := range ns {
+		out = append(out, NotificationDomainToResponse(n))
+	}
+	return out
+}

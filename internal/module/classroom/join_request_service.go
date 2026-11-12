@@ -4,8 +4,8 @@ import (
 	"context"
 
 	command "math-ai.com/math-ai/internal/application/command/classroom"
-	dto "math-ai.com/math-ai/internal/application/dto/classroom"
-	profileDTO "math-ai.com/math-ai/internal/application/dto/profile"
+	"math-ai.com/math-ai/internal/application/dto"
+
 	query "math-ai.com/math-ai/internal/application/query/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -111,14 +111,14 @@ func (s *Service) ListJoinRequestsByClassroom(ctx context.Context, req *dto.List
 	for _, m := range rows {
 		requesterIDs = append(requesterIDs, m.ProfileId())
 	}
-	hashRequesters := make(map[int64]*profileDTO.ProfileResponse)
+	hashRequesters := make(map[int64]*dto.ProfileResponse)
 	if len(requesterIDs) > 0 {
 		requesters, err := s.profileRepo.ListByProfileIds(ctx, requesterIDs)
 		if err != nil {
 			return nil, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		for _, p := range requesters {
-			hashRequesters[p.ProfileId()] = profileDTO.DomainToResponse(p)
+			hashRequesters[p.ProfileId()] = dto.ProfileDomainToResponse(p)
 		}
 	}
 

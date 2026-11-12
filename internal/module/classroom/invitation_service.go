@@ -4,8 +4,8 @@ import (
 	"context"
 
 	command "math-ai.com/math-ai/internal/application/command/classroom"
-	dto "math-ai.com/math-ai/internal/application/dto/classroom"
-	profileDTO "math-ai.com/math-ai/internal/application/dto/profile"
+	"math-ai.com/math-ai/internal/application/dto"
+
 	query "math-ai.com/math-ai/internal/application/query/classroom"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -100,9 +100,9 @@ func (s *Service) ListMyPendingInvitations(ctx context.Context, req *dto.ListMyP
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	hashInviter := make(map[int64]*profileDTO.ProfileResponse)
+	hashInviter := make(map[int64]*dto.ProfileResponse)
 	for _, inviter := range inviters {
-		hashInviter[inviter.ProfileId()] = profileDTO.DomainToResponse(inviter)
+		hashInviter[inviter.ProfileId()] = dto.ProfileDomainToResponse(inviter)
 	}
 	invitations := dto.InvitationDomainListToResponse(rows, hashInviter)
 	if err := s.hydrateInvitationClassrooms(ctx, rows, invitations); err != nil {

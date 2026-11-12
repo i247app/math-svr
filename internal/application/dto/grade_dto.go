@@ -1,0 +1,100 @@
+package dto
+
+import (
+	"io"
+
+	domain "math-ai.com/math-ai/internal/domain/grade"
+	"math-ai.com/math-ai/internal/shared/pagination"
+)
+
+type GradeResponse struct {
+	GradeID      int64   `json:"grade_id"`
+	Label        string  `json:"label"`
+	Description  string  `json:"description"`
+	ImageKey     *string `json:"-"`
+	ImageUrl     *string `json:"image_url"` // pre-signed url from image_key
+	DisplayOrder int8    `json:"display_order"`
+	Note         *string `json:"note,omitempty"`
+	CreateDt     string  `json:"create_dt"`
+	ModifyDt     string  `json:"modify_dt"`
+}
+
+type CreateGradeReq struct {
+	Label        string  `json:"label"`
+	Description  string  `json:"description"`
+	ImageKey     *string `json:"image_key,omitempty"`
+	DisplayOrder int8    `json:"display_order"`
+	Note         *string `json:"note,omitempty"`
+}
+
+type CreateGradeRes struct {
+	Grade *GradeResponse `json:"grade"`
+}
+
+// UpdateGradeReq uses pointer fields for every patchable column so a
+// client can omit fields they don't intend to change.
+type UpdateGradeReq struct {
+	GradeID      int64   `json:"grade_id"`
+	Label        *string `json:"label,omitempty"`
+	Description  *string `json:"description,omitempty"`
+	ImageKey     *string `json:"image_key,omitempty"`
+	DisplayOrder *int8   `json:"display_order,omitempty"`
+	Note         *string `json:"note,omitempty"`
+
+	ImageFile        io.Reader `json:"-"` // multipart file reader
+	ImageFilename    string    `json:"-"` // original filename
+	ImageContentType string    `json:"-"` // MIME type
+}
+
+type UpdateGradeRes struct {
+	Grade *GradeResponse `json:"grade"`
+}
+
+type DeleteGradeReq struct {
+	GradeID int64 `json:"grade_id"`
+}
+
+type DeleteGradeRes struct{}
+
+type GetGradeReq struct {
+	GradeID int64 `json:"grade_id"`
+}
+
+type GetGradeRes struct {
+	Grade *GradeResponse `json:"grade"`
+}
+
+type ListGradesReq struct {
+	GradeIDs []int64 `json:"grade_ids,omitempty"`
+	Page     int64   `json:"page"`
+	Size     int64   `json:"size"`
+}
+
+type ListGradesRes struct {
+	Grades     []*GradeResponse       `json:"grades"`
+	Pagination *pagination.Pagination `json:"pagination"`
+}
+
+func GradeDomainToResponse(g *domain.Grade) *GradeResponse {
+	if g == nil {
+		return nil
+	}
+	return &GradeResponse{
+		GradeID:      g.GradeId(),
+		Label:        g.Label(),
+		Description:  g.Description(),
+		ImageKey:     g.ImageKey(),
+		DisplayOrder: g.DisplayOrder(),
+		Note:         g.Note(),
+		CreateDt:     g.CreateDt().String(),
+		ModifyDt:     g.ModifyDt().String(),
+	}
+}
+
+func GradeDomainListToResponse(grades []*domain.Grade) []*GradeResponse {
+	result := make([]*GradeResponse, len(grades))
+	for i, g := range grades {
+		result[i] = GradeDomainToResponse(g)
+	}
+	return result
+}

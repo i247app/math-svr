@@ -6,7 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	dto "math-ai.com/math-ai/internal/application/dto/chat"
+	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
@@ -82,7 +82,7 @@ func ValidateListMessages(ctx context.Context, req *dto.ListMessagesReq) error {
 	return nil
 }
 
-func ValidateMarkRead(ctx context.Context, req *dto.MarkReadReq) error {
+func ValidateMarkRead(ctx context.Context, req *dto.ChatMarkReadReq) error {
 	if req == nil {
 		return errs.NewError(ctx, status.CHAT_MISSING_CONVERSATION_ID, nil, errors.New("request body is required"))
 	}

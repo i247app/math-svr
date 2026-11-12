@@ -9,8 +9,7 @@ import (
 	"unicode/utf8"
 
 	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
-	"math-ai.com/math-ai/internal/application/dto/aiquestion"
-	dto "math-ai.com/math-ai/internal/application/dto/exam"
+	"math-ai.com/math-ai/internal/application/dto"
 
 	// input "math-ai.com/math-ai/internal/domain/prompt/input"
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
@@ -69,7 +68,7 @@ type generateExamInput struct {
 type generateExamOutput struct {
 	Title     string
 	ShortText string
-	Questions []aiquestion.Question
+	Questions []dto.Question
 	// RespID is the journey's new chain pointer; nil breaks the chain.
 	RespID *string
 }
@@ -89,14 +88,14 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	levels, subLevels := input.QuestionLevels(in.ExamType, n, in.Level, in.SubLevel)
 
 	promptIn := input.ExamPromptInput{
-		ExamType:     in.ExamType,
-		Grade:        in.Grade,
-		NumQuestions: in.NumQuestions,
-		Semester:     in.Semester,
-		Program:      in.Program,
-		Level:        in.Level,
-		SubLevel:     in.SubLevel,
-		Practice:     in.Practice,
+		ExamType:          in.ExamType,
+		Grade:             in.Grade,
+		NumQuestions:      in.NumQuestions,
+		Semester:          in.Semester,
+		Program:           in.Program,
+		Level:             in.Level,
+		SubLevel:          in.SubLevel,
+		Practice:          in.Practice,
 		QuestionLevels:    levels,
 		QuestionSubLevels: subLevels,
 		// Read from the stored text before rendering fills it in.
@@ -133,7 +132,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	// Parsed with the exam vocabulary (question_text, options[{id, text}],
 	// correct_answer, ...) and converted straight into the shared shape, which is what the
 	// normalisers and the scorer operate on.
-	gen, err := aiquestion.ParseGenerationOf[dto.ExamQuestion](content)
+	gen, err := dto.ParseGenerationOf[dto.ExamQuestion](content)
 	if err != nil {
 		log.Warnf("exam.llm.generate_parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED,
@@ -154,7 +153,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	// are cleaned to the bank's rules (NormalizeExtras), never refused.
 	for i := range gen.Questions {
 		q := &gen.Questions[i]
-		q.QuestionKind = aiquestion.KindSingleChoice
+		q.QuestionKind = dto.KindSingleChoice
 		q.NormalizeIDs()
 		q.NormalizeExtras()
 		if q.ReconcileKey() {
@@ -171,7 +170,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	//
 	// The first clamps render types and reports icon drift: cosmetic, never
 	// fatal, since grading is label-based.
-	questions, warnings := aiquestion.Normalize(dto.ToSharedQuestions(gen.Questions))
+	questions, warnings := dto.Normalize(dto.ToSharedQuestions(gen.Questions))
 	for _, w := range warnings {
 		log.Warnf("exam.normalize.%s value=%q q=%d", w.Kind, w.Value, w.QuestionNumber)
 	}

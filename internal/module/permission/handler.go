@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strconv"
 
-	dto "math-ai.com/math-ai/internal/application/dto/role"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"

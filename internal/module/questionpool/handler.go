@@ -6,7 +6,7 @@ import (
 	"errors"
 	"net/http"
 
-	dto "math-ai.com/math-ai/internal/application/dto/questionpool"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 

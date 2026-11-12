@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	dto "math-ai.com/math-ai/internal/application/dto/misc"
+	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/mtime"
 	"math-ai.com/math-ai/internal/domain/shared/status"

@@ -4,11 +4,8 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/adapter/storage"
-	gradeDto "math-ai.com/math-ai/internal/application/dto/grade"
-	dto "math-ai.com/math-ai/internal/application/dto/profile"
-	programDto "math-ai.com/math-ai/internal/application/dto/program"
-	schoolDto "math-ai.com/math-ai/internal/application/dto/school"
-	semesterDto "math-ai.com/math-ai/internal/application/dto/semester"
+	"math-ai.com/math-ai/internal/application/dto"
+
 	domain "math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -147,33 +144,33 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
-	progMap := make(map[int64]*programDto.ProgramResponse, len(programs))
+	progMap := make(map[int64]*dto.ProgramResponse, len(programs))
 	for _, p := range programs {
-		r := programDto.DomainToResponse(p)
+		r := dto.ProgramDomainToResponse(p)
 		s.signProgramImageUrl(ctx, r)
 		progMap[p.ProgramId()] = r
 	}
-	gradeMap := make(map[int64]*gradeDto.GradeResponse, len(grades))
+	gradeMap := make(map[int64]*dto.GradeResponse, len(grades))
 	for _, g := range grades {
-		r := gradeDto.DomainToResponse(g)
+		r := dto.GradeDomainToResponse(g)
 		s.signGradeImageUrl(ctx, r)
 		gradeMap[g.GradeId()] = r
 	}
-	semMap := make(map[int64]*semesterDto.SemesterResponse, len(semesters))
+	semMap := make(map[int64]*dto.SemesterResponse, len(semesters))
 	for _, sem := range semesters {
-		r := semesterDto.DomainToResponse(sem)
+		r := dto.SemesterDomainToResponse(sem)
 		s.signSemesterImageUrl(ctx, r)
 		semMap[sem.SemesterId()] = r
 	}
 
-	schoolMap := make(map[int64]*schoolDto.SchoolResponse)
+	schoolMap := make(map[int64]*dto.SchoolResponse)
 	if len(schoolIds) > 0 && s.schoolRepo != nil {
 		schools, err := s.schoolRepo.ListSchoolsByIds(ctx, schoolIds)
 		if err != nil {
 			return nil, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		for _, sc := range schools {
-			r := schoolDto.DomainToResponse(sc)
+			r := dto.SchoolDomainToResponse(sc)
 			s.signSchoolImageUrl(ctx, r)
 			schoolMap[sc.SchoolId()] = r
 		}
@@ -181,7 +178,7 @@ func (s *Service) composeProfileResponses(ctx context.Context, profiles []*domai
 
 	out := make([]*dto.ProfileResponse, len(profiles))
 	for i, p := range profiles {
-		resp := dto.DomainToResponse(p)
+		resp := dto.ProfileDomainToResponse(p)
 		if p.ProgramId() != nil {
 			resp.Program = progMap[*p.ProgramId()]
 		}
@@ -218,7 +215,7 @@ func (s *Service) populateAvatarUrl(ctx context.Context, resp *dto.ProfileRespon
 	resp.AvatarUrl = &url
 }
 
-func (s *Service) signProgramImageUrl(ctx context.Context, r *programDto.ProgramResponse) {
+func (s *Service) signProgramImageUrl(ctx context.Context, r *dto.ProgramResponse) {
 	if r == nil || s.storageProvider == nil || r.ImageKey == nil || *r.ImageKey == "" {
 		return
 	}
@@ -233,7 +230,7 @@ func (s *Service) signProgramImageUrl(ctx context.Context, r *programDto.Program
 	r.ImageUrl = &url
 }
 
-func (s *Service) signGradeImageUrl(ctx context.Context, r *gradeDto.GradeResponse) {
+func (s *Service) signGradeImageUrl(ctx context.Context, r *dto.GradeResponse) {
 	if r == nil || s.storageProvider == nil || r.ImageKey == nil || *r.ImageKey == "" {
 		return
 	}
@@ -248,7 +245,7 @@ func (s *Service) signGradeImageUrl(ctx context.Context, r *gradeDto.GradeRespon
 	r.ImageUrl = &url
 }
 
-func (s *Service) signSchoolImageUrl(ctx context.Context, r *schoolDto.SchoolResponse) {
+func (s *Service) signSchoolImageUrl(ctx context.Context, r *dto.SchoolResponse) {
 	if r == nil || s.storageProvider == nil || r.ImageKey == nil || *r.ImageKey == "" {
 		return
 	}
@@ -263,7 +260,7 @@ func (s *Service) signSchoolImageUrl(ctx context.Context, r *schoolDto.SchoolRes
 	r.ImageUrl = &url
 }
 
-func (s *Service) signSemesterImageUrl(ctx context.Context, r *semesterDto.SemesterResponse) {
+func (s *Service) signSemesterImageUrl(ctx context.Context, r *dto.SemesterResponse) {
 	if r == nil || s.storageProvider == nil || r.ImageKey == nil || *r.ImageKey == "" {
 		return
 	}

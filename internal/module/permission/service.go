@@ -6,7 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/role"
-	dto "math-ai.com/math-ai/internal/application/dto/role"
+	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/role"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/role"
@@ -178,7 +178,7 @@ func (s *Service) ListRoles(ctx context.Context, req *dto.ListRolesReq) (*dto.Li
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	responses := dto.DomainListToResponse(roles)
+	responses := dto.RoleDomainListToResponse(roles)
 	for _, r := range responses {
 		s.populateRoleImageUrl(ctx, r)
 	}
@@ -190,7 +190,7 @@ func (s *Service) ListRoles(ctx context.Context, req *dto.ListRolesReq) (*dto.Li
 }
 
 func (s *Service) toResponse(ctx context.Context, r *domain.Role) *dto.RoleResponse {
-	resp := dto.DomainToResponse(r)
+	resp := dto.RoleDomainToResponse(r)
 	s.populateRoleImageUrl(ctx, resp)
 	return resp
 }

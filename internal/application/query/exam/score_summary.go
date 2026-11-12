@@ -3,7 +3,7 @@ package query
 import (
 	"math"
 
-	dto "math-ai.com/math-ai/internal/application/dto/exam"
+	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/query/progress"
 	"math-ai.com/math-ai/internal/shared/enum"
 )

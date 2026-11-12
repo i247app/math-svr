@@ -1,0 +1,937 @@
+package dto
+
+import (
+	"encoding/json"
+	"sort"
+
+	domain "math-ai.com/math-ai/internal/domain/exam"
+	"math-ai.com/math-ai/internal/domain/prompt/input"
+	"math-ai.com/math-ai/internal/shared/pagination"
+	"math-ai.com/math-ai/internal/shared/utils"
+)
+
+// GenerateExamReq asks for one exam.
+//
+// Grade and Level are the client's statement of where the child is
+// working. They are recorded on the journey (current_grade /
+// current_level) and Level on the sitting (req_level); the server does
+// not derive either from results. Grade left out falls back to the
+// journey's current grade, then the class the profile attends. Level is
+// 1..10 and is recorded only — no server rule reads it yet.
+//
+// EsessID names the journey a PRACTICE round is drawn on, and is
+// required for that type: the round is aimed at the journey's latest
+// submitted sitting, so there is nothing to aim at without one. For a
+// PRACTICE round Grade is ignored — it follows that sitting's grade.
+type GenerateExamReq struct {
+	UID *int64 `json:"-"`
+	// ProfileID names the child. It may be omitted ONLY by a caller with
+	// no session: that is the guest path, where the server opens an
+	// account and fills this in. Anyone else must state it.
+	ProfileID int64 `json:"profile_id"`
+	// ChildName is read only on the guest path, to name the profile being
+	// opened. Ignored once a profile exists — renaming is /profiles/update.
+	ChildName string `json:"child_name,omitempty"`
+	ExamType  string `json:"exam_type"`
+	EsessID   *int64 `json:"esess_id,omitempty"`
+	Grade     *int   `json:"grade,omitempty"`
+	Level     *int   `json:"level,omitempty"`
+	// Level / SubLevel (0..9 each; SubLevel is a finer step inside Level)
+	// set question_level / question_sub_level of every question of a
+	// model-written set, any type, and are part of the cache tag; a GRADE
+	// paper is also written at Level. Not stated = ramps Q1 = 0 .. Q10 = 9.
+	SubLevel     *int   `json:"sub_level,omitempty"`
+	NumQuestions int    `json:"num_questions,omitempty"` // ignored: every exam is 10 questions (module/exam DefaultNumQuestions)
+	Semester     string `json:"semester,omitempty"`
+	Program      string `json:"program,omitempty"`
+}
+
+// SubmitExamReq carries only the attempt id and the answers.
+//
+// It deliberately does NOT accept the questions. The answer key lives in
+// ma_exam_pools and is read from there, so a client cannot declare its own
+// correct answers and grade itself upward.
+type SubmitExamReq struct {
+	UID       *int64       `json:"-"`
+	ProfileID int64        `json:"profile_id"`
+	ElinkID   int64        `json:"elink_id"`
+	Answers   []ExamAnswer `json:"answers"`
+}
+
+// GetExamReq reads either ONE sitting or ONE row of a journey:
+//
+//   - elink_id → that sitting: the exam as served, plus its answers.
+//   - esess_id    → that journey: its running totals, every sitting
+//     that fed them, and every question answered across them.
+//     ReqExamType picks which row of the journey — ASSESSMENT (the
+//     default, so older clients keep working) or PRACTICE — since the
+//     two share the id. It is ignored when a sitting is asked for.
+type GetExamReq struct {
+	UID       *int64  `json:"-"`
+	ProfileID int64   `json:"profile_id"`
+	ElinkID   int64   `json:"elink_id,omitempty"`
+	EsessID   int64   `json:"esess_id,omitempty"`
+	ExamType  *string `json:"exam_type,omitempty"`
+}
+
+// ListExamsReq pages a child's history. Status narrows to unfinished
+// attempts ("IN_PROGRESS"), which is how the resume surface is built.
+// EsessID narrows to one journey, and is required when ExamType is
+// PRACTICE: practice rounds only exist inside a journey, so "the practice
+// rounds" is only a question about one.
+type ListExamsReq struct {
+	UID       *int64  `json:"-"`
+	ProfileID int64   `json:"profile_id"`
+	ExamType  *string `json:"exam_type,omitempty"`
+	EsessID   *int64  `json:"esess_id,omitempty"`
+	Status    *string `json:"status,omitempty"`
+	Page      int64   `json:"page,omitempty"`
+	Size      int64   `json:"size,omitempty"`
+}
+
+// ListExamSessionsReq reads a child's journeys. Status narrows to one
+// lifecycle state — "ACTIVE" is the natural filter for a dashboard
+// showing where the child is now; omit it for the full history.
+//
+// ExamTypes keeps the journeys of the listed types (e.g. ["ASSESSMENT",
+// "GRADE"]); omitted or empty means every type. Each names a JOURNEY
+// type. PRACTICE is not one — its totals ride along on the journey they
+// belong to (ExamSessionResponse.Practice) — so asking for it is rejected rather
+// than answered with orphan rows.
+//
+// Paged in either style (pagination.Request — default CURSOR, newest
+// journey first).
+type ListExamSessionsReq struct {
+	UID               *int64   `json:"-"`
+	ProfileID         int64    `json:"profile_id"`
+	ExamTypes         []string `json:"exam_types,omitempty"`
+	JourneyExamStatus *string  `json:"status,omitempty"`
+	pagination.Request
+}
+
+// MarkExamJourneyReq ends one journey. Status is COMPLETE or CANCEL; the
+// difference is what the next journey of that type inherits (see
+// enum.EsessStatusType).
+type MarkExamJourneyReq struct {
+	UID       *int64 `json:"-"`
+	ProfileID int64  `json:"profile_id"`
+	EsessID   int64  `json:"esess_id"`
+	Status    string `json:"status"`
+}
+
+type MarkExamJourneyRes struct {
+	ExamSession *ExamSessionResponse `json:"exam_session"`
+}
+
+// ExamResult is one sitting's score. Nil until the exam is submitted.
+//
+// TotalQuestions counts the questions the child ANSWERED — the exam
+// model's counting rule — while SkippedNumber keeps the untouched ones
+// visible so "3 of 3" is distinguishable from "10 of 10".
+type ExamResult struct {
+	TotalQuestions  int `json:"total_questions"`
+	CorrectNumber   int `json:"correct_number"`
+	SkippedNumber   int `json:"skipped_number"`
+	ScorePercentage int `json:"score_percentage"`
+}
+
+// ExamResponse is one attempt as the client sees it: the sitting plus the
+// question set it was drawn from, flattened into a single object so the
+// app never has to join two payloads.
+type ExamResponse struct {
+	ElinkID   int64  `json:"elink_id"`
+	ExamID    int64  `json:"exam_id"`
+	ProfileID int64  `json:"profile_id"`
+	ExamType  string `json:"exam_type"`
+	Grade     int    `json:"grade"`
+	// Level mirrors req_level: the level the client stated when this
+	// sitting was handed out, or absent when none was.
+	Level *int `json:"level,omitempty"`
+
+	Title     *string `json:"title,omitempty"`
+	ShortText *string `json:"short_text,omitempty"`
+	NumQues   int     `json:"num_questions"`
+
+	Questions []ExamQuestion `json:"questions,omitempty"`
+	Result    *ExamResult    `json:"result,omitempty"`
+
+	Status      string `json:"status"`
+	StartedDt   string `json:"started_dt,omitempty"`
+	SubmittedDt string `json:"submitted_dt,omitempty"`
+	CreateDt    string `json:"create_dt"`
+}
+
+// ExamAnswerDetail is one answered question on the review screen.
+// ElinkID says which sitting it came from — redundant on a single
+// sitting's review, load-bearing on a journey's, where the rows span
+// many.
+//
+// Options is every option the question offered, in the order the child
+// saw them, so the screen can lay all of them out and mark the right one
+// and the chosen one among them (by id; the letters are drawn by position).
+// It is resolved at read time from the question set the sitting was drawn
+// from — the log itself stores only the ids and texts that matter for
+// grading — and is omitted when that set can no longer be found.
+type ExamAnswerDetail struct {
+	ElinkID          int64        `json:"elink_id"`
+	QuestionNumber   int          `json:"question_number"`
+	QuestionText     *string      `json:"question_text,omitempty"`
+	QuestionImageKey string       `json:"question_image_key,omitempty"`
+	QuestionImageURL string       `json:"question_image_url,omitempty"`
+	Options          []ExamOption `json:"options,omitempty"`
+	QuestionTopic    *string      `json:"question_topic,omitempty"`
+	QuestionTags     []string     `json:"question_tags,omitempty"`
+	Explanation      *string      `json:"explanation,omitempty"`
+	QuestionGrade    *int         `json:"question_grade,omitempty"`
+
+	// The key and the child's answer, the same four fields for every kind of
+	// question, always present. The ids name entries of Options (empty for
+	// a numeric question, which has none); Text is what to show: the
+	// option's text, the chosen options' texts joined, or the number the
+	// child typed / the numbers accepted.
+	RightOptionIDs  []string `json:"right_option_ids"`
+	RightAnswerText string   `json:"right_answer_text"`
+	ChildOptionIDs  []string `json:"child_option_ids"`
+	ChildAnswerText string   `json:"child_answer_text"`
+	IsCorrect       bool     `json:"is_correct"`
+
+	// QuestionKind is absent for a single-choice question.
+	QuestionKind *string `json:"question_kind,omitempty"`
+}
+
+// ExamSessionResponse is one JOURNEY — a stretch of one exam type the child worked
+// through. EsessID is what a client sends back to end it; Status says
+// whether it is the open one (ACTIVE) or history (COMPLETE / CANCEL).
+type ExamSessionResponse struct {
+	EsessID         int64   `json:"esess_id"`
+	ExamType        string  `json:"exam_type"`
+	Status          string  `json:"status"`
+	TotalQuestions  int     `json:"total_questions"`
+	CorrectNumber   int     `json:"correct_number"`
+	SkippedNumber   int     `json:"skipped_number"`
+	ScorePercentage *int    `json:"score_percentage,omitempty"`
+	Review          *string `json:"review,omitempty"`
+	// EsessFlag is whether a COMPLETE GRADE journey passed its level
+	// (score_percentage >= 50): true = passed, unlock the next level;
+	// false = not passed. null when there is no verdict — the journey is
+	// still open, was cancelled, or is not a GRADE journey.
+	EsessFlag *bool `json:"esess_flag"`
+	// Title / ShortText are the title and summary of the exam handed
+	// out last in this journey (its last_title / last_short_text) — the same
+	// fields the exam itself carries as title / short_text.
+	Title     *string `json:"title,omitempty"`
+	ShortText *string `json:"short_text,omitempty"`
+	// AIReviewShort / AIReviewLong are the AI's review of the answers in
+	// this journey (/exams/sessions/review), absent until one was asked for.
+	AIReviewShort *string `json:"ai_review_short,omitempty"`
+	AIReviewLong  *string `json:"ai_review_long,omitempty"`
+	// Grade and Level are where the child is working, as the client last
+	// stated on a hand-out (current_grade / current_level). The server
+	// records them; it does not derive them from results.
+	Grade           *int   `json:"grade,omitempty"`
+	Level           *int   `json:"level,omitempty"`
+	LastSubmittedDt string `json:"last_submitted_dt,omitempty"`
+	EndedDt         string `json:"ended_dt,omitempty"`
+	CreateDt        string `json:"create_dt"`
+	// Practice is the journey's PRACTICE row, present once the child has
+	// submitted a practice round in it. Either kind of journey — ASSESSMENT
+	// or GRADE — may carry one; it shares esess_id and never has a grade.
+	Practice *ExamSessionResponse `json:"practice,omitempty"`
+	// InProgressExams are the journey's sittings — ASSESSMENT or PRACTICE,
+	// see each one's exam_type — that were handed out and never submitted,
+	// oldest first; absent when there are none. Each carries its questions
+	// as served, so the app can put the child back in front of the paper
+	// without another read.
+	InProgressExams []*ExamResponse `json:"in_progress_exams,omitempty"`
+}
+
+type GenerateExamRes struct {
+	Exam *ExamResponse `json:"exam"`
+	// Resumed is true when the journey already had an IN_PROGRESS sitting
+	// of this type and Exam is that sitting, handed back instead of a new
+	// one (same elink_id, same question order).
+	Resumed     bool                 `json:"resumed"`
+	ExamSession *ExamSessionResponse `json:"exam_session,omitempty"`
+}
+
+// SubmitExamRes answers the question the child just asked — how did I do
+// on THIS one — and hands back the updated running record beside it.
+type SubmitExamRes struct {
+	Exam        *ExamResponse        `json:"exam"`
+	ExamSession *ExamSessionResponse `json:"exam_session,omitempty"`
+}
+
+// GetExamRes is shaped by which id was asked for.
+//
+//   - by elink_id: Exam + Details (ExamSession and Exams stay empty).
+//   - by esess_id:    ExamSession + Exams + Details (Exam stays empty). Exams
+//     are cards — no questions blob — in chronological order; Details span
+//     every sitting and carry elink_id so they can be grouped.
+type GetExamRes struct {
+	Exam        *ExamResponse        `json:"exam,omitempty"`
+	ExamSession *ExamSessionResponse `json:"exam_session,omitempty"`
+	Exams       []*ExamResponse      `json:"exams,omitempty"`
+	Details     []ExamAnswerDetail   `json:"details,omitempty"`
+	// PracticePreview says what a PRACTICE round on this journey would
+	// drill, were one requested now. Journey view only; absent until the
+	// journey has a submitted sitting.
+	PracticePreview *PracticePreview `json:"practice_preview,omitempty"`
+}
+
+// PracticePreview is the practice brief as the review screen shows it:
+// the mode decides the copy ("needs more work on…" vs "all correct —
+// push harder"), the topics fill it in, and the base id says which
+// sitting it was read from. It is derived by the same function the
+// hand-out uses, so requesting the round delivers exactly this.
+type PracticePreview struct {
+	Mode         string       `json:"mode"`
+	BaseElinkID  int64        `json:"base_elink_id"`
+	WeakTopics   []TopicScore `json:"weak_topics"`
+	StrongTopics []string     `json:"strong_topics"`
+}
+
+// TopicScore is one weak topic with the numbers behind the verdict,
+// most-wrong first.
+type TopicScore struct {
+	Topic    string `json:"topic"`
+	Wrong    int    `json:"wrong"`
+	Answered int    `json:"answered"`
+}
+
+// PracticePreviewFrom renders a brief for the wire. Lists are never nil
+// so the client can iterate without a null check.
+func PracticePreviewFrom(base *domain.ExamLink, brief *input.PracticeBrief) *PracticePreview {
+	if base == nil || brief == nil {
+		return nil
+	}
+	weak := make([]TopicScore, 0, len(brief.WeakTopics))
+	for _, topic := range brief.WeakTopics {
+		t := brief.Tally[topic]
+		weak = append(weak, TopicScore{Topic: topic, Wrong: t.Wrong, Answered: t.Answered})
+	}
+	strong := brief.StrongTopics
+	if strong == nil {
+		strong = []string{}
+	}
+	return &PracticePreview{
+		Mode:         string(brief.Mode),
+		BaseElinkID:  base.ElinkId(),
+		WeakTopics:   weak,
+		StrongTopics: strong,
+	}
+}
+
+type ListExamsRes struct {
+	Exams      []*ExamResponse        `json:"exams"`
+	Pagination *pagination.Pagination `json:"pagination"`
+}
+
+// ListExamSessionsRes carries exactly one of Pagination (OFFSET) or Cursor
+// (CURSOR).
+type ListExamSessionsRes struct {
+	ExamSessions []ExamSessionResponse        `json:"exam_sessions"`
+	Pagination   *pagination.Pagination       `json:"pagination,omitempty"`
+	Cursor       *pagination.CursorPagination `json:"cursor,omitempty"`
+}
+
+// AttemptToResponse flattens an attempt and its question set.
+//
+// includeAnswerKey gates right_answer / correct_answer: a live exam must
+// not ship the key, or the client holds the answers to the paper it is
+// currently sitting. A submitted one does, so the review screen can mark
+// each question.
+func AttemptToResponse(a *domain.ExamLink, e *domain.ExamPool, includeAnswerKey bool) *ExamResponse {
+	if a == nil {
+		return nil
+	}
+
+	res := &ExamResponse{
+		ElinkID:   a.ElinkId(),
+		ExamID:    a.ExamId(),
+		ProfileID: a.ProfileId(),
+		ExamType:  a.ReqExamType(),
+		Grade:     a.ReqGrade(),
+		Level:     a.ReqLevel(),
+		CreateDt:  a.CreateDt().String(),
+	}
+	if s := a.ElinkStatus(); s != nil {
+		res.Status = *s
+	}
+	if !a.StartedDt().IsZero() {
+		res.StartedDt = a.StartedDt().String()
+	}
+	if !a.SubmittedDt().IsZero() {
+		res.SubmittedDt = a.SubmittedDt().String()
+	}
+
+	if e != nil {
+		res.Title = e.Title()
+		res.ShortText = e.ShortText()
+		res.NumQues = e.ReqNumQues()
+		// The sitting's own ordering, not the stored one: two children
+		// served the same cached set each see their own arrangement.
+		res.Questions = servedQuestions(e.QuestionsJson(), shuffleOf(a), includeAnswerKey)
+	}
+
+	if total := a.ResTotalQuestions(); total != nil {
+		res.Result = &ExamResult{
+			TotalQuestions:  *total,
+			CorrectNumber:   utils.DerefInt(a.ResCorrectNumber()),
+			SkippedNumber:   utils.DerefInt(a.ResSkippedNumber()),
+			ScorePercentage: utils.DerefInt(a.ResScorePercentage()),
+		}
+	}
+	return res
+}
+
+// AttemptListToResponse maps a page of attempts against the question sets
+// hydrated alongside them. The answer key is exposed only for submitted
+// rows, so a history list cannot leak the answers to an exam still open.
+func AttemptListToResponse(attempts []*domain.ExamLink, examPools map[int64]*domain.ExamPool) []*ExamResponse {
+	out := make([]*ExamResponse, 0, len(attempts))
+	for _, a := range attempts {
+		e := examPools[a.ExamId()]
+		submitted := a.ElinkStatus() != nil && *a.ElinkStatus() == "SUBMITTED"
+		res := AttemptToResponse(a, e, submitted)
+		// A list renders cards, not papers: drop the questions blob so a
+		// twenty-row page does not ship twenty question sets.
+		res.Questions = nil
+		out = append(out, res)
+	}
+	return out
+}
+
+// DetailsToResponse renders the per-question log the way the child SAW
+// it. The log is stored canonically (so analytics line up with the shared
+// question set), but a review screen has to say "câu 3" and "đáp án B"
+// in the numbering the child actually met, or nothing on it will match
+// their memory. shuffles maps each sitting to its ordering; a sitting
+// absent from the map — or mapped to nil — is rendered canonically.
+//
+// examPools supplies the question sets the sittings were drawn from, keyed
+// by exam_id, so every row can carry its full option list. Each set is
+// parsed once, however many rows point at it.
+func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*Shuffle, examPools map[int64]*domain.ExamPool) []ExamAnswerDetail {
+	questions := newQuestionIndex(examPools)
+
+	out := make([]ExamAnswerDetail, 0, len(details))
+	for _, d := range details {
+		sh := shuffles[d.ElinkId()]
+
+		var (
+			answers  []AnswerChoice
+			imageKey string
+		)
+		if q, ok := questions.lookup(d.ExamId(), d.QuestionNumber()); ok {
+			answers = sh.ServedAnswers(d.QuestionNumber(), q)
+			imageKey = q.ImageKey
+		}
+
+		// A stored id set ("a,c") is a list on the wire, never null.
+		right := []string{}
+		if d.RightOptionIDs() != nil {
+			right = idList(*d.RightOptionIDs())
+		}
+		detail := ExamAnswerDetail{
+			ElinkID:          d.ElinkId(),
+			QuestionNumber:   sh.ServedNumber(d.QuestionNumber()),
+			QuestionText:     d.QuestionText(),
+			QuestionImageKey: imageKey,
+			Options:          OptionsFrom(answers),
+			QuestionTopic:    d.QuestionTopic(),
+			QuestionTags:     d.QuestionTags(),
+			Explanation:      d.Explanation(),
+			QuestionGrade:    d.QuestionGrade(),
+			RightOptionIDs:   right,
+			RightAnswerText:  utils.DerefString(d.RightAnswerText()),
+			ChildOptionIDs:   idList(d.ChildOptionIDs()),
+			ChildAnswerText:  utils.DerefString(d.ChildAnswerText()),
+			IsCorrect:        d.IsCorrect(),
+			QuestionKind:     d.QuestionKind(),
+		}
+		out = append(out, detail)
+	}
+
+	// Rows arrive in canonical order; the student saw them in served
+	// order. Re-sort per sitting so the review reads like the paper did.
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].ElinkID != out[j].ElinkID {
+			return out[i].ElinkID < out[j].ElinkID
+		}
+		return out[i].QuestionNumber < out[j].QuestionNumber
+	})
+	return out
+}
+
+// questionIndex parses each question set lazily and at most once, then
+// answers "which question is canonical number N of set S" in O(1). A
+// journey review touches every row of every sitting, so this is the
+// difference between parsing each set once and parsing it per row.
+type questionIndex struct {
+	sets   map[int64]*domain.ExamPool
+	parsed map[int64]map[int]Question
+}
+
+func newQuestionIndex(sets map[int64]*domain.ExamPool) *questionIndex {
+	return &questionIndex{sets: sets, parsed: make(map[int64]map[int]Question, len(sets))}
+}
+
+func (x *questionIndex) lookup(examID int64, canonicalQN int) (Question, bool) {
+	byNumber, ok := x.parsed[examID]
+	if !ok {
+		byNumber = x.parse(examID)
+		x.parsed[examID] = byNumber
+	}
+	q, ok := byNumber[canonicalQN]
+	return q, ok
+}
+
+// parse decodes one set. A missing or unreadable set yields an empty
+// index rather than an error: the review still renders, just without the
+// option list for those rows — which is the graceful outcome when a
+// shared question set has been retired from under a child's history.
+func (x *questionIndex) parse(examID int64) map[int]Question {
+	set, ok := x.sets[examID]
+	if !ok || set == nil {
+		return nil
+	}
+	var stored []ExamQuestion
+	if err := json.Unmarshal([]byte(set.QuestionsJson()), &stored); err != nil || CheckSet(stored) != nil {
+		return nil
+	}
+	byNumber := make(map[int]Question, len(stored))
+	for _, q := range stored {
+		byNumber[q.QuestionNumber] = q.ToShared()
+	}
+	return byNumber
+}
+
+// ShufflesOf parses each attempt's stored ordering into the map
+// DetailsToResponse consumes. A malformed ordering is treated as none:
+// the review then renders that sitting canonically rather than failing
+// the whole screen over one row.
+func ShufflesOf(attempts ...*domain.ExamLink) map[int64]*Shuffle {
+	out := make(map[int64]*Shuffle, len(attempts))
+	for _, a := range attempts {
+		if a == nil {
+			continue
+		}
+		out[a.ElinkId()] = shuffleOf(a)
+	}
+	return out
+}
+
+func shuffleOf(a *domain.ExamLink) *Shuffle {
+	sh, err := ParseShuffle(a.ShuffleMap())
+	if err != nil {
+		return nil
+	}
+	return sh
+}
+
+// idList splits a stored id set ("a,c") into a list that is never nil.
+func idList(joined string) []string {
+	ids := SplitIDs(joined)
+	if ids == nil {
+		return []string{}
+	}
+	return ids
+}
+
+func ExamSessionsToResponse(rows []*domain.ExamSession) []ExamSessionResponse {
+	out := make([]ExamSessionResponse, 0, len(rows))
+	for _, r := range rows {
+		s := ExamSessionResponse{
+			EsessID:         r.EsessId(),
+			ExamType:        r.ReqExamType(),
+			CreateDt:        r.CreateDt().String(),
+			TotalQuestions:  r.ResTotalQuestions(),
+			CorrectNumber:   r.ResCorrectNumber(),
+			SkippedNumber:   r.ResSkippedNumber(),
+			ScorePercentage: r.ResScorePercentage(),
+			Review:          r.ResReview(),
+			EsessFlag:       r.EsessFlag(),
+			Title:           r.LastTitle(),
+			ShortText:       r.LastShortText(),
+			AIReviewShort:   r.AiReviewShort(),
+			AIReviewLong:    r.AiReviewLong(),
+			Grade:           r.CurrentGrade(),
+			Level:           r.CurrentLevel(),
+		}
+		if st := r.EsessStatus(); st != nil {
+			s.Status = *st
+		}
+		if !r.LastSubmittedDt().IsZero() {
+			s.LastSubmittedDt = r.LastSubmittedDt().String()
+		}
+		if !r.EndedDt().IsZero() {
+			s.EndedDt = r.EndedDt().String()
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
+func ExamSessionToResponse(row *domain.ExamSession) *ExamSessionResponse {
+	if row == nil {
+		return nil
+	}
+	all := ExamSessionsToResponse([]*domain.ExamSession{row})
+	return &all[0]
+}
+
+// JourneysToResponse renders journeys with their practice row and
+// unfinished sittings tucked inside, so the client sees one entry per
+// journey rather than two rows that happen to share an id.
+//
+// An unfinished sitting ships with its answer key, the same as the
+// hand-out response does — the two must agree, or a child resuming an
+// exam would see a different paper than the one they started.
+func JourneysToResponse(journeys []domain.JourneyStats, examPools map[int64]*domain.ExamPool) []ExamSessionResponse {
+	out := make([]ExamSessionResponse, 0, len(journeys))
+	for _, j := range journeys {
+		s := ExamSessionToResponse(j.Journey)
+		if s == nil {
+			continue
+		}
+		s.Practice = ExamSessionToResponse(j.Practice)
+		for _, a := range j.InProgress {
+			s.InProgressExams = append(s.InProgressExams, AttemptToResponse(a, examPools[a.ExamId()], true))
+		}
+		out = append(out, *s)
+	}
+	return out
+}
+
+// parseQuestions decodes the stored payload and, when the key must stay
+// hidden, blanks it field by field rather than dropping the question —
+// the child still needs the stem and the options to answer.
+// servedQuestions decodes the stored (canonical) set, arranges it the way
+// this sitting was served, and — when the key must stay hidden — blanks
+// it field by field rather than dropping the question: the child still
+// needs the stem and the options to answer.
+func servedQuestions(raw string, sh *Shuffle, includeAnswerKey bool) []ExamQuestion {
+	if raw == "" {
+		return nil
+	}
+	var stored []ExamQuestion
+	if err := json.Unmarshal([]byte(raw), &stored); err != nil || CheckSet(stored) != nil {
+		return nil
+	}
+	out := FromSharedQuestions(sh.Apply(ToSharedQuestions(stored)))
+	if !includeAnswerKey {
+		for i := range out {
+			out[i].CorrectAnswer = nil
+			out[i].Explanation = ""
+		}
+	}
+	return out
+}
+
+// ExamProgressReq is the request for the learning-progress chart.
+// UID comes from the session, never the body. FromDt/ToDt are optional
+// datetime strings; Tz is a numeric offset (IANA names are rejected — see
+// enum.IsValidTzOffset). ExamType optionally narrows to one type; Limit
+// caps the number of chart points.
+// ProgressWindow is the slice of history a progress chart reads: an
+// optional [from_dt, to_dt] range, the client's UTC offset, and how many
+// points at most. Both progress requests embed it so the two charts are
+// bounded the same way.
+type ProgressWindow struct {
+	FromDt string `json:"from_dt"`
+	ToDt   string `json:"to_dt"`
+	Tz     string `json:"tz"`
+	Limit  int    `json:"limit"`
+}
+
+type ExamProgressReq struct {
+	UID       *int64  `json:"-"`
+	ProfileID int64   `json:"profile_id"`
+	ExamType  *string `json:"exam_type"`
+	EsessID   *int64  `json:"esess_id,omitempty"` // required with PRACTICE
+	ProgressWindow
+}
+
+// JourneyReviewReq asks the AI to review the answers of one journey.
+type JourneyReviewReq struct {
+	UID       *int64 `json:"-"`
+	ProfileID int64  `json:"profile_id"`
+	EsessID   int64  `json:"esess_id"`
+}
+
+// JourneyReviewRes is the journey after the review was stored, in the
+// shape /exams/sessions/latest returns; ai_review_short / ai_review_long
+// carry the review just written.
+type JourneyReviewRes struct {
+	ExamSession *ExamSessionResponse `json:"exam_session"`
+}
+
+// LatestJourneyReq asks for the child's latest journey. Both filters are
+// optional: ExamType ASSESSMENT or GRADE (PRACTICE is not a journey),
+// Grade 0..5 matched against the journey's current grade.
+type LatestJourneyReq struct {
+	UID       *int64  `json:"-"`
+	ProfileID int64   `json:"profile_id"`
+	ExamType  *string `json:"exam_type"`
+	Grade     *int    `json:"grade"`
+}
+
+// LatestJourneyRes carries the journey in the same shape as
+// /exams/sessions/mark; ExamSession is null when no journey matches.
+type LatestJourneyRes struct {
+	ExamSession *ExamSessionResponse `json:"exam_session"`
+}
+
+// GradeMapReq asks for one grade's level map. Grade is required.
+type GradeMapReq struct {
+	UID       *int64 `json:"-"`
+	ProfileID int64  `json:"profile_id"`
+	Grade     *int   `json:"grade"`
+}
+
+// GradeMapEntry is a journey in the ExamSessionResponse shape plus IsLatest,
+// true on exactly the entry that is the journey the child worked last
+// (no entry when the grade has no journey). No esess_id appears twice.
+type GradeMapEntry struct {
+	ExamSessionResponse
+	IsLatest bool `json:"is_latest"`
+}
+
+// GradeMapRes lists the map: one entry per completed level, lowest
+// first — each the level's latest COMPLETE journey, esess_flag telling
+// pass or fail — plus, at the end, the latest journey when it is not
+// already one of them (still ACTIVE, or CANCELLED). Empty when the child has no journey at
+// this grade.
+type GradeMapRes struct {
+	ProfileID    int64           `json:"profile_id"`
+	Grade        int             `json:"grade"`
+	ExamSessions []GradeMapEntry `json:"exam_sessions"`
+}
+
+// GradeLevelsReq asks where a child stands on one grade's GRADE level
+// ladder. Grade is required (0 is kindergarten, so it is a pointer);
+// ProfileID may be omitted by a guest, like every exam route.
+type GradeLevelsReq struct {
+	UID       *int64 `json:"-"`
+	ProfileID int64  `json:"profile_id"`
+	Grade     *int   `json:"grade"`
+}
+
+// GradeLevelsRes: LatestLevel is the level of the GRADE journey worked
+// last at this grade; MaxLevel the highest level any GRADE journey at
+// this grade has reached, in any state. Both are 0 — the first lock, on
+// the 0..9 scale — when the child has no journey at this grade.
+type GradeLevelsRes struct {
+	LatestLevel int `json:"latest_level"`
+	MaxLevel    int `json:"max_level"`
+}
+
+// JourneyProgressReq asks for the chart over journeys (ma_exam_sessions
+// rows) rather than sittings. ExamType nil means every journey type;
+// PRACTICE is refused, as it is for /exams/sessions/list — its rows live inside their
+// journey (ASSESSMENT or GRADE).
+type JourneyProgressReq struct {
+	UID       *int64  `json:"-"`
+	ProfileID int64   `json:"profile_id"`
+	ExamType  *string `json:"exam_type"`
+	ProgressWindow
+}
+
+// ExamPoint is one chart point — a single submitted attempt. Sequence is
+// the 1..N positional label. Score is on the 10-point scale the product
+// displays; ScorePct is the raw 0-100 value it was derived from.
+type ExamPoint struct {
+	Sequence       int64   `json:"sequence"`
+	ElinkID        int64   `json:"elink_id"`
+	ExamType       string  `json:"exam_type"`
+	Grade          int     `json:"grade"`
+	CompletedDt    string  `json:"completed_dt"`
+	Score          float64 `json:"score"`
+	ScorePct       int64   `json:"score_pct"`
+	CorrectNumber  *int64  `json:"correct_number"`
+	TotalQuestions *int64  `json:"total_questions"`
+}
+
+// ExamScoreSummary is the banner both progress charts share — over
+// sittings and over journeys — so the two screens read the same numbers
+// the same way. Nullable score fields
+// serialise as null when there is no data; AverageDelta compares against
+// the prior same-size window and is null when there is no such window.
+type ExamScoreSummary struct {
+	Count           int64    `json:"count"`
+	AverageScore    *float64 `json:"average_score"`
+	AverageScorePct *float64 `json:"average_score_pct"`
+	AverageDelta    *float64 `json:"average_delta"`
+	HighestScore    *float64 `json:"highest_score"`
+	HighestScorePct *int64   `json:"highest_score_pct"`
+	LowestScore     *float64 `json:"lowest_score"`
+	Trend           string   `json:"trend"`
+}
+
+// ExamProgressSummary is the banner over sittings; the highest one is
+// named by its attempt id.
+type ExamProgressSummary struct {
+	ExamScoreSummary
+	HighestElinkID *int64 `json:"highest_elink_id"`
+}
+
+// ExamStatsSummary is the banner over journeys (ma_exam_sessions rows) for
+// the journey progress chart; the highest one is named by its journey id.
+type ExamStatsSummary struct {
+	ExamScoreSummary
+	HighestEsessID *int64 `json:"highest_esess_id"`
+}
+
+type ExamProgressRes struct {
+	ProfileID int64               `json:"profile_id"`
+	FromDt    string              `json:"from_dt"`
+	ToDt      string              `json:"to_dt"`
+	Tz        string              `json:"tz"`
+	ExamType  *string             `json:"exam_type"`
+	Limit     int                 `json:"limit"`
+	Series    []ExamPoint         `json:"series"`
+	Summary   ExamProgressSummary `json:"summary"`
+}
+
+// JourneyPoint is one chart point over journeys — one ma_exam_sessions row
+// with its cumulative score. Sequence is the 1..N positional label;
+// LastSubmittedDt is the point's moment in time, when that score last
+// moved. Score is on the 10-point scale; ScorePct the raw 0-100 value.
+type JourneyPoint struct {
+	Sequence        int64   `json:"sequence"`
+	EsessID         int64   `json:"esess_id"`
+	ExamType        string  `json:"exam_type"`
+	Status          string  `json:"status"`
+	Grade           *int    `json:"grade"`
+	LastSubmittedDt string  `json:"last_submitted_dt"`
+	Score           float64 `json:"score"`
+	ScorePct        int64   `json:"score_pct"`
+	CorrectNumber   int     `json:"correct_number"`
+	TotalQuestions  int     `json:"total_questions"`
+}
+
+type JourneyProgressRes struct {
+	ProfileID int64            `json:"profile_id"`
+	FromDt    string           `json:"from_dt"`
+	ToDt      string           `json:"to_dt"`
+	Tz        string           `json:"tz"`
+	ExamType  *string          `json:"exam_type"`
+	Limit     int              `json:"limit"`
+	Series    []JourneyPoint   `json:"series"`
+	Summary   ExamStatsSummary `json:"summary"`
+}
+
+// GenerateExamPoolReq asks the model for one question set that joins the
+// pool without being handed to anyone (POST /exams/pools/generate). It
+// takes the placement fields of GenerateExamReq; with no child to read a
+// grade from, grade is required. PRACTICE is refused: a practice round is
+// built from one child's mistakes.
+type GenerateExamPoolReq struct {
+	ExamType string `json:"exam_type"`
+	Grade    *int   `json:"grade"`
+	Level    *int   `json:"level,omitempty"`
+	// Level / SubLevel (0..9 each; SubLevel is a finer step inside Level)
+	// set question_level / question_sub_level of every question of a
+	// model-written set, any type, and are part of the cache tag; a GRADE
+	// paper is also written at Level. Not stated = ramps Q1 = 0 .. Q10 = 9.
+	SubLevel     *int   `json:"sub_level,omitempty"`
+	NumQuestions int    `json:"num_questions,omitempty"` // ignored: every exam is 10 questions (module/exam DefaultNumQuestions)
+	Semester     string `json:"semester,omitempty"`
+	Program      string `json:"program,omitempty"`
+}
+
+// ListExamPoolsReq pages the pool, newest first (OFFSET: page, size).
+// ExamTypes empty = every type; Grade nil = every grade; IsVerified nil =
+// verified or not, true = verified_count > 0, false = verified_count = 0.
+type ListExamPoolsReq struct {
+	ExamTypes  []string `json:"exam_types,omitempty"`
+	Grade      *int     `json:"grade,omitempty"`
+	IsVerified *bool    `json:"is_verified,omitempty"`
+	Page       int64    `json:"page,omitempty"`
+	Size       int64    `json:"size,omitempty"`
+}
+
+type GetExamPoolReq struct {
+	ExamID int64 `json:"exam_id"`
+}
+
+// MarkExamPoolVerifyReq: is_verify true moves verified_count 0 -> 1 (an
+// already verified set keeps its count); false resets it to 0.
+type MarkExamPoolVerifyReq struct {
+	ExamID   int64 `json:"exam_id"`
+	IsVerify *bool `json:"is_verify"`
+}
+
+// VerifyExamPoolReq carries the WHOLE corrected question set, which
+// replaces the stored one and adds 1 to verified_count. It must keep the
+// stored question_numbers and each question's answer labels.
+type VerifyExamPoolReq struct {
+	ExamID    int64          `json:"exam_id"`
+	Questions []ExamQuestion `json:"questions"`
+}
+
+// ExamPoolResponse is one stored question set. Questions — in stored
+// order, answer key included — is filled on generate and detail only;
+// the list leaves it out.
+type ExamPoolResponse struct {
+	ExamID   int64   `json:"exam_id"`
+	ExamType string  `json:"exam_type"`
+	Grade    int     `json:"grade"`
+	Level    *int    `json:"level,omitempty"`
+	NumQues  int     `json:"num_questions"`
+	Semester *string `json:"semester,omitempty"`
+	Program  *string `json:"program,omitempty"`
+	Extras   *string `json:"req_extras,omitempty"`
+	// ExamSource: LLM, or POOL (drawn from the question bank).
+	ExamSource string         `json:"exam_source"`
+	Title      *string        `json:"title,omitempty"`
+	ShortText  *string        `json:"short_text,omitempty"`
+	Questions  []ExamQuestion `json:"questions,omitempty"`
+	// VerifiedCount: 0 = not verified, >0 = verified.
+	VerifiedCount int     `json:"verified_count"`
+	Status        *string `json:"status,omitempty"`
+	CreateDt      string  `json:"create_dt"`
+}
+
+type ExamPoolRes struct {
+	ExamPool *ExamPoolResponse `json:"exam_pool"`
+}
+
+type ListExamPoolsRes struct {
+	ExamPools  []*ExamPoolResponse    `json:"exam_pools"`
+	Pagination *pagination.Pagination `json:"pagination"`
+}
+
+func ExamPoolToResponse(e *domain.ExamPool, withQuestions bool) *ExamPoolResponse {
+	if e == nil {
+		return nil
+	}
+	res := &ExamPoolResponse{
+		ExamID:        e.ExamId(),
+		ExamType:      e.ReqExamType(),
+		Grade:         e.ReqGrade(),
+		Level:         e.ReqLevel(),
+		NumQues:       e.ReqNumQues(),
+		Semester:      e.ReqSemester(),
+		Program:       e.ReqProgram(),
+		Extras:        e.ReqExtras(),
+		ExamSource:    e.ExamSource(),
+		Title:         e.Title(),
+		ShortText:     e.ShortText(),
+		VerifiedCount: e.VerifiedCount(),
+		Status:        e.ExamStatus(),
+		CreateDt:      e.CreateDt().String(),
+	}
+	if withQuestions {
+		res.Questions = servedQuestions(e.QuestionsJson(), nil, true)
+	}
+	return res
+}
+
+func ExamPoolsToResponse(pools []*domain.ExamPool) []*ExamPoolResponse {
+	out := make([]*ExamPoolResponse, 0, len(pools))
+	for _, e := range pools {
+		out = append(out, ExamPoolToResponse(e, false))
+	}
+	return out
+}
