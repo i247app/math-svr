@@ -64,7 +64,8 @@ func (c NotificationCategoryType) String() string {
 
 func (c NotificationCategoryType) IsValid() bool {
 	switch c {
-	case NotificationCategoryTypeInfo, NotificationCategoryTypeWarning, NotificationCategoryTypeError, NotificationCategoryTypeSuccess:
+	case NotificationCategoryTypeInfo, NotificationCategoryTypeWarning,
+		NotificationCategoryTypeError, NotificationCategoryTypeSuccess:
 		return true
 	default:
 		return false

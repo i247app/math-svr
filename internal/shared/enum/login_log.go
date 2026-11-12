@@ -15,7 +15,8 @@ func (s LoginLogStatusType) String() string {
 
 func (s LoginLogStatusType) IsValid() bool {
 	switch s {
-	case LoginLogStatusTypeActive, LoginLogStatusTypeInactive, LoginLogStatusTypeRevoked:
+	case LoginLogStatusTypeActive, LoginLogStatusTypeInactive,
+		LoginLogStatusTypeRevoked, LoginLogStatusTypeDeleted:
 		return true
 	default:
 		return false

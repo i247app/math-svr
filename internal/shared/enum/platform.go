@@ -21,7 +21,8 @@ func (p PlatformType) String() string {
 
 func (p PlatformType) IsValid() bool {
 	switch p {
-	case PlatformTypeIOS, PlatformTypeAndroid, PlatformTypeWeb, PlatformTypeUnknown:
+	case PlatformTypeIOS, PlatformTypeAndroid,
+		PlatformTypeWeb, PlatformTypeUnknown:
 		return true
 	default:
 		return false
@@ -35,11 +36,11 @@ func (p PlatformType) IsValid() bool {
 // blocks login/registration.
 func ParsePlatformType(raw string) PlatformType {
 	switch strings.ToUpper(strings.TrimSpace(raw)) {
-	case string(PlatformTypeIOS):
+	case PlatformTypeIOS.String():
 		return PlatformTypeIOS
-	case string(PlatformTypeAndroid):
+	case PlatformTypeAndroid.String():
 		return PlatformTypeAndroid
-	case string(PlatformTypeWeb):
+	case PlatformTypeWeb.String():
 		return PlatformTypeWeb
 	default:
 		return PlatformTypeUnknown

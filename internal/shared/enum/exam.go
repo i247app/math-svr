@@ -27,7 +27,9 @@ const (
 	ExamTypeGrade ExamType = "GRADE"
 )
 
-func (t ExamType) String() string { return string(t) }
+func (t ExamType) String() string {
+	return string(t)
+}
 
 // HasProbes reports whether a round of this type carries the harder
 // probe questions (Q3/Q6 at grade + 1). ASSESSMENT needs them to measure

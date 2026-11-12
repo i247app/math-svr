@@ -9,6 +9,20 @@ const (
 	LanguageTypeEnglishV2    LanguageType = "en-US"
 )
 
+func (s LanguageType) String() string {
+	return string(s)
+}
+
+func (s LanguageType) IsValid() bool {
+	switch s {
+	case LanguageTypeVietnamese, LanguageTypeVietnameseV2,
+		LanguageTypeEnglish, LanguageTypeEnglishV2:
+		return true
+	default:
+		return false
+	}
+}
+
 type StatusType string
 
 const (
