@@ -135,7 +135,7 @@ func WithInterceptor(interceptor Interceptor) Option {
 // path, used by clients that handle their own structured logging and
 // must avoid leaking secret headers (e.g. the Twilio client masks the
 // Authorization header out by dropping the logging interceptor and
-// emitting its own structured log at the adapter layer).
+// emitting its own structured log at the provider layer).
 //
 // Pass zero arguments to disable interceptors entirely.
 func WithInterceptors(interceptors ...Interceptor) Option {

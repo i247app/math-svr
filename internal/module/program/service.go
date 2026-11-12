@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/program"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/program"
@@ -13,6 +12,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -28,7 +28,7 @@ type Service struct {
 	updateProgramCmd      *command.UpdateProgramCommandHandler
 	softDeleteProgramCmd  *command.SoftDeleteProgramCommandHandler
 	forceDeleteProgramCmd *command.ForceDeleteProgramCommandHandler
-	storageProvider       *storage.Adapter
+	storageProvider       *storage.Registry
 }
 
 // NewService wires the program module. storageProvider may be nil; in
@@ -36,7 +36,7 @@ type Service struct {
 func NewService(
 	programRepo domain.IRepository,
 	uow transaction.UnitOfWork,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 ) *Service {
 	return &Service{
 		listProgramsQuery:     query.NewListProgramsQueryHandler(programRepo),

@@ -22,7 +22,7 @@ type ShakeRes struct {
 	Cached bool `json:"cached"`
 
 	// Provider is the LLM provider that serves AI requests, e.g.
-	// "openai". Empty when the LLM adapter is disabled.
+	// "openai". Empty when the LLM provider is disabled.
 	Provider string `json:"provider,omitempty"`
 
 	// Model is the resolved model id reported by the provider. May be empty.

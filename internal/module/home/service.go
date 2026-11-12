@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/home"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
@@ -13,6 +12,7 @@ import (
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/provider/storage"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -27,7 +27,7 @@ const presignTTL = 1 * time.Hour
 type Service struct {
 	getHomeLayoutQuery *query.GetHomeLayoutQueryHandler
 	profileRepo        profileDomain.IRepository
-	storageProvider    *storage.Adapter
+	storageProvider    *storage.Registry
 }
 
 func NewService(
@@ -38,7 +38,7 @@ func NewService(
 	profileRepo profileDomain.IRepository,
 	attemptRepo examDomain.IExamLinkRepository,
 	examPoolRepo examDomain.IExamPoolRepository,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 ) *Service {
 	return &Service{
 		getHomeLayoutQuery: query.NewGetHomeLayoutQueryHandler(

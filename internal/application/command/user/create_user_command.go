@@ -33,7 +33,7 @@ const emailVerificationWindow = 15 * time.Minute
 //
 // AvatarKey is the S3 key returned by a prior upload performed by the user
 // module's service. The command itself is storage-agnostic — keeping the
-// adapter out of the application layer.
+// provider out of the application layer.
 type CreateUserCommand struct {
 	Role      enum.RoleType
 	Phone     string

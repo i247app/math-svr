@@ -1,6 +1,6 @@
 // Package firebase is a thin, domain-agnostic wrapper over
 // firebase.google.com/go/v4. It owns nothing but the Firebase Admin SDK
-// handle and the FCM messaging client; callers (the notification adapter)
+// handle and the FCM messaging client; callers (the notification provider)
 // translate its results into domain shapes and MathErrors.
 //
 // Nothing here knows about ma_notifications, devices, or users — it only
@@ -19,7 +19,7 @@ import (
 )
 
 // ErrInvalidConfig is returned by NewClient when required configuration is
-// missing. The adapter factory maps it to NOTIFICATION_CONFIG_INVALID.
+// missing. The provider factory maps it to NOTIFICATION_CONFIG_INVALID.
 var ErrInvalidConfig = errors.New("firebase: invalid config")
 
 // credTypeServiceAccount is the only credential type the Firebase Admin SDK

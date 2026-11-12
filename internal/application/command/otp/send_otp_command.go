@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	notifAdapter "math-ai.com/math-ai/internal/adapter/notification"
-	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	notifCommand "math-ai.com/math-ai/internal/application/command/notification"
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -15,29 +13,31 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	notiProvider "math-ai.com/math-ai/internal/provider/notification"
+	otpProvider "math-ai.com/math-ai/internal/provider/otp_delivery"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // pushChannelName labels SendOtpCommandResult.Channel when the OTP was
-// pushed to a trusted device instead of going through otp_delivery. It is
-// not registered with otp_delivery.Adapter — push uses a different
+// pushed to a trusted device instead of going through otpProvider. It is
+// not registered with otpProvider.Registry — push uses a different
 // addressing scheme (device push token, not phone/email identifier) and a
 // richer result (InvalidTokens) that the Deliverer interface can't carry, so
-// it is dispatched directly through the notification adapter below instead
+// it is dispatched directly through the notification provider below instead
 // of being shoehorned into a Deliverer.
 var (
-	pushChannelName otp_delivery.ChannelName = "push"
+	pushChannelName otpProvider.ChannelName = "push"
 )
 
 // SendOtpCommand issues a fresh OTP for (type, identifier) and dispatches it
-// via the OTP delivery adapter. Inside one UoW it:
+// via the OTP delivery provider. Inside one UoW it:
 //
 //  1. Reuses a still-valid PENDING OTP instead of issuing a new one.
 //  2. Enforces the per-window send cap (OTP_RATE_LIMITED).
 //  3. Revokes any prior PENDING OTPs for (type, identifier).
 //  4. Generates a 6-digit code, hashes it, inserts the row.
 //
-// Step 5 happens AFTER commit: the delivery adapter is invoked. If delivery
+// Step 5 happens AFTER commit: the delivery provider is invoked. If delivery
 // fails, the row stays in place (audit trail) and the caller sees
 // OTP_DELIVERY_FAILED — the client can retry, which reuses the same row
 // rather than creating a duplicate one.
@@ -64,7 +64,7 @@ type SendOtpCommand struct {
 type SendOtpCommandResult struct {
 	OtpID     int64
 	ExpiresAt time.Time
-	Channel   otp_delivery.ChannelName
+	Channel   otpProvider.ChannelName
 	// OTPCode is the code the caller may echo back to the requesting
 	// client. Empty when it was pushed to a trusted device instead.
 	OTPCode string
@@ -82,21 +82,21 @@ type SendOtpCommandResult struct {
 
 type SendOtpCommandHandler struct {
 	uow                transaction.UnitOfWork
-	delivery           *otp_delivery.Adapter
-	pushAdapter        *notifAdapter.Adapter
+	delivery           *otpProvider.Registry
+	pushProvider       *notiProvider.Registry
 	clearDeadTokensCmd *notifCommand.ClearDeadTokensCommandHandler
 	demoNames          []string
 }
 
 // NewSendOtpCommandHandler wires both delivery paths: delivery (SMS/email,
-// identifier-routed) and pushAdapter (Firebase, device-token-routed — nil
+// identifier-routed) and pushProvider (Firebase, device-token-routed — nil
 // when NOTIFICATION_PROVIDER is disabled, same nil-guard convention as the
-// rest of the notification adapter's consumers).
-func NewSendOtpCommandHandler(uow transaction.UnitOfWork, delivery *otp_delivery.Adapter, pushAdapter *notifAdapter.Adapter, demoNames []string) *SendOtpCommandHandler {
+// rest of the notification provider's consumers).
+func NewSendOtpCommandHandler(uow transaction.UnitOfWork, delivery *otpProvider.Registry, pushProvider *notiProvider.Registry, demoNames []string) *SendOtpCommandHandler {
 	return &SendOtpCommandHandler{
 		uow:                uow,
 		delivery:           delivery,
-		pushAdapter:        pushAdapter,
+		pushProvider:       pushProvider,
 		clearDeadTokensCmd: notifCommand.NewClearDeadTokensCommandHandler(uow),
 		demoNames:          demoNames,
 	}
@@ -121,9 +121,9 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	// target_device_id picks a different addressing scheme (device push
 	// token) than the identifier-routed sms/email channels, so it bypasses
 	// resolveChannel entirely.
-	var channel otp_delivery.ChannelName
+	var channel otpProvider.ChannelName
 	if cmd.TargetDeviceID != nil {
-		if h.pushAdapter == nil {
+		if h.pushProvider == nil {
 			return nil, errs.NewError(ctx, status.OTP_NO_DELIVERY_CHANNEL, map[string]any{
 				"channel": string(pushChannelName),
 			}, ErrPushChannelNotRegistered)
@@ -264,7 +264,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		log.Infof("otp send command reuse pending otp id=%d, delivery skipped", createdOtpID)
 	}
 	if !reused && cmd.TargetDeviceID != nil {
-		sendRes, perr := h.pushAdapter.Send(ctx, notifAdapter.PushMessage{
+		sendRes, perr := h.pushProvider.Send(ctx, notiProvider.PushMessage{
 			Tokens: []string{targetPushToken},
 			Title:  "Xác nhận đăng nhập",
 			Body:   fmt.Sprintf("Mã xác thực đăng nhập của bạn là %s", plainCode),
@@ -293,8 +293,8 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		pushedCode = plainCode
 	}
 
-	if !reused && h.delivery != nil && channel == otp_delivery.ChannelEmail {
-		err := h.delivery.Send(ctx, otp_delivery.Message{
+	if !reused && h.delivery != nil && channel == otpProvider.ChannelEmail {
+		err := h.delivery.Send(ctx, otpProvider.Message{
 			OtpType:    cmd.OtpType,
 			Identifier: cmd.Identifier,
 			Code:       plainCode,
@@ -317,20 +317,20 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 }
 
 // resolveChannel returns the channel the OTP will ship through. Explicit
-// overrides win; otherwise the adapter's auto-detect picks SMS vs email from
+// overrides win; otherwise the provider's auto-detect picks SMS vs email from
 // identifier shape.
-func (h *SendOtpCommandHandler) resolveChannel(ctx context.Context, cmd SendOtpCommand) (otp_delivery.ChannelName, error) {
-	var channel otp_delivery.ChannelName
+func (h *SendOtpCommandHandler) resolveChannel(ctx context.Context, cmd SendOtpCommand) (otpProvider.ChannelName, error) {
+	var channel otpProvider.ChannelName
 	switch cmd.Channel {
 	case enum.OtpChannelSMS:
-		channel = otp_delivery.ChannelSMS
+		channel = otpProvider.ChannelSMS
 	case enum.OtpChannelEmail:
-		channel = otp_delivery.ChannelEmail
+		channel = otpProvider.ChannelEmail
 	case enum.OtpChannelAuto:
 		if isEmailLike(cmd.Identifier) {
-			channel = otp_delivery.ChannelEmail
+			channel = otpProvider.ChannelEmail
 		} else {
-			channel = otp_delivery.ChannelSMS
+			channel = otpProvider.ChannelSMS
 		}
 	default:
 		return "", errs.NewError(ctx, status.OTP_NO_DELIVERY_CHANNEL, nil,

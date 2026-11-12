@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/profile"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/profile"
@@ -19,6 +18,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/provider/storage"
 	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
@@ -49,7 +49,7 @@ type Service struct {
 	gradeRepo             gradeDomain.IRepository
 	semesterRepo          semesterDomain.IRepository
 	schoolRepo            schoolDomain.IRepository
-	storageProvider       *storage.Adapter
+	storageProvider       *storage.Registry
 }
 
 // NewService wires the profile module. storageProvider may be nil — in a
@@ -61,7 +61,7 @@ type Service struct {
 func NewService(
 	repo domain.IRepository,
 	uow transaction.UnitOfWork,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 	programRepo programDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
 	semesterRepo semesterDomain.IRepository,
@@ -385,7 +385,7 @@ func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, c
 	}
 	if s.storageProvider == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			ErrStorageAdapterNotConfigured)
+			ErrStorageProviderNotConfigured)
 	}
 	if file == nil || filename == "" {
 		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil,

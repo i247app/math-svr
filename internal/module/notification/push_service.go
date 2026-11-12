@@ -3,30 +3,30 @@ package notification
 import (
 	"context"
 
-	notifAdapter "math-ai.com/math-ai/internal/adapter/notification"
 	domain "math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	notiProvider "math-ai.com/math-ai/internal/provider/notification"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
-// pushService is the typed seam over the notification adapter — it keeps the
+// pushService is the typed seam over the notification provider — it keeps the
 // FCM wiring out of the orchestration service (mirrors exercise/llm_service.go).
-// The adapter pointer is nil when NOTIFICATION_PROVIDER is ""/"disabled";
+// The provider pointer is nil when NOTIFICATION_PROVIDER is ""/"disabled";
 // enabled() lets callers skip delivery cleanly.
 type pushService struct {
-	adapter *notifAdapter.Adapter
+	provider *notiProvider.Registry
 }
 
-func newPushService(adapter *notifAdapter.Adapter) *pushService {
-	return &pushService{adapter: adapter}
+func newPushService(provider *notiProvider.Registry) *pushService {
+	return &pushService{provider: provider}
 }
 
-func (p *pushService) enabled() bool { return p.adapter != nil }
+func (p *pushService) enabled() bool { return p.provider != nil }
 
-// send fans n out to tokens through the adapter, mapping the persisted
+// send fans n out to tokens through the provider, mapping the persisted
 // notification onto the push payload. action_type / action_data ride along in
 // the data map so the mobile client can deep-link.
-func (p *pushService) send(ctx context.Context, tokens []string, n *domain.Notification) (*notifAdapter.SendResult, error) {
+func (p *pushService) send(ctx context.Context, tokens []string, n *domain.Notification) (*notiProvider.SendResult, error) {
 	log := logger.From(ctx)
 	data := map[string]string{
 		"notification_id": utils.Int64ToString(n.NotificationId()),
@@ -45,7 +45,7 @@ func (p *pushService) send(ctx context.Context, tokens []string, n *domain.Notif
 		log.Infof("FCM to token: %s", token)
 	}
 
-	return p.adapter.Send(ctx, notifAdapter.PushMessage{
+	return p.provider.Send(ctx, notiProvider.PushMessage{
 		Tokens: tokens,
 		Title:  n.Title(),
 		Body:   n.ShortText(),

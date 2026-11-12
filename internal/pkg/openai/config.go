@@ -1,7 +1,7 @@
 // Package openai is the math-svr libs wrapper around OpenAI's REST API
 // (https://api.openai.com/v1). It owns the LLM client lifecycle
 // (credentials, timeouts, retries) and exposes the same narrow chat
-// surface the adapter layer (`internal/adapter/llm`) consumes — mirroring
+// surface the provider layer (`internal/provider/llm`) consumes — mirroring
 // the role of `internal/libs/openrouter`, `internal/libs/gemini` and
 // `internal/libs/deepseek`.
 //
@@ -40,7 +40,7 @@
 //
 // # API choice
 //
-// Generate / GenerateStream target Chat Completions: the LLM adapter's
+// Generate / GenerateStream target Chat Completions: the LLM provider's
 // ChatRequest is a messages/role/content shape that maps 1:1 onto it, and
 // openrouter speaks it too — so prompts, JSON mode and results stay
 // directly comparable across providers, which is the point of keeping
@@ -49,8 +49,8 @@
 // always sent explicitly because the endpoint defaults it to true.
 //
 // This package never imports from `internal/domain`, `internal/application`,
-// or `internal/adapter` — it is the lowest layer. Errors returned here are
-// plain wrapped errors or typed sentinels; the adapter layer translates
+// or `internal/provider` — it is the lowest layer. Errors returned here are
+// plain wrapped errors or typed sentinels; the provider layer translates
 // them into MathError(LLM_*) status codes.
 //
 // Secret handling: cfg.APIKey is read once at construction, set as the
@@ -67,7 +67,7 @@ import (
 	"time"
 )
 
-// ErrInvalidConfig is the sentinel wrapped by Config.Validate. The adapter
+// ErrInvalidConfig is the sentinel wrapped by Config.Validate. The provider
 // factory uses errors.Is to distinguish "config is wrong"
 // (→ LLM_CONFIG_INVALID) from "config is fine but the network or upstream
 // said no" (→ LLM_CONNECT_FAILED).

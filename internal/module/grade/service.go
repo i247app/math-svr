@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/grade"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/grade"
@@ -13,6 +12,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -28,13 +28,13 @@ type Service struct {
 	updateGradeCmd      *command.UpdateGradeCommandHandler
 	softDeleteGradeCmd  *command.SoftDeleteGradeCommandHandler
 	forceDeleteGradeCmd *command.ForceDeleteGradeCommandHandler
-	storageProvider     *storage.Adapter
+	storageProvider     *storage.Registry
 }
 
 func NewService(
 	gradeRepo domain.IRepository,
 	uow transaction.UnitOfWork,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 ) *Service {
 	return &Service{
 		listGradesQuery:     query.NewListGradesQueryHandler(gradeRepo),

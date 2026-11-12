@@ -6,9 +6,9 @@ import (
 	"sync"
 	"time"
 
-	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	llmProvider "math-ai.com/math-ai/internal/provider/llm"
 )
 
 const (
@@ -28,7 +28,7 @@ const (
 // fast. Globally throttled by shakeTTL + single-flight so the vendor is hit
 // at most once per window regardless of caller volume.
 type Service struct {
-	llm *llmAdapter.Adapter
+	llm *llmProvider.Registry
 
 	flightMu sync.Mutex
 
@@ -40,7 +40,7 @@ type Service struct {
 
 // NewService wires the handshake service. LLM may be nil (LLM_PROVIDER
 // disabled) — Shake then reports shaked=false.
-func NewService(llm *llmAdapter.Adapter) *Service {
+func NewService(llm *llmProvider.Registry) *Service {
 	return &Service{llm: llm}
 }
 
@@ -73,9 +73,9 @@ func (s *Service) Shake(ctx context.Context, req dto.ShakeReq, force bool) *dto.
 	defer cancel()
 
 	start := time.Now()
-	out, err := s.llm.Chat(callCtx, llmAdapter.ChatRequest{
-		Provider:    llmAdapter.LLMProviderName(req.Provider),
-		Messages:    []llmAdapter.Message{{Role: llmAdapter.RoleUser, Content: shakePrompt}},
+	out, err := s.llm.Chat(callCtx, llmProvider.ChatRequest{
+		Provider:    llmProvider.LLMProviderName(req.Provider),
+		Messages:    []llmProvider.Message{{Role: llmProvider.RoleUser, Content: shakePrompt}},
 		MaxTokens:   10,
 		Temperature: 0,
 		TopP:        -1, // unset; the zero value would send top_p=0

@@ -22,7 +22,7 @@ import (
 //
 // The client is safe for concurrent use; http_client wraps a stdlib
 // http.Client which pools connections internally. Nothing to Close —
-// constructed once at boot and retained on the LLM adapter for the
+// constructed once at boot and retained on the LLM provider for the
 // process lifetime.
 type Client struct {
 	cfg  Config
@@ -46,10 +46,10 @@ func (c *Client) BaseURL() string { return c.cfg.BaseURL }
 // to fail fast on a bad credential.
 //
 // Errors:
-//   - cfg.Validate failure → wraps ErrInvalidConfig (adapter factory maps
+//   - cfg.Validate failure → wraps ErrInvalidConfig (provider factory maps
 //     to MathError(LLM_CONFIG_INVALID)).
 //   - probe failure under RequireAtBoot=true → wraps the underlying error
-//     (adapter factory maps to MathError(LLM_CONNECT_FAILED)).
+//     (provider factory maps to MathError(LLM_CONNECT_FAILED)).
 func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -322,13 +322,13 @@ func (c *Client) Embed(ctx context.Context, req EmbedRequest) (*EmbedResponse, e
 // the wire body.
 //
 // This is the only genuinely lossy step in the package, because Gemini's
-// conversation model is narrower than the adapter's:
+// conversation model is narrower than the provider's:
 //
 //   - system messages have no role here; they are lifted out and joined
 //     into the top-level systemInstruction.
 //   - assistant becomes "model"; user stays "user".
 //   - tool becomes "user". Gemini's real equivalent is a functionResponse
-//     part, but the adapter's tool messages are plain text with no call to
+//     part, but the provider's tool messages are plain text with no call to
 //     correlate them to, so "user" is the honest mapping.
 //   - consecutive messages of the same role are merged into one content
 //     with several parts, because the API expects the turns to alternate.

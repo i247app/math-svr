@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/banner"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/banner"
@@ -14,6 +13,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 const (
@@ -37,13 +37,13 @@ type Service struct {
 	updateBannerCmd      *command.UpdateBannerCommandHandler
 	softDeleteBannerCmd  *command.SoftDeleteBannerCommandHandler
 	forceDeleteBannerCmd *command.ForceDeleteBannerCommandHandler
-	storageProvider      *storage.Adapter
+	storageProvider      *storage.Registry
 }
 
 func NewService(
 	bannerRepo domain.IRepository,
 	uow transaction.UnitOfWork,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 ) *Service {
 	return &Service{
 		getBannerQuery:       query.NewGetBannerByIdQueryHandler(bannerRepo),

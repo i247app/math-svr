@@ -9,12 +9,6 @@ import (
 	gexsess "github.com/i247app/gex/session"
 	"github.com/i247app/gex/sessionprovider"
 
-	"math-ai.com/math-ai/internal/adapter/email"
-	"math-ai.com/math-ai/internal/adapter/llm"
-	"math-ai.com/math-ai/internal/adapter/notification"
-	"math-ai.com/math-ai/internal/adapter/otp_delivery"
-	"math-ai.com/math-ai/internal/adapter/sms"
-	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/infrastructure/httproute"
 	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
@@ -22,6 +16,12 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/metrics"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/infrastructure/socket"
+	"math-ai.com/math-ai/internal/provider/email"
+	"math-ai.com/math-ai/internal/provider/llm"
+	"math-ai.com/math-ai/internal/provider/notification"
+	"math-ai.com/math-ai/internal/provider/otp_delivery"
+	"math-ai.com/math-ai/internal/provider/sms"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 const (
@@ -108,48 +108,48 @@ func SetupResource(res *resource.Resource) error {
 	res.SessionProvider = sessionProvider
 
 	log.Info("> Setup Resource...")
-	log.Info("> Setup EmailAdapter...")
+	log.Info("> Setup EmailProvider...")
 	log.Infof("> Email Provider: %s", env.EmailConfig.EmailProvider)
-	emailAdapter, err := email.NewFromConfig(context.Background(), env.EmailConfig)
+	emailProvider, err := email.NewFromConfig(context.Background(), env.EmailConfig)
 	if err != nil {
-		return fmt.Errorf("failed to setup email adapter: %w", err)
+		return fmt.Errorf("failed to setup email provider: %w", err)
 	}
-	res.EmailProvider = emailAdapter
+	res.EmailProvider = emailProvider
 
-	log.Info("> Setup SMSAdapter...")
+	log.Info("> Setup SMSProvider...")
 	log.Infof("> SMS Provider: %s", env.SMSConfig.SMSProvider)
-	smsAdapter, err := sms.NewFromConfig(context.Background(), env.SMSConfig)
+	smsProvider, err := sms.NewFromConfig(context.Background(), env.SMSConfig)
 	if err != nil {
-		return fmt.Errorf("failed to setup sms adapter: %w", err)
+		return fmt.Errorf("failed to setup sms provider: %w", err)
 	}
-	res.SMSProvider = smsAdapter
+	res.SMSProvider = smsProvider
 
-	log.Info("> Setup StorageAdapter...")
+	log.Info("> Setup StorageProvider...")
 	log.Infof("> Storage Provider: %s", env.StorageConfig.Provider)
-	storageAdapter, err := storage.NewFromConfig(context.Background(), env.StorageConfig)
+	storageProvider, err := storage.NewFromConfig(context.Background(), env.StorageConfig)
 	if err != nil {
-		return fmt.Errorf("failed to setup storage adapter: %w", err)
+		return fmt.Errorf("failed to setup storage provider: %w", err)
 	}
-	res.StorageProvider = storageAdapter
+	res.StorageProvider = storageProvider
 
-	log.Info("> Setup LLMAdapter...")
+	log.Info("> Setup LLMProvider...")
 	log.Infof("> LLM Provider (default): %s", env.LLMConfig.DefaultLLMProvider)
-	llmAdapter, err := llm.NewFromConfig(context.Background(), env.LLMConfig)
+	llmProvider, err := llm.NewFromConfig(context.Background(), env.LLMConfig)
 	if err != nil {
-		return fmt.Errorf("failed to setup LLM adapter: %w", err)
+		return fmt.Errorf("failed to setup LLM provider: %w", err)
 	}
-	res.LLMProvider = llmAdapter
+	res.LLMProvider = llmProvider
 
-	log.Info("> Setup NotificationAdapter...")
+	log.Info("> Setup NotificationProvider...")
 	log.Infof("> Notification Provider: %s", env.NotificationConfig.Provider)
-	notificationAdapter, err := notification.NewFromConfig(context.Background(), env.NotificationConfig)
+	notificationProvider, err := notification.NewFromConfig(context.Background(), env.NotificationConfig)
 	if err != nil {
-		return fmt.Errorf("failed to setup notification adapter: %w", err)
+		return fmt.Errorf("failed to setup notification provider: %w", err)
 	}
-	res.NotificationProvider = notificationAdapter
+	res.NotificationProvider = notificationProvider
 
-	log.Info("> Setup OtpDeliveryAdapter...")
-	res.OtpDelivery = otp_delivery.NewFromAdapters(context.Background(), smsAdapter, emailAdapter)
+	log.Info("> Setup OtpDeliveryProvider...")
+	res.OtpDelivery = otp_delivery.NewFromProviders(context.Background(), smsProvider, emailProvider)
 
 	return nil
 }

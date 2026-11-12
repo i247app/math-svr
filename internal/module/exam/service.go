@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/exam"
 	"math-ai.com/math-ai/internal/application/command/shared/practice"
 	"math-ai.com/math-ai/internal/application/dto"
+	llmProvider "math-ai.com/math-ai/internal/provider/llm"
+	"math-ai.com/math-ai/internal/provider/storage"
 
 	query "math-ai.com/math-ai/internal/application/query/exam"
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -82,14 +82,14 @@ func NewService(
 	detailRepo examDomain.IExamSessionLineRepository,
 	promptRepo promptDomain.IRepository,
 	uow transaction.UnitOfWork,
-	llm *llmAdapter.Adapter,
+	llm *llmProvider.Registry,
 	profileRepo profileDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
 	userRepo userDomain.IRepository,
 	questionPoolRepo questionpoolDomain.IRepository,
 	shuffleEnabled bool,
 	questionPoolEnabled bool,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 ) *Service {
 	s := &Service{
 		generateCmd:     command.NewGenerateExamCommandHandler(uow),
@@ -121,7 +121,7 @@ func NewService(
 		questionPoolRepo:    questionPoolRepo,
 		questionPoolEnabled: questionPoolEnabled,
 	}
-	if storageProvider != nil { // a nil *Adapter in the interface would not be nil
+	if storageProvider != nil { // a nil *Registry in the interface would not be nil
 		s.signer = storageProvider
 	}
 	return s

@@ -6,9 +6,9 @@ import (
 	"errors"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/email"
 	"math-ai.com/math-ai/internal/infrastructure/job"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/provider/email"
 )
 
 // Weekly digest is a two-piece workflow: a CronJob fans out per-user
@@ -86,11 +86,11 @@ type WeeklyDigestPayload struct {
 // Body is a stub until the digest template + recipient lookup land;
 // the retry policy and observability are already in place.
 type WeeklyDigestTask struct {
-	email *email.Adapter
+	email *email.Registry
 }
 
-func NewWeeklyDigestTask(emailAdapter *email.Adapter) *WeeklyDigestTask {
-	return &WeeklyDigestTask{email: emailAdapter}
+func NewWeeklyDigestTask(emailProvider *email.Registry) *WeeklyDigestTask {
+	return &WeeklyDigestTask{email: emailProvider}
 }
 
 const weeklyDigestTaskName = "digest.send"
@@ -113,7 +113,7 @@ func (t *WeeklyDigestTask) Handle(ctx context.Context, payload []byte) error {
 		return errors.New("weekly_digest: empty uid")
 	}
 	if t.email == nil {
-		log.Warnf("weekly_digest.skip uid=%s reason=email_adapter_disabled", msg.UID)
+		log.Warnf("weekly_digest.skip uid=%s reason=email_provider_disabled", msg.UID)
 		return nil
 	}
 

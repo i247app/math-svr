@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/questionpool"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/questionpool"
@@ -17,6 +16,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/provider/storage"
 	sctx "math-ai.com/math-ai/internal/shared/context"
 )
 
@@ -35,10 +35,10 @@ type Service struct {
 	importCmd *command.ImportQuestionPoolsCommandHandler
 	listQuery *query.ListQuestionPoolsQueryHandler
 	repo      domain.IRepository // import's duplicate check, outside any transaction
-	storage   *storage.Adapter
+	storage   *storage.Registry
 }
 
-func NewService(uow transaction.UnitOfWork, repo domain.IRepository, storageProvider *storage.Adapter) *Service {
+func NewService(uow transaction.UnitOfWork, repo domain.IRepository, storageProvider *storage.Registry) *Service {
 	return &Service{
 		createCmd: command.NewCreateQuestionPoolsCommandHandler(uow),
 		updateCmd: command.NewUpdateQuestionPoolCommandHandler(uow),

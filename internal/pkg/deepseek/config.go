@@ -1,7 +1,7 @@
 // Package deepseek is the math-svr libs wrapper around the DeepSeek API
 // (https://api.deepseek.com). It owns the LLM client lifecycle
 // (credentials, timeouts, retries) and exposes the same narrow chat
-// surface the adapter layer (`internal/adapter/llm`) consumes — mirroring
+// surface the provider layer (`internal/provider/llm`) consumes — mirroring
 // libs/openrouter, libs/openai and libs/gemini.
 //
 // Like the other three direct clients, this package uses NO vendor SDK:
@@ -34,8 +34,8 @@
 // See the PR notes for the measured cost of that choice.
 //
 // This package never imports from `internal/domain`, `internal/application`,
-// or `internal/adapter` — it is the lowest layer. Errors returned here are
-// plain wrapped errors or typed sentinels; the adapter layer translates
+// or `internal/provider` — it is the lowest layer. Errors returned here are
+// plain wrapped errors or typed sentinels; the provider layer translates
 // them into MathError(LLM_*) status codes.
 //
 // Secret handling: cfg.APIKey is read once at construction, set as the
@@ -52,7 +52,7 @@ import (
 	"time"
 )
 
-// ErrInvalidConfig is the sentinel wrapped by Config.Validate. The adapter
+// ErrInvalidConfig is the sentinel wrapped by Config.Validate. The provider
 // factory uses errors.Is to distinguish "config is wrong"
 // (→ LLM_CONFIG_INVALID) from "config is fine but the network or upstream
 // said no" (→ LLM_CONNECT_FAILED).

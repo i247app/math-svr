@@ -21,7 +21,7 @@ var (
 	ErrSchoolIDRequired                          = errors.New("school_id is required")
 	ErrSearchTooLong                             = errors.New("search too long")
 	ErrSemesterIDRequired                        = errors.New("semester_id is required")
-	ErrStorageAdapterNotConfigured               = errors.New("storage adapter is not configured")
+	ErrStorageProviderNotConfigured              = errors.New("storage provider is not configured")
 	ErrUploadReturnedEmptyKey                    = errors.New("upload returned an empty key")
 	ErrUIDRequired                               = errors.New("uid is required")
 )

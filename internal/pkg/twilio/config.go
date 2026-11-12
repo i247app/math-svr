@@ -1,13 +1,13 @@
 // Package twilio is the bin-svr libs wrapper around Twilio's REST API.
 // It owns the http_client.Client lifecycle (auth, timeouts, retry) and
 // exposes a narrow resource-typed surface (Messages.Create, ...) that
-// the adapter layer (`internal/adapter/sms`) consumes.
+// the provider layer (`internal/provider/sms`) consumes.
 //
 // This package never imports from `internal/domain` or
-// `internal/adapter` — it is the lowest layer, mirroring the role of
-// `internal/libs/redis` for the cache adapter and `internal/libs/email`
-// for the email adapter. Errors returned here are plain wrapped errors
-// or *APIError values; the adapter factory translates them into
+// `internal/provider` — it is the lowest layer, mirroring the role of
+// `internal/libs/redis` for the cache provider and `internal/libs/email`
+// for the email provider. Errors returned here are plain wrapped errors
+// or *APIError values; the provider factory translates them into
 // binbaseError(SMS_CONNECT_FAILED / SMS_CONFIG_INVALID / SMS_OP_FAILED /
 // SMS_SERIALIZE_FAILED).
 //
@@ -30,7 +30,7 @@ import (
 )
 
 // ErrInvalidConfig is the sentinel wrapped by Config.Validate. The
-// adapter factory uses errors.Is to distinguish "config is wrong"
+// provider factory uses errors.Is to distinguish "config is wrong"
 // (→ SMS_CONFIG_INVALID) from "config is fine but the network or
 // upstream said no" (→ SMS_CONNECT_FAILED).
 var ErrInvalidConfig = errors.New("twilio: invalid config")
@@ -90,7 +90,7 @@ const DefaultBaseURL = "https://api.twilio.com"
 var accountSIDPattern = regexp.MustCompile(`^AC[a-f0-9]{32}$`)
 
 // Validate enforces the credential format and the https-only invariant.
-// Returns errors wrapped with ErrInvalidConfig; the adapter factory
+// Returns errors wrapped with ErrInvalidConfig; the provider factory
 // translates that sentinel into binbaseError(SMS_CONFIG_INVALID).
 func (c Config) Validate() error {
 	if c.AccountSID == "" {
@@ -146,7 +146,7 @@ func (c *Config) applyDefaults() {
 // Example: "+15551234567" → "+1***4567".
 //
 // Lives in the libs package because phone-PII masking is a Twilio-payload
-// concern; the adapter layer re-exports it via package-level usage.
+// concern; the provider layer re-exports it via package-level usage.
 func MaskPhone(p string) string {
 	if p == "" {
 		return ""

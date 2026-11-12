@@ -8,8 +8,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
 	"math-ai.com/math-ai/internal/application/dto"
+	llmProvider "math-ai.com/math-ai/internal/provider/llm"
 
 	// input "math-ai.com/math-ai/internal/domain/prompt/input"
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
@@ -22,7 +22,7 @@ import (
 )
 
 // llmClient is the exam module's typed surface over the generic LLM
-// adapter: prompt in, validated questions out.
+// provider: prompt in, validated questions out.
 //
 // It has one method. Grading never reaches the model — the server scores
 // every submission — so unlike the quiz module there is no GradeExam here
@@ -33,11 +33,11 @@ import (
 // mandates the shape anyway, because backends that honour it fail earlier
 // and more cheaply.
 type llmClient struct {
-	adapter *llmAdapter.Adapter
+	provider *llmProvider.Registry
 }
 
-func newLLMClient(adapter *llmAdapter.Adapter) *llmClient {
-	return &llmClient{adapter: adapter}
+func newLLMClient(provider *llmProvider.Registry) *llmClient {
+	return &llmClient{provider: provider}
 }
 
 type generateExamInput struct {
@@ -75,8 +75,8 @@ type generateExamOutput struct {
 
 func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*generateExamOutput, error) {
 	log := logger.From(ctx)
-	if c.adapter == nil {
-		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil, ErrLLMAdapterNotConfigured)
+	if c.provider == nil {
+		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil, ErrLLMProviderNotConfigured)
 	}
 
 	// Drawn once: the user message states these pairs and the server stamps
@@ -220,11 +220,11 @@ const maxChainInputTokens = 30000
 func (c *llmClient) complete(ctx context.Context, system, user string, temperature float64, chain *string) (string, *string, error) {
 	log := logger.From(ctx)
 
-	if chain == nil || !c.adapter.SupportsRespond("") {
-		res, err := c.adapter.Chat(ctx, llmAdapter.ChatRequest{
-			Messages: []llmAdapter.Message{
-				{Role: llmAdapter.RoleSystem, Content: system},
-				{Role: llmAdapter.RoleUser, Content: user},
+	if chain == nil || !c.provider.SupportsRespond("") {
+		res, err := c.provider.Chat(ctx, llmProvider.ChatRequest{
+			Messages: []llmProvider.Message{
+				{Role: llmProvider.RoleSystem, Content: system},
+				{Role: llmProvider.RoleUser, Content: user},
 			},
 			Temperature: temperature,
 			TopP:        -1, // temperature is the knob; top_p comes from LLM_*_TOP_P or the model default
@@ -236,21 +236,21 @@ func (c *llmClient) complete(ctx context.Context, system, user string, temperatu
 		return res.Content, nil, nil
 	}
 
-	req := llmAdapter.RespondRequest{
+	req := llmProvider.RespondRequest{
 		// Instructions are not inherited along the chain: resent every turn.
 		Instructions:       system,
-		Input:              []llmAdapter.Message{{Role: llmAdapter.RoleUser, Content: user}},
+		Input:              []llmProvider.Message{{Role: llmProvider.RoleUser, Content: user}},
 		PreviousResponseID: *chain,
 		Store:              true,
 		Temperature:        temperature,
 		TopP:               -1,
 		JSONMode:           true,
 	}
-	res, err := c.adapter.Respond(ctx, req)
-	if err != nil && req.PreviousResponseID != "" && llmAdapter.IsChainPointerGone(err) {
+	res, err := c.provider.Respond(ctx, req)
+	if err != nil && req.PreviousResponseID != "" && llmProvider.IsChainPointerGone(err) {
 		log.Warnf("exam.chain.gone previous_response_id=%s, starting a new chain", req.PreviousResponseID)
 		req.PreviousResponseID = ""
-		res, err = c.adapter.Respond(ctx, req)
+		res, err = c.provider.Respond(ctx, req)
 	}
 	if err != nil {
 		return "", nil, err
@@ -280,8 +280,8 @@ type journeyReviewOutput struct {
 // review is one more turn of the journey's chain.
 func (c *llmClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prompt, in input.JourneyReviewInput, chain string) (*journeyReviewOutput, error) {
 	log := logger.From(ctx)
-	if c.adapter == nil {
-		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil, ErrLLMAdapterNotConfigured)
+	if c.provider == nil {
+		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil, ErrLLMProviderNotConfigured)
 	}
 	if prompt == nil || prompt.SystemPrompt() == "" {
 		return nil, errs.NewError(ctx, status.PROMPT_NOT_FOUND, nil, fmt.Errorf("exam: no system prompt for the journey review"))

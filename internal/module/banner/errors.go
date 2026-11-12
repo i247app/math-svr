@@ -15,7 +15,7 @@ var (
 	ErrShortTextTooLong    = errors.New("short_text too long")
 	ErrTitleTooLong        = errors.New("title too long")
 
-	ErrStorageAdapterNotConfigured       = errors.New("storage adapter is not configured")
+	ErrStorageProviderNotConfigured      = errors.New("storage provider is not configured")
 	ErrUploadReturnedEmptyKey            = errors.New("upload returned an empty key")
 	ErrBannerReferenceResolvedToEmptyKey = errors.New("avatar reference resolved to empty key")
 )

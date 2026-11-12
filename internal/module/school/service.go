@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/school"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/school"
@@ -13,6 +12,7 @@ import (
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 // imageUrlTTL bounds how long a generated school image URL is valid.
@@ -31,13 +31,13 @@ type Service struct {
 	updateSchoolCmd      *command.UpdateSchoolCommandHandler
 	softDeleteSchoolCmd  *command.SoftDeleteSchoolCommandHandler
 	forceDeleteSchoolCmd *command.ForceDeleteSchoolCommandHandler
-	storageProvider      *storage.Adapter
+	storageProvider      *storage.Registry
 }
 
 func NewService(
 	schoolRepo domain.IRepository,
 	uow transaction.UnitOfWork,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 ) *Service {
 	return &Service{
 		getSchoolQuery:       query.NewGetSchoolByIdQueryHandler(schoolRepo),

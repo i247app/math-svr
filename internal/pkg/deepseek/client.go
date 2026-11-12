@@ -23,7 +23,7 @@ import (
 //
 // The client is safe for concurrent use; http_client wraps a stdlib
 // http.Client which pools connections internally. Nothing to Close —
-// constructed once at boot and retained on the LLM adapter for the
+// constructed once at boot and retained on the LLM provider for the
 // process lifetime.
 type Client struct {
 	cfg  Config
@@ -42,10 +42,10 @@ func (c *Client) BaseURL() string { return c.cfg.BaseURL }
 // to fail fast on a bad credential.
 //
 // Errors:
-//   - cfg.Validate failure → wraps ErrInvalidConfig (adapter factory maps
+//   - cfg.Validate failure → wraps ErrInvalidConfig (provider factory maps
 //     to MathError(LLM_CONFIG_INVALID)).
 //   - probe failure under RequireAtBoot=true → wraps the underlying error
-//     (adapter factory maps to MathError(LLM_CONNECT_FAILED)).
+//     (provider factory maps to MathError(LLM_CONNECT_FAILED)).
 func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (c *Client) Generate(ctx context.Context, req ChatRequest) (*ChatResponse, 
 	}
 
 	// Three finish reasons mean the 200 is not actually a usable answer.
-	// Each gets its own sentinel so the adapter can tell an operator
+	// Each gets its own sentinel so the provider can tell an operator
 	// problem from a transient one from a truncation.
 	switch choice.FinishReason {
 	case finishReasonFilter:

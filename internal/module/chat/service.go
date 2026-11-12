@@ -7,7 +7,6 @@ import (
 	"context"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/chat"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/chat"
@@ -17,6 +16,7 @@ import (
 	presenceDomain "math-ai.com/math-ai/internal/domain/presence"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/provider/storage"
 	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
@@ -40,7 +40,7 @@ type Service struct {
 	profileRepo         profileDomain.IRepository
 	classroomMemberRepo classroomDomain.IMemberRepository
 	presenceRepo        presenceDomain.IRepository
-	storageProvider     *storage.Adapter
+	storageProvider     *storage.Registry
 	realtime            MessagePublisher
 }
 
@@ -55,7 +55,7 @@ func NewService(
 	profileRepo profileDomain.IRepository,
 	classroomMemberRepo classroomDomain.IMemberRepository,
 	presenceRepo presenceDomain.IRepository,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 	realtime MessagePublisher,
 ) *Service {
 	return &Service{

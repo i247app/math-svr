@@ -6,9 +6,9 @@ import (
 	"io"
 	"strings"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/user"
 	"math-ai.com/math-ai/internal/application/dto"
+	"math-ai.com/math-ai/internal/provider/storage"
 
 	aliasQuery "math-ai.com/math-ai/internal/application/query/alias"
 	query "math-ai.com/math-ai/internal/application/query/user"
@@ -49,7 +49,7 @@ type Service struct {
 	adoptGuestCmd       *command.AdoptGuestCommandHandler
 	softDeleteUserCmd   *command.SoftDeleteUserCommandHandler
 	forceDeleteUserCmd  *command.ForceDeleteUserCommandHandler
-	storageProvider     *storage.Adapter
+	storageProvider     *storage.Registry
 }
 
 func NewService(
@@ -57,7 +57,7 @@ func NewService(
 	repo domain.IRepository,
 	aliasRepo aliasDomain.IRepository,
 	uow transaction.UnitOfWork,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 	hasher login.PasswordHasher,
 ) *Service {
 	return &Service{
@@ -599,7 +599,7 @@ func (s *Service) UploadAvatar(ctx context.Context, uid int64, filename, content
 	}
 	if s.storageProvider == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			ErrStorageAdapterNotConfigured)
+			ErrStorageProviderNotConfigured)
 	}
 	if file == nil || filename == "" {
 		return nil, errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil,

@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 // imageURLTTL is how long a presigned question / option image URL stays
@@ -14,7 +14,7 @@ import (
 // reopened later gets fresh URLs, because they are made per response.
 const imageURLTTL = time.Hour
 
-// urlSigner is the part of the storage adapter this module needs.
+// urlSigner is the part of the storage provider this module needs.
 type urlSigner interface {
 	CreatePresignedUrl(ctx context.Context, req *storage.CreatePresignedUrlRequest) (string, error)
 }

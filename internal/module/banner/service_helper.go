@@ -3,10 +3,10 @@ package banner
 import (
 	"context"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 // normalizeBannerKey resolves a client-supplied media reference into a
@@ -16,7 +16,7 @@ import (
 func (s *Service) normalizeBannerKey(ctx context.Context, raw string, invalidStatus status.StatusCode) (string, error) {
 	if s.storageProvider == nil {
 		return "", errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			ErrStorageAdapterNotConfigured)
+			ErrStorageProviderNotConfigured)
 	}
 	key, err := s.storageProvider.NormalizeKey(ctx, &storage.NormalizeKeyRequest{
 		Raw: raw,
@@ -36,7 +36,7 @@ func (s *Service) uploadBannerIfPresent(ctx context.Context, req *dto.CreateBann
 	}
 	if s.storageProvider == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			ErrStorageAdapterNotConfigured)
+			ErrStorageProviderNotConfigured)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
@@ -68,7 +68,7 @@ func (s *Service) updateBannerIfPresent(ctx context.Context, req *dto.UpdateBann
 	}
 	if s.storageProvider == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			ErrStorageAdapterNotConfigured)
+			ErrStorageProviderNotConfigured)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{

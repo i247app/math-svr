@@ -3,17 +3,17 @@ package exercise
 import (
 	"context"
 
-	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	llmProvider "math-ai.com/math-ai/internal/provider/llm"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // llmClient is the classroomexercise module's typed surface over the
-// generic LLM adapter. It owns prompt construction (delegated to
+// generic LLM provider. It owns prompt construction (delegated to
 // domain/prompt/input via BuildExercisePrompt) and parses the response through
 // application/dto (aiquestion_*.go), which owns the shared MCQ
 // JSON-mode contract.
@@ -22,11 +22,11 @@ import (
 // stays moderate so the model can vary phrasing across calls but won't
 // drift the schema.
 type llmClient struct {
-	adapter *llmAdapter.Adapter
+	provider *llmProvider.Registry
 }
 
-func newLLMClient(adapter *llmAdapter.Adapter) *llmClient {
-	return &llmClient{adapter: adapter}
+func newLLMClient(provider *llmProvider.Registry) *llmClient {
+	return &llmClient{provider: provider}
 }
 
 // generateExerciseInput is the union of fields the exercise prompt
@@ -55,9 +55,9 @@ type generateExerciseOutput struct {
 
 func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInput) (*generateExerciseOutput, error) {
 	log := logger.From(ctx)
-	if c.adapter == nil {
+	if c.provider == nil {
 		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil,
-			ErrLLMAdapterNotConfigured)
+			ErrLLMProviderNotConfigured)
 	}
 
 	system, user, err := input.BuildExercisePrompt(
@@ -77,10 +77,10 @@ func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 
 	log.Infof("PROMPT CLASSROOM EXERCISE: system=%s user=%s", system, user)
 
-	res, err := c.adapter.Chat(ctx, llmAdapter.ChatRequest{
-		Messages: []llmAdapter.Message{
-			{Role: llmAdapter.RoleSystem, Content: system},
-			{Role: llmAdapter.RoleUser, Content: user},
+	res, err := c.provider.Chat(ctx, llmProvider.ChatRequest{
+		Messages: []llmProvider.Message{
+			{Role: llmProvider.RoleSystem, Content: system},
+			{Role: llmProvider.RoleUser, Content: user},
 		},
 		Temperature: 0.4,
 		TopP:        -1, // temperature is the knob; top_p comes from LLM_*_TOP_P or the model default
@@ -120,9 +120,9 @@ type gradeExerciseInput struct {
 
 func (c *llmClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*dto.GradingResult, error) {
 	log := logger.From(ctx)
-	if c.adapter == nil {
+	if c.provider == nil {
 		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil,
-			ErrClassroomExerciseSubmissionLLMAdapterNotConfigured)
+			ErrClassroomExerciseSubmissionLLMProviderNotConfigured)
 	}
 
 	system, user, err := input.BuildExercisePrompt(
@@ -138,10 +138,10 @@ func (c *llmClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*
 
 	log.Infof("PROMPT CLASSROOM EXERCISE SUBMISSION GRADE: system=%s user=%s", system, user)
 
-	res, err := c.adapter.Chat(ctx, llmAdapter.ChatRequest{
-		Messages: []llmAdapter.Message{
-			{Role: llmAdapter.RoleSystem, Content: system},
-			{Role: llmAdapter.RoleUser, Content: user},
+	res, err := c.provider.Chat(ctx, llmProvider.ChatRequest{
+		Messages: []llmProvider.Message{
+			{Role: llmProvider.RoleSystem, Content: system},
+			{Role: llmProvider.RoleUser, Content: user},
 		},
 		Temperature: 0.4,
 		TopP:        -1, // temperature is the knob; top_p comes from LLM_*_TOP_P or the model default

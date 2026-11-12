@@ -151,7 +151,7 @@ type wireOutputContent struct {
 
 // wireResponsesUsage uses the Responses vocabulary (input/output) rather
 // than chat-completions' prompt/completion. toUsage folds it into the
-// shared Usage so the adapter sees one shape.
+// shared Usage so the provider sees one shape.
 //
 // The two detail blocks are read for the log line only: cached_tokens is
 // the part of a chained turn's input billed at the cache rate, which is

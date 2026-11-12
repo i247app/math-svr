@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/role"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/role"
@@ -12,6 +11,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/role"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 // roleImageUrlTTL bounds how long a presigned role image URL stays valid.
@@ -28,13 +28,13 @@ type Service struct {
 	updateRoleCmd      *command.UpdateRoleCommandHandler
 	softDeleteRoleCmd  *command.SoftDeleteRoleCommandHandler
 	forceDeleteRoleCmd *command.ForceDeleteRoleCommandHandler
-	storageProvider    *storage.Adapter
+	storageProvider    *storage.Registry
 }
 
 func NewService(
 	roleRepo domain.IRepository,
 	uow transaction.UnitOfWork,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 ) *Service {
 	return &Service{
 		getRoleQuery:       query.NewGetRoleByIdQueryHandler(roleRepo),

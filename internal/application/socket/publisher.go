@@ -9,7 +9,7 @@ import "context"
 // Publisher is the write side of the realtime channel. Producers (notification,
 // classroom, …) depend on this interface, obtained from the app Resource and
 // always nil-guarded — the socket runtime is a deploy-profile concern like the
-// other adapters.
+// other providers.
 //
 // ctx carries the request deadline/cancellation and (for a future networked
 // implementation) bounds the publish call; the in-memory Hub ignores it and

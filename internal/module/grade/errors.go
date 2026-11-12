@@ -14,6 +14,6 @@ var (
 	ErrLabelRequired            = errors.New("label is required")
 	ErrLabelTooLong             = errors.New("label too long")
 
-	ErrStorageAdapterNotConfigured = errors.New("storage adapter is not configured")
-	ErrUploadReturnedEmptyKey      = errors.New("upload returned an empty key")
+	ErrStorageProviderNotConfigured = errors.New("storage provider is not configured")
+	ErrUploadReturnedEmptyKey       = errors.New("upload returned an empty key")
 )

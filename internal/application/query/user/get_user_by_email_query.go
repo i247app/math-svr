@@ -14,10 +14,7 @@ type GetUserByEmailQueryHandler struct {
 	userRepo user.IRepository
 }
 
-// NewGetUserByIdQueryHandler wires the read path. cacheAdapter may be
-// nil — the handler degrades to a pure repo lookup in that case so
-// boot order and tests don't have to fabricate a cache. Production
-// always passes a real adapter via the bootstrap container.
+// NewGetUserByEmailQueryHandler wires the read path: a plain repo lookup.
 func NewGetUserByEmailQueryHandler(userRepo user.IRepository) *GetUserByEmailQueryHandler {
 	return &GetUserByEmailQueryHandler{userRepo: userRepo}
 }

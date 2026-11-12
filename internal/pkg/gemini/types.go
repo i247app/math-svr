@@ -15,7 +15,7 @@ const (
 type Message struct {
 	Role    Role
 	Content string
-	// Name is an optional discriminator carried by the adapter. Gemini has
+	// Name is an optional discriminator carried by the provider. Gemini has
 	// no equivalent on a text part, so it is dropped.
 	Name string
 }

@@ -12,7 +12,7 @@ import (
 )
 
 // Sentinel errors surfaced by the Client. Each maps to a distinct
-// MathError(LLM_*) code in the adapter layer; see adapter/llm/errors.go.
+// MathError(LLM_*) code in the provider layer; see provider/llm/errors.go.
 // The taxonomy matches the sibling libs packages so mapGeminiError stays
 // symmetrical with its four siblings — plus ErrContentBlocked, which has
 // no analogue on the OpenAI-shaped providers.
@@ -245,7 +245,7 @@ func (w *wireError) toAPIError(httpStatus int, retryAfter time.Duration) *APIErr
 }
 
 // classifyAPIError lifts a typed *APIError onto the package sentinels so
-// the adapter's status mapping is driven by the taxonomy rather than by
+// the provider's status mapping is driven by the taxonomy rather than by
 // raw HTTP numbers. Unrecognised statuses are returned unchanged and end
 // up as LLM_OP_FAILED.
 //

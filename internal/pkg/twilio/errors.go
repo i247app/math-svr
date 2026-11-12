@@ -7,7 +7,7 @@ import (
 )
 
 // ErrDecodeResponse signals that a 2xx Twilio response carried a body
-// the client could not parse. The adapter factory maps it to
+// the client could not parse. The provider factory maps it to
 // SMS_SERIALIZE_FAILED.
 var ErrDecodeResponse = errors.New("twilio: failed to decode response")
 

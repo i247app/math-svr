@@ -36,7 +36,7 @@ type SendNotificationReq struct {
 
 // SendNotificationRes returns the persisted notification plus a summary of
 // the push fan-out (zeroed when the recipient has no device tokens or the
-// adapter is disabled).
+// provider is disabled).
 type SendNotificationRes struct {
 	Notification NotificationResponse `json:"notification"`
 	PushSuccess  int                  `json:"push_success"`

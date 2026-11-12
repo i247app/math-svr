@@ -4,11 +4,11 @@ import (
 	"context"
 	"io"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 // roleImageFolder is the S3 prefix role images are uploaded under.
@@ -23,7 +23,7 @@ func (s *Service) uploadRoleImage(ctx context.Context, file roleImageFile) (*str
 		return nil, nil
 	}
 	if s.storageProvider == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil, ErrStorageAdapterNotConfigured)
+		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil, ErrStorageProviderNotConfigured)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{

@@ -1,7 +1,7 @@
 // Package gemini is the math-svr libs wrapper around Google's Gemini API
 // (https://generativelanguage.googleapis.com/v1beta). It owns the LLM
 // client lifecycle (credentials, timeouts, retries) and exposes the same
-// narrow chat surface the adapter layer (`internal/adapter/llm`) consumes
+// narrow chat surface the provider layer (`internal/provider/llm`) consumes
 // — mirroring libs/openrouter, libs/openai and libs/deepseek.
 //
 // Like libs/openrouter and libs/openai, this package uses NO vendor SDK:
@@ -33,12 +33,12 @@
 //
 // This client targets the v1beta REST surface, which is what every current
 // Gemini model is served from and what the official docs document. The
-// LLM adapter's ChatRequest is translated in buildRequest; see the role
+// LLM provider's ChatRequest is translated in buildRequest; see the role
 // mapping there, which is the only genuinely lossy step.
 //
 // This package never imports from `internal/domain`, `internal/application`,
-// or `internal/adapter` — it is the lowest layer. Errors returned here are
-// plain wrapped errors or typed sentinels; the adapter layer translates
+// or `internal/provider` — it is the lowest layer. Errors returned here are
+// plain wrapped errors or typed sentinels; the provider layer translates
 // them into MathError(LLM_*) status codes.
 //
 // Secret handling: cfg.APIKey is read once at construction and set as the
@@ -56,7 +56,7 @@ import (
 	"time"
 )
 
-// ErrInvalidConfig is the sentinel wrapped by Config.Validate. The adapter
+// ErrInvalidConfig is the sentinel wrapped by Config.Validate. The provider
 // factory uses errors.Is to distinguish "config is wrong"
 // (→ LLM_CONFIG_INVALID) from "config is fine but the network or upstream
 // said no" (→ LLM_CONNECT_FAILED).

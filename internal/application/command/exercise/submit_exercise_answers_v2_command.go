@@ -21,7 +21,7 @@ import (
 
 // SubmitExerciseAnswersV2Command is the deterministic counterpart of
 // SubmitExerciseAnswersCommand. It scores the student's answers entirely
-// in process — no LLM adapter call — and persists the row through the
+// in process — no LLM provider call — and persists the row through the
 // same repo write path as v1, including the seq-minted external ID.
 //
 // Compared to v1, the LLM grading inputs (Review / TotalQuestions /

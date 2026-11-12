@@ -46,12 +46,12 @@ var (
 	ErrUIDNotFoundFromSession = errors.New("uid not found from session")
 	ErrProfileNotOwnedByUser  = errors.New("profile does not belong to the authenticated user")
 
-	// Adapter wiring.
-	ErrLLMAdapterNotConfigured = errors.New("classroom exercise: LLM adapter is not configured")
+	// Provider wiring.
+	ErrLLMProviderNotConfigured = errors.New("classroom exercise: LLM provider is not configured")
 
 	ErrAnswerLabelRequired                                               = errors.New("answer label is required")
 	ErrAnswersRequired                                                   = errors.New("answers is required")
-	ErrClassroomExerciseSubmissionLLMAdapterNotConfigured                = errors.New("classroom exercise submission: LLM adapter is not configured")
+	ErrClassroomExerciseSubmissionLLMProviderNotConfigured               = errors.New("classroom exercise submission: LLM provider is not configured")
 	ErrClassroomExerciseSubmissionIDRequired                             = errors.New("classroom_exercise_submission_id is required")
 	ErrClassroomIDOrClassroomExerciseIDRequiredWhenListingAcrossProfiles = errors.New("classroom_id or classroom_exercise_id is required when listing across profiles")
 	ErrDuplicateQuestionNumber                                           = errors.New("duplicate question_number")

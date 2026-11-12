@@ -18,7 +18,7 @@ import (
 //
 // Lifecycle: there is nothing to Close — net/http.Transport manages its
 // own connection pool. The struct is constructed once at boot and
-// retained on the SMS adapter for the process lifetime.
+// retained on the SMS provider for the process lifetime.
 type Client struct {
 	// accountSID and authToken are captured here so resource services
 	// (messages.go) can construct REST paths and the HTTP client can
@@ -28,7 +28,7 @@ type Client struct {
 
 	// defaultFrom / messagingServiceSID record the boot-time defaults.
 	// Resource services may also consult them when a per-call value is
-	// absent; the TwilioProvider in adapter/sms is the canonical caller
+	// absent; the TwilioProvider in provider/sms is the canonical caller
 	// of that fallback.
 	defaultFrom         string
 	messagingServiceSID string
@@ -62,14 +62,14 @@ func (c *Client) MessagingServiceSID() string { return c.messagingServiceSID }
 // replacement interceptor list containing only the timing interceptor.
 // The default logging interceptor would capture the outbound
 // Authorization header and the form-encoded request body (which
-// contains To= in plain text); both are sensitive. Adapter-level
-// structured logging in `internal/adapter/sms` covers what we need.
+// contains To= in plain text); both are sensitive. Provider-level
+// structured logging in `internal/provider/sms` covers what we need.
 //
 // Errors:
-//   - cfg.Validate failure → wraps ErrInvalidConfig (adapter factory
+//   - cfg.Validate failure → wraps ErrInvalidConfig (provider factory
 //     maps to binbaseError(SMS_CONFIG_INVALID)).
 //   - probe failure under RequireAtBoot=true → wraps the underlying
-//     error (adapter factory maps to binbaseError(SMS_CONNECT_FAILED)).
+//     error (provider factory maps to binbaseError(SMS_CONNECT_FAILED)).
 func NewClient(ctx context.Context, cfg Config) (*Client, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err

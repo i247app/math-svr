@@ -14,7 +14,7 @@ var (
 	ErrGuestSessionAlreadySecure                 = errors.New("this session already belongs to a registered account")
 	ErrRoleInvalid                               = errors.New("role is invalid")
 	ErrProvideEitherAvatarFileOrAvatarReference  = errors.New("provide either avatar file or avatar reference")
-	ErrStorageAdapterNotConfigured               = errors.New("storage adapter is not configured")
+	ErrStorageProviderNotConfigured              = errors.New("storage provider is not configured")
 	ErrUploadReturnedEmptyKey                    = errors.New("upload returned an empty key")
 	ErrUIDMustBeValidId                          = errors.New("user id must be a valid id")
 	ErrUserNotFound                              = errors.New("user not found")

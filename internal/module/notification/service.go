@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	notifAdapter "math-ai.com/math-ai/internal/adapter/notification"
 	command "math-ai.com/math-ai/internal/application/command/notification"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/notification"
@@ -17,6 +16,7 @@ import (
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	notiProvider "math-ai.com/math-ai/internal/provider/notification"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -52,7 +52,7 @@ func NewService(
 	repo domain.IRepository,
 	userRepo userDomain.IRepository,
 	deviceRepo deviceDomain.IRepository,
-	pushAdapter *notifAdapter.Adapter,
+	pushProvider *notiProvider.Registry,
 	socketPub appsocket.Publisher,
 ) *Service {
 	return &Service{
@@ -65,7 +65,7 @@ func NewService(
 		unreadCountQuery: query.NewUnreadCountQueryHandler(repo),
 		userRepo:         userRepo,
 		deviceRepo:       deviceRepo,
-		push:             newPushService(pushAdapter),
+		push:             newPushService(pushProvider),
 		socket:           socketPub,
 	}
 }

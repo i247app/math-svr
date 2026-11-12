@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/classroom"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/classroom"
@@ -19,6 +18,7 @@ import (
 	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 // coverUrlTTL bounds how long a generated cover URL is valid. Mirrors
@@ -65,7 +65,7 @@ type Service struct {
 	programRepo          programDomain.IRepository
 	gradeRepo            gradeDomain.IRepository
 	schoolRepo           schoolDomain.IRepository
-	storageProvider      *storage.Adapter
+	storageProvider      *storage.Registry
 }
 
 func NewService(
@@ -79,7 +79,7 @@ func NewService(
 	schoolRepo schoolDomain.IRepository,
 	submissionRepo exerciseDomain.ISubmissionRepository,
 	exerciseRepo exerciseDomain.IRepository,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 ) *Service {
 	return &Service{
 		getClassroomQuery:                  query.NewGetClassroomByIdQueryHandler(classroomRepo, classroomProgramRepo),

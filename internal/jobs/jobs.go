@@ -9,22 +9,22 @@
 // Jobs live here (not under module/job) because they are not handlers
 // — they are the runtime's consumers of domain/application services.
 // Concretely, they import application/command/* like any module
-// service would, and may reach side-effect adapters (email, storage,
+// service would, and may reach side-effect providers (email, storage,
 // LLM) directly. They never see *sql.DB.
 package jobs
 
 import (
-	"math-ai.com/math-ai/internal/adapter/email"
 	userCommand "math-ai.com/math-ai/internal/application/command/user"
 	"math-ai.com/math-ai/internal/infrastructure/job"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	"math-ai.com/math-ai/internal/provider/email"
 )
 
 // Deps bundles the cross-cutting services concrete jobs need. Add a
 // field here whenever a new job requires a new dependency; the
 // alternative — fishing services out of a Resource pointer at run
 // time — hides the wiring. Keep nil-tolerant where the underlying
-// adapter is disable-friendly (email/SMS/LLM/storage), so a dev that
+// provider is disable-friendly (email/SMS/LLM/storage), so a dev that
 // turns one off in .env can still boot.
 type Deps struct {
 	// Runtime is the same *job.Runtime that owns the Registry. Cron
@@ -40,9 +40,9 @@ type Deps struct {
 	// the session provider cannot sweep; session_cleanup then skips.
 	SessionSweeper ExpiredSessionSweeper
 
-	// EmailProvider may be nil when the email adapter is disabled in
+	// EmailProvider may be nil when the email provider is disabled in
 	// .env. Jobs that depend on it must nil-guard and degrade.
-	EmailProvider *email.Adapter
+	EmailProvider *email.Registry
 
 	// CleanupGuests retires guest accounts nobody came back for. Built in
 	// the container (it needs the UoW and the maintenance repository);

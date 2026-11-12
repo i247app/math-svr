@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	llmAdapter "math-ai.com/math-ai/internal/adapter/llm"
-	"math-ai.com/math-ai/internal/adapter/storage"
 	command "math-ai.com/math-ai/internal/application/command/exercise"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/exercise"
@@ -19,6 +17,8 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	llmProvider "math-ai.com/math-ai/internal/provider/llm"
+	"math-ai.com/math-ai/internal/provider/storage"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -26,7 +26,7 @@ import (
 // dependency surface mirrors the classroom module: classroom + member
 // repos for permission checks, classroom_program for the program-pick
 // validation, profile/program/grade repos to resolve curriculum labels
-// for the LLM prompt, and the LLM adapter itself.
+// for the LLM prompt, and the LLM provider itself.
 type Service struct {
 	getExerciseQuery   *query.GetClassroomExerciseByIdQueryHandler
 	listExercisesQuery *query.ListClassroomExercisesQueryHandler
@@ -49,21 +49,21 @@ type Service struct {
 	programRepo          programDomain.IRepository
 	gradeRepo            gradeDomain.IRepository
 	llm                  *llmClient
-	storageProvider      *storage.Adapter
+	storageProvider      *storage.Registry
 }
 
 func NewService(
 	exerciseRepo domain.IRepository,
 	submissionRepo domain.ISubmissionRepository,
 	uow transaction.UnitOfWork,
-	llm *llmAdapter.Adapter,
+	llm *llmProvider.Registry,
 	classroomRepo classroomDomain.IRepository,
 	classroomMemberRepo classroomDomain.IMemberRepository,
 	classroomProgramRepo classroomDomain.IClassroomProgramRepository,
 	profileRepo profileDomain.IRepository,
 	programRepo programDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
-	storageProvider *storage.Adapter,
+	storageProvider *storage.Registry,
 ) *Service {
 	return &Service{
 		getExerciseQuery:   query.NewGetClassroomExerciseByIdQueryHandler(exerciseRepo),

@@ -43,7 +43,7 @@ type ChatRequest struct {
 // Usage reports tokens billed by the upstream when available.
 //
 // CacheHitTokens / CacheMissTokens and ReasoningTokens are DeepSeek
-// extensions with no equivalent on the adapter's shared Usage type. They
+// extensions with no equivalent on the provider's shared Usage type. They
 // are logged as operator metadata rather than propagated, because they
 // exist to explain a bill, not to change a caller's behaviour.
 type Usage struct {
@@ -59,7 +59,7 @@ type Usage struct {
 // ChatResponse is the provider-agnostic shape of a non-streamed reply.
 //
 // ReasoningContent holds the model's deliberation when thinking mode is
-// on. It is captured so the client can report on it, but the adapter
+// on. It is captured so the client can report on it, but the provider
 // deliberately does NOT forward it: callers of this repo want the answer
 // (a quiz JSON blob), and the reasoning is both large and not part of the
 // contract the prompts define.

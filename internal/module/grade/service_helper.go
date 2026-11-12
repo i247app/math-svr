@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 const (
@@ -31,7 +31,7 @@ func (s *Service) uploadImageIfPresent(ctx context.Context, req *dto.UpdateGrade
 		return nil, nil
 	}
 	if s.storageProvider == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil, ErrStorageAdapterNotConfigured)
+		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil, ErrStorageProviderNotConfigured)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{

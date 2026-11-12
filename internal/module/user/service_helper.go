@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/dto"
+	"math-ai.com/math-ai/internal/provider/storage"
 
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -24,7 +24,7 @@ func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateUser
 	}
 	if s.storageProvider == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			ErrStorageAdapterNotConfigured)
+			ErrStorageProviderNotConfigured)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
@@ -56,7 +56,7 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateUser
 	}
 	if s.storageProvider == nil {
 		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			ErrStorageAdapterNotConfigured)
+			ErrStorageProviderNotConfigured)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
@@ -93,7 +93,7 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateUser
 func (s *Service) normalizeAvatarKey(ctx context.Context, raw string, invalidStatus status.StatusCode) (string, error) {
 	if s.storageProvider == nil {
 		return "", errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
-			ErrStorageAdapterNotConfigured)
+			ErrStorageProviderNotConfigured)
 	}
 	key, err := s.storageProvider.NormalizeKey(ctx, &storage.NormalizeKeyRequest{
 		Raw: raw,

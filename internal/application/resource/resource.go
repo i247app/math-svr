@@ -4,12 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"math-ai.com/math-ai/internal/adapter/email"
-	"math-ai.com/math-ai/internal/adapter/llm"
-	"math-ai.com/math-ai/internal/adapter/notification"
-	"math-ai.com/math-ai/internal/adapter/otp_delivery"
-	"math-ai.com/math-ai/internal/adapter/sms"
-	"math-ai.com/math-ai/internal/adapter/storage"
 	appsocket "math-ai.com/math-ai/internal/application/socket"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/database"
@@ -18,13 +12,19 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/metrics"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/infrastructure/socket"
+	"math-ai.com/math-ai/internal/provider/email"
+	"math-ai.com/math-ai/internal/provider/llm"
+	"math-ai.com/math-ai/internal/provider/notification"
+	"math-ai.com/math-ai/internal/provider/otp_delivery"
+	"math-ai.com/math-ai/internal/provider/sms"
+	"math-ai.com/math-ai/internal/provider/storage"
 
 	"github.com/i247app/gex"
 	"github.com/i247app/gex/sessionprovider"
 )
 
 // Resource carries the long-lived I/O dependencies wired at boot.
-// Adapter pointers may be nil when the corresponding adapter is
+// Provider pointers may be nil when the corresponding provider is
 // disabled in this deploy (e.g. SMS in local dev without Twilio
 // credentials); callers must nil-guard.
 type Resource struct {
@@ -33,12 +33,12 @@ type Resource struct {
 	DB                   *database.DatabaseWithLogs
 	SessionManager       *session.SessionManager
 	SessionProvider      sessionprovider.SessionProvider
-	EmailProvider        *email.Adapter
-	SMSProvider          *sms.Adapter
-	StorageProvider      *storage.Adapter
-	LLMProvider          *llm.Adapter
-	NotificationProvider *notification.Adapter
-	OtpDelivery          *otp_delivery.Adapter
+	EmailProvider        *email.Registry
+	SMSProvider          *sms.Registry
+	StorageProvider      *storage.Registry
+	LLMProvider          *llm.Registry
+	NotificationProvider *notification.Registry
+	OtpDelivery          *otp_delivery.Registry
 
 	// JobRegistry holds the static name → handler map for both
 	// CronJobs and TaskHandlers. Populated in bootstrap before the

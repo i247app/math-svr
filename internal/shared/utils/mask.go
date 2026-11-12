@@ -22,7 +22,7 @@ func MaskIndentifier(s string) string {
 // Example: "+15551234567" → "+1***4567".
 //
 // Lives in the libs package because phone-PII masking is a Twilio-payload
-// concern; the adapter layer re-exports it via package-level usage.
+// concern; the provider layer re-exports it via package-level usage.
 func MaskPhone(p string) string {
 	if p == "" {
 		return ""

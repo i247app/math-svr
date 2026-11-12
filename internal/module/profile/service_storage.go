@@ -3,10 +3,10 @@ package profile
 import (
 	"context"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/provider/storage"
 )
 
 // UploadAvatar streams the request body to S3 then persists the resulting

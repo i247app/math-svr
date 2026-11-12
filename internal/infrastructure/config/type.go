@@ -156,7 +156,7 @@ type StorageConfig struct {
 	Bucket    string // env STORAGE_BUCKET
 }
 
-// SMSConfig configures the SMS adapter (`internal/adapter/sms`). The
+// SMSConfig configures the SMS provider (`internal/provider/sms`). The
 // factory translates these into provider-specific configs — today the
 // only supported provider is "twilio", consumed by libs/twilio.
 //
@@ -182,7 +182,7 @@ type SMSConfig struct {
 	RequireAtBoot bool          // env SMS_REQUIRE_AT_BOOT, default false
 }
 
-// LLMConfig configures the AI LLM adapter (`internal/adapter/llm`). The
+// LLMConfig configures the AI LLM provider (`internal/provider/llm`). The
 // factory translates these into provider-specific configs. Four providers
 // are supported, each a direct REST client with no vendor SDK:
 // "openrouter" (vendor chosen by the model id), "openai", "gemini" and
@@ -193,7 +193,7 @@ type SMSConfig struct {
 //
 // Behaviour matrix for LLMProvider:
 //
-//	""  or "disabled" → adapter is nil; module services must nil-guard.
+//	""  or "disabled" → provider is nil; module services must nil-guard.
 //	"openrouter" | "openai" | "gemini" | "deepseek"
 //	                  → every provider whose API key is set gets
 //	                    registered (LLM_OPENROUTER_API_KEY /
@@ -301,13 +301,13 @@ type LLMConfig struct {
 	RequireAtBoot bool          // env LLM_REQUIRE_AT_BOOT, default false
 }
 
-// NotificationConfig configures the push-notification adapter
-// (`internal/adapter/notification`). Today the only provider is Firebase
+// NotificationConfig configures the push-notification provider
+// (`internal/provider/notification`). Today the only provider is Firebase
 // Cloud Messaging.
 //
 // Behaviour matrix for Provider:
 //
-//	""  or "disabled" → adapter is nil; module services must nil-guard.
+//	""  or "disabled" → provider is nil; module services must nil-guard.
 //	"firebase"        → Firebase provider, registered + defaulted.
 //	anything else     → MathError(NOTIFICATION_CONFIG_INVALID) at boot.
 //

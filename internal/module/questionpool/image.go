@@ -10,11 +10,11 @@ import (
 	"path"
 	"strings"
 
-	"math-ai.com/math-ai/internal/adapter/storage"
 	"math-ai.com/math-ai/internal/application/dto"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	"math-ai.com/math-ai/internal/provider/storage"
 	sctx "math-ai.com/math-ai/internal/shared/context"
 )
 
@@ -38,7 +38,7 @@ var imageTypes = map[string]string{
 var (
 	ErrImageMissing  = errors.New("image file part is required")
 	ErrImageTooLarge = errors.New("request body is over the image size limit")
-	ErrStorageOff    = errors.New("question_pool: storage adapter is not configured")
+	ErrStorageOff    = errors.New("question_pool: storage provider is not configured")
 )
 
 // imageFormError maps a body that is not a usable multipart form. The admin

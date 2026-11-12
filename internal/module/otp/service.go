@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	notifAdapter "math-ai.com/math-ai/internal/adapter/notification"
-	"math-ai.com/math-ai/internal/adapter/otp_delivery"
 	command "math-ai.com/math-ai/internal/application/command/otp"
 	"math-ai.com/math-ai/internal/application/dto"
+	notiProvider "math-ai.com/math-ai/internal/provider/notification"
+	"math-ai.com/math-ai/internal/provider/otp_delivery"
 
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/notification"
@@ -48,8 +48,8 @@ func NewService(
 	notificationSvc *notification.Service,
 	repo domain.IRepository,
 	uow transaction.UnitOfWork,
-	delivery *otp_delivery.Adapter,
-	pushAdapter *notifAdapter.Adapter,
+	delivery *otp_delivery.Registry,
+	pushProvider *notiProvider.Registry,
 	bypassEnabled bool,
 	bypassCode string,
 	demoNames []string,
@@ -58,7 +58,7 @@ func NewService(
 		userSvc:         userSvc,
 		deviceSvc:       deviceSvc,
 		notificationSvc: notificationSvc,
-		sendCmd:         command.NewSendOtpCommandHandler(uow, delivery, pushAdapter, demoNames),
+		sendCmd:         command.NewSendOtpCommandHandler(uow, delivery, pushProvider, demoNames),
 		verifyCmd:       command.NewVerifyOtpCommandHandler(uow, bypassEnabled, bypassCode, demoNames),
 		revokeCmd:       command.NewRevokeOtpCommandHandler(uow),
 		getByIdQuery:    query.NewGetOtpByIdQueryHandler(repo),
