@@ -66,6 +66,7 @@ func KeysetPage[T, K any](ctx context.Context, ks Keyset[T, K], next, previous s
 		// cursor, i.e. the first in display order.
 		if more {
 			rows = rows[1:]
+
 		}
 		page.HasPrev = more
 		if page.HasNext, err = ks.ExistsAtOrAfter(ctx, *before); err != nil {
@@ -91,6 +92,7 @@ func KeysetPage[T, K any](ctx context.Context, ks Keyset[T, K], next, previous s
 			return nil, nil, err
 		}
 	}
+
 	return rows, page, nil
 }
 

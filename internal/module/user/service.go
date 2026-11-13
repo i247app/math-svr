@@ -251,7 +251,7 @@ func (s *Service) CreateUser(ctx context.Context, sess *session.AppSession, req 
 
 	log.Info("Mark device as trusted")
 	_, err = s.deviceSvc.VerifyDevice(ctx, &dto.VerifyDeviceReq{
-		UID:             created.User.Uid(),
+		UID:             created.User.UID(),
 		DeviceUUID:      metadata.GetDeviceUUID(ctx),
 		DeviceName:      metadata.GetDeviceName(ctx),
 		Platform:        metadata.GetPlatform(ctx),
@@ -326,9 +326,9 @@ func (s *Service) AdminCreateUser(ctx context.Context, adminUID *int64, req *dto
 	log := logger.From(ctx)
 	role := utils.DerefString(created.User.Role())
 	if adminUID != nil {
-		log.Info("user.admin_created", "uid", created.User.Uid(), "by_uid", *adminUID, "role", role)
+		log.Info("user.admin_created", "uid", created.User.UID(), "by_uid", *adminUID, "role", role)
 	} else {
-		log.Info("user.admin_created", "uid", created.User.Uid(), "via", "api_key", "role", role)
+		log.Info("user.admin_created", "uid", created.User.UID(), "via", "api_key", "role", role)
 	}
 
 	userRes := dto.UserDomainToResponse(created.User)
@@ -450,12 +450,12 @@ func (s *Service) CreateGuest(ctx context.Context, sess *session.AppSession, req
 	sess.Init(session.InitData{
 		Source:    "guest",
 		IsSecure:  false,
-		UID:       created.User.Uid(),
+		UID:       created.User.UID(),
 		LoginName: loginName,
 	})
 
 	logger.From(ctx).Info("user.guest.opened",
-		"uid", created.User.Uid(), "profile_id", created.Profile.ProfileId())
+		"uid", created.User.UID(), "profile_id", created.Profile.ProfileId())
 
 	res := &dto.CreateGuestRes{
 		User: dto.UserDomainToResponse(created.User),
@@ -478,7 +478,7 @@ func (s *Service) SoftDeleteUser(ctx context.Context, req *dto.DeleteUserReq) (*
 	}
 
 	if err := s.softDeleteUserCmd.Handle(ctx, command.SoftDeleteUserCommand{
-		UID: user.Uid(),
+		UID: user.UID(),
 	}); err != nil {
 		return nil, err
 	}

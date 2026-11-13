@@ -26,7 +26,7 @@ type ListUsersByCursorQuery struct {
 // are displayed uid DESC, so "after" a row means a lower uid and "before"
 // it a higher one.
 type userCursor struct {
-	Uid int64 `json:"uid"`
+	UID int64 `json:"uid"`
 }
 
 type ListUsersByCursorQueryHandler struct {
@@ -38,25 +38,27 @@ func NewListUsersByCursorQueryHandler(userRepo user.IRepository) *ListUsersByCur
 }
 
 func (h *ListUsersByCursorQueryHandler) Handle(ctx context.Context, query *ListUsersByCursorQuery) ([]*user.User, *pagination.CursorPagination, error) {
-	return pagination.KeysetPage(ctx, pagination.Keyset[*user.User, userCursor]{
+	keyset := pagination.Keyset[*user.User, userCursor]{
 		Read: func(ctx context.Context, after, before *userCursor, limit int64) ([]*user.User, error) {
 			params := &user.ListUsersKeysetParams{Limit: limit, Roles: query.Roles}
 			if after != nil {
-				params.AfterUid = &after.Uid
+				params.AfterUID = &after.UID
 			}
 			if before != nil {
-				params.BeforeUid = &before.Uid
+				params.BeforeUID = &before.UID
 			}
 			return h.userRepo.ListUsersByKeyset(ctx, params)
 		},
 		// Display order is uid DESC: "before" a row means a higher uid.
 		ExistsAtOrBefore: func(ctx context.Context, k userCursor) (bool, error) {
-			return h.userRepo.ExistsUserUidAtLeast(ctx, k.Uid, query.Roles)
+			return h.userRepo.ExistsUserUidAtLeast(ctx, k.UID, query.Roles)
 		},
 		ExistsAtOrAfter: func(ctx context.Context, k userCursor) (bool, error) {
-			return h.userRepo.ExistsUserUidAtMost(ctx, k.Uid, query.Roles)
+			return h.userRepo.ExistsUserUidAtMost(ctx, k.UID, query.Roles)
 		},
-		Key:   func(u *user.User) userCursor { return userCursor{Uid: u.Uid()} },
-		Valid: func(k userCursor) bool { return k.Uid > 0 },
-	}, query.Next, query.Previous, query.Size)
+		Key:   func(u *user.User) userCursor { return userCursor{UID: u.UID()} },
+		Valid: func(k userCursor) bool { return k.UID > 0 },
+	}
+
+	return pagination.KeysetPage(ctx, keyset, query.Next, query.Previous, query.Size)
 }

@@ -55,7 +55,7 @@ func (g *guestService) EnsureGuest(ctx context.Context, deviceUUID, childName st
 	}
 
 	identity := &GuestIdentity{
-		UID:       res.User.Uid(),
+		UID:       res.User.UID(),
 		ProfileID: res.Profile.ProfileId(),
 	}
 	logger.From(ctx).Info("exam.guest.opened", "uid", identity.UID, "profile_id", identity.ProfileID)

@@ -87,12 +87,12 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		}
 
 		result = &LoginCommandResult{
-			UID:             u.Uid(),
+			UID:             u.UID(),
 			IsTrustedDevice: true,
 		}
 		// return nil
 
-		d, err := ensureDevice(ctx, repos, u.Uid(), cmd)
+		d, err := ensureDevice(ctx, repos, u.UID(), cmd)
 		if err != nil {
 			return err
 		}
@@ -101,19 +101,19 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		result.IsTrustedDevice = d.IsVerified() && !d.IsTrustExpired(h.trustDeviceTTLDays, time.Now().UTC())
 
 		if result.IsTrustedDevice {
-			err := repos.Device.MarkVerifiedByUserDevice(ctx, u.Uid(), cmd.DeviceUUID, true)
+			err := repos.Device.MarkVerifiedByUserDevice(ctx, u.UID(), cmd.DeviceUUID, true)
 			if err != nil {
 				return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
 			}
 
-			ll, err := repos.LoginLog.FindActiveByUserDevice(ctx, u.Uid(), cmd.DeviceUUID)
+			ll, err := repos.LoginLog.FindActiveByUserDevice(ctx, u.UID(), cmd.DeviceUUID)
 			if err != nil {
 				return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 			}
 
 			if ll != nil {
 				result.LoginLogID = ll.LoginLogId()
-				if err := repos.LoginLog.MarkStatusByUserDevice(ctx, u.Uid(), cmd.DeviceUUID, enum.LoginLogStatusTypeActive); err != nil {
+				if err := repos.LoginLog.MarkStatusByUserDevice(ctx, u.UID(), cmd.DeviceUUID, enum.LoginLogStatusTypeActive); err != nil {
 					return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 				}
 			} else {
@@ -121,7 +121,7 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 				if err != nil {
 					return err
 				}
-				ll := BuildLoginLog(u.Uid(), cmd)
+				ll := BuildLoginLog(u.UID(), cmd)
 				ll.SetLoginLogId(loginLogId)
 				_, err = repos.LoginLog.Create(ctx, ll)
 				if err != nil {
@@ -158,7 +158,7 @@ func (h *LoginCommandHandler) verifyPassword(ctx context.Context, cmd LoginComma
 			return err
 		}
 		found = true
-		cred, err := repos.Login.FindByUid(ctx, u.Uid())
+		cred, err := repos.Login.FindByUid(ctx, u.UID())
 		if err != nil {
 			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 		}

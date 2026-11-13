@@ -121,7 +121,7 @@ func (h *CreateGuestCommandHandler) Handle(ctx context.Context, cmd CreateGuestC
 		// that already exist — see the seq cleanup task.
 		p.SetProfileId(uid)
 		p.SetProfileCode(profileCode)
-		p.SetUid(created.Uid())
+		p.SetUid(created.UID())
 		p.SetName(guestChildName(cmd.ChildName, uid))
 		p.SetIdentityCode(&identity)
 		p.SetIsDefault(true)

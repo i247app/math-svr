@@ -195,7 +195,7 @@ func UserDomainToResponse(u *user.User) *UserResponse {
 	}
 
 	return &UserResponse{
-		UID:             u.Uid(),
+		UID:             u.UID(),
 		Name:            u.UserName(),
 		Email:           u.Email(),
 		IsEmailVerified: u.IsEmailVerified(),

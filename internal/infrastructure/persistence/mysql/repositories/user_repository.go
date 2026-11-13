@@ -8,8 +8,9 @@ import (
 	"slices"
 	"strings"
 
-	"math-ai.com/math-ai/internal/domain/user"
 	"time"
+
+	"math-ai.com/math-ai/internal/domain/user"
 
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
@@ -100,12 +101,12 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (*user.User, 
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err := r.db.Exec(ctx, query, u.Uid(), u.UserName(), u.Phone(), u.Email(), u.IsEmailVerified(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.UserStatus(), u.RptFlg(), u.Kwords(), u.Note(), time.Now().UTC(), time.Now().UTC())
+	_, err := r.db.Exec(ctx, query, u.UID(), u.UserName(), u.Phone(), u.Email(), u.IsEmailVerified(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.UserStatus(), u.RptFlg(), u.Kwords(), u.Note(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("user repo create: %w", err)
 	}
 
-	return r.FindByUid(ctx, u.Uid())
+	return r.FindByUid(ctx, u.UID())
 }
 
 func (r *UserRepository) ListUsers(ctx context.Context, params *user.ListUsersParams) ([]*user.User, *pagination.Pagination, error) {
@@ -141,12 +142,12 @@ func (r *UserRepository) ListUsersByKeyset(ctx context.Context, params *user.Lis
 	filter, order := ``, ` ORDER BY u.uid DESC`
 	var args []any
 	switch {
-	case params.AfterUid != nil:
+	case params.AfterUID != nil:
 		filter = `(u.uid < ?)`
-		args = append(args, *params.AfterUid)
-	case params.BeforeUid != nil:
+		args = append(args, *params.AfterUID)
+	case params.BeforeUID != nil:
 		filter, order = `(u.uid > ?)`, ` ORDER BY u.uid ASC`
-		args = append(args, *params.BeforeUid)
+		args = append(args, *params.BeforeUID)
 	}
 	if roleFilter, roleArgs := userRoleFilter(params.Roles); roleFilter != "" {
 		if filter != "" {
@@ -163,7 +164,7 @@ func (r *UserRepository) ListUsersByKeyset(ctx context.Context, params *user.Lis
 	if err != nil {
 		return nil, fmt.Errorf("user repo list by keyset: %w", err)
 	}
-	if params.AfterUid == nil && params.BeforeUid != nil {
+	if params.AfterUID == nil && params.BeforeUID != nil {
 		slices.Reverse(users)
 	}
 	return users, nil
@@ -269,7 +270,7 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 		WHERE uid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.IsEmailVerified(), u.RptFlg(), u.Kwords(), u.Uid()); err != nil {
+	if _, err := r.db.Exec(ctx, query, userName, u.Email(), u.Phone(), u.AvatarKey(), u.Role(), u.IdentityCode(), u.IsEmailVerified(), u.RptFlg(), u.Kwords(), u.UID()); err != nil {
 		return fmt.Errorf("user repo update: %w", err)
 	}
 	return nil
@@ -318,7 +319,7 @@ func (r *UserRepository) SoftDeleteByUid(ctx context.Context, uid int64) error {
 
 func DomainToModel(u *user.User) *models.UserModel {
 	return &models.UserModel{
-		Uid:        u.Uid(),
+		Uid:        u.UID(),
 		UserName:   u.UserName(),
 		Email:      u.Email(),
 		Phone:      u.Phone(),

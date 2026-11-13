@@ -68,8 +68,8 @@ type IOwnedDataRepository interface {
 
 // ListUsersKeysetParams: at most one of AfterUid / BeforeUid is set.
 type ListUsersKeysetParams struct {
-	AfterUid  *int64 // next page: uid < AfterUid
-	BeforeUid *int64 // previous page: uid > BeforeUid
+	AfterUID  *int64 // next page: uid < AfterUid
+	BeforeUID *int64 // previous page: uid > BeforeUid
 	Limit     int64
 	Roles     []string // ma_users.role IN Roles; empty = every role
 }

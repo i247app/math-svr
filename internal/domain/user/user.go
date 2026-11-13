@@ -28,7 +28,7 @@ func NewUser() *User {
 	return &User{}
 }
 
-func (u *User) Uid() int64 {
+func (u *User) UID() int64 {
 	return u.uid
 }
 

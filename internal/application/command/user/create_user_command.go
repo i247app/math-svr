@@ -149,7 +149,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 		}
 		if guest != nil {
-			uid = guest.Uid()
+			uid = guest.UID()
 		} else {
 			uid, err = seqgen.Next(ctx, repos.Seq, seq.NameUser)
 			if err != nil {
@@ -208,7 +208,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 					return err
 				}
 				alias.SetAid(aid)
-				alias.SetUid(u.Uid())
+				alias.SetUid(u.UID())
 				alias.SetStatus(enum.StatusActive.String())
 				alias.SetAka(*aka)
 				if _, err := repos.Alias.Create(ctx, alias); err != nil {
@@ -218,7 +218,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		}
 
 		if passwordHash != nil {
-			if err := createLogin(ctx, repos, u.Uid(), *passwordHash); err != nil {
+			if err := createLogin(ctx, repos, u.UID(), *passwordHash); err != nil {
 				return err
 			}
 		}
@@ -227,7 +227,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			// The guest's default profile is the child who has been sitting
 			// exams all along — it is updated, never replaced, so the
 			// journeys pointing at its profile_id keep pointing somewhere.
-			existing, err := repos.Profile.FindDefaultProfileByUid(ctx, u.Uid())
+			existing, err := repos.Profile.FindDefaultProfileByUid(ctx, u.UID())
 			if err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
@@ -237,7 +237,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 
 			patch := BuildProfile(ctx, cmd)
 			patch.SetProfileId(existing.ProfileId())
-			patch.SetUid(u.Uid())
+			patch.SetUid(u.UID())
 			if err := repos.Profile.Update(ctx, patch); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
@@ -248,7 +248,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			// a device_uuid is not a secret, and leaving one resolvable
 			// against a now-real account would let anyone who learns it
 			// start a login (and spray OTPs at the owner's phone).
-			if err := revokeDeviceAlias(ctx, repos, u.Uid(), cmd.DeviceUUID); err != nil {
+			if err := revokeDeviceAlias(ctx, repos, u.UID(), cmd.DeviceUUID); err != nil {
 				return err
 			}
 
@@ -263,7 +263,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 
 			profileDomain := BuildProfile(ctx, cmd)
-			profileDomain.SetUid(u.Uid())
+			profileDomain.SetUid(u.UID())
 			profileDomain.SetProfileId(uid)
 			profileDomain.SetIsDefault(true)
 			profileDomain.SetProfileCode(profileCode)

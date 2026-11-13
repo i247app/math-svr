@@ -89,7 +89,7 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 	}
 
 	notiDomain := domain.NewNotification()
-	notiDomain.SetUid(user.Uid())
+	notiDomain.SetUid(user.UID())
 	notiDomain.SetTitle("Ping")
 
 	shortText := fmt.Sprintf("Hello %s, have a great day! ", user.UserName())
