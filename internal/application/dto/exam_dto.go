@@ -6,6 +6,7 @@ import (
 
 	domain "math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
+	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"
 	"math-ai.com/math-ai/internal/shared/utils"
@@ -153,8 +154,9 @@ type ExamResponse struct {
 	ShortText *string `json:"short_text,omitempty"`
 	NumQues   int     `json:"num_questions"`
 
-	Questions []ExamQuestion `json:"questions,omitempty"`
-	Result    *ExamResult    `json:"result,omitempty"`
+	Language  enum.LanguageType `json:"lang,omitempty"`
+	Questions []ExamQuestion    `json:"questions,omitempty"`
+	Result    *ExamResult       `json:"result,omitempty"`
 
 	Status      string          `json:"status"`
 	StartedDt   *mtime.MathTime `json:"started_dt,omitempty"`
@@ -347,6 +349,7 @@ func AttemptToResponse(a *domain.ExamLink, e *domain.ExamPool, includeAnswerKey 
 	}
 
 	res := &ExamResponse{
+		Language:  enum.LanguageTypeVietnamese,
 		ElinkID:   a.ElinkId(),
 		ExamID:    a.ExamId(),
 		ProfileID: a.ProfileId(),

@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"math-ai.com/math-ai/internal/domain/questionpool"
+	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -60,6 +61,7 @@ type ExamOption struct {
 //     scale of ma_question_pools. The prompt asks for them; the server
 //     stamps them (exam.StampQuestionLevels) like question_grade.
 type ExamQuestion struct {
+	Language         enum.LanguageType  `json:"lang"`
 	QuestionNumber   int                `json:"question_number"`
 	QuestionKind     string             `json:"question_kind,omitempty"`
 	QuestionText     string             `json:"question_text"`
@@ -206,6 +208,7 @@ func (q ExamQuestion) optionText(id string) string {
 // ExamQuestionFrom converts back out to the wire shape.
 func ExamQuestionFrom(q Question) ExamQuestion {
 	out := ExamQuestion{
+		Language:         enum.LanguageTypeVietnamese,
 		QuestionNumber:   q.QuestionNumber,
 		QuestionKind:     q.Kind,
 		QuestionText:     q.QuestionName,
