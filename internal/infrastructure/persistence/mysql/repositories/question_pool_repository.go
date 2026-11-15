@@ -21,7 +21,7 @@ const (
 	questionPoolTable = "ma_question_pools"
 
 	questionPoolColumns = `q.question_pool_id, q.question_kind, q.question_text, q.question_image_key,
-		q.options, q.correct_answer, q.explanation, q.question_grade, q.question_topic,
+		q.options, q.correct_answer, q.explanation, q.tts_text, q.question_grade, q.question_topic,
 		q.question_level, q.question_sub_level, q.question_tags, q.question_source, q.verified_count, q.question_hash,
 		q.question_status, q.rpt_flg, q.kwords, q.note, q.status,
 		q.create_id, q.create_dt, q.modify_id, q.modify_dt`
@@ -30,7 +30,7 @@ const (
 
 	// questionInsertRow is one VALUES tuple of CreateMany, in the column
 	// order of its INSERT list.
-	questionPoolInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	questionPoolInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func questionPoolActiveArgs() []any {
@@ -62,7 +62,7 @@ func NewQuestionPoolRepository(db database.Executor) questionpool.IRepository {
 func scanQuestionPool(s database.RowScanner) (*models.QuestionPoolModel, error) {
 	var m models.QuestionPoolModel
 	if err := s.Scan(&m.QuestionPoolId, &m.QuestionKind, &m.QuestionText, &m.QuestionImageKey,
-		&m.Options, &m.CorrectAnswer, &m.Explanation, &m.QuestionGrade, &m.QuestionTopic,
+		&m.Options, &m.CorrectAnswer, &m.Explanation, &m.TtsText, &m.QuestionGrade, &m.QuestionTopic,
 		&m.QuestionLevel, &m.QuestionSubLevel, &m.QuestionTags, &m.QuestionSource, &m.VerifiedCount, &m.QuestionHash,
 		&m.QuestionStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -71,7 +71,7 @@ func scanQuestionPool(s database.RowScanner) (*models.QuestionPoolModel, error) 
 	return &m, nil
 }
 
-// questionPoolInsertChunk caps the rows of one INSERT: 200 rows x 22
+// questionPoolInsertChunk caps the rows of one INSERT: 200 rows x 23
 // columns stays far below MySQL's 65,535 placeholders and keeps one
 // statement's packet small.
 const questionPoolInsertChunk = 200
@@ -96,7 +96,7 @@ func (r *QuestionPoolRepository) CreateMany(ctx context.Context, questions []*qu
 func (r *QuestionPoolRepository) insertChunk(ctx context.Context, questions []*questionpool.QuestionPool, createId *int64) error {
 	now := time.Now().UTC()
 	tuples := make([]string, 0, len(questions))
-	args := make([]any, 0, len(questions)*22)
+	args := make([]any, 0, len(questions)*23)
 	for _, q := range questions {
 		options, answer, tags, err := marshalQuestionPoolJSON(q)
 		if err != nil {
@@ -105,14 +105,14 @@ func (r *QuestionPoolRepository) insertChunk(ctx context.Context, questions []*q
 		tuples = append(tuples, questionPoolInsertRow)
 		args = append(args,
 			q.QuestionPoolId(), string(q.QuestionKind()), q.QuestionText(), q.QuestionImageKey(),
-			options, answer, q.Explanation(), q.QuestionGrade(), q.QuestionTopic(),
+			options, answer, q.Explanation(), q.TtsText(), q.QuestionGrade(), q.QuestionTopic(),
 			q.QuestionLevel(), q.QuestionSubLevel(), tags, string(q.QuestionSource()), q.VerifiedCount(), q.QuestionHash(),
 			q.QuestionStatus(), q.RptFlg(), q.Kwords(), q.Note(),
 			createId, now, now)
 	}
 	query := `INSERT INTO ` + questionPoolTable + `
 			(question_pool_id, question_kind, question_text, question_image_key,
-			 options, correct_answer, explanation, question_grade, question_topic,
+			 options, correct_answer, explanation, tts_text, question_grade, question_topic,
 			 question_level, question_sub_level, question_tags, question_source, verified_count, question_hash,
 			 question_status, rpt_flg, kwords, note,
 			 create_id, create_dt, modify_dt)
@@ -139,7 +139,9 @@ func (r *QuestionPoolRepository) LockById(ctx context.Context, id int64) (*quest
 	return ModelToDomainQuestionPool(m)
 }
 
-// UpdateContent leaves question_pool_id, source, status, verified_count and
+// UpdateContent overwrites (no COALESCE): the service has already merged
+// the edit onto the stored row, so a nil field here means "cleared".
+// It leaves question_pool_id, source, status, verified_count and
 // create_* alone: an edit is not a review.
 func (r *QuestionPoolRepository) UpdateContent(ctx context.Context, q *questionpool.QuestionPool, modifyId *int64) error {
 	options, answer, tags, err := marshalQuestionPoolJSON(q)
@@ -147,11 +149,11 @@ func (r *QuestionPoolRepository) UpdateContent(ctx context.Context, q *questionp
 		return err
 	}
 	query := `UPDATE ` + questionPoolTable + ` q SET q.question_kind = ?, q.question_text = ?, q.question_image_key = ?,
-			q.options = ?, q.correct_answer = ?, q.explanation = ?, q.question_grade = ?, q.question_topic = ?,
+			q.options = ?, q.correct_answer = ?, q.explanation = ?, q.tts_text = ?, q.question_grade = ?, q.question_topic = ?,
 			q.question_level = ?, q.question_sub_level = ?, q.question_tags = ?, q.question_hash = ?, q.modify_id = ?
 		WHERE (q.question_pool_id = ?) AND ` + questionPoolActiveWhere
 	args := slices.Concat([]any{string(q.QuestionKind()), q.QuestionText(), q.QuestionImageKey(),
-		options, answer, q.Explanation(), q.QuestionGrade(), q.QuestionTopic(),
+		options, answer, q.Explanation(), q.TtsText(), q.QuestionGrade(), q.QuestionTopic(),
 		q.QuestionLevel(), q.QuestionSubLevel(), tags, q.QuestionHash(), modifyId, q.QuestionPoolId()}, questionPoolActiveArgs())
 	if _, err := r.db.Exec(ctx, query, args...); err != nil {
 		if isDuplicateEntry(err) {
@@ -231,6 +233,37 @@ func (r *QuestionPoolRepository) ForceDeleteByFilter(ctx context.Context, filter
 		return 0, fmt.Errorf("question pool repo force delete by filter: %w", err)
 	}
 	return affected, nil
+}
+
+// ListIdsUsingImage matches the stem image and every option image
+// (JSON_CONTAINS of {"image_key": key} in the options array), live rows only.
+//
+// ponytail: no index covers it, so it scans the bank; fine at tens of
+// thousands of rows and an admin-only caller.
+func (r *QuestionPoolRepository) ListIdsUsingImage(ctx context.Context, key string, limit int) ([]int64, error) {
+	query := `SELECT q.question_pool_id FROM ` + questionPoolTable + ` q
+		WHERE (q.question_image_key = ? OR JSON_CONTAINS(q.options, JSON_OBJECT('image_key', ?)))
+		AND ` + questionPoolActiveWhere + `
+		ORDER BY q.question_pool_id LIMIT ?`
+	args := slices.Concat([]any{key, key}, questionPoolActiveArgs(), []any{limit})
+	rows, err := r.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("question pool repo list ids using image: %w", err)
+	}
+	defer rows.Close()
+
+	var out []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("question pool repo scan id: %w", err)
+		}
+		out = append(out, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("question pool repo rows iteration: %w", err)
+	}
+	return out, nil
 }
 
 func (r *QuestionPoolRepository) ListByIds(ctx context.Context, ids []int64) ([]*questionpool.QuestionPool, error) {
@@ -518,6 +551,7 @@ func ModelToDomainQuestionPool(m *models.QuestionPoolModel) (*questionpool.Quest
 	q.SetOptions(options)
 	q.SetCorrectAnswer(questionpool.CorrectAnswer{OptionIds: answer.OptionIds, Value: answer.Value, Values: answer.Values})
 	q.SetExplanation(m.Explanation)
+	q.SetTtsText(m.TtsText)
 	q.SetQuestionGrade(m.QuestionGrade)
 	q.SetQuestionTopic(m.QuestionTopic)
 	q.SetQuestionLevel(m.QuestionLevel)

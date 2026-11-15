@@ -185,6 +185,22 @@ func (h *Handler) HandleUploadImage(w http.ResponseWriter, r *http.Request) {
 	response.WriteJson(w, res, nil)
 }
 
+// POST /question-pools/images/delete — admin only; {image_key}. Removes an
+// uploaded image no live question uses. Returns {result}.
+func (h *Handler) HandleDeleteImage(w http.ResponseWriter, r *http.Request) {
+	var req dto.DeleteImageReq
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	res, err := h.service.DeleteImage(r.Context(), &req)
+	if err != nil {
+		response.WriteJson(w, nil, err)
+		return
+	}
+	response.WriteJson(w, res, nil)
+}
+
 // POST /question-pools/validate-file — admin only; multipart/form-data with
 // one file part "file" (a .json array of questions). Writes nothing;
 // returns {report}.

@@ -98,7 +98,7 @@
 -- content (text + image_key + correct or not) | the TRUE_FALSE value |
 -- the NUMERIC_INPUT values as a set of reduced numbers ("0.5" = "1/2"),
 -- computed by the application (domain/questionpool.Hash). Option ids, display
--- order, topic, tags, level, sub level and explanation are NOT part of it: the same
+-- order, topic, tags, level, sub level, explanation and tts_text are NOT part of it: the same
 -- question reordered or filed under another topic is still the same
 -- question. uk_live_question_hash keeps one live row per hash.
 --
@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS ma_question_pools (
   options             JSON          DEFAULT NULL,             -- [{"id","text","image_key"?}] in display order; NULL for kinds with no options
   correct_answer      JSON          NOT NULL,                 -- the key, shape per kind: {"option_ids"} / {"value"} / {"values"} (see header); never selected for a child's paper
   explanation         TEXT          DEFAULT NULL,             -- worked solution / why the answer is right, shown after answering
+  tts_text            TEXT          DEFAULT NULL,             -- the stem as the client reads it aloud (text-to-speech), at most 2000 characters; NULL = none; not in question_hash
   question_grade      TINYINT UNSIGNED NOT NULL,              -- 0 = Mẫu giáo, 1..5 = Lớp 1..5
   question_topic      VARCHAR(255)  DEFAULT NULL,             -- curriculum topic, free text (e.g. 'phép cộng')
   question_level      TINYINT UNSIGNED DEFAULT NULL,          -- 0 = easiest .. 9 = hardest; NULL = not rated yet

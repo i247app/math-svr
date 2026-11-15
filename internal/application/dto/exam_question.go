@@ -57,6 +57,10 @@ type ExamOption struct {
 //     the answer away, so it is blanked with the key on a live exam.
 //     QuestionTags are short English labels ("addition"). Both follow the
 //     rules of ma_question_pools (NormalizeExtras).
+//   - TtsText is the stem as the client reads it aloud (text-to-speech):
+//     numbers and symbols written out as words. It gives nothing away, so it
+//     is served on a live exam; trimmed and cut at MaxTtsTextRunes
+//     (NormalizeExtras). Empty = the client has nothing to read.
 //   - QuestionLevel / QuestionSubLevel: the level pair, 0..9 each, on the
 //     scale of ma_question_pools. The prompt asks for them; the server
 //     stamps them (exam.StampQuestionLevels) like question_grade.
@@ -71,6 +75,7 @@ type ExamQuestion struct {
 	CorrectAnswer    *ExamCorrectAnswer `json:"correct_answer,omitempty"`
 	RightAnswerText  string             `json:"right_answer_text,omitempty"`
 	Explanation      string             `json:"explanation,omitempty"`
+	TtsText          string             `json:"tts_text,omitempty"`
 	QuestionTopic    string             `json:"question_topic,omitempty"`
 	QuestionGrade    *int               `json:"question_grade,omitempty"`
 	QuestionLevel    *int               `json:"question_level,omitempty"`
@@ -166,6 +171,7 @@ func (q ExamQuestion) ToShared() Question {
 		Kind:             q.QuestionKind,
 		QuestionTags:     q.QuestionTags,
 		Explanation:      q.Explanation,
+		TtsText:          q.TtsText,
 		ImageKey:         q.QuestionImageKey,
 	}
 	ca := q.CorrectAnswer
@@ -220,6 +226,7 @@ func ExamQuestionFrom(q Question) ExamQuestion {
 		QuestionSubLevel: q.QuestionSubLevel,
 		QuestionTags:     q.QuestionTags,
 		Explanation:      q.Explanation,
+		TtsText:          q.TtsText,
 	}
 	switch q.EffectiveKind() {
 	case KindMultipleChoice:
@@ -341,14 +348,19 @@ func (q *ExamQuestion) NormalizeIDs() {
 }
 
 // NormalizeExtras applies the rules of ma_question_pools to the
-// explanation and the tags, leniently: a model's slip must not fail the
-// round, so the explanation is trimmed and cut at MaxExplanationRunes, and
+// explanation, the tts_text and the tags, leniently: a model's slip must not
+// fail the round, so the explanation and the tts_text are trimmed and cut at
+// MaxExplanationRunes / MaxTtsTextRunes, and
 // tags are trimmed, blanks and repeats dropped, over-long ones dropped and
 // the list cut at MaxTags — where the bank would refuse the question.
 func (q *ExamQuestion) NormalizeExtras() {
 	q.Explanation = strings.TrimSpace(q.Explanation)
 	if r := []rune(q.Explanation); len(r) > questionpool.MaxExplanationRunes {
 		q.Explanation = strings.TrimSpace(string(r[:questionpool.MaxExplanationRunes]))
+	}
+	q.TtsText = strings.TrimSpace(q.TtsText)
+	if r := []rune(q.TtsText); len(r) > questionpool.MaxTtsTextRunes {
+		q.TtsText = strings.TrimSpace(string(r[:questionpool.MaxTtsTextRunes]))
 	}
 	tags := make([]string, 0, len(q.QuestionTags))
 	for _, t := range q.QuestionTags {

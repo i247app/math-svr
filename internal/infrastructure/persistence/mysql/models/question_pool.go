@@ -12,6 +12,7 @@ type QuestionPoolModel struct {
 	Options          *string // JSON [{"id","text","image_key"?}]; NULL for kinds with no options
 	CorrectAnswer    string  // JSON {"option_ids":[...]} or {"value":bool}
 	Explanation      *string
+	TtsText          *string
 	QuestionGrade    int
 	QuestionTopic    *string
 	QuestionLevel    *int

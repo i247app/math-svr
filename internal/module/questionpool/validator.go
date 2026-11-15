@@ -123,7 +123,7 @@ func ValidateUpdateQuestionPool(ctx context.Context, req *dto.UpdateQuestionPool
 		return errs.NewError(ctx, status.QUESTION_POOL_MISSING_ID, nil, errors.New("question_pool_id is required"))
 	}
 	if req.QuestionKind == nil && req.QuestionText == nil && !req.QuestionImageKey.Set && !req.Options.Set &&
-		req.CorrectAnswer == nil && !req.Explanation.Set && req.QuestionGrade == nil && !req.QuestionTopic.Set &&
+		req.CorrectAnswer == nil && !req.Explanation.Set && !req.TtsText.Set && req.QuestionGrade == nil && !req.QuestionTopic.Set &&
 		!req.QuestionLevel.Set && !req.QuestionSubLevel.Set && req.QuestionTags == nil {
 		return errs.NewError(ctx, status.QUESTION_POOL_NOTHING_TO_UPDATE, nil, errors.New("no field to change"))
 	}
@@ -168,6 +168,9 @@ func MergeUpdate(ctx context.Context, stored *domain.QuestionPool, req *dto.Upda
 	}
 	if req.Explanation.Set {
 		item.Explanation = req.Explanation.Value
+	}
+	if req.TtsText.Set {
+		item.TtsText = req.TtsText.Value
 	}
 	if req.QuestionGrade != nil {
 		item.QuestionGrade = req.QuestionGrade
@@ -215,6 +218,7 @@ func itemOf(q *domain.QuestionPool) dto.CreateQuestionPoolItem {
 		Options:          options,
 		CorrectAnswer:    &dto.CorrectAnswerDto{OptionIds: a.OptionIds, Value: a.Value, Values: a.Values},
 		Explanation:      q.Explanation(),
+		TtsText:          q.TtsText(),
 		QuestionGrade:    &grade,
 		QuestionTopic:    q.QuestionTopic(),
 		QuestionLevel:    q.QuestionLevel(),
@@ -293,6 +297,10 @@ func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, [
 	if explanation != nil && utf8.RuneCountInString(*explanation) > domain.MaxExplanationRunes {
 		add(status.QUESTION_POOL_INVALID, "explanation: longer than %d characters", domain.MaxExplanationRunes)
 	}
+	ttsText := trimmedOrNil(item.TtsText)
+	if ttsText != nil && utf8.RuneCountInString(*ttsText) > domain.MaxTtsTextRunes {
+		add(status.QUESTION_POOL_INVALID, "tts_text: longer than %d characters", domain.MaxTtsTextRunes)
+	}
 	topic := trimmedOrNil(item.QuestionTopic)
 	if topic != nil && utf8.RuneCountInString(*topic) > MaxTopicRunes {
 		add(status.QUESTION_POOL_INVALID, "question_topic: longer than %d characters", MaxTopicRunes)
@@ -312,6 +320,7 @@ func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, [
 	q.SetOptions(options)
 	q.SetCorrectAnswer(answer)
 	q.SetExplanation(explanation)
+	q.SetTtsText(ttsText)
 	q.SetQuestionGrade(*item.QuestionGrade)
 	q.SetQuestionTopic(topic)
 	q.SetQuestionLevel(item.QuestionLevel)

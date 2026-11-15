@@ -24,6 +24,7 @@ const (
 // (ma_question_pools) and the exam flow's question rows (ma_questions).
 const (
 	MaxExplanationRunes = 5000
+	MaxTtsTextRunes     = 2000 // tts_text: the spoken form of the stem, as long as question_text may be
 	MaxTags             = 20
 	MaxTagRunes         = 64 // what ix_question_tags (CHAR(64) ARRAY) accepts
 )

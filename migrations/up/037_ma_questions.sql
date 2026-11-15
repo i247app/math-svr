@@ -35,6 +35,11 @@
 --                     (or the bank) wrote it; trimmed, NULL when blank, at
 --                     most 5000 characters — the rule of
 --                     ma_question_pools.explanation
+--   tts_text          the stem as the client reads it aloud (text-to-speech),
+--                     numbers and symbols written as words; trimmed, NULL
+--                     when blank, at most 2000 characters — the rule of
+--                     ma_question_pools.tts_text. Served on a live exam (it
+--                     gives nothing away)
 --   question_tags     JSON ["addition", "mental_math"]: trimmed, blanks and
 --                     repeats dropped, at most 20 of at most 64 characters
 --                     (ma_question_pools.question_tags). NOT NULL with no
@@ -75,6 +80,7 @@ CREATE TABLE IF NOT EXISTS ma_questions (
   options               JSON          NOT NULL,                 -- [{"id","text"}] in canonical order
   correct_answer        JSON          NOT NULL,                 -- {"option_ids"} / {"value"} / {"values"}, as ma_question_pools.correct_answer
   explanation           TEXT          DEFAULT NULL,             -- worked solution / why the answer is right, shown after answering
+  tts_text              TEXT          DEFAULT NULL,             -- the stem read aloud by the client (text-to-speech), as the model (or the bank) wrote it; NULL = none
   question_tags         JSON          NOT NULL,                 -- ["addition", "mental_math"]; always sent, '[]' when none (no DEFAULT, as ma_question_pools)
   question_topic        VARCHAR(255)  DEFAULT NULL,             -- curriculum topic as written by the model
   question_grade        TINYINT UNSIGNED DEFAULT NULL,          -- 0 = Mẫu giáo, 1..5 = Lớp 1..5; the band of this question (probes: grade + 1)

@@ -818,6 +818,10 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "File có câu hỏi không hợp lệ, chưa có câu nào được import"
 	case QUESTION_POOL_DELETE_FILTER_REQUIRED:
 		return "Vui lòng chọn ít nhất một bộ lọc cho các câu hỏi cần xoá"
+	case QUESTION_POOL_IMAGE_IN_USE:
+		return "Ảnh đang được câu hỏi sử dụng, không thể xoá"
+	case QUESTION_POOL_IMAGE_DELETE_FAILED:
+		return "Không xoá được ảnh"
 
 	default:
 		return ""

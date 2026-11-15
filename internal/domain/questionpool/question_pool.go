@@ -18,6 +18,7 @@ type QuestionPool struct {
 	options          []Option // nil for a kind with no options
 	correctAnswer    CorrectAnswer
 	explanation      *string
+	ttsText          *string // text read aloud by the client (TTS); nil = none
 	questionGrade    int
 	questionTopic    *string
 	questionLevel    *int // 0..9, nil = not rated
@@ -54,6 +55,8 @@ func (q *QuestionPool) CorrectAnswer() CorrectAnswer     { return q.correctAnswe
 func (q *QuestionPool) SetCorrectAnswer(a CorrectAnswer) { q.correctAnswer = a }
 func (q *QuestionPool) Explanation() *string             { return q.explanation }
 func (q *QuestionPool) SetExplanation(s *string)         { q.explanation = s }
+func (q *QuestionPool) TtsText() *string                 { return q.ttsText }
+func (q *QuestionPool) SetTtsText(s *string)             { q.ttsText = s }
 func (q *QuestionPool) QuestionGrade() int               { return q.questionGrade }
 func (q *QuestionPool) SetQuestionGrade(g int)           { q.questionGrade = g }
 func (q *QuestionPool) QuestionTopic() *string           { return q.questionTopic }

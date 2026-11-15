@@ -88,6 +88,9 @@ type IRepository interface {
 	// soft-deleted, in one DELETE, and returns how many. An empty filter
 	// fails with ErrEmptyFilter and deletes nothing.
 	ForceDeleteByFilter(ctx context.Context, filter ListQuestionPoolsFilter) (int64, error)
+	// ListIdsUsingImage returns up to limit live questions whose
+	// question_image_key or one of whose options[].image_key is key.
+	ListIdsUsingImage(ctx context.Context, key string, limit int) ([]int64, error)
 	// ListByIds returns the live rows among ids, in no particular order.
 	ListByIds(ctx context.Context, ids []int64) ([]*QuestionPool, error)
 	// FindLiveHashes returns which of hashes a live row already holds, so a

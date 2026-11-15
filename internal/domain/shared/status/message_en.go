@@ -818,6 +818,10 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "The file has invalid questions; nothing was imported"
 	case QUESTION_POOL_DELETE_FILTER_REQUIRED:
 		return "Please choose at least one filter for the questions to delete"
+	case QUESTION_POOL_IMAGE_IN_USE:
+		return "The image is still used by a question"
+	case QUESTION_POOL_IMAGE_DELETE_FAILED:
+		return "Could not delete the image"
 
 	default:
 		return ""

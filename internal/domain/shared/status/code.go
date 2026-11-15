@@ -555,4 +555,9 @@ const (
 	// QUESTION_POOL_DELETE_FILTER_REQUIRED: a delete by filter named no
 	// filter; refused so one call cannot wipe the whole bank.
 	QUESTION_POOL_DELETE_FILTER_REQUIRED StatusCode = 14420
+	// QUESTION_POOL_IMAGE_IN_USE: images/delete named a key a live question
+	// still shows (stem or option image).
+	QUESTION_POOL_IMAGE_IN_USE StatusCode = 14421
+	// QUESTION_POOL_IMAGE_DELETE_FAILED: storage refused the delete.
+	QUESTION_POOL_IMAGE_DELETE_FAILED StatusCode = 14422
 )

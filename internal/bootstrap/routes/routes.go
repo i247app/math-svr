@@ -296,6 +296,7 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /question-pools/force-delete", questionPoolHandler.HandleForceDeleteQuestionPool, adminOrApiKeyMiddleware)
 		reg("POST /question-pools/force-delete-by-filter", questionPoolHandler.HandleForceDeleteQuestionPools, adminOrApiKeyMiddleware)
 		reg("POST /question-pools/images/upload", questionPoolHandler.HandleUploadImage, adminOrApiKeyMiddleware)
+		reg("POST /question-pools/images/delete", questionPoolHandler.HandleDeleteImage, adminOrApiKeyMiddleware)
 		reg("POST /question-pools/validate-file", questionPoolHandler.HandleValidateFile, adminOrApiKeyMiddleware)
 		reg("POST /question-pools/import-file", questionPoolHandler.HandleImportFile, adminOrApiKeyMiddleware)
 	}

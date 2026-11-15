@@ -34,6 +34,7 @@ type Question struct {
 	options        []Option
 	correctAnswer  questionpool.CorrectAnswer
 	explanation    *string
+	ttsText        *string // text read aloud by the client (TTS); nil = none
 	questionTags   []string
 	questionTopic  *string
 	questionGrade  *int
@@ -71,6 +72,8 @@ func (q *Question) CorrectAnswer() questionpool.CorrectAnswer     { return q.cor
 func (q *Question) SetCorrectAnswer(a questionpool.CorrectAnswer) { q.correctAnswer = a }
 func (q *Question) Explanation() *string                          { return q.explanation }
 func (q *Question) SetExplanation(s *string)                      { q.explanation = s }
+func (q *Question) TtsText() *string                              { return q.ttsText }
+func (q *Question) SetTtsText(s *string)                          { q.ttsText = s }
 func (q *Question) QuestionTags() []string                        { return q.questionTags }
 func (q *Question) SetQuestionTags(t []string)                    { q.questionTags = t }
 func (q *Question) QuestionTopic() *string                        { return q.questionTopic }

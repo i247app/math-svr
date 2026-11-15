@@ -252,6 +252,7 @@ func toExamQuestion(q *questionpool.QuestionPool, number int) (dto.Question, err
 		QuestionTopic:  utils.DerefString(q.QuestionTopic()),
 		QuestionTags:   q.QuestionTags(),
 		Explanation:    utils.DerefString(q.Explanation()),
+		TtsText:        utils.DerefString(q.TtsText()),
 		Kind:           q.QuestionKind().String(),
 		// The bank row's own rating (nil = not rated): a bank set is not
 		// ramped like a model-written one.

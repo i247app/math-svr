@@ -90,6 +90,7 @@ type Question struct {
 	QuestionSubLevel   *int           `json:"question_sub_level,omitempty"`
 	QuestionTags       []string       `json:"question_tags,omitempty"`
 	Explanation        string         `json:"explanation,omitempty"`
+	TtsText            string         `json:"tts_text,omitempty"`
 
 	// ImageKey is the S3 key of an image shown with the stem (question bank
 	// sets only).

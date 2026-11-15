@@ -40,6 +40,7 @@ type CreateQuestionPoolItem struct {
 	Options          []OptionDto       `json:"options,omitempty"`
 	CorrectAnswer    *CorrectAnswerDto `json:"correct_answer"`
 	Explanation      *string           `json:"explanation,omitempty"`
+	TtsText          *string           `json:"tts_text,omitempty"`
 	QuestionGrade    *int              `json:"question_grade"`
 	QuestionTopic    *string           `json:"question_topic,omitempty"`
 	QuestionLevel    *int              `json:"question_level,omitempty"`
@@ -94,6 +95,7 @@ type QuestionPoolResponse struct {
 	Options          []OptionDto      `json:"options"`
 	CorrectAnswer    CorrectAnswerDto `json:"correct_answer"`
 	Explanation      *string          `json:"explanation"`
+	TtsText          *string          `json:"tts_text"`
 	QuestionGrade    int              `json:"question_grade"`
 	QuestionTopic    *string          `json:"question_topic"`
 	QuestionLevel    *int             `json:"question_level"`
@@ -133,6 +135,7 @@ func QuestionPoolDomainToResponse(q *domain.QuestionPool) *QuestionPoolResponse 
 		Options:          options,
 		CorrectAnswer:    CorrectAnswerDto{OptionIds: a.OptionIds, Value: a.Value, Values: a.Values},
 		Explanation:      q.Explanation(),
+		TtsText:          q.TtsText(),
 		QuestionGrade:    q.QuestionGrade(),
 		QuestionTopic:    q.QuestionTopic(),
 		QuestionLevel:    q.QuestionLevel(),
@@ -200,6 +203,7 @@ type UpdateQuestionPoolReq struct {
 	Options          Opt[[]OptionDto]  `json:"options"`
 	CorrectAnswer    *CorrectAnswerDto `json:"correct_answer"`
 	Explanation      Opt[string]       `json:"explanation"`
+	TtsText          Opt[string]       `json:"tts_text"`
 	QuestionGrade    *int              `json:"question_grade"`
 	QuestionTopic    Opt[string]       `json:"question_topic"`
 	QuestionLevel    Opt[int]          `json:"question_level"`
@@ -234,6 +238,16 @@ type ForceDeleteQuestionPoolsReq struct {
 	QuestionGrade    *int `json:"question_grade,omitempty"`
 	QuestionLevel    *int `json:"question_level,omitempty"`
 	QuestionSubLevel *int `json:"question_sub_level,omitempty"`
+}
+
+// DeleteImageReq is the body of /question-pools/images/delete.
+type DeleteImageReq struct {
+	ImageKey string `json:"image_key"`
+}
+
+// DeleteImageRes is what /question-pools/images/delete returns.
+type DeleteImageRes struct {
+	Result string `json:"result"`
 }
 
 // ForceDeleteQuestionPoolsRes says how many rows were removed.

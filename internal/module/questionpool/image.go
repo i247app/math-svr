@@ -96,7 +96,61 @@ func (s *Service) UploadImage(ctx context.Context, file ImageFile) (*dto.UploadI
 			fmt.Errorf("question_pool: storage returned key %q, want one under %s", keyOf(uploaded), ImageKeyPrefix))
 	}
 	logger.From(ctx).Infof("question_pool.image.uploaded admin_uid=%d key=%s bytes=%d", sctx.UID(ctx), uploaded.Key, len(data))
-	return &dto.UploadImageRes{ImageKey: uploaded.Key, ImageUrl: s.presign(ctx, 0, &uploaded.Key)}, nil
+
+	res := &dto.UploadImageRes{
+		ImageKey: uploaded.Key,
+		ImageUrl: s.presign(ctx, 0, &uploaded.Key),
+	}
+	return res, nil
+}
+
+// imageInUseShown caps the question ids an "image in use" refusal names.
+const imageInUseShown = 20
+
+// DeleteImage removes an uploaded image from storage, refusing a key a live
+// question still shows (stem or option image). Soft-deleted questions do not
+// count: nothing serves them again.
+//
+// Idempotent: a key with no object succeeds too. S3 DeleteObject answers a
+// missing key with success, and the state the admin asks for ("this key is
+// gone") holds either way; checking first would cost a HeadObject and still
+// race a concurrent delete, and a retried call after a timeout must not fail.
+//
+// ponytail: the usage check and the delete are not atomic — a create naming
+// the key between the two keeps a dangling key (create checks the key's
+// shape, never the object). Admin-only and rare; lock if it ever matters.
+func (s *Service) DeleteImage(ctx context.Context, req *dto.DeleteImageReq) (*dto.DeleteImageRes, error) {
+	if err := requireAdminGate(ctx); err != nil {
+		return nil, err
+	}
+	key := req.ImageKey
+	if key == "" {
+		return nil, errs.NewError(ctx, status.QUESTION_POOL_INVALID_IMAGE_KEY, nil, errors.New("image_key is required"))
+	}
+	if msg := checkImageKey(&key); msg != "" {
+		return nil, errs.NewError(ctx, status.QUESTION_POOL_INVALID_IMAGE_KEY, nil, fmt.Errorf("image_key: %s", msg))
+	}
+	if s.storage == nil {
+		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil, ErrStorageOff)
+	}
+	ids, err := s.repo.ListIdsUsingImage(ctx, key, imageInUseShown)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if len(ids) > 0 {
+		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_IN_USE, nil,
+			fmt.Errorf("image_key %s is used by question_pool_id %v (first %d shown)", key, ids, imageInUseShown))
+	}
+	if err := s.storage.HandleDelete(ctx, &storage.DeleteFileRequest{Key: key}); err != nil {
+		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_DELETE_FAILED, nil, err)
+	}
+	logger.From(ctx).Infof("question_pool.image.deleted admin_uid=%d key=%s", sctx.UID(ctx), key)
+
+	res := &dto.DeleteImageRes{
+		Result: "Delete successfully",
+	}
+
+	return res, nil
 }
 
 // readImage reads at most MaxImageBytes+1 bytes and returns them with the
