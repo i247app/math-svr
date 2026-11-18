@@ -2,7 +2,9 @@ package dto
 
 import (
 	"encoding/json"
+	"slices"
 	"sort"
+	"strings"
 
 	domain "math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
@@ -343,13 +345,17 @@ type ListExamSessionsRes struct {
 // not ship the key, or the client holds the answers to the paper it is
 // currently sitting. A submitted one does, so the review screen can mark
 // each question.
-func AttemptToResponse(a *domain.ExamLink, e *domain.ExamPool, includeAnswerKey bool) *ExamResponse {
+//
+// lang is the language the child asked for (metadata.language): each
+// question is served in it when it has that translation, else in its own
+// language (each question's lang says which).
+func AttemptToResponse(a *domain.ExamLink, e *domain.ExamPool, includeAnswerKey bool, lang enum.LanguageType) *ExamResponse {
 	if a == nil {
 		return nil
 	}
 
 	res := &ExamResponse{
-		Language:  enum.LanguageTypeVietnamese,
+		Language:  LanguageOf(lang),
 		ElinkID:   a.ElinkId(),
 		ExamID:    a.ExamId(),
 		ProfileID: a.ProfileId(),
@@ -374,7 +380,7 @@ func AttemptToResponse(a *domain.ExamLink, e *domain.ExamPool, includeAnswerKey 
 		res.NumQues = e.ReqNumQues()
 		// The sitting's own ordering, not the stored one: two children
 		// served the same cached set each see their own arrangement.
-		res.Questions = servedQuestions(e.QuestionsJson(), shuffleOf(a), includeAnswerKey)
+		res.Questions = servedQuestions(e.QuestionsJson(), shuffleOf(a), includeAnswerKey, lang)
 	}
 
 	if total := a.ResTotalQuestions(); total != nil {
@@ -391,12 +397,12 @@ func AttemptToResponse(a *domain.ExamLink, e *domain.ExamPool, includeAnswerKey 
 // AttemptListToResponse maps a page of attempts against the question sets
 // hydrated alongside them. The answer key is exposed only for submitted
 // rows, so a history list cannot leak the answers to an exam still open.
-func AttemptListToResponse(attempts []*domain.ExamLink, examPools map[int64]*domain.ExamPool) []*ExamResponse {
+func AttemptListToResponse(attempts []*domain.ExamLink, examPools map[int64]*domain.ExamPool, lang enum.LanguageType) []*ExamResponse {
 	out := make([]*ExamResponse, 0, len(attempts))
 	for _, a := range attempts {
 		e := examPools[a.ExamId()]
 		submitted := a.ElinkStatus() != nil && *a.ElinkStatus() == "SUBMITTED"
-		res := AttemptToResponse(a, e, submitted)
+		res := AttemptToResponse(a, e, submitted, lang)
 		// A list renders cards, not papers: drop the questions blob so a
 		// twenty-row page does not ship twenty question sets.
 		res.Questions = nil
@@ -415,7 +421,11 @@ func AttemptListToResponse(attempts []*domain.ExamLink, examPools map[int64]*dom
 // examPools supplies the question sets the sittings were drawn from, keyed
 // by exam_id, so every row can carry its full option list. Each set is
 // parsed once, however many rows point at it.
-func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*Shuffle, examPools map[int64]*domain.ExamPool) []ExamAnswerDetail {
+//
+// lang localizes each row from its question set (stem, explanation, topic,
+// option texts, and the right / child answer texts of a choice question);
+// a row whose question has no translation for it keeps the logged text.
+func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*Shuffle, examPools map[int64]*domain.ExamPool, lang enum.LanguageType) []ExamAnswerDetail {
 	questions := newQuestionIndex(examPools)
 
 	out := make([]ExamAnswerDetail, 0, len(details))
@@ -423,10 +433,16 @@ func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*Sh
 		sh := shuffles[d.ElinkId()]
 
 		var (
-			answers  []AnswerChoice
-			imageKey string
+			answers    []AnswerChoice
+			imageKey   string
+			translated *ExamQuestion
 		)
 		if q, ok := questions.lookup(d.ExamId(), d.QuestionNumber()); ok {
+			if _, has := q.Translations[lang.Base()]; has && lang.Base() != LanguageOf(q.Language) {
+				l := ExamQuestionFrom(q).Localized(lang)
+				translated = &l
+				q = l.ToShared()
+			}
 			answers = sh.ServedAnswers(d.QuestionNumber(), q)
 			imageKey = q.ImageKey
 		}
@@ -453,6 +469,9 @@ func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*Sh
 			IsCorrect:        d.IsCorrect(),
 			QuestionKind:     d.QuestionKind(),
 		}
+		if translated != nil {
+			localizeDetail(&detail, translated, answers)
+		}
 		out = append(out, detail)
 	}
 
@@ -465,6 +484,35 @@ func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*Sh
 		return out[i].QuestionNumber < out[j].QuestionNumber
 	})
 	return out
+}
+
+// localizeDetail lays a translated question over a logged answer row. The
+// answer texts of a choice question are the texts of the options the ids
+// name (in served order); a numeric one keeps its numbers.
+func localizeDetail(d *ExamAnswerDetail, q *ExamQuestion, answers []AnswerChoice) {
+	d.QuestionText = &q.QuestionText
+	if q.Explanation != "" {
+		d.Explanation = &q.Explanation
+	}
+	if q.QuestionTopic != "" {
+		d.QuestionTopic = &q.QuestionTopic
+	}
+	if q.QuestionKind == KindNumericInput {
+		return
+	}
+	textsOf := func(ids []string) string {
+		var texts []string
+		for _, a := range answers {
+			if slices.Contains(ids, a.Label) {
+				texts = append(texts, a.Content)
+			}
+		}
+		return strings.Join(texts, ContentSeparator)
+	}
+	d.RightAnswerText = textsOf(d.RightOptionIDs)
+	if len(d.ChildOptionIDs) > 0 {
+		d.ChildAnswerText = textsOf(d.ChildOptionIDs)
+	}
 }
 
 // questionIndex parses each question set lazily and at most once, then
@@ -591,7 +639,7 @@ func ExamSessionToResponse(row *domain.ExamSession) *ExamSessionResponse {
 // An unfinished sitting ships with its answer key, the same as the
 // hand-out response does — the two must agree, or a child resuming an
 // exam would see a different paper than the one they started.
-func JourneysToResponse(journeys []domain.JourneyStats, examPools map[int64]*domain.ExamPool) []ExamSessionResponse {
+func JourneysToResponse(journeys []domain.JourneyStats, examPools map[int64]*domain.ExamPool, lang enum.LanguageType) []ExamSessionResponse {
 	out := make([]ExamSessionResponse, 0, len(journeys))
 	for _, j := range journeys {
 		s := ExamSessionToResponse(j.Journey)
@@ -600,7 +648,7 @@ func JourneysToResponse(journeys []domain.JourneyStats, examPools map[int64]*dom
 		}
 		s.Practice = ExamSessionToResponse(j.Practice)
 		for _, a := range j.InProgress {
-			s.InProgressExams = append(s.InProgressExams, AttemptToResponse(a, examPools[a.ExamId()], true))
+			s.InProgressExams = append(s.InProgressExams, AttemptToResponse(a, examPools[a.ExamId()], true, lang))
 		}
 		out = append(out, *s)
 	}
@@ -614,15 +662,18 @@ func JourneysToResponse(journeys []domain.JourneyStats, examPools map[int64]*dom
 // this sitting was served, and — when the key must stay hidden — blanks
 // it field by field rather than dropping the question: the child still
 // needs the stem and the options to answer.
-func servedQuestions(raw string, sh *Shuffle, includeAnswerKey bool) []ExamQuestion {
-	if raw == "" {
-		return nil
-	}
-	var stored []ExamQuestion
-	if err := json.Unmarshal([]byte(raw), &stored); err != nil || CheckSet(stored) != nil {
+//
+// Each question is served in lang (Localized), so no translation leaves
+// here: a child's paper never ships the translated explanations.
+func servedQuestions(raw string, sh *Shuffle, includeAnswerKey bool, lang enum.LanguageType) []ExamQuestion {
+	stored := storedQuestions(raw)
+	if stored == nil {
 		return nil
 	}
 	out := FromSharedQuestions(sh.Apply(ToSharedQuestions(stored)))
+	for i := range out {
+		out[i] = out[i].Localized(lang)
+	}
 	if !includeAnswerKey {
 		for i := range out {
 			out[i].CorrectAnswer = nil
@@ -630,6 +681,22 @@ func servedQuestions(raw string, sh *Shuffle, includeAnswerKey bool) []ExamQuest
 		}
 	}
 	return out
+}
+
+// storedQuestions decodes a stored set as it is, translations included (the
+// admin view), nil when it is empty or unusable.
+func storedQuestions(raw string) []ExamQuestion {
+	if raw == "" {
+		return nil
+	}
+	var stored []ExamQuestion
+	if err := json.Unmarshal([]byte(raw), &stored); err != nil || CheckSet(stored) != nil {
+		return nil
+	}
+	for i := range stored {
+		stored[i].Language = LanguageOf(stored[i].Language)
+	}
+	return stored
 }
 
 // ExamProgressReq is the request for the learning-progress chart.
@@ -927,7 +994,7 @@ func ExamPoolToResponse(e *domain.ExamPool, withQuestions bool) *ExamPoolRespons
 		CreateDt:      mtime.NewTime(e.CreateDt()),
 	}
 	if withQuestions {
-		res.Questions = servedQuestions(e.QuestionsJson(), nil, true)
+		res.Questions = storedQuestions(e.QuestionsJson())
 	}
 	return res
 }

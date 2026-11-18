@@ -12,8 +12,17 @@ import (
 
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
+
+// requestLanguage is the language the client asked for (metadata.language,
+// short code), "" when it sent none or an unknown one: questions are then
+// served in their own language.
+func requestLanguage(ctx context.Context) enum.LanguageType {
+	return enum.LanguageType(metadata.GetLanguage(ctx)).Base()
+}
 
 // maxExamTextLen mirrors the VARCHAR(255) limit on ma_exam_pools.title
 // and short_text. The prompt asks for far less; this is a backstop

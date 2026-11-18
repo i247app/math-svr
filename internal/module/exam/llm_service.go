@@ -156,6 +156,9 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		q.QuestionKind = dto.KindSingleChoice
 		q.NormalizeIDs()
 		q.NormalizeExtras()
+		if dropped := q.NormalizeTranslations(); len(dropped) > 0 {
+			log.Warnf("exam.llm.translation_dropped q=%d langs=%v", q.QuestionNumber, dropped)
+		}
 		if q.ReconcileKey() {
 			log.Warnf("exam.llm.key_moved_to_answer_text q=%d option=%s", q.QuestionNumber, q.CorrectAnswer.OptionIDs[0])
 		}

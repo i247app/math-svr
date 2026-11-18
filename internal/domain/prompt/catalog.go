@@ -42,6 +42,7 @@ var examGenerationKeys = []string{
 	`"question_text"`, `"options"`, `"id"`, `"text"`,
 	`"correct_answer"`, `"option_ids"`, `"right_answer_text"`, `"explanation"`, `"tts_text"`, `"question_topic"`,
 	`"question_tags"`, `"question_grade"`, `"question_level"`, `"question_sub_level"`,
+	`"lang"`, `"translations"`,
 }
 
 var specs = map[Code]Spec{

@@ -83,6 +83,8 @@ WARP.md
 *_test.go
 testdata/
 
+sql/
+
 # go workspace files
 go.work
 go.work.sum

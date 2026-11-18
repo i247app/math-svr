@@ -81,6 +81,22 @@ type ExamQuestion struct {
 	QuestionLevel    *int               `json:"question_level,omitempty"`
 	QuestionSubLevel *int               `json:"question_sub_level,omitempty"`
 	QuestionTags     []string           `json:"question_tags,omitempty"`
+	// Translations holds the question's text in other languages (keyed
+	// "vi" / "en", never Language itself). Stored and shown to admins; a
+	// child's paper is served in one language (Localized) without it.
+	Translations map[enum.LanguageType]ExamTranslation `json:"translations,omitempty"`
+}
+
+// ExamTranslation is a question's text in another language: the shape of
+// one entry of ma_question_pools.translations. Options carry id + text only
+// and name the question's own option ids; ids, images, order and the key
+// stay on the question.
+type ExamTranslation struct {
+	QuestionText  string       `json:"question_text"`
+	TtsText       string       `json:"tts_text,omitempty"`
+	Explanation   string       `json:"explanation,omitempty"`
+	QuestionTopic string       `json:"question_topic,omitempty"`
+	Options       []ExamOption `json:"options,omitempty"`
 }
 
 // ExamCorrectAnswer is the key of one question, the shape of
@@ -173,6 +189,8 @@ func (q ExamQuestion) ToShared() Question {
 		Explanation:      q.Explanation,
 		TtsText:          q.TtsText,
 		ImageKey:         q.QuestionImageKey,
+		Language:         q.Language,
+		Translations:     q.Translations,
 	}
 	ca := q.CorrectAnswer
 	if ca == nil {
@@ -214,7 +232,8 @@ func (q ExamQuestion) optionText(id string) string {
 // ExamQuestionFrom converts back out to the wire shape.
 func ExamQuestionFrom(q Question) ExamQuestion {
 	out := ExamQuestion{
-		Language:         enum.LanguageTypeVietnamese,
+		Language:         LanguageOf(q.Language),
+		Translations:     q.Translations,
 		QuestionNumber:   q.QuestionNumber,
 		QuestionKind:     q.Kind,
 		QuestionText:     q.QuestionName,
@@ -374,6 +393,124 @@ func (q *ExamQuestion) NormalizeExtras() {
 		tags = tags[:questionpool.MaxTags]
 	}
 	q.QuestionTags = tags
+}
+
+// LanguageOf is a stored question's language: a set written before the
+// field existed states none and is Vietnamese.
+func LanguageOf(l enum.LanguageType) enum.LanguageType {
+	if b := l.Base(); b != "" {
+		return b
+	}
+	return enum.LanguageTypeVietnamese
+}
+
+// NormalizeTranslations applies the bank's translation rules to a
+// model-written question, leniently (a slip must not fail the round): the
+// language is read as a short code (unknown = Vietnamese); an entry keyed by
+// an unknown language or the question's own, or with no question_text, is
+// dropped; text is trimmed and cut at the bank's limits; translated options
+// that are not exactly the question's ids (after NormalizeIDs' lower-casing)
+// are dropped, so the base option text shows instead. It returns the
+// languages it dropped, for the caller to log.
+func (q *ExamQuestion) NormalizeTranslations() []string {
+	q.Language = LanguageOf(q.Language)
+	var dropped []string
+	if len(q.Translations) == 0 {
+		q.Translations = nil
+		return nil
+	}
+	out := make(map[enum.LanguageType]ExamTranslation, len(q.Translations))
+	for lang, t := range q.Translations {
+		key := lang.Base()
+		if key == "" || key == q.Language || key != lang {
+			dropped = append(dropped, string(lang))
+			continue
+		}
+		t.QuestionText = cut(t.QuestionText, questionpool.MaxTtsTextRunes)
+		if t.QuestionText == "" {
+			dropped = append(dropped, string(lang))
+			continue
+		}
+		t.TtsText = cut(t.TtsText, questionpool.MaxTtsTextRunes)
+		t.Explanation = cut(t.Explanation, questionpool.MaxExplanationRunes)
+		t.QuestionTopic = cut(t.QuestionTopic, 255)
+		for i := range t.Options {
+			t.Options[i] = ExamOption{ID: strings.ToLower(strings.TrimSpace(t.Options[i].ID)), Text: cut(t.Options[i].Text, 500)}
+		}
+		if !sameOptionIDs(q.Options, t.Options) {
+			t.Options = nil
+		}
+		out[key] = t
+	}
+	q.Translations = nil
+	if len(out) > 0 {
+		q.Translations = out
+	}
+	slices.Sort(dropped)
+	return dropped
+}
+
+func cut(s string, max int) string {
+	s = strings.TrimSpace(s)
+	if r := []rune(s); len(r) > max {
+		s = strings.TrimSpace(string(r[:max]))
+	}
+	return s
+}
+
+// sameOptionIDs reports whether tr names exactly the ids of base, each once.
+func sameOptionIDs(base, tr []ExamOption) bool {
+	if len(base) != len(tr) {
+		return false
+	}
+	seen := make(map[string]bool, len(tr))
+	for _, o := range tr {
+		if seen[o.ID] || !slices.ContainsFunc(base, func(b ExamOption) bool { return b.ID == o.ID }) {
+			return false
+		}
+		seen[o.ID] = true
+	}
+	return true
+}
+
+// Localized is the question as served in lang: a translation's text over
+// the base fields (option text matched by id, so the served order is kept),
+// Language set to lang, and Translations dropped either way — a child's
+// paper carries one language. A field the translation leaves empty keeps the
+// base text, except tts_text: base text read by a voice of another language
+// is wrong, so it is left empty. No translation for lang (or lang "" or the
+// question's own) = the base question.
+func (q ExamQuestion) Localized(lang enum.LanguageType) ExamQuestion {
+	t, ok := q.Translations[lang.Base()]
+	q.Translations = nil
+	q.Language = LanguageOf(q.Language)
+	if !ok {
+		return q
+	}
+	q.Language = lang.Base()
+	q.QuestionText = orBase(t.QuestionText, q.QuestionText)
+	q.TtsText = orBase(t.TtsText, q.TtsText)
+	q.Explanation = orBase(t.Explanation, q.Explanation)
+	q.QuestionTopic = orBase(t.QuestionTopic, q.QuestionTopic)
+	if len(t.Options) > 0 {
+		textOf := make(map[string]string, len(t.Options))
+		for _, o := range t.Options {
+			textOf[o.ID] = o.Text
+		}
+		opts := slices.Clone(q.Options)
+		for i := range opts {
+			opts[i].Text = orBase(textOf[opts[i].ID], opts[i].Text)
+		}
+		q.Options = opts
+	}
+	return q
+}
+
+func orBase(tr, base string) string {
+	if tr == "" {
+		return base
+	}
+	return tr
 }
 
 // ReconcileKey makes a model-written single-choice key agree with the

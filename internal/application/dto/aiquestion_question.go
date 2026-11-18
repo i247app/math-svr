@@ -13,6 +13,8 @@ package dto
 import (
 	"slices"
 	"strings"
+
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // AnswerChoice is one option in a multiple-choice question. Label is the
@@ -99,6 +101,11 @@ type Question struct {
 	Kind           string   `json:"question_kind,omitempty"`
 	RightOptionIDs []string `json:"right_option_ids,omitempty"`
 	RightValues    []string `json:"right_values,omitempty"`
+
+	// Language / Translations ride along from ExamQuestion untouched (exam
+	// sets only): the language of the text above and the other ones.
+	Language     enum.LanguageType                     `json:"lang,omitempty"`
+	Translations map[enum.LanguageType]ExamTranslation `json:"translations,omitempty"`
 }
 
 // Answer kinds. They carry the same strings as the question bank's kinds

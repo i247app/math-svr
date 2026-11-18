@@ -30,6 +30,19 @@ type CorrectAnswerDto struct {
 	Values    []string `json:"values,omitempty"`
 }
 
+// TranslationDto is a question's text in another language (key of the
+// translations map: "vi" or "en", never the question's own
+// question_language). Only text: options name the question's own option ids
+// (every one, each once) with text and no image; a question without options
+// takes none. Ids, images, order and the key stay on the question.
+type TranslationDto struct {
+	QuestionText  string      `json:"question_text"`
+	TtsText       *string     `json:"tts_text,omitempty"`
+	Explanation   *string     `json:"explanation,omitempty"`
+	QuestionTopic *string     `json:"question_topic,omitempty"`
+	Options       []OptionDto `json:"options,omitempty"`
+}
+
 // CreateQuestionItem is one question an admin sends. Pointer fields tell
 // "absent" from "zero" for the validator. Source, status, verified_count
 // and ids are set by the server; there is no field for them.
@@ -46,6 +59,10 @@ type CreateQuestionPoolItem struct {
 	QuestionLevel    *int              `json:"question_level,omitempty"`
 	QuestionSubLevel *int              `json:"question_sub_level,omitempty"`
 	QuestionTags     []string          `json:"question_tags,omitempty"`
+	// QuestionLanguage is the language of the text fields above, "vi"
+	// (default) or "en".
+	QuestionLanguage *string                   `json:"question_language,omitempty"`
+	Translations     map[string]TranslationDto `json:"translations,omitempty"`
 }
 
 // CreateQuestionsReq creates every question or none.
@@ -101,14 +118,17 @@ type QuestionPoolResponse struct {
 	QuestionLevel    *int             `json:"question_level"`
 	QuestionSubLevel *int             `json:"question_sub_level"`
 	QuestionTags     []string         `json:"question_tags"`
-	QuestionSource   string           `json:"question_source"`
-	QuestionStatus   *string          `json:"question_status"`
-	VerifiedCount    int              `json:"verified_count"`
-	Note             *string          `json:"note,omitempty"`
-	CreateID         *int64           `json:"create_id"`
-	CreateDt         mtime.MathTime   `json:"create_dt"`
-	ModifyID         *int64           `json:"modify_id"`
-	ModifyDt         mtime.MathTime   `json:"modify_dt"`
+	QuestionLanguage string           `json:"question_language"`
+	// Translations is null when the question has none.
+	Translations   map[string]TranslationDto `json:"translations"`
+	QuestionSource string                    `json:"question_source"`
+	QuestionStatus *string                   `json:"question_status"`
+	VerifiedCount  int                       `json:"verified_count"`
+	Note           *string                   `json:"note,omitempty"`
+	CreateID       *int64                    `json:"create_id"`
+	CreateDt       mtime.MathTime            `json:"create_dt"`
+	ModifyID       *int64                    `json:"modify_id"`
+	ModifyDt       mtime.MathTime            `json:"modify_dt"`
 }
 
 func QuestionPoolDomainToResponse(q *domain.QuestionPool) *QuestionPoolResponse {
@@ -141,6 +161,8 @@ func QuestionPoolDomainToResponse(q *domain.QuestionPool) *QuestionPoolResponse 
 		QuestionLevel:    q.QuestionLevel(),
 		QuestionSubLevel: q.QuestionSubLevel(),
 		QuestionTags:     tags,
+		QuestionLanguage: string(q.QuestionLanguage()),
+		Translations:     TranslationsToDto(q.Translations()),
 		QuestionSource:   string(q.QuestionSource()),
 		QuestionStatus:   q.QuestionStatus(),
 		VerifiedCount:    q.VerifiedCount(),
@@ -150,6 +172,35 @@ func QuestionPoolDomainToResponse(q *domain.QuestionPool) *QuestionPoolResponse 
 		ModifyID:         q.ModifyId(),
 		ModifyDt:         mtime.NewTime(q.ModifyDt()),
 	}
+}
+
+// TranslationsToDto is the wire form of a question's translations, nil for
+// none. A field never translated is absent (omitempty).
+func TranslationsToDto(in domain.Translations) map[string]TranslationDto {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]TranslationDto, len(in))
+	for lang, t := range in {
+		d := TranslationDto{
+			QuestionText:  t.QuestionText,
+			TtsText:       strOrNil(t.TtsText),
+			Explanation:   strOrNil(t.Explanation),
+			QuestionTopic: strOrNil(t.QuestionTopic),
+		}
+		for _, o := range t.Options {
+			d.Options = append(d.Options, OptionDto{Id: o.Id, Text: o.Text})
+		}
+		out[string(lang)] = d
+	}
+	return out
+}
+
+func strOrNil(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func QuestionPoolDomainListToResponse(qs []*domain.QuestionPool) []*QuestionPoolResponse {
@@ -209,6 +260,9 @@ type UpdateQuestionPoolReq struct {
 	QuestionLevel    Opt[int]          `json:"question_level"`
 	QuestionSubLevel Opt[int]          `json:"question_sub_level"`
 	QuestionTags     *[]string         `json:"question_tags"`
+	QuestionLanguage *string           `json:"question_language"`
+	// Translations replaces every translation; null or {} clears them.
+	Translations Opt[map[string]TranslationDto] `json:"translations"`
 }
 
 // MarkQuestionStatusReq sets one question's review state.
@@ -273,6 +327,7 @@ type ImportQuestionPoolError struct {
 // live question of the pool already holds the content).
 type ImportQuestionPoolDuplicate struct {
 	Index       int    `json:"index"`
+	Name        string `json:"name"`
 	Reason      string `json:"reason"`
 	DuplicateOf *int   `json:"duplicate_of,omitempty"`
 }

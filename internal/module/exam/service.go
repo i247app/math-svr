@@ -399,7 +399,7 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 		log.Infof("exam.resumed.in_tx attempt=%d journey=%d type=%s discarded_new_content=%t",
 			created.Attempt.ElinkId(), utils.DerefInt64(cmd.EsessID), cmd.ExamType, cmd.NewContent != nil)
 		res := &dto.GenerateExamRes{
-			Exam:        dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
+			Exam:        dto.AttemptToResponse(created.Attempt, created.ExamPool, true, requestLanguage(ctx)),
 			Resumed:     true,
 			ExamSession: dto.ExamSessionToResponse(created.ExamSession),
 		}
@@ -413,7 +413,7 @@ func (s *Service) handOut(ctx context.Context, cmd command.GenerateExamCommand, 
 
 	// A live exam never ships the answer key.
 	res := &dto.GenerateExamRes{
-		Exam:        dto.AttemptToResponse(created.Attempt, created.ExamPool, true),
+		Exam:        dto.AttemptToResponse(created.Attempt, created.ExamPool, true, requestLanguage(ctx)),
 		ExamSession: dto.ExamSessionToResponse(created.ExamSession),
 	}
 	s.signExam(ctx, res.Exam)
@@ -448,7 +448,7 @@ func (s *Service) SubmitExam(ctx context.Context, req *dto.SubmitExamReq) (*dto.
 
 	// Submitted: the review screen needs the key to mark each question.
 	res := &dto.SubmitExamRes{
-		Exam:        dto.AttemptToResponse(result.Attempt, examPool, true),
+		Exam:        dto.AttemptToResponse(result.Attempt, examPool, true, requestLanguage(ctx)),
 		ExamSession: dto.ExamSessionToResponse(result.ExamSession),
 	}
 	s.signExam(ctx, res.Exam)
@@ -494,7 +494,7 @@ func (s *Service) ListExams(ctx context.Context, req *dto.ListExamsReq) (*dto.Li
 	}
 
 	res := &dto.ListExamsRes{
-		Exams:      dto.AttemptListToResponse(result.Attempts, result.ExamPools),
+		Exams:      dto.AttemptListToResponse(result.Attempts, result.ExamPools, requestLanguage(ctx)),
 		Pagination: result.Pagination,
 	}
 	return res, nil
@@ -520,7 +520,7 @@ func (s *Service) ListExamSessions(ctx context.Context, req *dto.ListExamSession
 		return nil, err
 	}
 	res := &dto.ListExamSessionsRes{
-		ExamSessions: dto.JourneysToResponse(rows.Journeys, rows.ExamPools),
+		ExamSessions: dto.JourneysToResponse(rows.Journeys, rows.ExamPools, requestLanguage(ctx)),
 		Pagination:   rows.Pagination,
 		Cursor:       rows.Cursor,
 	}

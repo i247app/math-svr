@@ -13,6 +13,8 @@ type QuestionPoolModel struct {
 	CorrectAnswer    string  // JSON {"option_ids":[...]} or {"value":bool}
 	Explanation      *string
 	TtsText          *string
+	QuestionLanguage string
+	Translations     *string // JSON {"<lang>": {...}}; NULL = none
 	QuestionGrade    int
 	QuestionTopic    *string
 	QuestionLevel    *int

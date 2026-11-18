@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -12,6 +13,8 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/questionpool"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/shared/enum"
+	"math-ai.com/math-ai/internal/shared/utils"
 )
 
 // Limits of one /question-pools/create call and of the stored text.
@@ -124,7 +127,8 @@ func ValidateUpdateQuestionPool(ctx context.Context, req *dto.UpdateQuestionPool
 	}
 	if req.QuestionKind == nil && req.QuestionText == nil && !req.QuestionImageKey.Set && !req.Options.Set &&
 		req.CorrectAnswer == nil && !req.Explanation.Set && !req.TtsText.Set && req.QuestionGrade == nil && !req.QuestionTopic.Set &&
-		!req.QuestionLevel.Set && !req.QuestionSubLevel.Set && req.QuestionTags == nil {
+		!req.QuestionLevel.Set && !req.QuestionSubLevel.Set && req.QuestionTags == nil &&
+		req.QuestionLanguage == nil && !req.Translations.Set {
 		return errs.NewError(ctx, status.QUESTION_POOL_NOTHING_TO_UPDATE, nil, errors.New("no field to change"))
 	}
 	return nil
@@ -187,6 +191,15 @@ func MergeUpdate(ctx context.Context, stored *domain.QuestionPool, req *dto.Upda
 	if req.QuestionTags != nil {
 		item.QuestionTags = *req.QuestionTags
 	}
+	if req.QuestionLanguage != nil {
+		item.QuestionLanguage = req.QuestionLanguage
+	}
+	if req.Translations.Set {
+		item.Translations = nil
+		if req.Translations.Value != nil {
+			item.Translations = *req.Translations.Value
+		}
+	}
 
 	q, found := buildQuestionPool(item)
 	if len(found) > 0 {
@@ -211,7 +224,10 @@ func itemOf(q *domain.QuestionPool) dto.CreateQuestionPoolItem {
 	}
 	a := q.CorrectAnswer()
 	grade := q.QuestionGrade()
+	lang := string(q.QuestionLanguage())
 	return dto.CreateQuestionPoolItem{
+		QuestionLanguage: &lang,
+		Translations:     dto.TranslationsToDto(q.Translations()),
 		QuestionKind:     string(q.QuestionKind()),
 		QuestionText:     q.QuestionText(),
 		QuestionImageKey: q.QuestionImageKey(),
@@ -309,6 +325,15 @@ func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, [
 	if msg != "" {
 		add(status.QUESTION_POOL_INVALID, "question_tags: %s", msg)
 	}
+	lang := domain.DefaultLanguage
+	if item.QuestionLanguage != nil {
+		lang = enum.LanguageType(strings.TrimSpace(*item.QuestionLanguage))
+		if !slices.Contains(enum.ContentLanguages, lang) {
+			add(status.QUESTION_POOL_INVALID_TRANSLATION, "question_language: %q is not one of %v", lang, enum.ContentLanguages)
+		}
+	}
+	translations, found := buildTranslations(lang, options, item.Translations)
+	issues = append(issues, found...)
 	if len(issues) > 0 {
 		return nil, issues
 	}
@@ -326,11 +351,67 @@ func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, [
 	q.SetQuestionLevel(item.QuestionLevel)
 	q.SetQuestionSubLevel(item.QuestionSubLevel)
 	q.SetQuestionTags(tags)
+	q.SetQuestionLanguage(lang)
+	q.SetTranslations(translations)
 	q.SetQuestionSource(domain.SourceAdmin)
 	initial := domain.SourceAdmin.InitialStatus()
 	q.SetQuestionStatus(&initial)
 	q.SetQuestionHash(domain.Hash(q))
 	return q, nil
+}
+
+// buildTranslations checks every translation against the question (its
+// language and its options, already trimmed) and maps them; empty = nil.
+// Text is trimmed, a blank optional field dropped; limits are the base
+// field's. Keys are checked in sorted order so the issues read the same
+// every time.
+func buildTranslations(base enum.LanguageType, options []domain.Option, in map[string]dto.TranslationDto) (domain.Translations, []issue) {
+	if len(in) == 0 {
+		return nil, nil
+	}
+	var issues []issue
+	add := func(format string, args ...any) {
+		issues = append(issues, issue{status.QUESTION_POOL_INVALID_TRANSLATION, fmt.Sprintf(format, args...)})
+	}
+	tooLong := func(path, s string, max int) {
+		if utf8.RuneCountInString(s) > max {
+			add("%s: longer than %d characters", path, max)
+		}
+	}
+	out := make(domain.Translations, len(in))
+	for _, key := range slices.Sorted(maps.Keys(in)) {
+		t, path, lang := in[key], "translations."+key, enum.LanguageType(key)
+		if msg := domain.CheckTranslationKey(base, lang); msg != "" {
+			add("%s: %s", path, msg)
+			continue
+		}
+		tr := domain.Translation{
+			QuestionText:  strings.TrimSpace(t.QuestionText),
+			TtsText:       utils.DerefString(trimmedOrNil(t.TtsText)),
+			Explanation:   utils.DerefString(trimmedOrNil(t.Explanation)),
+			QuestionTopic: utils.DerefString(trimmedOrNil(t.QuestionTopic)),
+		}
+		if tr.QuestionText == "" {
+			add("%s.question_text: required", path)
+		}
+		tooLong(path+".question_text", tr.QuestionText, MaxTextRunes)
+		tooLong(path+".tts_text", tr.TtsText, domain.MaxTtsTextRunes)
+		tooLong(path+".explanation", tr.Explanation, domain.MaxExplanationRunes)
+		tooLong(path+".question_topic", tr.QuestionTopic, MaxTopicRunes)
+		for j, o := range t.Options {
+			text := strings.TrimSpace(o.Text)
+			tooLong(fmt.Sprintf("%s.options[%d].text", path, j), text, MaxOptionTextRunes)
+			tr.Options = append(tr.Options, domain.Option{Id: strings.TrimSpace(o.Id), Text: text, ImageKey: o.ImageKey})
+		}
+		if msg := domain.CheckTranslationOptions(options, tr.Options); msg != "" {
+			add("%s.options: %s", path, msg)
+		}
+		out[lang] = tr
+	}
+	if len(issues) > 0 {
+		return nil, issues
+	}
+	return out, nil
 }
 
 func shapeCode(err error) status.StatusCode {

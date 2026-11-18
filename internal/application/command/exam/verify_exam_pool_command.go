@@ -114,6 +114,12 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 			q.QuestionImageKey, q.QuestionImageURL = "", ""
 			q.RightAnswerText = "" // derived from the key, never stored
 			q.NormalizeExtras()
+			// lang omitted = the stored one; translations are what the
+			// correction carries (omitted = none), cleaned like a model's.
+			if q.Language == "" {
+				q.Language = levelOf[q.QuestionNumber].Language
+			}
+			q.NormalizeTranslations()
 			q.Options = slices.Clone(q.Options)
 			for j := range q.Options {
 				q.Options[j].ImageKey, q.Options[j].ImageURL = "", ""

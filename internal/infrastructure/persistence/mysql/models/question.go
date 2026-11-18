@@ -14,7 +14,9 @@ type QuestionModel struct {
 	CorrectAnswer    string // JSON {"option_ids"} / {"value"} / {"values"}
 	Explanation      *string
 	TtsText          *string
-	QuestionTags     string // JSON ["addition", …], never NULL
+	QuestionLanguage string
+	Translations     *string // JSON {"<lang>": {...}}; NULL = none
+	QuestionTags     string  // JSON ["addition", …], never NULL
 	QuestionTopic    *string
 	QuestionGrade    *int
 	QuestionLevel    *int

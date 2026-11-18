@@ -47,6 +47,8 @@ func QuestionRows(examID int64, questionsJSON string) ([]*question.Question, err
 		q.SetCorrectAnswer(key)
 		q.SetExplanation(nonEmpty(s.Explanation))
 		q.SetTtsText(nonEmpty(s.TtsText))
+		q.SetQuestionLanguage(string(dto.LanguageOf(s.Language)))
+		q.SetTranslations(translationsOf(s.Translations))
 		q.SetQuestionTags(s.QuestionTags)
 		q.SetQuestionTopic(nonEmpty(s.QuestionTopic))
 		q.SetQuestionGrade(s.QuestionGrade)
@@ -73,6 +75,22 @@ func mintQuestionRows(ctx context.Context, repos transaction.Repositories, examI
 		q.SetQuestionId(id)
 	}
 	return rows, nil
+}
+
+// translationsOf is a question's translations in the bank's shape.
+func translationsOf(in map[enum.LanguageType]dto.ExamTranslation) questionpool.Translations {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(questionpool.Translations, len(in))
+	for lang, t := range in {
+		tr := questionpool.Translation{QuestionText: t.QuestionText, TtsText: t.TtsText, Explanation: t.Explanation, QuestionTopic: t.QuestionTopic}
+		for _, o := range t.Options {
+			tr.Options = append(tr.Options, questionpool.Option{Id: o.ID, Text: o.Text})
+		}
+		out[lang] = tr
+	}
+	return out
 }
 
 func nonEmpty(s string) *string {

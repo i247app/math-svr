@@ -283,9 +283,9 @@ func (s *Service) getAttempt(ctx context.Context, elinkID int64, profile *profil
 		*detail.Attempt.ElinkStatus() == enum.ElinkStatusSubmitted.String()
 
 	res := &dto.GetExamRes{
-		Exam: dto.AttemptToResponse(detail.Attempt, detail.ExamPool, submitted),
+		Exam: dto.AttemptToResponse(detail.Attempt, detail.ExamPool, submitted, requestLanguage(ctx)),
 		Details: dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempt),
-			map[int64]*examDomain.ExamPool{detail.ExamPool.ExamId(): detail.ExamPool}),
+			map[int64]*examDomain.ExamPool{detail.ExamPool.ExamId(): detail.ExamPool}, requestLanguage(ctx)),
 	}
 	s.signExam(ctx, res.Exam)
 	s.signDetails(ctx, res.Details)
@@ -310,8 +310,8 @@ func (s *Service) getJourney(ctx context.Context, esessID int64, examType string
 
 	res := &dto.GetExamRes{
 		ExamSession:     dto.ExamSessionToResponse(detail.Journey),
-		Exams:           dto.AttemptListToResponse(detail.Attempts, detail.ExamPools),
-		Details:         dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...), detail.ExamPools),
+		Exams:           dto.AttemptListToResponse(detail.Attempts, detail.ExamPools, requestLanguage(ctx)),
+		Details:         dto.DetailsToResponse(detail.Details, dto.ShufflesOf(detail.Attempts...), detail.ExamPools, requestLanguage(ctx)),
 		PracticePreview: dto.PracticePreviewFrom(detail.PracticeBase, detail.PracticeBrief),
 	}
 	s.signDetails(ctx, res.Details)
@@ -392,7 +392,7 @@ func (s *Service) resumeOpenSitting(ctx context.Context, profile *profileDomain.
 
 	log.Infof("exam.resumed attempt=%d journey=%d type=%s", open.ElinkId(), esessID, examType)
 	res := &dto.GenerateExamRes{
-		Exam:        dto.AttemptToResponse(open, pool, true),
+		Exam:        dto.AttemptToResponse(open, pool, true, requestLanguage(ctx)),
 		Resumed:     true,
 		ExamSession: dto.ExamSessionToResponse(journey),
 	}

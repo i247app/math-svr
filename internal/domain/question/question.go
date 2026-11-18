@@ -35,9 +35,13 @@ type Question struct {
 	correctAnswer  questionpool.CorrectAnswer
 	explanation    *string
 	ttsText        *string // text read aloud by the client (TTS); nil = none
-	questionTags   []string
-	questionTopic  *string
-	questionGrade  *int
+	// questionLanguage is the language of the text fields; translations
+	// holds the others (questionpool.Translations, the bank's shape).
+	questionLanguage string
+	translations     questionpool.Translations
+	questionTags     []string
+	questionTopic    *string
+	questionGrade    *int
 	// questionLevel / questionSubLevel use the scale of ma_question_pools
 	// (0..9 each); nil on rows written before they were stamped.
 	questionLevel    *int
@@ -72,6 +76,10 @@ func (q *Question) CorrectAnswer() questionpool.CorrectAnswer     { return q.cor
 func (q *Question) SetCorrectAnswer(a questionpool.CorrectAnswer) { q.correctAnswer = a }
 func (q *Question) Explanation() *string                          { return q.explanation }
 func (q *Question) SetExplanation(s *string)                      { q.explanation = s }
+func (q *Question) QuestionLanguage() string                      { return q.questionLanguage }
+func (q *Question) SetQuestionLanguage(l string)                  { q.questionLanguage = l }
+func (q *Question) Translations() questionpool.Translations       { return q.translations }
+func (q *Question) SetTranslations(t questionpool.Translations)   { q.translations = t }
 func (q *Question) TtsText() *string                              { return q.ttsText }
 func (q *Question) SetTtsText(s *string)                          { q.ttsText = s }
 func (q *Question) QuestionTags() []string                        { return q.questionTags }

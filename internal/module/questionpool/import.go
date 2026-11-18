@@ -224,7 +224,13 @@ func (s *Service) analyzeImport(ctx context.Context, file ImportFile) (*importAn
 	toImport := make([]checkedItem, 0, len(unique))
 	for _, c := range unique {
 		if isHeld[c.q.QuestionHash()] {
-			r.Duplicates = append(r.Duplicates, dto.ImportQuestionPoolDuplicate{Index: c.index, Reason: DuplicateInPool})
+			importDup := dto.ImportQuestionPoolDuplicate{
+				Index:  c.index,
+				Name:   c.q.QuestionText(),
+				Reason: DuplicateInPool,
+			}
+
+			r.Duplicates = append(r.Duplicates, importDup)
 			r.DuplicateInPoolCount++
 			continue
 		}

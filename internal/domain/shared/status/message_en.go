@@ -822,6 +822,8 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 		return "The image is still used by a question"
 	case QUESTION_POOL_IMAGE_DELETE_FAILED:
 		return "Could not delete the image"
+	case QUESTION_POOL_INVALID_TRANSLATION:
+		return "The question language or a translation is invalid"
 
 	default:
 		return ""

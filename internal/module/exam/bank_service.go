@@ -43,11 +43,46 @@ func assessmentTags(questionGrade int) []string {
 	return assessmentBankTags
 }
 
-// Texts of the two options a TRUE_FALSE bank question is served with.
-const (
-	trueOptionText  = "Đúng"
-	falseOptionText = "Sai"
-)
+// Texts of the two options a TRUE_FALSE bank question is served with, per
+// language; a language missing here falls back to Vietnamese.
+var trueFalseTexts = map[enum.LanguageType][2]string{
+	enum.LanguageTypeVietnamese: {"Đúng", "Sai"},
+	enum.LanguageTypeEnglish:    {"True", "False"},
+}
+
+func trueFalseOptions(lang enum.LanguageType) []dto.ExamOption {
+	t, ok := trueFalseTexts[lang]
+	if !ok {
+		t = trueFalseTexts[enum.LanguageTypeVietnamese]
+	}
+	return []dto.ExamOption{{ID: dto.TrueOptionID, Text: t[0]}, {ID: dto.FalseOptionID, Text: t[1]}}
+}
+
+// bankTranslations copies a bank row's translations into the exam shape.
+// A TRUE_FALSE question has no options in the bank; the exam gives it the
+// two served ones in each language.
+func bankTranslations(q *questionpool.QuestionPool) map[enum.LanguageType]dto.ExamTranslation {
+	if len(q.Translations()) == 0 {
+		return nil
+	}
+	out := make(map[enum.LanguageType]dto.ExamTranslation, len(q.Translations()))
+	for lang, t := range q.Translations() {
+		e := dto.ExamTranslation{
+			QuestionText:  t.QuestionText,
+			TtsText:       t.TtsText,
+			Explanation:   t.Explanation,
+			QuestionTopic: t.QuestionTopic,
+		}
+		for _, o := range t.Options {
+			e.Options = append(e.Options, dto.ExamOption{ID: o.Id, Text: o.Text})
+		}
+		if q.QuestionKind() == questionpool.KindTrueFalse {
+			e.Options = trueFalseOptions(lang)
+		}
+		out[lang] = e
+	}
+	return out
+}
 
 // generateFromBank hands out an ASSESSMENT / GRADE paper drawn from the
 // question bank instead of asking the model (QUESTION_POOL_ENABLED). The
@@ -89,10 +124,14 @@ func (s *Service) generateFromBank(ctx context.Context, req *dto.GenerateExamReq
 // pickFromBank draws a whole paper, numbered 1..N, or fails with
 // EXAM_QUESTION_BANK_INSUFFICIENT naming the group that came up short.
 func (s *Service) pickFromBank(ctx context.Context, examType enum.ExamType, grade int, level *int, avoid []string) ([]dto.Question, error) {
+	log := logger.From(ctx)
+
 	paper := make([]dto.Question, DefaultNumQuestions)
 	var chosen []int64
 
-	for _, g := range bankGroups(examType, grade, level) {
+	bankGroups := bankGroups(examType, grade, level)
+
+	for _, g := range bankGroups {
 		picked, err := s.drawGroup(ctx, g, chosen, avoid)
 		if err != nil {
 			return nil, err
@@ -103,6 +142,7 @@ func (s *Service) pickFromBank(ctx context.Context, examType enum.ExamType, grad
 		})
 		for i, q := range picked {
 			slot := g.slots[i]
+			log.Infof("pick - slot: %v", slot)
 			converted, err := toExamQuestion(q, slot)
 			if err != nil {
 				return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)
@@ -197,13 +237,13 @@ func bankGroups(examType enum.ExamType, grade int, level *int) []bankGroup {
 		// ponytail: one ORDER BY RAND() query per slot (10 per paper), each
 		// over one grade's approved rows at those levels; one windowed query
 		// (ROW_NUMBER() OVER (PARTITION BY question_level)) if it shows.
-		up := input.ProbeGrade(grade)
+		gradeUp := input.ProbeGrade(grade)
 		allowed := input.AllowedLevels(examType, DefaultNumQuestions, nil)
 		groups := make([]bankGroup, 0, DefaultNumQuestions)
 		for slot := 1; slot <= DefaultNumQuestions; slot++ {
 			g, probe := grade, ""
 			if slices.Contains(bankChallengeSlots, slot) {
-				g, probe = up, " (probe)"
+				g, probe = gradeUp, " (probe)"
 			}
 			tags, levels := assessmentTags(g), allowed[slot-1]
 			groups = append(groups, bankGroup{
@@ -258,6 +298,8 @@ func toExamQuestion(q *questionpool.QuestionPool, number int) (dto.Question, err
 		// ramped like a model-written one.
 		QuestionLevel:    q.QuestionLevel(),
 		QuestionSubLevel: q.QuestionSubLevel(),
+		Language:         dto.LanguageOf(q.QuestionLanguage()),
+		Translations:     bankTranslations(q),
 	}
 	grade := q.QuestionGrade()
 	out.QuestionGrade = &grade
@@ -296,9 +338,9 @@ func toExamQuestion(q *questionpool.QuestionPool, number int) (dto.Question, err
 		if correct.Value == nil {
 			return out, fmt.Errorf("question %d: true/false key has no value", q.QuestionPoolId())
 		}
-		out.Answers = []dto.AnswerChoice{
-			{Label: dto.TrueOptionID, Content: trueOptionText},
-			{Label: dto.FalseOptionID, Content: falseOptionText},
+		out.Answers = nil
+		for _, o := range trueFalseOptions(out.Language) {
+			out.Answers = append(out.Answers, dto.AnswerChoice{Label: o.ID, Content: o.Text})
 		}
 		out.RightAnswerLabel = dto.FalseOptionID
 		if *correct.Value {

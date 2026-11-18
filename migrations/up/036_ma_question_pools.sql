@@ -114,7 +114,9 @@ CREATE TABLE IF NOT EXISTS ma_question_pools (
   correct_answer      JSON          NOT NULL,                 -- the key, shape per kind: {"option_ids"} / {"value"} / {"values"} (see header); never selected for a child's paper
   explanation         TEXT          DEFAULT NULL,             -- worked solution / why the answer is right, shown after answering
   tts_text            TEXT          DEFAULT NULL,             -- the stem as the client reads it aloud (text-to-speech), at most 2000 characters; NULL = none; not in question_hash
-  question_grade      TINYINT UNSIGNED NOT NULL,              -- 0 = Mẫu giáo, 1..5 = Lớp 1..5
+  question_language   VARCHAR(8)    NOT NULL DEFAULT 'en',    -- 'en' | 'vi': the language of the text fields of this row
+  translations        JSON          DEFAULT NULL,             -- {"<lang>": {question_text, tts_text, explanation, question_topic, options:[{id, text}]}}; NULL = none; not in question_hash
+  question_grade     TINYINT UNSIGNED NOT NULL,              -- 0 = Mẫu giáo, 1..5 = Lớp 1..5
   question_topic      VARCHAR(255)  DEFAULT NULL,             -- curriculum topic, free text (e.g. 'phép cộng')
   question_level      TINYINT UNSIGNED DEFAULT NULL,          -- 0 = easiest .. 9 = hardest; NULL = not rated yet
   question_sub_level  TINYINT UNSIGNED DEFAULT NULL,          -- finer step inside question_level, 0 .. 9; NULL = not rated yet

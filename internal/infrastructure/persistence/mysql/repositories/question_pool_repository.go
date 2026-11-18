@@ -21,7 +21,8 @@ const (
 	questionPoolTable = "ma_question_pools"
 
 	questionPoolColumns = `q.question_pool_id, q.question_kind, q.question_text, q.question_image_key,
-		q.options, q.correct_answer, q.explanation, q.tts_text, q.question_grade, q.question_topic,
+		q.options, q.correct_answer, q.explanation, q.tts_text, q.question_language, q.translations,
+		q.question_grade, q.question_topic,
 		q.question_level, q.question_sub_level, q.question_tags, q.question_source, q.verified_count, q.question_hash,
 		q.question_status, q.rpt_flg, q.kwords, q.note, q.status,
 		q.create_id, q.create_dt, q.modify_id, q.modify_dt`
@@ -30,7 +31,7 @@ const (
 
 	// questionInsertRow is one VALUES tuple of CreateMany, in the column
 	// order of its INSERT list.
-	questionPoolInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	questionPoolInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func questionPoolActiveArgs() []any {
@@ -62,7 +63,8 @@ func NewQuestionPoolRepository(db database.Executor) questionpool.IRepository {
 func scanQuestionPool(s database.RowScanner) (*models.QuestionPoolModel, error) {
 	var m models.QuestionPoolModel
 	if err := s.Scan(&m.QuestionPoolId, &m.QuestionKind, &m.QuestionText, &m.QuestionImageKey,
-		&m.Options, &m.CorrectAnswer, &m.Explanation, &m.TtsText, &m.QuestionGrade, &m.QuestionTopic,
+		&m.Options, &m.CorrectAnswer, &m.Explanation, &m.TtsText, &m.QuestionLanguage, &m.Translations,
+		&m.QuestionGrade, &m.QuestionTopic,
 		&m.QuestionLevel, &m.QuestionSubLevel, &m.QuestionTags, &m.QuestionSource, &m.VerifiedCount, &m.QuestionHash,
 		&m.QuestionStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.Status,
 		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
@@ -71,7 +73,7 @@ func scanQuestionPool(s database.RowScanner) (*models.QuestionPoolModel, error) 
 	return &m, nil
 }
 
-// questionPoolInsertChunk caps the rows of one INSERT: 200 rows x 23
+// questionPoolInsertChunk caps the rows of one INSERT: 200 rows x 25
 // columns stays far below MySQL's 65,535 placeholders and keeps one
 // statement's packet small.
 const questionPoolInsertChunk = 200
@@ -96,23 +98,29 @@ func (r *QuestionPoolRepository) CreateMany(ctx context.Context, questions []*qu
 func (r *QuestionPoolRepository) insertChunk(ctx context.Context, questions []*questionpool.QuestionPool, createId *int64) error {
 	now := time.Now().UTC()
 	tuples := make([]string, 0, len(questions))
-	args := make([]any, 0, len(questions)*23)
+	args := make([]any, 0, len(questions)*25)
 	for _, q := range questions {
 		options, answer, tags, err := marshalQuestionPoolJSON(q)
+		if err != nil {
+			return err
+		}
+		translations, err := marshalTranslations(q.Translations())
 		if err != nil {
 			return err
 		}
 		tuples = append(tuples, questionPoolInsertRow)
 		args = append(args,
 			q.QuestionPoolId(), string(q.QuestionKind()), q.QuestionText(), q.QuestionImageKey(),
-			options, answer, q.Explanation(), q.TtsText(), q.QuestionGrade(), q.QuestionTopic(),
+			options, answer, q.Explanation(), q.TtsText(), languageOrDefault(q.QuestionLanguage()), translations,
+			q.QuestionGrade(), q.QuestionTopic(),
 			q.QuestionLevel(), q.QuestionSubLevel(), tags, string(q.QuestionSource()), q.VerifiedCount(), q.QuestionHash(),
 			q.QuestionStatus(), q.RptFlg(), q.Kwords(), q.Note(),
 			createId, now, now)
 	}
 	query := `INSERT INTO ` + questionPoolTable + `
 			(question_pool_id, question_kind, question_text, question_image_key,
-			 options, correct_answer, explanation, tts_text, question_grade, question_topic,
+			 options, correct_answer, explanation, tts_text, question_language, translations,
+			 question_grade, question_topic,
 			 question_level, question_sub_level, question_tags, question_source, verified_count, question_hash,
 			 question_status, rpt_flg, kwords, note,
 			 create_id, create_dt, modify_dt)
@@ -148,12 +156,18 @@ func (r *QuestionPoolRepository) UpdateContent(ctx context.Context, q *questionp
 	if err != nil {
 		return err
 	}
+	translations, err := marshalTranslations(q.Translations())
+	if err != nil {
+		return err
+	}
 	query := `UPDATE ` + questionPoolTable + ` q SET q.question_kind = ?, q.question_text = ?, q.question_image_key = ?,
-			q.options = ?, q.correct_answer = ?, q.explanation = ?, q.tts_text = ?, q.question_grade = ?, q.question_topic = ?,
+			q.options = ?, q.correct_answer = ?, q.explanation = ?, q.tts_text = ?,
+			q.question_language = ?, q.translations = ?, q.question_grade = ?, q.question_topic = ?,
 			q.question_level = ?, q.question_sub_level = ?, q.question_tags = ?, q.question_hash = ?, q.modify_id = ?
 		WHERE (q.question_pool_id = ?) AND ` + questionPoolActiveWhere
 	args := slices.Concat([]any{string(q.QuestionKind()), q.QuestionText(), q.QuestionImageKey(),
-		options, answer, q.Explanation(), q.TtsText(), q.QuestionGrade(), q.QuestionTopic(),
+		options, answer, q.Explanation(), q.TtsText(), languageOrDefault(q.QuestionLanguage()), translations,
+		q.QuestionGrade(), q.QuestionTopic(),
 		q.QuestionLevel(), q.QuestionSubLevel(), tags, q.QuestionHash(), modifyId, q.QuestionPoolId()}, questionPoolActiveArgs())
 	if _, err := r.db.Exec(ctx, query, args...); err != nil {
 		if isDuplicateEntry(err) {
@@ -542,6 +556,10 @@ func ModelToDomainQuestionPool(m *models.QuestionPoolModel) (*questionpool.Quest
 	if err := json.Unmarshal([]byte(m.QuestionTags), &tags); err != nil {
 		return nil, fmt.Errorf("question pool repo decode question_tags of %d: %w", m.QuestionPoolId, err)
 	}
+	translations, err := unmarshalTranslations(m.Translations)
+	if err != nil {
+		return nil, fmt.Errorf("question pool repo decode translations of %d: %w", m.QuestionPoolId, err)
+	}
 
 	q := questionpool.NewQuestionPool()
 	q.SetQuestionPoolId(m.QuestionPoolId)
@@ -552,6 +570,8 @@ func ModelToDomainQuestionPool(m *models.QuestionPoolModel) (*questionpool.Quest
 	q.SetCorrectAnswer(questionpool.CorrectAnswer{OptionIds: answer.OptionIds, Value: answer.Value, Values: answer.Values})
 	q.SetExplanation(m.Explanation)
 	q.SetTtsText(m.TtsText)
+	q.SetQuestionLanguage(enum.LanguageType(m.QuestionLanguage))
+	q.SetTranslations(translations)
 	q.SetQuestionGrade(m.QuestionGrade)
 	q.SetQuestionTopic(m.QuestionTopic)
 	q.SetQuestionLevel(m.QuestionLevel)

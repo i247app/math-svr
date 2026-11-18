@@ -390,6 +390,13 @@ func insertExamPool(ctx context.Context, repos transaction.Repositories, examTyp
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 
+	// A POOL set's questions already live in ma_question_pools; copying them
+	// to ma_questions on every hand-out (POOL sets are never cache hits)
+	// would only duplicate the bank.
+	if source == enum.ExamSourcePool {
+		return saved, nil
+	}
+
 	// The set's questions go to ma_questions in the same transaction, from
 	// the JSON just stored, so a failure here rolls the generation back.
 	rows, err := mintQuestionRows(ctx, repos, examID, content.QuestionsJSON)

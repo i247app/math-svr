@@ -560,4 +560,8 @@ const (
 	QUESTION_POOL_IMAGE_IN_USE StatusCode = 14421
 	// QUESTION_POOL_IMAGE_DELETE_FAILED: storage refused the delete.
 	QUESTION_POOL_IMAGE_DELETE_FAILED StatusCode = 14422
+	// QUESTION_POOL_INVALID_TRANSLATION: question_language or a translation
+	// breaks a rule (unknown language, the question's own language, missing
+	// question_text, options that are not exactly the question's ids).
+	QUESTION_POOL_INVALID_TRANSLATION StatusCode = 14423
 )

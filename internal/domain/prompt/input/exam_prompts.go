@@ -161,7 +161,16 @@ func ProbeGrade(grade int) int {
 // entry. The probes (Q3, Q6) are at grade + 1, so their wide sets are levels
 // of that grade.
 var assessmentSlotLevels = [][]int{
-	{0, 1}, {2}, {0, 1, 2, 3, 4}, {3}, {4}, {5, 6, 7, 8, 9}, {5}, {6}, {7}, {8, 9},
+	{0, 1},
+	{2},
+	{0, 1, 2, 3, 4},
+	{3},
+	{4},
+	{5, 6, 7, 8, 9},
+	{5},
+	{6},
+	{7},
+	{8, 9},
 }
 
 // AllowedLevels returns, by position (index 0 = Q1), the question_levels

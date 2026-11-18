@@ -822,6 +822,8 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 		return "Ảnh đang được câu hỏi sử dụng, không thể xoá"
 	case QUESTION_POOL_IMAGE_DELETE_FAILED:
 		return "Không xoá được ảnh"
+	case QUESTION_POOL_INVALID_TRANSLATION:
+		return "Ngôn ngữ hoặc bản dịch của câu hỏi không hợp lệ"
 
 	default:
 		return ""
