@@ -66,6 +66,15 @@ const (
 
 func (m PracticeMode) String() string { return string(m) }
 
+func (m PracticeMode) IsValid() bool {
+	switch m {
+	case PracticeModeRetryWeak, PracticeModeAdvance:
+		return true
+	default:
+		return false
+	}
+}
+
 // ElinkStatusType is the lifecycle of ONE attempt at an exam.
 //
 // An attempt is created IN_PROGRESS the moment the exam is handed out and
@@ -102,6 +111,15 @@ const (
 
 func (s ExamStatusType) String() string { return string(s) }
 
+func (s ExamStatusType) IsValid() bool {
+	switch s {
+	case ExamStatusActive, ExamStatusDeleted:
+		return true
+	default:
+		return false
+	}
+}
+
 // EsessStatusType is the lifecycle of one JOURNEY — a stretch of
 // ASSESSMENT sittings (and the PRACTICE rounds drawn inside it) that a
 // child works through and then closes.
@@ -132,6 +150,8 @@ const (
 	EsessStatusDeleted  EsessStatusType = "DELETED"
 )
 
+func (s EsessStatusType) String() string { return string(s) }
+
 // IsValid accepts every lifecycle value, including DELETED, for callers
 // that filter on status.
 func (s EsessStatusType) IsValid() bool {
@@ -161,8 +181,6 @@ func (s EsessStatusType) IsMarkable() bool {
 	return s.IsEnding() || s.IsActive()
 }
 
-func (s EsessStatusType) String() string { return string(s) }
-
 // EsessLnStatusType is the business lifecycle of one answered
 // question. Rows are written once at submit and never edited, so SUBMITTED
 // is the only state they normally hold.
@@ -174,6 +192,15 @@ const (
 )
 
 func (s EsessLnStatusType) String() string { return string(s) }
+
+func (s EsessLnStatusType) IsValid() bool {
+	switch s {
+	case EsessLnStatusActive, EsessLnStatusDeleted:
+		return true
+	default:
+		return false
+	}
+}
 
 // Bounds for the grade axis.
 //
@@ -212,4 +239,13 @@ const (
 
 func (e ExamSource) String() string {
 	return string(e)
+}
+
+func (s ExamSource) IsValid() bool {
+	switch s {
+	case ExamSourceLLM, ExamSourcePool:
+		return true
+	default:
+		return false
+	}
 }

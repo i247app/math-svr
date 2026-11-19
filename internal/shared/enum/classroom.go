@@ -104,6 +104,16 @@ func (s ClassroomRelationshipType) String() string {
 	return string(s)
 }
 
+func (s ClassroomRelationshipType) IsValid() bool {
+	switch s {
+	case ClassroomRelationshipTypeMember, ClassroomRelationshipTypePendingInvitation,
+		ClassroomRelationshipTypePendingRequest, ClassroomRelationshipTypeNone:
+		return true
+	default:
+		return false
+	}
+}
+
 // ClassroomInviteeIdentifierType identifies how a send-invitation
 // caller addressed the target — EMAIL/PHONE need alias lookup to
 // resolve a profile_id, PROFILE_ID is a direct id.
