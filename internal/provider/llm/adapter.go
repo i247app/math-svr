@@ -70,7 +70,6 @@ func (a *Registry) Has(name LLMProviderName) bool {
 func (a *Registry) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error) {
 	log := logger.From(ctx)
 	log.Infof("llm provider default %s", a.defaultName)
-	log.Infof("llm provider request %s", req.Provider)
 
 	if a.defaultName == "" {
 		return nil, errors.New("llm: no default provider configured")
@@ -86,6 +85,8 @@ func (a *Registry) Chat(ctx context.Context, req ChatRequest) (*ChatResult, erro
 // an invalid payload, which keeps vendor billing clean.
 func (a *Registry) ChatVia(ctx context.Context, name LLMProviderName, req ChatRequest) (*ChatResult, error) {
 	log := logger.From(ctx)
+
+	log.Infof("provider name: %v", name)
 
 	if name == "" {
 		name = a.defaultName
