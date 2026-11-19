@@ -70,57 +70,83 @@ type ExamSessionLine struct {
 
 func NewExamSessionLine() *ExamSessionLine { return &ExamSessionLine{} }
 
-func (d *ExamSessionLine) EsessLnId() int64             { return d.esessLnId }
-func (d *ExamSessionLine) SetEsessLnId(id int64)        { d.esessLnId = id }
-func (d *ExamSessionLine) ElinkId() int64               { return d.elinkId }
-func (d *ExamSessionLine) SetElinkId(id int64)          { d.elinkId = id }
-func (d *ExamSessionLine) EsessId() int64               { return d.esessId }
-func (d *ExamSessionLine) SetEsessId(id int64)          { d.esessId = id }
-func (d *ExamSessionLine) ExamId() int64                { return d.examId }
-func (d *ExamSessionLine) ReqExamType() string          { return d.reqExamType }
-func (d *ExamSessionLine) SetReqExamType(t string)      { d.reqExamType = t }
-func (d *ExamSessionLine) SetExamId(id int64)           { d.examId = id }
-func (d *ExamSessionLine) QuestionNumber() int          { return d.questionNumber }
-func (d *ExamSessionLine) SetQuestionNumber(n int)      { d.questionNumber = n }
-func (d *ExamSessionLine) QuestionKind() *string        { return d.questionKind }
-func (d *ExamSessionLine) SetQuestionKind(s *string)    { d.questionKind = s }
-func (d *ExamSessionLine) QuestionText() *string        { return d.questionText }
-func (d *ExamSessionLine) SetQuestionText(s *string)    { d.questionText = s }
-func (d *ExamSessionLine) QuestionTopic() *string       { return d.questionTopic }
-func (d *ExamSessionLine) SetQuestionTopic(s *string)   { d.questionTopic = s }
-func (d *ExamSessionLine) QuestionTags() []string       { return d.questionTags }
-func (d *ExamSessionLine) SetQuestionTags(t []string)   { d.questionTags = t }
-func (d *ExamSessionLine) Explanation() *string         { return d.explanation }
-func (d *ExamSessionLine) SetExplanation(s *string)     { d.explanation = s }
-func (d *ExamSessionLine) QuestionGrade() *int          { return d.questionGrade }
-func (d *ExamSessionLine) SetQuestionGrade(g *int)      { d.questionGrade = g }
-func (d *ExamSessionLine) QuestionLevel() *int          { return d.questionLevel }
-func (d *ExamSessionLine) SetQuestionLevel(l *int)      { d.questionLevel = l }
-func (d *ExamSessionLine) RightOptionIDs() *string      { return d.rightOptionIDs }
-func (d *ExamSessionLine) SetRightOptionIDs(s *string)  { d.rightOptionIDs = s }
+func (d *ExamSessionLine) EsessLnId() int64      { return d.esessLnId }
+func (d *ExamSessionLine) SetEsessLnId(id int64) { d.esessLnId = id }
+
+func (d *ExamSessionLine) ElinkId() int64      { return d.elinkId }
+func (d *ExamSessionLine) SetElinkId(id int64) { d.elinkId = id }
+
+func (d *ExamSessionLine) EsessId() int64      { return d.esessId }
+func (d *ExamSessionLine) SetEsessId(id int64) { d.esessId = id }
+
+func (d *ExamSessionLine) ExamId() int64      { return d.examId }
+func (d *ExamSessionLine) SetExamId(id int64) { d.examId = id }
+
+func (d *ExamSessionLine) ReqExamType() string     { return d.reqExamType }
+func (d *ExamSessionLine) SetReqExamType(t string) { d.reqExamType = t }
+
+func (d *ExamSessionLine) QuestionNumber() int     { return d.questionNumber }
+func (d *ExamSessionLine) SetQuestionNumber(n int) { d.questionNumber = n }
+
+func (d *ExamSessionLine) QuestionKind() *string     { return d.questionKind }
+func (d *ExamSessionLine) SetQuestionKind(s *string) { d.questionKind = s }
+
+func (d *ExamSessionLine) QuestionText() *string     { return d.questionText }
+func (d *ExamSessionLine) SetQuestionText(s *string) { d.questionText = s }
+
+func (d *ExamSessionLine) QuestionTopic() *string     { return d.questionTopic }
+func (d *ExamSessionLine) SetQuestionTopic(s *string) { d.questionTopic = s }
+
+func (d *ExamSessionLine) QuestionTags() []string     { return d.questionTags }
+func (d *ExamSessionLine) SetQuestionTags(t []string) { d.questionTags = t }
+
+func (d *ExamSessionLine) Explanation() *string     { return d.explanation }
+func (d *ExamSessionLine) SetExplanation(s *string) { d.explanation = s }
+
+func (d *ExamSessionLine) QuestionGrade() *int     { return d.questionGrade }
+func (d *ExamSessionLine) SetQuestionGrade(g *int) { d.questionGrade = g }
+
+func (d *ExamSessionLine) QuestionLevel() *int     { return d.questionLevel }
+func (d *ExamSessionLine) SetQuestionLevel(l *int) { d.questionLevel = l }
+
+func (d *ExamSessionLine) RightOptionIDs() *string     { return d.rightOptionIDs }
+func (d *ExamSessionLine) SetRightOptionIDs(s *string) { d.rightOptionIDs = s }
+
 func (d *ExamSessionLine) RightAnswerText() *string     { return d.rightAnswerText }
 func (d *ExamSessionLine) SetRightAnswerText(s *string) { d.rightAnswerText = s }
-func (d *ExamSessionLine) ChildOptionIDs() string       { return d.childOptionIDs }
-func (d *ExamSessionLine) SetChildOptionIDs(s string)   { d.childOptionIDs = s }
+
+func (d *ExamSessionLine) ChildOptionIDs() string     { return d.childOptionIDs }
+func (d *ExamSessionLine) SetChildOptionIDs(s string) { d.childOptionIDs = s }
+
 func (d *ExamSessionLine) ChildAnswerText() *string     { return d.childAnswerText }
 func (d *ExamSessionLine) SetChildAnswerText(s *string) { d.childAnswerText = s }
-func (d *ExamSessionLine) IsCorrect() bool              { return d.isCorrect }
-func (d *ExamSessionLine) SetIsCorrect(b bool)          { d.isCorrect = b }
-func (d *ExamSessionLine) Note() *string                { return d.note }
-func (d *ExamSessionLine) SetNote(s *string)            { d.note = s }
-func (d *ExamSessionLine) RptFlg() *string              { return d.rptFlg }
-func (d *ExamSessionLine) SetRptFlg(v *string)          { d.rptFlg = v }
-func (d *ExamSessionLine) Kwords() *string              { return d.kwords }
-func (d *ExamSessionLine) SetKwords(v *string)          { d.kwords = v }
-func (d *ExamSessionLine) EsessLnStatus() *string       { return d.esessLnStatus }
-func (d *ExamSessionLine) SetEsessLnStatus(s *string)   { d.esessLnStatus = s }
-func (d *ExamSessionLine) Status() string               { return d.status }
-func (d *ExamSessionLine) SetStatus(s string)           { d.status = s }
-func (d *ExamSessionLine) CreateId() *int64             { return d.createId }
-func (d *ExamSessionLine) SetCreateId(id *int64)        { d.createId = id }
-func (d *ExamSessionLine) CreateDt() time.Time          { return d.createDt }
-func (d *ExamSessionLine) SetCreateDt(t time.Time)      { d.createDt = t }
-func (d *ExamSessionLine) ModifyId() *int64             { return d.modifyId }
-func (d *ExamSessionLine) SetModifyId(id *int64)        { d.modifyId = id }
-func (d *ExamSessionLine) ModifyDt() time.Time          { return d.modifyDt }
-func (d *ExamSessionLine) SetModifyDt(t time.Time)      { d.modifyDt = t }
+
+func (d *ExamSessionLine) IsCorrect() bool     { return d.isCorrect }
+func (d *ExamSessionLine) SetIsCorrect(b bool) { d.isCorrect = b }
+
+func (d *ExamSessionLine) RptFlg() *string     { return d.rptFlg }
+func (d *ExamSessionLine) SetRptFlg(v *string) { d.rptFlg = v }
+
+func (d *ExamSessionLine) Kwords() *string     { return d.kwords }
+func (d *ExamSessionLine) SetKwords(v *string) { d.kwords = v }
+
+func (d *ExamSessionLine) Note() *string     { return d.note }
+func (d *ExamSessionLine) SetNote(s *string) { d.note = s }
+
+func (d *ExamSessionLine) EsessLnStatus() *string     { return d.esessLnStatus }
+func (d *ExamSessionLine) SetEsessLnStatus(s *string) { d.esessLnStatus = s }
+
+func (d *ExamSessionLine) Status() string     { return d.status }
+func (d *ExamSessionLine) SetStatus(s string) { d.status = s }
+
+func (d *ExamSessionLine) CreateId() *int64      { return d.createId }
+func (d *ExamSessionLine) SetCreateId(id *int64) { d.createId = id }
+
+func (d *ExamSessionLine) CreateDt() time.Time     { return d.createDt }
+func (d *ExamSessionLine) SetCreateDt(t time.Time) { d.createDt = t }
+
+func (d *ExamSessionLine) ModifyId() *int64      { return d.modifyId }
+func (d *ExamSessionLine) SetModifyId(id *int64) { d.modifyId = id }
+
+func (d *ExamSessionLine) ModifyDt() time.Time     { return d.modifyDt }
+func (d *ExamSessionLine) SetModifyDt(t time.Time) { d.modifyDt = t }

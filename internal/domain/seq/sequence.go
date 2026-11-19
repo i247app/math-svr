@@ -18,15 +18,20 @@ type Sequence struct {
 
 func NewSequence() *Sequence { return &Sequence{} }
 
-func (s *Sequence) Name() string             { return s.name }
-func (s *Sequence) SetName(n string)         { s.name = n }
+func (s *Sequence) Name() string     { return s.name }
+func (s *Sequence) SetName(n string) { s.name = n }
+
 func (s *Sequence) CurrentValue() uint64     { return s.currentValue }
 func (s *Sequence) SetCurrentValue(v uint64) { s.currentValue = v }
-func (s *Sequence) Prefix() string           { return s.prefix }
-func (s *Sequence) SetPrefix(p string)       { s.prefix = p }
-func (s *Sequence) Padding() uint8           { return s.padding }
-func (s *Sequence) SetPadding(p uint8)       { s.padding = p }
-func (s *Sequence) IncrementBy() uint32      { return s.incrementBy }
-func (s *Sequence) SetIncrementBy(i uint32)  { s.incrementBy = i }
-func (s *Sequence) ModifyDt() time.Time      { return s.modifyDt }
-func (s *Sequence) SetModifyDt(t time.Time)  { s.modifyDt = t }
+
+func (s *Sequence) Prefix() string     { return s.prefix }
+func (s *Sequence) SetPrefix(p string) { s.prefix = p }
+
+func (s *Sequence) Padding() uint8     { return s.padding }
+func (s *Sequence) SetPadding(p uint8) { s.padding = p }
+
+func (s *Sequence) IncrementBy() uint32     { return s.incrementBy }
+func (s *Sequence) SetIncrementBy(i uint32) { s.incrementBy = i }
+
+func (s *Sequence) ModifyDt() time.Time     { return s.modifyDt }
+func (s *Sequence) SetModifyDt(t time.Time) { s.modifyDt = t }

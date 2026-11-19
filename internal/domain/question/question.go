@@ -60,53 +60,77 @@ type Question struct {
 
 func NewQuestion() *Question { return &Question{} }
 
-func (q *Question) QuestionId() int64                             { return q.questionId }
-func (q *Question) SetQuestionId(id int64)                        { q.questionId = id }
-func (q *Question) ExamId() int64                                 { return q.examId }
-func (q *Question) SetExamId(id int64)                            { q.examId = id }
-func (q *Question) QuestionNumber() int                           { return q.questionNumber }
-func (q *Question) SetQuestionNumber(n int)                       { q.questionNumber = n }
-func (q *Question) QuestionKind() *string                         { return q.questionKind }
-func (q *Question) SetQuestionKind(k *string)                     { q.questionKind = k }
-func (q *Question) QuestionText() string                          { return q.questionText }
-func (q *Question) SetQuestionText(s string)                      { q.questionText = s }
-func (q *Question) Options() []Option                             { return q.options }
-func (q *Question) SetOptions(a []Option)                         { q.options = a }
+func (q *Question) QuestionId() int64      { return q.questionId }
+func (q *Question) SetQuestionId(id int64) { q.questionId = id }
+
+func (q *Question) ExamId() int64      { return q.examId }
+func (q *Question) SetExamId(id int64) { q.examId = id }
+
+func (q *Question) QuestionNumber() int     { return q.questionNumber }
+func (q *Question) SetQuestionNumber(n int) { q.questionNumber = n }
+
+func (q *Question) QuestionKind() *string     { return q.questionKind }
+func (q *Question) SetQuestionKind(k *string) { q.questionKind = k }
+
+func (q *Question) QuestionText() string     { return q.questionText }
+func (q *Question) SetQuestionText(s string) { q.questionText = s }
+
+func (q *Question) Options() []Option     { return q.options }
+func (q *Question) SetOptions(a []Option) { q.options = a }
+
 func (q *Question) CorrectAnswer() questionpool.CorrectAnswer     { return q.correctAnswer }
 func (q *Question) SetCorrectAnswer(a questionpool.CorrectAnswer) { q.correctAnswer = a }
-func (q *Question) Explanation() *string                          { return q.explanation }
-func (q *Question) SetExplanation(s *string)                      { q.explanation = s }
-func (q *Question) QuestionLanguage() string                      { return q.questionLanguage }
-func (q *Question) SetQuestionLanguage(l string)                  { q.questionLanguage = l }
-func (q *Question) Translations() questionpool.Translations       { return q.translations }
-func (q *Question) SetTranslations(t questionpool.Translations)   { q.translations = t }
-func (q *Question) TtsText() *string                              { return q.ttsText }
-func (q *Question) SetTtsText(s *string)                          { q.ttsText = s }
-func (q *Question) QuestionTags() []string                        { return q.questionTags }
-func (q *Question) SetQuestionTags(t []string)                    { q.questionTags = t }
-func (q *Question) QuestionTopic() *string                        { return q.questionTopic }
-func (q *Question) SetQuestionTopic(s *string)                    { q.questionTopic = s }
-func (q *Question) QuestionGrade() *int                           { return q.questionGrade }
-func (q *Question) SetQuestionGrade(g *int)                       { q.questionGrade = g }
-func (q *Question) QuestionLevel() *int                           { return q.questionLevel }
-func (q *Question) SetQuestionLevel(l *int)                       { q.questionLevel = l }
-func (q *Question) QuestionSubLevel() *int                        { return q.questionSubLevel }
-func (q *Question) SetQuestionSubLevel(l *int)                    { q.questionSubLevel = l }
-func (q *Question) QuestionStatus() *string                       { return q.questionStatus }
-func (q *Question) SetQuestionStatus(s *string)                   { q.questionStatus = s }
-func (q *Question) RptFlg() *string                               { return q.rptFlg }
-func (q *Question) SetRptFlg(s *string)                           { q.rptFlg = s }
-func (q *Question) Kwords() *string                               { return q.kwords }
-func (q *Question) SetKwords(s *string)                           { q.kwords = s }
-func (q *Question) Note() *string                                 { return q.note }
-func (q *Question) SetNote(s *string)                             { q.note = s }
-func (q *Question) Status() string                                { return q.status }
-func (q *Question) SetStatus(s string)                            { q.status = s }
-func (q *Question) CreateId() *int64                              { return q.createId }
-func (q *Question) SetCreateId(id *int64)                         { q.createId = id }
-func (q *Question) CreateDt() time.Time                           { return q.createDt }
-func (q *Question) SetCreateDt(t time.Time)                       { q.createDt = t }
-func (q *Question) ModifyId() *int64                              { return q.modifyId }
-func (q *Question) SetModifyId(id *int64)                         { q.modifyId = id }
-func (q *Question) ModifyDt() time.Time                           { return q.modifyDt }
-func (q *Question) SetModifyDt(t time.Time)                       { q.modifyDt = t }
+
+func (q *Question) Explanation() *string     { return q.explanation }
+func (q *Question) SetExplanation(s *string) { q.explanation = s }
+
+func (q *Question) TtsText() *string     { return q.ttsText }
+func (q *Question) SetTtsText(s *string) { q.ttsText = s }
+
+func (q *Question) QuestionLanguage() string     { return q.questionLanguage }
+func (q *Question) SetQuestionLanguage(l string) { q.questionLanguage = l }
+
+func (q *Question) Translations() questionpool.Translations     { return q.translations }
+func (q *Question) SetTranslations(t questionpool.Translations) { q.translations = t }
+
+func (q *Question) QuestionTags() []string     { return q.questionTags }
+func (q *Question) SetQuestionTags(t []string) { q.questionTags = t }
+
+func (q *Question) QuestionTopic() *string     { return q.questionTopic }
+func (q *Question) SetQuestionTopic(s *string) { q.questionTopic = s }
+
+func (q *Question) QuestionGrade() *int     { return q.questionGrade }
+func (q *Question) SetQuestionGrade(g *int) { q.questionGrade = g }
+
+func (q *Question) QuestionLevel() *int     { return q.questionLevel }
+func (q *Question) SetQuestionLevel(l *int) { q.questionLevel = l }
+
+func (q *Question) QuestionSubLevel() *int     { return q.questionSubLevel }
+func (q *Question) SetQuestionSubLevel(l *int) { q.questionSubLevel = l }
+
+func (q *Question) QuestionStatus() *string     { return q.questionStatus }
+func (q *Question) SetQuestionStatus(s *string) { q.questionStatus = s }
+
+func (q *Question) RptFlg() *string     { return q.rptFlg }
+func (q *Question) SetRptFlg(s *string) { q.rptFlg = s }
+
+func (q *Question) Kwords() *string     { return q.kwords }
+func (q *Question) SetKwords(s *string) { q.kwords = s }
+
+func (q *Question) Note() *string     { return q.note }
+func (q *Question) SetNote(s *string) { q.note = s }
+
+func (q *Question) Status() string     { return q.status }
+func (q *Question) SetStatus(s string) { q.status = s }
+
+func (q *Question) CreateId() *int64      { return q.createId }
+func (q *Question) SetCreateId(id *int64) { q.createId = id }
+
+func (q *Question) CreateDt() time.Time     { return q.createDt }
+func (q *Question) SetCreateDt(t time.Time) { q.createDt = t }
+
+func (q *Question) ModifyId() *int64      { return q.modifyId }
+func (q *Question) SetModifyId(id *int64) { q.modifyId = id }
+
+func (q *Question) ModifyDt() time.Time     { return q.modifyDt }
+func (q *Question) SetModifyDt(t time.Time) { q.modifyDt = t }

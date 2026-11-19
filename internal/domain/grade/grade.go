@@ -25,116 +25,44 @@ func NewGrade() *Grade {
 	return &Grade{}
 }
 
-func (g *Grade) GradeId() int64 {
-	return g.gradeId
-}
+func (g *Grade) GradeId() int64           { return g.gradeId }
+func (g *Grade) SetGradeId(gradeId int64) { g.gradeId = gradeId }
 
-func (g *Grade) SetGradeId(gradeId int64) {
-	g.gradeId = gradeId
-}
+func (g *Grade) Label() string         { return g.label }
+func (g *Grade) SetLabel(label string) { g.label = label }
 
-func (g *Grade) Label() string {
-	return g.label
-}
+func (g *Grade) Description() string               { return g.description }
+func (g *Grade) SetDescription(description string) { g.description = description }
 
-func (g *Grade) SetLabel(label string) {
-	g.label = label
-}
+func (g *Grade) ImageKey() *string            { return g.imageKey }
+func (g *Grade) SetImageKey(imageKey *string) { g.imageKey = imageKey }
 
-func (g *Grade) Description() string {
-	return g.description
-}
+func (g *Grade) DisplayOrder() int8                { return g.displayOrder }
+func (g *Grade) SetDisplayOrder(displayOrder int8) { g.displayOrder = displayOrder }
 
-func (g *Grade) SetDescription(description string) {
-	g.description = description
-}
+func (g *Grade) RptFlg() *string          { return g.rptFlg }
+func (g *Grade) SetRptFlg(rptFlg *string) { g.rptFlg = rptFlg }
 
-func (g *Grade) ImageKey() *string {
-	return g.imageKey
-}
+func (g *Grade) Kwords() *string          { return g.kwords }
+func (g *Grade) SetKwords(kwords *string) { g.kwords = kwords }
 
-func (g *Grade) SetImageKey(imageKey *string) {
-	g.imageKey = imageKey
-}
+func (g *Grade) Note() *string        { return g.note }
+func (g *Grade) SetNote(note *string) { g.note = note }
 
-func (g *Grade) DisplayOrder() int8 {
-	return g.displayOrder
-}
+func (g *Grade) GradeStatus() *string               { return g.gradeStatus }
+func (g *Grade) SetGradeStatus(gradeStatus *string) { g.gradeStatus = gradeStatus }
 
-func (g *Grade) SetDisplayOrder(displayOrder int8) {
-	g.displayOrder = displayOrder
-}
+func (g *Grade) Status() string          { return g.status }
+func (g *Grade) SetStatus(status string) { g.status = status }
 
-func (g *Grade) Note() *string {
-	return g.note
-}
+func (g *Grade) CreateId() *int64            { return g.createId }
+func (g *Grade) SetCreateId(createId *int64) { g.createId = createId }
 
-func (g *Grade) SetNote(note *string) {
-	g.note = note
-}
+func (g *Grade) CreateDt() time.Time            { return g.createDt }
+func (g *Grade) SetCreateDt(createDt time.Time) { g.createDt = createDt }
 
-// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
-func (g *Grade) RptFlg() *string {
-	return g.rptFlg
-}
+func (g *Grade) ModifyId() *int64            { return g.modifyId }
+func (g *Grade) SetModifyId(modifyId *int64) { g.modifyId = modifyId }
 
-func (g *Grade) SetRptFlg(rptFlg *string) {
-	g.rptFlg = rptFlg
-}
-
-// Kwords holds search keywords (kwords) for a future text-search index.
-func (g *Grade) Kwords() *string {
-	return g.kwords
-}
-
-func (g *Grade) SetKwords(kwords *string) {
-	g.kwords = kwords
-}
-
-func (g *Grade) GradeStatus() *string {
-	return g.gradeStatus
-}
-
-func (g *Grade) SetGradeStatus(gradeStatus *string) {
-	g.gradeStatus = gradeStatus
-}
-
-func (g *Grade) Status() string {
-	return g.status
-}
-
-func (g *Grade) SetStatus(status string) {
-	g.status = status
-}
-
-func (g *Grade) CreateId() *int64 {
-	return g.createId
-}
-
-func (g *Grade) SetCreateId(createId *int64) {
-	g.createId = createId
-}
-
-func (g *Grade) CreateDt() time.Time {
-	return g.createDt
-}
-
-func (g *Grade) SetCreateDt(createDt time.Time) {
-	g.createDt = createDt
-}
-
-func (g *Grade) ModifyId() *int64 {
-	return g.modifyId
-}
-
-func (g *Grade) SetModifyId(modifyId *int64) {
-	g.modifyId = modifyId
-}
-
-func (g *Grade) ModifyDt() time.Time {
-	return g.modifyDt
-}
-
-func (g *Grade) SetModifyDt(modifyDt time.Time) {
-	g.modifyDt = modifyDt
-}
+func (g *Grade) ModifyDt() time.Time            { return g.modifyDt }
+func (g *Grade) SetModifyDt(modifyDt time.Time) { g.modifyDt = modifyDt }

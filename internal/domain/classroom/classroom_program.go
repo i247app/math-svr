@@ -34,23 +34,33 @@ func NewClassroomProgram() *ClassroomProgram {
 
 func (cp *ClassroomProgram) ClassroomProgramId() int64     { return cp.classroomProgramId }
 func (cp *ClassroomProgram) SetClassroomProgramId(v int64) { cp.classroomProgramId = v }
-func (cp *ClassroomProgram) ClassroomId() int64            { return cp.classroomId }
-func (cp *ClassroomProgram) SetClassroomId(v int64)        { cp.classroomId = v }
-func (cp *ClassroomProgram) ProgramId() int64              { return cp.programId }
-func (cp *ClassroomProgram) SetProgramId(v int64)          { cp.programId = v }
-func (cp *ClassroomProgram) Note() *string                 { return cp.note }
-func (cp *ClassroomProgram) SetNote(v *string)             { cp.note = v }
-func (cp *ClassroomProgram) RptFlg() *string               { return cp.rptFlg }
-func (cp *ClassroomProgram) SetRptFlg(v *string)           { cp.rptFlg = v }
-func (cp *ClassroomProgram) Kwords() *string               { return cp.kwords }
-func (cp *ClassroomProgram) SetKwords(v *string)           { cp.kwords = v }
-func (cp *ClassroomProgram) Status() string                { return cp.status }
-func (cp *ClassroomProgram) SetStatus(v string)            { cp.status = v }
-func (cp *ClassroomProgram) CreateId() *int64              { return cp.createId }
-func (cp *ClassroomProgram) SetCreateId(v *int64)          { cp.createId = v }
-func (cp *ClassroomProgram) CreateDt() time.Time           { return cp.createDt }
-func (cp *ClassroomProgram) SetCreateDt(t time.Time)       { cp.createDt = t }
-func (cp *ClassroomProgram) ModifyId() *int64              { return cp.modifyId }
-func (cp *ClassroomProgram) SetModifyId(v *int64)          { cp.modifyId = v }
-func (cp *ClassroomProgram) ModifyDt() time.Time           { return cp.modifyDt }
-func (cp *ClassroomProgram) SetModifyDt(t time.Time)       { cp.modifyDt = t }
+
+func (cp *ClassroomProgram) ClassroomId() int64     { return cp.classroomId }
+func (cp *ClassroomProgram) SetClassroomId(v int64) { cp.classroomId = v }
+
+func (cp *ClassroomProgram) ProgramId() int64     { return cp.programId }
+func (cp *ClassroomProgram) SetProgramId(v int64) { cp.programId = v }
+
+func (cp *ClassroomProgram) RptFlg() *string     { return cp.rptFlg }
+func (cp *ClassroomProgram) SetRptFlg(v *string) { cp.rptFlg = v }
+
+func (cp *ClassroomProgram) Kwords() *string     { return cp.kwords }
+func (cp *ClassroomProgram) SetKwords(v *string) { cp.kwords = v }
+
+func (cp *ClassroomProgram) Note() *string     { return cp.note }
+func (cp *ClassroomProgram) SetNote(v *string) { cp.note = v }
+
+func (cp *ClassroomProgram) Status() string     { return cp.status }
+func (cp *ClassroomProgram) SetStatus(v string) { cp.status = v }
+
+func (cp *ClassroomProgram) CreateId() *int64     { return cp.createId }
+func (cp *ClassroomProgram) SetCreateId(v *int64) { cp.createId = v }
+
+func (cp *ClassroomProgram) CreateDt() time.Time     { return cp.createDt }
+func (cp *ClassroomProgram) SetCreateDt(t time.Time) { cp.createDt = t }
+
+func (cp *ClassroomProgram) ModifyId() *int64     { return cp.modifyId }
+func (cp *ClassroomProgram) SetModifyId(v *int64) { cp.modifyId = v }
+
+func (cp *ClassroomProgram) ModifyDt() time.Time     { return cp.modifyDt }
+func (cp *ClassroomProgram) SetModifyDt(t time.Time) { cp.modifyDt = t }

@@ -45,41 +45,60 @@ func NewSubmission() *Submission { return &Submission{} }
 
 func (s *Submission) ClassroomExerciseSubmissionId() int64      { return s.classroomExerciseSubmissionId }
 func (s *Submission) SetClassroomExerciseSubmissionId(id int64) { s.classroomExerciseSubmissionId = id }
-func (s *Submission) ClassroomExerciseId() int64                { return s.classroomExerciseId }
-func (s *Submission) SetClassroomExerciseId(id int64)           { s.classroomExerciseId = id }
-func (s *Submission) ClassroomId() int64                        { return s.classroomId }
-func (s *Submission) SetClassroomId(id int64)                   { s.classroomId = id }
-func (s *Submission) ProfileId() int64                          { return s.profileId }
-func (s *Submission) SetProfileId(id int64)                     { s.profileId = id }
-func (s *Submission) Answers() *string                          { return s.answers }
-func (s *Submission) SetAnswers(v *string)                      { s.answers = v }
-func (s *Submission) Review() *string                           { return s.review }
-func (s *Submission) SetReview(v *string)                       { s.review = v }
-func (s *Submission) TotalQuestions() *int64                    { return s.totalQuestions }
-func (s *Submission) SetTotalQuestions(v *int64)                { s.totalQuestions = v }
-func (s *Submission) CorrectNumber() *int64                     { return s.correctNumber }
-func (s *Submission) SetCorrectNumber(v *int64)                 { s.correctNumber = v }
-func (s *Submission) ScorePercentage() *int64                   { return s.scorePercentage }
-func (s *Submission) SetScorePercentage(v *int64)               { s.scorePercentage = v }
-func (s *Submission) SubmittedDt() time.Time                    { return s.submittedDt }
-func (s *Submission) SetSubmittedDt(t time.Time)                { s.submittedDt = t }
-func (s *Submission) GradedDt() time.Time                       { return s.gradedDt }
-func (s *Submission) SetGradedDt(t time.Time)                   { s.gradedDt = t }
-func (s *Submission) Note() *string                             { return s.note }
-func (s *Submission) SetNote(v *string)                         { s.note = v }
-func (s *Submission) RptFlg() *string                           { return s.rptFlg }
-func (s *Submission) SetRptFlg(v *string)                       { s.rptFlg = v }
-func (s *Submission) Kwords() *string                           { return s.kwords }
-func (s *Submission) SetKwords(v *string)                       { s.kwords = v }
-func (s *Submission) SubmissionStatus() *string                 { return s.submissionStatus }
-func (s *Submission) SetSubmissionStatus(v *string)             { s.submissionStatus = v }
-func (s *Submission) Status() string                            { return s.status }
-func (s *Submission) SetStatus(v string)                        { s.status = v }
-func (s *Submission) CreateId() *int64                          { return s.createId }
-func (s *Submission) SetCreateId(v *int64)                      { s.createId = v }
-func (s *Submission) CreateDt() time.Time                       { return s.createDt }
-func (s *Submission) SetCreateDt(t time.Time)                   { s.createDt = t }
-func (s *Submission) ModifyId() *int64                          { return s.modifyId }
-func (s *Submission) SetModifyId(v *int64)                      { s.modifyId = v }
-func (s *Submission) ModifyDt() time.Time                       { return s.modifyDt }
-func (s *Submission) SetModifyDt(t time.Time)                   { s.modifyDt = t }
+
+func (s *Submission) ClassroomExerciseId() int64      { return s.classroomExerciseId }
+func (s *Submission) SetClassroomExerciseId(id int64) { s.classroomExerciseId = id }
+
+func (s *Submission) ClassroomId() int64      { return s.classroomId }
+func (s *Submission) SetClassroomId(id int64) { s.classroomId = id }
+
+func (s *Submission) ProfileId() int64      { return s.profileId }
+func (s *Submission) SetProfileId(id int64) { s.profileId = id }
+
+func (s *Submission) Answers() *string     { return s.answers }
+func (s *Submission) SetAnswers(v *string) { s.answers = v }
+
+func (s *Submission) Review() *string     { return s.review }
+func (s *Submission) SetReview(v *string) { s.review = v }
+
+func (s *Submission) TotalQuestions() *int64     { return s.totalQuestions }
+func (s *Submission) SetTotalQuestions(v *int64) { s.totalQuestions = v }
+
+func (s *Submission) CorrectNumber() *int64     { return s.correctNumber }
+func (s *Submission) SetCorrectNumber(v *int64) { s.correctNumber = v }
+
+func (s *Submission) ScorePercentage() *int64     { return s.scorePercentage }
+func (s *Submission) SetScorePercentage(v *int64) { s.scorePercentage = v }
+
+func (s *Submission) SubmittedDt() time.Time     { return s.submittedDt }
+func (s *Submission) SetSubmittedDt(t time.Time) { s.submittedDt = t }
+
+func (s *Submission) GradedDt() time.Time     { return s.gradedDt }
+func (s *Submission) SetGradedDt(t time.Time) { s.gradedDt = t }
+
+func (s *Submission) RptFlg() *string     { return s.rptFlg }
+func (s *Submission) SetRptFlg(v *string) { s.rptFlg = v }
+
+func (s *Submission) Kwords() *string     { return s.kwords }
+func (s *Submission) SetKwords(v *string) { s.kwords = v }
+
+func (s *Submission) Note() *string     { return s.note }
+func (s *Submission) SetNote(v *string) { s.note = v }
+
+func (s *Submission) SubmissionStatus() *string     { return s.submissionStatus }
+func (s *Submission) SetSubmissionStatus(v *string) { s.submissionStatus = v }
+
+func (s *Submission) Status() string     { return s.status }
+func (s *Submission) SetStatus(v string) { s.status = v }
+
+func (s *Submission) CreateId() *int64     { return s.createId }
+func (s *Submission) SetCreateId(v *int64) { s.createId = v }
+
+func (s *Submission) CreateDt() time.Time     { return s.createDt }
+func (s *Submission) SetCreateDt(t time.Time) { s.createDt = t }
+
+func (s *Submission) ModifyId() *int64     { return s.modifyId }
+func (s *Submission) SetModifyId(v *int64) { s.modifyId = v }
+
+func (s *Submission) ModifyDt() time.Time     { return s.modifyDt }
+func (s *Submission) SetModifyDt(t time.Time) { s.modifyDt = t }

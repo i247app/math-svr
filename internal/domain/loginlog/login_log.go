@@ -25,116 +25,44 @@ func NewLoginLog() *LoginLog {
 	return &LoginLog{}
 }
 
-func (l *LoginLog) LoginLogId() int64 {
-	return l.loginLogId
-}
+func (l *LoginLog) LoginLogId() int64              { return l.loginLogId }
+func (l *LoginLog) SetLoginLogId(loginLogId int64) { l.loginLogId = loginLogId }
 
-func (l *LoginLog) SetLoginLogId(loginLogId int64) {
-	l.loginLogId = loginLogId
-}
+func (l *LoginLog) Uid() int64       { return l.uid }
+func (l *LoginLog) SetUid(uid int64) { l.uid = uid }
 
-func (l *LoginLog) Uid() int64 {
-	return l.uid
-}
+func (l *LoginLog) IpAddress() string             { return l.ipAddress }
+func (l *LoginLog) SetIpAddress(ipAddress string) { l.ipAddress = ipAddress }
 
-func (l *LoginLog) SetUid(uid int64) {
-	l.uid = uid
-}
+func (l *LoginLog) DeviceUUID() string              { return l.deviceUUID }
+func (l *LoginLog) SetDeviceUUID(deviceUUID string) { l.deviceUUID = deviceUUID }
 
-func (l *LoginLog) IpAddress() string {
-	return l.ipAddress
-}
+func (l *LoginLog) Token() string         { return l.token }
+func (l *LoginLog) SetToken(token string) { l.token = token }
 
-func (l *LoginLog) SetIpAddress(ipAddress string) {
-	l.ipAddress = ipAddress
-}
+func (l *LoginLog) RptFlg() *string          { return l.rptFlg }
+func (l *LoginLog) SetRptFlg(rptFlg *string) { l.rptFlg = rptFlg }
 
-func (l *LoginLog) DeviceUUID() string {
-	return l.deviceUUID
-}
+func (l *LoginLog) Kwords() *string          { return l.kwords }
+func (l *LoginLog) SetKwords(kwords *string) { l.kwords = kwords }
 
-func (l *LoginLog) SetDeviceUUID(deviceUUID string) {
-	l.deviceUUID = deviceUUID
-}
+func (l *LoginLog) Note() *string        { return l.note }
+func (l *LoginLog) SetNote(note *string) { l.note = note }
 
-func (l *LoginLog) Token() string {
-	return l.token
-}
+func (l *LoginLog) LoginLogStatus() *string                  { return l.loginLogStatus }
+func (l *LoginLog) SetLoginLogStatus(loginLogStatus *string) { l.loginLogStatus = loginLogStatus }
 
-func (l *LoginLog) SetToken(token string) {
-	l.token = token
-}
+func (l *LoginLog) Status() string          { return l.status }
+func (l *LoginLog) SetStatus(status string) { l.status = status }
 
-func (l *LoginLog) Note() *string {
-	return l.note
-}
+func (l *LoginLog) CreateId() *int64            { return l.createId }
+func (l *LoginLog) SetCreateId(createId *int64) { l.createId = createId }
 
-func (l *LoginLog) SetNote(note *string) {
-	l.note = note
-}
+func (l *LoginLog) CreateDt() time.Time            { return l.createDt }
+func (l *LoginLog) SetCreateDt(createDt time.Time) { l.createDt = createDt }
 
-// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
-func (l *LoginLog) RptFlg() *string {
-	return l.rptFlg
-}
+func (l *LoginLog) ModifyId() *int64            { return l.modifyId }
+func (l *LoginLog) SetModifyId(modifyId *int64) { l.modifyId = modifyId }
 
-func (l *LoginLog) SetRptFlg(rptFlg *string) {
-	l.rptFlg = rptFlg
-}
-
-// Kwords holds search keywords (kwords) for a future text-search index.
-func (l *LoginLog) Kwords() *string {
-	return l.kwords
-}
-
-func (l *LoginLog) SetKwords(kwords *string) {
-	l.kwords = kwords
-}
-
-func (l *LoginLog) LoginLogStatus() *string {
-	return l.loginLogStatus
-}
-
-func (l *LoginLog) SetLoginLogStatus(loginLogStatus *string) {
-	l.loginLogStatus = loginLogStatus
-}
-
-func (l *LoginLog) Status() string {
-	return l.status
-}
-
-func (l *LoginLog) SetStatus(status string) {
-	l.status = status
-}
-
-func (l *LoginLog) CreateId() *int64 {
-	return l.createId
-}
-
-func (l *LoginLog) SetCreateId(createId *int64) {
-	l.createId = createId
-}
-
-func (l *LoginLog) CreateDt() time.Time {
-	return l.createDt
-}
-
-func (l *LoginLog) SetCreateDt(createDt time.Time) {
-	l.createDt = createDt
-}
-
-func (l *LoginLog) ModifyId() *int64 {
-	return l.modifyId
-}
-
-func (l *LoginLog) SetModifyId(modifyId *int64) {
-	l.modifyId = modifyId
-}
-
-func (l *LoginLog) ModifyDt() time.Time {
-	return l.modifyDt
-}
-
-func (l *LoginLog) SetModifyDt(modifyDt time.Time) {
-	l.modifyDt = modifyDt
-}
+func (l *LoginLog) ModifyDt() time.Time            { return l.modifyDt }
+func (l *LoginLog) SetModifyDt(modifyDt time.Time) { l.modifyDt = modifyDt }

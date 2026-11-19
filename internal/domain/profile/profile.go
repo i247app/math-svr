@@ -42,249 +42,91 @@ func NewProfile() *Profile {
 	return &Profile{}
 }
 
-func (p *Profile) ProfileId() int64 {
-	return p.profileId
-}
-
-func (p *Profile) SetProfileId(profileId int64) {
-	p.profileId = profileId
-}
+func (p *Profile) ProfileId() int64             { return p.profileId }
+func (p *Profile) SetProfileId(profileId int64) { p.profileId = profileId }
 
 // ProfileCode is the human-readable id (e.g. "AA-1234") minted at
 // create time and unique across ma_profiles. Used by clients for
 // display + search alongside the numeric profile_id.
-func (p *Profile) ProfileCode() string {
-	return p.profileCode
-}
+func (p *Profile) ProfileCode() string        { return p.profileCode }
+func (p *Profile) SetProfileCode(code string) { p.profileCode = code }
 
-func (p *Profile) SetProfileCode(code string) {
-	p.profileCode = code
-}
+func (p *Profile) Uid() int64       { return p.uid }
+func (p *Profile) SetUid(uid int64) { p.uid = uid }
 
-func (p *Profile) Uid() int64 {
-	return p.uid
-}
+func (p *Profile) Name() string        { return p.name }
+func (p *Profile) SetName(name string) { p.name = name }
 
-func (p *Profile) SetUid(uid int64) {
-	p.uid = uid
-}
+func (p *Profile) Phone() *string         { return p.phone }
+func (p *Profile) SetPhone(phone *string) { p.phone = phone }
 
-func (p *Profile) Name() string {
-	return p.name
-}
-
-func (p *Profile) SetName(name string) {
-	p.name = name
-}
-
-func (p *Profile) Phone() *string {
-	return p.phone
-}
-
-func (p *Profile) SetPhone(phone *string) {
-	p.phone = phone
-}
-
-func (p *Profile) Email() *string {
-	return p.email
-}
-
-func (p *Profile) SetEmail(email *string) {
-	p.email = email
-}
+func (p *Profile) Email() *string         { return p.email }
+func (p *Profile) SetEmail(email *string) { p.email = email }
 
 // Role mirrors ma_users.role for this child. Nullable since migration
 // 031: a guest profile has no declared role.
-func (p *Profile) Role() *string {
-	return p.role
-}
-
-func (p *Profile) SetRole(role *string) {
-	p.role = role
-}
+func (p *Profile) Role() *string        { return p.role }
+func (p *Profile) SetRole(role *string) { p.role = role }
 
 // IdentityCode is GUEST / USER / VERIFIED — see enum.IdentityCodeType.
 // VERIFIED is paired with profileStatus OFFICIAL; both are produced by
 // DeriveIdentity, never set independently.
-func (p *Profile) IdentityCode() *string {
-	return p.identityCode
-}
+func (p *Profile) IdentityCode() *string                { return p.identityCode }
+func (p *Profile) SetIdentityCode(identityCode *string) { p.identityCode = identityCode }
 
-func (p *Profile) SetIdentityCode(identityCode *string) {
-	p.identityCode = identityCode
-}
+func (p *Profile) AvatarKey() *string             { return p.avatarKey }
+func (p *Profile) SetAvatarKey(avatarKey *string) { p.avatarKey = avatarKey }
 
-func (p *Profile) AvatarKey() *string {
-	return p.avatarKey
-}
+func (p *Profile) Dob() time.Time       { return p.dob }
+func (p *Profile) SetDob(dob time.Time) { p.dob = dob }
 
-func (p *Profile) SetAvatarKey(avatarKey *string) {
-	p.avatarKey = avatarKey
-}
+func (p *Profile) SchoolId() *int64            { return p.schoolId }
+func (p *Profile) SetSchoolId(schoolId *int64) { p.schoolId = schoolId }
 
-func (p *Profile) Dob() time.Time {
-	return p.dob
-}
+func (p *Profile) ProgramId() *int64             { return p.programId }
+func (p *Profile) SetProgramId(programId *int64) { p.programId = programId }
 
-func (p *Profile) SetDob(dob time.Time) {
-	p.dob = dob
-}
+func (p *Profile) GradeId() *int64           { return p.gradeId }
+func (p *Profile) SetGradeId(gradeId *int64) { p.gradeId = gradeId }
 
-func (p *Profile) SchoolId() *int64 {
-	return p.schoolId
-}
+func (p *Profile) SemesterId() *int64              { return p.semesterId }
+func (p *Profile) SetSemesterId(semesterId *int64) { p.semesterId = semesterId }
 
-// SetSchoolId mirrors the other reference-id setters — nil passes through
-// so the model layer can flatten a NULL column to "no school assigned".
-func (p *Profile) SetSchoolId(schoolId *int64) {
-	if schoolId == nil {
-		p.schoolId = nil
-		return
-	}
-	p.schoolId = schoolId
-}
+func (p *Profile) IsDefault() bool             { return p.isDefault }
+func (p *Profile) SetIsDefault(isDefault bool) { p.isDefault = isDefault }
 
-func (p *Profile) ProgramId() *int64 {
-	return p.programId
-}
+func (p *Profile) IdType() *string          { return p.idType }
+func (p *Profile) SetIdType(idType *string) { p.idType = idType }
 
-// SetProgramId accepts a pointer so the model layer (which stores
-// *string for the now-nullable column) can pass through nil. nil is
-// flattened to uuid.Nil so the domain field stays a value type.
-func (p *Profile) SetProgramId(programId *int64) {
-	if programId == nil {
-		p.programId = nil
-		return
-	}
-	p.programId = programId
-}
+func (p *Profile) TeacherId() *string             { return p.teacherId }
+func (p *Profile) SetTeacherId(teacherId *string) { p.teacherId = teacherId }
 
-func (p *Profile) GradeId() *int64 {
-	return p.gradeId
-}
+func (p *Profile) StudentId() *string             { return p.studentId }
+func (p *Profile) SetStudentId(studentId *string) { p.studentId = studentId }
 
-func (p *Profile) SetGradeId(gradeId *int64) {
-	if gradeId == nil {
-		p.gradeId = nil
-		return
-	}
-	p.gradeId = gradeId
-}
+func (p *Profile) RptFlg() *string          { return p.rptFlg }
+func (p *Profile) SetRptFlg(rptFlg *string) { p.rptFlg = rptFlg }
 
-func (p *Profile) SemesterId() *int64 {
-	return p.semesterId
-}
+func (p *Profile) Kwords() *string          { return p.kwords }
+func (p *Profile) SetKwords(kwords *string) { p.kwords = kwords }
 
-func (p *Profile) SetSemesterId(semesterId *int64) {
-	if semesterId == nil {
-		p.semesterId = nil
-		return
-	}
-	p.semesterId = semesterId
-}
+func (p *Profile) Note() *string        { return p.note }
+func (p *Profile) SetNote(note *string) { p.note = note }
 
-func (p *Profile) IsDefault() bool {
-	return p.isDefault
-}
+func (p *Profile) ProfileStatus() *string                 { return p.profileStatus }
+func (p *Profile) SetProfileStatus(profileStatus *string) { p.profileStatus = profileStatus }
 
-func (p *Profile) SetIsDefault(isDefault bool) {
-	p.isDefault = isDefault
-}
+func (p *Profile) Status() string          { return p.status }
+func (p *Profile) SetStatus(status string) { p.status = status }
 
-func (p *Profile) IdType() *string {
-	return p.idType
-}
+func (p *Profile) CreateId() *int64            { return p.createId }
+func (p *Profile) SetCreateId(createId *int64) { p.createId = createId }
 
-func (p *Profile) SetIdType(idType *string) {
-	p.idType = idType
-}
+func (p *Profile) CreateDt() time.Time            { return p.createDt }
+func (p *Profile) SetCreateDt(createDt time.Time) { p.createDt = createDt }
 
-func (p *Profile) TeacherId() *string {
-	return p.teacherId
-}
+func (p *Profile) ModifyId() *int64            { return p.modifyId }
+func (p *Profile) SetModifyId(modifyId *int64) { p.modifyId = modifyId }
 
-func (p *Profile) SetTeacherId(teacherId *string) {
-	p.teacherId = teacherId
-}
-
-func (p *Profile) StudentId() *string {
-	return p.studentId
-}
-
-func (p *Profile) SetStudentId(studentId *string) {
-	p.studentId = studentId
-}
-
-func (p *Profile) Note() *string {
-	return p.note
-}
-
-func (p *Profile) SetNote(note *string) {
-	p.note = note
-}
-
-// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
-func (p *Profile) RptFlg() *string {
-	return p.rptFlg
-}
-
-func (p *Profile) SetRptFlg(rptFlg *string) {
-	p.rptFlg = rptFlg
-}
-
-// Kwords holds search keywords (kwords) for a future text-search index.
-func (p *Profile) Kwords() *string {
-	return p.kwords
-}
-
-func (p *Profile) SetKwords(kwords *string) {
-	p.kwords = kwords
-}
-
-func (p *Profile) ProfileStatus() *string {
-	return p.profileStatus
-}
-
-func (p *Profile) SetProfileStatus(profileStatus *string) {
-	p.profileStatus = profileStatus
-}
-
-func (p *Profile) Status() string {
-	return p.status
-}
-
-func (p *Profile) SetStatus(status string) {
-	p.status = status
-}
-
-func (p *Profile) CreateId() *int64 {
-	return p.createId
-}
-
-func (p *Profile) SetCreateId(createId *int64) {
-	p.createId = createId
-}
-
-func (p *Profile) CreateDt() time.Time {
-	return p.createDt
-}
-
-func (p *Profile) SetCreateDt(createDt time.Time) {
-	p.createDt = createDt
-}
-
-func (p *Profile) ModifyId() *int64 {
-	return p.modifyId
-}
-
-func (p *Profile) SetModifyId(modifyId *int64) {
-	p.modifyId = modifyId
-}
-
-func (p *Profile) ModifyDt() time.Time {
-	return p.modifyDt
-}
-
-func (p *Profile) SetModifyDt(modifyDt time.Time) {
-	p.modifyDt = modifyDt
-}
+func (p *Profile) ModifyDt() time.Time            { return p.modifyDt }
+func (p *Profile) SetModifyDt(modifyDt time.Time) { p.modifyDt = modifyDt }

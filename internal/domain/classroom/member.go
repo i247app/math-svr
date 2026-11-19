@@ -43,45 +43,65 @@ func NewMember() *Member {
 	return &Member{}
 }
 
-func (m *Member) MemberId() int64                { return m.memberId }
-func (m *Member) SetMemberId(id int64)           { m.memberId = id }
-func (m *Member) ClassroomId() int64             { return m.classroomId }
-func (m *Member) SetClassroomId(id int64)        { m.classroomId = id }
-func (m *Member) ProfileId() int64               { return m.profileId }
-func (m *Member) SetProfileId(id int64)          { m.profileId = id }
-func (m *Member) MemberRole() string             { return m.memberRole }
-func (m *Member) SetMemberRole(v string)         { m.memberRole = v }
-func (m *Member) InvitationId() *int64           { return m.invitationId }
-func (m *Member) SetInvitationId(v *int64)       { m.invitationId = v }
-func (m *Member) JoinedDt() time.Time            { return m.joinedDt }
-func (m *Member) SetJoinedDt(t time.Time)        { m.joinedDt = t }
-func (m *Member) LeftDt() time.Time              { return m.leftDt }
-func (m *Member) SetLeftDt(t time.Time)          { m.leftDt = t }
+func (m *Member) MemberId() int64      { return m.memberId }
+func (m *Member) SetMemberId(id int64) { m.memberId = id }
+
+func (m *Member) ClassroomId() int64      { return m.classroomId }
+func (m *Member) SetClassroomId(id int64) { m.classroomId = id }
+
+func (m *Member) ProfileId() int64      { return m.profileId }
+func (m *Member) SetProfileId(id int64) { m.profileId = id }
+
+func (m *Member) MemberRole() string     { return m.memberRole }
+func (m *Member) SetMemberRole(v string) { m.memberRole = v }
+
+func (m *Member) InvitationId() *int64     { return m.invitationId }
+func (m *Member) SetInvitationId(v *int64) { m.invitationId = v }
+
+func (m *Member) JoinedDt() time.Time     { return m.joinedDt }
+func (m *Member) SetJoinedDt(t time.Time) { m.joinedDt = t }
+
+func (m *Member) LeftDt() time.Time     { return m.leftDt }
+func (m *Member) SetLeftDt(t time.Time) { m.leftDt = t }
+
 func (m *Member) RemovedByProfileId() *int64     { return m.removedByProfileId }
 func (m *Member) SetRemovedByProfileId(v *int64) { m.removedByProfileId = v }
-func (m *Member) RemovedDt() time.Time           { return m.removedDt }
-func (m *Member) SetRemovedDt(t time.Time)       { m.removedDt = t }
-func (m *Member) LastSeenDt() time.Time          { return m.lastSeenDt }
-func (m *Member) SetLastSeenDt(t time.Time)      { m.lastSeenDt = t }
-func (m *Member) Note() *string                  { return m.note }
-func (m *Member) SetNote(n *string)              { m.note = n }
-func (m *Member) RptFlg() *string                { return m.rptFlg }
-func (m *Member) SetRptFlg(v *string)            { m.rptFlg = v }
-func (m *Member) Kwords() *string                { return m.kwords }
-func (m *Member) SetKwords(v *string)            { m.kwords = v }
-func (m *Member) InviteBy() *int64               { return m.inviteBy }
-func (m *Member) SetInviteBy(v *int64)           { m.inviteBy = v }
-func (m *Member) InviteDt() time.Time            { return m.inviteDt }
-func (m *Member) SetInviteDt(t time.Time)        { m.inviteDt = t }
-func (m *Member) MemberStatus() *string          { return m.memberStatus }
-func (m *Member) SetMemberStatus(v *string)      { m.memberStatus = v }
-func (m *Member) Status() string                 { return m.status }
-func (m *Member) SetStatus(v string)             { m.status = v }
-func (m *Member) CreateId() *int64               { return m.createId }
-func (m *Member) SetCreateId(id *int64)          { m.createId = id }
-func (m *Member) CreateDt() time.Time            { return m.createDt }
-func (m *Member) SetCreateDt(t time.Time)        { m.createDt = t }
-func (m *Member) ModifyId() *int64               { return m.modifyId }
-func (m *Member) SetModifyId(id *int64)          { m.modifyId = id }
-func (m *Member) ModifyDt() time.Time            { return m.modifyDt }
-func (m *Member) SetModifyDt(t time.Time)        { m.modifyDt = t }
+
+func (m *Member) RemovedDt() time.Time     { return m.removedDt }
+func (m *Member) SetRemovedDt(t time.Time) { m.removedDt = t }
+
+func (m *Member) LastSeenDt() time.Time     { return m.lastSeenDt }
+func (m *Member) SetLastSeenDt(t time.Time) { m.lastSeenDt = t }
+
+func (m *Member) RptFlg() *string     { return m.rptFlg }
+func (m *Member) SetRptFlg(v *string) { m.rptFlg = v }
+
+func (m *Member) Kwords() *string     { return m.kwords }
+func (m *Member) SetKwords(v *string) { m.kwords = v }
+
+func (m *Member) Note() *string     { return m.note }
+func (m *Member) SetNote(n *string) { m.note = n }
+
+func (m *Member) InviteBy() *int64     { return m.inviteBy }
+func (m *Member) SetInviteBy(v *int64) { m.inviteBy = v }
+
+func (m *Member) InviteDt() time.Time     { return m.inviteDt }
+func (m *Member) SetInviteDt(t time.Time) { m.inviteDt = t }
+
+func (m *Member) MemberStatus() *string     { return m.memberStatus }
+func (m *Member) SetMemberStatus(v *string) { m.memberStatus = v }
+
+func (m *Member) Status() string     { return m.status }
+func (m *Member) SetStatus(v string) { m.status = v }
+
+func (m *Member) CreateId() *int64      { return m.createId }
+func (m *Member) SetCreateId(id *int64) { m.createId = id }
+
+func (m *Member) CreateDt() time.Time     { return m.createDt }
+func (m *Member) SetCreateDt(t time.Time) { m.createDt = t }
+
+func (m *Member) ModifyId() *int64      { return m.modifyId }
+func (m *Member) SetModifyId(id *int64) { m.modifyId = id }
+
+func (m *Member) ModifyDt() time.Time     { return m.modifyDt }
+func (m *Member) SetModifyDt(t time.Time) { m.modifyDt = t }

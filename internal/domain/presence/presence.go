@@ -34,43 +34,49 @@ type Presence struct {
 
 func NewPresence() *Presence { return &Presence{} }
 
-func (p *Presence) Uid() int64                 { return p.uid }
-func (p *Presence) SetUid(id int64)            { p.uid = id }
-func (p *Presence) PresenceState() string      { return p.presenceState }
-func (p *Presence) SetPresenceState(s string)  { p.presenceState = s }
+func (p *Presence) Uid() int64      { return p.uid }
+func (p *Presence) SetUid(id int64) { p.uid = id }
+
+func (p *Presence) PresenceState() string     { return p.presenceState }
+func (p *Presence) SetPresenceState(s string) { p.presenceState = s }
+
 func (p *Presence) ConnectionCount() int64     { return p.connectionCount }
 func (p *Presence) SetConnectionCount(c int64) { p.connectionCount = c }
-func (p *Presence) LastOnlineDt() time.Time    { return p.lastOnlineDt }
-func (p *Presence) SetLastOnlineDt(t time.Time) {
-	p.lastOnlineDt = t
-}
-func (p *Presence) LastSeenDt() time.Time { return p.lastSeenDt }
-func (p *Presence) SetLastSeenDt(t time.Time) {
-	p.lastSeenDt = t
-}
+
+func (p *Presence) LastOnlineDt() time.Time     { return p.lastOnlineDt }
+func (p *Presence) SetLastOnlineDt(t time.Time) { p.lastOnlineDt = t }
+
+func (p *Presence) LastSeenDt() time.Time     { return p.lastSeenDt }
+func (p *Presence) SetLastSeenDt(t time.Time) { p.lastSeenDt = t }
+
 func (p *Presence) LastDeviceUuid() *string     { return p.lastDeviceUuid }
 func (p *Presence) SetLastDeviceUuid(u *string) { p.lastDeviceUuid = u }
-func (p *Presence) LastPlatform() *string       { return p.lastPlatform }
-func (p *Presence) SetLastPlatform(v *string)   { p.lastPlatform = v }
-func (p *Presence) Note() *string               { return p.note }
-func (p *Presence) SetNote(n *string)           { p.note = n }
-func (p *Presence) RptFlg() *string             { return p.rptFlg }
-func (p *Presence) SetRptFlg(v *string)         { p.rptFlg = v }
-func (p *Presence) Kwords() *string             { return p.kwords }
-func (p *Presence) SetKwords(v *string)         { p.kwords = v }
-func (p *Presence) Status() string              { return p.status }
-func (p *Presence) SetStatus(v string)          { p.status = v }
-func (p *Presence) CreateId() *int64            { return p.createId }
-func (p *Presence) SetCreateId(id *int64)       { p.createId = id }
-func (p *Presence) CreateDt() time.Time         { return p.createDt }
-func (p *Presence) SetCreateDt(t time.Time) {
-	p.createDt = t
-}
+
+func (p *Presence) LastPlatform() *string     { return p.lastPlatform }
+func (p *Presence) SetLastPlatform(v *string) { p.lastPlatform = v }
+
+func (p *Presence) RptFlg() *string     { return p.rptFlg }
+func (p *Presence) SetRptFlg(v *string) { p.rptFlg = v }
+
+func (p *Presence) Kwords() *string     { return p.kwords }
+func (p *Presence) SetKwords(v *string) { p.kwords = v }
+
+func (p *Presence) Note() *string     { return p.note }
+func (p *Presence) SetNote(n *string) { p.note = n }
+
+func (p *Presence) Status() string     { return p.status }
+func (p *Presence) SetStatus(v string) { p.status = v }
+
+func (p *Presence) CreateId() *int64      { return p.createId }
+func (p *Presence) SetCreateId(id *int64) { p.createId = id }
+
+func (p *Presence) CreateDt() time.Time     { return p.createDt }
+func (p *Presence) SetCreateDt(t time.Time) { p.createDt = t }
+
 func (p *Presence) ModifyId() *int64      { return p.modifyId }
 func (p *Presence) SetModifyId(id *int64) { p.modifyId = id }
-func (p *Presence) ModifyDt() time.Time {
-	return p.modifyDt
-}
+
+func (p *Presence) ModifyDt() time.Time     { return p.modifyDt }
 func (p *Presence) SetModifyDt(t time.Time) { p.modifyDt = t }
 
 // IsOnline reports whether the account currently holds a live connection.

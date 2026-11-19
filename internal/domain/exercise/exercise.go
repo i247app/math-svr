@@ -51,51 +51,75 @@ func NewExercise() *Exercise { return &Exercise{} }
 
 func (e *Exercise) ClassroomExerciseId() int64      { return e.classroomExerciseId }
 func (e *Exercise) SetClassroomExerciseId(id int64) { e.classroomExerciseId = id }
-func (e *Exercise) ClassroomId() int64              { return e.classroomId }
-func (e *Exercise) SetClassroomId(id int64)         { e.classroomId = id }
-func (e *Exercise) CreatorProfileId() int64         { return e.creatorProfileId }
-func (e *Exercise) SetCreatorProfileId(id int64)    { e.creatorProfileId = id }
-func (e *Exercise) Visibility() string              { return e.visibility }
-func (e *Exercise) SetVisibility(v string)          { e.visibility = v }
-func (e *Exercise) Purpose() string                 { return e.purpose }
-func (e *Exercise) SetPurpose(p string)             { e.purpose = p }
-func (e *Exercise) ProgramId() *int64               { return e.programId }
-func (e *Exercise) SetProgramId(id *int64)          { e.programId = id }
-func (e *Exercise) Title() string                   { return e.title }
-func (e *Exercise) SetTitle(s string)               { e.title = s }
-func (e *Exercise) ShortText() *string              { return e.shortText }
-func (e *Exercise) SetShortText(s *string)          { e.shortText = s }
-func (e *Exercise) Description() *string            { return e.description }
-func (e *Exercise) SetDescription(s *string)        { e.description = s }
-func (e *Exercise) ChapterName() string             { return e.chapterName }
-func (e *Exercise) SetChapterName(s string)         { e.chapterName = s }
-func (e *Exercise) LessonName() string              { return e.lessonName }
-func (e *Exercise) SetLessonName(s string)          { e.lessonName = s }
-func (e *Exercise) TotalQuestions() int             { return e.totalQuestions }
-func (e *Exercise) SetTotalQuestions(n int)         { e.totalQuestions = n }
-func (e *Exercise) Questions() *string              { return e.questions }
-func (e *Exercise) SetQuestions(s *string)          { e.questions = s }
-func (e *Exercise) Answers() *string                { return e.answers }
-func (e *Exercise) SetAnswers(s *string)            { e.answers = s }
-func (e *Exercise) StartDate() time.Time            { return e.startDate }
-func (e *Exercise) SetStartDate(t time.Time)        { e.startDate = t }
-func (e *Exercise) EndDate() time.Time              { return e.endDate }
-func (e *Exercise) SetEndDate(t time.Time)          { e.endDate = t }
-func (e *Exercise) Note() *string                   { return e.note }
-func (e *Exercise) SetNote(s *string)               { e.note = s }
-func (e *Exercise) RptFlg() *string                 { return e.rptFlg }
-func (e *Exercise) SetRptFlg(v *string)             { e.rptFlg = v }
-func (e *Exercise) Kwords() *string                 { return e.kwords }
-func (e *Exercise) SetKwords(v *string)             { e.kwords = v }
-func (e *Exercise) ExerciseStatus() *string         { return e.exerciseStatus }
-func (e *Exercise) SetExerciseStatus(s *string)     { e.exerciseStatus = s }
-func (e *Exercise) Status() string                  { return e.status }
-func (e *Exercise) SetStatus(s string)              { e.status = s }
-func (e *Exercise) CreateId() *int64                { return e.createId }
-func (e *Exercise) SetCreateId(id *int64)           { e.createId = id }
-func (e *Exercise) CreateDt() time.Time             { return e.createDt }
-func (e *Exercise) SetCreateDt(t time.Time)         { e.createDt = t }
-func (e *Exercise) ModifyId() *int64                { return e.modifyId }
-func (e *Exercise) SetModifyId(id *int64)           { e.modifyId = id }
-func (e *Exercise) ModifyDt() time.Time             { return e.modifyDt }
-func (e *Exercise) SetModifyDt(t time.Time)         { e.modifyDt = t }
+
+func (e *Exercise) ClassroomId() int64      { return e.classroomId }
+func (e *Exercise) SetClassroomId(id int64) { e.classroomId = id }
+
+func (e *Exercise) CreatorProfileId() int64      { return e.creatorProfileId }
+func (e *Exercise) SetCreatorProfileId(id int64) { e.creatorProfileId = id }
+
+func (e *Exercise) Visibility() string     { return e.visibility }
+func (e *Exercise) SetVisibility(v string) { e.visibility = v }
+
+func (e *Exercise) Purpose() string     { return e.purpose }
+func (e *Exercise) SetPurpose(p string) { e.purpose = p }
+
+func (e *Exercise) ProgramId() *int64      { return e.programId }
+func (e *Exercise) SetProgramId(id *int64) { e.programId = id }
+
+func (e *Exercise) Title() string     { return e.title }
+func (e *Exercise) SetTitle(s string) { e.title = s }
+
+func (e *Exercise) ShortText() *string     { return e.shortText }
+func (e *Exercise) SetShortText(s *string) { e.shortText = s }
+
+func (e *Exercise) Description() *string     { return e.description }
+func (e *Exercise) SetDescription(s *string) { e.description = s }
+
+func (e *Exercise) ChapterName() string     { return e.chapterName }
+func (e *Exercise) SetChapterName(s string) { e.chapterName = s }
+
+func (e *Exercise) LessonName() string     { return e.lessonName }
+func (e *Exercise) SetLessonName(s string) { e.lessonName = s }
+
+func (e *Exercise) TotalQuestions() int     { return e.totalQuestions }
+func (e *Exercise) SetTotalQuestions(n int) { e.totalQuestions = n }
+
+func (e *Exercise) Questions() *string     { return e.questions }
+func (e *Exercise) SetQuestions(s *string) { e.questions = s }
+
+func (e *Exercise) Answers() *string     { return e.answers }
+func (e *Exercise) SetAnswers(s *string) { e.answers = s }
+
+func (e *Exercise) StartDate() time.Time     { return e.startDate }
+func (e *Exercise) SetStartDate(t time.Time) { e.startDate = t }
+
+func (e *Exercise) EndDate() time.Time     { return e.endDate }
+func (e *Exercise) SetEndDate(t time.Time) { e.endDate = t }
+
+func (e *Exercise) RptFlg() *string     { return e.rptFlg }
+func (e *Exercise) SetRptFlg(v *string) { e.rptFlg = v }
+
+func (e *Exercise) Kwords() *string     { return e.kwords }
+func (e *Exercise) SetKwords(v *string) { e.kwords = v }
+
+func (e *Exercise) Note() *string     { return e.note }
+func (e *Exercise) SetNote(s *string) { e.note = s }
+
+func (e *Exercise) ExerciseStatus() *string     { return e.exerciseStatus }
+func (e *Exercise) SetExerciseStatus(s *string) { e.exerciseStatus = s }
+
+func (e *Exercise) Status() string     { return e.status }
+func (e *Exercise) SetStatus(s string) { e.status = s }
+
+func (e *Exercise) CreateId() *int64      { return e.createId }
+func (e *Exercise) SetCreateId(id *int64) { e.createId = id }
+
+func (e *Exercise) CreateDt() time.Time     { return e.createDt }
+func (e *Exercise) SetCreateDt(t time.Time) { e.createDt = t }
+
+func (e *Exercise) ModifyId() *int64      { return e.modifyId }
+func (e *Exercise) SetModifyId(id *int64) { e.modifyId = id }
+
+func (e *Exercise) ModifyDt() time.Time     { return e.modifyDt }
+func (e *Exercise) SetModifyDt(t time.Time) { e.modifyDt = t }

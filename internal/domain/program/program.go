@@ -25,116 +25,44 @@ func NewProgram() *Program {
 	return &Program{}
 }
 
-func (p *Program) ProgramId() int64 {
-	return p.programId
-}
+func (p *Program) ProgramId() int64             { return p.programId }
+func (p *Program) SetProgramId(programId int64) { p.programId = programId }
 
-func (p *Program) SetProgramId(programId int64) {
-	p.programId = programId
-}
+func (p *Program) Label() string         { return p.label }
+func (p *Program) SetLabel(label string) { p.label = label }
 
-func (p *Program) Label() string {
-	return p.label
-}
+func (p *Program) Description() string               { return p.description }
+func (p *Program) SetDescription(description string) { p.description = description }
 
-func (p *Program) SetLabel(label string) {
-	p.label = label
-}
+func (p *Program) ImageKey() *string            { return p.imageKey }
+func (p *Program) SetImageKey(imageKey *string) { p.imageKey = imageKey }
 
-func (p *Program) Description() string {
-	return p.description
-}
+func (p *Program) DisplayOrder() int8                { return p.displayOrder }
+func (p *Program) SetDisplayOrder(displayOrder int8) { p.displayOrder = displayOrder }
 
-func (p *Program) SetDescription(description string) {
-	p.description = description
-}
+func (p *Program) RptFlg() *string          { return p.rptFlg }
+func (p *Program) SetRptFlg(rptFlg *string) { p.rptFlg = rptFlg }
 
-func (p *Program) ImageKey() *string {
-	return p.imageKey
-}
+func (p *Program) Kwords() *string          { return p.kwords }
+func (p *Program) SetKwords(kwords *string) { p.kwords = kwords }
 
-func (p *Program) SetImageKey(imageKey *string) {
-	p.imageKey = imageKey
-}
+func (p *Program) Note() *string        { return p.note }
+func (p *Program) SetNote(note *string) { p.note = note }
 
-func (p *Program) DisplayOrder() int8 {
-	return p.displayOrder
-}
+func (p *Program) ProgramStatus() *string                 { return p.programStatus }
+func (p *Program) SetProgramStatus(programStatus *string) { p.programStatus = programStatus }
 
-func (p *Program) SetDisplayOrder(displayOrder int8) {
-	p.displayOrder = displayOrder
-}
+func (p *Program) Status() string          { return p.status }
+func (p *Program) SetStatus(status string) { p.status = status }
 
-func (p *Program) Note() *string {
-	return p.note
-}
+func (p *Program) CreateId() *int64            { return p.createId }
+func (p *Program) SetCreateId(createId *int64) { p.createId = createId }
 
-func (p *Program) SetNote(note *string) {
-	p.note = note
-}
+func (p *Program) CreateDt() time.Time            { return p.createDt }
+func (p *Program) SetCreateDt(createDt time.Time) { p.createDt = createDt }
 
-// RptFlg is the client-side report flag (rpt_flg). Nil means "not reported".
-func (p *Program) RptFlg() *string {
-	return p.rptFlg
-}
+func (p *Program) ModifyId() *int64            { return p.modifyId }
+func (p *Program) SetModifyId(modifyId *int64) { p.modifyId = modifyId }
 
-func (p *Program) SetRptFlg(rptFlg *string) {
-	p.rptFlg = rptFlg
-}
-
-// Kwords holds search keywords (kwords) for a future text-search index.
-func (p *Program) Kwords() *string {
-	return p.kwords
-}
-
-func (p *Program) SetKwords(kwords *string) {
-	p.kwords = kwords
-}
-
-func (p *Program) ProgramStatus() *string {
-	return p.programStatus
-}
-
-func (p *Program) SetProgramStatus(programStatus *string) {
-	p.programStatus = programStatus
-}
-
-func (p *Program) Status() string {
-	return p.status
-}
-
-func (p *Program) SetStatus(status string) {
-	p.status = status
-}
-
-func (p *Program) CreateId() *int64 {
-	return p.createId
-}
-
-func (p *Program) SetCreateId(createId *int64) {
-	p.createId = createId
-}
-
-func (p *Program) CreateDt() time.Time {
-	return p.createDt
-}
-
-func (p *Program) SetCreateDt(createDt time.Time) {
-	p.createDt = createDt
-}
-
-func (p *Program) ModifyId() *int64 {
-	return p.modifyId
-}
-
-func (p *Program) SetModifyId(modifyId *int64) {
-	p.modifyId = modifyId
-}
-
-func (p *Program) ModifyDt() time.Time {
-	return p.modifyDt
-}
-
-func (p *Program) SetModifyDt(modifyDt time.Time) {
-	p.modifyDt = modifyDt
-}
+func (p *Program) ModifyDt() time.Time            { return p.modifyDt }
+func (p *Program) SetModifyDt(modifyDt time.Time) { p.modifyDt = modifyDt }
