@@ -28,7 +28,7 @@ func DeviceDomainToResponse(d *device.Device) *DeviceResponse {
 
 	return &DeviceResponse{
 		DeviceID:   d.DeviceId(),
-		UID:        d.Uid(),
+		UID:        d.UID(),
 		DeviceUUID: d.DeviceUUID(),
 		DeviceName: d.DeviceName(),
 		Platform:   d.Platform(),

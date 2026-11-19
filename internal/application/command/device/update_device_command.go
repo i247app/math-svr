@@ -39,7 +39,7 @@ func (h *UpdateDeviceCommandHandler) Handle(ctx context.Context, cmd UpdateDevic
 		if existing == nil {
 			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
 		}
-		if existing.Uid() == nil || *existing.Uid() != cmd.UID {
+		if existing.UID() == nil || *existing.UID() != cmd.UID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
 				ErrDeviceNotOwnedByUser)
 		}

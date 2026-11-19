@@ -8,11 +8,12 @@ import (
 	"slices"
 	"strings"
 
+	"time"
+
 	"math-ai.com/math-ai/internal/domain/presence"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"time"
 )
 
 const (
@@ -171,7 +172,7 @@ func (r *PresenceRepository) ResetAll(ctx context.Context) error {
 
 func ModelToDomainPresence(m *models.PresenceModel) *presence.Presence {
 	p := presence.NewPresence()
-	p.SetUid(m.Uid)
+	p.SetUID(m.Uid)
 	p.SetPresenceState(m.PresenceState)
 	p.SetConnectionCount(m.ConnectionCount)
 	if m.LastOnlineDt != nil {

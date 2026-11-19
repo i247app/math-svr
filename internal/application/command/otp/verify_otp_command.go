@@ -121,7 +121,7 @@ func (h *VerifyOtpCommandHandler) markVerified(ctx context.Context, repos transa
 	}
 	*out = &VerifyOtpCommandResult{
 		OtpID:      o.OtpId(),
-		UID:        o.Uid(),
+		UID:        o.UID(),
 		DeviceUUID: o.DeviceUUID(),
 	}
 	return nil

@@ -105,7 +105,7 @@ func NotificationDomainToResponse(n *domain.Notification) NotificationResponse {
 	}
 	return NotificationResponse{
 		NotificationID: n.NotificationId(),
-		UID:            n.Uid(),
+		UID:            n.UID(),
 		Title:          n.Title(),
 		ShortText:      n.ShortText(),
 		Category:       n.Category(),

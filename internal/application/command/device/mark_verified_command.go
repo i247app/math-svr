@@ -53,7 +53,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			}
 
 			d.SetDeviceId(deviceID)
-			d.SetUid(&cmd.UID)
+			d.SetUID(&cmd.UID)
 			d.SetDeviceUUID(cmd.DeviceUUID)
 			d.SetDeviceName(cmd.DeviceName)
 			d.SetPlatform(enum.ParsePlatformType(cmd.Platform).String())
@@ -70,7 +70,7 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 			}
 			return nil
 		}
-		if d.Uid() == nil || *d.Uid() != cmd.UID {
+		if d.UID() == nil || *d.UID() != cmd.UID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil, ErrDeviceNotOwnedByUser)
 		}
 		if d.IsVerified() {

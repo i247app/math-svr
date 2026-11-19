@@ -205,7 +205,7 @@ func ProfileDomainToResponse(p *domain.Profile) *ProfileResponse {
 	return &ProfileResponse{
 		ProfileID:     p.ProfileId(),
 		ProfileCode:   p.ProfileCode(),
-		UID:           p.Uid(),
+		UID:           p.UID(),
 		Name:          p.Name(),
 		Phone:         p.Phone(),
 		Email:         p.Email(),

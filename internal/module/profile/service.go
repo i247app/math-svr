@@ -217,7 +217,7 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 
 	log.Info("profile.created",
 		"profile_id", created.ProfileId(),
-		"uid", created.Uid(),
+		"uid", created.UID(),
 		"name_len", len(created.Name()),
 	)
 

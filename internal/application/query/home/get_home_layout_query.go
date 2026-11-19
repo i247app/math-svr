@@ -333,7 +333,7 @@ func (h *GetHomeLayoutQueryHandler) listUnsubmittedExercises(ctx context.Context
 // buildParent: every classroom the parent's children are enrolled in plus
 // a recent feed of exercises those children just completed.
 func (h *GetHomeLayoutQueryHandler) buildParent(ctx context.Context, p *profileDomain.Profile, data *HomeLayoutData) (*HomeLayoutData, error) {
-	siblings, err := h.profileRepo.ListByUid(ctx, p.Uid())
+	siblings, err := h.profileRepo.ListByUid(ctx, p.UID())
 	if err != nil {
 		return nil, err
 	}

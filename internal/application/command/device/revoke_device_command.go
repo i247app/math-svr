@@ -35,7 +35,7 @@ func (h *RevokeDeviceCommandHandler) Handle(ctx context.Context, cmd RevokeDevic
 		if d == nil {
 			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
 		}
-		if d.Uid() == nil || *d.Uid() != cmd.UID {
+		if d.UID() == nil || *d.UID() != cmd.UID {
 			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
 				ErrDeviceNotOwnedByUser)
 		}

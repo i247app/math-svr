@@ -102,7 +102,7 @@ func (h *ListClassroomMembersQueryHandler) Handle(ctx context.Context, q *ListCl
 	uids := make([]int64, 0, len(profiles))
 	for _, p := range profiles {
 		profileByID[p.ProfileId()] = p
-		uids = append(uids, p.Uid())
+		uids = append(uids, p.UID())
 	}
 
 	// Presence is keyed by user, not profile: a WebSocket belongs to an
@@ -140,7 +140,7 @@ func (h *ListClassroomMembersQueryHandler) Handle(ctx context.Context, q *ListCl
 
 		if p, ok := profileByID[m.ProfileId()]; ok {
 			row.Profile = p
-			if pr, ok := presenceByUser[p.Uid()]; ok {
+			if pr, ok := presenceByUser[p.UID()]; ok {
 				row.Presence = pr
 			}
 		}

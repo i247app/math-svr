@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"slices"
 
+	"time"
+
 	"math-ai.com/math-ai/internal/domain/login"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"time"
 )
 
 const (
@@ -78,7 +79,7 @@ func (r *LoginRepository) Create(ctx context.Context, l *login.Login) (*login.Lo
 
 	now := time.Now().UTC()
 	_, err := r.db.Exec(ctx, query,
-		l.LoginId(), l.Uid(), l.Upw(), l.LoginsStatus(), l.RptFlg(), l.Kwords(),
+		l.LoginId(), l.UID(), l.Upw(), l.LoginsStatus(), l.RptFlg(), l.Kwords(),
 		l.Note(), l.Status(), l.CreateId(), now, now)
 	if err != nil {
 		return nil, fmt.Errorf("login repo create: %w", err)
@@ -90,7 +91,7 @@ func (r *LoginRepository) Create(ctx context.Context, l *login.Login) (*login.Lo
 func ModelToDomainLogin(m *models.LoginModel) *login.Login {
 	l := login.NewLogin()
 	l.SetLoginId(m.LoginId)
-	l.SetUid(m.Uid)
+	l.SetUID(m.Uid)
 	l.SetUpw(m.Upw)
 	l.SetLoginsStatus(m.LoginsStatus)
 	l.SetRptFlg(m.RptFlg)

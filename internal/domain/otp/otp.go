@@ -42,8 +42,8 @@ func (o *Otp) SetOtpId(v int64) { o.otpId = v }
 func (o *Otp) OtpType() string     { return o.otpType }
 func (o *Otp) SetOtpType(v string) { o.otpType = v }
 
-func (o *Otp) Uid() *int64     { return o.uid }
-func (o *Otp) SetUid(v *int64) { o.uid = v }
+func (o *Otp) UID() *int64     { return o.uid }
+func (o *Otp) SetUID(v *int64) { o.uid = v }
 
 func (o *Otp) Identifier() string     { return o.identifier }
 func (o *Otp) SetIdentifier(v string) { o.identifier = v }

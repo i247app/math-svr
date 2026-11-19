@@ -29,8 +29,8 @@ func NewLogin() *Login {
 func (l *Login) LoginId() int64           { return l.loginId }
 func (l *Login) SetLoginId(loginId int64) { l.loginId = loginId }
 
-func (l *Login) Uid() int64       { return l.uid }
-func (l *Login) SetUid(uid int64) { l.uid = uid }
+func (l *Login) UID() int64       { return l.uid }
+func (l *Login) SetUID(uid int64) { l.uid = uid }
 
 // Upw is the password hash. Nil means the row carries no password.
 func (l *Login) Upw() *string       { return l.upw }

@@ -34,8 +34,8 @@ type Presence struct {
 
 func NewPresence() *Presence { return &Presence{} }
 
-func (p *Presence) Uid() int64      { return p.uid }
-func (p *Presence) SetUid(id int64) { p.uid = id }
+func (p *Presence) UID() int64      { return p.uid }
+func (p *Presence) SetUID(id int64) { p.uid = id }
 
 func (p *Presence) PresenceState() string     { return p.presenceState }
 func (p *Presence) SetPresenceState(s string) { p.presenceState = s }

@@ -207,8 +207,8 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 				if err != nil {
 					return err
 				}
-				alias.SetAid(aid)
-				alias.SetUid(u.UID())
+				alias.SetAID(aid)
+				alias.SetUID(u.UID())
 				alias.SetStatus(enum.StatusActive.String())
 				alias.SetAka(*aka)
 				if _, err := repos.Alias.Create(ctx, alias); err != nil {
@@ -237,7 +237,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 
 			patch := BuildProfile(ctx, cmd)
 			patch.SetProfileId(existing.ProfileId())
-			patch.SetUid(u.UID())
+			patch.SetUID(u.UID())
 			if err := repos.Profile.Update(ctx, patch); err != nil {
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
@@ -263,7 +263,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 			}
 
 			profileDomain := BuildProfile(ctx, cmd)
-			profileDomain.SetUid(u.UID())
+			profileDomain.SetUID(u.UID())
 			profileDomain.SetProfileId(uid)
 			profileDomain.SetIsDefault(true)
 			profileDomain.SetProfileCode(profileCode)
@@ -294,7 +294,7 @@ func createLogin(ctx context.Context, repos transaction.Repositories, uid int64,
 	active := enum.StatusActive.String()
 	l := login.NewLogin()
 	l.SetLoginId(loginID)
-	l.SetUid(uid)
+	l.SetUID(uid)
 	l.SetUpw(&passwordHash)
 	l.SetLoginsStatus(&active)
 	l.SetStatus(active)
@@ -413,10 +413,10 @@ func revokeDeviceAlias(ctx context.Context, repos transaction.Repositories, uid 
 	if err != nil {
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	if alias == nil || alias.Uid() != uid {
+	if alias == nil || alias.UID() != uid {
 		return nil
 	}
-	if err := repos.Alias.SoftDeleteByAid(ctx, alias.Aid()); err != nil {
+	if err := repos.Alias.SoftDeleteByAid(ctx, alias.AID()); err != nil {
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	return nil

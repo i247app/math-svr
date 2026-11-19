@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"slices"
 
+	"time"
+
 	"math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
-	"time"
 )
 
 const (
@@ -140,7 +141,7 @@ func (r *NotificationRepository) Create(ctx context.Context, n *notification.Not
 	`
 	now := time.Now().UTC()
 	_, err := r.db.Exec(ctx, query,
-		n.NotificationId(), n.Uid(), n.Title(), n.ShortText(), n.Category(),
+		n.NotificationId(), n.UID(), n.Title(), n.ShortText(), n.Category(),
 		n.IsRead(), n.ActionType(), n.ActionData(), n.Priority(), n.RptFlg(), n.Kwords(), n.Note(),
 		n.NotificationStatus(), n.CreateId(), now, now)
 	if err != nil {
@@ -195,7 +196,7 @@ func (r *NotificationRepository) SoftDeleteByNotificationId(ctx context.Context,
 func ModelToDomainNotification(m *models.NotificationModel) *notification.Notification {
 	n := notification.NewNotification()
 	n.SetNotificationId(m.NotificationId)
-	n.SetUid(m.Uid)
+	n.SetUID(m.Uid)
 	n.SetTitle(m.Title)
 	n.SetShortText(m.ShortText)
 	n.SetCategory(m.Category)

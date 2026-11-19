@@ -51,8 +51,8 @@ func (p *Profile) SetProfileId(profileId int64) { p.profileId = profileId }
 func (p *Profile) ProfileCode() string        { return p.profileCode }
 func (p *Profile) SetProfileCode(code string) { p.profileCode = code }
 
-func (p *Profile) Uid() int64       { return p.uid }
-func (p *Profile) SetUid(uid int64) { p.uid = uid }
+func (p *Profile) UID() int64       { return p.uid }
+func (p *Profile) SetUID(uid int64) { p.uid = uid }
 
 func (p *Profile) Name() string        { return p.name }
 func (p *Profile) SetName(name string) { p.name = name }

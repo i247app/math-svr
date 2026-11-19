@@ -23,11 +23,11 @@ func NewAlias() *Alias {
 	return &Alias{}
 }
 
-func (a *Alias) Aid() int64       { return a.aid }
-func (a *Alias) SetAid(aid int64) { a.aid = aid }
+func (a *Alias) AID() int64       { return a.aid }
+func (a *Alias) SetAID(aid int64) { a.aid = aid }
 
-func (a *Alias) Uid() int64       { return a.uid }
-func (a *Alias) SetUid(uid int64) { a.uid = uid }
+func (a *Alias) UID() int64       { return a.uid }
+func (a *Alias) SetUID(uid int64) { a.uid = uid }
 
 func (a *Alias) Aka() string       { return a.aka }
 func (a *Alias) SetAka(aka string) { a.aka = aka }

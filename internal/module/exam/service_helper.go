@@ -120,7 +120,7 @@ func (s *Service) loadOwnedProfile(ctx context.Context, uid *int64, profileID in
 	if p == nil {
 		return nil, errs.NewError(ctx, status.EXAM_PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
 	}
-	if p.Uid() != *uid {
+	if p.UID() != *uid {
 		return nil, errs.NewError(ctx, status.EXAM_PROFILE_NOT_OWNED, nil, ErrProfileNotOwned)
 	}
 	return p, nil
@@ -152,7 +152,7 @@ func (s *Service) actAsOwner(ctx context.Context, route string, profileID int64)
 	if p == nil {
 		return nil, errs.NewError(ctx, status.EXAM_PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
 	}
-	owner := p.Uid()
+	owner := p.UID()
 	logger.From(ctx).Infof("admin.act_as_owner admin_uid=%d via=%s route=%s profile_id=%d owner_uid=%d",
 		sctx.UID(ctx), via, route, profileID, owner)
 	return &owner, nil
@@ -201,7 +201,7 @@ func adminActor(ctx context.Context) *int64 {
 func (s *Service) resolvePlacement(ctx context.Context, req *dto.GenerateExamReq, examType enum.ExamType, profile *profileDomain.Profile) (grade int, openJourney *int64, err error) {
 	// The open journey is looked up regardless of a stated grade: even a
 	// pinned sitting belongs to the journey that is open in its slot.
-	key := examDomain.JourneyKeyOf(profile.Uid(), profile.ProfileId(), string(examType), req.Grade)
+	key := examDomain.JourneyKeyOf(profile.UID(), profile.ProfileId(), string(examType), req.Grade)
 	active, err := s.examSessionRepo.FindActiveJourney(ctx, key)
 	if err != nil {
 		return 0, nil, errs.NewError(ctx, status.FAIL, nil, err)
@@ -272,7 +272,7 @@ func (s *Service) gradeFromProfile(ctx context.Context, profile *profileDomain.P
 func (s *Service) getAttempt(ctx context.Context, elinkID int64, profile *profileDomain.Profile) (*dto.GetExamRes, error) {
 	detail, err := s.getAttemptQuery.Handle(ctx, query.GetExamAttemptQuery{
 		ElinkID:   elinkID,
-		UID:       profile.Uid(),
+		UID:       profile.UID(),
 		ProfileID: profile.ProfileId(),
 	})
 	if err != nil {
@@ -301,7 +301,7 @@ func (s *Service) getJourney(ctx context.Context, esessID int64, examType string
 	detail, err := s.getJourneyQuery.Handle(ctx, query.GetExamJourneyQuery{
 		EsessID:   esessID,
 		ExamType:  examType,
-		UID:       profile.Uid(),
+		UID:       profile.UID(),
 		ProfileID: profile.ProfileId(),
 	})
 	if err != nil {

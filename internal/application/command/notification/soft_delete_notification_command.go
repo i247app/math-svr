@@ -35,7 +35,7 @@ func (h *SoftDeleteNotificationCommandHandler) Handle(ctx context.Context, cmd S
 			return errs.NewError(ctx, status.NOTIFICATION_NOT_FOUND, nil,
 				errors.New("notification not found"))
 		}
-		if n.Uid() != cmd.UID {
+		if n.UID() != cmd.UID {
 			return errs.NewError(ctx, status.NOTIFICATION_NOT_OWNED, nil,
 				errors.New("notification not owned by user"))
 		}

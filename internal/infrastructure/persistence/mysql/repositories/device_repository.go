@@ -8,11 +8,12 @@ import (
 	"slices"
 	"strings"
 
+	"time"
+
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"time"
 )
 
 const (
@@ -131,7 +132,7 @@ func (r *DeviceRepository) Create(ctx context.Context, d *device.Device) (*devic
 	`
 
 	_, err := r.db.Exec(ctx, query,
-		d.DeviceId(), d.Uid(), d.DeviceUUID(), d.DeviceName(), d.Platform(), d.DevicePushToken(),
+		d.DeviceId(), d.UID(), d.DeviceUUID(), d.DeviceName(), d.Platform(), d.DevicePushToken(),
 		d.IsVerified(), nullableTime(d.TrustDt()), d.RptFlg(), d.Kwords(), d.Note(), d.DeviceStatus(),
 		time.Now().UTC(), time.Now().UTC())
 	if err != nil {
@@ -257,7 +258,7 @@ func (r *DeviceRepository) ClearPushTokens(ctx context.Context, tokens []string)
 func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
 	d := device.NewDevice()
 	d.SetDeviceId(m.DeviceId)
-	d.SetUid(m.Uid)
+	d.SetUID(m.Uid)
 	d.SetDeviceUUID(m.DeviceUUID)
 	d.SetDeviceName(m.DeviceName)
 	d.SetPlatform(m.Platform)

@@ -170,7 +170,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 			if targetDevice == nil {
 				return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrTargetDeviceNotFound)
 			}
-			if cmd.UID == nil || targetDevice.Uid() == nil || *targetDevice.Uid() != *cmd.UID {
+			if cmd.UID == nil || targetDevice.UID() == nil || *targetDevice.UID() != *cmd.UID {
 				return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil, ErrTargetDeviceNotOwned)
 			}
 			if !targetDevice.IsVerified() {
@@ -226,7 +226,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		o.SetOtpId(otpID)
 
 		o.SetOtpType(cmd.OtpType.String())
-		o.SetUid(cmd.UID)
+		o.SetUID(cmd.UID)
 		o.SetIdentifier(cmd.Identifier)
 		o.SetDeviceUUID(cmd.DeviceUUID)
 		o.SetDeviceName(cmd.DeviceName)

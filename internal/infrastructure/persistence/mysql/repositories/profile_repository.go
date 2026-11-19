@@ -8,12 +8,13 @@ import (
 	"slices"
 	"strings"
 
+	"time"
+
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
-	"time"
 )
 
 const (
@@ -293,7 +294,7 @@ func (r *ProfileRepository) Create(ctx context.Context, p *profile.Profile) (*pr
 	`
 
 	_, err := r.db.Exec(ctx, query,
-		p.ProfileId(), p.ProfileCode(), p.Uid(), p.Name(), p.Phone(), p.Email(), p.Role(), p.IdentityCode(), p.AvatarKey(), nullableTime(p.Dob()),
+		p.ProfileId(), p.ProfileCode(), p.UID(), p.Name(), p.Phone(), p.Email(), p.Role(), p.IdentityCode(), p.AvatarKey(), nullableTime(p.Dob()),
 		p.SchoolId(), p.ProgramId(), p.GradeId(), p.SemesterId(), p.IsDefault(),
 		p.IdType(), p.TeacherId(), p.StudentId(), p.RptFlg(), p.Kwords(), p.Note(), p.ProfileStatus(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
@@ -487,7 +488,7 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p := profile.NewProfile()
 	p.SetProfileId(m.ProfileId)
 	p.SetProfileCode(m.ProfileCode)
-	p.SetUid(m.Uid)
+	p.SetUID(m.Uid)
 	p.SetName(m.Name)
 	p.SetPhone(m.Phone)
 	p.SetEmail(m.Email)

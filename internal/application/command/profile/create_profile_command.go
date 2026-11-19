@@ -84,7 +84,7 @@ func (h *CreateProfileCommandHandler) Handle(ctx context.Context, cmd CreateProf
 
 func BuildProfile(cmd CreateProfileCommand) *profile.Profile {
 	p := profile.NewProfile()
-	p.SetUid(cmd.UID)
+	p.SetUID(cmd.UID)
 	p.SetName(cmd.Name)
 	p.SetPhone(cmd.Phone)
 	p.SetEmail(cmd.Email)

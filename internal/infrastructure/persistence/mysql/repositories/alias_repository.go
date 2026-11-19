@@ -69,7 +69,7 @@ func (r *AliasRepository) Create(ctx context.Context, alias *alias.Alias) (*alia
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err := r.db.Exec(ctx, query, alias.Aid(), alias.Uid(),
+	_, err := r.db.Exec(ctx, query, alias.AID(), alias.UID(),
 		alias.Aka(), alias.AliasStatus(), alias.RptFlg(), alias.Kwords(), alias.Note(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("alias repo create: %w", err)
@@ -123,7 +123,7 @@ func (r *AliasRepository) UpdateByAid(ctx context.Context, alias *alias.Alias) e
 		WHERE aid = ?
 	`
 
-	if _, err := r.db.Exec(ctx, query, alias.Aka(), alias.AliasStatus(), alias.RptFlg(), alias.Kwords(), alias.Note(), alias.ModifyId(), nullableTime(alias.ModifyDt()), alias.Aid()); err != nil {
+	if _, err := r.db.Exec(ctx, query, alias.Aka(), alias.AliasStatus(), alias.RptFlg(), alias.Kwords(), alias.Note(), alias.ModifyId(), nullableTime(alias.ModifyDt()), alias.AID()); err != nil {
 		return fmt.Errorf("alias repo update by alias id: %w", err)
 	}
 	return nil
@@ -185,8 +185,8 @@ func (r *AliasRepository) SoftDeleteByAid(ctx context.Context, aid int64) error 
 
 func ModelToDomainAlias(m *models.AliasModel) *alias.Alias {
 	a := alias.NewAlias()
-	a.SetAid(m.Aid)
-	a.SetUid(m.Uid)
+	a.SetAID(m.Aid)
+	a.SetUID(m.Uid)
 	a.SetAka(m.Aka)
 	a.SetAliasStatus(m.AliasStatus)
 	a.SetRptFlg(m.RptFlg)

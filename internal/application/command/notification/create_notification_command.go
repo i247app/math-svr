@@ -47,7 +47,7 @@ func (h *CreateNotificationCommandHandler) Handle(ctx context.Context, cmd Creat
 
 		n := notification.NewNotification()
 		n.SetNotificationId(id)
-		n.SetUid(cmd.UID)
+		n.SetUID(cmd.UID)
 		n.SetTitle(cmd.Title)
 		n.SetShortText(cmd.ShortText)
 		n.SetCategory(cmd.Category)

@@ -201,7 +201,7 @@ func resolveUser(ctx context.Context, repos transaction.Repositories, loginName 
 		return nil, nil
 	}
 
-	u, err := repos.User.FindByUid(ctx, alias.Uid())
+	u, err := repos.User.FindByUid(ctx, alias.UID())
 	if err != nil {
 		return nil, errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
 	}
@@ -263,7 +263,7 @@ func ensureDevice(
 
 func BuildDevice(uid int64, cmd LoginCommand) *device.Device {
 	d := device.NewDevice()
-	d.SetUid(&uid)
+	d.SetUID(&uid)
 	d.SetDeviceUUID(cmd.DeviceUUID)
 	d.SetDeviceName(cmd.DeviceName)
 	d.SetPlatform(enum.ParsePlatformType(cmd.Platform).String())
@@ -281,7 +281,7 @@ func BuildDevice(uid int64, cmd LoginCommand) *device.Device {
 
 func BuildLoginLog(uid int64, cmd LoginCommand) *loginlog.LoginLog {
 	ll := loginlog.NewLoginLog()
-	ll.SetUid(uid)
+	ll.SetUID(uid)
 	ll.SetDeviceUUID(cmd.DeviceUUID)
 	ll.SetIpAddress(cmd.IPAddress)
 	ll.SetToken(cmd.DevicePushToken)

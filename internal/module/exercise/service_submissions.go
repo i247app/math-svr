@@ -286,7 +286,7 @@ func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsR
 			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 				ErrProfileNotFound)
 		}
-		if sessionUID != 0 && p.Uid() == sessionUID {
+		if sessionUID != 0 && p.UID() == sessionUID {
 			isSelfList = true
 		}
 	}

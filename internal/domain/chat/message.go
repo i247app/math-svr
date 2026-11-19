@@ -20,7 +20,7 @@ type Message struct {
 	conversationId   int64
 	seqNo            int64
 	senderProfileId  *int64
-	senderUid        *int64
+	senderUID        *int64
 	messageType      string
 	content          *string
 	attachmentCount  int64
@@ -57,8 +57,8 @@ func (m *Message) SetSeqNo(n int64) { m.seqNo = n }
 func (m *Message) SenderProfileId() *int64      { return m.senderProfileId }
 func (m *Message) SetSenderProfileId(id *int64) { m.senderProfileId = id }
 
-func (m *Message) SenderUid() *int64      { return m.senderUid }
-func (m *Message) SetSenderUid(id *int64) { m.senderUid = id }
+func (m *Message) SenderUID() *int64      { return m.senderUID }
+func (m *Message) SetSenderUID(id *int64) { m.senderUID = id }
 
 func (m *Message) MessageType() string     { return m.messageType }
 func (m *Message) SetMessageType(t string) { m.messageType = t }

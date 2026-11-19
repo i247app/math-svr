@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"slices"
 
+	"time"
+
 	"math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"time"
 )
 
 const (
@@ -65,7 +66,7 @@ func ModelToDomainChatMessage(m *models.ChatMessageModel) *chat.Message {
 	msg.SetConversationId(m.ConversationId)
 	msg.SetSeqNo(m.SeqNo)
 	msg.SetSenderProfileId(m.SenderProfileId)
-	msg.SetSenderUid(m.SenderUid)
+	msg.SetSenderUID(m.SenderUid)
 	msg.SetMessageType(m.MessageType)
 	msg.SetContent(m.Content)
 	msg.SetAttachmentCount(m.AttachmentCount)
@@ -203,7 +204,7 @@ func (r *ChatMessageRepository) Create(ctx context.Context, m *chat.Message) (*c
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	_, err := r.db.Exec(ctx, query,
-		m.MessageId(), m.ConversationId(), m.SeqNo(), m.SenderProfileId(), m.SenderUid(),
+		m.MessageId(), m.ConversationId(), m.SeqNo(), m.SenderProfileId(), m.SenderUID(),
 		m.MessageType(), m.Content(), m.AttachmentCount(), m.ReplyToMessageId(),
 		m.SystemEvent(), m.SystemPayload(), m.Metadata(), m.ClientMsgId(), m.SentDt(),
 		m.RptFlg(), m.Kwords(), m.Note(), m.MessageStatus(), m.Status(), m.CreateId(), time.Now().UTC(),

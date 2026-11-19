@@ -106,7 +106,7 @@ func (h *SendMessageCommandHandler) Handle(ctx context.Context, cmd *SendMessage
 		m.SetConversationId(cmd.ConversationID)
 		m.SetSeqNo(seqNo)
 		m.SetSenderProfileId(&cmd.SenderProfileID)
-		m.SetSenderUid(&cmd.SenderUID)
+		m.SetSenderUID(&cmd.SenderUID)
 		m.SetMessageType(messageType)
 		m.SetContent(&content)
 		m.SetReplyToMessageId(cmd.ReplyToMessageID)

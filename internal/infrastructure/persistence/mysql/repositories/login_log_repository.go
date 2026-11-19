@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"slices"
 
+	"time"
+
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
-	"time"
 )
 
 const (
@@ -111,7 +112,7 @@ func (r *LoginLogRepository) Create(ctx context.Context, l *loginlog.LoginLog) (
 	`
 
 	_, err := r.db.Exec(ctx, query,
-		l.LoginLogId(), l.Uid(), l.IpAddress(), l.DeviceUUID(),
+		l.LoginLogId(), l.UID(), l.IpAddress(), l.DeviceUUID(),
 		l.Token(), l.RptFlg(), l.Kwords(), l.Note(), l.LoginLogStatus(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("login_log repo create: %w", err)
@@ -169,7 +170,7 @@ func (r *LoginLogRepository) SoftDeleteByLoginLogId(ctx context.Context, loginLo
 func ModelToDomainLoginLog(m *models.LoginLogModel) *loginlog.LoginLog {
 	l := loginlog.NewLoginLog()
 	l.SetLoginLogId(m.LoginLogId)
-	l.SetUid(m.Uid)
+	l.SetUID(m.Uid)
 	l.SetIpAddress(m.IpAddress)
 	l.SetDeviceUUID(m.DeviceUUID)
 	l.SetToken(m.Token)

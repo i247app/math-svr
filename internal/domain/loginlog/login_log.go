@@ -28,8 +28,8 @@ func NewLoginLog() *LoginLog {
 func (l *LoginLog) LoginLogId() int64              { return l.loginLogId }
 func (l *LoginLog) SetLoginLogId(loginLogId int64) { l.loginLogId = loginLogId }
 
-func (l *LoginLog) Uid() int64       { return l.uid }
-func (l *LoginLog) SetUid(uid int64) { l.uid = uid }
+func (l *LoginLog) UID() int64       { return l.uid }
+func (l *LoginLog) SetUID(uid int64) { l.uid = uid }
 
 func (l *LoginLog) IpAddress() string             { return l.ipAddress }
 func (l *LoginLog) SetIpAddress(ipAddress string) { l.ipAddress = ipAddress }

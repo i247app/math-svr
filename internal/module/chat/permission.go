@@ -27,7 +27,7 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUI
 	if p == nil {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
 	}
-	if sessionUID != 0 && sessionUID != p.Uid() {
+	if sessionUID != 0 && sessionUID != p.UID() {
 		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileNotOwnedByUser)
 	}
 	return p, nil

@@ -185,7 +185,7 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 	}
 
 	cmd := command.GenerateExamCommand{
-		UID:         profile.Uid(),
+		UID:         profile.UID(),
 		ProfileID:   profile.ProfileId(),
 		ExamType:    validated.ExamType,
 		Grade:       grade,
@@ -290,7 +290,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
 			fmt.Errorf("exam: journey %d not found", journeyID))
 	}
-	if journey.Uid() != profile.Uid() || journey.ProfileId() != profile.ProfileId() {
+	if journey.Uid() != profile.UID() || journey.ProfileId() != profile.ProfileId() {
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
 	}
@@ -360,7 +360,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		journeyID, base.ElinkId(), brief.Mode, len(brief.Wrong), brief.WeakTopics)
 
 	return s.handOut(ctx, command.GenerateExamCommand{
-		UID:        profile.Uid(),
+		UID:        profile.UID(),
 		ProfileID:  profile.ProfileId(),
 		ExamType:   enum.ExamTypePractice,
 		Grade:      grade,
@@ -432,7 +432,7 @@ func (s *Service) SubmitExam(ctx context.Context, req *dto.SubmitExamReq) (*dto.
 
 	result, err := s.submitCmd.Handle(ctx, command.SubmitExamCommand{
 		ElinkID:   req.ElinkID,
-		UID:       profile.Uid(),
+		UID:       profile.UID(),
 		ProfileID: profile.ProfileId(),
 		Answers:   req.Answers,
 		Language:  metadata.GetClientLanguage(ctx).ToEnumLanguage(),
@@ -510,7 +510,7 @@ func (s *Service) ListExamSessions(ctx context.Context, req *dto.ListExamSession
 	}
 
 	rows, err := s.statsQuery.Handle(ctx, query.GetExamStatsQuery{
-		UID:       profile.Uid(),
+		UID:       profile.UID(),
 		ProfileID: profile.ProfileId(),
 		ExamTypes: req.ExamTypes,
 		Status:    req.JourneyExamStatus,
@@ -548,7 +548,7 @@ func (s *Service) MarkExamJourney(ctx context.Context, req *dto.MarkExamJourneyR
 
 	journey, err := s.markJourneyCmd.Handle(ctx, command.MarkExamSessionCommand{
 		EsessID:   req.EsessID,
-		UID:       profile.Uid(),
+		UID:       profile.UID(),
 		ProfileID: profile.ProfileId(),
 		Status:    validated.Status,
 	})
@@ -607,7 +607,7 @@ func (s *Service) GetJourneyProgress(ctx context.Context, req *dto.JourneyProgre
 	}
 
 	result, err := s.journeyProgress.Handle(ctx, query.GetJourneyProgressQuery{
-		UID:       profile.Uid(),
+		UID:       profile.UID(),
 		ProfileID: profile.ProfileId(),
 		ExamType:  req.ExamType,
 		From:      req.FromDt,
@@ -644,7 +644,7 @@ func (s *Service) GetGradeLevels(ctx context.Context, req *dto.GradeLevelsReq) (
 	}
 
 	result, err := s.gradeLevels.Handle(ctx, query.GetGradeLevelsQuery{
-		UID:       profile.Uid(),
+		UID:       profile.UID(),
 		ProfileID: profile.ProfileId(),
 		Grade:     *req.Grade,
 	})
@@ -673,7 +673,7 @@ func (s *Service) GetLatestJourney(ctx context.Context, req *dto.LatestJourneyRe
 	}
 
 	journey, err := s.examSessionRepo.FindLatestJourney(ctx, examDomain.LatestJourneyFilter{
-		Uid:       profile.Uid(),
+		Uid:       profile.UID(),
 		ProfileId: profile.ProfileId(),
 		ExamType:  req.ExamType,
 		Grade:     req.Grade,
@@ -698,7 +698,7 @@ func (s *Service) GetGradeRoadMap(ctx context.Context, req *dto.GradeMapReq) (*d
 	}
 
 	entries, err := s.gradeMap.Handle(ctx, query.GetGradeMapQuery{
-		UID:       profile.Uid(),
+		UID:       profile.UID(),
 		ProfileID: profile.ProfileId(),
 		Grade:     *req.Grade,
 	})
@@ -753,7 +753,7 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
 			fmt.Errorf("exam: journey %d not found", req.EsessID))
 	}
-	if journey.Uid() != profile.Uid() || journey.ProfileId() != profile.ProfileId() {
+	if journey.Uid() != profile.UID() || journey.ProfileId() != profile.ProfileId() {
 		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", req.EsessID))
 	}
@@ -782,7 +782,7 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 	saved, err := s.saveReviewCmd.Handle(ctx, command.SaveJourneyReviewCommand{
 		EsessID:     journey.EsessId(),
 		ExamType:    journey.ReqExamType(),
-		UID:         profile.Uid(),
+		UID:         profile.UID(),
 		ProfileID:   profile.ProfileId(),
 		ReviewShort: review.Short,
 		ReviewLong:  review.Long,

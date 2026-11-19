@@ -38,8 +38,8 @@ func NewNotification() *Notification { return &Notification{} }
 func (n *Notification) NotificationId() int64      { return n.notificationId }
 func (n *Notification) SetNotificationId(id int64) { n.notificationId = id }
 
-func (n *Notification) Uid() int64       { return n.uid }
-func (n *Notification) SetUid(uid int64) { n.uid = uid }
+func (n *Notification) UID() int64       { return n.uid }
+func (n *Notification) SetUID(uid int64) { n.uid = uid }
 
 func (n *Notification) Title() string     { return n.title }
 func (n *Notification) SetTitle(t string) { n.title = t }

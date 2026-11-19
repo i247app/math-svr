@@ -151,9 +151,9 @@ func (s *Service) OpenConversation(ctx context.Context, req *dto.OpenConversatio
 
 	conversation, err := s.openConversationCmd.Handle(ctx, &command.OpenConversationCommand{
 		ActorProfileID:  actor.ProfileId(),
-		ActorUID:        actor.Uid(),
+		ActorUID:        actor.UID(),
 		TargetProfileID: target.ProfileId(),
-		TargetUID:       target.Uid(),
+		TargetUID:       target.UID(),
 	})
 	if err != nil {
 		return nil, err
@@ -242,7 +242,7 @@ func (s *Service) SendMessage(ctx context.Context, req *dto.SendMessageReq, sess
 	result, err := s.sendMessageCmd.Handle(ctx, &command.SendMessageCommand{
 		ConversationID:   req.ConversationID,
 		SenderProfileID:  actor.ProfileId(),
-		SenderUID:        actor.Uid(),
+		SenderUID:        actor.UID(),
 		Content:          req.Content,
 		ClientMsgID:      req.ClientMsgID,
 		ReplyToMessageID: req.ReplyToMessageID,
@@ -329,7 +329,7 @@ func (s *Service) attachCounterpart(ctx context.Context, res *dto.ConversationRe
 		AvatarKey: peer.AvatarKey(),
 		AvatarURL: s.presign(ctx, peer.AvatarKey()),
 	}
-	if pr, err := s.presenceRepo.FindByUid(ctx, peer.Uid()); err == nil && pr != nil {
+	if pr, err := s.presenceRepo.FindByUid(ctx, peer.UID()); err == nil && pr != nil {
 		item.IsOnline = pr.IsOnline()
 		item.LastSeenDt = mtime.NewTime(pr.LastSeenDt())
 	}

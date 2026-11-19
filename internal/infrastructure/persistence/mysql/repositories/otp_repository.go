@@ -135,7 +135,7 @@ func (r *OtpRepository) Create(ctx context.Context, o *otp.Otp) (*otp.Otp, error
 	}
 
 	_, err := r.db.Exec(ctx, query,
-		o.OtpId(), o.OtpType(), o.Uid(), o.Identifier(), o.DeviceUUID(), o.DeviceName(),
+		o.OtpId(), o.OtpType(), o.UID(), o.Identifier(), o.DeviceUUID(), o.DeviceName(),
 		o.OtpCode(), createDtArg, expireDtArg, o.AttemptCount(), o.RptFlg(), o.Kwords(), o.Note(), o.OtpStatus(), time.Now().UTC(), time.Now().UTC())
 	if err != nil {
 		return nil, fmt.Errorf("otp repo create: %w", err)
@@ -212,7 +212,7 @@ func ModelToDomainOtp(m *models.OtpModel) *otp.Otp {
 	o := otp.NewOtp()
 	o.SetOtpId(m.OtpId)
 	o.SetOtpType(m.OtpType)
-	o.SetUid(m.Uid)
+	o.SetUID(m.Uid)
 	o.SetIdentifier(m.Identifier)
 	o.SetDeviceUUID(m.DeviceUUID)
 	o.SetDeviceName(m.DeviceName)
