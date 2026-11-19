@@ -18,15 +18,10 @@ import (
 const (
 	chatParticipantTable = "ma_chat_participants"
 
-	chatParticipantColumns = `p.participant_id, p.conversation_id, p.profile_id,
-		p.uid, p.participant_role, p.last_read_seq_no, p.last_read_message_id,
-		p.last_read_dt, p.last_delivered_seq_no, p.unread_count, p.is_muted,
-		p.muted_until_dt, p.is_pinned, p.cleared_before_seq_no, p.joined_dt, p.left_dt,
-		p.invited_by_profile_id, p.rpt_flg, p.kwords, p.note, p.participant_status, p.status,
-		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
-
 	chatParticipantActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
 )
+
+var chatParticipantColumns = `p.participant_id, p.conversation_id, p.profile_id, p.uid, p.participant_role, p.last_read_seq_no, p.last_read_message_id, p.last_read_dt, p.last_delivered_seq_no, p.unread_count, p.is_muted, p.muted_until_dt, p.is_pinned, p.cleared_before_seq_no, p.joined_dt, p.left_dt, p.invited_by_profile_id, p.participant_status, ` + models.AuditColumns("p")
 
 func chatParticipantActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -42,12 +37,7 @@ func NewChatParticipantRepository(db database.Executor) chat.IParticipantReposit
 
 func scanChatParticipant(s database.RowScanner) (*models.ChatParticipantModel, error) {
 	var m models.ChatParticipantModel
-	if err := s.Scan(&m.ParticipantId, &m.ConversationId, &m.ProfileId,
-		&m.Uid, &m.ParticipantRole, &m.LastReadSeqNo, &m.LastReadMessageId,
-		&m.LastReadDt, &m.LastDeliveredSeqNo, &m.UnreadCount, &m.IsMuted,
-		&m.MutedUntilDt, &m.IsPinned, &m.ClearedBeforeSeqNo, &m.JoinedDt, &m.LeftDt,
-		&m.InvitedByProfileId, &m.RptFlg, &m.Kwords, &m.Note, &m.ParticipantStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.ParticipantId, &m.ConversationId, &m.ProfileId, &m.Uid, &m.ParticipantRole, &m.LastReadSeqNo, &m.LastReadMessageId, &m.LastReadDt, &m.LastDeliveredSeqNo, &m.UnreadCount, &m.IsMuted, &m.MutedUntilDt, &m.IsPinned, &m.ClearedBeforeSeqNo, &m.JoinedDt, &m.LeftDt, &m.InvitedByProfileId, &m.ParticipantStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -80,15 +70,8 @@ func ModelToDomainChatParticipant(m *models.ChatParticipantModel) *chat.Particip
 		p.SetLeftDt(*m.LeftDt)
 	}
 	p.SetInvitedByProfileId(m.InvitedByProfileId)
-	p.SetRptFlg(m.RptFlg)
-	p.SetKwords(m.Kwords)
-	p.SetNote(m.Note)
+	m.Audit.ApplyTo(&p.Audit)
 	p.SetParticipantStatus(m.ParticipantStatus)
-	p.SetStatus(m.Status)
-	p.SetCreateId(m.CreateId)
-	p.SetCreateDt(m.CreateDt)
-	p.SetModifyId(m.ModifyId)
-	p.SetModifyDt(m.ModifyDt)
 	return p
 }
 

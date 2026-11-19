@@ -19,12 +19,10 @@ import (
 const (
 	roleTable = "ma_roles"
 
-	roleColumns = `r.role_id, r.role_code, r.role_name, r.description, r.role_image_key,
-		r.role_status, r.rpt_flg, r.kwords, r.note, r.status,
-		r.create_id, r.create_dt, r.modify_id, r.modify_dt`
-
 	roleActiveWhere = `r.status IN (?) AND r.deleted_dt IS NULL`
 )
+
+var roleColumns = `r.role_id, r.role_code, r.role_name, r.description, r.role_image_key, r.role_status, ` + models.AuditColumns("r")
 
 func roleActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -40,9 +38,7 @@ func NewRoleRepository(db database.Executor) role.IRepository {
 
 func scanRole(s database.RowScanner) (*models.RoleModel, error) {
 	var m models.RoleModel
-	if err := s.Scan(&m.RoleId, &m.RoleCode, &m.RoleName, &m.Description, &m.RoleImageKey,
-		&m.RoleStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.RoleId, &m.RoleCode, &m.RoleName, &m.Description, &m.RoleImageKey, &m.RoleStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -249,13 +245,6 @@ func ModelToDomainRole(m *models.RoleModel) *role.Role {
 	ro.SetDescription(m.Description)
 	ro.SetRoleImageKey(m.RoleImageKey)
 	ro.SetRoleStatus(m.RoleStatus)
-	ro.SetRptFlg(m.RptFlg)
-	ro.SetKwords(m.Kwords)
-	ro.SetNote(m.Note)
-	ro.SetStatus(m.Status)
-	ro.SetCreateId(m.CreateId)
-	ro.SetCreateDt(m.CreateDt)
-	ro.SetModifyId(m.ModifyId)
-	ro.SetModifyDt(m.ModifyDt)
+	m.Audit.ApplyTo(&ro.Audit)
 	return ro
 }

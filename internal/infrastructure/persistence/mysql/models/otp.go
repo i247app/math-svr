@@ -5,6 +5,8 @@ import (
 )
 
 type OtpModel struct {
+	Audit
+
 	OtpId         int64
 	OtpType       string
 	Uid           *int64
@@ -16,13 +18,5 @@ type OtpModel struct {
 	OtpExpireDt   *time.Time
 	OtpVerifiedDt *time.Time
 	AttemptCount  int
-	RptFlg        *string
-	Kwords        *string
-	Note          *string
 	OtpStatus     *string
-	Status        string
-	CreateId      *int64
-	CreateDt      time.Time
-	ModifyId      *int64
-	ModifyDt      time.Time
 }

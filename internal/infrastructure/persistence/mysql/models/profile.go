@@ -5,6 +5,8 @@ import (
 )
 
 type ProfileModel struct {
+	Audit
+
 	ProfileId     int64
 	ProfileCode   string
 	Uid           int64
@@ -23,13 +25,5 @@ type ProfileModel struct {
 	IdType        *string
 	TeacherId     *string
 	StudentId     *string
-	RptFlg        *string
-	Kwords        *string
-	Note          *string
 	ProfileStatus *string
-	Status        string
-	CreateId      *int64
-	CreateDt      time.Time
-	ModifyId      *int64
-	ModifyDt      time.Time
 }

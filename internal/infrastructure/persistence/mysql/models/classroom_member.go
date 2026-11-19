@@ -3,6 +3,8 @@ package models
 import "time"
 
 type ClassroomMemberModel struct {
+	Audit
+
 	MemberId           int64
 	ClassroomId        int64
 	ProfileId          int64
@@ -13,15 +15,7 @@ type ClassroomMemberModel struct {
 	RemovedByProfileId *int64
 	RemovedDt          *time.Time
 	LastSeenDt         *time.Time
-	RptFlg             *string
-	Kwords             *string
-	Note               *string
 	InviteBy           *int64
 	InviteDt           *time.Time
 	MemberStatus       *string
-	Status             string
-	CreateId           *int64
-	CreateDt           time.Time
-	ModifyId           *int64
-	ModifyDt           time.Time
 }

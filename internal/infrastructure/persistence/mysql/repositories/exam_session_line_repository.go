@@ -17,13 +17,6 @@ import (
 const (
 	examSessionLineTable = "ma_exam_session_lines"
 
-	examSessionLineColumns = `d.esess_ln_id, d.elink_id, d.esess_id, d.exam_id, d.req_exam_type,
-		d.question_number, d.question_kind, d.question_text, d.question_topic, d.question_tags, d.explanation, d.question_grade, d.question_level,
-		d.right_option_ids, d.right_answer_text,
-		d.child_option_ids, d.child_answer_text, d.is_correct,
-		d.rpt_flg, d.kwords, d.note, d.esess_ln_status, d.status,
-		d.create_id, d.create_dt, d.modify_id, d.modify_dt`
-
 	examSessionLineActiveWhere = `d.status IN (?) AND d.deleted_dt IS NULL`
 
 	// examSessionLineInsertColumns and its placeholder tuple are kept next
@@ -37,6 +30,8 @@ const (
 
 	examSessionLineValueTuple = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
+
+var examSessionLineColumns = `d.esess_ln_id, d.elink_id, d.esess_id, d.exam_id, d.req_exam_type, d.question_number, d.question_kind, d.question_text, d.question_topic, d.question_tags, d.explanation, d.question_grade, d.question_level, d.right_option_ids, d.right_answer_text, d.child_option_ids, d.child_answer_text, d.is_correct, d.esess_ln_status, ` + models.AuditColumns("d")
 
 func examSessionLineActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -52,12 +47,7 @@ func NewExamSessionLineRepository(db database.Executor) exam.IExamSessionLineRep
 
 func scanExamSessionLine(s database.RowScanner) (*models.ExamSessionLineModel, error) {
 	var m models.ExamSessionLineModel
-	if err := s.Scan(&m.EsessLnId, &m.ElinkId, &m.EsessId, &m.ExamId, &m.ReqExamType,
-		&m.QuestionNumber, &m.QuestionKind, &m.QuestionText, &m.QuestionTopic, &m.QuestionTags, &m.Explanation, &m.QuestionGrade, &m.QuestionLevel,
-		&m.RightOptionIDs, &m.RightAnswerText,
-		&m.ChildOptionIDs, &m.ChildAnswerText, &m.IsCorrect,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.EsessLnStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.EsessLnId, &m.ElinkId, &m.EsessId, &m.ExamId, &m.ReqExamType, &m.QuestionNumber, &m.QuestionKind, &m.QuestionText, &m.QuestionTopic, &m.QuestionTags, &m.Explanation, &m.QuestionGrade, &m.QuestionLevel, &m.RightOptionIDs, &m.RightAnswerText, &m.ChildOptionIDs, &m.ChildAnswerText, &m.IsCorrect, &m.EsessLnStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -206,14 +196,7 @@ func ModelToDomainExamSessionLine(m *models.ExamSessionLineModel) (*exam.ExamSes
 	d.SetChildOptionIDs(m.ChildOptionIDs)
 	d.SetChildAnswerText(m.ChildAnswerText)
 	d.SetIsCorrect(m.IsCorrect)
-	d.SetRptFlg(m.RptFlg)
-	d.SetKwords(m.Kwords)
-	d.SetNote(m.Note)
+	m.Audit.ApplyTo(&d.Audit)
 	d.SetEsessLnStatus(m.EsessLnStatus)
-	d.SetStatus(m.Status)
-	d.SetCreateId(m.CreateId)
-	d.SetCreateDt(m.CreateDt)
-	d.SetModifyId(m.ModifyId)
-	d.SetModifyDt(m.ModifyDt)
 	return d, nil
 }

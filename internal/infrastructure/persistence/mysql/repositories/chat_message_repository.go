@@ -18,13 +18,6 @@ import (
 const (
 	chatMessageTable = "ma_chat_messages"
 
-	chatMessageColumns = `m.message_id, m.conversation_id, m.seq_no,
-		m.sender_profile_id, m.sender_uid, m.message_type, m.content,
-		m.attachment_count, m.reply_to_message_id, m.system_event, m.system_payload,
-		m.metadata, m.client_msg_id, m.sent_dt, m.edited_dt, m.revoked_dt,
-		m.rpt_flg, m.kwords, m.note, m.message_status, m.status, m.create_id, m.create_dt,
-		m.modify_id, m.modify_dt`
-
 	// REVOKED rows deliberately survive this filter: the client renders them
 	// in place as "tin nhắn đã được thu hồi", and hiding them would reopen the
 	// gap in seq_no that the thread view relies on being contiguous.
@@ -34,6 +27,8 @@ const (
 	defaultMessagePageSize int64 = 30
 	maxMessagePageSize     int64 = 100
 )
+
+var chatMessageColumns = `m.message_id, m.conversation_id, m.seq_no, m.sender_profile_id, m.sender_uid, m.message_type, m.content, m.attachment_count, m.reply_to_message_id, m.system_event, m.system_payload, m.metadata, m.client_msg_id, m.sent_dt, m.edited_dt, m.revoked_dt, m.message_status, ` + models.AuditColumns("m")
 
 func chatMessageActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -49,12 +44,7 @@ func NewChatMessageRepository(db database.Executor) chat.IMessageRepository {
 
 func scanChatMessage(s database.RowScanner) (*models.ChatMessageModel, error) {
 	var m models.ChatMessageModel
-	if err := s.Scan(&m.MessageId, &m.ConversationId, &m.SeqNo,
-		&m.SenderProfileId, &m.SenderUid, &m.MessageType, &m.Content,
-		&m.AttachmentCount, &m.ReplyToMessageId, &m.SystemEvent, &m.SystemPayload,
-		&m.Metadata, &m.ClientMsgId, &m.SentDt, &m.EditedDt, &m.RevokedDt,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.MessageStatus, &m.Status, &m.CreateId, &m.CreateDt,
-		&m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.MessageId, &m.ConversationId, &m.SeqNo, &m.SenderProfileId, &m.SenderUid, &m.MessageType, &m.Content, &m.AttachmentCount, &m.ReplyToMessageId, &m.SystemEvent, &m.SystemPayload, &m.Metadata, &m.ClientMsgId, &m.SentDt, &m.EditedDt, &m.RevokedDt, &m.MessageStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -82,15 +72,8 @@ func ModelToDomainChatMessage(m *models.ChatMessageModel) *chat.Message {
 	if m.RevokedDt != nil {
 		msg.SetRevokedDt(*m.RevokedDt)
 	}
-	msg.SetRptFlg(m.RptFlg)
-	msg.SetKwords(m.Kwords)
-	msg.SetNote(m.Note)
+	m.Audit.ApplyTo(&msg.Audit)
 	msg.SetMessageStatus(m.MessageStatus)
-	msg.SetStatus(m.Status)
-	msg.SetCreateId(m.CreateId)
-	msg.SetCreateDt(m.CreateDt)
-	msg.SetModifyId(m.ModifyId)
-	msg.SetModifyDt(m.ModifyDt)
 	return msg
 }
 

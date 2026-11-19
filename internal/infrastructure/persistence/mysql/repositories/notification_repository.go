@@ -19,16 +19,13 @@ import (
 const (
 	notificationTable = "ma_notifications"
 
-	notificationColumns = `n.notification_id, n.uid, n.title, n.short_text,
-		n.category, n.is_read, n.action_type, n.action_data, n.priority, n.rpt_flg, n.kwords, n.note,
-		n.notification_status, n.status,
-		n.create_id, n.create_dt, n.modify_id, n.modify_dt`
-
 	// Reads exclude both system-inactive rows and the DELETED business
 	// status used by the soft-delete path. ARCHIVED rows remain visible
 	// (recoverable) — callers filter them out at the query level if needed.
 	notificationActiveWhere = `n.status IN (?) AND n.deleted_dt IS NULL`
 )
+
+var notificationColumns = `n.notification_id, n.uid, n.title, n.short_text, n.category, n.is_read, n.action_type, n.action_data, n.priority, n.notification_status, ` + models.AuditColumns("n")
 
 func notificationActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -44,10 +41,7 @@ func NewNotificationRepository(db database.Executor) notification.IRepository {
 
 func scanNotification(s database.RowScanner) (*models.NotificationModel, error) {
 	var m models.NotificationModel
-	if err := s.Scan(&m.NotificationId, &m.Uid, &m.Title, &m.ShortText,
-		&m.Category, &m.IsRead, &m.ActionType, &m.ActionData, &m.Priority, &m.RptFlg, &m.Kwords, &m.Note,
-		&m.NotificationStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.NotificationId, &m.Uid, &m.Title, &m.ShortText, &m.Category, &m.IsRead, &m.ActionType, &m.ActionData, &m.Priority, &m.NotificationStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -204,14 +198,7 @@ func ModelToDomainNotification(m *models.NotificationModel) *notification.Notifi
 	n.SetActionType(m.ActionType)
 	n.SetActionData(m.ActionData)
 	n.SetPriority(m.Priority)
-	n.SetRptFlg(m.RptFlg)
-	n.SetKwords(m.Kwords)
-	n.SetNote(m.Note)
+	m.Audit.ApplyTo(&n.Audit)
 	n.SetNotificationStatus(m.NotificationStatus)
-	n.SetStatus(m.Status)
-	n.SetCreateId(m.CreateId)
-	n.SetCreateDt(m.CreateDt)
-	n.SetModifyId(m.ModifyId)
-	n.SetModifyDt(m.ModifyDt)
 	return n
 }

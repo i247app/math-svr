@@ -2,6 +2,8 @@ package classroom
 
 import (
 	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Member models ma_classroom_members — the (classroom, profile) join
@@ -16,6 +18,8 @@ import (
 // ma_classroom_invitations and is no longer written — it remains on
 // the entity only so historical rows hydrate without scan errors.
 type Member struct {
+	audit.Audit
+
 	memberId           int64
 	classroomId        int64
 	profileId          int64
@@ -26,17 +30,9 @@ type Member struct {
 	removedByProfileId *int64
 	removedDt          time.Time
 	lastSeenDt         time.Time
-	rptFlg             *string
-	kwords             *string
-	note               *string
 	inviteBy           *int64
 	inviteDt           time.Time
 	memberStatus       *string
-	status             string
-	createId           *int64
-	createDt           time.Time
-	modifyId           *int64
-	modifyDt           time.Time
 }
 
 func NewMember() *Member {
@@ -73,15 +69,6 @@ func (m *Member) SetRemovedDt(t time.Time) { m.removedDt = t }
 func (m *Member) LastSeenDt() time.Time     { return m.lastSeenDt }
 func (m *Member) SetLastSeenDt(t time.Time) { m.lastSeenDt = t }
 
-func (m *Member) RptFlg() *string     { return m.rptFlg }
-func (m *Member) SetRptFlg(v *string) { m.rptFlg = v }
-
-func (m *Member) Kwords() *string     { return m.kwords }
-func (m *Member) SetKwords(v *string) { m.kwords = v }
-
-func (m *Member) Note() *string     { return m.note }
-func (m *Member) SetNote(n *string) { m.note = n }
-
 func (m *Member) InviteBy() *int64     { return m.inviteBy }
 func (m *Member) SetInviteBy(v *int64) { m.inviteBy = v }
 
@@ -90,18 +77,3 @@ func (m *Member) SetInviteDt(t time.Time) { m.inviteDt = t }
 
 func (m *Member) MemberStatus() *string     { return m.memberStatus }
 func (m *Member) SetMemberStatus(v *string) { m.memberStatus = v }
-
-func (m *Member) Status() string     { return m.status }
-func (m *Member) SetStatus(v string) { m.status = v }
-
-func (m *Member) CreateId() *int64      { return m.createId }
-func (m *Member) SetCreateId(id *int64) { m.createId = id }
-
-func (m *Member) CreateDt() time.Time     { return m.createDt }
-func (m *Member) SetCreateDt(t time.Time) { m.createDt = t }
-
-func (m *Member) ModifyId() *int64      { return m.modifyId }
-func (m *Member) SetModifyId(id *int64) { m.modifyId = id }
-
-func (m *Member) ModifyDt() time.Time     { return m.modifyDt }
-func (m *Member) SetModifyDt(t time.Time) { m.modifyDt = t }

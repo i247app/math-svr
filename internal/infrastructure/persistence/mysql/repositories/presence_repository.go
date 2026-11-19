@@ -19,15 +19,13 @@ import (
 const (
 	presenceTable = "ma_user_presence"
 
-	presenceColumns = `p.uid, p.presence_state, p.connection_count,
-		p.last_online_dt, p.last_seen_dt, p.last_device_uuid, p.last_platform,
-		p.rpt_flg, p.kwords, p.note, p.status, p.create_id, p.create_dt, p.modify_id, p.modify_dt`
-
 	// Presence has no business-status column — a user is never "soft-deleted"
 	// from presence, the row simply goes OFFLINE. Only the system status and
 	// the soft-delete stamp are filtered.
 	presenceActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
 )
+
+var presenceColumns = `p.uid, p.presence_state, p.connection_count, p.last_online_dt, p.last_seen_dt, p.last_device_uuid, p.last_platform, ` + models.AuditColumns("p")
 
 func presenceActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -43,10 +41,7 @@ func NewPresenceRepository(db database.Executor) presence.IRepository {
 
 func scanPresence(s database.RowScanner) (*models.PresenceModel, error) {
 	var m models.PresenceModel
-	if err := s.Scan(&m.Uid, &m.PresenceState, &m.ConnectionCount,
-		&m.LastOnlineDt, &m.LastSeenDt, &m.LastDeviceUuid, &m.LastPlatform,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.Status, &m.CreateId, &m.CreateDt, &m.ModifyId,
-		&m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.Uid, &m.PresenceState, &m.ConnectionCount, &m.LastOnlineDt, &m.LastSeenDt, &m.LastDeviceUuid, &m.LastPlatform}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -183,13 +178,6 @@ func ModelToDomainPresence(m *models.PresenceModel) *presence.Presence {
 	}
 	p.SetLastDeviceUuid(m.LastDeviceUuid)
 	p.SetLastPlatform(m.LastPlatform)
-	p.SetRptFlg(m.RptFlg)
-	p.SetKwords(m.Kwords)
-	p.SetNote(m.Note)
-	p.SetStatus(m.Status)
-	p.SetCreateId(m.CreateId)
-	p.SetCreateDt(m.CreateDt)
-	p.SetModifyId(m.ModifyId)
-	p.SetModifyDt(m.ModifyDt)
+	m.Audit.ApplyTo(&p.Audit)
 	return p
 }

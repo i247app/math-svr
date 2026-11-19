@@ -19,15 +19,10 @@ import (
 const (
 	examLinkTable = "ma_exam_links"
 
-	examLinkColumns = `u.elink_id, u.uid, u.profile_id, u.exam_id, u.esess_id, u.shuffle_map,
-		u.req_exam_type, u.req_grade, u.req_level,
-		u.res_total_questions, u.res_correct_number, u.res_skipped_number, u.res_score_percentage,
-		u.started_dt, u.submitted_dt,
-		u.rpt_flg, u.kwords, u.note, u.elink_status, u.status,
-		u.create_id, u.create_dt, u.modify_id, u.modify_dt`
-
 	examLinkActiveWhere = `u.status IN (?) AND u.deleted_dt IS NULL`
 )
+
+var examLinkColumns = `u.elink_id, u.uid, u.profile_id, u.exam_id, u.esess_id, u.shuffle_map, u.req_exam_type, u.req_grade, u.req_level, u.res_total_questions, u.res_correct_number, u.res_skipped_number, u.res_score_percentage, u.started_dt, u.submitted_dt, u.elink_status, ` + models.AuditColumns("u")
 
 func examLinkActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -43,12 +38,7 @@ func NewExamLinkRepository(db database.Executor) exam.IExamLinkRepository {
 
 func scanExamLink(s database.RowScanner) (*models.ExamLinkModel, error) {
 	var m models.ExamLinkModel
-	if err := s.Scan(&m.ElinkId, &m.Uid, &m.ProfileId, &m.ExamId, &m.EsessId, &m.ShuffleMap,
-		&m.ReqExamType, &m.ReqGrade, &m.ReqLevel,
-		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
-		&m.StartedDt, &m.SubmittedDt,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.ElinkStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.ElinkId, &m.Uid, &m.ProfileId, &m.ExamId, &m.EsessId, &m.ShuffleMap, &m.ReqExamType, &m.ReqGrade, &m.ReqLevel, &m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage, &m.StartedDt, &m.SubmittedDt, &m.ElinkStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -479,14 +469,7 @@ func ModelToDomainExamLink(m *models.ExamLinkModel) *exam.ExamLink {
 	a.SetResScorePercentage(m.ResScorePercentage)
 	a.SetStartedDt(timeOrZero(m.StartedDt))
 	a.SetSubmittedDt(timeOrZero(m.SubmittedDt))
-	a.SetRptFlg(m.RptFlg)
-	a.SetKwords(m.Kwords)
-	a.SetNote(m.Note)
+	m.Audit.ApplyTo(&a.Audit)
 	a.SetElinkStatus(m.ElinkStatus)
-	a.SetStatus(m.Status)
-	a.SetCreateId(m.CreateId)
-	a.SetCreateDt(m.CreateDt)
-	a.SetModifyId(m.ModifyId)
-	a.SetModifyDt(m.ModifyDt)
 	return a
 }

@@ -1,7 +1,7 @@
 package classroom
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // ClassroomProgram models a row in ma_classroom_programs — the junction
@@ -15,17 +15,11 @@ import (
 // columns are present for shape consistency with the rest of the schema
 // but the repository only emits ACTIVE rows.
 type ClassroomProgram struct {
+	audit.Audit
+
 	classroomProgramId int64
 	classroomId        int64
 	programId          int64
-	rptFlg             *string
-	kwords             *string
-	note               *string
-	status             string
-	createId           *int64
-	createDt           time.Time
-	modifyId           *int64
-	modifyDt           time.Time
 }
 
 func NewClassroomProgram() *ClassroomProgram {
@@ -40,27 +34,3 @@ func (cp *ClassroomProgram) SetClassroomId(v int64) { cp.classroomId = v }
 
 func (cp *ClassroomProgram) ProgramId() int64     { return cp.programId }
 func (cp *ClassroomProgram) SetProgramId(v int64) { cp.programId = v }
-
-func (cp *ClassroomProgram) RptFlg() *string     { return cp.rptFlg }
-func (cp *ClassroomProgram) SetRptFlg(v *string) { cp.rptFlg = v }
-
-func (cp *ClassroomProgram) Kwords() *string     { return cp.kwords }
-func (cp *ClassroomProgram) SetKwords(v *string) { cp.kwords = v }
-
-func (cp *ClassroomProgram) Note() *string     { return cp.note }
-func (cp *ClassroomProgram) SetNote(v *string) { cp.note = v }
-
-func (cp *ClassroomProgram) Status() string     { return cp.status }
-func (cp *ClassroomProgram) SetStatus(v string) { cp.status = v }
-
-func (cp *ClassroomProgram) CreateId() *int64     { return cp.createId }
-func (cp *ClassroomProgram) SetCreateId(v *int64) { cp.createId = v }
-
-func (cp *ClassroomProgram) CreateDt() time.Time     { return cp.createDt }
-func (cp *ClassroomProgram) SetCreateDt(t time.Time) { cp.createDt = t }
-
-func (cp *ClassroomProgram) ModifyId() *int64     { return cp.modifyId }
-func (cp *ClassroomProgram) SetModifyId(v *int64) { cp.modifyId = v }
-
-func (cp *ClassroomProgram) ModifyDt() time.Time     { return cp.modifyDt }
-func (cp *ClassroomProgram) SetModifyDt(t time.Time) { cp.modifyDt = t }

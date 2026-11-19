@@ -2,6 +2,8 @@ package profile
 
 import (
 	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Profile is a child managed by a parent (User). One row per child; the
@@ -9,6 +11,8 @@ import (
 // as a new row). A zero dob means "not set"; the repository writes it as
 // NULL and the API renders it as "" (empty).
 type Profile struct {
+	audit.Audit
+
 	profileId     int64
 	profileCode   string
 	uid           int64
@@ -27,15 +31,7 @@ type Profile struct {
 	idType        *string
 	teacherId     *string
 	studentId     *string
-	rptFlg        *string
-	kwords        *string
-	note          *string
 	profileStatus *string
-	status        string
-	createId      *int64
-	createDt      time.Time
-	modifyId      *int64
-	modifyDt      time.Time
 }
 
 func NewProfile() *Profile {
@@ -104,29 +100,5 @@ func (p *Profile) SetTeacherId(teacherId *string) { p.teacherId = teacherId }
 func (p *Profile) StudentId() *string             { return p.studentId }
 func (p *Profile) SetStudentId(studentId *string) { p.studentId = studentId }
 
-func (p *Profile) RptFlg() *string          { return p.rptFlg }
-func (p *Profile) SetRptFlg(rptFlg *string) { p.rptFlg = rptFlg }
-
-func (p *Profile) Kwords() *string          { return p.kwords }
-func (p *Profile) SetKwords(kwords *string) { p.kwords = kwords }
-
-func (p *Profile) Note() *string        { return p.note }
-func (p *Profile) SetNote(note *string) { p.note = note }
-
 func (p *Profile) ProfileStatus() *string                 { return p.profileStatus }
 func (p *Profile) SetProfileStatus(profileStatus *string) { p.profileStatus = profileStatus }
-
-func (p *Profile) Status() string          { return p.status }
-func (p *Profile) SetStatus(status string) { p.status = status }
-
-func (p *Profile) CreateId() *int64            { return p.createId }
-func (p *Profile) SetCreateId(createId *int64) { p.createId = createId }
-
-func (p *Profile) CreateDt() time.Time            { return p.createDt }
-func (p *Profile) SetCreateDt(createDt time.Time) { p.createDt = createDt }
-
-func (p *Profile) ModifyId() *int64            { return p.modifyId }
-func (p *Profile) SetModifyId(modifyId *int64) { p.modifyId = modifyId }
-
-func (p *Profile) ModifyDt() time.Time            { return p.modifyDt }
-func (p *Profile) SetModifyDt(modifyDt time.Time) { p.modifyDt = modifyDt }

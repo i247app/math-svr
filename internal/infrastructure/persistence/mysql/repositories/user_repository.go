@@ -23,9 +23,6 @@ import (
 const (
 	userTable = "ma_users"
 
-	userColumns = `u.uid, u.name, u.phone, u.email, u.is_email_verified, u.avatar_key, u.role, u.identity_code, u.user_status, u.status,
-	u.rpt_flg, u.kwords, u.note, u.create_id, u.create_dt, u.modify_id, u.modify_dt`
-
 	userFrom = userTable + ` u`
 
 	// User reads never JOIN ma_aliases. The alias table is a separate
@@ -34,6 +31,8 @@ const (
 	// (alias.FindByAka -> user.FindByUid), not here.
 	userActiveWhere = `u.status IN (?) AND u.deleted_dt IS NULL`
 )
+
+var userColumns = `u.uid, u.name, u.phone, u.email, u.is_email_verified, u.avatar_key, u.role, u.identity_code, u.user_status, ` + models.AuditColumns("u")
 
 func userActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -49,8 +48,7 @@ func NewUserRepository(db database.Executor) user.IRepository {
 
 func scanUser(s database.RowScanner) (*models.UserModel, error) {
 	var m models.UserModel
-	if err := s.Scan(&m.Uid, &m.UserName, &m.Phone, &m.Email, &m.IsEmailVerified, &m.AvatarKey, &m.Role, &m.IdentityCode, &m.UserStatus, &m.Status,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.Uid, &m.UserName, &m.Phone, &m.Email, &m.IsEmailVerified, &m.AvatarKey, &m.Role, &m.IdentityCode, &m.UserStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -348,14 +346,7 @@ func ModelToDomain(m *models.UserModel) *user.User {
 	u.SetRole(m.Role)
 	u.SetIdentityCode(m.IdentityCode)
 	u.SetUserStatus(m.UserStatus)
-	u.SetStatus(m.Status)
-	u.SetRptFlg(m.RptFlg)
-	u.SetKwords(m.Kwords)
-	u.SetNote(m.Note)
-	u.SetCreateId(m.CreateId)
-	u.SetCreateDt(m.CreateDt)
-	u.SetModifyId(m.ModifyId)
-	u.SetModifyDt(m.ModifyDt)
+	m.Audit.ApplyTo(&u.Audit)
 
 	return u
 }

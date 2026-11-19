@@ -1,7 +1,7 @@
 package prompt
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Prompt is the STATIC half of one kind of LLM call: the system message,
@@ -15,6 +15,8 @@ import (
 // puts it into the cache tag, so a rewritten prompt stops serving sets
 // generated from the old text.
 type Prompt struct {
+	audit.Audit
+
 	promptId      int64
 	promptCode    Code
 	grade         *int    // nil = the code does not vary by grade
@@ -24,14 +26,6 @@ type Prompt struct {
 	description   *string
 
 	promptStatus *string
-	rptFlg       *string
-	kwords       *string
-	note         *string
-	status       string
-	createId     *int64
-	createDt     time.Time
-	modifyId     *int64
-	modifyDt     time.Time
 }
 
 func NewPrompt() *Prompt { return &Prompt{} }
@@ -59,27 +53,3 @@ func (p *Prompt) SetDescription(s *string) { p.description = s }
 
 func (p *Prompt) PromptStatus() *string     { return p.promptStatus }
 func (p *Prompt) SetPromptStatus(s *string) { p.promptStatus = s }
-
-func (p *Prompt) RptFlg() *string     { return p.rptFlg }
-func (p *Prompt) SetRptFlg(s *string) { p.rptFlg = s }
-
-func (p *Prompt) Kwords() *string     { return p.kwords }
-func (p *Prompt) SetKwords(s *string) { p.kwords = s }
-
-func (p *Prompt) Note() *string     { return p.note }
-func (p *Prompt) SetNote(s *string) { p.note = s }
-
-func (p *Prompt) Status() string     { return p.status }
-func (p *Prompt) SetStatus(s string) { p.status = s }
-
-func (p *Prompt) CreateId() *int64      { return p.createId }
-func (p *Prompt) SetCreateId(id *int64) { p.createId = id }
-
-func (p *Prompt) CreateDt() time.Time     { return p.createDt }
-func (p *Prompt) SetCreateDt(t time.Time) { p.createDt = t }
-
-func (p *Prompt) ModifyId() *int64      { return p.modifyId }
-func (p *Prompt) SetModifyId(id *int64) { p.modifyId = id }
-
-func (p *Prompt) ModifyDt() time.Time     { return p.modifyDt }
-func (p *Prompt) SetModifyDt(t time.Time) { p.modifyDt = t }

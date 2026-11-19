@@ -18,12 +18,10 @@ import (
 const (
 	loginLogTable = "ma_login_logs"
 
-	loginLogColumns = `l.login_log_id, l.uid, l.ip_address, l.device_uuid,
-		l.token, l.rpt_flg, l.kwords, l.note, l.login_log_status, l.status,
-		l.create_id, l.create_dt, l.modify_id, l.modify_dt`
-
 	loginLogActiveWhere = `l.status IN (?) AND l.deleted_dt IS NULL`
 )
+
+var loginLogColumns = `l.login_log_id, l.uid, l.ip_address, l.device_uuid, l.token, l.login_log_status, ` + models.AuditColumns("l")
 
 func loginLogActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -39,9 +37,7 @@ func NewLoginLogRepository(db database.Executor) loginlog.IRepository {
 
 func scanLoginLog(s database.RowScanner) (*models.LoginLogModel, error) {
 	var m models.LoginLogModel
-	if err := s.Scan(&m.LoginLogId, &m.Uid, &m.IpAddress, &m.DeviceUUID,
-		&m.Token, &m.RptFlg, &m.Kwords, &m.Note, &m.LoginLogStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.LoginLogId, &m.Uid, &m.IpAddress, &m.DeviceUUID, &m.Token, &m.LoginLogStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -174,14 +170,7 @@ func ModelToDomainLoginLog(m *models.LoginLogModel) *loginlog.LoginLog {
 	l.SetIpAddress(m.IpAddress)
 	l.SetDeviceUUID(m.DeviceUUID)
 	l.SetToken(m.Token)
-	l.SetRptFlg(m.RptFlg)
-	l.SetKwords(m.Kwords)
-	l.SetNote(m.Note)
+	m.Audit.ApplyTo(&l.Audit)
 	l.SetLoginLogStatus(m.LoginLogStatus)
-	l.SetStatus(m.Status)
-	l.SetCreateId(m.CreateId)
-	l.SetCreateDt(m.CreateDt)
-	l.SetModifyId(m.ModifyId)
-	l.SetModifyDt(m.ModifyDt)
 	return l
 }

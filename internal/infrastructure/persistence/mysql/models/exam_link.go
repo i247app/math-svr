@@ -5,6 +5,8 @@ import (
 )
 
 type ExamLinkModel struct {
+	Audit
+
 	ElinkId            int64
 	Uid                int64
 	ProfileId          int64
@@ -20,13 +22,5 @@ type ExamLinkModel struct {
 	ResScorePercentage *int
 	StartedDt          *time.Time
 	SubmittedDt        *time.Time
-	RptFlg             *string
-	Kwords             *string
-	Note               *string
 	ElinkStatus        *string
-	Status             string
-	CreateId           *int64
-	CreateDt           time.Time
-	ModifyId           *int64
-	ModifyDt           time.Time
 }

@@ -2,6 +2,8 @@ package classroom
 
 import (
 	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Classroom models ma_classrooms. owner_profile_id is denormalized for
@@ -10,6 +12,8 @@ import (
 // classroom_code path is opt-in: nil/empty + a null expiry means
 // joining is closed (only targeted invitations work).
 type Classroom struct {
+	audit.Audit
+
 	classroomId            int64
 	ownerProfileId         int64
 	name                   string
@@ -23,15 +27,7 @@ type Classroom struct {
 	studentCount           int64
 	teacherCount           int64
 	coverKey               *string
-	rptFlg                 *string
-	kwords                 *string
-	note                   *string
 	classroomStatus        *string
-	status                 string
-	createId               *int64
-	createDt               time.Time
-	modifyId               *int64
-	modifyDt               time.Time
 
 	// programIds is the in-memory denormalisation of the
 	// ma_classroom_programs junction rows for this classroom. It is set
@@ -84,32 +80,8 @@ func (c *Classroom) SetTeacherCount(v int64) { c.teacherCount = v }
 func (c *Classroom) CoverKey() *string     { return c.coverKey }
 func (c *Classroom) SetCoverKey(k *string) { c.coverKey = k }
 
-func (c *Classroom) RptFlg() *string     { return c.rptFlg }
-func (c *Classroom) SetRptFlg(v *string) { c.rptFlg = v }
-
-func (c *Classroom) Kwords() *string     { return c.kwords }
-func (c *Classroom) SetKwords(v *string) { c.kwords = v }
-
-func (c *Classroom) Note() *string     { return c.note }
-func (c *Classroom) SetNote(n *string) { c.note = n }
-
 func (c *Classroom) ClassroomStatus() *string     { return c.classroomStatus }
 func (c *Classroom) SetClassroomStatus(v *string) { c.classroomStatus = v }
-
-func (c *Classroom) Status() string     { return c.status }
-func (c *Classroom) SetStatus(v string) { c.status = v }
-
-func (c *Classroom) CreateId() *int64      { return c.createId }
-func (c *Classroom) SetCreateId(id *int64) { c.createId = id }
-
-func (c *Classroom) CreateDt() time.Time     { return c.createDt }
-func (c *Classroom) SetCreateDt(t time.Time) { c.createDt = t }
-
-func (c *Classroom) ModifyId() *int64      { return c.modifyId }
-func (c *Classroom) SetModifyId(id *int64) { c.modifyId = id }
-
-func (c *Classroom) ModifyDt() time.Time     { return c.modifyDt }
-func (c *Classroom) SetModifyDt(t time.Time) { c.modifyDt = t }
 
 func (c *Classroom) ProgramIds() []int64       { return c.programIds }
 func (c *Classroom) SetProgramIds(ids []int64) { c.programIds = ids }

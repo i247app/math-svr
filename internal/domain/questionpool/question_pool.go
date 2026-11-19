@@ -1,8 +1,7 @@
 package questionpool
 
 import (
-	"time"
-
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 
@@ -13,6 +12,8 @@ import (
 // questionHash fingerprints the content (see migration 036) so the same
 // question cannot be stored twice while live.
 type QuestionPool struct {
+	audit.Audit
+
 	questionPoolId   int64
 	questionKind     Kind
 	questionText     string
@@ -33,14 +34,6 @@ type QuestionPool struct {
 	questionHash     string
 
 	questionStatus *string
-	rptFlg         *string
-	kwords         *string
-	note           *string
-	status         string
-	createId       *int64
-	createDt       time.Time
-	modifyId       *int64
-	modifyDt       time.Time
 }
 
 func NewQuestionPool() *QuestionPool { return &QuestionPool{} }
@@ -101,27 +94,3 @@ func (q *QuestionPool) SetQuestionHash(h string) { q.questionHash = h }
 
 func (q *QuestionPool) QuestionStatus() *string     { return q.questionStatus }
 func (q *QuestionPool) SetQuestionStatus(s *string) { q.questionStatus = s }
-
-func (q *QuestionPool) RptFlg() *string     { return q.rptFlg }
-func (q *QuestionPool) SetRptFlg(s *string) { q.rptFlg = s }
-
-func (q *QuestionPool) Kwords() *string     { return q.kwords }
-func (q *QuestionPool) SetKwords(s *string) { q.kwords = s }
-
-func (q *QuestionPool) Note() *string     { return q.note }
-func (q *QuestionPool) SetNote(s *string) { q.note = s }
-
-func (q *QuestionPool) Status() string     { return q.status }
-func (q *QuestionPool) SetStatus(s string) { q.status = s }
-
-func (q *QuestionPool) CreateId() *int64      { return q.createId }
-func (q *QuestionPool) SetCreateId(id *int64) { q.createId = id }
-
-func (q *QuestionPool) CreateDt() time.Time     { return q.createDt }
-func (q *QuestionPool) SetCreateDt(t time.Time) { q.createDt = t }
-
-func (q *QuestionPool) ModifyId() *int64      { return q.modifyId }
-func (q *QuestionPool) SetModifyId(id *int64) { q.modifyId = id }
-
-func (q *QuestionPool) ModifyDt() time.Time     { return q.modifyDt }
-func (q *QuestionPool) SetModifyDt(t time.Time) { q.modifyDt = t }

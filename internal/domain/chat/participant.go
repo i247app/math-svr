@@ -1,6 +1,10 @@
 package chat
 
-import "time"
+import (
+	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
+)
 
 // Participant models one ma_chat_participants row — a profile's membership of
 // one thread, plus every piece of state that is private to that profile.
@@ -16,6 +20,8 @@ import "time"
 // 57" from a single column, where receipts would cost one row per member per
 // message.
 type Participant struct {
+	audit.Audit
+
 	participantId      int64
 	conversationId     int64
 	profileId          int64
@@ -33,15 +39,7 @@ type Participant struct {
 	joinedDt           time.Time
 	leftDt             time.Time
 	invitedByProfileId *int64
-	rptFlg             *string
-	kwords             *string
-	note               *string
 	participantStatus  *string
-	status             string
-	createId           *int64
-	createDt           time.Time
-	modifyId           *int64
-	modifyDt           time.Time
 }
 
 func NewParticipant() *Participant { return &Participant{} }
@@ -97,29 +95,5 @@ func (p *Participant) SetLeftDt(t time.Time) { p.leftDt = t }
 func (p *Participant) InvitedByProfileId() *int64      { return p.invitedByProfileId }
 func (p *Participant) SetInvitedByProfileId(id *int64) { p.invitedByProfileId = id }
 
-func (p *Participant) RptFlg() *string     { return p.rptFlg }
-func (p *Participant) SetRptFlg(v *string) { p.rptFlg = v }
-
-func (p *Participant) Kwords() *string     { return p.kwords }
-func (p *Participant) SetKwords(v *string) { p.kwords = v }
-
-func (p *Participant) Note() *string     { return p.note }
-func (p *Participant) SetNote(n *string) { p.note = n }
-
 func (p *Participant) ParticipantStatus() *string     { return p.participantStatus }
 func (p *Participant) SetParticipantStatus(s *string) { p.participantStatus = s }
-
-func (p *Participant) Status() string     { return p.status }
-func (p *Participant) SetStatus(s string) { p.status = s }
-
-func (p *Participant) CreateId() *int64      { return p.createId }
-func (p *Participant) SetCreateId(id *int64) { p.createId = id }
-
-func (p *Participant) CreateDt() time.Time     { return p.createDt }
-func (p *Participant) SetCreateDt(t time.Time) { p.createDt = t }
-
-func (p *Participant) ModifyId() *int64      { return p.modifyId }
-func (p *Participant) SetModifyId(id *int64) { p.modifyId = id }
-
-func (p *Participant) ModifyDt() time.Time     { return p.modifyDt }
-func (p *Participant) SetModifyDt(t time.Time) { p.modifyDt = t }

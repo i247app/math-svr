@@ -1,8 +1,8 @@
 package models
 
-import "time"
-
 type BannerModel struct {
+	Audit
+
 	BannerId      int64
 	Title         *string
 	ShortText     *string
@@ -10,13 +10,5 @@ type BannerModel struct {
 	MediaURLKey   string
 	ButtonText    *string
 	ButtonLinkURL *string
-	RptFlg        *string
-	Kwords        *string
-	Note          *string
 	BannerStatus  *string
-	Status        string
-	CreateId      *int64
-	CreateDt      time.Time
-	ModifyId      *int64
-	ModifyDt      time.Time
 }

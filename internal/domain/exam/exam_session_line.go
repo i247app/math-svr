@@ -1,7 +1,7 @@
 package exam
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // ExamSessionLine is one question the child ACTUALLY ANSWERED. A skipped
@@ -34,6 +34,8 @@ import (
 // question's question_level as stored in questions_json, copied at submit
 // (NULL for a set stored before 2026-11-09, or an unrated bank question).
 type ExamSessionLine struct {
+	audit.Audit
+
 	esessLnId   int64
 	elinkId     int64
 	esessId     int64
@@ -55,17 +57,7 @@ type ExamSessionLine struct {
 	childAnswerText *string
 	isCorrect       bool
 
-	rptFlg *string
-
-	kwords *string
-
-	note          *string
 	esessLnStatus *string
-	status        string
-	createId      *int64
-	createDt      time.Time
-	modifyId      *int64
-	modifyDt      time.Time
 }
 
 func NewExamSessionLine() *ExamSessionLine { return &ExamSessionLine{} }
@@ -124,29 +116,5 @@ func (d *ExamSessionLine) SetChildAnswerText(s *string) { d.childAnswerText = s 
 func (d *ExamSessionLine) IsCorrect() bool     { return d.isCorrect }
 func (d *ExamSessionLine) SetIsCorrect(b bool) { d.isCorrect = b }
 
-func (d *ExamSessionLine) RptFlg() *string     { return d.rptFlg }
-func (d *ExamSessionLine) SetRptFlg(v *string) { d.rptFlg = v }
-
-func (d *ExamSessionLine) Kwords() *string     { return d.kwords }
-func (d *ExamSessionLine) SetKwords(v *string) { d.kwords = v }
-
-func (d *ExamSessionLine) Note() *string     { return d.note }
-func (d *ExamSessionLine) SetNote(s *string) { d.note = s }
-
 func (d *ExamSessionLine) EsessLnStatus() *string     { return d.esessLnStatus }
 func (d *ExamSessionLine) SetEsessLnStatus(s *string) { d.esessLnStatus = s }
-
-func (d *ExamSessionLine) Status() string     { return d.status }
-func (d *ExamSessionLine) SetStatus(s string) { d.status = s }
-
-func (d *ExamSessionLine) CreateId() *int64      { return d.createId }
-func (d *ExamSessionLine) SetCreateId(id *int64) { d.createId = id }
-
-func (d *ExamSessionLine) CreateDt() time.Time     { return d.createDt }
-func (d *ExamSessionLine) SetCreateDt(t time.Time) { d.createDt = t }
-
-func (d *ExamSessionLine) ModifyId() *int64      { return d.modifyId }
-func (d *ExamSessionLine) SetModifyId(id *int64) { d.modifyId = id }
-
-func (d *ExamSessionLine) ModifyDt() time.Time     { return d.modifyDt }
-func (d *ExamSessionLine) SetModifyDt(t time.Time) { d.modifyDt = t }

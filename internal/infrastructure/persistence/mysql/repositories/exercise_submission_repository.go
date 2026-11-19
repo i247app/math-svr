@@ -19,16 +19,10 @@ import (
 const (
 	exerciseSubmissionTable = "ma_exercise_submissions"
 
-	exerciseSubmissionColumns = `s.classroom_exercise_submission_id,
-		s.classroom_exercise_id, s.classroom_id, s.profile_id,
-		s.answers, s.review,
-		s.total_questions, s.correct_number, s.score_percentage,
-		s.submitted_dt, s.graded_dt,
-		s.rpt_flg, s.kwords, s.note, s.submission_status, s.status,
-		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
-
 	exerciseSubmissionActiveWhere = `s.status IN (?) AND s.deleted_dt IS NULL`
 )
+
+var exerciseSubmissionColumns = `s.classroom_exercise_submission_id, s.classroom_exercise_id, s.classroom_id, s.profile_id, s.answers, s.review, s.total_questions, s.correct_number, s.score_percentage, s.submitted_dt, s.graded_dt, s.submission_status, ` + models.AuditColumns("s")
 
 func exerciseSubmissionActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -44,13 +38,7 @@ func NewExerciseSubmissionRepository(db database.Executor) domain.ISubmissionRep
 
 func scanExerciseSubmission(s database.RowScanner) (*models.ExerciseSubmissionModel, error) {
 	var m models.ExerciseSubmissionModel
-	if err := s.Scan(&m.ClassroomExerciseSubmissionId,
-		&m.ClassroomExerciseId, &m.ClassroomId, &m.ProfileId,
-		&m.Answers, &m.Review,
-		&m.TotalQuestions, &m.CorrectNumber, &m.ScorePercentage,
-		&m.SubmittedDt, &m.GradedDt,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.SubmissionStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.ClassroomExerciseSubmissionId, &m.ClassroomExerciseId, &m.ClassroomId, &m.ProfileId, &m.Answers, &m.Review, &m.TotalQuestions, &m.CorrectNumber, &m.ScorePercentage, &m.SubmittedDt, &m.GradedDt, &m.SubmissionStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -429,14 +417,7 @@ func modelToDomainClassroomExerciseSubmission(m *models.ExerciseSubmissionModel)
 	if m.GradedDt != nil {
 		s.SetGradedDt(*m.GradedDt)
 	}
-	s.SetRptFlg(m.RptFlg)
-	s.SetKwords(m.Kwords)
-	s.SetNote(m.Note)
+	m.Audit.ApplyTo(&s.Audit)
 	s.SetSubmissionStatus(m.SubmissionStatus)
-	s.SetStatus(m.Status)
-	s.SetCreateId(m.CreateId)
-	s.SetCreateDt(m.CreateDt)
-	s.SetModifyId(m.ModifyId)
-	s.SetModifyDt(m.ModifyDt)
 	return s
 }

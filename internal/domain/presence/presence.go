@@ -7,7 +7,11 @@
 // ma_profiles.uid before looking presence up.
 package presence
 
-import "time"
+import (
+	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
+)
 
 // Presence models one ma_user_presence row.
 //
@@ -15,6 +19,8 @@ import "time"
 // person has the app open on a phone and a tablet: the row only flips to
 // OFFLINE when the last connection goes away.
 type Presence struct {
+	audit.Audit
+
 	uid             int64
 	presenceState   string
 	connectionCount int64
@@ -22,14 +28,6 @@ type Presence struct {
 	lastSeenDt      time.Time
 	lastDeviceUuid  *string
 	lastPlatform    *string
-	rptFlg          *string
-	kwords          *string
-	note            *string
-	status          string
-	createId        *int64
-	createDt        time.Time
-	modifyId        *int64
-	modifyDt        time.Time
 }
 
 func NewPresence() *Presence { return &Presence{} }
@@ -54,30 +52,6 @@ func (p *Presence) SetLastDeviceUuid(u *string) { p.lastDeviceUuid = u }
 
 func (p *Presence) LastPlatform() *string     { return p.lastPlatform }
 func (p *Presence) SetLastPlatform(v *string) { p.lastPlatform = v }
-
-func (p *Presence) RptFlg() *string     { return p.rptFlg }
-func (p *Presence) SetRptFlg(v *string) { p.rptFlg = v }
-
-func (p *Presence) Kwords() *string     { return p.kwords }
-func (p *Presence) SetKwords(v *string) { p.kwords = v }
-
-func (p *Presence) Note() *string     { return p.note }
-func (p *Presence) SetNote(n *string) { p.note = n }
-
-func (p *Presence) Status() string     { return p.status }
-func (p *Presence) SetStatus(v string) { p.status = v }
-
-func (p *Presence) CreateId() *int64      { return p.createId }
-func (p *Presence) SetCreateId(id *int64) { p.createId = id }
-
-func (p *Presence) CreateDt() time.Time     { return p.createDt }
-func (p *Presence) SetCreateDt(t time.Time) { p.createDt = t }
-
-func (p *Presence) ModifyId() *int64      { return p.modifyId }
-func (p *Presence) SetModifyId(id *int64) { p.modifyId = id }
-
-func (p *Presence) ModifyDt() time.Time     { return p.modifyDt }
-func (p *Presence) SetModifyDt(t time.Time) { p.modifyDt = t }
 
 // IsOnline reports whether the account currently holds a live connection.
 // Read paths should call this rather than comparing presenceState strings,

@@ -19,13 +19,10 @@ import (
 const (
 	programTable = "ma_programs"
 
-	programColumns = `p.program_id, p.label, p.description,
-		p.image_key, p.display_order, p.rpt_flg, p.kwords, p.note,
-		p.program_status, p.status,
-		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
-
 	programActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
 )
+
+var programColumns = `p.program_id, p.label, p.description, p.image_key, p.display_order, p.program_status, ` + models.AuditColumns("p")
 
 func programActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -41,9 +38,7 @@ func NewProgramRepository(db database.Executor) program.IRepository {
 
 func scanProgram(s database.RowScanner) (*models.ProgramModel, error) {
 	var m models.ProgramModel
-	if err := s.Scan(&m.ProgramId, &m.Label, &m.Description, &m.ImageKey,
-		&m.DisplayOrder, &m.RptFlg, &m.Kwords, &m.Note, &m.ProgramStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.ProgramId, &m.Label, &m.Description, &m.ImageKey, &m.DisplayOrder, &m.ProgramStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -240,14 +235,7 @@ func ModelToDomainProgram(m *models.ProgramModel) *program.Program {
 	p.SetDescription(m.Description)
 	p.SetImageKey(m.ImageKey)
 	p.SetDisplayOrder(m.DisplayOrder)
-	p.SetRptFlg(m.RptFlg)
-	p.SetKwords(m.Kwords)
-	p.SetNote(m.Note)
+	m.Audit.ApplyTo(&p.Audit)
 	p.SetProgramStatus(m.ProgramStatus)
-	p.SetStatus(m.Status)
-	p.SetCreateId(m.CreateId)
-	p.SetCreateDt(m.CreateDt)
-	p.SetModifyId(m.ModifyId)
-	p.SetModifyDt(m.ModifyDt)
 	return p
 }

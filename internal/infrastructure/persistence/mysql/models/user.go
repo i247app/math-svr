@@ -1,10 +1,8 @@
 package models
 
-import (
-	"time"
-)
-
 type UserModel struct {
+	Audit
+
 	Uid             int64
 	UserName        string
 	Phone           *string
@@ -14,12 +12,4 @@ type UserModel struct {
 	Role            *string
 	IdentityCode    *string
 	UserStatus      *string
-	Status          string
-	RptFlg          *string
-	Kwords          *string
-	Note            *string
-	CreateId        *int64
-	CreateDt        time.Time
-	ModifyId        *int64
-	ModifyDt        time.Time
 }

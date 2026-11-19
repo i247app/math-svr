@@ -1,7 +1,7 @@
 package banner
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Banner models ma_banners. Every optional column is a pointer so the
@@ -11,6 +11,8 @@ import (
 // an absolute client-supplied URL and is passed through as-is (not
 // presigned).
 type Banner struct {
+	audit.Audit
+
 	bannerId      int64
 	title         *string
 	shortText     *string
@@ -18,15 +20,7 @@ type Banner struct {
 	mediaURLKey   string
 	buttonText    *string
 	buttonLinkURL *string
-	rptFlg        *string
-	kwords        *string
-	note          *string
 	bannerStatus  *string
-	status        string
-	createId      *int64
-	createDt      time.Time
-	modifyId      *int64
-	modifyDt      time.Time
 }
 
 func NewBanner() *Banner {
@@ -54,29 +48,5 @@ func (b *Banner) SetButtonText(t *string) { b.buttonText = t }
 func (b *Banner) ButtonLinkURL() *string     { return b.buttonLinkURL }
 func (b *Banner) SetButtonLinkURL(u *string) { b.buttonLinkURL = u }
 
-func (b *Banner) RptFlg() *string     { return b.rptFlg }
-func (b *Banner) SetRptFlg(v *string) { b.rptFlg = v }
-
-func (b *Banner) Kwords() *string     { return b.kwords }
-func (b *Banner) SetKwords(v *string) { b.kwords = v }
-
-func (b *Banner) Note() *string     { return b.note }
-func (b *Banner) SetNote(n *string) { b.note = n }
-
 func (b *Banner) BannerStatus() *string     { return b.bannerStatus }
 func (b *Banner) SetBannerStatus(v *string) { b.bannerStatus = v }
-
-func (b *Banner) Status() string     { return b.status }
-func (b *Banner) SetStatus(v string) { b.status = v }
-
-func (b *Banner) CreateId() *int64      { return b.createId }
-func (b *Banner) SetCreateId(id *int64) { b.createId = id }
-
-func (b *Banner) CreateDt() time.Time     { return b.createDt }
-func (b *Banner) SetCreateDt(t time.Time) { b.createDt = t }
-
-func (b *Banner) ModifyId() *int64      { return b.modifyId }
-func (b *Banner) SetModifyId(id *int64) { b.modifyId = id }
-
-func (b *Banner) ModifyDt() time.Time     { return b.modifyDt }
-func (b *Banner) SetModifyDt(t time.Time) { b.modifyDt = t }

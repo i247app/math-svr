@@ -20,14 +20,10 @@ import (
 const (
 	profileTable = "ma_profiles"
 
-	profileColumns = `p.profile_id, p.profile_code, p.uid, p.name, p.phone, p.email, p.role, p.identity_code, p.avatar_key, p.dob,
-		p.school_id, p.program_id, p.grade_id, p.semester_id, p.is_default,
-		p.id_type, p.teacher_id, p.student_id,
-		p.rpt_flg, p.kwords, p.note, p.profile_status, p.status,
-		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
-
 	profileActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
 )
+
+var profileColumns = `p.profile_id, p.profile_code, p.uid, p.name, p.phone, p.email, p.role, p.identity_code, p.avatar_key, p.dob, p.school_id, p.program_id, p.grade_id, p.semester_id, p.is_default, p.id_type, p.teacher_id, p.student_id, p.profile_status, ` + models.AuditColumns("p")
 
 func profileActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -43,11 +39,7 @@ func NewProfileRepository(db database.Executor) profile.IRepository {
 
 func scanProfile(s database.RowScanner) (*models.ProfileModel, error) {
 	var m models.ProfileModel
-	if err := s.Scan(&m.ProfileId, &m.ProfileCode, &m.Uid, &m.Name, &m.Phone, &m.Email, &m.Role, &m.IdentityCode, &m.AvatarKey, &m.Dob,
-		&m.SchoolId, &m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault,
-		&m.IdType, &m.TeacherId, &m.StudentId,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.ProfileStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.ProfileId, &m.ProfileCode, &m.Uid, &m.Name, &m.Phone, &m.Email, &m.Role, &m.IdentityCode, &m.AvatarKey, &m.Dob, &m.SchoolId, &m.ProgramId, &m.GradeId, &m.SemesterId, &m.IsDefault, &m.IdType, &m.TeacherId, &m.StudentId, &m.ProfileStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -506,14 +498,7 @@ func ModelToDomainProfile(m *models.ProfileModel) *profile.Profile {
 	p.SetIdType(m.IdType)
 	p.SetTeacherId(m.TeacherId)
 	p.SetStudentId(m.StudentId)
-	p.SetRptFlg(m.RptFlg)
-	p.SetKwords(m.Kwords)
-	p.SetNote(m.Note)
+	m.Audit.ApplyTo(&p.Audit)
 	p.SetProfileStatus(m.ProfileStatus)
-	p.SetStatus(m.Status)
-	p.SetCreateId(m.CreateId)
-	p.SetCreateDt(m.CreateDt)
-	p.SetModifyId(m.ModifyId)
-	p.SetModifyDt(m.ModifyDt)
 	return p
 }

@@ -2,6 +2,8 @@ package exercise
 
 import (
 	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Exercise is a teacher-issued, AI-generated assignment scoped to a
@@ -20,6 +22,8 @@ import (
 // independently of `status`, mirroring the dual-status convention on
 // ma_classrooms.
 type Exercise struct {
+	audit.Audit
+
 	classroomExerciseId int64
 	classroomId         int64
 	creatorProfileId    int64
@@ -36,15 +40,7 @@ type Exercise struct {
 	answers             *string
 	startDate           time.Time
 	endDate             time.Time
-	rptFlg              *string
-	kwords              *string
-	note                *string
 	exerciseStatus      *string
-	status              string
-	createId            *int64
-	createDt            time.Time
-	modifyId            *int64
-	modifyDt            time.Time
 }
 
 func NewExercise() *Exercise { return &Exercise{} }
@@ -97,29 +93,5 @@ func (e *Exercise) SetStartDate(t time.Time) { e.startDate = t }
 func (e *Exercise) EndDate() time.Time     { return e.endDate }
 func (e *Exercise) SetEndDate(t time.Time) { e.endDate = t }
 
-func (e *Exercise) RptFlg() *string     { return e.rptFlg }
-func (e *Exercise) SetRptFlg(v *string) { e.rptFlg = v }
-
-func (e *Exercise) Kwords() *string     { return e.kwords }
-func (e *Exercise) SetKwords(v *string) { e.kwords = v }
-
-func (e *Exercise) Note() *string     { return e.note }
-func (e *Exercise) SetNote(s *string) { e.note = s }
-
 func (e *Exercise) ExerciseStatus() *string     { return e.exerciseStatus }
 func (e *Exercise) SetExerciseStatus(s *string) { e.exerciseStatus = s }
-
-func (e *Exercise) Status() string     { return e.status }
-func (e *Exercise) SetStatus(s string) { e.status = s }
-
-func (e *Exercise) CreateId() *int64      { return e.createId }
-func (e *Exercise) SetCreateId(id *int64) { e.createId = id }
-
-func (e *Exercise) CreateDt() time.Time     { return e.createDt }
-func (e *Exercise) SetCreateDt(t time.Time) { e.createDt = t }
-
-func (e *Exercise) ModifyId() *int64      { return e.modifyId }
-func (e *Exercise) SetModifyId(id *int64) { e.modifyId = id }
-
-func (e *Exercise) ModifyDt() time.Time     { return e.modifyDt }
-func (e *Exercise) SetModifyDt(t time.Time) { e.modifyDt = t }

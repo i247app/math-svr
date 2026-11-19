@@ -1,17 +1,9 @@
 package models
 
-import "time"
-
 type ClassroomProgramModel struct {
+	Audit
+
 	ClassroomProgramId int64
 	ClassroomId        int64
 	ProgramId          int64
-	RptFlg             *string
-	Kwords             *string
-	Note               *string
-	Status             string
-	CreateId           *int64
-	CreateDt           time.Time
-	ModifyId           *int64
-	ModifyDt           time.Time
 }

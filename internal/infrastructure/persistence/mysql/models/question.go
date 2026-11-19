@@ -1,10 +1,8 @@
 package models
 
-import (
-	"time"
-)
-
 type QuestionModel struct {
+	Audit
+
 	QuestionId       int64
 	ExamId           int64
 	QuestionNumber   int
@@ -22,12 +20,4 @@ type QuestionModel struct {
 	QuestionLevel    *int
 	QuestionSubLevel *int
 	QuestionStatus   *string
-	RptFlg           *string
-	Kwords           *string
-	Note             *string
-	Status           string
-	CreateId         *int64
-	CreateDt         time.Time
-	ModifyId         *int64
-	ModifyDt         time.Time
 }

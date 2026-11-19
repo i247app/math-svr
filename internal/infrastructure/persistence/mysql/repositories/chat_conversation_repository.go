@@ -19,15 +19,10 @@ import (
 const (
 	chatConversationTable = "ma_chat_conversations"
 
-	chatConversationColumns = `c.conversation_id, c.conversation_type, c.classroom_id,
-		c.dm_key, c.title, c.avatar_key, c.owner_profile_id, c.participant_count,
-		c.last_seq_no, c.message_count, c.last_message_id, c.last_message_seq_no,
-		c.last_message_type, c.last_message_preview, c.last_message_sender_profile_id,
-		c.last_message_dt, c.rpt_flg, c.kwords, c.note, c.conversation_status, c.status,
-		c.create_id, c.create_dt, c.modify_id, c.modify_dt`
-
 	chatConversationActiveWhere = `c.status IN (?) AND c.deleted_dt IS NULL`
 )
+
+var chatConversationColumns = `c.conversation_id, c.conversation_type, c.classroom_id, c.dm_key, c.title, c.avatar_key, c.owner_profile_id, c.participant_count, c.last_seq_no, c.message_count, c.last_message_id, c.last_message_seq_no, c.last_message_type, c.last_message_preview, c.last_message_sender_profile_id, c.last_message_dt, c.conversation_status, ` + models.AuditColumns("c")
 
 func chatConversationActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -43,12 +38,7 @@ func NewChatConversationRepository(db database.Executor) chat.IRepository {
 
 func scanChatConversation(s database.RowScanner) (*models.ChatConversationModel, error) {
 	var m models.ChatConversationModel
-	if err := s.Scan(&m.ConversationId, &m.ConversationType, &m.ClassroomId,
-		&m.DmKey, &m.Title, &m.AvatarKey, &m.OwnerProfileId, &m.ParticipantCount,
-		&m.LastSeqNo, &m.MessageCount, &m.LastMessageId, &m.LastMessageSeqNo,
-		&m.LastMessageType, &m.LastMessagePreview, &m.LastMessageSenderProfileId,
-		&m.LastMessageDt, &m.RptFlg, &m.Kwords, &m.Note, &m.ConversationStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.ConversationId, &m.ConversationType, &m.ClassroomId, &m.DmKey, &m.Title, &m.AvatarKey, &m.OwnerProfileId, &m.ParticipantCount, &m.LastSeqNo, &m.MessageCount, &m.LastMessageId, &m.LastMessageSeqNo, &m.LastMessageType, &m.LastMessagePreview, &m.LastMessageSenderProfileId, &m.LastMessageDt, &m.ConversationStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -74,15 +64,8 @@ func ModelToDomainChatConversation(m *models.ChatConversationModel) *chat.Conver
 	if m.LastMessageDt != nil {
 		c.SetLastMessageDt(*m.LastMessageDt)
 	}
-	c.SetRptFlg(m.RptFlg)
-	c.SetKwords(m.Kwords)
-	c.SetNote(m.Note)
+	m.Audit.ApplyTo(&c.Audit)
 	c.SetConversationStatus(m.ConversationStatus)
-	c.SetStatus(m.Status)
-	c.SetCreateId(m.CreateId)
-	c.SetCreateDt(m.CreateDt)
-	c.SetModifyId(m.ModifyId)
-	c.SetModifyDt(m.ModifyDt)
 	return c
 }
 

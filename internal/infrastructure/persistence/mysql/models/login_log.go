@@ -1,22 +1,12 @@
 package models
 
-import (
-	"time"
-)
-
 type LoginLogModel struct {
+	Audit
+
 	LoginLogId     int64
 	Uid            int64
 	IpAddress      string
 	DeviceUUID     string
 	Token          string
-	RptFlg         *string
-	Kwords         *string
-	Note           *string
 	LoginLogStatus *string
-	Status         string
-	CreateId       *int64
-	CreateDt       time.Time
-	ModifyId       *int64
-	ModifyDt       time.Time
 }

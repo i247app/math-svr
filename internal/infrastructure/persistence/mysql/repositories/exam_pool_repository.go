@@ -19,14 +19,10 @@ import (
 const (
 	examPoolTable = "ma_exam_pools"
 
-	examPoolColumns = `a.exam_id, a.req_exam_type, a.req_grade, a.req_level, a.req_num_ques,
-		a.req_semester, a.req_program, a.req_extras, a.exam_source,
-		a.title, a.short_text, a.questions_json, a.verified_count,
-		a.rpt_flg, a.kwords, a.note, a.exam_status, a.status,
-		a.create_id, a.create_dt, a.modify_id, a.modify_dt`
-
 	examPoolActiveWhere = `a.status IN (?) AND a.deleted_dt IS NULL`
 )
+
+var examPoolColumns = `a.exam_id, a.req_exam_type, a.req_grade, a.req_level, a.req_num_ques, a.req_semester, a.req_program, a.req_extras, a.exam_source, a.title, a.short_text, a.questions_json, a.verified_count, a.exam_status, ` + models.AuditColumns("a")
 
 func examPoolActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -42,11 +38,7 @@ func NewExamPoolRepository(db database.Executor) exam.IExamPoolRepository {
 
 func scanExamPool(s database.RowScanner) (*models.ExamPoolModel, error) {
 	var m models.ExamPoolModel
-	if err := s.Scan(&m.ExamId, &m.ReqExamType, &m.ReqGrade, &m.ReqLevel, &m.ReqNumQues,
-		&m.ReqSemester, &m.ReqProgram, &m.ReqExtras, &m.ExamSource,
-		&m.Title, &m.ShortText, &m.QuestionsJson, &m.VerifiedCount,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.ExamStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.ExamId, &m.ReqExamType, &m.ReqGrade, &m.ReqLevel, &m.ReqNumQues, &m.ReqSemester, &m.ReqProgram, &m.ReqExtras, &m.ExamSource, &m.Title, &m.ShortText, &m.QuestionsJson, &m.VerifiedCount, &m.ExamStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -297,14 +289,7 @@ func ModelToDomainExamPool(m *models.ExamPoolModel) *exam.ExamPool {
 	e.SetShortText(m.ShortText)
 	e.SetQuestionsJson(m.QuestionsJson)
 	e.SetVerifiedCount(m.VerifiedCount)
-	e.SetRptFlg(m.RptFlg)
-	e.SetKwords(m.Kwords)
-	e.SetNote(m.Note)
+	m.Audit.ApplyTo(&e.Audit)
 	e.SetExamStatus(m.ExamStatus)
-	e.SetStatus(m.Status)
-	e.SetCreateId(m.CreateId)
-	e.SetCreateDt(m.CreateDt)
-	e.SetModifyId(m.ModifyId)
-	e.SetModifyDt(m.ModifyDt)
 	return e
 }

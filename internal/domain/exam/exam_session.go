@@ -1,8 +1,10 @@
 package exam
 
 import (
-	"math-ai.com/math-ai/internal/shared/enum"
 	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // JourneyKey names the slot an open journey occupies: a submission folds
@@ -65,6 +67,8 @@ func JourneyKeyOf(uid, profileId int64, examType string, grade *int) JourneyKey 
 // written back to the profile: ma_profiles.grade_id records the class
 // the child attends, which is a different fact.
 type ExamSession struct {
+	audit.Audit
+
 	esessId      int64
 	uid          int64
 	profileId    int64
@@ -103,17 +107,7 @@ type ExamSession struct {
 	lastSubmittedDt time.Time
 	endedDt         time.Time
 
-	rptFlg *string
-
-	kwords *string
-
-	note        *string
 	esessStatus *string
-	status      string
-	createId    *int64
-	createDt    time.Time
-	modifyId    *int64
-	modifyDt    time.Time
 }
 
 func NewExamSession() *ExamSession { return &ExamSession{} }
@@ -175,32 +169,8 @@ func (u *ExamSession) SetLastSubmittedDt(t time.Time) { u.lastSubmittedDt = t }
 func (u *ExamSession) EndedDt() time.Time     { return u.endedDt }
 func (u *ExamSession) SetEndedDt(t time.Time) { u.endedDt = t }
 
-func (u *ExamSession) RptFlg() *string     { return u.rptFlg }
-func (u *ExamSession) SetRptFlg(v *string) { u.rptFlg = v }
-
-func (u *ExamSession) Kwords() *string     { return u.kwords }
-func (u *ExamSession) SetKwords(v *string) { u.kwords = v }
-
-func (u *ExamSession) Note() *string     { return u.note }
-func (u *ExamSession) SetNote(s *string) { u.note = s }
-
 func (u *ExamSession) EsessStatus() *string     { return u.esessStatus }
 func (u *ExamSession) SetEsessStatus(s *string) { u.esessStatus = s }
-
-func (u *ExamSession) Status() string     { return u.status }
-func (u *ExamSession) SetStatus(s string) { u.status = s }
-
-func (u *ExamSession) CreateId() *int64      { return u.createId }
-func (u *ExamSession) SetCreateId(id *int64) { u.createId = id }
-
-func (u *ExamSession) CreateDt() time.Time     { return u.createDt }
-func (u *ExamSession) SetCreateDt(t time.Time) { u.createDt = t }
-
-func (u *ExamSession) ModifyId() *int64      { return u.modifyId }
-func (u *ExamSession) SetModifyId(id *int64) { u.modifyId = id }
-
-func (u *ExamSession) ModifyDt() time.Time     { return u.modifyDt }
-func (u *ExamSession) SetModifyDt(t time.Time) { u.modifyDt = t }
 
 // HasAiReview reports whether the journey already holds both versions of
 // its AI review; such a journey is not reviewed again.

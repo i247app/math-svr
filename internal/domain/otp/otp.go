@@ -2,6 +2,8 @@ package otp
 
 import (
 	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Otp is a one-time password issuance. The plaintext code never lives in the
@@ -12,6 +14,8 @@ import (
 // identifier (phone or email) is always present and is the lookup key on
 // verify.
 type Otp struct {
+	audit.Audit
+
 	otpId         int64
 	otpType       string
 	uid           *int64
@@ -23,15 +27,7 @@ type Otp struct {
 	otpExpireDt   time.Time
 	otpVerifiedDt time.Time
 	attemptCount  int
-	rptFlg        *string
-	kwords        *string
-	note          *string
 	otpStatus     *string
-	status        string
-	createId      *int64
-	createDt      time.Time
-	modifyId      *int64
-	modifyDt      time.Time
 }
 
 func NewOtp() *Otp { return &Otp{} }
@@ -69,29 +65,5 @@ func (o *Otp) SetOtpVerifiedDt(v time.Time) { o.otpVerifiedDt = v }
 func (o *Otp) AttemptCount() int     { return o.attemptCount }
 func (o *Otp) SetAttemptCount(v int) { o.attemptCount = v }
 
-func (o *Otp) RptFlg() *string     { return o.rptFlg }
-func (o *Otp) SetRptFlg(v *string) { o.rptFlg = v }
-
-func (o *Otp) Kwords() *string     { return o.kwords }
-func (o *Otp) SetKwords(v *string) { o.kwords = v }
-
-func (o *Otp) Note() *string     { return o.note }
-func (o *Otp) SetNote(v *string) { o.note = v }
-
 func (o *Otp) OtpStatus() *string     { return o.otpStatus }
 func (o *Otp) SetOtpStatus(v *string) { o.otpStatus = v }
-
-func (o *Otp) Status() string     { return o.status }
-func (o *Otp) SetStatus(v string) { o.status = v }
-
-func (o *Otp) CreateId() *int64     { return o.createId }
-func (o *Otp) SetCreateId(v *int64) { o.createId = v }
-
-func (o *Otp) CreateDt() time.Time     { return o.createDt }
-func (o *Otp) SetCreateDt(v time.Time) { o.createDt = v }
-
-func (o *Otp) ModifyId() *int64     { return o.modifyId }
-func (o *Otp) SetModifyId(v *int64) { o.modifyId = v }
-
-func (o *Otp) ModifyDt() time.Time     { return o.modifyDt }
-func (o *Otp) SetModifyDt(v time.Time) { o.modifyDt = v }

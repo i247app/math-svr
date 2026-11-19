@@ -1,22 +1,16 @@
 package alias
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 type Alias struct {
+	audit.Audit
+
 	aid         int64
 	uid         int64
 	aka         string
 	aliasStatus *string
-	rptFlg      *string
-	kwords      *string
-	note        *string
-	status      string
-	createId    *int64
-	createDt    time.Time
-	modifyId    *int64
-	modifyDt    time.Time
 }
 
 func NewAlias() *Alias {
@@ -34,27 +28,3 @@ func (a *Alias) SetAka(aka string) { a.aka = aka }
 
 func (a *Alias) AliasStatus() *string               { return a.aliasStatus }
 func (a *Alias) SetAliasStatus(aliasStatus *string) { a.aliasStatus = aliasStatus }
-
-func (a *Alias) RptFlg() *string          { return a.rptFlg }
-func (a *Alias) SetRptFlg(rptFlg *string) { a.rptFlg = rptFlg }
-
-func (a *Alias) Kwords() *string          { return a.kwords }
-func (a *Alias) SetKwords(kwords *string) { a.kwords = kwords }
-
-func (a *Alias) Note() *string        { return a.note }
-func (a *Alias) SetNote(note *string) { a.note = note }
-
-func (a *Alias) Status() string          { return a.status }
-func (a *Alias) SetStatus(status string) { a.status = status }
-
-func (a *Alias) CreateId() *int64            { return a.createId }
-func (a *Alias) SetCreateId(createId *int64) { a.createId = createId }
-
-func (a *Alias) CreateDt() time.Time            { return a.createDt }
-func (a *Alias) SetCreateDt(createDt time.Time) { a.createDt = createDt }
-
-func (a *Alias) ModifyId() *int64            { return a.modifyId }
-func (a *Alias) SetModifyId(modifyId *int64) { a.modifyId = modifyId }
-
-func (a *Alias) ModifyDt() time.Time            { return a.modifyDt }
-func (a *Alias) SetModifyDt(modifyDt time.Time) { a.modifyDt = modifyDt }

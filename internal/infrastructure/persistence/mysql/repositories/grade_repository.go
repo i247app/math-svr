@@ -19,13 +19,10 @@ import (
 const (
 	gradeTable = "ma_grades"
 
-	gradeColumns = `g.grade_id, g.label, g.description,
-		g.image_key, g.display_order, g.rpt_flg, g.kwords, g.note,
-		g.grade_status, g.status,
-		g.create_id, g.create_dt, g.modify_id, g.modify_dt`
-
 	gradeActiveWhere = `g.status IN (?) AND g.deleted_dt IS NULL`
 )
+
+var gradeColumns = `g.grade_id, g.label, g.description, g.image_key, g.display_order, g.grade_status, ` + models.AuditColumns("g")
 
 func gradeActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -41,9 +38,7 @@ func NewGradeRepository(db database.Executor) grade.IRepository {
 
 func scanGrade(s database.RowScanner) (*models.GradeModel, error) {
 	var m models.GradeModel
-	if err := s.Scan(&m.GradeId, &m.Label, &m.Description, &m.ImageKey,
-		&m.DisplayOrder, &m.RptFlg, &m.Kwords, &m.Note, &m.GradeStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.GradeId, &m.Label, &m.Description, &m.ImageKey, &m.DisplayOrder, &m.GradeStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -257,14 +252,7 @@ func ModelToDomainGrade(m *models.GradeModel) *grade.Grade {
 	g.SetDescription(m.Description)
 	g.SetImageKey(m.ImageKey)
 	g.SetDisplayOrder(m.DisplayOrder)
-	g.SetRptFlg(m.RptFlg)
-	g.SetKwords(m.Kwords)
-	g.SetNote(m.Note)
+	m.Audit.ApplyTo(&g.Audit)
 	g.SetGradeStatus(m.GradeStatus)
-	g.SetStatus(m.Status)
-	g.SetCreateId(m.CreateId)
-	g.SetCreateDt(m.CreateDt)
-	g.SetModifyId(m.ModifyId)
-	g.SetModifyDt(m.ModifyDt)
 	return g
 }

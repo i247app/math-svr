@@ -19,12 +19,10 @@ import (
 const (
 	deviceTable = "ma_devices"
 
-	deviceColumns = `d.device_id, d.uid, d.device_uuid, d.device_name, d.platform,
-		d.device_push_token, d.is_verified, d.trust_dt, d.rpt_flg, d.kwords, d.note, d.device_status, d.status,
-		d.create_id, d.create_dt, d.modify_id, d.modify_dt`
-
 	deviceActiveWhere = `d.status IN (?) AND d.deleted_dt IS NULL`
 )
+
+var deviceColumns = `d.device_id, d.uid, d.device_uuid, d.device_name, d.platform, d.device_push_token, d.is_verified, d.trust_dt, d.device_status, ` + models.AuditColumns("d")
 
 func deviceActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -40,9 +38,7 @@ func NewDeviceRepository(db database.Executor) device.IRepository {
 
 func scanDevice(s database.RowScanner) (*models.DeviceModel, error) {
 	var m models.DeviceModel
-	if err := s.Scan(&m.DeviceId, &m.Uid, &m.DeviceUUID, &m.DeviceName, &m.Platform,
-		&m.DevicePushToken, &m.IsVerified, &m.TrustDt, &m.RptFlg, &m.Kwords, &m.Note, &m.DeviceStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.DeviceId, &m.Uid, &m.DeviceUUID, &m.DeviceName, &m.Platform, &m.DevicePushToken, &m.IsVerified, &m.TrustDt, &m.DeviceStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -267,14 +263,7 @@ func ModelToDomainDevice(m *models.DeviceModel) *device.Device {
 	if m.TrustDt != nil {
 		d.SetTrustDt(*m.TrustDt)
 	}
-	d.SetRptFlg(m.RptFlg)
-	d.SetKwords(m.Kwords)
-	d.SetNote(m.Note)
+	m.Audit.ApplyTo(&d.Audit)
 	d.SetDeviceStatus(m.DeviceStatus)
-	d.SetStatus(m.Status)
-	d.SetCreateId(m.CreateId)
-	d.SetCreateDt(m.CreateDt)
-	d.SetModifyId(m.ModifyId)
-	d.SetModifyDt(m.ModifyDt)
 	return d
 }

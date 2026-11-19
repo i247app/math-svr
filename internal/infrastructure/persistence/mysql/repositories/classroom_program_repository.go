@@ -18,15 +18,14 @@ import (
 const (
 	classroomProgramTable = "ma_classroom_programs"
 
-	classroomProgramColumns = `cp.classroom_program_id, cp.classroom_id, cp.program_id,
-		cp.rpt_flg, cp.kwords, cp.note, cp.status, cp.create_id, cp.create_dt, cp.modify_id, cp.modify_dt`
-
 	// classroomProgramActiveWhere mirrors the convention used by every
 	// other repo: filter out system-inactive and soft-deleted rows.
 	// Because pairs are hard-deleted in practice, deleted_dt should
 	// always be NULL — the filter is here for shape consistency.
 	classroomProgramActiveWhere = `cp.status IN (?) AND cp.deleted_dt IS NULL`
 )
+
+var classroomProgramColumns = `cp.classroom_program_id, cp.classroom_id, cp.program_id, ` + models.AuditColumns("cp")
 
 func classroomProgramActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -42,8 +41,7 @@ func NewClassroomProgramRepository(db database.Executor) classroom.IClassroomPro
 
 func scanClassroomProgram(s database.RowScanner) (*models.ClassroomProgramModel, error) {
 	var m models.ClassroomProgramModel
-	if err := s.Scan(&m.ClassroomProgramId, &m.ClassroomId, &m.ProgramId,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.Status, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.ClassroomProgramId, &m.ClassroomId, &m.ProgramId}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -167,13 +165,6 @@ func ModelToDomainClassroomProgram(m *models.ClassroomProgramModel) *classroom.C
 	cp.SetClassroomProgramId(m.ClassroomProgramId)
 	cp.SetClassroomId(m.ClassroomId)
 	cp.SetProgramId(m.ProgramId)
-	cp.SetRptFlg(m.RptFlg)
-	cp.SetKwords(m.Kwords)
-	cp.SetNote(m.Note)
-	cp.SetStatus(m.Status)
-	cp.SetCreateId(m.CreateId)
-	cp.SetCreateDt(m.CreateDt)
-	cp.SetModifyId(m.ModifyId)
-	cp.SetModifyDt(m.ModifyDt)
+	m.Audit.ApplyTo(&cp.Audit)
 	return cp
 }

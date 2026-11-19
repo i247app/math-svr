@@ -17,12 +17,10 @@ import (
 const (
 	promptTable = "ma_prompts"
 
-	promptColumns = `p.prompt_id, p.prompt_code, p.grade, p.language, p.system_prompt, p.prompt_version, p.description,
-		p.prompt_status, p.rpt_flg, p.kwords, p.note, p.status,
-		p.create_id, p.create_dt, p.modify_id, p.modify_dt`
-
 	promptActiveWhere = `p.status IN (?) AND p.deleted_dt IS NULL`
 )
+
+var promptColumns = `p.prompt_id, p.prompt_code, p.grade, p.language, p.system_prompt, p.prompt_version, p.description, p.prompt_status, ` + models.AuditColumns("p")
 
 func promptActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -38,9 +36,7 @@ func NewPromptRepository(db database.Executor) prompt.IRepository {
 
 func scanPrompt(s database.RowScanner) (*models.PromptModel, error) {
 	var m models.PromptModel
-	if err := s.Scan(&m.PromptId, &m.PromptCode, &m.Grade, &m.Language, &m.SystemPrompt, &m.PromptVersion, &m.Description,
-		&m.PromptStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.PromptId, &m.PromptCode, &m.Grade, &m.Language, &m.SystemPrompt, &m.PromptVersion, &m.Description, &m.PromptStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -148,13 +144,6 @@ func ModelToDomainPrompt(m *models.PromptModel) *prompt.Prompt {
 	p.SetPromptVersion(m.PromptVersion)
 	p.SetDescription(m.Description)
 	p.SetPromptStatus(m.PromptStatus)
-	p.SetRptFlg(m.RptFlg)
-	p.SetKwords(m.Kwords)
-	p.SetNote(m.Note)
-	p.SetStatus(m.Status)
-	p.SetCreateId(m.CreateId)
-	p.SetCreateDt(m.CreateDt)
-	p.SetModifyId(m.ModifyId)
-	p.SetModifyDt(m.ModifyDt)
+	m.Audit.ApplyTo(&p.Audit)
 	return p
 }

@@ -19,19 +19,13 @@ import (
 const (
 	classroomTable = "ma_classrooms"
 
-	classroomColumns = `c.classroom_id, c.owner_profile_id, c.name, c.description,
-		c.school_id, c.grade_id,
-		c.classroom_code, c.classroom_code_expires_dt,
-		c.max_members, c.member_count, c.student_count, c.teacher_count,
-		c.cover_key, c.rpt_flg, c.kwords, c.note,
-		c.classroom_status, c.status,
-		c.create_id, c.create_dt, c.modify_id, c.modify_dt`
-
 	// classroomActiveWhere keeps ARCHIVED rows visible — archived classrooms
 	// are read-only history that the UI still wants to render. Callers that
 	// need to exclude them filter classroom_status themselves.
 	classroomActiveWhere = `c.status IN (?) AND c.deleted_dt IS NULL`
 )
+
+var classroomColumns = `c.classroom_id, c.owner_profile_id, c.name, c.description, c.school_id, c.grade_id, c.classroom_code, c.classroom_code_expires_dt, c.max_members, c.member_count, c.student_count, c.teacher_count, c.cover_key, c.classroom_status, ` + models.AuditColumns("c")
 
 func classroomActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -47,13 +41,7 @@ func NewClassroomRepository(db database.Executor) classroom.IRepository {
 
 func scanClassroom(s database.RowScanner) (*models.ClassroomModel, error) {
 	var m models.ClassroomModel
-	if err := s.Scan(&m.ClassroomId, &m.OwnerProfileId, &m.Name, &m.Description,
-		&m.SchoolId, &m.GradeId,
-		&m.ClassroomCode, &m.ClassroomCodeExpiresDt,
-		&m.MaxMembers, &m.MemberCount, &m.StudentCount, &m.TeacherCount,
-		&m.CoverKey, &m.RptFlg, &m.Kwords, &m.Note,
-		&m.ClassroomStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.ClassroomId, &m.OwnerProfileId, &m.Name, &m.Description, &m.SchoolId, &m.GradeId, &m.ClassroomCode, &m.ClassroomCodeExpiresDt, &m.MaxMembers, &m.MemberCount, &m.StudentCount, &m.TeacherCount, &m.CoverKey, &m.ClassroomStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -458,14 +446,7 @@ func ModelToDomainClassroom(m *models.ClassroomModel) *classroom.Classroom {
 	c.SetStudentCount(m.StudentCount)
 	c.SetTeacherCount(m.TeacherCount)
 	c.SetCoverKey(m.CoverKey)
-	c.SetRptFlg(m.RptFlg)
-	c.SetKwords(m.Kwords)
-	c.SetNote(m.Note)
+	m.Audit.ApplyTo(&c.Audit)
 	c.SetClassroomStatus(m.ClassroomStatus)
-	c.SetStatus(m.Status)
-	c.SetCreateId(m.CreateId)
-	c.SetCreateDt(m.CreateDt)
-	c.SetModifyId(m.ModifyId)
-	c.SetModifyDt(m.ModifyDt)
 	return c
 }

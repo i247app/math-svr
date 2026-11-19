@@ -19,18 +19,13 @@ import (
 const (
 	exerciseTable = "ma_exercises"
 
-	exerciseColumns = `e.classroom_exercise_id, e.classroom_id,
-		e.creator_profile_id, e.visibility, e.purpose, e.program_id,
-		e.title, e.short_text, e.description, e.chapter_name, e.lesson_name, e.total_questions,
-		e.questions, e.answers, e.start_date, e.end_date,
-		e.rpt_flg, e.kwords, e.note, e.exercise_status, e.status,
-		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
-
 	// exerciseActiveWhere keeps ARCHIVED rows visible — archived exercises
 	// are still surfaced to the UI as read-only history. Callers filter
 	// exercise_status themselves when they need only ACTIVE ones.
 	exerciseActiveWhere = `e.status IN (?) AND e.deleted_dt IS NULL`
 )
+
+var exerciseColumns = `e.classroom_exercise_id, e.classroom_id, e.creator_profile_id, e.visibility, e.purpose, e.program_id, e.title, e.short_text, e.description, e.chapter_name, e.lesson_name, e.total_questions, e.questions, e.answers, e.start_date, e.end_date, e.exercise_status, ` + models.AuditColumns("e")
 
 func exerciseActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -46,12 +41,7 @@ func NewExerciseRepository(db database.Executor) domain.IRepository {
 
 func scanClassroomExercise(s database.RowScanner) (*models.ExerciseModel, error) {
 	var m models.ExerciseModel
-	if err := s.Scan(&m.ClassroomExerciseId, &m.ClassroomId,
-		&m.CreatorProfileId, &m.Visibility, &m.Purpose, &m.ProgramId,
-		&m.Title, &m.ShortText, &m.Description, &m.ChapterName, &m.LessonName, &m.TotalQuestions,
-		&m.Questions, &m.Answers, &m.StartDate, &m.EndDate,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.ExerciseStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.ClassroomExerciseId, &m.ClassroomId, &m.CreatorProfileId, &m.Visibility, &m.Purpose, &m.ProgramId, &m.Title, &m.ShortText, &m.Description, &m.ChapterName, &m.LessonName, &m.TotalQuestions, &m.Questions, &m.Answers, &m.StartDate, &m.EndDate, &m.ExerciseStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -476,14 +466,7 @@ func modelToDomainClassroomExercise(m *models.ExerciseModel) *domain.Exercise {
 	if m.EndDate != nil {
 		e.SetEndDate(*m.EndDate)
 	}
-	e.SetRptFlg(m.RptFlg)
-	e.SetKwords(m.Kwords)
-	e.SetNote(m.Note)
+	m.Audit.ApplyTo(&e.Audit)
 	e.SetExerciseStatus(m.ExerciseStatus)
-	e.SetStatus(m.Status)
-	e.SetCreateId(m.CreateId)
-	e.SetCreateDt(m.CreateDt)
-	e.SetModifyId(m.ModifyId)
-	e.SetModifyDt(m.ModifyDt)
 	return e
 }

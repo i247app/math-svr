@@ -1,7 +1,7 @@
 package notification
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Notification models ma_notifications — one persisted in-app notification
@@ -13,6 +13,8 @@ import (
 // opaque JSON blob (mirrors how exercise questions/answers are stored — parsed at
 // the application layer, never relationally modelled here).
 type Notification struct {
+	audit.Audit
+
 	notificationId     int64 // external id (minted via Seq.Next)
 	uid                int64 // recipient uid
 	title              string
@@ -22,15 +24,7 @@ type Notification struct {
 	actionType         *string
 	actionData         *string // opaque JSON
 	priority           *string // LOW, NORMAL, HIGH
-	rptFlg             *string
-	kwords             *string
-	note               *string
 	notificationStatus *string // ACTIVE, ARCHIVED, DELETED
-	status             string
-	createId           *int64
-	createDt           time.Time
-	modifyId           *int64
-	modifyDt           time.Time
 }
 
 func NewNotification() *Notification { return &Notification{} }
@@ -62,29 +56,5 @@ func (n *Notification) SetActionData(d *string) { n.actionData = d }
 func (n *Notification) Priority() *string     { return n.priority }
 func (n *Notification) SetPriority(p *string) { n.priority = p }
 
-func (n *Notification) RptFlg() *string     { return n.rptFlg }
-func (n *Notification) SetRptFlg(v *string) { n.rptFlg = v }
-
-func (n *Notification) Kwords() *string     { return n.kwords }
-func (n *Notification) SetKwords(v *string) { n.kwords = v }
-
-func (n *Notification) Note() *string        { return n.note }
-func (n *Notification) SetNote(note *string) { n.note = note }
-
 func (n *Notification) NotificationStatus() *string     { return n.notificationStatus }
 func (n *Notification) SetNotificationStatus(s *string) { n.notificationStatus = s }
-
-func (n *Notification) Status() string     { return n.status }
-func (n *Notification) SetStatus(s string) { n.status = s }
-
-func (n *Notification) CreateId() *int64      { return n.createId }
-func (n *Notification) SetCreateId(id *int64) { n.createId = id }
-
-func (n *Notification) CreateDt() time.Time     { return n.createDt }
-func (n *Notification) SetCreateDt(t time.Time) { n.createDt = t }
-
-func (n *Notification) ModifyId() *int64      { return n.modifyId }
-func (n *Notification) SetModifyId(id *int64) { n.modifyId = id }
-
-func (n *Notification) ModifyDt() time.Time     { return n.modifyDt }
-func (n *Notification) SetModifyDt(t time.Time) { n.modifyDt = t }

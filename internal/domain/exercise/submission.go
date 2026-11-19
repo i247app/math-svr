@@ -2,6 +2,8 @@ package exercise
 
 import (
 	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Submission is a single student's attempt at a classroom exercise. The
@@ -19,6 +21,8 @@ import (
 // column shared by every aggregate. The repo's active-where filter
 // excludes DELETED rows.
 type Submission struct {
+	audit.Audit
+
 	classroomExerciseSubmissionId int64
 	classroomExerciseId           int64
 	classroomId                   int64
@@ -30,15 +34,7 @@ type Submission struct {
 	scorePercentage               *int64
 	submittedDt                   time.Time
 	gradedDt                      time.Time
-	rptFlg                        *string
-	kwords                        *string
-	note                          *string
 	submissionStatus              *string
-	status                        string
-	createId                      *int64
-	createDt                      time.Time
-	modifyId                      *int64
-	modifyDt                      time.Time
 }
 
 func NewSubmission() *Submission { return &Submission{} }
@@ -76,29 +72,5 @@ func (s *Submission) SetSubmittedDt(t time.Time) { s.submittedDt = t }
 func (s *Submission) GradedDt() time.Time     { return s.gradedDt }
 func (s *Submission) SetGradedDt(t time.Time) { s.gradedDt = t }
 
-func (s *Submission) RptFlg() *string     { return s.rptFlg }
-func (s *Submission) SetRptFlg(v *string) { s.rptFlg = v }
-
-func (s *Submission) Kwords() *string     { return s.kwords }
-func (s *Submission) SetKwords(v *string) { s.kwords = v }
-
-func (s *Submission) Note() *string     { return s.note }
-func (s *Submission) SetNote(v *string) { s.note = v }
-
 func (s *Submission) SubmissionStatus() *string     { return s.submissionStatus }
 func (s *Submission) SetSubmissionStatus(v *string) { s.submissionStatus = v }
-
-func (s *Submission) Status() string     { return s.status }
-func (s *Submission) SetStatus(v string) { s.status = v }
-
-func (s *Submission) CreateId() *int64     { return s.createId }
-func (s *Submission) SetCreateId(v *int64) { s.createId = v }
-
-func (s *Submission) CreateDt() time.Time     { return s.createDt }
-func (s *Submission) SetCreateDt(t time.Time) { s.createDt = t }
-
-func (s *Submission) ModifyId() *int64     { return s.modifyId }
-func (s *Submission) SetModifyId(v *int64) { s.modifyId = v }
-
-func (s *Submission) ModifyDt() time.Time     { return s.modifyDt }
-func (s *Submission) SetModifyDt(t time.Time) { s.modifyDt = t }

@@ -1,10 +1,12 @@
 package user
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 type User struct {
+	audit.Audit
+
 	uid             int64
 	userName        string
 	phone           *string
@@ -14,14 +16,6 @@ type User struct {
 	role            *string
 	identityCode    *string
 	userStatus      *string
-	status          string
-	rptFlg          *string
-	kwords          *string
-	note            *string
-	createId        *int64
-	createDt        time.Time
-	modifyId        *int64
-	modifyDt        time.Time
 }
 
 func NewUser() *User {
@@ -63,27 +57,3 @@ func (u *User) SetIdentityCode(identityCode *string) { u.identityCode = identity
 
 func (u *User) UserStatus() *string              { return u.userStatus }
 func (u *User) SetUserStatus(userStatus *string) { u.userStatus = userStatus }
-
-func (u *User) Status() string          { return u.status }
-func (u *User) SetStatus(status string) { u.status = status }
-
-func (u *User) RptFlg() *string          { return u.rptFlg }
-func (u *User) SetRptFlg(rptFlg *string) { u.rptFlg = rptFlg }
-
-func (u *User) Kwords() *string          { return u.kwords }
-func (u *User) SetKwords(kwords *string) { u.kwords = kwords }
-
-func (u *User) Note() *string        { return u.note }
-func (u *User) SetNote(note *string) { u.note = note }
-
-func (u *User) CreateId() *int64            { return u.createId }
-func (u *User) SetCreateId(createId *int64) { u.createId = createId }
-
-func (u *User) CreateDt() time.Time            { return u.createDt }
-func (u *User) SetCreateDt(createDt time.Time) { u.createDt = createDt }
-
-func (u *User) ModifyId() *int64            { return u.modifyId }
-func (u *User) SetModifyId(modifyId *int64) { u.modifyId = modifyId }
-
-func (u *User) ModifyDt() time.Time            { return u.modifyDt }
-func (u *User) SetModifyDt(modifyDt time.Time) { u.modifyDt = modifyDt }

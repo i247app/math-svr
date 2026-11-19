@@ -20,19 +20,14 @@ import (
 const (
 	questionPoolTable = "ma_question_pools"
 
-	questionPoolColumns = `q.question_pool_id, q.question_kind, q.question_text, q.question_image_key,
-		q.options, q.correct_answer, q.explanation, q.tts_text, q.question_language, q.translations,
-		q.question_grade, q.question_topic,
-		q.question_level, q.question_sub_level, q.question_tags, q.question_source, q.verified_count, q.question_hash,
-		q.question_status, q.rpt_flg, q.kwords, q.note, q.status,
-		q.create_id, q.create_dt, q.modify_id, q.modify_dt`
-
 	questionPoolActiveWhere = `q.status IN (?) AND q.deleted_dt IS NULL`
 
 	// questionInsertRow is one VALUES tuple of CreateMany, in the column
 	// order of its INSERT list.
 	questionPoolInsertRow = `(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
+
+var questionPoolColumns = `q.question_pool_id, q.question_kind, q.question_text, q.question_image_key, q.options, q.correct_answer, q.explanation, q.tts_text, q.question_language, q.translations, q.question_grade, q.question_topic, q.question_level, q.question_sub_level, q.question_tags, q.question_source, q.verified_count, q.question_hash, q.question_status, ` + models.AuditColumns("q")
 
 func questionPoolActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -62,12 +57,7 @@ func NewQuestionPoolRepository(db database.Executor) questionpool.IRepository {
 
 func scanQuestionPool(s database.RowScanner) (*models.QuestionPoolModel, error) {
 	var m models.QuestionPoolModel
-	if err := s.Scan(&m.QuestionPoolId, &m.QuestionKind, &m.QuestionText, &m.QuestionImageKey,
-		&m.Options, &m.CorrectAnswer, &m.Explanation, &m.TtsText, &m.QuestionLanguage, &m.Translations,
-		&m.QuestionGrade, &m.QuestionTopic,
-		&m.QuestionLevel, &m.QuestionSubLevel, &m.QuestionTags, &m.QuestionSource, &m.VerifiedCount, &m.QuestionHash,
-		&m.QuestionStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.QuestionPoolId, &m.QuestionKind, &m.QuestionText, &m.QuestionImageKey, &m.Options, &m.CorrectAnswer, &m.Explanation, &m.TtsText, &m.QuestionLanguage, &m.Translations, &m.QuestionGrade, &m.QuestionTopic, &m.QuestionLevel, &m.QuestionSubLevel, &m.QuestionTags, &m.QuestionSource, &m.VerifiedCount, &m.QuestionHash, &m.QuestionStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -581,13 +571,6 @@ func ModelToDomainQuestionPool(m *models.QuestionPoolModel) (*questionpool.Quest
 	q.SetVerifiedCount(m.VerifiedCount)
 	q.SetQuestionHash(m.QuestionHash)
 	q.SetQuestionStatus(m.QuestionStatus)
-	q.SetRptFlg(m.RptFlg)
-	q.SetKwords(m.Kwords)
-	q.SetNote(m.Note)
-	q.SetStatus(m.Status)
-	q.SetCreateId(m.CreateId)
-	q.SetCreateDt(m.CreateDt)
-	q.SetModifyId(m.ModifyId)
-	q.SetModifyDt(m.ModifyDt)
+	m.Audit.ApplyTo(&q.Audit)
 	return q, nil
 }

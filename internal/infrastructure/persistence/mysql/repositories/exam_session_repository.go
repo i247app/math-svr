@@ -20,14 +20,10 @@ import (
 const (
 	examSessionTable = "ma_exam_sessions"
 
-	examSessionColumns = `e.esess_id, e.uid, e.profile_id, e.req_exam_type,
-		e.res_total_questions, e.res_correct_number, e.res_skipped_number, e.res_score_percentage,
-		e.res_review, e.esess_flag, e.last_title, e.last_short_text, e.ai_review_short, e.ai_review_long, e.last_resp_id, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt,
-		e.rpt_flg, e.kwords, e.note, e.esess_status, e.status,
-		e.create_id, e.create_dt, e.modify_id, e.modify_dt`
-
 	examSessionActiveWhere = `e.status IN (?) AND e.deleted_dt IS NULL`
 )
+
+var examSessionColumns = `e.esess_id, e.uid, e.profile_id, e.req_exam_type, e.res_total_questions, e.res_correct_number, e.res_skipped_number, e.res_score_percentage, e.res_review, e.esess_flag, e.last_title, e.last_short_text, e.ai_review_short, e.ai_review_long, e.last_resp_id, e.current_grade, e.current_level, e.last_submitted_dt, e.ended_dt, e.esess_status, ` + models.AuditColumns("e")
 
 func examSessionActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -43,11 +39,7 @@ func NewExamSessionRepository(db database.Executor) exam.IExamSessionRepository 
 
 func scanExamSession(s database.RowScanner) (*models.ExamSessionModel, error) {
 	var m models.ExamSessionModel
-	if err := s.Scan(&m.EsessId, &m.Uid, &m.ProfileId, &m.ReqExamType,
-		&m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage,
-		&m.ResReview, &m.EsessFlag, &m.LastTitle, &m.LastShortText, &m.AiReviewShort, &m.AiReviewLong, &m.LastRespId, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt,
-		&m.RptFlg, &m.Kwords, &m.Note, &m.EsessStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.EsessId, &m.Uid, &m.ProfileId, &m.ReqExamType, &m.ResTotalQuestions, &m.ResCorrectNumber, &m.ResSkippedNumber, &m.ResScorePercentage, &m.ResReview, &m.EsessFlag, &m.LastTitle, &m.LastShortText, &m.AiReviewShort, &m.AiReviewLong, &m.LastRespId, &m.CurrentGrade, &m.CurrentLevel, &m.LastSubmittedDt, &m.EndedDt, &m.EsessStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -785,14 +777,7 @@ func ModelToDomainExamSession(m *models.ExamSessionModel) *exam.ExamSession {
 	e.SetCurrentLevel(m.CurrentLevel)
 	e.SetLastSubmittedDt(timeOrZero(m.LastSubmittedDt))
 	e.SetEndedDt(timeOrZero(m.EndedDt))
-	e.SetRptFlg(m.RptFlg)
-	e.SetKwords(m.Kwords)
-	e.SetNote(m.Note)
+	m.Audit.ApplyTo(&e.Audit)
 	e.SetEsessStatus(m.EsessStatus)
-	e.SetStatus(m.Status)
-	e.SetCreateId(m.CreateId)
-	e.SetCreateDt(m.CreateDt)
-	e.SetModifyId(m.ModifyId)
-	e.SetModifyDt(m.ModifyDt)
 	return e
 }

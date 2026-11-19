@@ -19,13 +19,10 @@ import (
 const (
 	schoolTable = "ma_schools"
 
-	schoolColumns = `s.school_id, s.name, s.description, s.image_key,
-		s.district, s.province, s.rpt_flg, s.kwords, s.note,
-		s.school_status, s.status,
-		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
-
 	schoolActiveWhere = `s.status IN (?) AND s.deleted_dt IS NULL`
 )
+
+var schoolColumns = `s.school_id, s.name, s.description, s.image_key, s.district, s.province, s.school_status, ` + models.AuditColumns("s")
 
 func schoolActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -41,10 +38,7 @@ func NewSchoolRepository(db database.Executor) school.IRepository {
 
 func scanSchool(s database.RowScanner) (*models.SchoolModel, error) {
 	var m models.SchoolModel
-	if err := s.Scan(&m.SchoolId, &m.Name, &m.Description, &m.ImageKey,
-		&m.District, &m.Province, &m.RptFlg, &m.Kwords, &m.Note,
-		&m.SchoolStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.SchoolId, &m.Name, &m.Description, &m.ImageKey, &m.District, &m.Province, &m.SchoolStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -288,14 +282,7 @@ func ModelToDomainSchool(m *models.SchoolModel) *school.School {
 	s.SetImageKey(m.ImageKey)
 	s.SetDistrict(m.District)
 	s.SetProvince(m.Province)
-	s.SetRptFlg(m.RptFlg)
-	s.SetKwords(m.Kwords)
-	s.SetNote(m.Note)
+	m.Audit.ApplyTo(&s.Audit)
 	s.SetSchoolStatus(m.SchoolStatus)
-	s.SetStatus(m.Status)
-	s.SetCreateId(m.CreateId)
-	s.SetCreateDt(m.CreateDt)
-	s.SetModifyId(m.ModifyId)
-	s.SetModifyDt(m.ModifyDt)
 	return s
 }

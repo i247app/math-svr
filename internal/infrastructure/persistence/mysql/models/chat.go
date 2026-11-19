@@ -3,6 +3,8 @@ package models
 import "time"
 
 type ChatConversationModel struct {
+	Audit
+
 	ConversationId             int64
 	ConversationType           string
 	ClassroomId                *int64
@@ -19,18 +21,12 @@ type ChatConversationModel struct {
 	LastMessagePreview         *string
 	LastMessageSenderProfileId *int64
 	LastMessageDt              *time.Time
-	RptFlg                     *string
-	Kwords                     *string
-	Note                       *string
 	ConversationStatus         *string
-	Status                     string
-	CreateId                   *int64
-	CreateDt                   time.Time
-	ModifyId                   *int64
-	ModifyDt                   time.Time
 }
 
 type ChatParticipantModel struct {
+	Audit
+
 	ParticipantId      int64
 	ConversationId     int64
 	ProfileId          int64
@@ -48,18 +44,12 @@ type ChatParticipantModel struct {
 	JoinedDt           *time.Time
 	LeftDt             *time.Time
 	InvitedByProfileId *int64
-	RptFlg             *string
-	Kwords             *string
-	Note               *string
 	ParticipantStatus  *string
-	Status             string
-	CreateId           *int64
-	CreateDt           time.Time
-	ModifyId           *int64
-	ModifyDt           time.Time
 }
 
 type ChatMessageModel struct {
+	Audit
+
 	MessageId        int64
 	ConversationId   int64
 	SeqNo            int64
@@ -76,13 +66,5 @@ type ChatMessageModel struct {
 	SentDt           time.Time
 	EditedDt         *time.Time
 	RevokedDt        *time.Time
-	RptFlg           *string
-	Kwords           *string
-	Note             *string
 	MessageStatus    *string
-	Status           string
-	CreateId         *int64
-	CreateDt         time.Time
-	ModifyId         *int64
-	ModifyDt         time.Time
 }

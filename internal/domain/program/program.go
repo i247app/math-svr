@@ -1,24 +1,18 @@
 package program
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 type Program struct {
+	audit.Audit
+
 	programId     int64
 	label         string
 	description   string
 	imageKey      *string
 	displayOrder  int8
-	rptFlg        *string
-	kwords        *string
-	note          *string
 	programStatus *string
-	status        string
-	createId      *int64
-	createDt      time.Time
-	modifyId      *int64
-	modifyDt      time.Time
 }
 
 func NewProgram() *Program {
@@ -40,29 +34,5 @@ func (p *Program) SetImageKey(imageKey *string) { p.imageKey = imageKey }
 func (p *Program) DisplayOrder() int8                { return p.displayOrder }
 func (p *Program) SetDisplayOrder(displayOrder int8) { p.displayOrder = displayOrder }
 
-func (p *Program) RptFlg() *string          { return p.rptFlg }
-func (p *Program) SetRptFlg(rptFlg *string) { p.rptFlg = rptFlg }
-
-func (p *Program) Kwords() *string          { return p.kwords }
-func (p *Program) SetKwords(kwords *string) { p.kwords = kwords }
-
-func (p *Program) Note() *string        { return p.note }
-func (p *Program) SetNote(note *string) { p.note = note }
-
 func (p *Program) ProgramStatus() *string                 { return p.programStatus }
 func (p *Program) SetProgramStatus(programStatus *string) { p.programStatus = programStatus }
-
-func (p *Program) Status() string          { return p.status }
-func (p *Program) SetStatus(status string) { p.status = status }
-
-func (p *Program) CreateId() *int64            { return p.createId }
-func (p *Program) SetCreateId(createId *int64) { p.createId = createId }
-
-func (p *Program) CreateDt() time.Time            { return p.createDt }
-func (p *Program) SetCreateDt(createDt time.Time) { p.createDt = createDt }
-
-func (p *Program) ModifyId() *int64            { return p.modifyId }
-func (p *Program) SetModifyId(modifyId *int64) { p.modifyId = modifyId }
-
-func (p *Program) ModifyDt() time.Time            { return p.modifyDt }
-func (p *Program) SetModifyDt(modifyDt time.Time) { p.modifyDt = modifyDt }

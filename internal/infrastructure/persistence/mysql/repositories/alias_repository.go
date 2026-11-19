@@ -18,12 +18,12 @@ import (
 const (
 	aliasTable = "ma_aliases"
 
-	aliasColumns = `aid, uid, aka, alias_status, rpt_flg, kwords, note, create_id, create_dt, modify_id, modify_dt`
-
 	// Login resolution (alias.FindByAka -> user.FindByUid) relies on this
 	// filter so a soft-deleted account cannot log back in through its alias.
 	aliasActiveWhere = `status IN (?) AND deleted_dt IS NULL`
 )
+
+var aliasColumns = `aid, uid, aka, alias_status, ` + models.AuditColumns("")
 
 func aliasActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -39,7 +39,7 @@ func NewAliasRepository(db database.Executor) alias.IRepository {
 
 func scanAlias(s database.RowScanner) (*models.AliasModel, error) {
 	var m models.AliasModel
-	if err := s.Scan(&m.Aid, &m.Uid, &m.Aka, &m.AliasStatus, &m.RptFlg, &m.Kwords, &m.Note, &m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.Aid, &m.Uid, &m.Aka, &m.AliasStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -189,12 +189,6 @@ func ModelToDomainAlias(m *models.AliasModel) *alias.Alias {
 	a.SetUID(m.Uid)
 	a.SetAka(m.Aka)
 	a.SetAliasStatus(m.AliasStatus)
-	a.SetRptFlg(m.RptFlg)
-	a.SetKwords(m.Kwords)
-	a.SetNote(m.Note)
-	a.SetCreateId(m.CreateId)
-	a.SetCreateDt(m.CreateDt)
-	a.SetModifyId(m.ModifyId)
-	a.SetModifyDt(m.ModifyDt)
+	m.Audit.ApplyTo(&a.Audit)
 	return a
 }

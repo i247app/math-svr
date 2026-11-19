@@ -22,14 +22,12 @@ import (
 const (
 	semesterTable = "ma_semesters"
 
-	semesterColumns = `s.semester_id, s.name,
-		COALESCE(s.description, '') AS description,
-		s.image_key, s.display_order, s.rpt_flg, s.kwords, s.note,
-		s.semester_status, s.status,
-		s.create_id, s.create_dt, s.modify_id, s.modify_dt`
-
 	semesterActiveWhere = `s.status IN (?) AND s.deleted_dt IS NULL`
 )
+
+var semesterColumns = `s.semester_id, s.name,
+		COALESCE(s.description, '') AS description,
+		s.image_key, s.display_order, s.semester_status, ` + models.AuditColumns("s")
 
 func semesterActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -45,9 +43,8 @@ func NewSemesterRepository(db database.Executor) semester.IRepository {
 
 func scanSemester(s database.RowScanner) (*models.SemesterModel, error) {
 	var m models.SemesterModel
-	if err := s.Scan(&m.SemesterId, &m.Name, &m.Description, &m.ImageKey,
-		&m.DisplayOrder, &m.RptFlg, &m.Kwords, &m.Note, &m.SemesterStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.SemesterId, &m.Name, &m.Description, &m.ImageKey,
+		&m.DisplayOrder, &m.SemesterStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -248,14 +245,7 @@ func ModelToDomainSemester(m *models.SemesterModel) *semester.Semester {
 	s.SetDescription(m.Description)
 	s.SetImageKey(m.ImageKey)
 	s.SetDisplayOrder(m.DisplayOrder)
-	s.SetRptFlg(m.RptFlg)
-	s.SetKwords(m.Kwords)
-	s.SetNote(m.Note)
+	m.Audit.ApplyTo(&s.Audit)
 	s.SetSemesterStatus(m.SemesterStatus)
-	s.SetStatus(m.Status)
-	s.SetCreateId(m.CreateId)
-	s.SetCreateDt(m.CreateDt)
-	s.SetModifyId(m.ModifyId)
-	s.SetModifyDt(m.ModifyDt)
 	return s
 }

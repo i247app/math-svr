@@ -5,6 +5,8 @@ import (
 )
 
 type ExerciseSubmissionModel struct {
+	Audit
+
 	ClassroomExerciseSubmissionId int64
 	ClassroomExerciseId           int64
 	ClassroomId                   int64
@@ -16,13 +18,5 @@ type ExerciseSubmissionModel struct {
 	ScorePercentage               *int64
 	SubmittedDt                   *time.Time
 	GradedDt                      *time.Time
-	RptFlg                        *string
-	Kwords                        *string
-	Note                          *string
 	SubmissionStatus              *string
-	Status                        string
-	CreateId                      *int64
-	CreateDt                      time.Time
-	ModifyId                      *int64
-	ModifyDt                      time.Time
 }

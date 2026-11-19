@@ -3,6 +3,8 @@ package models
 import "time"
 
 type ClassroomModel struct {
+	Audit
+
 	ClassroomId            int64
 	OwnerProfileId         int64
 	Name                   string
@@ -16,13 +18,5 @@ type ClassroomModel struct {
 	StudentCount           int64
 	TeacherCount           int64
 	CoverKey               *string
-	RptFlg                 *string
-	Kwords                 *string
-	Note                   *string
 	ClassroomStatus        *string
-	Status                 string
-	CreateId               *int64
-	CreateDt               time.Time
-	ModifyId               *int64
-	ModifyDt               time.Time
 }

@@ -1,6 +1,10 @@
 package chat
 
-import "time"
+import (
+	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
+)
 
 // Conversation models one ma_chat_conversations row — a thread of any shape.
 //
@@ -12,6 +16,8 @@ import "time"
 // screen renders in one query instead of one query per row. They are written
 // by UpdateLastMessage in the same transaction as the message insert.
 type Conversation struct {
+	audit.Audit
+
 	conversationId             int64
 	conversationType           string
 	classroomId                *int64
@@ -28,15 +34,7 @@ type Conversation struct {
 	lastMessagePreview         *string
 	lastMessageSenderProfileId *int64
 	lastMessageDt              time.Time
-	rptFlg                     *string
-	kwords                     *string
-	note                       *string
 	conversationStatus         *string
-	status                     string
-	createId                   *int64
-	createDt                   time.Time
-	modifyId                   *int64
-	modifyDt                   time.Time
 }
 
 func NewConversation() *Conversation { return &Conversation{} }
@@ -89,29 +87,5 @@ func (c *Conversation) SetLastMessageSenderProfileId(id *int64) { c.lastMessageS
 func (c *Conversation) LastMessageDt() time.Time     { return c.lastMessageDt }
 func (c *Conversation) SetLastMessageDt(t time.Time) { c.lastMessageDt = t }
 
-func (c *Conversation) RptFlg() *string     { return c.rptFlg }
-func (c *Conversation) SetRptFlg(v *string) { c.rptFlg = v }
-
-func (c *Conversation) Kwords() *string     { return c.kwords }
-func (c *Conversation) SetKwords(v *string) { c.kwords = v }
-
-func (c *Conversation) Note() *string     { return c.note }
-func (c *Conversation) SetNote(n *string) { c.note = n }
-
 func (c *Conversation) ConversationStatus() *string     { return c.conversationStatus }
 func (c *Conversation) SetConversationStatus(s *string) { c.conversationStatus = s }
-
-func (c *Conversation) Status() string     { return c.status }
-func (c *Conversation) SetStatus(s string) { c.status = s }
-
-func (c *Conversation) CreateId() *int64      { return c.createId }
-func (c *Conversation) SetCreateId(id *int64) { c.createId = id }
-
-func (c *Conversation) CreateDt() time.Time     { return c.createDt }
-func (c *Conversation) SetCreateDt(t time.Time) { c.createDt = t }
-
-func (c *Conversation) ModifyId() *int64      { return c.modifyId }
-func (c *Conversation) SetModifyId(id *int64) { c.modifyId = id }
-
-func (c *Conversation) ModifyDt() time.Time     { return c.modifyDt }
-func (c *Conversation) SetModifyDt(t time.Time) { c.modifyDt = t }

@@ -1,7 +1,7 @@
 package school
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // School models ma_schools. Address fields (district, province) are
@@ -9,21 +9,15 @@ import (
 // the column nullability. image_key is the S3 key; the presigned URL is
 // produced at the module/service edge, not stored on the entity.
 type School struct {
+	audit.Audit
+
 	schoolId     int64
 	name         string
 	description  *string
 	imageKey     *string
 	district     *string
 	province     *string
-	rptFlg       *string
-	kwords       *string
-	note         *string
 	schoolStatus *string
-	status       string
-	createId     *int64
-	createDt     time.Time
-	modifyId     *int64
-	modifyDt     time.Time
 }
 
 func NewSchool() *School {
@@ -48,29 +42,5 @@ func (s *School) SetDistrict(d *string) { s.district = d }
 func (s *School) Province() *string     { return s.province }
 func (s *School) SetProvince(p *string) { s.province = p }
 
-func (s *School) RptFlg() *string     { return s.rptFlg }
-func (s *School) SetRptFlg(v *string) { s.rptFlg = v }
-
-func (s *School) Kwords() *string     { return s.kwords }
-func (s *School) SetKwords(v *string) { s.kwords = v }
-
-func (s *School) Note() *string     { return s.note }
-func (s *School) SetNote(n *string) { s.note = n }
-
 func (s *School) SchoolStatus() *string     { return s.schoolStatus }
 func (s *School) SetSchoolStatus(v *string) { s.schoolStatus = v }
-
-func (s *School) Status() string     { return s.status }
-func (s *School) SetStatus(v string) { s.status = v }
-
-func (s *School) CreateId() *int64      { return s.createId }
-func (s *School) SetCreateId(id *int64) { s.createId = id }
-
-func (s *School) CreateDt() time.Time     { return s.createDt }
-func (s *School) SetCreateDt(t time.Time) { s.createDt = t }
-
-func (s *School) ModifyId() *int64      { return s.modifyId }
-func (s *School) SetModifyId(id *int64) { s.modifyId = id }
-
-func (s *School) ModifyDt() time.Time     { return s.modifyDt }
-func (s *School) SetModifyDt(t time.Time) { s.modifyDt = t }

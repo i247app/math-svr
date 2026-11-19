@@ -19,16 +19,12 @@ import (
 const (
 	classroomMemberTable = "ma_classroom_members"
 
-	classroomMemberColumns = `m.member_id, m.classroom_id, m.profile_id, m.member_role,
-		m.invitation_id, m.joined_dt, m.left_dt, m.removed_by_profile_id, m.removed_dt,
-		m.last_seen_dt, m.rpt_flg, m.kwords, m.note, m.invite_by, m.invite_dt,
-		m.member_status, m.status,
-		m.create_id, m.create_dt, m.modify_id, m.modify_dt`
-
 	// PENDING/ACTIVE/REJECTED/LEFT/REMOVED rows are all visible through the
 	// active filter — callers narrow further via params.Status.
 	classroomMemberActiveWhere = `m.status IN (?) AND m.deleted_dt IS NULL`
 )
+
+var classroomMemberColumns = `m.member_id, m.classroom_id, m.profile_id, m.member_role, m.invitation_id, m.joined_dt, m.left_dt, m.removed_by_profile_id, m.removed_dt, m.last_seen_dt, m.invite_by, m.invite_dt, m.member_status, ` + models.AuditColumns("m")
 
 func classroomMemberActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -44,11 +40,7 @@ func NewClassroomMemberRepository(db database.Executor) classroom.IMemberReposit
 
 func scanClassroomMember(s database.RowScanner) (*models.ClassroomMemberModel, error) {
 	var m models.ClassroomMemberModel
-	if err := s.Scan(&m.MemberId, &m.ClassroomId, &m.ProfileId, &m.MemberRole,
-		&m.InvitationId, &m.JoinedDt, &m.LeftDt, &m.RemovedByProfileId, &m.RemovedDt,
-		&m.LastSeenDt, &m.RptFlg, &m.Kwords, &m.Note, &m.InviteBy, &m.InviteDt,
-		&m.MemberStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.MemberId, &m.ClassroomId, &m.ProfileId, &m.MemberRole, &m.InvitationId, &m.JoinedDt, &m.LeftDt, &m.RemovedByProfileId, &m.RemovedDt, &m.LastSeenDt, &m.InviteBy, &m.InviteDt, &m.MemberStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -809,18 +801,11 @@ func ModelToDomainClassroomMember(m *models.ClassroomMemberModel) *classroom.Mem
 	if m.LastSeenDt != nil {
 		d.SetLastSeenDt(*m.LastSeenDt)
 	}
-	d.SetRptFlg(m.RptFlg)
-	d.SetKwords(m.Kwords)
-	d.SetNote(m.Note)
+	m.Audit.ApplyTo(&d.Audit)
 	d.SetInviteBy(m.InviteBy)
 	if m.InviteDt != nil {
 		d.SetInviteDt(*m.InviteDt)
 	}
 	d.SetMemberStatus(m.MemberStatus)
-	d.SetStatus(m.Status)
-	d.SetCreateId(m.CreateId)
-	d.SetCreateDt(m.CreateDt)
-	d.SetModifyId(m.ModifyId)
-	d.SetModifyDt(m.ModifyDt)
 	return d
 }

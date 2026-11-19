@@ -5,6 +5,8 @@ import (
 )
 
 type ExamSessionModel struct {
+	Audit
+
 	EsessId            int64
 	Uid                int64
 	ProfileId          int64
@@ -24,13 +26,5 @@ type ExamSessionModel struct {
 	CurrentLevel       *int
 	LastSubmittedDt    *time.Time
 	EndedDt            *time.Time
-	RptFlg             *string
-	Kwords             *string
-	Note               *string
 	EsessStatus        *string
-	Status             string
-	CreateId           *int64
-	CreateDt           time.Time
-	ModifyId           *int64
-	ModifyDt           time.Time
 }

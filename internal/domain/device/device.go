@@ -2,6 +2,8 @@ package device
 
 import (
 	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Device is a (user, device_uuid) registration. The is_verified flag is the
@@ -12,6 +14,8 @@ import (
 // at which point uid is always known — but the domain stays faithful to
 // the column nullability.
 type Device struct {
+	audit.Audit
+
 	deviceId        int64
 	uid             *int64
 	deviceUUID      string
@@ -20,15 +24,7 @@ type Device struct {
 	devicePushToken *string
 	isVerified      bool
 	trustDt         time.Time
-	rptFlg          *string
-	kwords          *string
-	note            *string
 	deviceStatus    *string
-	status          string
-	createId        *int64
-	createDt        time.Time
-	modifyId        *int64
-	modifyDt        time.Time
 }
 
 func NewDevice() *Device {
@@ -62,32 +58,8 @@ func (d *Device) SetIsVerified(isVerified bool) { d.isVerified = isVerified }
 func (d *Device) TrustDt() time.Time           { return d.trustDt }
 func (d *Device) SetTrustDt(trustDt time.Time) { d.trustDt = trustDt }
 
-func (d *Device) RptFlg() *string          { return d.rptFlg }
-func (d *Device) SetRptFlg(rptFlg *string) { d.rptFlg = rptFlg }
-
-func (d *Device) Kwords() *string          { return d.kwords }
-func (d *Device) SetKwords(kwords *string) { d.kwords = kwords }
-
-func (d *Device) Note() *string        { return d.note }
-func (d *Device) SetNote(note *string) { d.note = note }
-
 func (d *Device) DeviceStatus() *string                { return d.deviceStatus }
 func (d *Device) SetDeviceStatus(deviceStatus *string) { d.deviceStatus = deviceStatus }
-
-func (d *Device) Status() string          { return d.status }
-func (d *Device) SetStatus(status string) { d.status = status }
-
-func (d *Device) CreateId() *int64            { return d.createId }
-func (d *Device) SetCreateId(createId *int64) { d.createId = createId }
-
-func (d *Device) CreateDt() time.Time            { return d.createDt }
-func (d *Device) SetCreateDt(createDt time.Time) { d.createDt = createDt }
-
-func (d *Device) ModifyId() *int64            { return d.modifyId }
-func (d *Device) SetModifyId(modifyId *int64) { d.modifyId = modifyId }
-
-func (d *Device) ModifyDt() time.Time            { return d.modifyDt }
-func (d *Device) SetModifyDt(modifyDt time.Time) { d.modifyDt = modifyDt }
 
 // IsTrustExpired reports whether the device's trust grant has aged past
 // ttlDays. ttlDays <= 0 disables the TTL (trust never expires by age — the

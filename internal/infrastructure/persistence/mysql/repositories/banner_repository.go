@@ -19,17 +19,14 @@ import (
 const (
 	bannerTable = "ma_banners"
 
-	bannerColumns = `b.banner_id, b.title, b.short_text, b.media_type,
-		b.media_url_key, b.button_text, b.button_link_url, b.rpt_flg, b.kwords, b.note,
-		b.banner_status, b.status,
-		b.create_id, b.create_dt, b.modify_id, b.modify_dt`
-
 	// Reads exclude both system-inactive rows and the DELETED business
 	// status used by the soft-delete path. INACTIVE banner_status rows
 	// still pass here — callers filter them out via BannerStatus when they
 	// only want display-ready banners.
 	bannerActiveWhere = `b.status IN (?) AND b.deleted_dt IS NULL`
 )
+
+var bannerColumns = `b.banner_id, b.title, b.short_text, b.media_type, b.media_url_key, b.button_text, b.button_link_url, b.banner_status, ` + models.AuditColumns("b")
 
 func bannerActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -45,10 +42,7 @@ func NewBannerRepository(db database.Executor) banner.IRepository {
 
 func scanBanner(s database.RowScanner) (*models.BannerModel, error) {
 	var m models.BannerModel
-	if err := s.Scan(&m.BannerId, &m.Title, &m.ShortText, &m.MediaType,
-		&m.MediaURLKey, &m.ButtonText, &m.ButtonLinkURL, &m.RptFlg, &m.Kwords, &m.Note,
-		&m.BannerStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.BannerId, &m.Title, &m.ShortText, &m.MediaType, &m.MediaURLKey, &m.ButtonText, &m.ButtonLinkURL, &m.BannerStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -262,14 +256,7 @@ func ModelToDomainBanner(m *models.BannerModel) *banner.Banner {
 	b.SetMediaURLKey(m.MediaURLKey)
 	b.SetButtonText(m.ButtonText)
 	b.SetButtonLinkURL(m.ButtonLinkURL)
-	b.SetRptFlg(m.RptFlg)
-	b.SetKwords(m.Kwords)
-	b.SetNote(m.Note)
+	m.Audit.ApplyTo(&b.Audit)
 	b.SetBannerStatus(m.BannerStatus)
-	b.SetStatus(m.Status)
-	b.SetCreateId(m.CreateId)
-	b.SetCreateDt(m.CreateDt)
-	b.SetModifyId(m.ModifyId)
-	b.SetModifyDt(m.ModifyDt)
 	return b
 }

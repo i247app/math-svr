@@ -1,7 +1,7 @@
 package role
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Role models ma_roles — one entry in the permission module's role registry.
@@ -11,20 +11,14 @@ import (
 // Nothing consults this registry for authorization yet: ma_users.role and
 // ma_profiles.role remain free-text columns validated by enum.RoleType.
 type Role struct {
+	audit.Audit
+
 	roleId      int64
 	roleCode    string
 	roleName    string
 	description *string
 	imageKey    *string
 	roleStatus  *string
-	rptFlg      *string
-	kwords      *string
-	note        *string
-	status      string
-	createId    *int64
-	createDt    time.Time
-	modifyId    *int64
-	modifyDt    time.Time
 }
 
 func NewRole() *Role {
@@ -48,27 +42,3 @@ func (r *Role) SetRoleImageKey(k *string) { r.imageKey = k }
 
 func (r *Role) RoleStatus() *string     { return r.roleStatus }
 func (r *Role) SetRoleStatus(v *string) { r.roleStatus = v }
-
-func (r *Role) RptFlg() *string     { return r.rptFlg }
-func (r *Role) SetRptFlg(v *string) { r.rptFlg = v }
-
-func (r *Role) Kwords() *string     { return r.kwords }
-func (r *Role) SetKwords(v *string) { r.kwords = v }
-
-func (r *Role) Note() *string     { return r.note }
-func (r *Role) SetNote(n *string) { r.note = n }
-
-func (r *Role) Status() string     { return r.status }
-func (r *Role) SetStatus(v string) { r.status = v }
-
-func (r *Role) CreateId() *int64      { return r.createId }
-func (r *Role) SetCreateId(id *int64) { r.createId = id }
-
-func (r *Role) CreateDt() time.Time     { return r.createDt }
-func (r *Role) SetCreateDt(t time.Time) { r.createDt = t }
-
-func (r *Role) ModifyId() *int64      { return r.modifyId }
-func (r *Role) SetModifyId(id *int64) { r.modifyId = id }
-
-func (r *Role) ModifyDt() time.Time     { return r.modifyDt }
-func (r *Role) SetModifyDt(t time.Time) { r.modifyDt = t }

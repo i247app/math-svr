@@ -2,6 +2,8 @@ package exam
 
 import (
 	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // ExamLink is ONE ATTEMPT: a (user, profile) pair sitting down with one
@@ -29,6 +31,8 @@ import (
 // sitting knows its journey, so "the latest sitting of journey X" is one
 // indexed read rather than a walk through the answer log.
 type ExamLink struct {
+	audit.Audit
+
 	elinkId    int64
 	uid        int64
 	profileId  int64
@@ -48,17 +52,7 @@ type ExamLink struct {
 	startedDt   time.Time
 	submittedDt time.Time
 
-	rptFlg *string
-
-	kwords *string
-
-	note        *string
 	elinkStatus *string
-	status      string
-	createId    *int64
-	createDt    time.Time
-	modifyId    *int64
-	modifyDt    time.Time
 }
 
 func NewExamLink() *ExamLink { return &ExamLink{} }
@@ -108,29 +102,5 @@ func (u *ExamLink) SetStartedDt(t time.Time) { u.startedDt = t }
 func (u *ExamLink) SubmittedDt() time.Time     { return u.submittedDt }
 func (u *ExamLink) SetSubmittedDt(t time.Time) { u.submittedDt = t }
 
-func (u *ExamLink) RptFlg() *string     { return u.rptFlg }
-func (u *ExamLink) SetRptFlg(v *string) { u.rptFlg = v }
-
-func (u *ExamLink) Kwords() *string     { return u.kwords }
-func (u *ExamLink) SetKwords(v *string) { u.kwords = v }
-
-func (u *ExamLink) Note() *string     { return u.note }
-func (u *ExamLink) SetNote(s *string) { u.note = s }
-
 func (u *ExamLink) ElinkStatus() *string     { return u.elinkStatus }
 func (u *ExamLink) SetElinkStatus(s *string) { u.elinkStatus = s }
-
-func (u *ExamLink) Status() string     { return u.status }
-func (u *ExamLink) SetStatus(s string) { u.status = s }
-
-func (u *ExamLink) CreateId() *int64      { return u.createId }
-func (u *ExamLink) SetCreateId(id *int64) { u.createId = id }
-
-func (u *ExamLink) CreateDt() time.Time     { return u.createDt }
-func (u *ExamLink) SetCreateDt(t time.Time) { u.createDt = t }
-
-func (u *ExamLink) ModifyId() *int64      { return u.modifyId }
-func (u *ExamLink) SetModifyId(id *int64) { u.modifyId = id }
-
-func (u *ExamLink) ModifyDt() time.Time     { return u.modifyDt }
-func (u *ExamLink) SetModifyDt(t time.Time) { u.modifyDt = t }

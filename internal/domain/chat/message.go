@@ -1,6 +1,10 @@
 package chat
 
-import "time"
+import (
+	"time"
+
+	"math-ai.com/math-ai/internal/domain/shared/audit"
+)
 
 // Message models one ma_chat_messages row.
 //
@@ -16,6 +20,8 @@ import "time"
 // so that a message can carry several of them without changing this shape once
 // the table already holds data.
 type Message struct {
+	audit.Audit
+
 	messageId        int64
 	conversationId   int64
 	seqNo            int64
@@ -32,15 +38,7 @@ type Message struct {
 	sentDt           time.Time
 	editedDt         time.Time
 	revokedDt        time.Time
-	rptFlg           *string
-	kwords           *string
-	note             *string
 	messageStatus    *string
-	status           string
-	createId         *int64
-	createDt         time.Time
-	modifyId         *int64
-	modifyDt         time.Time
 }
 
 func NewMessage() *Message { return &Message{} }
@@ -93,29 +91,5 @@ func (m *Message) SetEditedDt(t time.Time) { m.editedDt = t }
 func (m *Message) RevokedDt() time.Time     { return m.revokedDt }
 func (m *Message) SetRevokedDt(t time.Time) { m.revokedDt = t }
 
-func (m *Message) RptFlg() *string     { return m.rptFlg }
-func (m *Message) SetRptFlg(v *string) { m.rptFlg = v }
-
-func (m *Message) Kwords() *string     { return m.kwords }
-func (m *Message) SetKwords(v *string) { m.kwords = v }
-
-func (m *Message) Note() *string     { return m.note }
-func (m *Message) SetNote(n *string) { m.note = n }
-
 func (m *Message) MessageStatus() *string     { return m.messageStatus }
 func (m *Message) SetMessageStatus(s *string) { m.messageStatus = s }
-
-func (m *Message) Status() string     { return m.status }
-func (m *Message) SetStatus(s string) { m.status = s }
-
-func (m *Message) CreateId() *int64      { return m.createId }
-func (m *Message) SetCreateId(id *int64) { m.createId = id }
-
-func (m *Message) CreateDt() time.Time     { return m.createDt }
-func (m *Message) SetCreateDt(t time.Time) { m.createDt = t }
-
-func (m *Message) ModifyId() *int64      { return m.modifyId }
-func (m *Message) SetModifyId(id *int64) { m.modifyId = id }
-
-func (m *Message) ModifyDt() time.Time     { return m.modifyDt }
-func (m *Message) SetModifyDt(t time.Time) { m.modifyDt = t }

@@ -5,6 +5,8 @@ import (
 )
 
 type DeviceModel struct {
+	Audit
+
 	DeviceId        int64
 	Uid             *int64
 	DeviceUUID      string
@@ -13,13 +15,5 @@ type DeviceModel struct {
 	DevicePushToken *string
 	IsVerified      bool
 	TrustDt         *time.Time
-	RptFlg          *string
-	Kwords          *string
-	Note            *string
 	DeviceStatus    *string
-	Status          string
-	CreateId        *int64
-	CreateDt        time.Time
-	ModifyId        *int64
-	ModifyDt        time.Time
 }

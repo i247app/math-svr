@@ -18,12 +18,10 @@ import (
 const (
 	loginTable = "ma_logins"
 
-	loginColumns = `lg.login_id, lg.uid, lg.upw, lg.logins_status, lg.rpt_flg,
-		lg.kwords, lg.note, lg.status, lg.create_id, lg.create_dt,
-		lg.modify_id, lg.modify_dt`
-
 	loginActiveWhere = `lg.status IN (?) AND lg.deleted_dt IS NULL`
 )
+
+var loginColumns = `lg.login_id, lg.uid, lg.upw, lg.logins_status, ` + models.AuditColumns("lg")
 
 func loginActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -39,9 +37,7 @@ func NewLoginRepository(db database.Executor) login.IRepository {
 
 func scanLogin(s database.RowScanner) (*models.LoginModel, error) {
 	var m models.LoginModel
-	if err := s.Scan(&m.LoginId, &m.Uid, &m.Upw, &m.LoginsStatus, &m.RptFlg,
-		&m.Kwords, &m.Note, &m.Status, &m.CreateId, &m.CreateDt,
-		&m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.LoginId, &m.Uid, &m.Upw, &m.LoginsStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -94,13 +90,6 @@ func ModelToDomainLogin(m *models.LoginModel) *login.Login {
 	l.SetUID(m.Uid)
 	l.SetUpw(m.Upw)
 	l.SetLoginsStatus(m.LoginsStatus)
-	l.SetRptFlg(m.RptFlg)
-	l.SetKwords(m.Kwords)
-	l.SetNote(m.Note)
-	l.SetStatus(m.Status)
-	l.SetCreateId(m.CreateId)
-	l.SetCreateDt(m.CreateDt)
-	l.SetModifyId(m.ModifyId)
-	l.SetModifyDt(m.ModifyDt)
+	m.Audit.ApplyTo(&l.Audit)
 	return l
 }

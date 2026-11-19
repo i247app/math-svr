@@ -2,7 +2,7 @@ package question
 
 import (
 	"math-ai.com/math-ai/internal/domain/questionpool"
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // Option is one option of a generated question, in canonical order.
@@ -26,6 +26,8 @@ type Option struct {
 // and graded from, and every write of that JSON rewrites the exam's rows in
 // the same transaction.
 type Question struct {
+	audit.Audit
+
 	questionId     int64
 	examId         int64
 	questionNumber int
@@ -48,14 +50,6 @@ type Question struct {
 	questionSubLevel *int
 
 	questionStatus *string
-	rptFlg         *string
-	kwords         *string
-	note           *string
-	status         string
-	createId       *int64
-	createDt       time.Time
-	modifyId       *int64
-	modifyDt       time.Time
 }
 
 func NewQuestion() *Question { return &Question{} }
@@ -110,27 +104,3 @@ func (q *Question) SetQuestionSubLevel(l *int) { q.questionSubLevel = l }
 
 func (q *Question) QuestionStatus() *string     { return q.questionStatus }
 func (q *Question) SetQuestionStatus(s *string) { q.questionStatus = s }
-
-func (q *Question) RptFlg() *string     { return q.rptFlg }
-func (q *Question) SetRptFlg(s *string) { q.rptFlg = s }
-
-func (q *Question) Kwords() *string     { return q.kwords }
-func (q *Question) SetKwords(s *string) { q.kwords = s }
-
-func (q *Question) Note() *string     { return q.note }
-func (q *Question) SetNote(s *string) { q.note = s }
-
-func (q *Question) Status() string     { return q.status }
-func (q *Question) SetStatus(s string) { q.status = s }
-
-func (q *Question) CreateId() *int64      { return q.createId }
-func (q *Question) SetCreateId(id *int64) { q.createId = id }
-
-func (q *Question) CreateDt() time.Time     { return q.createDt }
-func (q *Question) SetCreateDt(t time.Time) { q.createDt = t }
-
-func (q *Question) ModifyId() *int64      { return q.modifyId }
-func (q *Question) SetModifyId(id *int64) { q.modifyId = id }
-
-func (q *Question) ModifyDt() time.Time     { return q.modifyDt }
-func (q *Question) SetModifyDt(t time.Time) { q.modifyDt = t }

@@ -1,7 +1,7 @@
 package exam
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 // ExamPool is one set of questions produced by the model, and nothing else.
@@ -19,6 +19,8 @@ import (
 // server has normalised question_grade. Parsing happens on read, in the
 // application layer.
 type ExamPool struct {
+	audit.Audit
+
 	examId int64
 
 	reqExamType string
@@ -39,17 +41,7 @@ type ExamPool struct {
 	// IExamPoolRepository.MarkVerified / ReplaceQuestions).
 	verifiedCount int
 
-	rptFlg *string
-
-	kwords *string
-
-	note       *string
 	examStatus *string
-	status     string
-	createId   *int64
-	createDt   time.Time
-	modifyId   *int64
-	modifyDt   time.Time
 }
 
 func NewExamPool() *ExamPool { return &ExamPool{} }
@@ -93,29 +85,5 @@ func (a *ExamPool) SetQuestionsJson(s string) { a.questionsJson = s }
 func (a *ExamPool) VerifiedCount() int     { return a.verifiedCount }
 func (a *ExamPool) SetVerifiedCount(n int) { a.verifiedCount = n }
 
-func (a *ExamPool) RptFlg() *string     { return a.rptFlg }
-func (a *ExamPool) SetRptFlg(v *string) { a.rptFlg = v }
-
-func (a *ExamPool) Kwords() *string     { return a.kwords }
-func (a *ExamPool) SetKwords(v *string) { a.kwords = v }
-
-func (a *ExamPool) Note() *string     { return a.note }
-func (a *ExamPool) SetNote(s *string) { a.note = s }
-
 func (a *ExamPool) ExamStatus() *string     { return a.examStatus }
 func (a *ExamPool) SetExamStatus(s *string) { a.examStatus = s }
-
-func (a *ExamPool) Status() string     { return a.status }
-func (a *ExamPool) SetStatus(s string) { a.status = s }
-
-func (a *ExamPool) CreateId() *int64      { return a.createId }
-func (a *ExamPool) SetCreateId(id *int64) { a.createId = id }
-
-func (a *ExamPool) CreateDt() time.Time     { return a.createDt }
-func (a *ExamPool) SetCreateDt(t time.Time) { a.createDt = t }
-
-func (a *ExamPool) ModifyId() *int64      { return a.modifyId }
-func (a *ExamPool) SetModifyId(id *int64) { a.modifyId = id }
-
-func (a *ExamPool) ModifyDt() time.Time     { return a.modifyDt }
-func (a *ExamPool) SetModifyDt(t time.Time) { a.modifyDt = t }

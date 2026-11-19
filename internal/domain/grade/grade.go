@@ -1,24 +1,18 @@
 package grade
 
 import (
-	"time"
+	"math-ai.com/math-ai/internal/domain/shared/audit"
 )
 
 type Grade struct {
+	audit.Audit
+
 	gradeId      int64
 	label        string
 	description  string
 	imageKey     *string
 	displayOrder int8
-	rptFlg       *string
-	kwords       *string
-	note         *string
 	gradeStatus  *string
-	status       string
-	createId     *int64
-	createDt     time.Time
-	modifyId     *int64
-	modifyDt     time.Time
 }
 
 func NewGrade() *Grade {
@@ -40,29 +34,5 @@ func (g *Grade) SetImageKey(imageKey *string) { g.imageKey = imageKey }
 func (g *Grade) DisplayOrder() int8                { return g.displayOrder }
 func (g *Grade) SetDisplayOrder(displayOrder int8) { g.displayOrder = displayOrder }
 
-func (g *Grade) RptFlg() *string          { return g.rptFlg }
-func (g *Grade) SetRptFlg(rptFlg *string) { g.rptFlg = rptFlg }
-
-func (g *Grade) Kwords() *string          { return g.kwords }
-func (g *Grade) SetKwords(kwords *string) { g.kwords = kwords }
-
-func (g *Grade) Note() *string        { return g.note }
-func (g *Grade) SetNote(note *string) { g.note = note }
-
 func (g *Grade) GradeStatus() *string               { return g.gradeStatus }
 func (g *Grade) SetGradeStatus(gradeStatus *string) { g.gradeStatus = gradeStatus }
-
-func (g *Grade) Status() string          { return g.status }
-func (g *Grade) SetStatus(status string) { g.status = status }
-
-func (g *Grade) CreateId() *int64            { return g.createId }
-func (g *Grade) SetCreateId(createId *int64) { g.createId = createId }
-
-func (g *Grade) CreateDt() time.Time            { return g.createDt }
-func (g *Grade) SetCreateDt(createDt time.Time) { g.createDt = createDt }
-
-func (g *Grade) ModifyId() *int64            { return g.modifyId }
-func (g *Grade) SetModifyId(modifyId *int64) { g.modifyId = modifyId }
-
-func (g *Grade) ModifyDt() time.Time            { return g.modifyDt }
-func (g *Grade) SetModifyDt(modifyDt time.Time) { g.modifyDt = modifyDt }

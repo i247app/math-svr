@@ -1,10 +1,10 @@
 package models
 
-import "time"
-
 // NotificationModel mirrors ma_notifications. Pure data; the repository maps
 // it to the domain Notification via ModelToDomainNotification.
 type NotificationModel struct {
+	Audit
+
 	NotificationId     int64
 	Uid                int64
 	Title              string
@@ -14,13 +14,5 @@ type NotificationModel struct {
 	ActionType         *string
 	ActionData         *string
 	Priority           *string
-	RptFlg             *string
-	Kwords             *string
-	Note               *string
 	NotificationStatus *string
-	Status             string
-	CreateId           *int64
-	CreateDt           time.Time
-	ModifyId           *int64
-	ModifyDt           time.Time
 }

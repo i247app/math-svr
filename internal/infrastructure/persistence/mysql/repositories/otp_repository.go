@@ -17,13 +17,10 @@ import (
 const (
 	otpTable = "ma_otps"
 
-	otpColumns = `o.otp_id, o.otp_type, o.uid, o.identifier,
-		o.device_uuid, o.device_name, o.otp_code, o.otp_create_dt, o.otp_expire_dt, o.otp_verified_dt,
-		o.attempt_count, o.rpt_flg, o.kwords, o.note, o.otp_status, o.status,
-		o.create_id, o.create_dt, o.modify_id, o.modify_dt`
-
 	otpActiveWhere = `o.status IN (?) AND o.deleted_dt IS NULL`
 )
+
+var otpColumns = `o.otp_id, o.otp_type, o.uid, o.identifier, o.device_uuid, o.device_name, o.otp_code, o.otp_create_dt, o.otp_expire_dt, o.otp_verified_dt, o.attempt_count, o.otp_status, ` + models.AuditColumns("o")
 
 func otpActiveArgs() []any {
 	return []any{enum.StatusActive}
@@ -39,10 +36,7 @@ func NewOtpRepository(db database.Executor) otp.IRepository {
 
 func scanOtp(s database.RowScanner) (*models.OtpModel, error) {
 	var m models.OtpModel
-	if err := s.Scan(&m.OtpId, &m.OtpType, &m.Uid, &m.Identifier,
-		&m.DeviceUUID, &m.DeviceName, &m.OtpCode, &m.OtpCreateDt, &m.OtpExpireDt, &m.OtpVerifiedDt,
-		&m.AttemptCount, &m.RptFlg, &m.Kwords, &m.Note, &m.OtpStatus, &m.Status,
-		&m.CreateId, &m.CreateDt, &m.ModifyId, &m.ModifyDt); err != nil {
+	if err := s.Scan(append([]any{&m.OtpId, &m.OtpType, &m.Uid, &m.Identifier, &m.DeviceUUID, &m.DeviceName, &m.OtpCode, &m.OtpCreateDt, &m.OtpExpireDt, &m.OtpVerifiedDt, &m.AttemptCount, &m.OtpStatus}, m.Audit.Dest()...)...); err != nil {
 		return nil, err
 	}
 	return &m, nil
@@ -227,14 +221,7 @@ func ModelToDomainOtp(m *models.OtpModel) *otp.Otp {
 		o.SetOtpVerifiedDt(*m.OtpVerifiedDt)
 	}
 	o.SetAttemptCount(m.AttemptCount)
-	o.SetRptFlg(m.RptFlg)
-	o.SetKwords(m.Kwords)
-	o.SetNote(m.Note)
+	m.Audit.ApplyTo(&o.Audit)
 	o.SetOtpStatus(m.OtpStatus)
-	o.SetStatus(m.Status)
-	o.SetCreateId(m.CreateId)
-	o.SetCreateDt(m.CreateDt)
-	o.SetModifyId(m.ModifyId)
-	o.SetModifyDt(m.ModifyDt)
 	return o
 }
