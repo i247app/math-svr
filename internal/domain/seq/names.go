@@ -2,7 +2,7 @@ package seq
 
 // Sequence names — each is the name of the table whose ids it mints, so a
 // row in ma_seqs reads as "the next id for this table". They must match the
-// seed rows in migrations/seed/001_ma_seqs.sql (existing databases were
+// seed rows in migrations/seed/20261119000101_ma_seqs.sql (existing databases were
 // renamed by sql/prod/squash-2026-09-29/04_rename_seq_names_to_tables.sql).
 // Callers reference these constants instead of magic strings so a rename
 // triggers a compile error rather than a runtime "sequence not found".

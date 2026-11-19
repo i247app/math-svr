@@ -55,16 +55,16 @@ deploy-amd: ## full deploy with an AMD64 build — RHOST=t1|t2|t3|t4
 connect-mysql: ## connect to remote mysql (HOST in .env.ec2-credentials)
 	@./deploy/scripts/connect-mysql.sh
 
-migrate: ## apply pending migrations/up/*.sql to LOCAL db (uses .env DB_*)
+migrate: ## apply pending migrations/*.up.sql to LOCAL db (uses .env DB_*)
 	@./deploy/scripts/migrate.sh up
 
-migrate-create: ## create new migration pair — var: NAME=ma_foos
+migrate-create: ## create <utc-ts>_<table>.up/.down.sql pair — var: NAME=ma_foos
 	@./deploy/scripts/create_migration.sh $(NAME)
 
 migrate-status: ## list applied / pending migrations on LOCAL db, change nothing
 	@./deploy/scripts/migrate.sh status
 
-migrate-down: ## DESTRUCTIVE: run migrations/down/ for every applied version — drops all tables
+migrate-down: ## DESTRUCTIVE: run migrations/*.down.sql for every applied version — drops all tables
 	@./deploy/scripts/migrate.sh down
 
 migrate-baseline: ## mark all migrations as applied WITHOUT running them (one-off, existing LOCAL db)

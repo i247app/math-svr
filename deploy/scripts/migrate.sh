@@ -4,18 +4,19 @@
 # Boot-time database.Migrate is commented out in internal/bootstrap/app.go, so this
 # is the supported way to bring a freshly-cloned checkout's database up to date.
 #
-#   migrations/up/NNN_*.sql     forward schema changes, tracked in schema_migrations
-#   migrations/down/NNN_*.sql   the mirror of each up file — drops what it created
-#   migrations/seed/NNN_*.sql   reference data (ma_seqs, programs, grades, semesters);
-#                               idempotent INSERT IGNORE, NOT tracked, re-run any time
+#   migrations/<ts>_<table>.up.sql    forward schema, tracked in schema_migrations
+#   migrations/<ts>_<table>.down.sql  the mirror of each up file — drops what it created
+#   migrations/seed/<ts>_<name>.sql    reference data (ma_seqs, programs, grades, semesters, …);
+#                                     idempotent INSERT IGNORE, NOT tracked, re-run any time
+#   <ts> = UTC creation time YYYYMMDDHHMMSS (deploy/scripts/create_migration.sh)
 #
 # Usage:
-#   ./deploy/scripts/migrate.sh up          # apply every pending up/ file (default)
+#   ./deploy/scripts/migrate.sh up          # apply every pending .up.sql file (default)
 #   ./deploy/scripts/migrate.sh status      # list applied / pending, change nothing
 #   ./deploy/scripts/migrate.sh seed        # run every seed/ file in order
-#   ./deploy/scripts/migrate.sh down        # DESTRUCTIVE: run down/ for every applied
+#   ./deploy/scripts/migrate.sh down        # DESTRUCTIVE: run .down.sql for every applied
 #                                           # version, newest first — empties the schema
-#   ./deploy/scripts/migrate.sh baseline    # record every up/ file as applied WITHOUT
+#   ./deploy/scripts/migrate.sh baseline    # record every .up.sql file as applied WITHOUT
 #                                           # running it (one-off, for a database that
 #                                           # was set up by hand — see README.md §2)
 #   MIGRATE_DB_NAME=x_scratch ./deploy/scripts/migrate.sh up
@@ -26,14 +27,16 @@
 #                                           # DROP that throwaway database
 #
 # `up` mirrors the Go runner (internal/infrastructure/database/migration.go):
-# files sorted in byte order, version = filename without ".sql", recorded in
+# *.up.sql files sorted in byte order (= timestamp order), version = filename
+# without ".up.sql" (e.g. 20261119000001_ma_users), recorded in
 # schema_migrations(version); recorded versions are skipped, so re-running is safe.
 #
 # Env:      DB_HOST, DB_USER, DB_NAME required in .env (DB_PASS optional; DB_PORT 3306).
 #           MIGRATE_YES=1 skips the confirmation prompt on down / baseline.
 #           MIGRATE_DB_NAME overrides DB_NAME; it must end in "_scratch", so it can
 #           never point at a real database. MIGRATE_DIR replaces migrations/ (e.g. an
-#           older checkout's copy, to build the schema it describes).
+#           older checkout's copy, to build the schema it describes — it must use the
+#           <ts>_<table>.up.sql layout; the pre-2026-11-19 up/ + down/ layout is not read).
 # Caveats:  MySQL DDL auto-commits — an up file that fails halfway may leave earlier
 #           statements applied while its version stays unrecorded. Fix and re-run;
 #           the version is only recorded after the whole file succeeds.
@@ -44,14 +47,12 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$PROJECT_DIR"
 
 MIGRATIONS_DIR="${MIGRATE_DIR:-$PROJECT_DIR/migrations}"
-UP_DIR="$MIGRATIONS_DIR/up"
-DOWN_DIR="$MIGRATIONS_DIR/down"
 SEED_DIR="$MIGRATIONS_DIR/seed"
 
 CMD="${1:-up}"
 case "$CMD" in
   up|down|seed|status|baseline|drop-scratch) ;;
-  -h|--help) sed -n '2,40p' "$0"; exit 0 ;;
+  -h|--help) sed -n '2,42p' "$0"; exit 0 ;;
   *) echo "error: unknown command '$CMD' (up | down | seed | status | baseline | drop-scratch)" >&2; exit 1 ;;
 esac
 
@@ -106,7 +107,8 @@ confirm() {
 }
 
 # LC_ALL=C gives plain byte ordering, matching Go's sort.Strings.
-list_sql() { find "$1" -maxdepth 1 -type f -name '*.sql' -exec basename {} \; | LC_ALL=C sort; }
+# list_sql DIR [GLOB] — default '*.sql' (seed/), '*.up.sql' for migrations.
+list_sql() { find "$1" -maxdepth 1 -type f -name "${2:-*.sql}" -exec basename {} \; | LC_ALL=C sort; }
 
 echo ">>> migrate ${CMD} (LOCAL)"
 echo "  target: ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
@@ -126,7 +128,7 @@ if [[ $CMD == seed ]]; then
 fi
 
 # ---------------------------------------------------- tracking table ----
-[[ -d "$UP_DIR" ]] || { echo "error: missing $UP_DIR" >&2; exit 1; }
+[[ -d "$MIGRATIONS_DIR" ]] || { echo "error: missing $MIGRATIONS_DIR" >&2; exit 1; }
 
 # Same DDL as migrationTable in migration.go.
 sql <<'SQL'
@@ -141,36 +143,35 @@ is_applied() { grep -qxF -- "$1" <<<"$APPLIED"; }
 
 # ---------------------------------------------------------------- down ----
 if [[ $CMD == down ]]; then
-  [[ -d "$DOWN_DIR" ]] || { echo "error: missing $DOWN_DIR" >&2; exit 1; }
   if [[ -z "$APPLIED" ]]; then
     echo ">>> nothing to do — no applied migrations recorded"
     exit 0
   fi
-  # A version recorded in the DB but with no down/ file (renamed or deleted since it
+  # A version recorded in the DB but with no .down.sql file (renamed or deleted since it
   # was applied) is an orphan: we cannot know which tables it created, so we only
   # remove its tracking row and tell the user what is left to drop by hand.
   ORPHANS=()
   while IFS= read -r v; do
-    [[ -f "$DOWN_DIR/$v.sql" ]] || ORPHANS+=("$v")
+    [[ -f "$MIGRATIONS_DIR/$v.down.sql" ]] || ORPHANS+=("$v")
   done <<<"$APPLIED"
 
   count=$(wc -l <<<"$APPLIED" | tr -d ' ')
   if [[ ${#ORPHANS[@]} -gt 0 ]]; then
-    echo "  ${#ORPHANS[@]} recorded version(s) have no down/ file — their tables will NOT be dropped,"
+    echo "  ${#ORPHANS[@]} recorded version(s) have no .down.sql file — their tables will NOT be dropped,"
     echo "  only their schema_migrations rows are removed:"
     printf '    %s\n' "${ORPHANS[@]}"
     echo
   fi
   confirm "⚠ This DROPS every table created by ${count} applied migration(s) in '${DB_NAME}' — ALL DATA IS LOST."
   while IFS= read -r v; do
-    if [[ ! -f "$DOWN_DIR/$v.sql" ]]; then
+    if [[ ! -f "$MIGRATIONS_DIR/$v.down.sql" ]]; then
       echo "  forgetting ${v} (orphan — no down file)"
       sql -e "DELETE FROM schema_migrations WHERE version = '${v}'"
       continue
     fi
     echo "  reverting ${v} ..."
     {
-      cat "$DOWN_DIR/$v.sql"
+      cat "$MIGRATIONS_DIR/$v.down.sql"
       echo
       printf "DELETE FROM schema_migrations WHERE version = '%s';\n" "$v"
     } | sql || { echo "error: down ${v} failed — earlier versions are still applied" >&2; exit 1; }
@@ -179,18 +180,18 @@ if [[ $CMD == down ]]; then
   echo ">>> done — ${count} migration(s) reverted"
   if [[ ${#ORPHANS[@]} -gt 0 ]]; then
     echo ">>> ${#ORPHANS[@]} orphan version(s) forgotten; any tables they created are still in '${DB_NAME}'."
-    echo "    Compare 'SHOW TABLES' with migrations/up/ and DROP the leftovers by hand if you want a clean slate."
+    echo "    Compare 'SHOW TABLES' with migrations/*.up.sql and DROP the leftovers by hand if you want a clean slate."
   fi
   exit 0
 fi
 
 # ------------------------------------------------- up / status / baseline ----
 FILES=()
-while IFS= read -r f; do FILES+=("$f"); done < <(list_sql "$UP_DIR")
+while IFS= read -r f; do FILES+=("$f"); done < <(list_sql "$MIGRATIONS_DIR" '*.up.sql')
 
 PENDING=()
 for f in "${FILES[@]}"; do
-  version="${f%.sql}"
+  version="${f%.up.sql}"
   if is_applied "$version"; then
     [[ $CMD == status ]] && printf '  %-8s %s\n' applied "$version"
   else
@@ -201,8 +202,10 @@ done
 
 if [[ $CMD == status ]]; then
   # Versions recorded in the DB that no longer have an up file (renamed / deleted).
+  # Pre-2026-11-19 NNN_<table> versions land here until
+  # sql/prod/2026-11-19_rename_migration_versions.sql maps them.
   while IFS= read -r v; do
-    [[ -n "$v" && ! -f "$UP_DIR/$v.sql" ]] && printf '  %-8s %s  (recorded, no up/ file)\n' ORPHAN "$v"
+    [[ -n "$v" && ! -f "$MIGRATIONS_DIR/$v.up.sql" ]] && printf '  %-8s %s  (recorded, no .up.sql file)\n' ORPHAN "$v"
   done <<<"$APPLIED"
   echo
   echo ">>> ${#PENDING[@]} pending of ${#FILES[@]} total"
@@ -215,9 +218,9 @@ if [[ ${#PENDING[@]} -eq 0 ]]; then
 fi
 
 if [[ $CMD == baseline ]]; then
-  confirm "This records ${#PENDING[@]} migration(s) as applied in '${DB_NAME}' WITHOUT executing them. Only do this if the schema already matches every file under migrations/up/."
+  confirm "This records ${#PENDING[@]} migration(s) as applied in '${DB_NAME}' WITHOUT executing them. Only do this if the schema already matches every migrations/*.up.sql file."
   for f in "${PENDING[@]}"; do
-    printf "INSERT INTO schema_migrations (version) VALUES ('%s');\n" "${f%.sql}"
+    printf "INSERT INTO schema_migrations (version) VALUES ('%s');\n" "${f%.up.sql}"
   done | sql
   echo ">>> baselined ${#PENDING[@]} migration(s)"
   exit 0
@@ -225,7 +228,7 @@ fi
 
 echo ">>> applying ${#PENDING[@]} pending migration(s)"
 for f in "${PENDING[@]}"; do
-  version="${f%.sql}"
+  version="${f%.up.sql}"
   echo "  applying ${version} ..."
   # mysql in batch mode aborts on the first error, so the INSERT that records the
   # version only runs if every statement in the file succeeded. START/COMMIT wrap
@@ -234,7 +237,7 @@ for f in "${PENDING[@]}"; do
   # an empty ';;' statement is itself an error to the mysql client.
   {
     echo 'START TRANSACTION;'
-    cat "$UP_DIR/$f"
+    cat "$MIGRATIONS_DIR/$f"
     echo   # some files end in a '--' comment with no newline; keep the INSERT out of it
     printf "INSERT INTO schema_migrations (version) VALUES ('%s');\n" "$version"
     echo 'COMMIT;'

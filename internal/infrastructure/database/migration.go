@@ -12,13 +12,18 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 )
 
+const upSuffix = ".up.sql"
+
 const migrationTable = `CREATE TABLE IF NOT EXISTS schema_migrations (
 	version VARCHAR(255) NOT NULL PRIMARY KEY,
 	applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`
 
-// Migrate reads .sql files from migrationsDir and applies any that haven't been run yet.
-// Files are sorted lexicographically; use a naming convention like 001_create_users.sql.
+// Migrate applies every <version>_<table>.up.sql file in migrationsDir that is not yet
+// recorded in schema_migrations. version is the UTC creation time YYYYMMDDHHMMSS
+// (deploy/scripts/create_migration.sh); files sort in byte order, which is that
+// time order. The recorded version is the filename without ".up.sql". The
+// .down.sql twins and the seed/ subdirectory are ignored.
 func Migrate(ctx context.Context, db *sql.DB, migrationsDir string) error {
 	lg := logger.From(ctx)
 
@@ -35,7 +40,7 @@ func Migrate(ctx context.Context, db *sql.DB, migrationsDir string) error {
 
 	var files []string
 	for _, e := range entries {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".sql") {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), upSuffix) {
 			files = append(files, e.Name())
 		}
 	}
@@ -49,7 +54,7 @@ func Migrate(ctx context.Context, db *sql.DB, migrationsDir string) error {
 
 	// Apply pending migrations
 	for _, f := range files {
-		version := strings.TrimSuffix(f, ".sql")
+		version := strings.TrimSuffix(f, upSuffix)
 		if applied[version] {
 			continue
 		}

@@ -1,13 +1,23 @@
 #!/usr/bin/env bash
-# deploy/scripts/create_migration.sh — scaffold an up/down migration pair.
+# deploy/scripts/create_migration.sh — scaffold the CREATE TABLE migration pair
+# of a new table (make migrate-create NAME=ma_foos).
 #
 # Usage:
 #   ./deploy/scripts/create_migration.sh ma_foos
-#   → migrations/up/NNN_ma_foos.sql   (next free 3-digit number)
-#   → migrations/down/NNN_ma_foos.sql
+#   → migrations/YYYYMMDDHHMMSS_ma_foos.up.sql
+#   → migrations/YYYYMMDDHHMMSS_ma_foos.down.sql
 #
-# One file per table, named after the table (the 2026-09-29 convention). A
-# trailing "_table" in the argument is dropped, so the old spelling still works.
+# The version is the current UTC time (the nexxa-svr convention), so two
+# branches never compete for the same number. The runner applies files in
+# byte order and records "<ts>_<table>" in schema_migrations; a pair whose
+# timestamp is older than one already applied on a shared database is still
+# applied (the runner is not strict about order), but rename it to a fresh
+# timestamp before merging so the order stays the dependency order.
+#
+# One pair per table, named after the table; a trailing "_table" in the
+# argument is dropped. A table that already has its pair is refused: a
+# change to it edits that table's CREATE file and is applied to existing
+# databases by hand (.claude/rules/database.md §2).
 #
 # Reference data does not belong here — add an INSERT IGNORE file under
 # migrations/seed/ instead (see deploy/scripts/migrate.sh).
@@ -15,24 +25,32 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
-UP_DIR="$PROJECT_DIR/migrations/up"
-DOWN_DIR="$PROJECT_DIR/migrations/down"
+DIR="$PROJECT_DIR/migrations"
 
 NAME="${1:-}"
 [[ -n "$NAME" ]] || { echo "usage: $0 <table_name>   e.g. $0 ma_foos" >&2; exit 1; }
-[[ "$NAME" =~ ^[a-z0-9_]+$ ]] || { echo "error: name must be lowercase [a-z0-9_]" >&2; exit 1; }
+[[ "$NAME" =~ ^[a-z][a-z0-9_]*$ ]] || { echo "error: table name must be lowercase [a-z0-9_], starting with a letter" >&2; exit 1; }
 NAME="${NAME%_table}"   # the file is named after the table itself
 
-mkdir -p "$UP_DIR" "$DOWN_DIR"
+existing=$(find "$DIR" -maxdepth 1 -name "[0-9]*_${NAME}.up.sql" -exec basename {} \;)
+[[ -z "$existing" ]] || {
+  echo "error: $NAME already has a migration ($existing); edit its CREATE file instead" >&2
+  exit 1
+}
 
-# Next number = highest existing NNN prefix in up/ + 1 (000 when the dir is empty).
-last=$(find "$UP_DIR" -maxdepth 1 -name '[0-9][0-9][0-9]_*.sql' -exec basename {} \; \
-        | LC_ALL=C sort | tail -1 | cut -c1-3)
-next=$(printf '%03d' $(( 10#${last:-"-1"} + 1 )))
+next=$(date -u +%Y%m%d%H%M%S)
 
-UP_FILE="$UP_DIR/${next}_${NAME}.sql"
-DOWN_FILE="$DOWN_DIR/${next}_${NAME}.sql"
-[[ ! -e "$UP_FILE" && ! -e "$DOWN_FILE" ]] || { echo "error: ${next}_${NAME}.sql already exists" >&2; exit 1; }
+# The new version must sort after every existing one (a clock behind the
+# newest file, or two runs in the same second, would break the order).
+last=$(find "$DIR" -maxdepth 1 -name '[0-9]*_*.up.sql' -exec basename {} \; \
+        | cut -d_ -f1 | LC_ALL=C sort -n | tail -1)
+(( 10#$next > 10#${last:-0} )) || {
+  echo "error: version $next is not after the newest migration ($last); retry in a second or check the clock" >&2
+  exit 1
+}
+
+UP_FILE="$DIR/${next}_${NAME}.up.sql"
+DOWN_FILE="$DIR/${next}_${NAME}.down.sql"
 
 # Entity name for the <entity>_id / <entity>_status columns: the table name
 # without its ma_ prefix, e.g. ma_foos → foos (singularise it by hand).
@@ -73,12 +91,12 @@ CREATE TABLE IF NOT EXISTS ${NAME} (
 -- Drop:
 --   ALTER TABLE ${NAME} DROP PRIMARY KEY;   -- pair it with ADD PRIMARY KEY in the same statement
 
--- Remember the ma_seqs row for '${NAME}' (seq_name = table name) → migrations/seed/001_ma_seqs.sql (INSERT IGNORE),
+-- Remember the ma_seqs row for '${NAME}' (seq_name = table name) → migrations/seed/20261119000101_ma_seqs.sql (INSERT IGNORE),
 -- and a seq.Name<Entity> constant in internal/domain/seq/names.go.
 SQL
 
 cat >"$DOWN_FILE" <<SQL
--- migration down — reverses up/${next}_${NAME}.sql
+-- migration down — reverses ${next}_${NAME}.up.sql
 DROP TABLE IF EXISTS ${NAME};
 SQL
 

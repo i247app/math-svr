@@ -62,9 +62,9 @@ Full walkthrough of every phase: [`docs/DeploymentProcessExplain.md`](../../docs
 | [`login.sh`](./login.sh) | `make login RHOST=t1` | SSH into the host |
 | [`watch-logs.sh`](./watch-logs.sh) | `make watch-logs RHOST=t1` | Tail `/apps/math/mathsvr.log` |
 | [`connect-mysql.sh`](./connect-mysql.sh) | `make connect-mysql` | Open a `mysql` shell on the host using its `/apps/math/.env` |
-| [`migrate.sh`](./migrate.sh) | `make migrate` / `migrate-status` / `seed` / `migrate-down` / `db-reset` / `migrate-baseline` | `up` / `status` / `seed` / `down` / `baseline` over `migrations/{up,down,seed}/` on the **local** DB from `.env`, tracked in `schema_migrations` (same table + version format as the Go runner). Boot-time migrate is disabled, so this is how a fresh clone gets its schema. `down` / `db-reset` are **destructive** |
+| [`migrate.sh`](./migrate.sh) | `make migrate` / `migrate-status` / `seed` / `migrate-down` / `db-reset` / `migrate-baseline` | `up` / `status` / `seed` / `down` / `baseline` over `migrations/<ts>_<table>.{up,down}.sql` + `migrations/seed/` on the **local** DB from `.env`, tracked in `schema_migrations` (same table + version format as the Go runner). Boot-time migrate is disabled, so this is how a fresh clone gets its schema. `down` / `db-reset` are **destructive** |
 | [`clear-data.sh`](./clear-data.sh) | `make clear-data-local` / `make clear-data-ec2 RHOST=…` | Run `sql/clear_data.sql` — wipes user data, keeps reference data. **Destructive** |
-| [`create_migration.sh`](./create_migration.sh) | — | Scaffold `migrations/up/NNN_<name>.sql` + `migrations/down/NNN_<name>.sql` with the next free number |
+| [`create_migration.sh`](./create_migration.sh) | `make migrate-create NAME=ma_foos` | Scaffold `migrations/<utc-ts>_<table>.up.sql` + `.down.sql` (UTC `YYYYMMDDHHMMSS`, must sort after the newest file; refuses a table that already has a pair) |
 | [`verify-graceful-shutdown.sh`](./verify-graceful-shutdown.sh) | — | Prove SIGTERM triggers session serialization (and that SIGHUP does not) |
 
 ## Credentials

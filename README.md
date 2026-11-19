@@ -128,20 +128,21 @@ if the file is missing or unparsable, and that error aborts startup.
 
 ### 2. Set up the database
 
-**Migrations are not applied on boot.** The `database.Migrate(ctx, sqlDB, "migrations/up")`
+**Migrations are not applied on boot.** The `database.Migrate(ctx, sqlDB, "migrations")`
 call in `internal/bootstrap/app.go` is commented out, so run them from the repo root:
 
 ```bash
 make migrate && make seed
 ```
 
-`migrations/` is split in three:
+`migrations/` holds `<ts>_<table>.up.sql` / `.down.sql` pairs side by side (`<ts>` = UTC
+`YYYYMMDDHHMMSS`, the nexxa-svr convention) plus a `seed/` folder:
 
-| Folder | Contents | Tracked? |
+| File | Contents | Tracked? |
 |---|---|---|
-| `up/NNN_*.sql` | forward schema changes (one table per file) | yes — `schema_migrations(version)`, `version` = filename without `.sql` |
-| `down/NNN_*.sql` | the mirror of each `up` file: `DROP TABLE IF EXISTS` (+ removes the `ma_seqs` row the up file seeded) | runs newest-first, deletes the version row |
-| `seed/NNN_*.sql` | reference data — `ma_seqs`, `ma_programs`, `ma_grades`, `ma_semesters` — all `INSERT IGNORE` | no — idempotent, re-run any time |
+| `<ts>_<table>.up.sql` | forward schema (one table per file) | yes — `schema_migrations(version)`, `version` = filename without `.up.sql`, e.g. `20261119000001_ma_users` |
+| `<ts>_<table>.down.sql` | the mirror of each `.up.sql` file: `DROP TABLE IF EXISTS` (+ removes the `ma_seqs` row the up file seeded) | runs newest-first, deletes the version row |
+| `seed/<ts>_<name>.sql` | reference data — `ma_seqs`, `ma_programs`, `ma_grades`, `ma_semesters` — all `INSERT IGNORE` | no — idempotent, re-run any time |
 
 `deploy/scripts/migrate.sh <up|status|seed|down|baseline>` does the work, reading `DB_*`
 from `.env`. `up` uses the same table, version format and byte ordering as the Go runner,
@@ -149,15 +150,22 @@ so the two are interchangeable; re-running is a no-op.
 
 | Command | Effect |
 |---|---|
-| `make migrate` | apply pending `up/` files |
-| `make migrate-status` | list applied / pending (and orphan versions with no `up/` file), change nothing |
+| `make migrate` | apply pending `.up.sql` files |
+| `make migrate-status` | list applied / pending (and orphan versions with no `.up.sql` file), change nothing |
 | `make seed` | run every `seed/` file |
-| `make migrate-down` | **destructive** — run `down/` for every applied version, newest first; asks for `yes` (`MIGRATE_YES=1` to skip). Versions with no `down/` file (orphans) are forgotten, their tables listed for manual drop |
+| `make migrate-down` | **destructive** — run the `.down.sql` of every applied version, newest first; asks for `yes` (`MIGRATE_YES=1` to skip). Versions with no `.down.sql` file (orphans) are forgotten, their tables listed for manual drop |
 | `make db-reset` | **destructive** — `migrate-down` → `migrate` → `seed`: a clean local database |
-| `make migrate-baseline` | record every `up/` file as applied **without** running it — one-off for a database set up by hand before this script existed |
+| `make migrate-baseline` | record every `.up.sql` file as applied **without** running it — one-off for a database set up by hand before this script existed |
 
-New migration: `./deploy/scripts/create_migration.sh ma_foo_table` scaffolds
-`up/NNN_ma_foo.sql` + `down/NNN_ma_foo.sql` with the next free number (files are named after their table).
+New table: `make migrate-create NAME=ma_foos` scaffolds
+`migrations/<utc-ts>_ma_foos.up.sql` + `.down.sql` (files are named after their table; a table
+that already has a pair is refused — edit its CREATE file instead).
+
+**A database migrated before 2026-11-19** records the old `NNN_<table>` versions of the
+`up/` + `down/` layout, so `make migrate-status` shows them as `ORPHAN` and every file as
+`PENDING`. Run `sql/prod/2026-11-19_rename_migration_versions.sql` on it once, by hand
+(it renames the `schema_migrations` rows, keeps `applied_at`, runs no migration, and is safe to
+re-run), then check with `make migrate-status`.
 
 > Migrations are forward-only in the sense that `up` never re-executes a recorded version;
 > `down` exists to tear a **local** database down, not to roll back production. MySQL DDL
