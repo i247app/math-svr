@@ -6,9 +6,9 @@ import (
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // resolveActingProfile loads the caller's profile and confirms it
@@ -21,11 +21,11 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUI
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if p == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, profileDomain.ProfileNotFound, nil,
 			ErrProfileNotFound)
 	}
 	if sessionUID != 0 && sessionUID != p.UID() {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
+		return nil, errs.NewError(ctx, exerciseDomain.ClassroomExercisePermissionDenied, nil,
 			ErrProfileNotOwnedByUser)
 	}
 	return p, nil
@@ -37,11 +37,11 @@ func (s *Service) requireMember(ctx context.Context, classroomID, profileID int6
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if m == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
+		return nil, errs.NewError(ctx, exerciseDomain.ClassroomExercisePermissionDenied, nil,
 			ErrNotClassroomMember)
 	}
 	if m.MemberStatus() == nil || *m.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
+		return nil, errs.NewError(ctx, exerciseDomain.ClassroomExercisePermissionDenied, nil,
 			ErrMembershipNotActive)
 	}
 	return m, nil
@@ -59,7 +59,7 @@ func (s *Service) requireManager(ctx context.Context, classroomID, profileID int
 		enum.ClassroomMemberRoleTypeCoTeacher.String():
 		return m, nil
 	default:
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
+		return nil, errs.NewError(ctx, exerciseDomain.ClassroomExercisePermissionDenied, nil,
 			ErrManagerRoleRequired)
 	}
 }
@@ -80,7 +80,7 @@ func requirePrivateAccess(ctx context.Context, e *exerciseDomain.Exercise, calle
 	if e.CreatorProfileId() == callerProfileID {
 		return nil
 	}
-	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_PRIVATE_DENIED, nil,
+	return errs.NewError(ctx, exerciseDomain.ClassroomExercisePrivateDenied, nil,
 		ErrPrivateExerciseOwnerOnly)
 }
 

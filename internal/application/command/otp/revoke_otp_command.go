@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // RevokeOtpCommand revokes every PENDING OTP for (type, identifier). The
@@ -28,15 +28,15 @@ func NewRevokeOtpCommandHandler(uow transaction.UnitOfWork) *RevokeOtpCommandHan
 
 func (h *RevokeOtpCommandHandler) Handle(ctx context.Context, cmd RevokeOtpCommand) error {
 	if !cmd.OtpType.IsValid() {
-		return errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, ErrInvalidOtpType)
+		return errs.NewError(ctx, otp.OTPInvalidType, nil, ErrInvalidOtpType)
 	}
 	if cmd.Identifier == "" {
-		return errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
+		return errs.NewError(ctx, otp.OTPMissingIdentifier, nil, ErrIdentifierRequired)
 	}
 
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		if err := repos.Otp.RevokePendingByTypeIdentifier(ctx, cmd.OtpType, cmd.Identifier); err != nil {
-			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
+			return errs.NewError(ctx, otp.OTPGenerationFailed, nil, err)
 		}
 		return nil
 	})

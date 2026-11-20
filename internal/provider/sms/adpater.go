@@ -8,9 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/pkg/twilio"
 
-	"math-ai.com/math-ai/internal/domain/shared/status"
-
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Registry is the entry point callers use to dispatch SMS. It holds one
@@ -68,7 +66,7 @@ func (a *Registry) SendVia(ctx context.Context, name SMSProviderName, msg Messag
 	log := logger.From(ctx)
 
 	if err := msg.Validate(); err != nil {
-		return nil, errs.NewError(ctx, status.SMS_OP_FAILED, map[string]any{
+		return nil, errs.NewError(ctx, SMSOpFailed, map[string]any{
 			"reason":    err.Error(),
 			"to_masked": twilio.MaskPhone(msg.To),
 		}, err)
@@ -85,9 +83,9 @@ func (a *Registry) SendVia(ctx context.Context, name SMSProviderName, msg Messag
 		// Log discipline (spec §13): masked phone only; never the body,
 		// never the recipient in cleartext, never any auth material.
 		switch kerr.GetStatusCode() {
-		case status.SMS_CONFIG_INVALID:
+		case SMSConfigInvalid:
 			log.Errorf("sms.config_error provider=%s to=%s err=%v", name, twilio.MaskPhone(msg.To), err)
-		case status.SMS_SERIALIZE_FAILED:
+		case SMSSerializeFailed:
 			log.Errorf("sms.serialize_error provider=%s to=%s err=%v", name, twilio.MaskPhone(msg.To), err)
 		default:
 			// SMS_OP_FAILED: covers transient 5xx and validation-style 4xx.

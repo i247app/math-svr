@@ -10,10 +10,10 @@ import (
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 
 	"math-ai.com/math-ai/internal/application/transaction"
@@ -110,7 +110,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			if existByEmail != nil {
-				return errs.NewError(ctx, status.USER_EMAIL_ALREADY_EXISTS, nil, ErrEmailAlreadyExists)
+				return errs.NewError(ctx, user.UserEmailAlreadyExists, nil, ErrEmailAlreadyExists)
 			}
 		}
 
@@ -120,7 +120,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			if existByPhone != nil {
-				return errs.NewError(ctx, status.USER_PHONE_ALREADY_EXISTS, nil, ErrPhoneAlreadyExists)
+				return errs.NewError(ctx, user.UserPhoneAlreadyExists, nil, ErrPhoneAlreadyExists)
 			}
 		}
 
@@ -130,7 +130,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 		// 		return errs.NewError(ctx, status.FAIL, nil, err)
 		// 	}
 		// 	if existByUserName != nil {
-		// 		return errs.NewError(ctx, status.USER_USERNAME_ALREADY_EXISTS, nil, ErrUsernameAlreadyExists)
+		// 		return errs.NewError(ctx, user.UserUsernameAlreadyExists, nil, ErrUsernameAlreadyExists)
 		// 	}
 		// }
 
@@ -170,7 +170,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			if !emailOtpMatches(verified, cmd.DeviceUUID) {
-				return errs.NewError(ctx, status.USER_EMAIL_NOT_VERIFIED, nil, ErrEmailNotVerified)
+				return errs.NewError(ctx, user.UserEmailNotVerified, nil, ErrEmailNotVerified)
 			}
 		}
 
@@ -232,7 +232,7 @@ func (h *CreateUserCommandHandler) Handle(ctx context.Context, cmd CreateUserCom
 				return errs.NewError(ctx, status.FAIL, nil, err)
 			}
 			if existing == nil {
-				return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrGuestProfileMissing)
+				return errs.NewError(ctx, profile.ProfileNotFound, nil, ErrGuestProfileMissing)
 			}
 
 			patch := BuildProfile(ctx, cmd)
@@ -392,10 +392,10 @@ func loadUpgradableGuest(ctx context.Context, repos transaction.Repositories, gu
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if u == nil {
-		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil, ErrUserNotFound)
+		return nil, errs.NewError(ctx, user.UserNotFound, nil, ErrUserNotFound)
 	}
 	if !enum.IdentityCodeType(utils.DerefString(u.IdentityCode())).IsGuest() {
-		return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, ErrNotAGuest)
+		return nil, errs.NewError(ctx, user.UserAlreadyExists, nil, ErrNotAGuest)
 	}
 	return u, nil
 }

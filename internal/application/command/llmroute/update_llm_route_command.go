@@ -6,8 +6,8 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/llmroute"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateLLMRouteCommand retargets one route. Provider and Model overwrite
@@ -39,7 +39,7 @@ func (h *UpdateLLMRouteCommandHandler) Handle(ctx context.Context, cmd UpdateLLM
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if !updated {
-			return errs.NewError(ctx, status.LLM_ROUTE_NOT_FOUND, nil,
+			return errs.NewError(ctx, llmroute.LLMRouteNotFound, nil,
 				fmt.Errorf("llm route: ma_llm_routes has no live row %s", cmd.Code))
 		}
 		if saved, err = repos.LLMRoute.FindByCode(ctx, cmd.Code); err != nil {

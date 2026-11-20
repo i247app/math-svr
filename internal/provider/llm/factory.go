@@ -4,14 +4,13 @@ import (
 	"context"
 	"errors"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/pkg/deepseek"
 	"math-ai.com/math-ai/internal/pkg/gemini"
 	"math-ai.com/math-ai/internal/pkg/openai"
 	"math-ai.com/math-ai/internal/pkg/openrouter"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // NewFromConfig builds a fully-wired *Registry from cfg, or returns
@@ -57,7 +56,7 @@ func NewFromConfig(ctx context.Context, cfg config.LLMConfig) (*Registry, error)
 		string(ProviderGemini), string(ProviderDeepSeek):
 		// recognised — continue below
 	default:
-		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
+		return nil, errs.NewError(ctx, LLMConfigInvalid,
 			map[string]any{"provider": cfg.DefaultLLMProvider}, nil)
 	}
 
@@ -80,11 +79,11 @@ func NewFromConfig(ctx context.Context, cfg config.LLMConfig) (*Registry, error)
 		})
 		if err != nil {
 			if errors.Is(err, openrouter.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
+				return nil, errs.NewError(ctx, LLMConfigInvalid,
 					map[string]any{"reason": err.Error()}, err)
 			}
 			log.Warnf("openrouter: client not ready: %v", err)
-			return nil, errs.NewError(ctx, status.LLM_CONNECT_FAILED,
+			return nil, errs.NewError(ctx, LLMConnectFailed,
 				map[string]any{"model": cfg.OpenRouterModel}, err)
 		}
 
@@ -111,11 +110,11 @@ func NewFromConfig(ctx context.Context, cfg config.LLMConfig) (*Registry, error)
 		})
 		if err != nil {
 			if errors.Is(err, openai.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
+				return nil, errs.NewError(ctx, LLMConfigInvalid,
 					map[string]any{"reason": err.Error()}, err)
 			}
 			log.Warnf("openai: client not ready: %v", err)
-			return nil, errs.NewError(ctx, status.LLM_CONNECT_FAILED,
+			return nil, errs.NewError(ctx, LLMConnectFailed,
 				map[string]any{"model": cfg.OpenAIModel}, err)
 		}
 
@@ -138,11 +137,11 @@ func NewFromConfig(ctx context.Context, cfg config.LLMConfig) (*Registry, error)
 		})
 		if err != nil {
 			if errors.Is(err, gemini.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
+				return nil, errs.NewError(ctx, LLMConfigInvalid,
 					map[string]any{"reason": err.Error()}, err)
 			}
 			log.Warnf("gemini: client not ready: %v", err)
-			return nil, errs.NewError(ctx, status.LLM_CONNECT_FAILED,
+			return nil, errs.NewError(ctx, LLMConnectFailed,
 				map[string]any{"model": cfg.GeminiModel}, err)
 		}
 
@@ -166,11 +165,11 @@ func NewFromConfig(ctx context.Context, cfg config.LLMConfig) (*Registry, error)
 		})
 		if err != nil {
 			if errors.Is(err, deepseek.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
+				return nil, errs.NewError(ctx, LLMConfigInvalid,
 					map[string]any{"reason": err.Error()}, err)
 			}
 			log.Warnf("deepseek: client not ready: %v", err)
-			return nil, errs.NewError(ctx, status.LLM_CONNECT_FAILED,
+			return nil, errs.NewError(ctx, LLMConnectFailed,
 				map[string]any{"model": cfg.DeepSeekModel}, err)
 		}
 
@@ -178,7 +177,7 @@ func NewFromConfig(ctx context.Context, cfg config.LLMConfig) (*Registry, error)
 	}
 
 	if err := reg.SetDefault(LLMProviderName(cfg.DefaultLLMProvider)); err != nil {
-		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID,
+		return nil, errs.NewError(ctx, LLMConfigInvalid,
 			map[string]any{
 				"provider": cfg.DefaultLLMProvider,
 				"reason":   "default provider is not configured (missing LLM_<PROVIDER>_API_KEY?)",

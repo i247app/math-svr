@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	devicedom "math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type SoftDeleteDeviceCommand struct {
@@ -26,25 +26,25 @@ func (h *SoftDeleteDeviceCommandHandler) Handle(ctx context.Context, cmd SoftDel
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		d, err := repos.Device.FindByDeviceId(ctx, cmd.DeviceID)
 		if err != nil {
-			return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+			return errs.NewError(ctx, devicedom.DeviceRegistrationFail, nil, err)
 		}
 		if d == nil {
-			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
+			return errs.NewError(ctx, devicedom.DeviceNotFound, nil, ErrDeviceNotFound)
 		}
 		if d.UID() == nil || *d.UID() != cmd.UID {
-			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
+			return errs.NewError(ctx, devicedom.DeviceNotOwned, nil,
 				ErrDeviceNotOwnedByUser)
 		}
 
 		if err := repos.Device.SoftDeleteByDeviceId(ctx, cmd.DeviceID); err != nil {
-			return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+			return errs.NewError(ctx, devicedom.DeviceRegistrationFail, nil, err)
 		}
 
 		// Cascade: kill any active session bound to this device.
 		if err := repos.LoginLog.MarkStatusByUserDevice(
 			ctx, cmd.UID, d.DeviceUUID(), enum.LoginLogStatusTypeRevoked,
 		); err != nil {
-			return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+			return errs.NewError(ctx, devicedom.DeviceRegistrationFail, nil, err)
 		}
 		return nil
 	})

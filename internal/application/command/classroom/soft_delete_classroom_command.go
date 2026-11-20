@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SoftDeleteClassroomCommand flips the parent row to DELETED but leaves
@@ -31,7 +32,7 @@ func (h *SoftDeleteClassroomCommandHandler) Handle(ctx context.Context, cmd Soft
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
+			return errs.NewError(ctx, classroom.ClassroomNotFound, nil,
 				ErrClassroomNotFound)
 		}
 		if err := repos.Classroom.SoftDeleteByClassroomId(ctx, cmd.ClassroomID); err != nil {

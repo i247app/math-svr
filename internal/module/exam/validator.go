@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
@@ -29,37 +29,37 @@ type ValidatedGenerate struct {
 
 func ValidateGenerateExam(ctx context.Context, req *dto.GenerateExamReq) (ValidatedGenerate, error) {
 	if req.ProfileID <= 0 {
-		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return ValidatedGenerate{}, errs.NewError(ctx, domain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 
 	raw := strings.ToUpper(strings.TrimSpace(req.ExamType))
 	if raw == "" {
-		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_MISSING_EXAM_TYPE, nil, ErrExamTypeRequired)
+		return ValidatedGenerate{}, errs.NewError(ctx, domain.ExamMissingExamType, nil, ErrExamTypeRequired)
 	}
 	examType := enum.ExamType(raw)
 	if !examType.IsValid() {
-		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
+		return ValidatedGenerate{}, errs.NewError(ctx, domain.ExamInvalidExamType, nil, ErrExamTypeInvalid)
 	}
 	req.ExamType = raw
 
 	// A PRACTICE round lives inside a journey and is aimed at that
 	// journey's latest sitting, so the journey must be named.
 	if examType == enum.ExamTypePractice && (req.EsessID == nil || *req.EsessID <= 0) {
-		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrPracticeJourneyRequired)
+		return ValidatedGenerate{}, errs.NewError(ctx, domain.ExamMissingJourneyID, nil, ErrPracticeJourneyRequired)
 	}
 
 	// Grade is optional; when pinned it must name a band the product
 	// actually serves. Nothing may be placed at the probe ceiling.
 	if req.Grade != nil && (*req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax) {
-		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
+		return ValidatedGenerate{}, errs.NewError(ctx, domain.ExamInvalidGrade, nil, ErrGradeOutOfRange)
 	}
 	// Level is optional and recorded as stated, so the only check is the
 	// scale itself.
 	if req.Level != nil && (*req.Level < enum.ExamLevelMin || *req.Level > enum.ExamLevelMax) {
-		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrLevelOutOfRange)
+		return ValidatedGenerate{}, errs.NewError(ctx, domain.ExamInvalidLevel, nil, ErrLevelOutOfRange)
 	}
 	if req.SubLevel != nil && (*req.SubLevel < enum.ExamLevelMin || *req.SubLevel > enum.ExamLevelMax) {
-		return ValidatedGenerate{}, errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrSubLevelOutOfRange)
+		return ValidatedGenerate{}, errs.NewError(ctx, domain.ExamInvalidLevel, nil, ErrSubLevelOutOfRange)
 	}
 
 	req.NumQuestions = DefaultNumQuestions
@@ -73,26 +73,26 @@ func ValidateGenerateExam(ctx context.Context, req *dto.GenerateExamReq) (Valida
 func ValidateGenerateExamPool(ctx context.Context, req *dto.GenerateExamPoolReq) (enum.ExamType, error) {
 	raw := strings.ToUpper(strings.TrimSpace(req.ExamType))
 	if raw == "" {
-		return "", errs.NewError(ctx, status.EXAM_MISSING_EXAM_TYPE, nil, ErrExamTypeRequired)
+		return "", errs.NewError(ctx, domain.ExamMissingExamType, nil, ErrExamTypeRequired)
 	}
 	examType := enum.ExamType(raw)
 	if !examType.IsValid() {
-		return "", errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
+		return "", errs.NewError(ctx, domain.ExamInvalidExamType, nil, ErrExamTypeInvalid)
 	}
 	if examType == enum.ExamTypePractice {
-		return "", errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrPracticeNotPooled)
+		return "", errs.NewError(ctx, domain.ExamInvalidExamType, nil, ErrPracticeNotPooled)
 	}
 	if req.Grade == nil {
-		return "", errs.NewError(ctx, status.EXAM_MISSING_GRADE, nil, ErrGradeRequired)
+		return "", errs.NewError(ctx, domain.ExamMissingGrade, nil, ErrGradeRequired)
 	}
 	if *req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax {
-		return "", errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
+		return "", errs.NewError(ctx, domain.ExamInvalidGrade, nil, ErrGradeOutOfRange)
 	}
 	if req.Level != nil && (*req.Level < enum.ExamLevelMin || *req.Level > enum.ExamLevelMax) {
-		return "", errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrLevelOutOfRange)
+		return "", errs.NewError(ctx, domain.ExamInvalidLevel, nil, ErrLevelOutOfRange)
 	}
 	if req.SubLevel != nil && (*req.SubLevel < enum.ExamLevelMin || *req.SubLevel > enum.ExamLevelMax) {
-		return "", errs.NewError(ctx, status.EXAM_INVALID_LEVEL, nil, ErrSubLevelOutOfRange)
+		return "", errs.NewError(ctx, domain.ExamInvalidLevel, nil, ErrSubLevelOutOfRange)
 	}
 	req.NumQuestions = DefaultNumQuestions
 	return examType, nil
@@ -111,17 +111,17 @@ func ValidateListExamPools(ctx context.Context, req *dto.ListExamPoolsReq) error
 	}
 	req.ExamTypes = examTypes
 	if req.Grade != nil && (*req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax) {
-		return errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
+		return errs.NewError(ctx, domain.ExamInvalidGrade, nil, ErrGradeOutOfRange)
 	}
 	return nil
 }
 
 func ValidateMarkExamPoolVerify(ctx context.Context, req *dto.MarkExamPoolVerifyReq) error {
 	if req.ExamID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_EXAM_ID, nil, ErrExamIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingExamID, nil, ErrExamIDRequired)
 	}
 	if req.IsVerify == nil {
-		return errs.NewError(ctx, status.EXAM_MISSING_IS_VERIFY, nil, ErrIsVerifyRequired)
+		return errs.NewError(ctx, domain.ExamMissingIsVerify, nil, ErrIsVerifyRequired)
 	}
 	return nil
 }
@@ -130,30 +130,30 @@ func ValidateMarkExamPoolVerify(ctx context.Context, req *dto.MarkExamPoolVerify
 // against the stored set is checked in the command.
 func ValidateVerifyExamPool(ctx context.Context, req *dto.VerifyExamPoolReq) error {
 	if req.ExamID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_EXAM_ID, nil, ErrExamIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingExamID, nil, ErrExamIDRequired)
 	}
 	if len(req.Questions) == 0 {
-		return errs.NewError(ctx, status.EXAM_POOL_INVALID_QUESTIONS, nil, ErrQuestionsRequired)
+		return errs.NewError(ctx, domain.ExamPoolInvalidQuestions, nil, ErrQuestionsRequired)
 	}
 	return nil
 }
 
 func ValidateGetExamPool(ctx context.Context, req *dto.GetExamPoolReq) error {
 	if req.ExamID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_EXAM_ID, nil, ErrExamIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingExamID, nil, ErrExamIDRequired)
 	}
 	return nil
 }
 
 func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {
 	if req.ProfileID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 	if req.ElinkID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_ATTEMPT_ID, nil, ErrAttemptIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingAttemptID, nil, ErrAttemptIDRequired)
 	}
 	if len(req.Answers) == 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_ANSWERS, nil, ErrAnswersRequired)
+		return errs.NewError(ctx, domain.ExamMissingAnswers, nil, ErrAnswersRequired)
 	}
 
 	// Duplicates are caught here rather than in the scorer so the client
@@ -161,7 +161,7 @@ func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {
 	seen := make(map[int]struct{}, len(req.Answers))
 	for i, a := range req.Answers {
 		if a.QuestionNumber <= 0 {
-			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS,
+			return errs.NewError(ctx, domain.ExamInvalidAnswers,
 				map[string]any{"index": i}, ErrQuestionNumberInvalid)
 		}
 		// Which of the two a question takes follows its kind, which only
@@ -169,17 +169,17 @@ func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {
 		// has to carry exactly one of them.
 		hasIDs, hasValue := len(a.OptionIDs) > 0, strings.TrimSpace(a.Value) != ""
 		if hasIDs == hasValue {
-			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS,
+			return errs.NewError(ctx, domain.ExamInvalidAnswers,
 				map[string]any{"index": i}, ErrAnswerBodyInvalid)
 		}
 		for _, id := range a.OptionIDs {
 			if strings.TrimSpace(id) == "" {
-				return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS,
+				return errs.NewError(ctx, domain.ExamInvalidAnswers,
 					map[string]any{"index": i}, ErrAnswerOptionIDRequired)
 			}
 		}
 		if _, dup := seen[a.QuestionNumber]; dup {
-			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS,
+			return errs.NewError(ctx, domain.ExamInvalidAnswers,
 				map[string]any{"question_number": a.QuestionNumber}, ErrDuplicateAnswer)
 		}
 		seen[a.QuestionNumber] = struct{}{}
@@ -200,12 +200,12 @@ func ValidateSubmitExam(ctx context.Context, req *dto.SubmitExamReq) error {
 // read as "not found".
 func ValidateGetExam(ctx context.Context, req *dto.GetExamReq) error {
 	if req.ProfileID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 	hasAttempt := req.ElinkID > 0
 	hasJourney := req.EsessID > 0
 	if !hasAttempt && !hasJourney {
-		return errs.NewError(ctx, status.EXAM_MISSING_ATTEMPT_ID, nil, ErrDetailIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingAttemptID, nil, ErrDetailIDRequired)
 	}
 
 	if hasJourney {
@@ -230,7 +230,7 @@ func normalizeExamType(ctx context.Context, raw *string) (*string, error) {
 		return nil, nil
 	}
 	if !enum.ExamType(normalized).IsValid() {
-		return nil, errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrExamTypeInvalid)
+		return nil, errs.NewError(ctx, domain.ExamInvalidExamType, nil, ErrExamTypeInvalid)
 	}
 	return &normalized, nil
 }
@@ -240,14 +240,14 @@ func normalizeExamType(ctx context.Context, raw *string) (*string, error) {
 // rounds" is only a question about one.
 func requireJourneyForPractice(ctx context.Context, examType *string, esessID *int64) error {
 	if examType != nil && *examType == enum.ExamTypePractice.String() && (esessID == nil || *esessID <= 0) {
-		return errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrPracticeJourneyRequired)
+		return errs.NewError(ctx, domain.ExamMissingJourneyID, nil, ErrPracticeJourneyRequired)
 	}
 	return nil
 }
 
 func ValidateListExams(ctx context.Context, req *dto.ListExamsReq) error {
 	if req.ProfileID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 	examType, err := normalizeExamType(ctx, req.ExamType)
 	if err != nil {
@@ -270,7 +270,7 @@ func ValidateListExams(ctx context.Context, req *dto.ListExamsReq) error {
 
 func ValidateListExamSessions(ctx context.Context, req *dto.ListExamSessionsReq) error {
 	if req.ProfileID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 	if req.JourneyExamStatus != nil {
 		normalized := strings.ToUpper(strings.TrimSpace(*req.JourneyExamStatus))
@@ -278,7 +278,7 @@ func ValidateListExamSessions(ctx context.Context, req *dto.ListExamSessionsReq)
 			req.JourneyExamStatus = nil
 		} else {
 			if !enum.EsessStatusType(normalized).IsValid() {
-				return errs.NewError(ctx, status.EXAM_INVALID_JOURNEY_STATUS, nil, ErrJourneyStatusInvalid)
+				return errs.NewError(ctx, domain.ExamInvalidJourneyStatus, nil, ErrJourneyStatusInvalid)
 			}
 			req.JourneyExamStatus = &normalized
 		}
@@ -298,7 +298,7 @@ func ValidateListExamSessions(ctx context.Context, req *dto.ListExamSessionsReq)
 		// journey they belong to. Answering with bare practice rows would
 		// hand the client two entries per id.
 		if *examType == enum.ExamTypePractice.String() {
-			return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrStatsPracticeNotAJourney)
+			return errs.NewError(ctx, domain.ExamInvalidExamType, nil, ErrStatsPracticeNotAJourney)
 		}
 		examTypes = append(examTypes, *examType)
 	}
@@ -322,7 +322,7 @@ const (
 // service.
 func ValidateExamProgress(ctx context.Context, req *dto.ExamProgressReq) error {
 	if req.ProfileID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 
 	examType, err := normalizeExamType(ctx, req.ExamType)
@@ -341,7 +341,7 @@ func ValidateExamProgress(ctx context.Context, req *dto.ExamProgressReq) error {
 // not a journey, it is a part of one.
 func ValidateJourneyProgress(ctx context.Context, req *dto.JourneyProgressReq) error {
 	if req.ProfileID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 
 	examType, err := normalizeExamType(ctx, req.ExamType)
@@ -349,7 +349,7 @@ func ValidateJourneyProgress(ctx context.Context, req *dto.JourneyProgressReq) e
 		return err
 	}
 	if examType != nil && *examType == enum.ExamTypePractice.String() {
-		return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrStatsPracticeNotAJourney)
+		return errs.NewError(ctx, domain.ExamInvalidExamType, nil, ErrStatsPracticeNotAJourney)
 	}
 	req.ExamType = examType
 	return validateProgressWindow(ctx, &req.ProgressWindow)
@@ -358,10 +358,10 @@ func ValidateJourneyProgress(ctx context.Context, req *dto.JourneyProgressReq) e
 // ValidateJourneyReview checks the review request: a profile and a journey.
 func ValidateJourneyReview(ctx context.Context, req *dto.JourneyReviewReq) error {
 	if req.ProfileID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 	if req.EsessID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrJourneyIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingJourneyID, nil, ErrJourneyIDRequired)
 	}
 	return nil
 }
@@ -370,7 +370,7 @@ func ValidateJourneyReview(ctx context.Context, req *dto.JourneyReviewReq) error
 // are optional; an empty exam_type means any type.
 func ValidateLatestJourney(ctx context.Context, req *dto.LatestJourneyReq) error {
 	if req.ProfileID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 	examType, err := normalizeExamType(ctx, req.ExamType)
 	if err != nil {
@@ -379,11 +379,11 @@ func ValidateLatestJourney(ctx context.Context, req *dto.LatestJourneyReq) error
 	// A PRACTICE row lives inside its journey (under "practice"); it is
 	// never a journey of its own, so it cannot be the latest one.
 	if examType != nil && *examType == enum.ExamTypePractice.String() {
-		return errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, ErrStatsPracticeNotAJourney)
+		return errs.NewError(ctx, domain.ExamInvalidExamType, nil, ErrStatsPracticeNotAJourney)
 	}
 	req.ExamType = examType
 	if req.Grade != nil && (*req.Grade < enum.ExamGradeMin || *req.Grade > enum.ExamGradeMax) {
-		return errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
+		return errs.NewError(ctx, domain.ExamInvalidGrade, nil, ErrGradeOutOfRange)
 	}
 	return nil
 }
@@ -403,13 +403,13 @@ func ValidateGradeMap(ctx context.Context, req *dto.GradeMapReq) error {
 // profile, and a required grade the product teaches.
 func validateProfileAndGrade(ctx context.Context, profileID int64, grade *int) error {
 	if profileID <= 0 {
-		return errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 	if grade == nil {
-		return errs.NewError(ctx, status.EXAM_MISSING_GRADE, nil, ErrGradeRequired)
+		return errs.NewError(ctx, domain.ExamMissingGrade, nil, ErrGradeRequired)
 	}
 	if *grade < enum.ExamGradeMin || *grade > enum.ExamGradeMax {
-		return errs.NewError(ctx, status.EXAM_INVALID_GRADE, nil, ErrGradeOutOfRange)
+		return errs.NewError(ctx, domain.ExamInvalidGrade, nil, ErrGradeOutOfRange)
 	}
 	return nil
 }
@@ -424,23 +424,23 @@ func validateProgressWindow(ctx context.Context, w *dto.ProgressWindow) error {
 	if w.Tz == "" {
 		w.Tz = enum.DefaultProgressTz
 	} else if !enum.IsValidTzOffset(w.Tz) {
-		return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_TZ, nil, ErrInvalidTz)
+		return errs.NewError(ctx, domain.ExamAnalyticsInvalidTz, nil, ErrInvalidTz)
 	}
 
 	if w.FromDt != "" || w.ToDt != "" {
 		if w.FromDt == "" || w.ToDt == "" {
-			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, ErrInvalidDateRange)
+			return errs.NewError(ctx, domain.ExamAnalyticsInvalidRange, nil, ErrInvalidDateRange)
 		}
 		from, err := mtime.ParseFromString(w.FromDt)
 		if err != nil {
-			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, err)
+			return errs.NewError(ctx, domain.ExamAnalyticsInvalidRange, nil, err)
 		}
 		to, err := mtime.ParseFromString(w.ToDt)
 		if err != nil {
-			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, err)
+			return errs.NewError(ctx, domain.ExamAnalyticsInvalidRange, nil, err)
 		}
 		if !from.Before(to) || to.Sub(from) > progressMaxRange {
-			return errs.NewError(ctx, status.EXAM_ANALYTICS_INVALID_RANGE, nil, ErrInvalidDateRange)
+			return errs.NewError(ctx, domain.ExamAnalyticsInvalidRange, nil, ErrInvalidDateRange)
 		}
 	}
 
@@ -467,14 +467,14 @@ type ValidatedMarkJourney struct {
 // exist, and DELETED is a soft-delete with its own path.
 func ValidateMarkExamJourney(ctx context.Context, req *dto.MarkExamJourneyReq) (ValidatedMarkJourney, error) {
 	if req.ProfileID <= 0 {
-		return ValidatedMarkJourney{}, errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return ValidatedMarkJourney{}, errs.NewError(ctx, domain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 	if req.EsessID <= 0 {
-		return ValidatedMarkJourney{}, errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil, ErrJourneyIDRequired)
+		return ValidatedMarkJourney{}, errs.NewError(ctx, domain.ExamMissingJourneyID, nil, ErrJourneyIDRequired)
 	}
 	st := enum.EsessStatusType(strings.ToUpper(strings.TrimSpace(req.Status)))
 	if !st.IsMarkable() {
-		return ValidatedMarkJourney{}, errs.NewError(ctx, status.EXAM_INVALID_JOURNEY_STATUS, nil, ErrJourneyStatusInvalid)
+		return ValidatedMarkJourney{}, errs.NewError(ctx, domain.ExamInvalidJourneyStatus, nil, ErrJourneyStatusInvalid)
 	}
 	req.Status = string(st)
 	return ValidatedMarkJourney{Status: st}, nil

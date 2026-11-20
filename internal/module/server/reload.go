@@ -11,10 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -85,12 +84,12 @@ func (h *Handler) HandleReload(w http.ResponseWriter, r *http.Request) {
 	log := logger.From(ctx)
 
 	if !reloadSupported {
-		response.WriteJson(w, nil, errs.NewError(ctx, status.SERVER_RELOAD_NOT_SUPPORTED, nil,
+		response.WriteJson(w, nil, errs.NewError(ctx, ServerReloadNotSupported, nil,
 			errors.New("reload is not supported on this OS")))
 		return
 	}
 	if !stopping.CompareAndSwap(false, true) {
-		response.WriteJson(w, nil, errs.NewError(ctx, status.SERVER_SHUTTING_DOWN, nil,
+		response.WriteJson(w, nil, errs.NewError(ctx, ServerShuttingDown, nil,
 			errors.New("a shutdown or reload is already in progress")))
 		return
 	}
@@ -102,7 +101,7 @@ func (h *Handler) HandleReload(w http.ResponseWriter, r *http.Request) {
 		log.Errorf("server.reload.env_invalid err=%v", err)
 		// The loader's message stays in the server log: it can quote a line
 		// of the env file.
-		response.WriteJson(w, nil, errs.NewError(ctx, status.SERVER_RELOAD_INVALID_ENV, nil,
+		response.WriteJson(w, nil, errs.NewError(ctx, ServerReloadInvalidEnv, nil,
 			errors.New("env validation failed, see server log")))
 		return
 	}

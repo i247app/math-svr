@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/semester"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SoftDeleteSemesterCommand soft-deletes the parent row. The soft-deleted
@@ -29,7 +30,7 @@ func (h *SoftDeleteSemesterCommandHandler) Handle(ctx context.Context, cmd SoftD
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil,
+			return errs.NewError(ctx, semester.SemesterNotFound, nil,
 				ErrSemesterNotFound)
 		}
 

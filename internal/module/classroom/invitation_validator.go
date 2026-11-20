@@ -5,8 +5,9 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	domain "math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 const (
@@ -23,15 +24,15 @@ const (
 // recipient sent twice in the same call.
 func ValidateSendInvitation(ctx context.Context, req *dto.SendInvitationReq) error {
 	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomMissingOwnerProfileID, nil,
 			ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomMissingID, nil,
 			ErrClassroomIDRequired)
 	}
 	if len(req.Targets) == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_INVITATION_MISSING_TARGET, nil,
+		return errs.NewError(ctx, domain.ClassroomInvitationMissingTarget, nil,
 			ErrAtLeastOneTargetRequired)
 	}
 	if req.Note != nil {
@@ -51,50 +52,50 @@ func ValidateSendInvitation(ctx context.Context, req *dto.SendInvitationReq) err
 
 func ValidateListMyPendingInvitations(ctx context.Context, req *dto.ListMyPendingInvitationsReq) error {
 	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ClassroomMissingOwnerProfileID, nil, ErrProfileIDRequired)
 	}
 	return nil
 }
 
 func ValidateListClassroomInvitations(ctx context.Context, req *dto.ListClassroomInvitationsReq) error {
 	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ClassroomMissingOwnerProfileID, nil, ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil, ErrClassroomIDRequired)
+		return errs.NewError(ctx, domain.ClassroomMissingID, nil, ErrClassroomIDRequired)
 	}
 	return nil
 }
 
 func ValidateAcceptInvitation(ctx context.Context, req *dto.AcceptInvitationReq) error {
 	if req.InviterProfileID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ClassroomMissingOwnerProfileID, nil, ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil, ErrClassroomIDRequired)
+		return errs.NewError(ctx, domain.ClassroomMissingID, nil, ErrClassroomIDRequired)
 	}
 	return nil
 }
 
 func ValidateRejectInvitation(ctx context.Context, req *dto.RejectInvitationReq) error {
 	if req.InviterProfileID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ClassroomMissingOwnerProfileID, nil, ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil, ErrClassroomIDRequired)
+		return errs.NewError(ctx, domain.ClassroomMissingID, nil, ErrClassroomIDRequired)
 	}
 	return nil
 }
 
 func ValidateCancelInvitation(ctx context.Context, req *dto.CancelInvitationReq) error {
 	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_OWNER_PROFILE_ID, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, domain.ClassroomMissingOwnerProfileID, nil, ErrProfileIDRequired)
 	}
 	if req.ClassroomID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil, ErrClassroomIDRequired)
+		return errs.NewError(ctx, domain.ClassroomMissingID, nil, ErrClassroomIDRequired)
 	}
 	if req.TargetProfileID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MEMBER_MISSING_PROFILE_ID, nil, ErrTargetProfileIDRequired)
+		return errs.NewError(ctx, domain.ClassroomMemberMissingProfileID, nil, ErrTargetProfileIDRequired)
 	}
 	return nil
 }

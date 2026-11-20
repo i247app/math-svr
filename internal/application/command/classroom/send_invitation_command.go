@@ -8,9 +8,9 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SendInvitationTarget is the per-recipient slice the command walks
@@ -80,12 +80,12 @@ func (h *SendInvitationCommandHandler) Handle(ctx context.Context, cmd SendInvit
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if c == nil {
-			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
+			return errs.NewError(ctx, classroom.ClassroomNotFound, nil,
 				ErrClassroomNotFound)
 		}
 		if c.ClassroomStatus() != nil &&
 			*c.ClassroomStatus() == enum.ClassroomStatusTypeArchived.String() {
-			return errs.NewError(ctx, status.CLASSROOM_ALREADY_ARCHIVED, nil,
+			return errs.NewError(ctx, classroom.ClassroomAlreadyArchived, nil,
 				ErrClassroomArchived)
 		}
 
@@ -121,14 +121,14 @@ func (h *SendInvitationCommandHandler) Handle(ctx context.Context, cmd SendInvit
 				case enum.ClassroomMemberStatusTypeActive.String():
 					result.Skipped = append(result.Skipped, SendInvitationSkipReason{
 						Target:  t,
-						Reason:  status.CLASSROOM_MEMBER_ALREADY_MEMBER,
+						Reason:  classroom.ClassroomMemberAlreadyMember,
 						Message: "target is already an active member",
 					})
 					continue
 				case enum.ClassroomMemberStatusTypePendingInvitation.String():
 					result.Skipped = append(result.Skipped, SendInvitationSkipReason{
 						Target:  t,
-						Reason:  status.CLASSROOM_INVITATION_ALREADY_INVITED,
+						Reason:  classroom.ClassroomInvitationAlreadyInvited,
 						Message: "a pending invitation already exists",
 					})
 					continue

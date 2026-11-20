@@ -13,11 +13,11 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/questionpool"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/questionpool"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
 	sctx "math-ai.com/math-ai/internal/shared/context"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // imageUrlTTL bounds how long a presigned question / option image URL stays
@@ -143,7 +143,7 @@ func (s *Service) VerifyQuestionPool(ctx context.Context, req *dto.VerifyQuestio
 		return nil, err
 	}
 	if req.QuestionPoolID <= 0 {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_MISSING_ID, nil, errors.New("question_pool_id is required"))
+		return nil, errs.NewError(ctx, domain.QuestionPoolMissingID, nil, errors.New("question_pool_id is required"))
 	}
 	saved, err := s.reviewCmd.Handle(ctx, command.ReviewQuestionPoolCommand{
 		QuestionPoolID: req.QuestionPoolID, ActorUID: adminActor(ctx), Verify: true,
@@ -174,7 +174,7 @@ func (s *Service) deleteQuestionPool(ctx context.Context, req *dto.DeleteQuestio
 		return nil, err
 	}
 	if req.QuestionPoolID <= 0 {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_MISSING_ID, nil, errors.New("question_pool_id is required"))
+		return nil, errs.NewError(ctx, domain.QuestionPoolMissingID, nil, errors.New("question_pool_id is required"))
 	}
 	if err := s.deleteCmd.Handle(ctx, command.DeleteQuestionPoolCommand{QuestionPoolID: req.QuestionPoolID, ActorUID: adminActor(ctx), Force: force}); err != nil {
 		return nil, err

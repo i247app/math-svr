@@ -99,11 +99,11 @@ func (s *Service) onMessage(c *socket.Conn, in socket.Inbound) {
 	switch in.Type {
 	case socket.TypeSubscribe:
 		if in.Topic == "" {
-			s.sendErr(c, in.Topic, status.SOCKET_MISSING_TOPIC)
+			s.sendErr(c, in.Topic, SocketMissingTopic)
 			return
 		}
 		if !s.authz.CanSubscribe(c.UID(), in.Topic) {
-			s.sendErr(c, in.Topic, status.SOCKET_TOPIC_FORBIDDEN)
+			s.sendErr(c, in.Topic, SocketTopicForbidden)
 			return
 		}
 		s.hub.Subscribe(c, in.Topic)
@@ -111,14 +111,14 @@ func (s *Service) onMessage(c *socket.Conn, in socket.Inbound) {
 
 	case socket.TypeUnsubscribe:
 		if in.Topic == "" {
-			s.sendErr(c, in.Topic, status.SOCKET_MISSING_TOPIC)
+			s.sendErr(c, in.Topic, SocketMissingTopic)
 			return
 		}
 		s.hub.Unsubscribe(c, in.Topic)
 		s.sendAck(c, socket.TypeUnsubscribe, in.Topic)
 
 	default:
-		s.sendErr(c, in.Topic, status.SOCKET_INVALID_MESSAGE)
+		s.sendErr(c, in.Topic, SocketInvalidMessage)
 	}
 }
 

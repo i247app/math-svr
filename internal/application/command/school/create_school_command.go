@@ -7,8 +7,8 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type CreateSchoolCommand struct {
@@ -53,7 +53,7 @@ func (h *CreateSchoolCommandHandler) Handle(ctx context.Context, cmd CreateSchoo
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if saved == nil {
-			return errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil,
+			return errs.NewError(ctx, school.SchoolNotFound, nil,
 				ErrSchoolNotFoundAfterInsert)
 		}
 		created = saved

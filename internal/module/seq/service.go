@@ -6,8 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Service is the seq module's public façade. It exists so other modules
@@ -42,7 +41,7 @@ func NewService(uow transaction.UnitOfWork) *Service {
 // every other failure mode.
 func (s *Service) NextID(ctx context.Context, name string) (int64, error) {
 	if name == "" {
-		return 0, errs.NewError(ctx, status.SEQ_MISSING_NAME, nil, ErrSeqNameRequired)
+		return 0, errs.NewError(ctx, domain.SeqMissingName, nil, ErrSeqNameRequired)
 	}
 
 	var id int64
@@ -50,9 +49,9 @@ func (s *Service) NextID(ctx context.Context, name string) (int64, error) {
 		next, err := repos.Seq.Next(ctx, name)
 		if err != nil {
 			if errors.Is(err, domain.ErrNotFound) {
-				return errs.NewError(ctx, status.SEQ_NOT_FOUND, map[string]any{"name": name}, err)
+				return errs.NewError(ctx, domain.SeqNotFound, map[string]any{"name": name}, err)
 			}
-			return errs.NewError(ctx, status.SEQ_GENERATION_FAILED, map[string]any{"name": name}, err)
+			return errs.NewError(ctx, domain.SeqGenerationFailed, map[string]any{"name": name}, err)
 		}
 		id = next
 		return nil
@@ -70,15 +69,15 @@ func (s *Service) NextID(ctx context.Context, name string) (int64, error) {
 // module service.
 func ResolveNext(ctx context.Context, repo domain.IRepository, name string) (int64, error) {
 	if name == "" {
-		return 0, errs.NewError(ctx, status.SEQ_MISSING_NAME, nil,
+		return 0, errs.NewError(ctx, domain.SeqMissingName, nil,
 			ErrSeqNameRequired)
 	}
 	id, err := repo.Next(ctx, name)
 	if err != nil {
 		if errors.Is(err, domain.ErrNotFound) {
-			return 0, errs.NewError(ctx, status.SEQ_NOT_FOUND, map[string]any{"name": name}, err)
+			return 0, errs.NewError(ctx, domain.SeqNotFound, map[string]any{"name": name}, err)
 		}
-		return 0, errs.NewError(ctx, status.SEQ_GENERATION_FAILED, map[string]any{"name": name}, err)
+		return 0, errs.NewError(ctx, domain.SeqGenerationFailed, map[string]any{"name": name}, err)
 	}
 	return id, nil
 }

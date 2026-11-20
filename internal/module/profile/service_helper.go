@@ -7,9 +7,9 @@ import (
 	"math-ai.com/math-ai/internal/provider/storage"
 
 	domain "math-ai.com/math-ai/internal/domain/profile"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // uploadAvatarIfPresent ships the multipart avatar (if any) to S3 and returns
@@ -21,7 +21,7 @@ func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateProf
 		return nil, nil
 	}
 	if s.storageProvider == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
+		return nil, errs.NewError(ctx, storage.StorageConfigInvalid, nil,
 			ErrStorageProviderNotConfigured)
 	}
 
@@ -29,7 +29,7 @@ func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateProf
 		Filename:    req.AvatarFilename,
 		ContentType: req.AvatarContentType,
 	}); err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, domain.ProfileAvatarInvalidFile, nil, err)
 	}
 
 	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -39,10 +39,10 @@ func (s *Service) uploadAvatarIfPresent(ctx context.Context, req *dto.CreateProf
 		Folder:      avatarFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ProfileAvatarUploadFailed, nil, err)
 	}
 	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
+		return nil, errs.NewError(ctx, domain.ProfileAvatarUploadFailed, nil,
 			ErrUploadReturnedEmptyKey)
 	}
 	return &uploaded.Key, nil
@@ -56,7 +56,7 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProf
 		return nil, nil
 	}
 	if s.storageProvider == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
+		return nil, errs.NewError(ctx, storage.StorageConfigInvalid, nil,
 			ErrStorageProviderNotConfigured)
 	}
 
@@ -64,7 +64,7 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProf
 		Filename:    req.AvatarFilename,
 		ContentType: req.AvatarContentType,
 	}); err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, domain.ProfileAvatarInvalidFile, nil, err)
 	}
 
 	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -74,10 +74,10 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProf
 		Folder:      avatarFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ProfileAvatarUploadFailed, nil, err)
 	}
 	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
+		return nil, errs.NewError(ctx, domain.ProfileAvatarUploadFailed, nil,
 			ErrUploadReturnedEmptyKey)
 	}
 
@@ -94,7 +94,7 @@ func (s *Service) updateAvatarIfPresent(ctx context.Context, req *dto.UpdateProf
 // translates a plain error into a typed MathError.
 func (s *Service) normalizeAvatarKey(ctx context.Context, raw string, invalidStatus status.StatusCode) (string, error) {
 	if s.storageProvider == nil {
-		return "", errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
+		return "", errs.NewError(ctx, storage.StorageConfigInvalid, nil,
 			ErrStorageProviderNotConfigured)
 	}
 	key, err := s.storageProvider.NormalizeKey(ctx, &storage.NormalizeKeyRequest{

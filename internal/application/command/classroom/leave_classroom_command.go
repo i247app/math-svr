@@ -5,9 +5,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // LeaveClassroomCommand transitions the caller's member row to LEFT and
@@ -34,15 +34,15 @@ func (h *LeaveClassroomCommandHandler) Handle(ctx context.Context, cmd LeaveClas
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if m == nil {
-			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_MEMBER, nil,
+			return errs.NewError(ctx, classroom.ClassroomMemberNotMember, nil,
 				ErrNotClassroomMember)
 		}
 		if m.MemberStatus() == nil || *m.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
-			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_MEMBER, nil,
+			return errs.NewError(ctx, classroom.ClassroomMemberNotMember, nil,
 				ErrMembershipNotActive)
 		}
 		if m.MemberRole() == enum.ClassroomMemberRoleTypeOwner.String() {
-			return errs.NewError(ctx, status.CLASSROOM_OWNER_CANNOT_LEAVE, nil,
+			return errs.NewError(ctx, classroom.ClassroomOwnerCannotLeave, nil,
 				ErrOwnerMustTransferBeforeLeave)
 		}
 		if err := repos.ClassroomMember.MarkLeft(ctx, m.MemberId()); err != nil {

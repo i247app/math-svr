@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/pkg/twilio"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // NewFromConfig builds a fully-wired *Registry from cfg, or returns
@@ -48,10 +47,10 @@ func NewFromConfig(ctx context.Context, cfg config.SMSConfig) (*Registry, error)
 		})
 		if err != nil {
 			if errors.Is(err, twilio.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.SMS_CONFIG_INVALID,
+				return nil, errs.NewError(ctx, SMSConfigInvalid,
 					map[string]any{"reason": err.Error()}, err)
 			}
-			return nil, errs.NewError(ctx, status.SMS_CONNECT_FAILED, nil, err)
+			return nil, errs.NewError(ctx, SMSConnectFailed, nil, err)
 		}
 
 		reg := NewRegistry()
@@ -59,7 +58,7 @@ func NewFromConfig(ctx context.Context, cfg config.SMSConfig) (*Registry, error)
 		return reg, nil
 
 	default:
-		return nil, errs.NewError(ctx, status.SMS_CONFIG_INVALID,
+		return nil, errs.NewError(ctx, SMSConfigInvalid,
 			map[string]any{"provider": cfg.SMSProvider}, nil)
 	}
 }

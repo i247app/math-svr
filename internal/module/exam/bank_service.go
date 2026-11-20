@@ -9,13 +9,14 @@ import (
 	command "math-ai.com/math-ai/internal/application/command/exam"
 	"math-ai.com/math-ai/internal/application/dto"
 
+	domain "math-ai.com/math-ai/internal/domain/exam"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
 	"math-ai.com/math-ai/internal/domain/questionpool"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -142,7 +143,7 @@ func (s *Service) pickFromBank(ctx context.Context, examType enum.ExamType, grad
 			slot := g.slots[i]
 			converted, err := toExamQuestion(q, slot)
 			if err != nil {
-				return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)
+				return nil, errs.NewError(ctx, domain.ExamGenerationFailed, nil, err)
 			}
 			paper[slot-1] = converted
 			chosen = append(chosen, q.QuestionPoolId())
@@ -177,7 +178,7 @@ func (s *Service) drawGroup(ctx context.Context, g bankGroup, chosen []int64, av
 	}
 	if len(got) < need {
 		logger.From(ctx).Warnf("exam.bank.insufficient group=%q need=%d found=%d", g.name, need, len(got))
-		return nil, errs.NewError(ctx, status.EXAM_QUESTION_BANK_INSUFFICIENT,
+		return nil, errs.NewError(ctx, domain.ExamQuestionBankInsufficient,
 			map[string]any{"group": g.name, "needed": need, "found": len(got)},
 			fmt.Errorf("exam: the question bank holds %d approved questions for %s, the paper needs %d", len(got), g.name, need))
 	}

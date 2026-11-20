@@ -12,11 +12,11 @@ import (
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	sctx "math-ai.com/math-ai/internal/shared/context"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -118,10 +118,10 @@ func (s *Service) loadOwnedProfile(ctx context.Context, uid *int64, profileID in
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if p == nil {
-		return nil, errs.NewError(ctx, status.EXAM_PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
+		return nil, errs.NewError(ctx, examDomain.ExamProfileNotFound, nil, ErrProfileNotFound)
 	}
 	if p.UID() != *uid {
-		return nil, errs.NewError(ctx, status.EXAM_PROFILE_NOT_OWNED, nil, ErrProfileNotOwned)
+		return nil, errs.NewError(ctx, examDomain.ExamProfileNotOwned, nil, ErrProfileNotOwned)
 	}
 	return p, nil
 }
@@ -143,14 +143,14 @@ func (s *Service) actAsOwner(ctx context.Context, route string, profileID int64)
 		return nil, err
 	}
 	if profileID <= 0 {
-		return nil, errs.NewError(ctx, status.EXAM_MISSING_PROFILE_ID, nil, ErrProfileIDRequired)
+		return nil, errs.NewError(ctx, examDomain.ExamMissingProfileID, nil, ErrProfileIDRequired)
 	}
 	p, err := s.profileRepo.FindByProfileId(ctx, profileID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if p == nil {
-		return nil, errs.NewError(ctx, status.EXAM_PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
+		return nil, errs.NewError(ctx, examDomain.ExamProfileNotFound, nil, ErrProfileNotFound)
 	}
 	owner := p.UID()
 	logger.From(ctx).Infof("admin.act_as_owner admin_uid=%d via=%s route=%s profile_id=%d owner_uid=%d",
@@ -345,7 +345,7 @@ func (s *Service) guardGuest(ctx context.Context, p *profileDomain.Profile, exam
 	// a child's own mistakes across a journey and GRADE is a review at a
 	// level — both belong to a child whose progress is being followed.
 	if examType != enum.ExamTypeAssessment {
-		return errs.NewError(ctx, status.EXAM_GUEST_TYPE_NOT_ALLOWED, nil, ErrGuestAssessmentOnly)
+		return errs.NewError(ctx, examDomain.ExamGuestTypeNotAllowed, nil, ErrGuestAssessmentOnly)
 	}
 
 	since := time.Now().UTC().Add(-guestExamWindow)
@@ -355,7 +355,7 @@ func (s *Service) guardGuest(ctx context.Context, p *profileDomain.Profile, exam
 	}
 	if handed >= GuestDailyExamLimit {
 		logger.From(ctx).Info("exam.guest.limit_reached", "profile_id", p.ProfileId(), "handed", handed)
-		return errs.NewError(ctx, status.EXAM_GUEST_DAILY_LIMIT,
+		return errs.NewError(ctx, examDomain.ExamGuestDailyLimit,
 			map[string]any{"limit": GuestDailyExamLimit}, ErrGuestDailyLimit)
 	}
 	return nil
@@ -381,7 +381,7 @@ func (s *Service) resumeOpenSitting(ctx context.Context, profile *profileDomain.
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if pool == nil {
-		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, examDomain.ExamNotFound, nil,
 			fmt.Errorf("exam: open sitting %d points at exam_pool %d, which is gone", open.ElinkId(), open.ExamId()))
 	}
 
@@ -444,11 +444,11 @@ func answerText(ids, content string) string {
 // versions of its review.
 func requireReviewable(ctx context.Context, journey *examDomain.ExamSession) error {
 	if st := utils.DerefString(journey.EsessStatus()); st != enum.EsessStatusComplete.String() {
-		return errs.NewError(ctx, status.EXAM_REVIEW_JOURNEY_NOT_COMPLETE, nil,
+		return errs.NewError(ctx, examDomain.ExamReviewJourneyNotComplete, nil,
 			fmt.Errorf("exam: journey %d is %s; only a COMPLETE journey is reviewed", journey.EsessId(), st))
 	}
 	if journey.HasAiReview() {
-		return errs.NewError(ctx, status.EXAM_REVIEW_ALREADY_EXISTS, nil,
+		return errs.NewError(ctx, examDomain.ExamReviewAlreadyExists, nil,
 			fmt.Errorf("exam: journey %d already has its AI review", journey.EsessId()))
 	}
 	return nil
@@ -462,7 +462,7 @@ func requireReviewable(ctx context.Context, journey *examDomain.ExamSession) err
 func (s *Service) loadExamPrompt(ctx context.Context, examType enum.ExamType, grade int) (*promptDomain.Prompt, error) {
 	scope, err := promptDomain.ExamGenerationScope(examType, grade)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.EXAM_INVALID_EXAM_TYPE, nil, err)
+		return nil, errs.NewError(ctx, examDomain.ExamInvalidExamType, nil, err)
 	}
 	return s.loadPrompt(ctx, scope)
 }
@@ -479,7 +479,7 @@ func (s *Service) loadPrompt(ctx context.Context, scope promptDomain.Scope) (*pr
 		if scope.Grade != nil {
 			grade = fmt.Sprint(*scope.Grade)
 		}
-		return nil, errs.NewError(ctx, status.PROMPT_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, promptDomain.PromptNotFound, nil,
 			fmt.Errorf("exam: ma_prompts has no row for %s grade %s", scope.Code, grade))
 	}
 	return p, nil

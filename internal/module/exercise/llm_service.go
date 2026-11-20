@@ -5,13 +5,13 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	routeQuery "math-ai.com/math-ai/internal/application/query/llmroute"
+	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/llmroute"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	llmProvider "math-ai.com/math-ai/internal/provider/llm"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // llmClient is the classroomexercise module's typed surface over the
@@ -68,7 +68,7 @@ type generateExerciseOutput struct {
 func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInput) (*generateExerciseOutput, error) {
 	log := logger.From(ctx)
 	if c.provider == nil {
-		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil,
+		return nil, errs.NewError(ctx, llmProvider.LLMConfigInvalid, nil,
 			ErrLLMProviderNotConfigured)
 	}
 
@@ -84,7 +84,7 @@ func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 			NumQuestions: in.NumQuestions,
 		})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_GENERATION_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseGenerationFailed, nil, err)
 	}
 
 	log.Infof("PROMPT CLASSROOM EXERCISE: system=%s user=%s", system, user)
@@ -113,7 +113,7 @@ func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 	gen, err := dto.ParseGeneration(res.Content)
 	if err != nil {
 		log.Warnf("classroom_exercise.llm.parse_failed err=%v", err)
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_GENERATION_FAILED, map[string]any{"reason": err.Error()}, err)
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseGenerationFailed, map[string]any{"reason": err.Error()}, err)
 	}
 
 	// Clamp render discriminators and report icon-token drift, so the
@@ -136,7 +136,7 @@ type gradeExerciseInput struct {
 func (c *llmClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*dto.GradingResult, error) {
 	log := logger.From(ctx)
 	if c.provider == nil {
-		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil,
+		return nil, errs.NewError(ctx, llmProvider.LLMConfigInvalid, nil,
 			ErrClassroomExerciseSubmissionLLMProviderNotConfigured)
 	}
 
@@ -148,7 +148,7 @@ func (c *llmClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*
 			Answers:   in.Answers,
 		})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionGradingFailed, nil, err)
 	}
 
 	log.Infof("PROMPT CLASSROOM EXERCISE SUBMISSION GRADE: system=%s user=%s", system, user)
@@ -174,7 +174,7 @@ func (c *llmClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*
 	grading, err := dto.ParseGrading(res.Content)
 	if err != nil {
 		log.Warnf("classroom_exercise_submission.llm.parse_failed err=%v", err)
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionGradingFailed,
 			map[string]any{"reason": err.Error()}, err)
 	}
 	return grading, nil

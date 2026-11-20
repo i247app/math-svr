@@ -10,9 +10,8 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // previewRuneLimit keeps the denormalised preview inside the column's 255
@@ -63,7 +62,7 @@ func (h *SendMessageCommandHandler) Handle(ctx context.Context, cmd *SendMessage
 		if cmd.ClientMsgID != nil && *cmd.ClientMsgID != "" {
 			existing, err := repos.ChatMessage.FindByClientMsgId(ctx, cmd.ConversationID, cmd.SenderProfileID, *cmd.ClientMsgID)
 			if err != nil {
-				return errs.NewError(ctx, status.CHAT_MESSAGE_CREATE_FAILED, nil, err)
+				return errs.NewError(ctx, domain.ChatMessageCreateFailed, nil, err)
 			}
 			if existing != nil {
 				result.Message = existing
@@ -77,16 +76,16 @@ func (h *SendMessageCommandHandler) Handle(ctx context.Context, cmd *SendMessage
 		// it.
 		participant, err := repos.ChatParticipant.FindByConversationAndProfile(ctx, cmd.ConversationID, cmd.SenderProfileID)
 		if err != nil {
-			return errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, err)
+			return errs.NewError(ctx, domain.ChatNotParticipant, nil, err)
 		}
 		if participant == nil || participant.ParticipantStatus() == nil ||
 			*participant.ParticipantStatus() != enum.ChatParticipantStatusActive.String() {
-			return errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, errNotParticipant)
+			return errs.NewError(ctx, domain.ChatNotParticipant, nil, errNotParticipant)
 		}
 
 		seqNo, err := repos.ChatConversation.NextSeqNo(ctx, cmd.ConversationID)
 		if err != nil {
-			return errs.NewError(ctx, status.CHAT_SEQ_ALLOCATION_FAILED, nil, err)
+			return errs.NewError(ctx, domain.ChatSeqAllocationFailed, nil, err)
 		}
 
 		messageID, err := seqgen.Next(ctx, repos.Seq, seq.NameChatMessage)
@@ -123,15 +122,15 @@ func (h *SendMessageCommandHandler) Handle(ctx context.Context, cmd *SendMessage
 			if errors.Is(err, domain.ErrDuplicateMessage) {
 				return err
 			}
-			return errs.NewError(ctx, status.CHAT_MESSAGE_CREATE_FAILED, nil, err)
+			return errs.NewError(ctx, domain.ChatMessageCreateFailed, nil, err)
 		}
 
 		if err := repos.ChatConversation.UpdateLastMessage(ctx, cmd.ConversationID, created, buildPreview(content)); err != nil {
-			return errs.NewError(ctx, status.CHAT_MESSAGE_CREATE_FAILED, nil, err)
+			return errs.NewError(ctx, domain.ChatMessageCreateFailed, nil, err)
 		}
 
 		if err := repos.ChatParticipant.IncUnreadExcept(ctx, cmd.ConversationID, cmd.SenderProfileID, seqNo); err != nil {
-			return errs.NewError(ctx, status.CHAT_MESSAGE_CREATE_FAILED, nil, err)
+			return errs.NewError(ctx, domain.ChatMessageCreateFailed, nil, err)
 		}
 
 		result.Message = created
@@ -154,7 +153,7 @@ func (h *SendMessageCommandHandler) findExisting(ctx context.Context, cmd *SendM
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		m, err := repos.ChatMessage.FindByClientMsgId(ctx, cmd.ConversationID, cmd.SenderProfileID, *cmd.ClientMsgID)
 		if err != nil {
-			return errs.NewError(ctx, status.CHAT_MESSAGE_CREATE_FAILED, nil, err)
+			return errs.NewError(ctx, domain.ChatMessageCreateFailed, nil, err)
 		}
 		found = m
 		return nil
@@ -163,7 +162,7 @@ func (h *SendMessageCommandHandler) findExisting(ctx context.Context, cmd *SendM
 		return nil, err
 	}
 	if found == nil {
-		return nil, errs.NewError(ctx, status.CHAT_MESSAGE_CREATE_FAILED, nil, errDuplicateUnresolved)
+		return nil, errs.NewError(ctx, domain.ChatMessageCreateFailed, nil, errDuplicateUnresolved)
 	}
 	return &SendMessageResult{Message: found, Duplicate: true}, nil
 }

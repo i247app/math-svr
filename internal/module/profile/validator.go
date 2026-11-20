@@ -5,9 +5,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	domain "math-ai.com/math-ai/internal/domain/profile"
+	"math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // profileSearchMaxLen bounds the LIKE %?% needle so a runaway client
@@ -16,27 +18,27 @@ const profileSearchMaxLen = 128
 
 func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error {
 	if req.UID == 0 {
-		return errs.NewError(ctx, status.PROFILE_MISSING_USER_ID, nil,
+		return errs.NewError(ctx, domain.ProfileMissingUserID, nil,
 			ErrUIDRequired)
 	}
 	if strings.TrimSpace(req.Name) == "" {
-		return errs.NewError(ctx, status.PROFILE_MISSING_NAME, nil,
+		return errs.NewError(ctx, domain.ProfileMissingName, nil,
 			ErrNameRequired)
 	}
 	if strings.TrimSpace(req.Avatar) != "" && req.AvatarFile != nil {
-		return errs.NewError(ctx, status.PROFILE_AVATAR_CONFLICT, nil,
+		return errs.NewError(ctx, domain.ProfileAvatarConflict, nil,
 			ErrProvideEitherAvatarFileOrAvatarReference)
 	}
 	// if req.ProgramID == nil {
-	// 	return errs.NewError(ctx, status.PROFILE_MISSING_PROGRAM_ID, nil,
+	// 	return errs.NewError(ctx, domain.ProfileMissingProgramID, nil,
 	// 		ErrProgramIDRequired)
 	// }
 	// if req.GradeID == nil {
-	// 	return errs.NewError(ctx, status.PROFILE_MISSING_GRADE_ID, nil,
+	// 	return errs.NewError(ctx, domain.ProfileMissingGradeID, nil,
 	// 		ErrGradeIDRequired)
 	// }
 	// if req.SemesterID == nil {
-	// 	return errs.NewError(ctx, status.PROFILE_MISSING_SEMESTER_ID, nil,
+	// 	return errs.NewError(ctx, domain.ProfileMissingSemesterID, nil,
 	// 		ErrSemesterIDRequired)
 	// }
 	return nil
@@ -44,19 +46,19 @@ func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error
 
 func ValidateUpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) error {
 	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileIDRequired)
 	}
 	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
-		return errs.NewError(ctx, status.PROFILE_MISSING_NAME, nil,
+		return errs.NewError(ctx, domain.ProfileMissingName, nil,
 			ErrNameCannotBeBlank)
 	}
 	if req.Avatar != nil && strings.TrimSpace(*req.Avatar) == "" {
-		return errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_REFERENCE, nil,
+		return errs.NewError(ctx, domain.ProfileAvatarInvalidReference, nil,
 			ErrAvatarReferenceMustBeNonEmptyWhenProvided)
 	}
 	if req.Avatar != nil && strings.TrimSpace(*req.Avatar) != "" && req.AvatarFile != nil {
-		return errs.NewError(ctx, status.PROFILE_AVATAR_CONFLICT, nil,
+		return errs.NewError(ctx, domain.ProfileAvatarConflict, nil,
 			ErrProvideEitherAvatarFileOrAvatarReference)
 	}
 	return nil
@@ -64,7 +66,7 @@ func ValidateUpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) error
 
 func ValidateGetProfile(ctx context.Context, req *dto.GetProfileByIdReq) error {
 	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileIDRequired)
 	}
 
@@ -134,7 +136,7 @@ func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
 
 func ValidateDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) error {
 	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileIDRequired)
 	}
 	return nil
@@ -142,11 +144,11 @@ func ValidateDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) error
 
 func ValidateAssignSchool(ctx context.Context, req *dto.AssignSchoolReq) error {
 	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileIDRequired)
 	}
 	if req.SchoolID == 0 {
-		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
+		return errs.NewError(ctx, school.SchoolMissingID, nil,
 			ErrSchoolIDRequired)
 	}
 	return nil
@@ -154,7 +156,7 @@ func ValidateAssignSchool(ctx context.Context, req *dto.AssignSchoolReq) error {
 
 func ValidateRemoveSchool(ctx context.Context, req *dto.RemoveSchoolReq) error {
 	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileIDRequired)
 	}
 	return nil

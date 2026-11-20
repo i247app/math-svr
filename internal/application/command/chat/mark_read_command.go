@@ -5,9 +5,10 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	domain "math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type MarkReadCommand struct {
@@ -37,11 +38,11 @@ func (h *MarkReadCommandHandler) Handle(ctx context.Context, cmd *MarkReadComman
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		participant, err := repos.ChatParticipant.FindByConversationAndProfile(ctx, cmd.ConversationID, cmd.ProfileID)
 		if err != nil {
-			return errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, err)
+			return errs.NewError(ctx, domain.ChatNotParticipant, nil, err)
 		}
 		if participant == nil || participant.ParticipantStatus() == nil ||
 			*participant.ParticipantStatus() != enum.ChatParticipantStatusActive.String() {
-			return errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, errNotParticipant)
+			return errs.NewError(ctx, domain.ChatNotParticipant, nil, errNotParticipant)
 		}
 
 		if err := repos.ChatParticipant.MarkRead(ctx, cmd.ConversationID, cmd.ProfileID, cmd.SeqNo, nil, time.Now().UTC()); err != nil {

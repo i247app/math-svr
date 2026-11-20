@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	domain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UploadAvatar streams the request body to S3 then persists the resulting
@@ -17,7 +18,7 @@ func (s *Service) UploadAvatarStatic(ctx context.Context, req *dto.UploadFileReq
 		Filename:    req.Filename,
 		ContentType: req.ContentType,
 	}); err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, domain.ProfileAvatarInvalidFile, nil, err)
 	}
 
 	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -27,10 +28,10 @@ func (s *Service) UploadAvatarStatic(ctx context.Context, req *dto.UploadFileReq
 		Folder:      avatarFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ProfileAvatarUploadFailed, nil, err)
 	}
 	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
+		return nil, errs.NewError(ctx, domain.ProfileAvatarUploadFailed, nil,
 			ErrUploadReturnedEmptyKey)
 	}
 

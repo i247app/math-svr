@@ -5,9 +5,9 @@ import (
 
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -23,10 +23,10 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUI
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if p == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
+		return nil, errs.NewError(ctx, profileDomain.ProfileNotFound, nil, ErrProfileNotFound)
 	}
 	if sessionUID != 0 && sessionUID != p.UID() {
-		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil, ErrProfileNotOwnedByUser)
+		return nil, errs.NewError(ctx, classroomDomain.ClassroomPermissionDenied, nil, ErrProfileNotOwnedByUser)
 	}
 	return p, nil
 }
@@ -35,7 +35,7 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUI
 // (§0 Q2). PARENT/STUDENT cannot create or own a classroom.
 func (s *Service) requireTeacherRole(ctx context.Context, p *profileDomain.Profile) error {
 	if utils.DerefString(p.Role()) != enum.RoleTypeTeacher.String() {
-		return errs.NewError(ctx, status.CLASSROOM_INVALID_OWNER_ROLE, nil, ErrTeacherOwnershipOnly)
+		return errs.NewError(ctx, classroomDomain.ClassroomInvalidOwnerRole, nil, ErrTeacherOwnershipOnly)
 	}
 	return nil
 }
@@ -48,10 +48,10 @@ func (s *Service) requireMember(ctx context.Context, classroomID, profileID int6
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if m == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil, ErrNotClassroomMember)
+		return nil, errs.NewError(ctx, classroomDomain.ClassroomPermissionDenied, nil, ErrNotClassroomMember)
 	}
 	if m.MemberStatus() == nil || *m.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
-		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil, ErrMembershipNotActive)
+		return nil, errs.NewError(ctx, classroomDomain.ClassroomPermissionDenied, nil, ErrMembershipNotActive)
 	}
 	return m, nil
 }
@@ -67,7 +67,7 @@ func (s *Service) requireManager(ctx context.Context, classroomID, profileID int
 	case enum.ClassroomMemberRoleTypeOwner.String(), enum.ClassroomMemberRoleTypeCoTeacher.String():
 		return m, nil
 	default:
-		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil, ErrManagerRoleRequired)
+		return nil, errs.NewError(ctx, classroomDomain.ClassroomPermissionDenied, nil, ErrManagerRoleRequired)
 	}
 }
 
@@ -79,7 +79,7 @@ func (s *Service) requireOwner(ctx context.Context, classroomID, profileID int64
 		return nil, err
 	}
 	if m.MemberRole() != enum.ClassroomMemberRoleTypeOwner.String() {
-		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil, ErrOwnerRoleRequired)
+		return nil, errs.NewError(ctx, classroomDomain.ClassroomPermissionDenied, nil, ErrOwnerRoleRequired)
 	}
 	return m, nil
 }
@@ -90,10 +90,10 @@ func (s *Service) requireOwner(ctx context.Context, classroomID, profileID int64
 // still surfaced to the caller for read.
 func guardClassroomMutable(ctx context.Context, c *classroomDomain.Classroom) error {
 	if c == nil {
-		return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil, ErrClassroomNotFound)
+		return errs.NewError(ctx, classroomDomain.ClassroomNotFound, nil, ErrClassroomNotFound)
 	}
 	if c.ClassroomStatus() != nil && *c.ClassroomStatus() == enum.ClassroomStatusTypeArchived.String() {
-		return errs.NewError(ctx, status.CLASSROOM_ALREADY_ARCHIVED, nil, ErrClassroomArchived)
+		return errs.NewError(ctx, classroomDomain.ClassroomAlreadyArchived, nil, ErrClassroomArchived)
 	}
 	return nil
 }

@@ -5,8 +5,9 @@ import (
 	"fmt"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // DeleteQuestionCommand removes one question. Soft (Force false) hides the
@@ -40,7 +41,7 @@ func (h *DeleteQuestionPoolCommandHandler) Handle(ctx context.Context, cmd Delet
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if !found {
-			return errs.NewError(ctx, status.QUESTION_POOL_NOT_FOUND, nil, fmt.Errorf("question_pool: no question %d to delete", cmd.QuestionPoolID))
+			return errs.NewError(ctx, questionpool.QuestionPoolNotFound, nil, fmt.Errorf("question_pool: no question %d to delete", cmd.QuestionPoolID))
 		}
 		return nil
 	})

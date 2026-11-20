@@ -5,9 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 var (
@@ -60,7 +59,7 @@ func (r *Request) Validate(ctx context.Context) error {
 		args := map[string]any{
 			"pagination_types": enum.ListPaginationTypes(),
 		}
-		return errs.NewError(ctx, status.PAGINATION_INVALID_TYPE, args, ErrPaginationTypeInvalid)
+		return errs.NewError(ctx, PaginationInvalidType, args, ErrPaginationTypeInvalid)
 	}
 	r.Next = strings.TrimSpace(r.Next)
 	r.Previous = strings.TrimSpace(r.Previous)
@@ -69,15 +68,15 @@ func (r *Request) Validate(ctx context.Context) error {
 	case enum.PaginationTypeCursor:
 		// TODO: Turn on if we need, now don't care
 		// if r.Page != 0 {
-		// 	return errs.NewError(ctx, status.PAGINATION_PARAMS_CONFLICT, nil, ErrPageWithCursorPagination)
+		// 	return errs.NewError(ctx, PaginationParamsConflict, nil, ErrPageWithCursorPagination)
 		// }
 		if r.Next != "" && r.Previous != "" {
-			return errs.NewError(ctx, status.PAGINATION_PARAMS_CONFLICT, nil, ErrNextAndPrevious)
+			return errs.NewError(ctx, PaginationParamsConflict, nil, ErrNextAndPrevious)
 		}
 	case enum.PaginationTypeOffset:
 		// TODO: Turn on if we need, now don't care
 		// if r.Next != "" || r.Previous != "" {
-		// 	return errs.NewError(ctx, status.PAGINATION_PARAMS_CONFLICT, nil, ErrCursorWithOffsetPagination)
+		// 	return errs.NewError(ctx, PaginationParamsConflict, nil, ErrCursorWithOffsetPagination)
 		// }
 	}
 	return nil

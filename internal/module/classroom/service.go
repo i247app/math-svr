@@ -16,9 +16,9 @@ import (
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
 	schoolDomain "math-ai.com/math-ai/internal/domain/school"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // coverUrlTTL bounds how long a generated cover URL is valid. Mirrors
@@ -242,7 +242,7 @@ func (s *Service) GetClassroom(ctx context.Context, req *dto.GetClassroomReq, se
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if found == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, classroomDomain.ClassroomNotFound, nil,
 			ErrClassroomNotFound)
 	}
 
@@ -283,7 +283,7 @@ func (s *Service) FindClassroomByCode(ctx context.Context, req *dto.FindClassroo
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if found == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil, ErrClassroomNotFound)
+		return nil, errs.NewError(ctx, classroomDomain.ClassroomNotFound, nil, ErrClassroomNotFound)
 	}
 
 	resp := dto.ClassroomDomainToResponse(found)
@@ -468,7 +468,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if sc == nil {
-			return errs.NewError(ctx, status.CLASSROOM_INVALID_SCHOOL, nil, ErrSchoolNotFound)
+			return errs.NewError(ctx, classroomDomain.ClassroomInvalidSchool, nil, ErrSchoolNotFound)
 		}
 	}
 	for _, pid := range programIDs {
@@ -480,7 +480,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if p == nil {
-			return errs.NewError(ctx, status.CLASSROOM_INVALID_PROGRAM, nil, ErrProgramNotFound)
+			return errs.NewError(ctx, classroomDomain.ClassroomInvalidProgram, nil, ErrProgramNotFound)
 		}
 	}
 	if gradeID != nil && *gradeID != 0 {
@@ -489,7 +489,7 @@ func (s *Service) validateRefs(ctx context.Context, schoolID *int64, programIDs 
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if g == nil {
-			return errs.NewError(ctx, status.CLASSROOM_INVALID_GRADE, nil, ErrGradeNotFound)
+			return errs.NewError(ctx, classroomDomain.ClassroomInvalidGrade, nil, ErrGradeNotFound)
 		}
 	}
 	return nil

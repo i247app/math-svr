@@ -7,9 +7,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/exam"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -59,25 +59,25 @@ func (h *SaveJourneyReviewCommandHandler) Handle(ctx context.Context, cmd SaveJo
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if journey == nil {
-			return errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
+			return errs.NewError(ctx, exam.ExamJourneyNotFound, nil,
 				fmt.Errorf("exam: journey %d (%s) not found", cmd.EsessID, cmd.ExamType))
 		}
 		if journey.Uid() != cmd.UID || journey.ProfileId() != cmd.ProfileID {
-			return errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
+			return errs.NewError(ctx, exam.ExamJourneyNotOwned, nil,
 				fmt.Errorf("exam: journey %d belongs to another profile", cmd.EsessID))
 		}
 		if st := utils.DerefString(journey.EsessStatus()); st != enum.EsessStatusComplete.String() {
-			return errs.NewError(ctx, status.EXAM_REVIEW_JOURNEY_NOT_COMPLETE, nil,
+			return errs.NewError(ctx, exam.ExamReviewJourneyNotComplete, nil,
 				fmt.Errorf("exam: journey %d is %s; only a COMPLETE journey is reviewed", cmd.EsessID, st))
 		}
 		if journey.HasAiReview() {
-			return errs.NewError(ctx, status.EXAM_REVIEW_ALREADY_EXISTS, nil,
+			return errs.NewError(ctx, exam.ExamReviewAlreadyExists, nil,
 				fmt.Errorf("exam: journey %d already has its AI review", cmd.EsessID))
 		}
 
 		if err := repos.ExamSession.SetAiReview(ctx, cmd.EsessID, cmd.ExamType, cmd.ReviewShort, cmd.ReviewLong); err != nil {
 			if errors.Is(err, exam.ErrJourneyNotFound) {
-				return errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil, err)
+				return errs.NewError(ctx, exam.ExamJourneyNotFound, nil, err)
 			}
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}

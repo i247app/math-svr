@@ -9,10 +9,10 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/school"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/school"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // imageUrlTTL bounds how long a generated school image URL is valid.
@@ -129,7 +129,7 @@ func (s *Service) GetSchool(ctx context.Context, req *dto.GetSchoolReq) (*dto.Ge
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if found == nil {
-		return nil, errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil, ErrSchoolNotFound)
+		return nil, errs.NewError(ctx, domain.SchoolNotFound, nil, ErrSchoolNotFound)
 	}
 
 	resp := dto.SchoolDomainToResponse(found)

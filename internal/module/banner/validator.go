@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/banner"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Column-width mirrors of migration 022. Keeping the bounds here lets the
@@ -25,13 +25,13 @@ const (
 func ValidateCreateBanner(ctx context.Context, req *dto.CreateBannerReq) error {
 	mediaType := enum.BannerMediaType(strings.TrimSpace(req.MediaType))
 	if !mediaType.IsValid() {
-		return errs.NewError(ctx, status.BANNER_INVALID_MEDIA_TYPE, nil, ErrInvalidMediaType)
+		return errs.NewError(ctx, domain.BannerInvalidMediaType, nil, ErrInvalidMediaType)
 	}
 	// Media is uploaded server-side (multipart file) or resolved from a
 	// reference, so there is no client-supplied media_url_key to require
 	// here; MediaType alone gates whether media is expected.
 	if len(req.MediaURLKey) > mediaURLKeyMaxLen {
-		return errs.NewError(ctx, status.BANNER_MEDIA_URL_TOO_LONG, nil, ErrMediaURLKeyTooLong)
+		return errs.NewError(ctx, domain.BannerMediaURLTooLong, nil, ErrMediaURLKeyTooLong)
 	}
 	if err := validateBannerCommonFields(ctx, req.Title, req.ShortText, req.ButtonText, req.ButtonLinkURL, req.Note); err != nil {
 		return err
@@ -46,16 +46,16 @@ func ValidateCreateBanner(ctx context.Context, req *dto.CreateBannerReq) error {
 
 func ValidateUpdateBanner(ctx context.Context, req *dto.UpdateBannerReq) error {
 	if req.BannerID == 0 {
-		return errs.NewError(ctx, status.BANNER_MISSING_ID, nil, ErrBannerIDRequired)
+		return errs.NewError(ctx, domain.BannerMissingID, nil, ErrBannerIDRequired)
 	}
 	if req.MediaType != nil {
 		mediaType := enum.BannerMediaType(strings.TrimSpace(*req.MediaType))
 		if !mediaType.IsValid() {
-			return errs.NewError(ctx, status.BANNER_INVALID_MEDIA_TYPE, nil, ErrInvalidMediaType)
+			return errs.NewError(ctx, domain.BannerInvalidMediaType, nil, ErrInvalidMediaType)
 		}
 	}
 	if req.MediaURLKey != nil && len(*req.MediaURLKey) > mediaURLKeyMaxLen {
-		return errs.NewError(ctx, status.BANNER_MEDIA_URL_TOO_LONG, nil, ErrMediaURLKeyTooLong)
+		return errs.NewError(ctx, domain.BannerMediaURLTooLong, nil, ErrMediaURLKeyTooLong)
 	}
 	if err := validateBannerCommonFields(ctx, req.Title, req.ShortText, req.ButtonText, req.ButtonLinkURL, req.Note); err != nil {
 		return err
@@ -72,40 +72,40 @@ func ValidateUpdateBanner(ctx context.Context, req *dto.UpdateBannerReq) error {
 // update. All args are optional pointers; nil skips the check.
 func validateBannerCommonFields(ctx context.Context, title, shortText, buttonText, buttonLink, note *string) error {
 	if title != nil && len(*title) > titleMaxLen {
-		return errs.NewError(ctx, status.BANNER_TITLE_TOO_LONG, nil, ErrTitleTooLong)
+		return errs.NewError(ctx, domain.BannerTitleTooLong, nil, ErrTitleTooLong)
 	}
 	if shortText != nil && len(*shortText) > shortTextMaxLen {
-		return errs.NewError(ctx, status.BANNER_SHORT_TEXT_TOO_LONG, nil, ErrShortTextTooLong)
+		return errs.NewError(ctx, domain.BannerShortTextTooLong, nil, ErrShortTextTooLong)
 	}
 	if buttonText != nil && len(*buttonText) > buttonTextMaxLen {
-		return errs.NewError(ctx, status.BANNER_BUTTON_TEXT_TOO_LONG, nil, ErrButtonTextTooLong)
+		return errs.NewError(ctx, domain.BannerButtonTextTooLong, nil, ErrButtonTextTooLong)
 	}
 	if buttonLink != nil && len(*buttonLink) > buttonLinkMaxLen {
-		return errs.NewError(ctx, status.BANNER_BUTTON_LINK_TOO_LONG, nil, ErrButtonLinkTooLong)
+		return errs.NewError(ctx, domain.BannerButtonLinkTooLong, nil, ErrButtonLinkTooLong)
 	}
 	if note != nil && len(*note) > noteMaxLen {
-		return errs.NewError(ctx, status.BANNER_NOTE_TOO_LONG, nil, ErrNoteTooLong)
+		return errs.NewError(ctx, domain.BannerNoteTooLong, nil, ErrNoteTooLong)
 	}
 	return nil
 }
 
 func validateBannerStatus(ctx context.Context, v string) error {
 	if !enum.BannerStatusType(strings.TrimSpace(v)).IsValid() {
-		return errs.NewError(ctx, status.BANNER_INVALID_STATUS, nil, ErrInvalidBannerStatus)
+		return errs.NewError(ctx, domain.BannerInvalidStatus, nil, ErrInvalidBannerStatus)
 	}
 	return nil
 }
 
 func ValidateGetBanner(ctx context.Context, req *dto.GetBannerReq) error {
 	if req.BannerID == 0 {
-		return errs.NewError(ctx, status.BANNER_MISSING_ID, nil, ErrBannerIDRequired)
+		return errs.NewError(ctx, domain.BannerMissingID, nil, ErrBannerIDRequired)
 	}
 	return nil
 }
 
 func ValidateDeleteBanner(ctx context.Context, req *dto.DeleteBannerReq) error {
 	if req.BannerID == 0 {
-		return errs.NewError(ctx, status.BANNER_MISSING_ID, nil, ErrBannerIDRequired)
+		return errs.NewError(ctx, domain.BannerMissingID, nil, ErrBannerIDRequired)
 	}
 	return nil
 }
@@ -120,7 +120,7 @@ func ValidateListBanners(ctx context.Context, req *dto.ListBannersReq) error {
 		if trimmed == "" {
 			req.MediaType = nil
 		} else if !enum.BannerMediaType(trimmed).IsValid() {
-			return errs.NewError(ctx, status.BANNER_INVALID_MEDIA_TYPE, nil, ErrInvalidMediaType)
+			return errs.NewError(ctx, domain.BannerInvalidMediaType, nil, ErrInvalidMediaType)
 		}
 	}
 	if req.BannerStatus != nil {
@@ -128,7 +128,7 @@ func ValidateListBanners(ctx context.Context, req *dto.ListBannersReq) error {
 		if trimmed == "" {
 			req.BannerStatus = nil
 		} else if !enum.BannerStatusType(trimmed).IsValid() {
-			return errs.NewError(ctx, status.BANNER_INVALID_STATUS, nil, ErrInvalidBannerStatus)
+			return errs.NewError(ctx, domain.BannerInvalidStatus, nil, ErrInvalidBannerStatus)
 		}
 	}
 	req.BannerIDs = sanitizeBannerIDs(req.BannerIDs)

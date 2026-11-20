@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	classroomdom "math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // TransferOwnershipCommand atomically moves the OWNER role from the
@@ -32,7 +33,7 @@ func NewTransferOwnershipCommandHandler(uow transaction.UnitOfWork) *TransferOwn
 func (h *TransferOwnershipCommandHandler) Handle(ctx context.Context, cmd TransferOwnershipCommand) error {
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		if cmd.CurrentOwnerID == cmd.NewOwnerProfileID {
-			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil, ErrTransferSameOwner)
+			return errs.NewError(ctx, classroomdom.ClassroomOwnerTransferToNonMember, nil, ErrTransferSameOwner)
 		}
 		currentOwner, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, cmd.ClassroomID, cmd.CurrentOwnerID)
 		if err != nil {
@@ -40,7 +41,7 @@ func (h *TransferOwnershipCommandHandler) Handle(ctx context.Context, cmd Transf
 		}
 
 		if currentOwner == nil || currentOwner.MemberRole() != enum.ClassroomMemberRoleTypeOwner.String() {
-			return errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil, ErrCallerNotCurrentOwner)
+			return errs.NewError(ctx, classroomdom.ClassroomPermissionDenied, nil, ErrCallerNotCurrentOwner)
 		}
 
 		newOwner, err := repos.ClassroomMember.FindByClassroomAndProfile(ctx, cmd.ClassroomID, cmd.NewOwnerProfileID)
@@ -49,11 +50,11 @@ func (h *TransferOwnershipCommandHandler) Handle(ctx context.Context, cmd Transf
 		}
 
 		if newOwner == nil {
-			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil, ErrNewOwnerNotMember)
+			return errs.NewError(ctx, classroomdom.ClassroomOwnerTransferToNonMember, nil, ErrNewOwnerNotMember)
 		}
 
 		if newOwner.MemberStatus() == nil || *newOwner.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
-			return errs.NewError(ctx, status.CLASSROOM_OWNER_TRANSFER_TO_NON_MEMBER, nil, ErrNewOwnerNotActiveMember)
+			return errs.NewError(ctx, classroomdom.ClassroomOwnerTransferToNonMember, nil, ErrNewOwnerNotActiveMember)
 		}
 
 		if err := repos.ClassroomMember.SetRole(ctx, currentOwner.MemberId(), enum.ClassroomMemberRoleTypeCoTeacher.String()); err != nil {

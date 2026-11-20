@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/pkg/firebase"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // NewFromConfig builds a fully-wired *Registry from cfg, or returns
@@ -35,10 +35,10 @@ func NewFromConfig(ctx context.Context, cfg config.NotificationConfig) (*Registr
 		})
 		if err != nil {
 			if errors.Is(err, firebase.ErrInvalidConfig) {
-				return nil, errs.NewError(ctx, status.NOTIFICATION_CONFIG_INVALID,
+				return nil, errs.NewError(ctx, domain.NotificationConfigInvalid,
 					map[string]any{"reason": err.Error()}, err)
 			}
-			return nil, errs.NewError(ctx, status.NOTIFICATION_CONNECT_FAILED, nil, err)
+			return nil, errs.NewError(ctx, domain.NotificationConnectFailed, nil, err)
 		}
 
 		reg := NewRegistry()
@@ -46,7 +46,7 @@ func NewFromConfig(ctx context.Context, cfg config.NotificationConfig) (*Registr
 		return reg, nil
 
 	default:
-		return nil, errs.NewError(ctx, status.NOTIFICATION_CONFIG_INVALID,
+		return nil, errs.NewError(ctx, domain.NotificationConfigInvalid,
 			map[string]any{"provider": cfg.Provider}, nil)
 	}
 }

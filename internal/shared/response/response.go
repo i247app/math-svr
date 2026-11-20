@@ -11,8 +11,8 @@ import (
 	"fmt"
 	"net/http"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Envelope keys — part of the wire contract, the client reads them by name.

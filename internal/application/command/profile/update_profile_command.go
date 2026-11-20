@@ -6,9 +6,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type UpdateProfileCommand struct {
@@ -49,7 +49,7 @@ func (h *UpdateProfileCommandHandler) Handle(ctx context.Context, cmd UpdateProf
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			return errs.NewError(ctx, profile.ProfileNotFound, nil,
 				ErrProfileNotFound)
 		}
 

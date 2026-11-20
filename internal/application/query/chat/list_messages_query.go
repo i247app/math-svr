@@ -4,9 +4,9 @@ import (
 	"context"
 
 	domain "math-ai.com/math-ai/internal/domain/chat"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type ListMessagesQuery struct {
@@ -35,11 +35,11 @@ func NewListMessagesQueryHandler(messageRepo domain.IMessageRepository, particip
 func (h *ListMessagesQueryHandler) Handle(ctx context.Context, q *ListMessagesQuery) ([]*domain.Message, error) {
 	participant, err := h.participantRepo.FindByConversationAndProfile(ctx, q.ConversationID, q.ProfileID)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, err)
+		return nil, errs.NewError(ctx, domain.ChatNotParticipant, nil, err)
 	}
 	if participant == nil || participant.ParticipantStatus() == nil ||
 		*participant.ParticipantStatus() != enum.ChatParticipantStatusActive.String() {
-		return nil, errs.NewError(ctx, status.CHAT_NOT_PARTICIPANT, nil, ErrNotParticipant)
+		return nil, errs.NewError(ctx, domain.ChatNotParticipant, nil, ErrNotParticipant)
 	}
 
 	messages, err := h.messageRepo.ListByConversationId(ctx, &domain.ListMessagesParams{

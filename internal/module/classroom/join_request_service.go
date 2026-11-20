@@ -7,8 +7,8 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 
 	query "math-ai.com/math-ai/internal/application/query/classroom"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // ApproveJoinRequest is owner-gated. Only the classroom OWNER can

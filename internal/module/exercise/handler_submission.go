@@ -6,8 +6,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/resource"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -90,7 +91,7 @@ func (h *ClassroomExerciseSubmissionHandler) HandleGetSubmission(w http.Response
 
 	if req.ClassroomExerciseSubmissionID == 0 {
 		response.WriteJson(w, nil, errs.NewError(r.Context(),
-			status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_ID, nil, nil))
+			domain.ClassroomExerciseSubmissionMissingID, nil, nil))
 		return
 	}
 	uid, err := h.sessionUID(r)

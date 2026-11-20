@@ -5,8 +5,9 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	domain "math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Column-width mirrors of migration 017. Keeping the bounds here lets
@@ -23,15 +24,15 @@ const (
 
 func ValidateCreateSchool(ctx context.Context, req *dto.CreateSchoolReq) error {
 	if strings.TrimSpace(req.Name) == "" {
-		return errs.NewError(ctx, status.SCHOOL_MISSING_NAME, nil,
+		return errs.NewError(ctx, domain.SchoolMissingName, nil,
 			ErrNameRequired)
 	}
 	if len(req.Name) > nameMaxLen {
-		return errs.NewError(ctx, status.SCHOOL_NAME_TOO_LONG, nil,
+		return errs.NewError(ctx, domain.SchoolNameTooLong, nil,
 			ErrNameTooLong)
 	}
 	if req.Description != nil && len(*req.Description) > descriptionMaxLen {
-		return errs.NewError(ctx, status.SCHOOL_DESCRIPTION_TOO_LONG, nil,
+		return errs.NewError(ctx, domain.SchoolDescriptionTooLong, nil,
 			ErrDescriptionTooLong)
 	}
 	if req.ImageKey != nil && len(*req.ImageKey) > imageKeyMaxLen {
@@ -55,21 +56,21 @@ func ValidateCreateSchool(ctx context.Context, req *dto.CreateSchoolReq) error {
 
 func ValidateUpdateSchool(ctx context.Context, req *dto.UpdateSchoolReq) error {
 	if req.SchoolID == 0 {
-		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
+		return errs.NewError(ctx, domain.SchoolMissingID, nil,
 			ErrSchoolIDRequired)
 	}
 	if req.Name != nil {
 		if strings.TrimSpace(*req.Name) == "" {
-			return errs.NewError(ctx, status.SCHOOL_MISSING_NAME, nil,
+			return errs.NewError(ctx, domain.SchoolMissingName, nil,
 				ErrNameCannotBeBlank)
 		}
 		if len(*req.Name) > nameMaxLen {
-			return errs.NewError(ctx, status.SCHOOL_NAME_TOO_LONG, nil,
+			return errs.NewError(ctx, domain.SchoolNameTooLong, nil,
 				ErrNameTooLong)
 		}
 	}
 	if req.Description != nil && len(*req.Description) > descriptionMaxLen {
-		return errs.NewError(ctx, status.SCHOOL_DESCRIPTION_TOO_LONG, nil,
+		return errs.NewError(ctx, domain.SchoolDescriptionTooLong, nil,
 			ErrDescriptionTooLong)
 	}
 	if req.ImageKey != nil && len(*req.ImageKey) > imageKeyMaxLen {
@@ -93,7 +94,7 @@ func ValidateUpdateSchool(ctx context.Context, req *dto.UpdateSchoolReq) error {
 
 func ValidateGetSchool(ctx context.Context, req *dto.GetSchoolReq) error {
 	if req.SchoolID == 0 {
-		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
+		return errs.NewError(ctx, domain.SchoolMissingID, nil,
 			ErrSchoolIDRequired)
 	}
 	return nil
@@ -142,7 +143,7 @@ func sanitizeSchoolIDs(ids []int64) []int64 {
 
 func ValidateDeleteSchool(ctx context.Context, req *dto.DeleteSchoolReq) error {
 	if req.SchoolID == 0 {
-		return errs.NewError(ctx, status.SCHOOL_MISSING_ID, nil,
+		return errs.NewError(ctx, domain.SchoolMissingID, nil,
 			ErrSchoolIDRequired)
 	}
 	return nil

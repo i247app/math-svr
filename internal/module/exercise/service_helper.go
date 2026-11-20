@@ -6,9 +6,9 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // resolveCaller resolves ProfileID with a fallback: when the request
@@ -21,7 +21,7 @@ func (s *Service) resolveCaller(ctx context.Context, profileID *int64, sessionUI
 	}
 	// No ProfileID supplied — require the session and look up by user.
 	if sessionUID == 0 {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil, ErrProfileIDRequired)
+		return nil, errs.NewError(ctx, domain.ClassroomExercisePermissionDenied, nil, ErrProfileIDRequired)
 	}
 	profiles, err := s.profileRepo.ListByUid(ctx, sessionUID)
 	if err != nil {
@@ -30,7 +30,7 @@ func (s *Service) resolveCaller(ctx context.Context, profileID *int64, sessionUI
 	if len(profiles) == 1 {
 		return profiles[0], nil
 	}
-	return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil, ErrProfileIDRequiredMultiProfile)
+	return nil, errs.NewError(ctx, domain.ClassroomExercisePermissionDenied, nil, ErrProfileIDRequiredMultiProfile)
 }
 
 // resolveExerciseProgram verifies the supplied program belongs to the
@@ -50,7 +50,7 @@ func (s *Service) resolveExerciseProgram(ctx context.Context, classroomID int64,
 			return programID, nil
 		}
 	}
-	return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_PROGRAM_NOT_IN_CLASSROOM, nil, ErrProgramNotAssociated)
+	return nil, errs.NewError(ctx, domain.ClassroomExerciseProgramNotInClassroom, nil, ErrProgramNotAssociated)
 }
 
 // hydrateSubmissionStatus stamps the per-exercise SubmissionStatus

@@ -11,9 +11,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/exam"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // MarkExamPoolVerifyCommand flags a question set as verified (0 -> 1; a
@@ -84,7 +84,7 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 		}
 		// A set drawn from the question bank is corrected in the bank.
 		if pool.ExamSource() == enum.ExamSourcePool.String() {
-			return errs.NewError(ctx, status.EXAM_POOL_BANK_READONLY, nil,
+			return errs.NewError(ctx, exam.ExamPoolBankReadonly, nil,
 				fmt.Errorf("exam: exam_pool %d was drawn from the question bank", cmd.ExamID))
 		}
 		var stored []dto.ExamQuestion
@@ -92,7 +92,7 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 			return errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("exam: decode exam_pool %d questions: %w", cmd.ExamID, err))
 		}
 		if err := SameQuestionShape(stored, cmd.Questions); err != nil {
-			return errs.NewError(ctx, status.EXAM_POOL_INVALID_QUESTIONS, nil, err)
+			return errs.NewError(ctx, exam.ExamPoolInvalidQuestions, nil, err)
 		}
 		// Only a set the model wrote reaches here (a bank set is refused
 		// above) and the model writes no images: whatever image a correction
@@ -214,7 +214,7 @@ func findLivePool(ctx context.Context, repos transaction.Repositories, examID in
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if pool == nil {
-		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, exam.ExamNotFound, nil,
 			errors.New("exam: exam_pool not found"))
 	}
 	return pool, nil

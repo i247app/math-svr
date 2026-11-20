@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	roledom "math-ai.com/math-ai/internal/domain/role"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // ForceDeleteRoleCommand physically removes the role row.
@@ -28,7 +29,7 @@ func (h *ForceDeleteRoleCommandHandler) Handle(ctx context.Context, cmd ForceDel
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.ROLE_NOT_FOUND, nil, ErrRoleNotFound)
+			return errs.NewError(ctx, roledom.RoleNotFound, nil, ErrRoleNotFound)
 		}
 		if err := repos.Role.ForceDeleteByRoleId(ctx, cmd.RoleID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)

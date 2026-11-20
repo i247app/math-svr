@@ -11,9 +11,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/questionpool"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -49,10 +49,10 @@ type issue struct {
 // and every issue (by path) in debug, so the admin can fix all at once.
 func ValidateCreateQuestionPools(ctx context.Context, req *dto.CreateQuestionPoolsReq) ([]*domain.QuestionPool, error) {
 	if len(req.QuestionPools) == 0 {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_EMPTY_LIST, nil, errors.New("question_pools is required"))
+		return nil, errs.NewError(ctx, domain.QuestionPoolEmptyList, nil, errors.New("question_pools is required"))
 	}
 	if len(req.QuestionPools) > MaxQuestionPoolsPerCreate {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_TOO_MANY, nil,
+		return nil, errs.NewError(ctx, domain.QuestionPoolTooMany, nil,
 			fmt.Errorf("at most %d questions per request, got %d", MaxQuestionPoolsPerCreate, len(req.QuestionPools)))
 	}
 
@@ -65,7 +65,7 @@ func ValidateCreateQuestionPools(ctx context.Context, req *dto.CreateQuestionPoo
 	firstByHash := map[string]int{}
 	for _, c := range checked {
 		if first, ok := firstByHash[c.q.QuestionHash()]; ok {
-			issues = append(issues, issue{status.QUESTION_POOL_DUPLICATE, fmt.Sprintf("question_pools[%d] repeats question_pools[%d]", c.index, first)})
+			issues = append(issues, issue{domain.QuestionPoolDuplicate, fmt.Sprintf("question_pools[%d] repeats question_pools[%d]", c.index, first)})
 			continue
 		}
 		firstByHash[c.q.QuestionHash()] = c.index
@@ -123,13 +123,13 @@ func issuesError(ctx context.Context, issues []issue) error {
 // ValidateUpdateQuestion checks what needs no stored row.
 func ValidateUpdateQuestionPool(ctx context.Context, req *dto.UpdateQuestionPoolReq) error {
 	if req.QuestionPoolID <= 0 {
-		return errs.NewError(ctx, status.QUESTION_POOL_MISSING_ID, nil, errors.New("question_pool_id is required"))
+		return errs.NewError(ctx, domain.QuestionPoolMissingID, nil, errors.New("question_pool_id is required"))
 	}
 	if req.QuestionKind == nil && req.QuestionText == nil && !req.QuestionImageKey.Set && !req.Options.Set &&
 		req.CorrectAnswer == nil && !req.Explanation.Set && !req.TtsText.Set && req.QuestionGrade == nil && !req.QuestionTopic.Set &&
 		!req.QuestionLevel.Set && !req.QuestionSubLevel.Set && req.QuestionTags == nil &&
 		req.QuestionLanguage == nil && !req.Translations.Set {
-		return errs.NewError(ctx, status.QUESTION_POOL_NOTHING_TO_UPDATE, nil, errors.New("no field to change"))
+		return errs.NewError(ctx, domain.QuestionPoolNothingToUpdate, nil, errors.New("no field to change"))
 	}
 	return nil
 }
@@ -137,10 +137,10 @@ func ValidateUpdateQuestionPool(ctx context.Context, req *dto.UpdateQuestionPool
 // ValidateMarkQuestionStatus needs a question_pool_id and a known review state.
 func ValidateMarkQuestionPoolStatus(ctx context.Context, req *dto.MarkQuestionPoolStatusReq) error {
 	if req.QuestionPoolID <= 0 {
-		return errs.NewError(ctx, status.QUESTION_POOL_MISSING_ID, nil, errors.New("question_pool_id is required"))
+		return errs.NewError(ctx, domain.QuestionPoolMissingID, nil, errors.New("question_pool_id is required"))
 	}
 	if !slices.Contains(domain.Statuses, req.QuestionStatus) {
-		return errs.NewError(ctx, status.QUESTION_POOL_INVALID_STATUS, nil,
+		return errs.NewError(ctx, domain.QuestionPoolInvalidStatus, nil,
 			fmt.Errorf("question_status %q is not one of %v", req.QuestionStatus, domain.Statuses))
 	}
 	return nil
@@ -255,12 +255,12 @@ func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, [
 	text := strings.TrimSpace(item.QuestionText)
 	switch {
 	case text == "":
-		add(status.QUESTION_POOL_INVALID, "question_text: required")
+		add(domain.QuestionPoolInvalid, "question_text: required")
 	case utf8.RuneCountInString(text) > MaxTextRunes:
-		add(status.QUESTION_POOL_INVALID, "question_text: longer than %d characters", MaxTextRunes)
+		add(domain.QuestionPoolInvalid, "question_text: longer than %d characters", MaxTextRunes)
 	}
 	if msg := checkImageKey(item.QuestionImageKey); msg != "" {
-		add(status.QUESTION_POOL_INVALID_IMAGE_KEY, "question_image_key: %s", msg)
+		add(domain.QuestionPoolInvalidImageKey, "question_image_key: %s", msg)
 	}
 
 	// An empty list is "no options": a TRUE_FALSE sent with "options": []
@@ -271,10 +271,10 @@ func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, [
 		for j, o := range item.Options {
 			optText := strings.TrimSpace(o.Text)
 			if utf8.RuneCountInString(optText) > MaxOptionTextRunes {
-				add(status.QUESTION_POOL_INVALID_OPTIONS, "options[%d].text: longer than %d characters", j, MaxOptionTextRunes)
+				add(domain.QuestionPoolInvalidOptions, "options[%d].text: longer than %d characters", j, MaxOptionTextRunes)
 			}
 			if msg := checkImageKey(o.ImageKey); msg != "" {
-				add(status.QUESTION_POOL_INVALID_IMAGE_KEY, "options[%d].image_key: %s", j, msg)
+				add(domain.QuestionPoolInvalidImageKey, "options[%d].image_key: %s", j, msg)
 			}
 			options = append(options, domain.Option{Id: strings.TrimSpace(o.Id), Text: optText, ImageKey: o.ImageKey})
 		}
@@ -282,7 +282,7 @@ func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, [
 
 	var answer domain.CorrectAnswer
 	if item.CorrectAnswer == nil {
-		add(status.QUESTION_POOL_INVALID_ANSWER, "correct_answer: required")
+		add(domain.QuestionPoolInvalidAnswer, "correct_answer: required")
 	} else {
 		answer = domain.CorrectAnswer{OptionIds: item.CorrectAnswer.OptionIds, Value: item.CorrectAnswer.Value, Values: item.CorrectAnswer.Values}
 		if kind == domain.KindNumericInput {
@@ -299,37 +299,37 @@ func buildQuestionPool(item dto.CreateQuestionPoolItem) (*domain.QuestionPool, [
 
 	switch g := item.QuestionGrade; {
 	case g == nil:
-		add(status.QUESTION_POOL_INVALID, "question_grade: required")
+		add(domain.QuestionPoolInvalid, "question_grade: required")
 	case *g < domain.GradeMin || *g > domain.GradeMax:
-		add(status.QUESTION_POOL_INVALID, "question_grade: %d is outside %d..%d", *g, domain.GradeMin, domain.GradeMax)
+		add(domain.QuestionPoolInvalid, "question_grade: %d is outside %d..%d", *g, domain.GradeMin, domain.GradeMax)
 	}
 	if l := item.QuestionLevel; l != nil && (*l < domain.LevelMin || *l > domain.LevelMax) {
-		add(status.QUESTION_POOL_INVALID, "question_level: %d is outside %d..%d", *l, domain.LevelMin, domain.LevelMax)
+		add(domain.QuestionPoolInvalid, "question_level: %d is outside %d..%d", *l, domain.LevelMin, domain.LevelMax)
 	}
 	if l := item.QuestionSubLevel; l != nil && (*l < domain.LevelMin || *l > domain.LevelMax) {
-		add(status.QUESTION_POOL_INVALID, "question_sub_level: %d is outside %d..%d", *l, domain.LevelMin, domain.LevelMax)
+		add(domain.QuestionPoolInvalid, "question_sub_level: %d is outside %d..%d", *l, domain.LevelMin, domain.LevelMax)
 	}
 	explanation := trimmedOrNil(item.Explanation)
 	if explanation != nil && utf8.RuneCountInString(*explanation) > domain.MaxExplanationRunes {
-		add(status.QUESTION_POOL_INVALID, "explanation: longer than %d characters", domain.MaxExplanationRunes)
+		add(domain.QuestionPoolInvalid, "explanation: longer than %d characters", domain.MaxExplanationRunes)
 	}
 	ttsText := trimmedOrNil(item.TtsText)
 	if ttsText != nil && utf8.RuneCountInString(*ttsText) > domain.MaxTtsTextRunes {
-		add(status.QUESTION_POOL_INVALID, "tts_text: longer than %d characters", domain.MaxTtsTextRunes)
+		add(domain.QuestionPoolInvalid, "tts_text: longer than %d characters", domain.MaxTtsTextRunes)
 	}
 	topic := trimmedOrNil(item.QuestionTopic)
 	if topic != nil && utf8.RuneCountInString(*topic) > MaxTopicRunes {
-		add(status.QUESTION_POOL_INVALID, "question_topic: longer than %d characters", MaxTopicRunes)
+		add(domain.QuestionPoolInvalid, "question_topic: longer than %d characters", MaxTopicRunes)
 	}
 	tags, msg := domain.CleanTags(item.QuestionTags)
 	if msg != "" {
-		add(status.QUESTION_POOL_INVALID, "question_tags: %s", msg)
+		add(domain.QuestionPoolInvalid, "question_tags: %s", msg)
 	}
 	lang := domain.DefaultLanguage
 	if item.QuestionLanguage != nil {
 		lang = enum.LanguageType(strings.TrimSpace(*item.QuestionLanguage))
 		if !slices.Contains(enum.ContentLanguages, lang) {
-			add(status.QUESTION_POOL_INVALID_TRANSLATION, "question_language: %q is not one of %v", lang, enum.ContentLanguages)
+			add(domain.QuestionPoolInvalidTranslation, "question_language: %q is not one of %v", lang, enum.ContentLanguages)
 		}
 	}
 	translations, found := buildTranslations(lang, options, item.Translations)
@@ -371,7 +371,7 @@ func buildTranslations(base enum.LanguageType, options []domain.Option, in map[s
 	}
 	var issues []issue
 	add := func(format string, args ...any) {
-		issues = append(issues, issue{status.QUESTION_POOL_INVALID_TRANSLATION, fmt.Sprintf(format, args...)})
+		issues = append(issues, issue{domain.QuestionPoolInvalidTranslation, fmt.Sprintf(format, args...)})
 	}
 	tooLong := func(path, s string, max int) {
 		if utf8.RuneCountInString(s) > max {
@@ -417,11 +417,11 @@ func buildTranslations(base enum.LanguageType, options []domain.Option, in map[s
 func shapeCode(err error) status.StatusCode {
 	switch {
 	case errors.Is(err, domain.ErrInvalidKind):
-		return status.QUESTION_POOL_INVALID_KIND
+		return domain.QuestionPoolInvalidKind
 	case errors.Is(err, domain.ErrInvalidOptions):
-		return status.QUESTION_POOL_INVALID_OPTIONS
+		return domain.QuestionPoolInvalidOptions
 	default:
-		return status.QUESTION_POOL_INVALID_ANSWER
+		return domain.QuestionPoolInvalidAnswer
 	}
 }
 
@@ -467,7 +467,7 @@ func ValidateForceDeleteQuestionPools(ctx context.Context, req *dto.ForceDeleteQ
 		return filter, err
 	}
 	if filter.IsEmpty() {
-		return filter, errs.NewError(ctx, status.QUESTION_POOL_DELETE_FILTER_REQUIRED, nil, domain.ErrEmptyFilter)
+		return filter, errs.NewError(ctx, domain.QuestionPoolDeleteFilterRequired, nil, domain.ErrEmptyFilter)
 	}
 	return filter, nil
 }
@@ -479,28 +479,28 @@ func ValidateListQuestionPools(ctx context.Context, req *dto.ListQuestionPoolsRe
 	var filter domain.ListQuestionPoolsFilter
 	if g := req.QuestionGrade; g != nil {
 		if *g < domain.GradeMin || *g > domain.GradeMax {
-			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil,
+			return filter, errs.NewError(ctx, domain.QuestionPoolInvalidFilter, nil,
 				fmt.Errorf("question_grade: %d is outside %d..%d", *g, domain.GradeMin, domain.GradeMax))
 		}
 		filter.Grade = g
 	}
 	if l := req.QuestionLevel; l != nil {
 		if *l < domain.LevelMin || *l > domain.LevelMax {
-			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil,
+			return filter, errs.NewError(ctx, domain.QuestionPoolInvalidFilter, nil,
 				fmt.Errorf("question_level: %d is outside %d..%d", *l, domain.LevelMin, domain.LevelMax))
 		}
 		filter.Level = l
 	}
 	if l := req.QuestionSubLevel; l != nil {
 		if *l < domain.SubLevelMin || *l > domain.SubLevelMax {
-			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil,
+			return filter, errs.NewError(ctx, domain.QuestionPoolInvalidFilter, nil,
 				fmt.Errorf("question_sub_level: %d is outside %d..%d", *l, domain.SubLevelMin, domain.SubLevelMax))
 		}
 		filter.SubLevel = l
 	}
 	if text := trimmedOrNil(req.QuestionText); text != nil {
 		if utf8.RuneCountInString(*text) > MaxTextSearchRunes {
-			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil,
+			return filter, errs.NewError(ctx, domain.QuestionPoolInvalidFilter, nil,
 				fmt.Errorf("question_text: longer than %d characters", MaxTextSearchRunes))
 		}
 		filter.Text = text
@@ -508,7 +508,7 @@ func ValidateListQuestionPools(ctx context.Context, req *dto.ListQuestionPoolsRe
 	filter.Topic = trimmedOrNil(req.QuestionTopic)
 	tags, msg := domain.CleanTags(req.QuestionTags)
 	if msg != "" {
-		return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil, errors.New("question_tags: "+msg))
+		return filter, errs.NewError(ctx, domain.QuestionPoolInvalidFilter, nil, errors.New("question_tags: "+msg))
 	}
 	if len(tags) > 0 {
 		filter.Tags = tags
@@ -516,7 +516,7 @@ func ValidateListQuestionPools(ctx context.Context, req *dto.ListQuestionPoolsRe
 	for _, raw := range req.QuestionKinds {
 		k := domain.Kind(strings.TrimSpace(raw))
 		if !k.IsValid() {
-			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_KIND, nil, fmt.Errorf("question_kinds: unknown kind %q", raw))
+			return filter, errs.NewError(ctx, domain.QuestionPoolInvalidKind, nil, fmt.Errorf("question_kinds: unknown kind %q", raw))
 		}
 		if !slices.Contains(filter.Kinds, k) {
 			filter.Kinds = append(filter.Kinds, k)
@@ -525,7 +525,7 @@ func ValidateListQuestionPools(ctx context.Context, req *dto.ListQuestionPoolsRe
 	for _, raw := range req.QuestionStatuses {
 		s := strings.TrimSpace(raw)
 		if !slices.Contains(domain.Statuses, s) {
-			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil, fmt.Errorf("question_statuses: unknown status %q", raw))
+			return filter, errs.NewError(ctx, domain.QuestionPoolInvalidFilter, nil, fmt.Errorf("question_statuses: unknown status %q", raw))
 		}
 		if !slices.Contains(filter.Statuses, s) {
 			filter.Statuses = append(filter.Statuses, s)
@@ -534,7 +534,7 @@ func ValidateListQuestionPools(ctx context.Context, req *dto.ListQuestionPoolsRe
 	if req.QuestionSource != nil {
 		src := domain.Source(strings.TrimSpace(*req.QuestionSource))
 		if !src.IsValid() {
-			return filter, errs.NewError(ctx, status.QUESTION_POOL_INVALID_FILTER, nil, fmt.Errorf("question_source: unknown source %q", *req.QuestionSource))
+			return filter, errs.NewError(ctx, domain.QuestionPoolInvalidFilter, nil, fmt.Errorf("question_source: unknown source %q", *req.QuestionSource))
 		}
 		filter.Source = &src
 	}

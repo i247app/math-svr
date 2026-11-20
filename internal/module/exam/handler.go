@@ -7,11 +7,12 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/resource"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	domain "math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/module/pow"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -168,7 +169,7 @@ func (h *ExamHandler) HandleGenerateExam(w http.ResponseWriter, r *http.Request)
 		}
 	} else {
 		if req.ProfileID > 0 {
-			response.WriteJson(w, nil, errs.NewError(ctx, status.EXAM_GUEST_PROFILE_NOT_OWNED, nil, ErrGuestProfileNotOwned))
+			response.WriteJson(w, nil, errs.NewError(ctx, domain.ExamGuestProfileNotOwned, nil, ErrGuestProfileNotOwned))
 			return
 		}
 

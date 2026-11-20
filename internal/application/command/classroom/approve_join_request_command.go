@@ -5,9 +5,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // ApproveJoinRequestCommand flips a PENDING_REQUEST ma_classroom_members
@@ -40,16 +40,16 @@ func (h *ApproveJoinRequestCommandHandler) Handle(ctx context.Context, cmd Appro
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if c == nil {
-			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
+			return errs.NewError(ctx, classroom.ClassroomNotFound, nil,
 				ErrClassroomNotFound)
 		}
 		if c.ClassroomStatus() != nil &&
 			*c.ClassroomStatus() == enum.ClassroomStatusTypeArchived.String() {
-			return errs.NewError(ctx, status.CLASSROOM_ALREADY_ARCHIVED, nil,
+			return errs.NewError(ctx, classroom.ClassroomAlreadyArchived, nil,
 				ErrClassroomArchived)
 		}
 		if c.MaxMembers() != nil && c.MemberCount() >= *c.MaxMembers() {
-			return errs.NewError(ctx, status.CLASSROOM_MAX_MEMBERS_REACHED, nil,
+			return errs.NewError(ctx, classroom.ClassroomMaxMembersReached, nil,
 				ErrClassroomFull)
 		}
 
@@ -58,7 +58,7 @@ func (h *ApproveJoinRequestCommandHandler) Handle(ctx context.Context, cmd Appro
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_NOT_FOUND, nil,
+			return errs.NewError(ctx, classroom.ClassroomJoinRequestNotFound, nil,
 				ErrJoinRequestNotFound)
 		}
 		currentStatus := ""
@@ -66,7 +66,7 @@ func (h *ApproveJoinRequestCommandHandler) Handle(ctx context.Context, cmd Appro
 			currentStatus = *existing.MemberStatus()
 		}
 		if currentStatus != enum.ClassroomMemberStatusTypePendingRequest.String() {
-			return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_NOT_PENDING, nil,
+			return errs.NewError(ctx, classroom.ClassroomJoinRequestNotPending, nil,
 				ErrJoinRequestNotPending)
 		}
 

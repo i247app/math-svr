@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // RestoreClassroomCommand reverses ArchiveClassroomCommand. Restoring
@@ -32,11 +33,11 @@ func (h *RestoreClassroomCommandHandler) Handle(ctx context.Context, cmd Restore
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
+			return errs.NewError(ctx, classroom.ClassroomNotFound, nil,
 				ErrClassroomNotFound)
 		}
 		if existing.ClassroomStatus() == nil || *existing.ClassroomStatus() != enum.ClassroomStatusTypeArchived.String() {
-			return errs.NewError(ctx, status.CLASSROOM_NOT_ARCHIVED, nil,
+			return errs.NewError(ctx, classroom.ClassroomNotArchived, nil,
 				ErrClassroomNotArchived)
 		}
 		if err := repos.Classroom.RestoreByClassroomId(ctx, cmd.ClassroomID); err != nil {

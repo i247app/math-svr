@@ -6,9 +6,11 @@ import (
 	command "math-ai.com/math-ai/internal/application/command/classroom"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/classroom"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	domain "math-ai.com/math-ai/internal/domain/classroom"
+	profiledom "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -83,14 +85,14 @@ func (s *Service) RemoveMember(ctx context.Context, req *dto.RemoveMemberReq, se
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if target == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomMemberNotFound, nil,
 			ErrTargetMemberNotFound)
 	}
 	// CO_TEACHER can only remove STUDENT targets; OWNER can remove
 	// CO_TEACHER and STUDENT.
 	if callerMember.MemberRole() == enum.ClassroomMemberRoleTypeCoTeacher.String() &&
 		target.MemberRole() != enum.ClassroomMemberRoleTypeStudent.String() {
-		return nil, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil, ErrCoTeacherCanOnlyRemoveStudent)
+		return nil, errs.NewError(ctx, domain.ClassroomPermissionDenied, nil, ErrCoTeacherCanOnlyRemoveStudent)
 	}
 	if err := s.removeMemberCmd.Handle(ctx, command.RemoveMemberCommand{
 		ClassroomID:     req.ClassroomID,
@@ -123,11 +125,11 @@ func (s *Service) UpdateMemberRole(ctx context.Context, req *dto.UpdateMemberRol
 			return nil, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if targetProfile == nil {
-			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			return nil, errs.NewError(ctx, profiledom.ProfileNotFound, nil,
 				ErrTargetProfileNotFound)
 		}
 		if utils.DerefString(targetProfile.Role()) != enum.RoleTypeTeacher.String() {
-			return nil, errs.NewError(ctx, status.CLASSROOM_MEMBER_INVALID_ROLE, nil,
+			return nil, errs.NewError(ctx, domain.ClassroomMemberInvalidRole, nil,
 				ErrTeacherCoTeacherOnly)
 		}
 	}
@@ -166,7 +168,7 @@ func (s *Service) TransferOwnership(ctx context.Context, req *dto.TransferOwners
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if newOwnerProfile == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, profiledom.ProfileNotFound, nil,
 			ErrNewOwnerProfileNotFound)
 	}
 	if err := s.requireTeacherRole(ctx, newOwnerProfile); err != nil {

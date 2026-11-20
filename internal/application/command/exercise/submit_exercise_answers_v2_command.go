@@ -13,10 +13,10 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SubmitExerciseAnswersV2Command is the deterministic counterpart of
@@ -63,18 +63,18 @@ func (h *SubmitExerciseAnswersV2CommandHandler) Handle(ctx context.Context, cmd 
 
 	answersJSON, err := json.Marshal(cmd.Answers)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionInvalidAnswers, nil,
 			fmt.Errorf("submission v2: marshal answers: %w", err))
 	}
 
 	if strings.TrimSpace(cmd.QuestionsJSON) == "" {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionGradingFailed, nil,
 			fmt.Errorf("submission v2: exercise has no questions to grade"))
 	}
 
 	score, err := scorer.Score(cmd.QuestionsJSON, cmd.Answers, cmd.Language)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionGradingFailed, nil, err)
 	}
 
 	var created *domain.Submission
@@ -121,7 +121,7 @@ func (h *SubmitExerciseAnswersV2CommandHandler) Handle(ctx context.Context, cmd 
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if saved == nil {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseSubmissionNotFound, nil,
 				ErrSubmissionNotFoundAfterInsert)
 		}
 		created = saved

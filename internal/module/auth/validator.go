@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/domain/login"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 func ValidateLogin(ctx context.Context, req *dto.LoginReq) error {
 	if strings.TrimSpace(req.LoginName) == "" {
-		return errs.NewError(ctx, status.AUTH_MISSING_LOGIN_NAME, nil, ErrLoginNameRequired)
+		return errs.NewError(ctx, login.AuthMissingLoginName, nil, ErrLoginNameRequired)
 	}
 	return nil
 }
@@ -21,7 +21,7 @@ func ValidateLogout(ctx context.Context, req *dto.LogoutReq) error {
 		return errs.NewUnauthorizedError(ctx, ErrUIDNotFoundInSession)
 	}
 	if req.DeviceUUID == "" {
-		return errs.NewError(ctx, status.AUTH_MISSING_DEVICE_UUID, nil, ErrDeviceUUIDRequired)
+		return errs.NewError(ctx, login.AuthMissingDeviceUUID, nil, ErrDeviceUUIDRequired)
 	}
 	return nil
 }

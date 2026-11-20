@@ -5,8 +5,9 @@ import (
 	"errors"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	notificationdom "math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SoftDeleteNotificationCommand marks an owned notification DELETED. Ownership
@@ -32,11 +33,11 @@ func (h *SoftDeleteNotificationCommandHandler) Handle(ctx context.Context, cmd S
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if n == nil {
-			return errs.NewError(ctx, status.NOTIFICATION_NOT_FOUND, nil,
+			return errs.NewError(ctx, notificationdom.NotificationNotFound, nil,
 				errors.New("notification not found"))
 		}
 		if n.UID() != cmd.UID {
-			return errs.NewError(ctx, status.NOTIFICATION_NOT_OWNED, nil,
+			return errs.NewError(ctx, notificationdom.NotificationNotOwned, nil,
 				errors.New("notification not owned by user"))
 		}
 		if err := repos.Notification.SoftDeleteByNotificationId(ctx, cmd.NotificationID); err != nil {

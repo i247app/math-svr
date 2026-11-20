@@ -10,16 +10,16 @@ import (
 type StatusMessage string
 
 func GetMessage(language enum.LanguageType, statusCode StatusCode, args map[string]any) StatusMessage {
-	var message StatusMessage
+	english := language == enum.LanguageTypeEnglish || language == enum.LanguageTypeEnglishV2
 
-	// Get template and static message based on language
-	switch language {
-	case enum.LanguageTypeVietnamese, enum.LanguageTypeVietnameseV2:
-		message = GetVNMessage(statusCode)
-	case enum.LanguageTypeEnglish, enum.LanguageTypeEnglishV2:
-		message = GetENMessage(statusCode)
-	default:
-		message = GetVNMessage(statusCode)
+	// Anything but English is Vietnamese; an unregistered code has no
+	// message ("") and the response falls back to the error's text.
+	var message StatusMessage
+	if m, ok := registered[statusCode]; ok {
+		message = m[1]
+		if english {
+			message = m[0]
+		}
 	}
 
 	// If we have args and a template exists, use the template

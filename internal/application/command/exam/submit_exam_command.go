@@ -16,10 +16,10 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -73,7 +73,7 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if examPool == nil {
-			return errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
+			return errs.NewError(ctx, exam.ExamNotFound, nil,
 				fmt.Errorf("exam: attempt %d points at missing exam_pool %d", cmd.ElinkID, attempt.ExamId()))
 		}
 
@@ -82,7 +82,7 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 		// one.
 		questions, err := decodeExamQuestions(examPool.QuestionsJson())
 		if err != nil {
-			return errs.NewError(ctx, status.EXAM_GRADING_FAILED, nil, err)
+			return errs.NewError(ctx, exam.ExamGradingFailed, nil, err)
 		}
 
 		// Answered-only denominator: this model counts what the child
@@ -93,7 +93,7 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 		// grading, or every shuffled sitting scores as random guessing.
 		canonicalAnswers, err := canonicalAnswersFor(attempt, cmd.Answers)
 		if err != nil {
-			return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS, map[string]any{"reason": err.Error()}, err)
+			return errs.NewError(ctx, exam.ExamInvalidAnswers, map[string]any{"reason": err.Error()}, err)
 		}
 
 		scored, err := scorer.ScoreExamQuestions(questions, canonicalAnswers, cmd.Language, scorer.DenominatorAnsweredOnly)
@@ -101,9 +101,9 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			// An answer that does not fit its question's kind is the
 			// client's mistake, not a grading failure.
 			if errors.Is(err, scorer.ErrAnswerShape) {
-				return errs.NewError(ctx, status.EXAM_INVALID_ANSWERS, map[string]any{"reason": err.Error()}, err)
+				return errs.NewError(ctx, exam.ExamInvalidAnswers, map[string]any{"reason": err.Error()}, err)
 			}
-			return errs.NewError(ctx, status.EXAM_GRADING_FAILED, nil, err)
+			return errs.NewError(ctx, exam.ExamGradingFailed, nil, err)
 		}
 
 		// The sitting folds into the journey it was drawn for first, so
@@ -130,7 +130,7 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			EsessId:         &journeyID,
 		}); err != nil {
 			if errors.Is(err, exam.ErrAttemptNotInProgress) {
-				return errs.NewError(ctx, status.EXAM_ALREADY_SUBMITTED, nil, err)
+				return errs.NewError(ctx, exam.ExamAlreadySubmitted, nil, err)
 			}
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
@@ -176,15 +176,15 @@ func (h *SubmitExamCommandHandler) loadOpenAttempt(ctx context.Context, repos tr
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if attempt == nil {
-		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, exam.ExamAttemptNotFound, nil,
 			fmt.Errorf("exam: attempt %d not found", cmd.ElinkID))
 	}
 	if attempt.Uid() != cmd.UID || attempt.ProfileId() != cmd.ProfileID {
-		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_OWNED, nil,
+		return nil, errs.NewError(ctx, exam.ExamAttemptNotOwned, nil,
 			fmt.Errorf("exam: attempt %d belongs to another profile", cmd.ElinkID))
 	}
 	if s := attempt.ElinkStatus(); s == nil || *s != enum.ElinkStatusInProgress.String() {
-		return nil, errs.NewError(ctx, status.EXAM_ALREADY_SUBMITTED, nil,
+		return nil, errs.NewError(ctx, exam.ExamAlreadySubmitted, nil,
 			fmt.Errorf("exam: attempt %d is not in progress", cmd.ElinkID))
 	}
 	return attempt, nil
@@ -278,7 +278,7 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 	}
 
 	if attempt.EsessId() == nil {
-		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
+		return 0, errs.NewError(ctx, exam.ExamJourneyNotFound, nil,
 			fmt.Errorf("exam: attempt %d was handed out without a journey", attempt.ElinkId()))
 	}
 	journeyID := *attempt.EsessId()
@@ -300,16 +300,16 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if owner == nil {
-		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
+		return 0, errs.NewError(ctx, exam.ExamJourneyNotFound, nil,
 			fmt.Errorf("exam: journey %d not found for attempt %d", journeyID, attempt.ElinkId()))
 	}
 	if owner.Uid() != cmd.UID || owner.ProfileId() != cmd.ProfileID {
-		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
+		return 0, errs.NewError(ctx, exam.ExamJourneyNotOwned, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
 	}
 	if attempt.ReqExamType() != enum.ExamTypePractice.String() {
 		if !hasStatus(owner, enum.EsessStatusActive) {
-			return 0, errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil,
+			return 0, errs.NewError(ctx, exam.ExamJourneyAlreadyEnded, nil,
 				fmt.Errorf("exam: journey %d has ended; attempt %d cannot fold into it", journeyID, attempt.ElinkId()))
 		}
 		row := h.journeyRow(cmd, attempt, owner, delta, journeyID)
@@ -320,7 +320,7 @@ func (h *SubmitExamCommandHandler) applyStats(ctx context.Context, repos transac
 	// journey was COMPLETE and submitted after the parent reopened it is
 	// refused — the journey is being measured again, not drilled.
 	if !hasStatus(owner, enum.EsessStatusComplete) {
-		return 0, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_COMPLETE, nil,
+		return 0, errs.NewError(ctx, exam.ExamJourneyNotComplete, nil,
 			fmt.Errorf("exam: journey %d is %s; practice attempt %d needs it COMPLETE", journeyID, utils.DerefString(owner.EsessStatus()), attempt.ElinkId()))
 	}
 
@@ -357,9 +357,9 @@ func (h *SubmitExamCommandHandler) accumulate(ctx context.Context, repos transac
 	if err := repos.ExamSession.Accumulate(ctx, journeyID, examType, expectedStatus, row, delta); err != nil {
 		if errors.Is(err, exam.ErrJourneyNotActive) {
 			if examType == enum.ExamTypePractice.String() {
-				return errs.NewError(ctx, status.EXAM_JOURNEY_NOT_COMPLETE, nil, err)
+				return errs.NewError(ctx, exam.ExamJourneyNotComplete, nil, err)
 			}
-			return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
+			return errs.NewError(ctx, exam.ExamJourneyAlreadyEnded, nil, err)
 		}
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}

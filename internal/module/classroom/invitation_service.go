@@ -7,8 +7,9 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 
 	query "math-ai.com/math-ai/internal/application/query/classroom"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	profiledom "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -42,7 +43,7 @@ func (s *Service) SendInvitation(ctx context.Context, req *dto.SendInvitationReq
 			return nil, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if profileExists == nil {
-			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
+			return nil, errs.NewError(ctx, profiledom.ProfileNotFound, nil, ErrProfileNotFound)
 		}
 
 		targets = append(targets, command.SendInvitationTarget{

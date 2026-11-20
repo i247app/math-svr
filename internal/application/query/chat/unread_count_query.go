@@ -4,8 +4,8 @@ import (
 	"context"
 
 	domain "math-ai.com/math-ai/internal/domain/chat"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type UnreadCountQueryHandler struct {

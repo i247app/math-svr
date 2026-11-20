@@ -4,10 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/pkg/twilio"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // mapTwilioError translates a libs/twilio error into a domain-layer
@@ -29,7 +28,7 @@ func mapTwilioError(ctx context.Context, msg Message, err error) *errs.MathError
 	}
 
 	if errors.Is(err, twilio.ErrDecodeResponse) {
-		return errs.NewError(ctx, status.SMS_SERIALIZE_FAILED, nil, err)
+		return errs.NewError(ctx, SMSSerializeFailed, nil, err)
 	}
 
 	var apiErr *twilio.APIError
@@ -41,13 +40,13 @@ func mapTwilioError(ctx context.Context, msg Message, err error) *errs.MathError
 			"to_masked":        twilio.MaskPhone(msg.To),
 		}
 		if twilio.IsConfigError(err) {
-			return errs.NewError(ctx, status.SMS_CONFIG_INVALID, args, err)
+			return errs.NewError(ctx, SMSConfigInvalid, args, err)
 		}
-		return errs.NewError(ctx, status.SMS_OP_FAILED, args, err)
+		return errs.NewError(ctx, SMSOpFailed, args, err)
 	}
 
 	// Transport failure (DNS, TCP, TLS, retry exhaustion).
-	return errs.NewError(ctx, status.SMS_OP_FAILED, map[string]any{
+	return errs.NewError(ctx, SMSOpFailed, map[string]any{
 		"to_masked": twilio.MaskPhone(msg.To),
 	}, err)
 }

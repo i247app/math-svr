@@ -10,10 +10,10 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/banner"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/banner"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 const (
@@ -69,7 +69,7 @@ func (s *Service) CreateBanner(ctx context.Context, req *dto.CreateBannerReq, ac
 	)
 	switch {
 	case strings.TrimSpace(req.Media) != "":
-		key, err := s.normalizeBannerKey(ctx, req.Media, status.BANNER_MEDIA_INVALID_REFERENCE)
+		key, err := s.normalizeBannerKey(ctx, req.Media, domain.BannerMediaInvalidReference)
 		if err != nil {
 			return nil, err
 		}
@@ -123,7 +123,7 @@ func (s *Service) UpdateBanner(ctx context.Context, req *dto.UpdateBannerReq, ac
 		return nil, err
 	}
 	if existBanner == nil {
-		return nil, errs.NewError(ctx, status.BANNER_NOT_FOUND, nil, ErrBannerNotFound)
+		return nil, errs.NewError(ctx, domain.BannerNotFound, nil, ErrBannerNotFound)
 	}
 
 	var (
@@ -132,7 +132,7 @@ func (s *Service) UpdateBanner(ctx context.Context, req *dto.UpdateBannerReq, ac
 	)
 	switch {
 	case strings.TrimSpace(req.Media) != "":
-		key, err := s.normalizeBannerKey(ctx, req.Media, status.BANNER_MEDIA_INVALID_REFERENCE)
+		key, err := s.normalizeBannerKey(ctx, req.Media, domain.BannerMediaInvalidReference)
 		if err != nil {
 			return nil, err
 		}
@@ -217,7 +217,7 @@ func (s *Service) GetBanner(ctx context.Context, req *dto.GetBannerReq) (*dto.Ge
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if found == nil {
-		return nil, errs.NewError(ctx, status.BANNER_NOT_FOUND, nil, ErrBannerNotFound)
+		return nil, errs.NewError(ctx, domain.BannerNotFound, nil, ErrBannerNotFound)
 	}
 
 	resp := dto.BannerDomainToResponse(found)

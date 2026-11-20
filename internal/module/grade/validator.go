@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/grade"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // labelMaxLen / descriptionMaxLen mirror the column widths in
@@ -18,52 +18,52 @@ const (
 
 func ValidateCreateGrade(ctx context.Context, req *dto.CreateGradeReq) error {
 	if strings.TrimSpace(req.Label) == "" {
-		return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil, ErrLabelRequired)
+		return errs.NewError(ctx, domain.GradeMissingLabel, nil, ErrLabelRequired)
 	}
 	if len(req.Label) > labelMaxLen {
-		return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil, ErrLabelTooLong)
+		return errs.NewError(ctx, domain.GradeMissingLabel, nil, ErrLabelTooLong)
 	}
 	if strings.TrimSpace(req.Description) == "" {
-		return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil, ErrDescriptionRequired)
+		return errs.NewError(ctx, domain.GradeMissingDescription, nil, ErrDescriptionRequired)
 	}
 	if len(req.Description) > descriptionMaxLen {
-		return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil, ErrDescriptionTooLong)
+		return errs.NewError(ctx, domain.GradeMissingDescription, nil, ErrDescriptionTooLong)
 	}
 	if req.DisplayOrder < 0 {
-		return errs.NewError(ctx, status.GRADE_INVALID_DISPLAY_ORDER, nil, ErrDisplayOrderMustBe0)
+		return errs.NewError(ctx, domain.GradeInvalidDisplayOrder, nil, ErrDisplayOrderMustBe0)
 	}
 	return nil
 }
 
 func ValidateUpdateGrade(ctx context.Context, req *dto.UpdateGradeReq) error {
 	if req.GradeID == 0 {
-		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil, ErrGradeIDRequired)
+		return errs.NewError(ctx, domain.GradeMissingID, nil, ErrGradeIDRequired)
 	}
 	if req.Label != nil {
 		if strings.TrimSpace(*req.Label) == "" {
-			return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil, ErrLabelCannotBeBlank)
+			return errs.NewError(ctx, domain.GradeMissingLabel, nil, ErrLabelCannotBeBlank)
 		}
 		if len(*req.Label) > labelMaxLen {
-			return errs.NewError(ctx, status.GRADE_MISSING_LABEL, nil, ErrLabelTooLong)
+			return errs.NewError(ctx, domain.GradeMissingLabel, nil, ErrLabelTooLong)
 		}
 	}
 	if req.Description != nil {
 		if strings.TrimSpace(*req.Description) == "" {
-			return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil, ErrDescriptionCannotBeBlank)
+			return errs.NewError(ctx, domain.GradeMissingDescription, nil, ErrDescriptionCannotBeBlank)
 		}
 		if len(*req.Description) > descriptionMaxLen {
-			return errs.NewError(ctx, status.GRADE_MISSING_DESCRIPTION, nil, ErrDescriptionTooLong)
+			return errs.NewError(ctx, domain.GradeMissingDescription, nil, ErrDescriptionTooLong)
 		}
 	}
 	if req.DisplayOrder != nil && *req.DisplayOrder < 0 {
-		return errs.NewError(ctx, status.GRADE_INVALID_DISPLAY_ORDER, nil, ErrDisplayOrderMustBe0)
+		return errs.NewError(ctx, domain.GradeInvalidDisplayOrder, nil, ErrDisplayOrderMustBe0)
 	}
 	return nil
 }
 
 func ValidateGetGrade(ctx context.Context, req *dto.GetGradeReq) error {
 	if req.GradeID == 0 {
-		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil, ErrGradeIDRequired)
+		return errs.NewError(ctx, domain.GradeMissingID, nil, ErrGradeIDRequired)
 	}
 	return nil
 }
@@ -101,7 +101,7 @@ func sanitizeGradeIDs(ids []int64) []int64 {
 
 func ValidateDeleteGrade(ctx context.Context, req *dto.DeleteGradeReq) error {
 	if req.GradeID == 0 {
-		return errs.NewError(ctx, status.GRADE_MISSING_ID, nil, ErrGradeIDRequired)
+		return errs.NewError(ctx, domain.GradeMissingID, nil, ErrGradeIDRequired)
 	}
 	return nil
 }

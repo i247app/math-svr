@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/pkg/deepseek"
 	"math-ai.com/math-ai/internal/pkg/gemini"
 	"math-ai.com/math-ai/internal/pkg/openai"
 	"math-ai.com/math-ai/internal/pkg/openrouter"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // mapOpenRouterError translates a libs/openrouter error into a
@@ -53,22 +52,22 @@ func mapOpenRouterError(ctx context.Context, err error) *errs.MathError {
 	case errors.Is(err, openrouter.ErrInvalidConfig),
 		errors.Is(err, openrouter.ErrInsufficientCredits),
 		openrouter.IsConfigError(err):
-		return errs.NewError(ctx, status.LLM_CONFIG_INVALID, args, err)
+		return errs.NewError(ctx, LLMConfigInvalid, args, err)
 
 	case errors.Is(err, openrouter.ErrUnsupportedOp):
-		return errs.NewError(ctx, status.LLM_UNSUPPORTED_OP, args, err)
+		return errs.NewError(ctx, LLMUnsupportedOp, args, err)
 
 	case errors.Is(err, openrouter.ErrContextTooLarge):
-		return errs.NewError(ctx, status.LLM_CONTEXT_TOO_LARGE, args, err)
+		return errs.NewError(ctx, LLMContextTooLarge, args, err)
 
 	case errors.Is(err, openrouter.ErrRateLimited), openrouter.IsRateLimited(err):
-		return errs.NewError(ctx, status.LLM_RATE_LIMITED, args, err)
+		return errs.NewError(ctx, LLMRateLimited, args, err)
 
 	case errors.Is(err, openrouter.ErrDecodeResponse):
-		return errs.NewError(ctx, status.LLM_SERIALIZE_FAILED, args, err)
+		return errs.NewError(ctx, LLMSerializeFailed, args, err)
 	}
 
-	return errs.NewError(ctx, status.LLM_OP_FAILED, args, err)
+	return errs.NewError(ctx, LLMOpFailed, args, err)
 }
 
 // mapOpenAIError translates a libs/openai error into a domain-layer
@@ -119,32 +118,32 @@ func mapOpenAIError(ctx context.Context, err error) *errs.MathError {
 	// chain — see IsChainPointerGone.
 	case openai.IsPreviousResponseGone(err):
 		args["vendor_reason"] = VendorReasonPreviousResponseGone
-		return errs.NewError(ctx, status.LLM_OP_FAILED, args, err)
+		return errs.NewError(ctx, LLMOpFailed, args, err)
 
 	case errors.Is(err, openai.ErrInvalidConfig),
 		errors.Is(err, openai.ErrQuotaExhausted),
 		openai.IsConfigError(err):
-		return errs.NewError(ctx, status.LLM_CONFIG_INVALID, args, err)
+		return errs.NewError(ctx, LLMConfigInvalid, args, err)
 
 	case errors.Is(err, openai.ErrUnsupportedOp):
-		return errs.NewError(ctx, status.LLM_UNSUPPORTED_OP, args, err)
+		return errs.NewError(ctx, LLMUnsupportedOp, args, err)
 
 	case errors.Is(err, openai.ErrContextTooLarge):
-		return errs.NewError(ctx, status.LLM_CONTEXT_TOO_LARGE, args, err)
+		return errs.NewError(ctx, LLMContextTooLarge, args, err)
 
 	case errors.Is(err, openai.ErrRateLimited), openai.IsRateLimited(err):
-		return errs.NewError(ctx, status.LLM_RATE_LIMITED, args, err)
+		return errs.NewError(ctx, LLMRateLimited, args, err)
 
 	case errors.Is(err, openai.ErrContentRefused):
 		// Deterministic for the same input — same reasoning as Gemini's
 		// safety block: a retry would be refused identically.
-		return errs.NewError(ctx, status.LLM_CONTENT_BLOCKED, args, err)
+		return errs.NewError(ctx, LLMContentBlocked, args, err)
 
 	case errors.Is(err, openai.ErrDecodeResponse):
-		return errs.NewError(ctx, status.LLM_SERIALIZE_FAILED, args, err)
+		return errs.NewError(ctx, LLMSerializeFailed, args, err)
 	}
 
-	return errs.NewError(ctx, status.LLM_OP_FAILED, args, err)
+	return errs.NewError(ctx, LLMOpFailed, args, err)
 }
 
 // VendorReasonPreviousResponseGone is the args["vendor_reason"] value a
@@ -209,27 +208,27 @@ func mapGeminiError(ctx context.Context, err error) *errs.MathError {
 
 	switch {
 	case errors.Is(err, gemini.ErrContentBlocked):
-		return errs.NewError(ctx, status.LLM_CONTENT_BLOCKED, args, err)
+		return errs.NewError(ctx, LLMContentBlocked, args, err)
 
 	case errors.Is(err, gemini.ErrInvalidConfig),
 		errors.Is(err, gemini.ErrQuotaExhausted),
 		gemini.IsConfigError(err):
-		return errs.NewError(ctx, status.LLM_CONFIG_INVALID, args, err)
+		return errs.NewError(ctx, LLMConfigInvalid, args, err)
 
 	case errors.Is(err, gemini.ErrUnsupportedOp):
-		return errs.NewError(ctx, status.LLM_UNSUPPORTED_OP, args, err)
+		return errs.NewError(ctx, LLMUnsupportedOp, args, err)
 
 	case errors.Is(err, gemini.ErrContextTooLarge):
-		return errs.NewError(ctx, status.LLM_CONTEXT_TOO_LARGE, args, err)
+		return errs.NewError(ctx, LLMContextTooLarge, args, err)
 
 	case errors.Is(err, gemini.ErrRateLimited), gemini.IsRateLimited(err):
-		return errs.NewError(ctx, status.LLM_RATE_LIMITED, args, err)
+		return errs.NewError(ctx, LLMRateLimited, args, err)
 
 	case errors.Is(err, gemini.ErrDecodeResponse):
-		return errs.NewError(ctx, status.LLM_SERIALIZE_FAILED, args, err)
+		return errs.NewError(ctx, LLMSerializeFailed, args, err)
 	}
 
-	return errs.NewError(ctx, status.LLM_OP_FAILED, args, err)
+	return errs.NewError(ctx, LLMOpFailed, args, err)
 }
 
 // mapDeepSeekError translates a libs/deepseek error into a domain-layer
@@ -276,28 +275,28 @@ func mapDeepSeekError(ctx context.Context, err error) *errs.MathError {
 
 	switch {
 	case errors.Is(err, deepseek.ErrContentFiltered):
-		return errs.NewError(ctx, status.LLM_CONTENT_BLOCKED, args, err)
+		return errs.NewError(ctx, LLMContentBlocked, args, err)
 
 	case errors.Is(err, deepseek.ErrInvalidConfig),
 		errors.Is(err, deepseek.ErrInsufficientBalance),
 		deepseek.IsConfigError(err):
-		return errs.NewError(ctx, status.LLM_CONFIG_INVALID, args, err)
+		return errs.NewError(ctx, LLMConfigInvalid, args, err)
 
 	case errors.Is(err, deepseek.ErrUnsupportedOp):
-		return errs.NewError(ctx, status.LLM_UNSUPPORTED_OP, args, err)
+		return errs.NewError(ctx, LLMUnsupportedOp, args, err)
 
 	case errors.Is(err, deepseek.ErrContextTooLarge):
-		return errs.NewError(ctx, status.LLM_CONTEXT_TOO_LARGE, args, err)
+		return errs.NewError(ctx, LLMContextTooLarge, args, err)
 
 	case errors.Is(err, deepseek.ErrRateLimited), deepseek.IsRateLimited(err):
-		return errs.NewError(ctx, status.LLM_RATE_LIMITED, args, err)
+		return errs.NewError(ctx, LLMRateLimited, args, err)
 
 	case errors.Is(err, deepseek.ErrDecodeResponse):
-		return errs.NewError(ctx, status.LLM_SERIALIZE_FAILED, args, err)
+		return errs.NewError(ctx, LLMSerializeFailed, args, err)
 	}
 
 	// ErrServerOverloaded lands here on purpose: LLM_OP_FAILED is the
 	// registry's transient bucket, which is exactly what an overloaded
 	// platform is.
-	return errs.NewError(ctx, status.LLM_OP_FAILED, args, err)
+	return errs.NewError(ctx, LLMOpFailed, args, err)
 }

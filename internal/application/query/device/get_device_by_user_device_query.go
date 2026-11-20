@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/domain/device"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type GetDeviceByUserDeviceQuery struct {
@@ -24,7 +23,7 @@ func NewGetDeviceByUserDeviceQueryHandler(repo device.IRepository) *GetDeviceByU
 func (h *GetDeviceByUserDeviceQueryHandler) Handle(ctx context.Context, q GetDeviceByUserDeviceQuery) (*device.Device, error) {
 	d, err := h.repo.FindByUserDevice(ctx, q.UID, q.DeviceUUID)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+		return nil, errs.NewError(ctx, device.DeviceRegistrationFail, nil, err)
 	}
 	return d, nil
 }

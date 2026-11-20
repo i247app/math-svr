@@ -6,8 +6,8 @@ import (
 	"math-ai.com/math-ai/internal/application/command/shared/practice"
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // GetExamJourneyQuery reads one journey in full. Ownership is proven on
@@ -83,10 +83,10 @@ func (h *GetExamJourneyQueryHandler) Handle(ctx context.Context, q GetExamJourne
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if journey == nil {
-		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil, nil)
+		return nil, errs.NewError(ctx, exam.ExamJourneyNotFound, nil, nil)
 	}
 	if journey.Uid() != q.UID || journey.ProfileId() != q.ProfileID {
-		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil, nil)
+		return nil, errs.NewError(ctx, exam.ExamJourneyNotOwned, nil, nil)
 	}
 
 	details, err := h.detailRepo.ListByEsessId(ctx, journey.EsessId(), journey.ReqExamType())

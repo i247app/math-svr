@@ -23,16 +23,16 @@ func (h *LogoutCommandHandler) Handle(ctx context.Context, cmd LogoutCommand) er
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		// ll, err := repos.LoginLog.FindActiveByUserDevice(ctx, cmd.UID, cmd.DeviceUUID)
 		// if err != nil {
-		// 	return errs.NewError(ctx, status.AUTH_LOGOUT_FAILED, nil, err)
+		// 	return errs.NewError(ctx, login.AuthLogoutFailed, nil, err)
 		// }
 		// if ll == nil {
-		// 	return errs.NewError(ctx, status.AUTH_INVALID_TOKEN, nil, ErrTokenNotFoundOrRevoked)
+		// 	return errs.NewError(ctx, login.AuthInvalidToken, nil, ErrTokenNotFoundOrRevoked)
 		// }
 
 		// if err := repos.LoginLog.MarkStatusByLoginLogId(
 		// 	ctx, ll.LoginLogId(), enum.LoginLogStatusTypeRevoked,
 		// ); err != nil {
-		// 	return errs.NewError(ctx, status.AUTH_LOGOUT_FAILED, nil, err)
+		// 	return errs.NewError(ctx, login.AuthLogoutFailed, nil, err)
 		// }
 
 		// err := repos.LoginLog.MarkStatusByUserDevice(ctx, cmd.UID, cmd.DeviceUUID, enum.LoginLogStatusTypeRevoked)

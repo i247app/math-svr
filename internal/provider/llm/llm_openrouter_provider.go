@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/pkg/openrouter"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // OpenRouterProvider is the LLMProvider implementation backed by
@@ -102,7 +101,7 @@ func (p *OpenRouterProvider) Stream(ctx context.Context, req ChatRequest, onChun
 // embedding endpoint; deploys that need embeddings should route Embed via
 // the openai or gemini provider (EmbedVia).
 func (p *OpenRouterProvider) Embed(ctx context.Context, _ EmbedRequest) (*EmbedResult, error) {
-	return nil, errs.NewError(ctx, status.LLM_UNSUPPORTED_OP,
+	return nil, errs.NewError(ctx, LLMUnsupportedOp,
 		map[string]any{"provider": string(ProviderOpenRouter)},
 		errors.New("openrouter provider does not support embeddings"))
 }

@@ -7,8 +7,9 @@ import (
 	"math/big"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // maxProfileCodeAttempts bounds how many times mintUniqueProfileCode
@@ -67,7 +68,7 @@ func mintUniqueProfileCode(ctx context.Context, repos transaction.Repositories) 
 	for attempt := 0; attempt < maxProfileCodeAttempts; attempt++ {
 		candidate, err := generateProfileCode()
 		if err != nil {
-			return "", errs.NewError(ctx, status.PROFILE_CODE_GENERATION_FAILED, nil, err)
+			return "", errs.NewError(ctx, profile.ProfileCodeGenerationFailed, nil, err)
 		}
 		existing, err := repos.Profile.FindByProfileCode(ctx, candidate)
 		if err != nil {
@@ -77,6 +78,6 @@ func mintUniqueProfileCode(ctx context.Context, repos transaction.Repositories) 
 			return candidate, nil
 		}
 	}
-	return "", errs.NewError(ctx, status.PROFILE_CODE_GENERATION_FAILED, nil,
+	return "", errs.NewError(ctx, profile.ProfileCodeGenerationFailed, nil,
 		ErrProfileCodeMintExhausted)
 }

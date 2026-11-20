@@ -5,8 +5,8 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/grade"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateGradeCommand patches the parent row. Each pointer field is
@@ -39,7 +39,7 @@ func (h *UpdateGradeCommandHandler) Handle(ctx context.Context, cmd UpdateGradeC
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.GRADE_NOT_FOUND, nil,
+			return errs.NewError(ctx, grade.GradeNotFound, nil,
 				ErrGradeNotFound)
 		}
 
@@ -75,7 +75,7 @@ func (h *UpdateGradeCommandHandler) Handle(ctx context.Context, cmd UpdateGradeC
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if refreshed == nil {
-			return errs.NewError(ctx, status.GRADE_NOT_FOUND, nil,
+			return errs.NewError(ctx, grade.GradeNotFound, nil,
 				ErrGradeNotFoundAfterUpdate)
 		}
 		updated = refreshed

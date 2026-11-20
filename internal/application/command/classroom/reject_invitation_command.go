@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	classroomdom "math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // RejectInvitationCommand flips a PENDING ma_classroom_members row to
@@ -35,7 +36,7 @@ func (h *RejectInvitationCommandHandler) Handle(ctx context.Context, cmd RejectI
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.CLASSROOM_INVITATION_NOT_FOUND, nil,
+			return errs.NewError(ctx, classroomdom.ClassroomInvitationNotFound, nil,
 				ErrInvitationNotFound)
 		}
 		currentStatus := ""
@@ -43,7 +44,7 @@ func (h *RejectInvitationCommandHandler) Handle(ctx context.Context, cmd RejectI
 			currentStatus = *existing.MemberStatus()
 		}
 		if currentStatus != enum.ClassroomMemberStatusTypePendingInvitation.String() {
-			return errs.NewError(ctx, status.CLASSROOM_INVITATION_NOT_PENDING, nil,
+			return errs.NewError(ctx, classroomdom.ClassroomInvitationNotPending, nil,
 				ErrInvitationNotPending)
 		}
 		if err := repos.ClassroomMember.Reject(ctx, existing.MemberId()); err != nil {

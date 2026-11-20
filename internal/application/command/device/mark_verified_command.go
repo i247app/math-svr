@@ -8,10 +8,9 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // MarkDeviceVerifiedCommand promotes a device to the trusted set. The future
@@ -42,10 +41,10 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		d, err := repos.Device.FindByUserDevice(ctx, cmd.UID, cmd.DeviceUUID)
 		if err != nil {
-			return errs.NewError(ctx, status.DEVICE_VERIFICATION_FAIL, nil, err)
+			return errs.NewError(ctx, device.DeviceVerificationFail, nil, err)
 		}
 		if d == nil {
-			// return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
+			// return errs.NewError(ctx, device.DeviceNotFound, nil, ErrDeviceNotFound)
 			d := device.NewDevice()
 			deviceID, err := seqgen.Next(ctx, repos.Seq, seq.NameDevice)
 			if err != nil {
@@ -66,20 +65,20 @@ func (h *MarkDeviceVerifiedCommandHandler) Handle(ctx context.Context, cmd MarkD
 
 			_, err = repos.Device.Create(ctx, d)
 			if err != nil {
-				return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+				return errs.NewError(ctx, device.DeviceRegistrationFail, nil, err)
 			}
 			return nil
 		}
 		if d.UID() == nil || *d.UID() != cmd.UID {
-			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil, ErrDeviceNotOwnedByUser)
+			return errs.NewError(ctx, device.DeviceNotOwned, nil, ErrDeviceNotOwnedByUser)
 		}
 		if d.IsVerified() {
-			// return errs.NewError(ctx, status.DEVICE_ALREADY_VERIFIED, nil, ErrDeviceAlreadyVerified)
+			// return errs.NewError(ctx, device.DeviceAlreadyVerified, nil, ErrDeviceAlreadyVerified)
 			log.Info("device is already verified")
 		}
 
 		if err := repos.Device.MarkVerifiedByUserDevice(ctx, cmd.UID, cmd.DeviceUUID, true); err != nil {
-			return errs.NewError(ctx, status.DEVICE_VERIFICATION_FAIL, nil, err)
+			return errs.NewError(ctx, device.DeviceVerificationFail, nil, err)
 		}
 		return nil
 	})

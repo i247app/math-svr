@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/domain/otp"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type GetOtpByIdQuery struct {
@@ -23,7 +22,7 @@ func NewGetOtpByIdQueryHandler(repo otp.IRepository) *GetOtpByIdQueryHandler {
 func (h *GetOtpByIdQueryHandler) Handle(ctx context.Context, q GetOtpByIdQuery) (*otp.Otp, error) {
 	o, err := h.repo.FindByOtpId(ctx, q.OtpID)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.OTP_NOT_FOUND, nil, err)
+		return nil, errs.NewError(ctx, otp.OTPNotFound, nil, err)
 	}
 	return o, nil
 }

@@ -14,13 +14,13 @@ import (
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	programDomain "math-ai.com/math-ai/internal/domain/program"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	llmProvider "math-ai.com/math-ai/internal/provider/llm"
 	"math-ai.com/math-ai/internal/provider/storage"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Service is the classroomexercise module's public façade. The
@@ -116,7 +116,7 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if classroom == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil, ErrClassroomNotFound)
+		return nil, errs.NewError(ctx, classroomDomain.ClassroomNotFound, nil, ErrClassroomNotFound)
 	}
 
 	programID, err := s.resolveExerciseProgram(ctx, req.ClassroomID, req.ProgramID)
@@ -155,7 +155,7 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 
 	questionsJSON, err := json.Marshal(generated.Questions)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_GENERATION_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseGenerationFailed, nil, err)
 	}
 	answersJSON := buildAnswerKey(generated.Questions)
 
@@ -219,7 +219,7 @@ func (s *Service) UpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if existing == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil, ErrClassroomExerciseNotFound)
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseNotFound, nil, ErrClassroomExerciseNotFound)
 	}
 	if _, err := s.requireManager(ctx, existing.ClassroomId(), caller.ProfileId()); err != nil {
 		return nil, err
@@ -262,7 +262,7 @@ func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sess
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if exercise == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil, ErrClassroomExerciseNotFound)
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseNotFound, nil, ErrClassroomExerciseNotFound)
 	}
 
 	// caller, err := s.resolveCaller(ctx, req.ProfileID, sessionUID)
@@ -364,7 +364,7 @@ func (s *Service) SoftDeleteExercise(ctx context.Context, req *dto.DeleteExercis
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if existing == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil, ErrClassroomExerciseNotFound)
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseNotFound, nil, ErrClassroomExerciseNotFound)
 	}
 	if _, err := s.requireManager(ctx, existing.ClassroomId(), caller.ProfileId()); err != nil {
 		return nil, err

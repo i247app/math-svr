@@ -3,11 +3,12 @@ package chat
 import (
 	"context"
 
+	domain "math-ai.com/math-ai/internal/domain/chat"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // This file is the whole authorization story for chat. There is no role system
@@ -25,10 +26,10 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUI
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if p == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
+		return nil, errs.NewError(ctx, profileDomain.ProfileNotFound, nil, ErrProfileNotFound)
 	}
 	if sessionUID != 0 && sessionUID != p.UID() {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileNotOwnedByUser)
+		return nil, errs.NewError(ctx, profileDomain.ProfileNotFound, nil, ErrProfileNotOwnedByUser)
 	}
 	return p, nil
 }
@@ -41,7 +42,7 @@ func (s *Service) requireActiveMember(ctx context.Context, classroomID, profileI
 	}
 	if m == nil || m.MemberStatus() == nil ||
 		*m.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
-		return nil, errs.NewError(ctx, status.CHAT_TARGET_NOT_IN_CLASSROOM, nil, notMemberErr)
+		return nil, errs.NewError(ctx, domain.ChatTargetNotInClassroom, nil, notMemberErr)
 	}
 	return m, nil
 }
@@ -56,7 +57,7 @@ func (s *Service) requireActiveMember(ctx context.Context, classroomID, profileI
 // would experience as data loss.
 func (s *Service) requireCanMessage(ctx context.Context, classroomID, actorProfileID, targetProfileID int64) (*profileDomain.Profile, error) {
 	if actorProfileID == targetProfileID {
-		return nil, errs.NewError(ctx, status.CHAT_CANNOT_MESSAGE_SELF, nil, ErrCannotMessageSelf)
+		return nil, errs.NewError(ctx, domain.ChatCannotMessageSelf, nil, ErrCannotMessageSelf)
 	}
 
 	if _, err := s.requireActiveMember(ctx, classroomID, actorProfileID, ErrNotClassroomMember); err != nil {
@@ -71,7 +72,7 @@ func (s *Service) requireCanMessage(ctx context.Context, classroomID, actorProfi
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if target == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrTargetProfileNotFound)
+		return nil, errs.NewError(ctx, profileDomain.ProfileNotFound, nil, ErrTargetProfileNotFound)
 	}
 	return target, nil
 }

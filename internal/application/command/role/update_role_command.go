@@ -5,8 +5,8 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/role"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateRoleCommand patches a role. A nil field is left unchanged. The role
@@ -41,7 +41,7 @@ func (h *UpdateRoleCommandHandler) Handle(ctx context.Context, cmd UpdateRoleCom
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.ROLE_NOT_FOUND, nil, ErrRoleNotFound)
+			return errs.NewError(ctx, role.RoleNotFound, nil, ErrRoleNotFound)
 		}
 
 		patch := role.NewRole()
@@ -69,7 +69,7 @@ func (h *UpdateRoleCommandHandler) Handle(ctx context.Context, cmd UpdateRoleCom
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if refreshed == nil {
-			return errs.NewError(ctx, status.ROLE_NOT_FOUND, nil, ErrRoleNotFoundAfterUpdate)
+			return errs.NewError(ctx, role.RoleNotFound, nil, ErrRoleNotFoundAfterUpdate)
 		}
 		updated = refreshed
 		return nil

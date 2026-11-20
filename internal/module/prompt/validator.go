@@ -8,8 +8,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/prompt"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // MaxPromptRunes caps a stored prompt. The column is MEDIUMTEXT, so the
@@ -20,13 +19,13 @@ const MaxPromptRunes = 50000
 // ValidateUpdatePrompt checks what needs no stored row.
 func ValidateUpdatePrompt(ctx context.Context, req *dto.UpdatePromptReq) error {
 	if req.PromptID <= 0 {
-		return errs.NewError(ctx, status.PROMPT_MISSING_ID, nil, ErrPromptIDRequired)
+		return errs.NewError(ctx, domain.PromptMissingID, nil, ErrPromptIDRequired)
 	}
 	if strings.TrimSpace(req.SystemPrompt) == "" {
-		return errs.NewError(ctx, status.PROMPT_EMPTY, nil, ErrPromptEmpty)
+		return errs.NewError(ctx, domain.PromptEmpty, nil, ErrPromptEmpty)
 	}
 	if utf8.RuneCountInString(req.SystemPrompt) > MaxPromptRunes {
-		return errs.NewError(ctx, status.PROMPT_TOO_LONG, nil, ErrPromptTooLong)
+		return errs.NewError(ctx, domain.PromptTooLong, nil, ErrPromptTooLong)
 	}
 	return nil
 }
@@ -49,7 +48,7 @@ func ValidatePromptKeys(ctx context.Context, code domain.Code, text string) erro
 		}
 	}
 	if len(missing) > 0 {
-		return errs.NewError(ctx, status.PROMPT_MISSING_JSON_KEY, nil,
+		return errs.NewError(ctx, domain.PromptMissingJSONKey, nil,
 			fmt.Errorf("system_prompt does not name the JSON key(s) %s", strings.Join(missing, ", ")))
 	}
 	return nil

@@ -7,8 +7,8 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/grade"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // CreateGradeCommand writes the parent ma_grades row in a single
@@ -53,7 +53,7 @@ func (h *CreateGradeCommandHandler) Handle(ctx context.Context, cmd CreateGradeC
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if saved == nil {
-			return errs.NewError(ctx, status.GRADE_NOT_FOUND, nil,
+			return errs.NewError(ctx, grade.GradeNotFound, nil,
 				ErrGradeNotFoundAfterInsert)
 		}
 		created = saved

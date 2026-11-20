@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
@@ -66,15 +67,15 @@ func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) err
 		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_CLASSROOM_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseMissingClassroomID, nil,
 			ErrClassroomIDRequired)
 	}
 	if strings.TrimSpace(req.Title) == "" {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_TITLE, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseMissingTitle, nil,
 			ErrTitleRequired)
 	}
 	if len([]rune(req.Title)) > titleMaxLen {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_TITLE_TOO_LONG, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseTitleTooLong, nil,
 			ErrTitleTooLong)
 	}
 	if req.Description != nil {
@@ -82,35 +83,35 @@ func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) err
 		if v == "" {
 			req.Description = nil
 		} else if len([]rune(v)) > descriptionMaxLen {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOTE_TOO_LONG, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseNoteTooLong, nil,
 				ErrDescriptionTooLong)
 		} else {
 			req.Description = &v
 		}
 	}
 	if strings.TrimSpace(req.ChapterName) == "" {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_CHAPTER_NAME, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseMissingChapterName, nil,
 			ErrChapterNameRequired)
 	}
 	if len([]rune(req.ChapterName)) > chapterNameMaxLen {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_CHAPTER_NAME_TOO_LONG, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseChapterNameTooLong, nil,
 			ErrChapterNameTooLong)
 	}
 	if strings.TrimSpace(req.LessonName) == "" {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_LESSON_NAME, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseMissingLessonName, nil,
 			ErrLessonNameRequired)
 	}
 	if len([]rune(req.LessonName)) > lessonNameMaxLen {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_LESSON_NAME_TOO_LONG, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseLessonNameTooLong, nil,
 			ErrLessonNameTooLong)
 	}
 	if req.NumQuestions < 0 || req.NumQuestions > maxNumQuestions {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_NUM_QUESTIONS, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseInvalidNumQuestions, nil,
 			ErrNumQuestionsOutOfRange)
 	}
 	// if req.StartDate.IsValid() && req.EndDate.IsValid() &&
 	// 	req.EndDate.Before(req.StartDate) {
-	// 	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil,
+	// 	return errs.NewError(ctx, domain.ClassroomExerciseInvalidDateRange, nil,
 	// 		ErrEndDateBeforeStart)
 	// }
 
@@ -124,11 +125,11 @@ func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) err
 			return err
 		}
 		if !parseEndDate.IsZero() && parseEndDate.Before(parseStartDate) {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil, ErrEndDateBeforeStart)
+			return errs.NewError(ctx, domain.ClassroomExerciseInvalidDateRange, nil, ErrEndDateBeforeStart)
 		}
 	}
 	if req.Note != nil && len([]rune(*req.Note)) > noteMaxLen {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOTE_TOO_LONG, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseNoteTooLong, nil,
 			ErrNoteTooLong)
 	}
 	if req.Visibility != nil {
@@ -136,7 +137,7 @@ func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) err
 		if v == "" {
 			req.Visibility = nil
 		} else if !enum.ClassroomExerciseVisibilityType(v).IsValid() {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_VISIBILITY, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseInvalidVisibility, nil,
 				ErrInvalidVisibility)
 		} else {
 			req.Visibility = &v
@@ -147,7 +148,7 @@ func ValidateCreateExercise(ctx context.Context, req *dto.CreateExerciseReq) err
 		if v == "" {
 			req.Purpose = nil
 		} else if !enum.ClassroomExercisePurposeType(v).IsValid() {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_PURPOSE, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseInvalidPurpose, nil,
 				ErrInvalidPurpose)
 		} else {
 			req.Purpose = &v
@@ -161,16 +162,16 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseMissingID, nil,
 			ErrClassroomExerciseIDRequired)
 	}
 	if req.Title != nil {
 		if strings.TrimSpace(*req.Title) == "" {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_TITLE, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseMissingTitle, nil,
 				ErrTitleRequired)
 		}
 		if len([]rune(*req.Title)) > titleMaxLen {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_TITLE_TOO_LONG, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseTitleTooLong, nil,
 				ErrTitleTooLong)
 		}
 	}
@@ -184,7 +185,7 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 		if v == "" {
 			req.Description = nil
 		} else if len([]rune(v)) > descriptionMaxLen {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOTE_TOO_LONG, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseNoteTooLong, nil,
 				ErrDescriptionTooLong)
 		} else {
 			req.Description = &v
@@ -192,28 +193,28 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 	}
 	if req.ChapterName != nil {
 		if strings.TrimSpace(*req.ChapterName) == "" {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_CHAPTER_NAME, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseMissingChapterName, nil,
 				ErrChapterNameRequired)
 		}
 		if len([]rune(*req.ChapterName)) > chapterNameMaxLen {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_CHAPTER_NAME_TOO_LONG, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseChapterNameTooLong, nil,
 				ErrChapterNameTooLong)
 		}
 	}
 	if req.LessonName != nil {
 		if strings.TrimSpace(*req.LessonName) == "" {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_LESSON_NAME, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseMissingLessonName, nil,
 				ErrLessonNameRequired)
 		}
 		if len([]rune(*req.LessonName)) > lessonNameMaxLen {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_LESSON_NAME_TOO_LONG, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseLessonNameTooLong, nil,
 				ErrLessonNameTooLong)
 		}
 	}
 	// if req.StartDate != nil && req.EndDate != nil &&
 	// 	req.StartDate.IsValid() && req.EndDate.IsValid() &&
 	// 	req.EndDate.Before(req.StartDate) {
-	// 	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil,
+	// 	return errs.NewError(ctx, domain.ClassroomExerciseInvalidDateRange, nil,
 	// 		ErrEndDateBeforeStart)
 	// }
 
@@ -227,17 +228,17 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 			return err
 		}
 		if !parseEndDate.IsZero() && parseEndDate.Before(parseStartDate) {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_DATE_RANGE, nil, ErrEndDateBeforeStart)
+			return errs.NewError(ctx, domain.ClassroomExerciseInvalidDateRange, nil, ErrEndDateBeforeStart)
 		}
 	}
 
 	if req.Note != nil && len([]rune(*req.Note)) > noteMaxLen {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOTE_TOO_LONG, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseNoteTooLong, nil,
 			ErrNoteTooLong)
 	}
 	if req.ExerciseStatus != nil {
 		if !enum.ClassroomExerciseStatusType(*req.ExerciseStatus).IsValid() {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
+			return errs.NewError(ctx, domain.ClassroomExercisePermissionDenied, nil,
 				ErrInvalidExerciseStatus)
 		}
 	}
@@ -246,7 +247,7 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 		if v == "" {
 			req.Visibility = nil
 		} else if !enum.ClassroomExerciseVisibilityType(v).IsValid() {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_VISIBILITY, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseInvalidVisibility, nil,
 				ErrInvalidVisibility)
 		} else {
 			req.Visibility = &v
@@ -257,7 +258,7 @@ func ValidateUpdateExercise(ctx context.Context, req *dto.UpdateExerciseReq) err
 		if v == "" {
 			req.Purpose = nil
 		} else if !enum.ClassroomExercisePurposeType(v).IsValid() {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_PURPOSE, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseInvalidPurpose, nil,
 				ErrInvalidPurpose)
 		} else {
 			req.Purpose = &v
@@ -271,7 +272,7 @@ func ValidateGetExercise(ctx context.Context, req *dto.GetExerciseReq) error {
 		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseMissingID, nil,
 			ErrClassroomExerciseIDRequired)
 	}
 	return nil
@@ -282,7 +283,7 @@ func ValidateListExercises(ctx context.Context, req *dto.ListExercisesReq) error
 		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_CLASSROOM_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseMissingClassroomID, nil,
 			ErrClassroomIDRequired)
 	}
 
@@ -292,7 +293,7 @@ func ValidateListExercises(ctx context.Context, req *dto.ListExercisesReq) error
 		if v == "" {
 			req.Status = nil
 		} else if !enum.ClassroomExerciseStatusType(v).IsValid() {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_PERMISSION_DENIED, nil,
+			return errs.NewError(ctx, domain.ClassroomExercisePermissionDenied, nil,
 				ErrInvalidStatus)
 		} else {
 			req.Status = &v
@@ -303,7 +304,7 @@ func ValidateListExercises(ctx context.Context, req *dto.ListExercisesReq) error
 		if v == "" {
 			req.Visibility = nil
 		} else if !enum.ClassroomExerciseVisibilityType(v).IsValid() {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_INVALID_VISIBILITY, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseInvalidVisibility, nil,
 				ErrInvalidVisibility)
 		} else {
 			req.Visibility = &v
@@ -325,7 +326,7 @@ func ValidateListExercises(ctx context.Context, req *dto.ListExercisesReq) error
 		if v == "" {
 			req.ChapterName = nil
 		} else if len([]rune(v)) > chapterNameMaxLen {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_CHAPTER_NAME_TOO_LONG, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseChapterNameTooLong, nil,
 				ErrChapterNameTooLong)
 		} else {
 			req.ChapterName = &v
@@ -336,7 +337,7 @@ func ValidateListExercises(ctx context.Context, req *dto.ListExercisesReq) error
 		if v == "" {
 			req.LessonName = nil
 		} else if len([]rune(v)) > lessonNameMaxLen {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_LESSON_NAME_TOO_LONG, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseLessonNameTooLong, nil,
 				ErrLessonNameTooLong)
 		} else {
 			req.LessonName = &v
@@ -389,7 +390,7 @@ func ValidateDeleteExercise(ctx context.Context, req *dto.DeleteExerciseReq) err
 		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_MISSING_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseMissingID, nil,
 			ErrClassroomExerciseIDRequired)
 	}
 	return nil
@@ -400,15 +401,15 @@ func ValidateSubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExerciseA
 		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_EXERCISE_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseSubmissionMissingExerciseID, nil,
 			ErrClassroomExerciseIDRequired)
 	}
 	if len(req.Answers) == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_ANSWERS, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseSubmissionMissingAnswers, nil,
 			ErrAnswersRequired)
 	}
 	if len(req.Answers) > submissionMaxAnswerCount {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseSubmissionInvalidAnswers, nil,
 			ErrTooManyAnswers)
 	}
 	// Per-item shape check. We don't enforce that question_numbers form
@@ -417,21 +418,21 @@ func ValidateSubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExerciseA
 	seen := make(map[int]struct{}, len(req.Answers))
 	for _, a := range req.Answers {
 		if a.QuestionNumber <= 0 {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseSubmissionInvalidAnswers, nil,
 				ErrQuestionNumberMustBe0)
 		}
 		if _, dup := seen[a.QuestionNumber]; dup {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseSubmissionInvalidAnswers, nil,
 				ErrDuplicateQuestionNumber)
 		}
 		seen[a.QuestionNumber] = struct{}{}
 		if strings.TrimSpace(a.Label) == "" {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS, nil,
+			return errs.NewError(ctx, domain.ClassroomExerciseSubmissionInvalidAnswers, nil,
 				ErrAnswerLabelRequired)
 		}
 	}
 	if req.Note != nil && len([]rune(*req.Note)) > submissionNoteMaxLen {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOTE_TOO_LONG, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseSubmissionNoteTooLong, nil,
 			ErrNoteTooLong)
 	}
 	return nil
@@ -442,7 +443,7 @@ func ValidateGetSubmission(ctx context.Context, req *dto.GetSubmissionReq) error
 		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseSubmissionID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseSubmissionMissingID, nil,
 			ErrClassroomExerciseSubmissionIDRequired)
 	}
 	return nil
@@ -473,7 +474,7 @@ func ValidateListSubmissionsByExercise(ctx context.Context, req *dto.ListSubmiss
 		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_EXERCISE_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseSubmissionMissingExerciseID, nil,
 			ErrClassroomExerciseIDRequired)
 	}
 	return normalizeSubmissionListShared(ctx, &req.Status, &req.SortBy, &req.SortOrder)
@@ -486,7 +487,7 @@ func ValidateListAudienceMembers(ctx context.Context, req *dto.ListAudienceMembe
 		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_EXERCISE_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseSubmissionMissingExerciseID, nil,
 			ErrClassroomExerciseIDRequired)
 	}
 	if req.Search != nil {
@@ -530,7 +531,7 @@ func ValidateDeleteSubmission(ctx context.Context, req *dto.DeleteSubmissionReq)
 		return errs.NewError(ctx, status.FAIL, nil, ErrNilRequest)
 	}
 	if req.ClassroomExerciseSubmissionID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_MISSING_ID, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseSubmissionMissingID, nil,
 			ErrClassroomExerciseSubmissionIDRequired)
 	}
 	return nil

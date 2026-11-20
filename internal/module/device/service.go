@@ -9,11 +9,10 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/device"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/device"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -71,7 +70,7 @@ func (s *Service) GetDeviceById(ctx context.Context, req *dto.GetDeviceByIdReq) 
 		return nil, err
 	}
 	if d == nil {
-		return nil, errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
+		return nil, errs.NewError(ctx, domain.DeviceNotFound, nil, ErrDeviceNotFound)
 	}
 	res := &dto.GetDeviceByIdRes{Device: dto.DeviceDomainToResponse(d)}
 	return res, nil

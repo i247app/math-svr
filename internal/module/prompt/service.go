@@ -10,10 +10,10 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/prompt"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	sctx "math-ai.com/math-ai/internal/shared/context"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Service is the admin surface over ma_prompts: read every prompt, rewrite
@@ -95,14 +95,14 @@ func (s *Service) UpdatePrompt(ctx context.Context, req *dto.UpdatePromptReq) (*
 
 func (s *Service) findPrompt(ctx context.Context, promptID int64) (*domain.Prompt, error) {
 	if promptID <= 0 {
-		return nil, errs.NewError(ctx, status.PROMPT_MISSING_ID, nil, ErrPromptIDRequired)
+		return nil, errs.NewError(ctx, domain.PromptMissingID, nil, ErrPromptIDRequired)
 	}
 	p, err := s.repo.FindByPromptId(ctx, promptID)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if p == nil {
-		return nil, errs.NewError(ctx, status.PROMPT_NOT_FOUND, nil, fmt.Errorf("prompt: no row %d", promptID))
+		return nil, errs.NewError(ctx, domain.PromptNotFound, nil, fmt.Errorf("prompt: no row %d", promptID))
 	}
 	return p, nil
 }

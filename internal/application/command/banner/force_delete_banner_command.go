@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/banner"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // ForceDeleteBannerCommand physically removes the banner row.
@@ -28,7 +29,7 @@ func (h *ForceDeleteBannerCommandHandler) Handle(ctx context.Context, cmd ForceD
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.BANNER_NOT_FOUND, nil,
+			return errs.NewError(ctx, banner.BannerNotFound, nil,
 				ErrBannerNotFound)
 		}
 

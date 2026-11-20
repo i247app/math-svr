@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Registry is the entry point callers use to dispatch push notifications. It
@@ -61,7 +61,7 @@ func (a *Registry) SendVia(ctx context.Context, name NotificationProviderName, m
 	log := logger.From(ctx)
 
 	if err := msg.Validate(); err != nil {
-		return nil, errs.NewError(ctx, status.NOTIFICATION_SEND_FAILED,
+		return nil, errs.NewError(ctx, domain.NotificationSendFailed,
 			map[string]any{"reason": err.Error()}, err)
 	}
 
@@ -76,7 +76,7 @@ func (a *Registry) SendVia(ctx context.Context, name NotificationProviderName, m
 		if _, ok := errs.IsMathError(err); ok {
 			return nil, err
 		}
-		return nil, errs.NewError(ctx, status.NOTIFICATION_SEND_FAILED,
+		return nil, errs.NewError(ctx, domain.NotificationSendFailed,
 			map[string]any{"provider": string(name)}, err)
 	}
 

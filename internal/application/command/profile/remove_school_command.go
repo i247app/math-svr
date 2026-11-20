@@ -5,8 +5,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // RemoveSchoolCommand clears profile.school_id. Distinct from Update —
@@ -34,12 +35,12 @@ func (h *RemoveSchoolCommandHandler) Handle(ctx context.Context, cmd RemoveSchoo
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			return errs.NewError(ctx, profile.ProfileNotFound, nil,
 				ErrProfileNotFound)
 		}
 
 		if err := repos.Profile.SetSchoolId(ctx, cmd.ProfileID, nil); err != nil {
-			return errs.NewError(ctx, status.SCHOOL_PROFILE_LINK_FAILED, nil, err)
+			return errs.NewError(ctx, school.SchoolProfileLinkFailed, nil, err)
 		}
 
 		refreshed, err := repos.Profile.FindByProfileId(ctx, cmd.ProfileID)

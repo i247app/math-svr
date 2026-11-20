@@ -5,8 +5,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	schooldom "math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // AssignSchoolCommand sets profile.school_id to the supplied schoolId.
@@ -35,7 +36,7 @@ func (h *AssignSchoolCommandHandler) Handle(ctx context.Context, cmd AssignSchoo
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			return errs.NewError(ctx, profile.ProfileNotFound, nil,
 				ErrProfileNotFound)
 		}
 
@@ -44,13 +45,13 @@ func (h *AssignSchoolCommandHandler) Handle(ctx context.Context, cmd AssignSchoo
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if school == nil {
-			return errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil,
+			return errs.NewError(ctx, schooldom.SchoolNotFound, nil,
 				ErrSchoolNotFound)
 		}
 
 		schoolID := cmd.SchoolID
 		if err := repos.Profile.SetSchoolId(ctx, cmd.ProfileID, &schoolID); err != nil {
-			return errs.NewError(ctx, status.SCHOOL_PROFILE_LINK_FAILED, nil, err)
+			return errs.NewError(ctx, schooldom.SchoolProfileLinkFailed, nil, err)
 		}
 
 		refreshed, err := repos.Profile.FindByProfileId(ctx, cmd.ProfileID)

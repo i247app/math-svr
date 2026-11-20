@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/classroom"
+	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
@@ -20,29 +21,29 @@ const maxProgressRangeHours = 2 * 365 * 24
 // MathError on the first failure.
 func (s *Service) ValidateProfileProgress(ctx context.Context, req *dto.ProfileProgressReq) error {
 	if req.ClassroomID == 0 {
-		return errs.NewError(ctx, status.CLASSROOM_MISSING_ID, nil, ErrClassroomIDRequired)
+		return errs.NewError(ctx, domain.ClassroomMissingID, nil, ErrClassroomIDRequired)
 	}
 	if req.ProfileID == 0 {
-		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil, ErrProfileIDRequired)
+		return errs.NewError(ctx, profile.ProfileNotFound, nil, ErrProfileIDRequired)
 	}
 
 	if req.FromDt == "" || req.ToDt == "" {
-		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
+		return errs.NewError(ctx, domain.ClassroomProgressInvalidDateRange, nil, ErrProgressInvalidDateRange)
 	}
 	from, err := mtime.ParseFromString(req.FromDt)
 	if err != nil {
-		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
+		return errs.NewError(ctx, domain.ClassroomProgressInvalidDateRange, nil, ErrProgressInvalidDateRange)
 	}
 	to, err := mtime.ParseFromString(req.ToDt)
 	if err != nil {
-		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
+		return errs.NewError(ctx, domain.ClassroomProgressInvalidDateRange, nil, ErrProgressInvalidDateRange)
 	}
 
 	if !from.Before(to) {
-		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressInvalidDateRange)
+		return errs.NewError(ctx, domain.ClassroomProgressInvalidDateRange, nil, ErrProgressInvalidDateRange)
 	}
 	if to.Sub(from).Hours() > maxProgressRangeHours {
-		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_DATE_RANGE, nil, ErrProgressRangeTooLong)
+		return errs.NewError(ctx, domain.ClassroomProgressInvalidDateRange, nil, ErrProgressRangeTooLong)
 	}
 
 	// tz defaults to the Vietnam offset; otherwise must be a numeric offset.
@@ -50,7 +51,7 @@ func (s *Service) ValidateProfileProgress(ctx context.Context, req *dto.ProfileP
 	if req.Tz == "" {
 		req.Tz = enum.DefaultProgressTz
 	} else if !enum.IsValidTzOffset(req.Tz) {
-		return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_TZ, nil, ErrProgressInvalidTz)
+		return errs.NewError(ctx, domain.ClassroomProgressInvalidTz, nil, ErrProgressInvalidTz)
 	}
 
 	// purpose is optional; when present it must be a known exercise intent.
@@ -59,7 +60,7 @@ func (s *Service) ValidateProfileProgress(ctx context.Context, req *dto.ProfileP
 		if p == "" {
 			req.Purpose = nil
 		} else if !enum.ClassroomExercisePurposeType(p).IsValid() {
-			return errs.NewError(ctx, status.CLASSROOM_PROGRESS_INVALID_PURPOSE, nil, ErrProgressInvalidPurpose)
+			return errs.NewError(ctx, domain.ClassroomProgressInvalidPurpose, nil, ErrProgressInvalidPurpose)
 		} else {
 			req.Purpose = &p
 		}

@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -222,14 +222,14 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 	r.Body = http.MaxBytesReader(w, r.Body, MaxAvatarUploadSize)
 	if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
 		response.WriteJson(w, nil,
-			errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err))
+			errs.NewError(ctx, domain.ProfileAvatarInvalidFile, nil, err))
 		return
 	}
 
 	profileIDStr := r.FormValue("profile_id")
 	if profileIDStr == "" {
 		response.WriteJson(w, nil,
-			errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			errs.NewError(ctx, domain.ProfileNotFound, nil,
 				ErrProfileIDFormFieldRequired))
 		return
 	}
@@ -237,7 +237,7 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		response.WriteJson(w, nil,
-			errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err))
+			errs.NewError(ctx, domain.ProfileAvatarInvalidFile, nil, err))
 		return
 	}
 	defer file.Close()

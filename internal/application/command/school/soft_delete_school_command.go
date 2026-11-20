@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SoftDeleteSchoolCommand flips the school's status fields to the deleted
@@ -31,7 +32,7 @@ func (h *SoftDeleteSchoolCommandHandler) Handle(ctx context.Context, cmd SoftDel
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.SCHOOL_NOT_FOUND, nil,
+			return errs.NewError(ctx, school.SchoolNotFound, nil,
 				ErrSchoolNotFound)
 		}
 

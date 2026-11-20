@@ -9,10 +9,10 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/semester"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/semester"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -123,7 +123,7 @@ func (s *Service) GetSemester(ctx context.Context, req *dto.GetSemesterReq) (*dt
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if sm == nil {
-		return nil, errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil, ErrSemesterNotFound)
+		return nil, errs.NewError(ctx, domain.SemesterNotFound, nil, ErrSemesterNotFound)
 	}
 	resp := dto.SemesterDomainToResponse(sm)
 	s.populateImageUrl(ctx, resp)

@@ -6,8 +6,8 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/questionpool"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // ForceDeleteQuestionPoolsCommand removes, for good, every question that
@@ -28,13 +28,13 @@ func NewForceDeleteQuestionPoolsCommandHandler(uow transaction.UnitOfWork) *Forc
 // error). An empty filter is refused before the statement.
 func (h *ForceDeleteQuestionPoolsCommandHandler) Handle(ctx context.Context, cmd ForceDeleteQuestionPoolsCommand) (int64, error) {
 	if cmd.Filter.IsEmpty() {
-		return 0, errs.NewError(ctx, status.QUESTION_POOL_DELETE_FILTER_REQUIRED, nil, questionpool.ErrEmptyFilter)
+		return 0, errs.NewError(ctx, questionpool.QuestionPoolDeleteFilterRequired, nil, questionpool.ErrEmptyFilter)
 	}
 	var deleted int64
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		n, err := repos.QuestionPool.ForceDeleteByFilter(ctx, cmd.Filter)
 		if errors.Is(err, questionpool.ErrEmptyFilter) {
-			return errs.NewError(ctx, status.QUESTION_POOL_DELETE_FILTER_REQUIRED, nil, err)
+			return errs.NewError(ctx, questionpool.QuestionPoolDeleteFilterRequired, nil, err)
 		}
 		if err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)

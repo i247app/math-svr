@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	classroomdom "math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // RejectJoinRequestCommand flips a PENDING_REQUEST row to REJECTED.
@@ -34,7 +35,7 @@ func (h *RejectJoinRequestCommandHandler) Handle(ctx context.Context, cmd Reject
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_NOT_FOUND, nil,
+			return errs.NewError(ctx, classroomdom.ClassroomJoinRequestNotFound, nil,
 				ErrJoinRequestNotFound)
 		}
 		currentStatus := ""
@@ -42,7 +43,7 @@ func (h *RejectJoinRequestCommandHandler) Handle(ctx context.Context, cmd Reject
 			currentStatus = *existing.MemberStatus()
 		}
 		if currentStatus != enum.ClassroomMemberStatusTypePendingRequest.String() {
-			return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_NOT_PENDING, nil,
+			return errs.NewError(ctx, classroomdom.ClassroomJoinRequestNotPending, nil,
 				ErrJoinRequestNotPending)
 		}
 		if err := repos.ClassroomMember.Reject(ctx, existing.MemberId()); err != nil {

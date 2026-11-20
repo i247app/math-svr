@@ -5,8 +5,8 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/program"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateProgramCommand patches the parent row. Each pointer field is
@@ -39,7 +39,7 @@ func (h *UpdateProgramCommandHandler) Handle(ctx context.Context, cmd UpdateProg
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.PROGRAM_NOT_FOUND, nil,
+			return errs.NewError(ctx, program.ProgramNotFound, nil,
 				ErrProgramNotFound)
 		}
 
@@ -75,7 +75,7 @@ func (h *UpdateProgramCommandHandler) Handle(ctx context.Context, cmd UpdateProg
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if refreshed == nil {
-			return errs.NewError(ctx, status.PROGRAM_NOT_FOUND, nil,
+			return errs.NewError(ctx, program.ProgramNotFound, nil,
 				ErrProgramNotFoundAfterUpdate)
 		}
 		updated = refreshed

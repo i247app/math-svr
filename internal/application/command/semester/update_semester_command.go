@@ -5,8 +5,8 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/semester"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateSemesterCommand patches the parent row. Each pointer field is
@@ -39,7 +39,7 @@ func (h *UpdateSemesterCommandHandler) Handle(ctx context.Context, cmd UpdateSem
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil,
+			return errs.NewError(ctx, semester.SemesterNotFound, nil,
 				ErrSemesterNotFound)
 		}
 
@@ -75,7 +75,7 @@ func (h *UpdateSemesterCommandHandler) Handle(ctx context.Context, cmd UpdateSem
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if refreshed == nil {
-			return errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil,
+			return errs.NewError(ctx, semester.SemesterNotFound, nil,
 				ErrSemesterNotFoundAfterUpdate)
 		}
 		updated = refreshed

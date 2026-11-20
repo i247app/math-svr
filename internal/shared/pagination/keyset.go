@@ -3,8 +3,7 @@ package pagination
 import (
 	"context"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Keyset describes one keyset-paged list to KeysetPage. T is a row, K the
@@ -99,7 +98,7 @@ func KeysetPage[T, K any](ctx context.Context, ks Keyset[T, K], next, previous s
 func decodeKey[T, K any](ctx context.Context, ks Keyset[T, K], cursor string) (*K, error) {
 	var k K
 	if err := DecodeCursor(cursor, &k); err != nil || !ks.Valid(k) {
-		return nil, errs.NewError(ctx, status.PAGINATION_INVALID_CURSOR, nil, ErrInvalidCursor)
+		return nil, errs.NewError(ctx, PaginationInvalidCursor, nil, ErrInvalidCursor)
 	}
 	return &k, nil
 }

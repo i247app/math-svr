@@ -7,11 +7,11 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/home"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // resolveActingProfile loads the profile and confirms it belongs to the
@@ -24,10 +24,10 @@ func (s *Service) resolveActingProfile(ctx context.Context, profileID, sessionUI
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if p == nil {
-		return nil, errs.NewError(ctx, status.HOME_PROFILE_NOT_FOUND, nil, ErrProfileNotFound)
+		return nil, errs.NewError(ctx, HomeProfileNotFound, nil, ErrProfileNotFound)
 	}
 	if sessionUID != 0 && sessionUID != p.UID() {
-		return nil, errs.NewError(ctx, status.HOME_PROFILE_NOT_OWNED, nil, ErrProfileNotOwnedByUser)
+		return nil, errs.NewError(ctx, HomeProfileNotOwned, nil, ErrProfileNotOwnedByUser)
 	}
 	return p, nil
 }

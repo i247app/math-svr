@@ -15,7 +15,6 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	aliasDomain "math-ai.com/math-ai/internal/domain/alias"
 	"math-ai.com/math-ai/internal/domain/login"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	domain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
@@ -23,6 +22,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -201,7 +201,7 @@ func (s *Service) CheckIdentifierAvailable(ctx context.Context, req *dto.CheckId
 	}
 
 	if u != nil || a != nil {
-		return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, ErrAccountAlreadyExists)
+		return nil, errs.NewError(ctx, domain.UserAlreadyExists, nil, ErrAccountAlreadyExists)
 	}
 
 	res := dto.CheckIdentifierRes{
@@ -378,7 +378,7 @@ func (s *Service) prepareCreateUser(ctx context.Context, req *dto.CreateUserReq)
 
 	switch {
 	case strings.TrimSpace(req.Avatar) != "":
-		key, err := s.normalizeAvatarKey(ctx, req.Avatar, status.USER_AVATAR_INVALID_REFERENCE)
+		key, err := s.normalizeAvatarKey(ctx, req.Avatar, domain.UserAvatarInvalidReference)
 		if err != nil {
 			return nil, err
 		}
@@ -430,7 +430,7 @@ func (s *Service) CreateGuest(ctx context.Context, sess *session.AppSession, req
 	// sign them out. They have an account already — this route has
 	// nothing to give them.
 	if sess.IsValid() && sess.IsSecure() {
-		return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, ErrGuestSessionAlreadySecure)
+		return nil, errs.NewError(ctx, domain.UserAlreadyExists, nil, ErrGuestSessionAlreadySecure)
 	}
 
 	deviceUUID := metadata.GetDeviceUUID(ctx)
@@ -540,7 +540,7 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 	var avatarKey *string
 	switch {
 	case req.Avatar != nil:
-		key, err := s.normalizeAvatarKey(ctx, *req.Avatar, status.USER_AVATAR_INVALID_REFERENCE)
+		key, err := s.normalizeAvatarKey(ctx, *req.Avatar, domain.UserAvatarInvalidReference)
 		if err != nil {
 			return nil, err
 		}
@@ -594,15 +594,15 @@ func (s *Service) UpdateUser(ctx context.Context, req *dto.UpdateUserReq) (*dto.
 // uploader for both endpoints.
 func (s *Service) UploadAvatar(ctx context.Context, uid int64, filename, contentType string, file io.Reader) (*dto.UserUploadAvatarRes, error) {
 	if uid == 0 {
-		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.UserNotFound, nil,
 			ErrUIDRequired)
 	}
 	if s.storageProvider == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
+		return nil, errs.NewError(ctx, storage.StorageConfigInvalid, nil,
 			ErrStorageProviderNotConfigured)
 	}
 	if file == nil || filename == "" {
-		return nil, errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil,
+		return nil, errs.NewError(ctx, domain.UserAvatarInvalidFile, nil,
 			ErrAvatarFileRequired)
 	}
 
@@ -613,7 +613,7 @@ func (s *Service) UploadAvatar(ctx context.Context, uid int64, filename, content
 		return nil, err
 	}
 	if existing == nil {
-		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.UserNotFound, nil,
 			ErrUserNotFound)
 	}
 
@@ -621,7 +621,7 @@ func (s *Service) UploadAvatar(ctx context.Context, uid int64, filename, content
 		Filename:    filename,
 		ContentType: contentType,
 	}); err != nil {
-		return nil, errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, domain.UserAvatarInvalidFile, nil, err)
 	}
 
 	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -631,10 +631,10 @@ func (s *Service) UploadAvatar(ctx context.Context, uid int64, filename, content
 		Folder:      avatarFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.USER_AVATAR_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.UserAvatarUploadFailed, nil, err)
 	}
 	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.USER_AVATAR_UPLOAD_FAILED, nil,
+		return nil, errs.NewError(ctx, domain.UserAvatarUploadFailed, nil,
 			ErrUploadReturnedEmptyKey)
 	}
 

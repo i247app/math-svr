@@ -12,12 +12,13 @@ import (
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	profiledom "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/provider/storage"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -46,11 +47,11 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if exercise == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseNotFound, nil,
 			ErrClassroomExerciseNotFound)
 	}
 	if !exerciseAvailableForSubmission(exercise) {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_EXERCISE_UNAVAILABLE, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionExerciseUnavailable, nil,
 			ErrExerciseNotAvailable)
 	}
 	if _, err := s.requireMember(ctx, exercise.ClassroomId(), caller.ProfileId()); err != nil {
@@ -68,13 +69,13 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if existing != nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_ALREADY_EXISTS, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionAlreadyExists, nil,
 			ErrSubmissionAlreadyExists)
 	}
 
 	answersJSON, err := json.Marshal(req.Answers)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_INVALID_ANSWERS, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionInvalidAnswers, nil,
 			fmt.Errorf("submission: marshal answers: %w", err))
 	}
 
@@ -85,7 +86,7 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 		questions = *exercise.Questions()
 	}
 	if questions == "" {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionGradingFailed, nil,
 			ErrExerciseHasNoQuestionsToGrade)
 	}
 
@@ -168,11 +169,11 @@ func (s *Service) SubmitExerciseAnswersV2(ctx context.Context, req *dto.SubmitEx
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if exercise == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseNotFound, nil,
 			ErrClassroomExerciseNotFound)
 	}
 	if !exerciseAvailableForSubmission(exercise) {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_EXERCISE_UNAVAILABLE, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionExerciseUnavailable, nil,
 			ErrExerciseNotAvailable)
 	}
 	if _, err := s.requireMember(ctx, exercise.ClassroomId(), caller.ProfileId()); err != nil {
@@ -190,7 +191,7 @@ func (s *Service) SubmitExerciseAnswersV2(ctx context.Context, req *dto.SubmitEx
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if existing != nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_ALREADY_EXISTS, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionAlreadyExists, nil,
 			ErrSubmissionAlreadyExists)
 	}
 
@@ -199,7 +200,7 @@ func (s *Service) SubmitExerciseAnswersV2(ctx context.Context, req *dto.SubmitEx
 		questions = *exercise.Questions()
 	}
 	if questions == "" {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionGradingFailed, nil,
 			ErrExerciseHasNoQuestionsToGrade)
 	}
 
@@ -238,7 +239,7 @@ func (s *Service) GetSubmission(ctx context.Context, req *dto.GetSubmissionReq, 
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if sub == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionNotFound, nil,
 			ErrSubmissionNotFound)
 	}
 
@@ -283,7 +284,7 @@ func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsR
 			return nil, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if p == nil {
-			return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+			return nil, errs.NewError(ctx, profiledom.ProfileNotFound, nil,
 				ErrProfileNotFound)
 		}
 		if sessionUID != 0 && p.UID() == sessionUID {
@@ -297,7 +298,7 @@ func (s *Service) ListSubmissions(ctx context.Context, req *dto.ListSubmissionsR
 			return nil, err
 		}
 		if scopeClassroomID == 0 {
-			return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_PERMISSION_DENIED, nil,
+			return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionPermissionDenied, nil,
 				ErrClassroomIDOrClassroomExerciseIDRequiredWhenListingAcrossProfiles)
 		}
 		// if _, err := s.requireManagerForUser(ctx, scopeClassroomID, sessionUID); err != nil {
@@ -348,7 +349,7 @@ func (s *Service) resolveListScopeClassroomID(ctx context.Context, req *dto.List
 			return 0, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if exercise == nil {
-			return 0, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
+			return 0, errs.NewError(ctx, domain.ClassroomExerciseNotFound, nil,
 				ErrClassroomExerciseNotFound)
 		}
 		return exercise.ClassroomId(), nil
@@ -375,7 +376,7 @@ func (s *Service) ListSubmissionsByExercise(ctx context.Context, req *dto.ListSu
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if exercise == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseNotFound, nil,
 			ErrClassroomExerciseNotFound)
 	}
 	if _, err := s.requireManager(ctx, exercise.ClassroomId(), caller.ProfileId()); err != nil {
@@ -437,7 +438,7 @@ func (s *Service) listAudienceMembers(ctx context.Context, req *dto.ListAudience
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if exercise == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseNotFound, nil,
 			ErrClassroomExerciseNotFound)
 	}
 	if _, err := s.requireManager(ctx, exercise.ClassroomId(), caller.ProfileId()); err != nil {
@@ -598,7 +599,7 @@ func (s *Service) SoftDeleteSubmission(ctx context.Context, req *dto.DeleteSubmi
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if sub == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseSubmissionNotFound, nil,
 			ErrSubmissionNotFound)
 	}
 	if _, err := s.requireManager(ctx, sub.ClassroomId(), caller.ProfileId()); err != nil {
@@ -652,7 +653,7 @@ func enforceExerciseAccess(ctx context.Context, e *exerciseDomain.Exercise, call
 	if e.CreatorProfileId() == callerProfileID {
 		return nil
 	}
-	return errs.NewError(ctx, status.CLASSROOM_EXERCISE_PRIVATE_DENIED, nil,
+	return errs.NewError(ctx, domain.ClassroomExercisePrivateDenied, nil,
 		ErrPrivateExerciseOnlyCreatorCanSubmit)
 }
 
@@ -662,11 +663,11 @@ func enforceExerciseAccess(ctx context.Context, e *exerciseDomain.Exercise, call
 func enforceSubmissionWindow(ctx context.Context, e *exerciseDomain.Exercise) error {
 	now := time.Now().UTC()
 	if !e.StartDate().IsZero() && now.Before(e.StartDate()) {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_WINDOW_NOT_OPEN, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseSubmissionWindowNotOpen, nil,
 			ErrYouCanNotSubmitBeforeStartTime)
 	}
 	if !e.EndDate().IsZero() && now.After(e.EndDate()) {
-		return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_WINDOW_CLOSED, nil,
+		return errs.NewError(ctx, domain.ClassroomExerciseSubmissionWindowClosed, nil,
 			ErrYouCanNotSubmitAfterEndTime)
 	}
 	return nil

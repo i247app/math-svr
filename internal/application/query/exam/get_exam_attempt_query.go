@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/domain/exam"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // GetExamAttemptQuery reads one sitting. ProfileID is required, not
@@ -54,10 +54,10 @@ func (h *GetExamAttemptQueryHandler) Handle(ctx context.Context, q GetExamAttemp
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if attempt == nil {
-		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_FOUND, nil, nil)
+		return nil, errs.NewError(ctx, exam.ExamAttemptNotFound, nil, nil)
 	}
 	if attempt.Uid() != q.UID || attempt.ProfileId() != q.ProfileID {
-		return nil, errs.NewError(ctx, status.EXAM_ATTEMPT_NOT_OWNED, nil, nil)
+		return nil, errs.NewError(ctx, exam.ExamAttemptNotOwned, nil, nil)
 	}
 
 	examPool, err := h.examPoolRepo.FindByExamId(ctx, attempt.ExamId())
@@ -65,7 +65,7 @@ func (h *GetExamAttemptQueryHandler) Handle(ctx context.Context, q GetExamAttemp
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if examPool == nil {
-		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil, nil)
+		return nil, errs.NewError(ctx, exam.ExamNotFound, nil, nil)
 	}
 
 	details, err := h.detailRepo.ListByElinkId(ctx, attempt.ElinkId())

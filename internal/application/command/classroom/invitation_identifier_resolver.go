@@ -5,9 +5,11 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/classroom"
+	profiledom "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -31,7 +33,7 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 	out := resolvedInvitationTarget{}
 	trimmed := strings.TrimSpace(identifier)
 	if trimmed == "" {
-		return out, errs.NewError(ctx, status.CLASSROOM_INVITATION_INVALID_IDENTIFIER, nil,
+		return out, errs.NewError(ctx, classroom.ClassroomInvitationInvalidIdentifier, nil,
 			ErrInvitationIdentifierRequired)
 	}
 
@@ -42,7 +44,7 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 		// precise INVALID_IDENTIFIER instead of a silent miss.
 		profileID := utils.StringToInt64(trimmed, 0)
 		if profileID == 0 {
-			return out, errs.NewError(ctx, status.CLASSROOM_INVITATION_INVALID_IDENTIFIER, nil,
+			return out, errs.NewError(ctx, classroom.ClassroomInvitationInvalidIdentifier, nil,
 				ErrProfileIDMustBePositive)
 		}
 		p, err := repos.Profile.FindByProfileId(ctx, profileID)
@@ -50,7 +52,7 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 			return out, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if p == nil {
-			out.skipReason = status.PROFILE_NOT_FOUND
+			out.skipReason = profiledom.ProfileNotFound
 			return out, nil
 		}
 		id := p.ProfileId()
@@ -69,7 +71,7 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 			return out, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if alias == nil {
-			out.skipReason = status.PROFILE_NOT_FOUND
+			out.skipReason = profiledom.ProfileNotFound
 			return out, nil
 		}
 		profiles, err := repos.Profile.ListByUid(ctx, alias.UID())
@@ -77,7 +79,7 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 			return out, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if len(profiles) != 1 {
-			out.skipReason = status.PROFILE_NOT_FOUND
+			out.skipReason = profiledom.ProfileNotFound
 			return out, nil
 		}
 		id := profiles[0].ProfileId()
@@ -85,7 +87,7 @@ func resolveInvitationTarget(ctx context.Context, repos transaction.Repositories
 		return out, nil
 
 	default:
-		return out, errs.NewError(ctx, status.CLASSROOM_INVITATION_INVALID_IDENTIFIER_TYPE, nil,
+		return out, errs.NewError(ctx, classroom.ClassroomInvitationInvalidIdentifierType, nil,
 			ErrInvalidIdentifierType)
 	}
 }

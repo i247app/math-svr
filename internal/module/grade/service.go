@@ -9,10 +9,10 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/grade"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/grade"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -132,7 +132,7 @@ func (s *Service) GetGrade(ctx context.Context, req *dto.GetGradeReq) (*dto.GetG
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if g == nil {
-		return nil, errs.NewError(ctx, status.GRADE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.GradeNotFound, nil,
 			ErrGradeNotFound)
 	}
 	resp := dto.GradeDomainToResponse(g)

@@ -7,13 +7,13 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/login"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/user"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -72,7 +72,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 	if result == nil {
 		return &dto.LoginRes{
 			User: nil,
-		}, errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, ErrUserNotFound)
+		}, errs.NewError(ctx, login.AuthLoginFailed, nil, ErrUserNotFound)
 	}
 
 	userRes, err := s.userSvc.GetUserById(ctx, &dto.GetUserByUidReq{UID: result.UID})

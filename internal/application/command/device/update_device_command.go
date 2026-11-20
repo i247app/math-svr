@@ -5,8 +5,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateDeviceCommand patches mutable attributes of an existing device row —
@@ -34,13 +33,13 @@ func (h *UpdateDeviceCommandHandler) Handle(ctx context.Context, cmd UpdateDevic
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		existing, err := repos.Device.FindByDeviceId(ctx, cmd.DeviceID)
 		if err != nil {
-			return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+			return errs.NewError(ctx, device.DeviceRegistrationFail, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
+			return errs.NewError(ctx, device.DeviceNotFound, nil, ErrDeviceNotFound)
 		}
 		if existing.UID() == nil || *existing.UID() != cmd.UID {
-			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
+			return errs.NewError(ctx, device.DeviceNotOwned, nil,
 				ErrDeviceNotOwnedByUser)
 		}
 
@@ -51,12 +50,12 @@ func (h *UpdateDeviceCommandHandler) Handle(ctx context.Context, cmd UpdateDevic
 		patch.SetNote(cmd.Note)
 
 		if err := repos.Device.Update(ctx, patch); err != nil {
-			return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+			return errs.NewError(ctx, device.DeviceRegistrationFail, nil, err)
 		}
 
 		refreshed, err := repos.Device.FindByDeviceId(ctx, cmd.DeviceID)
 		if err != nil {
-			return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+			return errs.NewError(ctx, device.DeviceRegistrationFail, nil, err)
 		}
 		updated = refreshed
 		return nil

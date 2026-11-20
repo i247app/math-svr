@@ -11,8 +11,8 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // CreateQuestionsCommand stores a batch of questions in the bank, all or
@@ -56,7 +56,7 @@ func (h *CreateQuestionPoolsCommandHandler) Handle(ctx context.Context, cmd Crea
 					at = append(at, fmt.Sprintf("questions[%d]", i))
 				}
 			}
-			return errs.NewError(ctx, status.QUESTION_POOL_DUPLICATE, nil,
+			return errs.NewError(ctx, questionpool.QuestionPoolDuplicate, nil,
 				fmt.Errorf("already in the question bank: %s", strings.Join(at, ", ")))
 		}
 
@@ -71,7 +71,7 @@ func (h *CreateQuestionPoolsCommandHandler) Handle(ctx context.Context, cmd Crea
 		}
 		if err := repos.QuestionPool.CreateMany(ctx, cmd.QuestionPools, cmd.ActorUID); err != nil {
 			if errors.Is(err, questionpool.ErrDuplicate) {
-				return errs.NewError(ctx, status.QUESTION_POOL_DUPLICATE, nil,
+				return errs.NewError(ctx, questionpool.QuestionPoolDuplicate, nil,
 					fmt.Errorf("already in the question bank (stored by another request meanwhile): %w", err))
 			}
 			return errs.NewError(ctx, status.FAIL, nil, err)

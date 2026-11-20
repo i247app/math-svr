@@ -7,8 +7,8 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/program"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // CreateProgramCommand writes the parent ma_programs row in a single
@@ -53,7 +53,7 @@ func (h *CreateProgramCommandHandler) Handle(ctx context.Context, cmd CreateProg
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if saved == nil {
-			return errs.NewError(ctx, status.PROGRAM_NOT_FOUND, nil,
+			return errs.NewError(ctx, program.ProgramNotFound, nil,
 				ErrProgramNotFoundAfterInsert)
 		}
 		created = saved

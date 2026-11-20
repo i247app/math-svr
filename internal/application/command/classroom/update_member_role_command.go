@@ -5,9 +5,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateMemberRoleCommand promotes / demotes a non-owner member
@@ -39,14 +39,14 @@ func (h *UpdateMemberRoleCommandHandler) Handle(ctx context.Context, cmd UpdateM
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if target == nil {
-			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_FOUND, nil,
+			return errs.NewError(ctx, classroom.ClassroomMemberNotFound, nil,
 				ErrTargetMemberNotFound)
 		}
 		if target.MemberStatus() == nil || *target.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
-			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_MEMBER, nil, ErrTargetMemberNotActive)
+			return errs.NewError(ctx, classroom.ClassroomMemberNotMember, nil, ErrTargetMemberNotActive)
 		}
 		if target.MemberRole() == enum.ClassroomMemberRoleTypeOwner.String() {
-			return errs.NewError(ctx, status.CLASSROOM_MEMBER_CANNOT_DEMOTE_OWNER, nil, ErrOwnerRoleUpdateForbidden)
+			return errs.NewError(ctx, classroom.ClassroomMemberCannotDemoteOwner, nil, ErrOwnerRoleUpdateForbidden)
 		}
 		if target.MemberRole() == cmd.NewRole {
 			updated = target

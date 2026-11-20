@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/pkg/deepseek"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // DeepSeekProvider is the LLMProvider implementation backed by
@@ -98,7 +97,7 @@ func (p *DeepSeekProvider) Stream(ctx context.Context, req ChatRequest, onChunk 
 // embedding endpoint; deploys that need embeddings should route Embed via
 // the openai or gemini providers (EmbedVia).
 func (p *DeepSeekProvider) Embed(ctx context.Context, _ EmbedRequest) (*EmbedResult, error) {
-	return nil, errs.NewError(ctx, status.LLM_UNSUPPORTED_OP,
+	return nil, errs.NewError(ctx, LLMUnsupportedOp,
 		map[string]any{"provider": string(ProviderDeepSeek)},
 		errors.New("deepseek provider does not support embeddings"))
 }

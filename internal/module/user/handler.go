@@ -8,10 +8,10 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/resource"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	sctx "math-ai.com/math-ai/internal/shared/context"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -314,14 +314,14 @@ func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request)
 	r.Body = http.MaxBytesReader(w, r.Body, MaxAvatarUploadSize)
 	if err := r.ParseMultipartForm(MaxAvatarUploadSize); err != nil {
 		response.WriteJson(w, nil,
-			errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil, err))
+			errs.NewError(ctx, domain.UserAvatarInvalidFile, nil, err))
 		return
 	}
 
 	uidStr := r.FormValue("uid")
 	if uidStr == "" {
 		response.WriteJson(w, nil,
-			errs.NewError(ctx, status.USER_NOT_FOUND, nil,
+			errs.NewError(ctx, domain.UserNotFound, nil,
 				ErrUIDFormFieldRequired))
 		return
 	}
@@ -330,7 +330,7 @@ func (h *UserHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Request)
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		response.WriteJson(w, nil,
-			errs.NewError(ctx, status.USER_AVATAR_INVALID_FILE, nil, err))
+			errs.NewError(ctx, domain.UserAvatarInvalidFile, nil, err))
 		return
 	}
 	defer file.Close()

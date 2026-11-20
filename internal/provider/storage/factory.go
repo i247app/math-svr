@@ -3,11 +3,10 @@ package storage
 import (
 	"context"
 
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/pkg/s3"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 func NewFromConfig(ctx context.Context, cfg config.StorageConfig) (*Registry, error) {
@@ -27,7 +26,7 @@ func NewFromConfig(ctx context.Context, cfg config.StorageConfig) (*Registry, er
 		return reg, nil
 
 	default:
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID,
+		return nil, errs.NewError(ctx, StorageConfigInvalid,
 			map[string]any{"provider": cfg.Provider}, nil)
 	}
 }

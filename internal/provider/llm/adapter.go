@@ -11,9 +11,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 const llmTracerName = "math-svr/llm"
@@ -101,7 +100,7 @@ func (a *Registry) ChatVia(ctx context.Context, name LLMProviderName, req ChatRe
 	}
 
 	if err := req.Validate(); err != nil {
-		return nil, errs.NewError(ctx, status.LLM_INVALID_PROMPT,
+		return nil, errs.NewError(ctx, LLMInvalidPrompt,
 			map[string]any{"reason": err.Error()}, err)
 	}
 
@@ -145,11 +144,11 @@ func (a *Registry) StreamVia(ctx context.Context, name LLMProviderName, req Chat
 	}
 
 	if onChunk == nil {
-		return nil, errs.NewError(ctx, status.LLM_INVALID_PROMPT, nil,
+		return nil, errs.NewError(ctx, LLMInvalidPrompt, nil,
 			errors.New("llm: onChunk is required for streaming"))
 	}
 	if err := req.Validate(); err != nil {
-		return nil, errs.NewError(ctx, status.LLM_INVALID_PROMPT,
+		return nil, errs.NewError(ctx, LLMInvalidPrompt,
 			map[string]any{"reason": err.Error()}, err)
 	}
 
@@ -187,7 +186,7 @@ func (a *Registry) EmbedVia(ctx context.Context, name LLMProviderName, req Embed
 	log := logger.From(ctx)
 
 	if err := req.Validate(); err != nil {
-		return nil, errs.NewError(ctx, status.LLM_INVALID_PROMPT,
+		return nil, errs.NewError(ctx, LLMInvalidPrompt,
 			map[string]any{"reason": err.Error()}, err)
 	}
 
@@ -246,7 +245,7 @@ func (a *Registry) RespondVia(ctx context.Context, name LLMProviderName, req Res
 	}
 
 	if err := req.Validate(); err != nil {
-		return nil, errs.NewError(ctx, status.LLM_INVALID_PROMPT,
+		return nil, errs.NewError(ctx, LLMInvalidPrompt,
 			map[string]any{"reason": err.Error()}, err)
 	}
 
@@ -257,7 +256,7 @@ func (a *Registry) RespondVia(ctx context.Context, name LLMProviderName, req Res
 	responder, ok := provider.(ResponderProvider)
 	if !ok {
 		err := fmt.Errorf("llm: provider %q does not support server-side conversation state", name)
-		return nil, errs.NewError(ctx, status.LLM_UNSUPPORTED_OP,
+		return nil, errs.NewError(ctx, LLMUnsupportedOp,
 			map[string]any{"provider": string(name), "op": "respond"}, err)
 	}
 
@@ -293,7 +292,7 @@ func (a *Registry) ListModelsVia(ctx context.Context, name LLMProviderName) ([]M
 	lister, ok := provider.(ModelLister)
 	if !ok {
 		err := fmt.Errorf("llm: provider %q cannot list its models", name)
-		return nil, errs.NewError(ctx, status.LLM_UNSUPPORTED_OP, map[string]any{"provider": string(name), "op": "list_models"}, err)
+		return nil, errs.NewError(ctx, LLMUnsupportedOp, map[string]any{"provider": string(name), "op": "list_models"}, err)
 	}
 
 	ctx, span := startLLMSpan(ctx, name, "list_models")
@@ -350,18 +349,18 @@ func logAndReturn(ctx context.Context, log interface {
 		// translation contract. Surface as LLM_OP_FAILED so the wire
 		// shape stays uniform; log loudly to flag the regression.
 		log.Errorf("llm.%s_error provider=%s err=%v (provider returned non-MathError)", op, name, err)
-		return errs.NewError(ctx, status.LLM_OP_FAILED,
+		return errs.NewError(ctx, LLMOpFailed,
 			map[string]any{"provider": string(name)}, err)
 	}
 
 	switch mErr.GetStatusCode() {
-	case status.LLM_CONFIG_INVALID, status.LLM_UNSUPPORTED_OP:
+	case LLMConfigInvalid, LLMUnsupportedOp:
 		log.Errorf("llm.%s_config_error provider=%s err=%v", op, name, err)
-	case status.LLM_SERIALIZE_FAILED:
+	case LLMSerializeFailed:
 		log.Errorf("llm.%s_serialize_error provider=%s err=%v", op, name, err)
-	case status.LLM_RATE_LIMITED:
+	case LLMRateLimited:
 		log.Warnf("llm.%s_rate_limited provider=%s err=%v", op, name, err)
-	case status.LLM_CONTEXT_TOO_LARGE:
+	case LLMContextTooLarge:
 		log.Warnf("llm.%s_context_too_large provider=%s err=%v", op, name, err)
 	default:
 		// LLM_OP_FAILED / LLM_CONNECT_FAILED — transient or upstream-noise.

@@ -7,8 +7,8 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/semester"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // CreateSemesterCommand writes the parent ma_semesters row in a single
@@ -53,7 +53,7 @@ func (h *CreateSemesterCommandHandler) Handle(ctx context.Context, cmd CreateSem
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if saved == nil {
-			return errs.NewError(ctx, status.SEMESTER_NOT_FOUND, nil,
+			return errs.NewError(ctx, semester.SemesterNotFound, nil,
 				ErrSemesterNotFoundAfterInsert)
 		}
 		created = saved

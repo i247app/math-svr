@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	userdom "math-ai.com/math-ai/internal/domain/user"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SetAvatarKeyCommand persists a newly-uploaded avatar's S3 key onto a
@@ -33,7 +34,7 @@ func (h *SetAvatarKeyCommandHandler) Handle(ctx context.Context, cmd SetAvatarKe
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.USER_NOT_FOUND, nil,
+			return errs.NewError(ctx, userdom.UserNotFound, nil,
 				ErrUserNotFound)
 		}
 		if err := repos.User.UpdateAvatarKey(ctx, cmd.UID, cmd.AvatarKey); err != nil {

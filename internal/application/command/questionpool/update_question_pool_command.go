@@ -7,8 +7,8 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/questionpool"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateQuestionCommand edits one question. Apply turns the stored row into
@@ -41,7 +41,7 @@ func (h *UpdateQuestionPoolCommandHandler) Handle(ctx context.Context, cmd Updat
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if stored == nil {
-			return errs.NewError(ctx, status.QUESTION_POOL_NOT_FOUND, nil,
+			return errs.NewError(ctx, questionpool.QuestionPoolNotFound, nil,
 				fmt.Errorf("question_pool: no live question %d", cmd.QuestionPoolID))
 		}
 		edited, err := cmd.Apply(stored)
@@ -51,7 +51,7 @@ func (h *UpdateQuestionPoolCommandHandler) Handle(ctx context.Context, cmd Updat
 		edited.SetQuestionPoolId(stored.QuestionPoolId())
 		if err := repos.QuestionPool.UpdateContent(ctx, edited, cmd.ActorUID); err != nil {
 			if errors.Is(err, questionpool.ErrDuplicate) {
-				return errs.NewError(ctx, status.QUESTION_POOL_DUPLICATE, nil,
+				return errs.NewError(ctx, questionpool.QuestionPoolDuplicate, nil,
 					fmt.Errorf("another question in the bank already has this content: %w", err))
 			}
 			return errs.NewError(ctx, status.FAIL, nil, err)

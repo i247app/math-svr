@@ -2,6 +2,7 @@ package errs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
@@ -60,16 +61,11 @@ func (e *MathError) Unwrap() error {
 	return e.BaseError
 }
 
-// IsMathError checks if an error is a MathError
+// IsMathError reports whether err is, or wraps, a MathError, and returns it.
 func IsMathError(err error) (*MathError, bool) {
-	if err == nil {
-		return nil, false
+	if mathErr, ok := errors.AsType[*MathError](err); ok {
+		return mathErr, true
 	}
-
-	if binbaseErr, ok := err.(*MathError); ok {
-		return binbaseErr, true
-	}
-
 	return nil, false
 }
 

@@ -8,12 +8,11 @@ import (
 	"strings"
 	"time"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metrics"
 	"math-ai.com/math-ai/internal/infrastructure/ratelimit"
 	sess "math-ai.com/math-ai/internal/infrastructure/session"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -119,7 +118,7 @@ func RateLimitMiddleware(policy string, lim ratelimit.Limiter, key RateLimitKeyF
 				// retry_after (seconds) rides in the body too: the mobile client
 				// reads the JSON envelope, not headers.
 				response.WriteJson(w, map[string]any{"retry_after": retry},
-					errs.NewError(ctx, status.RATE_LIMIT_EXCEEDED, nil, ErrRateLimited))
+					errs.NewError(ctx, RateLimitExceeded, nil, ErrRateLimited))
 				return
 			}
 

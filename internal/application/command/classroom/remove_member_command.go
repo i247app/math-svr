@@ -5,9 +5,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // RemoveMemberCommand kicks a target profile out of the classroom.
@@ -36,15 +36,15 @@ func (h *RemoveMemberCommandHandler) Handle(ctx context.Context, cmd RemoveMembe
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if target == nil {
-			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_FOUND, nil,
+			return errs.NewError(ctx, classroom.ClassroomMemberNotFound, nil,
 				ErrTargetMemberNotFound)
 		}
 		if target.MemberStatus() == nil || *target.MemberStatus() != enum.ClassroomMemberStatusTypeActive.String() {
-			return errs.NewError(ctx, status.CLASSROOM_MEMBER_NOT_MEMBER, nil,
+			return errs.NewError(ctx, classroom.ClassroomMemberNotMember, nil,
 				ErrTargetMemberNotActive)
 		}
 		if target.MemberRole() == enum.ClassroomMemberRoleTypeOwner.String() {
-			return errs.NewError(ctx, status.CLASSROOM_MEMBER_CANNOT_REMOVE_OWNER, nil,
+			return errs.NewError(ctx, classroom.ClassroomMemberCannotRemoveOwner, nil,
 				ErrOwnerCannotBeRemoved)
 		}
 		if err := repos.ClassroomMember.MarkRemoved(ctx, target.MemberId(), cmd.CallerProfileID); err != nil {

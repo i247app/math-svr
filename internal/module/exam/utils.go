@@ -10,10 +10,10 @@ import (
 	command "math-ai.com/math-ai/internal/application/command/exam"
 	"math-ai.com/math-ai/internal/application/dto"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -48,7 +48,7 @@ func sanitizeExamText(text string) *string {
 func marshalQuestions(ctx context.Context, questions []dto.Question) (string, error) {
 	raw, err := json.Marshal(dto.FromSharedQuestions(questions))
 	if err != nil {
-		return "", errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil,
+		return "", errs.NewError(ctx, domain.ExamGenerationFailed, nil,
 			fmt.Errorf("exam: marshal questions: %w", err))
 	}
 	return string(raw), nil
@@ -97,7 +97,7 @@ func (s *Service) drawShuffle(ctx context.Context, canonical []dto.Question) (*s
 	}
 	raw, err := dto.NewShuffle(canonical, systemRand{}).JSON()
 	if err != nil {
-		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ExamGenerationFailed, nil, err)
 	}
 	return &raw, nil
 }
@@ -107,11 +107,11 @@ func (s *Service) drawShuffle(ctx context.Context, canonical []dto.Question) (*s
 func decodeStoredQuestions(ctx context.Context, raw string) ([]dto.Question, error) {
 	var stored []dto.ExamQuestion
 	if err := json.Unmarshal([]byte(raw), &stored); err != nil {
-		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil,
+		return nil, errs.NewError(ctx, domain.ExamGenerationFailed, nil,
 			fmt.Errorf("exam: decode cached questions: %w", err))
 	}
 	if err := dto.CheckSet(stored); err != nil {
-		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ExamGenerationFailed, nil, err)
 	}
 	return dto.ToSharedQuestions(stored), nil
 }

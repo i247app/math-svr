@@ -15,10 +15,9 @@ import (
 	programDomain "math-ai.com/math-ai/internal/domain/program"
 	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
@@ -96,7 +95,7 @@ func (s *Service) GetProfileById(ctx context.Context, req *dto.GetProfileByIdReq
 		return nil, err
 	}
 	if p == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileNotFound)
 	}
 
@@ -163,7 +162,7 @@ func (s *Service) CreateProfile(ctx context.Context, req *dto.CreateProfileReq) 
 	)
 	switch {
 	case strings.TrimSpace(req.Avatar) != "":
-		key, err := s.normalizeAvatarKey(ctx, req.Avatar, status.PROFILE_AVATAR_INVALID_REFERENCE)
+		key, err := s.normalizeAvatarKey(ctx, req.Avatar, domain.ProfileAvatarInvalidReference)
 		if err != nil {
 			return nil, err
 		}
@@ -239,7 +238,7 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 		return nil, err
 	}
 	if existProfile == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileNotFound)
 	}
 
@@ -248,7 +247,7 @@ func (s *Service) UpdateProfile(ctx context.Context, req *dto.UpdateProfileReq) 
 	var avatarKey *string
 	switch {
 	case req.Avatar != nil:
-		key, err := s.normalizeAvatarKey(ctx, *req.Avatar, status.PROFILE_AVATAR_INVALID_REFERENCE)
+		key, err := s.normalizeAvatarKey(ctx, *req.Avatar, domain.ProfileAvatarInvalidReference)
 		if err != nil {
 			return nil, err
 		}
@@ -320,7 +319,7 @@ func (s *Service) SoftDeleteProfile(ctx context.Context, req *dto.DeleteProfileR
 		return nil, err
 	}
 	if p == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileNotFound)
 	}
 
@@ -343,7 +342,7 @@ func (s *Service) ForceDeleteProfile(ctx context.Context, req *dto.DeleteProfile
 		return nil, err
 	}
 	if existProfile == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileNotFound)
 	}
 
@@ -352,7 +351,7 @@ func (s *Service) ForceDeleteProfile(ctx context.Context, req *dto.DeleteProfile
 		return nil, err
 	}
 	if p == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileNotFound)
 	}
 
@@ -380,15 +379,15 @@ func (s *Service) ForceDeleteProfile(ctx context.Context, req *dto.DeleteProfile
 // short-lived presigned URL for immediate display.
 func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, contentType string, file io.Reader) (*dto.ProfileUploadAvatarRes, error) {
 	if profileID == 0 {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileIDRequired)
 	}
 	if s.storageProvider == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil,
+		return nil, errs.NewError(ctx, storage.StorageConfigInvalid, nil,
 			ErrStorageProviderNotConfigured)
 	}
 	if file == nil || filename == "" {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil,
+		return nil, errs.NewError(ctx, domain.ProfileAvatarInvalidFile, nil,
 			ErrAvatarFileRequired)
 	}
 
@@ -399,7 +398,7 @@ func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, c
 		return nil, err
 	}
 	if existing == nil {
-		return nil, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ProfileNotFound, nil,
 			ErrProfileNotFound)
 	}
 
@@ -407,7 +406,7 @@ func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, c
 		Filename:    filename,
 		ContentType: contentType,
 	}); err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, domain.ProfileAvatarInvalidFile, nil, err)
 	}
 
 	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -417,10 +416,10 @@ func (s *Service) UploadAvatar(ctx context.Context, profileID int64, filename, c
 		Folder:      avatarFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ProfileAvatarUploadFailed, nil, err)
 	}
 	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
+		return nil, errs.NewError(ctx, domain.ProfileAvatarUploadFailed, nil,
 			ErrUploadReturnedEmptyKey)
 	}
 

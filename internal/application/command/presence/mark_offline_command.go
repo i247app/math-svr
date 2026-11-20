@@ -6,8 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/presence"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type MarkOfflineCommand struct {
@@ -31,7 +30,7 @@ func (h *MarkOfflineCommandHandler) Handle(ctx context.Context, cmd *MarkOffline
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		p, err := repos.Presence.DecrementConnection(ctx, cmd.Uid, time.Now().UTC())
 		if err != nil {
-			return errs.NewError(ctx, status.PRESENCE_UPDATE_FAILED, nil, err)
+			return errs.NewError(ctx, domain.PresenceUpdateFailed, nil, err)
 		}
 		result = p
 		return nil

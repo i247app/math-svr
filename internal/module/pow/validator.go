@@ -4,8 +4,7 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	err "math-ai.com/math-ai/internal/domain/shared/error"
-	status "math-ai.com/math-ai/internal/domain/shared/status"
+	err "math-ai.com/math-ai/internal/shared/errs"
 )
 
 func ValidateChallenge(ctx context.Context, req *dto.ChallengeReq) error {
@@ -14,7 +13,7 @@ func ValidateChallenge(ctx context.Context, req *dto.ChallengeReq) error {
 
 func ValidateVerifyChallenge(ctx context.Context, req *dto.VerifyChallengeReq) error {
 	if req.Nonce <= 0 {
-		return err.NewError(ctx, status.POW_INVALID_REQUEST, nil, ErrNonceRequired)
+		return err.NewError(ctx, PowInvalidRequest, nil, ErrNonceRequired)
 	}
 	return nil
 }

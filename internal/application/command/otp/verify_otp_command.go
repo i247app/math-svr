@@ -6,10 +6,9 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/otp"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // VerifyOtpCommand consumes a PENDING OTP. On success it returns the
@@ -42,13 +41,13 @@ func NewVerifyOtpCommandHandler(uow transaction.UnitOfWork, bypassEnabled bool, 
 
 func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpCommand) (*VerifyOtpCommandResult, error) {
 	if !cmd.OtpType.IsValid() {
-		return nil, errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, ErrInvalidOtpType)
+		return nil, errs.NewError(ctx, otp.OTPInvalidType, nil, ErrInvalidOtpType)
 	}
 	if cmd.Identifier == "" {
-		return nil, errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
+		return nil, errs.NewError(ctx, otp.OTPMissingIdentifier, nil, ErrIdentifierRequired)
 	}
 	if cmd.Code == "" {
-		return nil, errs.NewError(ctx, status.OTP_MISSING_CODE, nil, ErrOtpCodeRequired)
+		return nil, errs.NewError(ctx, otp.OTPMissingCode, nil, ErrOtpCodeRequired)
 	}
 
 	var result *VerifyOtpCommandResult
@@ -56,13 +55,13 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		o, err := repos.Otp.FindLatestPending(ctx, cmd.OtpType, cmd.Identifier)
 		if err != nil {
-			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
+			return errs.NewError(ctx, otp.OTPGenerationFailed, nil, err)
 		}
 		if o == nil {
 			// No PENDING row — either never sent, or already consumed
 			// /revoked /expired. Treat all of them as "not found" to
 			// keep response shape uniform and avoid leaking lifecycle.
-			return errs.NewError(ctx, status.OTP_NOT_FOUND, nil, ErrNoPendingOtp)
+			return errs.NewError(ctx, otp.OTPNotFound, nil, ErrNoPendingOtp)
 		}
 
 		// Dev/test bypass. Sits after the PENDING lookup (a send must have
@@ -78,18 +77,18 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 		// Expiry check. Mark EXPIRED so the row is greppable in audit.
 		if !o.OtpExpireDt().IsZero() && time.Now().UTC().After(o.OtpExpireDt()) {
 			_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeExpired)
-			return errs.NewError(ctx, status.OTP_EXPIRED, nil, ErrOtpExpired)
+			return errs.NewError(ctx, otp.OTPExpired, nil, ErrOtpExpired)
 		}
 
 		// Increment attempts BEFORE comparing — otherwise an attacker can
 		// brute-force by flooding mismatches.
 		newCount, err := repos.Otp.IncrementAttemptCount(ctx, o.OtpId())
 		if err != nil {
-			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
+			return errs.NewError(ctx, otp.OTPGenerationFailed, nil, err)
 		}
 		if newCount > OtpMaxAttempts {
 			_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeRevoked)
-			return errs.NewError(ctx, status.OTP_TOO_MANY_ATTEMPTS, nil,
+			return errs.NewError(ctx, otp.OTPTooManyAttempts, nil,
 				ErrOtpAttemptCapExceeded)
 		}
 
@@ -101,7 +100,7 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 				// next /verify call returns OTP_TOO_MANY_ATTEMPTS.
 				_ = repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeRevoked)
 			}
-			return errs.NewError(ctx, status.OTP_INVALID_CODE, map[string]any{
+			return errs.NewError(ctx, otp.OTPInvalidCode, map[string]any{
 				"attempts_remaining": maxInt(0, OtpMaxAttempts-newCount),
 			}, ErrOtpCodeMismatch)
 		}
@@ -117,7 +116,7 @@ func (h *VerifyOtpCommandHandler) Handle(ctx context.Context, cmd VerifyOtpComma
 // markVerified consumes the row and fills the result the caller hands back.
 func (h *VerifyOtpCommandHandler) markVerified(ctx context.Context, repos transaction.Repositories, o *otp.Otp, out **VerifyOtpCommandResult) error {
 	if err := repos.Otp.MarkStatusByOtpId(ctx, o.OtpId(), enum.OtpStatusTypeVerified); err != nil {
-		return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
+		return errs.NewError(ctx, otp.OTPGenerationFailed, nil, err)
 	}
 	*out = &VerifyOtpCommandResult{
 		OtpID:      o.OtpId(),

@@ -14,12 +14,12 @@ import (
 	llmProvider "math-ai.com/math-ai/internal/provider/llm"
 
 	// input "math-ai.com/math-ai/internal/domain/prompt/input"
+	domain "math-ai.com/math-ai/internal/domain/exam"
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -95,7 +95,7 @@ type generateExamOutput struct {
 func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*generateExamOutput, error) {
 	log := logger.From(ctx)
 	if c.provider == nil {
-		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil, ErrLLMProviderNotConfigured)
+		return nil, errs.NewError(ctx, llmProvider.LLMConfigInvalid, nil, ErrLLMProviderNotConfigured)
 	}
 
 	// Drawn once: the user message states these pairs and the server stamps
@@ -123,7 +123,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	}
 
 	if in.Prompt == nil || in.Prompt.SystemPrompt() == "" {
-		return nil, errs.NewError(ctx, status.PROMPT_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, promptDomain.PromptNotFound, nil,
 			fmt.Errorf("exam: no system prompt for %s grade %d", in.ExamType, in.Grade))
 	}
 	system := input.RenderSystemPrompt(in.Prompt.SystemPrompt(), in.Level, rand.Int64N(1_000_000))
@@ -133,7 +133,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	}
 	user, err := input.BuildExamUserPrompt(promptIn)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ExamGenerationFailed, nil, err)
 	}
 
 	// The full system text is logged on purpose: a rewrite overwrites the
@@ -160,11 +160,11 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	gen, err := dto.ParseGenerationOf[dto.ExamQuestion](content)
 	if err != nil {
 		log.Warnf("exam.llm.generate_parse_failed err=%v", err)
-		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED,
+		return nil, errs.NewError(ctx, domain.ExamGenerationFailed,
 			map[string]any{"reason": err.Error()}, err)
 	}
 	if len(gen.Questions) == 0 {
-		return nil, errs.NewError(ctx, status.EXAM_NO_QUESTIONS, nil, ErrModelReturnedNothing)
+		return nil, errs.NewError(ctx, domain.ExamNoQuestions, nil, ErrModelReturnedNothing)
 	}
 
 	// The model writes single-choice questions only: whatever question_kind
@@ -190,7 +190,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	}
 	if err := dto.CheckSet(gen.Questions); err != nil {
 		log.Warnf("exam.llm.generate_unusable err=%v", err)
-		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED,
+		return nil, errs.NewError(ctx, domain.ExamGenerationFailed,
 			map[string]any{"reason": err.Error()}, err)
 	}
 
@@ -316,16 +316,16 @@ type journeyReviewOutput struct {
 func (c *llmClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prompt, in input.JourneyReviewInput, chain string) (*journeyReviewOutput, error) {
 	log := logger.From(ctx)
 	if c.provider == nil {
-		return nil, errs.NewError(ctx, status.LLM_CONFIG_INVALID, nil, ErrLLMProviderNotConfigured)
+		return nil, errs.NewError(ctx, llmProvider.LLMConfigInvalid, nil, ErrLLMProviderNotConfigured)
 	}
 	if prompt == nil || prompt.SystemPrompt() == "" {
-		return nil, errs.NewError(ctx, status.PROMPT_NOT_FOUND, nil, fmt.Errorf("exam: no system prompt for the journey review"))
+		return nil, errs.NewError(ctx, promptDomain.PromptNotFound, nil, fmt.Errorf("exam: no system prompt for the journey review"))
 	}
 	system := prompt.SystemPrompt()
 
 	user, err := input.BuildJourneyReviewUserPrompt(in)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.EXAM_REVIEW_NO_ANSWERS, nil, err)
+		return nil, errs.NewError(ctx, domain.ExamReviewNoAnswers, nil, err)
 	}
 
 	// The full system text is logged on purpose: a rewrite overwrites the
@@ -344,11 +344,11 @@ func (c *llmClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prom
 	}
 	if err := json.Unmarshal([]byte(stripJSONFence(content)), &out); err != nil {
 		log.Warnf("exam.review.parse_failed err=%v len=%d", err, len(content))
-		return nil, errs.NewError(ctx, status.EXAM_REVIEW_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ExamReviewFailed, nil, err)
 	}
 	short, long := strings.TrimSpace(out.Short), strings.TrimSpace(out.Long)
 	if short == "" || long == "" {
-		return nil, errs.NewError(ctx, status.EXAM_REVIEW_FAILED, nil, ErrReviewEmpty)
+		return nil, errs.NewError(ctx, domain.ExamReviewFailed, nil, ErrReviewEmpty)
 	}
 	if utf8.RuneCountInString(short) > input.ReviewShortMaxChars {
 		log.Warnf("exam.review.short_truncated runes=%d", utf8.RuneCountInString(short))

@@ -10,9 +10,9 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -96,7 +96,7 @@ func NewGenerateExamCommandHandler(uow transaction.UnitOfWork) *GenerateExamComm
 
 func (h *GenerateExamCommandHandler) Handle(ctx context.Context, cmd GenerateExamCommand) (*GenerateExamResult, error) {
 	if cmd.ReuseExamID == nil && cmd.NewContent == nil {
-		return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil,
+		return nil, errs.NewError(ctx, exam.ExamGenerationFailed, nil,
 			fmt.Errorf("exam: generate command needs either a cached exam id or new content"))
 	}
 
@@ -204,7 +204,7 @@ func (h *GenerateExamCommandHandler) findOpenSitting(ctx context.Context, repos 
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if pool == nil {
-		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, exam.ExamNotFound, nil,
 			fmt.Errorf("exam: open sitting %d points at exam_pool %d, which is gone", open.ElinkId(), open.ExamId()))
 	}
 
@@ -245,7 +245,7 @@ func (h *GenerateExamCommandHandler) resolveJourney(ctx context.Context, repos t
 		return *cmd.EsessID, nil
 	}
 	if cmd.ExamType == enum.ExamTypePractice {
-		return 0, errs.NewError(ctx, status.EXAM_MISSING_JOURNEY_ID, nil,
+		return 0, errs.NewError(ctx, exam.ExamMissingJourneyID, nil,
 			fmt.Errorf("exam: a PRACTICE round must name its journey"))
 	}
 
@@ -328,7 +328,7 @@ func (h *GenerateExamCommandHandler) recordCurrent(ctx context.Context, repos tr
 // no longer open means the journey ended under this hand-out.
 func journeyWriteError(ctx context.Context, err error) error {
 	if errors.Is(err, exam.ErrJourneyNotActive) {
-		return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
+		return errs.NewError(ctx, exam.ExamJourneyAlreadyEnded, nil, err)
 	}
 	return errs.NewError(ctx, status.FAIL, nil, err)
 }
@@ -345,7 +345,7 @@ func (h *GenerateExamCommandHandler) resolveExamPool(ctx context.Context, repos 
 			return nil, errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if cached == nil {
-			return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
+			return nil, errs.NewError(ctx, exam.ExamNotFound, nil,
 				fmt.Errorf("exam: cached exam_pool %d disappeared before it could be served", *cmd.ReuseExamID))
 		}
 		return cached, nil

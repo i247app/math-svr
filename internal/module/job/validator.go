@@ -6,9 +6,8 @@ import (
 	"strings"
 	"time"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Bounds on kind=every, enforced here (the API trust boundary) rather
@@ -28,14 +27,14 @@ const (
 
 func validateJobName(ctx context.Context, name string) error {
 	if strings.TrimSpace(name) == "" {
-		return errs.NewError(ctx, status.JOB_MISSING_NAME, nil, ErrJobNameRequired)
+		return errs.NewError(ctx, JobMissingName, nil, ErrJobNameRequired)
 	}
 	return nil
 }
 
 func validateTaskName(ctx context.Context, name string) error {
 	if strings.TrimSpace(name) == "" {
-		return errs.NewError(ctx, status.TASK_MISSING_NAME, nil, ErrTaskNameRequired)
+		return errs.NewError(ctx, TaskMissingName, nil, ErrTaskNameRequired)
 	}
 	return nil
 }
@@ -52,14 +51,14 @@ func validateTaskName(ctx context.Context, name string) error {
 // local time.
 func parseSchedule(ctx context.Context, req *ScheduleRequest) (jobruntime.Schedule, error) {
 	if req == nil {
-		return jobruntime.Schedule{}, errs.NewError(ctx, status.JOB_INVALID_SCHEDULE, nil, ErrScheduleRequired)
+		return jobruntime.Schedule{}, errs.NewError(ctx, JobInvalidSchedule, nil, ErrScheduleRequired)
 	}
 
 	switch strings.ToLower(strings.TrimSpace(req.Kind)) {
 	case "every":
 		d := time.Duration(req.EverySeconds) * time.Second
 		if req.EverySeconds < int(minEveryInterval.Seconds()) || req.EverySeconds > int(maxEveryInterval.Seconds()) {
-			return jobruntime.Schedule{}, errs.NewError(ctx, status.JOB_INVALID_SCHEDULE, nil,
+			return jobruntime.Schedule{}, errs.NewError(ctx, JobInvalidSchedule, nil,
 				fmt.Errorf("every_seconds must be within [%d,%d], got %d",
 					int(minEveryInterval.Seconds()), int(maxEveryInterval.Seconds()), req.EverySeconds))
 		}
@@ -72,13 +71,13 @@ func parseSchedule(ctx context.Context, req *ScheduleRequest) (jobruntime.Schedu
 		}
 		s := jobruntime.DailyAt(req.Hour, req.Minute, loc)
 		if err := s.Validate(); err != nil {
-			return jobruntime.Schedule{}, errs.NewError(ctx, status.JOB_INVALID_SCHEDULE, nil, err)
+			return jobruntime.Schedule{}, errs.NewError(ctx, JobInvalidSchedule, nil, err)
 		}
 		return s, nil
 
 	case "weekly":
 		if req.Weekday == nil {
-			return jobruntime.Schedule{}, errs.NewError(ctx, status.JOB_INVALID_SCHEDULE, nil, ErrWeekdayRequired)
+			return jobruntime.Schedule{}, errs.NewError(ctx, JobInvalidSchedule, nil, ErrWeekdayRequired)
 		}
 		loc, err := parseTimezone(ctx, req.Timezone)
 		if err != nil {
@@ -86,12 +85,12 @@ func parseSchedule(ctx context.Context, req *ScheduleRequest) (jobruntime.Schedu
 		}
 		s := jobruntime.WeeklyAt(time.Weekday(*req.Weekday), req.Hour, req.Minute, loc)
 		if err := s.Validate(); err != nil {
-			return jobruntime.Schedule{}, errs.NewError(ctx, status.JOB_INVALID_SCHEDULE, nil, err)
+			return jobruntime.Schedule{}, errs.NewError(ctx, JobInvalidSchedule, nil, err)
 		}
 		return s, nil
 
 	default:
-		return jobruntime.Schedule{}, errs.NewError(ctx, status.JOB_INVALID_SCHEDULE, nil,
+		return jobruntime.Schedule{}, errs.NewError(ctx, JobInvalidSchedule, nil,
 			fmt.Errorf("%w: got %q", ErrScheduleKindUnknown, req.Kind))
 	}
 }
@@ -107,7 +106,7 @@ func parseTimezone(ctx context.Context, name string) (*time.Location, error) {
 	}
 	loc, err := time.LoadLocation(name)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.JOB_INVALID_SCHEDULE, nil,
+		return nil, errs.NewError(ctx, JobInvalidSchedule, nil,
 			fmt.Errorf("unknown timezone %q: %w", name, err))
 	}
 	return loc, nil

@@ -8,9 +8,9 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // JoinByCodeCommand resolves a classroom by classroom_code and submits a
@@ -48,15 +48,15 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if c == nil {
-			return errs.NewError(ctx, status.CLASSROOM_CODE_INVALID, nil,
+			return errs.NewError(ctx, classroom.ClassroomCodeInvalid, nil,
 				ErrClassroomCodeNotFound)
 		}
 		if c.ClassroomStatus() != nil && *c.ClassroomStatus() == enum.ClassroomStatusTypeArchived.String() {
-			return errs.NewError(ctx, status.CLASSROOM_CODE_DISABLED, nil,
+			return errs.NewError(ctx, classroom.ClassroomCodeDisabled, nil,
 				ErrClassroomArchived)
 		}
 		if !c.ClassroomCodeExpiresDt().IsZero() && c.ClassroomCodeExpiresDt().Before(time.Now()) {
-			return errs.NewError(ctx, status.CLASSROOM_CODE_EXPIRED, nil,
+			return errs.NewError(ctx, classroom.ClassroomCodeExpired, nil,
 				ErrClassroomCodeExpired)
 		}
 
@@ -73,16 +73,16 @@ func (h *JoinByCodeCommandHandler) Handle(ctx context.Context, cmd JoinByCodeCom
 			}
 			switch currentStatus {
 			case enum.ClassroomMemberStatusTypeActive.String():
-				return errs.NewError(ctx, status.CLASSROOM_MEMBER_ALREADY_MEMBER, nil,
+				return errs.NewError(ctx, classroom.ClassroomMemberAlreadyMember, nil,
 					ErrAlreadyActiveMember)
 			case enum.ClassroomMemberStatusTypePendingInvitation.String():
 				// A teacher has already reached out — the user should
 				// accept that invitation rather than open a separate
 				// request thread.
-				return errs.NewError(ctx, status.CLASSROOM_INVITATION_ALREADY_INVITED, nil,
+				return errs.NewError(ctx, classroom.ClassroomInvitationAlreadyInvited, nil,
 					ErrPendingInvitationExists)
 			case enum.ClassroomMemberStatusTypePendingRequest.String():
-				return errs.NewError(ctx, status.CLASSROOM_JOIN_REQUEST_ALREADY_PENDING, nil,
+				return errs.NewError(ctx, classroom.ClassroomJoinRequestAlreadyPending, nil,
 					ErrPendingJoinRequestExists)
 			}
 			// REJECTED / LEFT / REMOVED → reactivate the existing row

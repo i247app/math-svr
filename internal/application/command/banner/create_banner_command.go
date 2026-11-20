@@ -7,9 +7,9 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/banner"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type CreateBannerCommand struct {
@@ -66,7 +66,7 @@ func (h *CreateBannerCommandHandler) Handle(ctx context.Context, cmd CreateBanne
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if saved == nil {
-			return errs.NewError(ctx, status.BANNER_NOT_FOUND, nil,
+			return errs.NewError(ctx, banner.BannerNotFound, nil,
 				ErrBannerNotFoundAfterInsert)
 		}
 		created = saved

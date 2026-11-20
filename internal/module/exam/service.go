@@ -18,13 +18,13 @@ import (
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
 	questionpoolDomain "math-ai.com/math-ai/internal/domain/questionpool"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	sctx "math-ai.com/math-ai/internal/shared/context"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -289,15 +289,15 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if journey == nil {
-		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, examDomain.ExamJourneyNotFound, nil,
 			fmt.Errorf("exam: journey %d not found", journeyID))
 	}
 	if journey.Uid() != profile.UID() || journey.ProfileId() != profile.ProfileId() {
-		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
+		return nil, errs.NewError(ctx, examDomain.ExamJourneyNotOwned, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", journeyID))
 	}
 	if st := journey.EsessStatus(); st == nil || *st != enum.EsessStatusComplete.String() {
-		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_COMPLETE, nil,
+		return nil, errs.NewError(ctx, examDomain.ExamJourneyNotComplete, nil,
 			fmt.Errorf("exam: journey %d is %s; practice needs it COMPLETE", journeyID, utils.DerefString(st)))
 	}
 
@@ -312,7 +312,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if base == nil {
-		return nil, errs.NewError(ctx, status.EXAM_PRACTICE_NO_BASE, nil,
+		return nil, errs.NewError(ctx, examDomain.ExamPracticeNoBase, nil,
 			fmt.Errorf("exam: journey %d has no submitted sitting to practise from", journeyID))
 	}
 	details, err := s.detailRepo.ListByElinkId(ctx, base.ElinkId())
@@ -752,11 +752,11 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if journey == nil {
-		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, examDomain.ExamJourneyNotFound, nil,
 			fmt.Errorf("exam: journey %d not found", req.EsessID))
 	}
 	if journey.Uid() != profile.UID() || journey.ProfileId() != profile.ProfileId() {
-		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
+		return nil, errs.NewError(ctx, examDomain.ExamJourneyNotOwned, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", req.EsessID))
 	}
 	if err := requireReviewable(ctx, journey); err != nil {
@@ -768,7 +768,7 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if len(lines) == 0 {
-		return nil, errs.NewError(ctx, status.EXAM_REVIEW_NO_ANSWERS, nil,
+		return nil, errs.NewError(ctx, examDomain.ExamReviewNoAnswers, nil,
 			fmt.Errorf("exam: journey %d has no answered question", req.EsessID))
 	}
 
@@ -891,7 +891,7 @@ func (s *Service) GetExamPool(ctx context.Context, req *dto.GetExamPoolReq) (*dt
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if pool == nil {
-		return nil, errs.NewError(ctx, status.EXAM_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, examDomain.ExamNotFound, nil,
 			fmt.Errorf("exam: exam_pool %d not found", req.ExamID))
 	}
 	res := &dto.ExamPoolRes{ExamPool: dto.ExamPoolToResponse(pool, true)}

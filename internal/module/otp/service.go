@@ -16,12 +16,13 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/otp"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/otp"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	userdom "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -96,13 +97,13 @@ func (s *Service) Send(ctx context.Context, req *dto.SendOtpReq) (*dto.SendOtpRe
 	switch req.OtpType {
 	case enum.OtpTypeLogin2FA.String():
 		if user == nil {
-			return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil, ErrUserNotFound)
+			return nil, errs.NewError(ctx, userdom.UserNotFound, nil, ErrUserNotFound)
 		}
 
 		uid = &user.UID
 	case enum.OtpTypeRegister.String():
 		if user != nil {
-			return nil, errs.NewError(ctx, status.USER_ALREADY_EXISTS, nil, ErrUserAlreadyExists)
+			return nil, errs.NewError(ctx, userdom.UserAlreadyExists, nil, ErrUserAlreadyExists)
 		}
 		uid = nil
 	default:

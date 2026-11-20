@@ -5,9 +5,10 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	progressQuery "math-ai.com/math-ai/internal/application/query/classroomprogress"
+	domain "math-ai.com/math-ai/internal/domain/classroom"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // requireProfileProgressAccess enforces FEATURE-SPEC §5: a caller may
@@ -51,7 +52,7 @@ func (s *Service) GetProfileProgress(ctx context.Context, req dto.ProfileProgres
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if classroom == nil {
-		return nil, errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil, ErrClassroomNotFound)
+		return nil, errs.NewError(ctx, domain.ClassroomNotFound, nil, ErrClassroomNotFound)
 	}
 
 	result, err := s.profileProgressQuery.Handle(ctx, progressQuery.ProfileProgressQuery{

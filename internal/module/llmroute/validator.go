@@ -9,9 +9,8 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/llmroute"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	llmProvider "math-ai.com/math-ai/internal/provider/llm"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // MaxModelRunes matches ma_llm_routes.llm_model VARCHAR(128).
@@ -37,10 +36,10 @@ type validatedUpdate struct {
 func ValidateUpdateLLMRoute(ctx context.Context, req *dto.UpdateLLMRouteReq, registry *llmProvider.Registry) (validatedUpdate, error) {
 	code := domain.Code(strings.ToUpper(strings.TrimSpace(req.RouteCode)))
 	if code == "" {
-		return validatedUpdate{}, errs.NewError(ctx, status.LLM_ROUTE_MISSING_CODE, nil, ErrRouteCodeRequired)
+		return validatedUpdate{}, errs.NewError(ctx, domain.LLMRouteMissingCode, nil, ErrRouteCodeRequired)
 	}
 	if !domain.IsKnown(code) {
-		return validatedUpdate{}, errs.NewError(ctx, status.LLM_ROUTE_NOT_FOUND, nil,
+		return validatedUpdate{}, errs.NewError(ctx, domain.LLMRouteNotFound, nil,
 			fmt.Errorf("route_code %q is not in the catalog", code))
 	}
 
@@ -48,16 +47,16 @@ func ValidateUpdateLLMRoute(ctx context.Context, req *dto.UpdateLLMRouteReq, reg
 	if v.Provider != nil {
 		name := llmProvider.LLMProviderName(*v.Provider)
 		if registry == nil || !registry.Has(name) {
-			return validatedUpdate{}, errs.NewError(ctx, status.LLM_ROUTE_INVALID_PROVIDER, nil,
+			return validatedUpdate{}, errs.NewError(ctx, domain.LLMRouteInvalidProvider, nil,
 				fmt.Errorf("llm_provider %q is not registered (registered: %s)", name, registeredList(registry)))
 		}
 	}
 	if v.Model != nil {
 		if v.Provider == nil {
-			return validatedUpdate{}, errs.NewError(ctx, status.LLM_ROUTE_INVALID_MODEL, nil, ErrModelWithoutTarget)
+			return validatedUpdate{}, errs.NewError(ctx, domain.LLMRouteInvalidModel, nil, ErrModelWithoutTarget)
 		}
 		if utf8.RuneCountInString(*v.Model) > MaxModelRunes {
-			return validatedUpdate{}, errs.NewError(ctx, status.LLM_ROUTE_INVALID_MODEL, nil, ErrModelTooLong)
+			return validatedUpdate{}, errs.NewError(ctx, domain.LLMRouteInvalidModel, nil, ErrModelTooLong)
 		}
 	}
 	return v, nil

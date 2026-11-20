@@ -3,9 +3,9 @@ package prompt
 import (
 	"context"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	sctx "math-ai.com/math-ai/internal/shared/context"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // requireAdminGate fails closed when a route was registered without the

@@ -10,9 +10,8 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // OpenConversationCommand carries both identities for both sides: the profile
@@ -59,7 +58,7 @@ func (h *OpenConversationCommandHandler) Handle(ctx context.Context, cmd *OpenCo
 		// The unique key fired but no visible row matches — the only way this
 		// happens is a soft-deleted thread holding the key, which the active
 		// filter hides. Report it rather than looping.
-		return nil, errs.NewError(ctx, status.CHAT_CONVERSATION_CREATE_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.ChatConversationCreateFailed, nil, err)
 	}
 	return existing, nil
 }
@@ -71,7 +70,7 @@ func (h *OpenConversationCommandHandler) findByPair(ctx context.Context, cmd *Op
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		c, err := repos.ChatConversation.FindByDmKey(ctx, dmKey)
 		if err != nil {
-			return errs.NewError(ctx, status.CHAT_CONVERSATION_NOT_FOUND, nil, err)
+			return errs.NewError(ctx, domain.ChatConversationNotFound, nil, err)
 		}
 		found = c
 		return nil
@@ -89,7 +88,7 @@ func (h *OpenConversationCommandHandler) create(ctx context.Context, cmd *OpenCo
 	err := h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		existing, err := repos.ChatConversation.FindByDmKey(ctx, dmKey)
 		if err != nil {
-			return errs.NewError(ctx, status.CHAT_CONVERSATION_NOT_FOUND, nil, err)
+			return errs.NewError(ctx, domain.ChatConversationNotFound, nil, err)
 		}
 		if existing != nil {
 			result = existing
@@ -119,7 +118,7 @@ func (h *OpenConversationCommandHandler) create(ctx context.Context, cmd *OpenCo
 			if errors.Is(err, domain.ErrDuplicateConversation) {
 				return err
 			}
-			return errs.NewError(ctx, status.CHAT_CONVERSATION_CREATE_FAILED, nil, err)
+			return errs.NewError(ctx, domain.ChatConversationCreateFailed, nil, err)
 		}
 
 		// Both participant rows are inserted in the same transaction as the
@@ -147,7 +146,7 @@ func (h *OpenConversationCommandHandler) create(ctx context.Context, cmd *OpenCo
 			p.SetCreateId(&cmd.ActorUID)
 
 			if _, err := repos.ChatParticipant.Create(ctx, p); err != nil {
-				return errs.NewError(ctx, status.CHAT_CONVERSATION_CREATE_FAILED, nil, err)
+				return errs.NewError(ctx, domain.ChatConversationCreateFailed, nil, err)
 			}
 		}
 

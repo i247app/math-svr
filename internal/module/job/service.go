@@ -7,10 +7,10 @@ import (
 	"fmt"
 	"time"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Service wraps *jobruntime.Runtime with the project's error contract:
@@ -45,7 +45,7 @@ func (s *Service) TriggerJob(ctx context.Context, req *JobNameRequest) (*ActionR
 		return nil, runtimeUnavailable(ctx)
 	}
 	if err := s.runtime.TriggerOnce(ctx, req.Name); err != nil {
-		return nil, mapRuntimeError(ctx, err, status.JOB_TRIGGER_FAILED)
+		return nil, mapRuntimeError(ctx, err, JobTriggerFailed)
 	}
 	res := &ActionResponse{Name: req.Name, Result: "triggered"}
 	return res, nil
@@ -59,7 +59,7 @@ func (s *Service) PauseJob(ctx context.Context, req *JobNameRequest) (*ActionRes
 		return nil, runtimeUnavailable(ctx)
 	}
 	if err := s.runtime.PauseJob(req.Name); err != nil {
-		return nil, mapRuntimeError(ctx, err, status.JOB_TRIGGER_FAILED)
+		return nil, mapRuntimeError(ctx, err, JobTriggerFailed)
 	}
 	res := &ActionResponse{Name: req.Name, Result: "paused"}
 	return res, nil
@@ -73,7 +73,7 @@ func (s *Service) ResumeJob(ctx context.Context, req *JobNameRequest) (*ActionRe
 		return nil, runtimeUnavailable(ctx)
 	}
 	if err := s.runtime.ResumeJob(req.Name); err != nil {
-		return nil, mapRuntimeError(ctx, err, status.JOB_TRIGGER_FAILED)
+		return nil, mapRuntimeError(ctx, err, JobTriggerFailed)
 	}
 	res := &ActionResponse{Name: req.Name, Result: "resumed"}
 	return res, nil
@@ -99,7 +99,7 @@ func (s *Service) UpdateSchedule(ctx context.Context, req *UpdateScheduleRequest
 		return nil, runtimeUnavailable(ctx)
 	}
 	if err := s.runtime.UpdateSchedule(req.Name, sched); err != nil {
-		return nil, mapRuntimeError(ctx, err, status.JOB_UPDATE_SCHEDULE_FAILED)
+		return nil, mapRuntimeError(ctx, err, JobUpdateScheduleFailed)
 	}
 	return s.scheduleResult(ctx, req.Name, "schedule_updated")
 }
@@ -114,7 +114,7 @@ func (s *Service) ResetSchedule(ctx context.Context, req *JobNameRequest) (*Sche
 		return nil, runtimeUnavailable(ctx)
 	}
 	if err := s.runtime.ResetSchedule(req.Name); err != nil {
-		return nil, mapRuntimeError(ctx, err, status.JOB_UPDATE_SCHEDULE_FAILED)
+		return nil, mapRuntimeError(ctx, err, JobUpdateScheduleFailed)
 	}
 	return s.scheduleResult(ctx, req.Name, "schedule_reset")
 }
@@ -127,7 +127,7 @@ func (s *Service) scheduleResult(ctx context.Context, name, result string) (*Sch
 	if !ok {
 		// The job existed a moment ago inside the runtime's lock; states
 		// are never deleted, so this is unreachable in practice.
-		return nil, errs.NewError(ctx, status.JOB_NOT_FOUND, nil, jobruntime.ErrJobNotFound)
+		return nil, errs.NewError(ctx, JobNotFound, nil, jobruntime.ErrJobNotFound)
 	}
 	logger.From(ctx).Infof("job.schedule.%s name=%s schedule=%q next_run_at=%v",
 		result, info.Name, info.Schedule, info.NextRunAt)
@@ -147,7 +147,7 @@ func (s *Service) EnqueueTask(ctx context.Context, req *EnqueueTaskRequest) (*Ac
 	if req.Payload != nil {
 		b, err := json.Marshal(req.Payload)
 		if err != nil {
-			return nil, errs.NewError(ctx, status.TASK_ENQUEUE_FAILED, nil,
+			return nil, errs.NewError(ctx, TaskEnqueueFailed, nil,
 				fmt.Errorf("payload marshal: %w", err))
 		}
 		payload = b
@@ -170,14 +170,14 @@ func (s *Service) EnqueueTask(ctx context.Context, req *EnqueueTaskRequest) (*Ac
 	}
 
 	if err := s.runtime.Enqueue(ctx, req.Name, payload, opts); err != nil {
-		return nil, mapRuntimeError(ctx, err, status.TASK_ENQUEUE_FAILED)
+		return nil, mapRuntimeError(ctx, err, TaskEnqueueFailed)
 	}
 	res := &ActionResponse{Name: req.Name, Result: "enqueued"}
 	return res, nil
 }
 
 func runtimeUnavailable(ctx context.Context) error {
-	return errs.NewError(ctx, status.JOB_RUNTIME_UNAVAILABLE, nil,
+	return errs.NewError(ctx, JobRuntimeUnavailable, nil,
 		ErrJobRuntimeNotInitialised)
 }
 
@@ -188,23 +188,23 @@ func runtimeUnavailable(ctx context.Context) error {
 func mapRuntimeError(ctx context.Context, err error, fallback status.StatusCode) error {
 	switch {
 	case stderrors.Is(err, jobruntime.ErrJobNotFound):
-		return errs.NewError(ctx, status.JOB_NOT_FOUND, nil, err)
+		return errs.NewError(ctx, JobNotFound, nil, err)
 	case stderrors.Is(err, jobruntime.ErrJobAlreadyPaused):
-		return errs.NewError(ctx, status.JOB_ALREADY_PAUSED, nil, err)
+		return errs.NewError(ctx, JobAlreadyPaused, nil, err)
 	case stderrors.Is(err, jobruntime.ErrJobNotPaused):
-		return errs.NewError(ctx, status.JOB_NOT_PAUSED, nil, err)
+		return errs.NewError(ctx, JobNotPaused, nil, err)
 	case stderrors.Is(err, jobruntime.ErrJobInFlight):
-		return errs.NewError(ctx, status.JOB_IN_FLIGHT, nil, err)
+		return errs.NewError(ctx, JobInFlight, nil, err)
 	case stderrors.Is(err, jobruntime.ErrRuntimeUnavailable):
-		return errs.NewError(ctx, status.JOB_RUNTIME_UNAVAILABLE, nil, err)
+		return errs.NewError(ctx, JobRuntimeUnavailable, nil, err)
 	case stderrors.Is(err, jobruntime.ErrTaskHandlerNotFound):
-		return errs.NewError(ctx, status.TASK_HANDLER_NOT_FOUND, nil, err)
+		return errs.NewError(ctx, TaskHandlerNotFound, nil, err)
 	case stderrors.Is(err, jobruntime.ErrQueueFull):
-		return errs.NewError(ctx, status.TASK_QUEUE_FULL, nil, err)
+		return errs.NewError(ctx, TaskQueueFull, nil, err)
 	case stderrors.Is(err, jobruntime.ErrInvalidSchedule):
 		// parseSchedule rejects these first; this covers the runtime's own
 		// re-validation so the caller still gets the precise status code.
-		return errs.NewError(ctx, status.JOB_INVALID_SCHEDULE, nil, err)
+		return errs.NewError(ctx, JobInvalidSchedule, nil, err)
 	default:
 		return errs.NewError(ctx, fallback, nil, err)
 	}

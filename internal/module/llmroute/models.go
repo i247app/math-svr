@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/llmroute"
 	llmProvider "math-ai.com/math-ai/internal/provider/llm"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
@@ -91,7 +91,7 @@ func (s *Service) modelTargets(ctx context.Context, req *dto.ListLLMModelsReq) (
 	if p := blankToNil(req.Provider, true); p != nil {
 		name := llmProvider.LLMProviderName(*p)
 		if s.registry == nil || !s.registry.Has(name) {
-			return nil, errs.NewError(ctx, status.LLM_ROUTE_INVALID_PROVIDER, nil,
+			return nil, errs.NewError(ctx, domain.LLMRouteInvalidProvider, nil,
 				fmt.Errorf("provider %q is not registered (registered: %s)", name, registeredList(s.registry)))
 		}
 		return []llmProvider.LLMProviderName{name}, nil
@@ -137,7 +137,7 @@ func modelsError(ctx context.Context, err error) *dto.LLMModelsError {
 	mErr, ok := errs.IsMathError(err)
 	if !ok {
 		// Not a MathError (a provider bypassing the error contract).
-		mErr = errs.NewError(ctx, status.LLM_OP_FAILED, nil, err)
+		mErr = errs.NewError(ctx, llmProvider.LLMOpFailed, nil, err)
 	}
 	return &dto.LLMModelsError{MStatus: int(mErr.GetStatusCode()), MMessage: string(mErr.GetStatusMessage())}
 }

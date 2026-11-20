@@ -10,9 +10,9 @@ import (
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -62,7 +62,7 @@ func (s *Service) GetHomeLayout(ctx context.Context, req *dto.HomeLayoutReq, ses
 		return nil, err
 	}
 	if !isSupportedRole(utils.DerefString(caller.Role())) {
-		return nil, errs.NewError(ctx, status.HOME_UNSUPPORTED_ROLE, nil, ErrUnsupportedRole)
+		return nil, errs.NewError(ctx, HomeUnsupportedRole, nil, ErrUnsupportedRole)
 	}
 
 	data, err := s.getHomeLayoutQuery.Handle(ctx, query.GetHomeLayoutQuery{Profile: caller})

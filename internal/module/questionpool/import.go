@@ -11,10 +11,10 @@ import (
 	command "math-ai.com/math-ai/internal/application/command/questionpool"
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/questionpool"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	sctx "math-ai.com/math-ai/internal/shared/context"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Limits of one imported file. 2,000 questions are about 3–4 MB; the file
@@ -55,9 +55,9 @@ func (s *Service) importFormError(ctx context.Context, err error) error {
 		return gateErr
 	}
 	if errors.Is(err, ErrImportFileTooLarge) {
-		return errs.NewError(ctx, status.QUESTION_POOL_IMPORT_FILE_TOO_LARGE, nil, err)
+		return errs.NewError(ctx, domain.QuestionPoolImportFileTooLarge, nil, err)
 	}
-	return errs.NewError(ctx, status.QUESTION_POOL_IMPORT_FILE_MISSING, nil, fmt.Errorf("body is not multipart/form-data with a file part: %w", err))
+	return errs.NewError(ctx, domain.QuestionPoolImportFileMissing, nil, fmt.Errorf("body is not multipart/form-data with a file part: %w", err))
 }
 
 // ValidateFile checks a question file the way ImportFile would and writes
@@ -97,7 +97,7 @@ func (s *Service) ImportFile(ctx context.Context, file ImportFile) (*dto.ImportQ
 		for _, e := range r.Errors {
 			msgs = append(msgs, e.Message)
 		}
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMPORT_INVALID, nil,
+		return nil, errs.NewError(ctx, domain.QuestionPoolImportInvalid, nil,
 			fmt.Errorf("%d of %d questions are invalid: %s", r.InvalidCount, r.Total, strings.Join(msgs, "; ")))
 	}
 
@@ -163,9 +163,9 @@ func (s *Service) analyzeImport(ctx context.Context, file ImportFile) (*importAn
 	}
 	switch {
 	case r.Total == 0:
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_EMPTY_LIST, nil, errors.New("the file holds no question"))
+		return nil, errs.NewError(ctx, domain.QuestionPoolEmptyList, nil, errors.New("the file holds no question"))
 	case r.Total > MaxImportQuestions:
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_TOO_MANY, nil,
+		return nil, errs.NewError(ctx, domain.QuestionPoolTooMany, nil,
 			fmt.Errorf("at most %d questions per file, got %d", MaxImportQuestions, r.Total))
 	}
 

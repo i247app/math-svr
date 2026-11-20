@@ -6,8 +6,8 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/prompt"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdatePromptCommand overwrites one prompt row and moves its
@@ -38,7 +38,7 @@ func (h *UpdatePromptCommandHandler) Handle(ctx context.Context, cmd UpdatePromp
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if !updated {
-			return errs.NewError(ctx, status.PROMPT_NOT_FOUND, nil,
+			return errs.NewError(ctx, prompt.PromptNotFound, nil,
 				fmt.Errorf("prompt: ma_prompts has no row %d", cmd.PromptID))
 		}
 		if saved, err = repos.Prompt.FindByPromptId(ctx, cmd.PromptID); err != nil {

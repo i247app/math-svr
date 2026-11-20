@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SoftDeleteSubmissionCommand flips a submission to DELETED inside a
@@ -32,12 +33,12 @@ func (h *SoftDeleteSubmissionCommandHandler) Handle(ctx context.Context, cmd Sof
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_NOT_FOUND, nil,
+			return errs.NewError(ctx, exercise.ClassroomExerciseSubmissionNotFound, nil,
 				ErrSubmissionNotFound)
 		}
 		if existing.SubmissionStatus() != nil &&
 			*existing.SubmissionStatus() == enum.ClassroomExerciseSubmissionStatusDeleted.String() {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_SUBMISSION_ALREADY_DELETED, nil,
+			return errs.NewError(ctx, exercise.ClassroomExerciseSubmissionAlreadyDeleted, nil,
 				ErrSubmissionAlreadyDeleted)
 		}
 		if err := repos.ExerciseSubmission.SoftDelete(ctx, cmd.ClassroomExerciseSubmissionID, cmd.ActorID); err != nil {

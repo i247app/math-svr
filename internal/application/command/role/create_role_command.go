@@ -8,9 +8,9 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/role"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // CreateRoleCommand expects RoleCode already normalised (trimmed, upper-case)
@@ -42,7 +42,7 @@ func (h *CreateRoleCommandHandler) Handle(ctx context.Context, cmd CreateRoleCom
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing != nil {
-			return errs.NewError(ctx, status.ROLE_CODE_ALREADY_EXISTS, nil, ErrRoleCodeAlreadyExists)
+			return errs.NewError(ctx, role.RoleCodeAlreadyExists, nil, ErrRoleCodeAlreadyExists)
 		}
 
 		roleID, err := seqgen.Next(ctx, repos.Seq, seq.NameRole)
@@ -70,12 +70,12 @@ func (h *CreateRoleCommandHandler) Handle(ctx context.Context, cmd CreateRoleCom
 			// A concurrent create won the unique key between our check and
 			// the INSERT.
 			if errors.Is(err, role.ErrDuplicateRoleCode) {
-				return errs.NewError(ctx, status.ROLE_CODE_ALREADY_EXISTS, nil, err)
+				return errs.NewError(ctx, role.RoleCodeAlreadyExists, nil, err)
 			}
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if saved == nil {
-			return errs.NewError(ctx, status.ROLE_NOT_FOUND, nil, ErrRoleNotFoundAfterInsert)
+			return errs.NewError(ctx, role.RoleNotFound, nil, ErrRoleNotFoundAfterInsert)
 		}
 		created = saved
 		return nil

@@ -4,9 +4,10 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	exercisedom "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SoftDeleteClassroomExerciseCommand transitions an exercise to DELETED
@@ -32,12 +33,12 @@ func (h *SoftDeleteClassroomExerciseCommandHandler) Handle(ctx context.Context, 
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_NOT_FOUND, nil,
+			return errs.NewError(ctx, exercisedom.ClassroomExerciseNotFound, nil,
 				ErrExerciseNotFound)
 		}
 		if existing.ExerciseStatus() != nil &&
 			*existing.ExerciseStatus() == enum.ClassroomExerciseStatusTypeDeleted.String() {
-			return errs.NewError(ctx, status.CLASSROOM_EXERCISE_ALREADY_DELETED, nil, ErrExerciseAlreadyDeleted)
+			return errs.NewError(ctx, exercisedom.ClassroomExerciseAlreadyDeleted, nil, ErrExerciseAlreadyDeleted)
 		}
 		if err := repos.Exercise.SoftDelete(ctx, cmd.ClassroomExerciseID, cmd.ActorID); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, err)

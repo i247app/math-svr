@@ -5,52 +5,52 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 func ValidateSendOtp(ctx context.Context, req *dto.SendOtpReq) error {
 	if strings.TrimSpace(req.OtpType) == "" {
-		return errs.NewError(ctx, status.OTP_MISSING_TYPE, nil, ErrOTPTypeRequired)
+		return errs.NewError(ctx, domain.OTPMissingType, nil, ErrOTPTypeRequired)
 	}
 	if !enum.OtpType(req.OtpType).IsValid() {
-		return errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, ErrOTPTypeInvalid)
+		return errs.NewError(ctx, domain.OTPInvalidType, nil, ErrOTPTypeInvalid)
 	}
 	if strings.TrimSpace(req.Identifier) == "" {
-		return errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
+		return errs.NewError(ctx, domain.OTPMissingIdentifier, nil, ErrIdentifierRequired)
 	}
 	if req.TargetDeviceID != nil && req.OtpType != enum.OtpTypeLogin2FA.String() {
-		return errs.NewError(ctx, status.OTP_TARGET_DEVICE_REQUIRES_LOGIN2FA, nil, ErrTargetDeviceRequiresLogin2FA)
+		return errs.NewError(ctx, domain.OTPTargetDeviceRequiresLogin2FA, nil, ErrTargetDeviceRequiresLogin2FA)
 	}
 	return nil
 }
 
 func ValidateVerifyOtp(ctx context.Context, req *dto.VerifyOtpReq) error {
 	if strings.TrimSpace(req.OtpType) == "" {
-		return errs.NewError(ctx, status.OTP_MISSING_TYPE, nil, ErrOTPTypeRequired)
+		return errs.NewError(ctx, domain.OTPMissingType, nil, ErrOTPTypeRequired)
 	}
 	if !enum.OtpType(req.OtpType).IsValid() {
-		return errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, ErrOTPTypeInvalid)
+		return errs.NewError(ctx, domain.OTPInvalidType, nil, ErrOTPTypeInvalid)
 	}
 	if strings.TrimSpace(req.Identifier) == "" {
-		return errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
+		return errs.NewError(ctx, domain.OTPMissingIdentifier, nil, ErrIdentifierRequired)
 	}
 	if strings.TrimSpace(req.OtpCode) == "" {
-		return errs.NewError(ctx, status.OTP_MISSING_CODE, nil, ErrOTPCodeRequired)
+		return errs.NewError(ctx, domain.OTPMissingCode, nil, ErrOTPCodeRequired)
 	}
 	return nil
 }
 
 func ValidateRevokeOtp(ctx context.Context, req *dto.RevokeOtpReq) error {
 	if strings.TrimSpace(req.OtpType) == "" {
-		return errs.NewError(ctx, status.OTP_MISSING_TYPE, nil, ErrOTPTypeRequired)
+		return errs.NewError(ctx, domain.OTPMissingType, nil, ErrOTPTypeRequired)
 	}
 	if !enum.OtpType(req.OtpType).IsValid() {
-		return errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, ErrOTPTypeInvalid)
+		return errs.NewError(ctx, domain.OTPInvalidType, nil, ErrOTPTypeInvalid)
 	}
 	if strings.TrimSpace(req.Identifier) == "" {
-		return errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
+		return errs.NewError(ctx, domain.OTPMissingIdentifier, nil, ErrIdentifierRequired)
 	}
 	return nil
 }

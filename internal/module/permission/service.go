@@ -9,9 +9,9 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/role"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/role"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // roleImageUrlTTL bounds how long a presigned role image URL stays valid.
@@ -91,7 +91,7 @@ func (s *Service) UpdateRole(ctx context.Context, req *dto.UpdateRoleReq, actorI
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if existing == nil {
-		return nil, errs.NewError(ctx, status.ROLE_NOT_FOUND, nil, ErrRoleNotFound)
+		return nil, errs.NewError(ctx, domain.RoleNotFound, nil, ErrRoleNotFound)
 	}
 
 	imageKey, err := s.uploadRoleImage(ctx, roleImageFile{
@@ -158,7 +158,7 @@ func (s *Service) GetRole(ctx context.Context, req *dto.GetRoleReq) (*dto.GetRol
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if found == nil {
-		return nil, errs.NewError(ctx, status.ROLE_NOT_FOUND, nil, ErrRoleNotFound)
+		return nil, errs.NewError(ctx, domain.RoleNotFound, nil, ErrRoleNotFound)
 	}
 	res := &dto.GetRoleRes{Role: s.toResponse(ctx, found)}
 	return res, nil

@@ -5,10 +5,10 @@ import (
 	"io"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	roledom "math-ai.com/math-ai/internal/domain/role"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // roleImageFolder is the S3 prefix role images are uploaded under.
@@ -23,14 +23,14 @@ func (s *Service) uploadRoleImage(ctx context.Context, file roleImageFile) (*str
 		return nil, nil
 	}
 	if s.storageProvider == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil, ErrStorageProviderNotConfigured)
+		return nil, errs.NewError(ctx, storage.StorageConfigInvalid, nil, ErrStorageProviderNotConfigured)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
 		Filename:    file.filename,
 		ContentType: file.contentType,
 	}); err != nil {
-		return nil, errs.NewError(ctx, status.ROLE_IMAGE_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, roledom.RoleImageInvalidFile, nil, err)
 	}
 
 	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -40,10 +40,10 @@ func (s *Service) uploadRoleImage(ctx context.Context, file roleImageFile) (*str
 		Folder:      roleImageFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.ROLE_IMAGE_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, roledom.RoleImageUploadFailed, nil, err)
 	}
 	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.ROLE_IMAGE_UPLOAD_FAILED, nil, ErrUploadReturnedEmptyKey)
+		return nil, errs.NewError(ctx, roledom.RoleImageUploadFailed, nil, ErrUploadReturnedEmptyKey)
 	}
 	return &uploaded.Key, nil
 }

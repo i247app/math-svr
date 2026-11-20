@@ -16,8 +16,7 @@ import (
 	"errors"
 
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Next mints the next centralised ID for the named sequence inside the
@@ -55,7 +54,7 @@ func Lock(ctx context.Context, repo seq.IRepository, name string) error {
 
 func mapErr(ctx context.Context, name string, err error) error {
 	if errors.Is(err, seq.ErrNotFound) {
-		return errs.NewError(ctx, status.SEQ_NOT_FOUND, map[string]any{"name": name}, err)
+		return errs.NewError(ctx, seq.SeqNotFound, map[string]any{"name": name}, err)
 	}
-	return errs.NewError(ctx, status.SEQ_GENERATION_FAILED, map[string]any{"name": name}, err)
+	return errs.NewError(ctx, seq.SeqGenerationFailed, map[string]any{"name": name}, err)
 }

@@ -8,10 +8,10 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/exam"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -47,7 +47,7 @@ func (h *MarkExamSessionCommandHandler) Handle(ctx context.Context, cmd MarkExam
 	log := logger.From(ctx)
 
 	if !cmd.Status.IsMarkable() {
-		return nil, errs.NewError(ctx, status.EXAM_INVALID_JOURNEY_STATUS, nil,
+		return nil, errs.NewError(ctx, exam.ExamInvalidJourneyStatus, nil,
 			fmt.Errorf("exam: %q is not a status a journey can be marked with", string(cmd.Status)))
 	}
 
@@ -73,7 +73,7 @@ func (h *MarkExamSessionCommandHandler) Handle(ctx context.Context, cmd MarkExam
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if fresh == nil {
-			return errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil, nil)
+			return errs.NewError(ctx, exam.ExamJourneyNotFound, nil, nil)
 		}
 		updated = fresh
 
@@ -98,11 +98,11 @@ func (h *MarkExamSessionCommandHandler) loadOwnedJourney(ctx context.Context, re
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if journey == nil {
-		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, exam.ExamJourneyNotFound, nil,
 			fmt.Errorf("exam: journey %d not found", cmd.EsessID))
 	}
 	if journey.Uid() != cmd.UID || journey.ProfileId() != cmd.ProfileID {
-		return nil, errs.NewError(ctx, status.EXAM_JOURNEY_NOT_OWNED, nil,
+		return nil, errs.NewError(ctx, exam.ExamJourneyNotOwned, nil,
 			fmt.Errorf("exam: journey %d belongs to another profile", cmd.EsessID))
 	}
 	return journey, nil
@@ -111,7 +111,7 @@ func (h *MarkExamSessionCommandHandler) loadOwnedJourney(ctx context.Context, re
 // end closes an open journey.
 func (h *MarkExamSessionCommandHandler) end(ctx context.Context, repos transaction.Repositories, cmd MarkExamSessionCommand, journey *exam.ExamSession) error {
 	if !hasStatus(journey, enum.EsessStatusActive) {
-		return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil,
+		return errs.NewError(ctx, exam.ExamJourneyAlreadyEnded, nil,
 			fmt.Errorf("exam: journey %d is not active", cmd.EsessID))
 	}
 
@@ -124,7 +124,7 @@ func (h *MarkExamSessionCommandHandler) end(ctx context.Context, repos transacti
 		// another mark; the WHERE clause in MarkStatus is. This is how
 		// the loser of that race finds out.
 		if errors.Is(err, exam.ErrJourneyNotActive) {
-			return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ENDED, nil, err)
+			return errs.NewError(ctx, exam.ExamJourneyAlreadyEnded, nil, err)
 		}
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}
@@ -139,11 +139,11 @@ func (h *MarkExamSessionCommandHandler) end(ctx context.Context, repos transacti
 // and it reports back through ErrJourneyConflict.
 func (h *MarkExamSessionCommandHandler) reopen(ctx context.Context, repos transaction.Repositories, cmd MarkExamSessionCommand, journey *exam.ExamSession) error {
 	if hasStatus(journey, enum.EsessStatusActive) {
-		return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ACTIVE, nil,
+		return errs.NewError(ctx, exam.ExamJourneyAlreadyActive, nil,
 			fmt.Errorf("exam: journey %d is already active", cmd.EsessID))
 	}
 	if !enum.EsessStatusType(utils.DerefString(journey.EsessStatus())).IsEnding() {
-		return errs.NewError(ctx, status.EXAM_JOURNEY_NOT_FOUND, nil,
+		return errs.NewError(ctx, exam.ExamJourneyNotFound, nil,
 			fmt.Errorf("exam: journey %d is in state %q and cannot be reopened", cmd.EsessID, utils.DerefString(journey.EsessStatus())))
 	}
 
@@ -153,7 +153,7 @@ func (h *MarkExamSessionCommandHandler) reopen(ctx context.Context, repos transa
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if open != nil {
-		return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ACTIVE, nil,
+		return errs.NewError(ctx, exam.ExamJourneyAlreadyActive, nil,
 			fmt.Errorf("exam: journey %d is open; end it before reopening %d", open.EsessId(), cmd.EsessID))
 	}
 
@@ -162,11 +162,11 @@ func (h *MarkExamSessionCommandHandler) reopen(ctx context.Context, repos transa
 		case errors.Is(err, exam.ErrJourneyConflict):
 			// Another journey took the open slot between the read above
 			// and this write.
-			return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ACTIVE, nil, err)
+			return errs.NewError(ctx, exam.ExamJourneyAlreadyActive, nil, err)
 		case errors.Is(err, exam.ErrJourneyNotEnded):
 			// The row changed under us — most likely reopened by a
 			// concurrent mark, so "already active" is the honest answer.
-			return errs.NewError(ctx, status.EXAM_JOURNEY_ALREADY_ACTIVE, nil, err)
+			return errs.NewError(ctx, exam.ExamJourneyAlreadyActive, nil, err)
 		}
 		return errs.NewError(ctx, status.FAIL, nil, err)
 	}

@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/program"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // ForceDeleteProgramCommand physically removes the program row.
@@ -28,7 +29,7 @@ func (h *ForceDeleteProgramCommandHandler) Handle(ctx context.Context, cmd Force
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.PROGRAM_NOT_FOUND, nil,
+			return errs.NewError(ctx, program.ProgramNotFound, nil,
 				ErrProgramNotFound)
 		}
 

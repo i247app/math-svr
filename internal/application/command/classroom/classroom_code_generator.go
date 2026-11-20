@@ -7,8 +7,9 @@ import (
 	"math/big"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // maxClassroomCodeAttempts bounds how many times mintUniqueClassroomCode
@@ -64,7 +65,7 @@ func mintUniqueClassroomCode(ctx context.Context, repos transaction.Repositories
 	for attempt := 0; attempt < maxClassroomCodeAttempts; attempt++ {
 		candidate, err := generateClassroomCode()
 		if err != nil {
-			return "", errs.NewError(ctx, status.CLASSROOM_CODE_GENERATION_FAILED, nil, err)
+			return "", errs.NewError(ctx, classroom.ClassroomCodeGenerationFailed, nil, err)
 		}
 		existing, err := repos.Classroom.FindByClassroomCode(ctx, candidate)
 		if err != nil {
@@ -74,6 +75,6 @@ func mintUniqueClassroomCode(ctx context.Context, repos transaction.Repositories
 			return candidate, nil
 		}
 	}
-	return "", errs.NewError(ctx, status.CLASSROOM_CODE_GENERATION_FAILED, nil,
+	return "", errs.NewError(ctx, classroom.ClassroomCodeGenerationFailed, nil,
 		ErrClassroomCodeMintExhausted)
 }

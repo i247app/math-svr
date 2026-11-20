@@ -8,14 +8,15 @@ import (
 	notifCommand "math-ai.com/math-ai/internal/application/command/notification"
 	"math-ai.com/math-ai/internal/application/command/shared/seqgen"
 	"math-ai.com/math-ai/internal/application/transaction"
+	devicedom "math-ai.com/math-ai/internal/domain/device"
+	notificationdom "math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	notiProvider "math-ai.com/math-ai/internal/provider/notification"
 	otpProvider "math-ai.com/math-ai/internal/provider/otp_delivery"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // pushChannelName labels SendOtpCommandResult.Channel when the OTP was
@@ -105,10 +106,10 @@ func NewSendOtpCommandHandler(uow transaction.UnitOfWork, delivery *otpProvider.
 func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) (*SendOtpCommandResult, error) {
 	log := logger.From(ctx)
 	if !cmd.OtpType.IsValid() {
-		return nil, errs.NewError(ctx, status.OTP_INVALID_TYPE, nil, ErrInvalidOtpType)
+		return nil, errs.NewError(ctx, otp.OTPInvalidType, nil, ErrInvalidOtpType)
 	}
 	if cmd.Identifier == "" {
-		return nil, errs.NewError(ctx, status.OTP_MISSING_IDENTIFIER, nil, ErrIdentifierRequired)
+		return nil, errs.NewError(ctx, otp.OTPMissingIdentifier, nil, ErrIdentifierRequired)
 	}
 
 	// Detect Demo names
@@ -124,7 +125,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	var channel otpProvider.ChannelName
 	if cmd.TargetDeviceID != nil {
 		if h.pushProvider == nil {
-			return nil, errs.NewError(ctx, status.OTP_NO_DELIVERY_CHANNEL, map[string]any{
+			return nil, errs.NewError(ctx, otp.OTPNoDeliveryChannel, map[string]any{
 				"channel": string(pushChannelName),
 			}, ErrPushChannelNotRegistered)
 		}
@@ -143,7 +144,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 	// under crypto entropy pressure and shouldn't hold a tx open.
 	plainCode, err := generateCode(OtpCodeLength)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
+		return nil, errs.NewError(ctx, otp.OTPGenerationFailed, nil, err)
 	}
 
 	now := time.Now().UTC()
@@ -165,19 +166,19 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		if cmd.TargetDeviceID != nil {
 			targetDevice, err := repos.Device.FindByDeviceId(ctx, *cmd.TargetDeviceID)
 			if err != nil {
-				return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+				return errs.NewError(ctx, devicedom.DeviceRegistrationFail, nil, err)
 			}
 			if targetDevice == nil {
-				return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrTargetDeviceNotFound)
+				return errs.NewError(ctx, devicedom.DeviceNotFound, nil, ErrTargetDeviceNotFound)
 			}
 			if cmd.UID == nil || targetDevice.UID() == nil || *targetDevice.UID() != *cmd.UID {
-				return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil, ErrTargetDeviceNotOwned)
+				return errs.NewError(ctx, devicedom.DeviceNotOwned, nil, ErrTargetDeviceNotOwned)
 			}
 			if !targetDevice.IsVerified() {
-				return errs.NewError(ctx, status.DEVICE_NOT_TRUSTED, nil, ErrTargetDeviceNotTrusted)
+				return errs.NewError(ctx, devicedom.DeviceNotTrusted, nil, ErrTargetDeviceNotTrusted)
 			}
 			if targetDevice.DevicePushToken() == nil || *targetDevice.DevicePushToken() == "" {
-				return errs.NewError(ctx, status.NOTIFICATION_NO_DEVICE_TOKEN, nil, ErrTargetDeviceNoPushToken)
+				return errs.NewError(ctx, notificationdom.NotificationNoDeviceToken, nil, ErrTargetDeviceNoPushToken)
 			}
 			targetPushToken = *targetDevice.DevicePushToken()
 		}
@@ -189,7 +190,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		// UTC.
 		latest, err := repos.Otp.FindLatestPending(ctx, cmd.OtpType, cmd.Identifier)
 		if err != nil {
-			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
+			return errs.NewError(ctx, otp.OTPGenerationFailed, nil, err)
 		}
 		if latest != nil && !latest.OtpExpireDt().IsZero() && now.Before(latest.OtpExpireDt()) {
 			createdOtpID = latest.OtpId()
@@ -202,10 +203,10 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 		// 2. Window cap
 		count, err := repos.Otp.CountSentSince(ctx, cmd.OtpType, cmd.Identifier, now.Add(-OtpSendWindow))
 		if err != nil {
-			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
+			return errs.NewError(ctx, otp.OTPGenerationFailed, nil, err)
 		}
 		if count >= OtpMaxSendsPerWindow {
-			return errs.NewError(ctx, status.OTP_RATE_LIMITED, map[string]any{
+			return errs.NewError(ctx, otp.OTPRateLimited, map[string]any{
 				"window_seconds": int(OtpSendWindow.Seconds()),
 				"limit":          OtpMaxSendsPerWindow,
 			}, ErrOtpSendWindowReached)
@@ -213,7 +214,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 
 		// 3. Revoke prior PENDING rows
 		if err := repos.Otp.RevokePendingByTypeIdentifier(ctx, cmd.OtpType, cmd.Identifier); err != nil {
-			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
+			return errs.NewError(ctx, otp.OTPGenerationFailed, nil, err)
 		}
 
 		// 4. Insert fresh row
@@ -241,7 +242,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 
 		created, err := repos.Otp.Create(ctx, o)
 		if err != nil {
-			return errs.NewError(ctx, status.OTP_GENERATION_FAILED, nil, err)
+			return errs.NewError(ctx, otp.OTPGenerationFailed, nil, err)
 		}
 		createdOtpID = created.OtpId()
 		return nil
@@ -273,7 +274,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 			},
 		})
 		if perr != nil {
-			return nil, errs.NewError(ctx, status.OTP_DELIVERY_FAILED, nil, perr)
+			return nil, errs.NewError(ctx, otp.OTPDeliveryFailed, nil, perr)
 		}
 		if len(sendRes.InvalidTokens) > 0 {
 			// Best-effort: prune the dead token, but a cleanup failure must
@@ -283,7 +284,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 			}); cerr != nil {
 				logger.From(ctx).Warnf("otp.push_clear_dead_tokens_failed err=%v", cerr)
 			}
-			return nil, errs.NewError(ctx, status.OTP_DELIVERY_FAILED, nil, ErrPushTokenInvalid)
+			return nil, errs.NewError(ctx, otp.OTPDeliveryFailed, nil, ErrPushTokenInvalid)
 		}
 
 		// Delivered for real via a channel the requesting (untrusted) device
@@ -301,7 +302,7 @@ func (h *SendOtpCommandHandler) Handle(ctx context.Context, cmd SendOtpCommand) 
 			ExpiresAt:  expiresAt,
 		})
 		if err != nil {
-			return nil, errs.NewError(ctx, status.OTP_DELIVERY_FAILED, nil, err)
+			return nil, errs.NewError(ctx, otp.OTPDeliveryFailed, nil, err)
 		}
 	}
 
@@ -333,11 +334,11 @@ func (h *SendOtpCommandHandler) resolveChannel(ctx context.Context, cmd SendOtpC
 			channel = otpProvider.ChannelSMS
 		}
 	default:
-		return "", errs.NewError(ctx, status.OTP_NO_DELIVERY_CHANNEL, nil,
+		return "", errs.NewError(ctx, otp.OTPNoDeliveryChannel, nil,
 			ErrOtpUnknownChannel)
 	}
 	if !h.delivery.HasChannel(channel) {
-		return "", errs.NewError(ctx, status.OTP_NO_DELIVERY_CHANNEL, map[string]any{
+		return "", errs.NewError(ctx, otp.OTPNoDeliveryChannel, map[string]any{
 			"channel": string(channel),
 		}, ErrOtpChannelNotRegistered)
 	}

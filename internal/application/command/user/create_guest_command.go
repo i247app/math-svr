@@ -7,10 +7,10 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -83,7 +83,7 @@ func NewCreateGuestCommandHandler(uow transaction.UnitOfWork) *CreateGuestComman
 
 func (h *CreateGuestCommandHandler) Handle(ctx context.Context, cmd CreateGuestCommand) (*CreateGuestCommandResult, error) {
 	if cmd.DeviceUUID == "" {
-		return nil, errs.NewError(ctx, status.USER_MISSING_DEVICE_UUID, nil, ErrGuestDeviceRequired)
+		return nil, errs.NewError(ctx, user.UserMissingDeviceUUID, nil, ErrGuestDeviceRequired)
 	}
 
 	result := &CreateGuestCommandResult{}

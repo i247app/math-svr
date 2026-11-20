@@ -4,10 +4,11 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -76,7 +77,7 @@ func (h *AdoptGuestCommandHandler) Handle(ctx context.Context, cmd AdoptGuestCom
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if owner == nil {
-			return errs.NewError(ctx, status.USER_NOT_FOUND, nil, ErrUserNotFound)
+			return errs.NewError(ctx, user.UserNotFound, nil, ErrUserNotFound)
 		}
 
 		profiles, err := repos.Profile.ListByUid(ctx, cmd.GuestUID)

@@ -4,27 +4,27 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/device"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 func validateUID(ctx context.Context, uid int64) error {
 	if uid == 0 {
-		return errs.NewError(ctx, status.DEVICE_MISSING_USER_ID, nil, ErrUIDRequired)
+		return errs.NewError(ctx, domain.DeviceMissingUserID, nil, ErrUIDRequired)
 	}
 	return nil
 }
 
 func validateDeviceUUID(ctx context.Context, deviceUUID string) error {
 	if deviceUUID == "" {
-		return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceIDRequired)
+		return errs.NewError(ctx, domain.DeviceNotFound, nil, ErrDeviceIDRequired)
 	}
 	return nil
 }
 
 func validateDeviceID(ctx context.Context, deviceID int64) error {
 	if deviceID == 0 {
-		return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceIDRequired)
+		return errs.NewError(ctx, domain.DeviceNotFound, nil, ErrDeviceIDRequired)
 	}
 	return nil
 }

@@ -5,8 +5,8 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/banner"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateBannerCommand patches the banner row. Each pointer field is
@@ -42,7 +42,7 @@ func (h *UpdateBannerCommandHandler) Handle(ctx context.Context, cmd UpdateBanne
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if existing == nil {
-			return errs.NewError(ctx, status.BANNER_NOT_FOUND, nil,
+			return errs.NewError(ctx, banner.BannerNotFound, nil,
 				ErrBannerNotFound)
 		}
 
@@ -71,7 +71,7 @@ func (h *UpdateBannerCommandHandler) Handle(ctx context.Context, cmd UpdateBanne
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if refreshed == nil {
-			return errs.NewError(ctx, status.BANNER_NOT_FOUND, nil,
+			return errs.NewError(ctx, banner.BannerNotFound, nil,
 				ErrBannerNotFoundAfterUpdate)
 		}
 		updated = refreshed

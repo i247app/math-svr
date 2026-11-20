@@ -11,10 +11,9 @@ import (
 	"math-ai.com/math-ai/internal/domain/login"
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -103,18 +102,18 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 		if result.IsTrustedDevice {
 			err := repos.Device.MarkVerifiedByUserDevice(ctx, u.UID(), cmd.DeviceUUID, true)
 			if err != nil {
-				return errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+				return errs.NewError(ctx, device.DeviceRegistrationFail, nil, err)
 			}
 
 			ll, err := repos.LoginLog.FindActiveByUserDevice(ctx, u.UID(), cmd.DeviceUUID)
 			if err != nil {
-				return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+				return errs.NewError(ctx, login.AuthLoginFailed, nil, err)
 			}
 
 			if ll != nil {
 				result.LoginLogID = ll.LoginLogId()
 				if err := repos.LoginLog.MarkStatusByUserDevice(ctx, u.UID(), cmd.DeviceUUID, enum.LoginLogStatusTypeActive); err != nil {
-					return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+					return errs.NewError(ctx, login.AuthLoginFailed, nil, err)
 				}
 			} else {
 				loginLogId, err := seqgen.Next(ctx, repos.Seq, seq.NameLoginLog)
@@ -125,7 +124,7 @@ func (h *LoginCommandHandler) Handle(ctx context.Context, cmd LoginCommand) (*Lo
 				ll.SetLoginLogId(loginLogId)
 				_, err = repos.LoginLog.Create(ctx, ll)
 				if err != nil {
-					return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+					return errs.NewError(ctx, login.AuthLoginFailed, nil, err)
 				}
 			}
 		}
@@ -160,7 +159,7 @@ func (h *LoginCommandHandler) verifyPassword(ctx context.Context, cmd LoginComma
 		found = true
 		cred, err := repos.Login.FindByUid(ctx, u.UID())
 		if err != nil {
-			return errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+			return errs.NewError(ctx, login.AuthLoginFailed, nil, err)
 		}
 		if cred != nil && cred.Upw() != nil {
 			hash = *cred.Upw()
@@ -176,7 +175,7 @@ func (h *LoginCommandHandler) verifyPassword(ctx context.Context, cmd LoginComma
 	// No password on file is the same answer as a wrong one: the caller
 	// asked to be checked against a credential this account does not have.
 	if hash == "" || h.hasher.Compare(cmd.Password, hash) != nil {
-		return errs.NewError(ctx, status.AUTH_INVALID_CREDENTIALS, nil, ErrInvalidCredentials)
+		return errs.NewError(ctx, login.AuthInvalidCredentials, nil, ErrInvalidCredentials)
 	}
 	return nil
 }
@@ -195,7 +194,7 @@ func (h *LoginCommandHandler) verifyPassword(ctx context.Context, cmd LoginComma
 func resolveUser(ctx context.Context, repos transaction.Repositories, loginName string) (*user.User, error) {
 	alias, err := repos.Alias.FindByAka(ctx, loginName)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+		return nil, errs.NewError(ctx, login.AuthLoginFailed, nil, err)
 	}
 	if alias == nil {
 		return nil, nil
@@ -203,7 +202,7 @@ func resolveUser(ctx context.Context, repos transaction.Repositories, loginName 
 
 	u, err := repos.User.FindByUid(ctx, alias.UID())
 	if err != nil {
-		return nil, errs.NewError(ctx, status.AUTH_LOGIN_FAILED, nil, err)
+		return nil, errs.NewError(ctx, login.AuthLoginFailed, nil, err)
 	}
 	if u == nil || enum.IdentityCodeType(utils.DerefString(u.IdentityCode())).IsGuest() {
 		return nil, nil
@@ -224,7 +223,7 @@ func ensureDevice(
 ) (*device.Device, error) {
 	existing, err := repos.Device.FindByUserDevice(ctx, uid, cmd.DeviceUUID)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+		return nil, errs.NewError(ctx, device.DeviceRegistrationFail, nil, err)
 	}
 	if existing != nil {
 		// Refresh the push token if the client sent a new value. Leaving
@@ -240,7 +239,7 @@ func ensureDevice(
 				token := cmd.DevicePushToken
 				patch.SetDevicePushToken(&token)
 				if err := repos.Device.Update(ctx, patch); err != nil {
-					return nil, errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+					return nil, errs.NewError(ctx, device.DeviceRegistrationFail, nil, err)
 				}
 			}
 		}
@@ -256,7 +255,7 @@ func ensureDevice(
 
 	created, err := repos.Device.Create(ctx, deviceBuild)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.DEVICE_REGISTRATION_FAIL, nil, err)
+		return nil, errs.NewError(ctx, device.DeviceRegistrationFail, nil, err)
 	}
 	return created, nil
 }
@@ -293,13 +292,13 @@ func BuildLoginLog(uid int64, cmd LoginCommand) *loginlog.LoginLog {
 
 func ValidateLoginCommand(ctx context.Context, cmd LoginCommand) error {
 	if strings.TrimSpace(cmd.DeviceUUID) == "" {
-		return errs.NewError(ctx, status.AUTH_MISSING_DEVICE_UUID, nil, ErrDeviceUUIDRequired)
+		return errs.NewError(ctx, login.AuthMissingDeviceUUID, nil, ErrDeviceUUIDRequired)
 	}
 	if strings.TrimSpace(cmd.IPAddress) == "" {
-		return errs.NewError(ctx, status.AUTH_MISSING_IP_ADDRESS, nil, ErrIPAddressRequired)
+		return errs.NewError(ctx, login.AuthMissingIPAddress, nil, ErrIPAddressRequired)
 	}
 	if strings.TrimSpace(cmd.DevicePushToken) == "" {
-		return errs.NewError(ctx, status.AUTH_MISSING_DEVICE_PUSH_TOKEN, nil, ErrDevicePushTokenRequired)
+		return errs.NewError(ctx, login.AuthMissingDevicePushToken, nil, ErrDevicePushTokenRequired)
 	}
 	return nil
 }

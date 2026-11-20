@@ -7,9 +7,9 @@ import (
 	"unicode/utf8"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/domain/role"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Column widths of migrations/up/030_ma_roles.sql, counted in characters as
@@ -29,10 +29,10 @@ var roleCodePattern = regexp.MustCompile(`^[A-Z][A-Z0-9_]{0,63}$`)
 func ValidateCreateRole(ctx context.Context, req *dto.CreateRoleReq) error {
 	req.RoleCode = strings.ToUpper(strings.TrimSpace(req.RoleCode))
 	if req.RoleCode == "" {
-		return errs.NewError(ctx, status.ROLE_MISSING_CODE, nil, ErrRoleCodeRequired)
+		return errs.NewError(ctx, role.RoleMissingCode, nil, ErrRoleCodeRequired)
 	}
 	if !roleCodePattern.MatchString(req.RoleCode) {
-		return errs.NewError(ctx, status.ROLE_INVALID_CODE, nil, ErrInvalidRoleCode)
+		return errs.NewError(ctx, role.RoleInvalidCode, nil, ErrInvalidRoleCode)
 	}
 	req.RoleName = strings.TrimSpace(req.RoleName)
 	if err := validateRoleName(ctx, req.RoleName); err != nil {
@@ -43,10 +43,10 @@ func ValidateCreateRole(ctx context.Context, req *dto.CreateRoleReq) error {
 
 func ValidateUpdateRole(ctx context.Context, req *dto.UpdateRoleReq) error {
 	if req.RoleID <= 0 {
-		return errs.NewError(ctx, status.ROLE_MISSING_ID, nil, ErrRoleIDRequired)
+		return errs.NewError(ctx, role.RoleMissingID, nil, ErrRoleIDRequired)
 	}
 	if req.RemoveRoleImage && req.RoleImageFile != nil {
-		return errs.NewError(ctx, status.ROLE_IMAGE_CONFLICT, nil, ErrRoleImageConflict)
+		return errs.NewError(ctx, role.RoleImageConflict, nil, ErrRoleImageConflict)
 	}
 	if req.RoleName != nil {
 		name := strings.TrimSpace(*req.RoleName)
@@ -60,10 +60,10 @@ func ValidateUpdateRole(ctx context.Context, req *dto.UpdateRoleReq) error {
 
 func validateRoleName(ctx context.Context, name string) error {
 	if name == "" {
-		return errs.NewError(ctx, status.ROLE_MISSING_NAME, nil, ErrRoleNameRequired)
+		return errs.NewError(ctx, role.RoleMissingName, nil, ErrRoleNameRequired)
 	}
 	if utf8.RuneCountInString(name) > roleNameMaxLen {
-		return errs.NewError(ctx, status.ROLE_NAME_TOO_LONG, nil, ErrRoleNameTooLong)
+		return errs.NewError(ctx, role.RoleNameTooLong, nil, ErrRoleNameTooLong)
 	}
 	return nil
 }
@@ -72,27 +72,27 @@ func validateRoleName(ctx context.Context, name string) error {
 // a nil pointer skips its check.
 func validateRoleOptionalFields(ctx context.Context, description, note, roleStatus *string) error {
 	if description != nil && utf8.RuneCountInString(*description) > descriptionMaxLen {
-		return errs.NewError(ctx, status.ROLE_DESCRIPTION_TOO_LONG, nil, ErrDescriptionTooLong)
+		return errs.NewError(ctx, role.RoleDescriptionTooLong, nil, ErrDescriptionTooLong)
 	}
 	if note != nil && utf8.RuneCountInString(*note) > noteMaxLen {
-		return errs.NewError(ctx, status.ROLE_NOTE_TOO_LONG, nil, ErrNoteTooLong)
+		return errs.NewError(ctx, role.RoleNoteTooLong, nil, ErrNoteTooLong)
 	}
 	if roleStatus != nil && !enum.RoleRecordStatusType(*roleStatus).IsValid() {
-		return errs.NewError(ctx, status.ROLE_INVALID_STATUS, nil, ErrInvalidRoleStatus)
+		return errs.NewError(ctx, role.RoleInvalidStatus, nil, ErrInvalidRoleStatus)
 	}
 	return nil
 }
 
 func ValidateGetRole(ctx context.Context, req *dto.GetRoleReq) error {
 	if req.RoleID <= 0 {
-		return errs.NewError(ctx, status.ROLE_MISSING_ID, nil, ErrRoleIDRequired)
+		return errs.NewError(ctx, role.RoleMissingID, nil, ErrRoleIDRequired)
 	}
 	return nil
 }
 
 func ValidateDeleteRole(ctx context.Context, req *dto.DeleteRoleReq) error {
 	if req.RoleID <= 0 {
-		return errs.NewError(ctx, status.ROLE_MISSING_ID, nil, ErrRoleIDRequired)
+		return errs.NewError(ctx, role.RoleMissingID, nil, ErrRoleIDRequired)
 	}
 	return nil
 }
@@ -108,7 +108,7 @@ func ValidateListRoles(ctx context.Context, req *dto.ListRolesReq) error {
 		if trimmed == "" {
 			req.RoleStatus = nil
 		} else if !enum.RoleRecordStatusType(trimmed).IsValid() {
-			return errs.NewError(ctx, status.ROLE_INVALID_STATUS, nil, ErrInvalidRoleStatus)
+			return errs.NewError(ctx, role.RoleInvalidStatus, nil, ErrInvalidRoleStatus)
 		}
 	}
 	req.RoleIDs = sanitizeRoleIDs(req.RoleIDs)

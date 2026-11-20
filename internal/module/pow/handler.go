@@ -6,8 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/application/resource"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -29,7 +28,7 @@ func (p *PowHandler) GetChallenge(w http.ResponseWriter, r *http.Request) {
 
 	var req dto.ChallengeReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, nil, errs.NewError(ctx, status.POW_INVALID_REQUEST, nil, err))
+		response.WriteJson(w, nil, errs.NewError(ctx, PowInvalidRequest, nil, err))
 		return
 	}
 
@@ -54,7 +53,7 @@ func (p *PowHandler) VerifyChallenge(w http.ResponseWriter, r *http.Request) {
 
 	var req dto.VerifyChallengeReq
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		response.WriteJson(w, nil, errs.NewError(ctx, status.POW_INVALID_REQUEST, nil, err))
+		response.WriteJson(w, nil, errs.NewError(ctx, PowInvalidRequest, nil, err))
 		return
 	}
 

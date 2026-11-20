@@ -6,8 +6,8 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/questionpool"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // ReviewQuestionCommand changes one question's review fields, never its
@@ -38,7 +38,7 @@ func (h *ReviewQuestionPoolCommandHandler) Handle(ctx context.Context, cmd Revie
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if stored == nil {
-			return errs.NewError(ctx, status.QUESTION_POOL_NOT_FOUND, nil,
+			return errs.NewError(ctx, questionpool.QuestionPoolNotFound, nil,
 				fmt.Errorf("question_pool: no live question %d", cmd.QuestionPoolID))
 		}
 		if cmd.Status != nil {

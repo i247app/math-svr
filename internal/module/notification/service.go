@@ -11,13 +11,13 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
 	domain "math-ai.com/math-ai/internal/domain/notification"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	userDomain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	notiProvider "math-ai.com/math-ai/internal/provider/notification"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Service is the notification module façade. It persists notification rows
@@ -85,7 +85,7 @@ func (s *Service) Ping(ctx context.Context, req *dto.PingNotificationReq) (*dto.
 	}
 
 	if user == nil {
-		return nil, errs.NewError(ctx, status.USER_NOT_FOUND, nil, ErrUserNotFound)
+		return nil, errs.NewError(ctx, userDomain.UserNotFound, nil, ErrUserNotFound)
 	}
 
 	notiDomain := domain.NewNotification()
@@ -279,7 +279,7 @@ func (s *Service) MarkRead(ctx context.Context, req *dto.NotificationMarkReadReq
 		return errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession)
 	}
 	if req.NotificationID <= 0 {
-		return errs.NewError(ctx, status.NOTIFICATION_NOT_FOUND, nil, ErrNotificationIDInvalid)
+		return errs.NewError(ctx, domain.NotificationNotFound, nil, ErrNotificationIDInvalid)
 	}
 	return s.markReadCmd.Handle(ctx, command.MarkReadCommand{
 		NotificationID: req.NotificationID,
@@ -299,7 +299,7 @@ func (s *Service) SoftDelete(ctx context.Context, req *dto.DeleteNotificationReq
 		return errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUidNotFoundFromSession)
 	}
 	if req.NotificationID <= 0 {
-		return errs.NewError(ctx, status.NOTIFICATION_NOT_FOUND, nil, ErrNotificationIDInvalid)
+		return errs.NewError(ctx, domain.NotificationNotFound, nil, ErrNotificationIDInvalid)
 	}
 	return s.softDeleteCmd.Handle(ctx, command.SoftDeleteNotificationCommand{
 		NotificationID: req.NotificationID,

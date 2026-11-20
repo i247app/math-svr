@@ -9,9 +9,9 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
@@ -65,7 +65,7 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 					return errs.NewError(ctx, status.FAIL, nil, err)
 				}
 				if existing != nil {
-					return errs.NewError(ctx, status.CLASSROOM_CODE_TAKEN, nil,
+					return errs.NewError(ctx, classroom.ClassroomCodeTaken, nil,
 						ErrClassroomCodeTaken)
 				}
 				classroomCodeArg = &trimmed
@@ -114,7 +114,7 @@ func (h *CreateClassroomCommandHandler) Handle(ctx context.Context, cmd CreateCl
 			return errs.NewError(ctx, status.FAIL, nil, err)
 		}
 		if saved == nil {
-			return errs.NewError(ctx, status.CLASSROOM_NOT_FOUND, nil,
+			return errs.NewError(ctx, classroom.ClassroomNotFound, nil,
 				ErrClassroomNotFoundAfterInsert)
 		}
 

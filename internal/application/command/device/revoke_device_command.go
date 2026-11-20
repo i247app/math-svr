@@ -4,9 +4,9 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	devicedom "math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // RevokeDeviceCommand un-trusts a device: flips is_verified back to false and
@@ -30,21 +30,21 @@ func (h *RevokeDeviceCommandHandler) Handle(ctx context.Context, cmd RevokeDevic
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		d, err := repos.Device.FindByUserDevice(ctx, cmd.UID, cmd.DeviceUUID)
 		if err != nil {
-			return errs.NewError(ctx, status.DEVICE_VERIFICATION_FAIL, nil, err)
+			return errs.NewError(ctx, devicedom.DeviceVerificationFail, nil, err)
 		}
 		if d == nil {
-			return errs.NewError(ctx, status.DEVICE_NOT_FOUND, nil, ErrDeviceNotFound)
+			return errs.NewError(ctx, devicedom.DeviceNotFound, nil, ErrDeviceNotFound)
 		}
 		if d.UID() == nil || *d.UID() != cmd.UID {
-			return errs.NewError(ctx, status.DEVICE_NOT_OWNED, nil,
+			return errs.NewError(ctx, devicedom.DeviceNotOwned, nil,
 				ErrDeviceNotOwnedByUser)
 		}
 
 		if err := repos.Device.MarkVerifiedByUserDevice(ctx, cmd.UID, cmd.DeviceUUID, false); err != nil {
-			return errs.NewError(ctx, status.DEVICE_REVOKE_FAIL, nil, err)
+			return errs.NewError(ctx, devicedom.DeviceRevokeFail, nil, err)
 		}
 		if err := repos.Device.MarkStatusByDeviceId(ctx, d.DeviceId(), enum.DeviceStatusTypeRevoked); err != nil {
-			return errs.NewError(ctx, status.DEVICE_REVOKE_FAIL, nil, err)
+			return errs.NewError(ctx, devicedom.DeviceRevokeFail, nil, err)
 		}
 
 		// Kill the active session bound to this device, if any. The
@@ -53,7 +53,7 @@ func (h *RevokeDeviceCommandHandler) Handle(ctx context.Context, cmd RevokeDevic
 		if err := repos.LoginLog.MarkStatusByUserDevice(
 			ctx, cmd.UID, d.DeviceUUID(), enum.LoginLogStatusTypeRevoked,
 		); err != nil {
-			return errs.NewError(ctx, status.DEVICE_REVOKE_FAIL, nil, err)
+			return errs.NewError(ctx, devicedom.DeviceRevokeFail, nil, err)
 		}
 		return nil
 	})

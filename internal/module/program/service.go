@@ -9,10 +9,10 @@ import (
 	query "math-ai.com/math-ai/internal/application/query/program"
 	"math-ai.com/math-ai/internal/application/transaction"
 	domain "math-ai.com/math-ai/internal/domain/program"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 const imageUrlTTL = 1 * time.Hour
@@ -125,7 +125,7 @@ func (s *Service) GetProgram(ctx context.Context, req *dto.GetProgramReq) (*dto.
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if p == nil {
-		return nil, errs.NewError(ctx, status.PROGRAM_NOT_FOUND, nil,
+		return nil, errs.NewError(ctx, domain.ProgramNotFound, nil,
 			ErrProgramNotFound)
 	}
 	resp := dto.ProgramDomainToResponse(p)

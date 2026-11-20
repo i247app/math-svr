@@ -10,27 +10,27 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/questionpool"
 )
 
 // readImportFile returns the file's bytes: present, named .json, at most
 // MaxImportFileBytes.
 func readImportFile(file ImportFile) ([]byte, *fileError) {
 	if file.Reader == nil {
-		return nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_MISSING, ErrImportFileMissing}
+		return nil, &fileError{domain.QuestionPoolImportFileMissing, ErrImportFileMissing}
 	}
 	if !strings.EqualFold(path.Ext(file.Filename), ".json") {
-		return nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_INVALID, fmt.Errorf("file %q is not a .json file", path.Base(file.Filename))}
+		return nil, &fileError{domain.QuestionPoolImportFileInvalid, fmt.Errorf("file %q is not a .json file", path.Base(file.Filename))}
 	}
 	if file.Size > MaxImportFileBytes {
-		return nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_TOO_LARGE, fmt.Errorf("file is %d bytes, at most %d", file.Size, MaxImportFileBytes)}
+		return nil, &fileError{domain.QuestionPoolImportFileTooLarge, fmt.Errorf("file is %d bytes, at most %d", file.Size, MaxImportFileBytes)}
 	}
 	data, err := io.ReadAll(io.LimitReader(file.Reader, MaxImportFileBytes+1))
 	if err != nil {
-		return nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_INVALID, fmt.Errorf("read file: %w", err)}
+		return nil, &fileError{domain.QuestionPoolImportFileInvalid, fmt.Errorf("read file: %w", err)}
 	}
 	if len(data) > MaxImportFileBytes {
-		return nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_TOO_LARGE, fmt.Errorf("file is over %d bytes", MaxImportFileBytes)}
+		return nil, &fileError{domain.QuestionPoolImportFileTooLarge, fmt.Errorf("file is over %d bytes", MaxImportFileBytes)}
 	}
 	return data, nil
 }
@@ -44,7 +44,7 @@ func readImportFile(file ImportFile) ([]byte, *fileError) {
 func parseImportItems(raw []byte) (items []dto.CreateQuestionPoolItem, positions []int, total int, issues []itemIssue, ferr *fileError) {
 	var elems []json.RawMessage
 	if err := json.Unmarshal(raw, &elems); err != nil {
-		return nil, nil, 0, nil, &fileError{status.QUESTION_POOL_IMPORT_FILE_INVALID,
+		return nil, nil, 0, nil, &fileError{domain.QuestionPoolImportFileInvalid,
 			fmt.Errorf("the file must be a JSON array of questions: %w", err)}
 	}
 	items = make([]dto.CreateQuestionPoolItem, 0, len(elems))
@@ -54,7 +54,7 @@ func parseImportItems(raw []byte) (items []dto.CreateQuestionPoolItem, positions
 		dec := json.NewDecoder(bytes.NewReader(e))
 		dec.DisallowUnknownFields()
 		if err := dec.Decode(&item); err != nil {
-			issues = append(issues, itemIssue{i, issue{status.QUESTION_POOL_INVALID, fmt.Sprintf("[%d]: %v", i, err)}})
+			issues = append(issues, itemIssue{i, issue{domain.QuestionPoolInvalid, fmt.Sprintf("[%d]: %v", i, err)}})
 			continue
 		}
 		items = append(items, item)

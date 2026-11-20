@@ -5,10 +5,9 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type Service struct {
@@ -31,7 +30,7 @@ func (s *Service) DeleteByToken(ctx context.Context, req *dto.DeleteSessionReq) 
 
 	sess, ok := s.manager.TakeSession(token)
 	if !ok {
-		return nil, errs.NewError(ctx, status.SESSION_NOT_FOUND, nil, ErrSessionNotFound)
+		return nil, errs.NewError(ctx, SessionNotFound, nil, ErrSessionNotFound)
 	}
 
 	res := &dto.DeleteSessionRes{IsSecure: sess.IsSecure()}
@@ -57,21 +56,21 @@ func (s *Service) MarkSecureByToken(ctx context.Context, req *dto.MarkSessionSec
 		return nil, err
 	}
 	if req.IsSecure == nil {
-		return nil, errs.NewError(ctx, status.SESSION_MISSING_IS_SECURE, nil, ErrIsSecureRequired)
+		return nil, errs.NewError(ctx, SessionMissingIsSecure, nil, ErrIsSecureRequired)
 	}
 	secure := *req.IsSecure
 
 	sess, ok := s.manager.Session(token)
 	if !ok {
-		return nil, errs.NewError(ctx, status.SESSION_NOT_FOUND, nil, ErrSessionNotFound)
+		return nil, errs.NewError(ctx, SessionNotFound, nil, ErrSessionNotFound)
 	}
 	uid, hasUID := sess.UID()
 	if secure && (!hasUID || uid <= 0) {
-		return nil, errs.NewError(ctx, status.SESSION_MISSING_UID, nil, ErrSecureWithoutUID)
+		return nil, errs.NewError(ctx, SessionMissingUID, nil, ErrSecureWithoutUID)
 	}
 	if _, ok := s.manager.SetSecure(token, secure); !ok {
 		// Deleted between the read and the write.
-		return nil, errs.NewError(ctx, status.SESSION_NOT_FOUND, nil, ErrSessionNotFound)
+		return nil, errs.NewError(ctx, SessionNotFound, nil, ErrSessionNotFound)
 	}
 
 	res := &dto.MarkSessionSecureRes{IsSecure: secure}
@@ -93,7 +92,7 @@ func normalizeToken(ctx context.Context, raw string) (string, error) {
 	}
 	token = strings.TrimSpace(token)
 	if token == "" {
-		return "", errs.NewError(ctx, status.SESSION_MISSING_TOKEN, nil, ErrTokenRequired)
+		return "", errs.NewError(ctx, SessionMissingToken, nil, ErrTokenRequired)
 	}
 	return token, nil
 }

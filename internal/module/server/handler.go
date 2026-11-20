@@ -5,10 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 
@@ -38,7 +37,7 @@ func (h *Handler) HandleShutdown(w http.ResponseWriter, r *http.Request) {
 	log := logger.From(ctx)
 
 	if !stopping.CompareAndSwap(false, true) {
-		response.WriteJson(w, nil, errs.NewError(ctx, status.SERVER_SHUTTING_DOWN, nil,
+		response.WriteJson(w, nil, errs.NewError(ctx, ServerShuttingDown, nil,
 			errors.New("a shutdown or reload is already in progress")))
 		return
 	}

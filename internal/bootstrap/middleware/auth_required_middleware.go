@@ -4,9 +4,9 @@ import (
 	"errors"
 	"net/http"
 
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	sess "math-ai.com/math-ai/internal/infrastructure/session"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 

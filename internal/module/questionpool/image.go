@@ -11,11 +11,12 @@ import (
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	domain "math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
 	sctx "math-ai.com/math-ai/internal/shared/context"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 // MaxImageBytes caps one question image. A child's screen needs far less;
@@ -42,9 +43,9 @@ func (s *Service) imageFormError(ctx context.Context, err error) error {
 		return gateErr
 	}
 	if errors.Is(err, ErrImageTooLarge) {
-		return errs.NewError(ctx, status.QUESTION_POOL_IMAGE_INVALID_FILE, nil, err)
+		return errs.NewError(ctx, domain.QuestionPoolImageInvalidFile, nil, err)
 	}
-	return errs.NewError(ctx, status.QUESTION_POOL_IMAGE_MISSING, nil, fmt.Errorf("body is not multipart/form-data with an image part: %w", err))
+	return errs.NewError(ctx, domain.QuestionPoolImageMissing, nil, fmt.Errorf("body is not multipart/form-data with an image part: %w", err))
 }
 
 // ImageFile is the multipart "image" part. Size is the part's size as the
@@ -66,14 +67,14 @@ func (s *Service) UploadImage(ctx context.Context, file ImageFile) (*dto.UploadI
 		return nil, err
 	}
 	if file.Reader == nil {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_MISSING, nil, ErrImageMissing)
+		return nil, errs.NewError(ctx, domain.QuestionPoolImageMissing, nil, ErrImageMissing)
 	}
 	if s.storage == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil, ErrStorageOff)
+		return nil, errs.NewError(ctx, storage.StorageConfigInvalid, nil, ErrStorageOff)
 	}
 	data, contentType, err := readImage(file)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, domain.QuestionPoolImageInvalidFile, nil, err)
 	}
 
 	uploaded, err := s.storage.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -83,10 +84,10 @@ func (s *Service) UploadImage(ctx context.Context, file ImageFile) (*dto.UploadI
 		Folder:      imageFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.QuestionPoolImageUploadFailed, nil, err)
 	}
 	if uploaded == nil || !strings.HasPrefix(uploaded.Key, ImageKeyPrefix) {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_UPLOAD_FAILED, nil,
+		return nil, errs.NewError(ctx, domain.QuestionPoolImageUploadFailed, nil,
 			fmt.Errorf("question_pool: storage returned key %q, want one under %s", keyOf(uploaded), ImageKeyPrefix))
 	}
 	logger.From(ctx).Infof("question_pool.image.uploaded admin_uid=%d key=%s bytes=%d", sctx.UID(ctx), uploaded.Key, len(data))
@@ -119,24 +120,24 @@ func (s *Service) DeleteImage(ctx context.Context, req *dto.DeleteImageReq) (*dt
 	}
 	key := req.ImageKey
 	if key == "" {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_INVALID_IMAGE_KEY, nil, errors.New("image_key is required"))
+		return nil, errs.NewError(ctx, domain.QuestionPoolInvalidImageKey, nil, errors.New("image_key is required"))
 	}
 	if msg := checkImageKey(&key); msg != "" {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_INVALID_IMAGE_KEY, nil, fmt.Errorf("image_key: %s", msg))
+		return nil, errs.NewError(ctx, domain.QuestionPoolInvalidImageKey, nil, fmt.Errorf("image_key: %s", msg))
 	}
 	if s.storage == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil, ErrStorageOff)
+		return nil, errs.NewError(ctx, storage.StorageConfigInvalid, nil, ErrStorageOff)
 	}
 	ids, err := s.repo.ListIdsUsingImage(ctx, key, imageInUseShown)
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if len(ids) > 0 {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_IN_USE, nil,
+		return nil, errs.NewError(ctx, domain.QuestionPoolImageInUse, nil,
 			fmt.Errorf("image_key %s is used by question_pool_id %v (first %d shown)", key, ids, imageInUseShown))
 	}
 	if err := s.storage.HandleDelete(ctx, &storage.DeleteFileRequest{Key: key}); err != nil {
-		return nil, errs.NewError(ctx, status.QUESTION_POOL_IMAGE_DELETE_FAILED, nil, err)
+		return nil, errs.NewError(ctx, domain.QuestionPoolImageDeleteFailed, nil, err)
 	}
 	logger.From(ctx).Infof("question_pool.image.deleted admin_uid=%d key=%s", sctx.UID(ctx), key)
 

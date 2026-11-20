@@ -8,6 +8,7 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // Handler exposes the WebSocket upgrade endpoint.
@@ -68,8 +69,8 @@ func writeHandshakeUnauthorized(w http.ResponseWriter, debug string) {
 		MMessage string `json:"mmessage"`
 		Debug    string `json:"debug,omitempty"`
 	}{
-		MStatus:  int(status.SOCKET_UNAUTHORIZED),
-		MMessage: string(status.GetVNMessage(status.SOCKET_UNAUTHORIZED)),
+		MStatus:  int(SocketUnauthorized),
+		MMessage: string(status.GetMessage(enum.LanguageTypeVietnamese, SocketUnauthorized, nil)),
 		Debug:    debug,
 	})
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

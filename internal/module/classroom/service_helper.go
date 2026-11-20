@@ -5,11 +5,12 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
+	profiledom "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
 	"math-ai.com/math-ai/internal/shared/enum"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -253,7 +254,7 @@ func (s *Service) populateCoverUrl(ctx context.Context, resp *dto.ClassroomRespo
 // zero (anonymous) or no owned profile is a member.
 func (s *Service) resolveMemberProfileForUser(ctx context.Context, sessionUID, classroomID int64) (int64, error) {
 	if sessionUID == 0 {
-		return 0, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
+		return 0, errs.NewError(ctx, classroomDomain.ClassroomPermissionDenied, nil,
 			ErrProfileIDRequiredNoSession)
 	}
 	profiles, err := s.profileRepo.ListByUid(ctx, sessionUID)
@@ -261,7 +262,7 @@ func (s *Service) resolveMemberProfileForUser(ctx context.Context, sessionUID, c
 		return 0, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if len(profiles) == 0 {
-		return 0, errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
+		return 0, errs.NewError(ctx, profiledom.ProfileNotFound, nil,
 			ErrNoProfileForUser)
 	}
 	for _, p := range profiles {
@@ -276,7 +277,7 @@ func (s *Service) resolveMemberProfileForUser(ctx context.Context, sessionUID, c
 			return p.ProfileId(), nil
 		}
 	}
-	return 0, errs.NewError(ctx, status.CLASSROOM_PERMISSION_DENIED, nil,
+	return 0, errs.NewError(ctx, classroomDomain.ClassroomPermissionDenied, nil,
 		ErrNotClassroomMember)
 }
 

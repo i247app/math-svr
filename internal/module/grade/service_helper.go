@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/provider/storage"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 const (
@@ -31,14 +31,14 @@ func (s *Service) uploadImageIfPresent(ctx context.Context, req *dto.UpdateGrade
 		return nil, nil
 	}
 	if s.storageProvider == nil {
-		return nil, errs.NewError(ctx, status.STORAGE_CONFIG_INVALID, nil, ErrStorageProviderNotConfigured)
+		return nil, errs.NewError(ctx, storage.StorageConfigInvalid, nil, ErrStorageProviderNotConfigured)
 	}
 
 	if err := s.storageProvider.ValidateFileType(ctx, &storage.ValidateFileTypeRequest{
 		Filename:    req.ImageFilename,
 		ContentType: req.ImageContentType,
 	}); err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_INVALID_FILE, nil, err)
+		return nil, errs.NewError(ctx, profile.ProfileAvatarInvalidFile, nil, err)
 	}
 
 	uploaded, err := s.storageProvider.HandleUpload(ctx, &storage.UploadFileRequest{
@@ -48,10 +48,10 @@ func (s *Service) uploadImageIfPresent(ctx context.Context, req *dto.UpdateGrade
 		Folder:      avatarFolder,
 	})
 	if err != nil {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil, err)
+		return nil, errs.NewError(ctx, profile.ProfileAvatarUploadFailed, nil, err)
 	}
 	if uploaded == nil || uploaded.Key == "" {
-		return nil, errs.NewError(ctx, status.PROFILE_AVATAR_UPLOAD_FAILED, nil,
+		return nil, errs.NewError(ctx, profile.ProfileAvatarUploadFailed, nil,
 			ErrUploadReturnedEmptyKey)
 	}
 	return &uploaded.Key, nil

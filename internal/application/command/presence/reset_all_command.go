@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/transaction"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
+	domain "math-ai.com/math-ai/internal/domain/presence"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 )
 
 type ResetAllCommandHandler struct {
@@ -23,7 +23,7 @@ func NewResetAllCommandHandler(uow transaction.UnitOfWork) *ResetAllCommandHandl
 func (h *ResetAllCommandHandler) Handle(ctx context.Context) error {
 	return h.uow.Do(ctx, func(ctx context.Context, repos transaction.Repositories) error {
 		if err := repos.Presence.ResetAll(ctx); err != nil {
-			return errs.NewError(ctx, status.PRESENCE_UPDATE_FAILED, nil, err)
+			return errs.NewError(ctx, domain.PresenceUpdateFailed, nil, err)
 		}
 		return nil
 	})

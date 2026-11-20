@@ -6,10 +6,9 @@ import (
 	"time"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/domain/shared/error"
-	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	errs "math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -43,7 +42,7 @@ func NewService(enabled bool, difficulty int) *Service {
 func (s *Service) GenerateChallenge(ctx context.Context, sess *session.AppSession) (*dto.ChallengeRes, error) {
 	seed, err := utils.RandomStringWithLenght(seedLength)
 	if err != nil {
-		return nil, errs.NewError(ctx, status.POW_CHALLENGE_FAILED, nil, err)
+		return nil, errs.NewError(ctx, PowChallengeFailed, nil, err)
 	}
 
 	sess.Put(sessionKeyChallenge, session.Pow{
@@ -68,7 +67,7 @@ func (s *Service) VerifyChallenge(ctx context.Context, sess *session.AppSession,
 	challenge, _ := sess.Get(sessionKeyChallenge)
 	pending, _ := challenge.(session.Pow)
 	if pending.Seed == "" {
-		return nil, errs.NewError(ctx, status.POW_CHALLENGE_NOT_FOUND, nil, ErrChallengeNotFound)
+		return nil, errs.NewError(ctx, PowChallengeNotFound, nil, ErrChallengeNotFound)
 	}
 
 	// Consume. A zero value, not a delete: the session store has no delete,
@@ -77,11 +76,11 @@ func (s *Service) VerifyChallenge(ctx context.Context, sess *session.AppSession,
 
 	if time.Since(pending.CreatedAt) > challengeTTL {
 		log.Info("pow.verify_rejected", "reason", "expired")
-		return nil, errs.NewError(ctx, status.POW_CHALLENGE_EXPIRED, nil, ErrChallengeExpired)
+		return nil, errs.NewError(ctx, PowChallengeExpired, nil, ErrChallengeExpired)
 	}
 	if !Solves(pending.Seed, nonce, pending.Difficulty) {
 		log.Info("pow.verify_rejected", "reason", "invalid_proof")
-		return nil, errs.NewError(ctx, status.POW_INVALID_PROOF, nil, ErrInvalidProof)
+		return nil, errs.NewError(ctx, PowInvalidProof, nil, ErrInvalidProof)
 	}
 
 	sess.Put(sessionKeyPassedAt, time.Now())
@@ -102,7 +101,7 @@ func (s *Service) ConsumePass(ctx context.Context, sess *session.AppSession) err
 	raw, _ := sess.Get(sessionKeyPassedAt)
 	passedAt, _ := raw.(time.Time)
 	if passedAt.IsZero() || time.Since(passedAt) > passTTL {
-		return errs.NewError(ctx, status.POW_REQUIRED, nil, ErrPowRequired)
+		return errs.NewError(ctx, PowRequired, nil, ErrPowRequired)
 	}
 
 	sess.Put(sessionKeyPassedAt, time.Time{})
