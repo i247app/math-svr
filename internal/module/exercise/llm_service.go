@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/dto"
+	routeQuery "math-ai.com/math-ai/internal/application/query/llmroute"
+	"math-ai.com/math-ai/internal/domain/llmroute"
 	"math-ai.com/math-ai/internal/domain/prompt/input"
 	errs "math-ai.com/math-ai/internal/domain/shared/error"
 	"math-ai.com/math-ai/internal/domain/shared/status"
@@ -23,10 +25,20 @@ import (
 // drift the schema.
 type llmClient struct {
 	provider *llmProvider.Registry
+	// routes picks the provider per kind of call (ma_llm_routes); nil =
+	// every call goes through the registry's default.
+	routes *routeQuery.ResolveLLMRouteQuery
 }
 
-func newLLMClient(provider *llmProvider.Registry) *llmClient {
-	return &llmClient{provider: provider}
+// route resolves the provider of one kind of call; zero (= the default)
+// without a resolver.
+func (c *llmClient) route(ctx context.Context, code llmroute.Code) routeQuery.Route {
+	if c.routes == nil {
+		return routeQuery.Route{}
+	}
+	r := c.routes.Handle(ctx, code)
+	logger.From(ctx).Infof("exercise.llm.route code=%s provider=%s model=%s source=%s", code, r.Provider, r.Model, r.Source)
+	return r
 }
 
 // generateExerciseInput is the union of fields the exercise prompt
@@ -77,7 +89,10 @@ func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 
 	log.Infof("PROMPT CLASSROOM EXERCISE: system=%s user=%s", system, user)
 
+	route := c.route(ctx, llmroute.CodeExerciseGenerate)
 	res, err := c.provider.Chat(ctx, llmProvider.ChatRequest{
+		Provider: route.Provider,
+		Model:    route.Model,
 		Messages: []llmProvider.Message{
 			{Role: llmProvider.RoleSystem, Content: system},
 			{Role: llmProvider.RoleUser, Content: user},
@@ -138,7 +153,10 @@ func (c *llmClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*
 
 	log.Infof("PROMPT CLASSROOM EXERCISE SUBMISSION GRADE: system=%s user=%s", system, user)
 
+	route := c.route(ctx, llmroute.CodeExerciseGrade)
 	res, err := c.provider.Chat(ctx, llmProvider.ChatRequest{
+		Provider: route.Provider,
+		Model:    route.Model,
 		Messages: []llmProvider.Message{
 			{Role: llmProvider.RoleSystem, Content: system},
 			{Role: llmProvider.RoleUser, Content: user},

@@ -11,6 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/grade"
+	"math-ai.com/math-ai/internal/domain/llmroute"
 	"math-ai.com/math-ai/internal/domain/login"
 	"math-ai.com/math-ai/internal/domain/loginlog"
 	"math-ai.com/math-ai/internal/domain/notification"
@@ -65,6 +66,7 @@ type Repositories struct {
 	ExamSession        exam.IExamSessionRepository
 	ExamSessionLine    exam.IExamSessionLineRepository
 	Prompt             prompt.IRepository
+	LLMRoute           llmroute.IRepository // ma_llm_routes — provider per kind of LLM call
 	Question           question.IRepository // ma_questions — one row per question of an exam pool
 	QuestionPool       questionpool.IRepository
 	Role               role.IRepository

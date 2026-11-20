@@ -825,6 +825,15 @@ func GetENMessage(statusCode StatusCode) StatusMessage {
 	case QUESTION_POOL_INVALID_TRANSLATION:
 		return "The question language or a translation is invalid"
 
+	case LLM_ROUTE_NOT_FOUND:
+		return "LLM route not found"
+	case LLM_ROUTE_MISSING_CODE:
+		return "LLM route code is required"
+	case LLM_ROUTE_INVALID_PROVIDER:
+		return "The LLM provider is not configured on the server"
+	case LLM_ROUTE_INVALID_MODEL:
+		return "The LLM model is invalid"
+
 	default:
 		return ""
 	}

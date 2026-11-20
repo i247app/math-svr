@@ -1,7 +1,5 @@
 package enum
 
-import "strings"
-
 type LanguageType string
 
 const (
@@ -33,10 +31,10 @@ var ContentLanguages = []LanguageType{LanguageTypeVietnamese, LanguageTypeEnglis
 // Base is the short code of a known language ("vi-VN" → "vi", " EN " →
 // "en"), "" for anything else.
 func (s LanguageType) Base() LanguageType {
-	switch LanguageType(strings.ToLower(strings.TrimSpace(string(s)))) {
-	case LanguageTypeVietnamese, "vi-vn":
+	switch s {
+	case LanguageTypeVietnamese, LanguageTypeVietnameseV2:
 		return LanguageTypeVietnamese
-	case LanguageTypeEnglish, "en-us":
+	case LanguageTypeEnglish, LanguageTypeEnglishV2:
 		return LanguageTypeEnglish
 	}
 	return ""

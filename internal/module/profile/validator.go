@@ -14,22 +14,6 @@ import (
 // can't drive an unbounded table scan via an oversized search string.
 const profileSearchMaxLen = 128
 
-// validateLanguage allows an empty value (service substitutes vn) and
-// otherwise restricts to the project's supported set. Shared by the get and
-// list endpoints since both newly accept a language input.
-func validateLanguage(ctx context.Context, lang enum.LanguageType) error {
-	if lang == "" {
-		return nil
-	}
-	switch lang {
-	case enum.LanguageTypeVietnamese, enum.LanguageTypeEnglish:
-		return nil
-	default:
-		return errs.NewError(ctx, status.PROFILE_INVALID_LANGUAGE, nil,
-			ErrLanguageMustBeVnOrEn)
-	}
-}
-
 func ValidateCreateProfile(ctx context.Context, req *dto.CreateProfileReq) error {
 	if req.UID == 0 {
 		return errs.NewError(ctx, status.PROFILE_MISSING_USER_ID, nil,
@@ -83,7 +67,8 @@ func ValidateGetProfile(ctx context.Context, req *dto.GetProfileByIdReq) error {
 		return errs.NewError(ctx, status.PROFILE_NOT_FOUND, nil,
 			ErrProfileIDRequired)
 	}
-	return validateLanguage(ctx, req.Language)
+
+	return nil
 }
 
 // ValidateListProfiles validates and normalises the list filters in
@@ -143,7 +128,8 @@ func ValidateListProfiles(ctx context.Context, req *dto.ListProfilesReq) error {
 			req.Search = &s
 		}
 	}
-	return validateLanguage(ctx, req.Language)
+
+	return nil
 }
 
 func ValidateDeleteProfile(ctx context.Context, req *dto.DeleteProfileReq) error {

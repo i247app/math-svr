@@ -9,6 +9,8 @@ import (
 	"unicode/utf8"
 
 	"math-ai.com/math-ai/internal/application/dto"
+	routeQuery "math-ai.com/math-ai/internal/application/query/llmroute"
+	"math-ai.com/math-ai/internal/domain/llmroute"
 	llmProvider "math-ai.com/math-ai/internal/provider/llm"
 
 	// input "math-ai.com/math-ai/internal/domain/prompt/input"
@@ -34,10 +36,27 @@ import (
 // and more cheaply.
 type llmClient struct {
 	provider *llmProvider.Registry
+	// routes picks the provider per kind of call (ma_llm_routes); nil =
+	// every call goes through the registry's default.
+	routes *routeQuery.ResolveLLMRouteQuery
 }
 
 func newLLMClient(provider *llmProvider.Registry) *llmClient {
 	return &llmClient{provider: provider}
+}
+
+// llmRoute is the provider (and optional model) one call goes through.
+// The zero value is the registry's default provider with its env model.
+type llmRoute = routeQuery.Route
+
+// route resolves the provider of one kind of call; zero without a resolver.
+func (c *llmClient) route(ctx context.Context, code llmroute.Code) llmRoute {
+	if c.routes == nil {
+		return llmRoute{}
+	}
+	r := c.routes.Handle(ctx, code)
+	logger.From(ctx).Infof("exam.llm.route code=%s provider=%s model=%s source=%s", code, r.Provider, r.Model, r.Source)
+	return r
 }
 
 type generateExamInput struct {
@@ -122,7 +141,13 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	log.Infof("PROMPT GENERATE EXAM: code=%s grade=%d prompt_id=%d prompt_version=%d system=%s user=%s",
 		in.Prompt.PromptCode(), in.Grade, in.Prompt.PromptId(), in.Prompt.PromptVersion(), system, user)
 
-	content, respID, err := c.complete(ctx, system, user, 0.4, in.Chain)
+	// Every exam type that reaches the model has a route; another type
+	// (none today) would go through the default.
+	var route llmRoute
+	if code, ok := llmroute.ExamCode(in.ExamType); ok {
+		route = c.route(ctx, code)
+	}
+	content, respID, err := c.complete(ctx, route, system, user, 0.4, in.Chain)
 	if err != nil {
 		return nil, err
 	}
@@ -220,11 +245,16 @@ const maxChainInputTokens = 30000
 // persist; on any other provider it falls back to Chat and returns a nil
 // id. A chain pointer the vendor no longer holds (30-day retention) is
 // retried once as a new chain.
-func (c *llmClient) complete(ctx context.Context, system, user string, temperature float64, chain *string) (string, *string, error) {
+func (c *llmClient) complete(ctx context.Context, route llmRoute, system, user string, temperature float64, chain *string) (string, *string, error) {
 	log := logger.From(ctx)
 
-	if chain == nil || !c.provider.SupportsRespond("") {
+	// The chain is only usable on the provider this turn goes through: a
+	// route on a stateless provider takes the Chat path and returns a nil
+	// id, so the journey's pointer is cleared rather than sent elsewhere.
+	if chain == nil || !c.provider.SupportsRespond(route.Provider) {
 		res, err := c.provider.Chat(ctx, llmProvider.ChatRequest{
+			Provider: route.Provider,
+			Model:    route.Model,
 			Messages: []llmProvider.Message{
 				{Role: llmProvider.RoleSystem, Content: system},
 				{Role: llmProvider.RoleUser, Content: user},
@@ -240,6 +270,8 @@ func (c *llmClient) complete(ctx context.Context, system, user string, temperatu
 	}
 
 	req := llmProvider.RespondRequest{
+		Provider: route.Provider,
+		Model:    route.Model,
 		// Instructions are not inherited along the chain: resent every turn.
 		Instructions:       system,
 		Input:              []llmProvider.Message{{Role: llmProvider.RoleUser, Content: user}},
@@ -301,7 +333,7 @@ func (c *llmClient) ReviewJourney(ctx context.Context, prompt *promptDomain.Prom
 	log.Infof("PROMPT REVIEW JOURNEY: prompt_id=%d prompt_version=%d system=%s user=%s",
 		prompt.PromptId(), prompt.PromptVersion(), system, user)
 
-	content, respID, err := c.complete(ctx, system, user, 0.4, &chain)
+	content, respID, err := c.complete(ctx, c.route(ctx, llmroute.CodeExamReview), system, user, 0.4, &chain)
 	if err != nil {
 		return nil, err
 	}

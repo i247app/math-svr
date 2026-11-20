@@ -7,6 +7,7 @@ import (
 	command "math-ai.com/math-ai/internal/application/command/exercise"
 	"math-ai.com/math-ai/internal/application/dto"
 	query "math-ai.com/math-ai/internal/application/query/exercise"
+	routeQuery "math-ai.com/math-ai/internal/application/query/llmroute"
 	"math-ai.com/math-ai/internal/application/transaction"
 	classroomDomain "math-ai.com/math-ai/internal/domain/classroom"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
@@ -57,6 +58,7 @@ func NewService(
 	submissionRepo domain.ISubmissionRepository,
 	uow transaction.UnitOfWork,
 	llm *llmProvider.Registry,
+	llmRoutes *routeQuery.ResolveLLMRouteQuery,
 	classroomRepo classroomDomain.IRepository,
 	classroomMemberRepo classroomDomain.IMemberRepository,
 	classroomProgramRepo classroomDomain.IClassroomProgramRepository,
@@ -86,7 +88,7 @@ func NewService(
 		profileRepo:          profileRepo,
 		programRepo:          programRepo,
 		gradeRepo:            gradeRepo,
-		llm:                  newLLMClient(llm),
+		llm:                  &llmClient{provider: llm, routes: llmRoutes},
 		storageProvider:      storageProvider,
 	}
 }
@@ -122,7 +124,7 @@ func (s *Service) CreateExercise(ctx context.Context, req *dto.CreateExerciseReq
 		return nil, err
 	}
 
-	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+	lang := metadata.GetLanguage(ctx)
 	if req.Language != "" {
 		lang = req.Language
 	}

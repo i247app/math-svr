@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -65,16 +66,23 @@ func (a *Registry) Has(name LLMProviderName) bool {
 	return ok
 }
 
-// Chat dispatches req through the default provider after running
-// ChatRequest.Validate.
-func (a *Registry) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error) {
-	log := logger.From(ctx)
-	log.Infof("llm provider default %s", a.defaultName)
+// Names lists the registered providers, sorted, for callers that validate
+// a provider name chosen at runtime.
+func (a *Registry) Names() []LLMProviderName {
+	names := make([]LLMProviderName, 0, len(a.providers))
+	for name := range a.providers {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+	return names
+}
 
+// Chat dispatches req through req.Provider (the default when empty) after
+// running ChatRequest.Validate.
+func (a *Registry) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error) {
 	if a.defaultName == "" {
 		return nil, errors.New("llm: no default provider configured")
 	}
-
 	return a.ChatVia(ctx, req.Provider, req)
 }
 
@@ -117,20 +125,24 @@ func (a *Registry) ChatVia(ctx context.Context, name LLMProviderName, req ChatRe
 	return res, nil
 }
 
-// Stream dispatches a streaming chat request through the default
-// provider after running ChatRequest.Validate. onChunk MUST NOT block —
-// the caller's pipeline owns downstream buffering.
+// Stream dispatches a streaming chat request through req.Provider (the
+// default when empty) after running ChatRequest.Validate. onChunk MUST NOT
+// block — the caller's pipeline owns downstream buffering.
 func (a *Registry) Stream(ctx context.Context, req ChatRequest, onChunk func(StreamChunk) error) (*ChatResult, error) {
 	if a.defaultName == "" {
 		return nil, errors.New("llm: no default provider configured")
 	}
-	return a.StreamVia(ctx, a.defaultName, req, onChunk)
+	return a.StreamVia(ctx, req.Provider, req, onChunk)
 }
 
 // StreamVia dispatches a streaming chat request through the provider
-// registered under name.
+// registered under name (the default when empty).
 func (a *Registry) StreamVia(ctx context.Context, name LLMProviderName, req ChatRequest, onChunk func(StreamChunk) error) (*ChatResult, error) {
 	log := logger.From(ctx)
+
+	if name == "" {
+		name = a.defaultName
+	}
 
 	if onChunk == nil {
 		return nil, errs.NewError(ctx, status.LLM_INVALID_PROMPT, nil,
@@ -214,13 +226,13 @@ func (a *Registry) SupportsRespond(name LLMProviderName) bool {
 	return ok
 }
 
-// Respond dispatches one chained turn through the default provider after
-// running RespondRequest.Validate.
+// Respond dispatches one chained turn through req.Provider (the default
+// when empty) after running RespondRequest.Validate.
 func (a *Registry) Respond(ctx context.Context, req RespondRequest) (*RespondResult, error) {
 	if a.defaultName == "" {
 		return nil, errors.New("llm: no default provider configured")
 	}
-	return a.RespondVia(ctx, a.defaultName, req)
+	return a.RespondVia(ctx, req.Provider, req)
 }
 
 // RespondVia dispatches one chained turn through the provider registered
@@ -266,6 +278,36 @@ func (a *Registry) RespondVia(ctx context.Context, name LLMProviderName, req Res
 		name, res.Model, res.ResponseID, req.PreviousResponseID != "",
 		res.Usage.PromptTokens, res.Usage.CompletionTokens, res.Usage.TotalTokens)
 	return res, nil
+}
+
+// ListModelsVia lists the models of the provider registered under name. A
+// provider that does not implement ModelLister answers LLM_UNSUPPORTED_OP
+// without any network call, like Embed on a provider without embeddings.
+func (a *Registry) ListModelsVia(ctx context.Context, name LLMProviderName) ([]ModelInfo, error) {
+	log := logger.From(ctx)
+
+	provider, ok := a.providers[name]
+	if !ok {
+		return nil, fmt.Errorf("llm: provider %q is not registered", name)
+	}
+	lister, ok := provider.(ModelLister)
+	if !ok {
+		err := fmt.Errorf("llm: provider %q cannot list its models", name)
+		return nil, errs.NewError(ctx, status.LLM_UNSUPPORTED_OP, map[string]any{"provider": string(name), "op": "list_models"}, err)
+	}
+
+	ctx, span := startLLMSpan(ctx, name, "list_models")
+	defer span.End()
+
+	models, err := lister.ListModels(ctx)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return nil, logAndReturn(ctx, log, name, "list_models", err)
+	}
+	span.SetAttributes(attribute.Int("ai.models.count", len(models)))
+	log.Infof("llm.list_models provider=%s count=%d", name, len(models))
+	return models, nil
 }
 
 // startLLMSpan opens a client span for one LLM operation as a child of the

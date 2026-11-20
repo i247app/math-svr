@@ -4,6 +4,7 @@ import (
 	"context"
 
 	userCommand "math-ai.com/math-ai/internal/application/command/user"
+	routeQuery "math-ai.com/math-ai/internal/application/query/llmroute"
 	"math-ai.com/math-ai/internal/application/resource"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql"
@@ -20,6 +21,7 @@ import (
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
 	"math-ai.com/math-ai/internal/module/llm"
+	"math-ai.com/math-ai/internal/module/llmroute"
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
@@ -162,6 +164,10 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 	log.Info("> Setup QuestionSvc...")
 	questionPoolService := questionpool.NewService(uow, repos.QuestionPoolRepository, res.StorageProvider)
 
+	// One resolver for every routed LLM call: it reads ma_llm_routes on
+	// each call (no cache), so an admin update reaches every instance.
+	llmRoutes := routeQuery.NewResolveLLMRouteQuery(repos.LLMRouteRepository, res.LLMProvider)
+
 	log.Info("> Setup ExamSvc...")
 	examService := exam.NewService(
 		repos.ExamPoolRepository,
@@ -171,6 +177,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.PromptRepository,
 		uow,
 		res.LLMProvider,
+		llmRoutes,
 		repos.ProfileRepository,
 		repos.GradeRepository,
 		repos.UserRepository,
@@ -182,6 +189,9 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 
 	log.Info("> Setup PromptSvc...")
 	promptService := prompt.NewService(repos.PromptRepository, uow)
+
+	log.Info("> Setup LLMRouteSvc...")
+	llmRouteService := llmroute.NewService(repos.LLMRouteRepository, llmRoutes, uow, res.LLMProvider)
 
 	log.Info("> Setup JobSvc...")
 	jobService := job.NewService(res.JobRuntime)
@@ -210,6 +220,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		repos.ExerciseSubmissionRepository,
 		uow,
 		res.LLMProvider,
+		llmRoutes,
 		repos.ClassroomRepository,
 		repos.ClassroomMemberRepository,
 		repos.ClassroomProgramRepository,
@@ -260,6 +271,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		OtpSvc:           otpService,
 		ExamSvc:          examService,
 		PromptSvc:        promptService,
+		LLMRouteSvc:      llmRouteService,
 		QuestionPoolSvc:  questionPoolService,
 		PowSvc:           powService,
 		SchoolSvc:        schoolService,

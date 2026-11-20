@@ -42,4 +42,5 @@ const (
 	NameRole                        = "ma_roles"
 	NameQuestionPool                = "ma_question_pools"
 	NameQuestion                    = "ma_questions"
+	NameLLMRoute                    = "ma_llm_routes"
 )

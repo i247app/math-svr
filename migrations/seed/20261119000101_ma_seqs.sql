@@ -44,4 +44,5 @@ INSERT IGNORE INTO ma_seqs (seq_name, current_value, prefix, padding) VALUES
 ('ma_roles',                 0, 'RL',  8),
 ('ma_prompts',              19, 'PRM', 8),   
 ('ma_question_pools',        0, 'QPL', 8),   
-('ma_questions',             0, 'QST', 8);
+('ma_questions',             0, 'QST', 8),
+('ma_llm_routes',            7, 'LLR', 8);

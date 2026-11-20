@@ -19,6 +19,7 @@ import (
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
 	"math-ai.com/math-ai/internal/module/llm"
+	"math-ai.com/math-ai/internal/module/llmroute"
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
@@ -281,6 +282,16 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /prompts/list", promptHandler.HandleListPrompts, adminOrApiKeyMiddleware)
 		reg("POST /prompts/detail", promptHandler.HandleGetPrompt, adminOrApiKeyMiddleware)
 		reg("POST /prompts/update", promptHandler.HandleUpdatePrompt, adminOrApiKeyMiddleware)
+	}
+
+	// llm route routes — which LLM provider each kind of call goes through
+	// (ma_llm_routes). Admin only: a retarget sends every child's exams of
+	// that kind to another vendor, from the next call on every instance.
+	{
+		llmRouteHandler := llmroute.NewHandler(services.LLMRouteSvc)
+		reg("POST /llm-routes/list", llmRouteHandler.HandleListLLMRoutes, adminOrApiKeyMiddleware)
+		reg("POST /llm-routes/update", llmRouteHandler.HandleUpdateLLMRoute, adminOrApiKeyMiddleware)
+		reg("POST /llm-routes/models", llmRouteHandler.HandleListLLMModels, adminOrApiKeyMiddleware)
 	}
 
 	// question pool routes (ma_question_pools, the admin bank) — admin only and independent of

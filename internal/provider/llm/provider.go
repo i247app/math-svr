@@ -42,3 +42,16 @@ type ResponderProvider interface {
 	// is the pointer the caller must persist for the next turn.
 	Respond(ctx context.Context, req RespondRequest) (*RespondResult, error)
 }
+
+// ModelLister is the OPTIONAL capability of listing the models a provider
+// can serve, for an admin picking ma_llm_routes.llm_model. Discovered by
+// type assertion like ResponderProvider; Registry.ListModelsVia answers
+// LLM_UNSUPPORTED_OP for a provider without it. All four providers
+// implement it today.
+type ModelLister interface {
+	LLMProvider
+
+	// ListModels calls the vendor's model-list endpoint once, under the
+	// provider's timeout.
+	ListModels(ctx context.Context) ([]ModelInfo, error)
+}

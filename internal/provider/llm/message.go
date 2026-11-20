@@ -205,3 +205,19 @@ func (r EmbedRequest) Validate() error {
 	}
 	return nil
 }
+
+// ModelInfo is one model a provider lists. ID is the value llm_model takes
+// on that provider. The capability hints are the vendor's own, passed
+// through without filtering; each is empty when the vendor reports none:
+// OutputModalities (openrouter: "text", "image", …), SupportedMethods
+// (gemini: "generateContent", "embedContent", …). ContextLength is in
+// tokens, 0 when unknown.
+type ModelInfo struct {
+	ID               string   `json:"id"`
+	Name             string   `json:"name,omitempty"`
+	OwnedBy          string   `json:"owned_by,omitempty"`
+	ContextLength    int      `json:"context_length,omitempty"`
+	InputModalities  []string `json:"input_modalities,omitempty"`
+	OutputModalities []string `json:"output_modalities,omitempty"`
+	SupportedMethods []string `json:"supported_methods,omitempty"`
+}

@@ -825,6 +825,15 @@ func GetVNMessage(statusCode StatusCode) StatusMessage {
 	case QUESTION_POOL_INVALID_TRANSLATION:
 		return "Ngôn ngữ hoặc bản dịch của câu hỏi không hợp lệ"
 
+	case LLM_ROUTE_NOT_FOUND:
+		return "Không tìm thấy cấu hình định tuyến LLM"
+	case LLM_ROUTE_MISSING_CODE:
+		return "Mã định tuyến LLM là bắt buộc"
+	case LLM_ROUTE_INVALID_PROVIDER:
+		return "Nhà cung cấp LLM chưa được cấu hình trên máy chủ"
+	case LLM_ROUTE_INVALID_MODEL:
+		return "Model LLM không hợp lệ"
+
 	default:
 		return ""
 	}

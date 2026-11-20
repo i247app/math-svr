@@ -2,6 +2,8 @@ package metadata
 
 import (
 	"context"
+
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 type contextKey string
@@ -47,8 +49,8 @@ func GetTimezone(ctx context.Context) string {
 }
 
 // GetLanguage is a convenience function to get the user's language from context
-func GetLanguage(ctx context.Context) string {
-	return FromContext(ctx).UserContext.Language
+func GetLanguage(ctx context.Context) enum.LanguageType {
+	return FromContext(ctx).Language
 }
 
 // GetPlatform is a convenience function to get the client platform from context
@@ -118,9 +120,4 @@ func GetDevicePushToken(ctx context.Context) string {
 // GetIPAddress is a convenience function to get the client IP address from context
 func GetIPAddress(ctx context.Context) string {
 	return FromContext(ctx).IPAddress
-}
-
-// GetClientLanguage is a convenience function to get the client language from context
-func GetClientLanguage(ctx context.Context) ClientLanguage {
-	return FromContext(ctx).Language
 }

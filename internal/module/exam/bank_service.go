@@ -124,8 +124,6 @@ func (s *Service) generateFromBank(ctx context.Context, req *dto.GenerateExamReq
 // pickFromBank draws a whole paper, numbered 1..N, or fails with
 // EXAM_QUESTION_BANK_INSUFFICIENT naming the group that came up short.
 func (s *Service) pickFromBank(ctx context.Context, examType enum.ExamType, grade int, level *int, avoid []string) ([]dto.Question, error) {
-	log := logger.From(ctx)
-
 	paper := make([]dto.Question, DefaultNumQuestions)
 	var chosen []int64
 
@@ -142,7 +140,6 @@ func (s *Service) pickFromBank(ctx context.Context, examType enum.ExamType, grad
 		})
 		for i, q := range picked {
 			slot := g.slots[i]
-			log.Infof("pick - slot: %v", slot)
 			converted, err := toExamQuestion(q, slot)
 			if err != nil {
 				return nil, errs.NewError(ctx, status.EXAM_GENERATION_FAILED, nil, err)

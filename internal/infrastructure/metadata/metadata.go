@@ -7,33 +7,6 @@ import (
 	"math-ai.com/math-ai/internal/shared/mtime"
 )
 
-type ClientLanguage string
-
-const (
-	ClientLanguageViVN ClientLanguage = "vi-VN"
-	ClientLanguageEnEN ClientLanguage = "en-EN"
-	ClientLanguageVi   ClientLanguage = "vi"
-	ClientLanguageEn   ClientLanguage = "en"
-)
-
-func (c ClientLanguage) String() string {
-	return string(c)
-}
-
-// ToEnumLanguage maps the client-reported language onto the internal
-// enum. Both the short ("vi"/"en") and long ("vi-VN"/"en-EN") forms are
-// accepted because the mobile app sends the short code. Unknown / empty
-// values fall back to Vietnamese — the project default (see CLAUDE.md).
-func (c ClientLanguage) ToEnumLanguage() enum.LanguageType {
-	switch c {
-	case ClientLanguageViVN, ClientLanguageVi:
-		return enum.LanguageTypeVietnamese
-	case ClientLanguageEnEN, ClientLanguageEn:
-		return enum.LanguageTypeEnglish
-	}
-	return enum.LanguageTypeVietnamese
-}
-
 // RequestMetadata is the `metadata` object every client request carries in
 // its body (JSON object, or a `metadata` form field for multipart uploads).
 // It is parsed by MetadataMiddleware into the request context.
@@ -59,10 +32,10 @@ type RequestMetadata struct {
 	DevicePushToken string `json:"device_push_token,omitempty"` // FCM / APNS push token
 
 	// Locale / negotiation
-	Language       ClientLanguage `json:"language,omitempty"`        // "vi" | "en" | "vi-VN" | "en-EN"
-	AcceptLanguage string         `json:"accept_language,omitempty"` // e.g. "vi"
-	Accept         string         `json:"accept,omitempty"`          // e.g. "application/json"
-	ContentType    string         `json:"content_type,omitempty"`    // e.g. "application/json"
+	Language       enum.LanguageType `json:"language,omitempty"`        // "vi" | "en" | "vi-VN" | "en-EN"
+	AcceptLanguage string            `json:"accept_language,omitempty"` // e.g. "vi"
+	Accept         string            `json:"accept,omitempty"`          // e.g. "application/json"
+	ContentType    string            `json:"content_type,omitempty"`    // e.g. "application/json"
 
 	// Network — client-reported; the server also derives the real peer IP in
 	// the logging middleware. Treat this as advisory, not authoritative.

@@ -58,6 +58,10 @@ const (
 	ProviderDeepSeek LLMProviderName = "deepseek"
 )
 
+func (l LLMProviderName) String() string {
+	return string(l)
+}
+
 // Role enumerates the chat message roles the registry recognises. The
 // provider layer is responsible for mapping these onto the upstream
 // vendor's role vocabulary.

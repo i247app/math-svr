@@ -78,7 +78,7 @@ func (s *Service) SubmitExerciseAnswers(ctx context.Context, req *dto.SubmitExer
 			fmt.Errorf("submission: marshal answers: %w", err))
 	}
 
-	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+	lang := metadata.GetLanguage(ctx)
 
 	questions := ""
 	if exercise.Questions() != nil {
@@ -203,7 +203,7 @@ func (s *Service) SubmitExerciseAnswersV2(ctx context.Context, req *dto.SubmitEx
 			ErrExerciseHasNoQuestionsToGrade)
 	}
 
-	lang := metadata.GetClientLanguage(ctx).ToEnumLanguage()
+	lang := metadata.GetLanguage(ctx)
 
 	actor := caller.ProfileId()
 	saved, err := s.submitAnswersV2Cmd.Handle(ctx, command.SubmitExerciseAnswersV2Command{

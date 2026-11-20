@@ -11,6 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/provider/storage"
 
 	query "math-ai.com/math-ai/internal/application/query/exam"
+	routeQuery "math-ai.com/math-ai/internal/application/query/llmroute"
 	"math-ai.com/math-ai/internal/application/transaction"
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
@@ -83,6 +84,7 @@ func NewService(
 	promptRepo promptDomain.IRepository,
 	uow transaction.UnitOfWork,
 	llm *llmProvider.Registry,
+	llmRoutes *routeQuery.ResolveLLMRouteQuery,
 	profileRepo profileDomain.IRepository,
 	gradeRepo gradeDomain.IRepository,
 	userRepo userDomain.IRepository,
@@ -114,7 +116,7 @@ func NewService(
 		promptRepo:      promptRepo,
 		profileRepo:     profileRepo,
 		gradeRepo:       gradeRepo,
-		llm:             newLLMClient(llm),
+		llm:             &llmClient{provider: llm, routes: llmRoutes},
 		guest:           newGuestService(uow, userRepo, profileRepo),
 		shuffleEnabled:  shuffleEnabled,
 
@@ -435,7 +437,7 @@ func (s *Service) SubmitExam(ctx context.Context, req *dto.SubmitExamReq) (*dto.
 		UID:       profile.UID(),
 		ProfileID: profile.ProfileId(),
 		Answers:   req.Answers,
-		Language:  metadata.GetClientLanguage(ctx).ToEnumLanguage(),
+		Language:  metadata.GetLanguage(ctx),
 	})
 	if err != nil {
 		return nil, err

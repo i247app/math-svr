@@ -11,6 +11,7 @@ import (
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
+	llmRouteDomain "math-ai.com/math-ai/internal/domain/llmroute"
 	loginLogDomain "math-ai.com/math-ai/internal/domain/loginlog"
 	notificationDomain "math-ai.com/math-ai/internal/domain/notification"
 	otpDomain "math-ai.com/math-ai/internal/domain/otp"
@@ -36,6 +37,7 @@ import (
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
 	"math-ai.com/math-ai/internal/module/llm"
+	"math-ai.com/math-ai/internal/module/llmroute"
 	"math-ai.com/math-ai/internal/module/misc"
 	"math-ai.com/math-ai/internal/module/notification"
 	"math-ai.com/math-ai/internal/module/otp"
@@ -66,6 +68,7 @@ type ServiceContainer struct {
 	OtpSvc          *otp.Service
 	ExamSvc         *exam.Service
 	PromptSvc       *prompt.Service
+	LLMRouteSvc     *llmroute.Service
 	QuestionPoolSvc *questionpool.Service
 	SchoolSvc       *school.Service
 	JobSvc          *job.Service
@@ -103,6 +106,7 @@ type RepositoryContainer struct {
 	ExamSessionRepository        examDomain.IExamSessionRepository
 	ExamSessionLineRepository    examDomain.IExamSessionLineRepository
 	PromptRepository             promptDomain.IRepository
+	LLMRouteRepository           llmRouteDomain.IRepository
 	QuestionRepository           questionDomain.IRepository
 	QuestionPoolRepository       questionPoolDomain.IRepository
 	SchoolRepository             schoolDomain.IRepository

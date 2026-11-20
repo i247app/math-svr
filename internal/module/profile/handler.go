@@ -97,7 +97,7 @@ func (h *ProfileHandler) HandleGetProfileById(w http.ResponseWriter, r *http.Req
 	}
 
 	if req.Language == "" {
-		req.Language = metadata.GetClientLanguage(r.Context()).ToEnumLanguage()
+		req.Language = metadata.GetLanguage(r.Context())
 	}
 
 	res, err := h.service.GetProfileById(r.Context(), &req)
@@ -118,7 +118,7 @@ func (h *ProfileHandler) HandleListProfiles(w http.ResponseWriter, r *http.Reque
 	}
 
 	if req.Language == "" {
-		req.Language = metadata.GetClientLanguage(r.Context()).ToEnumLanguage()
+		req.Language = metadata.GetLanguage(r.Context())
 	}
 
 	res, err := h.service.ListProfiles(r.Context(), &req)

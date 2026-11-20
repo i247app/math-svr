@@ -565,3 +565,18 @@ const (
 	// question_text, options that are not exactly the question's ids).
 	QUESTION_POOL_INVALID_TRANSLATION StatusCode = 14423
 )
+
+// LLM_ROUTE_* (14600–14699): ma_llm_routes — which LLM provider each kind of
+// call goes through, edited by /llm-routes/*.
+const (
+	// LLM_ROUTE_NOT_FOUND: no live row has that route_code.
+	LLM_ROUTE_NOT_FOUND StatusCode = 14600
+	// LLM_ROUTE_MISSING_CODE: route_code is empty.
+	LLM_ROUTE_MISSING_CODE StatusCode = 14601
+	// LLM_ROUTE_INVALID_PROVIDER: llm_provider is not a provider registered
+	// on the server (unknown name, or its API key is not configured).
+	LLM_ROUTE_INVALID_PROVIDER StatusCode = 14602
+	// LLM_ROUTE_INVALID_MODEL: llm_model is too long, or set without an
+	// llm_provider.
+	LLM_ROUTE_INVALID_MODEL StatusCode = 14603
+)
