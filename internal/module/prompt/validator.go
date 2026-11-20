@@ -2,7 +2,6 @@ package prompt
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"unicode/utf8"
@@ -17,12 +16,6 @@ import (
 // limit is about cost, not storage: every call of that kind sends the
 // whole text.
 const MaxPromptRunes = 50000
-
-var (
-	ErrPromptIDRequired = errors.New("prompt_id is required")
-	ErrPromptEmpty      = errors.New("system_prompt is required")
-	ErrPromptTooLong    = errors.New("system_prompt is longer than 50000 characters")
-)
 
 // ValidateUpdatePrompt checks what needs no stored row.
 func ValidateUpdatePrompt(ctx context.Context, req *dto.UpdatePromptReq) error {

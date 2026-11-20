@@ -52,8 +52,6 @@ func NewService(uow transaction.UnitOfWork, repo domain.IRepository, storageProv
 	}
 }
 
-var ErrAdminGateMissing = errors.New("question_pool: route did not pass the admin gate")
-
 // requireAdminGate fails closed when a route was registered without the
 // admin middleware: every bank response carries the answer key.
 func requireAdminGate(ctx context.Context) error {

@@ -35,12 +35,6 @@ var imageTypes = map[string]string{
 	".webp": "image/webp",
 }
 
-var (
-	ErrImageMissing  = errors.New("image file part is required")
-	ErrImageTooLarge = errors.New("request body is over the image size limit")
-	ErrStorageOff    = errors.New("question_pool: storage provider is not configured")
-)
-
 // imageFormError maps a body that is not a usable multipart form. The admin
 // gate still comes first, so an unauthorised caller learns nothing.
 func (s *Service) imageFormError(ctx context.Context, err error) error {

@@ -32,11 +32,6 @@ const (
 	DuplicateInPool = "IN_POOL"
 )
 
-var (
-	ErrImportFileMissing  = errors.New("file part is required")
-	ErrImportFileTooLarge = errors.New("request body is over the import file size limit")
-)
-
 // ImportFile is the multipart "file" part; a nil Reader means the request
 // had none. Size is the part's size as the client declared it; the read is
 // capped at MaxImportFileBytes as well.

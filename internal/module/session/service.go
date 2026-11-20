@@ -2,7 +2,6 @@ package session
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
@@ -10,13 +9,6 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/session"
-)
-
-var (
-	ErrTokenRequired    = errors.New("token is required")
-	ErrSessionNotFound  = errors.New("no session is stored under that token")
-	ErrIsSecureRequired = errors.New("is_secure is required")
-	ErrSecureWithoutUID = errors.New("a session without a uid cannot be marked secure")
 )
 
 type Service struct {

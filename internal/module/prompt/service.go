@@ -2,7 +2,6 @@ package prompt
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"unicode/utf8"
@@ -28,27 +27,6 @@ type Service struct {
 
 func NewService(repo domain.IRepository, uow transaction.UnitOfWork) *Service {
 	return &Service{repo: repo, updateCmd: command.NewUpdatePromptCommandHandler(uow)}
-}
-
-var ErrAdminGateMissing = errors.New("prompt: route did not pass the admin gate")
-
-// requireAdminGate fails closed when a route was registered without the
-// admin middleware: every prompt is sent to the model for every child.
-func requireAdminGate(ctx context.Context) (sctx.AdminVia, error) {
-	via := sctx.GetAdminVia(ctx)
-	if via == "" {
-		return "", errs.NewError(ctx, status.FORBIDDEN, nil, ErrAdminGateMissing)
-	}
-	return via, nil
-}
-
-// adminActor is the admin's uid for modify_id, or nil when the request came
-// in with the X-Api-Admin-Key header and has no account behind it.
-func adminActor(ctx context.Context) *int64 {
-	if uid := sctx.UID(ctx); uid > 0 {
-		return &uid
-	}
-	return nil
 }
 
 func (s *Service) ListPrompts(ctx context.Context, req *dto.ListPromptsReq) (*dto.ListPromptsRes, error) {
