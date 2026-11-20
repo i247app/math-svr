@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
-	"math-ai.com/math-ai/internal/shared/enum"
 
 	"math-ai.com/math-ai/internal/domain/shared/status"
 )
@@ -36,9 +35,9 @@ func (e *MathError) Error() string {
 
 // NewDynamicError creates a new DynamicError with status code and dynamic arguments
 func NewError(ctx context.Context, statusCode status.StatusCode, args map[string]any, baseError error) *MathError {
-	language := metadata.FromContext(ctx).Language
+	language := metadata.GetLanguage(ctx)
 
-	message := status.GetMessage(enum.LanguageType(language), statusCode, args)
+	message := status.GetMessage(language, statusCode, args)
 
 	return &MathError{
 		Status:    status.NewMStatus(statusCode, message),
