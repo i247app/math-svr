@@ -5,7 +5,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/device"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateDeviceCommand patches mutable attributes of an existing device row —

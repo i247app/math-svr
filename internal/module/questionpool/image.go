@@ -16,7 +16,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
 	sctx "math-ai.com/math-ai/internal/shared/context"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // MaxImageBytes caps one question image. A child's screen needs far less;

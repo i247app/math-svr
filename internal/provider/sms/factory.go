@@ -7,7 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/pkg/twilio"
 
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // NewFromConfig builds a fully-wired *Registry from cfg, or returns

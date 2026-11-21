@@ -9,7 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/domain/role"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Column widths of migrations/up/030_ma_roles.sql, counted in characters as

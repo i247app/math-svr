@@ -13,7 +13,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 

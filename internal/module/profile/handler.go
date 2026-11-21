@@ -8,7 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )

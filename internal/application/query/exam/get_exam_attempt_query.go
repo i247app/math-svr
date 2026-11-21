@@ -5,7 +5,7 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // GetExamAttemptQuery reads one sitting. ProfileID is required, not

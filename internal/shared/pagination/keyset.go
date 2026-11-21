@@ -3,7 +3,7 @@ package pagination
 import (
 	"context"
 
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Keyset describes one keyset-paged list to KeysetPage. T is a row, K the

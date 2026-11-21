@@ -13,7 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/user"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
@@ -70,9 +70,8 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		return nil, err
 	}
 	if result == nil {
-		return &dto.LoginRes{
-			User: nil,
-		}, errs.NewError(ctx, login.AuthLoginFailed, nil, ErrUserNotFound)
+		res := &dto.LoginRes{User: nil}
+		return res, errs.NewError(ctx, login.AuthLoginFailed, nil, ErrUserNotFound)
 	}
 
 	userRes, err := s.userSvc.GetUserById(ctx, &dto.GetUserByUidReq{UID: result.UID})
@@ -80,9 +79,7 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 		return nil, err
 	}
 	if userRes == nil || userRes.User == nil {
-		res := &dto.LoginRes{
-			User: nil,
-		}
+		res := &dto.LoginRes{User: nil}
 		return res, nil
 	}
 

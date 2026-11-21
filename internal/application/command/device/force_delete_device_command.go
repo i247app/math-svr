@@ -6,7 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	devicedom "math-ai.com/math-ai/internal/domain/device"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // ForceDeleteDeviceCommand physically removes the device row. Same ownership

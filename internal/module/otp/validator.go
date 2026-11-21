@@ -7,7 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/otp"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 func ValidateSendOtp(ctx context.Context, req *dto.SendOtpReq) error {

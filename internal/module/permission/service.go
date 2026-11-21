@@ -11,7 +11,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/role"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/provider/storage"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // roleImageUrlTTL bounds how long a presigned role image URL stays valid.

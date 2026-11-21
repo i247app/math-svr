@@ -23,7 +23,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/infrastructure/tracing"
 	"math-ai.com/math-ai/internal/jobs"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 

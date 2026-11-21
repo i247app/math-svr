@@ -8,7 +8,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/mtime"
 )
 

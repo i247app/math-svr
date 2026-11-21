@@ -17,7 +17,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/metadata"
 	notiProvider "math-ai.com/math-ai/internal/provider/notification"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Service is the notification module façade. It persists notification rows

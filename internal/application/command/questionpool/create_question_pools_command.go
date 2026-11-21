@@ -12,7 +12,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/domain/seq"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // CreateQuestionsCommand stores a batch of questions in the bank, all or

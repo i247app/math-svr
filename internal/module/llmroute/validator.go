@@ -10,7 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/llmroute"
 	llmProvider "math-ai.com/math-ai/internal/provider/llm"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // MaxModelRunes matches ma_llm_routes.llm_model VARCHAR(128).

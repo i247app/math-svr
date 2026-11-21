@@ -11,7 +11,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/seq"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // previewRuneLimit keeps the denormalised preview inside the column's 255

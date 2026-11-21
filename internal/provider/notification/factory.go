@@ -7,7 +7,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/pkg/firebase"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // NewFromConfig builds a fully-wired *Registry from cfg, or returns

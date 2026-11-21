@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"math-ai.com/math-ai/internal/pkg/openrouter"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // OpenRouterProvider is the LLMProvider implementation backed by

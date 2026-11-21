@@ -13,7 +13,7 @@ import (
 	sess "math-ai.com/math-ai/internal/infrastructure/session"
 	sctx "math-ai.com/math-ai/internal/shared/context"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 )
 

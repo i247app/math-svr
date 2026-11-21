@@ -6,7 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/role"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateRoleCommand patches a role. A nil field is left unchanged. The role

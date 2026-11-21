@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 const llmTracerName = "math-svr/llm"

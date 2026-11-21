@@ -8,7 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UpdateQuestionCommand edits one question. Apply turns the stored row into

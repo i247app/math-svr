@@ -8,7 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/program"
 	"math-ai.com/math-ai/internal/domain/seq"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // CreateProgramCommand writes the parent ma_programs row in a single

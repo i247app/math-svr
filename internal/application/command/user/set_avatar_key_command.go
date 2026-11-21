@@ -6,7 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	userdom "math-ai.com/math-ai/internal/domain/user"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SetAvatarKeyCommand persists a newly-uploaded avatar's S3 key onto a

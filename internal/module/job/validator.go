@@ -7,7 +7,7 @@ import (
 	"time"
 
 	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Bounds on kind=every, enforced here (the API trust boundary) rather

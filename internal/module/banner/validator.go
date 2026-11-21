@@ -7,7 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/banner"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Column-width mirrors of migration 022. Keeping the bounds here lets the

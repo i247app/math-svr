@@ -14,7 +14,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	sctx "math-ai.com/math-ai/internal/shared/context"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Limits of one imported file. 2,000 questions are about 3–4 MB; the file

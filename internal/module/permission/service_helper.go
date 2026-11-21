@@ -8,7 +8,7 @@ import (
 	roledom "math-ai.com/math-ai/internal/domain/role"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // roleImageFolder is the S3 prefix role images are uploaded under.

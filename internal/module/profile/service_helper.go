@@ -9,7 +9,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // uploadAvatarIfPresent ships the multipart avatar (if any) to S3 and returns

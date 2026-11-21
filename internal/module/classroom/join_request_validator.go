@@ -5,7 +5,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/classroom"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 func ValidateApproveJoinRequest(ctx context.Context, req *dto.ApproveJoinRequestReq) error {

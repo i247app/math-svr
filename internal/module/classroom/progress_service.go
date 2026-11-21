@@ -8,7 +8,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/classroom"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // requireProfileProgressAccess enforces FEATURE-SPEC §5: a caller may

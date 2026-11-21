@@ -17,7 +17,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
 	sctx "math-ai.com/math-ai/internal/shared/context"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // imageUrlTTL bounds how long a presigned question / option image URL stays

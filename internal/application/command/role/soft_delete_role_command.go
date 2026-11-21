@@ -6,7 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	roledom "math-ai.com/math-ai/internal/domain/role"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SoftDeleteRoleCommand hides the role from every read and frees its code;

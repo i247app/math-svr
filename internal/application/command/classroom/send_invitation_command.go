@@ -10,7 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/seq"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SendInvitationTarget is the per-recipient slice the command walks

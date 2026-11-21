@@ -16,7 +16,7 @@ import (
 	notiProvider "math-ai.com/math-ai/internal/provider/notification"
 	otpProvider "math-ai.com/math-ai/internal/provider/otp_delivery"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // pushChannelName labels SendOtpCommandResult.Channel when the OTP was

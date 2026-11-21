@@ -17,7 +17,7 @@ import (
 	semesterDomain "math-ai.com/math-ai/internal/domain/semester"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/provider/storage"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/mtime"
 )
 

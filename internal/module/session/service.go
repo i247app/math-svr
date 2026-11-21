@@ -7,7 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/infrastructure/session"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 type Service struct {

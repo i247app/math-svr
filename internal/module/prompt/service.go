@@ -13,7 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	sctx "math-ai.com/math-ai/internal/shared/context"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Service is the admin surface over ma_prompts: read every prompt, rewrite

@@ -10,7 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/pkg/gemini"
 	"math-ai.com/math-ai/internal/pkg/openai"
 	"math-ai.com/math-ai/internal/pkg/openrouter"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // NewFromConfig builds a fully-wired *Registry from cfg, or returns

@@ -20,7 +20,7 @@ import (
 	llmProvider "math-ai.com/math-ai/internal/provider/llm"
 	"math-ai.com/math-ai/internal/provider/storage"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Service is the classroomexercise module's public façade. The

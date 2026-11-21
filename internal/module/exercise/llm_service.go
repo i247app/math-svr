@@ -11,7 +11,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	llmProvider "math-ai.com/math-ai/internal/provider/llm"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // llmClient is the classroomexercise module's typed surface over the

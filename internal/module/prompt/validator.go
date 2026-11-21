@@ -8,7 +8,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/prompt"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // MaxPromptRunes caps a stored prompt. The column is MEDIUMTEXT, so the

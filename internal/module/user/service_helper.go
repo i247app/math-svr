@@ -10,7 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	domain "math-ai.com/math-ai/internal/domain/user"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 const imageUrlTTL = 1 * time.Hour

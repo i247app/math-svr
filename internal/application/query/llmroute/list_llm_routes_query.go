@@ -5,7 +5,7 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/llmroute"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // ListLLMRoutesQuery returns every live route, ordered by id.

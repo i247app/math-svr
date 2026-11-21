@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/domain/otp"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 type GetOtpByIdQuery struct {

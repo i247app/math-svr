@@ -7,7 +7,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/profile"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/provider/storage"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // UploadAvatar streams the request body to S3 then persists the resulting

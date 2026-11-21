@@ -6,7 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/pkg/twilio"
 
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // mapTwilioError translates a libs/twilio error into a domain-layer

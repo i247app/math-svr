@@ -18,7 +18,7 @@ import (
 	schoolDomain "math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/provider/storage"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // coverUrlTTL bounds how long a generated cover URL is valid. Mirrors

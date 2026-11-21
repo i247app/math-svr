@@ -5,9 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"math-ai.com/math-ai/internal/infrastructure/metadata"
-
 	"math-ai.com/math-ai/internal/domain/shared/status"
+	"math-ai.com/math-ai/internal/infrastructure/metadata"
 )
 
 type MathError struct {
@@ -26,8 +25,8 @@ func (e *MathError) Error() string {
 	}
 
 	isSuccess := e.Status.Code() == status.SUCCESS || e.Status.Code() == status.CREATED
-	if isSuccess {
-		return fmt.Sprintf("Success with status %v", e.Status.Code())
+	if !isSuccess {
+		return fmt.Sprintf("Error with status %v", e.Status.Code())
 	}
 
 	return fmt.Sprintf("Error with status %v", e.Status.Code())

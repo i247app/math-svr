@@ -6,7 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	"math-ai.com/math-ai/internal/domain/login"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 func ValidateLogin(ctx context.Context, req *dto.LoginReq) error {

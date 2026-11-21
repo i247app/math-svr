@@ -9,6 +9,10 @@ import (
 
 type StatusMessage string
 
+func (s StatusMessage) IsEmpty() bool {
+	return string(s) == ""
+}
+
 func GetMessage(language enum.LanguageType, statusCode StatusCode, args map[string]any) StatusMessage {
 	english := language == enum.LanguageTypeEnglish || language == enum.LanguageTypeEnglishV2
 

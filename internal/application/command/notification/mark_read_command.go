@@ -7,7 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/application/transaction"
 	notificationdom "math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // MarkReadCommand marks a single owned notification read. Ownership is

@@ -7,7 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // SoftDeleteSubmissionCommand flips a submission to DELETED inside a

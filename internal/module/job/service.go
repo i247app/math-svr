@@ -10,7 +10,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	jobruntime "math-ai.com/math-ai/internal/infrastructure/job"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Service wraps *jobruntime.Runtime with the project's error contract:

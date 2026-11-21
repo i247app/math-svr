@@ -8,7 +8,7 @@ import (
 	domain "math-ai.com/math-ai/internal/domain/chat"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 type MarkReadCommand struct {

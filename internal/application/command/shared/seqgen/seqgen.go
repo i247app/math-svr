@@ -16,7 +16,7 @@ import (
 	"errors"
 
 	"math-ai.com/math-ai/internal/domain/seq"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Next mints the next centralised ID for the named sequence inside the

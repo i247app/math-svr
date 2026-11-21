@@ -13,7 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/exam"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // MarkExamPoolVerifyCommand flags a question set as verified (0 -> 1; a

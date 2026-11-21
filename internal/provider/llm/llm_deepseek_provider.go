@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"math-ai.com/math-ai/internal/pkg/deepseek"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // DeepSeekProvider is the LLMProvider implementation backed by

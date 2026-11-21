@@ -9,7 +9,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // profileSearchMaxLen bounds the LIKE %?% needle so a runaway client

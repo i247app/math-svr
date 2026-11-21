@@ -7,7 +7,7 @@ import (
 
 	domain "math-ai.com/math-ai/internal/domain/notification"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Registry is the entry point callers use to dispatch push notifications. It

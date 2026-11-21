@@ -6,7 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/dto"
 	domain "math-ai.com/math-ai/internal/domain/program"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // labelMaxLen / descriptionMaxLen mirror the column widths in

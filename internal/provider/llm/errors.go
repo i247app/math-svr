@@ -8,7 +8,7 @@ import (
 	"math-ai.com/math-ai/internal/pkg/gemini"
 	"math-ai.com/math-ai/internal/pkg/openai"
 	"math-ai.com/math-ai/internal/pkg/openrouter"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // mapOpenRouterError translates a libs/openrouter error into a

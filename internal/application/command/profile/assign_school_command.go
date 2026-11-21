@@ -7,7 +7,7 @@ import (
 	"math-ai.com/math-ai/internal/domain/profile"
 	schooldom "math-ai.com/math-ai/internal/domain/school"
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // AssignSchoolCommand sets profile.school_id to the supplied schoolId.

@@ -12,7 +12,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/metrics"
 	"math-ai.com/math-ai/internal/infrastructure/ratelimit"
 	sess "math-ai.com/math-ai/internal/infrastructure/session"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 	"math-ai.com/math-ai/internal/shared/utils"
 )

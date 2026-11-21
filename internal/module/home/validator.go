@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"math-ai.com/math-ai/internal/application/dto"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // ValidateHomeLayout enforces the single hard requirement: a profile_id

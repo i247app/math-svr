@@ -6,7 +6,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/config"
 	"math-ai.com/math-ai/internal/pkg/s3"
 
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 func NewFromConfig(ctx context.Context, cfg config.StorageConfig) (*Registry, error) {

@@ -7,7 +7,7 @@ import (
 	classroomdom "math-ai.com/math-ai/internal/domain/classroom"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/enum"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // CancelJoinRequestCommand flips a PENDING_REQUEST row owned by the
