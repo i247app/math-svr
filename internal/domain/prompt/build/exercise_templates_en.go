@@ -3,6 +3,8 @@ package input
 import (
 	"fmt"
 	"strings"
+
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // Exercise prompt templates — English. The output schema reuses the
@@ -85,7 +87,7 @@ func userExerciseGenerateEN(in ExercisePromptInput) string {
 	scope := fmt.Sprintf("- Chapter: %s\n- Lesson: %s",
 		strings.TrimSpace(in.ChapterName), strings.TrimSpace(in.LessonName))
 	context := buildExerciseContextEN(in)
-	gradeBlock := gradeProfileBlock(QuizLanguageEnglish, in.Grade)
+	gradeBlock := gradeProfileBlock(enum.LanguageTypeEnglish, in.Grade)
 
 	// The GRADE PROFILE sets the difficulty level; the teacher's chapter +
 	// lesson sets the topic. Both are binding — grade never lowers below

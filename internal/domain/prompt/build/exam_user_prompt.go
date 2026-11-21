@@ -93,7 +93,7 @@ func buildUserExamEN(in ExamPromptInput, n int) string {
 	if in.ExamType == enum.ExamTypeGrade && in.Level != nil {
 		if in.SystemDefinesLevels {
 			fmt.Fprintf(&out, "level: %d (scale %d–%d)\n", *in.Level, enum.ExamLevelMin, enum.ExamLevelMax)
-		} else if block := levelProfileBlock(QuizLanguageEnglish, *in.Level); block != "" {
+		} else if block := levelProfileBlock(enum.LanguageTypeEnglish, *in.Level); block != "" {
 			out.WriteString("\n")
 			out.WriteString(block)
 			out.WriteString("\n")

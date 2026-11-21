@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // IconPolicy is the grade-band decision on whether visual (COUNT / icon /
@@ -56,12 +58,12 @@ const (
 
 // gradeBandName returns the display name of a band, or "" when the band is
 // not one we describe. Used by the exam prompt to name the probe band.
-func gradeBandName(lang QuizLanguage, level GradeLevel) string {
+func gradeBandName(lang enum.LanguageType, level GradeLevel) string {
 	p, ok := gradeProfiles[level]
 	if !ok {
 		return ""
 	}
-	if lang == QuizLanguageEnglish {
+	if lang.IsEnglish() {
 		return p.nameEN
 	}
 	return p.nameVN
@@ -272,7 +274,7 @@ func resolveGradeLevel(label string) (GradeLevel, bool) {
 // grade-agnostic fallback. This block is the authority on difficulty and
 // icon policy; the prompt builders place it at the TOP of the user
 // message so it outranks the schema's illustrative example.
-func gradeProfileBlock(lang QuizLanguage, gradeLabel string) string {
+func gradeProfileBlock(lang enum.LanguageType, gradeLabel string) string {
 	level, ok := resolveGradeLevel(gradeLabel)
 	if !ok {
 		return ""
@@ -284,13 +286,13 @@ func gradeProfileBlock(lang QuizLanguage, gradeLabel string) string {
 // a number. The exam flow takes this entrance: its grade arrives as an
 // int on the request, so routing it through a label and back would only
 // add a chance to mis-parse.
-func gradeProfileBlockByLevel(lang QuizLanguage, gradeLevel GradeLevel) string {
+func gradeProfileBlockByLevel(lang enum.LanguageType, gradeLevel GradeLevel) string {
 	p, ok := gradeProfiles[gradeLevel]
 	if !ok {
 		return ""
 	}
 
-	if lang == QuizLanguageEnglish {
+	if lang.IsEnglish() {
 		floor := p.floorEN
 		if floor == "" {
 			floor = defaultFloorEN

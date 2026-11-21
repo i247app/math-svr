@@ -2,7 +2,7 @@ package exam
 
 import (
 	"math-ai.com/math-ai/internal/application/dto"
-	"math-ai.com/math-ai/internal/domain/prompt/input"
+	input "math-ai.com/math-ai/internal/domain/prompt/build"
 	"math-ai.com/math-ai/internal/shared/enum"
 )
 

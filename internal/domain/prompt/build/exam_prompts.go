@@ -271,7 +271,7 @@ func ExamTitle(examType enum.ExamType, grade int) string {
 // GradeLabel is the Vietnamese band name of a grade ("Mẫu giáo",
 // "Lớp 1", …), used to name the grade in prompts and in the exam title.
 func GradeLabel(grade int) string {
-	band := gradeBandName(QuizLanguageVietnamese, GradeLevel(grade))
+	band := gradeBandName(enum.LanguageTypeVietnamese, GradeLevel(grade))
 	if band == "" {
 		band = fmt.Sprintf("Grade %d", grade)
 	}

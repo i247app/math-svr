@@ -13,10 +13,9 @@ import (
 	"math-ai.com/math-ai/internal/domain/llmroute"
 	llmProvider "math-ai.com/math-ai/internal/provider/llm"
 
-	// input "math-ai.com/math-ai/internal/domain/prompt/input"
 	domain "math-ai.com/math-ai/internal/domain/exam"
 	promptDomain "math-ai.com/math-ai/internal/domain/prompt"
-	"math-ai.com/math-ai/internal/domain/prompt/input"
+	input "math-ai.com/math-ai/internal/domain/prompt/build"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/errs"

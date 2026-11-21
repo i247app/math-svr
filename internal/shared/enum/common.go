@@ -23,6 +23,10 @@ func (s LanguageType) IsValid() bool {
 	}
 }
 
+func (s LanguageType) IsEnglish() bool {
+	return s == LanguageTypeEnglish || s == LanguageTypeEnglishV2
+}
+
 // ContentLanguages are the languages question content is written in (a
 // question's base language and the keys of its translations): the short
 // codes only.

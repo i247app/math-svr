@@ -3,6 +3,8 @@ package input
 import (
 	"fmt"
 	"strings"
+
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // Exercise prompt templates — Vietnamese. JSON keys stay English; only
@@ -83,7 +85,7 @@ func userExerciseGenerateVN(in ExercisePromptInput) string {
 	scope := fmt.Sprintf("- Chương: %s\n- Bài học: %s",
 		strings.TrimSpace(in.ChapterName), strings.TrimSpace(in.LessonName))
 	context := buildExerciseContextVN(in)
-	gradeBlock := gradeProfileBlock(QuizLanguageVietnamese, in.Grade)
+	gradeBlock := gradeProfileBlock(enum.LanguageTypeEnglish, in.Grade)
 
 	// GRADE PROFILE quyết định mức độ khó; chương + bài học của giáo viên
 	// quyết định chủ đề. Cả hai đều bắt buộc — grade không hạ dưới mức lớp,

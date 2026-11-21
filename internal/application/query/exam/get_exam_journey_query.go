@@ -5,7 +5,7 @@ import (
 
 	"math-ai.com/math-ai/internal/application/command/shared/practice"
 	"math-ai.com/math-ai/internal/domain/exam"
-	"math-ai.com/math-ai/internal/domain/prompt/input"
+	input "math-ai.com/math-ai/internal/domain/prompt/build"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/shared/errs"
 )

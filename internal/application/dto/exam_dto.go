@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	domain "math-ai.com/math-ai/internal/domain/exam"
-	"math-ai.com/math-ai/internal/domain/prompt/input"
+	input "math-ai.com/math-ai/internal/domain/prompt/build"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/mtime"
 	"math-ai.com/math-ai/internal/shared/pagination"

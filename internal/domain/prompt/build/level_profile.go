@@ -140,12 +140,12 @@ func clampLevel(grade GradeLevel, level int) int {
 // levelProfileBlock renders the LEVEL PROFILE section in the prompt's
 // language. It returns "" for a level we do not describe, so the caller
 // keeps its level-agnostic fallback instead of emitting a half-empty block.
-func levelProfileBlock(lang QuizLanguage, level int) string {
+func levelProfileBlock(lang enum.LanguageType, level int) string {
 	p, ok := levelProfiles[level]
 	if !ok {
 		return ""
 	}
-	if lang == QuizLanguageEnglish {
+	if lang.IsEnglish() {
 		return fmt.Sprintf(`LEVEL PROFILE — intensity %d on a %d–%d scale.
 - Steps: %s
 - Numbers from: %s

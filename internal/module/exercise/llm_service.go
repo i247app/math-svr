@@ -7,7 +7,7 @@ import (
 	routeQuery "math-ai.com/math-ai/internal/application/query/llmroute"
 	domain "math-ai.com/math-ai/internal/domain/exercise"
 	"math-ai.com/math-ai/internal/domain/llmroute"
-	"math-ai.com/math-ai/internal/domain/prompt/input"
+	input "math-ai.com/math-ai/internal/domain/prompt/build"
 	"math-ai.com/math-ai/internal/infrastructure/logger"
 	llmProvider "math-ai.com/math-ai/internal/provider/llm"
 	"math-ai.com/math-ai/internal/shared/enum"
@@ -75,7 +75,7 @@ func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 	system, user, err := input.BuildExercisePrompt(
 		input.ExercisePromptKindGenerate,
 		input.ExercisePromptInput{
-			Language:     input.QuizLanguage(normalizeLanguage(in.Language)),
+			Language:     in.Language,
 			Grade:        in.GradeLabel,
 			Program:      in.ProgramLabel,
 			Description:  in.Description,
@@ -143,7 +143,7 @@ func (c *llmClient) GradeExercise(ctx context.Context, in gradeExerciseInput) (*
 	system, user, err := input.BuildExercisePrompt(
 		input.ExercisePromptKindGrade,
 		input.ExercisePromptInput{
-			Language:  input.QuizLanguage(normalizeLanguage(in.Language)),
+			Language:  in.Language,
 			Questions: in.Questions,
 			Answers:   in.Answers,
 		})

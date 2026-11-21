@@ -11,7 +11,7 @@ import (
 
 	domain "math-ai.com/math-ai/internal/domain/exam"
 	profileDomain "math-ai.com/math-ai/internal/domain/profile"
-	"math-ai.com/math-ai/internal/domain/prompt/input"
+	input "math-ai.com/math-ai/internal/domain/prompt/build"
 	"math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/logger"

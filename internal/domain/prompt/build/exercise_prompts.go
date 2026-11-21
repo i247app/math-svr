@@ -3,6 +3,8 @@ package input
 import (
 	"fmt"
 	"strings"
+
+	"math-ai.com/math-ai/internal/shared/enum"
 )
 
 // ExercisePromptKind enumerates the exercise-side LLM calls.
@@ -26,7 +28,7 @@ const (
 // pinned. Grading reuses Questions / Answers as the JSON blobs being
 // scored.
 type ExercisePromptInput struct {
-	Language QuizLanguage
+	Language enum.LanguageType
 	Grade    string
 	Program  string
 	// Description is the teacher's free-form supplemental guidance —
@@ -52,10 +54,11 @@ type ExercisePromptInput struct {
 // them the exercise has no anchor and the LLM would degrade to a generic
 // curriculum-only generation.
 func BuildExercisePrompt(kind ExercisePromptKind, in ExercisePromptInput) (system string, user string, err error) {
-	lang, err := normalizeLanguage(in.Language)
-	if err != nil {
-		return "", "", err
-	}
+	// lang, err := normalizeLanguage(in.Language)
+	// if err != nil {
+	// 	return "", "", err
+	// }
+	lang := in.Language
 
 	switch kind {
 	case ExercisePromptKindGenerate:
@@ -77,30 +80,30 @@ func BuildExercisePrompt(kind ExercisePromptKind, in ExercisePromptInput) (syste
 	}
 }
 
-func buildExerciseGradePrompt(lang QuizLanguage) string {
-	if lang == QuizLanguageEnglish {
+func buildExerciseGradePrompt(lang enum.LanguageType) string {
+	if lang.IsEnglish() {
 		return systemExerciseGradeEN
 	}
 	return systemExerciseGradeVN
 }
 
-func buildExerciseGradeUser(lang QuizLanguage, in ExercisePromptInput) string {
-	if lang == QuizLanguageEnglish {
+func buildExerciseGradeUser(lang enum.LanguageType, in ExercisePromptInput) string {
+	if lang.IsEnglish() {
 		return userExerciseGradeEN(in)
 	}
 	return userExerciseGradeVN(in)
 }
 
-func buildExerciseGeneratePrompt(lang QuizLanguage, in ExercisePromptInput) string {
+func buildExerciseGeneratePrompt(lang enum.LanguageType, in ExercisePromptInput) string {
 	n := resolveNumQuestions(in.NumQuestions)
-	if lang == QuizLanguageEnglish {
+	if lang.IsEnglish() {
 		return buildSystemExerciseGenerateEN(n)
 	}
 	return buildSystemExerciseGenerateVN(n)
 }
 
-func buildExerciseGenerateUser(lang QuizLanguage, in ExercisePromptInput) string {
-	if lang == QuizLanguageEnglish {
+func buildExerciseGenerateUser(lang enum.LanguageType, in ExercisePromptInput) string {
+	if lang.IsEnglish() {
 		return userExerciseGenerateEN(in)
 	}
 	return userExerciseGenerateVN(in)
