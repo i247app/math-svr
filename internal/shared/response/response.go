@@ -12,7 +12,7 @@ import (
 	"net/http"
 
 	"math-ai.com/math-ai/internal/domain/shared/status"
-	errs "math-ai.com/math-ai/internal/shared/errs"
+	"math-ai.com/math-ai/internal/shared/errs"
 )
 
 // Envelope keys — part of the wire contract, the client reads them by name.
@@ -24,6 +24,7 @@ const (
 	keyResult  = "result"
 
 	statusSuccess = "Success"
+	statusError   = "Error"
 )
 
 // WriteJson writes data and err as one envelope. On success it adds
@@ -104,6 +105,8 @@ func setSuccess(payload map[string]any, code status.StatusCode) {
 // setError fills the error half of the envelope. A MathError carries its own
 // code and localized message; any other error is an internal error.
 func setError(payload map[string]any, err error) {
+	payload[keyStatus] = statusError
+
 	mathErr, ok := errs.IsMathError(err)
 	if !ok {
 		payload[keyMStatus] = status.INTERNAL_SERVER_ERROR
