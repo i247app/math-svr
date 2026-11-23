@@ -48,10 +48,6 @@ type ExamOption struct {
 //     MULTIPLE_CHOICE, TRUE_FALSE or NUMERIC_INPUT; absent = single-choice.
 //   - CorrectAnswer is the key, in the shape of ma_question_pools.correct_answer
 //     (ExamCorrectAnswer). It is blanked on a live exam.
-//   - RightAnswerText is the model's working: it writes the correct option's
-//     text first and picks the id from it (ReconcileKey checks the two
-//     agree). It is never stored — the displayed key text is derived from
-//     the options — and never served.
 //   - QuestionImageKey / QuestionImageURL: the stem's image, as for options.
 //   - Explanation is the worked solution (why the key is right): it gives
 //     the answer away, so it is blanked with the key on a live exam.
@@ -73,7 +69,6 @@ type ExamQuestion struct {
 	QuestionImageURL string             `json:"question_image_url,omitempty"`
 	Options          []ExamOption       `json:"options"`
 	CorrectAnswer    *ExamCorrectAnswer `json:"correct_answer,omitempty"`
-	RightAnswerText  string             `json:"right_answer_text,omitempty"`
 	Explanation      string             `json:"explanation,omitempty"`
 	TtsText          string             `json:"tts_text,omitempty"`
 	QuestionTopic    string             `json:"question_topic,omitempty"`
@@ -174,7 +169,7 @@ func parseGrade(raw json.RawMessage) *int {
 
 // ToShared converts into the internal shape the scorer and normalisers
 // operate on. The key text (RightAnswerContent) is the text of the option
-// the key names, never the model's right_answer_text.
+// the key names.
 func (q ExamQuestion) ToShared() Question {
 	out := Question{
 		QuestionNumber:   q.QuestionNumber,
@@ -513,37 +508,6 @@ func orBase(tr, base string) string {
 	return tr
 }
 
-// ReconcileKey makes a model-written single-choice key agree with the
-// model's right_answer_text. The prompt has the model write that text
-// first and pick the id from it, so when the two disagree the text is the
-// model's actual answer: if it is the text of exactly one option, the key
-// is moved to that option and true is returned (the caller logs it). Any
-// other mismatch is left alone — the key stays as written. A no-op for a
-// question without right_answer_text or without a one-id key.
-func (q *ExamQuestion) ReconcileKey() bool {
-	want := strings.TrimSpace(q.RightAnswerText)
-	if want == "" || q.CorrectAnswer == nil || len(q.CorrectAnswer.OptionIDs) != 1 {
-		return false
-	}
-	if strings.TrimSpace(q.optionText(q.CorrectAnswer.OptionIDs[0])) == want {
-		return false
-	}
-	match := ""
-	for _, o := range q.Options {
-		if strings.TrimSpace(o.Text) == want {
-			if match != "" {
-				return false
-			}
-			match = o.ID
-		}
-	}
-	if match == "" {
-		return false
-	}
-	q.CorrectAnswer.OptionIDs = []string{match}
-	return true
-}
-
 // CheckSet refuses a question set with an unusable question, naming it.
 // Every reader of a stored or generated set runs it, so a set written under
 // the older vocabulary — or with a key that names no option — fails loudly
@@ -554,7 +518,7 @@ func CheckSet(qs []ExamQuestion) error {
 	}
 	for _, q := range qs {
 		if !q.Usable() {
-			return fmt.Errorf("exam: question %d is not usable: it needs a question_text, at least two options with distinct ids, and a correct_answer that fits its kind (option_ids naming its options for a choice question) — a set written with an older field vocabulary? the prompt must emit question_text / options[{id, text}] / correct_answer{option_ids} / right_answer_text", q.QuestionNumber)
+			return fmt.Errorf("exam: question %d is not usable: it needs a question_text, at least two options with distinct ids, and a correct_answer that fits its kind (option_ids naming its options for a choice question) — a set written with an older field vocabulary? the prompt must emit question_text / options[{id, text}] / correct_answer{option_ids}", q.QuestionNumber)
 		}
 	}
 	return nil

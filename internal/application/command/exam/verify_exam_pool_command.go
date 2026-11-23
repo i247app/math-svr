@@ -112,7 +112,6 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 				q.QuestionSubLevel = levelOf[q.QuestionNumber].QuestionSubLevel
 			}
 			q.QuestionImageKey, q.QuestionImageURL = "", ""
-			q.RightAnswerText = "" // derived from the key, never stored
 			q.NormalizeExtras()
 			// lang omitted = the stored one; translations are what the
 			// correction carries (omitted = none), cleaned like a model's.

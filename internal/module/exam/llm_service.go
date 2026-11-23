@@ -167,10 +167,8 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 
 	// The model writes single-choice questions only: whatever question_kind
 	// it claims, the key it gave is one option id. Ids are normalised ("A",
-	// "a " and "a" are the same option) so the list and the key agree, and
-	// the key is moved to the option whose text the model gave as
-	// right_answer_text when the two disagree (its working wins). A round
-	// written under an older field vocabulary (a prompt not rewritten yet)
+	// "a " and "a" are the same option) so the list and the key agree. A
+	// round written under an older field vocabulary (a prompt not rewritten yet)
 	// parses as questions without a correct_answer, or options without ids
 	// — refused here, before anything is stored. The explanation and tags
 	// are cleaned to the bank's rules (NormalizeExtras), never refused.
@@ -181,9 +179,6 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 		q.NormalizeExtras()
 		if dropped := q.NormalizeTranslations(); len(dropped) > 0 {
 			log.Warnf("exam.llm.translation_dropped q=%d langs=%v", q.QuestionNumber, dropped)
-		}
-		if q.ReconcileKey() {
-			log.Warnf("exam.llm.key_moved_to_answer_text q=%d option=%s", q.QuestionNumber, q.CorrectAnswer.OptionIDs[0])
 		}
 	}
 	if err := dto.CheckSet(gen.Questions); err != nil {
