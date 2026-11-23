@@ -347,7 +347,7 @@ func (s *Service) generatePractice(ctx context.Context, req *dto.GenerateExamReq
 		SubLevel:     req.SubLevel,
 		Practice:     &brief,
 		Avoid:        avoid,
-		Chain:        utils.ToAnyPtr(utils.DerefString(journey.LastRespId())),
+		Chain:        journey.LastRespId(),
 	}
 	generated, err := s.llm.GenerateExam(ctx, in)
 	if err != nil {
@@ -768,8 +768,7 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
 	if len(lines) == 0 {
-		return nil, errs.NewError(ctx, examDomain.ExamReviewNoAnswers, nil,
-			fmt.Errorf("exam: journey %d has no answered question", req.EsessID))
+		return nil, errs.NewError(ctx, examDomain.ExamReviewNoAnswers, nil, fmt.Errorf("exam: journey %d has no answered question", req.EsessID))
 	}
 
 	prompt, err := s.loadPrompt(ctx, promptDomain.JourneyReviewScope())
@@ -794,9 +793,12 @@ func (s *Service) ReviewJourney(ctx context.Context, req *dto.JourneyReviewReq) 
 		return nil, err
 	}
 
-	logger.From(ctx).Infof("exam.journey.reviewed esess_id=%d type=%s answers=%d",
-		journey.EsessId(), journey.ReqExamType(), len(lines))
-	res := &dto.JourneyReviewRes{ExamSession: dto.ExamSessionToResponse(saved)}
+	logger.From(ctx).Infof("exam.journey.reviewed esess_id=%d type=%s answers=%d", journey.EsessId(), journey.ReqExamType(), len(lines))
+
+	res := &dto.JourneyReviewRes{
+		ExamSession: dto.ExamSessionToResponse(saved),
+	}
+
 	return res, nil
 }
 

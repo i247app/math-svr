@@ -56,7 +56,10 @@ func trueFalseOptions(lang enum.LanguageType) []dto.ExamOption {
 	if !ok {
 		t = trueFalseTexts[enum.LanguageTypeVietnamese]
 	}
-	return []dto.ExamOption{{ID: dto.TrueOptionID, Text: t[0]}, {ID: dto.FalseOptionID, Text: t[1]}}
+	return []dto.ExamOption{
+		{ID: dto.TrueOptionID, Text: t[0]},
+		{ID: dto.FalseOptionID, Text: t[1]},
+	}
 }
 
 // bankTranslations copies a bank row's translations into the exam shape.
@@ -90,8 +93,13 @@ func bankTranslations(q *questionpool.QuestionPool) map[enum.LanguageType]dto.Ex
 // drawn questions are stored as a new ma_exam_pools row of source POOL,
 // with no cache tag, so everything after this — the sitting, its shuffle,
 // grading, the answer log — is the path an LLM paper takes.
-func (s *Service) generateFromBank(ctx context.Context, req *dto.GenerateExamReq, profile *profileDomain.Profile,
-	cmd command.GenerateExamCommand, level *int) (*dto.GenerateExamRes, error) {
+func (s *Service) generateFromBank(
+	ctx context.Context,
+	req *dto.GenerateExamReq,
+	profile *profileDomain.Profile,
+	cmd command.GenerateExamCommand,
+	level *int,
+) (*dto.GenerateExamRes, error) {
 
 	avoid, err := s.recentStems(ctx, profile.ProfileId(), cmd.Grade)
 	if err != nil {
@@ -150,39 +158,6 @@ func (s *Service) pickFromBank(ctx context.Context, examType enum.ExamType, grad
 		}
 	}
 	return paper, nil
-}
-
-// drawGroup draws len(g.slots) questions, preferring ones whose stem the
-// child has not met recently; only when the bank cannot fill the group that
-// way does it accept a recent one.
-func (s *Service) drawGroup(ctx context.Context, g bankGroup, chosen []int64, avoid []string) ([]*questionpool.QuestionPool, error) {
-	need := len(g.slots)
-	f := g.filter
-	f.ExcludeIds, f.AvoidTexts = chosen, avoid
-
-	got, err := s.questionPoolRepo.PickForExam(ctx, f, need)
-	if err != nil {
-		return nil, errs.NewError(ctx, status.FAIL, nil, err)
-	}
-	if len(got) < need && len(avoid) > 0 {
-		f.AvoidTexts = nil
-		f.ExcludeIds = slices.Clone(chosen)
-		for _, q := range got {
-			f.ExcludeIds = append(f.ExcludeIds, q.QuestionPoolId())
-		}
-		more, err := s.questionPoolRepo.PickForExam(ctx, f, need-len(got))
-		if err != nil {
-			return nil, errs.NewError(ctx, status.FAIL, nil, err)
-		}
-		got = append(got, more...)
-	}
-	if len(got) < need {
-		logger.From(ctx).Warnf("exam.bank.insufficient group=%q need=%d found=%d", g.name, need, len(got))
-		return nil, errs.NewError(ctx, domain.ExamQuestionBankInsufficient,
-			map[string]any{"group": g.name, "needed": need, "found": len(got)},
-			fmt.Errorf("exam: the question bank holds %d approved questions for %s, the paper needs %d", len(got), g.name, need))
-	}
-	return got, nil
 }
 
 // bankGroup is the part of a paper drawn under one filter, filling slots
@@ -264,6 +239,39 @@ func bankGroups(examType enum.ExamType, grade int, level *int) []bankGroup {
 	}
 }
 
+// drawGroup draws len(g.slots) questions, preferring ones whose stem the
+// child has not met recently; only when the bank cannot fill the group that
+// way does it accept a recent one.
+func (s *Service) drawGroup(ctx context.Context, g bankGroup, chosen []int64, avoid []string) ([]*questionpool.QuestionPool, error) {
+	need := len(g.slots)
+	f := g.filter
+	f.ExcludeIds, f.AvoidTexts = chosen, avoid
+
+	got, err := s.questionPoolRepo.PickForExam(ctx, f, need)
+	if err != nil {
+		return nil, errs.NewError(ctx, status.FAIL, nil, err)
+	}
+	if len(got) < need && len(avoid) > 0 {
+		f.AvoidTexts = nil
+		f.ExcludeIds = slices.Clone(chosen)
+		for _, q := range got {
+			f.ExcludeIds = append(f.ExcludeIds, q.QuestionPoolId())
+		}
+		more, err := s.questionPoolRepo.PickForExam(ctx, f, need-len(got))
+		if err != nil {
+			return nil, errs.NewError(ctx, status.FAIL, nil, err)
+		}
+		got = append(got, more...)
+	}
+	if len(got) < need {
+		logger.From(ctx).Warnf("exam.bank.insufficient group=%q need=%d found=%d", g.name, need, len(got))
+		return nil, errs.NewError(ctx, domain.ExamQuestionBankInsufficient,
+			map[string]any{"group": g.name, "needed": need, "found": len(got)},
+			fmt.Errorf("exam: the question bank holds %d approved questions for %s, the paper needs %d", len(got), g.name, need))
+	}
+	return got, nil
+}
+
 // difficulty orders questions within a group: level, then sub-level. A
 // question that is not rated counts as the middle of the scale.
 func difficulty(q *questionpool.QuestionPool) int {
@@ -285,15 +293,13 @@ func difficulty(q *questionpool.QuestionPool) int {
 // built (image_service.go).
 func toExamQuestion(q *questionpool.QuestionPool, number int) (dto.Question, error) {
 	out := dto.Question{
-		QuestionNumber: number,
-		QuestionName:   q.QuestionText(),
-		QuestionTopic:  utils.DerefString(q.QuestionTopic()),
-		QuestionTags:   q.QuestionTags(),
-		Explanation:    utils.DerefString(q.Explanation()),
-		TtsText:        utils.DerefString(q.TtsText()),
-		Kind:           q.QuestionKind().String(),
-		// The bank row's own rating (nil = not rated): a bank set is not
-		// ramped like a model-written one.
+		QuestionNumber:   number,
+		QuestionName:     q.QuestionText(),
+		QuestionTopic:    utils.DerefString(q.QuestionTopic()),
+		QuestionTags:     q.QuestionTags(),
+		Explanation:      utils.DerefString(q.Explanation()),
+		TtsText:          utils.DerefString(q.TtsText()),
+		Kind:             q.QuestionKind().String(),
 		QuestionLevel:    q.QuestionLevel(),
 		QuestionSubLevel: q.QuestionSubLevel(),
 		Language:         dto.LanguageOf(q.QuestionLanguage()),

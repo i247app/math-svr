@@ -122,9 +122,9 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	}
 
 	if in.Prompt == nil || in.Prompt.SystemPrompt() == "" {
-		return nil, errs.NewError(ctx, promptDomain.PromptNotFound, nil,
-			fmt.Errorf("exam: no system prompt for %s grade %d", in.ExamType, in.Grade))
+		return nil, errs.NewError(ctx, promptDomain.PromptNotFound, nil, fmt.Errorf("exam: no system prompt for %s grade %d", in.ExamType, in.Grade))
 	}
+
 	system := input.RenderSystemPrompt(in.Prompt.SystemPrompt(), in.Level, rand.Int64N(1_000_000))
 	if input.HasUnfilledLevel(system) {
 		log.Warnf("exam.prompt.level_unfilled prompt_id=%d type=%s grade=%d — the prompt names %s but the round has no level",
@@ -159,8 +159,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	gen, err := dto.ParseGenerationOf[dto.ExamQuestion](content)
 	if err != nil {
 		log.Warnf("exam.llm.generate_parse_failed err=%v", err)
-		return nil, errs.NewError(ctx, domain.ExamGenerationFailed,
-			map[string]any{"reason": err.Error()}, err)
+		return nil, errs.NewError(ctx, domain.ExamGenerationFailed, map[string]any{"reason": err.Error()}, err)
 	}
 	if len(gen.Questions) == 0 {
 		return nil, errs.NewError(ctx, domain.ExamNoQuestions, nil, ErrModelReturnedNothing)
