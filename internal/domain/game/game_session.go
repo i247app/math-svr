@@ -79,3 +79,8 @@ func (s *GameSession) SetSubmittedDt(v time.Time) { s.submittedDt = v }
 
 func (s *GameSession) GsessStatus() *string     { return s.gsessStatus }
 func (s *GameSession) SetGsessStatus(v *string) { s.gsessStatus = v }
+
+// OwnedBy reports whether the round belongs to this user AND this profile.
+func (s *GameSession) OwnedBy(uid, profileId int64) bool {
+	return s.uid == uid && s.profileId == profileId
+}
