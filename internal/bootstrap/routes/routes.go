@@ -14,6 +14,7 @@ import (
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exam"
 	"math-ai.com/math-ai/internal/module/exercise"
+	"math-ai.com/math-ai/internal/module/game"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/health"
 	"math-ai.com/math-ai/internal/module/home"
@@ -273,6 +274,17 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 		reg("POST /exams/pools/detail", examHandler.HandleGetExamPool, adminOrApiKeyMiddleware)
 		reg("POST /exams/pools/mark-verify", examHandler.HandleMarkExamPoolVerify, adminOrApiKeyMiddleware)
 		reg("POST /exams/pools/verify", examHandler.HandleVerifyExamPool, adminOrApiKeyMiddleware)
+	}
+
+	// game routes — rounds drawn from the question bank, independent of
+	// /exams/*. No model call. Guests are refused by the service: a guest
+	// session can be made secure (/auth/resume-session).
+	{
+		gameHandler := game.NewHandler(res, services.GameSvc)
+		reg("POST /games/start", gameHandler.HandleStartGame, authMiddleware)
+		reg("POST /games/submit", gameHandler.HandleSubmitGame, authMiddleware)
+		reg("POST /games/list", gameHandler.HandleListGames, authMiddleware)
+		reg("POST /games/detail", gameHandler.HandleGetGame, authMiddleware)
 	}
 
 	// prompt routes — the static half of every LLM call (ma_prompts). Admin

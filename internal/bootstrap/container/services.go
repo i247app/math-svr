@@ -17,6 +17,7 @@ import (
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exam"
 	"math-ai.com/math-ai/internal/module/exercise"
+	"math-ai.com/math-ai/internal/module/game"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
@@ -187,6 +188,16 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		res.StorageProvider,
 	)
 
+	log.Info("> Setup GameSvc...")
+	gameService := game.NewService(
+		uow,
+		repos.GameSessionRepository,
+		repos.QuestionPoolRepository,
+		repos.ProfileRepository,
+		repos.GradeRepository,
+		res.StorageProvider,
+	)
+
 	log.Info("> Setup PromptSvc...")
 	promptService := prompt.NewService(repos.PromptRepository, uow)
 
@@ -270,6 +281,7 @@ func SetupServiceContainer(res *resource.Resource) (*ServiceContainer, error) {
 		DeviceSvc:        deviceService,
 		OtpSvc:           otpService,
 		ExamSvc:          examService,
+		GameSvc:          gameService,
 		PromptSvc:        promptService,
 		LLMRouteSvc:      llmRouteService,
 		QuestionPoolSvc:  questionPoolService,

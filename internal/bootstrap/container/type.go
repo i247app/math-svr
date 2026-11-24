@@ -34,6 +34,7 @@ import (
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/exam"
 	"math-ai.com/math-ai/internal/module/exercise"
+	"math-ai.com/math-ai/internal/module/game"
 	"math-ai.com/math-ai/internal/module/grade"
 	"math-ai.com/math-ai/internal/module/home"
 	"math-ai.com/math-ai/internal/module/job"
@@ -68,6 +69,7 @@ type ServiceContainer struct {
 	DeviceSvc       *device.Service
 	OtpSvc          *otp.Service
 	ExamSvc         *exam.Service
+	GameSvc         *game.Service
 	PromptSvc       *prompt.Service
 	LLMRouteSvc     *llmroute.Service
 	QuestionPoolSvc *questionpool.Service
