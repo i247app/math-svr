@@ -13,15 +13,13 @@ import (
 // and "the model's answer was unreadable" call for different log lines.
 var ErrNoQuestions = errors.New("question: model returned zero questions")
 
-// Generation is the parsed result of a generation call. Title, ShortText
-// and AssessmentGrade are best-effort: an empty string flows through to a
-// NULL column, which the response layer then omits. Callers must tolerate
-// them being blank without aborting the round.
+// Generation is the parsed result of a generation call. ShortText is
+// best-effort: an empty string flows through to a NULL column, which the
+// response layer then omits. Callers must tolerate it being blank without
+// aborting the round.
 type Generation struct {
-	Title           string
-	ShortText       string
-	AssessmentGrade string
-	Questions       []Question
+	ShortText string
+	Questions []Question
 }
 
 // GenerationOf is Generation for a caller that spells its questions
@@ -29,10 +27,8 @@ type Generation struct {
 // columns (right_answer_label, question_topic, ...) rather than the
 // quiz-era names this package's Question carries.
 type GenerationOf[T any] struct {
-	Title           string
-	ShortText       string
-	AssessmentGrade string
-	Questions       []T
+	ShortText string
+	Questions []T
 }
 
 // ParseGeneration extracts a generated round in this package's own
@@ -43,10 +39,8 @@ func ParseGeneration(content string) (*Generation, error) {
 		return nil, err
 	}
 	return &Generation{
-		Title:           g.Title,
-		ShortText:       g.ShortText,
-		AssessmentGrade: g.AssessmentGrade,
-		Questions:       g.Questions,
+		ShortText: g.ShortText,
+		Questions: g.Questions,
 	}, nil
 }
 
@@ -55,27 +49,23 @@ func ParseGeneration(content string) (*Generation, error) {
 // It is generic so a second vocabulary costs a type, not a second copy of
 // the salvage state machine — the part most likely to drift if duplicated.
 //
-// The prompt schema is {"title", "short_text", "assessment_grade",
-// "questions": [...]} so the object wrapper is the happy path; the
-// bare-array and truncation-salvage branches are defence in depth against
-// backends that drift from the schema or hit a max-tokens cut.
+// The prompt schema is {"short_text", "questions": [...]} so the object
+// wrapper is the happy path; the bare-array and truncation-salvage branches
+// are defence in depth against backends that drift from the schema or hit a
+// max-tokens cut.
 func ParseGenerationOf[T any](content string) (*GenerationOf[T], error) {
 	payload := extractJSONPayload(content)
 
 	var wrap struct {
-		Title           string `json:"title"`
-		ShortText       string `json:"short_text"`
-		AssessmentGrade string `json:"assessment_grade"`
-		Questions       []T    `json:"questions"`
-		Items           []T    `json:"items"`
-		Data            []T    `json:"data"`
-		Quiz            []T    `json:"quiz"`
+		ShortText string `json:"short_text"`
+		Questions []T    `json:"questions"`
+		Items     []T    `json:"items"`
+		Data      []T    `json:"data"`
+		Quiz      []T    `json:"quiz"`
 	}
 	if err := json.Unmarshal([]byte(payload), &wrap); err == nil {
 		out := &GenerationOf[T]{
-			Title:           strings.TrimSpace(wrap.Title),
-			ShortText:       strings.TrimSpace(wrap.ShortText),
-			AssessmentGrade: strings.TrimSpace(wrap.AssessmentGrade),
+			ShortText: strings.TrimSpace(wrap.ShortText),
 		}
 		switch {
 		case len(wrap.Questions) > 0:
@@ -94,20 +84,17 @@ func ParseGenerationOf[T any](content string) (*GenerationOf[T], error) {
 	}
 
 	// Some backends drop the wrapper and return a bare array; the header
-	// fields are unavailable on this branch but the questions are usable.
+	// field is unavailable on this branch but the questions are usable.
 	var bare []T
 	if err := json.Unmarshal([]byte(payload), &bare); err == nil && len(bare) > 0 {
 		return &GenerationOf[T]{Questions: bare}, nil
 	}
 
 	// Truncated mid-array (max_tokens hit, safety cut, network reset...).
-	// The header fields appear before the questions array in the schema,
-	// so they can usually be recovered by regex even when the array body
-	// is cut off.
+	// short_text appears before the questions array in the schema, so it
+	// can usually be recovered by regex even when the array body is cut off.
 	out := &GenerationOf[T]{
-		Title:           extractStringFieldFromTruncated(payload, titleFieldRe),
-		ShortText:       extractStringFieldFromTruncated(payload, shortTextFieldRe),
-		AssessmentGrade: extractStringFieldFromTruncated(payload, assessmentGradeFieldRe),
+		ShortText: extractStringFieldFromTruncated(payload, shortTextFieldRe),
 	}
 	arr := extractQuestionsArrayPrefix(payload)
 	if arr == "" {
@@ -136,14 +123,9 @@ func ParseGrading(content string) (*GradingResult, error) {
 	return &out, nil
 }
 
-// titleFieldRe / shortTextFieldRe / assessmentGradeFieldRe find the first
-// top-level occurrence of their string field. Truncation-tolerant
-// fallbacks for ParseGeneration.
-var (
-	titleFieldRe           = regexp.MustCompile(`"title"\s*:\s*"((?:[^"\\]|\\.)*)"`)
-	shortTextFieldRe       = regexp.MustCompile(`"short_text"\s*:\s*"((?:[^"\\]|\\.)*)"`)
-	assessmentGradeFieldRe = regexp.MustCompile(`"assessment_grade"\s*:\s*"((?:[^"\\]|\\.)*)"`)
-)
+// shortTextFieldRe finds the first occurrence of the "short_text" string
+// field: the truncation-tolerant fallback for ParseGeneration.
+var shortTextFieldRe = regexp.MustCompile(`"short_text"\s*:\s*"((?:[^"\\]|\\.)*)"`)
 
 func extractStringFieldFromTruncated(payload string, re *regexp.Regexp) string {
 	m := re.FindStringSubmatch(payload)

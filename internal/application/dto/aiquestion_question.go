@@ -26,35 +26,13 @@ import (
 // the letters A, B, C by position. In an exercise it is the letter "A".."D".
 //
 // ImageKey is the S3 key of an image shown with the option (question bank
-// sets only). ImageURL is its presigned URL, set when a response is built
-// and never stored. Both are empty for every model-written option, and
-// omitted from the JSON then.
+// sets only): empty for every model-written option, and omitted from the
+// JSON then.
 type AnswerChoice struct {
 	Label    string `json:"label"`
 	Content  string `json:"content"`
 	ImageKey string `json:"image_key,omitempty"`
-	ImageURL string `json:"image_url,omitempty"`
 }
-
-// Question type discriminators. Type tells the client how to render a
-// question and its answers; it never affects grading, which is always
-// label-based. Missing or unknown values normalize to TypeArithmetic so
-// legacy rows and any schema drift from the model degrade to a plain text
-// question.
-//
-//   - ARITHMETIC     — text-only stem (numbers + operators), text answers.
-//   - COUNT          — stem embeds emoji / [icon:NAME] tokens to count or add.
-//   - PICK_BY_ICON   — text stem; each answer's content embeds emoji / icons.
-//   - IDENTIFY_SHAPE — stem is a single [icon:NAME] token; text answers.
-//   - FRACTION       — stem and answers carry LaTeX \frac{a}{b} in $…$, so the
-//     client renders them as stacked fractions instead of "3/4".
-const (
-	TypeArithmetic    = "ARITHMETIC"
-	TypeCount         = "COUNT"
-	TypePickByIcon    = "PICK_BY_ICON"
-	TypeIdentifyShape = "IDENTIFY_SHAPE"
-	TypeFraction      = "FRACTION"
-)
 
 // Question is one MCQ item as produced by the llm. RightAnswer is the
 // label of the correct option and is only included in responses once the
@@ -75,6 +53,10 @@ const (
 // scale of ma_question_pools (0..9 each): server-stamped on a model-written
 // exam set (input.QuestionLevels), the bank row's own on a bank set, nil on
 // sets stored before 2026-11-09 and on exercises.
+//
+// QuestionType tells the client how to draw an exercise question (the
+// exercise prompt asks for ARITHMETIC or COUNT). It is passed through as the
+// model wrote it and never affects grading; exams do not carry it.
 //
 // Kind, RightAnswerLabels and RightValues are only set by exam sets built
 // from the question bank; a question without a Kind is a single-choice one,
@@ -212,12 +194,10 @@ type ExamAnswer struct {
 	Value          string   `json:"value,omitempty"`
 }
 
-// GradingResult is a graded round's outcome. AssessmentGrade is only
-// populated where the flow predicts a grade; practice rounds omit it.
+// GradingResult is a graded round's outcome.
 type GradingResult struct {
-	TotalQuestions  int     `json:"total_questions"`
-	CorrectNumber   int     `json:"correct_number"`
-	ScorePercentage int     `json:"score_percentage"`
-	Review          string  `json:"review"`
-	AssessmentGrade *string `json:"assessment_grade,omitempty"`
+	TotalQuestions  int    `json:"total_questions"`
+	CorrectNumber   int    `json:"correct_number"`
+	ScorePercentage int    `json:"score_percentage"`
+	Review          string `json:"review"`
 }

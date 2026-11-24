@@ -116,15 +116,7 @@ func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 		return nil, errs.NewError(ctx, domain.ClassroomExerciseGenerationFailed, map[string]any{"reason": err.Error()}, err)
 	}
 
-	// Clamp render discriminators and report icon-token drift, so the
-	// visual contract is enforced identically for classroom exercises.
-	// Grading is label-based, so this never changes correctness.
-	questions, warnings := dto.Normalize(gen.Questions)
-	for _, w := range warnings {
-		log.Warnf("classroom_exercise.normalize.%s value=%q q=%d", w.Kind, w.Value, w.QuestionNumber)
-	}
-
-	return &generateExerciseOutput{ShortText: gen.ShortText, Questions: questions}, nil
+	return &generateExerciseOutput{ShortText: gen.ShortText, Questions: gen.Questions}, nil
 }
 
 type gradeExerciseInput struct {

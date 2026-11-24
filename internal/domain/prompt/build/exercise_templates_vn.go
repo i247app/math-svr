@@ -65,7 +65,7 @@ CẤU TRÚC:
 // visualExerciseRulesVN mirrors visualExerciseRulesEN — tuned for
 // teacher-scoped exercises: COUNT is gated on BOTH the grade icon policy
 // (from the GRADE PROFILE) AND lesson fit. JSON keys stay English; the
-// icon whitelist matches the quiz normalizer's geometryIconWhitelist.
+// shape names under ICONS are the same list.
 const visualExerciseRulesVN = `
 VISUAL QUESTION RULES:
 - Mỗi câu có "question_type": ARITHMETIC (câu chữ thuần, mặc định) hoặc COUNT (đếm bằng icon). KHÔNG tạo bất kỳ question_type nào khác.

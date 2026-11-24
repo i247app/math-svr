@@ -66,8 +66,9 @@ SCHEMA:
 // visualExerciseRulesEN mirrors the quiz visual contract, tuned for
 // teacher-scoped exercises: COUNT is gated on BOTH the grade's icon
 // policy (from the GRADE PROFILE) AND lesson fit, so an icon question
-// never appears above level nor drifts off-topic. The icon whitelist
-// matches the quiz normalizer's geometryIconWhitelist.
+// never appears above level nor drifts off-topic. The shape names
+// listed under ICONS are the ones the client has assets for; the server does
+// not check the reply against them.
 const visualExerciseRulesEN = `
 VISUAL QUESTION RULES:
 - Every question carries a "question_type": either ARITHMETIC (plain text, the default) or COUNT (icon-based counting). Do NOT produce any other question_type.

@@ -213,14 +213,9 @@ func (s EsessLnStatusType) IsValid() bool {
 // what a nil *int is for. (It was 1..10 until up/031 moved every stored
 // level down one.) A GRADE review renders it into the prompt as its
 // intensity; nothing on the server derives it.
-//
-// ExamQuestionGradeMax is one above ExamGradeMax on purpose: an
-// ASSESSMENT at grade 5 still has to probe upward, so its probe questions
-// carry grade 6 even though no child can be PLACED at 6.
 const (
-	ExamGradeMin         = 0
-	ExamGradeMax         = 5
-	ExamQuestionGradeMax = ExamGradeMax + 1
+	ExamGradeMin = 0
+	ExamGradeMax = 5
 
 	ExamLevelMin = 0
 	ExamLevelMax = 9

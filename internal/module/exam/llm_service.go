@@ -187,20 +187,11 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 			map[string]any{"reason": err.Error()}, err)
 	}
 
-	// Two normalisation passes, and they answer different questions.
-	//
-	// The first clamps render types and reports icon drift: cosmetic, never
-	// fatal, since grading is label-based.
-	questions, warnings := dto.Normalize(dto.ToSharedQuestions(gen.Questions))
-	for _, w := range warnings {
-		log.Warnf("exam.normalize.%s value=%q q=%d", w.Kind, w.Value, w.QuestionNumber)
-	}
-
-	// The second stamps question_grade from the request. This one is not
-	// cosmetic: question_grade feeds placement, so a value the model
-	// invented could move a child up or down a year. The mismatches are
-	// logged because a run of them means the prompt has stopped landing.
-	questions, mismatches := NormalizeQuestionBands(questions, in.ExamType, in.Grade)
+	// question_grade is stamped from the request: it feeds placement, so a
+	// value the model invented could move a child up or down a year. The
+	// mismatches are logged because a run of them means the prompt has
+	// stopped landing.
+	questions, mismatches := NormalizeQuestionBands(dto.ToSharedQuestions(gen.Questions), in.ExamType, in.Grade)
 	for _, m := range mismatches {
 		log.Warnf("exam.question_grade.mismatch q=%d model=%v applied=%d",
 			m.QuestionNumber, utils.DerefInt(m.ModelGrade), m.Applied)
