@@ -39,7 +39,7 @@ type SubmitExamCommand struct {
 	ElinkID   int64
 	UID       int64
 	ProfileID int64
-	Answers   []dto.ExamAnswer
+	Answers   []dto.QuestionAnswer
 	Language  enum.LanguageType
 }
 
@@ -96,7 +96,7 @@ func (h *SubmitExamCommandHandler) Handle(ctx context.Context, cmd SubmitExamCom
 			return errs.NewError(ctx, exam.ExamInvalidAnswers, map[string]any{"reason": err.Error()}, err)
 		}
 
-		scored, err := scorer.ScoreExamQuestions(questions, canonicalAnswers, cmd.Language, scorer.DenominatorAnsweredOnly)
+		scored, err := scorer.ScoreQuestions(questions, canonicalAnswers, cmd.Language, scorer.DenominatorAnsweredOnly)
 		if err != nil {
 			// An answer that does not fit its question's kind is the
 			// client's mistake, not a grading failure.
@@ -219,8 +219,8 @@ func (h *SubmitExamCommandHandler) writeDetails(ctx context.Context, repos trans
 		d.SetExamId(attempt.ExamId())
 		d.SetReqExamType(attempt.ReqExamType())
 		d.SetQuestionNumber(o.Question.QuestionNumber)
-		d.SetQuestionKind(utils.ToStringPtr(o.Question.Kind))
-		d.SetQuestionText(utils.ToStringPtr(o.Question.QuestionName))
+		d.SetQuestionKind(utils.ToStringPtr(o.Question.QuestionKind))
+		d.SetQuestionText(utils.ToStringPtr(o.Question.QuestionText))
 		d.SetQuestionTopic(utils.ToStringPtr(o.Question.QuestionTopic))
 		d.SetQuestionTags(o.Question.QuestionTags)
 		d.SetExplanation(utils.ToStringPtr(o.Question.Explanation))
@@ -428,7 +428,7 @@ func (h *SubmitExamCommandHandler) journeyRow(cmd SubmitExamCommand, attempt *ex
 // canonicalAnswersFor undoes the sitting's shuffle on the submitted
 // answers. A sitting with no recorded ordering (NULL shuffle_map) was
 // served as stored, and its answers pass through unchanged.
-func canonicalAnswersFor(attempt *exam.ExamLink, served []dto.ExamAnswer) ([]dto.ExamAnswer, error) {
+func canonicalAnswersFor(attempt *exam.ExamLink, served []dto.QuestionAnswer) ([]dto.QuestionAnswer, error) {
 	shuffle, err := dto.ParseShuffle(attempt.ShuffleMap())
 	if err != nil {
 		return nil, err
@@ -457,7 +457,7 @@ func decodeExamQuestions(raw string) ([]dto.Question, error) {
 	if strings.TrimSpace(raw) == "" {
 		return nil, fmt.Errorf("exam: stored questions payload is empty")
 	}
-	var wire []dto.ExamQuestion
+	var wire []dto.Question
 	if err := json.Unmarshal([]byte(raw), &wire); err != nil {
 		return nil, fmt.Errorf("exam: parse stored questions: %w", err)
 	}
@@ -466,5 +466,5 @@ func decodeExamQuestions(raw string) ([]dto.Question, error) {
 	if err := dto.CheckSet(wire); err != nil {
 		return nil, err
 	}
-	return dto.ToSharedQuestions(wire), nil
+	return wire, nil
 }

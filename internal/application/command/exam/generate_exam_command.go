@@ -56,7 +56,7 @@ type GenerateExamCommand struct {
 	StatedGrade *int
 	StatedLevel *int
 	// ShuffleJSON is this sitting's private ordering of the question set
-	// (aiquestion.Shuffle in its stored form). It is drawn by the caller for
+	// (dto.Shuffle in its stored form). It is drawn by the caller for
 	// EVERY sitting, cache hit or miss: a fresh generation is shuffled too,
 	// so the child who triggered it sees no different treatment from the
 	// next child who is served it from cache.

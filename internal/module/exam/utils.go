@@ -46,7 +46,7 @@ func sanitizeExamText(text string) *string {
 // in questions_json is what the client reads and what
 // ma_exam_session_lines mirrors — one set of names end to end.
 func marshalQuestions(ctx context.Context, questions []dto.Question) (string, error) {
-	raw, err := json.Marshal(dto.FromSharedQuestions(questions))
+	raw, err := json.Marshal(dto.CanonicalSet(questions))
 	if err != nil {
 		return "", errs.NewError(ctx, domain.ExamGenerationFailed, nil,
 			fmt.Errorf("exam: marshal questions: %w", err))
@@ -75,7 +75,7 @@ func newContentFrom(ctx context.Context, in generateExamInput, generated *genera
 	}, nil
 }
 
-// systemRand adapts the process-wide generator to aiquestion.Shuffler. The
+// systemRand adapts the process-wide generator to dto.Shuffler. The
 // top-level math/rand/v2 source is seeded by the runtime and safe for
 // concurrent use, which is all a shuffle needs; nothing here is security
 // sensitive.
@@ -102,10 +102,10 @@ func (s *Service) drawShuffle(ctx context.Context, canonical []dto.Question) (*s
 	return &raw, nil
 }
 
-// decodeStoredQuestions reads a cached set back into the shared shape so
+// decodeStoredQuestions reads a cached set back so
 // a shuffle can be drawn against it.
 func decodeStoredQuestions(ctx context.Context, raw string) ([]dto.Question, error) {
-	var stored []dto.ExamQuestion
+	var stored []dto.Question
 	if err := json.Unmarshal([]byte(raw), &stored); err != nil {
 		return nil, errs.NewError(ctx, domain.ExamGenerationFailed, nil,
 			fmt.Errorf("exam: decode cached questions: %w", err))
@@ -113,5 +113,5 @@ func decodeStoredQuestions(ctx context.Context, raw string) ([]dto.Question, err
 	if err := dto.CheckSet(stored); err != nil {
 		return nil, errs.NewError(ctx, domain.ExamGenerationFailed, nil, err)
 	}
-	return dto.ToSharedQuestions(stored), nil
+	return stored, nil
 }

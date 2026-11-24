@@ -24,7 +24,7 @@ type SubmitGameCommand struct {
 	GsessID   int64
 	UID       int64
 	ProfileID int64
-	Answers   []dto.ExamAnswer
+	Answers   []dto.QuestionAnswer
 }
 
 type SubmitGameCommandHandler struct {
@@ -80,8 +80,8 @@ func (h *SubmitGameCommandHandler) Handle(ctx context.Context, cmd SubmitGameCom
 
 // grade scores the answers over ALL the round's questions: a skipped one
 // counts as not correct.
-func grade(ctx context.Context, s *game.GameSession, answers []dto.ExamAnswer) (game.Result, error) {
-	var wire []dto.ExamQuestion
+func grade(ctx context.Context, s *game.GameSession, answers []dto.QuestionAnswer) (game.Result, error) {
+	var wire []dto.Question
 	if err := json.Unmarshal([]byte(s.QuestionsJson()), &wire); err != nil {
 		return game.Result{}, errs.NewError(ctx, game.GameGradingFailed, nil, fmt.Errorf("game: parse stored questions: %w", err))
 	}
@@ -96,7 +96,7 @@ func grade(ctx context.Context, s *game.GameSession, answers []dto.ExamAnswer) (
 	}
 
 	// The language only shapes the scorer's review text, which a game drops.
-	scored, err := scorer.ScoreExamQuestions(dto.ToSharedQuestions(wire), answers,
+	scored, err := scorer.ScoreQuestions(wire, answers,
 		enum.LanguageTypeVietnamese, scorer.DenominatorAllQuestions)
 	if err != nil {
 		if errors.Is(err, scorer.ErrAnswerShape) {
@@ -132,8 +132,8 @@ func grade(ctx context.Context, s *game.GameSession, answers []dto.ExamAnswer) (
 // second answer to the same question, and an option the question was not
 // served with. The scorer checks none of these but the duplicate: it would
 // drop the first silently and grade the last as wrong.
-func checkAnswers(questions []dto.ExamQuestion, answers []dto.ExamAnswer) error {
-	byNumber := make(map[int]dto.ExamQuestion, len(questions))
+func checkAnswers(questions []dto.Question, answers []dto.QuestionAnswer) error {
+	byNumber := make(map[int]dto.Question, len(questions))
 	for _, q := range questions {
 		byNumber[q.QuestionNumber] = q
 	}
@@ -148,7 +148,7 @@ func checkAnswers(questions []dto.ExamQuestion, answers []dto.ExamAnswer) error 
 		}
 		seen[a.QuestionNumber] = true
 		for _, id := range a.OptionIDs {
-			handler := func(o dto.ExamOption) bool {
+			handler := func(o dto.QuestionOption) bool {
 				return strings.EqualFold(o.ID, strings.TrimSpace(id))
 			}
 

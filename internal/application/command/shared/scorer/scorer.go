@@ -1,11 +1,10 @@
-// Package scorer is the deterministic, LLM-free grader for MCQ-style
-// classroom exercises and exams. Both aggregates ship the same
-// `{question_number, question_name, answers:[{label, content}],
-// right_answer, correct_answer?, topic?, difficulty?}` schema, so a
-// single scoring engine serves both submit paths:
+// Package scorer is the deterministic, LLM-free grader for exams, games and
+// classroom exercises. The engine grades dto.Question; an exercise's older
+// dto.ExerciseQuestion is converted on the way in (fromExercise):
 //
 //   - /classroom-exercise/submissions/submit → exercise module
 //   - /exams/*                               → exam module
+//   - /games/*                               → game module
 //
 // The package lives under application/command/shared so the command
 // packages can all depend on it without depending on each other (which
@@ -17,7 +16,7 @@
 //     question_numbers and missing labels before Score is called);
 //   - ordering / free-text question types. Multi-select and typed-number
 //     questions exist only in exam sets built from the question bank and
-//     are graded by ScoreExamQuestions; exercises stay single-choice.
+//     are graded by ScoreQuestions; exercises stay single-choice.
 package scorer
 
 import (
@@ -49,7 +48,7 @@ const ReviewSourceMarker = "deterministic_v2"
 // presentation budget rather than a storage limit.
 const reviewMaxLen = 250
 
-// Result is the deterministic counterpart of aiquestion.GradingResult.
+// Result is the deterministic counterpart of dto.GradingResult.
 // The exercise and exam commands map this into their respective
 // row-update / row-insert types.
 type Result struct {
@@ -141,26 +140,59 @@ func ScoreDetailed(questionsJSON string, answers []dto.StudentAnswer, lang enum.
 	if err != nil {
 		return nil, err
 	}
-	return ScoreQuestions(questions, answers, lang, denom)
+	return ScoreExerciseQuestions(questions, answers, lang, denom)
 }
 
-// ScoreQuestions is ScoreDetailed for a caller that has already decoded
-// its payload. The exam flow needs it: its stored JSON uses its own field
-// names, so it decodes with its own type and hands the questions over
-// rather than having this package parse a vocabulary it does not know.
-func ScoreQuestions(questions []dto.Question, answers []dto.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
-	exam := make([]dto.ExamAnswer, 0, len(answers))
+// ScoreExerciseQuestions is ScoreDetailed over decoded questions.
+func ScoreExerciseQuestions(questions []dto.ExerciseQuestion, answers []dto.StudentAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
+	exam := make([]dto.QuestionAnswer, 0, len(answers))
 	for _, a := range answers {
 		// One id per answer, blank included: a blank label is a wrong
 		// answer here, as it always was, not a shape error.
-		exam = append(exam, dto.ExamAnswer{QuestionNumber: a.QuestionNumber, OptionIDs: []string{strings.TrimSpace(a.Label)}})
+		exam = append(exam, dto.QuestionAnswer{QuestionNumber: a.QuestionNumber, OptionIDs: []string{strings.TrimSpace(a.Label)}})
 	}
-	return ScoreExamQuestions(questions, exam, lang, denom)
+	qs := make([]dto.Question, 0, len(questions))
+	for _, q := range questions {
+		qs = append(qs, fromExercise(q))
+	}
+	return ScoreQuestions(qs, exam, lang, denom)
 }
 
-// ScoreExamQuestions grades questions of any kind. An answer that does not
+// fromExercise is an exercise question in the shape the engine grades.
+func fromExercise(q dto.ExerciseQuestion) dto.Question {
+	out := dto.Question{
+		QuestionNumber: q.QuestionNumber,
+		QuestionText:   q.QuestionName,
+		QuestionTopic:  q.QuestionTopic,
+		CorrectAnswer:  &dto.CorrectAnswer{OptionIDs: exerciseKeyIDs(q)},
+	}
+	for _, a := range q.Answers {
+		out.Options = append(out.Options, dto.QuestionOption{ID: a.Label, Text: a.Content})
+	}
+	return out
+}
+
+// exerciseKeyIDs are the labels graded as right: the key's label when there
+// is one, else (rows without it) every choice whose content equals the key's.
+func exerciseKeyIDs(q dto.ExerciseQuestion) []string {
+	if strings.TrimSpace(q.RightAnswerLabel) != "" {
+		return []string{q.RightAnswerLabel}
+	}
+	if strings.TrimSpace(q.RightAnswerContent) == "" {
+		return nil
+	}
+	var ids []string
+	for _, a := range q.Answers {
+		if valuesEqual(a.Content, q.RightAnswerContent) {
+			ids = append(ids, a.Label)
+		}
+	}
+	return ids
+}
+
+// ScoreQuestions grades questions of any kind. An answer that does not
 // fit its question's kind fails the whole call with ErrAnswerShape.
-func ScoreExamQuestions(questions []dto.Question, answers []dto.ExamAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
+func ScoreQuestions(questions []dto.Question, answers []dto.QuestionAnswer, lang enum.LanguageType, denom Denominator) (*DetailedResult, error) {
 	if len(questions) == 0 {
 		return nil, fmt.Errorf("scorer: payload has no questions")
 	}
@@ -251,7 +283,7 @@ func ScoreExamQuestions(questions []dto.Question, answers []dto.ExamAnswer, lang
 
 // checkAnswerShape: single-choice and true/false take exactly one option
 // id, multiple-choice at least one (no repeats), numeric a value and no id.
-func checkAnswerShape(q dto.Question, a dto.ExamAnswer) error {
+func checkAnswerShape(q dto.Question, a dto.QuestionAnswer) error {
 	fail := func(why string) error {
 		return fmt.Errorf("%w: question %d (%s) %s", ErrAnswerShape, q.QuestionNumber, q.EffectiveKind(), why)
 	}
@@ -281,15 +313,15 @@ func checkAnswerShape(q dto.Question, a dto.ExamAnswer) error {
 }
 
 // answerIsCorrect grades one answer that already passed checkAnswerShape.
-func answerIsCorrect(q dto.Question, a dto.ExamAnswer) bool {
+func answerIsCorrect(q dto.Question, a dto.QuestionAnswer) bool {
 	switch q.EffectiveKind() {
 	case dto.KindNumericInput:
-		return questionpool.AcceptsNumber(q.RightValues, a.Value)
+		return questionpool.AcceptsNumber(q.KeyValues(), a.Value)
 	case dto.KindMultipleChoice:
-		want := normalizedIDs(q.RightOptionIDs)
+		want := normalizedIDs(q.KeyIDs())
 		return len(want) > 0 && slices.Equal(want, normalizedIDs(a.OptionIDs))
 	}
-	return questionIsCorrect(q, strings.TrimSpace(a.OptionIDs[0]))
+	return slices.Contains(normalizedIDs(q.KeyIDs()), normalizeID(a.OptionIDs[0]))
 }
 
 // normalizeID is an option id in comparable form: trimmed, lower-cased.
@@ -306,7 +338,7 @@ func normalizedIDs(ids []string) []string {
 }
 
 // selectedView is the option id(s) and text a log row stores for an answer.
-func selectedView(q dto.Question, a dto.ExamAnswer) (ids, content string) {
+func selectedView(q dto.Question, a dto.QuestionAnswer) (ids, content string) {
 	switch q.EffectiveKind() {
 	case dto.KindNumericInput:
 		return "", strings.TrimSpace(a.Value)
@@ -325,9 +357,9 @@ func selectedView(q dto.Question, a dto.ExamAnswer) (ids, content string) {
 // choiceContent returns the displayed text of the option the student
 // picked, or "" when the label matches nothing in the payload.
 func choiceContent(q dto.Question, label string) string {
-	for _, c := range q.Answers {
-		if strings.EqualFold(strings.TrimSpace(c.Label), strings.TrimSpace(label)) {
-			return c.Content
+	for _, c := range q.Options {
+		if strings.EqualFold(strings.TrimSpace(c.ID), strings.TrimSpace(label)) {
+			return c.Text
 		}
 	}
 	return ""
@@ -337,12 +369,12 @@ func choiceContent(q dto.Question, label string) string {
 // the DTO shape. Returns an error on empty / malformed input so the
 // caller can surface the right status code (EXAM_GRADING_FAILED /
 // CLASSROOM_EXERCISE_SUBMISSION_GRADING_FAILED).
-func parseQuestionsForScoring(raw string) ([]dto.Question, error) {
+func parseQuestionsForScoring(raw string) ([]dto.ExerciseQuestion, error) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return nil, fmt.Errorf("scorer: questions payload is empty")
 	}
-	var out []dto.Question
+	var out []dto.ExerciseQuestion
 	if err := json.Unmarshal([]byte(raw), &out); err != nil {
 		return nil, fmt.Errorf("scorer: parse questions: %w", err)
 	}
@@ -353,8 +385,8 @@ func parseQuestionsForScoring(raw string) ([]dto.Question, error) {
 // question_number. Duplicate numbers fail loudly — the per-module
 // validator catches it earlier, but the scorer guards too so out-of-band
 // callers can't smuggle them past.
-func indexAnswers(answers []dto.ExamAnswer) (map[int]dto.ExamAnswer, error) {
-	out := make(map[int]dto.ExamAnswer, len(answers))
+func indexAnswers(answers []dto.QuestionAnswer) (map[int]dto.QuestionAnswer, error) {
+	out := make(map[int]dto.QuestionAnswer, len(answers))
 	for i, a := range answers {
 		if _, dup := out[a.QuestionNumber]; dup {
 			return nil, fmt.Errorf("scorer: duplicate answer for question_number %d at index %d", a.QuestionNumber, i)
@@ -362,26 +394,6 @@ func indexAnswers(answers []dto.ExamAnswer) (map[int]dto.ExamAnswer, error) {
 		out[a.QuestionNumber] = a
 	}
 	return out, nil
-}
-
-// questionIsCorrect: label match first (the v1-compatible path), value
-// compare as fallback only when right_answer is absent.
-func questionIsCorrect(q dto.Question, studentLabel string) bool {
-	rightLabel := normalizeID(q.RightAnswerLabel)
-	if rightLabel != "" {
-		return normalizeID(studentLabel) == rightLabel
-	}
-	if strings.TrimSpace(q.RightAnswerContent) == "" {
-		return false
-	}
-	// Value-compare path: locate the chosen choice's content, compare it
-	// to correct_answer via the canonical numeric/string compare.
-	for _, c := range q.Answers {
-		if strings.EqualFold(strings.TrimSpace(c.Label), studentLabel) {
-			return valuesEqual(c.Content, q.RightAnswerContent)
-		}
-	}
-	return false
 }
 
 // valuesEqual: canonical compare. Order of checks:

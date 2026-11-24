@@ -247,11 +247,11 @@ func (s *Service) drawQuestions(ctx context.Context, grade int, level *int, n in
 			return "", errs.NewError(ctx, domain.GameGenerationFailed, nil, err)
 		}
 		if q.EffectiveKind() != dto.KindTrueFalse {
-			rand.Shuffle(len(q.Answers), func(a, b int) { q.Answers[a], q.Answers[b] = q.Answers[b], q.Answers[a] })
+			rand.Shuffle(len(q.Options), func(a, b int) { q.Options[a], q.Options[b] = q.Options[b], q.Options[a] })
 		}
 		questions = append(questions, q)
 	}
-	wire := dto.FromSharedQuestions(questions)
+	wire := dto.CanonicalSet(questions)
 	if err := dto.CheckSet(wire); err != nil {
 		return "", errs.NewError(ctx, domain.GameGenerationFailed, nil, err)
 	}

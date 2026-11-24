@@ -154,9 +154,8 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	log.Infof("LLM RESPONSE: %s", content)
 
 	// Parsed with the exam vocabulary (question_text, options[{id, text}],
-	// correct_answer, ...) and converted straight into the shared shape, which is what the
-	// normalisers and the scorer operate on.
-	gen, err := dto.ParseGenerationOf[dto.ExamQuestion](content)
+	// correct_answer, ...), which the normalisers and the scorer use as is.
+	gen, err := dto.ParseGeneration[dto.Question](content)
 	if err != nil {
 		log.Warnf("exam.llm.generate_parse_failed err=%v", err)
 		return nil, errs.NewError(ctx, domain.ExamGenerationFailed, map[string]any{"reason": err.Error()}, err)
@@ -191,7 +190,7 @@ func (c *llmClient) GenerateExam(ctx context.Context, in generateExamInput) (*ge
 	// value the model invented could move a child up or down a year. The
 	// mismatches are logged because a run of them means the prompt has
 	// stopped landing.
-	questions, mismatches := NormalizeQuestionBands(dto.ToSharedQuestions(gen.Questions), in.ExamType, in.Grade)
+	questions, mismatches := NormalizeQuestionBands(gen.Questions, in.ExamType, in.Grade)
 	for _, m := range mismatches {
 		log.Warnf("exam.question_grade.mismatch q=%d model=%v applied=%d",
 			m.QuestionNumber, utils.DerefInt(m.ModelGrade), m.Applied)

@@ -26,6 +26,7 @@ var (
 	ErrInvalidSortOrder              = errors.New("invalid sort_order")
 	ErrClassroomExerciseIDRequired   = errors.New("classroom_exercise_id is required")
 	ErrClassroomIDRequired           = errors.New("classroom_id is required")
+	ErrGeneratedQuestionWithoutKey   = errors.New("generated question has no right_answer_label naming one of its answers")
 	ErrProfileIDRequired             = errors.New("profile_id is required")
 	ErrProfileIDRequiredMultiProfile = errors.New("profile_id is required when the user owns multiple profiles")
 	ErrNilRequest                    = errors.New("nil request")

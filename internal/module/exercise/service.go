@@ -277,7 +277,7 @@ func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sess
 	// 	return nil, err
 	// }
 
-	resp := dto.ExerciseDomainToResponse(exercise, true)
+	resp := dto.ExerciseDomainToResponse(exercise, s.canSeeAnswerKey(ctx, exercise.ClassroomId(), req.ProfileID, sessionUID))
 	exercises := []*domain.Exercise{exercise}
 	responses := []*dto.ExerciseResponse{resp}
 	if err := s.hydrateSubmissionStatus(ctx, req.ProfileID, exercises, responses); err != nil {
@@ -287,7 +287,6 @@ func (s *Service) GetExercise(ctx context.Context, req *dto.GetExerciseReq, sess
 		return nil, err
 	}
 	res := &dto.GetExerciseRes{
-		// Exercise: dto.DomainToResponse(exercise, isManagerRole(callerMember)),
 		Exercise: resp,
 	}
 	return res, nil
@@ -307,8 +306,7 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 		callerProfileId = *req.ProfileID
 	}
 
-	callerMember, err := s.requireMember(ctx, req.ClassroomID, callerProfileId)
-	if err != nil {
+	if _, err := s.requireMember(ctx, req.ClassroomID, callerProfileId); err != nil {
 		return nil, err
 	}
 
@@ -331,7 +329,7 @@ func (s *Service) ListExercises(ctx context.Context, req *dto.ListExercisesReq, 
 	if err != nil {
 		return nil, errs.NewError(ctx, status.FAIL, nil, err)
 	}
-	responses := dto.ExerciseDomainListToResponse(exercises, isManagerRole(callerMember))
+	responses := dto.ExerciseDomainListToResponse(exercises, s.canSeeAnswerKey(ctx, req.ClassroomID, req.ProfileID, sessionUID))
 	// Hydrate from the resolved caller's profile id, not from the raw
 	// req.ProfileID. Even when the caller omits it, resolveCaller has
 	// inferred the acting profile, so the field reflects the student's

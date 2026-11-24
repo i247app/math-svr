@@ -13,38 +13,17 @@ import (
 // and "the model's answer was unreadable" call for different log lines.
 var ErrNoQuestions = errors.New("question: model returned zero questions")
 
-// Generation is the parsed result of a generation call. ShortText is
-// best-effort: an empty string flows through to a NULL column, which the
-// response layer then omits. Callers must tolerate it being blank without
-// aborting the round.
-type Generation struct {
-	ShortText string
-	Questions []Question
-}
-
-// GenerationOf is Generation for a caller that spells its questions
-// differently. The exam flow does: its wire vocabulary matches its own
-// columns (right_answer_label, question_topic, ...) rather than the
-// quiz-era names this package's Question carries.
-type GenerationOf[T any] struct {
+// Generation is the parsed result of a generation call, over the caller's
+// own question type (Question for exams, ExerciseQuestion for exercises).
+// ShortText is best-effort: an empty string flows through to a NULL column,
+// which the response layer then omits. Callers must tolerate it being blank
+// without aborting the round.
+type Generation[T any] struct {
 	ShortText string
 	Questions []T
 }
 
-// ParseGeneration extracts a generated round in this package's own
-// question shape.
-func ParseGeneration(content string) (*Generation, error) {
-	g, err := ParseGenerationOf[Question](content)
-	if err != nil {
-		return nil, err
-	}
-	return &Generation{
-		ShortText: g.ShortText,
-		Questions: g.Questions,
-	}, nil
-}
-
-// ParseGenerationOf is the engine: same wrapper detection, same
+// ParseGeneration extracts a generated round: same wrapper detection, same
 // bare-array fallback, same truncation salvage, for any question type.
 // It is generic so a second vocabulary costs a type, not a second copy of
 // the salvage state machine — the part most likely to drift if duplicated.
@@ -53,7 +32,7 @@ func ParseGeneration(content string) (*Generation, error) {
 // wrapper is the happy path; the bare-array and truncation-salvage branches
 // are defence in depth against backends that drift from the schema or hit a
 // max-tokens cut.
-func ParseGenerationOf[T any](content string) (*GenerationOf[T], error) {
+func ParseGeneration[T any](content string) (*Generation[T], error) {
 	payload := extractJSONPayload(content)
 
 	var wrap struct {
@@ -64,7 +43,7 @@ func ParseGenerationOf[T any](content string) (*GenerationOf[T], error) {
 		Quiz      []T    `json:"quiz"`
 	}
 	if err := json.Unmarshal([]byte(payload), &wrap); err == nil {
-		out := &GenerationOf[T]{
+		out := &Generation[T]{
 			ShortText: strings.TrimSpace(wrap.ShortText),
 		}
 		switch {
@@ -87,13 +66,13 @@ func ParseGenerationOf[T any](content string) (*GenerationOf[T], error) {
 	// field is unavailable on this branch but the questions are usable.
 	var bare []T
 	if err := json.Unmarshal([]byte(payload), &bare); err == nil && len(bare) > 0 {
-		return &GenerationOf[T]{Questions: bare}, nil
+		return &Generation[T]{Questions: bare}, nil
 	}
 
 	// Truncated mid-array (max_tokens hit, safety cut, network reset...).
 	// short_text appears before the questions array in the schema, so it
 	// can usually be recovered by regex even when the array body is cut off.
-	out := &GenerationOf[T]{
+	out := &Generation[T]{
 		ShortText: extractStringFieldFromTruncated(payload, shortTextFieldRe),
 	}
 	arr := extractQuestionsArrayPrefix(payload)

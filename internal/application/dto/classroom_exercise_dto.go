@@ -65,7 +65,7 @@ type ExerciseResponse struct {
 	ChapterName         string                    `json:"chapter_name"`
 	LessonName          string                    `json:"lesson_name"`
 	TotalQuestions      int                       `json:"total_questions"`
-	Questions           []Question                `json:"questions,omitempty"`
+	Questions           []ExerciseQuestion        `json:"questions,omitempty"`
 	StartDate           *mtime.MathTime           `json:"start_date,omitempty"`
 	EndDate             *mtime.MathTime           `json:"end_date,omitempty"`
 	Note                *string                   `json:"note,omitempty"`
@@ -226,10 +226,11 @@ func ExerciseDomainToResponse(e *domain.Exercise, includeRightAnswers bool) *Exe
 	if !e.EndDate().IsZero() {
 		res.EndDate = mtime.NewMathTimePtr(e.EndDate())
 	}
-	if questions := parseQuestions(e.Questions()); len(questions) > 0 {
+	if questions := parseExerciseQuestions(e.Questions()); len(questions) > 0 {
 		if !includeRightAnswers {
 			for i := range questions {
 				questions[i].RightAnswerLabel = ""
+				questions[i].RightAnswerContent = ""
 			}
 		}
 		res.Questions = questions
@@ -245,13 +246,53 @@ func ExerciseDomainListToResponse(items []*domain.Exercise, includeRightAnswers 
 	return out
 }
 
-func parseQuestions(raw *string) []Question {
+func parseExerciseQuestions(raw *string) []ExerciseQuestion {
 	if raw == nil || *raw == "" {
 		return nil
 	}
-	var out []Question
+	var out []ExerciseQuestion
 	if err := json.Unmarshal([]byte(*raw), &out); err != nil {
 		return nil
 	}
 	return out
+}
+
+// ExerciseQuestion is one question of a classroom exercise: what
+// ma_exercises.questions stores and the client is served. Exercises are the
+// one flow still on this older vocabulary; exams and games use Question.
+// The JSON tags are the wire contract with the mobile client.
+//
+// QuestionType tells the client how to draw the question (the exercise
+// prompt asks for ARITHMETIC or COUNT); it is passed through as the model
+// wrote it and never affects grading.
+type ExerciseQuestion struct {
+	QuestionNumber     int              `json:"question_number"`
+	QuestionType       string           `json:"question_type,omitempty"`
+	QuestionName       string           `json:"question_name"`
+	Answers            []ExerciseOption `json:"answers"`
+	RightAnswerLabel   string           `json:"right_answer_label,omitempty"`
+	RightAnswerContent string           `json:"right_answer_content,omitempty"`
+	QuestionTopic      string           `json:"question_topic,omitempty"`
+}
+
+// ExerciseOption is one choice: Label ("A".."D") is the key the student
+// selects, Content the text shown.
+type ExerciseOption struct {
+	Label   string `json:"label"`
+	Content string `json:"content"`
+}
+
+// StudentAnswer is the student's chosen label for a single question.
+// Classroom exercises use it; exams and games use QuestionAnswer.
+type StudentAnswer struct {
+	QuestionNumber int    `json:"question_number"`
+	Label          string `json:"label"`
+}
+
+// GradingResult is a graded exercise's outcome.
+type GradingResult struct {
+	TotalQuestions  int    `json:"total_questions"`
+	CorrectNumber   int    `json:"correct_number"`
+	ScorePercentage int    `json:"score_percentage"`
+	Review          string `json:"review"`
 }

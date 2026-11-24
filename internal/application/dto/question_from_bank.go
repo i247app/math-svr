@@ -16,12 +16,12 @@ var trueFalseTexts = map[enum.LanguageType][2]string{
 	enum.LanguageTypeEnglish:    {"True", "False"},
 }
 
-func trueFalseOptions(lang enum.LanguageType) []ExamOption {
+func trueFalseOptions(lang enum.LanguageType) []QuestionOption {
 	t, ok := trueFalseTexts[lang]
 	if !ok {
 		t = trueFalseTexts[enum.LanguageTypeVietnamese]
 	}
-	return []ExamOption{
+	return []QuestionOption{
 		{ID: TrueOptionID, Text: t[0]},
 		{ID: FalseOptionID, Text: t[1]},
 	}
@@ -30,20 +30,20 @@ func trueFalseOptions(lang enum.LanguageType) []ExamOption {
 // bankTranslations copies a bank row's translations into the exam shape.
 // A TRUE_FALSE question has no options in the bank; the exam gives it the
 // two served ones in each language.
-func bankTranslations(q *questionpool.QuestionPool) map[enum.LanguageType]ExamTranslation {
+func bankTranslations(q *questionpool.QuestionPool) map[enum.LanguageType]QuestionTranslation {
 	if len(q.Translations()) == 0 {
 		return nil
 	}
-	out := make(map[enum.LanguageType]ExamTranslation, len(q.Translations()))
+	out := make(map[enum.LanguageType]QuestionTranslation, len(q.Translations()))
 	for lang, t := range q.Translations() {
-		e := ExamTranslation{
+		e := QuestionTranslation{
 			QuestionText:  t.QuestionText,
 			TtsText:       t.TtsText,
 			Explanation:   t.Explanation,
 			QuestionTopic: t.QuestionTopic,
 		}
 		for _, o := range t.Options {
-			e.Options = append(e.Options, ExamOption{ID: o.Id, Text: o.Text})
+			e.Options = append(e.Options, QuestionOption{ID: o.Id, Text: o.Text})
 		}
 		if q.QuestionKind() == questionpool.KindTrueFalse {
 			e.Options = trueFalseOptions(lang)
@@ -56,18 +56,18 @@ func bankTranslations(q *questionpool.QuestionPool) map[enum.LanguageType]ExamTr
 // QuestionFromBank converts a bank question (ma_question_pools) into the
 // question at position number of a paper (exam) or round (game).
 // Options keep their bank ids, in display order; the key follows from the
-// kind (Question documents the four shapes).
+// kind (CorrectAnswer documents the four shapes).
 // Image keys travel with the question and are presigned when a response is
 // built, by the module that serves it.
 func QuestionFromBank(q *questionpool.QuestionPool, number int) (Question, error) {
 	out := Question{
 		QuestionNumber:   number,
-		QuestionName:     q.QuestionText(),
+		QuestionText:     q.QuestionText(),
 		QuestionTopic:    utils.DerefString(q.QuestionTopic()),
 		QuestionTags:     q.QuestionTags(),
 		Explanation:      utils.DerefString(q.Explanation()),
 		TtsText:          utils.DerefString(q.TtsText()),
-		Kind:             q.QuestionKind().String(),
+		QuestionKind:     q.QuestionKind().String(),
 		QuestionLevel:    q.QuestionLevel(),
 		QuestionSubLevel: q.QuestionSubLevel(),
 		Language:         LanguageOf(q.QuestionLanguage()),
@@ -75,12 +75,13 @@ func QuestionFromBank(q *questionpool.QuestionPool, number int) (Question, error
 	}
 	grade := q.QuestionGrade()
 	out.QuestionGrade = &grade
-	out.ImageKey = utils.DerefString(q.QuestionImageKey())
+	out.QuestionImageKey = utils.DerefString(q.QuestionImageKey())
 
-	textOf := make(map[string]string, len(q.Options()))
+	out.Options = make([]QuestionOption, 0, len(q.Options()))
+	has := make(map[string]bool, len(q.Options()))
 	for _, o := range q.Options() {
-		textOf[o.Id] = o.Text
-		out.Answers = append(out.Answers, AnswerChoice{Label: o.Id, Content: o.Text, ImageKey: utils.DerefString(o.ImageKey)})
+		has[o.Id] = true
+		out.Options = append(out.Options, QuestionOption{ID: o.Id, Text: o.Text, ImageKey: utils.DerefString(o.ImageKey)})
 	}
 	correct := q.CorrectAnswer()
 
@@ -89,40 +90,34 @@ func QuestionFromBank(q *questionpool.QuestionPool, number int) (Question, error
 		if len(correct.OptionIds) != 1 {
 			return out, fmt.Errorf("question %d: single-choice key does not name exactly one option", q.QuestionPoolId())
 		}
-		text, ok := textOf[correct.OptionIds[0]]
-		if !ok {
+		if !has[correct.OptionIds[0]] {
 			return out, fmt.Errorf("question %d: single-choice key names unknown option %q", q.QuestionPoolId(), correct.OptionIds[0])
 		}
-		out.RightAnswerLabel = correct.OptionIds[0]
-		out.RightAnswerContent = text
+		out.CorrectAnswer = &CorrectAnswer{OptionIDs: slices.Clone(correct.OptionIds)}
 	case questionpool.KindMultipleChoice:
 		for _, id := range correct.OptionIds {
-			if _, ok := textOf[id]; !ok {
+			if !has[id] {
 				return out, fmt.Errorf("question %d: multiple-choice key names unknown option %q", q.QuestionPoolId(), id)
 			}
-			out.RightOptionIDs = append(out.RightOptionIDs, id)
 		}
-		slices.Sort(out.RightOptionIDs)
-		if len(out.RightOptionIDs) == 0 {
+		if len(correct.OptionIds) == 0 {
 			return out, fmt.Errorf("question %d: multiple-choice key is empty", q.QuestionPoolId())
 		}
+		ids := slices.Clone(correct.OptionIds)
+		slices.Sort(ids)
+		out.CorrectAnswer = &CorrectAnswer{OptionIDs: ids}
 	case questionpool.KindTrueFalse:
 		if correct.Value == nil {
 			return out, fmt.Errorf("question %d: true/false key has no value", q.QuestionPoolId())
 		}
-		out.Answers = nil
-		for _, o := range trueFalseOptions(out.Language) {
-			out.Answers = append(out.Answers, AnswerChoice{Label: o.ID, Content: o.Text})
-		}
-		out.RightAnswerLabel = FalseOptionID
-		if *correct.Value {
-			out.RightAnswerLabel = TrueOptionID
-		}
+		value := *correct.Value
+		out.Options = trueFalseOptions(out.Language)
+		out.CorrectAnswer = &CorrectAnswer{Value: &value}
 	case questionpool.KindNumericInput:
 		if len(correct.Values) == 0 {
 			return out, fmt.Errorf("question %d: numeric key has no values", q.QuestionPoolId())
 		}
-		out.RightValues = slices.Clone(correct.Values)
+		out.CorrectAnswer = &CorrectAnswer{Values: slices.Clone(correct.Values)}
 	default:
 		return out, fmt.Errorf("question %d: unknown kind %q", q.QuestionPoolId(), q.QuestionKind())
 	}

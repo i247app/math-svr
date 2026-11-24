@@ -17,13 +17,13 @@ import (
 )
 
 // QuestionRows converts the questions JSON an exam pool stores
-// (questions_json, []dto.ExamQuestion) into its ma_questions rows, one
+// (questions_json, []dto.Question) into its ma_questions rows, one
 // per element, in stored order. It reads the very string the pool row
 // holds, so every row matches its JSON element field for field (the key
 // is its correct_answer, in the bank's shape); an empty question_topic or
 // explanation or tts_text is stored as NULL, no tags as '[]'. Ids are left to the caller.
 func QuestionRows(examID int64, questionsJSON string) ([]*question.Question, error) {
-	var stored []dto.ExamQuestion
+	var stored []dto.Question
 	if err := json.Unmarshal([]byte(questionsJSON), &stored); err != nil {
 		return nil, fmt.Errorf("exam: decode exam_pool %d questions: %w", examID, err)
 	}
@@ -78,7 +78,7 @@ func mintQuestionRows(ctx context.Context, repos transaction.Repositories, examI
 }
 
 // translationsOf is a question's translations in the bank's shape.
-func translationsOf(in map[enum.LanguageType]dto.ExamTranslation) questionpool.Translations {
+func translationsOf(in map[enum.LanguageType]dto.QuestionTranslation) questionpool.Translations {
 	if len(in) == 0 {
 		return nil
 	}

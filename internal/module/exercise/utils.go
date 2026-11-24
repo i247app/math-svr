@@ -2,6 +2,8 @@ package exercise
 
 import (
 	"encoding/json"
+	"fmt"
+	"slices"
 	"strings"
 
 	"math-ai.com/math-ai/internal/application/dto"
@@ -34,11 +36,26 @@ func sanitizeExerciseText(text string) *string {
 	return &t
 }
 
+// checkAnswerKeys refuses a generated set holding a question whose
+// right_answer_label names none of its choices: every student would be
+// graded wrong on it, without an error anywhere.
+func checkAnswerKeys(questions []dto.ExerciseQuestion) error {
+	for _, q := range questions {
+		label := strings.TrimSpace(q.RightAnswerLabel)
+		if label == "" || !slices.ContainsFunc(q.Answers, func(o dto.ExerciseOption) bool {
+			return strings.EqualFold(strings.TrimSpace(o.Label), label)
+		}) {
+			return fmt.Errorf("%w: question %d", ErrGeneratedQuestionWithoutKey, q.QuestionNumber)
+		}
+	}
+	return nil
+}
+
 // buildAnswerKey extracts {question_number: right_answer_label} from the
 // generated questions and serialises it. Stored separately so a future
 // submission grader can compare against this column without having to
 // re-parse the full questions blob.
-func buildAnswerKey(questions []dto.Question) []byte {
+func buildAnswerKey(questions []dto.ExerciseQuestion) []byte {
 	key := make(map[string]string, len(questions))
 	for _, q := range questions {
 		if q.RightAnswerLabel == "" {

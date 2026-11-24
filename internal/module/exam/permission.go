@@ -6,6 +6,7 @@ import (
 
 	"math-ai.com/math-ai/internal/domain/shared/status"
 	"math-ai.com/math-ai/internal/infrastructure/session"
+	sctx "math-ai.com/math-ai/internal/shared/context"
 	"math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/response"
 )
@@ -114,4 +115,25 @@ func (h *ExamHandler) callerUID(ctx context.Context, sess *session.AppSession) (
 		return 0, false
 	}
 	return id, true
+}
+
+// requireAdminGate refuses unless the request passed the admin
+// middleware (sctx.AdminVia is set only there), so an admin-only method
+// reached through a route registered without it fails closed.
+func requireAdminGate(ctx context.Context) (sctx.AdminVia, error) {
+	via := sctx.GetAdminVia(ctx)
+	if via == "" {
+		return "", errs.NewError(ctx, status.FORBIDDEN, nil, ErrAdminGateMissing)
+	}
+	return via, nil
+}
+
+// adminActor is the admin's uid for create_id / modify_id, or nil when
+// the request passed the gate with the X-Api-Admin-Key header and so has
+// no account behind it — NULL, never a uid 0 that belongs to nobody.
+func adminActor(ctx context.Context) *int64 {
+	if uid := sctx.UID(ctx); uid > 0 {
+		return &uid
+	}
+	return nil
 }

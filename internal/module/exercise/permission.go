@@ -84,6 +84,22 @@ func requirePrivateAccess(ctx context.Context, e *exerciseDomain.Exercise, calle
 		ErrPrivateExerciseOwnerOnly)
 }
 
+// canSeeAnswerKey reports whether the caller may be shown right answers: a
+// profile the session OWNS that manages the classroom. It never fails the
+// read — any doubt (no such profile, not a member, lookup error) hides the
+// key — and it never trusts a profile_id the session does not own.
+func (s *Service) canSeeAnswerKey(ctx context.Context, classroomID int64, profileID *int64, sessionUID int64) bool {
+	if sessionUID == 0 {
+		return false
+	}
+	caller, err := s.resolveCaller(ctx, profileID, sessionUID)
+	if err != nil {
+		return false
+	}
+	m, err := s.requireMember(ctx, classroomID, caller.ProfileId())
+	return err == nil && isManagerRole(m)
+}
+
 // isManager returns true when the caller is OWNER or CO_TEACHER, used
 // to decide whether to include right_answer in the response payload.
 func isManagerRole(m *classroomDomain.Member) bool {

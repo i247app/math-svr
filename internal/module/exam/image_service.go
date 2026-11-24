@@ -44,7 +44,7 @@ func (s *Service) imageURL(ctx context.Context, key string) string {
 
 // signAnswers returns options with their image URLs filled. The input is
 // not modified: its slice may be shared with a parsed question set.
-func (s *Service) signAnswers(ctx context.Context, in []dto.ExamOption) []dto.ExamOption {
+func (s *Service) signAnswers(ctx context.Context, in []dto.QuestionOption) []dto.QuestionOption {
 	imaged := false
 	for _, a := range in {
 		if a.ImageKey != "" {
@@ -55,7 +55,7 @@ func (s *Service) signAnswers(ctx context.Context, in []dto.ExamOption) []dto.Ex
 	if !imaged {
 		return in
 	}
-	out := make([]dto.ExamOption, len(in))
+	out := make([]dto.QuestionOption, len(in))
 	for i, a := range in {
 		a.ImageURL = s.imageURL(ctx, a.ImageKey)
 		out[i] = a
@@ -64,7 +64,7 @@ func (s *Service) signAnswers(ctx context.Context, in []dto.ExamOption) []dto.Ex
 }
 
 // signQuestions fills the image URLs of a served question set, in place.
-func (s *Service) signQuestions(ctx context.Context, qs []dto.ExamQuestion) {
+func (s *Service) signQuestions(ctx context.Context, qs []dto.Question) {
 	for i := range qs {
 		qs[i].QuestionImageURL = s.imageURL(ctx, qs[i].QuestionImageKey)
 		qs[i].Options = s.signAnswers(ctx, qs[i].Options)

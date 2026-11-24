@@ -158,27 +158,6 @@ func (s *Service) actAsOwner(ctx context.Context, route string, profileID int64)
 	return &owner, nil
 }
 
-// requireAdminGate refuses unless the request passed the admin
-// middleware (sctx.AdminVia is set only there), so an admin-only method
-// reached through a route registered without it fails closed.
-func requireAdminGate(ctx context.Context) (sctx.AdminVia, error) {
-	via := sctx.GetAdminVia(ctx)
-	if via == "" {
-		return "", errs.NewError(ctx, status.FORBIDDEN, nil, ErrAdminGateMissing)
-	}
-	return via, nil
-}
-
-// adminActor is the admin's uid for create_id / modify_id, or nil when
-// the request passed the gate with the X-Api-Admin-Key header and so has
-// no account behind it — NULL, never a uid 0 that belongs to nobody.
-func adminActor(ctx context.Context) *int64 {
-	if uid := sctx.UID(ctx); uid > 0 {
-		return &uid
-	}
-	return nil
-}
-
 // resolvePlacement decides which band the next paper is written at, and
 // reports the open journey (if any) so the sitting can be pinned to it.
 //

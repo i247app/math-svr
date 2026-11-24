@@ -87,9 +87,9 @@ func NewShuffle(questions []Question, rng Shuffler) *Shuffle {
 	}
 
 	for _, q := range questions {
-		ids := make([]string, len(q.Answers))
-		for i, a := range q.Answers {
-			ids[i] = a.Label
+		ids := make([]string, len(q.Options))
+		for i, a := range q.Options {
+			ids[i] = a.ID
 		}
 		// A true/false pair keeps its order: "true" first, always.
 		if q.EffectiveKind() != KindTrueFalse {
@@ -153,7 +153,7 @@ func (s *Shuffle) Apply(canonical []Question) []Question {
 			continue // the stored set no longer holds this question; skip rather than invent
 		}
 		q.QuestionNumber = pos + 1
-		q.Answers = s.ServedAnswers(qn, q)
+		q.Options = s.ServedAnswers(qn, q)
 		served = append(served, q)
 	}
 	return served
@@ -163,23 +163,23 @@ func (s *Shuffle) Apply(canonical []Question) []Question {
 // them. The review screen uses it to lay out every option beside the one
 // the child picked; a nil receiver, or an ordering that no longer matches
 // the set, returns the stored order.
-func (s *Shuffle) ServedAnswers(canonicalQN int, q Question) []AnswerChoice {
+func (s *Shuffle) ServedAnswers(canonicalQN int, q Question) []QuestionOption {
 	var order []string
 	if s != nil {
 		order = s.Options[canonicalQN]
 	}
-	if len(order) != len(q.Answers) {
-		return q.Answers // no usable ordering recorded — serve as stored
+	if len(order) != len(q.Options) {
+		return q.Options // no usable ordering recorded — serve as stored
 	}
-	byID := make(map[string]AnswerChoice, len(q.Answers))
-	for _, a := range q.Answers {
-		byID[a.Label] = a
+	byID := make(map[string]QuestionOption, len(q.Options))
+	for _, a := range q.Options {
+		byID[a.ID] = a
 	}
-	out := make([]AnswerChoice, 0, len(order))
+	out := make([]QuestionOption, 0, len(order))
 	for _, id := range order {
 		a, ok := byID[id]
 		if !ok {
-			return q.Answers
+			return q.Options
 		}
 		out = append(out, a)
 	}
@@ -195,11 +195,11 @@ func (s *Shuffle) ServedAnswers(canonicalQN int, q Question) []AnswerChoice {
 // the client is speaking about a sitting the server handed it moments ago,
 // so a mismatch means a bug, not a skipped question. A typed Value needs
 // no translation and passes through.
-func (s *Shuffle) ToCanonical(served []ExamAnswer) ([]ExamAnswer, error) {
+func (s *Shuffle) ToCanonical(served []QuestionAnswer) ([]QuestionAnswer, error) {
 	if s == nil {
 		return served, nil
 	}
-	out := make([]ExamAnswer, 0, len(served))
+	out := make([]QuestionAnswer, 0, len(served))
 	for _, a := range served {
 		if a.QuestionNumber < 1 || a.QuestionNumber > len(s.Questions) {
 			return nil, fmt.Errorf("question: served question %d is outside 1..%d", a.QuestionNumber, len(s.Questions))
@@ -210,7 +210,7 @@ func (s *Shuffle) ToCanonical(served []ExamAnswer) ([]ExamAnswer, error) {
 				return nil, fmt.Errorf("question: option %q is not an option of question %d", id, a.QuestionNumber)
 			}
 		}
-		out = append(out, ExamAnswer{QuestionNumber: canonicalQN, OptionIDs: a.OptionIDs, Value: a.Value})
+		out = append(out, QuestionAnswer{QuestionNumber: canonicalQN, OptionIDs: a.OptionIDs, Value: a.Value})
 	}
 	return out, nil
 }

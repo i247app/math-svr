@@ -57,13 +57,13 @@ func (h *MarkExamPoolVerifyCommandHandler) Handle(ctx context.Context, cmd MarkE
 // The corrected set must keep the stored set's SHAPE: the same
 // question_numbers, and for each question the same answer labels. Every
 // sitting already handed out stores its ordering in those canonical
-// terms (aiquestion.Shuffle) and every answer log names canonical labels,
+// terms (dto.Shuffle) and every answer log names canonical labels,
 // so a renumbered question or a renamed option would break the papers in
 // flight and the history. Everything else — wording, option contents,
 // which label is right, topic, grade — may change.
 type VerifyExamPoolCommand struct {
 	ExamID    int64
-	Questions []dto.ExamQuestion
+	Questions []dto.Question
 	AdminUID  *int64 // nil = no uid (API-key admin)
 }
 
@@ -87,7 +87,7 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 			return errs.NewError(ctx, exam.ExamPoolBankReadonly, nil,
 				fmt.Errorf("exam: exam_pool %d was drawn from the question bank", cmd.ExamID))
 		}
-		var stored []dto.ExamQuestion
+		var stored []dto.Question
 		if err := json.Unmarshal([]byte(pool.QuestionsJson()), &stored); err != nil {
 			return errs.NewError(ctx, status.FAIL, nil, fmt.Errorf("exam: decode exam_pool %d questions: %w", cmd.ExamID, err))
 		}
@@ -99,7 +99,7 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 		// carries is dropped, so a typed-in key or URL is never stored. A
 		// correction that omits the level pair keeps the stored one, so a
 		// client that does not know the fields cannot wipe them.
-		levelOf := make(map[int]dto.ExamQuestion, len(stored))
+		levelOf := make(map[int]dto.Question, len(stored))
 		for _, q := range stored {
 			levelOf[q.QuestionNumber] = q
 		}
@@ -153,11 +153,11 @@ func (h *VerifyExamPoolCommandHandler) Handle(ctx context.Context, cmd VerifyExa
 // question (any order), and a usable question — a question_text and a
 // correct_answer that fits its kind and names its options (dto.Usable),
 // and a question_level / question_sub_level, when sent, inside 0..9.
-func SameQuestionShape(stored, fixed []dto.ExamQuestion) error {
+func SameQuestionShape(stored, fixed []dto.Question) error {
 	if len(fixed) != len(stored) {
 		return fmt.Errorf("%d questions sent, the exam has %d", len(fixed), len(stored))
 	}
-	want := make(map[int]dto.ExamQuestion, len(stored))
+	want := make(map[int]dto.Question, len(stored))
 	for _, q := range stored {
 		want[q.QuestionNumber] = q
 	}
@@ -190,7 +190,7 @@ func inLevelScale(l *int) bool {
 }
 
 // kindOf is a question's kind, SINGLE_CHOICE when it states none.
-func kindOf(q dto.ExamQuestion) string {
+func kindOf(q dto.Question) string {
 	if q.QuestionKind == "" {
 		return dto.KindSingleChoice
 	}
@@ -198,7 +198,7 @@ func kindOf(q dto.ExamQuestion) string {
 }
 
 // labelsOf returns a question's option ids, sorted.
-func labelsOf(q dto.ExamQuestion) []string {
+func labelsOf(q dto.Question) []string {
 	ids := make([]string, 0, len(q.Options))
 	for _, o := range q.Options {
 		ids = append(ids, o.ID)

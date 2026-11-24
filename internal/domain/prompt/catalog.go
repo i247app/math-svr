@@ -35,8 +35,8 @@ type Spec struct {
 	RequiredKeys []string
 }
 
-// examGenerationKeys are the keys aiquestion.ParseGenerationOf reads over
-// dto.ExamQuestion / aiquestion.AnswerChoice.
+// examGenerationKeys are the keys dto.ParseGeneration reads over
+// dto.Question / dto.QuestionOption.
 var examGenerationKeys = []string{
 	`"short_text"`, `"questions"`, `"question_number"`, `"lang"`, `"question_kind"`,
 	`"question_text"`, `"options"`, `"id"`, `"text"`,

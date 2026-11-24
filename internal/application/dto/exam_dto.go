@@ -56,10 +56,10 @@ type GenerateExamReq struct {
 // ma_exam_pools and is read from there, so a client cannot declare its own
 // correct answers and grade itself upward.
 type SubmitExamReq struct {
-	UID       *int64       `json:"-"`
-	ProfileID int64        `json:"profile_id"`
-	ElinkID   int64        `json:"elink_id"`
-	Answers   []ExamAnswer `json:"answers"`
+	UID       *int64           `json:"-"`
+	ProfileID int64            `json:"profile_id"`
+	ElinkID   int64            `json:"elink_id"`
+	Answers   []QuestionAnswer `json:"answers"`
 }
 
 // GetExamReq reads either ONE sitting or ONE row of a journey:
@@ -157,7 +157,7 @@ type ExamResponse struct {
 	NumQues   int     `json:"num_questions"`
 
 	Language  enum.LanguageType `json:"lang,omitempty"`
-	Questions []ExamQuestion    `json:"questions,omitempty"`
+	Questions []Question        `json:"questions,omitempty"`
 	Result    *ExamResult       `json:"result,omitempty"`
 
 	Status      string          `json:"status"`
@@ -178,16 +178,16 @@ type ExamResponse struct {
 // from — the log itself stores only the ids and texts that matter for
 // grading — and is omitted when that set can no longer be found.
 type ExamAnswerDetail struct {
-	ElinkID          int64        `json:"elink_id"`
-	QuestionNumber   int          `json:"question_number"`
-	QuestionText     *string      `json:"question_text,omitempty"`
-	QuestionImageKey string       `json:"question_image_key,omitempty"`
-	QuestionImageURL string       `json:"question_image_url,omitempty"`
-	Options          []ExamOption `json:"options,omitempty"`
-	QuestionTopic    *string      `json:"question_topic,omitempty"`
-	QuestionTags     []string     `json:"question_tags,omitempty"`
-	Explanation      *string      `json:"explanation,omitempty"`
-	QuestionGrade    *int         `json:"question_grade,omitempty"`
+	ElinkID          int64            `json:"elink_id"`
+	QuestionNumber   int              `json:"question_number"`
+	QuestionText     *string          `json:"question_text,omitempty"`
+	QuestionImageKey string           `json:"question_image_key,omitempty"`
+	QuestionImageURL string           `json:"question_image_url,omitempty"`
+	Options          []QuestionOption `json:"options,omitempty"`
+	QuestionTopic    *string          `json:"question_topic,omitempty"`
+	QuestionTags     []string         `json:"question_tags,omitempty"`
+	Explanation      *string          `json:"explanation,omitempty"`
+	QuestionGrade    *int             `json:"question_grade,omitempty"`
 
 	// The key and the child's answer, the same four fields for every kind of
 	// question, always present. The ids name entries of Options (empty for
@@ -433,18 +433,18 @@ func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*Sh
 		sh := shuffles[d.ElinkId()]
 
 		var (
-			answers    []AnswerChoice
+			answers    []QuestionOption
 			imageKey   string
-			translated *ExamQuestion
+			translated *Question
 		)
 		if q, ok := questions.lookup(d.ExamId(), d.QuestionNumber()); ok {
 			if _, has := q.Translations[lang.Base()]; has && lang.Base() != LanguageOf(q.Language) {
-				l := ExamQuestionFrom(q).Localized(lang)
+				q = q.Localized(lang)
+				l := q
 				translated = &l
-				q = l.ToShared()
 			}
 			answers = sh.ServedAnswers(d.QuestionNumber(), q)
-			imageKey = q.ImageKey
+			imageKey = q.QuestionImageKey
 		}
 
 		// A stored id set ("a,c") is a list on the wire, never null.
@@ -489,7 +489,7 @@ func DetailsToResponse(details []*domain.ExamSessionLine, shuffles map[int64]*Sh
 // localizeDetail lays a translated question over a logged answer row. The
 // answer texts of a choice question are the texts of the options the ids
 // name (in served order); a numeric one keeps its numbers.
-func localizeDetail(d *ExamAnswerDetail, q *ExamQuestion, answers []AnswerChoice) {
+func localizeDetail(d *ExamAnswerDetail, q *Question, answers []QuestionOption) {
 	d.QuestionText = &q.QuestionText
 	if q.Explanation != "" {
 		d.Explanation = &q.Explanation
@@ -503,8 +503,8 @@ func localizeDetail(d *ExamAnswerDetail, q *ExamQuestion, answers []AnswerChoice
 	textsOf := func(ids []string) string {
 		var texts []string
 		for _, a := range answers {
-			if slices.Contains(ids, a.Label) {
-				texts = append(texts, a.Content)
+			if slices.Contains(ids, a.ID) {
+				texts = append(texts, a.Text)
 			}
 		}
 		return strings.Join(texts, ContentSeparator)
@@ -547,13 +547,13 @@ func (x *questionIndex) parse(examID int64) map[int]Question {
 	if !ok || set == nil {
 		return nil
 	}
-	var stored []ExamQuestion
+	var stored []Question
 	if err := json.Unmarshal([]byte(set.QuestionsJson()), &stored); err != nil || CheckSet(stored) != nil {
 		return nil
 	}
 	byNumber := make(map[int]Question, len(stored))
 	for _, q := range stored {
-		byNumber[q.QuestionNumber] = q.ToShared()
+		byNumber[q.QuestionNumber] = q
 	}
 	return byNumber
 }
@@ -653,50 +653,6 @@ func JourneysToResponse(journeys []domain.JourneyStats, examPools map[int64]*dom
 		out = append(out, *s)
 	}
 	return out
-}
-
-// parseQuestions decodes the stored payload and, when the key must stay
-// hidden, blanks it field by field rather than dropping the question —
-// the child still needs the stem and the options to answer.
-// servedQuestions decodes the stored (canonical) set, arranges it the way
-// this sitting was served, and — when the key must stay hidden — blanks
-// it field by field rather than dropping the question: the child still
-// needs the stem and the options to answer.
-//
-// Each question is served in lang (Localized), so no translation leaves
-// here: a child's paper never ships the translated explanations.
-func servedQuestions(raw string, sh *Shuffle, includeAnswerKey bool, lang enum.LanguageType) []ExamQuestion {
-	stored := storedQuestions(raw)
-	if stored == nil {
-		return nil
-	}
-	out := FromSharedQuestions(sh.Apply(ToSharedQuestions(stored)))
-	for i := range out {
-		out[i] = out[i].Localized(lang)
-	}
-	if !includeAnswerKey {
-		for i := range out {
-			out[i].CorrectAnswer = nil
-			out[i].Explanation = ""
-		}
-	}
-	return out
-}
-
-// storedQuestions decodes a stored set as it is, translations included (the
-// admin view), nil when it is empty or unusable.
-func storedQuestions(raw string) []ExamQuestion {
-	if raw == "" {
-		return nil
-	}
-	var stored []ExamQuestion
-	if err := json.Unmarshal([]byte(raw), &stored); err != nil || CheckSet(stored) != nil {
-		return nil
-	}
-	for i := range stored {
-		stored[i].Language = LanguageOf(stored[i].Language)
-	}
-	return stored
 }
 
 // ExamProgressReq is the request for the learning-progress chart.
@@ -937,8 +893,8 @@ type MarkExamPoolVerifyReq struct {
 // replaces the stored one and adds 1 to verified_count. It must keep the
 // stored question_numbers and each question's answer labels.
 type VerifyExamPoolReq struct {
-	ExamID    int64          `json:"exam_id"`
-	Questions []ExamQuestion `json:"questions"`
+	ExamID    int64      `json:"exam_id"`
+	Questions []Question `json:"questions"`
 }
 
 // ExamPoolResponse is one stored question set. Questions — in stored
@@ -954,10 +910,10 @@ type ExamPoolResponse struct {
 	Program  *string `json:"program,omitempty"`
 	Extras   *string `json:"req_extras,omitempty"`
 	// ExamSource: LLM, or POOL (drawn from the question bank).
-	ExamSource string         `json:"exam_source"`
-	Title      *string        `json:"title,omitempty"`
-	ShortText  *string        `json:"short_text,omitempty"`
-	Questions  []ExamQuestion `json:"questions,omitempty"`
+	ExamSource string     `json:"exam_source"`
+	Title      *string    `json:"title,omitempty"`
+	ShortText  *string    `json:"short_text,omitempty"`
+	Questions  []Question `json:"questions,omitempty"`
 	// VerifiedCount: 0 = not verified, >0 = verified.
 	VerifiedCount int            `json:"verified_count"`
 	Status        *string        `json:"status,omitempty"`

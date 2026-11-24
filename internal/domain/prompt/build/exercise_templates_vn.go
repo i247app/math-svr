@@ -25,9 +25,9 @@ QUY TẮC NỘI DUNG:
 - Tất cả câu hỏi phải nằm trong phạm vi chương + bài học giáo viên đã đặt; không lan sang chủ đề khác kể cả khi vẫn phù hợp với cấp lớp.
 
 QUY TẮC METADATA (BẮT BUỘC ĐỂ CHẤM TỰ ĐỘNG):
-- "right_answer" là nhãn (A/B/C/D) của phương án đúng.
-- "correct_answer" là GIÁ TRỊ chữ trong "content" của phương án đúng — phải khớp ký tự với "content" tương ứng (vd. "8", "1/2").
-- "topic" là mã kỹ năng ngắn bằng tiếng Việt viết thường, snake_case. Ưu tiên dùng các mã: phép cộng trong phạm vi 10, phép trừ trong phạm vi 10, phép nhân 1 chữ số, phép chia 1 chữ số, phép cộng trong phạm vi 100, phép trừ trong phạm vi 100, phép nhân nhiều chữ số, phép chia nhiều chữ số, phân số cơ bản, phân số so sánh, phân số cộng trừ, số thập phân cơ bản, giá trị chỗ, bài toán đố, phép toán hỗn hợp, hình học cơ bản, đo lường, thời gian tiền tệ. Nếu không phù hợp, tạo mã mới ngắn gọn (≤32 ký tự).
+- "right_answer_label" là nhãn (A/B/C/D) của phương án đúng.
+- "right_answer_content" là GIÁ TRỊ chữ trong "content" của phương án đúng — phải khớp ký tự với "content" tương ứng (vd. "8", "1/2").
+- "question_topic" là mã kỹ năng ngắn bằng tiếng Việt viết thường, snake_case. Ưu tiên dùng các mã: phép cộng trong phạm vi 10, phép trừ trong phạm vi 10, phép nhân 1 chữ số, phép chia 1 chữ số, phép cộng trong phạm vi 100, phép trừ trong phạm vi 100, phép nhân nhiều chữ số, phép chia nhiều chữ số, phân số cơ bản, phân số so sánh, phân số cộng trừ, số thập phân cơ bản, giá trị chỗ, bài toán đố, phép toán hỗn hợp, hình học cơ bản, đo lường, thời gian tiền tệ. Nếu không phù hợp, tạo mã mới ngắn gọn (≤32 ký tự).
 - "difficulty" là số nguyên 1..5 phản ánh mức độ thử thách so với bài học đang nhắm tới.
 
 QUY TẮC SHORT_TEXT:
@@ -53,9 +53,9 @@ CẤU TRÚC:
         {"label": "C", "content": "10"},
         {"label": "D", "content": "7"}
       ],
-      "right_answer": "A",
-      "correct_answer": "8",
-      "topic": "phép cộng trong phạm vi 10",
+      "right_answer_label": "A",
+      "right_answer_content": "8",
+      "question_topic": "phép cộng trong phạm vi 10",
       "difficulty": 1
     }
   ]
@@ -70,7 +70,7 @@ const visualExerciseRulesVN = `
 VISUAL QUESTION RULES:
 - Mỗi câu có "question_type": ARITHMETIC (câu chữ thuần, mặc định) hoặc COUNT (đếm bằng icon). KHÔNG tạo bất kỳ question_type nào khác.
 - CHỈ được dùng COUNT/icon khi CẢ HAI điều kiện đúng: (1) chính sách icon trong GRADE PROFILE cho phép — nếu là TẮT, hoặc không có GRADE PROFILE, dùng ARITHMETIC cho mọi câu và TUYỆT ĐỐI không phát sinh emoji hay token [icon:...]; VÀ (2) chương + bài học của giáo viên thực sự về đếm / số lượng / hình cơ bản. Ngược lại, dùng ARITHMETIC cho mọi câu.
-- COUNT (chỉ khi cả hai điều kiện trên đúng): "question_name" hiển thị các vật để đếm hoặc cộng bằng icon kèm toán tử (+, "?"). Đáp án là số; giữ "topic" bám theo bài học. Icon có thể là emoji HOẶC token hình (xem ICONS), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" hoặc "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
+- COUNT (chỉ khi cả hai điều kiện trên đúng): "question_name" hiển thị các vật để đếm hoặc cộng bằng icon kèm toán tử (+, "?"). Đáp án là số; giữ "question_topic" bám theo bài học. Icon có thể là emoji HOẶC token hình (xem ICONS), ví dụ "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" hoặc "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
 
 ICONS (chỉ dùng cho COUNT; TUYỆT ĐỐI không dùng trong ARITHMETIC):
 - Emoji: với vật đếm được, dùng emoji phổ thông, thân thiện trẻ em, chèn trực tiếp và cách nhau bởi dấu cách, ví dụ 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Mỗi câu chỉ dùng MỘT loại emoji.
@@ -117,11 +117,11 @@ Thông tin bổ sung:
 const systemExerciseGradeVN = `Bạn là trợ lý chấm bài tập trắc nghiệm toán cho trẻ mẫu giáo và học sinh tiểu học Việt Nam.
 
 Đầu vào gồm:
-- "questions": danh sách câu hỏi gốc kèm "right_answer" (nhãn đúng A/B/C/D).
+- "questions": danh sách câu hỏi gốc kèm "right_answer_label" (nhãn đúng A/B/C/D).
 - "answers": danh sách câu trả lời học sinh đã chọn theo "question_number" và "label".
 
 NHIỆM VỤ:
-- So khớp từng câu trả lời với "right_answer" của câu hỏi tương ứng để xác định đúng/sai.
+- So khớp từng câu trả lời với "right_answer_label" của câu hỏi tương ứng để xác định đúng/sai.
 - Câu hỏi không có câu trả lời tương ứng được tính là SAI.
 - Tính tổng số câu (total_questions), số câu đúng (correct_number) và phần trăm điểm (score_percentage, làm tròn xuống).
 - Viết "review" ngắn gọn (2-4 câu) bằng tiếng Việt: ghi nhận điểm mạnh, lỗi sai phổ biến, và một gợi ý ôn tập cụ thể bám sát chương + bài học.

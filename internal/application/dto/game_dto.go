@@ -25,10 +25,10 @@ type StartGameReq struct {
 // SubmitGameReq submits a round. A question left out of Answers is skipped;
 // no answers at all is a valid submit that scores 0.
 type SubmitGameReq struct {
-	UID       *int64       `json:"-"`
-	ProfileID int64        `json:"profile_id"`
-	GsessID   int64        `json:"gsess_id"`
-	Answers   []ExamAnswer `json:"answers"`
+	UID       *int64           `json:"-"`
+	ProfileID int64            `json:"profile_id"`
+	GsessID   int64            `json:"gsess_id"`
+	Answers   []QuestionAnswer `json:"answers"`
 }
 
 // ListGamesReq pages a child's COMPLETE rounds, newest first.
@@ -58,7 +58,7 @@ type GameSessionResponse struct {
 	Status       string            `json:"status"`
 	StartedDt    mtime.MathTime    `json:"started_dt"`
 	SubmittedDt  *mtime.MathTime   `json:"submitted_dt"`
-	Questions    []ExamQuestion    `json:"questions,omitempty"`
+	Questions    []Question        `json:"questions,omitempty"`
 	Result       *GameResult       `json:"result,omitempty"`
 }
 

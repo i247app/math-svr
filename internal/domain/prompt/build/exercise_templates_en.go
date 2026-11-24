@@ -26,9 +26,9 @@ CONTENT RULES:
 - Stay inside the teacher's chapter + lesson scope; do not drift to other topics even if the grade allows them.
 
 METADATA RULES (REQUIRED for deterministic auto-grading):
-- "right_answer" is the label (A/B/C/D) of the correct option.
-- "correct_answer" is the LITERAL VALUE in the correct option's "content" field — it MUST match that "content" character-for-character (e.g. "8", "1/2").
-- "topic" is a short snake_case English skill tag. Prefer one of: addition_within_100, subtraction_within_100, addition_regrouping, subtraction_regrouping, multiplication_single_digit, multiplication_multi_digit, division_single_digit, division_multi_digit, fractions_basic, fractions_compare, fractions_add_sub, decimals_basic, place_value, word_problem, mixed_operations, geometry_basic, measurement, time_money. If none fits, mint a new short tag (<= 32 chars).
+- "right_answer_label" is the label (A/B/C/D) of the correct option.
+- "right_answer_content" is the LITERAL VALUE in the correct option's "content" field — it MUST match that "content" character-for-character (e.g. "8", "1/2").
+- "question_topic" is a short snake_case English skill tag. Prefer one of: addition_within_100, subtraction_within_100, addition_regrouping, subtraction_regrouping, multiplication_single_digit, multiplication_multi_digit, division_single_digit, division_multi_digit, fractions_basic, fractions_compare, fractions_add_sub, decimals_basic, place_value, word_problem, mixed_operations, geometry_basic, measurement, time_money. If none fits, mint a new short tag (<= 32 chars).
 - "difficulty" is an integer 1..5 (1 easiest, 5 hardest) reflecting challenge level for the targeted lesson.
 
 SHORT_TEXT RULES:
@@ -54,9 +54,9 @@ SCHEMA:
         {"label": "C", "content": "10"},
         {"label": "D", "content": "7"}
       ],
-      "right_answer": "A",
-      "correct_answer": "8",
-      "topic": "addition_within_100",
+      "right_answer_label": "A",
+      "right_answer_content": "8",
+      "question_topic": "addition_within_100",
       "difficulty": 1
     }
   ]
@@ -73,7 +73,7 @@ const visualExerciseRulesEN = `
 VISUAL QUESTION RULES:
 - Every question carries a "question_type": either ARITHMETIC (plain text, the default) or COUNT (icon-based counting). Do NOT produce any other question_type.
 - COUNT/icons are allowed ONLY when BOTH conditions hold: (1) the Visual/icon policy in the GRADE PROFILE permits them — if it is OFF, or no GRADE PROFILE is provided, use ARITHMETIC for every question and NEVER emit emoji or [icon:...] tokens; AND (2) the teacher's chapter + lesson is genuinely about counting / quantity / basic shapes. Otherwise use ARITHMETIC for every question.
-- COUNT (only when both conditions above hold): "question_name" shows objects to count or add, using icons plus operators (+, "?"). Answers are numbers; keep "topic" tied to the lesson. Icons may be emoji OR shape tokens (see ICONS), e.g. "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" or "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
+- COUNT (only when both conditions above hold): "question_name" shows objects to count or add, using icons plus operators (+, "?"). Answers are numbers; keep "question_topic" tied to the lesson. Icons may be emoji OR shape tokens (see ICONS), e.g. "🏓 🏓 🏓 + 🏓 🏓 🏓 = ?" or "[icon:triangle] [icon:triangle] + [icon:triangle] = ?".
 
 ICONS (only for COUNT; NEVER in ARITHMETIC):
 - Emoji: for countable objects use common, child-friendly emoji inserted literally and space-separated, e.g. 🏓 🍎 ⭐ 🐟 🎈 🚗 🌸 🍓 ⚽ 🐶. Use ONE emoji type per question.
@@ -120,11 +120,11 @@ Additional context:
 const systemExerciseGradeEN = `You grade multiple-choice math exercises for Vietnamese kindergarten and primary-school students.
 
 You receive:
-- "questions": the original items, each with a "right_answer" label (A/B/C/D).
+- "questions": the original items, each with a "right_answer_label" label (A/B/C/D).
 - "answers": the student's chosen labels keyed by "question_number".
 
 TASK:
-- Match each answer against the corresponding "right_answer" to decide correctness.
+- Match each answer against the corresponding "right_answer_label" to decide correctness.
 - Any question without a matching answer is counted WRONG.
 - Compute total_questions, correct_number, and score_percentage (floor to integer).
 - Write a short "review" (2-4 sentences, English): note strengths, common mistakes, and one specific revision tip tied to the chapter + lesson scope.

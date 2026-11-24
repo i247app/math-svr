@@ -16,8 +16,8 @@ import (
 
 // llmClient is the classroomexercise module's typed surface over the
 // generic LLM provider. It owns prompt construction (delegated to
-// domain/prompt/input via BuildExercisePrompt) and parses the response through
-// application/dto (aiquestion_*.go), which owns the shared MCQ
+// domain/prompt/build via BuildExercisePrompt) and parses the response through
+// application/dto (question_parse.go), which owns the shared
 // JSON-mode contract.
 //
 // Temperature 0.2 matches QuizPromptKindGenerate — generation creativity
@@ -62,7 +62,7 @@ type generateExerciseOutput struct {
 	// cộng trong phạm vi 10"). The teacher supplies the exercise title
 	// separately, so only short_text is consumed from the model here.
 	ShortText string
-	Questions []dto.Question
+	Questions []dto.ExerciseQuestion
 }
 
 func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInput) (*generateExerciseOutput, error) {
@@ -110,9 +110,13 @@ func (c *llmClient) GenerateExercise(ctx context.Context, in generateExerciseInp
 	// The exercise schema shares the {short_text, questions} shape; we
 	// ignore the AI title because the teacher supplies the exercise title,
 	// but we keep the AI short_text as the auto-generated topic description.
-	gen, err := dto.ParseGeneration(res.Content)
+	gen, err := dto.ParseGeneration[dto.ExerciseQuestion](res.Content)
 	if err != nil {
 		log.Warnf("classroom_exercise.llm.parse_failed err=%v", err)
+		return nil, errs.NewError(ctx, domain.ClassroomExerciseGenerationFailed, map[string]any{"reason": err.Error()}, err)
+	}
+	if err := checkAnswerKeys(gen.Questions); err != nil {
+		log.Warnf("classroom_exercise.llm.unusable err=%v", err)
 		return nil, errs.NewError(ctx, domain.ClassroomExerciseGenerationFailed, map[string]any{"reason": err.Error()}, err)
 	}
 

@@ -117,7 +117,7 @@ var gradeProfiles = map[GradeLevel]gradeProfile{
 		iconLineVN: "BẮT BUỘC — trẻ chưa biết đọc. Dùng COUNT kèm emoji cho ĐA SỐ câu hỏi (ít nhất 70 phần trăm). Các câu còn lại chỉ là phép tính bằng chữ số như \"2 + 1 = ?\"; tuyệt đối không dùng toán đố bằng lời văn.",
 		floorEN:    "Difficulty ceiling — this is the LOWEST band, so the risk runs upward, not downward: never exceed the number range above, never use regrouping, multiplication, division, fractions, money, time or multi-step reasoning, and never write a question that requires reading a sentence. Answer options must all be single digits or very short words.",
 		floorVN:    "Trần độ khó — đây là bậc THẤP NHẤT nên rủi ro là ra đề quá khó, không phải quá dễ: không vượt phạm vi số nêu trên, không cộng trừ có nhớ, không nhân, chia, phân số, tiền tệ, thời gian hay suy luận nhiều bước, và tuyệt đối không ra câu hỏi buộc trẻ phải đọc một câu văn. Các phương án trả lời phải là chữ số đơn hoặc từ rất ngắn.",
-		exemplar:   `{"question_number": 1, "question_type": "COUNT", "question_name": "🐟 🐟 + 🐟 = ?", "answers": [{"label":"A","content":"3"},{"label":"B","content":"2"},{"label":"C","content":"4"},{"label":"D","content":"1"}], "right_answer": "A", "correct_answer": "3", "topic": "counting", "difficulty": 1}`,
+		exemplar:   `{"question_number": 1, "question_type": "COUNT", "question_name": "🐟 🐟 + 🐟 = ?", "answers": [{"label":"A","content":"3"},{"label":"B","content":"2"},{"label":"C","content":"4"},{"label":"D","content":"1"}], "right_answer_label": "A", "right_answer_content": "3", "question_topic": "counting", "difficulty": 1}`,
 	},
 	1: {
 		nameEN:     "Grade 1",
@@ -129,7 +129,7 @@ var gradeProfiles = map[GradeLevel]gradeProfile{
 		skillsVN:   "đếm và số lượng, so sánh số lượng, cộng trừ đơn giản, nhận diện hình cơ bản.",
 		iconLineEN: "ENCOURAGED — icons/emoji are welcome as counting aids for up to about 40 percent of questions; COUNT question_type is appropriate here.",
 		iconLineVN: "KHUYẾN KHÍCH — icon/emoji rất phù hợp làm công cụ đếm, tối đa khoảng 40 phần trăm số câu; dùng question_type COUNT là hợp lý.",
-		exemplar:   `{"question_number": 1, "question_type": "COUNT", "question_name": "🍎 🍎 🍎 + 🍎 🍎 = ?", "answers": [{"label":"A","content":"5"},{"label":"B","content":"4"},{"label":"C","content":"6"},{"label":"D","content":"3"}], "right_answer": "A", "correct_answer": "5", "topic": "counting", "difficulty": 1}`,
+		exemplar:   `{"question_number": 1, "question_type": "COUNT", "question_name": "🍎 🍎 🍎 + 🍎 🍎 = ?", "answers": [{"label":"A","content":"5"},{"label":"B","content":"4"},{"label":"C","content":"6"},{"label":"D","content":"3"}], "right_answer_label": "A", "right_answer_content": "5", "question_topic": "counting", "difficulty": 1}`,
 	},
 	2: {
 		nameEN:     "Grade 2",
@@ -141,7 +141,7 @@ var gradeProfiles = map[GradeLevel]gradeProfile{
 		skillsVN:   "cộng trừ có nhớ, nhân nhập môn, đo lường cơ bản (độ dài, thời gian).",
 		iconLineEN: "LIGHT — icons are optional (about one in six questions at most), and only when they genuinely aid understanding.",
 		iconLineVN: "NHẸ — icon tùy chọn (nhiều nhất khoảng 1/6 số câu), chỉ khi thực sự giúp hiểu bài.",
-		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "45 + 38 = ?", "answers": [{"label":"A","content":"83"},{"label":"B","content":"73"},{"label":"C","content":"84"},{"label":"D","content":"82"}], "right_answer": "A", "correct_answer": "83", "topic": "addition_regrouping", "difficulty": 2}`,
+		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "45 + 38 = ?", "answers": [{"label":"A","content":"83"},{"label":"B","content":"73"},{"label":"C","content":"84"},{"label":"D","content":"82"}], "right_answer_label": "A", "right_answer_content": "83", "question_topic": "addition_regrouping", "difficulty": 2}`,
 	},
 	3: {
 		nameEN:     "Grade 3",
@@ -153,7 +153,7 @@ var gradeProfiles = map[GradeLevel]gradeProfile{
 		skillsVN:   "thành thạo nhân chia, phân số đơn vị, chu vi, toán đố đơn giản.",
 		iconLineEN: "RARE — use icons ONLY to visualise fractions or shapes; every other question is ARITHMETIC. Keep any COUNT question below one in five.",
 		iconLineVN: "HIẾM — CHỈ dùng icon để minh hoạ phân số hoặc hình; mọi câu khác là ARITHMETIC. Giữ số câu COUNT dưới 1/5.",
-		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "7 * 8 = ?", "answers": [{"label":"A","content":"56"},{"label":"B","content":"54"},{"label":"C","content":"63"},{"label":"D","content":"48"}], "right_answer": "A", "correct_answer": "56", "topic": "multiplication_single_digit", "difficulty": 2}`,
+		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "7 * 8 = ?", "answers": [{"label":"A","content":"56"},{"label":"B","content":"54"},{"label":"C","content":"63"},{"label":"D","content":"48"}], "right_answer_label": "A", "right_answer_content": "56", "question_topic": "multiplication_single_digit", "difficulty": 2}`,
 	},
 	4: {
 		nameEN:     "Grade 4",
@@ -165,7 +165,7 @@ var gradeProfiles = map[GradeLevel]gradeProfile{
 		skillsVN:   "số học nhiều chữ số, phép tính phân số, số thập phân, diện tích, toán nhiều bước.",
 		iconLineEN: `OFF — do NOT use any emoji or [icon:...] tokens; use question_type "ARITHMETIC" for every question.`,
 		iconLineVN: `TẮT — TUYỆT ĐỐI không dùng emoji hay token [icon:...]; dùng question_type "ARITHMETIC" cho mọi câu.`,
-		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "236 * 4 = ?", "answers": [{"label":"A","content":"944"},{"label":"B","content":"924"},{"label":"C","content":"844"},{"label":"D","content":"952"}], "right_answer": "A", "correct_answer": "944", "topic": "multiplication_multi_digit", "difficulty": 3}`,
+		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "236 * 4 = ?", "answers": [{"label":"A","content":"944"},{"label":"B","content":"924"},{"label":"C","content":"844"},{"label":"D","content":"952"}], "right_answer_label": "A", "right_answer_content": "944", "question_topic": "multiplication_multi_digit", "difficulty": 3}`,
 	},
 	5: {
 		nameEN:     "Grade 5",
@@ -177,7 +177,7 @@ var gradeProfiles = map[GradeLevel]gradeProfile{
 		skillsVN:   "phép tính phân số/thập phân, phần trăm, tỉ số, hình học, toán đố nhiều bước.",
 		iconLineEN: `OFF — do NOT use any emoji or [icon:...] tokens; use question_type "ARITHMETIC" for every question.`,
 		iconLineVN: `TẮT — TUYỆT ĐỐI không dùng emoji hay token [icon:...]; dùng question_type "ARITHMETIC" cho mọi câu.`,
-		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "3/4 + 2/5 = ?", "answers": [{"label":"A","content":"23/20"},{"label":"B","content":"5/9"},{"label":"C","content":"6/20"},{"label":"D","content":"1"}], "right_answer": "A", "correct_answer": "23/20", "topic": "fractions_add_sub", "difficulty": 4}`,
+		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "3/4 + 2/5 = ?", "answers": [{"label":"A","content":"23/20"},{"label":"B","content":"5/9"},{"label":"C","content":"6/20"},{"label":"D","content":"1"}], "right_answer_label": "A", "right_answer_content": "23/20", "question_topic": "fractions_add_sub", "difficulty": 4}`,
 	},
 	6: {
 		nameEN:     "Grade 6",
@@ -189,7 +189,7 @@ var gradeProfiles = map[GradeLevel]gradeProfile{
 		skillsVN:   "thứ tự thực hiện phép tính trên biểu thức hỗn hợp, tỉ lệ và tỉ số, phương trình đơn giản một ẩn, cộng trừ số âm cơ bản.",
 		iconLineEN: `OFF — do NOT use any emoji or [icon:...] tokens; use question_type "ARITHMETIC" for every question.`,
 		iconLineVN: `TẮT — TUYỆT ĐỐI không dùng emoji hay token [icon:...]; dùng question_type "ARITHMETIC" cho mọi câu.`,
-		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "(-5) + 12 = ?", "answers": [{"label":"A","content":"7"},{"label":"B","content":"-7"},{"label":"C","content":"17"},{"label":"D","content":"-17"}], "right_answer": "A", "correct_answer": "7", "topic": "negative_numbers", "difficulty": 4}`,
+		exemplar:   `{"question_number": 1, "question_type": "ARITHMETIC", "question_name": "(-5) + 12 = ?", "answers": [{"label":"A","content":"7"},{"label":"B","content":"-7"},{"label":"C","content":"17"},{"label":"D","content":"-17"}], "right_answer_label": "A", "right_answer_content": "7", "question_topic": "negative_numbers", "difficulty": 4}`,
 	},
 }
 
