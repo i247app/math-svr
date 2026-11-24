@@ -44,50 +44,6 @@ func assessmentTags(questionGrade int) []string {
 	return assessmentBankTags
 }
 
-// Texts of the two options a TRUE_FALSE bank question is served with, per
-// language; a language missing here falls back to Vietnamese.
-var trueFalseTexts = map[enum.LanguageType][2]string{
-	enum.LanguageTypeVietnamese: {"Đúng", "Sai"},
-	enum.LanguageTypeEnglish:    {"True", "False"},
-}
-
-func trueFalseOptions(lang enum.LanguageType) []dto.ExamOption {
-	t, ok := trueFalseTexts[lang]
-	if !ok {
-		t = trueFalseTexts[enum.LanguageTypeVietnamese]
-	}
-	return []dto.ExamOption{
-		{ID: dto.TrueOptionID, Text: t[0]},
-		{ID: dto.FalseOptionID, Text: t[1]},
-	}
-}
-
-// bankTranslations copies a bank row's translations into the exam shape.
-// A TRUE_FALSE question has no options in the bank; the exam gives it the
-// two served ones in each language.
-func bankTranslations(q *questionpool.QuestionPool) map[enum.LanguageType]dto.ExamTranslation {
-	if len(q.Translations()) == 0 {
-		return nil
-	}
-	out := make(map[enum.LanguageType]dto.ExamTranslation, len(q.Translations()))
-	for lang, t := range q.Translations() {
-		e := dto.ExamTranslation{
-			QuestionText:  t.QuestionText,
-			TtsText:       t.TtsText,
-			Explanation:   t.Explanation,
-			QuestionTopic: t.QuestionTopic,
-		}
-		for _, o := range t.Options {
-			e.Options = append(e.Options, dto.ExamOption{ID: o.Id, Text: o.Text})
-		}
-		if q.QuestionKind() == questionpool.KindTrueFalse {
-			e.Options = trueFalseOptions(lang)
-		}
-		out[lang] = e
-	}
-	return out
-}
-
 // generateFromBank hands out an ASSESSMENT / GRADE paper drawn from the
 // question bank instead of asking the model (QUESTION_POOL_ENABLED). The
 // drawn questions are stored as a new ma_exam_pools row of source POOL,
@@ -145,11 +101,11 @@ func (s *Service) pickFromBank(ctx context.Context, examType enum.ExamType, grad
 		}
 		// Easiest first, so a paper that is served in stored order still rises.
 		slices.SortStableFunc(picked, func(a, b *questionpool.QuestionPool) int {
-			return cmp.Compare(difficulty(a), difficulty(b))
+			return cmp.Compare(dto.BankDifficulty(a), dto.BankDifficulty(b))
 		})
 		for i, q := range picked {
 			slot := g.slots[i]
-			converted, err := toExamQuestion(q, slot)
+			converted, err := dto.QuestionFromBank(q, slot)
 			if err != nil {
 				return nil, errs.NewError(ctx, domain.ExamGenerationFailed, nil, err)
 			}
@@ -270,95 +226,6 @@ func (s *Service) drawGroup(ctx context.Context, g bankGroup, chosen []int64, av
 			fmt.Errorf("exam: the question bank holds %d approved questions for %s, the paper needs %d", len(got), g.name, need))
 	}
 	return got, nil
-}
-
-// difficulty orders questions within a group: level, then sub-level. A
-// question that is not rated counts as the middle of the scale.
-func difficulty(q *questionpool.QuestionPool) int {
-	const unrated = 4
-	level, sub := unrated, unrated
-	if l := q.QuestionLevel(); l != nil {
-		level = *l
-	}
-	if l := q.QuestionSubLevel(); l != nil {
-		sub = *l
-	}
-	return level*10 + sub
-}
-
-// toExamQuestion converts a bank question into the exam's question at
-// position number. Options keep their bank ids, in display order; the key
-// follows from the kind (aiquestion.Question documents the four shapes).
-// Image keys travel with the question and are presigned when a response is
-// built (image_service.go).
-func toExamQuestion(q *questionpool.QuestionPool, number int) (dto.Question, error) {
-	out := dto.Question{
-		QuestionNumber:   number,
-		QuestionName:     q.QuestionText(),
-		QuestionTopic:    utils.DerefString(q.QuestionTopic()),
-		QuestionTags:     q.QuestionTags(),
-		Explanation:      utils.DerefString(q.Explanation()),
-		TtsText:          utils.DerefString(q.TtsText()),
-		Kind:             q.QuestionKind().String(),
-		QuestionLevel:    q.QuestionLevel(),
-		QuestionSubLevel: q.QuestionSubLevel(),
-		Language:         dto.LanguageOf(q.QuestionLanguage()),
-		Translations:     bankTranslations(q),
-	}
-	grade := q.QuestionGrade()
-	out.QuestionGrade = &grade
-	out.ImageKey = utils.DerefString(q.QuestionImageKey())
-
-	textOf := make(map[string]string, len(q.Options()))
-	for _, o := range q.Options() {
-		textOf[o.Id] = o.Text
-		out.Answers = append(out.Answers, dto.AnswerChoice{Label: o.Id, Content: o.Text, ImageKey: utils.DerefString(o.ImageKey)})
-	}
-	correct := q.CorrectAnswer()
-
-	switch q.QuestionKind() {
-	case questionpool.KindSingleChoice:
-		if len(correct.OptionIds) != 1 {
-			return out, fmt.Errorf("question %d: single-choice key does not name exactly one option", q.QuestionPoolId())
-		}
-		text, ok := textOf[correct.OptionIds[0]]
-		if !ok {
-			return out, fmt.Errorf("question %d: single-choice key names unknown option %q", q.QuestionPoolId(), correct.OptionIds[0])
-		}
-		out.RightAnswerLabel = correct.OptionIds[0]
-		out.RightAnswerContent = text
-	case questionpool.KindMultipleChoice:
-		for _, id := range correct.OptionIds {
-			if _, ok := textOf[id]; !ok {
-				return out, fmt.Errorf("question %d: multiple-choice key names unknown option %q", q.QuestionPoolId(), id)
-			}
-			out.RightOptionIDs = append(out.RightOptionIDs, id)
-		}
-		slices.Sort(out.RightOptionIDs)
-		if len(out.RightOptionIDs) == 0 {
-			return out, fmt.Errorf("question %d: multiple-choice key is empty", q.QuestionPoolId())
-		}
-	case questionpool.KindTrueFalse:
-		if correct.Value == nil {
-			return out, fmt.Errorf("question %d: true/false key has no value", q.QuestionPoolId())
-		}
-		out.Answers = nil
-		for _, o := range trueFalseOptions(out.Language) {
-			out.Answers = append(out.Answers, dto.AnswerChoice{Label: o.ID, Content: o.Text})
-		}
-		out.RightAnswerLabel = dto.FalseOptionID
-		if *correct.Value {
-			out.RightAnswerLabel = dto.TrueOptionID
-		}
-	case questionpool.KindNumericInput:
-		if len(correct.Values) == 0 {
-			return out, fmt.Errorf("question %d: numeric key has no values", q.QuestionPoolId())
-		}
-		out.RightValues = slices.Clone(correct.Values)
-	default:
-		return out, fmt.Errorf("question %d: unknown kind %q", q.QuestionPoolId(), q.QuestionKind())
-	}
-	return out, nil
 }
 
 // bankTitle is the title of a bank paper, which has no model-written one.
