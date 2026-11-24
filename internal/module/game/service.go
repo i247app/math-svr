@@ -104,7 +104,7 @@ func (s *Service) StartGame(ctx context.Context, req *dto.StartGameReq) (*dto.Ga
 	return s.render(ctx, created), nil
 }
 
-// SubmitGame grades a round and returns it with the key.
+// SubmitGame grades a round and returns it with the results.
 func (s *Service) SubmitGame(ctx context.Context, req *dto.SubmitGameReq) (*dto.GameSessionRes, error) {
 	if err := ValidateGameIDs(ctx, req.ProfileID, req.GsessID); err != nil {
 		return nil, err
@@ -173,8 +173,8 @@ func (s *Service) GetGame(ctx context.Context, req *dto.GetGameReq) (*dto.GameSe
 
 // loadPlayer resolves the acting child: the profile must belong to the
 // session's user and must not be a guest's. The guest check is needed on top
-// of authMiddleware because /auth/resume-session makes a guest's session
-// secure.
+// of authMiddleware so that a guest whose session was made secure — by
+// /auth/resume-session before 2026-11-24, for up to 14 days — cannot play.
 func (s *Service) loadPlayer(ctx context.Context, uid *int64, profileID int64) (*profileDomain.Profile, error) {
 	if uid == nil || *uid == 0 {
 		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrUIDNotFoundFromSession)

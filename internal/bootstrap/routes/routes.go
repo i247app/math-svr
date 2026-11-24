@@ -277,8 +277,8 @@ func SetupHttpRoutes(gexSvr *gex.Server, res *resource.Resource, services *conta
 	}
 
 	// game routes — rounds drawn from the question bank, independent of
-	// /exams/*. No model call. Guests are refused by the service: a guest
-	// session can be made secure (/auth/resume-session).
+	// /exams/*. No model call. Guests are refused by the service too
+	// (Service.loadPlayer).
 	{
 		gameHandler := game.NewHandler(res, services.GameSvc)
 		reg("POST /games/start", gameHandler.HandleStartGame, authMiddleware)

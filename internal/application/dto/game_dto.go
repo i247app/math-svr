@@ -44,8 +44,10 @@ type GetGameReq struct {
 	GsessID   int64  `json:"gsess_id"`
 }
 
-// GameSessionResponse is one round. Questions carry the answer key and the
-// explanation only once the round is COMPLETE; a list leaves them out.
+// GameSessionResponse is one round. Questions always carry the answer key —
+// the game client needs it while the child plays (product owner's decision,
+// 2026-11-24) — and the explanation only once the round is COMPLETE; a list
+// leaves the questions out.
 type GameSessionResponse struct {
 	Language     enum.LanguageType `json:"lang"`
 	GsessID      int64             `json:"gsess_id"`
@@ -100,8 +102,9 @@ func isGameComplete(s *domain.GameSession) bool {
 	return utils.DerefString(s.GsessStatus()) == enum.GsessStatusComplete.String()
 }
 
-// GameSessionToResponse renders a round in lang. Whether the answer key is
-// shown follows from the round's own status, never from the caller.
+// GameSessionToResponse renders a round in lang. The answer key is always
+// shown; whether the explanation is follows from the round's own status,
+// never from the caller.
 func GameSessionToResponse(s *domain.GameSession, lang enum.LanguageType) *GameSessionResponse {
 	if s == nil {
 		return nil
@@ -117,7 +120,12 @@ func GameSessionToResponse(s *domain.GameSession, lang enum.LanguageType) *GameS
 		StartedDt:    mtime.NewTime(s.StartedDt()),
 		SubmittedDt:  mtime.NewMathTimePtr(s.SubmittedDt()),
 		// Stored in served order: there is no shuffle to apply.
-		Questions: servedQuestions(s.QuestionsJson(), nil, isGameComplete(s), lang),
+		Questions: servedQuestions(s.QuestionsJson(), nil, true, lang),
+	}
+	if !isGameComplete(s) {
+		for i := range res.Questions {
+			res.Questions[i].Explanation = ""
+		}
 	}
 	if total := s.ResTotalQuestions(); total != nil {
 		res.Result = &GameResult{

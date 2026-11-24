@@ -148,9 +148,11 @@ func checkAnswers(questions []dto.ExamQuestion, answers []dto.ExamAnswer) error 
 		}
 		seen[a.QuestionNumber] = true
 		for _, id := range a.OptionIDs {
-			if !slices.ContainsFunc(q.Options, func(o dto.ExamOption) bool {
+			handler := func(o dto.ExamOption) bool {
 				return strings.EqualFold(o.ID, strings.TrimSpace(id))
-			}) {
+			}
+
+			if !slices.ContainsFunc(q.Options, handler) {
 				return fmt.Errorf("game: option %q is not an option of question %d", id, a.QuestionNumber)
 			}
 		}

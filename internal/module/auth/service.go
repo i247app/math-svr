@@ -13,6 +13,7 @@ import (
 	"math-ai.com/math-ai/internal/infrastructure/session"
 	"math-ai.com/math-ai/internal/module/device"
 	"math-ai.com/math-ai/internal/module/user"
+	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/errs"
 	"math-ai.com/math-ai/internal/shared/utils"
 )
@@ -113,6 +114,10 @@ func (s *Service) Login(ctx context.Context, sess *session.AppSession, req *dto.
 	return res, nil
 }
 
+// ResumeSession refreshes the identity of a session that is already signed
+// in. It proves nothing about the caller, so it never makes a session secure:
+// a guest gets their user back on a session that stays unsecure, and any
+// other unsecure session (logged out, revoked) has to sign in again.
 func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (*dto.LoginRes, error) {
 	log := logger.From(ctx)
 
@@ -136,7 +141,17 @@ func (s *Service) ResumeSession(ctx context.Context, sess *session.AppSession) (
 		return res, nil
 	}
 
-	log.Info("Login successful, updating session data...")
+	if enum.IdentityCodeType(utils.DerefString(userRes.User.IdentityCode)).IsGuest() {
+		// Also takes back what earlier versions granted: they made a
+		// resumed guest session secure, and it lives for 14 days.
+		sess.MarkNotSecure()
+		return &dto.LoginRes{User: userRes.User}, nil
+	}
+	if !sess.IsSecure() {
+		return nil, errs.NewError(ctx, status.UNAUTHORIZED, nil, ErrSessionNotSecure)
+	}
+
+	log.Info("Session resumed, updating session data...")
 	sessionData := session.InitData{
 		Source:    "login",
 		IsSecure:  true,
