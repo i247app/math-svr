@@ -50,6 +50,7 @@ var clearDataTargets = []clearTarget{
 	{examLinkTable, seq.NameExamLink, "elink_id"},
 	{examSessionTable, seq.NameExamSession, "esess_id"},
 	{examSessionLineTable, seq.NameExamSessionLine, "esess_ln_id"},
+	{gameSessionTable, seq.NameGameSession, "gsess_id"},
 	// Question pool (admin bank): admin data, independent of the pools. A full clear
 	// wipes it; ClearDataKeepingUsers keeps it whole.
 	// {questionPoolTable, seq.NameQuestionPool, "question_pool_id"},
@@ -103,6 +104,7 @@ var clearDataSeqs = []string{
 	seq.NameExamLink,
 	seq.NameExamSession,
 	seq.NameExamSessionLine,
+	seq.NameGameSession,
 	//TODO: Temporarily not deleted ma_question_pools
 	// seq.NameQuestionPool,
 }
@@ -133,6 +135,7 @@ var clearKeepByUid = []keepCol{
 	{profileTable, "uid"},
 	{examLinkTable, "uid"},
 	{examSessionTable, "uid"},
+	{gameSessionTable, "uid"},
 	{chatParticipantTable, "uid"},
 	{chatMessageTable, "sender_uid"},
 }

@@ -43,4 +43,5 @@ const (
 	NameQuestionPool                = "ma_question_pools"
 	NameQuestion                    = "ma_questions"
 	NameLLMRoute                    = "ma_llm_routes"
+	NameGameSession                 = "ma_game_sessions"
 )

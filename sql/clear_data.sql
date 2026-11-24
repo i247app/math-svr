@@ -37,6 +37,7 @@ TRUNCATE TABLE ma_chat_conversations;
 TRUNCATE TABLE ma_chat_participants;
 TRUNCATE TABLE ma_chat_messages;
 TRUNCATE TABLE ma_chat_attachments;
+TRUNCATE TABLE ma_game_sessions;
 TRUNCATE TABLE ma_question_pools;
 
 SET FOREIGN_KEY_CHECKS = 1;
@@ -66,6 +67,7 @@ WHERE seq_name IN (
   'ma_chat_participants',
   'ma_chat_messages',
   'ma_chat_attachments',
+  'ma_game_sessions',
   'ma_question_pools'
 );
 

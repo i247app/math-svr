@@ -51,6 +51,7 @@ func (u *SqlUnitOfWork) Do(ctx context.Context, fn func(ctx context.Context, rep
 			ExamSession:        repositories.NewExamSessionRepository(loggedTx),
 			ExamSessionLine:    repositories.NewExamSessionLineRepository(loggedTx),
 			Prompt:             repositories.NewPromptRepository(loggedTx),
+			GameSession:        repositories.NewGameSessionRepository(loggedTx),
 			LLMRoute:           repositories.NewLLMRouteRepository(loggedTx),
 			Question:           repositories.NewQuestionRepository(loggedTx),
 			QuestionPool:       repositories.NewQuestionPoolRepository(loggedTx),

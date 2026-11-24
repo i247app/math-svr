@@ -20,6 +20,7 @@ var profileOwnedTables = []string{
 	chatParticipantTable,
 	examLinkTable,
 	examSessionTable,
+	gameSessionTable,
 }
 
 // ProfileOwnedDataRepository implements profile.IOwnedDataRepository.

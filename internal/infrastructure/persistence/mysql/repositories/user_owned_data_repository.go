@@ -26,6 +26,7 @@ var userOwnedTables = []string{
 	chatParticipantTable,
 	examLinkTable,
 	examSessionTable,
+	gameSessionTable,
 }
 
 // UserOwnedDataRepository implements user.IOwnedDataRepository.

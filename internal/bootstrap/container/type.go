@@ -10,6 +10,7 @@ import (
 	deviceDomain "math-ai.com/math-ai/internal/domain/device"
 	examDomain "math-ai.com/math-ai/internal/domain/exam"
 	exerciseDomain "math-ai.com/math-ai/internal/domain/exercise"
+	gameDomain "math-ai.com/math-ai/internal/domain/game"
 	gradeDomain "math-ai.com/math-ai/internal/domain/grade"
 	llmRouteDomain "math-ai.com/math-ai/internal/domain/llmroute"
 	loginLogDomain "math-ai.com/math-ai/internal/domain/loginlog"
@@ -106,6 +107,7 @@ type RepositoryContainer struct {
 	ExamSessionRepository        examDomain.IExamSessionRepository
 	ExamSessionLineRepository    examDomain.IExamSessionLineRepository
 	PromptRepository             promptDomain.IRepository
+	GameSessionRepository        gameDomain.IRepository
 	LLMRouteRepository           llmRouteDomain.IRepository
 	QuestionRepository           questionDomain.IRepository
 	QuestionPoolRepository       questionPoolDomain.IRepository

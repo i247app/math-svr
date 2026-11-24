@@ -13,13 +13,13 @@ package status
 //	               50xx notification · 121xx seq · 122xx–125xx classroom ·
 //	               126xx–127xx exercise · 134xx banner · 135xx chat · 136xx presence ·
 //	               137xx exam · 139xx role · 143xx prompt · 144xx questionpool ·
-//	               146xx llmroute
+//	               146xx llmroute · 147xx game
 //	module/<x>     120xx job/task · 130xx server · 131xx home · 133xx socket ·
 //	               138xx pow · 141xx session
 //	provider/<k>   80xx storage · 90xx sms · 100xx llm
 //	shared         140xx pagination (shared/pagination) · 142xx rate limit
 //	               (bootstrap/middleware) · 60xx messaging, 70xx cache (legacy.go)
-//	reserved       145xx QUESTION_* (ma_questions) · next free block: 14700
+//	reserved       145xx QUESTION_* (ma_questions) · next free block: 14800
 //
 // Register panics on a number taken twice, so a collision stops the server
 // at boot.
