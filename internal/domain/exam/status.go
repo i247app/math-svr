@@ -92,7 +92,8 @@ const (
 	// PROMPT_* 14300+ when the prompts left the exam aggregate). Do not reuse.
 	// ExamQuestionBankInsufficient: QUESTION_POOL_ENABLED is on and the
 	// bank holds too few approved questions for the paper (the debug field
-	// names the group and the shortfall). The model is never called instead.
+	// names the group and the shortfall). /exams/generate answers it by asking
+	// the model for the paper, so a client no longer receives it.
 	ExamQuestionBankInsufficient status.StatusCode = 13747
 	// ExamPoolBankReadonly: /exams/pools/verify on a set built from the
 	// question bank — correct the question in the bank instead.

@@ -197,10 +197,16 @@ func (s *Service) GenerateExam(ctx context.Context, req *dto.GenerateExamReq) (*
 		EsessID:     openJourney,
 	}
 
-	// With the switch on the model is not asked at all: the paper is drawn
-	// from the bank, and the cache below (sets the model wrote) is not read.
+	// With the switch on the paper is drawn from the bank. Only a bank that
+	// cannot fill it falls through to the cache / model below, for the WHOLE
+	// paper; any other failure is returned as it is.
 	if s.questionPoolEnabled {
-		return s.generateFromBank(ctx, req, profile, cmd, bankLevel)
+		res, err := s.generateFromBank(ctx, req, profile, cmd, bankLevel)
+		if !isBankInsufficient(err) {
+			return res, err
+		}
+		log.Warnf("exam.bank.fallback_to_llm profile=%d type=%s grade=%d level=%s reason=%v",
+			profile.ProfileId(), cmd.ExamType, grade, levelLabel(bankLevel), err)
 	}
 
 	prompt, err := s.loadExamPrompt(ctx, validated.ExamType, grade)

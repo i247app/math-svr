@@ -44,6 +44,13 @@ func assessmentTags(questionGrade int) []string {
 	return assessmentBankTags
 }
 
+// isBankInsufficient reports whether err says the bank cannot fill a paper
+// (pickFromBank): nothing was stored, so the caller may ask the model instead.
+func isBankInsufficient(err error) bool {
+	me, ok := errs.IsMathError(err)
+	return ok && me.GetStatusCode() == domain.ExamQuestionBankInsufficient
+}
+
 // generateFromBank hands out an ASSESSMENT / GRADE paper drawn from the
 // question bank instead of asking the model (QUESTION_POOL_ENABLED). The
 // drawn questions are stored as a new ma_exam_pools row of source POOL,
