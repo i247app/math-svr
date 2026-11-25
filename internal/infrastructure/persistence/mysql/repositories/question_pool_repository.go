@@ -9,12 +9,13 @@ import (
 	"slices"
 	"strings"
 
+	"time"
+
 	"math-ai.com/math-ai/internal/domain/questionpool"
 	"math-ai.com/math-ai/internal/infrastructure/database"
 	"math-ai.com/math-ai/internal/infrastructure/persistence/mysql/models"
 	"math-ai.com/math-ai/internal/shared/enum"
 	"math-ai.com/math-ai/internal/shared/pagination"
-	"time"
 )
 
 const (
@@ -404,6 +405,24 @@ func buildQuestionPoolPickClause(filter questionpool.PickFilter) (string, []any)
 	return clause, args
 }
 
+// questionPoolTextMatches are the LIKE tests of the text filter, one
+// placeholder each: the stem and tts_text in the base language and in every
+// translation. JSON text is utf8mb4_bin, so it needs the table's collation to
+// match case- and accent-insensitively like the plain columns.
+var questionPoolTextMatches = func() []string {
+	exprs := []string{"q.question_text", "q.tts_text"}
+	for _, lang := range enum.ContentLanguages {
+		for _, field := range []string{"question_text", "tts_text"} {
+			exprs = append(exprs, fmt.Sprintf(
+				`JSON_UNQUOTE(JSON_EXTRACT(q.translations, '$.%s.%s')) COLLATE utf8mb4_0900_ai_ci`, lang, field))
+		}
+	}
+	for i := range exprs {
+		exprs[i] += ` LIKE ? ESCAPE '\\'`
+	}
+	return exprs
+}()
+
 // buildQuestionFilterClause keeps placeholder order in lockstep with the
 // returned args slice.
 func buildQuestionPoolFilterClause(filter questionpool.ListQuestionPoolsFilter) (string, []any, error) {
@@ -411,11 +430,14 @@ func buildQuestionPoolFilterClause(filter questionpool.ListQuestionPoolsFilter) 
 		clause string
 		args   []any
 	)
-	// ponytail: a leading-wildcard LIKE scans every row (~70 ms per pass at
-	// 61k rows, run twice: COUNT + page). Past ~500k, a FULLTEXT ngram index.
+	// ponytail: leading-wildcard LIKEs scan every row (~60 ms per pass at
+	// 20k rows, translations included, run twice: COUNT + page). Past ~500k, a FULLTEXT ngram index.
 	if filter.Text != nil {
-		clause += ` AND q.question_text LIKE ? ESCAPE '\\'`
-		args = append(args, "%"+escapeLikePattern(*filter.Text)+"%")
+		pattern := "%" + escapeLikePattern(*filter.Text) + "%"
+		clause += ` AND (` + strings.Join(questionPoolTextMatches, ` OR `) + `)`
+		for range questionPoolTextMatches {
+			args = append(args, pattern)
+		}
 	}
 	if filter.Grade != nil {
 		clause += ` AND q.question_grade = ?`

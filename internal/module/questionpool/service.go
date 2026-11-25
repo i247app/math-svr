@@ -230,7 +230,12 @@ func (s *Service) ListQuestionPools(ctx context.Context, req *dto.ListQuestionPo
 	if err != nil {
 		return nil, err
 	}
-	res := &dto.ListQuestionPoolsRes{QuestionPools: s.toResponses(ctx, rows), Pagination: page}
+
+	res := &dto.ListQuestionPoolsRes{
+		QuestionPools: s.toResponses(ctx, rows),
+		Pagination:    page,
+	}
+
 	return res, nil
 }
 
