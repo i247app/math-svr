@@ -392,9 +392,9 @@ func buildQuestionPoolPickClause(filter questionpool.PickFilter) (string, []any)
 	}
 	// ponytail: no index — evaluated on the grade's approved rows, which
 	// ORDER BY RAND() sorts anyway. Create ix_question_tags (036) if it shows.
-	if len(filter.Tags) > 0 {
-		raw, _ := json.Marshal(filter.Tags) // a []string always marshals
-		clause += ` AND JSON_CONTAINS(q.question_tags, CAST(? AS JSON))`
+	if len(filter.AnyTags) > 0 {
+		raw, _ := json.Marshal(filter.AnyTags) // a []string always marshals
+		clause += ` AND JSON_OVERLAPS(q.question_tags, CAST(? AS JSON))`
 		args = append(args, string(raw))
 	}
 

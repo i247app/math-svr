@@ -29,7 +29,7 @@ import (
 	"math-ai.com/math-ai/internal/shared/utils"
 )
 
-// gameBankTags are the tags every question of a round must carry,
+// gameBankTags: every question of a round must carry at least one of them,
 // kindergarten included.
 var gameBankTags = []string{questionpool.TagOnlyNumber}
 
@@ -221,7 +221,7 @@ func (s *Service) resolveGrade(ctx context.Context, stated *int, p *profileDomai
 // shuffles each one's options (a true/false pair keeps its order) and returns
 // the set as it is stored. Fewer than n is refused: never a shorter round.
 func (s *Service) drawQuestions(ctx context.Context, grade int, level *int, n int) (string, error) {
-	filter := questionpool.PickFilter{Grade: grade, Tags: gameBankTags}
+	filter := questionpool.PickFilter{Grade: grade, AnyTags: gameBankTags}
 	if level != nil {
 		filter.Levels = []int{*level}
 	}

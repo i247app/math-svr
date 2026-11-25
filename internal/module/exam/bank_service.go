@@ -26,13 +26,13 @@ import (
 // Q6 too; the rest of the paper is the child's own grade / level.
 var bankChallengeSlots = []int{3, 6}
 
-// assessmentBankTags are the tags every question of an ASSESSMENT drawn
-// from the bank must carry, all of them, probes included.
-var assessmentBankTags = []string{questionpool.TagOnlyNumber}
+// assessmentBankTags: every question of an ASSESSMENT drawn from the bank,
+// probes included, must carry at least one of them.
+var assessmentBankTags = []string{questionpool.TagOnlyNumber, questionpool.TagUnitConversion}
 
 // kindergartenGrade (Mẫu giáo) questions are exempt from
 // assessmentBankTags. The rule follows the QUESTION's grade, so the grade-1
-// probes of a kindergarten paper still carry the tags.
+// probes of a kindergarten paper still carry one.
 const kindergartenGrade = enum.ExamGradeMin
 
 // assessmentTags returns the tags an ASSESSMENT draws questions of
@@ -135,9 +135,9 @@ type bankGroup struct {
 //
 //   - ASSESSMENT: one group per position, at that position's allowed levels
 //     (input.AllowedLevels); the challenge slots come from grade + 1, the
-//     rest from the grade; every question must carry every
+//     rest from the grade; every question must carry at least one
 //     assessmentBankTags tag, except a kindergarten (grade 0) question — the
-//     probes of a grade-0 paper (grade 1) still carry them.
+//     probes of a grade-0 paper (grade 1) still carry one.
 //   - GRADE with a level: the challenge slots come from level + 1 (level 9 has
 //     none above it and draws level 9 again), the rest from the level.
 //   - GRADE without a level: the whole paper from the grade.
@@ -168,8 +168,8 @@ func bankGroups(examType enum.ExamType, grade int, level *int) []bankGroup {
 		}
 	case examType == enum.ExamTypeAssessment:
 		// One group per position: each has its own allowed levels
-		// (input.AllowedLevels). Every question, probes included, is a bare
-		// calculation — except a kindergarten question (assessmentTags).
+		// (input.AllowedLevels). Every question, probes included, carries an
+		// assessment tag — except a kindergarten question (assessmentTags).
 		// ponytail: one ORDER BY RAND() query per slot (10 per paper), each
 		// over one grade's approved rows at those levels; one windowed query
 		// (ROW_NUMBER() OVER (PARTITION BY question_level)) if it shows.
@@ -184,7 +184,7 @@ func bankGroups(examType enum.ExamType, grade int, level *int) []bankGroup {
 			tags, levels := assessmentTags(g), allowed[slot-1]
 			groups = append(groups, bankGroup{
 				name:   fmt.Sprintf("Q%d grade %d%s levels %v %v", slot, g, probe, levels, tags),
-				filter: questionpool.PickFilter{Grade: g, Levels: levels, Tags: tags},
+				filter: questionpool.PickFilter{Grade: g, Levels: levels, AnyTags: tags},
 				slots:  []int{slot},
 			})
 		}

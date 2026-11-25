@@ -51,14 +51,19 @@ type PickFilter struct {
 	// AvoidTexts are stems the child met recently; a matching question is
 	// not a candidate.
 	AvoidTexts []string
-	// Tags keeps only questions whose question_tags hold EVERY one of them
-	// (exact, case-sensitive match); empty = no tag condition.
-	Tags []string
+	// AnyTags keeps only questions whose question_tags hold AT LEAST ONE of
+	// them (exact, case-sensitive match); empty = no tag condition.
+	AnyTags []string
 }
 
-// TagOnlyNumber marks a bare-calculation stem (no words, units or images);
-// an ASSESSMENT drawn from the bank uses only these.
-const TagOnlyNumber = "only_number"
+// Tags an ASSESSMENT drawn from the bank picks by. They are written by the
+// admin or the generation prompt; the server does not check the content.
+const (
+	// TagOnlyNumber marks a bare-calculation stem (no words, units or images).
+	TagOnlyNumber = "only_number"
+	// TagUnitConversion marks a question about converting units.
+	TagUnitConversion = "unit_conversion"
+)
 
 // IRepository owns ma_question_pools.
 type IRepository interface {
